@@ -1,36 +1,31 @@
 ﻿namespace Obsidian.API.Utilities;
 public static class Extensions
 {
-    public static List<string> GetStateValues(this string key, Dictionary<string, List<string>> valueStores)
+    public static List<string> GetStateValues(this string key, Dictionary<string, string[]> valueStores)
     {
         var list = new List<string>();
-
-        var span = key.AsSpan();
+        var vals = key.Split("-");
 
         var count = 0;
         foreach (var (_, values) in valueStores)
         {
-            if (span.Length > valueStores.Count)
-            {
-                var index = int.Parse($"{span[count]}{span[count + 1]}");
+            var index = int.Parse(vals[count++]);
 
-                var value = values[index];
+            var value = values[index];
 
-                list.Add(value);
-                count++;
-            }
-            else
-            {
-                var index = int.Parse($"{span[count]}");
-
-                var value = values[index];
-
-                list.Add(value);
-            }
-
-            count++;
+            list.Add(value);
         }
 
         return list;
+    }
+
+    public static string GetIndexFromArray(this string[] array, string value)
+    {
+        var propertyValue = bool.TryParse(value, out _) ? value.ToLower() : value;
+
+        if (!array.Contains(propertyValue))
+            throw new ArgumentException("Failed to find value from the supplied array.", nameof(value));
+
+        return $"{Array.IndexOf(array, propertyValue)}";
     }
 }

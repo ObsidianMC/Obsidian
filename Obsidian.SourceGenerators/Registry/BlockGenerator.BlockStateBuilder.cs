@@ -1,16 +1,14 @@
 ﻿using Obsidian.SourceGenerators.Registry.Models;
-using System.Reflection;
-using System.Text;
 
 namespace Obsidian.SourceGenerators.Registry;
 public partial class BlockGenerator
 {
     private static void GenerateValueStore(CodeBuilder stateBuilder, BlockProperty[] properties)
     {
-        stateBuilder.Statement("private Dictionary<string, List<string>> valueStore = new()");
+        stateBuilder.Statement("private Dictionary<string, string[]> valueStore = new()");
         foreach (var property in properties)
         {
-            stateBuilder.Indent().Append("{ ").Append($"\"{property.Name}\", new()").Append("{ ");
+            stateBuilder.Indent().Append("{ ").Append($"\"{property.Name}\", new[]").Append("{ ");
 
             foreach (var value in property.Values)
                 stateBuilder.Append($"\"{value}\", ");
@@ -24,13 +22,13 @@ public partial class BlockGenerator
     {
         stateBuilder.Statement("private Dictionary<string, int> possibleStates = new()");
 
-        var sb = new StringBuilder();
+        var list = new List<string>();
         foreach (var kv in stateValues)
         {
             var key = kv.Key;
             var values = kv.Value;
 
-            sb.Clear();
+            list.Clear();
 
             var count = 0;
             foreach (var value in values)
@@ -44,16 +42,14 @@ public partial class BlockGenerator
 
                 var index = Array.IndexOf(property.Values, propertyValue);
 
-                sb.Append(index);
+                list.Add(index.ToString());
             }
 
-            stateBuilder.Indent().Append("{ ").Append($"\"{sb}\", {key}").Append(" },").Line();
+            stateBuilder.Indent().Append("{ ").Append($"\"{string.Join("-", list)}\", {key}").Append(" },").Line();
         }
 
         stateBuilder.EndScope(true);
     }
-
-    
 
     private static void SetStateFromIdMethod(string fullName, CodeBuilder stateBuilder, BlockProperty[] properties)
     {
@@ -171,8 +167,6 @@ public partial class BlockGenerator
 
     private static void BuildStateFinder(CodeBuilder stateBuilder, BlockProperty[] properties)
     {
-        stateBuilder.Line("var sb = new StringBuilder();").Line();
-
         foreach (var property in properties)
         {
             var name = property.Name;
@@ -187,15 +181,18 @@ public partial class BlockGenerator
             }
         }
 
+        stateBuilder.Statement("var list = new List<string>()");
+
         foreach (var property in properties)
         {
             var name = property.Name;
             var sanitizedName = name.Replace("Is", string.Empty);
 
-            stateBuilder.Indent().Append($"sb.Append(Array.FindIndex(this.valueStore[\"{name}\"].ToArray(), ")
-                .Append($"v => v.Equals(this.{sanitizedName}.ToString(), StringComparison.OrdinalIgnoreCase)));").Line();
+            stateBuilder.Line($"this.valueStore[\"{name}\"].GetIndexFromArray(this.{sanitizedName}.ToString()),");
         }
 
-        stateBuilder.Line().Line($"var stateId = this.possibleStates[sb.ToString()];");
+        stateBuilder.EndScope(true).Line();
+
+        stateBuilder.Line().Line($"var stateId = this.possibleStates[string.Join(\"-\", list)];");
     }
 }
