@@ -40,15 +40,31 @@ public partial class BlockGenerator
                 if (!property.Values.Contains(propertyValue))
                     continue;
 
-                var index = Array.IndexOf(property.Values, propertyValue);
+                var index = GetPropertyIndex(property.Values, value);
 
-                list.Add(index.ToString());
+                list.Add(index);
             }
 
             stateBuilder.Indent().Append("{ ").Append($"\"{string.Join("-", list)}\", {key}").Append(" },").Line();
         }
 
         stateBuilder.EndScope(true);
+    }
+
+    private static string GetPropertyIndex(string[] array, string value)
+    {
+        var propertyValue = bool.TryParse(value, out _) ? value.ToLower() : value;
+
+        if (!array.Contains(propertyValue))
+            throw new ArgumentException("Failed to find value from the supplied array.", nameof(value));
+
+        for (int i = 0; i < array.Length; i++)
+        {
+            if (array[i] == propertyValue)
+                return $"{i}";
+        }
+
+        throw new InvalidOperationException();
     }
 
     private static void SetStateFromIdMethod(string fullName, CodeBuilder stateBuilder, BlockProperty[] properties)

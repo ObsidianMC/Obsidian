@@ -1,4 +1,6 @@
-﻿namespace Obsidian.API.Utilities;
+﻿using System.Diagnostics;
+
+namespace Obsidian.API.Utilities;
 public static class Extensions
 {
     public static List<string> GetStateValues(this string key, Dictionary<string, string[]> valueStores)
@@ -26,6 +28,12 @@ public static class Extensions
         if (!array.Contains(propertyValue))
             throw new ArgumentException("Failed to find value from the supplied array.", nameof(value));
 
-        return $"{Array.IndexOf(array, propertyValue)}";
+        for(int i = 0; i < array.Length; i++)
+        {
+            if (array[i] == propertyValue)
+                return $"{i}";
+        }
+
+        throw new UnreachableException();
     }
 }
