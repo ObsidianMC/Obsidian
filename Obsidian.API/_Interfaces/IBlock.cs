@@ -5,6 +5,7 @@ public interface IBlock
 
     public int BaseId { get; }
     public int DefaultId { get; }
+    public int RegistryId { get; }
 
     public IBlockState State { get; }
 

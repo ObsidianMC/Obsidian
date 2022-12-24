@@ -95,10 +95,4 @@ internal sealed class Assets
 
         return tags.ToArray();
     }
-
-    private static string? GetAsset(GeneratorExecutionContext context, string fileName)
-    {
-        AdditionalText? asset = context.AdditionalFiles.FirstOrDefault(additionalText => additionalText.Path.EndsWith(fileName));
-        return asset?.GetText()?.ToString();
-    }
 }
