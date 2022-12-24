@@ -1,6 +1,6 @@
 ﻿
 namespace Obsidian.API;
-public enum BlockColor
+public enum Dye
 {
     White,
     Orange,
