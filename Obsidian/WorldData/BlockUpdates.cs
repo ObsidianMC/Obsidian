@@ -14,7 +14,7 @@ internal static class BlockUpdates
         var location = blockUpdate.position;
         var material = blockUpdate.Block.Material;
         if (await world.GetBlockAsync(location + Vector.Down) is IBlock below &&
-            (TagsRegistry.Blocks.ReplaceableByWater.Entries.Contains(below.BaseId) || below.IsLiquid))
+            (TagsRegistry.Blocks.ReplaceableByWater.Entries.Contains(below.RegistryId) || below.IsLiquid))
         {
             await world.SetBlockAsync(location, BlocksRegistry.Air);
             world.SpawnFallingBlock(location, material);
@@ -50,11 +50,11 @@ internal static class BlockUpdates
             foreach (var pathLoc in paths)
             {
                 if (await world.GetBlockAsync(pathLoc) is IBlock pathSide &&
-                    (TagsRegistry.Blocks.ReplaceableByWater.Entries.Contains(pathSide.BaseId) || pathSide.IsLiquid))
+                    (TagsRegistry.Blocks.ReplaceableByWater.Entries.Contains(pathSide.RegistryId) || pathSide.IsLiquid))
                 {
                     var pathBelow = await world.GetBlockAsync(pathLoc + Vector.Down);
                     if (pathBelow is IBlock pBelow &&
-                        (TagsRegistry.Blocks.ReplaceableByWater.Entries.Contains(pBelow.BaseId) || pBelow.IsLiquid))
+                        (TagsRegistry.Blocks.ReplaceableByWater.Entries.Contains(pBelow.RegistryId) || pBelow.IsLiquid))
                     {
                         validPaths.Add(pathLoc);
                     }
@@ -84,7 +84,7 @@ internal static class BlockUpdates
             }
 
             // Keep falling
-            if (await world.GetBlockAsync(belowPos) is IBlock below && TagsRegistry.Blocks.ReplaceableByWater.Entries.Contains(below.BaseId))
+            if (await world.GetBlockAsync(belowPos) is IBlock below && TagsRegistry.Blocks.ReplaceableByWater.Entries.Contains(below.RegistryId))
             {
                 var newBlock = BlocksRegistry.Get(Material.Water, new WaterStateBuilder().WithLevel(waterLevel).Build());
                 await world.SetBlockAsync(belowPos, newBlock);
@@ -154,7 +154,7 @@ internal static class BlockUpdates
             {
                 if (below.Material == block.Material) { return false; }
 
-                if (TagsRegistry.Blocks.ReplaceableByWater.Entries.Contains(below.BaseId))
+                if (TagsRegistry.Blocks.ReplaceableByWater.Entries.Contains(below.RegistryId))
                 {
                     var newBlock = BlocksRegistry.Get(Material.Water, new WaterStateBuilder().WithLevel(waterLevel + 8).Build());
                     await world.SetBlockAsync(belowPos, newBlock);
@@ -173,7 +173,7 @@ internal static class BlockUpdates
 
                 var neighborState = neighborBlock.State is WaterState neighborWater ? neighborWater.Level : 0;
 
-                if (TagsRegistry.Blocks.ReplaceableByWater.Entries.Contains(neighborBlock.BaseId) ||
+                if (TagsRegistry.Blocks.ReplaceableByWater.Entries.Contains(neighborBlock.RegistryId) ||
                     (neighborBlock.IsLiquid && neighborState > waterLevel + 1))
                 {
                     var newBlock = BlocksRegistry.Get(Material.Water, new WaterStateBuilder().WithLevel(waterLevel + 1).Build());

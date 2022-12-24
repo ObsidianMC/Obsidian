@@ -19,7 +19,7 @@ public struct BlockUpdate
             _block = value;
             if (value is IBlock b)
             {
-                if (TagsRegistry.Blocks.GravityAffected.Entries.Contains(b.State.Id))
+                if (TagsRegistry.Blocks.GravityAffected.Entries.Contains(b.RegistryId))
                 {
                     Delay = 1;
                 }
