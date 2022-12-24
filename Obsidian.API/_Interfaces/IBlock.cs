@@ -4,6 +4,7 @@ public interface IBlock
     public string UnlocalizedName { get; }
 
     public int BaseId { get; }
+    public int DefaultId { get; }
 
     public IBlockState State { get; }
 

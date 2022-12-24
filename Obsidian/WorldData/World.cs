@@ -486,7 +486,7 @@ public class World : IWorld
             }
             c = await Generator.GenerateChunkAsync(job.x, job.z, c);
             region.SetChunk(c);
-           await worldLight.ProcessSkyLightForChunk(c);
+          // await worldLight.ProcessSkyLightForChunk(c);
         });
     }
 

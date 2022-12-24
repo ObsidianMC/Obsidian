@@ -30,6 +30,7 @@ public partial class BlocksGenerator
 
             builder.Line($"public string UnlocalizedName => \"{block.Tag}\";");
             builder.Line($"public int BaseId => {block.BaseId};");
+            builder.Line($"public int DefaultId => {block.DefaultId};");
 
             builder.Line($"public Material Material => Material.{block.Name};");
 
@@ -48,7 +49,7 @@ public partial class BlocksGenerator
                 builder.Line("this.State = state;").EndScope();
             }
 
-            builder.Line().Method("public override int GetHashCode()").Line($"return this.State != null ? this.State.Id : this.BaseId;").EndScope();
+            builder.Line().Method("public override int GetHashCode()").Line($"return this.State != null ? this.State.Id : this.DefaultId;").EndScope();
 
             builder.EndScope();
             ctx.AddSource($"{blockName}.g.cs", builder.ToString());
