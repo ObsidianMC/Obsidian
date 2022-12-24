@@ -19,7 +19,7 @@ public static class OverworldDecorator
         var asm = typeof(OverworldDecorator).Assembly;
 
         var floras = asm.GetTypes()
-            .Where(t => t.IsClass && !t.IsAbstract && (t.IsSubclassOf(typeof(BaseFlora)) || t.IsSubclassOf(typeof(BaseTallFlora))));
+            .Where(t => t.IsClass && !t.IsAbstract && t.IsSubclassOf(typeof(BaseFlora)));
         var trees = asm.GetTypes()
             .Where(t => t.IsClass && !t.IsAbstract && t.IsSubclassOf(typeof(BaseTree)));
 
