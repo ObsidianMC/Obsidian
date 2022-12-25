@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using Obsidian.Utilities.Registry;
+using System.Diagnostics;
 
 namespace Obsidian.ChunkData;
 
@@ -30,7 +31,7 @@ public sealed class ChunkSection
 
         this.YBase = yBase;
 
-        int airIndex = BlockStateContainer.Palette.GetOrAddId(Block.Air);
+        int airIndex = BlockStateContainer.Palette.GetOrAddId(BlocksRegistry.Air);
         Debug.Assert(airIndex == 0);
     }
 
@@ -41,17 +42,18 @@ public sealed class ChunkSection
         YBase = yBase;
     }
 
-    public Block GetBlock(Vector position) => this.GetBlock(position.X, position.Y, position.Z);
-    public Block GetBlock(int x, int y, int z) => this.BlockStateContainer.Get(x, y, z);
+    public IBlock GetBlock(Vector position) => this.GetBlock(position.X, position.Y, position.Z);
+    public IBlock GetBlock(int x, int y, int z) => this.BlockStateContainer.Get(x, y, z);
 
     public Biomes GetBiome(Vector position) => this.GetBiome(position.X, position.Y, position.Z);
     public Biomes GetBiome(int x, int y, int z) => this.BiomeContainer.Get(x, y, z);
 
-    public void SetBlock(Vector position, Block block) => this.SetBlock(position.X, position.Y, position.Z, block);
-    public void SetBlock(int x, int y, int z, Block block)
+    public void SetBlock(Vector position, IBlock block) => this.SetBlock(position.X, position.Y, position.Z, block);
+    public void SetBlock(int x, int y, int z, IBlock block)
     {
-        if (!block.IsAir)
+        if (block.Material != Material.Air)
             IsEmpty = false;
+
         this.BlockStateContainer.Set(x, y, z, block);
     }
 

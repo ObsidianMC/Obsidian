@@ -21,6 +21,8 @@
 		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
 		<NoWarn>1591</NoWarn>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+		<CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -32,8 +34,12 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <AdditionalFiles Include="..\Obsidian\Assets\blocks.json" Link="Assets\blocks.json" />
-	  <AdditionalFiles Include="..\Obsidian\Assets\items.json" Link="Assets\items.json" />
+		<AdditionalFiles Include="..\Obsidian\Assets\blocks.json" Link="Assets\blocks.json" />
+		<AdditionalFiles Include="..\Obsidian\Assets\items.json" Link="Assets\items.json" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -48,13 +54,12 @@
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="6.0.0" />
 		<PackageReference Include="SharpNoise" Version="0.12.1.1" />
 	</ItemGroup>
-  
+
 	<ItemGroup>
-    <ProjectReference Include="..\Obsidian.SourceGenerators\Obsidian.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-  </ItemGroup>
-  
-	<ItemGroup>
-	  <Folder Include="Assets\" />
+		<ProjectReference Include="..\Obsidian.SourceGenerators\Obsidian.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<Folder Include="Assets\" />
+	</ItemGroup>
 </Project>

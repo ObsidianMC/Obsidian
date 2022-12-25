@@ -1,11 +1,53 @@
 ﻿using Obsidian.ChunkData;
 using Obsidian.WorldData.Generators.Overworld.Features.Flora;
 using Obsidian.WorldData.Generators.Overworld.Features.Trees;
+using System.Diagnostics;
+using System.Linq.Expressions;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 
 public static class OverworldDecorator
 {
+    private static readonly ConcurrentDictionary<Type, Func<GenHelper, Chunk, BaseFlora>> floraCache = new();
+    private static readonly ConcurrentDictionary<Type, Func<GenHelper, Chunk, BaseTree>> treeCache = new();
+
+    private static readonly Type[] argumentCache = new[] { typeof(GenHelper), typeof(Chunk) };
+    public static readonly ParameterExpression[] expressionParameters = argumentCache.Select((t, i) => Expression.Parameter(t, $"param{i}")).ToArray();
+
+    static OverworldDecorator()
+    {
+        var asm = typeof(OverworldDecorator).Assembly;
+
+        var floras = asm.GetTypes()
+            .Where(t => t.IsClass && !t.IsAbstract && t.IsSubclassOf(typeof(BaseFlora)));
+        var trees = asm.GetTypes()
+            .Where(t => t.IsClass && !t.IsAbstract && t.IsSubclassOf(typeof(BaseTree)));
+
+        foreach (var floraType in floras)
+        {
+            var ctor = floraType.GetConstructor(argumentCache);
+
+            var expression = Expression.New(ctor, expressionParameters);
+            var lambda = Expression.Lambda<Func<GenHelper, Chunk, BaseFlora>>(expression, expressionParameters);
+
+            var compiledLamda = lambda.Compile();
+
+            floraCache.TryAdd(floraType, compiledLamda);
+        }
+
+        foreach(var treeType in trees)
+        {
+            var ctor = treeType.GetConstructor(argumentCache);
+
+            var expression = Expression.New(ctor, expressionParameters);
+            var lambda = Expression.Lambda<Func<GenHelper, Chunk, BaseTree>>(expression, expressionParameters);
+
+            var compiledLamda = lambda.Compile();
+
+            treeCache.TryAdd(treeType, compiledLamda);
+        }
+    }
+
     public static async Task DecorateAsync(Chunk chunk, GenHelper helper)
     {
         for (int x = 0; x < 16; x++)
@@ -26,40 +68,50 @@ public static class OverworldDecorator
 
     private static async Task GenerateFloraAsync(Vector pos, DecoratorFeatures features, GenHelper helper, Chunk chunk)
     {
-        foreach (var (flora, index) in features.Flora.Select((value, i) => (value, i)))
+        for(int i = 0; i < features.Flora.Count; i++)
         {
-            if (flora.Frequency == 0) { continue; }
-            var floraInstance = Activator.CreateInstance(flora.FloraType, helper, chunk) as BaseFlora;
-            if (floraInstance is null) { continue; }
+            var flora = features.Flora[i];
 
-            var noiseVal = helper.Noise.Decoration.GetValue(pos.X, -33 + (index * 22), pos.Z);
+            if (flora.Frequency == 0)
+                continue;
+
+            if (!floraCache.TryGetValue(flora.FloraType, out var floraFactory))
+                throw new UnreachableException();
+
+            var floraInstance = floraFactory(helper, chunk);
+
+            var noiseVal = helper.Noise.Decoration.GetValue(pos.X, -33 + (i * 22), pos.Z);
             var freq = flora.Frequency / 200.0;
             bool isFlora = noiseVal > 0.9 && noiseVal <= freq + 0.9;
             if (!isFlora) { continue; }
 
             await floraInstance.GenerateFloraAsync(pos, helper.Seed, flora.Radius, flora.Density);
         }
+
     }
 
     public static async Task GrowTreeAsync(Vector position, BaseTree tree, int? heightOffset = null)
     {
-        int offset;
-        if (heightOffset is null)
-            offset = new Random().Next(-2, 2);
-        else
-            offset = (int)heightOffset;
+        var offset = heightOffset is null ? Globals.Random.Next(-2, 2) : (int)heightOffset;
         await tree.TryGenerateTreeAsync(position, offset);
     }
 
     private static async Task GenerateTreesAsync(Vector pos, DecoratorFeatures features, GenHelper helper, Chunk chunk)
     {
-        foreach (var (tree, index) in features.Trees.Select((value, i) => (value, i)))
+        for(int i = 0; i < features.Trees.Count; i++)
         {
-            if (tree.Frequency == 0) { continue; }
-            var treeInstance = Activator.CreateInstance(tree.TreeType, helper, chunk) as BaseTree;
+            var tree = features.Trees[i];
+
+            if (tree.Frequency == 0)
+                continue;
+
+            if (!treeCache.TryGetValue(tree.TreeType, out var treeFactory))
+                throw new UnreachableException();
+
+            var treeInstance = treeFactory(helper, chunk);
 
             // Use a different noisemap for each tree type by setting another Y value.
-            var noiseVal = helper.Noise.Decoration.GetValue(pos.X, -45 + (index * 10), pos.Z);
+            var noiseVal = helper.Noise.Decoration.GetValue(pos.X, -45 + (i * 10), pos.Z);
             var freq = tree.Frequency / 100.0;
             bool isTree = noiseVal > 0.8 && noiseVal <= freq + 0.8;
             if (!isTree) { continue; }

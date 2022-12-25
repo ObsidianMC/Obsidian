@@ -2,6 +2,7 @@
 
 public enum Biomes : int
 {
+    Default = -1,
     Badlands = 0,
     BambooJungle = 1,
     BasaltDeltas = 2,

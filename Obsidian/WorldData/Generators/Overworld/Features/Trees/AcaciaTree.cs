@@ -1,4 +1,6 @@
-﻿namespace Obsidian.WorldData.Generators.Overworld.Features.Trees;
+﻿using Obsidian.Utilities.Registry;
+
+namespace Obsidian.WorldData.Generators.Overworld.Features.Trees;
 
 public class AcaciaTree : BaseTree
 {
@@ -20,7 +22,7 @@ public class AcaciaTree : BaseTree
                     {
                         if (x != origin.X - 3 && x != origin.X + 3 && z != origin.Z - 3 && z != origin.Z + 3)
                         {
-                            await helper.SetBlockAsync(x, y, z, new Block(leaf), chunk);
+                            await helper.SetBlockAsync(x, y, z, this.leafBlock, chunk);
                         }
                     }
                     else if (!(
@@ -30,7 +32,7 @@ public class AcaciaTree : BaseTree
                         (x == origin.X + 3 && z == origin.Z + 3)
                         ))
                     {
-                        await helper.SetBlockAsync(x, y, z, new Block(leaf), chunk);
+                        await helper.SetBlockAsync(x, y, z, this.leafBlock, chunk);
                     }
                 }
             }

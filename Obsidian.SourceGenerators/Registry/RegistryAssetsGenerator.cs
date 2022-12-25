@@ -1,26 +1,36 @@
 ﻿using Obsidian.SourceGenerators.Registry.Models;
+using System.Collections.Immutable;
+using System.IO;
 
 namespace Obsidian.SourceGenerators.Registry;
 
 [Generator]
-public sealed partial class RegistryAssetsGenerator : ISourceGenerator
+public sealed partial class RegistryAssetsGenerator : IIncrementalGenerator
 {
-    public void Initialize(GeneratorInitializationContext context)
+    public void Initialize(IncrementalGeneratorInitializationContext context)
     {
+        var jsonFiles = context.AdditionalTextsProvider
+            .Where(file => file.Path.EndsWith(".json"))
+            .Select(static (file, ct) => (name: Path.GetFileNameWithoutExtension(file.Path), content: file.GetText(ct)!.ToString()));
+
+        var compilation = context.CompilationProvider.Combine(jsonFiles.Collect());
+
+        context.RegisterSourceOutput(compilation, this.Generate);
     }
 
-    public void Execute(GeneratorExecutionContext context)
+    private void Generate(SourceProductionContext context, (Compilation compilation, ImmutableArray<(string name, string json)> files) output)
     {
-        string? assembly = context.Compilation.AssemblyName;
-        var assets = Assets.Get(context);
+        var asm = output.compilation.AssemblyName;
 
-        if (assembly == "Obsidian")
+        var assets = Assets.Get(output.files);
+       
+        if (asm == "Obsidian")
         {
             GenerateTags(assets, context);
             GenerateItems(assets, context);
             GenerateBlockIds(assets, context);
         }
-        else if (assembly == "Obsidian.API")
+        else if (asm == "Obsidian.API")
         {
             GenerateMaterials(assets, context);
         }

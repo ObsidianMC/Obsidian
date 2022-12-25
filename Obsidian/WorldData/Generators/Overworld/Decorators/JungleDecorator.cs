@@ -25,15 +25,12 @@ public class JungleDecorator : BaseDecorator
             return;
         }
 
-        int worldX = (chunk.X << 4) + pos.X;
-        int worldZ = (chunk.Z << 4) + pos.Z;
+        //int worldX = (chunk.X << 4) + pos.X;
+        //int worldZ = (chunk.Z << 4) + pos.Z;
 
-        var grass = Registry.GetBlock(9);
-        var dirt = Registry.GetBlock(Material.Dirt);
-
-        chunk.SetBlock(pos, grass);
+        chunk.SetBlock(pos, BlocksRegistry.GrassBlock);
         for (int y = -1; y > -4; y--)
-            chunk.SetBlock(pos + (0, y, 0), dirt);
+            chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Dirt);
 
     }
 }

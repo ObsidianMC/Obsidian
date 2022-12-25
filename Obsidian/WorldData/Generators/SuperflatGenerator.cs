@@ -1,4 +1,5 @@
 ﻿using Obsidian.ChunkData;
+using Obsidian.Utilities.Registry;
 
 namespace Obsidian.WorldData.Generators;
 
@@ -12,19 +13,15 @@ public class SuperflatGenerator : IWorldGenerator
     {
         model = new Chunk(0, 0);
 
-        Block grass = new(Material.GrassBlock, 1);
-        Block dirt = new(Material.Dirt);
-        Block bedrock = new(Material.Bedrock);
-
         for (int x = 0; x < 16; x++)
         {
             for (int z = 0; z < 16; z++)
             {
-                model.SetBlock(x, -60, z, grass);
-                model.SetBlock(x, -61, z, dirt);
-                model.SetBlock(x, -62, z, dirt);
-                model.SetBlock(x, -63, z, dirt);
-                model.SetBlock(x, -64, z, bedrock);
+                model.SetBlock(x, -60, z, BlocksRegistry.GrassBlock);
+                model.SetBlock(x, -61, z, BlocksRegistry.Dirt);
+                model.SetBlock(x, -62, z, BlocksRegistry.Dirt);
+                model.SetBlock(x, -63, z, BlocksRegistry.Dirt);
+                model.SetBlock(x, -64, z, BlocksRegistry.Bedrock);
 
                 if (x % 4 == 0 && z % 4 == 0) // Biomes are in 4x4x4 blocks. Do a 2D array for now and just copy it vertically.
                 {

@@ -242,12 +242,6 @@ public partial class Server : IServer
         await Task.WhenAll(Registry.RegisterCodecsAsync(),
                            Registry.RegisterRecipesAsync());
 
-        Block.blockNames = BlocksRegistry.Names;
-        Block.numericToBase = BlocksRegistry.NumericToBase;
-        Block.stateToNumeric = BlocksRegistry.StateToNumeric;
-        Block.stateToBase = BlocksRegistry.StateToBase;
-        Block.Initialize();
-
         _logger.LogInformation($"Loading properties...");
 
         await (Operators as OperatorList).InitializeAsync();
@@ -388,18 +382,18 @@ public partial class Server : IServer
 
     internal IEnumerable<Player> PlayersInRange(World world, Vector worldPosition) => world.Players.Select(entry => entry.Value).Where(player => player.client.LoadedChunks.Contains(worldPosition.ToChunkCoord()));
 
-    internal void BroadcastBlockChange(World world, Block block, Vector location)
+    internal void BroadcastBlockChange(World world, IBlock block, Vector location)
     {
-        var packet = new BlockUpdatePacket(location, block.StateId);
+        var packet = new BlockUpdatePacket(location, block.GetHashCode());
         foreach (Player player in PlayersInRange(world, location))
         {
             player.client.SendPacket(packet);
         }
     }
 
-    internal void BroadcastBlockChange(World world, Player initiator, Block block, Vector location)
+    internal void BroadcastBlockChange(World world, Player initiator, IBlock block, Vector location)
     {
-        var packet = new BlockUpdatePacket(location, block.StateId);
+        var packet = new BlockUpdatePacket(location, block.GetHashCode());
         foreach (Player player in PlayersInRange(world, location))
         {
             if (player == initiator)
@@ -468,7 +462,7 @@ public partial class Server : IServer
 
     private bool TryAddEntity(World world, Entity entity) => world.TryAddEntity(entity);
 
-    internal async Task BroadcastPlayerDigAsync(PlayerDiggingStore store, Block block)
+    internal async Task BroadcastPlayerDigAsync(PlayerDiggingStore store, IBlock block)
     {
         var digging = store.Packet;
 
@@ -542,7 +536,7 @@ public partial class Server : IServer
 
                 if (player.Gamemode == Gamemode.Creative)
                 {
-                    await player.World.SetBlockAsync(digging.Position, Block.Air);
+                    await player.World.SetBlockAsync(digging.Position, BlocksRegistry.Air);
                 }
             }
             break;

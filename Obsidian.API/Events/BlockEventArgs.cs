@@ -5,7 +5,7 @@ public abstract class BlockEventArgs : BaseMinecraftEventArgs
     /// <summary>
     /// The impacted block.
     /// </summary>
-    public Block Block { get; }
+    public IBlock Block { get; }
 
     /// <summary>
     /// Location of the impacted block.
@@ -17,7 +17,7 @@ public abstract class BlockEventArgs : BaseMinecraftEventArgs
     /// </summary>
     public IWorld World { get; }
 
-    protected BlockEventArgs(IServer server, Block block, Vector location) : base(server)
+    protected BlockEventArgs(IServer server, IBlock block, Vector location) : base(server)
     {
         Block = block;
         Location = location;

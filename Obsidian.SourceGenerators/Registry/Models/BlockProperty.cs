@@ -15,7 +15,7 @@ internal class BlockProperty
     private const string BooleanName = "bool";
     private const string IntegerName = "int";
 
-    private static Dictionary<string, string[]> enumValuesCache = new();
+    internal static Dictionary<string, string[]> enumValuesCache = new();
 
     private BlockProperty(string name, string tag, string type, string[] values, int? customOffset = null, bool isBooleanToggled = true)
     {
@@ -58,7 +58,7 @@ internal class BlockProperty
             type = $"E{type}";
 
         if (enumValuesCache.TryGetValue(type, out var cachedValues))
-        {
+        { 
             values = cachedValues;
         }
         else
@@ -67,6 +67,7 @@ internal class BlockProperty
             {
                 values[i] = values[i].ToPascalCase();
             }
+
             enumValuesCache.Add(type, values);
         }
 

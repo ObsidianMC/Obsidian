@@ -3,7 +3,7 @@ using Obsidian.WorldData.Generators.Overworld.Decorators;
 
 namespace Obsidian.WorldData.Generators;
 
-public class OverworldGenerator : IWorldGenerator
+public sealed class OverworldGenerator : IWorldGenerator
 {
     private GenHelper helper;
 
@@ -11,8 +11,7 @@ public class OverworldGenerator : IWorldGenerator
 
     public async Task<Chunk> GenerateChunkAsync(int cx, int cz, Chunk? chunk = null)
     {
-        if (chunk is null)
-            chunk = new Chunk(cx, cz);
+        chunk ??= new Chunk(cx, cz);
 
         // Sanity checks
         if (chunk.isGenerated)

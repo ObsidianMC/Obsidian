@@ -1,14 +1,16 @@
-﻿namespace Obsidian.WorldData.Generators.Overworld.Features.Flora;
+﻿using Obsidian.Utilities.Registry;
+
+namespace Obsidian.WorldData.Generators.Overworld.Features.Flora;
 
 public abstract class BaseTallFlora : BaseFlora
 {
-    protected readonly ushort lowerState;
-    protected readonly ushort upperState;
+    protected readonly IBlock blockWithLowerState;
+    protected readonly IBlock blockWithUpperState;
 
-    protected BaseTallFlora(GenHelper helper, Chunk chunk, Material floraMat, int maxHeight = 2, int lowerState = 1, int upperState = 0) : base(helper, chunk, floraMat)
+    protected BaseTallFlora(GenHelper helper, Chunk chunk, Material floraMat, int maxHeight = 2, IBlockState? lowerState = null, IBlockState? upperState = null) : base(helper, chunk, floraMat)
     {
-        this.lowerState = (ushort)lowerState;
-        this.upperState = (ushort)upperState;
+        this.blockWithLowerState = BlocksRegistry.Get(floraMat, lowerState);
+        this.blockWithUpperState = BlocksRegistry.Get(floraMat, upperState);
         this.height = maxHeight;
     }
 
@@ -26,11 +28,11 @@ public abstract class BaseTallFlora : BaseFlora
         // Grow base
         for (int y = 0; y < growHeight - 1; y++)
         {
-            await helper.SetBlockAsync(placeVector + (0, y, 0), new Block(FloraMat, lowerState), chunk);
+            await helper.SetBlockAsync(placeVector + (0, y, 0), this.blockWithLowerState, chunk);
         }
 
         // Top
-        await helper.SetBlockAsync(placeVector + (0, growHeight - 1, 0), new Block(FloraMat, upperState), chunk);
+        await helper.SetBlockAsync(placeVector + (0, growHeight - 1, 0), this.blockWithUpperState, chunk);
         return true;
     }
 }

@@ -4,7 +4,7 @@ namespace Obsidian.SourceGenerators.Registry;
 
 public partial class RegistryAssetsGenerator
 {
-    private static void GenerateMaterials(Assets assets, GeneratorExecutionContext context)
+    private static void GenerateMaterials(Assets assets, SourceProductionContext context)
     {
         IEnumerable<string> materials =
             assets.Blocks.OrderBy(block => block.BaseId).Select(block => block.Name)
@@ -16,10 +16,9 @@ public partial class RegistryAssetsGenerator
         builder.Line();
 
         builder.Type("public enum Material");
+
         foreach (string material in materials)
-        {
             builder.Line($"{material},");
-        }
 
         builder.EndScope();
 

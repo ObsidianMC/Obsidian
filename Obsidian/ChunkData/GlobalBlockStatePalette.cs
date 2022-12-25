@@ -3,7 +3,7 @@ using Obsidian.Utilities.Registry;
 
 namespace Obsidian.ChunkData;
 
-public class GlobalBlockStatePalette : IPalette<Block>
+public class GlobalBlockStatePalette : IPalette<IBlock>
 {
     public int[] Values => throw new NotSupportedException();
     public int BitCount { get; }
@@ -16,17 +16,17 @@ public class GlobalBlockStatePalette : IPalette<Block>
         this.BitCount = bitCount;
     }
 
-    public bool TryGetId(Block block, out int id)
+    public bool TryGetId(IBlock block, out int id)
     {
-        id = block.Id;
+        id = block.GetHashCode();
         return true;
     }
 
-    public int GetOrAddId(Block block) => block.Id;
+    public int GetOrAddId(IBlock block) => block.GetHashCode();
 
-    public Block GetValueFromIndex(int index) => Registry.GetBlock(index);
+    public IBlock GetValueFromIndex(int index) => BlocksRegistry.Get(index);
 
-    public IPalette<Block> Clone() => this;
+    public IPalette<IBlock> Clone() => this;
 
     public Task WriteToAsync(MinecraftStream stream) => Task.CompletedTask;
 

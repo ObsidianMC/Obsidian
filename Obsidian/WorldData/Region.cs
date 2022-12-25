@@ -1,4 +1,5 @@
-﻿using Obsidian.ChunkData;
+﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Utilities.Collection;
@@ -74,13 +75,13 @@ public class Region
 
     private async Task<Chunk?> GetChunkFromFileAsync(int x, int z)
     {
-        ReadOnlyMemory<byte> compressedBytes = regionFile.GetChunkBytes(x, z, out var compression);
+        var chunkBuffer = await regionFile.GetChunkBytesAsync(x, z);
 
-        if (compressedBytes.IsEmpty)
+        if (chunkBuffer is not ChunkBuffer value)
             return null;
 
-        await using var bytesStream = new ReadOnlyStream(compressedBytes);
-        var nbtReader = new NbtReader(bytesStream, compression);
+        await using var bytesStream = new ReadOnlyStream(value.Memory);
+        var nbtReader = new NbtReader(bytesStream, value.Compression);
 
         return DeserializeChunk(nbtReader.ReadNextTag() as NbtCompound);
     }
@@ -187,15 +188,16 @@ public class Region
             if (statesCompound.TryGetTag("palette", out var palleteArrayTag))
             {
                 var blockStatesPalette = palleteArrayTag as NbtList;
-                foreach (NbtCompound entry in blockStatesPalette!)
+                foreach (NbtCompound entry in blockStatesPalette)
                 {
                     var name = entry.GetString("Name");
-                    
-                    chunkSecPalette.GetOrAddId(Registry.GetBlock(name));//TODO PROCESS ADDED PROPERTIES TO GET CORRECT BLOCK STATE
-                }
-            }
+                    var id = entry.GetInt("Id");
 
-            section.BlockStateContainer.GrowDataArray();
+                    chunkSecPalette.GetOrAddId(BlocksRegistry.Get(id));//TODO PROCESS ADDED PROPERTIES TO GET CORRECT BLOCK STATE
+                }
+
+                section.BlockStateContainer.GrowDataArray();
+            }
 
             var biomesCompound = sectionCompound["biomes"] as NbtCompound;
             var biomesPalette = biomesCompound!["palette"] as NbtList;
@@ -253,31 +255,20 @@ public class Region
             if (section.BlockStateContainer.DataArray.storage.Any(x => x > 0))
                 blockStatesCompound.Add(new NbtArray<long>("data", section.BlockStateContainer.DataArray.storage));
 
-            if (section.BlockStateContainer.Palette is IndirectPalette<Block> indirect)
+            if (section.BlockStateContainer.Palette is IndirectPalette indirect)
             {
                 var palette = new NbtList(NbtTagType.Compound, "palette");
 
-                var hasAir = false;
-
-                foreach(var id in indirect.Values)
+                Span<int> span = indirect.Values;
+                for(int i = 0; i < indirect.Count; i++)
                 {
-                    var block = new Block(id);
-
-                    if (block.IsAir && !hasAir && !indirect.Values.Any(x => x > 0))
-                    {
-                        palette.Add(new NbtCompound
-                        {
-                            new NbtTag<string>("Name", block.UnlocalizedName)
-                        });
-                        hasAir = true;
-                        continue;
-                    }
-                    else if (block.IsAir)
-                        continue;
+                    var id = span[i];
+                    var block = BlocksRegistry.Get(id);
 
                     palette.Add(new NbtCompound
                     {
-                        new NbtTag<string>("Name", block.UnlocalizedName)
+                        new NbtTag<string>("Name", block.UnlocalizedName),
+                        new NbtTag<int>("Id", id)
                     });//TODO INCLUDE PROPERTIES
                 }
 

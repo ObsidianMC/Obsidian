@@ -1,7 +1,10 @@
-﻿namespace Obsidian.WorldData.Generators.Overworld.Features.Flora;
+﻿using Obsidian.Utilities.Registry;
+
+namespace Obsidian.WorldData.Generators.Overworld.Features.Flora;
 
 public abstract class BaseFlora
 {
+    protected readonly IBlock floraBlock;
     protected GenHelper helper;
 
     protected Chunk chunk;
@@ -27,6 +30,8 @@ public abstract class BaseFlora
         this.helper = helper;
         this.chunk = chunk;
         this.FloraMat = mat;
+
+        this.floraBlock = BlocksRegistry.Get(mat);
     }
 
     /// <summary>
@@ -39,7 +44,7 @@ public abstract class BaseFlora
     public virtual async Task GenerateFloraAsync(Vector origin, int seed, int radius, int density)
     {
         density = Math.Max(1, 10 - density);
-        var seedRand = new Random(seed + origin.GetHashCode());
+        var seedRand = new XorshiftRandom(seed + origin.GetHashCode());
 
         for (int rz = 0; rz <= radius * 2; rz++)
         {
@@ -71,7 +76,7 @@ public abstract class BaseFlora
     {
         if (await GetGrowHeightAsync(placeVector) >= height && await GetValidSurfaceAsync(placeVector))
         {
-            await helper.SetBlockAsync(placeVector, new Block(FloraMat), chunk);
+            await helper.SetBlockAsync(placeVector, this.floraBlock, chunk);
             return true;
         }
         return false;
@@ -82,7 +87,7 @@ public abstract class BaseFlora
     /// </summary>
     /// <param name="loc">The position above the surface block.</param>
     /// <returns>Whether surface is compatible.</returns>
-    protected virtual async Task<bool> GetValidSurfaceAsync(Vector loc) => await helper.GetBlockAsync(loc + Vector.Down, chunk) is Block b && growsOn.Contains(b.Material);
+    protected virtual async Task<bool> GetValidSurfaceAsync(Vector loc) => await helper.GetBlockAsync(loc + Vector.Down, chunk) is IBlock b && growsOn.Contains(b.Material);
 
     /// <summary>
     /// Check free space above grow location.
@@ -94,7 +99,7 @@ public abstract class BaseFlora
         int freeSpace = 0;
         for (int y = 0; y < height; y++)
         {
-            if (await helper.GetBlockAsync(loc + (0, y, 0), chunk) is Block above && growsIn.Contains(above.Material))
+            if (await helper.GetBlockAsync(loc + (0, y, 0), chunk) is IBlock above && growsIn.Contains(above.Material))
             {
                 freeSpace++;
             }

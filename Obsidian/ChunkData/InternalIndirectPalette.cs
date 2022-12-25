@@ -17,15 +17,7 @@ internal sealed class InternalIndirectPalette<T> : BaseIndirectPalette<T>, IPale
             ThrowHelper.ThrowOutOfRange();
 
         if (typeof(T).IsEnum)
-        {
             return Unsafe.As<int, T>(ref Values[index]);
-        }
-
-        if (typeof(T) == typeof(Block))
-        {
-            var block = new Block(Values[index]);
-            return Unsafe.As<Block, T>(ref block);
-        }
 
         throw new NotSupportedException();
     }

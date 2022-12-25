@@ -1,4 +1,4 @@
-﻿namespace Obsidian.API._Types;
+﻿namespace Obsidian.API;
 
 public sealed class BitSet
 {

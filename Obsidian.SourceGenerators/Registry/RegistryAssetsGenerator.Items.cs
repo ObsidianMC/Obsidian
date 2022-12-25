@@ -4,7 +4,7 @@ namespace Obsidian.SourceGenerators.Registry;
 
 public partial class RegistryAssetsGenerator
 {
-    private static void GenerateItems(Assets assets, GeneratorExecutionContext context)
+    private static void GenerateItems(Assets assets, SourceProductionContext context)
     {
         var builder = new CodeBuilder();
         builder.Using("System.Collections.Generic");
@@ -16,10 +16,14 @@ public partial class RegistryAssetsGenerator
         builder.Type("public static class ItemsRegistry");
 
         builder.Statement("internal static Dictionary<Material, Item> Items = new()");
+
         foreach (Item item in assets.Items)
         {
-            builder.Line($"{{ Material.{item.Name}, new Item({item.Id}, \"{item.Tag}\", Material.{item.Name}) }},");
+            var name = item.Name;
+
+            builder.Line($"{{ Material.{name}, new Item({item.Id}, \"{item.Tag}\", Material.{name}) }},");
         }
+
         builder.EndScope(semicolon: true);
 
         builder.EndScope();

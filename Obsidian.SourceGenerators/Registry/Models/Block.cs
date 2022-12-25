@@ -11,8 +11,10 @@ internal sealed class Block : ITaggable, IHasName
     public int NumericId { get; }
     public int StatesCount { get; }
     public BlockProperty[] Properties { get; }
+    public Dictionary<int, List<string>> StateValues { get; }
 
-    private Block(string name, string tag, int baseId, int defaultId, int numericId, int statesCount, BlockProperty[] properties)
+    private Block(string name, string tag, int baseId, int defaultId, int numericId, int statesCount, BlockProperty[] properties,
+        Dictionary<int, List<string>> stateValues)
     {
         Name = name;
         Tag = tag;
@@ -21,27 +23,26 @@ internal sealed class Block : ITaggable, IHasName
         NumericId = numericId;
         StatesCount = statesCount;
         Properties = properties;
+        StateValues = stateValues;
     }
 
     public static Block Get(JsonProperty property, int id)
     {
         string name = property.Name.RemoveNamespace().ToPascalCase();
-        (int baseId, int defaultId) = GetIds(property);
+
+        (int baseId, int defaultId, int statesCount, var stateValues) = GetIds(property);
         BlockProperty[] properties = GetBlockProperties(property).ToArray();
 
-        int statesCount = 1;
-        foreach (BlockProperty blockProperty in properties)
-        {
-            statesCount *= blockProperty.Values.Length;
-        }
-
-        return new Block(name, property.Name, baseId, defaultId, id, statesCount, properties);
+        return new Block(name, property.Name, baseId, defaultId, id, statesCount, properties, stateValues);
     }
 
-    private static (int baseId, int defaultId) GetIds(JsonProperty property)
+    private static (int baseId, int defaultId, int stateCount, Dictionary<int, List<string>> stateValues) GetIds(JsonProperty property)
     {
         int baseId = int.MaxValue;
-        int defaultId = 0;
+        int defaultId = int.MinValue;
+        int stateCount = 0;
+
+        var props = new Dictionary<int, List<string>>();
         foreach (JsonElement state in property.Value.GetProperty("states").EnumerateArray())
         {
             int id = state.GetProperty("id").GetInt32();
@@ -51,9 +52,19 @@ internal sealed class Block : ITaggable, IHasName
 
             if (state.TryGetProperty("default", out JsonElement _default) && _default.GetBoolean())
                 defaultId = id;
+
+            if (state.TryGetProperty("properties", out var jsonElement))
+            {
+                var values = new List<string>();
+                foreach (var properties in jsonElement.EnumerateObject())
+                    values.Add(properties.Value.GetString().ToPascalCase());
+
+                props.Add(id, values);
+            }
+            stateCount++;
         }
 
-        return (baseId, defaultId);
+        return (baseId, defaultId, stateCount, props);
     }
 
     private static IEnumerable<BlockProperty> GetBlockProperties(JsonProperty block)

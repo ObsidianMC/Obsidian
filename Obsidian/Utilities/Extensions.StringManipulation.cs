@@ -33,6 +33,40 @@ public static partial class Extensions
         return null;
     }
 
+    public static string ToPascalCase(this string snakeCase)
+    {
+        // Alternative implementation:
+        // var textInfo = System.Globalization.CultureInfo.CurrentCulture.TextInfo;
+        // return string.Join("", snakeCase.Split('_').Select(s => textInfo.ToTitleCase(s)));
+
+        int spaceCount = 0;
+        for (int i = 0; i < snakeCase.Length; i++)
+        {
+            if (!char.IsLetterOrDigit(snakeCase[i]))
+                spaceCount++;
+        }
+
+        var result = new char[snakeCase.Length - spaceCount];
+
+        int targetIndex = 0;
+        bool wordStart = true;
+        for (int i = 0; i < snakeCase.Length; i++)
+        {
+            char c = snakeCase[i];
+            if (char.IsLetterOrDigit(c))
+            {
+                result[targetIndex++] = wordStart ? char.ToUpper(c) : char.ToLower(c);
+                wordStart = false;
+            }
+            else
+            {
+                wordStart = true;
+            }
+        }
+
+        return new string(result);
+    }
+
     public static EnchantmentType ToEnchantType(this string source) => Enum.Parse<EnchantmentType>(source.Split(":")[1].Replace("_", ""), true);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

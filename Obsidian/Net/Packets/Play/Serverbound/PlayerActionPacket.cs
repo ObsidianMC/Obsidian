@@ -1,6 +1,7 @@
 ﻿using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
+using Obsidian.Utilities.Registry;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
@@ -22,13 +23,13 @@ public partial class PlayerActionPacket : IServerboundPacket
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
-        Block? b = await player.World.GetBlockAsync(Position);
-        if (b is not Block block)
+        IBlock? b = await player.World.GetBlockAsync(Position);
+        if (b is not IBlock block)
             return;
 
         if (Status == DiggingStatus.FinishedDigging || (Status == DiggingStatus.StartedDigging && player.Gamemode == Gamemode.Creative))
         {
-            await player.World.SetBlockUntrackedAsync(Position, Block.Air, true);
+            await player.World.SetBlockUntrackedAsync(Position, BlocksRegistry.Air, true);
 
             var blockBreakEvent = await server.Events.InvokeBlockBreakAsync(new BlockBreakEventArgs(server, player, block, Position));
             if (blockBreakEvent.Cancel)

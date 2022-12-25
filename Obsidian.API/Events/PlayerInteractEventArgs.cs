@@ -15,7 +15,7 @@ public sealed class PlayerInteractEventArgs : PlayerEventArgs, ICancellable
     /// <summary>
     /// The block that was clicked. Null if no block was clicked.
     /// </summary>
-    public Block? Block { get; init; }
+    public IBlock? Block { get; init; }
 
     /// <summary>
     /// The location of the clicked block. Null if no block was clicked.

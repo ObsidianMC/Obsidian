@@ -1,4 +1,6 @@
-﻿namespace Obsidian.WorldData.Generators.Overworld.Features.Trees;
+﻿using Obsidian.Utilities.Registry;
+
+namespace Obsidian.WorldData.Generators.Overworld.Features.Trees;
 
 public class LargeSpruceTree : BaseTree
 {
@@ -73,14 +75,14 @@ public class LargeSpruceTree : BaseTree
             {
                 for (int y = topY; y > 0; y--)
                 {
-                    await helper.SetBlockAsync(origin + (x, y, z), new Block(trunk, 1), chunk);
+                    await helper.SetBlockAsync(origin + (x, y, z), this.trunkBlock, chunk);
                 }
 
                 // Fill in any air gaps under the trunk
                 var b = await helper.GetBlockAsync(origin + (x, -1, z), chunk);
-                if (b.Value.IsAir)
+                if (b.IsAir)
                 {
-                    await helper.SetBlockAsync(origin + (x, -1, z), new Block(trunk, 1), chunk);
+                    await helper.SetBlockAsync(origin + (x, -1, z), this.trunkBlock, chunk);
                 }
             }
         }
@@ -95,8 +97,8 @@ public class LargeSpruceTree : BaseTree
                     for (int y = -2; y < 2; y++)
                     {
                         var b = await helper.GetBlockAsync(origin + (x - 4, y, z - 4), chunk);
-                        if ((Material)b.Value.Id == Material.GrassBlock)
-                            await helper.SetBlockAsync(origin + (x - 4, y, z - 4), new Block(Material.Podzol, 1), chunk);
+                        if (b.Is(Material.GrassBlock))
+                            await helper.SetBlockAsync(origin + (x - 4, y, z - 4), BlocksRegistry.Podzol, chunk);
                     }
                 }
             }
@@ -127,7 +129,7 @@ public class LargeSpruceTree : BaseTree
                     {
                         if (leaves[x, z])
                         {
-                            await helper.SetBlockAsync(origin + (x - 4, y - level, z - 4), new Block(leaf), chunk);
+                            await helper.SetBlockAsync(origin + (x - 4, y - level, z - 4), this.leafBlock, chunk);
                         }
                     }
                 }

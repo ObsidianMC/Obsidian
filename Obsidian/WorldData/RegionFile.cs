@@ -4,7 +4,6 @@ using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace Obsidian.WorldData;
@@ -25,7 +24,6 @@ public sealed class RegionFile : IAsyncDisposable
     private readonly SemaphoreSlim semaphore = new(1, 1);
 
     private FileStream regionFileStream;
-    private IMemoryOwner<byte> chunkCache;
 
     private bool disposed;
     private bool initialized;
@@ -60,8 +58,6 @@ public sealed class RegionFile : IAsyncDisposable
         if (regionFileStream.Length == 0)
             return true;
 
-        this.chunkCache = MemoryPool<byte>.Shared.Rent((int)this.regionFileStream.Length - sectionSize * 2);
-
         for (var index = 0; index < headerTableSize; index++)
         {
             using var num = new RentedArray<byte>(4);
@@ -79,8 +75,6 @@ public sealed class RegionFile : IAsyncDisposable
 
             this.Timestamps[index] = BinaryPrimitives.ReadInt32BigEndian(num);
         }
-
-        await this.regionFileStream.ReadAsync(this.chunkCache.Memory);
 
         return true;
     }
@@ -109,18 +103,19 @@ public sealed class RegionFile : IAsyncDisposable
 
         this.ResetPosition();
 
-        var mem = this.chunkCache.Memory.Slice(this.GetChunkCacheIndex(offset), size);
+        this.regionFileStream.Position = offset;
+
+        using var mem = new RentedArray<byte>(size);
 
         if (chunkSectionSize * sectionSize > size)// gotta allocate new sector now
         {
             //TODO figure out a cleaner way to push down the old chunk and get rid of its old sector
-            mem.Span.Clear();
 
             var (previousOffset, _) = this.GetLocation(tableIndex - 1);
 
             this.SetLocation(tableIndex - 1, previousOffset, chunkSectionSize);
 
-            await this.regionFileStream.WriteAsync(this.chunkCache.Memory);
+            await this.regionFileStream.WriteAsync(mem);
 
             await this.WriteNewChunkAsync(bytes, chunkSectionSize, tableIndex);
 
@@ -133,55 +128,54 @@ public sealed class RegionFile : IAsyncDisposable
 
         await this.WriteHeadersAsync();
 
-        mem.Span.Clear();
-
         BinaryPrimitives.WriteInt32BigEndian(mem.Span[..4], bytes.Length + 1);
 
         mem.Span[4] = (byte)compression;
 
-        var chunkSection = mem[5..];
+        bytes.CopyTo(mem.Span[5..]);
 
-        bytes.CopyTo(chunkSection);
-
-        await this.regionFileStream.WriteAsync(this.chunkCache.Memory);
-
-        await this.UpdateChunkCache();
+        await this.regionFileStream.WriteAsync(mem);
 
         this.semaphore.Release();
     }
 
     private void ResetPosition() => this.regionFileStream.Position = sectionSize * 2;
 
-    public ReadOnlyMemory<byte> GetChunkBytes(int x, int z, out NbtCompression compression)
+    public async Task<ChunkBuffer?> GetChunkBytesAsync(int x, int z)
     {
+        await this.semaphore.WaitAsync();
+
         var tableIndex = this.GetChunkTableIndex(x, z);
 
         var (offset, size) = this.GetLocation(tableIndex);
 
-        compression = NbtCompression.ZLib;
-
         if (offset == 0 && size == 0)
-            return ReadOnlyMemory<byte>.Empty;
+        {
+            this.semaphore.Release();
 
-        var chunkCacheIndex = this.GetChunkCacheIndex(offset);
+            return null;
+        }
 
-        var chunk = this.chunkCache.Memory.Slice(chunkCacheIndex, size);
+        this.regionFileStream.Position = offset;
+
+        var chunk = new Memory<byte>(new byte[size]);
+
+        await this.regionFileStream.ReadAsync(chunk);
 
         var length = BinaryPrimitives.ReadInt32BigEndian(chunk.Span[..4]);
 
-        compression = (NbtCompression)chunk.Span[4];//We'll probably make use of this eventually
+        var compression = (NbtCompression)chunk.Span[4];
+
+        this.semaphore.Release();
 
         if (length > size)
             throw new UnreachableException($"{length} > {size}");
 
-        return chunk.Slice(5, length - 1);//Compression is included with the length
-    }
-
-    private int GetChunkCacheIndex(int offset)
-    {
-        var finalOffset = offset - (sectionSize * 2);
-
-        return finalOffset == 1 ? 0 : finalOffset;
+        return new()
+        {
+            Memory = chunk.Slice(5, length - 1),
+            Compression = compression
+        };
     }
 
     public async Task FlushAsync() =>
@@ -203,20 +197,6 @@ public sealed class RegionFile : IAsyncDisposable
         await this.regionFileStream.WriteAsync(bytes);
 
         this.Pad();
-
-        await this.UpdateChunkCache();
-    }
-
-    private async Task UpdateChunkCache()
-    {
-        await this.FlushAsync();
-        this.chunkCache?.Dispose();
-
-        this.chunkCache = MemoryPool<byte>.Shared.Rent((int)this.regionFileStream.Length - sectionSize * 2);
-
-        this.regionFileStream.Position = sectionSize * 2;
-
-        await this.regionFileStream.ReadAsync(this.chunkCache.Memory);
     }
 
     private async Task WriteChunkHeaderAsync(int length, byte compression)
@@ -277,10 +257,11 @@ public sealed class RegionFile : IAsyncDisposable
 
     private void Pad()
     {
-        var missing = this.regionFileStream.Length % sectionSize;
+        var length = (int)this.regionFileStream.Length;
+        var missing = (length + sectionSize - 1) / sectionSize * sectionSize;
 
-        if (missing > 0)
-            this.regionFileStream.SetLength(this.regionFileStream.Length + (sectionSize - missing));
+        if (length != missing)
+            this.regionFileStream.SetLength(length + (missing - length));
     }
 
 
@@ -293,8 +274,7 @@ public sealed class RegionFile : IAsyncDisposable
             {
                 await this.regionFileStream.FlushAsync();
                 await this.regionFileStream.DisposeAsync();
-
-                this.chunkCache.Dispose();
+                this.semaphore.Dispose();
             }
 
             // TODO: free unmanaged resources (unmanaged objects) and override finalizer

@@ -1,4 +1,5 @@
 ﻿using Obsidian.ChunkData;
+using Obsidian.Utilities.Registry;
 
 namespace Obsidian.WorldData.Generators;
 
@@ -14,19 +15,15 @@ public class EmptyWorldGenerator : IWorldGenerator
         spawn = new Chunk(0, 0);
         empty = new Chunk(0, 0);
 
-        Block grass = new(Material.GrassBlock, 1);
-        Block dirt = new(Material.Dirt);
-        Block bedrock = new(Material.Bedrock);
-
         for (int x = 0; x < 16; x++)
         {
             for (int z = 0; z < 16; z++)
             {
-                spawn.SetBlock(x, -60, z, grass);
-                spawn.SetBlock(x, -61, z, dirt);
-                spawn.SetBlock(x, -62, z, dirt);
-                spawn.SetBlock(x, -63, z, dirt);
-                spawn.SetBlock(x, -64, z, bedrock);
+                spawn.SetBlock(x, -60, z, BlocksRegistry.GrassBlock);
+                spawn.SetBlock(x, -61, z, BlocksRegistry.Dirt);
+                spawn.SetBlock(x, -62, z, BlocksRegistry.Dirt);
+                spawn.SetBlock(x, -63, z, BlocksRegistry.Dirt);
+                spawn.SetBlock(x, -64, z, BlocksRegistry.Bedrock);
 
                 if (x % 4 == 0 && z % 4 == 0) // Biomes are in 4x4x4 blocks. Do a 2D array for now and just copy it vertically.
                 {

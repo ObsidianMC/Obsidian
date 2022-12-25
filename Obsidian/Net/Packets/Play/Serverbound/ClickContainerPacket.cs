@@ -87,13 +87,13 @@ public partial class ClickContainerPacket : IServerboundPacket
 
                     var currentItem = player.Inventory.GetItem(localSlot);
 
-                    if (currentItem.IsAir() && CarriedItem != null)
+                    if (currentItem.IsAir && CarriedItem != null)
                     {
                         container.RemoveItem(slot);
 
                         player.Inventory.SetItem(localSlot, CarriedItem);
                     }
-                    else if (!currentItem.IsAir() && CarriedItem != null)
+                    else if (!currentItem.IsAir && CarriedItem != null)
                     {
                         container.SetItem(slot, currentItem);
 
@@ -269,7 +269,7 @@ public partial class ClickContainerPacket : IServerboundPacket
 
     private async Task HandleMouseClick(BaseContainer container, Server server, Player player, int slot)
     {
-        if (!CarriedItem.IsAir())
+        if (!CarriedItem.IsAir)
         {
             var @event = await server.Events.InvokeContainerClickAsync(new ContainerClickEventArgs(player, container, CarriedItem)
             {

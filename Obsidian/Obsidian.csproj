@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>Library</OutputType>
-    <TargetFramework>net7.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <EnablePreviewFeatures>true</EnablePreviewFeatures>
-  </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<TargetFramework>net7.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<EnablePreviewFeatures>true</EnablePreviewFeatures>
+	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
 		<DefineConstants>TRACE</DefineConstants>
@@ -22,6 +22,8 @@
 		<PackageTags>minecraft-server-protocol minecraft-server minecraft</PackageTags>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+		<CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -45,28 +47,22 @@
 	<ItemGroup>
 		<Compile Remove="Serializer\Enums\FieldType.cs" />
 	</ItemGroup>
-
+	
 	<ItemGroup>
-		<None Remove="Assets\biome_codec.json" />
-		<None Remove="Assets\chat_type_codec.json" />
-		<None Remove="Assets\default_dimensions.json" />
-		<None Remove="Assets\default_dimensions.xaml" />
-		<None Remove="Assets\tags.json" />
-		<None Remove="Serializer\Attributes\NewFile1.txt" />
-		<None Remove="Serializer\Enums\NewFile1.txt" />
+		<PackageReference Include="BouncyCastle.NetCoreSdk" Version="1.9.3.1" />
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.0.1" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="6.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.2" />
+		<PackageReference Include="SharpNoise" Version="0.12.1.1" />
 	</ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="BouncyCastle.NetCoreSdk" Version="1.9.3.1" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.0.1" />
-	  <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
-	  <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="6.0.0" />
-	  <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.2" />
-    <PackageReference Include="SharpNoise" Version="0.12.1.1" />
-  </ItemGroup>
 
 	<ItemGroup>
 		<EmbeddedResource Include="Assets/*.*" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -77,15 +73,15 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <AdditionalFiles Include="Assets\blocks.json">
-	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	  </AdditionalFiles>
-	  <AdditionalFiles Include="Assets\items.json">
-	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	  </AdditionalFiles>
-	  <AdditionalFiles Include="Assets\tags.json">
-	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	  </AdditionalFiles>
+		<AdditionalFiles Include="Assets\blocks.json">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</AdditionalFiles>
+		<AdditionalFiles Include="Assets\items.json">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</AdditionalFiles>
+		<AdditionalFiles Include="Assets\tags.json">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</AdditionalFiles>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -98,8 +94,11 @@
 		<EmbeddedResource Update="Assets\biome_codec.json">
 			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</EmbeddedResource>
+		<EmbeddedResource Update="Assets\block_registry.json">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</EmbeddedResource>
 		<EmbeddedResource Update="Assets\chat_type_codec.json">
-		  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</EmbeddedResource>
 		<EmbeddedResource Update="Assets\default_dimensions.json">
 			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
@@ -107,6 +106,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Plugins\Services\" />
+		<Folder Include="Plugins\Services\" />
 	</ItemGroup>
 </Project>

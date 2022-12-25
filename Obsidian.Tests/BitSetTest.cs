@@ -1,4 +1,4 @@
-using Obsidian.API._Types;
+using Obsidian.API;
 
 using Xunit;
 

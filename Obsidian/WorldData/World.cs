@@ -149,9 +149,9 @@ public class World : IWorld
     /// <returns>Null if the region or chunk doesn't exist yet. Otherwise the full chunk or a partial chunk.</returns>
     public Task<Chunk?> GetChunkAsync(Vector worldLocation, bool scheduleGeneration = true) => GetChunkAsync(worldLocation.X.ToChunkCoord(), worldLocation.Z.ToChunkCoord(), scheduleGeneration);
 
-    public Task<Block?> GetBlockAsync(Vector location) => GetBlockAsync(location.X, location.Y, location.Z);
+    public Task<IBlock?> GetBlockAsync(Vector location) => GetBlockAsync(location.X, location.Y, location.Z);
 
-    public async Task<Block?> GetBlockAsync(int x, int y, int z)
+    public async Task<IBlock?> GetBlockAsync(int x, int y, int z)
     {
         var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
         return c?.GetBlock(x, y, z);
@@ -179,25 +179,25 @@ public class World : IWorld
         c?.SetBlockEntity(x, y, z, tileEntityData);
     }
 
-    public Task SetBlockAsync(int x, int y, int z, Block block) => SetBlockAsync(new Vector(x, y, z), block);
+    public Task SetBlockAsync(int x, int y, int z, IBlock block) => SetBlockAsync(new Vector(x, y, z), block);
 
-    public async Task SetBlockAsync(Vector location, Block block)
+    public async Task SetBlockAsync(Vector location, IBlock block)
     {
         await SetBlockUntrackedAsync(location.X, location.Y, location.Z, block);
         Server.BroadcastBlockChange(this, block, location);
     }
 
-    public Task SetBlockAsync(int x, int y, int z, Block block, bool doBlockUpdate) => SetBlockAsync(new Vector(x, y, z), block, doBlockUpdate);
+    public Task SetBlockAsync(int x, int y, int z, IBlock block, bool doBlockUpdate) => SetBlockAsync(new Vector(x, y, z), block, doBlockUpdate);
 
-    public async Task SetBlockAsync(Vector location, Block block, bool doBlockUpdate)
+    public async Task SetBlockAsync(Vector location, IBlock block, bool doBlockUpdate)
     {
         await SetBlockUntrackedAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
         Server.BroadcastBlockChange(this, block, location);
     }
 
-    public Task SetBlockUntrackedAsync(Vector location, Block block, bool doBlockUpdate = false) => SetBlockUntrackedAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
+    public Task SetBlockUntrackedAsync(Vector location, IBlock block, bool doBlockUpdate = false) => SetBlockUntrackedAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
 
-    public async Task SetBlockUntrackedAsync(int x, int y, int z, Block block, bool doBlockUpdate = false)
+    public async Task SetBlockUntrackedAsync(int x, int y, int z, IBlock block, bool doBlockUpdate = false)
     {
         if (doBlockUpdate)
         {
@@ -422,21 +422,22 @@ public class World : IWorld
     {
         long value = NumericsHelper.IntsToLong(regionX, regionZ);
 
-        if (!this.Regions.TryAdd(value, null))
+        if(this.Regions.TryGetValue(value, out var region))
         {
-            if (this.Regions[value] is not null)
-            {
-                return this.Regions[value];
-            }
+            if (await region.InitAsync())
+                _ = Task.Run(() => region.BeginTickAsync(this.Server._cancelTokenSource.Token));
+
+            return region;
         }
 
-        var region = new Region(regionX, regionZ, this.FolderPath);
+        region = new Region(regionX, regionZ, this.FolderPath);
+
+        this.Regions.TryAdd(value, region);
+
         if (await region.InitAsync())
-        {
             _ = Task.Run(() => region.BeginTickAsync(this.Server._cancelTokenSource.Token));
-            this.Regions[value] = region;
-        }
-        return this.Regions[value];
+
+        return region;
     }
 
     public async Task UnloadRegionAsync(int regionX, int regionZ)
@@ -453,6 +454,8 @@ public class World : IWorld
         Region? region = GetRegionForChunk(chunkX, chunkZ);
         region?.AddBlockUpdate(blockUpdate);
     }
+
+    private ConcurrentDictionary<(int x, int z), (int x, int z)> moduloCache = new();
 
     public async Task ManageChunksAsync()
     {
@@ -484,7 +487,7 @@ public class World : IWorld
             }
             c = await Generator.GenerateChunkAsync(job.x, job.z, c);
             region.SetChunk(c);
-            await worldLight.ProcessSkyLightForChunk(c);
+          // await worldLight.ProcessSkyLightForChunk(c);
         });
     }
 
@@ -501,7 +504,7 @@ public class World : IWorld
             Position = position,
             EntityId = GetTotalLoadedEntities() + 1,
             Server = Server,
-            BlockMaterial = mat
+            Block = BlocksRegistry.Get(mat)
         };
 
         Server.BroadcastPacket(new SpawnEntityPacket
@@ -512,7 +515,7 @@ public class World : IWorld
             Position = entity.Position,
             Pitch = 0,
             Yaw = 0,
-            Data = new Block(mat).StateId
+            Data = entity.Block.GetHashCode()
         });
 
         TryAddEntity(entity);
@@ -615,18 +618,16 @@ public class World : IWorld
     /// <returns>Whether to update neighbor blocks.</returns>
     internal async Task<bool> HandleBlockUpdateAsync(BlockUpdate bu)
     {
-        if (bu.Block is null) { return false; }
+        var block = bu.Block;
+        if (block is null)
+            return false;
 
         // Todo: this better
-        if (Block.GravityAffected.Contains(bu.Block.Value.Material))
-        {
+        if (TagsRegistry.Blocks.GravityAffected.Entries.Contains(block.RegistryId))
             return await BlockUpdates.HandleFallingBlock(bu);
-        }
 
-        if (bu.Block.Value.IsFluid)
-        {
+        if (block.IsLiquid)
             return await BlockUpdates.HandleLiquidPhysicsAsync(bu);
-        }
 
         return false;
     }
@@ -758,7 +759,7 @@ public class World : IWorld
                     for (int bz = 0; bz < 16; bz++)
                     {
                         var by = c.Heightmaps[ChunkData.HeightmapType.MotionBlocking].GetHeight(bx, bz);
-                        Block block = c.GetBlock(bx, by, bz);
+                        IBlock block = c.GetBlock(bx, by, bz);
                         if (by >= 64 && (block.Is(Material.GrassBlock) || block.Is(Material.Sand)))
                         {
                             if (c.GetBlock(bx, by + 1, bz).IsAir && c.GetBlock(bx, by + 2, bz).IsAir)

@@ -10,26 +10,20 @@ public class FrozenRiverDecorator : BaseDecorator
 
     public override void Decorate()
     {
-        var sand = Registry.GetBlock(Material.Sand);
-        var dirt = Registry.GetBlock(Material.Dirt);
-        var gravel = Registry.GetBlock(Material.Gravel);
-        var water = Registry.GetBlock(Material.Water);
-        var ice = Registry.GetBlock(Material.Ice);
-
         if (pos.Y <= 64)
         {
-            chunk.SetBlock(pos, gravel);
+            chunk.SetBlock(pos, BlocksRegistry.Gravel);
             for (int y = 63; y > pos.Y; y--)
             {
-                chunk.SetBlock(pos.X, y, pos.Z, water);
+                chunk.SetBlock(pos.X, y, pos.Z, BlocksRegistry.Water);
             }
-            chunk.SetBlock(pos.X, 64, pos.Z, ice);
+            chunk.SetBlock(pos.X, 64, pos.Z, BlocksRegistry.Ice);
         }
         else
         {
-            chunk.SetBlock(pos, sand);
+            chunk.SetBlock(pos, BlocksRegistry.Sand);
             for (int y = -1; y > -4; y--)
-                chunk.SetBlock(pos + (0, y, 0), sand);
+                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Sand);
         }
     }
 }

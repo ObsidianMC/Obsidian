@@ -1,15 +1,17 @@
 ﻿using Obsidian.Net;
 using Obsidian.Utilities.Collection;
+using Obsidian.Utilities.Registry;
 
 namespace Obsidian.ChunkData;
 
-public sealed class BlockStateContainer : DataContainer<Block>
+public sealed class BlockStateContainer : DataContainer<IBlock>
 {
-    public override IPalette<Block> Palette { get; internal set; }
+    public override IPalette<IBlock> Palette { get; internal set; }
 
     public bool IsEmpty => DataArray.storage.Length == 0;
 
     public override DataArray DataArray { get; protected set; }
+
 
 #if CACHE_VALID_BLOCKS
     private readonly DirtyCache<short> validBlockCount;
@@ -25,7 +27,7 @@ public sealed class BlockStateContainer : DataContainer<Block>
 #endif
     }
 
-    private BlockStateContainer(IPalette<Block> palette, DataArray dataArray)
+    private BlockStateContainer(IPalette<IBlock> palette, DataArray dataArray)
     {
         Palette = palette;
         DataArray = dataArray;
@@ -35,7 +37,7 @@ public sealed class BlockStateContainer : DataContainer<Block>
 #endif
     }
 
-    public void Set(int x, int y, int z, Block blockState)
+    public void Set(int x, int y, int z, IBlock blockState)
     {
 #if CACHE_VALID_BLOCKS
         validBlockCount.SetDirty();
@@ -50,13 +52,13 @@ public sealed class BlockStateContainer : DataContainer<Block>
         DataArray[blockIndex] = paletteId;
     }
 
-    internal void GrowDataArray()
+    public void GrowDataArray()
     {
         if (Palette.BitCount > DataArray.BitsPerEntry)
             DataArray = DataArray.Grow(Palette.BitCount);
     }
 
-    public Block Get(int x, int y, int z)
+    public IBlock Get(int x, int y, int z)
     {
         int storageId = DataArray[GetIndex(x, y, z)];
 
@@ -97,7 +99,7 @@ public sealed class BlockStateContainer : DataContainer<Block>
         stream.WriteLongArray(DataArray.storage);
     }
 
-    public void Fill(Block block)
+    public void Fill(IBlock block)
     {
 #if CACHE_VALID_BLOCKS
         validBlockCount.SetDirty();
@@ -109,20 +111,16 @@ public sealed class BlockStateContainer : DataContainer<Block>
         }
     }
 
-    private static readonly Block air = Block.Air;
-    private static readonly Block caveAir = new(Material.CaveAir);
-    private static readonly Block voidAir = new(Material.VoidAir);
-
     private short GetNonAirBlocks()
     {
         int validBlocksCount = 0;
         int indexOne, indexTwo, indexThree;
 
-        if (!Palette.TryGetId(air, out indexOne))
+        if (!Palette.TryGetId(BlocksRegistry.Air, out indexOne))
             goto NO_AIR;
-        if (!Palette.TryGetId(caveAir, out indexTwo))
+        if (!Palette.TryGetId(BlocksRegistry.CaveAir, out indexTwo))
             goto NO_CAVE;
-        if (!Palette.TryGetId(voidAir, out indexThree))
+        if (!Palette.TryGetId(BlocksRegistry.VoidAir, out indexThree))
             goto TWO_INDEXES;
 
         // 1 1 1
@@ -136,21 +134,21 @@ public sealed class BlockStateContainer : DataContainer<Block>
 
     // 0 ? ?
     NO_AIR:
-        if (!Palette.TryGetId(caveAir, out indexOne))
+        if (!Palette.TryGetId(BlocksRegistry.CaveAir, out indexOne))
             goto NO_AIR_CAVE;
-        if (!Palette.TryGetId(voidAir, out indexTwo))
+        if (!Palette.TryGetId(BlocksRegistry.VoidAir, out indexTwo))
             goto ONE_INDEX;
         goto TWO_INDEXES;
 
     // 1 0 ?
     NO_CAVE:
-        if (!Palette.TryGetId(voidAir, out indexTwo))
+        if (!Palette.TryGetId(BlocksRegistry.VoidAir, out indexTwo))
             goto ONE_INDEX;
         goto TWO_INDEXES;
 
     // 0 0 ?
     NO_AIR_CAVE:
-        if (!Palette.TryGetId(voidAir, out indexOne))
+        if (!Palette.TryGetId(BlocksRegistry.VoidAir, out indexOne))
             return 0;
         // Fall through to ONE_INDEX
 

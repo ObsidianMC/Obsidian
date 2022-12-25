@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Collections.Immutable;
+using System.Text.Json;
 
 namespace Obsidian.SourceGenerators.Registry.Models;
 
@@ -15,16 +16,16 @@ internal sealed class Assets
         Items = items;
     }
 
-    public static Assets Get(GeneratorExecutionContext context)
+    public static Assets Get(ImmutableArray<(string name, string json)> files)
     {
-        Block[] blocks = GetBlocks(GetAsset(context, "blocks.json"));
-        Tag[] tags = GetTags(GetAsset(context, "tags.json"), blocks);
-        Item[] items = GetItems(GetAsset(context, "items.json"));
+        Block[] blocks = GetBlocks(files.GetJsonFromArray("blocks"));
+        Tag[] tags = GetTags(files.GetJsonFromArray("tags"), blocks);
+        Item[] items = GetItems(files.GetJsonFromArray("items"));
 
         return new Assets(blocks, tags, items);
     }
 
-    private static Block[] GetBlocks(string? json)
+    public static Block[] GetBlocks(string? json)
     {
         if (json is null)
             return Array.Empty<Block>();
@@ -72,7 +73,7 @@ internal sealed class Assets
         return items.ToArray();
     }
 
-    private static Tag[] GetTags(string? json, Block[] blocks)
+    public static Tag[] GetTags(string? json, Block[] blocks)
     {
         if (json is null)
             return Array.Empty<Tag>();
@@ -93,11 +94,5 @@ internal sealed class Assets
         }
 
         return tags.ToArray();
-    }
-
-    private static string? GetAsset(GeneratorExecutionContext context, string fileName)
-    {
-        AdditionalText? asset = context.AdditionalFiles.FirstOrDefault(additionalText => additionalText.Path.EndsWith(fileName));
-        return asset?.GetText()?.ToString();
     }
 }
