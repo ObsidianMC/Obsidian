@@ -422,21 +422,22 @@ public class World : IWorld
     {
         long value = NumericsHelper.IntsToLong(regionX, regionZ);
 
-        if (!this.Regions.TryAdd(value, null))
+        if(this.Regions.TryGetValue(value, out var region))
         {
-            if (this.Regions[value] is not null)
-            {
-                return this.Regions[value];
-            }
+            if (await region.InitAsync())
+                _ = Task.Run(() => region.BeginTickAsync(this.Server._cancelTokenSource.Token));
+
+            return region;
         }
 
-        var region = new Region(regionX, regionZ, this.FolderPath);
+        region = new Region(regionX, regionZ, this.FolderPath);
+
+        this.Regions.TryAdd(value, region);
+
         if (await region.InitAsync())
-        {
             _ = Task.Run(() => region.BeginTickAsync(this.Server._cancelTokenSource.Token));
-            this.Regions[value] = region;
-        }
-        return this.Regions[value];
+
+        return region;
     }
 
     public async Task UnloadRegionAsync(int regionX, int regionZ)

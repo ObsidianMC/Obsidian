@@ -75,13 +75,13 @@ public class Region
 
     private async Task<Chunk?> GetChunkFromFileAsync(int x, int z)
     {
-        ReadOnlyMemory<byte> compressedBytes = regionFile.GetChunkBytes(x, z, out var compression);
+        var chunkBuffer = await regionFile.GetChunkBytesAsync(x, z);
 
-        if (compressedBytes.IsEmpty)
+        if (chunkBuffer is not ChunkBuffer value)
             return null;
 
-        await using var bytesStream = new ReadOnlyStream(compressedBytes);
-        var nbtReader = new NbtReader(bytesStream, compression);
+        await using var bytesStream = new ReadOnlyStream(value.Memory);
+        var nbtReader = new NbtReader(bytesStream, value.Compression);
 
         return DeserializeChunk(nbtReader.ReadNextTag() as NbtCompound);
     }
