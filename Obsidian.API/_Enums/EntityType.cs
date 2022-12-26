@@ -13,6 +13,7 @@ public enum EntityType : int
     Boat,
     ChestBoat,
     Cat,
+    Camel,
     CaveSpider,
     Chicken,
     Cod,
