@@ -555,6 +555,15 @@ public partial class MinecraftStream
     }
 
     [ReadMethod]
+    public Guid? ReadOptionalGuid()
+    {
+        if(this.ReadBoolean())
+            return this.ReadGuid();
+
+        return null;
+    }
+
+    [ReadMethod]
     public IDictionary<short, ItemStack> ReadSlots()
     {
         var dict = new Dictionary<short, ItemStack>();

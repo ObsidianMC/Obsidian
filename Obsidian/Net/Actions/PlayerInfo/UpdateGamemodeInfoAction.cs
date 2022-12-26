@@ -2,7 +2,8 @@
 
 public class UpdateGamemodeInfoAction : InfoAction
 {
-    public int Gamemode { get; set; }
+    public override PlayerInfoAction Type => PlayerInfoAction.UpdateGamemode;
+    public int Gamemode { get; init; }
 
     public override async Task WriteAsync(MinecraftStream stream)
     {

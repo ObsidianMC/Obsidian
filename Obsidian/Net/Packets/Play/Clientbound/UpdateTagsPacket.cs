@@ -26,11 +26,3 @@ public class Tag
     public int[] Entries { get; init; }
     public int Count => Entries.Length;
 }
-
-public class RawTag
-{
-    public string Name { get; init; }
-    public string Type { get; init; }
-    public bool Replace { get; init; }
-    public List<string> Values { get; set; }
-}

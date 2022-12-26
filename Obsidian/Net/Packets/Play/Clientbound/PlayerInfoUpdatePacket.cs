@@ -1,40 +1,42 @@
-﻿using Obsidian.Net.Actions.PlayerInfo;
+﻿using Obsidian.API;
+using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
 public partial class PlayerInfoUpdatePacket : IClientboundPacket
 {
-    [Field(0), ActualType(typeof(int)), VarLength]
-    public PlayerInfoAction Action { get; }
+    [Field(0)]
+    public BitSet UsedActions { get; } = new();
 
     [Field(1)]
     public List<InfoAction> Actions { get; set; } = new();
 
     public int Id => 0x36;
 
-    public PlayerInfoUpdatePacket(PlayerInfoAction action, List<InfoAction> infoActions)
+    public PlayerInfoUpdatePacket(List<InfoAction> infoActions)
     {
-        Action = action;
         Actions.AddRange(infoActions);
+
+        this.InitializeBitSet();
     }
 
-    public PlayerInfoUpdatePacket(PlayerInfoAction action, InfoAction infoAction)
+    public PlayerInfoUpdatePacket(InfoAction infoAction)
     {
-        Action = action;
         Actions.Add(infoAction);
+
+        this.InitializeBitSet();
+    }
+
+    private void InitializeBitSet()
+    {
+        foreach (var action in this.Actions)
+        {
+            var index = (int)action.Type;
+
+            if (!this.UsedActions.GetBit(index))
+                this.UsedActions.SetBit(index, true);
+        }
     }
 }
 
-public enum PlayerInfoAction : int
-{
-    AddPlayer,
-
-    InitializeChat,
-
-
-    UpdateGamemode,
-    UpdateListed,
-    UpdateLatency,
-    UpdateDisplayName
-}

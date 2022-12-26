@@ -418,7 +418,7 @@ public class Player : Living, IPlayer
                 }
             };
 
-        await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfoUpdatePacket(PlayerInfoAction.UpdateGamemode, list));
+        await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfoUpdatePacket(list));
         await this.client.QueuePacketAsync(new GameEventPacket(gamemode));
 
         this.Gamemode = gamemode;
@@ -435,7 +435,7 @@ public class Player : Living, IPlayer
                 }
             };
 
-        await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfoUpdatePacket(PlayerInfoAction.UpdateDisplayName, list));
+        await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfoUpdatePacket(list));
 
         this.CustomName = newDisplayName;
     }
@@ -540,8 +540,8 @@ public class Player : Living, IPlayer
             Type = particle,
             Position = pos,
             ParticleCount = count,
-            Data = data, 
-            MaxSpeed = extra 
+            Data = data,
+            MaxSpeed = extra
         });
 
     public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float offsetX, float offsetY,

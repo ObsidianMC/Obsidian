@@ -1,4 +1,5 @@
-﻿using Obsidian.API.Advancements;
+﻿using Obsidian.API;
+using Obsidian.API.Advancements;
 using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registry.Codecs.Dimensions;
@@ -346,6 +347,16 @@ public partial class MinecraftStream
     {
         await WriteByteAsync((sbyte)angle.Value);
         // await this.WriteUnsignedByteAsync((byte)(angle / Angle.MaxValue * byte.MaxValue));
+    }
+
+    [WriteMethod]
+    public void WriteBitSet(BitSet bitset)
+    {
+        var storage = bitset.DataStorage.Span;
+
+        this.WriteVarInt(storage.Length);
+        if (storage.Length > 0)
+            this.WriteLongArray(storage.ToArray());
     }
 
     [WriteMethod]

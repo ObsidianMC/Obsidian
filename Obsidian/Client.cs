@@ -368,16 +368,6 @@ public sealed class Client : IDisposable
         var username = config.MulitplayerDebugMode ? $"Player{Globals.Random.Next(1, 999)}" : loginStart.Username;
         var world = (World)Server.DefaultWorld;
 
-        if (loginStart.HasSigData)
-        {
-            this.signatureData = new()
-            {
-                PublicKey = loginStart.PublicKey!,
-                Signature = loginStart.Signature!,
-                ExpirationTime = loginStart.Timestamp!.Value
-            };
-        }
-
         Logger.LogDebug("Received login request from user {Username}", loginStart.Username);
         await Server.DisconnectIfConnectedAsync(username);
 
@@ -484,8 +474,6 @@ public sealed class Client : IDisposable
         Logger.LogDebug("Compression has been enabled.");
     }
 
-    private Task DeclareRecipesAsync() => QueuePacketAsync(UpdateRecipesPacket.FromRegistry);
-
     private async Task ConnectAsync()
     {
         if (Player is null)
@@ -535,7 +523,9 @@ public sealed class Client : IDisposable
         await SendServerBrand();
         await QueuePacketAsync(UpdateTagsPacket.FromRegistry);
         await SendCommandsAsync();
-        await DeclareRecipesAsync();
+
+        await QueuePacketAsync(UpdateRecipesPacket.FromRegistry);
+
         await QueuePacketAsync(new UpdateRecipeBookPacket
         {
             Action = UnlockRecipeAction.Init,
@@ -658,9 +648,6 @@ public sealed class Client : IDisposable
         {
             Name = player.Username,
             Uuid = player.Uuid,
-            Ping = Player.Ping,
-            Gamemode = (int)Player.Gamemode,
-            DisplayName = ChatMessage.Simple(player.Username)
         };
 
         if (config.OnlineMode && cachedMojangUser is not null)
@@ -669,7 +656,15 @@ public sealed class Client : IDisposable
             addAction.Properties.AddRange(cachedMojangUser.Properties);
         }
 
-        await QueuePacketAsync(new PlayerInfoUpdatePacket(PlayerInfoAction.AddPlayer, addAction));
+        await QueuePacketAsync(new PlayerInfoUpdatePacket(new List<InfoAction>()
+        {
+            addAction,
+            new UpdatePingInfoAction
+            {
+                Uuid = player.Uuid,
+                Ping = player.Ping,
+            }
+        }));
     }
 
     internal async Task SendPlayerInfoAsync()
@@ -686,9 +681,6 @@ public sealed class Client : IDisposable
             {
                 Name = player.Username,
                 Uuid = player.Uuid,
-                Ping = player.Ping,
-                Gamemode = (int)Player.Gamemode,
-                DisplayName = ChatMessage.Simple(player.Username)
             };
 
             if (config.OnlineMode && await MinecraftAPI.GetUserAndSkinAsync(player.Uuid.ToString("N")) is MojangUser userWithSkin)
@@ -697,9 +689,22 @@ public sealed class Client : IDisposable
             }
 
             infoActions.Add(addPlayerInforAction);
+            infoActions.AddRange(new List<InfoAction>
+            {
+                new UpdateDisplayNameInfoAction
+                {
+                    DisplayName = player.Username,
+                    Uuid = player.Uuid
+                },
+                new UpdatePingInfoAction
+                {
+                    Uuid = player.Uuid,
+                    Ping = player.Ping,
+                }
+            });
         }
 
-        await QueuePacketAsync(new PlayerInfoUpdatePacket(PlayerInfoAction.AddPlayer, infoActions));
+        await QueuePacketAsync(new PlayerInfoUpdatePacket(infoActions));
     }
 
     internal void SendPacket(IClientboundPacket packet)
