@@ -8,7 +8,7 @@ public partial class ClientCommandPacket : IServerboundPacket
     [Field(0), ActualType(typeof(int)), VarLength]
     public ClientAction Action { get; private set; }
 
-    public int Id => 0x07;
+    public int Id => 0x06;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
