@@ -638,10 +638,10 @@ public sealed class Client : IDisposable
 
     internal Task SendCommandsAsync() => QueuePacketAsync(Registry.CommandsPacket);
 
-    internal Task RemovePlayerFromListAsync(IPlayer player) => QueuePacketAsync(new PlayerInfoUpdatePacket(PlayerInfoAction.RemovePlayer, new InfoAction
+    internal Task RemovePlayerFromListAsync(IPlayer player) => QueuePacketAsync(new PlayerInfoRemovePacket
     {
-        Uuid = player.Uuid
-    }));
+        UUIDs = new() { player.Uuid }
+    });
 
     internal async Task AddPlayerToListAsync(IPlayer player)
     {

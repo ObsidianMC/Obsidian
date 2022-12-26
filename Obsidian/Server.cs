@@ -35,7 +35,7 @@ public partial class Server : IServer
 #else
     public const string VERSION = "0.1-DEV";
 #endif
-    public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_19_2;
+    public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_19_3;
     public ProtocolVersion Protocol => DefaultProtocol;
 
     public int Tps { get; private set; }
