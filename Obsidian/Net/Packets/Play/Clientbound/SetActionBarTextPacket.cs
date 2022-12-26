@@ -7,5 +7,5 @@ public partial class SetActionBarTextPacket : IClientboundPacket
     [Field(0)]
     public required string Text { get; init; }
 
-    public int Id => 0x43;
+    public int Id => 0x42;
 }

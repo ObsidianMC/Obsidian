@@ -418,7 +418,7 @@ public class Player : Living, IPlayer
                 }
             };
 
-        await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfoPacket(PlayerInfoAction.UpdateGamemode, list));
+        await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfoUpdatePacket(PlayerInfoAction.UpdateGamemode, list));
         await this.client.QueuePacketAsync(new GameEventPacket(gamemode));
 
         this.Gamemode = gamemode;
@@ -435,7 +435,7 @@ public class Player : Living, IPlayer
                 }
             };
 
-        await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfoPacket(PlayerInfoAction.UpdateDisplayName, list));
+        await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfoUpdatePacket(PlayerInfoAction.UpdateDisplayName, list));
 
         this.CustomName = newDisplayName;
     }

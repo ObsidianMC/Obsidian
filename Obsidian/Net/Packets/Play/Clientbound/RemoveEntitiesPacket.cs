@@ -7,7 +7,7 @@ public partial class RemoveEntitiesPacket : IClientboundPacket
     [Field(0), VarLength]
     public List<int> Entities { get; private set; } = new();
 
-    public int Id => 0x3B;
+    public int Id => 0x3A;
 
     public RemoveEntitiesPacket(params int[] entities)
     {

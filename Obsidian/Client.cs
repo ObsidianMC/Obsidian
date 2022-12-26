@@ -638,7 +638,7 @@ public sealed class Client : IDisposable
 
     internal Task SendCommandsAsync() => QueuePacketAsync(Registry.CommandsPacket);
 
-    internal Task RemovePlayerFromListAsync(IPlayer player) => QueuePacketAsync(new PlayerInfoPacket(PlayerInfoAction.RemovePlayer, new InfoAction
+    internal Task RemovePlayerFromListAsync(IPlayer player) => QueuePacketAsync(new PlayerInfoUpdatePacket(PlayerInfoAction.RemovePlayer, new InfoAction
     {
         Uuid = player.Uuid
     }));
@@ -669,7 +669,7 @@ public sealed class Client : IDisposable
             addAction.Properties.AddRange(cachedMojangUser.Properties);
         }
 
-        await QueuePacketAsync(new PlayerInfoPacket(PlayerInfoAction.AddPlayer, addAction));
+        await QueuePacketAsync(new PlayerInfoUpdatePacket(PlayerInfoAction.AddPlayer, addAction));
     }
 
     internal async Task SendPlayerInfoAsync()
@@ -699,7 +699,7 @@ public sealed class Client : IDisposable
             infoActions.Add(addPlayerInforAction);
         }
 
-        await QueuePacketAsync(new PlayerInfoPacket(PlayerInfoAction.AddPlayer, infoActions));
+        await QueuePacketAsync(new PlayerInfoUpdatePacket(PlayerInfoAction.AddPlayer, infoActions));
     }
 
     internal void SendPacket(IClientboundPacket packet)

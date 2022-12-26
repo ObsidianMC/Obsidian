@@ -7,7 +7,7 @@ public partial class ChunkDataAndUpdateLightPacket : IClientboundPacket
 {
     public Chunk Chunk { get; }
 
-    public int Id => 0x21;
+    public int Id => 0x20;
 
     public ChunkDataAndUpdateLightPacket(Chunk chunk)
     {

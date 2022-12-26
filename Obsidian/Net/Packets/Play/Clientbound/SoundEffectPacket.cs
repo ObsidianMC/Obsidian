@@ -21,7 +21,7 @@ public partial class SoundEffectPacket : IClientboundPacket
     [Field(5)]
     public long Seed { get; init; }
 
-    public int Id => 0x60;
+    public int Id => 0x5E;
 
     public SoundEffectPacket(Sounds soundId, SoundPosition soundPosition, SoundCategory category = SoundCategory.Master, float volume = 1f, float pitch = 1f)
     {

@@ -10,7 +10,7 @@ public partial class SetDefaultSpawnPositionPacket : IClientboundPacket
     [Field(1), DataFormat(typeof(float))]
     public Angle Angle { get; set; }
 
-    public int Id => 0x4D;
+    public int Id => 0x4C;
 
     public SetDefaultSpawnPositionPacket(VectorF position)
     {
