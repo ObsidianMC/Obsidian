@@ -8,6 +8,9 @@ public partial class PlayerInfoUpdatePacket : IClientboundPacket
     [Field(0)]
     public BitSet UsedActions { get; } = new();
 
+    /// <remarks>
+    /// All action lists must set the same types of InfoAction set
+    /// </remarks>
     [Field(1)]
     public Dictionary<Guid, List<InfoAction>> Actions { get; set; } = new();
 
@@ -29,15 +32,13 @@ public partial class PlayerInfoUpdatePacket : IClientboundPacket
 
     private void InitializeBitSet()
     {
-        foreach (var (_, actions) in this.Actions)
-        {
-            foreach (var action in actions)
-            {
-                var index = (int)action.Type;
+        var enumValues = Enum.GetValues<PlayerInfoAction>();
+        var usedEnums = this.Actions.Values.First().Select(x => x.Type).Distinct();
 
-                if (!this.UsedActions.GetBit(index))
-                    this.UsedActions.SetBit(index, true);
-            }
+        for (int i = 0; i < enumValues.Length; i++)
+        {
+            var usingBit = usedEnums.Contains(enumValues[i]);
+            this.UsedActions.SetBit(i, usingBit);
         }
     }
 
@@ -47,8 +48,7 @@ public partial class PlayerInfoUpdatePacket : IClientboundPacket
 
         packetStream.WriteBitSet(this.UsedActions, true);
         packetStream.WriteVarInt(Actions.Count);
-
-        foreach(var (uuid, actions) in this.Actions)
+        foreach (var (uuid, actions) in this.Actions)
         {
             var orderedActions = actions.OrderBy(x => (int)x.Type).ToList();
 

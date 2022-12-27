@@ -658,10 +658,8 @@ public sealed class Client : IDisposable
         var list = new List<InfoAction>()
         {
             addAction,
-            new UpdatePingInfoAction
-            {
-                Ping = player.Ping,
-            }
+            new UpdatePingInfoAction(player.Ping),
+            new UpdateListedInfoAction(player.Listed),
         };
 
         await QueuePacketAsync(new PlayerInfoUpdatePacket(new Dictionary<Guid, List<InfoAction>>()
@@ -693,14 +691,9 @@ public sealed class Client : IDisposable
             var list = new List<InfoAction>
             {
                 addPlayerInforAction,
-                new UpdateDisplayNameInfoAction
-                {
-                    DisplayName = player.Username,
-                },
-                new UpdatePingInfoAction
-                {
-                    Ping = player.Ping
-                }
+                new UpdateListedInfoAction(player.Listed),
+                new UpdateDisplayNameInfoAction(player.Username),
+                new UpdatePingInfoAction(player.Ping)
             };
 
             dict.Add(player.Uuid, list);

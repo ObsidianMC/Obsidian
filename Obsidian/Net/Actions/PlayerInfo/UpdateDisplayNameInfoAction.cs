@@ -7,6 +7,8 @@ public class UpdateDisplayNameInfoAction : InfoAction
     public ChatMessage? DisplayName { get; init; }
     public bool HasDisplayName => this.DisplayName != null;
 
+    public UpdateDisplayNameInfoAction(ChatMessage? displayName) => this.DisplayName = displayName;
+
     public override async Task WriteAsync(MinecraftStream stream)
     {
         await stream.WriteBooleanAsync(this.HasDisplayName);

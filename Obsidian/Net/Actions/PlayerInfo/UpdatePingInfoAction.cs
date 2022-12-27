@@ -5,6 +5,8 @@ public class UpdatePingInfoAction : InfoAction
     public override PlayerInfoAction Type => PlayerInfoAction.UpdateLatency;
     public int Ping { get; set; }
 
+    public UpdatePingInfoAction(int ping) => this.Ping = ping;
+
     public override async Task WriteAsync(MinecraftStream stream)
     {
         await stream.WriteVarIntAsync(this.Ping);

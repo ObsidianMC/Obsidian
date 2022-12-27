@@ -22,7 +22,7 @@ public class AddPlayerInfoAction : InfoAction
 
     public override void Write(MinecraftStream stream)
     {
-        stream.WriteString(Name);
+        stream.WriteString(Name, 16);
         stream.WriteVarInt(Properties.Count);
 
         foreach (var properties in Properties)

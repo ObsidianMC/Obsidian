@@ -29,6 +29,7 @@ public class Player : Living, IPlayer
     internal int TeleportId { get; set; }
 
     public bool IsOperator => Server.Operators.IsOperator(this);
+    public bool Listed { get; set; } = true;
 
     public string Username { get; }
 
