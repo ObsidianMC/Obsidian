@@ -12,24 +12,20 @@ public class AddPlayerInfoAction : InfoAction
 
     public async override Task WriteAsync(MinecraftStream stream)
     {
-        await base.WriteAsync(stream);
-
         await stream.WriteStringAsync(this.Name, 16);
 
         await stream.WriteVarIntAsync(this.Properties.Count);
 
         foreach (var props in this.Properties)
-            await stream.WriteAsync(await props.ToArrayAsync());
+            await props.WriteAsync(stream);
     }
 
     public override void Write(MinecraftStream stream)
     {
-        base.Write(stream);
-
         stream.WriteString(Name);
         stream.WriteVarInt(Properties.Count);
 
         foreach (var properties in Properties)
-            stream.Write(properties.ToArray());
+            properties.Write(stream);
     }
 }

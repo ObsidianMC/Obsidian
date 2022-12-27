@@ -15,6 +15,7 @@ using Obsidian.Net.Packets.Status;
 using Obsidian.Utilities.Mojang;
 using Obsidian.Utilities.Registry;
 using Obsidian.WorldData;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -647,23 +648,25 @@ public sealed class Client : IDisposable
         var addAction = new AddPlayerInfoAction
         {
             Name = player.Username,
-            Uuid = player.Uuid,
         };
 
-        if (config.OnlineMode && cachedMojangUser is not null)
+        if (config.OnlineMode && await MinecraftAPI.GetUserAndSkinAsync(player.Uuid.ToString("N")) is MojangUser userWithSkin)
         {
-            _ = player.Uuid.ToString().Replace("-", "");
-            addAction.Properties.AddRange(cachedMojangUser.Properties);
+            addAction.Properties.AddRange(userWithSkin.Properties);
         }
 
-        await QueuePacketAsync(new PlayerInfoUpdatePacket(new List<InfoAction>()
+        var list = new List<InfoAction>()
         {
             addAction,
             new UpdatePingInfoAction
             {
-                Uuid = player.Uuid,
                 Ping = player.Ping,
             }
+        };
+
+        await QueuePacketAsync(new PlayerInfoUpdatePacket(new Dictionary<Guid, List<InfoAction>>()
+        {
+            { player.Uuid, list }
         }));
     }
 
@@ -674,13 +677,12 @@ public sealed class Client : IDisposable
             throw new InvalidOperationException("Player is null, which means the client has not yet logged in.");
         }
 
-        var infoActions = new List<InfoAction>();
+        var dict = new Dictionary<Guid, List<InfoAction>>();
         foreach (var player in Server.OnlinePlayers.Values)
         {
             var addPlayerInforAction = new AddPlayerInfoAction()
             {
                 Name = player.Username,
-                Uuid = player.Uuid,
             };
 
             if (config.OnlineMode && await MinecraftAPI.GetUserAndSkinAsync(player.Uuid.ToString("N")) is MojangUser userWithSkin)
@@ -688,23 +690,23 @@ public sealed class Client : IDisposable
                 addPlayerInforAction.Properties.AddRange(userWithSkin.Properties);
             }
 
-            infoActions.Add(addPlayerInforAction);
-            infoActions.AddRange(new List<InfoAction>
+            var list = new List<InfoAction>
             {
+                addPlayerInforAction,
                 new UpdateDisplayNameInfoAction
                 {
                     DisplayName = player.Username,
-                    Uuid = player.Uuid
                 },
                 new UpdatePingInfoAction
                 {
-                    Uuid = player.Uuid,
-                    Ping = player.Ping,
+                    Ping = player.Ping
                 }
-            });
+            };
+
+            dict.Add(player.Uuid, list);
         }
 
-        await QueuePacketAsync(new PlayerInfoUpdatePacket(infoActions));
+        await QueuePacketAsync(new PlayerInfoUpdatePacket(dict));
     }
 
     internal void SendPacket(IClientboundPacket packet)

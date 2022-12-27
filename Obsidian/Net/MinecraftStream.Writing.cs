@@ -13,6 +13,7 @@ using Obsidian.Net.WindowProperties;
 using Obsidian.Serialization.Attributes;
 using Obsidian.Utilities.Mojang;
 using Obsidian.Utilities.Registry;
+using Org.BouncyCastle.Utilities;
 using System.Buffers.Binary;
 using System.Text;
 
@@ -346,17 +347,21 @@ public partial class MinecraftStream
     public async Task WriteAngleAsync(Angle angle)
     {
         await WriteByteAsync((sbyte)angle.Value);
-        // await this.WriteUnsignedByteAsync((byte)(angle / Angle.MaxValue * byte.MaxValue));
     }
 
     [WriteMethod]
-    public void WriteBitSet(BitSet bitset)
+    public void WriteBitSet(BitSet bitset, bool isFixed = false)
     {
-        var storage = bitset.DataStorage.Span;
+        //TODO WE HAVE TO DO SOMETHING ABOUT THIS
+        if (isFixed)
+        {
+            this.WriteByte((byte)bitset.DataStorage.Span[0]);
+            return;
+        }
 
-        this.WriteVarInt(storage.Length);
-        if (storage.Length > 0)
-            this.WriteLongArray(storage.ToArray());
+        this.WriteVarInt(bitset.DataStorage.Length);
+        if (bitset.DataStorage.Length > 0)
+            this.WriteLongArray(bitset.DataStorage.ToArray());
     }
 
     [WriteMethod]
@@ -575,6 +580,7 @@ public partial class MinecraftStream
             WriteByte((sbyte)value.Count);
 
             NbtWriter writer = new(this, string.Empty);
+
             ItemMeta meta = value.ItemMeta;
 
             if (meta.HasTags())
@@ -629,7 +635,6 @@ public partial class MinecraftStream
                     writer.EndCompound();
                 }
             }
-
             writer.WriteString("id", item.UnlocalizedName);
             writer.WriteByte("Count", (byte)value.Count);
 
@@ -1182,7 +1187,6 @@ public partial class MinecraftStream
             WriteVarInt(cuttingRecipe.Ingredient.Count);
             foreach (var item in cuttingRecipe.Ingredient)
                 WriteItemStack(item);
-
 
             var result = cuttingRecipe.Result.First();
 

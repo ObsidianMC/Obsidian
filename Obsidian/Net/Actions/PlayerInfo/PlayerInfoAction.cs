@@ -5,7 +5,6 @@ public enum PlayerInfoAction : int
 
     InitializeChat,
 
-
     UpdateGamemode,
     UpdateListed,
     UpdateLatency,

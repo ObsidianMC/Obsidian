@@ -1,12 +1,11 @@
-﻿using Obsidian.API.Registry.Codecs.Dimensions;
-using Obsidian.Serialization.Attributes;
+﻿using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
 public partial class RespawnPacket : IClientboundPacket
 {
     [Field(0)]
-    public DimensionCodec Dimension { get; init; }
+    public string DimensionType { get; init; }
 
     [Field(1)]
     public string DimensionName { get; init; }

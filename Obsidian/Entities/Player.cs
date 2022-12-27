@@ -305,7 +305,7 @@ public class Player : Living, IPlayer
 
         await this.client.QueuePacketAsync(new RespawnPacket
         {
-            Dimension = codec,
+            DimensionType = codec.Name,
             DimensionName = this.World.DimensionName,
             Gamemode = this.Gamemode,
             PreviousGamemode = this.Gamemode,
@@ -409,16 +409,11 @@ public class Player : Living, IPlayer
 
     public async Task SetGamemodeAsync(Gamemode gamemode)
     {
-        var list = new List<InfoAction>()
-            {
-                new UpdateGamemodeInfoAction()
-                {
-                    Uuid = this.Uuid,
-                    Gamemode = (int)gamemode,
-                }
-            };
+        await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfoUpdatePacket(this.CompilePlayerInfo(new UpdateGamemodeInfoAction()
+        {
+            Gamemode = (int)gamemode,
+        })));
 
-        await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfoUpdatePacket(list));
         await this.client.QueuePacketAsync(new GameEventPacket(gamemode));
 
         this.Gamemode = gamemode;
@@ -426,16 +421,10 @@ public class Player : Living, IPlayer
 
     public async Task UpdateDisplayNameAsync(string newDisplayName)
     {
-        var list = new List<InfoAction>()
-            {
-                new UpdateDisplayNameInfoAction()
-                {
-                    Uuid = this.Uuid,
-                    DisplayName = newDisplayName,
-                }
-            };
-
-        await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfoUpdatePacket(list));
+        await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfoUpdatePacket(this.CompilePlayerInfo(new UpdateDisplayNameInfoAction()
+        {
+            DisplayName = newDisplayName,
+        })));
 
         this.CustomName = newDisplayName;
     }
@@ -1008,6 +997,11 @@ public class Player : Living, IPlayer
 
         writer.EndList();
     }
+
+    private Dictionary<Guid, List<InfoAction>> CompilePlayerInfo(params InfoAction[] actions) => new()
+    {
+        { this.Uuid, actions.ToList() }
+    };
 
     private string GetPlayerDataPath(bool isOld = false) =>
         !isOld ? Path.Join(this.World.PlayerDataPath, $"{this.Uuid}.dat") : Path.Join(this.World.PlayerDataPath, $"{this.Uuid}.dat.old");

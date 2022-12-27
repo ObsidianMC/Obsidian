@@ -9,8 +9,6 @@ public class UpdateDisplayNameInfoAction : InfoAction
 
     public override async Task WriteAsync(MinecraftStream stream)
     {
-        await base.WriteAsync(stream);
-
         await stream.WriteBooleanAsync(this.HasDisplayName);
         if (this.HasDisplayName)
             await stream.WriteChatAsync(this.DisplayName);
@@ -18,8 +16,6 @@ public class UpdateDisplayNameInfoAction : InfoAction
 
     public override void Write(MinecraftStream stream)
     {
-        base.Write(stream);
-
         stream.WriteBoolean(HasDisplayName);
         if (HasDisplayName)
             stream.WriteChat(DisplayName);
