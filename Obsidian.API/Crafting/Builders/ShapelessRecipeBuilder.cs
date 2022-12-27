@@ -8,6 +8,8 @@ public class ShapelessRecipeBuilder : IRecipeBuilder<ShapelessRecipeBuilder>
     public string? Group { get; set; }
     public ItemStack? Result { get; set; }
 
+    public CraftingBookCategory Category { get; set; }
+
     public IReadOnlyList<Ingredient> Ingredients { get; }
 
     private readonly List<Ingredient> ingredients = new();
@@ -33,13 +35,21 @@ public class ShapelessRecipeBuilder : IRecipeBuilder<ShapelessRecipeBuilder>
             throw new InvalidOperationException("Ingredients must be filled with atleast 1 item.");
 
         return new ShapelessRecipe
-        (
-            this.Name ?? throw new NullReferenceException("Recipe must have a name"),
-            CraftingType.CraftingShapeless,
-            this.Group,
-            this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),
-            new ReadOnlyCollection<Ingredient>(new List<Ingredient>(this.ingredients))
-        );
+        {
+            Name = this.Name ?? throw new NullReferenceException("Recipe must have a name"),
+            Type = CraftingType.CraftingShapeless,
+            Group = this.Group,
+            Result = this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),
+            Ingredients = new ReadOnlyCollection<Ingredient>(new List<Ingredient>(this.ingredients)),
+            Category = this.Category
+        };
+    }
+
+    public ShapelessRecipeBuilder InCategory(CraftingBookCategory category)
+    {
+        this.Category = category;
+
+        return this;
     }
 
     public ShapelessRecipeBuilder WithName(string name)

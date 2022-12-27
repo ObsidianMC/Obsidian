@@ -1,23 +1,16 @@
 ﻿namespace Obsidian.API.Crafting;
 
-public sealed class ShapelessRecipe : IRecipe
+public sealed class ShapelessRecipe : IRecipe, IHasRecipeCategory
 {
     public string Name { get; set; }
 
-    public CraftingType Type { get; set; }
+    public required CraftingType Type { get; init; }
 
-    public string? Group { get; set; }
+    public required CraftingBookCategory Category { get; init; }
 
-    public Ingredient Result { get; set; }
+    public string? Group { get; init; }
 
-    public IReadOnlyList<Ingredient> Ingredients { get; set; }
+    public required Ingredient Result { get; init; }
 
-    public ShapelessRecipe(string name, CraftingType type, string? group, Ingredient result, IReadOnlyList<Ingredient> ingredients)
-    {
-        Name = name;
-        Type = type;
-        Group = group;
-        Result = result;
-        Ingredients = ingredients;
-    }
+    public required IReadOnlyList<Ingredient> Ingredients { get; init; }
 }

@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Obsidian.Utilities.Converters;
+﻿using Obsidian.Utilities.Converters;
 using System.Net.Http;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -25,6 +24,8 @@ public static class Globals
                 new IngredientConverter(),
                 new DefaultEnumConverter<EHoverAction>(),
                 new DefaultEnumConverter<EClickAction>(),
+                new DefaultEnumConverter<CraftingBookCategory>(),
+                new DefaultEnumConverter<CookingBookCategory>(),
                 new HexColorConverter()
             },
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,

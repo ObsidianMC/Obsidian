@@ -55,13 +55,13 @@ public class CuttingRecipeBuilder : IRecipeBuilder<CuttingRecipeBuilder>
             throw new InvalidOperationException("Recipe must atleast have 1 item as an ingredient");
 
         return new CuttingRecipe
-        (
-            this.Name ?? throw new NullReferenceException("Name must not be null"),
-            CraftingType.Stonecutting,
-            this.Group,
-            this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),
-            this.Ingredient ?? throw new NullReferenceException("Ingredient must not be null"),
-            this.Count
-        );
+        {
+            Name = this.Name ?? throw new NullReferenceException("Name must not be null"),
+            Type = CraftingType.Stonecutting,
+            Group = this.Group,
+            Result = this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),
+            Ingredient = this.Ingredient ?? throw new NullReferenceException("Ingredient must not be null"),
+            Count = this.Count
+        };
     }
 }

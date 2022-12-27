@@ -1046,7 +1046,7 @@ public partial class MinecraftStream
             await WriteSlotAsync(smeltingRecipe.Result.First());
 
             await WriteFloatAsync(smeltingRecipe.Experience);
-            await WriteVarIntAsync(smeltingRecipe.Cookingtime);
+            await WriteVarIntAsync(smeltingRecipe.CookingTime);
         }
         else if (recipe is CuttingRecipe cuttingRecipe)
         {
@@ -1102,6 +1102,8 @@ public partial class MinecraftStream
 
             WriteString(shapedRecipe.Group ?? string.Empty);
 
+            WriteVarInt(shapedRecipe.Category);
+
             var ingredients = new List<ItemStack>[width * height];
 
             var y = 0;
@@ -1154,6 +1156,8 @@ public partial class MinecraftStream
 
             WriteString(shapelessRecipe.Group ?? string.Empty);
 
+            WriteVarInt(shapelessRecipe.Category);
+
             WriteVarInt(ingredients.Count);
             foreach (var ingredient in ingredients)
             {
@@ -1170,6 +1174,7 @@ public partial class MinecraftStream
         {
             WriteString(smeltingRecipe.Group ?? string.Empty);
 
+            WriteVarInt(smeltingRecipe.Category);
 
             WriteVarInt(smeltingRecipe.Ingredient.Count);
             foreach (var i in smeltingRecipe.Ingredient)
@@ -1178,7 +1183,7 @@ public partial class MinecraftStream
             WriteItemStack(smeltingRecipe.Result.First());
 
             WriteFloat(smeltingRecipe.Experience);
-            WriteVarInt(smeltingRecipe.Cookingtime);
+            WriteVarInt(smeltingRecipe.CookingTime);
         }
         else if (recipe is CuttingRecipe cuttingRecipe)
         {
