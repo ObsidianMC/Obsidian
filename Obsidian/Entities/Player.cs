@@ -410,10 +410,7 @@ public class Player : Living, IPlayer
 
     public async Task SetGamemodeAsync(Gamemode gamemode)
     {
-        await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfoUpdatePacket(this.CompilePlayerInfo(new UpdateGamemodeInfoAction()
-        {
-            Gamemode = (int)gamemode,
-        })));
+        await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfoUpdatePacket(this.CompilePlayerInfo(new UpdateGamemodeInfoAction(gamemode))));
 
         await this.client.QueuePacketAsync(new GameEventPacket(gamemode));
 
@@ -422,10 +419,7 @@ public class Player : Living, IPlayer
 
     public async Task UpdateDisplayNameAsync(string newDisplayName)
     {
-        await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfoUpdatePacket(this.CompilePlayerInfo(new UpdateDisplayNameInfoAction()
-        {
-            DisplayName = newDisplayName,
-        })));
+        await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfoUpdatePacket(this.CompilePlayerInfo(new UpdateDisplayNameInfoAction(newDisplayName))));
 
         this.CustomName = newDisplayName;
     }
