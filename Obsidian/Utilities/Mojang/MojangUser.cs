@@ -15,35 +15,29 @@ public class MojangUser
     public List<SkinProperty> Properties { get; set; }
 }
 
-public class SkinProperty
+public sealed class SkinProperty
 {
     public string Name { get; set; }
 
     public string Value { get; set; }
     public string? Signature { get; set; }
 
-    public async Task<byte[]> ToArrayAsync()
+    public async Task WriteAsync(MinecraftStream stream)
     {
         var isSigned = this.Signature != null;
-        using var stream = new MinecraftStream();
         await stream.WriteStringAsync(this.Name, 32767);
         await stream.WriteStringAsync(this.Value, 32767);
         await stream.WriteBooleanAsync(isSigned);
         if (isSigned)
             await stream.WriteStringAsync(this.Signature, 32767);
-
-        return stream.ToArray();
     }
 
-    public byte[] ToArray()
+    public void Write(MinecraftStream stream)
     {
-        using var stream = new MinecraftStream();
         stream.WriteString(Name);
         stream.WriteString(Value);
         stream.WriteBoolean(Signature is not null);
         if (Signature is not null)
             stream.WriteString(Signature);
-
-        return stream.ToArray();
     }
 }

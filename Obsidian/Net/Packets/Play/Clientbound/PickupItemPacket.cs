@@ -13,5 +13,5 @@ public partial class PickupItemPacket : IClientboundPacket
     [Field(2), VarLength]
     public int PickupItemCount { get; init; }
 
-    public int Id => 0x65;
+    public int Id => 0x63;
 }

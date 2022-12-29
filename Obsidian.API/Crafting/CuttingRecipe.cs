@@ -4,23 +4,13 @@ public sealed class CuttingRecipe : IRecipe
 {
     public string Name { get; set; }
 
-    public CraftingType Type { get; set; }
+    public required CraftingType Type { get; init; }
 
-    public string? Group { get; set; }
+    public string? Group { get; init; }
 
-    public Ingredient Result { get; set; }
+    public required Ingredient Result { get; init; }
 
-    public Ingredient Ingredient { get; set; }
+    public required Ingredient Ingredient { get; init; }
 
-    public int Count { get; set; }
-
-    public CuttingRecipe(string name, CraftingType type, string? group, Ingredient result, Ingredient ingredient, int count)
-    {
-        Name = name;
-        Type = type;
-        Group = group;
-        Result = result;
-        Ingredient = ingredient;
-        Count = count;
-    }
+    public required int Count { get; init; }
 }

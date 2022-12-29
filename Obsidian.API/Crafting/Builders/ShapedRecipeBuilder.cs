@@ -8,6 +8,8 @@ public class ShapedRecipeBuilder : IRecipeBuilder<ShapedRecipeBuilder>
     public string? Group { get; set; }
     public ItemStack? Result { get; set; }
 
+    public CraftingBookCategory Category { get; set; }
+
     public IReadOnlyList<string> Pattern { get; }
 
     public IReadOnlyDictionary<char, Ingredient> Key { get; }
@@ -21,6 +23,13 @@ public class ShapedRecipeBuilder : IRecipeBuilder<ShapedRecipeBuilder>
         this.Pattern = new ReadOnlyCollection<string>(this.pattern);
 
         this.Key = new ReadOnlyDictionary<char, Ingredient>(this.key);
+    }
+
+    public ShapedRecipeBuilder InCategory(CraftingBookCategory category)
+    {
+        this.Category = category;
+
+        return this;
     }
 
     public ShapedRecipeBuilder WithPattern(params string[] pattern)
@@ -54,14 +63,15 @@ public class ShapedRecipeBuilder : IRecipeBuilder<ShapedRecipeBuilder>
             throw new InvalidOperationException("Keys cannot be empty.");
 
         return new ShapedRecipe
-        (
-            this.Name ?? throw new NullReferenceException("Recipe must have a name"),
-            CraftingType.CraftingShaped,
-            this.Group,
-            this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),
-            new ReadOnlyCollection<string>(new List<string>(this.pattern)),
-            new ReadOnlyDictionary<char, Ingredient>(new Dictionary<char, Ingredient>(this.key))
-        );
+        {
+            Name = this.Name ?? throw new NullReferenceException("Recipe must have a name"),
+            Type = CraftingType.CraftingShaped,
+            Group = this.Group,
+            Result = this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),
+            Pattern = new ReadOnlyCollection<string>(new List<string>(this.pattern)),
+            Key = new ReadOnlyDictionary<char, Ingredient>(new Dictionary<char, Ingredient>(this.key)),
+            Category = this.Category
+        };
     }
 
     public ShapedRecipeBuilder WithName(string name)

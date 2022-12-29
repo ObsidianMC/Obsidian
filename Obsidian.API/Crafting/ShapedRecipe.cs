@@ -1,26 +1,18 @@
 ﻿namespace Obsidian.API.Crafting;
 
-public sealed class ShapedRecipe : IRecipe
+public sealed class ShapedRecipe : IRecipe, IHasRecipeCategory
 {
     public string Name { get; set; }
 
-    public CraftingType Type { get; set; }
+    public required CraftingType Type { get; init; }
 
-    public string? Group { get; set; }
+    public string? Group { get; init; }
 
-    public Ingredient Result { get; set; }
+    public required CraftingBookCategory Category { get; init; }
 
-    public IReadOnlyList<string> Pattern { get; set; }
+    public required Ingredient Result { get; init; }
 
-    public IReadOnlyDictionary<char, Ingredient> Key { get; set; }
+    public required IReadOnlyList<string> Pattern { get; init; }
 
-    public ShapedRecipe(string name, CraftingType type, string? group, Ingredient result, IReadOnlyList<string> pattern, IReadOnlyDictionary<char, Ingredient> key)
-    {
-        Name = name;
-        Type = type;
-        Group = group;
-        Result = result;
-        Pattern = pattern;
-        Key = key;
-    }
+    public required IReadOnlyDictionary<char, Ingredient> Key { get; init; }
 }

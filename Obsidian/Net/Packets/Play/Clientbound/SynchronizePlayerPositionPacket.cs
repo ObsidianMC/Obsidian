@@ -33,5 +33,5 @@ public partial class SynchronizePlayerPositionPacket : IClientboundPacket
     [Field(5)]
     public bool DismountVehicle { get; init; }
 
-    public int Id => 0x39;
+    public int Id => 0x38;
 }

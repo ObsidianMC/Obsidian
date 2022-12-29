@@ -2,22 +2,24 @@
 
 public class UpdateDisplayNameInfoAction : InfoAction
 {
-    public string DisplayName { get; set; }
-    public bool HasDisplayName => string.IsNullOrWhiteSpace(DisplayName);
+    public override PlayerInfoAction Type => PlayerInfoAction.UpdateDisplayName;
+
+    public ChatMessage? DisplayName { get; init; }
+    public bool HasDisplayName => this.DisplayName != null;
+
+    public UpdateDisplayNameInfoAction(ChatMessage? displayName) => this.DisplayName = displayName;
 
     public override async Task WriteAsync(MinecraftStream stream)
     {
-        await base.WriteAsync(stream);
-
-        await stream.WriteStringAsync(this.DisplayName);
+        await stream.WriteBooleanAsync(this.HasDisplayName);
+        if (this.HasDisplayName)
+            await stream.WriteChatAsync(this.DisplayName);
     }
 
     public override void Write(MinecraftStream stream)
     {
-        base.Write(stream);
-
         stream.WriteBoolean(HasDisplayName);
         if (HasDisplayName)
-            stream.WriteString(DisplayName);
+            stream.WriteChat(DisplayName);
     }
 }

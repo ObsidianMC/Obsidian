@@ -4,23 +4,13 @@ public sealed class SmithingRecipe : IRecipe
 {
     public string Name { get; set; }
 
-    public CraftingType Type { get; set; }
+    public required CraftingType Type { get; init; }
 
-    public string? Group { get; set; }
+    public string? Group { get; init; }
 
-    public Ingredient Result { get; set; }
+    public required Ingredient Result { get; init; }
 
-    public Ingredient Base { get; set; }
+    public required Ingredient Base { get; init; }
 
-    public Ingredient Addition { get; set; }
-
-    public SmithingRecipe(string name, CraftingType type, string? group, Ingredient result, Ingredient @base, Ingredient addition)
-    {
-        Name = name;
-        Type = type;
-        Group = group;
-        Result = result;
-        Base = @base;
-        Addition = addition;
-    }
+    public required Ingredient Addition { get; init; }
 }

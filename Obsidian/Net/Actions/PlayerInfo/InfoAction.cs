@@ -1,10 +1,10 @@
 ﻿namespace Obsidian.Net.Actions.PlayerInfo;
 
-public class InfoAction
+public abstract class InfoAction
 {
-    public Guid Uuid { get; set; }
+    public abstract PlayerInfoAction Type { get; }
 
-    public virtual Task WriteAsync(MinecraftStream stream) => stream.WriteUuidAsync(this.Uuid);
+    public virtual Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
-    public virtual void Write(MinecraftStream stream) => stream.WriteUuid(Uuid);
+    public virtual void Write(MinecraftStream stream) { }
 }

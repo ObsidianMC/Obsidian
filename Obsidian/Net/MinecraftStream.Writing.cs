@@ -1,4 +1,5 @@
-﻿using Obsidian.API.Advancements;
+﻿using Obsidian.API;
+using Obsidian.API.Advancements;
 using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registry.Codecs.Dimensions;
@@ -12,6 +13,7 @@ using Obsidian.Net.WindowProperties;
 using Obsidian.Serialization.Attributes;
 using Obsidian.Utilities.Mojang;
 using Obsidian.Utilities.Registry;
+using Org.BouncyCastle.Utilities;
 using System.Buffers.Binary;
 using System.Text;
 
@@ -345,7 +347,21 @@ public partial class MinecraftStream
     public async Task WriteAngleAsync(Angle angle)
     {
         await WriteByteAsync((sbyte)angle.Value);
-        // await this.WriteUnsignedByteAsync((byte)(angle / Angle.MaxValue * byte.MaxValue));
+    }
+
+    [WriteMethod]
+    public void WriteBitSet(BitSet bitset, bool isFixed = false)
+    {
+        //TODO WE HAVE TO DO SOMETHING ABOUT THIS
+        if (isFixed)
+        {
+            this.WriteByte((byte)bitset.DataStorage.Span[0]);
+            return;
+        }
+
+        this.WriteVarInt(bitset.DataStorage.Length);
+        if (bitset.DataStorage.Length > 0)
+            this.WriteLongArray(bitset.DataStorage.ToArray());
     }
 
     [WriteMethod]
@@ -564,6 +580,7 @@ public partial class MinecraftStream
             WriteByte((sbyte)value.Count);
 
             NbtWriter writer = new(this, string.Empty);
+
             ItemMeta meta = value.ItemMeta;
 
             if (meta.HasTags())
@@ -618,7 +635,6 @@ public partial class MinecraftStream
                     writer.EndCompound();
                 }
             }
-
             writer.WriteString("id", item.UnlocalizedName);
             writer.WriteByte("Count", (byte)value.Count);
 
@@ -1030,7 +1046,7 @@ public partial class MinecraftStream
             await WriteSlotAsync(smeltingRecipe.Result.First());
 
             await WriteFloatAsync(smeltingRecipe.Experience);
-            await WriteVarIntAsync(smeltingRecipe.Cookingtime);
+            await WriteVarIntAsync(smeltingRecipe.CookingTime);
         }
         else if (recipe is CuttingRecipe cuttingRecipe)
         {
@@ -1086,6 +1102,8 @@ public partial class MinecraftStream
 
             WriteString(shapedRecipe.Group ?? string.Empty);
 
+            WriteVarInt(shapedRecipe.Category);
+
             var ingredients = new List<ItemStack>[width * height];
 
             var y = 0;
@@ -1138,6 +1156,8 @@ public partial class MinecraftStream
 
             WriteString(shapelessRecipe.Group ?? string.Empty);
 
+            WriteVarInt(shapelessRecipe.Category);
+
             WriteVarInt(ingredients.Count);
             foreach (var ingredient in ingredients)
             {
@@ -1154,6 +1174,7 @@ public partial class MinecraftStream
         {
             WriteString(smeltingRecipe.Group ?? string.Empty);
 
+            WriteVarInt(smeltingRecipe.Category);
 
             WriteVarInt(smeltingRecipe.Ingredient.Count);
             foreach (var i in smeltingRecipe.Ingredient)
@@ -1162,7 +1183,7 @@ public partial class MinecraftStream
             WriteItemStack(smeltingRecipe.Result.First());
 
             WriteFloat(smeltingRecipe.Experience);
-            WriteVarInt(smeltingRecipe.Cookingtime);
+            WriteVarInt(smeltingRecipe.CookingTime);
         }
         else if (recipe is CuttingRecipe cuttingRecipe)
         {
@@ -1171,7 +1192,6 @@ public partial class MinecraftStream
             WriteVarInt(cuttingRecipe.Ingredient.Count);
             foreach (var item in cuttingRecipe.Ingredient)
                 WriteItemStack(item);
-
 
             var result = cuttingRecipe.Result.First();
 

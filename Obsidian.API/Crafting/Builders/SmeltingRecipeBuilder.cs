@@ -6,6 +6,8 @@ public class SmeltingRecipeBuilder : IRecipeBuilder<SmeltingRecipeBuilder>
     public string? Group { get; set; }
     public ItemStack? Result { get; set; }
 
+    public CookingBookCategory Category { get; set; }
+
     public SmeltingType Type { get; private set; }
 
     public Ingredient Ingredient { get; private set; } = new Ingredient();
@@ -13,6 +15,13 @@ public class SmeltingRecipeBuilder : IRecipeBuilder<SmeltingRecipeBuilder>
     public float Experience { get; private set; }
 
     public int CookingTime { get; private set; }
+
+    public SmeltingRecipeBuilder InCategory(CookingBookCategory category)
+    {
+        this.Category = category;
+
+        return this;
+    }
 
     public SmeltingRecipeBuilder WithType(SmeltingType type)
     {
@@ -84,15 +93,16 @@ public class SmeltingRecipeBuilder : IRecipeBuilder<SmeltingRecipeBuilder>
             throw new InvalidOperationException("Recipe must atleast have 1 item as an ingredient");
 
         return new SmeltingRecipe
-        (
-            this.Name ?? throw new NullReferenceException("Recipe must have a name"),
-            type,
-            Group = this.Group,
-            this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),
-            this.Ingredient,
-            this.Experience,
-            this.CookingTime
-        );
+        {
+            Name = this.Name ?? throw new NullReferenceException("Recipe must have a name"),
+            Type = type,
+            Group = Group = this.Group,
+            Result = this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),
+            Ingredient = this.Ingredient,
+            Experience = this.Experience,
+            CookingTime = this.CookingTime,
+            Category = this.Category
+        };
     }
 }
 

@@ -35,7 +35,7 @@ public partial class UpdateTeamsPacket : IClientboundPacket
     [Field(9), Condition("Mode != TeamModeOption.RemoveTeam || Mode != TeamModeOption.UpdateTeam")]
     public HashSet<string> Entities { get; set; } = new();
 
-    public int Id => 0x58;
+    public int Id => 0x56;
 
     public void Serialize(MinecraftStream stream)
     {

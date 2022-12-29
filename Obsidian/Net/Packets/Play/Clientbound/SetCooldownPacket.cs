@@ -10,5 +10,5 @@ public partial class SetCooldownPacket : IClientboundPacket
     [Field(1), VarLength]
     public int CooldownTicks { get; init; }
 
-    public int Id => 0x14;
+    public int Id => 0x13;
 }

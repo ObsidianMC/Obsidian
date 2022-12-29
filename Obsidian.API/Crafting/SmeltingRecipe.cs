@@ -1,29 +1,19 @@
 ﻿namespace Obsidian.API.Crafting;
 
-public sealed class SmeltingRecipe : IRecipe
+public sealed class SmeltingRecipe : IRecipe, IHasCookingRecipeCategory
 {
     public string Name { get; set; }
 
-    public CraftingType Type { get; set; }
+    public required CraftingType Type { get; init; }
 
-    public string? Group { get; set; }
+    public string? Group { get; init; }
 
-    public Ingredient Result { get; set; }
+    public required Ingredient Result { get; init; }
 
-    public Ingredient Ingredient { get; set; }
+    public required Ingredient Ingredient { get; init; }
 
-    public float Experience { get; set; }
+    public required float Experience { get; init; }
 
-    public int Cookingtime { get; set; }
-
-    public SmeltingRecipe(string name, CraftingType type, string? group, Ingredient result, Ingredient ingredient, float experience, int cookingTime)
-    {
-        Name = name;
-        Type = type;
-        Group = group;
-        Result = result;
-        Ingredient = ingredient;
-        Experience = experience;
-        Cookingtime = cookingTime;
-    }
+    public required int CookingTime { get; init; }
+    public required CookingBookCategory Category { get; init; }
 }

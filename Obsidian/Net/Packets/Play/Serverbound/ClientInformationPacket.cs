@@ -29,11 +29,14 @@ public partial class ClientInformationPacket : IServerboundPacket
     [Field(7)]
     public bool AllowServerListings { get; private set; }
 
-    public int Id => 0x08;
+    public int Id => 0x07;
 
-    public ValueTask HandleAsync(Server server, Player player)
+    public async ValueTask HandleAsync(Server server, Player player)
     {
         player.client.ClientSettings = this;
-        return ValueTask.CompletedTask;
+
+        player.Listed = this.AllowServerListings;
+
+        await player.client.SendInfoAsync();
     }
 }

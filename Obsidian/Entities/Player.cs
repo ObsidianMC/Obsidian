@@ -29,6 +29,7 @@ public class Player : Living, IPlayer
     internal int TeleportId { get; set; }
 
     public bool IsOperator => Server.Operators.IsOperator(this);
+    public bool Listed { get; set; } = true;
 
     public string Username { get; }
 
@@ -305,7 +306,7 @@ public class Player : Living, IPlayer
 
         await this.client.QueuePacketAsync(new RespawnPacket
         {
-            Dimension = codec,
+            DimensionType = codec.Name,
             DimensionName = this.World.DimensionName,
             Gamemode = this.Gamemode,
             PreviousGamemode = this.Gamemode,
@@ -409,16 +410,8 @@ public class Player : Living, IPlayer
 
     public async Task SetGamemodeAsync(Gamemode gamemode)
     {
-        var list = new List<InfoAction>()
-            {
-                new UpdateGamemodeInfoAction()
-                {
-                    Uuid = this.Uuid,
-                    Gamemode = (int)gamemode,
-                }
-            };
+        await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfoUpdatePacket(this.CompilePlayerInfo(new UpdateGamemodeInfoAction(gamemode))));
 
-        await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfoPacket(PlayerInfoAction.UpdateGamemode, list));
         await this.client.QueuePacketAsync(new GameEventPacket(gamemode));
 
         this.Gamemode = gamemode;
@@ -426,16 +419,7 @@ public class Player : Living, IPlayer
 
     public async Task UpdateDisplayNameAsync(string newDisplayName)
     {
-        var list = new List<InfoAction>()
-            {
-                new UpdateDisplayNameInfoAction()
-                {
-                    Uuid = this.Uuid,
-                    DisplayName = newDisplayName,
-                }
-            };
-
-        await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfoPacket(PlayerInfoAction.UpdateDisplayName, list));
+        await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfoUpdatePacket(this.CompilePlayerInfo(new UpdateDisplayNameInfoAction(newDisplayName))));
 
         this.CustomName = newDisplayName;
     }
@@ -540,8 +524,8 @@ public class Player : Living, IPlayer
             Type = particle,
             Position = pos,
             ParticleCount = count,
-            Data = data, 
-            MaxSpeed = extra 
+            Data = data,
+            MaxSpeed = extra
         });
 
     public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float offsetX, float offsetY,
@@ -1008,6 +992,11 @@ public class Player : Living, IPlayer
 
         writer.EndList();
     }
+
+    private Dictionary<Guid, List<InfoAction>> CompilePlayerInfo(params InfoAction[] actions) => new()
+    {
+        { this.Uuid, actions.ToList() }
+    };
 
     private string GetPlayerDataPath(bool isOld = false) =>
         !isOld ? Path.Join(this.World.PlayerDataPath, $"{this.Uuid}.dat") : Path.Join(this.World.PlayerDataPath, $"{this.Uuid}.dat.old");

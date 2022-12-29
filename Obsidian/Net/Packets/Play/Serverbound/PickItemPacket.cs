@@ -8,7 +8,7 @@ public partial class PickItemPacket : IServerboundPacket
     [Field(0), VarLength]
     public int SlotToUse { get; private set; }
 
-    public int Id => 0x1A;
+    public int Id => 0x19;
 
     public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
 }

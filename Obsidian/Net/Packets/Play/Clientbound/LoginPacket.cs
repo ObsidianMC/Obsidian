@@ -73,5 +73,5 @@ public partial class LoginPacket : IClientboundPacket
     [Field(19), Condition("HasDeathLocation")]
     public Vector DeathLocation { get; init; }
 
-    public int Id => 0x25;
+    public int Id => 0x24;
 }

@@ -36,9 +36,9 @@ public class ClientHandler
         //Packets.TryAdd(0x0E, InteractEntity);
         //Packets.TryAdd(0x0F, GenerateStructure);
         //Packets.TryAdd(0x11, LockDifficulty);
-        Packets.TryAdd(0x14, new SetPlayerPositionPacket());
-        Packets.TryAdd(0x15, new SetPlayerPositionAndRotationPacket());
-        Packets.TryAdd(0x16, new SetPlayerRotationPacket());
+        Packets.TryAdd(0x13, new SetPlayerPositionPacket());
+        Packets.TryAdd(0x14, new SetPlayerPositionAndRotationPacket());
+        Packets.TryAdd(0x15, new SetPlayerRotationPacket());
         //Packets.TryAdd(0x15, PlayerMovement);
         //Packets.TryAdd(0x16, VehicleMove);
         //Packets.TryAdd(0x17, SteerBoat);
@@ -81,50 +81,49 @@ public class ClientHandler
             case 0x05:
                 await HandleFromPoolAsync<ChatMessagePacket>(data, client);
                 break;
-            case 0x07:
+            case 0x06:
                 await HandleFromPoolAsync<ClientCommandPacket>(data, client);
                 break;
-            case 0x08:
+            case 0x07:
                 await HandleFromPoolAsync<ClientInformationPacket>(data, client);
                 break;
-
-            case 0x0A:
+            case 0x09:
                 await HandleFromPoolAsync<ClickContainerButtonPacket>(data, client);
                 break;
 
-            case 0x0B:
+            case 0x0A:
                 await HandleFromPoolAsync<ClickContainerPacket>(data, client);
                 break;
 
-            case 0x0C:
+            case 0x0B:
                 await HandleFromPoolAsync<CloseContainerPacket>(data, client);
                 break;
 
-            case 0x0D:
+            case 0x0C:
                 await HandleFromPoolAsync<PluginMessagePacket>(data, client);
                 break;
 
-            case 0x10:
+            case 0x0F:
                 await HandleFromPoolAsync<InteractPacket>(data, client);
                 break;
 
-            case 0x12:
+            case 0x11:
                 await HandleFromPoolAsync<KeepAlivePacket>(data, client);
                 break;
 
-            case 0x1A:
+            case 0x19:
                 await HandleFromPoolAsync<PickItemPacket>(data, client);
                 break;
 
-            case 0x1B:
+            case 0x1A:
                 await HandleFromPoolAsync<PlaceRecipePacket>(data, client);
                 break;
 
-            case 0x1D:
+            case 0x1C:
                 await HandleFromPoolAsync<PlayerActionPacket>(data, client);
                 break;
 
-            case 0x1E:
+            case 0x1D:
                 await HandleFromPoolAsync<PlayerCommandPacket>(data, client);
                 break;
 

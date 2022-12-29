@@ -1,5 +1,6 @@
 {
   "acacia_boat": {
+    "category": "misc",
     "group": "boat",
     "key": {
       "#": {
@@ -20,6 +21,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "acacia_button": {
+    "category": "redstone",
     "group": "wooden_button",
     "ingredients": [
       {
@@ -34,6 +36,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "acacia_chest_boat": {
+    "category": "misc",
     "group": "chest_boat",
     "ingredients": [
       {
@@ -51,6 +54,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "acacia_door": {
+    "category": "redstone",
     "group": "wooden_door",
     "key": {
       "#": {
@@ -72,6 +76,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "acacia_fence": {
+    "category": "misc",
     "group": "wooden_fence",
     "key": {
       "#": {
@@ -97,6 +102,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "acacia_fence_gate": {
+    "category": "redstone",
     "group": "wooden_fence_gate",
     "key": {
       "#": {
@@ -122,6 +128,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "acacia_planks": {
+    "category": "building",
     "group": "planks",
     "ingredients": [
       {
@@ -136,6 +143,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "acacia_pressure_plate": {
+    "category": "redstone",
     "group": "wooden_pressure_plate",
     "key": {
       "#": {
@@ -155,6 +163,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "acacia_sign": {
+    "category": "misc",
     "group": "wooden_sign",
     "key": {
       "#": {
@@ -181,6 +190,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "acacia_slab": {
+    "category": "building",
     "group": "wooden_slab",
     "key": {
       "#": {
@@ -200,6 +210,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "acacia_stairs": {
+    "category": "building",
     "group": "wooden_stairs",
     "key": {
       "#": {
@@ -221,6 +232,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "acacia_trapdoor": {
+    "category": "redstone",
     "group": "wooden_trapdoor",
     "key": {
       "#": {
@@ -241,6 +253,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "acacia_wood": {
+    "category": "building",
     "group": "bark",
     "key": {
       "#": {
@@ -261,6 +274,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "activator_rail": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -291,16 +305,17 @@
     "type": "minecraft:crafting_shaped"
   },
   "amethyst_block": {
+    "category": "building",
     "key": {
-      "S": {
+      "#": {
         "count": 1,
         "item": "minecraft:amethyst_shard",
         "tag": null
       }
     },
     "pattern": [
-      "SS",
-      "SS"
+      "##",
+      "##"
     ],
     "result": {
       "count": 1,
@@ -310,6 +325,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "andesite": {
+    "category": "building",
     "ingredients": [
       {
         "item": "minecraft:diorite"
@@ -326,6 +342,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "andesite_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -354,6 +371,7 @@
     "type": "minecraft:stonecutting"
   },
   "andesite_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -384,6 +402,7 @@
     "type": "minecraft:stonecutting"
   },
   "andesite_wall": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -413,6 +432,7 @@
     "type": "minecraft:stonecutting"
   },
   "anvil": {
+    "category": "misc",
     "key": {
       "I": {
         "count": 1,
@@ -438,9 +458,11 @@
     "type": "minecraft:crafting_shaped"
   },
   "armor_dye": {
+    "category": "misc",
     "type": "minecraft:crafting_special_armordye"
   },
   "armor_stand": {
+    "category": "misc",
     "key": {
       "/": {
         "count": 1,
@@ -466,6 +488,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "arrow": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -496,6 +519,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "baked_potato": {
+    "category": "food",
     "cookingtime": 200,
     "experience": 0.35,
     "ingredient": {
@@ -507,6 +531,7 @@
     "type": "minecraft:smelting"
   },
   "baked_potato_from_campfire_cooking": {
+    "category": "food",
     "cookingtime": 600,
     "experience": 0.35,
     "ingredient": {
@@ -518,6 +543,7 @@
     "type": "minecraft:campfire_cooking"
   },
   "baked_potato_from_smoking": {
+    "category": "food",
     "cookingtime": 100,
     "experience": 0.35,
     "ingredient": {
@@ -529,9 +555,11 @@
     "type": "minecraft:smoking"
   },
   "banner_duplicate": {
+    "category": "misc",
     "type": "minecraft:crafting_special_bannerduplicate"
   },
   "barrel": {
+    "category": "misc",
     "key": {
       "P": {
         "count": 1,
@@ -555,6 +583,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "beacon": {
+    "category": "misc",
     "key": {
       "G": {
         "count": 1,
@@ -585,6 +614,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "beehive": {
+    "category": "misc",
     "key": {
       "H": {
         "count": 1,
@@ -609,6 +639,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "beetroot_soup": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:bowl"
@@ -640,6 +671,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "birch_boat": {
+    "category": "misc",
     "group": "boat",
     "key": {
       "#": {
@@ -660,6 +692,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "birch_button": {
+    "category": "redstone",
     "group": "wooden_button",
     "ingredients": [
       {
@@ -674,6 +707,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "birch_chest_boat": {
+    "category": "misc",
     "group": "chest_boat",
     "ingredients": [
       {
@@ -691,6 +725,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "birch_door": {
+    "category": "redstone",
     "group": "wooden_door",
     "key": {
       "#": {
@@ -712,6 +747,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "birch_fence": {
+    "category": "misc",
     "group": "wooden_fence",
     "key": {
       "#": {
@@ -737,6 +773,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "birch_fence_gate": {
+    "category": "redstone",
     "group": "wooden_fence_gate",
     "key": {
       "#": {
@@ -762,6 +799,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "birch_planks": {
+    "category": "building",
     "group": "planks",
     "ingredients": [
       {
@@ -776,6 +814,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "birch_pressure_plate": {
+    "category": "redstone",
     "group": "wooden_pressure_plate",
     "key": {
       "#": {
@@ -795,6 +834,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "birch_sign": {
+    "category": "misc",
     "group": "wooden_sign",
     "key": {
       "#": {
@@ -821,6 +861,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "birch_slab": {
+    "category": "building",
     "group": "wooden_slab",
     "key": {
       "#": {
@@ -840,6 +881,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "birch_stairs": {
+    "category": "building",
     "group": "wooden_stairs",
     "key": {
       "#": {
@@ -861,6 +903,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "birch_trapdoor": {
+    "category": "redstone",
     "group": "wooden_trapdoor",
     "key": {
       "#": {
@@ -881,6 +924,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "birch_wood": {
+    "category": "building",
     "group": "bark",
     "key": {
       "#": {
@@ -901,6 +945,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "black_banner": {
+    "category": "misc",
     "group": "banner",
     "key": {
       "#": {
@@ -927,6 +972,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "black_bed": {
+    "category": "misc",
     "group": "bed",
     "key": {
       "#": {
@@ -951,6 +997,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "black_bed_from_white_bed": {
+    "category": "misc",
     "group": "dyed_bed",
     "ingredients": [
       {
@@ -968,6 +1015,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "black_candle": {
+    "category": "misc",
     "group": "dyed_candle",
     "ingredients": [
       {
@@ -985,6 +1033,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "black_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -1004,6 +1053,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "black_carpet_from_white_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -1030,6 +1080,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "black_concrete_powder": {
+    "category": "building",
     "group": "concrete_powder",
     "ingredients": [
       {
@@ -1068,6 +1119,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "black_dye": {
+    "category": "misc",
     "group": "black_dye",
     "ingredients": [
       {
@@ -1082,6 +1134,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "black_dye_from_wither_rose": {
+    "category": "misc",
     "group": "black_dye",
     "ingredients": [
       {
@@ -1096,6 +1149,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "black_glazed_terracotta": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -1107,6 +1161,7 @@
     "type": "minecraft:smelting"
   },
   "black_stained_glass": {
+    "category": "building",
     "group": "stained_glass",
     "key": {
       "#": {
@@ -1133,6 +1188,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "black_stained_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -1153,6 +1209,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "black_stained_glass_pane_from_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -1179,6 +1236,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "black_terracotta": {
+    "category": "building",
     "group": "stained_terracotta",
     "key": {
       "#": {
@@ -1205,6 +1263,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "black_wool": {
+    "category": "building",
     "group": "wool",
     "ingredients": [
       {
@@ -1222,6 +1281,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "blackstone_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -1250,6 +1310,7 @@
     "type": "minecraft:stonecutting"
   },
   "blackstone_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -1280,6 +1341,7 @@
     "type": "minecraft:stonecutting"
   },
   "blackstone_wall": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -1309,6 +1371,7 @@
     "type": "minecraft:stonecutting"
   },
   "blast_furnace": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -1339,6 +1402,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "blaze_powder": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:blaze_rod"
@@ -1352,6 +1416,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "blue_banner": {
+    "category": "misc",
     "group": "banner",
     "key": {
       "#": {
@@ -1378,6 +1443,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "blue_bed": {
+    "category": "misc",
     "group": "bed",
     "key": {
       "#": {
@@ -1402,6 +1468,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "blue_bed_from_white_bed": {
+    "category": "misc",
     "group": "dyed_bed",
     "ingredients": [
       {
@@ -1419,6 +1486,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "blue_candle": {
+    "category": "misc",
     "group": "dyed_candle",
     "ingredients": [
       {
@@ -1436,6 +1504,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "blue_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -1455,6 +1524,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "blue_carpet_from_white_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -1481,6 +1551,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "blue_concrete_powder": {
+    "category": "building",
     "group": "concrete_powder",
     "ingredients": [
       {
@@ -1519,6 +1590,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "blue_dye": {
+    "category": "misc",
     "group": "blue_dye",
     "ingredients": [
       {
@@ -1533,6 +1605,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "blue_dye_from_cornflower": {
+    "category": "misc",
     "group": "blue_dye",
     "ingredients": [
       {
@@ -1547,6 +1620,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "blue_glazed_terracotta": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -1558,26 +1632,45 @@
     "type": "minecraft:smelting"
   },
   "blue_ice": {
-    "key": {
-      "#": {
-        "count": 1,
-        "item": "minecraft:packed_ice",
-        "tag": null
+    "category": "building",
+    "ingredients": [
+      {
+        "item": "minecraft:packed_ice"
+      },
+      {
+        "item": "minecraft:packed_ice"
+      },
+      {
+        "item": "minecraft:packed_ice"
+      },
+      {
+        "item": "minecraft:packed_ice"
+      },
+      {
+        "item": "minecraft:packed_ice"
+      },
+      {
+        "item": "minecraft:packed_ice"
+      },
+      {
+        "item": "minecraft:packed_ice"
+      },
+      {
+        "item": "minecraft:packed_ice"
+      },
+      {
+        "item": "minecraft:packed_ice"
       }
-    },
-    "pattern": [
-      "###",
-      "###",
-      "###"
     ],
     "result": {
       "count": 1,
       "item": "minecraft:blue_ice",
       "tag": null
     },
-    "type": "minecraft:crafting_shaped"
+    "type": "minecraft:crafting_shapeless"
   },
   "blue_stained_glass": {
+    "category": "building",
     "group": "stained_glass",
     "key": {
       "#": {
@@ -1604,6 +1697,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "blue_stained_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -1624,6 +1718,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "blue_stained_glass_pane_from_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -1650,6 +1745,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "blue_terracotta": {
+    "category": "building",
     "group": "stained_terracotta",
     "key": {
       "#": {
@@ -1676,6 +1772,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "blue_wool": {
+    "category": "building",
     "group": "wool",
     "ingredients": [
       {
@@ -1693,6 +1790,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "bone_block": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -1713,6 +1811,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "bone_meal": {
+    "category": "misc",
     "group": "bonemeal",
     "ingredients": [
       {
@@ -1727,6 +1826,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "bone_meal_from_bone_block": {
+    "category": "misc",
     "group": "bonemeal",
     "ingredients": [
       {
@@ -1741,6 +1841,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "book": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:paper"
@@ -1763,9 +1864,11 @@
     "type": "minecraft:crafting_shapeless"
   },
   "book_cloning": {
+    "category": "misc",
     "type": "minecraft:crafting_special_bookcloning"
   },
   "bookshelf": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -1790,6 +1893,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "bow": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -1815,6 +1919,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "bowl": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -1833,6 +1938,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "bread": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -1851,6 +1957,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "brewing_stand": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -1874,6 +1981,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "brick": {
+    "category": "misc",
     "cookingtime": 200,
     "experience": 0.3,
     "ingredient": {
@@ -1885,6 +1993,7 @@
     "type": "minecraft:smelting"
   },
   "brick_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -1913,6 +2022,7 @@
     "type": "minecraft:stonecutting"
   },
   "brick_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -1943,6 +2053,7 @@
     "type": "minecraft:stonecutting"
   },
   "brick_wall": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -1972,6 +2083,7 @@
     "type": "minecraft:stonecutting"
   },
   "bricks": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -1991,6 +2103,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "brown_banner": {
+    "category": "misc",
     "group": "banner",
     "key": {
       "#": {
@@ -2017,6 +2130,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "brown_bed": {
+    "category": "misc",
     "group": "bed",
     "key": {
       "#": {
@@ -2041,6 +2155,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "brown_bed_from_white_bed": {
+    "category": "misc",
     "group": "dyed_bed",
     "ingredients": [
       {
@@ -2058,6 +2173,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "brown_candle": {
+    "category": "misc",
     "group": "dyed_candle",
     "ingredients": [
       {
@@ -2075,6 +2191,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "brown_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -2094,6 +2211,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "brown_carpet_from_white_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -2120,6 +2238,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "brown_concrete_powder": {
+    "category": "building",
     "group": "concrete_powder",
     "ingredients": [
       {
@@ -2158,6 +2277,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "brown_dye": {
+    "category": "misc",
     "group": "brown_dye",
     "ingredients": [
       {
@@ -2172,6 +2292,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "brown_glazed_terracotta": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -2183,6 +2304,7 @@
     "type": "minecraft:smelting"
   },
   "brown_stained_glass": {
+    "category": "building",
     "group": "stained_glass",
     "key": {
       "#": {
@@ -2209,6 +2331,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "brown_stained_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -2229,6 +2352,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "brown_stained_glass_pane_from_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -2255,6 +2379,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "brown_terracotta": {
+    "category": "building",
     "group": "stained_terracotta",
     "key": {
       "#": {
@@ -2281,6 +2406,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "brown_wool": {
+    "category": "building",
     "group": "wool",
     "ingredients": [
       {
@@ -2298,6 +2424,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "bucket": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -2317,6 +2444,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "cake": {
+    "category": "misc",
     "key": {
       "A": {
         "count": 1,
@@ -2352,6 +2480,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "campfire": {
+    "category": "misc",
     "key": {
       "C": {
         "count": 1,
@@ -2380,6 +2509,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "candle": {
+    "category": "misc",
     "key": {
       "H": {
         "count": 1,
@@ -2404,6 +2534,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "carrot_on_a_stick": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -2428,6 +2559,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "cartography_table": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -2452,6 +2584,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "cauldron": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -2472,6 +2605,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "chain": {
+    "category": "misc",
     "key": {
       "I": {
         "count": 1,
@@ -2497,6 +2631,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "charcoal": {
+    "category": "misc",
     "cookingtime": 200,
     "experience": 0.15,
     "ingredient": {
@@ -2507,6 +2642,7 @@
     "type": "minecraft:smelting"
   },
   "chest": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -2526,6 +2662,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "chest_minecart": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:chest"
@@ -2542,6 +2679,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "chiseled_deepslate": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -2571,6 +2709,7 @@
     "type": "minecraft:stonecutting"
   },
   "chiseled_nether_bricks": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -2600,6 +2739,7 @@
     "type": "minecraft:stonecutting"
   },
   "chiseled_polished_blackstone": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -2639,6 +2779,7 @@
     "type": "minecraft:stonecutting"
   },
   "chiseled_quartz_block": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -2668,6 +2809,7 @@
     "type": "minecraft:stonecutting"
   },
   "chiseled_red_sandstone": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -2697,6 +2839,7 @@
     "type": "minecraft:stonecutting"
   },
   "chiseled_sandstone": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -2726,6 +2869,7 @@
     "type": "minecraft:stonecutting"
   },
   "chiseled_stone_bricks": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -2765,6 +2909,7 @@
     "type": "minecraft:stonecutting"
   },
   "clay": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -2784,6 +2929,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "clock": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -2809,6 +2955,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "coal": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:coal_block"
@@ -2822,6 +2969,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "coal_block": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -2842,6 +2990,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "coal_from_blasting_coal_ore": {
+    "category": "misc",
     "cookingtime": 100,
     "experience": 0.1,
     "group": "coal",
@@ -2854,6 +3003,7 @@
     "type": "minecraft:blasting"
   },
   "coal_from_blasting_deepslate_coal_ore": {
+    "category": "misc",
     "cookingtime": 100,
     "experience": 0.1,
     "group": "coal",
@@ -2866,6 +3016,7 @@
     "type": "minecraft:blasting"
   },
   "coal_from_smelting_coal_ore": {
+    "category": "misc",
     "cookingtime": 200,
     "experience": 0.1,
     "group": "coal",
@@ -2878,6 +3029,7 @@
     "type": "minecraft:smelting"
   },
   "coal_from_smelting_deepslate_coal_ore": {
+    "category": "misc",
     "cookingtime": 200,
     "experience": 0.1,
     "group": "coal",
@@ -2890,6 +3042,7 @@
     "type": "minecraft:smelting"
   },
   "coarse_dirt": {
+    "category": "building",
     "key": {
       "D": {
         "count": 1,
@@ -2914,6 +3067,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "cobbled_deepslate_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -2942,6 +3096,7 @@
     "type": "minecraft:stonecutting"
   },
   "cobbled_deepslate_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -2972,6 +3127,7 @@
     "type": "minecraft:stonecutting"
   },
   "cobbled_deepslate_wall": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -3001,6 +3157,7 @@
     "type": "minecraft:stonecutting"
   },
   "cobblestone_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -3029,6 +3186,7 @@
     "type": "minecraft:stonecutting"
   },
   "cobblestone_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -3059,6 +3217,7 @@
     "type": "minecraft:stonecutting"
   },
   "cobblestone_wall": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -3088,6 +3247,7 @@
     "type": "minecraft:stonecutting"
   },
   "comparator": {
+    "category": "redstone",
     "key": {
       "#": {
         "count": 1,
@@ -3118,6 +3278,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "compass": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -3143,6 +3304,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "composter": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -3162,6 +3324,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "conduit": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -3187,6 +3350,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "cooked_beef": {
+    "category": "food",
     "cookingtime": 200,
     "experience": 0.35,
     "ingredient": {
@@ -3198,6 +3362,7 @@
     "type": "minecraft:smelting"
   },
   "cooked_beef_from_campfire_cooking": {
+    "category": "food",
     "cookingtime": 600,
     "experience": 0.35,
     "ingredient": {
@@ -3209,6 +3374,7 @@
     "type": "minecraft:campfire_cooking"
   },
   "cooked_beef_from_smoking": {
+    "category": "food",
     "cookingtime": 100,
     "experience": 0.35,
     "ingredient": {
@@ -3220,6 +3386,7 @@
     "type": "minecraft:smoking"
   },
   "cooked_chicken": {
+    "category": "food",
     "cookingtime": 200,
     "experience": 0.35,
     "ingredient": {
@@ -3231,6 +3398,7 @@
     "type": "minecraft:smelting"
   },
   "cooked_chicken_from_campfire_cooking": {
+    "category": "food",
     "cookingtime": 600,
     "experience": 0.35,
     "ingredient": {
@@ -3242,6 +3410,7 @@
     "type": "minecraft:campfire_cooking"
   },
   "cooked_chicken_from_smoking": {
+    "category": "food",
     "cookingtime": 100,
     "experience": 0.35,
     "ingredient": {
@@ -3253,6 +3422,7 @@
     "type": "minecraft:smoking"
   },
   "cooked_cod": {
+    "category": "food",
     "cookingtime": 200,
     "experience": 0.35,
     "ingredient": {
@@ -3264,6 +3434,7 @@
     "type": "minecraft:smelting"
   },
   "cooked_cod_from_campfire_cooking": {
+    "category": "food",
     "cookingtime": 600,
     "experience": 0.35,
     "ingredient": {
@@ -3275,6 +3446,7 @@
     "type": "minecraft:campfire_cooking"
   },
   "cooked_cod_from_smoking": {
+    "category": "food",
     "cookingtime": 100,
     "experience": 0.35,
     "ingredient": {
@@ -3286,6 +3458,7 @@
     "type": "minecraft:smoking"
   },
   "cooked_mutton": {
+    "category": "food",
     "cookingtime": 200,
     "experience": 0.35,
     "ingredient": {
@@ -3297,6 +3470,7 @@
     "type": "minecraft:smelting"
   },
   "cooked_mutton_from_campfire_cooking": {
+    "category": "food",
     "cookingtime": 600,
     "experience": 0.35,
     "ingredient": {
@@ -3308,6 +3482,7 @@
     "type": "minecraft:campfire_cooking"
   },
   "cooked_mutton_from_smoking": {
+    "category": "food",
     "cookingtime": 100,
     "experience": 0.35,
     "ingredient": {
@@ -3319,6 +3494,7 @@
     "type": "minecraft:smoking"
   },
   "cooked_porkchop": {
+    "category": "food",
     "cookingtime": 200,
     "experience": 0.35,
     "ingredient": {
@@ -3330,6 +3506,7 @@
     "type": "minecraft:smelting"
   },
   "cooked_porkchop_from_campfire_cooking": {
+    "category": "food",
     "cookingtime": 600,
     "experience": 0.35,
     "ingredient": {
@@ -3341,6 +3518,7 @@
     "type": "minecraft:campfire_cooking"
   },
   "cooked_porkchop_from_smoking": {
+    "category": "food",
     "cookingtime": 100,
     "experience": 0.35,
     "ingredient": {
@@ -3352,6 +3530,7 @@
     "type": "minecraft:smoking"
   },
   "cooked_rabbit": {
+    "category": "food",
     "cookingtime": 200,
     "experience": 0.35,
     "ingredient": {
@@ -3363,6 +3542,7 @@
     "type": "minecraft:smelting"
   },
   "cooked_rabbit_from_campfire_cooking": {
+    "category": "food",
     "cookingtime": 600,
     "experience": 0.35,
     "ingredient": {
@@ -3374,6 +3554,7 @@
     "type": "minecraft:campfire_cooking"
   },
   "cooked_rabbit_from_smoking": {
+    "category": "food",
     "cookingtime": 100,
     "experience": 0.35,
     "ingredient": {
@@ -3385,6 +3566,7 @@
     "type": "minecraft:smoking"
   },
   "cooked_salmon": {
+    "category": "food",
     "cookingtime": 200,
     "experience": 0.35,
     "ingredient": {
@@ -3396,6 +3578,7 @@
     "type": "minecraft:smelting"
   },
   "cooked_salmon_from_campfire_cooking": {
+    "category": "food",
     "cookingtime": 600,
     "experience": 0.35,
     "ingredient": {
@@ -3407,6 +3590,7 @@
     "type": "minecraft:campfire_cooking"
   },
   "cooked_salmon_from_smoking": {
+    "category": "food",
     "cookingtime": 100,
     "experience": 0.35,
     "ingredient": {
@@ -3418,6 +3602,7 @@
     "type": "minecraft:smoking"
   },
   "cookie": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -3441,6 +3626,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "copper_block": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -3461,6 +3647,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "copper_ingot": {
+    "category": "misc",
     "group": "copper_ingot",
     "ingredients": [
       {
@@ -3475,6 +3662,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "copper_ingot_from_blasting_copper_ore": {
+    "category": "misc",
     "cookingtime": 100,
     "experience": 0.7,
     "group": "copper_ingot",
@@ -3487,6 +3675,7 @@
     "type": "minecraft:blasting"
   },
   "copper_ingot_from_blasting_deepslate_copper_ore": {
+    "category": "misc",
     "cookingtime": 100,
     "experience": 0.7,
     "group": "copper_ingot",
@@ -3499,6 +3688,7 @@
     "type": "minecraft:blasting"
   },
   "copper_ingot_from_blasting_raw_copper": {
+    "category": "misc",
     "cookingtime": 100,
     "experience": 0.7,
     "group": "copper_ingot",
@@ -3511,6 +3701,7 @@
     "type": "minecraft:blasting"
   },
   "copper_ingot_from_smelting_copper_ore": {
+    "category": "misc",
     "cookingtime": 200,
     "experience": 0.7,
     "group": "copper_ingot",
@@ -3523,6 +3714,7 @@
     "type": "minecraft:smelting"
   },
   "copper_ingot_from_smelting_deepslate_copper_ore": {
+    "category": "misc",
     "cookingtime": 200,
     "experience": 0.7,
     "group": "copper_ingot",
@@ -3535,6 +3727,7 @@
     "type": "minecraft:smelting"
   },
   "copper_ingot_from_smelting_raw_copper": {
+    "category": "misc",
     "cookingtime": 200,
     "experience": 0.7,
     "group": "copper_ingot",
@@ -3547,6 +3740,7 @@
     "type": "minecraft:smelting"
   },
   "copper_ingot_from_waxed_copper_block": {
+    "category": "misc",
     "group": "copper_ingot",
     "ingredients": [
       {
@@ -3561,6 +3755,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "cracked_deepslate_bricks": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -3572,6 +3767,7 @@
     "type": "minecraft:smelting"
   },
   "cracked_deepslate_tiles": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -3583,6 +3779,7 @@
     "type": "minecraft:smelting"
   },
   "cracked_nether_bricks": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -3594,6 +3791,7 @@
     "type": "minecraft:smelting"
   },
   "cracked_polished_blackstone_bricks": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -3605,6 +3803,7 @@
     "type": "minecraft:smelting"
   },
   "cracked_stone_bricks": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -3616,6 +3815,7 @@
     "type": "minecraft:smelting"
   },
   "crafting_table": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -3634,6 +3834,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "creeper_banner_pattern": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:paper"
@@ -3650,6 +3851,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "crimson_button": {
+    "category": "redstone",
     "group": "wooden_button",
     "ingredients": [
       {
@@ -3664,6 +3866,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "crimson_door": {
+    "category": "redstone",
     "group": "wooden_door",
     "key": {
       "#": {
@@ -3685,6 +3888,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "crimson_fence": {
+    "category": "misc",
     "group": "wooden_fence",
     "key": {
       "#": {
@@ -3710,6 +3914,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "crimson_fence_gate": {
+    "category": "redstone",
     "group": "wooden_fence_gate",
     "key": {
       "#": {
@@ -3735,6 +3940,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "crimson_hyphae": {
+    "category": "building",
     "group": "bark",
     "key": {
       "#": {
@@ -3755,6 +3961,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "crimson_planks": {
+    "category": "building",
     "group": "planks",
     "ingredients": [
       {
@@ -3769,6 +3976,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "crimson_pressure_plate": {
+    "category": "redstone",
     "group": "wooden_pressure_plate",
     "key": {
       "#": {
@@ -3788,6 +3996,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "crimson_sign": {
+    "category": "misc",
     "group": "wooden_sign",
     "key": {
       "#": {
@@ -3814,6 +4023,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "crimson_slab": {
+    "category": "building",
     "group": "wooden_slab",
     "key": {
       "#": {
@@ -3833,6 +4043,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "crimson_stairs": {
+    "category": "building",
     "group": "wooden_stairs",
     "key": {
       "#": {
@@ -3854,6 +4065,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "crimson_trapdoor": {
+    "category": "redstone",
     "group": "wooden_trapdoor",
     "key": {
       "#": {
@@ -3874,6 +4086,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "crossbow": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -3909,6 +4122,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "cut_copper": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -3938,6 +4152,7 @@
     "type": "minecraft:stonecutting"
   },
   "cut_copper_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -3976,6 +4191,7 @@
     "type": "minecraft:stonecutting"
   },
   "cut_copper_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -4016,6 +4232,7 @@
     "type": "minecraft:stonecutting"
   },
   "cut_red_sandstone": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -4045,6 +4262,7 @@
     "type": "minecraft:stonecutting"
   },
   "cut_red_sandstone_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -4083,6 +4301,7 @@
     "type": "minecraft:stonecutting"
   },
   "cut_sandstone": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -4112,6 +4331,7 @@
     "type": "minecraft:stonecutting"
   },
   "cut_sandstone_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -4150,6 +4370,7 @@
     "type": "minecraft:stonecutting"
   },
   "cyan_banner": {
+    "category": "misc",
     "group": "banner",
     "key": {
       "#": {
@@ -4176,6 +4397,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "cyan_bed": {
+    "category": "misc",
     "group": "bed",
     "key": {
       "#": {
@@ -4200,6 +4422,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "cyan_bed_from_white_bed": {
+    "category": "misc",
     "group": "dyed_bed",
     "ingredients": [
       {
@@ -4217,6 +4440,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "cyan_candle": {
+    "category": "misc",
     "group": "dyed_candle",
     "ingredients": [
       {
@@ -4234,6 +4458,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "cyan_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -4253,6 +4478,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "cyan_carpet_from_white_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -4279,6 +4505,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "cyan_concrete_powder": {
+    "category": "building",
     "group": "concrete_powder",
     "ingredients": [
       {
@@ -4317,6 +4544,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "cyan_dye": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:blue_dye"
@@ -4333,6 +4561,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "cyan_glazed_terracotta": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -4344,6 +4573,7 @@
     "type": "minecraft:smelting"
   },
   "cyan_stained_glass": {
+    "category": "building",
     "group": "stained_glass",
     "key": {
       "#": {
@@ -4370,6 +4600,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "cyan_stained_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -4390,6 +4621,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "cyan_stained_glass_pane_from_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -4416,6 +4648,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "cyan_terracotta": {
+    "category": "building",
     "group": "stained_terracotta",
     "key": {
       "#": {
@@ -4442,6 +4675,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "cyan_wool": {
+    "category": "building",
     "group": "wool",
     "ingredients": [
       {
@@ -4459,6 +4693,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "dark_oak_boat": {
+    "category": "misc",
     "group": "boat",
     "key": {
       "#": {
@@ -4479,6 +4714,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "dark_oak_button": {
+    "category": "redstone",
     "group": "wooden_button",
     "ingredients": [
       {
@@ -4493,6 +4729,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "dark_oak_chest_boat": {
+    "category": "misc",
     "group": "chest_boat",
     "ingredients": [
       {
@@ -4510,6 +4747,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "dark_oak_door": {
+    "category": "redstone",
     "group": "wooden_door",
     "key": {
       "#": {
@@ -4531,6 +4769,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "dark_oak_fence": {
+    "category": "misc",
     "group": "wooden_fence",
     "key": {
       "#": {
@@ -4556,6 +4795,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "dark_oak_fence_gate": {
+    "category": "redstone",
     "group": "wooden_fence_gate",
     "key": {
       "#": {
@@ -4581,6 +4821,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "dark_oak_planks": {
+    "category": "building",
     "group": "planks",
     "ingredients": [
       {
@@ -4595,6 +4836,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "dark_oak_pressure_plate": {
+    "category": "redstone",
     "group": "wooden_pressure_plate",
     "key": {
       "#": {
@@ -4614,6 +4856,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "dark_oak_sign": {
+    "category": "misc",
     "group": "wooden_sign",
     "key": {
       "#": {
@@ -4640,6 +4883,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "dark_oak_slab": {
+    "category": "building",
     "group": "wooden_slab",
     "key": {
       "#": {
@@ -4659,6 +4903,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "dark_oak_stairs": {
+    "category": "building",
     "group": "wooden_stairs",
     "key": {
       "#": {
@@ -4680,6 +4925,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "dark_oak_trapdoor": {
+    "category": "redstone",
     "group": "wooden_trapdoor",
     "key": {
       "#": {
@@ -4700,6 +4946,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "dark_oak_wood": {
+    "category": "building",
     "group": "bark",
     "key": {
       "#": {
@@ -4720,6 +4967,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "dark_prismarine": {
+    "category": "building",
     "key": {
       "I": {
         "count": 1,
@@ -4745,6 +4993,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "dark_prismarine_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -4773,6 +5022,7 @@
     "type": "minecraft:stonecutting"
   },
   "dark_prismarine_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -4803,6 +5053,7 @@
     "type": "minecraft:stonecutting"
   },
   "daylight_detector": {
+    "category": "redstone",
     "key": {
       "G": {
         "count": 1,
@@ -4832,6 +5083,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "deepslate": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -4843,6 +5095,7 @@
     "type": "minecraft:smelting"
   },
   "deepslate_brick_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -4891,6 +5144,7 @@
     "type": "minecraft:stonecutting"
   },
   "deepslate_brick_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -4941,6 +5195,7 @@
     "type": "minecraft:stonecutting"
   },
   "deepslate_brick_wall": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -4990,6 +5245,7 @@
     "type": "minecraft:stonecutting"
   },
   "deepslate_bricks": {
+    "category": "building",
     "key": {
       "S": {
         "count": 1,
@@ -5029,6 +5285,7 @@
     "type": "minecraft:stonecutting"
   },
   "deepslate_tile_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -5087,6 +5344,7 @@
     "type": "minecraft:stonecutting"
   },
   "deepslate_tile_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -5147,6 +5405,7 @@
     "type": "minecraft:stonecutting"
   },
   "deepslate_tile_wall": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -5206,6 +5465,7 @@
     "type": "minecraft:stonecutting"
   },
   "deepslate_tiles": {
+    "category": "building",
     "key": {
       "S": {
         "count": 1,
@@ -5255,6 +5515,7 @@
     "type": "minecraft:stonecutting"
   },
   "detector_rail": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -5285,6 +5546,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "diamond": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:diamond_block"
@@ -5298,6 +5560,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "diamond_axe": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -5323,6 +5586,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "diamond_block": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -5343,6 +5607,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "diamond_boots": {
+    "category": "equipment",
     "key": {
       "X": {
         "count": 1,
@@ -5362,6 +5627,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "diamond_chestplate": {
+    "category": "equipment",
     "key": {
       "X": {
         "count": 1,
@@ -5382,6 +5648,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "diamond_from_blasting_deepslate_diamond_ore": {
+    "category": "misc",
     "cookingtime": 100,
     "experience": 1.0,
     "group": "diamond",
@@ -5394,6 +5661,7 @@
     "type": "minecraft:blasting"
   },
   "diamond_from_blasting_diamond_ore": {
+    "category": "misc",
     "cookingtime": 100,
     "experience": 1.0,
     "group": "diamond",
@@ -5406,6 +5674,7 @@
     "type": "minecraft:blasting"
   },
   "diamond_from_smelting_deepslate_diamond_ore": {
+    "category": "misc",
     "cookingtime": 200,
     "experience": 1.0,
     "group": "diamond",
@@ -5418,6 +5687,7 @@
     "type": "minecraft:smelting"
   },
   "diamond_from_smelting_diamond_ore": {
+    "category": "misc",
     "cookingtime": 200,
     "experience": 1.0,
     "group": "diamond",
@@ -5430,6 +5700,7 @@
     "type": "minecraft:smelting"
   },
   "diamond_helmet": {
+    "category": "equipment",
     "key": {
       "X": {
         "count": 1,
@@ -5449,6 +5720,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "diamond_hoe": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -5474,6 +5746,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "diamond_leggings": {
+    "category": "equipment",
     "key": {
       "X": {
         "count": 1,
@@ -5494,6 +5767,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "diamond_pickaxe": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -5519,6 +5793,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "diamond_shovel": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -5544,6 +5819,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "diamond_sword": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -5569,6 +5845,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "diorite": {
+    "category": "building",
     "key": {
       "C": {
         "count": 1,
@@ -5593,6 +5870,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "diorite_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -5621,6 +5899,7 @@
     "type": "minecraft:stonecutting"
   },
   "diorite_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -5651,6 +5930,7 @@
     "type": "minecraft:stonecutting"
   },
   "diorite_wall": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -5680,6 +5960,7 @@
     "type": "minecraft:stonecutting"
   },
   "dispenser": {
+    "category": "redstone",
     "key": {
       "#": {
         "count": 1,
@@ -5710,6 +5991,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "dried_kelp": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:dried_kelp_block"
@@ -5723,6 +6005,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "dried_kelp_block": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -5743,6 +6026,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "dried_kelp_from_campfire_cooking": {
+    "category": "food",
     "cookingtime": 600,
     "experience": 0.1,
     "ingredient": {
@@ -5754,6 +6038,7 @@
     "type": "minecraft:campfire_cooking"
   },
   "dried_kelp_from_smelting": {
+    "category": "food",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -5765,6 +6050,7 @@
     "type": "minecraft:smelting"
   },
   "dried_kelp_from_smoking": {
+    "category": "food",
     "cookingtime": 100,
     "experience": 0.1,
     "ingredient": {
@@ -5776,7 +6062,7 @@
     "type": "minecraft:smoking"
   },
   "dripstone_block": {
-    "group": "pointed_dripstone",
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -5796,6 +6082,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "dropper": {
+    "category": "redstone",
     "key": {
       "#": {
         "count": 1,
@@ -5821,6 +6108,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "emerald": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:emerald_block"
@@ -5834,6 +6122,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "emerald_block": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -5854,6 +6143,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "emerald_from_blasting_deepslate_emerald_ore": {
+    "category": "misc",
     "cookingtime": 100,
     "experience": 1.0,
     "group": "emerald",
@@ -5866,6 +6156,7 @@
     "type": "minecraft:blasting"
   },
   "emerald_from_blasting_emerald_ore": {
+    "category": "misc",
     "cookingtime": 100,
     "experience": 1.0,
     "group": "emerald",
@@ -5878,6 +6169,7 @@
     "type": "minecraft:blasting"
   },
   "emerald_from_smelting_deepslate_emerald_ore": {
+    "category": "misc",
     "cookingtime": 200,
     "experience": 1.0,
     "group": "emerald",
@@ -5890,6 +6182,7 @@
     "type": "minecraft:smelting"
   },
   "emerald_from_smelting_emerald_ore": {
+    "category": "misc",
     "cookingtime": 200,
     "experience": 1.0,
     "group": "emerald",
@@ -5902,6 +6195,7 @@
     "type": "minecraft:smelting"
   },
   "enchanting_table": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -5932,6 +6226,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "end_crystal": {
+    "category": "misc",
     "key": {
       "E": {
         "count": 1,
@@ -5962,6 +6257,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "end_rod": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -5986,6 +6282,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "end_stone_brick_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -6024,6 +6321,7 @@
     "type": "minecraft:stonecutting"
   },
   "end_stone_brick_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -6064,6 +6362,7 @@
     "type": "minecraft:stonecutting"
   },
   "end_stone_brick_wall": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -6103,6 +6402,7 @@
     "type": "minecraft:stonecutting"
   },
   "end_stone_bricks": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -6132,6 +6432,7 @@
     "type": "minecraft:stonecutting"
   },
   "ender_chest": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -6157,6 +6458,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "ender_eye": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:ender_pearl"
@@ -6173,6 +6475,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "exposed_cut_copper": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -6202,6 +6505,7 @@
     "type": "minecraft:stonecutting"
   },
   "exposed_cut_copper_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -6240,6 +6544,7 @@
     "type": "minecraft:stonecutting"
   },
   "exposed_cut_copper_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -6280,6 +6585,7 @@
     "type": "minecraft:stonecutting"
   },
   "fermented_spider_eye": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:spider_eye"
@@ -6299,6 +6605,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "fire_charge": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:gunpowder"
@@ -6323,9 +6630,11 @@
     "type": "minecraft:crafting_shapeless"
   },
   "firework_rocket": {
+    "category": "misc",
     "type": "minecraft:crafting_special_firework_rocket"
   },
   "firework_rocket_simple": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:gunpowder"
@@ -6342,12 +6651,15 @@
     "type": "minecraft:crafting_shapeless"
   },
   "firework_star": {
+    "category": "misc",
     "type": "minecraft:crafting_special_firework_star"
   },
   "firework_star_fade": {
+    "category": "misc",
     "type": "minecraft:crafting_special_firework_star_fade"
   },
   "fishing_rod": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -6373,6 +6685,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "fletching_table": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -6397,6 +6710,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "flint_and_steel": {
+    "category": "equipment",
     "ingredients": [
       {
         "item": "minecraft:iron_ingot"
@@ -6413,6 +6727,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "flower_banner_pattern": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:paper"
@@ -6429,6 +6744,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "flower_pot": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -6448,6 +6764,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "furnace": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -6467,6 +6784,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "furnace_minecart": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:furnace"
@@ -6483,6 +6801,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "glass": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -6493,6 +6812,7 @@
     "type": "minecraft:smelting"
   },
   "glass_bottle": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -6512,6 +6832,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "glass_pane": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -6531,6 +6852,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "glistering_melon_slice": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -6556,6 +6878,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "glow_item_frame": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:item_frame"
@@ -6572,6 +6895,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "glowstone": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -6591,6 +6915,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "gold_block": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -6611,6 +6936,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "gold_ingot_from_blasting_deepslate_gold_ore": {
+    "category": "misc",
     "cookingtime": 100,
     "experience": 1.0,
     "group": "gold_ingot",
@@ -6623,6 +6949,7 @@
     "type": "minecraft:blasting"
   },
   "gold_ingot_from_blasting_gold_ore": {
+    "category": "misc",
     "cookingtime": 100,
     "experience": 1.0,
     "group": "gold_ingot",
@@ -6635,6 +6962,7 @@
     "type": "minecraft:blasting"
   },
   "gold_ingot_from_blasting_nether_gold_ore": {
+    "category": "misc",
     "cookingtime": 100,
     "experience": 1.0,
     "group": "gold_ingot",
@@ -6647,6 +6975,7 @@
     "type": "minecraft:blasting"
   },
   "gold_ingot_from_blasting_raw_gold": {
+    "category": "misc",
     "cookingtime": 100,
     "experience": 1.0,
     "group": "gold_ingot",
@@ -6659,6 +6988,7 @@
     "type": "minecraft:blasting"
   },
   "gold_ingot_from_gold_block": {
+    "category": "misc",
     "group": "gold_ingot",
     "ingredients": [
       {
@@ -6673,6 +7003,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "gold_ingot_from_nuggets": {
+    "category": "misc",
     "group": "gold_ingot",
     "key": {
       "#": {
@@ -6694,6 +7025,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "gold_ingot_from_smelting_deepslate_gold_ore": {
+    "category": "misc",
     "cookingtime": 200,
     "experience": 1.0,
     "group": "gold_ingot",
@@ -6706,6 +7038,7 @@
     "type": "minecraft:smelting"
   },
   "gold_ingot_from_smelting_gold_ore": {
+    "category": "misc",
     "cookingtime": 200,
     "experience": 1.0,
     "group": "gold_ingot",
@@ -6718,6 +7051,7 @@
     "type": "minecraft:smelting"
   },
   "gold_ingot_from_smelting_nether_gold_ore": {
+    "category": "misc",
     "cookingtime": 200,
     "experience": 1.0,
     "group": "gold_ingot",
@@ -6730,6 +7064,7 @@
     "type": "minecraft:smelting"
   },
   "gold_ingot_from_smelting_raw_gold": {
+    "category": "misc",
     "cookingtime": 200,
     "experience": 1.0,
     "group": "gold_ingot",
@@ -6742,6 +7077,7 @@
     "type": "minecraft:smelting"
   },
   "gold_nugget": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:gold_ingot"
@@ -6755,6 +7091,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "gold_nugget_from_blasting": {
+    "category": "misc",
     "cookingtime": 100,
     "experience": 0.1,
     "ingredient": [
@@ -6813,6 +7150,7 @@
     "type": "minecraft:blasting"
   },
   "gold_nugget_from_smelting": {
+    "category": "misc",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": [
@@ -6871,6 +7209,7 @@
     "type": "minecraft:smelting"
   },
   "golden_apple": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -6896,6 +7235,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "golden_axe": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -6921,6 +7261,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "golden_boots": {
+    "category": "equipment",
     "key": {
       "X": {
         "count": 1,
@@ -6940,6 +7281,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "golden_carrot": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -6965,6 +7307,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "golden_chestplate": {
+    "category": "equipment",
     "key": {
       "X": {
         "count": 1,
@@ -6985,6 +7328,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "golden_helmet": {
+    "category": "equipment",
     "key": {
       "X": {
         "count": 1,
@@ -7004,6 +7348,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "golden_hoe": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -7029,6 +7374,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "golden_leggings": {
+    "category": "equipment",
     "key": {
       "X": {
         "count": 1,
@@ -7049,6 +7395,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "golden_pickaxe": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -7074,6 +7421,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "golden_shovel": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -7099,6 +7447,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "golden_sword": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -7124,6 +7473,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "granite": {
+    "category": "building",
     "ingredients": [
       {
         "item": "minecraft:diorite"
@@ -7140,6 +7490,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "granite_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -7168,6 +7519,7 @@
     "type": "minecraft:stonecutting"
   },
   "granite_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -7198,6 +7550,7 @@
     "type": "minecraft:stonecutting"
   },
   "granite_wall": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -7227,6 +7580,7 @@
     "type": "minecraft:stonecutting"
   },
   "gray_banner": {
+    "category": "misc",
     "group": "banner",
     "key": {
       "#": {
@@ -7253,6 +7607,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "gray_bed": {
+    "category": "misc",
     "group": "bed",
     "key": {
       "#": {
@@ -7277,6 +7632,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "gray_bed_from_white_bed": {
+    "category": "misc",
     "group": "dyed_bed",
     "ingredients": [
       {
@@ -7294,6 +7650,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "gray_candle": {
+    "category": "misc",
     "group": "dyed_candle",
     "ingredients": [
       {
@@ -7311,6 +7668,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "gray_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -7330,6 +7688,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "gray_carpet_from_white_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -7356,6 +7715,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "gray_concrete_powder": {
+    "category": "building",
     "group": "concrete_powder",
     "ingredients": [
       {
@@ -7394,6 +7754,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "gray_dye": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:black_dye"
@@ -7410,6 +7771,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "gray_glazed_terracotta": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -7421,6 +7783,7 @@
     "type": "minecraft:smelting"
   },
   "gray_stained_glass": {
+    "category": "building",
     "group": "stained_glass",
     "key": {
       "#": {
@@ -7447,6 +7810,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "gray_stained_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -7467,6 +7831,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "gray_stained_glass_pane_from_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -7493,6 +7858,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "gray_terracotta": {
+    "category": "building",
     "group": "stained_terracotta",
     "key": {
       "#": {
@@ -7519,6 +7885,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "gray_wool": {
+    "category": "building",
     "group": "wool",
     "ingredients": [
       {
@@ -7536,6 +7903,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "green_banner": {
+    "category": "misc",
     "group": "banner",
     "key": {
       "#": {
@@ -7562,6 +7930,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "green_bed": {
+    "category": "misc",
     "group": "bed",
     "key": {
       "#": {
@@ -7586,6 +7955,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "green_bed_from_white_bed": {
+    "category": "misc",
     "group": "dyed_bed",
     "ingredients": [
       {
@@ -7603,6 +7973,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "green_candle": {
+    "category": "misc",
     "group": "dyed_candle",
     "ingredients": [
       {
@@ -7620,6 +7991,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "green_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -7639,6 +8011,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "green_carpet_from_white_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -7665,6 +8038,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "green_concrete_powder": {
+    "category": "building",
     "group": "concrete_powder",
     "ingredients": [
       {
@@ -7703,6 +8077,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "green_dye": {
+    "category": "misc",
     "cookingtime": 200,
     "experience": 1.0,
     "ingredient": {
@@ -7714,6 +8089,7 @@
     "type": "minecraft:smelting"
   },
   "green_glazed_terracotta": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -7725,6 +8101,7 @@
     "type": "minecraft:smelting"
   },
   "green_stained_glass": {
+    "category": "building",
     "group": "stained_glass",
     "key": {
       "#": {
@@ -7751,6 +8128,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "green_stained_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -7771,6 +8149,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "green_stained_glass_pane_from_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -7797,6 +8176,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "green_terracotta": {
+    "category": "building",
     "group": "stained_terracotta",
     "key": {
       "#": {
@@ -7823,6 +8203,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "green_wool": {
+    "category": "building",
     "group": "wool",
     "ingredients": [
       {
@@ -7840,6 +8221,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "grindstone": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -7868,26 +8250,45 @@
     "type": "minecraft:crafting_shaped"
   },
   "hay_block": {
-    "key": {
-      "#": {
-        "count": 1,
-        "item": "minecraft:wheat",
-        "tag": null
+    "category": "building",
+    "ingredients": [
+      {
+        "item": "minecraft:wheat"
+      },
+      {
+        "item": "minecraft:wheat"
+      },
+      {
+        "item": "minecraft:wheat"
+      },
+      {
+        "item": "minecraft:wheat"
+      },
+      {
+        "item": "minecraft:wheat"
+      },
+      {
+        "item": "minecraft:wheat"
+      },
+      {
+        "item": "minecraft:wheat"
+      },
+      {
+        "item": "minecraft:wheat"
+      },
+      {
+        "item": "minecraft:wheat"
       }
-    },
-    "pattern": [
-      "###",
-      "###",
-      "###"
     ],
     "result": {
       "count": 1,
       "item": "minecraft:hay_block",
       "tag": null
     },
-    "type": "minecraft:crafting_shaped"
+    "type": "minecraft:crafting_shapeless"
   },
   "heavy_weighted_pressure_plate": {
+    "category": "redstone",
     "key": {
       "#": {
         "count": 1,
@@ -7906,16 +8307,17 @@
     "type": "minecraft:crafting_shaped"
   },
   "honey_block": {
+    "category": "redstone",
     "key": {
-      "S": {
+      "#": {
         "count": 1,
         "item": "minecraft:honey_bottle",
         "tag": null
       }
     },
     "pattern": [
-      "SS",
-      "SS"
+      "##",
+      "##"
     ],
     "result": {
       "count": 1,
@@ -7925,6 +8327,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "honey_bottle": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:honey_block"
@@ -7950,16 +8353,17 @@
     "type": "minecraft:crafting_shapeless"
   },
   "honeycomb_block": {
+    "category": "misc",
     "key": {
-      "H": {
+      "#": {
         "count": 1,
         "item": "minecraft:honeycomb",
         "tag": null
       }
     },
     "pattern": [
-      "HH",
-      "HH"
+      "##",
+      "##"
     ],
     "result": {
       "count": 1,
@@ -7969,6 +8373,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "hopper": {
+    "category": "redstone",
     "key": {
       "C": {
         "count": 1,
@@ -7994,6 +8399,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "hopper_minecart": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:hopper"
@@ -8010,6 +8416,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "iron_axe": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -8035,6 +8442,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "iron_bars": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -8054,6 +8462,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "iron_block": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -8074,6 +8483,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "iron_boots": {
+    "category": "equipment",
     "key": {
       "X": {
         "count": 1,
@@ -8093,6 +8503,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "iron_chestplate": {
+    "category": "equipment",
     "key": {
       "X": {
         "count": 1,
@@ -8113,6 +8524,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "iron_door": {
+    "category": "redstone",
     "key": {
       "#": {
         "count": 1,
@@ -8133,6 +8545,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "iron_helmet": {
+    "category": "equipment",
     "key": {
       "X": {
         "count": 1,
@@ -8152,6 +8565,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "iron_hoe": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -8177,6 +8591,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "iron_ingot_from_blasting_deepslate_iron_ore": {
+    "category": "misc",
     "cookingtime": 100,
     "experience": 0.7,
     "group": "iron_ingot",
@@ -8189,6 +8604,7 @@
     "type": "minecraft:blasting"
   },
   "iron_ingot_from_blasting_iron_ore": {
+    "category": "misc",
     "cookingtime": 100,
     "experience": 0.7,
     "group": "iron_ingot",
@@ -8201,6 +8617,7 @@
     "type": "minecraft:blasting"
   },
   "iron_ingot_from_blasting_raw_iron": {
+    "category": "misc",
     "cookingtime": 100,
     "experience": 0.7,
     "group": "iron_ingot",
@@ -8213,6 +8630,7 @@
     "type": "minecraft:blasting"
   },
   "iron_ingot_from_iron_block": {
+    "category": "misc",
     "group": "iron_ingot",
     "ingredients": [
       {
@@ -8227,6 +8645,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "iron_ingot_from_nuggets": {
+    "category": "misc",
     "group": "iron_ingot",
     "key": {
       "#": {
@@ -8248,6 +8667,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "iron_ingot_from_smelting_deepslate_iron_ore": {
+    "category": "misc",
     "cookingtime": 200,
     "experience": 0.7,
     "group": "iron_ingot",
@@ -8260,6 +8680,7 @@
     "type": "minecraft:smelting"
   },
   "iron_ingot_from_smelting_iron_ore": {
+    "category": "misc",
     "cookingtime": 200,
     "experience": 0.7,
     "group": "iron_ingot",
@@ -8272,6 +8693,7 @@
     "type": "minecraft:smelting"
   },
   "iron_ingot_from_smelting_raw_iron": {
+    "category": "misc",
     "cookingtime": 200,
     "experience": 0.7,
     "group": "iron_ingot",
@@ -8284,6 +8706,7 @@
     "type": "minecraft:smelting"
   },
   "iron_leggings": {
+    "category": "equipment",
     "key": {
       "X": {
         "count": 1,
@@ -8304,6 +8727,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "iron_nugget": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:iron_ingot"
@@ -8317,6 +8741,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "iron_nugget_from_blasting": {
+    "category": "misc",
     "cookingtime": 100,
     "experience": 0.1,
     "ingredient": [
@@ -8395,6 +8820,7 @@
     "type": "minecraft:blasting"
   },
   "iron_nugget_from_smelting": {
+    "category": "misc",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": [
@@ -8473,6 +8899,7 @@
     "type": "minecraft:smelting"
   },
   "iron_pickaxe": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -8498,6 +8925,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "iron_shovel": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -8523,6 +8951,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "iron_sword": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -8548,6 +8977,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "iron_trapdoor": {
+    "category": "redstone",
     "key": {
       "#": {
         "count": 1,
@@ -8567,6 +8997,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "item_frame": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -8592,6 +9023,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "jack_o_lantern": {
+    "category": "building",
     "key": {
       "A": {
         "count": 1,
@@ -8616,6 +9048,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "jukebox": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -8640,6 +9073,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "jungle_boat": {
+    "category": "misc",
     "group": "boat",
     "key": {
       "#": {
@@ -8660,6 +9094,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "jungle_button": {
+    "category": "redstone",
     "group": "wooden_button",
     "ingredients": [
       {
@@ -8674,6 +9109,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "jungle_chest_boat": {
+    "category": "misc",
     "group": "chest_boat",
     "ingredients": [
       {
@@ -8691,6 +9127,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "jungle_door": {
+    "category": "redstone",
     "group": "wooden_door",
     "key": {
       "#": {
@@ -8712,6 +9149,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "jungle_fence": {
+    "category": "misc",
     "group": "wooden_fence",
     "key": {
       "#": {
@@ -8737,6 +9175,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "jungle_fence_gate": {
+    "category": "redstone",
     "group": "wooden_fence_gate",
     "key": {
       "#": {
@@ -8762,6 +9201,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "jungle_planks": {
+    "category": "building",
     "group": "planks",
     "ingredients": [
       {
@@ -8776,6 +9216,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "jungle_pressure_plate": {
+    "category": "redstone",
     "group": "wooden_pressure_plate",
     "key": {
       "#": {
@@ -8795,6 +9236,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "jungle_sign": {
+    "category": "misc",
     "group": "wooden_sign",
     "key": {
       "#": {
@@ -8821,6 +9263,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "jungle_slab": {
+    "category": "building",
     "group": "wooden_slab",
     "key": {
       "#": {
@@ -8840,6 +9283,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "jungle_stairs": {
+    "category": "building",
     "group": "wooden_stairs",
     "key": {
       "#": {
@@ -8861,6 +9305,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "jungle_trapdoor": {
+    "category": "redstone",
     "group": "wooden_trapdoor",
     "key": {
       "#": {
@@ -8881,6 +9326,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "jungle_wood": {
+    "category": "building",
     "group": "bark",
     "key": {
       "#": {
@@ -8901,6 +9347,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "ladder": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -8921,6 +9368,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "lantern": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -8946,6 +9394,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "lapis_block": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -8966,6 +9415,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "lapis_lazuli": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:lapis_block"
@@ -8979,6 +9429,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "lapis_lazuli_from_blasting_deepslate_lapis_ore": {
+    "category": "misc",
     "cookingtime": 100,
     "experience": 0.2,
     "group": "lapis_lazuli",
@@ -8991,6 +9442,7 @@
     "type": "minecraft:blasting"
   },
   "lapis_lazuli_from_blasting_lapis_ore": {
+    "category": "misc",
     "cookingtime": 100,
     "experience": 0.2,
     "group": "lapis_lazuli",
@@ -9003,6 +9455,7 @@
     "type": "minecraft:blasting"
   },
   "lapis_lazuli_from_smelting_deepslate_lapis_ore": {
+    "category": "misc",
     "cookingtime": 200,
     "experience": 0.2,
     "group": "lapis_lazuli",
@@ -9015,6 +9468,7 @@
     "type": "minecraft:smelting"
   },
   "lapis_lazuli_from_smelting_lapis_ore": {
+    "category": "misc",
     "cookingtime": 200,
     "experience": 0.2,
     "group": "lapis_lazuli",
@@ -9027,6 +9481,7 @@
     "type": "minecraft:smelting"
   },
   "lead": {
+    "category": "equipment",
     "key": {
       "O": {
         "count": 1,
@@ -9052,6 +9507,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "leather": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -9071,6 +9527,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "leather_boots": {
+    "category": "equipment",
     "key": {
       "X": {
         "count": 1,
@@ -9090,6 +9547,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "leather_chestplate": {
+    "category": "equipment",
     "key": {
       "X": {
         "count": 1,
@@ -9110,6 +9568,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "leather_helmet": {
+    "category": "equipment",
     "key": {
       "X": {
         "count": 1,
@@ -9129,6 +9588,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "leather_horse_armor": {
+    "category": "misc",
     "key": {
       "X": {
         "count": 1,
@@ -9149,6 +9609,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "leather_leggings": {
+    "category": "equipment",
     "key": {
       "X": {
         "count": 1,
@@ -9169,6 +9630,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "lectern": {
+    "category": "redstone",
     "key": {
       "B": {
         "count": 1,
@@ -9193,6 +9655,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "lever": {
+    "category": "redstone",
     "key": {
       "#": {
         "count": 1,
@@ -9217,6 +9680,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "light_blue_banner": {
+    "category": "misc",
     "group": "banner",
     "key": {
       "#": {
@@ -9243,6 +9707,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "light_blue_bed": {
+    "category": "misc",
     "group": "bed",
     "key": {
       "#": {
@@ -9267,6 +9732,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "light_blue_bed_from_white_bed": {
+    "category": "misc",
     "group": "dyed_bed",
     "ingredients": [
       {
@@ -9284,6 +9750,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "light_blue_candle": {
+    "category": "misc",
     "group": "dyed_candle",
     "ingredients": [
       {
@@ -9301,6 +9768,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "light_blue_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -9320,6 +9788,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "light_blue_carpet_from_white_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -9346,6 +9815,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "light_blue_concrete_powder": {
+    "category": "building",
     "group": "concrete_powder",
     "ingredients": [
       {
@@ -9384,6 +9854,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "light_blue_dye_from_blue_orchid": {
+    "category": "misc",
     "group": "light_blue_dye",
     "ingredients": [
       {
@@ -9398,6 +9869,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "light_blue_dye_from_blue_white_dye": {
+    "category": "misc",
     "group": "light_blue_dye",
     "ingredients": [
       {
@@ -9415,6 +9887,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "light_blue_glazed_terracotta": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -9426,6 +9899,7 @@
     "type": "minecraft:smelting"
   },
   "light_blue_stained_glass": {
+    "category": "building",
     "group": "stained_glass",
     "key": {
       "#": {
@@ -9452,6 +9926,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "light_blue_stained_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -9472,6 +9947,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "light_blue_stained_glass_pane_from_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -9498,6 +9974,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "light_blue_terracotta": {
+    "category": "building",
     "group": "stained_terracotta",
     "key": {
       "#": {
@@ -9524,6 +10001,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "light_blue_wool": {
+    "category": "building",
     "group": "wool",
     "ingredients": [
       {
@@ -9541,6 +10019,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "light_gray_banner": {
+    "category": "misc",
     "group": "banner",
     "key": {
       "#": {
@@ -9567,6 +10046,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "light_gray_bed": {
+    "category": "misc",
     "group": "bed",
     "key": {
       "#": {
@@ -9591,6 +10071,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "light_gray_bed_from_white_bed": {
+    "category": "misc",
     "group": "dyed_bed",
     "ingredients": [
       {
@@ -9608,6 +10089,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "light_gray_candle": {
+    "category": "misc",
     "group": "dyed_candle",
     "ingredients": [
       {
@@ -9625,6 +10107,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "light_gray_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -9644,6 +10127,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "light_gray_carpet_from_white_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -9670,6 +10154,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "light_gray_concrete_powder": {
+    "category": "building",
     "group": "concrete_powder",
     "ingredients": [
       {
@@ -9708,6 +10193,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "light_gray_dye_from_azure_bluet": {
+    "category": "misc",
     "group": "light_gray_dye",
     "ingredients": [
       {
@@ -9722,6 +10208,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "light_gray_dye_from_black_white_dye": {
+    "category": "misc",
     "group": "light_gray_dye",
     "ingredients": [
       {
@@ -9742,6 +10229,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "light_gray_dye_from_gray_white_dye": {
+    "category": "misc",
     "group": "light_gray_dye",
     "ingredients": [
       {
@@ -9759,6 +10247,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "light_gray_dye_from_oxeye_daisy": {
+    "category": "misc",
     "group": "light_gray_dye",
     "ingredients": [
       {
@@ -9773,6 +10262,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "light_gray_dye_from_white_tulip": {
+    "category": "misc",
     "group": "light_gray_dye",
     "ingredients": [
       {
@@ -9787,6 +10277,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "light_gray_glazed_terracotta": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -9798,6 +10289,7 @@
     "type": "minecraft:smelting"
   },
   "light_gray_stained_glass": {
+    "category": "building",
     "group": "stained_glass",
     "key": {
       "#": {
@@ -9824,6 +10316,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "light_gray_stained_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -9844,6 +10337,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "light_gray_stained_glass_pane_from_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -9870,6 +10364,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "light_gray_terracotta": {
+    "category": "building",
     "group": "stained_terracotta",
     "key": {
       "#": {
@@ -9896,6 +10391,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "light_gray_wool": {
+    "category": "building",
     "group": "wool",
     "ingredients": [
       {
@@ -9913,6 +10409,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "light_weighted_pressure_plate": {
+    "category": "redstone",
     "key": {
       "#": {
         "count": 1,
@@ -9931,6 +10428,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "lightning_rod": {
+    "category": "redstone",
     "key": {
       "#": {
         "count": 1,
@@ -9951,6 +10449,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "lime_banner": {
+    "category": "misc",
     "group": "banner",
     "key": {
       "#": {
@@ -9977,6 +10476,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "lime_bed": {
+    "category": "misc",
     "group": "bed",
     "key": {
       "#": {
@@ -10001,6 +10501,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "lime_bed_from_white_bed": {
+    "category": "misc",
     "group": "dyed_bed",
     "ingredients": [
       {
@@ -10018,6 +10519,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "lime_candle": {
+    "category": "misc",
     "group": "dyed_candle",
     "ingredients": [
       {
@@ -10035,6 +10537,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "lime_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -10054,6 +10557,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "lime_carpet_from_white_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -10080,6 +10584,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "lime_concrete_powder": {
+    "category": "building",
     "group": "concrete_powder",
     "ingredients": [
       {
@@ -10118,6 +10623,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "lime_dye": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:green_dye"
@@ -10134,6 +10640,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "lime_dye_from_smelting": {
+    "category": "misc",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -10145,6 +10652,7 @@
     "type": "minecraft:smelting"
   },
   "lime_glazed_terracotta": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -10156,6 +10664,7 @@
     "type": "minecraft:smelting"
   },
   "lime_stained_glass": {
+    "category": "building",
     "group": "stained_glass",
     "key": {
       "#": {
@@ -10182,6 +10691,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "lime_stained_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -10202,6 +10712,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "lime_stained_glass_pane_from_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -10228,6 +10739,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "lime_terracotta": {
+    "category": "building",
     "group": "stained_terracotta",
     "key": {
       "#": {
@@ -10254,6 +10766,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "lime_wool": {
+    "category": "building",
     "group": "wool",
     "ingredients": [
       {
@@ -10271,6 +10784,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "lodestone": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -10296,6 +10810,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "loom": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -10319,6 +10834,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "magenta_banner": {
+    "category": "misc",
     "group": "banner",
     "key": {
       "#": {
@@ -10345,6 +10861,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "magenta_bed": {
+    "category": "misc",
     "group": "bed",
     "key": {
       "#": {
@@ -10369,6 +10886,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "magenta_bed_from_white_bed": {
+    "category": "misc",
     "group": "dyed_bed",
     "ingredients": [
       {
@@ -10386,6 +10904,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "magenta_candle": {
+    "category": "misc",
     "group": "dyed_candle",
     "ingredients": [
       {
@@ -10403,6 +10922,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "magenta_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -10422,6 +10942,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "magenta_carpet_from_white_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -10448,6 +10969,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "magenta_concrete_powder": {
+    "category": "building",
     "group": "concrete_powder",
     "ingredients": [
       {
@@ -10486,6 +11008,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "magenta_dye_from_allium": {
+    "category": "misc",
     "group": "magenta_dye",
     "ingredients": [
       {
@@ -10500,6 +11023,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "magenta_dye_from_blue_red_pink": {
+    "category": "misc",
     "group": "magenta_dye",
     "ingredients": [
       {
@@ -10520,6 +11044,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "magenta_dye_from_blue_red_white_dye": {
+    "category": "misc",
     "group": "magenta_dye",
     "ingredients": [
       {
@@ -10543,6 +11068,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "magenta_dye_from_lilac": {
+    "category": "misc",
     "group": "magenta_dye",
     "ingredients": [
       {
@@ -10557,6 +11083,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "magenta_dye_from_purple_and_pink": {
+    "category": "misc",
     "group": "magenta_dye",
     "ingredients": [
       {
@@ -10574,6 +11101,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "magenta_glazed_terracotta": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -10585,6 +11113,7 @@
     "type": "minecraft:smelting"
   },
   "magenta_stained_glass": {
+    "category": "building",
     "group": "stained_glass",
     "key": {
       "#": {
@@ -10611,6 +11140,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "magenta_stained_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -10631,6 +11161,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "magenta_stained_glass_pane_from_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -10657,6 +11188,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "magenta_terracotta": {
+    "category": "building",
     "group": "stained_terracotta",
     "key": {
       "#": {
@@ -10683,6 +11215,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "magenta_wool": {
+    "category": "building",
     "group": "wool",
     "ingredients": [
       {
@@ -10700,6 +11233,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "magma_block": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -10719,6 +11253,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "magma_cream": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:blaze_powder"
@@ -10735,6 +11270,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "mangrove_boat": {
+    "category": "misc",
     "group": "boat",
     "key": {
       "#": {
@@ -10755,6 +11291,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "mangrove_button": {
+    "category": "redstone",
     "group": "wooden_button",
     "ingredients": [
       {
@@ -10769,6 +11306,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "mangrove_chest_boat": {
+    "category": "misc",
     "group": "chest_boat",
     "ingredients": [
       {
@@ -10786,6 +11324,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "mangrove_door": {
+    "category": "redstone",
     "group": "wooden_door",
     "key": {
       "#": {
@@ -10807,6 +11346,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "mangrove_fence": {
+    "category": "misc",
     "group": "wooden_fence",
     "key": {
       "#": {
@@ -10832,6 +11372,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "mangrove_fence_gate": {
+    "category": "redstone",
     "group": "wooden_fence_gate",
     "key": {
       "#": {
@@ -10857,6 +11398,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "mangrove_planks": {
+    "category": "building",
     "group": "planks",
     "ingredients": [
       {
@@ -10871,6 +11413,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "mangrove_pressure_plate": {
+    "category": "redstone",
     "group": "wooden_pressure_plate",
     "key": {
       "#": {
@@ -10890,6 +11433,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "mangrove_sign": {
+    "category": "misc",
     "group": "wooden_sign",
     "key": {
       "#": {
@@ -10916,6 +11460,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "mangrove_slab": {
+    "category": "building",
     "group": "wooden_slab",
     "key": {
       "#": {
@@ -10935,6 +11480,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "mangrove_stairs": {
+    "category": "building",
     "group": "wooden_stairs",
     "key": {
       "#": {
@@ -10956,6 +11502,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "mangrove_trapdoor": {
+    "category": "redstone",
     "group": "wooden_trapdoor",
     "key": {
       "#": {
@@ -10976,6 +11523,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "mangrove_wood": {
+    "category": "building",
     "group": "bark",
     "key": {
       "#": {
@@ -10996,6 +11544,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "map": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -11021,32 +11570,53 @@
     "type": "minecraft:crafting_shaped"
   },
   "map_cloning": {
+    "category": "misc",
     "type": "minecraft:crafting_special_mapcloning"
   },
   "map_extending": {
+    "category": "misc",
     "type": "minecraft:crafting_special_mapextending"
   },
   "melon": {
-    "key": {
-      "M": {
-        "count": 1,
-        "item": "minecraft:melon_slice",
-        "tag": null
+    "category": "building",
+    "ingredients": [
+      {
+        "item": "minecraft:melon_slice"
+      },
+      {
+        "item": "minecraft:melon_slice"
+      },
+      {
+        "item": "minecraft:melon_slice"
+      },
+      {
+        "item": "minecraft:melon_slice"
+      },
+      {
+        "item": "minecraft:melon_slice"
+      },
+      {
+        "item": "minecraft:melon_slice"
+      },
+      {
+        "item": "minecraft:melon_slice"
+      },
+      {
+        "item": "minecraft:melon_slice"
+      },
+      {
+        "item": "minecraft:melon_slice"
       }
-    },
-    "pattern": [
-      "MMM",
-      "MMM",
-      "MMM"
     ],
     "result": {
       "count": 1,
       "item": "minecraft:melon",
       "tag": null
     },
-    "type": "minecraft:crafting_shaped"
+    "type": "minecraft:crafting_shapeless"
   },
   "melon_seeds": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:melon_slice"
@@ -11060,6 +11630,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "minecart": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -11079,6 +11650,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "mojang_banner_pattern": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:paper"
@@ -11095,6 +11667,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "moss_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -11114,6 +11687,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "mossy_cobblestone_from_moss_block": {
+    "category": "building",
     "group": "mossy_cobblestone",
     "ingredients": [
       {
@@ -11131,6 +11705,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "mossy_cobblestone_from_vine": {
+    "category": "building",
     "group": "mossy_cobblestone",
     "ingredients": [
       {
@@ -11148,6 +11723,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "mossy_cobblestone_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -11176,6 +11752,7 @@
     "type": "minecraft:stonecutting"
   },
   "mossy_cobblestone_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -11206,6 +11783,7 @@
     "type": "minecraft:stonecutting"
   },
   "mossy_cobblestone_wall": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -11235,6 +11813,7 @@
     "type": "minecraft:stonecutting"
   },
   "mossy_stone_brick_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -11263,6 +11842,7 @@
     "type": "minecraft:stonecutting"
   },
   "mossy_stone_brick_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -11293,6 +11873,7 @@
     "type": "minecraft:stonecutting"
   },
   "mossy_stone_brick_wall": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -11322,6 +11903,7 @@
     "type": "minecraft:stonecutting"
   },
   "mossy_stone_bricks_from_moss_block": {
+    "category": "building",
     "group": "mossy_stone_bricks",
     "ingredients": [
       {
@@ -11339,6 +11921,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "mossy_stone_bricks_from_vine": {
+    "category": "building",
     "group": "mossy_stone_bricks",
     "ingredients": [
       {
@@ -11356,6 +11939,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "mud_brick_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -11384,6 +11968,7 @@
     "type": "minecraft:stonecutting"
   },
   "mud_brick_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -11414,6 +11999,7 @@
     "type": "minecraft:stonecutting"
   },
   "mud_brick_wall": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -11443,6 +12029,7 @@
     "type": "minecraft:stonecutting"
   },
   "mud_bricks": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -11462,6 +12049,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "muddy_mangrove_roots": {
+    "category": "building",
     "ingredients": [
       {
         "item": "minecraft:mud"
@@ -11478,6 +12066,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "mushroom_stew": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:brown_mushroom"
@@ -11497,26 +12086,45 @@
     "type": "minecraft:crafting_shapeless"
   },
   "music_disc_5": {
-    "key": {
-      "S": {
-        "count": 1,
-        "item": "minecraft:disc_fragment_5",
-        "tag": null
+    "category": "misc",
+    "ingredients": [
+      {
+        "item": "minecraft:disc_fragment_5"
+      },
+      {
+        "item": "minecraft:disc_fragment_5"
+      },
+      {
+        "item": "minecraft:disc_fragment_5"
+      },
+      {
+        "item": "minecraft:disc_fragment_5"
+      },
+      {
+        "item": "minecraft:disc_fragment_5"
+      },
+      {
+        "item": "minecraft:disc_fragment_5"
+      },
+      {
+        "item": "minecraft:disc_fragment_5"
+      },
+      {
+        "item": "minecraft:disc_fragment_5"
+      },
+      {
+        "item": "minecraft:disc_fragment_5"
       }
-    },
-    "pattern": [
-      "SSS",
-      "SSS",
-      "SSS"
     ],
     "result": {
       "count": 1,
       "item": "minecraft:music_disc_5",
       "tag": null
     },
-    "type": "minecraft:crafting_shaped"
+    "type": "minecraft:crafting_shapeless"
   },
   "nether_brick": {
+    "category": "misc",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -11528,6 +12136,7 @@
     "type": "minecraft:smelting"
   },
   "nether_brick_fence": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -11552,6 +12161,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "nether_brick_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -11580,6 +12190,7 @@
     "type": "minecraft:stonecutting"
   },
   "nether_brick_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -11610,6 +12221,7 @@
     "type": "minecraft:stonecutting"
   },
   "nether_brick_wall": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -11639,16 +12251,17 @@
     "type": "minecraft:stonecutting"
   },
   "nether_bricks": {
+    "category": "building",
     "key": {
-      "N": {
+      "#": {
         "count": 1,
         "item": "minecraft:nether_brick",
         "tag": null
       }
     },
     "pattern": [
-      "NN",
-      "NN"
+      "##",
+      "##"
     ],
     "result": {
       "count": 1,
@@ -11658,24 +12271,42 @@
     "type": "minecraft:crafting_shaped"
   },
   "nether_wart_block": {
-    "key": {
-      "#": {
-        "count": 1,
-        "item": "minecraft:nether_wart",
-        "tag": null
+    "category": "building",
+    "ingredients": [
+      {
+        "item": "minecraft:nether_wart"
+      },
+      {
+        "item": "minecraft:nether_wart"
+      },
+      {
+        "item": "minecraft:nether_wart"
+      },
+      {
+        "item": "minecraft:nether_wart"
+      },
+      {
+        "item": "minecraft:nether_wart"
+      },
+      {
+        "item": "minecraft:nether_wart"
+      },
+      {
+        "item": "minecraft:nether_wart"
+      },
+      {
+        "item": "minecraft:nether_wart"
+      },
+      {
+        "item": "minecraft:nether_wart"
       }
-    },
-    "pattern": [
-      "###",
-      "###",
-      "###"
     ],
     "result": {
       "count": 1,
       "item": "minecraft:nether_wart_block",
       "tag": null
     },
-    "type": "minecraft:crafting_shaped"
+    "type": "minecraft:crafting_shapeless"
   },
   "netherite_axe_smithing": {
     "addition": {
@@ -11692,6 +12323,7 @@
     "type": "minecraft:smithing"
   },
   "netherite_block": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -11768,6 +12400,7 @@
     "type": "minecraft:smithing"
   },
   "netherite_ingot": {
+    "category": "misc",
     "group": "netherite_ingot",
     "ingredients": [
       {
@@ -11803,6 +12436,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "netherite_ingot_from_netherite_block": {
+    "category": "misc",
     "group": "netherite_ingot",
     "ingredients": [
       {
@@ -11845,6 +12479,7 @@
     "type": "minecraft:smithing"
   },
   "netherite_scrap": {
+    "category": "misc",
     "cookingtime": 200,
     "experience": 2.0,
     "ingredient": {
@@ -11856,6 +12491,7 @@
     "type": "minecraft:smelting"
   },
   "netherite_scrap_from_blasting": {
+    "category": "misc",
     "cookingtime": 100,
     "experience": 2.0,
     "ingredient": {
@@ -11895,6 +12531,7 @@
     "type": "minecraft:smithing"
   },
   "note_block": {
+    "category": "redstone",
     "key": {
       "#": {
         "count": 1,
@@ -11919,6 +12556,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "oak_boat": {
+    "category": "misc",
     "group": "boat",
     "key": {
       "#": {
@@ -11939,6 +12577,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "oak_button": {
+    "category": "redstone",
     "group": "wooden_button",
     "ingredients": [
       {
@@ -11953,6 +12592,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "oak_chest_boat": {
+    "category": "misc",
     "group": "chest_boat",
     "ingredients": [
       {
@@ -11970,6 +12610,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "oak_door": {
+    "category": "redstone",
     "group": "wooden_door",
     "key": {
       "#": {
@@ -11991,6 +12632,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "oak_fence": {
+    "category": "misc",
     "group": "wooden_fence",
     "key": {
       "#": {
@@ -12016,6 +12658,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "oak_fence_gate": {
+    "category": "redstone",
     "group": "wooden_fence_gate",
     "key": {
       "#": {
@@ -12041,6 +12684,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "oak_planks": {
+    "category": "building",
     "group": "planks",
     "ingredients": [
       {
@@ -12055,6 +12699,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "oak_pressure_plate": {
+    "category": "redstone",
     "group": "wooden_pressure_plate",
     "key": {
       "#": {
@@ -12074,6 +12719,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "oak_sign": {
+    "category": "misc",
     "group": "wooden_sign",
     "key": {
       "#": {
@@ -12100,6 +12746,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "oak_slab": {
+    "category": "building",
     "group": "wooden_slab",
     "key": {
       "#": {
@@ -12119,6 +12766,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "oak_stairs": {
+    "category": "building",
     "group": "wooden_stairs",
     "key": {
       "#": {
@@ -12140,6 +12788,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "oak_trapdoor": {
+    "category": "redstone",
     "group": "wooden_trapdoor",
     "key": {
       "#": {
@@ -12160,6 +12809,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "oak_wood": {
+    "category": "building",
     "group": "bark",
     "key": {
       "#": {
@@ -12180,6 +12830,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "observer": {
+    "category": "redstone",
     "key": {
       "#": {
         "count": 1,
@@ -12210,6 +12861,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "orange_banner": {
+    "category": "misc",
     "group": "banner",
     "key": {
       "#": {
@@ -12236,6 +12888,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "orange_bed": {
+    "category": "misc",
     "group": "bed",
     "key": {
       "#": {
@@ -12260,6 +12913,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "orange_bed_from_white_bed": {
+    "category": "misc",
     "group": "dyed_bed",
     "ingredients": [
       {
@@ -12277,6 +12931,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "orange_candle": {
+    "category": "misc",
     "group": "dyed_candle",
     "ingredients": [
       {
@@ -12294,6 +12949,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "orange_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -12313,6 +12969,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "orange_carpet_from_white_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -12339,6 +12996,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "orange_concrete_powder": {
+    "category": "building",
     "group": "concrete_powder",
     "ingredients": [
       {
@@ -12377,6 +13035,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "orange_dye_from_orange_tulip": {
+    "category": "misc",
     "group": "orange_dye",
     "ingredients": [
       {
@@ -12391,6 +13050,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "orange_dye_from_red_yellow": {
+    "category": "misc",
     "group": "orange_dye",
     "ingredients": [
       {
@@ -12408,6 +13068,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "orange_glazed_terracotta": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -12419,6 +13080,7 @@
     "type": "minecraft:smelting"
   },
   "orange_stained_glass": {
+    "category": "building",
     "group": "stained_glass",
     "key": {
       "#": {
@@ -12445,6 +13107,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "orange_stained_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -12465,6 +13128,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "orange_stained_glass_pane_from_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -12491,6 +13155,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "orange_terracotta": {
+    "category": "building",
     "group": "stained_terracotta",
     "key": {
       "#": {
@@ -12517,6 +13182,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "orange_wool": {
+    "category": "building",
     "group": "wool",
     "ingredients": [
       {
@@ -12534,6 +13200,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "oxidized_cut_copper": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -12563,6 +13230,7 @@
     "type": "minecraft:stonecutting"
   },
   "oxidized_cut_copper_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -12601,6 +13269,7 @@
     "type": "minecraft:stonecutting"
   },
   "oxidized_cut_copper_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -12641,6 +13310,7 @@
     "type": "minecraft:stonecutting"
   },
   "packed_ice": {
+    "category": "building",
     "ingredients": [
       {
         "item": "minecraft:ice"
@@ -12678,6 +13348,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "packed_mud": {
+    "category": "building",
     "ingredients": [
       {
         "item": "minecraft:mud"
@@ -12694,6 +13365,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "painting": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -12718,6 +13390,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "paper": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -12736,6 +13409,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "pink_banner": {
+    "category": "misc",
     "group": "banner",
     "key": {
       "#": {
@@ -12762,6 +13436,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "pink_bed": {
+    "category": "misc",
     "group": "bed",
     "key": {
       "#": {
@@ -12786,6 +13461,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "pink_bed_from_white_bed": {
+    "category": "misc",
     "group": "dyed_bed",
     "ingredients": [
       {
@@ -12803,6 +13479,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "pink_candle": {
+    "category": "misc",
     "group": "dyed_candle",
     "ingredients": [
       {
@@ -12820,6 +13497,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "pink_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -12839,6 +13517,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "pink_carpet_from_white_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -12865,6 +13544,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "pink_concrete_powder": {
+    "category": "building",
     "group": "concrete_powder",
     "ingredients": [
       {
@@ -12903,6 +13583,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "pink_dye_from_peony": {
+    "category": "misc",
     "group": "pink_dye",
     "ingredients": [
       {
@@ -12917,6 +13598,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "pink_dye_from_pink_tulip": {
+    "category": "misc",
     "group": "pink_dye",
     "ingredients": [
       {
@@ -12931,6 +13613,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "pink_dye_from_red_white_dye": {
+    "category": "misc",
     "group": "pink_dye",
     "ingredients": [
       {
@@ -12948,6 +13631,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "pink_glazed_terracotta": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -12959,6 +13643,7 @@
     "type": "minecraft:smelting"
   },
   "pink_stained_glass": {
+    "category": "building",
     "group": "stained_glass",
     "key": {
       "#": {
@@ -12985,6 +13670,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "pink_stained_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -13005,6 +13691,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "pink_stained_glass_pane_from_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -13031,6 +13718,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "pink_terracotta": {
+    "category": "building",
     "group": "stained_terracotta",
     "key": {
       "#": {
@@ -13057,6 +13745,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "pink_wool": {
+    "category": "building",
     "group": "wool",
     "ingredients": [
       {
@@ -13074,6 +13763,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "piston": {
+    "category": "redstone",
     "key": {
       "#": {
         "count": 1,
@@ -13108,6 +13798,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "polished_andesite": {
+    "category": "building",
     "key": {
       "S": {
         "count": 1,
@@ -13137,6 +13828,7 @@
     "type": "minecraft:stonecutting"
   },
   "polished_andesite_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -13175,6 +13867,7 @@
     "type": "minecraft:stonecutting"
   },
   "polished_andesite_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -13215,6 +13908,7 @@
     "type": "minecraft:stonecutting"
   },
   "polished_basalt": {
+    "category": "building",
     "key": {
       "S": {
         "count": 1,
@@ -13244,6 +13938,7 @@
     "type": "minecraft:stonecutting"
   },
   "polished_blackstone": {
+    "category": "building",
     "key": {
       "S": {
         "count": 1,
@@ -13263,6 +13958,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "polished_blackstone_brick_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -13311,6 +14007,7 @@
     "type": "minecraft:stonecutting"
   },
   "polished_blackstone_brick_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -13361,6 +14058,7 @@
     "type": "minecraft:stonecutting"
   },
   "polished_blackstone_brick_wall": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -13410,6 +14108,7 @@
     "type": "minecraft:stonecutting"
   },
   "polished_blackstone_bricks": {
+    "category": "building",
     "key": {
       "S": {
         "count": 1,
@@ -13449,6 +14148,7 @@
     "type": "minecraft:stonecutting"
   },
   "polished_blackstone_button": {
+    "category": "redstone",
     "ingredients": [
       {
         "item": "minecraft:polished_blackstone"
@@ -13472,6 +14172,7 @@
     "type": "minecraft:stonecutting"
   },
   "polished_blackstone_pressure_plate": {
+    "category": "redstone",
     "key": {
       "#": {
         "count": 1,
@@ -13490,6 +14191,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "polished_blackstone_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -13528,6 +14230,7 @@
     "type": "minecraft:stonecutting"
   },
   "polished_blackstone_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -13568,6 +14271,7 @@
     "type": "minecraft:stonecutting"
   },
   "polished_blackstone_wall": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -13607,6 +14311,7 @@
     "type": "minecraft:stonecutting"
   },
   "polished_deepslate": {
+    "category": "building",
     "key": {
       "S": {
         "count": 1,
@@ -13636,6 +14341,7 @@
     "type": "minecraft:stonecutting"
   },
   "polished_deepslate_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -13674,6 +14380,7 @@
     "type": "minecraft:stonecutting"
   },
   "polished_deepslate_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -13714,6 +14421,7 @@
     "type": "minecraft:stonecutting"
   },
   "polished_deepslate_wall": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -13753,6 +14461,7 @@
     "type": "minecraft:stonecutting"
   },
   "polished_diorite": {
+    "category": "building",
     "key": {
       "S": {
         "count": 1,
@@ -13782,6 +14491,7 @@
     "type": "minecraft:stonecutting"
   },
   "polished_diorite_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -13820,6 +14530,7 @@
     "type": "minecraft:stonecutting"
   },
   "polished_diorite_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -13860,6 +14571,7 @@
     "type": "minecraft:stonecutting"
   },
   "polished_granite": {
+    "category": "building",
     "key": {
       "S": {
         "count": 1,
@@ -13889,6 +14601,7 @@
     "type": "minecraft:stonecutting"
   },
   "polished_granite_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -13927,6 +14640,7 @@
     "type": "minecraft:stonecutting"
   },
   "polished_granite_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -13967,6 +14681,7 @@
     "type": "minecraft:stonecutting"
   },
   "popped_chorus_fruit": {
+    "category": "misc",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -13978,6 +14693,7 @@
     "type": "minecraft:smelting"
   },
   "powered_rail": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -14008,16 +14724,17 @@
     "type": "minecraft:crafting_shaped"
   },
   "prismarine": {
+    "category": "building",
     "key": {
-      "S": {
+      "#": {
         "count": 1,
         "item": "minecraft:prismarine_shard",
         "tag": null
       }
     },
     "pattern": [
-      "SS",
-      "SS"
+      "##",
+      "##"
     ],
     "result": {
       "count": 1,
@@ -14027,6 +14744,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "prismarine_brick_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -14055,6 +14773,7 @@
     "type": "minecraft:stonecutting"
   },
   "prismarine_brick_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -14085,26 +14804,45 @@
     "type": "minecraft:stonecutting"
   },
   "prismarine_bricks": {
-    "key": {
-      "S": {
-        "count": 1,
-        "item": "minecraft:prismarine_shard",
-        "tag": null
+    "category": "building",
+    "ingredients": [
+      {
+        "item": "minecraft:prismarine_shard"
+      },
+      {
+        "item": "minecraft:prismarine_shard"
+      },
+      {
+        "item": "minecraft:prismarine_shard"
+      },
+      {
+        "item": "minecraft:prismarine_shard"
+      },
+      {
+        "item": "minecraft:prismarine_shard"
+      },
+      {
+        "item": "minecraft:prismarine_shard"
+      },
+      {
+        "item": "minecraft:prismarine_shard"
+      },
+      {
+        "item": "minecraft:prismarine_shard"
+      },
+      {
+        "item": "minecraft:prismarine_shard"
       }
-    },
-    "pattern": [
-      "SSS",
-      "SSS",
-      "SSS"
     ],
     "result": {
       "count": 1,
       "item": "minecraft:prismarine_bricks",
       "tag": null
     },
-    "type": "minecraft:crafting_shaped"
+    "type": "minecraft:crafting_shapeless"
   },
   "prismarine_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -14133,6 +14871,7 @@
     "type": "minecraft:stonecutting"
   },
   "prismarine_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -14163,6 +14902,7 @@
     "type": "minecraft:stonecutting"
   },
   "prismarine_wall": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -14192,6 +14932,7 @@
     "type": "minecraft:stonecutting"
   },
   "pumpkin_pie": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:pumpkin"
@@ -14211,6 +14952,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "pumpkin_seeds": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:pumpkin"
@@ -14224,6 +14966,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "purple_banner": {
+    "category": "misc",
     "group": "banner",
     "key": {
       "#": {
@@ -14250,6 +14993,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "purple_bed": {
+    "category": "misc",
     "group": "bed",
     "key": {
       "#": {
@@ -14274,6 +15018,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "purple_bed_from_white_bed": {
+    "category": "misc",
     "group": "dyed_bed",
     "ingredients": [
       {
@@ -14291,6 +15036,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "purple_candle": {
+    "category": "misc",
     "group": "dyed_candle",
     "ingredients": [
       {
@@ -14308,6 +15054,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "purple_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -14327,6 +15074,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "purple_carpet_from_white_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -14353,6 +15101,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "purple_concrete_powder": {
+    "category": "building",
     "group": "concrete_powder",
     "ingredients": [
       {
@@ -14391,6 +15140,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "purple_dye": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:blue_dye"
@@ -14407,6 +15157,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "purple_glazed_terracotta": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -14418,6 +15169,7 @@
     "type": "minecraft:smelting"
   },
   "purple_stained_glass": {
+    "category": "building",
     "group": "stained_glass",
     "key": {
       "#": {
@@ -14444,6 +15196,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "purple_stained_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -14464,6 +15217,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "purple_stained_glass_pane_from_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -14490,6 +15244,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "purple_terracotta": {
+    "category": "building",
     "group": "stained_terracotta",
     "key": {
       "#": {
@@ -14516,6 +15271,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "purple_wool": {
+    "category": "building",
     "group": "wool",
     "ingredients": [
       {
@@ -14533,6 +15289,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "purpur_block": {
+    "category": "building",
     "key": {
       "F": {
         "count": 1,
@@ -14552,6 +15309,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "purpur_pillar": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -14581,6 +15339,7 @@
     "type": "minecraft:stonecutting"
   },
   "purpur_slab": {
+    "category": "building",
     "key": {
       "#": [
         {
@@ -14616,6 +15375,7 @@
     "type": "minecraft:stonecutting"
   },
   "purpur_stairs": {
+    "category": "building",
     "key": {
       "#": [
         {
@@ -14653,6 +15413,7 @@
     "type": "minecraft:stonecutting"
   },
   "quartz": {
+    "category": "misc",
     "cookingtime": 200,
     "experience": 0.2,
     "ingredient": {
@@ -14664,6 +15425,7 @@
     "type": "minecraft:smelting"
   },
   "quartz_block": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -14683,6 +15445,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "quartz_bricks": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -14712,6 +15475,7 @@
     "type": "minecraft:stonecutting"
   },
   "quartz_from_blasting": {
+    "category": "misc",
     "cookingtime": 100,
     "experience": 0.2,
     "ingredient": {
@@ -14723,6 +15487,7 @@
     "type": "minecraft:blasting"
   },
   "quartz_pillar": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -14752,6 +15517,7 @@
     "type": "minecraft:stonecutting"
   },
   "quartz_slab": {
+    "category": "building",
     "key": {
       "#": [
         {
@@ -14792,6 +15558,7 @@
     "type": "minecraft:stonecutting"
   },
   "quartz_stairs": {
+    "category": "building",
     "key": {
       "#": [
         {
@@ -14834,6 +15601,7 @@
     "type": "minecraft:stonecutting"
   },
   "rabbit_stew_from_brown_mushroom": {
+    "category": "misc",
     "group": "rabbit_stew",
     "ingredients": [
       {
@@ -14860,6 +15628,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "rabbit_stew_from_red_mushroom": {
+    "category": "misc",
     "group": "rabbit_stew",
     "ingredients": [
       {
@@ -14886,6 +15655,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "rail": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -14911,6 +15681,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "raw_copper": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:raw_copper_block"
@@ -14924,6 +15695,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "raw_copper_block": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -14944,6 +15716,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "raw_gold": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:raw_gold_block"
@@ -14957,6 +15730,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "raw_gold_block": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -14977,6 +15751,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "raw_iron": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:raw_iron_block"
@@ -14990,6 +15765,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "raw_iron_block": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -15010,6 +15786,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "recovery_compass": {
+    "category": "equipment",
     "key": {
       "C": {
         "count": 1,
@@ -15035,6 +15812,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "red_banner": {
+    "category": "misc",
     "group": "banner",
     "key": {
       "#": {
@@ -15061,6 +15839,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "red_bed": {
+    "category": "misc",
     "group": "bed",
     "key": {
       "#": {
@@ -15085,6 +15864,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "red_bed_from_white_bed": {
+    "category": "misc",
     "group": "dyed_bed",
     "ingredients": [
       {
@@ -15102,6 +15882,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "red_candle": {
+    "category": "misc",
     "group": "dyed_candle",
     "ingredients": [
       {
@@ -15119,6 +15900,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "red_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -15138,6 +15920,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "red_carpet_from_white_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -15164,6 +15947,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "red_concrete_powder": {
+    "category": "building",
     "group": "concrete_powder",
     "ingredients": [
       {
@@ -15202,6 +15986,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "red_dye_from_beetroot": {
+    "category": "misc",
     "group": "red_dye",
     "ingredients": [
       {
@@ -15216,6 +16001,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "red_dye_from_poppy": {
+    "category": "misc",
     "group": "red_dye",
     "ingredients": [
       {
@@ -15230,6 +16016,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "red_dye_from_rose_bush": {
+    "category": "misc",
     "group": "red_dye",
     "ingredients": [
       {
@@ -15244,6 +16031,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "red_dye_from_tulip": {
+    "category": "misc",
     "group": "red_dye",
     "ingredients": [
       {
@@ -15258,6 +16046,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "red_glazed_terracotta": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -15269,6 +16058,7 @@
     "type": "minecraft:smelting"
   },
   "red_nether_brick_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -15297,6 +16087,7 @@
     "type": "minecraft:stonecutting"
   },
   "red_nether_brick_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -15327,6 +16118,7 @@
     "type": "minecraft:stonecutting"
   },
   "red_nether_brick_wall": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -15356,6 +16148,7 @@
     "type": "minecraft:stonecutting"
   },
   "red_nether_bricks": {
+    "category": "building",
     "key": {
       "N": {
         "count": 1,
@@ -15380,6 +16173,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "red_sandstone": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -15399,6 +16193,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "red_sandstone_slab": {
+    "category": "building",
     "key": {
       "#": [
         {
@@ -15434,6 +16229,7 @@
     "type": "minecraft:stonecutting"
   },
   "red_sandstone_stairs": {
+    "category": "building",
     "key": {
       "#": [
         {
@@ -15476,6 +16272,7 @@
     "type": "minecraft:stonecutting"
   },
   "red_sandstone_wall": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -15505,6 +16302,7 @@
     "type": "minecraft:stonecutting"
   },
   "red_stained_glass": {
+    "category": "building",
     "group": "stained_glass",
     "key": {
       "#": {
@@ -15531,6 +16329,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "red_stained_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -15551,6 +16350,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "red_stained_glass_pane_from_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -15577,6 +16377,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "red_terracotta": {
+    "category": "building",
     "group": "stained_terracotta",
     "key": {
       "#": {
@@ -15603,6 +16404,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "red_wool": {
+    "category": "building",
     "group": "wool",
     "ingredients": [
       {
@@ -15620,6 +16422,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "redstone": {
+    "category": "redstone",
     "ingredients": [
       {
         "item": "minecraft:redstone_block"
@@ -15633,6 +16436,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "redstone_block": {
+    "category": "redstone",
     "key": {
       "#": {
         "count": 1,
@@ -15653,6 +16457,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "redstone_from_blasting_deepslate_redstone_ore": {
+    "category": "blocks",
     "cookingtime": 100,
     "experience": 0.7,
     "group": "redstone",
@@ -15665,6 +16470,7 @@
     "type": "minecraft:blasting"
   },
   "redstone_from_blasting_redstone_ore": {
+    "category": "blocks",
     "cookingtime": 100,
     "experience": 0.7,
     "group": "redstone",
@@ -15677,6 +16483,7 @@
     "type": "minecraft:blasting"
   },
   "redstone_from_smelting_deepslate_redstone_ore": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.7,
     "group": "redstone",
@@ -15689,6 +16496,7 @@
     "type": "minecraft:smelting"
   },
   "redstone_from_smelting_redstone_ore": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.7,
     "group": "redstone",
@@ -15701,6 +16509,7 @@
     "type": "minecraft:smelting"
   },
   "redstone_lamp": {
+    "category": "redstone",
     "key": {
       "G": {
         "count": 1,
@@ -15726,6 +16535,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "redstone_torch": {
+    "category": "redstone",
     "key": {
       "#": {
         "count": 1,
@@ -15750,9 +16560,11 @@
     "type": "minecraft:crafting_shaped"
   },
   "repair_item": {
+    "category": "misc",
     "type": "minecraft:crafting_special_repairitem"
   },
   "repeater": {
+    "category": "redstone",
     "key": {
       "#": {
         "count": 1,
@@ -15782,6 +16594,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "respawn_anchor": {
+    "category": "misc",
     "key": {
       "G": {
         "count": 1,
@@ -15807,6 +16620,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "sandstone": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -15826,6 +16640,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "sandstone_slab": {
+    "category": "building",
     "key": {
       "#": [
         {
@@ -15861,6 +16676,7 @@
     "type": "minecraft:stonecutting"
   },
   "sandstone_stairs": {
+    "category": "building",
     "key": {
       "#": [
         {
@@ -15903,6 +16719,7 @@
     "type": "minecraft:stonecutting"
   },
   "sandstone_wall": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -15932,6 +16749,7 @@
     "type": "minecraft:stonecutting"
   },
   "scaffolding": {
+    "category": "misc",
     "key": {
       "I": {
         "count": 1,
@@ -15957,6 +16775,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "sea_lantern": {
+    "category": "building",
     "key": {
       "C": {
         "count": 1,
@@ -15982,6 +16801,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "shears": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -16001,6 +16821,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "shield": {
+    "category": "equipment",
     "key": {
       "W": {
         "count": 1,
@@ -16025,9 +16846,11 @@
     "type": "minecraft:crafting_shaped"
   },
   "shield_decoration": {
+    "category": "misc",
     "type": "minecraft:crafting_special_shielddecoration"
   },
   "shulker_box": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -16053,9 +16876,11 @@
     "type": "minecraft:crafting_shaped"
   },
   "shulker_box_coloring": {
+    "category": "misc",
     "type": "minecraft:crafting_special_shulkerboxcoloring"
   },
   "skull_banner_pattern": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:paper"
@@ -16072,6 +16897,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "slime_ball": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:slime_block"
@@ -16085,6 +16911,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "slime_block": {
+    "category": "redstone",
     "key": {
       "#": {
         "count": 1,
@@ -16105,6 +16932,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "smithing_table": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -16129,6 +16957,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "smoker": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -16153,6 +16982,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "smooth_basalt": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -16164,6 +16994,7 @@
     "type": "minecraft:smelting"
   },
   "smooth_quartz": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -16175,6 +17006,7 @@
     "type": "minecraft:smelting"
   },
   "smooth_quartz_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -16203,6 +17035,7 @@
     "type": "minecraft:stonecutting"
   },
   "smooth_quartz_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -16233,6 +17066,7 @@
     "type": "minecraft:stonecutting"
   },
   "smooth_red_sandstone": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -16244,6 +17078,7 @@
     "type": "minecraft:smelting"
   },
   "smooth_red_sandstone_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -16272,6 +17107,7 @@
     "type": "minecraft:stonecutting"
   },
   "smooth_red_sandstone_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -16302,6 +17138,7 @@
     "type": "minecraft:stonecutting"
   },
   "smooth_sandstone": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -16313,6 +17150,7 @@
     "type": "minecraft:smelting"
   },
   "smooth_sandstone_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -16341,6 +17179,7 @@
     "type": "minecraft:stonecutting"
   },
   "smooth_sandstone_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -16371,6 +17210,7 @@
     "type": "minecraft:stonecutting"
   },
   "smooth_stone": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -16382,6 +17222,7 @@
     "type": "minecraft:smelting"
   },
   "smooth_stone_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -16410,6 +17251,7 @@
     "type": "minecraft:stonecutting"
   },
   "snow": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -16428,6 +17270,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "snow_block": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -16447,6 +17290,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "soul_campfire": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -16475,6 +17319,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "soul_lantern": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -16500,6 +17345,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "soul_torch": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -16536,6 +17382,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "spectral_arrow": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -16561,6 +17408,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "sponge": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.15,
     "ingredient": {
@@ -16572,6 +17420,7 @@
     "type": "minecraft:smelting"
   },
   "spruce_boat": {
+    "category": "misc",
     "group": "boat",
     "key": {
       "#": {
@@ -16592,6 +17441,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "spruce_button": {
+    "category": "redstone",
     "group": "wooden_button",
     "ingredients": [
       {
@@ -16606,6 +17456,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "spruce_chest_boat": {
+    "category": "misc",
     "group": "chest_boat",
     "ingredients": [
       {
@@ -16623,6 +17474,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "spruce_door": {
+    "category": "redstone",
     "group": "wooden_door",
     "key": {
       "#": {
@@ -16644,6 +17496,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "spruce_fence": {
+    "category": "misc",
     "group": "wooden_fence",
     "key": {
       "#": {
@@ -16669,6 +17522,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "spruce_fence_gate": {
+    "category": "redstone",
     "group": "wooden_fence_gate",
     "key": {
       "#": {
@@ -16694,6 +17548,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "spruce_planks": {
+    "category": "building",
     "group": "planks",
     "ingredients": [
       {
@@ -16708,6 +17563,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "spruce_pressure_plate": {
+    "category": "redstone",
     "group": "wooden_pressure_plate",
     "key": {
       "#": {
@@ -16727,6 +17583,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "spruce_sign": {
+    "category": "misc",
     "group": "wooden_sign",
     "key": {
       "#": {
@@ -16753,6 +17610,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "spruce_slab": {
+    "category": "building",
     "group": "wooden_slab",
     "key": {
       "#": {
@@ -16772,6 +17630,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "spruce_stairs": {
+    "category": "building",
     "group": "wooden_stairs",
     "key": {
       "#": {
@@ -16793,6 +17652,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "spruce_trapdoor": {
+    "category": "redstone",
     "group": "wooden_trapdoor",
     "key": {
       "#": {
@@ -16813,6 +17673,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "spruce_wood": {
+    "category": "building",
     "group": "bark",
     "key": {
       "#": {
@@ -16833,6 +17694,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "spyglass": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -16858,6 +17720,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "stick": {
+    "category": "misc",
     "group": "sticks",
     "key": {
       "#": {
@@ -16877,6 +17740,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "stick_from_bamboo_item": {
+    "category": "misc",
     "group": "sticks",
     "key": {
       "#": {
@@ -16897,6 +17761,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "sticky_piston": {
+    "category": "redstone",
     "key": {
       "P": {
         "count": 1,
@@ -16921,6 +17786,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "stone": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -16932,6 +17798,7 @@
     "type": "minecraft:smelting"
   },
   "stone_axe": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -16956,6 +17823,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "stone_brick_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -16994,6 +17862,7 @@
     "type": "minecraft:stonecutting"
   },
   "stone_brick_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -17034,6 +17903,7 @@
     "type": "minecraft:stonecutting"
   },
   "stone_brick_wall": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -17073,6 +17943,7 @@
     "type": "minecraft:stonecutting"
   },
   "stone_bricks": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -17102,6 +17973,7 @@
     "type": "minecraft:stonecutting"
   },
   "stone_button": {
+    "category": "redstone",
     "ingredients": [
       {
         "item": "minecraft:stone"
@@ -17115,6 +17987,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "stone_hoe": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -17139,6 +18012,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "stone_pickaxe": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -17163,6 +18037,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "stone_pressure_plate": {
+    "category": "redstone",
     "key": {
       "#": {
         "count": 1,
@@ -17181,6 +18056,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "stone_shovel": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -17205,6 +18081,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "stone_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -17233,6 +18110,7 @@
     "type": "minecraft:stonecutting"
   },
   "stone_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -17263,6 +18141,7 @@
     "type": "minecraft:stonecutting"
   },
   "stone_sword": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -17287,6 +18166,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "stonecutter": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -17311,6 +18191,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "stripped_acacia_wood": {
+    "category": "building",
     "group": "bark",
     "key": {
       "#": {
@@ -17331,6 +18212,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "stripped_birch_wood": {
+    "category": "building",
     "group": "bark",
     "key": {
       "#": {
@@ -17351,6 +18233,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "stripped_crimson_hyphae": {
+    "category": "building",
     "group": "bark",
     "key": {
       "#": {
@@ -17371,6 +18254,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "stripped_dark_oak_wood": {
+    "category": "building",
     "group": "bark",
     "key": {
       "#": {
@@ -17391,6 +18275,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "stripped_jungle_wood": {
+    "category": "building",
     "group": "bark",
     "key": {
       "#": {
@@ -17411,6 +18296,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "stripped_mangrove_wood": {
+    "category": "building",
     "group": "bark",
     "key": {
       "#": {
@@ -17431,6 +18317,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "stripped_oak_wood": {
+    "category": "building",
     "group": "bark",
     "key": {
       "#": {
@@ -17451,6 +18338,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "stripped_spruce_wood": {
+    "category": "building",
     "group": "bark",
     "key": {
       "#": {
@@ -17471,6 +18359,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "stripped_warped_hyphae": {
+    "category": "building",
     "group": "bark",
     "key": {
       "#": {
@@ -17491,6 +18380,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "sugar_from_honey_bottle": {
+    "category": "misc",
     "group": "sugar",
     "ingredients": [
       {
@@ -17505,6 +18395,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "sugar_from_sugar_cane": {
+    "category": "misc",
     "group": "sugar",
     "ingredients": [
       {
@@ -17519,9 +18410,11 @@
     "type": "minecraft:crafting_shapeless"
   },
   "suspicious_stew": {
+    "category": "misc",
     "type": "minecraft:crafting_special_suspiciousstew"
   },
   "target": {
+    "category": "redstone",
     "key": {
       "H": {
         "count": 1,
@@ -17547,6 +18440,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "terracotta": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.35,
     "ingredient": {
@@ -17558,6 +18452,7 @@
     "type": "minecraft:smelting"
   },
   "tinted_glass": {
+    "category": "building",
     "key": {
       "G": {
         "count": 1,
@@ -17583,9 +18478,11 @@
     "type": "minecraft:crafting_shaped"
   },
   "tipped_arrow": {
+    "category": "misc",
     "type": "minecraft:crafting_special_tippedarrow"
   },
   "tnt": {
+    "category": "redstone",
     "key": {
       "#": [
         {
@@ -17618,6 +18515,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "tnt_minecart": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:tnt"
@@ -17634,6 +18532,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "torch": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -17665,6 +18564,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "trapped_chest": {
+    "category": "redstone",
     "ingredients": [
       {
         "item": "minecraft:chest"
@@ -17681,6 +18581,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "tripwire_hook": {
+    "category": "redstone",
     "key": {
       "#": {
         "count": 1,
@@ -17710,6 +18611,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "turtle_helmet": {
+    "category": "equipment",
     "key": {
       "X": {
         "count": 1,
@@ -17729,6 +18631,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "warped_button": {
+    "category": "redstone",
     "group": "wooden_button",
     "ingredients": [
       {
@@ -17743,6 +18646,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "warped_door": {
+    "category": "redstone",
     "group": "wooden_door",
     "key": {
       "#": {
@@ -17764,6 +18668,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "warped_fence": {
+    "category": "misc",
     "group": "wooden_fence",
     "key": {
       "#": {
@@ -17789,6 +18694,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "warped_fence_gate": {
+    "category": "redstone",
     "group": "wooden_fence_gate",
     "key": {
       "#": {
@@ -17814,6 +18720,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "warped_fungus_on_a_stick": {
+    "category": "misc",
     "key": {
       "#": {
         "count": 1,
@@ -17838,6 +18745,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "warped_hyphae": {
+    "category": "building",
     "group": "bark",
     "key": {
       "#": {
@@ -17858,6 +18766,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "warped_planks": {
+    "category": "building",
     "group": "planks",
     "ingredients": [
       {
@@ -17872,6 +18781,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "warped_pressure_plate": {
+    "category": "redstone",
     "group": "wooden_pressure_plate",
     "key": {
       "#": {
@@ -17891,6 +18801,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "warped_sign": {
+    "category": "misc",
     "group": "wooden_sign",
     "key": {
       "#": {
@@ -17917,6 +18828,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "warped_slab": {
+    "category": "building",
     "group": "wooden_slab",
     "key": {
       "#": {
@@ -17936,6 +18848,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "warped_stairs": {
+    "category": "building",
     "group": "wooden_stairs",
     "key": {
       "#": {
@@ -17957,6 +18870,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "warped_trapdoor": {
+    "category": "redstone",
     "group": "wooden_trapdoor",
     "key": {
       "#": {
@@ -17977,6 +18891,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "waxed_copper_block_from_honeycomb": {
+    "category": "building",
     "group": "waxed_copper_block",
     "ingredients": [
       {
@@ -17994,6 +18909,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "waxed_cut_copper": {
+    "category": "building",
     "group": "waxed_cut_copper",
     "key": {
       "#": {
@@ -18014,6 +18930,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "waxed_cut_copper_from_honeycomb": {
+    "category": "building",
     "group": "waxed_cut_copper",
     "ingredients": [
       {
@@ -18041,6 +18958,7 @@
     "type": "minecraft:stonecutting"
   },
   "waxed_cut_copper_slab": {
+    "category": "building",
     "group": "waxed_cut_copper_slab",
     "key": {
       "#": {
@@ -18060,6 +18978,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "waxed_cut_copper_slab_from_honeycomb": {
+    "category": "building",
     "group": "waxed_cut_copper_slab",
     "ingredients": [
       {
@@ -18097,6 +19016,7 @@
     "type": "minecraft:stonecutting"
   },
   "waxed_cut_copper_stairs": {
+    "category": "building",
     "group": "waxed_cut_copper_stairs",
     "key": {
       "#": {
@@ -18118,6 +19038,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "waxed_cut_copper_stairs_from_honeycomb": {
+    "category": "building",
     "group": "waxed_cut_copper_stairs",
     "ingredients": [
       {
@@ -18155,6 +19076,7 @@
     "type": "minecraft:stonecutting"
   },
   "waxed_exposed_copper_from_honeycomb": {
+    "category": "building",
     "group": "waxed_exposed_copper",
     "ingredients": [
       {
@@ -18172,6 +19094,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "waxed_exposed_cut_copper": {
+    "category": "building",
     "group": "waxed_exposed_cut_copper",
     "key": {
       "#": {
@@ -18192,6 +19115,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "waxed_exposed_cut_copper_from_honeycomb": {
+    "category": "building",
     "group": "waxed_exposed_cut_copper",
     "ingredients": [
       {
@@ -18219,6 +19143,7 @@
     "type": "minecraft:stonecutting"
   },
   "waxed_exposed_cut_copper_slab": {
+    "category": "building",
     "group": "waxed_exposed_cut_copper_slab",
     "key": {
       "#": {
@@ -18238,6 +19163,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "waxed_exposed_cut_copper_slab_from_honeycomb": {
+    "category": "building",
     "group": "waxed_exposed_cut_copper_slab",
     "ingredients": [
       {
@@ -18275,6 +19201,7 @@
     "type": "minecraft:stonecutting"
   },
   "waxed_exposed_cut_copper_stairs": {
+    "category": "building",
     "group": "waxed_exposed_cut_copper_stairs",
     "key": {
       "#": {
@@ -18296,6 +19223,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "waxed_exposed_cut_copper_stairs_from_honeycomb": {
+    "category": "building",
     "group": "waxed_exposed_cut_copper_stairs",
     "ingredients": [
       {
@@ -18333,6 +19261,7 @@
     "type": "minecraft:stonecutting"
   },
   "waxed_oxidized_copper_from_honeycomb": {
+    "category": "building",
     "group": "waxed_oxidized_copper",
     "ingredients": [
       {
@@ -18350,6 +19279,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "waxed_oxidized_cut_copper": {
+    "category": "building",
     "group": "waxed_oxidized_cut_copper",
     "key": {
       "#": {
@@ -18370,6 +19300,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "waxed_oxidized_cut_copper_from_honeycomb": {
+    "category": "building",
     "group": "waxed_oxidized_cut_copper",
     "ingredients": [
       {
@@ -18397,6 +19328,7 @@
     "type": "minecraft:stonecutting"
   },
   "waxed_oxidized_cut_copper_slab": {
+    "category": "building",
     "group": "waxed_oxidized_cut_copper_slab",
     "key": {
       "#": {
@@ -18416,6 +19348,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "waxed_oxidized_cut_copper_slab_from_honeycomb": {
+    "category": "building",
     "group": "waxed_oxidized_cut_copper_slab",
     "ingredients": [
       {
@@ -18453,6 +19386,7 @@
     "type": "minecraft:stonecutting"
   },
   "waxed_oxidized_cut_copper_stairs": {
+    "category": "building",
     "group": "waxed_oxidized_cut_copper_stairs",
     "key": {
       "#": {
@@ -18474,6 +19408,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "waxed_oxidized_cut_copper_stairs_from_honeycomb": {
+    "category": "building",
     "group": "waxed_oxidized_cut_copper_stairs",
     "ingredients": [
       {
@@ -18511,6 +19446,7 @@
     "type": "minecraft:stonecutting"
   },
   "waxed_weathered_copper_from_honeycomb": {
+    "category": "building",
     "group": "waxed_weathered_copper",
     "ingredients": [
       {
@@ -18528,6 +19464,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "waxed_weathered_cut_copper": {
+    "category": "building",
     "group": "waxed_weathered_cut_copper",
     "key": {
       "#": {
@@ -18548,6 +19485,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "waxed_weathered_cut_copper_from_honeycomb": {
+    "category": "building",
     "group": "waxed_weathered_cut_copper",
     "ingredients": [
       {
@@ -18575,6 +19513,7 @@
     "type": "minecraft:stonecutting"
   },
   "waxed_weathered_cut_copper_slab": {
+    "category": "building",
     "group": "waxed_weathered_cut_copper_slab",
     "key": {
       "#": {
@@ -18594,6 +19533,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "waxed_weathered_cut_copper_slab_from_honeycomb": {
+    "category": "building",
     "group": "waxed_weathered_cut_copper_slab",
     "ingredients": [
       {
@@ -18631,6 +19571,7 @@
     "type": "minecraft:stonecutting"
   },
   "waxed_weathered_cut_copper_stairs": {
+    "category": "building",
     "group": "waxed_weathered_cut_copper_stairs",
     "key": {
       "#": {
@@ -18652,6 +19593,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "waxed_weathered_cut_copper_stairs_from_honeycomb": {
+    "category": "building",
     "group": "waxed_weathered_cut_copper_stairs",
     "ingredients": [
       {
@@ -18689,6 +19631,7 @@
     "type": "minecraft:stonecutting"
   },
   "weathered_cut_copper": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -18718,6 +19661,7 @@
     "type": "minecraft:stonecutting"
   },
   "weathered_cut_copper_slab": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -18756,6 +19700,7 @@
     "type": "minecraft:stonecutting"
   },
   "weathered_cut_copper_stairs": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -18796,6 +19741,7 @@
     "type": "minecraft:stonecutting"
   },
   "wheat": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:hay_block"
@@ -18809,6 +19755,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "white_banner": {
+    "category": "misc",
     "group": "banner",
     "key": {
       "#": {
@@ -18835,6 +19782,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "white_bed": {
+    "category": "misc",
     "group": "bed",
     "key": {
       "#": {
@@ -18859,6 +19807,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "white_candle": {
+    "category": "misc",
     "group": "dyed_candle",
     "ingredients": [
       {
@@ -18876,6 +19825,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "white_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -18895,6 +19845,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "white_concrete_powder": {
+    "category": "building",
     "group": "concrete_powder",
     "ingredients": [
       {
@@ -18933,6 +19884,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "white_dye": {
+    "category": "misc",
     "group": "white_dye",
     "ingredients": [
       {
@@ -18947,6 +19899,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "white_dye_from_lily_of_the_valley": {
+    "category": "misc",
     "group": "white_dye",
     "ingredients": [
       {
@@ -18961,6 +19914,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "white_glazed_terracotta": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -18972,6 +19926,7 @@
     "type": "minecraft:smelting"
   },
   "white_stained_glass": {
+    "category": "building",
     "group": "stained_glass",
     "key": {
       "#": {
@@ -18998,6 +19953,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "white_stained_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -19018,6 +19974,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "white_stained_glass_pane_from_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -19044,6 +20001,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "white_terracotta": {
+    "category": "building",
     "group": "stained_terracotta",
     "key": {
       "#": {
@@ -19070,6 +20028,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "white_wool_from_string": {
+    "category": "building",
     "key": {
       "#": {
         "count": 1,
@@ -19089,6 +20048,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "wooden_axe": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -19113,6 +20073,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "wooden_hoe": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -19137,6 +20098,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "wooden_pickaxe": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -19161,6 +20123,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "wooden_shovel": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -19185,6 +20148,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "wooden_sword": {
+    "category": "equipment",
     "key": {
       "#": {
         "count": 1,
@@ -19209,6 +20173,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "writable_book": {
+    "category": "misc",
     "ingredients": [
       {
         "item": "minecraft:book"
@@ -19228,6 +20193,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "yellow_banner": {
+    "category": "misc",
     "group": "banner",
     "key": {
       "#": {
@@ -19254,6 +20220,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "yellow_bed": {
+    "category": "misc",
     "group": "bed",
     "key": {
       "#": {
@@ -19278,6 +20245,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "yellow_bed_from_white_bed": {
+    "category": "misc",
     "group": "dyed_bed",
     "ingredients": [
       {
@@ -19295,6 +20263,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "yellow_candle": {
+    "category": "misc",
     "group": "dyed_candle",
     "ingredients": [
       {
@@ -19312,6 +20281,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "yellow_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -19331,6 +20301,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "yellow_carpet_from_white_carpet": {
+    "category": "misc",
     "group": "carpet",
     "key": {
       "#": {
@@ -19357,6 +20328,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "yellow_concrete_powder": {
+    "category": "building",
     "group": "concrete_powder",
     "ingredients": [
       {
@@ -19395,6 +20367,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "yellow_dye_from_dandelion": {
+    "category": "misc",
     "group": "yellow_dye",
     "ingredients": [
       {
@@ -19409,6 +20382,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "yellow_dye_from_sunflower": {
+    "category": "misc",
     "group": "yellow_dye",
     "ingredients": [
       {
@@ -19423,6 +20397,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "yellow_glazed_terracotta": {
+    "category": "blocks",
     "cookingtime": 200,
     "experience": 0.1,
     "ingredient": {
@@ -19434,6 +20409,7 @@
     "type": "minecraft:smelting"
   },
   "yellow_stained_glass": {
+    "category": "building",
     "group": "stained_glass",
     "key": {
       "#": {
@@ -19460,6 +20436,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "yellow_stained_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -19480,6 +20457,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "yellow_stained_glass_pane_from_glass_pane": {
+    "category": "misc",
     "group": "stained_glass_pane",
     "key": {
       "#": {
@@ -19506,6 +20484,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "yellow_terracotta": {
+    "category": "building",
     "group": "stained_terracotta",
     "key": {
       "#": {
@@ -19532,6 +20511,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "yellow_wool": {
+    "category": "building",
     "group": "wool",
     "ingredients": [
       {
