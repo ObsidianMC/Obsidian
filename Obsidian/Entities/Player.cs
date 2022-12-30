@@ -41,6 +41,8 @@ public class Player : Living, IPlayer
 
     public BaseContainer OpenedContainer { get; set; }
 
+    public List<SkinProperty> SkinProperties { get; set; } = new();
+
     public Vector? LastDeathLocation { get; set; }
 
     public ItemStack LastClickedItem { get; internal set; }
