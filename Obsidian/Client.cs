@@ -84,7 +84,7 @@ public sealed class Client : IDisposable
     /// <summary>
     /// The mojang user that the client and player is associated with.
     /// </summary>
-    private MojangUser? cachedMojangUser;
+    private CachedUser? cachedUser;
 
     /// <summary>
     /// Which packets are in queue to be sent to the client.
@@ -372,37 +372,44 @@ public sealed class Client : IDisposable
         Logger.LogDebug("Received login request from user {Username}", loginStart.Username);
         await Server.DisconnectIfConnectedAsync(username);
 
+        this.Logger.LogDebug("Not connected continue..");
+
         if (config.OnlineMode)
         {
-            cachedMojangUser = await MinecraftAPI.GetUserAndSkinAsync(loginStart.Username);
+            cachedUser = await UserCache.GetUserFromUuidAsync(loginStart.PlayerUuid ?? throw new NullReferenceException(nameof(loginStart.PlayerUuid)));
 
-            if (cachedMojangUser is null)
+            this.Logger.LogDebug("Got user");
+
+            if (cachedUser is null)
             {
                 await DisconnectAsync("Account not found in the Mojang database");
                 return;
             }
-            else if (config.WhitelistEnabled && !config.Whitelisted.Any(x => x.UUID == cachedMojangUser.Id))
+            else if (config.WhitelistEnabled && !config.Whitelisted.Any(x => x.Id == cachedUser.Id))
             {
                 await DisconnectAsync("You are not whitelisted on this server\nContact server administrator");
                 return;
             }
 
-            Player = new Player(loginStart.PlayerUuid ?? Guid.Parse(this.cachedMojangUser.Id), loginStart.Username, this, world);
+            Player = new Player(loginStart.PlayerUuid ?? this.cachedUser.Id, loginStart.Username, this, world);
 
             packetCryptography.GenerateKeyPair();
 
-            // Attempt to encrypt the connection
-            _ = packetCryptography.GenerateKeyPair();
+            var (publicKey, randomToken) = packetCryptography.GeneratePublicKeyAndToken();
 
-            var values = packetCryptography.GeneratePublicKeyAndToken();
+            this.randomToken = randomToken;
+
+            this.Logger.LogDebug("Sending request");
 
             SendPacket(new EncryptionRequest
             {
-                PublicKey = values.publicKey,
-                VerifyToken = randomToken = values.randomToken
+                PublicKey = publicKey,
+                VerifyToken = randomToken
             });
+
+            this.Logger.LogDebug("Sent request");
         }
-        else if (config.WhitelistEnabled && !config.Whitelisted.Any(x => x.Nickname == username))
+        else if (config.WhitelistEnabled && !config.Whitelisted.Any(x => x.Name == username))
         {
             await DisconnectAsync("You are not whitelisted on this server\nContact server administrator");
         }
@@ -432,33 +439,23 @@ public sealed class Client : IDisposable
 
         sharedKey = packetCryptography.Decrypt(encryptionResponse.SharedSecret);
 
-        if (encryptionResponse.HasVerifyToken)
-        {
-            var decryptedToken = packetCryptography.Decrypt(encryptionResponse.VerifyToken);
+        var decryptedToken = packetCryptography.Decrypt(encryptionResponse.VerifyToken);
 
-            if (!decryptedToken.SequenceEqual(randomToken))
-            {
-                await DisconnectAsync("Invalid token...");
-                return;
-            }
-        }
-        else
+        if (!decryptedToken.SequenceEqual(randomToken))
         {
-            this.messageSigningData = new()
-            {
-                Salt = encryptionResponse.Salt,
-                MessageSignature = encryptionResponse.MessageSignature,
-            };
+            await DisconnectAsync("Invalid token...");
+            return;
         }
 
         var serverId = sharedKey.Concat(packetCryptography.PublicKey).MinecraftShaDigest();
-        if (await MinecraftAPI.HasJoined(Player.Username, serverId) is null)
+        if (await UserCache.HasJoined(Player.Username, serverId) is not MojangUser user)
         {
             Logger.LogWarning("Failed to auth {Username}", Player.Username);
             await DisconnectAsync("Unable to authenticate...");
             return;
         }
 
+        this.Player.SkinProperties = user.Properties;
         EncryptionEnabled = true;
         minecraftStream = new AesStream(networkStream, sharedKey);
 
@@ -484,7 +481,7 @@ public sealed class Client : IDisposable
 
         await QueuePacketAsync(new LoginSuccess(Player.Uuid, Player.Username)
         {
-            SkinProperties = cachedMojangUser?.Properties ?? new(),
+            SkinProperties = this.Player.SkinProperties,
         });
 
         Logger.LogDebug("Sent Login success to user {Username} {UUID}", Player.Username, Player.Uuid);
@@ -650,10 +647,8 @@ public sealed class Client : IDisposable
             Name = player.Username,
         };
 
-        if (config.OnlineMode && await MinecraftAPI.GetUserAndSkinAsync(player.Uuid.ToString("N")) is MojangUser userWithSkin)
-        {
-            addAction.Properties.AddRange(userWithSkin.Properties);
-        }
+        if (config.OnlineMode)
+            addAction.Properties.AddRange(player.SkinProperties);
 
         var list = new List<InfoAction>()
         {
@@ -683,10 +678,8 @@ public sealed class Client : IDisposable
                 Name = player.Username,
             };
 
-            if (config.OnlineMode && await MinecraftAPI.GetUserAndSkinAsync(player.Uuid.ToString("N")) is MojangUser userWithSkin)
-            {
-                addPlayerInforAction.Properties.AddRange(userWithSkin.Properties);
-            }
+            if (config.OnlineMode)
+                addPlayerInforAction.Properties.AddRange(player.SkinProperties);
 
             var list = new List<InfoAction>
             {
