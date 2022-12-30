@@ -5,6 +5,7 @@ using Obsidian.Utilities.Registry;
 using System.Buffers.Binary;
 using System.ComponentModel;
 using System.IO;
+using System.Net.WebSockets;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -543,21 +544,13 @@ public partial class MinecraftStream
     }
 
     [ReadMethod]
-    public Guid ReadGuid()
-    {
-        var converter = new GuidConverter()
-        {
-            Long1 = this.ReadLong(),
-            Long2 = this.ReadLong()
-        };
-
-        return converter.Guid;
-    }
+    public Guid ReadGuid() =>
+        GuidHelper.FromLongs(this.ReadLong(), this.ReadLong());
 
     [ReadMethod]
     public Guid? ReadOptionalGuid()
     {
-        if(this.ReadBoolean())
+        if (this.ReadBoolean())
             return this.ReadGuid();
 
         return null;
@@ -815,21 +808,5 @@ public partial class MinecraftStream
     public Velocity ReadVelocity()
     {
         return new Velocity(ReadShort(), ReadShort(), ReadShort());
-    }
-
-    [StructLayout(LayoutKind.Explicit)]
-    private struct GuidConverter
-    {
-        [FieldOffset(0)]
-        public decimal Decimal;
-
-        [FieldOffset(0)]
-        public Guid Guid;
-
-        [FieldOffset(0)]
-        public long Long1;
-
-        [FieldOffset(8)]
-        public long Long2;
     }
 }

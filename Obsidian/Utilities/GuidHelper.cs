@@ -25,6 +25,34 @@ public static class GuidHelper
         return Unsafe.As<Int128, Guid>(ref i128);
     }
 
+    public static  Guid FromLongs(long mostSig, long leastSig)
+    {
+        var mostSigBytes = BitConverter.GetBytes(mostSig);
+        var leastSigBytes = BitConverter.GetBytes(leastSig);
+
+        Span<byte> guidBytes = stackalloc byte[16]//Is there a better way??
+        {
+            mostSigBytes[4],
+            mostSigBytes[5],
+            mostSigBytes[6],
+            mostSigBytes[7],
+            mostSigBytes[2],
+            mostSigBytes[3],
+            mostSigBytes[0],
+            mostSigBytes[1],
+            leastSigBytes[7],
+            leastSigBytes[6],
+            leastSigBytes[5],
+            leastSigBytes[4],
+            leastSigBytes[3],
+            leastSigBytes[2],
+            leastSigBytes[1],
+            leastSigBytes[0]
+        };
+
+        return new Guid(guidBytes);
+    }
+
     public static int GetVersion(Guid guid)
     {
         ref Int128 i128 = ref Unsafe.As<Guid, Int128>(ref guid);
