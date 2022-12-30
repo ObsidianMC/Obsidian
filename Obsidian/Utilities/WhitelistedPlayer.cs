@@ -1,7 +1,7 @@
 ﻿namespace Obsidian.Utilities;
 
-public class WhitelistedPlayer
+public sealed class WhitelistedPlayer
 {
-    public string Nickname { get; set; }
-    public string UUID { get; set; }
+    public required string Name { get; set; }
+    public required Guid Id { get; set; }
 }

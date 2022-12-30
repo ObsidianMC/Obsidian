@@ -239,6 +239,8 @@ public partial class Server : IServer
             return;
         }
 
+        await UserCache.LoadAsync(this._cancelTokenSource.Token);
+
         await Task.WhenAll(Registry.RegisterCodecsAsync(),
                            Registry.RegisterRecipesAsync());
 
@@ -295,7 +297,6 @@ public partial class Server : IServer
             // Try to shut the server down gracefully.
             await HandleServerShutdown();
             _logger.LogInformation("The server has been shut down");
-
         }
     }
 
@@ -303,6 +304,8 @@ public partial class Server : IServer
     {
         _logger.LogDebug("Flushing regions");
         await WorldManager.FlushLoadedWorldsAsync();
+
+        await UserCache.SaveAsync();
     }
 
     private async Task AcceptClientsAsync()
@@ -614,20 +617,18 @@ public partial class Server : IServer
 
     private async Task ServerSaveAsync()
     {
-        while (!_cancelTokenSource.IsCancellationRequested)
+        var timer = new PeriodicTimer(TimeSpan.FromMinutes(5));
+
+        try
         {
-            try
+            while (await timer.WaitForNextTickAsync(this._cancelTokenSource.Token))
             {
-                await Task.Delay(TimeSpan.FromMinutes(5), _cancelTokenSource.Token);
+                _logger.LogInformation("Saving world...");
+                await WorldManager.FlushLoadedWorldsAsync();
+                await UserCache.SaveAsync();
             }
-            catch (OperationCanceledException)
-            {
-                // Cancelled while waiting, don't loop anymore.
-                break;
-            }
-            _logger.LogInformation("Saving world...");
-            await WorldManager.FlushLoadedWorldsAsync();
         }
+        catch { }
     }
 
     private async Task LoopAsync()
