@@ -15,7 +15,6 @@ using Obsidian.Net.Packets.Status;
 using Obsidian.Utilities.Mojang;
 using Obsidian.Utilities.Registry;
 using Obsidian.WorldData;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -268,9 +267,29 @@ public sealed class Client : IDisposable
                     switch (id)
                     {
                         case 0x00:
+                        {
+                            if (this.Server.Config.CanThrottle)
+                            {
+                                string ip = ((IPEndPoint)socket.RemoteEndPoint!).Address.ToString();
+
+                                if (Server.throttler.TryGetValue(ip, out var timeLeft))
+                                {
+                                    if (DateTimeOffset.UtcNow < timeLeft)
+                                    {
+                                        this.Logger.LogInformation("{ip} has been throttled for reconnecting too fast.", ip);
+                                        await this.DisconnectAsync("Connection Throttled! Please wait before reconnecting.");
+                                        this.Disconnect();
+                                    }
+                                }
+                                else
+                                {
+                                    Server.throttler.TryAdd(ip, DateTimeOffset.UtcNow.AddMilliseconds(this.Server.Config.ConnectionThrottle));
+                                }
+                            }
+                            
                             await HandleLoginStartAsync(data);
                             break;
-
+                        }
                         case 0x01:
                             await HandleEncryptionResponseAsync(data);
                             break;
@@ -309,15 +328,8 @@ public sealed class Client : IDisposable
             await Server.Events.InvokePlayerLeaveAsync(new PlayerLeaveEventArgs(Player, DateTimeOffset.Now));
         }
 
-        if (socket.Connected)
-        {
-            socket.Close();
-
-            if (Player is not null)
-                _ = Server.OnlinePlayers.TryRemove(Player.Uuid, out _);
-
-            Disconnected?.Invoke(this);
-        }
+        Disconnected?.Invoke(this);
+        this.Dispose();//Dispose client after
     }
 
     private async Task HandleServerStatusRequestAsync()
@@ -372,13 +384,9 @@ public sealed class Client : IDisposable
         Logger.LogDebug("Received login request from user {Username}", loginStart.Username);
         await Server.DisconnectIfConnectedAsync(username);
 
-        this.Logger.LogDebug("Not connected continue..");
-
         if (config.OnlineMode)
         {
             cachedUser = await UserCache.GetUserFromUuidAsync(loginStart.PlayerUuid ?? throw new NullReferenceException(nameof(loginStart.PlayerUuid)));
-
-            this.Logger.LogDebug("Got user");
 
             if (cachedUser is null)
             {
@@ -399,15 +407,11 @@ public sealed class Client : IDisposable
 
             this.randomToken = randomToken;
 
-            this.Logger.LogDebug("Sending request");
-
             SendPacket(new EncryptionRequest
             {
                 PublicKey = publicKey,
                 VerifyToken = randomToken
             });
-
-            this.Logger.LogDebug("Sent request");
         }
         else if (config.WhitelistEnabled && !config.Whitelisted.Any(x => x.Name == username))
         {
@@ -448,7 +452,7 @@ public sealed class Client : IDisposable
         }
 
         var serverId = sharedKey.Concat(packetCryptography.PublicKey).MinecraftShaDigest();
-        if (await UserCache.HasJoined(Player.Username, serverId) is not MojangUser user)
+        if (await UserCache.HasJoinedAsync(Player.Username, serverId) is not MojangUser user)
         {
             Logger.LogWarning("Failed to auth {Username}", Player.Username);
             await DisconnectAsync("Unable to authenticate...");
@@ -457,7 +461,7 @@ public sealed class Client : IDisposable
 
         this.Player.SkinProperties = user.Properties;
         EncryptionEnabled = true;
-        minecraftStream = new AesStream(networkStream, sharedKey);
+        minecraftStream = new EncryptedMinecraftStream(networkStream, sharedKey);
 
         // TODO: Fix compression
         //await this.SetCompression();
@@ -760,23 +764,21 @@ public sealed class Client : IDisposable
     {
         cancellationSource.Cancel();
         Disconnected?.Invoke(this);
+
+        this.Dispose();
     }
 
     public void Dispose()
     {
         if (disposed)
             return;
-        disposed = true;
 
-        GC.SuppressFinalize(this);
+        disposed = true;
 
         minecraftStream.Dispose();
         socket.Dispose();
         cancellationSource?.Dispose();
-    }
 
-    ~Client()
-    {
-        Dispose();
+        GC.SuppressFinalize(this);
     }
 }

@@ -88,7 +88,7 @@ public static class UserCache
         return user;
     }
 
-    public static async Task<MojangUser?> HasJoined(string username, string serverId)
+    public static async Task<MojangUser?> HasJoinedAsync(string username, string serverId)
     {
         var escapedUsername = Sanitize(username);
         var escapedServerId = Sanitize(serverId);

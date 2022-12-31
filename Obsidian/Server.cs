@@ -36,6 +36,18 @@ public partial class Server : IServer
     public const string VERSION = "0.1-DEV";
 #endif
     public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_19_3;
+
+    internal static readonly ConcurrentDictionary<string, DateTimeOffset> throttler = new();
+
+    internal readonly CancellationTokenSource _cancelTokenSource;
+    internal string PermissionPath => Path.Combine(ServerFolderPath, "permissions");
+
+    private readonly ConcurrentQueue<IClientboundPacket> _chatMessagesQueue = new();
+    private readonly ConcurrentHashSet<Client> _clients = new();
+    private readonly TcpListener _tcpListener;
+    private readonly RconServer _rconServer;
+    private readonly ILogger _logger;
+
     public ProtocolVersion Protocol => DefaultProtocol;
 
     public int Tps { get; private set; }
@@ -66,15 +78,6 @@ public partial class Server : IServer
 
     // TODO: This should be removed. Services should get their own logger.
     public ILogger Logger => _logger;
-
-    private readonly ConcurrentQueue<IClientboundPacket> _chatMessagesQueue = new();
-    private readonly ConcurrentHashSet<Client> _clients = new();
-    private readonly TcpListener _tcpListener;
-    private readonly RconServer _rconServer;
-    internal readonly CancellationTokenSource _cancelTokenSource;
-    private readonly ILogger _logger;
-
-    internal string PermissionPath => Path.Combine(ServerFolderPath, "permissions");
 
     /// <summary>
     /// Creates a new instance of <see cref="Server"/>.
@@ -333,11 +336,21 @@ public partial class Server : IServer
             _logger.LogDebug("New connection from client with IP {ip}", socket.RemoteEndPoint);
 
             string ip = ((IPEndPoint)socket.RemoteEndPoint!).Address.ToString();
+
             if (Config.IpWhitelistEnabled && !Config.WhitelistedIPs.Contains(ip))
             {
                 _logger.LogInformation("{ip} is not whitelisted. Closing connection", ip);
                 socket.Disconnect(false);
                 return;
+            }
+
+            if(this.Config.CanThrottle)
+            {
+                if (throttler.TryGetValue(ip, out var time) && time <= DateTimeOffset.UtcNow)
+                {
+                    throttler.Remove(ip, out _);
+                    this.Logger.LogDebug("Removed {ip} from throttler", ip);
+                }
             }
 
             // TODO Entity ids need to be unique on the entire server, not per world
@@ -348,10 +361,9 @@ public partial class Server : IServer
             client.Disconnected += client =>
             {
                 _clients.TryRemove(client);
+
                 if (client.Player is not null)
-                {
-                    OnlinePlayers.Remove(client.Player.Uuid, out _);
-                }
+                    _ = OnlinePlayers.TryRemove(client.Player.Uuid, out _);
             };
 
             _ = Task.Run(client.StartConnectionAsync);

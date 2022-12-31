@@ -31,12 +31,18 @@ public class ServerConfiguration : IServerConfiguration
     public bool? Baah { get; set; }
     public bool WhitelistEnabled { get; set; }
     public bool IpWhitelistEnabled { get; set; }
+
+    [JsonIgnore]
+    public bool CanThrottle => this.ConnectionThrottle > 0;
+
     public List<string> WhitelistedIPs { get; set; } = new();
     public List<WhitelistedPlayer> Whitelisted { get; set; } = new();
 
     public long KeepAliveInterval { get; set; } = 10_000; // 10 seconds per KeepAlive
 
     public long KeepAliveTimeoutInterval { get; set; } = 30_000; // No response after 30s? Timeout
+
+    public long ConnectionThrottle { get; set; } = 15_000;
 
     public string[] DownloadPlugins { get; set; } = Array.Empty<string>();
     public RconConfig? Rcon { get; set; }
