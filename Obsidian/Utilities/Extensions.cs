@@ -55,24 +55,6 @@ public static partial class Extensions
 
     public static ParameterExpression[] GetParamExpressions(this Type[] types) => types.Select((t, i) => Expression.Parameter(t, $"param{i}")).ToArray();
 
-    public static void Write(this SkinProperty skinProperty, MinecraftStream stream)
-    {
-        stream.WriteString(skinProperty.Name);
-        stream.WriteString(skinProperty.Value);
-        stream.WriteBoolean(skinProperty.Signature != null);
-        if (skinProperty.Signature is string data)
-            stream.WriteString(data);
-    }
-
-    public static async Task WriteAsync(this SkinProperty skinProperty, MinecraftStream stream)
-    {
-        await stream.WriteStringAsync(skinProperty.Name);
-        await stream.WriteStringAsync(skinProperty.Value);
-        await stream.WriteBooleanAsync(skinProperty.Signature != null);
-        if (skinProperty.Signature is string data)
-            await stream.WriteStringAsync(data);
-    }
-
     internal static bool IsNonLiving(this EntityType type) => nonLiving.Contains(type);
 
     public static Item AsItem(this ItemStack itemStack) => Registry.Registry.GetItem(itemStack.Type);

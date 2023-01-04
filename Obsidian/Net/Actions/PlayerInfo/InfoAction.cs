@@ -4,7 +4,7 @@ public abstract class InfoAction
 {
     public abstract PlayerInfoAction Type { get; }
 
-    public virtual Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
+    public abstract Task WriteAsync(MinecraftStream stream);
 
-    public virtual void Write(MinecraftStream stream) { }
+    public abstract void Write(MinecraftStream stream);
 }

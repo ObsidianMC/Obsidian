@@ -11,4 +11,6 @@ public sealed class UpdateListedInfoAction : InfoAction
     {
         stream.WriteBoolean(this.Listed);
     }
+
+    public override async Task WriteAsync(MinecraftStream stream) => await stream.WriteBooleanAsync(this.Listed);
 }
