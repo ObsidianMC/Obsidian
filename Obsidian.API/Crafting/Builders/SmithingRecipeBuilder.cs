@@ -3,17 +3,17 @@
 namespace Obsidian.API.Crafting.Builders;
 
 public sealed class SmithingRecipeBuilder : BaseRecipeBuilder<SmithingRecipe>,
-    IBaseIngredientRecipe<INamedRecipe<SmithingRecipe>>, 
-    IUpgradeIngredientRecipe<INamedRecipe<SmithingRecipe>>
+    IBaseIngredientRecipe<SmithingRecipe>, 
+    IUpgradeIngredientRecipe<SmithingRecipe>
 {
     private Ingredient @base = new();
     private Ingredient addition = new();
 
     private SmithingRecipeBuilder() { }
 
-    public static IBaseIngredientRecipe<INamedRecipe<SmithingRecipe>> Create() => new SmithingRecipeBuilder();
+    public static IBaseIngredientRecipe<SmithingRecipe> Create() => new SmithingRecipeBuilder();
 
-    public IUpgradeIngredientRecipe<INamedRecipe<SmithingRecipe>> WithBaseIngredient(params ItemStack[] items)
+    public IUpgradeIngredientRecipe<SmithingRecipe> WithBaseIngredient(params ItemStack[] items)
     {
         foreach (var item in items)
             this.@base.Add(item);

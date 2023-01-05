@@ -1,10 +1,10 @@
 ﻿namespace Obsidian.API.Crafting.Builders.Interfaces;
-public interface IBaseIngredientRecipe<TBuilder>
+public interface IBaseIngredientRecipe<TRecipe>
 {
-    public IUpgradeIngredientRecipe<TBuilder> WithBaseIngredient(params ItemStack[] items);
+    public IUpgradeIngredientRecipe<TRecipe> WithBaseIngredient(params ItemStack[] items);
 }
 
-public interface IUpgradeIngredientRecipe<TBuilder>
+public interface IUpgradeIngredientRecipe<TRecipe>
 {
-    public TBuilder WithUpgradeIngredient(params ItemStack[] items);
+    public INamedRecipe<TRecipe> WithUpgradeIngredient(params ItemStack[] items);
 }
