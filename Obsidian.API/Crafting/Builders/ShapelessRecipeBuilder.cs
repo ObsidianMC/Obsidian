@@ -3,7 +3,7 @@ using System.Collections.ObjectModel;
 
 namespace Obsidian.API.Crafting.Builders;
 
-public sealed class ShapelessRecipeBuilder : BaseRecipeBuilder<ShapelessRecipe>, IIngredientRecipe<IGroupedRecipe<ShapelessRecipe>>
+public sealed class ShapelessRecipeBuilder : BaseRecipeBuilder<ShapelessRecipe>, IShapelessIngredientRecipe<ShapelessRecipe>
 {
     private readonly CraftingBookCategory category;
 
@@ -11,16 +11,12 @@ public sealed class ShapelessRecipeBuilder : BaseRecipeBuilder<ShapelessRecipe>,
 
     private ShapelessRecipeBuilder(CraftingBookCategory category) => this.category = category;
 
-    public static IIngredientRecipe<IGroupedRecipe<ShapelessRecipe>> Create(CraftingBookCategory category) => new ShapelessRecipeBuilder(category);
+    public static IShapelessIngredientRecipe<ShapelessRecipe> Create(CraftingBookCategory category) => new ShapelessRecipeBuilder(category);
 
-    public IGroupedRecipe<ShapelessRecipe> AddIngredient(params ItemStack[] items)
+    public IGroupedRecipe<ShapelessRecipe> AddIngredients(params Ingredient[] ingredients)
     {
-        var ingredient = new Ingredient();
-
-        foreach (var item in items)
-            ingredient.Add(item);
-
-        this.ingredients.Add(ingredient);
+        foreach (var ingredient in ingredients)
+            this.ingredients.Add(ingredient);
 
         return this;
     }

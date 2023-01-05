@@ -22,12 +22,10 @@ public sealed class CookingRecipeBuilder : BaseRecipeBuilder<SmeltingRecipe>, II
 
     public static IIngredientRecipe<ICookingRecipe> Create(CookingBookCategory category, SmeltingType type) => new CookingRecipeBuilder(category, type);
 
-    public ICookingRecipe AddIngredient(params ItemStack[] items)
+    public ICookingRecipe WithIngredient(params ItemStack[] items)
     {
-        var ingredient = new Ingredient();
-
         foreach (var item in items)
-            ingredient.Add(item);
+            this.ingredient.Add(item);
 
         return this;
     }

@@ -12,7 +12,7 @@ public sealed class CuttingRecipeBuilder : BaseRecipeBuilder<CuttingRecipe>, IIn
 
     public static IIngredientRecipe<IOutputCountRecipe<CuttingRecipe>> Create() => new CuttingRecipeBuilder();
 
-    public IOutputCountRecipe<CuttingRecipe> AddIngredient(params ItemStack[] items)
+    public IOutputCountRecipe<CuttingRecipe> WithIngredient(params ItemStack[] items)
     {
         foreach (var item in items)
             this.ingredient.Add(item);
