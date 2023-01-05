@@ -13,7 +13,7 @@ public sealed class SmithingRecipeBuilder : BaseRecipeBuilder<SmithingRecipe>,
 
     public static IBaseIngredientRecipe<INamedRecipe<SmithingRecipe>> Create() => new SmithingRecipeBuilder();
 
-    public IUpgradeIngredientRecipe<INamedRecipe<SmithingRecipe>> AddBaseIngredient(params ItemStack[] items)
+    public IUpgradeIngredientRecipe<INamedRecipe<SmithingRecipe>> WithBaseIngredient(params ItemStack[] items)
     {
         foreach (var item in items)
             this.@base.Add(item);
@@ -21,7 +21,7 @@ public sealed class SmithingRecipeBuilder : BaseRecipeBuilder<SmithingRecipe>,
         return this;
     }
 
-    public INamedRecipe<SmithingRecipe> AddUpgradeIngredient(params ItemStack[] items)
+    public INamedRecipe<SmithingRecipe> WithUpgradeIngredient(params ItemStack[] items)
     {
         foreach (var item in items)
             this.addition.Add(item);
