@@ -39,7 +39,7 @@ public sealed class SmithingRecipeBuilder : BaseRecipeBuilder<SmithingRecipe>,
 
         return new SmithingRecipe
         {
-            Name = this.Name ?? throw new NullReferenceException("Recipe must have a name"),
+            Identifier = this.Identifier ?? throw new NullReferenceException("Recipe must have a name"),
             Type = CraftingType.Smithing,
             Group = this.Group,
             Base = this.@base,

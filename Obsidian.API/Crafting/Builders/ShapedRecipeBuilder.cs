@@ -49,7 +49,7 @@ public sealed class ShapedRecipeBuilder : BaseRecipeBuilder<ShapedRecipe>, IPatt
 
         return new ShapedRecipe
         {
-            Name = this.Name ?? throw new NullReferenceException("Recipe must have a name"),
+            Identifier = this.Identifier ?? throw new NullReferenceException("Recipe must have a name"),
             Type = CraftingType.CraftingShaped,
             Group = this.Group,
             Result = this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),

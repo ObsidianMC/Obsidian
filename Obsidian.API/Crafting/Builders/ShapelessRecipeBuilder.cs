@@ -32,7 +32,7 @@ public sealed class ShapelessRecipeBuilder : BaseRecipeBuilder<ShapelessRecipe>,
 
         return new ShapelessRecipe
         {
-            Name = this.Name ?? throw new NullReferenceException("Recipe must have a name"),
+            Identifier = this.Identifier ?? throw new NullReferenceException("Recipe must have a name"),
             Type = CraftingType.CraftingShapeless,
             Group = this.Group,
             Result = this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),

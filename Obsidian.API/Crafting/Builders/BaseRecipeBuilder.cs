@@ -4,17 +4,17 @@ namespace Obsidian.API.Crafting.Builders;
 public abstract class BaseRecipeBuilder<TRecipe> : IGroupedRecipe<TRecipe>, INamedRecipe<TRecipe>, IRecipeResult<TRecipe>, 
     IRecipeBuilder<TRecipe> where TRecipe : IRecipe
 {
-    protected string Name { get; set; }
+    protected string Identifier { get; set; }
 
     protected string? Group { get; set; }
 
     protected ItemStack Result { get; set; }
 
-    public virtual IRecipeResult<TRecipe> WithName(string name)
+    public virtual IRecipeResult<TRecipe> WithIdentifier(string identifier)
     {
-        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(identifier);
 
-        this.Name = name;
+        this.Identifier = identifier;
 
         return this;
     }

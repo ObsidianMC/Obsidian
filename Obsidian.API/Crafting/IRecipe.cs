@@ -2,7 +2,7 @@
 
 public interface IRecipe
 {
-    public string Name { get; set; }
+    public string Identifier { get; set; }
 
     public CraftingType Type { get; init; }
 

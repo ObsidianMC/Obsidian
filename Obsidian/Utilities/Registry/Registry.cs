@@ -124,13 +124,13 @@ public static partial class Registry
             {
                 case CraftingType.CraftingShaped:
                     var shapedRecipe = json.FromJson<ShapedRecipe>();
-                    shapedRecipe.Name = name;
+                    shapedRecipe.Identifier = name;
                     Recipes.Add(name, shapedRecipe);
 
                     break;
                 case CraftingType.CraftingShapeless:
                     var shapelessRecipe = json.FromJson<ShapelessRecipe>();
-                    shapelessRecipe.Name = name;
+                    shapelessRecipe.Identifier = name;
 
                     Recipes.Add(name, shapelessRecipe);
                     break;
@@ -153,19 +153,19 @@ public static partial class Registry
                 case CraftingType.Smoking:
                 case CraftingType.CampfireCooking:
                     var smeltingRecipe = json.FromJson<SmeltingRecipe>();
-                    smeltingRecipe.Name = name;
+                    smeltingRecipe.Identifier = name;
 
                     Recipes.Add(name, smeltingRecipe);
                     break;
                 case CraftingType.Stonecutting:
                     var stonecuttingRecipe = json.FromJson<CuttingRecipe>();
-                    stonecuttingRecipe.Name = name;
+                    stonecuttingRecipe.Identifier = name;
 
                     Recipes.Add(name, stonecuttingRecipe);
                     break;
                 case CraftingType.Smithing:
                     var smithingRecipe = json.FromJson<SmithingRecipe>();
-                    smithingRecipe.Name = name;
+                    smithingRecipe.Identifier = name;
 
                     Recipes.Add(name, smithingRecipe);
                     break;

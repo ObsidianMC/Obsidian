@@ -34,7 +34,7 @@ public sealed class CuttingRecipeBuilder : BaseRecipeBuilder<CuttingRecipe>, IIn
 
         return new CuttingRecipe
         {
-            Name = this.Name ?? throw new NullReferenceException("Name must not be null"),
+            Identifier = this.Identifier ?? throw new NullReferenceException("Name must not be null"),
             Type = CraftingType.Stonecutting,
             Group = this.Group,
             Result = this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),

@@ -2,7 +2,7 @@
 
 public sealed class SmeltingRecipe : IRecipe
 {
-    public string Name { get; set; }
+    public string Identifier { get; set; }
 
     public required CraftingType Type { get; init; }
 
