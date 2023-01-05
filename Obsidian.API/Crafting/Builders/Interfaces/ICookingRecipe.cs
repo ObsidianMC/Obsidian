@@ -1,7 +1,7 @@
 ﻿namespace Obsidian.API.Crafting.Builders.Interfaces;
-public interface ISmeltingRecipeBuilder
+public interface ICookingRecipe
 {
-    public ISmeltingRecipeBuilder GivesExperience(float exp);
+    public ICookingRecipe GivesExperience(float exp);
 
-    public IGroupRecipeBuilder<SmeltingRecipe> WithCookingTime(int time);
+    public IGroupedRecipe<SmeltingRecipe> WithCookingTime(int time);
 }

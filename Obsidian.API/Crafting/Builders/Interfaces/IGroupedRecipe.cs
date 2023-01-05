@@ -1,7 +1,7 @@
 ﻿namespace Obsidian.API.Crafting.Builders.Interfaces;
-public interface IGroupRecipeBuilder<TRecipe>
+public interface IGroupedRecipe<TRecipe>
 {
-    public INamedRecipeBuilder<TRecipe> InGroup(string group);
+    public INamedRecipe<TRecipe> InGroup(string group);
 
-    public INamedRecipeBuilder<TRecipe> HasNoGroup();
+    public INamedRecipe<TRecipe> HasNoGroup();
 }

@@ -1,7 +1,7 @@
 ﻿namespace Obsidian.API.Crafting.Builders.Interfaces;
-public interface IRecipePattern
+public interface IPatternedRecipe
 {
-    public IRecipePattern WithKey(char key, params ItemStack[] items);
+    public IPatternedRecipe WithKey(char key, params ItemStack[] items);
 
-    public IRecipeGroup<ShapedRecipe> WithPattern(params string[] pattern);
+    public IGroupedRecipe<ShapedRecipe> WithPattern(params string[] pattern);
 }

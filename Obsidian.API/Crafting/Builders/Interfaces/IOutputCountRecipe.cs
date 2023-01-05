@@ -1,5 +1,5 @@
 ﻿namespace Obsidian.API.Crafting.Builders.Interfaces;
-public interface IHasOutputCount<TRecipe>
+public interface IOutputCountRecipe<TRecipe>
 {
-    public IGroupRecipeBuilder<TRecipe> WithOutputCount(int count);
+    public IGroupedRecipe<TRecipe> WithOutputCount(int count);
 }

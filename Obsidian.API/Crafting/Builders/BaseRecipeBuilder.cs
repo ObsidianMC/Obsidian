@@ -1,7 +1,7 @@
 ﻿using Obsidian.API.Crafting.Builders.Interfaces;
 
 namespace Obsidian.API.Crafting.Builders;
-public abstract class BaseRecipeBuilder<TRecipe> : IRecipeGroup<TRecipe>, IRecipeName<TRecipe>, IRecipeResult<TRecipe>, 
+public abstract class BaseRecipeBuilder<TRecipe> : IGroupedRecipe<TRecipe>, INamedRecipe<TRecipe>, IRecipeResult<TRecipe>, 
     IRecipeBuilder<TRecipe> where TRecipe : IRecipe
 {
     protected string Name { get; set; }
@@ -28,14 +28,14 @@ public abstract class BaseRecipeBuilder<TRecipe> : IRecipeGroup<TRecipe>, IRecip
         return this;
     }
 
-    public virtual IRecipeName<TRecipe> InGroup(string group)
+    public virtual INamedRecipe<TRecipe> InGroup(string group)
     {
         this.Group = group;
 
         return this;
     }
 
-    public virtual IRecipeName<TRecipe> HasNoGroup() => this;
+    public virtual INamedRecipe<TRecipe> HasNoGroup() => this;
 
     public abstract TRecipe Build();
 }
