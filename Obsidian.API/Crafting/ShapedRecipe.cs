@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API.Crafting;
 
-public sealed class ShapedRecipe : IRecipe, IHasRecipeCategory
+public sealed class ShapedRecipe : IRecipe
 {
     public string Name { get; set; }
 

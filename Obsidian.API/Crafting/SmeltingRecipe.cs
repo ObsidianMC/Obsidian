@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API.Crafting;
 
-public sealed class SmeltingRecipe : IRecipe, IHasCookingRecipeCategory
+public sealed class SmeltingRecipe : IRecipe
 {
     public string Name { get; set; }
 
@@ -15,5 +15,6 @@ public sealed class SmeltingRecipe : IRecipe, IHasCookingRecipeCategory
     public required float Experience { get; init; }
 
     public required int CookingTime { get; init; }
+
     public required CookingBookCategory Category { get; init; }
 }
