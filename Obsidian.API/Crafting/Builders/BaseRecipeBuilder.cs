@@ -19,7 +19,7 @@ public abstract class BaseRecipeBuilder<TRecipe> : IGroupedRecipe<TRecipe>, INam
         return this;
     }
 
-    public virtual IRecipeBuilder<TRecipe> SetResult(ItemStack result)
+    public virtual IRecipeBuilder<TRecipe> WithResult(ItemStack result)
     {
         ArgumentNullException.ThrowIfNull(result);
 

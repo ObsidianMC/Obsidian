@@ -2,5 +2,5 @@
 
 public interface IRecipeResult<TRecipe>
 {
-    public IRecipeBuilder<TRecipe> SetResult(ItemStack result);
+    public IRecipeBuilder<TRecipe> WithResult(ItemStack result);
 }
