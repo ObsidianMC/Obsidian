@@ -2,7 +2,7 @@
 
 public sealed class ShapelessRecipe : IRecipe
 {
-    public string Identifier { get; set; }
+    public string Identifier { get; internal set; }
 
     public required CraftingType Type { get; init; }
 
