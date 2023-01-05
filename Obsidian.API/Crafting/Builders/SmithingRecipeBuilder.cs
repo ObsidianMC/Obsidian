@@ -1,71 +1,49 @@
-﻿namespace Obsidian.API.Crafting.Builders;
+﻿using Obsidian.API.Crafting.Builders.Interfaces;
 
-public class SmithingRecipeBuilder : IRecipeBuilder<SmithingRecipeBuilder>
+namespace Obsidian.API.Crafting.Builders;
+
+public sealed class SmithingRecipeBuilder : BaseRecipeBuilder<SmithingRecipe>,
+    IBaseIngredientRecipe<SmithingRecipe>, 
+    IUpgradeIngredientRecipe<SmithingRecipe>
 {
-    public string? Name { get; set; }
-    public string? Group { get; set; }
-    public ItemStack? Result { get; set; }
+    private Ingredient @base = new();
+    private Ingredient addition = new();
 
-    public Ingredient Base { get; private set; } = new Ingredient();
+    private SmithingRecipeBuilder() { }
 
-    public Ingredient Addition { get; private set; } = new Ingredient();
+    public static IBaseIngredientRecipe<SmithingRecipe> Create() => new SmithingRecipeBuilder();
 
-    public SmithingRecipeBuilder AddBaseIngredients(params ItemStack[] items)
+    public IUpgradeIngredientRecipe<SmithingRecipe> WithBaseIngredient(params ItemStack[] items)
     {
         foreach (var item in items)
-            this.Base.Add(item);
+            this.@base.Add(item);
 
         return this;
     }
 
-    // Not sure what to name this without making the name insanely long :D
-    public SmithingRecipeBuilder AddSubIngredients(params ItemStack[] items)
+    public INamedRecipe<SmithingRecipe> WithUpgradeIngredient(params ItemStack[] items)
     {
         foreach (var item in items)
-            this.Addition.Add(item);
+            this.addition.Add(item);
 
         return this;
     }
 
-    public SmithingRecipeBuilder WithName(string name)
+    public override SmithingRecipe Build()
     {
-        this.Name = name;
-
-        return this;
-    }
-
-    public SmithingRecipeBuilder SetResult(ItemStack result)
-    {
-        if (this.Result != null)
-            throw new InvalidOperationException("Result is already set.");
-
-        this.Result = result;
-
-        return this;
-    }
-
-    public SmithingRecipeBuilder InGroup(string group)
-    {
-        this.Group = group;
-
-        return this;
-    }
-
-    public IRecipe Build()
-    {
-        if (this.Base.Count <= 0)
+        if (this.@base.Count <= 0)
             throw new InvalidOperationException("Base ingredients must have atleast 1 item.");
 
-        if (this.Addition.Count <= 0)
+        if (this.addition.Count <= 0)
             throw new InvalidOperationException("Sub ingredients must have atleast 1 item.");
 
         return new SmithingRecipe
         {
-            Name = this.Name ?? throw new NullReferenceException("Recipe must have a name"),
+            Identifier = this.Identifier ?? throw new NullReferenceException("Recipe must have a name"),
             Type = CraftingType.Smithing,
             Group = this.Group,
-            Base = this.Base,
-            Addition = this.Addition,
+            Base = this.@base,
+            Addition = this.addition,
             Result = this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set.")
         };
     }

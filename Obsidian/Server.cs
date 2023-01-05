@@ -151,7 +151,7 @@ public partial class Server : IServer
     public void RegisterRecipes(params IRecipe[] recipes)
     {
         foreach (var recipe in recipes)
-            Registry.Recipes.Add(recipe.Name.ToSnakeCase(), recipe);
+            Registry.Recipes.Add(recipe.Identifier.ToSnakeCase(), recipe);
     }
 
     /// <summary>
