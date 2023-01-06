@@ -1,43 +1,29 @@
-﻿using Obsidian.Net;
+﻿using System.Text.Json.Serialization;
 
 namespace Obsidian.Utilities.Mojang;
 
-public class MojangUser
+public sealed class MojangUser
 {
-    public string Id { get; set; }
+    public required Guid Id { get; init; }
 
-    public string Name { get; set; }
+    public required string Name { get; init; }
 
-    public bool Legacy { get; set; }
+    public bool? Legacy { get; init; }
 
-    public bool Demo { get; set; }
+    public bool? Demo { get; init; }
 
-    public List<SkinProperty> Properties { get; set; }
+    public required List<SkinProperty> Properties { get; init; }
 }
 
-public sealed class SkinProperty
+public sealed class CachedUser
 {
-    public string Name { get; set; }
+    public required string Name { get; set; }
 
-    public string Value { get; set; }
-    public string? Signature { get; set; }
+    public required Guid Id { get; init; }
 
-    public async Task WriteAsync(MinecraftStream stream)
-    {
-        var isSigned = this.Signature != null;
-        await stream.WriteStringAsync(this.Name, 32767);
-        await stream.WriteStringAsync(this.Value, 32767);
-        await stream.WriteBooleanAsync(isSigned);
-        if (isSigned)
-            await stream.WriteStringAsync(this.Signature, 32767);
-    }
+    public DateTimeOffset ExpiresOn { get; set; }
 
-    public void Write(MinecraftStream stream)
-    {
-        stream.WriteString(Name);
-        stream.WriteString(Value);
-        stream.WriteBoolean(Signature is not null);
-        if (Signature is not null)
-            stream.WriteString(Signature);
-    }
+    [JsonIgnore]
+    public bool Expired => DateTimeOffset.UtcNow >= this.ExpiresOn;
 }
+

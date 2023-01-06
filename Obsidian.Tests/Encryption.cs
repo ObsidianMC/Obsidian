@@ -21,7 +21,7 @@ public class Encryption
         random.NextBytes(sharedKey);
 
         await using var memoryStream = new MemoryStream();
-        await using var stream = new AesStream(memoryStream, sharedKey);
+        await using var stream = new EncryptedMinecraftStream(memoryStream, sharedKey);
 
         await stream.WriteAsync(testData);
         memoryStream.Position = 0;

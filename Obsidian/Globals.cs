@@ -26,15 +26,24 @@ public static class Globals
                 new DefaultEnumConverter<EClickAction>(),
                 new DefaultEnumConverter<CraftingBookCategory>(),
                 new DefaultEnumConverter<CookingBookCategory>(),
-                new HexColorConverter()
+                new HexColorConverter(),
+                new GuidJsonConverter()
             },
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 }
 
-public class SnakeCaseNamingPolicy : JsonNamingPolicy
+public sealed class SnakeCaseNamingPolicy : JsonNamingPolicy
 {
     public static SnakeCaseNamingPolicy Instance { get; } = new SnakeCaseNamingPolicy();
 
     public override string ConvertName(string name) => name.ToSnakeCase();
+}
+
+file class GuidJsonConverter : JsonConverter<Guid>
+{
+    public override Guid Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+        Guid.Parse(reader.GetString()!);
+
+    public override void Write(Utf8JsonWriter writer, Guid value, JsonSerializerOptions options) => writer.WriteStringValue(value.ToString("N"));
 }

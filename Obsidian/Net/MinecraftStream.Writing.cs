@@ -547,16 +547,27 @@ public partial class MinecraftStream
         }
     }
 
+    public async Task WriteSkinPropertyAsync(SkinProperty skinProperty)
+    {
+        await this.WriteStringAsync(skinProperty.Name);
+        await this.WriteStringAsync(skinProperty.Value);
+
+        var signed = !string.IsNullOrWhiteSpace(skinProperty.Signature);
+
+        await this.WriteBooleanAsync(signed);
+        if (signed)
+            await this.WriteStringAsync(skinProperty.Signature);
+    }
+
     [WriteMethod]
     public void WriteSkinProperty(SkinProperty skinProperty)
     {
         this.WriteString(skinProperty.Name);
         this.WriteString(skinProperty.Value);
 
-        var signed = string.IsNullOrWhiteSpace(skinProperty.Signature);
+        var signed = !string.IsNullOrWhiteSpace(skinProperty.Signature);
 
         this.WriteBoolean(signed);
-
         if (signed)
             this.WriteString(skinProperty.Signature);
     }

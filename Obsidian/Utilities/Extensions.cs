@@ -1,4 +1,5 @@
 ﻿using Obsidian.Entities;
+using Obsidian.Net;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;

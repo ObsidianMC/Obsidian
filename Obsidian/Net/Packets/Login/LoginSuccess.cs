@@ -1,5 +1,4 @@
 ﻿using Obsidian.Serialization.Attributes;
-using Obsidian.Utilities.Mojang;
 
 namespace Obsidian.Net.Packets.Login;
 

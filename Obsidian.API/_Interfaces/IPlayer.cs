@@ -8,6 +8,8 @@ public interface IPlayer : ILiving
     public Container EnderInventory { get; }
     public BaseContainer? OpenedContainer { get; set; }
 
+    public List<SkinProperty> SkinProperties { get; set; }
+
     public string Username { get; }
 
     public Guid Uuid { get; }

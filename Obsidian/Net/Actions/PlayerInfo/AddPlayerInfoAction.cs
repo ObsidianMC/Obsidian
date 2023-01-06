@@ -1,6 +1,4 @@
-﻿using Obsidian.Utilities.Mojang;
-
-namespace Obsidian.Net.Actions.PlayerInfo;
+﻿namespace Obsidian.Net.Actions.PlayerInfo;
 
 public class AddPlayerInfoAction : InfoAction
 {
@@ -16,8 +14,8 @@ public class AddPlayerInfoAction : InfoAction
 
         await stream.WriteVarIntAsync(this.Properties.Count);
 
-        foreach (var props in this.Properties)
-            await props.WriteAsync(stream);
+        foreach (var property in this.Properties)
+            await stream.WriteSkinPropertyAsync(property);
     }
 
     public override void Write(MinecraftStream stream)
@@ -25,7 +23,7 @@ public class AddPlayerInfoAction : InfoAction
         stream.WriteString(Name, 16);
         stream.WriteVarInt(Properties.Count);
 
-        foreach (var properties in Properties)
-            properties.Write(stream);
+        foreach (var property in Properties)
+            stream.WriteSkinProperty(property);
     }
 }

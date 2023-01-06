@@ -154,8 +154,6 @@ public partial class MinecraftStream : Stream
 
     public override void SetLength(long value) => this.BaseStream.SetLength(value);
 
-    public override void Close() => this.BaseStream.Close();
-
     public byte[] ToArray()
     {
         this.Position = 0;
