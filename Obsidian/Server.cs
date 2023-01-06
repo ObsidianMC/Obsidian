@@ -428,7 +428,8 @@ public partial class Server : IServer
             return;
 
         //TODO add bool for sending secure chat messages
-        BroadcastMessage(message);
+        ChatColor nameColor = source.Player.IsOperator ? ChatColor.BrightGreen : ChatColor.Gray;
+        BroadcastMessage(ChatMessage.Simple(source.Player.Username, nameColor).AppendText($": {message}", ChatColor.White));
     }
 
     internal async Task QueueBroadcastPacketAsync(IClientboundPacket packet)
