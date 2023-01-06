@@ -6,6 +6,8 @@ public enum EntityMetadataType : int
 
     VarInt,
 
+    VarLong,
+
     Float,
 
     String,
@@ -38,5 +40,13 @@ public enum EntityMetadataType : int
 
     OptVarInt,
 
-    Pose
+    Pose,
+
+    CatVariant,
+
+    FrogVariant,
+
+    GlobalPos,
+
+    PaintingVariant
 }
