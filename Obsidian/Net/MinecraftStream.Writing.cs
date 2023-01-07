@@ -474,11 +474,15 @@ public partial class MinecraftStream
     [WriteMethod]
     public void WriteTags(IDictionary<string, Tag[]> tagsDictionary)
     {
-        this.WriteVarInt(tagsDictionary.Count);
+        this.WriteVarInt(tagsDictionary.Count - 1);
 
         foreach (var (name, tags) in tagsDictionary)
         {
-            this.WriteString($"minecraft:{name.TrimEnd('s')}");
+            if (name == "worldgen")
+                continue;
+
+            var namespaceId = $"minecraft:{name.TrimEnd('s')}";
+            this.WriteString(namespaceId);
 
             this.WriteVarInt(tags.Length);
             foreach (var tag in tags)
