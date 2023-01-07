@@ -27,17 +27,18 @@ public partial class RegistryAssetsGenerator
 
         builder.Line();
         builder.Line($"public static Tag[] All = new[] {{ {string.Join(", ", assets.Tags.Select(tag => tag.Type.ToPascalCase() + "." + tag.Name))} }};");
-        builder.Indent().Append($"public static Dictionary<string, Tag[]> Categories = new() {{ ");
+        builder.Method($"public static Dictionary<string, Tag[]> Categories = new()");
         foreach (IGrouping<string, Tag> tagGroup in grouped)
         {
-            builder.Append($"{{ \"{tagGroup.Key}\", new Tag[] {{ ");
+            builder.Indent().Append($"{{ \"{tagGroup.Key}\", new Tag[] {{ ");
             foreach (Tag tag in tagGroup)
             {
                 builder.Append(tag.Type.ToPascalCase()).Append(".").Append(tag.Name).Append(", ");
             }
             builder.Append("} }, ");
+            builder.Line();
         }
-        builder.Append("};").Append(Environment.NewLine);
+        builder.Line().EndScope(true);
 
         builder.EndScope();
 

@@ -22,7 +22,7 @@ public sealed partial class RegistryAssetsGenerator : IIncrementalGenerator
     {
         var asm = output.compilation.AssemblyName;
 
-        var assets = Assets.Get(output.files);
+        var assets = Assets.Get(output.files, context);
        
         if (asm == "Obsidian")
         {

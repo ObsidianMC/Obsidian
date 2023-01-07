@@ -53,7 +53,7 @@
 	<ItemGroup>
 		<Compile Remove="Serializer\Enums\FieldType.cs" />
 	</ItemGroup>
-	
+
 	<ItemGroup>
 		<PackageReference Include="BouncyCastle.NetCoreSdk" Version="1.9.7" />
 		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.4.0" />
@@ -76,6 +76,7 @@
 		<EmbeddedResource Remove="Assets\default_dimensions.xaml" />
 		<EmbeddedResource Remove="Assets\items.json" />
 		<EmbeddedResource Remove="Assets\tags.json" />
+		<EmbeddedResource Remove="Assets\fluids.json" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -86,6 +87,9 @@
 			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</AdditionalFiles>
 		<AdditionalFiles Include="Assets\tags.json">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</AdditionalFiles>
+		<AdditionalFiles Include="Assets\fluids.json">
 			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</AdditionalFiles>
 	</ItemGroup>

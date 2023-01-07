@@ -31,7 +31,7 @@ public partial class BlocksGenerator
             builder.Line($"public string UnlocalizedName => \"{block.Tag}\";");
             builder.Line($"public int BaseId => {block.BaseId};");
             builder.Line($"public int DefaultId => {block.DefaultId};");
-            builder.Line($"public int RegistryId => {block.NumericId};");
+            builder.Line($"public int RegistryId => {block.RegistryId};");
 
             builder.Line($"public Material Material => Material.{block.Name};");
 

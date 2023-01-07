@@ -43,8 +43,8 @@
       "minecraft:dragon_egg"
     ]
   },
-  "blocks/replaceable_by_water": {
-    "name": "replaceable_by_water",
+  "blocks/replaceable_by_liquid": {
+    "name": "replaceable_by_liquid",
     "type": "blocks",
     "values": [
       "#minecraft:replaceable_plants",
@@ -53,7 +53,20 @@
       "#minecraft:flowers",
       "minecraft:sugar_cane",
       "minecraft:sweet_berry_bush",
-      "minecraft:tall_grass"
+      "minecraft:tall_grass",
+      "minecraft:air",
+      "minecraft:cave_air"
+    ]
+  },
+  "blocks/flowers": {
+    "name": "flowers",
+    "type": "blocks",
+    "values": [
+      "#minecraft:small_flowers",
+      "#minecraft:tall_flowers",
+      "minecraft:flowering_azalea_leaves",
+      "minecraft:flowering_azalea",
+      "minecraft:mangrove_propagule"
     ]
   },
   "banner_pattern/no_item_required": {
@@ -781,17 +794,6 @@
       "minecraft:potted_azalea_bush",
       "minecraft:potted_flowering_azalea_bush",
       "minecraft:potted_mangrove_propagule"
-    ]
-  },
-  "blocks/flowers": {
-    "name": "flowers",
-    "type": "blocks",
-    "values": [
-      "#minecraft:small_flowers",
-      "#minecraft:tall_flowers",
-      "minecraft:flowering_azalea_leaves",
-      "minecraft:flowering_azalea",
-      "minecraft:mangrove_propagule"
     ]
   },
   "blocks/foxes_spawnable_on": {
@@ -2677,6 +2679,13 @@
     "values": [
       "minecraft:water",
       "minecraft:flowing_water"
+    ]
+  },
+  "fluids/empty": {
+    "name": "empty",
+    "type": "fluids",
+    "values": [
+      "minecraft:empty"
     ]
   },
   "game_events/allay_can_listen": {

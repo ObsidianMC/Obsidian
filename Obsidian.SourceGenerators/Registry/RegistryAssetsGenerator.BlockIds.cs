@@ -12,7 +12,7 @@ public partial class RegistryAssetsGenerator
         builder.Line();
         builder.Type("internal static partial class BlocksRegistry");
 
-        var blocks = assets.Blocks.OrderBy(block => block.NumericId);
+        var blocks = assets.Blocks.OrderBy(block => block.RegistryId);
 
         builder.Indent().Append("internal static readonly ushort[] AllStates = { ");
         foreach (Block block in blocks)
@@ -37,7 +37,7 @@ public partial class RegistryAssetsGenerator
         builder.Indent().Append("internal static readonly ushort[] StateToNumeric = { ");
         foreach (Block block in blocks)
         {
-            string entry = $"{block.NumericId}, ";
+            string entry = $"{block.RegistryId}, ";
             for (int i = 0; i < block.StatesCount; i++)
                 builder.Append(entry);
         }
