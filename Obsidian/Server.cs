@@ -23,6 +23,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 
@@ -33,7 +34,24 @@ public partial class Server : IServer
 #if RELEASE
     public const string VERSION = "0.1";
 #else
-    public const string VERSION = "0.1-DEV";
+    public static string VERSION
+    {
+        get
+        {
+            // Was kinda cheating: https://www.hanselman.com/blog/adding-a-git-commit-hash-and-azure-devops-build-number-and-build-id-to-an-aspnet-website
+            var version = "1.0.0+v0.1"; // Dummy version for local dev
+            var appAssembly = Assembly.GetExecutingAssembly();
+            var infoVerAttr = (AssemblyInformationalVersionAttribute)appAssembly
+            .GetCustomAttributes(typeof(AssemblyInformationalVersionAttribute)).FirstOrDefault();
+
+            if (infoVerAttr != null && infoVerAttr.InformationalVersion.Length > 6)
+            {
+                // Hash is embedded in the version after a '+' symbol, e.g. 1.0.0+a34a913742f8845d3da5309b7b17242222d41a21
+                version = infoVerAttr.InformationalVersion;
+            }
+            return version.Substring(version.IndexOf('+') + 1);
+        }
+    }
 #endif
     public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_19_3;
 
@@ -89,6 +107,7 @@ public partial class Server : IServer
         RconServer rconServer)
     {
         _logger = logger;
+        _logger.LogInformation($"SHA / Version: {VERSION}");
         _cancelTokenSource = CancellationTokenSource.CreateLinkedTokenSource(lifetime.ApplicationStopping);
         _cancelTokenSource.Token.Register(() => _logger.LogWarning("Obsidian is shutting down..."));
         _rconServer = rconServer;
