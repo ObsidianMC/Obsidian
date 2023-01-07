@@ -1,4 +1,4 @@
-#ARG GIT_SHA=v0.1
+ARG GIT_SHA=v0.1
 
 FROM mcr.microsoft.com/dotnet/sdk:7.0-alpine AS build
 WORKDIR /src
