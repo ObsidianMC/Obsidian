@@ -1,8 +1,10 @@
+ARG GIT_SHA=v0.1
+
 FROM mcr.microsoft.com/dotnet/sdk:7.0-alpine AS build
 WORKDIR /src
 COPY . .
 RUN dotnet restore
-RUN dotnet publish Obsidian.ConsoleApp/ -c Release -r linux-musl-x64 --self-contained -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:EnableCompressionInSingleFile=true -p:DebugType=embedded
+RUN dotnet publish Obsidian.ConsoleApp/ -c Release -r linux-musl-x64 --self-contained -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:EnableCompressionInSingleFile=true -p:DebugType=embedded /p:SourceRevisionId=$GIT_SHA
 
 FROM alpine:latest
 WORKDIR /app
