@@ -21,7 +21,7 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
-      run: dotnet build --no-restore --configuration Release /p:DebugType=None
+      run: dotnet build --no-restore --configuration Release /p:DebugType=None /p:SourceRevisionId=${{ github.sha }}
     - name: Rename executables
       working-directory: /home/runner/work/Obsidian/Obsidian/Obsidian.ConsoleApp/bin/Release/net7.0/
       run: |
