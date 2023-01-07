@@ -73,6 +73,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Remove="CommitSHA.txt" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<AdditionalFiles Include="Assets\blocks.json">
 			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</AdditionalFiles>
@@ -82,6 +86,10 @@
 		<AdditionalFiles Include="Assets\tags.json">
 			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</AdditionalFiles>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Include="CommitSHA.txt" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -108,4 +116,8 @@
 	<ItemGroup>
 		<Folder Include="Plugins\Services\" />
 	</ItemGroup>
+
+	<Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+	  <Exec IgnoreStandardErrorWarningFormat="true" IgnoreExitCode="true" Command="git rev-parse HEAD --short &gt; &quot;$(ProjectDir)\CommitSHA.txt&quot;" />
+	</Target>
 </Project>

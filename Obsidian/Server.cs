@@ -23,6 +23,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 
@@ -31,9 +32,10 @@ namespace Obsidian;
 public partial class Server : IServer
 {
 #if RELEASE
-    public const string VERSION = "0.1";
+    public static readonly string VERSION = "0.1";
 #else
-    public const string VERSION = "0.1-DEV";
+    public static string VERSION => new StreamReader(Assembly.GetExecutingAssembly().GetManifestResourceStream("Obsidian.CommitSHA.txt"))
+        .ReadToEnd().Replace("\n", "");
 #endif
     public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_19_3;
 
@@ -100,6 +102,8 @@ public partial class Server : IServer
         _tcpListener = new TcpListener(IPAddress.Any, Port);
 
         Operators = new OperatorList(this);
+
+        _logger.LogInformation($"Commit SHA: {Version}");
 
         _logger.LogDebug(message: "Initializing command handler...");
         CommandsHandler = new CommandHandler();
