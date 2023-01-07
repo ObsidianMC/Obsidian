@@ -9,6 +9,7 @@
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
 		<DefineConstants>TRACE</DefineConstants>
+		<Deterministic>False</Deterministic>
 	</PropertyGroup>
 
 	<PropertyGroup>
@@ -24,6 +25,11 @@
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
 		<CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
+	</PropertyGroup>
+
+	<PropertyGroup>
+	  <Deterministic>False</Deterministic>
+	  <SourceRevisionId>$(GIT_SHA)</SourceRevisionId>
 	</PropertyGroup>
 
 	<ItemGroup>

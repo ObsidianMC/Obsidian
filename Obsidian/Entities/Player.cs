@@ -206,7 +206,7 @@ public class Player : Living, IPlayer
     {
         this.LastPosition = this.Position;
         this.Position = pos;
-        await this.UpdateChunksAsync(true);
+        await this.UpdateChunksAsync(true, 2);
 
         var tid = Globals.Random.Next(0, 999);
 
@@ -232,7 +232,7 @@ public class Player : Living, IPlayer
         this.LastPosition = this.Position;
         this.Position = to.Position;
 
-        await this.UpdateChunksAsync(true);
+        await this.UpdateChunksAsync(true, 2);
 
         this.TeleportId = Globals.Random.Next(0, 999);
 
@@ -264,7 +264,7 @@ public class Player : Living, IPlayer
         await this.LoadAsync(false);
 
         // reload world stuff and send rest of the info
-        await this.UpdateChunksAsync(true);
+        await this.UpdateChunksAsync(true, 2);
 
         await this.client.SendInfoAsync();
 
@@ -322,7 +322,7 @@ public class Player : Living, IPlayer
 
         this.Respawning = true;
 
-        await this.UpdateChunksAsync(true);
+        await this.UpdateChunksAsync(true, 2);
 
         await this.client.QueuePacketAsync(new SynchronizePlayerPositionPacket
         {
@@ -910,7 +910,13 @@ public class Player : Living, IPlayer
         }
     }
 
-    internal async Task UpdateChunksAsync(bool unloadAll = false)
+    /// <summary>
+    /// Updates client chunks. Only send <paramref name="distance"/> when sending initial chunks.
+    /// </summary>
+    /// <param name="unloadAll"></param>
+    /// <param name="distance"></param>
+    /// <returns></returns>
+    internal async Task UpdateChunksAsync(bool unloadAll = false, int distance = 0)
     {
         if (unloadAll)
         {
@@ -929,7 +935,7 @@ public class Player : Living, IPlayer
         (int playerChunkX, int playerChunkZ) = Position.ToChunkCoord();
         (int lastPlayerChunkX, int lastPlayerChunkZ) = LastPosition.ToChunkCoord();
 
-        int dist = (client.ClientSettings?.ViewDistance ?? 14) - 2;
+        int dist = distance < 1? ((client.ClientSettings?.ViewDistance ?? 14) - 2) : 2;
         for (int x = playerChunkX + dist; x > playerChunkX - dist; x--)
             for (int z = playerChunkZ + dist; z > playerChunkZ - dist; z--)
                 clientNeededChunks.Add((x, z));
@@ -944,13 +950,13 @@ public class Player : Living, IPlayer
             Math.Abs(playerChunkZ - chunk2.Z) ? -1 : 1;
         });
 
-        await Parallel.ForEachAsync(clientUnneededChunks, async (chunkLoc, _) =>
+        await Parallel.ForEachAsync(clientUnneededChunks.Take(25), async (chunkLoc, _) =>
         {
             await client.UnloadChunkAsync(chunkLoc.X, chunkLoc.Z);
             client.LoadedChunks.TryRemove(chunkLoc);
         });
 
-        await Parallel.ForEachAsync(clientNeededChunks, async (chunkLoc, _) =>
+        await Parallel.ForEachAsync(clientNeededChunks.Take(25), async (chunkLoc, _) =>
         {
             var chunk = await World.GetChunkAsync(chunkLoc.X, chunkLoc.Z);
             if (chunk is not null)

@@ -8,11 +8,12 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
+    - name: xXx_set_env_variables_xXx
+      run: echo "GIT_SHA=${GITHUB_SHA}" >> $GITHUB_ENV
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
       with:

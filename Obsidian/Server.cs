@@ -23,6 +23,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 
@@ -33,7 +34,17 @@ public partial class Server : IServer
 #if RELEASE
     public const string VERSION = "0.1";
 #else
-    public const string VERSION = "0.1-DEV";
+    public static string VERSION
+    {
+        get
+        {
+            var informalVersion = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>();
+            if(informalVersion != null && informalVersion.InformationalVersion.Contains('+'))
+                return informalVersion.InformationalVersion.Split('+')[1];
+
+            return "0.1";
+        }
+    }
 #endif
     public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_19_3;
 
@@ -89,6 +100,7 @@ public partial class Server : IServer
         RconServer rconServer)
     {
         _logger = logger;
+        _logger.LogInformation($"SHA / Version: {VERSION}");
         _cancelTokenSource = CancellationTokenSource.CreateLinkedTokenSource(lifetime.ApplicationStopping);
         _cancelTokenSource.Token.Register(() => _logger.LogWarning("Obsidian is shutting down..."));
         _rconServer = rconServer;
@@ -428,7 +440,8 @@ public partial class Server : IServer
             return;
 
         //TODO add bool for sending secure chat messages
-        BroadcastMessage(message);
+        ChatColor nameColor = source.Player.IsOperator ? ChatColor.BrightGreen : ChatColor.Gray;
+        BroadcastMessage(ChatMessage.Simple(source.Player.Username, nameColor).AppendText($": {message}", ChatColor.White));
     }
 
     internal async Task QueueBroadcastPacketAsync(IClientboundPacket packet)

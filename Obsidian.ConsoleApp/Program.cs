@@ -19,7 +19,7 @@ public static class Program
         var loggerProvider = new LoggerProvider(LOGLEVEL);
         var startupLogger = loggerProvider.CreateLogger("Startup");
 
-        Console.Title = $"Obsidian {Server.VERSION}";
+        Console.Title = $"Obsidian for {Server.DefaultProtocol} ({Server.VERSION})";
         Console.BackgroundColor = ConsoleColor.White;
         Console.ForegroundColor = ConsoleColor.Black;
         Console.CursorVisible = false;
