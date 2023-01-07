@@ -8,9 +8,6 @@ on:
 
 jobs:
   build:
-    env:
-      GIT_SHA: ${{ github.sha }}
-
     runs-on: ubuntu-latest
 
     steps:
@@ -23,6 +20,8 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
+      env:
+        GIT_SHA: ${{ github.sha }}
       run: dotnet build --no-restore --configuration Release /p:DebugType=None
     - name: Rename executables
       working-directory: /home/runner/work/Obsidian/Obsidian/Obsidian.ConsoleApp/bin/Release/net7.0/
