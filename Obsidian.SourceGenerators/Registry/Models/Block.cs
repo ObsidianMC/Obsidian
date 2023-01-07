@@ -2,25 +2,25 @@
 
 namespace Obsidian.SourceGenerators.Registry.Models;
 
-internal sealed class Block : ITaggable, IHasName
+internal sealed class Block : ITaggable, IHasName, IRegistryItem
 {
     public string Name { get; }
     public string Tag { get; }
     public int BaseId { get; }
     public int DefaultId { get; }
-    public int NumericId { get; }
+    public int RegistryId { get; }
     public int StatesCount { get; }
     public BlockProperty[] Properties { get; }
     public Dictionary<int, List<string>> StateValues { get; }
 
-    private Block(string name, string tag, int baseId, int defaultId, int numericId, int statesCount, BlockProperty[] properties,
+    private Block(string name, string tag, int baseId, int defaultId, int registryId, int statesCount, BlockProperty[] properties,
         Dictionary<int, List<string>> stateValues)
     {
         Name = name;
         Tag = tag;
         BaseId = baseId;
         DefaultId = defaultId;
-        NumericId = numericId;
+        RegistryId = registryId;
         StatesCount = statesCount;
         Properties = properties;
         StateValues = stateValues;
@@ -78,5 +78,5 @@ internal sealed class Block : ITaggable, IHasName
         }
     }
 
-    public string GetTagValue() => NumericId.ToString();
+    public string GetTagValue() => RegistryId.ToString();
 }

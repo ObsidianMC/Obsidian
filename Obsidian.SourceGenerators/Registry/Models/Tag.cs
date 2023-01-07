@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace Obsidian.SourceGenerators.Registry.Models;
 
@@ -17,7 +18,7 @@ internal sealed class Tag
         Values = values;
     }
 
-    public static Tag Get(JsonProperty property, Dictionary<string, ITaggable> taggables, Dictionary<string, Tag> knownTags)
+    public static Tag Get(JsonProperty property, Dictionary<string, ITaggable> taggables, Dictionary<string, Tag> knownTags, Dictionary<string, List<string>> missedTags)
     {
         JsonElement propertyValues = property.Value;
 
@@ -26,6 +27,7 @@ internal sealed class Tag
         string type = property.Name.Substring(0, property.Name.IndexOf('/'));
 
         var values = new List<ITaggable>();
+
         foreach (JsonElement value in propertyValues.GetProperty("values").EnumerateArray())
         {
             string valueTag = value.GetString()!;
@@ -40,15 +42,31 @@ internal sealed class Tag
                         values.Add(taggable);
                     }
                 }
+                else
+                {
+                    UpdateMissedTags(property.Name, valueTag, missedTags);
+                }
             }
             else if (taggables.TryGetValue(valueTag, out ITaggable taggable))
             {
                 values.Add(taggable);
+            }
+            else
+            {
+                UpdateMissedTags(property.Name, valueTag, missedTags);
             }
         }
 
         var tag = new Tag(name, minecraftName, type, values);
         knownTags[property.Name] = tag;
         return tag;
+    }
+
+    private static void UpdateMissedTags(string propertyName, string valueTag, Dictionary<string, List<string>> missedTags)
+    {
+        if (!missedTags.ContainsKey(propertyName))
+            missedTags.Add(propertyName, new() { valueTag });
+        else
+            missedTags[propertyName].Add(valueTag);
     }
 }
