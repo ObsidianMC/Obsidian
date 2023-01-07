@@ -44,7 +44,7 @@ public partial class Server : IServer
             var infoVerAttr = (AssemblyInformationalVersionAttribute)appAssembly
             .GetCustomAttributes(typeof(AssemblyInformationalVersionAttribute)).FirstOrDefault();
 
-            if (infoVerAttr != null && infoVerAttr.InformationalVersion.Length > 6)
+            if (infoVerAttr != null && infoVerAttr.InformationalVersion.Contains("+"))
             {
                 // Hash is embedded in the version after a '+' symbol, e.g. 1.0.0+a34a913742f8845d3da5309b7b17242222d41a21
                 version = infoVerAttr.InformationalVersion;
