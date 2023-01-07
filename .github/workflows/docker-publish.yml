@@ -30,6 +30,9 @@ jobs:
       id-token: write
 
     steps:
+      - name: xXx_set_env_variables_xXx
+        run: echo "GIT_SHA=${GITHUB_SHA}" >> $GITHUB_ENV
+      
       - name: Checkout repository
         uses: actions/checkout@v3
 
@@ -67,8 +70,6 @@ jobs:
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
       - name: Build and push Docker image
-        env:
-          GIT_SHA: ${{ github.sha }}
         id: build-and-push
         uses: docker/build-push-action@ac9327eae2b366085ac7f6a2d02df8aa8ead720a
         with:

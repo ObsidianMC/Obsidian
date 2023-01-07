@@ -12,6 +12,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: xXx_set_env_variables_xXx
+      run: echo "GIT_SHA=${GITHUB_SHA}" >> $GITHUB_ENV
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
       with:
@@ -20,8 +22,6 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
-      env:
-        GIT_SHA: ${{ github.sha }}
       run: dotnet build --no-restore --configuration Release /p:DebugType=None
     - name: Rename executables
       working-directory: /home/runner/work/Obsidian/Obsidian/Obsidian.ConsoleApp/bin/Release/net7.0/
