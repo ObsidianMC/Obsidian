@@ -1,8 +1,5 @@
 name: .NET Build
 
-env:
-  GIT_SHA: ${{ github.sha }}
-
 on:
   push:
     branches: [ master ]
@@ -11,6 +8,8 @@ on:
 
 jobs:
   build:
+    env:
+      GIT_SHA: ${{ github.sha }}
 
     runs-on: ubuntu-latest
 
