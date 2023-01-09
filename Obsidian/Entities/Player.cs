@@ -127,6 +127,8 @@ public class Player : Living, IPlayer
 
         this.PersistentDataFile = Path.Join(this.server.PersistentDataPath, $"{this.Uuid}.dat");
         this.PersistentDataBackupFile = Path.Join(this.server.PersistentDataPath, $"{this.Uuid}.dat.old");
+
+        this.Health = 20f;
     }
 
     public ItemStack GetHeldItem() => this.Inventory.GetItem(this.inventorySlot);
@@ -671,6 +673,9 @@ public class Player : Living, IPlayer
         this.FoodExhaustionLevel = compound.GetFloat("foodExhaustionLevel");
         this.FoodSaturationLevel = compound.GetFloat("foodSaturationLevel");
         this.XpP = compound.GetInt("XpP");
+
+        if (!this.Alive)
+            this.Health = 20f;//Player should never load data that has health at 0 
 
         var dimensionName = compound.GetString("Dimension");
         if (!string.IsNullOrWhiteSpace(dimensionName) && Registry.TryGetDimensionCodec(dimensionName, out var codec))
