@@ -8,7 +8,7 @@ public partial class UpdateEntityPositionPacket : IClientboundPacket
     public int EntityId { get; init; }
 
     [Field(1), DataFormat(typeof(short))]
-    public Vector Delta { get; init; }
+    public VectorF Delta { get; init; }
 
     [Field(4)]
     public bool OnGround { get; init; }

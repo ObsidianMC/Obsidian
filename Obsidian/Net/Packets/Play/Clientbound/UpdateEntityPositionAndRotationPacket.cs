@@ -8,7 +8,7 @@ public partial class UpdateEntityPositionAndRotationPacket : IClientboundPacket
     public int EntityId { get; init; }
 
     [Field(1), DataFormat(typeof(short))]
-    public Vector Delta { get; init; }
+    public VectorF Delta { get; init; }
 
     [Field(2)]
     public Angle Yaw { get; init; }

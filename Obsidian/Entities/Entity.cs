@@ -90,10 +90,9 @@ public class Entity : IEquatable<Entity>, IEntity
         var isNewLocation = position != this.Position;
         var isNewRotation = yaw != this.Yaw || pitch != this.Pitch;
 
+        var delta = (position * 32 - Position * 32) * 128;
         if (isNewLocation)
         {
-            Vector delta = (Vector)(position * 32 - Position * 32) * 128;
-
             if (isNewRotation)
             {
                 this.server.BroadcastPacket(new UpdateEntityPositionAndRotationPacket
@@ -112,7 +111,7 @@ public class Entity : IEquatable<Entity>, IEntity
                 {
                     EntityId = this.EntityId,
                     HeadYaw = yaw
-                });
+                }, this.EntityId);
             }
             else
             {
@@ -128,6 +127,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
             await this.UpdatePositionAsync(position, yaw, pitch, onGround);
         }
+        
     }
 
 
@@ -149,7 +149,7 @@ public class Entity : IEquatable<Entity>, IEntity
             {
                 EntityId = this.EntityId,
                 HeadYaw = yaw
-            });
+            }, this.EntityId);
             this.UpdatePosition(yaw, pitch, onGround);
         }
 
@@ -158,7 +158,8 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public async Task UpdatePositionAsync(VectorF pos, bool onGround = true)
     {
-        var chunk = await this.World.GetChunkAsync((int)MathF.Round(pos.X / 16f), (int)MathF.Round(pos.Z / 16f), false);
+        var (x, z) = pos.ToChunkCoord();
+        var chunk = await this.World.GetChunkAsync(x, z, false);
         if (chunk != null && chunk.isGenerated)
         {
             this.Position = pos;
@@ -169,7 +170,9 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public async Task UpdatePositionAsync(VectorF pos, Angle yaw, Angle pitch, bool onGround = true)
     {
-        var chunk = await this.World.GetChunkAsync((int)MathF.Round(pos.X / 16f), (int)MathF.Round(pos.Z / 16f), false);
+        var (x, z) = pos.ToChunkCoord();
+        var chunk = await this.World.GetChunkAsync(x, z, false);
+
         if (chunk != null && chunk.isGenerated)
         {
             this.Position = pos;
@@ -178,11 +181,6 @@ public class Entity : IEquatable<Entity>, IEntity
         this.Yaw = yaw;
         this.Pitch = pitch;
         this.OnGround = onGround;
-    }
-
-    public async Task UpdatePositionAsync(float x, float y, float z, bool onGround = true)
-    {
-        await this.UpdatePositionAsync(new VectorF(x, y, z), onGround);
     }
 
     public void UpdatePosition(Angle yaw, Angle pitch, bool onGround = true)
