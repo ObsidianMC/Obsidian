@@ -1,4 +1,5 @@
-﻿using Obsidian.WorldData.Generators.Overworld;
+﻿using Obsidian.Utilities.Registry;
+using Obsidian.WorldData.Generators.Overworld;
 using Obsidian.WorldData.Generators.Overworld.Decorators;
 
 namespace Obsidian.WorldData.Generators;
@@ -25,7 +26,7 @@ public sealed class OverworldGenerator : IWorldGenerator
             {
                 int worldX = bx + (cx << 4);
                 int worldZ = bz + (cz << 4);
-                chunk.Heightmaps[ChunkData.HeightmapType.MotionBlocking].Set(bx, bz, (int)helper.Noise.Heightmap.GetValue(worldX, 0, worldZ));
+                //chunk.Heightmaps[ChunkData.HeightmapType.MotionBlocking].Set(bx, bz, (int)helper.Noise.Heightmap.GetValue(worldX, 0, worldZ));
 
                 // Determine Biome
                 if (bx % 4 == 0 && bz % 4 == 0) // Biomes are in 4x4x4 blocks. Do a 2D array for now and just copy it vertically.
@@ -36,10 +37,20 @@ public sealed class OverworldGenerator : IWorldGenerator
                         chunk.SetBiome(bx, y, bz, biome);
                     }
                 }
+                int maxY = -64;
+                for (int y = -64; y < 320; y++)
+                {
+                    if (helper.Noise.IsTerrain(worldX, y, worldZ))
+                    {
+                        chunk.SetBlock(bx, y, bz, BlocksRegistry.Stone);
+                        maxY = Math.Max(maxY, y);
+                    }
+                }
+                chunk.Heightmaps[ChunkData.HeightmapType.MotionBlocking].Set(bx, bz, maxY);
             }
         }
 
-        ChunkBuilder.FillChunk(chunk);
+        //ChunkBuilder.FillChunk(chunk);
         ChunkBuilder.CarveCaves(helper, chunk);
         await OverworldDecorator.DecorateAsync(chunk, helper);
 

@@ -950,13 +950,13 @@ public class Player : Living, IPlayer
             Math.Abs(playerChunkZ - chunk2.Z) ? -1 : 1;
         });
 
-        await Parallel.ForEachAsync(clientUnneededChunks.Take(25), async (chunkLoc, _) =>
+        await Parallel.ForEachAsync(clientUnneededChunks, async (chunkLoc, _) =>
         {
             await client.UnloadChunkAsync(chunkLoc.X, chunkLoc.Z);
             client.LoadedChunks.TryRemove(chunkLoc);
         });
 
-        await Parallel.ForEachAsync(clientNeededChunks.Take(25), async (chunkLoc, _) =>
+        await Parallel.ForEachAsync(clientNeededChunks.Take(50), async (chunkLoc, _) =>
         {
             var chunk = await World.GetChunkAsync(chunkLoc.X, chunkLoc.Z);
             if (chunk is not null)

@@ -10,6 +10,26 @@ public class VoronoiBiomes : Module
 
     public double Frequency { get; set; }
 
+    // 3D: temp, humidity, height
+    Biomes[,,] biomeLookup = new Biomes[3, 3, 3] {
+        {
+            { Biomes.FrozenOcean, Biomes.SnowyPlains, Biomes.FrozenPeaks }, // cold, dry, low-med-high
+            { Biomes.ColdOcean, Biomes.Grove, Biomes.FrozenPeaks }, // cold, moderate, low-med-high
+            { Biomes.IceSpikes, Biomes.Grove, Biomes.FrozenPeaks }, // cold, humid, low-med-high
+        },
+        {
+            { Biomes.LukewarmOcean, Biomes.Desert, Biomes.FrozenPeaks }, // warm, dry, low-med-high
+            { Biomes.Ocean, Biomes.Grove, Biomes.FrozenPeaks }, // warm, moderate, low-med-high
+            { Biomes.LukewarmOcean, Biomes.Grove, Biomes.FrozenPeaks }, // warm, humid, low-med-high
+        },
+        {
+            { Biomes.WarmOcean, Biomes.SnowyPlains, Biomes.FrozenPeaks }, // warm, dry, low-med-high
+            { Biomes.WarmOcean, Biomes.Grove, Biomes.FrozenPeaks }, // warm, moderate, low-med-high
+            { Biomes.WarmOcean, Biomes.Grove, Biomes.FrozenPeaks }, // warm, humid, low-med-high
+        }
+    };
+
+
     internal enum BaseBiome : int
     {
         DeepOcean = -9, //unused methinks
@@ -46,9 +66,12 @@ public class VoronoiBiomes : Module
 
     private bool isUnitTest;
 
-    public VoronoiBiomes(bool isUnitTest = false) : base(0)
+    public VoronoiBiomes(Module temp, Module humidity, Module height, bool isUnitTest = false) : base(3)
     {
         this.isUnitTest = isUnitTest;
+        SourceModules[0] = temp;
+        SourceModules[1] = humidity;
+        SourceModules[2] = height;
     }
 
     [SkipLocalsInit]
@@ -101,6 +124,11 @@ public class VoronoiBiomes : Module
 
         return (double)ProcessBiomeRules(me, nearest);
     }
+
+/*    private Biomes GetBiome(VoronoiCell cell)
+    {
+
+    }*/
 
     private static void GetMin(ReadOnlySpan<VoronoiCell> cells, ref VoronoiCell min, ref VoronoiCell secondMin)
     {

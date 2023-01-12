@@ -1,5 +1,6 @@
 ﻿using Obsidian.API.Noise;
 using Obsidian.WorldData.Generators.Overworld.Terrain;
+using Org.BouncyCastle.Crypto.Engines;
 using SharpNoise.Modules;
 using static SharpNoise.Modules.Curve;
 using Blend = Obsidian.API.Noise.Blend;
@@ -11,6 +12,8 @@ public class OverworldTerrainNoise
     public Module Heightmap { get; set; }
 
     public OverworldTerrainSettings Settings { get; private set; } = new OverworldTerrainSettings();
+
+    public readonly Module terrainPerlin;
 
     public readonly Module ocean, deepocean, badlands, plains, hills, mountains, rivers;
 
@@ -26,6 +29,23 @@ public class OverworldTerrainNoise
     {
         this.isUnitTest = isUnitTest;
         this.seed = seed + 765; // add offset
+        terrainPerlin = new Turbulence()
+        {
+            Frequency = 0.1234,
+            Power = 2,
+            Roughness = 3,
+            Seed = seed + 1,
+            Source0 = new Perlin()
+            {
+                Frequency = 0.0356,
+                OctaveCount = 3,
+                Lacunarity = 0.8899,
+                Persistence = 0.1334,
+                Quality = SharpNoise.NoiseQuality.Fast,
+                Seed = seed
+            }
+        };
+
         ocean = new OceanTerrain(seed, Settings);
         deepocean = new DeepOceanTerrain(seed, Settings);
         plains = new PlainsTerrain(seed, Settings);
@@ -145,6 +165,37 @@ public class OverworldTerrainNoise
         Heightmap = isUnitTest ? blendPass1 : scaledWorld;
     }
 
+    public Module TemperaturePerlin => new Perlin()
+    {
+        Frequency = 0.0042,
+        Quality = SharpNoise.NoiseQuality.Fast,
+        Seed = seed + 2
+    };
+
+    public Module HumidityPerlin => new Perlin()
+    {
+        Frequency = 0.0042,
+        Quality = SharpNoise.NoiseQuality.Fast,
+        Seed = seed + 3
+    };
+
+    public Module HeightPerlin => new Perlin()
+    {
+        Frequency = 0.0042,
+        Quality = SharpNoise.NoiseQuality.Fast,
+        Seed = seed + 4
+    };
+
+    public bool IsTerrain(int x, int y, int z)
+    {
+        var terrainAmplification = 1d;
+        double bias = y - 128; // put half world height to 0;
+        bias = Math.Pow(bias, 3)/terrainAmplification;
+        bias /= 192d; // world height to -1 < y < 1;
+        double n = terrainPerlin.GetValue(x, y, z);
+        return n - bias > 0;
+    }
+
     public Module Cave => new Turbulence()
     {
         Frequency = 0.1234,
@@ -201,7 +252,7 @@ public class OverworldTerrainNoise
             Power = 16,
             Roughness = 3,
             Seed = seed + 4,
-            Source0 = new VoronoiBiomes(isUnitTest)
+            Source0 = new VoronoiBiomes(TemperaturePerlin, HumidityPerlin, HeightPerlin, isUnitTest)
             {
                 Frequency = 0.0054159,
                 Seed = seed + 5
@@ -210,5 +261,5 @@ public class OverworldTerrainNoise
     };
 
     // Set a constant biome here for development
-    //public Module Biome => new Constant() { ConstantValue = (int)Biomes.Jungle };
+    //public Module Biome => new Constant() { ConstantValue = (int)Biomes.Forest };
 }

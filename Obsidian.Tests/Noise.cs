@@ -169,4 +169,79 @@ public class Noise
             Assert.Equal(0, 0);
         });
     }
+
+    [Fact(DisplayName = "Temp", Timeout = 100000)]
+    public async void TempAsync()
+    {
+        await Task.Run(() =>
+        {
+            var noise = noiseGen.TemperaturePerlin;
+            var map = new NoiseMap();
+            PlaneNoiseMapBuilder builder =
+                new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noise };
+
+            var image = new Image();
+            var transitionsRenderer = new ImageRenderer() { SourceNoiseMap = map, DestinationImage = image };
+            transitionsRenderer.BuildTerrainGradient();
+            builder.SetBounds(-400, 400, -300, 300);
+            builder.SetDestSize(800, 600);
+            builder.Build();
+            transitionsRenderer.Render();
+
+            var bmp = transitionsRenderer.DestinationImage.ToGdiBitmap();
+            bmp.Save("_temp.bmp");
+
+            Assert.Equal(0, 0);
+        });
+    }
+
+    [Fact(DisplayName = "Height", Timeout = 100000)]
+    public async void HeightAsync()
+    {
+        await Task.Run(() =>
+        {
+            var noise = noiseGen.HeightPerlin;
+            var map = new NoiseMap();
+            PlaneNoiseMapBuilder builder =
+                new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noise };
+
+            var image = new Image();
+            var transitionsRenderer = new ImageRenderer() { SourceNoiseMap = map, DestinationImage = image };
+            transitionsRenderer.BuildTerrainGradient();
+            builder.SetBounds(-400, 400, -300, 300);
+            builder.SetDestSize(800, 600);
+            builder.Build();
+            transitionsRenderer.Render();
+
+            var bmp = transitionsRenderer.DestinationImage.ToGdiBitmap();
+            bmp.Save("_height.bmp");
+
+            Assert.Equal(0, 0);
+        });
+    }
+
+    [Fact(DisplayName = "Humidity", Timeout = 100000)]
+    public async void HumidityAsync()
+    {
+        await Task.Run(() =>
+        {
+            var noise = noiseGen.HumidityPerlin;
+            var map = new NoiseMap();
+            PlaneNoiseMapBuilder builder =
+                new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noise };
+
+            var image = new Image();
+            var transitionsRenderer = new ImageRenderer() { SourceNoiseMap = map, DestinationImage = image };
+            transitionsRenderer.BuildTerrainGradient();
+            builder.SetBounds(-400, 400, -300, 300);
+            builder.SetDestSize(800, 600);
+            builder.Build();
+            transitionsRenderer.Render();
+
+            var bmp = transitionsRenderer.DestinationImage.ToGdiBitmap();
+            bmp.Save("_hummidity.bmp");
+
+            Assert.Equal(0, 0);
+        });
+    }
 }
