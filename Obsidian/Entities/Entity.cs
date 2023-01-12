@@ -69,7 +69,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
         if (isNewLocation)
         {
-            Vector delta = (Vector)(position * 32 - Position * 32) * 128;
+            var delta = (Vector)((position * 32 - this.Position * 32) * 128);
 
             server.BroadcastPacket(new UpdateEntityPositionPacket
             {
@@ -79,9 +79,9 @@ public class Entity : IEquatable<Entity>, IEntity
 
                 OnGround = onGround
             }, this.EntityId);
-
-            await this.UpdatePositionAsync(position, onGround);
         }
+
+        await this.UpdatePositionAsync(position, onGround);
     }
 
 
@@ -90,9 +90,10 @@ public class Entity : IEquatable<Entity>, IEntity
         var isNewLocation = position != this.Position;
         var isNewRotation = yaw != this.Yaw || pitch != this.Pitch;
 
-        var delta = (position * 32 - Position * 32) * 128;
         if (isNewLocation)
         {
+            var delta = (Vector)((position * 32 - this.Position * 32) * 128);
+
             if (isNewRotation)
             {
                 this.server.BroadcastPacket(new UpdateEntityPositionAndRotationPacket
@@ -124,10 +125,9 @@ public class Entity : IEquatable<Entity>, IEntity
                     OnGround = onGround
                 }, this.EntityId);
             }
-
-            await this.UpdatePositionAsync(position, yaw, pitch, onGround);
         }
-        
+
+        await this.UpdatePositionAsync(position, yaw, pitch, onGround);
     }
 
 
