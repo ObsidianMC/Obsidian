@@ -323,6 +323,7 @@ public class Player : Living, IPlayer
         this.visiblePlayers.Clear();
 
         this.Respawning = true;
+        this.TeleportId = 0;
 
         await this.UpdateChunksAsync(true, 2);
 
