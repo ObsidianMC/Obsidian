@@ -10,22 +10,37 @@ public class VoronoiBiomes : Module
 
     public double Frequency { get; set; }
 
-    // 3D: temp, humidity, height
-    Biomes[,,] biomeLookup = new Biomes[3, 3, 3] {
+    // 3D: 5 heights, 4 temp, 3 humidity
+    private readonly Biomes[,,] BiomeLookup = new Biomes[5, 4, 3] {
         {
-            { Biomes.FrozenOcean, Biomes.SnowyPlains, Biomes.FrozenPeaks }, // cold, dry, low-med-high
-            { Biomes.ColdOcean, Biomes.Grove, Biomes.FrozenPeaks }, // cold, moderate, low-med-high
-            { Biomes.IceSpikes, Biomes.Grove, Biomes.FrozenPeaks }, // cold, humid, low-med-high
+            { Biomes.DeepFrozenOcean, Biomes.DeepFrozenOcean, Biomes.DeepFrozenOcean }, // deep ocean, frozen, low-med-high humidity
+            { Biomes.DeepColdOcean, Biomes.DeepColdOcean, Biomes.DeepColdOcean }, // deep ocean, cold, low-med-high humidity
+            { Biomes.DeepLukewarmOcean, Biomes.DeepLukewarmOcean, Biomes.DeepLukewarmOcean }, // deep ocean, warm, low-med-high humidity
+            { Biomes.DeepOcean, Biomes.DeepOcean, Biomes.DeepOcean }, // deep ocean, hot, low-med-high humidity
         },
         {
-            { Biomes.LukewarmOcean, Biomes.Desert, Biomes.FrozenPeaks }, // warm, dry, low-med-high
-            { Biomes.Ocean, Biomes.Grove, Biomes.FrozenPeaks }, // warm, moderate, low-med-high
-            { Biomes.LukewarmOcean, Biomes.Grove, Biomes.FrozenPeaks }, // warm, humid, low-med-high
+            { Biomes.FrozenOcean, Biomes.FrozenOcean, Biomes.FrozenOcean }, //  ocean, frozen, low-med-high humidity
+            { Biomes.ColdOcean, Biomes.ColdOcean, Biomes.ColdOcean }, //  ocean, cold, low-med-high humidity
+            { Biomes.LukewarmOcean, Biomes.LukewarmOcean, Biomes.LukewarmOcean }, //  ocean, warm, low-med-high humidity
+            { Biomes.Ocean, Biomes.Ocean, Biomes.Ocean }, //  ocean, hot, low-med-high humidity
         },
         {
-            { Biomes.WarmOcean, Biomes.SnowyPlains, Biomes.FrozenPeaks }, // warm, dry, low-med-high
-            { Biomes.WarmOcean, Biomes.Grove, Biomes.FrozenPeaks }, // warm, moderate, low-med-high
-            { Biomes.WarmOcean, Biomes.Grove, Biomes.FrozenPeaks }, // warm, humid, low-med-high
+            { Biomes.IceSpikes, Biomes.SnowyPlains, Biomes.SnowyTaiga }, // flatland, frozen, low-med-high humidity
+            { Biomes.Plains, Biomes.Plains, Biomes.Taiga }, // flatland, cold, low-med-high humidity
+            { Biomes.Forest, Biomes.Forest, Biomes.WindsweptSavanna }, // flatland, warm, low-med-high humidity
+            { Biomes.Savanna, Biomes.Desert, Biomes.Swamp }, // flatland, hot, low-med-high humidity
+        },
+        {
+            { Biomes.WindsweptForest, Biomes.SnowySlopes, Biomes.SnowySlopes }, // hills, frozen, low-med-high humidity
+            { Biomes.WindsweptHills, Biomes.Grove, Biomes.Forest }, // hills, cold, low-med-high humidity
+            { Biomes.WindsweptGravellyHills, Biomes.SunflowerPlains, Biomes.Jungle }, // hills, warm, low-med-high humidity
+            { Biomes.SavannaPlateau, Biomes.Badlands, Biomes.MangroveSwamp }, // hills, hot, low-med-high humidity
+        },
+        {
+            { Biomes.FrozenPeaks, Biomes.Grove, Biomes.IceSpikes }, // mountains, frozen, low-med-high humidity
+            { Biomes.FrozenPeaks, Biomes.Grove, Biomes.SnowySlopes }, // mountains, cold, low-med-high humidity
+            { Biomes.FrozenPeaks, Biomes.Grove, Biomes.StonyPeaks }, // mountains, warm, low-med-high humidity
+            { Biomes.StonyPeaks, Biomes.StonyPeaks, Biomes.StonyPeaks }, // mountains, hot, low-med-high humidity
         }
     };
 
@@ -117,18 +132,32 @@ public class VoronoiBiomes : Module
         Unsafe.SkipInit(out nearest);
         GetMin(cells, ref me, ref nearest);
 
-        var meVal = NoiseGenerator.ValueNoise3D((int)Math.Floor(me.Point.x), 0, (int)Math.Floor(me.Point.z));
+        GetBiomeParams(me);
+        GetBiomeParams(nearest);
+        SetBiome(me);
+        return (double) me.Biome;
+
+/*        var meVal = NoiseGenerator.ValueNoise3D((int)Math.Floor(me.Point.x), 0, (int)Math.Floor(me.Point.z));
         (me.BaseBiome, me.Variant) = GetBaseBiome(meVal);
         var nearestVal = NoiseGenerator.ValueNoise3D((int)Math.Floor(nearest.Point.x), 0, (int)Math.Floor(nearest.Point.z));
         (nearest.BaseBiome, nearest.Variant) = GetBaseBiome(nearestVal);
 
-        return (double)ProcessBiomeRules(me, nearest);
+        return (double)ProcessBiomeRules(me, nearest);*/
     }
 
-/*    private Biomes GetBiome(VoronoiCell cell)
+    private void GetBiomeParams(VoronoiCell cell)
     {
+        // 5 heights, 4 temps, 3 humidities
+        cell.TempIndex =  (int) ((SourceModules[0].GetValue(cell.Point.x, 0, cell.Point.z) + 0.999d) * 2.5d);
+        cell.HumidityIndex = (int) ((SourceModules[1].GetValue(cell.Point.x, 0, cell.Point.z) + 0.999d) * 2.0d);
+        cell.HeightIndex = (int) ((SourceModules[2].GetValue(cell.Point.x, 0, cell.Point.z) + 0.999d) * 1.5d);
+    }
 
-    }*/
+
+    private void SetBiome(VoronoiCell cell)
+    {
+        cell.Biome = BiomeLookup[cell.HeightIndex, cell.TempIndex, cell.HumidityIndex];
+    }
 
     private static void GetMin(ReadOnlySpan<VoronoiCell> cells, ref VoronoiCell min, ref VoronoiCell secondMin)
     {
@@ -444,5 +473,9 @@ public class VoronoiBiomes : Module
         public BaseBiome BaseBiome { get; set; }
         public int Variant { get; set; }
         public Biomes Biome { get; set; }
+        public int TempIndex { get; set; }
+        public int HumidityIndex { get; set; }
+        public int HeightIndex { get; set; }
+
     }
 }
