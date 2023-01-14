@@ -432,6 +432,14 @@ public partial class MinecraftStream
         WriteShort((short)value.Z);
     }
 
+    [WriteMethod, DataFormat(typeof(short))]
+    public void WriteAbsoluteShortPosition(VectorF value)
+    {
+        WriteShort((short)value.X);
+        WriteShort((short)value.Y);
+        WriteShort((short)value.Z);
+    }
+
     [WriteMethod]
     public void WritePositionF(VectorF value)
     {
