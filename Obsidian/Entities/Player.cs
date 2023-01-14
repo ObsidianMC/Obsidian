@@ -6,7 +6,7 @@ using Obsidian.Nbt;
 using Obsidian.Net;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Utilities.Registry;
+using Obsidian.Registries;
 using Obsidian.WorldData;
 using System.IO;
 using System.Net;
@@ -726,7 +726,7 @@ public class Player : Living, IPlayer
                     .WithDurability(itemCompound.GetInt("Damage"))
                     .IsUnbreakable(itemCompound.GetBool("Unbreakable"));
 
-                var item = Registry.GetSingleItem(itemCompound.GetString("id"), itemMetaBuilder.Build());
+                var item = ItemsRegistry.GetSingleItem(itemCompound.GetString("id"), itemMetaBuilder.Build());
                 item.Count = itemCompound.GetByte("Count");
                 item.Slot = slot;
 

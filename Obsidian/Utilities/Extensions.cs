@@ -1,5 +1,5 @@
 ﻿using Obsidian.Entities;
-using Obsidian.Net;
+using Obsidian.Registries;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
@@ -57,7 +57,7 @@ public static partial class Extensions
 
     internal static bool IsNonLiving(this EntityType type) => nonLiving.Contains(type);
 
-    public static Item AsItem(this ItemStack itemStack) => Registry.Registry.GetItem(itemStack.Type);
+    public static Item AsItem(this ItemStack itemStack) => ItemsRegistry.Get(itemStack.Type);
 
     public static IEnumerable<KeyValuePair<Guid, Player>> Except(this ConcurrentDictionary<Guid, Player> source, params Guid[] uuids) =>
         source.Where(x => !uuids.Contains(x.Value.Uuid));

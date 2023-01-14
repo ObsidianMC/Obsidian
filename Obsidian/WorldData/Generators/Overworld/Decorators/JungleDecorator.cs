@@ -1,4 +1,4 @@
-﻿using Obsidian.Utilities.Registry;
+﻿using Obsidian.Registries;
 using Obsidian.WorldData.Generators.Overworld.Features.Flora;
 using Obsidian.WorldData.Generators.Overworld.Features.Trees;
 

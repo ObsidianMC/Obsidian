@@ -1,5 +1,5 @@
 ﻿using Obsidian.API.BlockStates.Builders;
-using Obsidian.Utilities.Registry;
+using Obsidian.Registries;
 using Obsidian.WorldData.Generators.Overworld.Features.Trees;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators;

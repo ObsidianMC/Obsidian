@@ -2,6 +2,7 @@
 using Obsidian.API.Registry.Codecs.Chat;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.Nbt;
+using Obsidian.Registries;
 
 namespace Obsidian.Utilities;
 
@@ -88,7 +89,7 @@ public partial class Extensions
         if (item is null)
             return null;
 
-        var itemStack = Registry.Registry.GetSingleItem(item.GetString("id"));
+        var itemStack = ItemsRegistry.GetSingleItem(item.GetString("id"));
 
         var itemMetaBuilder = new ItemMetaBuilder();
 

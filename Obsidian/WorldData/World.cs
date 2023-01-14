@@ -4,7 +4,7 @@ using Obsidian.Blocks;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Utilities.Registry;
+using Obsidian.Registries;
 using System.IO;
 
 namespace Obsidian.WorldData;

@@ -12,8 +12,8 @@ using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Net.Packets.Status;
+using Obsidian.Registries;
 using Obsidian.Utilities.Mojang;
-using Obsidian.Utilities.Registry;
 using Obsidian.WorldData;
 using System.Diagnostics;
 using System.Net;
@@ -628,7 +628,7 @@ public sealed class Client : IDisposable
         //}).ConfigureAwait(false);
     }
 
-    internal Task SendCommandsAsync() => QueuePacketAsync(Registry.CommandsPacket);
+    internal Task SendCommandsAsync() => QueuePacketAsync(CommandsRegistry.Packet);
 
     internal Task RemovePlayerFromListAsync(IPlayer player) => QueuePacketAsync(new PlayerInfoRemovePacket
     {

@@ -1,5 +1,4 @@
-﻿using Obsidian.API;
-using Obsidian.API.Advancements;
+﻿using Obsidian.API.Advancements;
 using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registry.Codecs.Dimensions;
@@ -10,10 +9,8 @@ using Obsidian.Net.Actions.BossBar;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.WindowProperties;
+using Obsidian.Registries;
 using Obsidian.Serialization.Attributes;
-using Obsidian.Utilities.Mojang;
-using Obsidian.Utilities.Registry;
-using Org.BouncyCastle.Utilities;
 using System.Buffers.Binary;
 using System.Text;
 
@@ -526,7 +523,7 @@ public partial class MinecraftStream
             this.WriteChat(advancement.Display.Title);
             this.WriteChat(advancement.Display.Description);
 
-            this.WriteItemStack(Registry.GetSingleItem(advancement.Display.Icon.Type));
+            this.WriteItemStack(ItemsRegistry.GetSingleItem(advancement.Display.Icon.Type));
 
             this.WriteVarInt(advancement.Display.AdvancementFrameType);
 

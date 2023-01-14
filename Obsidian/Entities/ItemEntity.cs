@@ -1,5 +1,5 @@
 ﻿using Obsidian.Net;
-using Obsidian.Utilities.Registry;
+using Obsidian.Registries;
 
 namespace Obsidian.Entities;
 
@@ -7,7 +7,7 @@ public class ItemEntity : Entity
 {
     public int Id { get; set; }
 
-    public Material Material => Registry.GetItem(this.Id).Type;
+    public Material Material => ItemsRegistry.Get(this.Id).Type;
 
     public sbyte Count { get; set; }
 

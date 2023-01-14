@@ -1,5 +1,5 @@
 ﻿using Obsidian.Net;
-using Obsidian.Utilities.Registry;
+using Obsidian.Registries;
 
 namespace Obsidian.ChunkData;
 

@@ -14,13 +14,13 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json;
 
-namespace Obsidian.Utilities.Registry;
+namespace Obsidian.Registries;
 
 public static partial class Registry
 {
     internal static ILogger Logger { get; set; }
 
-    public static CommandsPacket CommandsPacket = new();
+    
 
     public static readonly Dictionary<string, IRecipe> Recipes = new();
 
@@ -46,11 +46,11 @@ public static partial class Registry
     {
         var asm = Assembly.GetExecutingAssembly()!;
 
-        await using Stream biomes = asm.GetManifestResourceStream($"{mainDomain}.biome_codec.json");
+        await using var biomes = asm.GetManifestResourceStream($"{mainDomain}.biome_codec.json");
 
         var baseCodec = await biomes.FromJsonAsync<BaseCodec<BiomeCodec>>(codecJsonOptions);
 
-        int registered = 0;
+        var registered = 0;
         foreach (var codec in baseCodec.Value)
         {
             Biomes.TryAdd(codec.Id, codec);
@@ -62,13 +62,12 @@ public static partial class Registry
 
         Logger?.LogDebug($"Successfully registered {registered} biomes...");
 
-        await using Stream dimensions = asm.GetManifestResourceStream($"{mainDomain}.default_dimensions.json");
+        await using var dimensions = asm.GetManifestResourceStream($"{mainDomain}.default_dimensions.json");
 
         var dimensionDict = await dimensions.FromJsonAsync<Dictionary<string, List<DimensionCodec>>>(codecJsonOptions);
 
         registered = 0;
         foreach (var (_, values) in dimensionDict)
-        {
             foreach (var codec in values)
             {
                 Dimensions.TryAdd(codec.Id, codec);
@@ -76,17 +75,15 @@ public static partial class Registry
                 Logger?.LogDebug($"Added codec: {codec.Name}:{codec.Id}");
                 registered++;
             }
-        }
 
         Logger?.LogDebug($"Successfully registered {registered} dimensions...");
 
-        await using Stream chatTypes = asm.GetManifestResourceStream($"{mainDomain}.chat_type_codec.json");
+        await using var chatTypes = asm.GetManifestResourceStream($"{mainDomain}.chat_type_codec.json");
 
         var chatTypesDict = await chatTypes.FromJsonAsync<Dictionary<string, List<ChatCodec>>>(codecJsonOptions);
 
         registered = 0;
         foreach (var (_, values) in chatTypesDict)
-        {
             foreach (var codec in values)
             {
                 ChatTypes.TryAdd(codec.Id, codec);
@@ -94,14 +91,13 @@ public static partial class Registry
                 Logger?.LogDebug($"Added codec: {codec.Name}:{codec.Id}");
                 registered++;
             }
-        }
 
         Logger?.LogDebug($"Successfully registered {registered} chat types...");
     }
 
     public static async Task RegisterRecipesAsync()
     {
-        using Stream fs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.recipes.json");
+        using var fs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.recipes.json");
 
         using var sw = new StreamReader(fs, new UTF8Encoding(false));
 
@@ -109,7 +105,7 @@ public static partial class Registry
 
         foreach (var (name, element) in dict)
         {
-            if (!element.TryGetProperty("type", out JsonElement value))
+            if (!element.TryGetProperty("type", out var value))
                 throw new InvalidOperationException("Unable to find json property 'type'");
 
             var type = value.GetString();
@@ -177,78 +173,7 @@ public static partial class Registry
         Logger?.LogDebug($"Registered {Recipes.Count} recipes...");
     }
 
-    public static void RegisterCommands(Server server)
-    {
-        CommandsPacket = new();
-        var index = 0;
-
-        var node = new CommandNode()
-        {
-            Type = CommandNodeType.Root,
-            Index = index
-        };
-
-        foreach (var cmd in server.CommandsHandler.GetAllCommands())
-        {
-            var cmdNode = new CommandNode()
-            {
-                Index = ++index,
-                Name = cmd.Name,
-                Type = CommandNodeType.Literal
-            };
-
-            foreach (var overload in cmd.Overloads.Take(1))
-            {
-                var args = overload.GetParameters().Skip(1); // skipping obsidian context
-                if (!args.Any())
-                    cmdNode.Type |= CommandNodeType.IsExecutable;
-
-                CommandNode prev = cmdNode;
-
-                foreach (var arg in args)
-                {
-                    var argNode = new CommandNode()
-                    {
-                        Index = ++index,
-                        Name = arg.Name,
-                        Type = CommandNodeType.Argument | CommandNodeType.IsExecutable
-                    };
-
-                    Type type = arg.ParameterType;
-
-                    var (id, mctype) = server.CommandsHandler.FindMinecraftType(type);
-
-                    argNode.Parser = mctype switch
-                    {
-                        "brigadier:string" => new StringCommandParser(arg.CustomAttributes.Any(x => x.AttributeType == typeof(RemainingAttribute)) ? StringType.GreedyPhrase : StringType.QuotablePhrase),
-                        "obsidian:player" => new EntityCommandParser(EntityCommadBitMask.OnlyPlayers),// this is a custom type used by obsidian meaning "only player entities".
-                        "brigadier:double" => new DoubleCommandParser(),
-                        "brigadier:float" => new FloatCommandParser(),
-                        "brigadier:integer" => new IntCommandParser(),
-                        "brigadier:long" => new LongCommandParser(),
-                        _ => new CommandParser(id, mctype),
-                    };
-
-                    prev.AddChild(argNode);
-
-                    prev = argNode;
-                }
-            }
-
-            node.AddChild(cmdNode);
-        }
-
-        CommandsPacket.AddNode(node);
-    }
-
-    public static Item GetItem(int id) => ItemsRegistry.Items.Values.SingleOrDefault(x => x.Id == id);
-    public static Item GetItem(Material mat) => ItemsRegistry.Items.GetValueOrDefault(mat);
-    public static Item GetItem(string unlocalizedName) =>
-        ItemsRegistry.Items.Values.SingleOrDefault(x => x.UnlocalizedName.EqualsIgnoreCase(unlocalizedName));
-
-    public static ItemStack GetSingleItem(Material mat, ItemMeta? meta = null) => new(mat, 1, meta);
-
-    public static ItemStack GetSingleItem(string unlocalizedName, ItemMeta? meta = null) => new(GetItem(unlocalizedName).Type, 1, meta);
+   
 
     public static bool TryGetDimensionCodec(int id, [MaybeNullWhen(false)] out DimensionCodec codec) => Dimensions.TryGetValue(id, out codec);
     public static bool TryGetDimensionCodec(string name, [MaybeNullWhen(false)] out DimensionCodec codec)

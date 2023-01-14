@@ -1,6 +1,6 @@
 ﻿using System.Linq.Expressions;
 
-namespace Obsidian.Utilities.Registry;
+namespace Obsidian.Registries;
 internal partial class BlocksRegistry
 {
     //Maybe we should make this a temp cache?

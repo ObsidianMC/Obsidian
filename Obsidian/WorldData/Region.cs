@@ -1,9 +1,8 @@
-﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Obsidian.ChunkData;
+﻿using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Nbt;
+using Obsidian.Registries;
 using Obsidian.Utilities.Collection;
-using Obsidian.Utilities.Registry;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;

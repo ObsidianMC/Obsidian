@@ -1,6 +1,6 @@
 ﻿using Obsidian.API.Crafting;
+using Obsidian.Registries;
 using Obsidian.Serialization.Attributes;
-using Obsidian.Utilities.Registry;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
@@ -11,7 +11,7 @@ public partial class UpdateRecipesPacket : IClientboundPacket
 
     public int Id => 0x69;
 
-    public static readonly UpdateRecipesPacket FromRegistry = new(Registry.Recipes);
+    public static readonly UpdateRecipesPacket FromRegistry = new(RecipesRegistry.Recipes);
 
     public UpdateRecipesPacket(IDictionary<string, IRecipe> recipes)
     {
