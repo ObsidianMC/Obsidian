@@ -19,6 +19,7 @@ public partial class RegistryAssetsGenerator
 
         GenerateDimensions(codecs["dimensions"].ToArray(), builder, ctx);
         GenerateBiomes(codecs["biomes"].ToArray(), builder, ctx);
+        GenerateChatType(codecs["chat_type"].ToArray(), builder, ctx);
 
         builder.EndScope();
 

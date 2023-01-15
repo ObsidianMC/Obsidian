@@ -508,12 +508,7 @@ public sealed class Client : IDisposable
             EntityId = id,
             Gamemode = Player.Gamemode,
             DimensionNames = CodecRegistry.Dimensions.All.Select(x => x.Value.Name).ToList(),
-            Codecs = new MixedCodec
-            {
-                Dimensions = Registry.Dimensions,
-                Biomes = Registry.Biomes,
-                ChatTypes = Registry.ChatTypes
-            },
+            Codecs = new(),//Don't need this anymore
             DimensionType = codec.Name,
             DimensionName = codec.Name,
             HashedSeed = 0,

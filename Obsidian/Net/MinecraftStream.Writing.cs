@@ -685,41 +685,41 @@ public partial class MinecraftStream
     }
 
     [WriteMethod]
-    public void WriteMixedCodec(MixedCodec value)
+    public void WriteMixedCodec(MixedCodec _)
     {
         var writer = new NbtWriter(this, "");
 
         var list = new NbtList(NbtTagType.Compound, "value");
 
-        foreach (var (_, codec) in value.Dimensions)
+        foreach (var (_, codec) in CodecRegistry.Dimensions.All)
             codec.Write(list);
 
-        var dimensions = new NbtCompound(value.Dimensions.Name)
+        var dimensions = new NbtCompound(CodecRegistry.Dimensions.CodecKey)
         {
-            new NbtTag<string>("type", value.Dimensions.Name),
+            new NbtTag<string>("type", CodecRegistry.Dimensions.CodecKey),
 
             list
         };
 
         writer.WriteTag(dimensions);
 
-        this.WriteBiomeCodec(value, writer);
+        this.WriteBiomeCodec(writer);
         this.WriteChatCodec(value, writer);
 
         writer.EndCompound();
         writer.TryFinish();
     }
 
-    private void WriteChatCodec(MixedCodec value, NbtWriter writer)
+    private void WriteChatCodec(NbtWriter writer)
     {
         var chatTypes = new NbtList(NbtTagType.Compound, "value");
 
-        foreach (var (_, chatType) in value.ChatTypes)
+        foreach (var (_, chatType) in CodecRegistry.ChatType.All)
             chatType.Write(chatTypes);
 
-        var chatTypesCompound = new NbtCompound(value.ChatTypes.Name)
+        var chatTypesCompound = new NbtCompound(CodecRegistry.ChatType.CodecKey)
         {
-            new NbtTag<string>("type", value.ChatTypes.Name),
+            new NbtTag<string>("type", CodecRegistry.ChatType.CodecKey),
 
             chatTypes
         };
@@ -727,16 +727,16 @@ public partial class MinecraftStream
         writer.WriteTag(chatTypesCompound);
     }
 
-    private void WriteBiomeCodec(MixedCodec value, NbtWriter writer)
+    private void WriteBiomeCodec(NbtWriter writer)
     {
         var biomes = new NbtList(NbtTagType.Compound, "value");
 
-        foreach (var (_, biome) in value.Biomes)
+        foreach (var (_, biome) in CodecRegistry.Biomes.All)
             biome.Write(biomes);
 
-        var biomeCompound = new NbtCompound(value.Biomes.Name)
+        var biomeCompound = new NbtCompound(CodecRegistry.Biomes.CodecKey)
         {
-            new NbtTag<string>("type", value.Biomes.Name),
+            new NbtTag<string>("type", CodecRegistry.Biomes.CodecKey),
 
             biomes
         };

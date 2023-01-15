@@ -1,15 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.API.Registry.Codecs;
-using Obsidian.API.Registry.Codecs.Chat;
 
 namespace Obsidian.Registries;
 
 public static partial class Registry
 {
     internal static ILogger Logger { get; set; }
-
-    public static CodecCollection<int, ChatCodec> ChatTypes { get; } = new("minecraft:chat_type");
-
 
     //public static async Task RegisterCodecsAsync()
     //{
