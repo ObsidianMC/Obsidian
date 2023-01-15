@@ -5,7 +5,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 
 public class MushroomFieldsDecorator : BaseDecorator
 {
-    public MushroomFieldsDecorator(Biomes biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
+    public MushroomFieldsDecorator(Biome biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, typeof(OakTree)));
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, typeof(AcaciaTree)));

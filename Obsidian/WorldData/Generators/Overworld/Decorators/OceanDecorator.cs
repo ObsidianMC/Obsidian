@@ -24,7 +24,7 @@ public class OceanDecorator : BaseDecorator
 
     protected bool IsMagma => noise.Decoration.GetValue(pos.X + (chunk.X * 16) / 2.0, -90, pos.Z + (chunk.Z * 16) / 2.0) > 0.85;
 
-    public OceanDecorator(Biomes biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
+    public OceanDecorator(Biome biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
         sand = BlocksRegistry.Sand;
         dirt = BlocksRegistry.Dirt;

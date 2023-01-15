@@ -27,7 +27,7 @@ public class SuperflatGenerator : IWorldGenerator
                 {
                     for (int y = -64; y < 320; y += 4)
                     {
-                        model.SetBiome(x, y, z, Biomes.Plains);
+                        model.SetBiome(x, y, z, Biome.Plains);
                     }
                 }
             }

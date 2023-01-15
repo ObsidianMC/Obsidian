@@ -4,7 +4,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 
 public class DesertDecorator : BaseDecorator
 {
-    public DesertDecorator(Biomes biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
+    public DesertDecorator(Biome biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
     }
 

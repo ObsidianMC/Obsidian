@@ -4,7 +4,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 
 public class BeachDecorator : BaseDecorator
 {
-    public BeachDecorator(Biomes biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
+    public BeachDecorator(Biome biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
     }
 

@@ -45,8 +45,8 @@ public sealed class ChunkSection
     public IBlock GetBlock(Vector position) => this.GetBlock(position.X, position.Y, position.Z);
     public IBlock GetBlock(int x, int y, int z) => this.BlockStateContainer.Get(x, y, z);
 
-    public Biomes GetBiome(Vector position) => this.GetBiome(position.X, position.Y, position.Z);
-    public Biomes GetBiome(int x, int y, int z) => this.BiomeContainer.Get(x, y, z);
+    public Biome GetBiome(Vector position) => this.GetBiome(position.X, position.Y, position.Z);
+    public Biome GetBiome(int x, int y, int z) => this.BiomeContainer.Get(x, y, z);
 
     public void SetBlock(Vector position, IBlock block) => this.SetBlock(position.X, position.Y, position.Z, block);
     public void SetBlock(int x, int y, int z, IBlock block)
@@ -57,8 +57,8 @@ public sealed class ChunkSection
         this.BlockStateContainer.Set(x, y, z, block);
     }
 
-    public void SetBiome(Vector position, Biomes biome) => this.SetBiome(position.X, position.Y, position.Z, biome);
-    public void SetBiome(int x, int y, int z, Biomes biome) => this.BiomeContainer.Set(x, y, z, biome);
+    public void SetBiome(Vector position, Biome biome) => this.SetBiome(position.X, position.Y, position.Z, biome);
+    public void SetBiome(int x, int y, int z, Biome biome) => this.BiomeContainer.Set(x, y, z, biome);
 
     public void SetLightLevel(Vector position, LightType lt, int level) => this.SetLightLevel(position.X, position.Y, position.Z, lt, level);
     public void SetLightLevel(int x, int y, int z, LightType lt, int level)

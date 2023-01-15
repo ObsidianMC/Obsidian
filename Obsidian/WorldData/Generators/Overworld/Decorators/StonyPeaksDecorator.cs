@@ -4,7 +4,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 
 public class StonyPeaksDecorator : BaseDecorator
 {
-    public StonyPeaksDecorator(Biomes biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
+    public StonyPeaksDecorator(Biome biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
     }
 

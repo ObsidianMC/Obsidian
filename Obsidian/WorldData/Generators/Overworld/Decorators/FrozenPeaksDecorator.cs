@@ -4,7 +4,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 
 public class FrozenPeaksDecorator : BaseDecorator
 {
-    public FrozenPeaksDecorator(Biomes biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
+    public FrozenPeaksDecorator(Biome biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
     }
 

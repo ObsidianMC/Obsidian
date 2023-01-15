@@ -14,10 +14,10 @@ public static class Palette
         return new GlobalBlockStatePalette(BlocksRegistry.GlobalBitsPerBlocks);
     }
 
-    public static IPalette<Biomes> DetermineBiomePalette(this byte bitsPerEntry)
+    public static IPalette<Biome> DetermineBiomePalette(this byte bitsPerEntry)
     {
         if (bitsPerEntry <= 3)
-            return new InternalIndirectPalette<Biomes>(bitsPerEntry);
+            return new InternalIndirectPalette<Biome>(bitsPerEntry);
 
         return new GlobalBiomePalette(Registry.GlobalBitsPerBiomes);
     }

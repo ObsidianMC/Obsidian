@@ -4,7 +4,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 
 public class ErodedBadlandsDecorator : BaseDecorator
 {
-    public ErodedBadlandsDecorator(Biomes biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
+    public ErodedBadlandsDecorator(Biome biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
     }
 

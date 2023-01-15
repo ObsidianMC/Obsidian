@@ -5,7 +5,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 
 public class WoodedBadlandsDecorator : BaseDecorator
 {
-    public WoodedBadlandsDecorator(Biomes biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
+    public WoodedBadlandsDecorator(Biome biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(2, typeof(OakTree)));
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(7, typeof(DarkOakTree)));

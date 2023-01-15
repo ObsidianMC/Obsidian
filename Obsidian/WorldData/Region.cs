@@ -204,7 +204,7 @@ public class Region
             var biomePalette = section.BiomeContainer.Palette;
             foreach (NbtTag<string> biome in biomesPalette!)
             {
-                if (Enum.TryParse<Biomes>(biome.Value.TrimResourceTag(), true, out var value))
+                if (Enum.TryParse<Biome>(biome.Value.TrimResourceTag(), true, out var value))
                     biomePalette.GetOrAddId(value);
             }
 
@@ -274,13 +274,13 @@ public class Region
                 blockStatesCompound.Add(palette);
             }
 
-            if (section.BiomeContainer.Palette is BaseIndirectPalette<Biomes> indirectBiomePalette)
+            if (section.BiomeContainer.Palette is BaseIndirectPalette<Biome> indirectBiomePalette)
             {
                 var palette = new NbtList(NbtTagType.String, "palette");
 
                 foreach (var id in indirectBiomePalette.Values)
                 {
-                    var biome = (Biomes)id;
+                    var biome = (Biome)id;
 
                     palette.Add(new NbtTag<string>(string.Empty, $"minecraft:{biome.ToString().ToLower()}"));
                 }

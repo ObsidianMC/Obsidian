@@ -31,17 +31,17 @@ public class VoronoiBiomes : Module
         FrozenRare = 7
     }
 
-    internal readonly List<Biomes> Oceans = new()
+    internal readonly List<Biome> Oceans = new()
     {
-        Biomes.DeepOcean,
-        Biomes.DeepFrozenOcean,
-        Biomes.DeepColdOcean,
-        Biomes.DeepLukewarmOcean,
-        Biomes.FrozenOcean,
-        Biomes.ColdOcean,
-        Biomes.LukewarmOcean,
-        Biomes.WarmOcean,
-        Biomes.Ocean,
+        Biome.DeepOcean,
+        Biome.DeepFrozenOcean,
+        Biome.DeepColdOcean,
+        Biome.DeepLukewarmOcean,
+        Biome.FrozenOcean,
+        Biome.ColdOcean,
+        Biome.LukewarmOcean,
+        Biome.WarmOcean,
+        Biome.Ocean,
     };
 
     private bool isUnitTest;
@@ -129,7 +129,7 @@ public class VoronoiBiomes : Module
         }
     }
 
-    private static Biomes ProcessVariants(VoronoiCell me, double averageDistance)
+    private static Biome ProcessVariants(VoronoiCell me, double averageDistance)
     {
         if ((int)me.BaseBiome < 0) // if ocean
         {
@@ -144,23 +144,23 @@ public class VoronoiBiomes : Module
             {
                 if (me.DistanceToPoint < averageDistance * 0.19)
                 {
-                    return Biomes.MushroomFields;
+                    return Biome.MushroomFields;
                 }
             }
 
             // Map base biomes to proper Biomes values
             return me.BaseBiome switch
             {
-                BaseBiome.DeepOcean => Biomes.DeepOcean,
-                BaseBiome.DeepFrozenOcean => Biomes.DeepFrozenOcean,
-                BaseBiome.DeepColdOcean => Biomes.DeepColdOcean,
-                BaseBiome.DeepLukewarmOcean => Biomes.DeepLukewarmOcean,
-                BaseBiome.DeepWarmOcean => Biomes.WarmOcean,
-                BaseBiome.FrozenOcean => Biomes.FrozenOcean,
-                BaseBiome.ColdOcean => Biomes.ColdOcean,
-                BaseBiome.LukewarmOcean => Biomes.LukewarmOcean,
-                BaseBiome.WarmOcean => Biomes.WarmOcean,
-                _ => Biomes.Ocean,
+                BaseBiome.DeepOcean => Biome.DeepOcean,
+                BaseBiome.DeepFrozenOcean => Biome.DeepFrozenOcean,
+                BaseBiome.DeepColdOcean => Biome.DeepColdOcean,
+                BaseBiome.DeepLukewarmOcean => Biome.DeepLukewarmOcean,
+                BaseBiome.DeepWarmOcean => Biome.WarmOcean,
+                BaseBiome.FrozenOcean => Biome.FrozenOcean,
+                BaseBiome.ColdOcean => Biome.ColdOcean,
+                BaseBiome.LukewarmOcean => Biome.LukewarmOcean,
+                BaseBiome.WarmOcean => Biome.WarmOcean,
+                _ => Biome.Ocean,
             };
         }
 
@@ -170,66 +170,66 @@ public class VoronoiBiomes : Module
             case BaseBiome.Dry:
                 {
                     if (me.Variant < 50)
-                        return Biomes.Desert;
+                        return Biome.Desert;
                     if (me.Variant < 83)
-                        return Biomes.Savanna;
+                        return Biome.Savanna;
                     else
-                        return Biomes.Plains;
+                        return Biome.Plains;
                 }
             case BaseBiome.DryRare:
                 {
                     if (me.Variant < 33)
-                        return Biomes.ErodedBadlands;
+                        return Biome.ErodedBadlands;
                     else
-                        return Biomes.Badlands;
+                        return Biome.Badlands;
                 }
             case BaseBiome.Medium:
                 {
                     if (me.Variant < 16)
-                        return Biomes.Forest;
+                        return Biome.Forest;
                     if (me.Variant < 32)
-                        return Biomes.DarkForest;
+                        return Biome.DarkForest;
                     if (me.Variant < 48)
-                        return Biomes.BirchForest;
+                        return Biome.BirchForest;
                     if (me.Variant < 64)
-                        return Biomes.WindsweptHills;
+                        return Biome.WindsweptHills;
                     if (me.Variant < 80)
-                        return Biomes.Swamp;
+                        return Biome.Swamp;
                     else
-                        return Biomes.Plains;
+                        return Biome.Plains;
                 }
             case BaseBiome.MediumRare:
                 {
-                    return Biomes.Jungle;
+                    return Biome.Jungle;
                 }
             case BaseBiome.Cold:
                 {
                     if (me.Variant < 25)
-                        return Biomes.WindsweptHills;
+                        return Biome.WindsweptHills;
                     if (me.Variant < 50)
-                        return Biomes.Taiga;
+                        return Biome.Taiga;
                     if (me.Variant < 75)
-                        return Biomes.Meadow;
+                        return Biome.Meadow;
                     else
-                        return Biomes.Grove;
+                        return Biome.Grove;
                 }
             case BaseBiome.ColdRare:
                 {
-                    return Biomes.OldGrowthPineTaiga;
+                    return Biome.OldGrowthPineTaiga;
                 }
             case BaseBiome.Frozen:
                 {
                     if (me.Variant < 75)
-                        return Biomes.SnowyPlains;
+                        return Biome.SnowyPlains;
                     else
-                        return Biomes.SnowyTaiga;
+                        return Biome.SnowyTaiga;
                 }
             case BaseBiome.FrozenRare:
                 {
-                    return Biomes.Plains; // There are no rare frozen biomes (yet?)
+                    return Biome.Plains; // There are no rare frozen biomes (yet?)
                 }
             default:
-                return Biomes.Plains;
+                return Biome.Plains;
         }
     }
 
@@ -241,14 +241,14 @@ public class VoronoiBiomes : Module
         me.Biome = me.Biome switch
         {
             // todo grove
-            Biomes.Grove or Biomes.Meadow => me.Variant < 85 ? Biomes.JaggedPeaks : Biomes.FrozenPeaks,
-            Biomes.Plains => me.Variant < 88 ? Biomes.Plains : me.Variant < 96 ? Biomes.SunflowerPlains : Biomes.FlowerForest,
-            Biomes.Jungle => me.Variant < 30 ? Biomes.SparseJungle : Biomes.BambooJungle,
-            Biomes.Savanna => Biomes.SavannaPlateau,
-            Biomes.Badlands => Biomes.WoodedBadlands,
-            Biomes.BirchForest => Biomes.OldGrowthBirchForest,
-            Biomes.Taiga => Biomes.OldGrowthSpruceTaiga,
-            Biomes.SnowyPlains => Biomes.IceSpikes,
+            Biome.Grove or Biome.Meadow => me.Variant < 85 ? Biome.JaggedPeaks : Biome.FrozenPeaks,
+            Biome.Plains => me.Variant < 88 ? Biome.Plains : me.Variant < 96 ? Biome.SunflowerPlains : Biome.FlowerForest,
+            Biome.Jungle => me.Variant < 30 ? Biome.SparseJungle : Biome.BambooJungle,
+            Biome.Savanna => Biome.SavannaPlateau,
+            Biome.Badlands => Biome.WoodedBadlands,
+            Biome.BirchForest => Biome.OldGrowthBirchForest,
+            Biome.Taiga => Biome.OldGrowthSpruceTaiga,
+            Biome.SnowyPlains => Biome.IceSpikes,
             _ => me.Biome
         };
         return me;
@@ -263,47 +263,47 @@ public class VoronoiBiomes : Module
         // Abandon hope, all ye who enter here
         switch (me.Biome)
         {
-            case Biomes.WindsweptHills:
+            case Biome.WindsweptHills:
                 // If a windswept hills is next to a forest, a windswept forest generates
-                if (new[] { Biomes.Forest, Biomes.BirchForest, Biomes.DarkForest }.Contains(neighbor.Biome))
+                if (new[] { Biome.Forest, Biome.BirchForest, Biome.DarkForest }.Contains(neighbor.Biome))
                 {
-                    me.Biome = Biomes.WindsweptForest;
+                    me.Biome = Biome.WindsweptForest;
                 }
                 // If a windswept hills is next to a mountain, a windswept gravel hills generates
-                else if (new[] { Biomes.SnowySlopes, Biomes.Grove }.Contains(neighbor.Biome))
+                else if (new[] { Biome.SnowySlopes, Biome.Grove }.Contains(neighbor.Biome))
                 {
-                    me.Biome = Biomes.WindsweptGravellyHills;
+                    me.Biome = Biome.WindsweptGravellyHills;
                 }
                 // If a windswept hills is next to a savanna, a windswept savanna generates
-                else if (neighbor.Biome == Biomes.Savanna)
+                else if (neighbor.Biome == Biome.Savanna)
                 {
-                    me.Biome = Biomes.WindsweptSavanna;
+                    me.Biome = Biome.WindsweptSavanna;
                 }
                 return me;
 
 
             // If a frozen or cold ocean borders a warm ocean,
             // then place a lukewarm ocean at the edge.
-            case Biomes.FrozenOcean:
-            case Biomes.DeepFrozenOcean:
-            case Biomes.ColdOcean:
-            case Biomes.DeepColdOcean:
-                if (neighbor.Biome == Biomes.WarmOcean)
-                    me.Biome = Biomes.LukewarmOcean;
+            case Biome.FrozenOcean:
+            case Biome.DeepFrozenOcean:
+            case Biome.ColdOcean:
+            case Biome.DeepColdOcean:
+                if (neighbor.Biome == Biome.WarmOcean)
+                    me.Biome = Biome.LukewarmOcean;
                 return me;
 
-            case Biomes.Grove:
-            case Biomes.FrozenPeaks:
-            case Biomes.JaggedPeaks:
+            case Biome.Grove:
+            case Biome.FrozenPeaks:
+            case Biome.JaggedPeaks:
                 // If a grove borders a hot or warm biome, stony peaks generate 
                 if (new[] { BaseBiome.Dry, BaseBiome.DryRare, BaseBiome.Medium, BaseBiome.MediumRare }.Contains(neighbor.BaseBiome))
                 {
-                    me.Biome = Biomes.StonyPeaks;
+                    me.Biome = Biome.StonyPeaks;
                 }
                 // If a grove borders an ocean, a stony shore generates.
                 else if (new[] { BaseBiome.ColdOcean, BaseBiome.FrozenOcean, BaseBiome.WarmOcean, BaseBiome.LukewarmOcean }.Contains(neighbor.BaseBiome))
                 {
-                    me.Biome = Biomes.StonyShore;
+                    me.Biome = Biome.StonyShore;
                 }
                 return me;
             default:
@@ -326,7 +326,7 @@ public class VoronoiBiomes : Module
                 me.Biome = me.BaseBiome == BaseBiome.Frozen ||
                     me.BaseBiome == BaseBiome.FrozenRare ||
                     nearest.BaseBiome == BaseBiome.Frozen ||
-                    nearest.BaseBiome == BaseBiome.FrozenRare ? Biomes.FrozenRiver : Biomes.River;
+                    nearest.BaseBiome == BaseBiome.FrozenRare ? Biome.FrozenRiver : Biome.River;
 
             return me;
         }
@@ -338,16 +338,16 @@ public class VoronoiBiomes : Module
             {
                 me.Biome = me.Biome switch
                 {
-                    Biomes.FrozenOcean or Biomes.DeepFrozenOcean => Biomes.SnowyBeach,
-                    Biomes.SnowySlopes => Biomes.StonyShore, // lul brorkd
-                    _ => Biomes.Beach
+                    Biome.FrozenOcean or Biome.DeepFrozenOcean => Biome.SnowyBeach,
+                    Biome.SnowySlopes => Biome.StonyShore, // lul brorkd
+                    _ => Biome.Beach
                 };
             }
         }
         return me;
     }
 
-    private Biomes ProcessBiomeRules(VoronoiCell me, VoronoiCell nearest)
+    private Biome ProcessBiomeRules(VoronoiCell me, VoronoiCell nearest)
     {
         double averageDistance = (me.DistanceToPoint + nearest.DistanceToPoint) / 2.0;
 
@@ -415,6 +415,6 @@ public class VoronoiBiomes : Module
         public double DistanceToPoint { get; set; }
         public BaseBiome BaseBiome { get; set; }
         public int Variant { get; set; }
-        public Biomes Biome { get; set; }
+        public Biome Biome { get; set; }
     }
 }

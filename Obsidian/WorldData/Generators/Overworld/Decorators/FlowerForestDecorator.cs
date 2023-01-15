@@ -6,7 +6,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 
 public class FlowerForestDecorator : BaseDecorator
 {
-    public FlowerForestDecorator(Biomes biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
+    public FlowerForestDecorator(Biome biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(3, typeof(OakTree)));
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, typeof(BirchTree)));

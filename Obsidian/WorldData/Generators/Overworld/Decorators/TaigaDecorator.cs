@@ -5,7 +5,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 
 public class TaigaDecorator : BaseDecorator
 {
-    public TaigaDecorator(Biomes biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
+    public TaigaDecorator(Biome biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(2, typeof(SpruceTree)));
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(3, typeof(LargeSpruceTree)));

@@ -6,7 +6,7 @@ public abstract class BaseDecorator : IDecorator
 {
     public DecoratorFeatures Features { get; }
 
-    protected Biomes biome;
+    protected Biome biome;
 
     protected Chunk chunk;
 
@@ -14,7 +14,7 @@ public abstract class BaseDecorator : IDecorator
 
     protected OverworldTerrainNoise noise;
 
-    protected BaseDecorator(Biomes biome, Chunk chunk, Vector pos, GenHelper helper)
+    protected BaseDecorator(Biome biome, Chunk chunk, Vector pos, GenHelper helper)
     {
         this.biome = biome;
         this.chunk = chunk;
