@@ -9,11 +9,14 @@ internal sealed class Assets
     public Tag[] Tags { get; }
     public Item[] Items { get; }
 
-    private Assets(Block[] blocks, Tag[] tags, Item[] items)
+    public Dictionary<string, IRegistryItem[]> Codecs { get; }
+
+    private Assets(Block[] blocks, Tag[] tags, Item[] items, Dictionary<string, IRegistryItem[]> codecs)
     {
         Blocks = blocks;
         Tags = tags;
         Items = items;
+        Codecs = codecs;
     }
 
     public static Assets Get(ImmutableArray<(string name, string json)> files, SourceProductionContext ctx)
@@ -22,9 +25,86 @@ internal sealed class Assets
         Fluid[] fluids = GetFluids(files.GetJsonFromArray("fluids"));
         Tag[] tags = GetTags(files.GetJsonFromArray("tags"), blocks, fluids);
         Item[] items = GetItems(files.GetJsonFromArray("items"));
+        Dictionary<string, IRegistryItem[]> codecs = GetCodecs(files);
 
-        return new Assets(blocks, tags, items);
+        return new Assets(blocks, tags, items, codecs);
     }
+
+    public static Dictionary<string, IRegistryItem[]> GetCodecs(ImmutableArray<(string name, string json)> files)
+    {
+        return new Dictionary<string, IRegistryItem[]>
+        {
+            { "dimensions", ParseDimensions(files.GetJsonFromArray("dimensions")) },
+            { "biomes", ParseDimensions(files.GetJsonFromArray("biomes")) },
+        };
+    }
+
+    private static Dimension[] ParseDimensions(string json)
+    {
+        if (json is null)
+            return Array.Empty<Dimension>();
+
+        using var document = JsonDocument.Parse(json);
+
+        var properties = new Dictionary<string, object>();
+
+        var dimensions = new List<Dimension>();
+
+        var dimensionElements = document.RootElement.GetProperty("value").EnumerateArray();
+
+        foreach (var dimension in dimensionElements)
+        {
+            var obj = new Dimension(dimension.GetProperty("name").GetString(), dimension.GetProperty("id").GetInt32());
+
+            foreach (var property in dimension.EnumerateObject())
+            {
+                if (property.Name is "name" or "id")
+                    continue;
+
+                foreach (var elementProperty in property.Value.EnumerateObject())
+                {
+                    obj.Properties.Add(elementProperty.Name.ToPascalCase(), elementProperty.Value.Clone());
+                }
+            }
+
+            dimensions.Add(obj);
+        }
+
+        return dimensions.ToArray();
+    }
+
+    private static Biome[] ParseBiomes(string json)
+    {
+        if(json is null)
+            return Array.Empty<Biome>();
+
+        using var document = JsonDocument.Parse(json);
+
+        var biomes = new List<Biome>();
+
+        var biomeElements = document.RootElement.GetProperty("value").EnumerateArray();
+
+        foreach (var biome in biomeElements)
+        {
+            var obj = new Biome(biome.GetProperty("name").GetString(), biome.GetProperty("id").GetInt32());
+
+            foreach (var property in biome.EnumerateObject())
+            {
+                if (property.Name is "name" or "id")
+                    continue;
+
+                foreach (var elementProperty in property.Value.EnumerateObject())
+                {
+                    obj.Properties.Add(elementProperty.Name.ToPascalCase(), elementProperty.Value.Clone());
+                }
+            }
+
+            biomes.Add(obj);
+        }
+
+        return biomes.ToArray();
+    }
+
 
     public static Fluid[] GetFluids(string? json)
     {
@@ -36,7 +116,7 @@ internal sealed class Assets
 
         var fluidProperties = document.RootElement.EnumerateObject();
 
-        foreach(JsonProperty property in fluidProperties)
+        foreach (JsonProperty property in fluidProperties)
         {
             var name = property.Name;
 
@@ -108,7 +188,7 @@ internal sealed class Assets
             taggables.Add(block.Tag, block);
         }
 
-        foreach(Fluid fluid in fluids)
+        foreach (Fluid fluid in fluids)
             taggables.Add(fluid.Tag, fluid);
 
         var tags = new List<Tag>();

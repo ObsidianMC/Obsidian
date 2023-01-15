@@ -72,6 +72,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<EmbeddedResource Remove="Assets\biomes.json" />
+		<EmbeddedResource Remove="Assets\chat_type.json" />
+		<EmbeddedResource Remove="Assets\dimensions.json" />
 		<EmbeddedResource Remove="Assets\blocks.json" />
 		<EmbeddedResource Remove="Assets\items.json" />
 		<EmbeddedResource Remove="Assets\tags.json" />
@@ -79,27 +82,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<AdditionalFiles Include="Assets\blocks.json">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</AdditionalFiles>
-		<AdditionalFiles Include="Assets\items.json">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</AdditionalFiles>
-		<AdditionalFiles Include="Assets\tags.json">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</AdditionalFiles>
-		<AdditionalFiles Include="Assets\fluids.json">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</AdditionalFiles>
-		<AdditionalFiles Update="Assets\biome_codec.json">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</AdditionalFiles>
-		<AdditionalFiles Update="Assets\chat_type_codec.json">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</AdditionalFiles>
-		<AdditionalFiles Update="Assets\dimension_codec.json">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</AdditionalFiles>
+		<AdditionalFiles Include="Assets\biomes.json" CopyToOutputDirectory="Never" />
+		<AdditionalFiles Include="Assets\blocks.json" CopyToOutputDirectory="Never" />
+		<AdditionalFiles Include="Assets\chat_type.json" CopyToOutputDirectory="Never" />
+		<AdditionalFiles Include="Assets\dimensions.json" CopyToOutputDirectory="Never"/>
+		<AdditionalFiles Include="Assets\items.json" CopyToOutputDirectory="Never" />
+		<AdditionalFiles Include="Assets\tags.json" CopyToOutputDirectory="Never" />
+		<AdditionalFiles Include="Assets\fluids.json" CopyToOutputDirectory="Never" />
 	</ItemGroup>
 
 	<ItemGroup>

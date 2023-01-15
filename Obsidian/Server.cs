@@ -166,7 +166,7 @@ public partial class Server : IServer
     public void RegisterRecipes(params IRecipe[] recipes)
     {
         foreach (var recipe in recipes)
-            Registry.Recipes.Add(recipe.Identifier.ToSnakeCase(), recipe);
+            RecipesRegistry.Recipes.Add(recipe.Identifier.ToSnakeCase(), recipe);
     }
 
     /// <summary>
@@ -256,8 +256,7 @@ public partial class Server : IServer
 
         await UserCache.LoadAsync(this._cancelTokenSource.Token);
 
-        await Task.WhenAll(Registry.RegisterCodecsAsync(),
-                           Registry.RegisterRecipesAsync());
+        await Task.WhenAll(Registry.RegisterCodecsAsync());
 
         _logger.LogInformation($"Loading properties...");
 

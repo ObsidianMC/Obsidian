@@ -531,8 +531,8 @@ public sealed class Client : IDisposable
         await QueuePacketAsync(new UpdateRecipeBookPacket
         {
             Action = UnlockRecipeAction.Init,
-            FirstRecipeIds = Registry.Recipes.Keys.ToList(),
-            SecondRecipeIds = Registry.Recipes.Keys.ToList()
+            FirstRecipeIds = RecipesRegistry.Recipes.Keys.ToList(),
+            SecondRecipeIds = RecipesRegistry.Recipes.Keys.ToList()
         });
 
         await SendPlayerListDecoration();

@@ -4,17 +4,18 @@ using System.Diagnostics.CodeAnalysis;
 namespace Obsidian.Registries;
 public partial class CodecRegistry
 {
-    public static bool TryGetDimension(int id, [MaybeNullWhen(false)]out DimensionCodec? dimensionCodec)
+    public static bool TryGetDimension(int id, [MaybeNullWhen(false)] out DimensionCodec? codec) => Dimensions.TryGetValue(id, out codec);
+    public static bool TryGetDimension(string name, [MaybeNullWhen(false)] out DimensionCodec? codec)
     {
-        dimensionCodec = null;
+        var (_, value) = Dimensions.FirstOrDefault(x => x.Value.Name.EqualsIgnoreCase(name));
 
-        return true;
-    }
+        if (value is not DimensionCodec dimensionCodec)
+        {
+            codec = null;
+            return false;
+        }
 
-
-    public static bool TryGetDimension(string name, [MaybeNullWhen(false)]out DimensionCodec? dimensionCodec)
-    {
-        dimensionCodec = null;
+        codec = dimensionCodec;
 
         return true;
     }

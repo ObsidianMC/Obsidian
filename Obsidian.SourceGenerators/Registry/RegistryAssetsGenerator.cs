@@ -29,6 +29,7 @@ public sealed partial class RegistryAssetsGenerator : IIncrementalGenerator
             GenerateTags(assets, context);
             GenerateItems(assets, context);
             GenerateBlockIds(assets, context);
+            GenerateCodecs(assets, context);
         }
         else if (asm == "Obsidian.API")
         {
