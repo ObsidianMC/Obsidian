@@ -826,7 +826,7 @@ public class World : IWorld
 
     private void WriteWorldGenSettings(NbtWriter writer)
     {
-        if (!Registry.TryGetDimensionCodec(this.DimensionName, out var codec))
+        if (!CodecRegistry.TryGetDimension(this.DimensionName, out var codec))
             return;
 
         var dimensionsCompound = new NbtCompound("dimensions")
@@ -839,7 +839,7 @@ public class World : IWorld
 
         foreach (var (id, _) in this.dimensions)
         {
-            Registry.TryGetDimensionCodec(id, out var childDimensionCodec);
+            CodecRegistry.TryGetDimension(id, out var childDimensionCodec);
 
             dimensionsCompound.Add(new NbtCompound(childDimensionCodec.Name)
             {

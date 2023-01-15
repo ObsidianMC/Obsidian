@@ -304,7 +304,7 @@ public class Player : Living, IPlayer
             this.Position = this.World.LevelData.SpawnPosition;
         }
 
-        Registry.TryGetDimensionCodec(this.World.DimensionName, out var codec);
+        CodecRegistry.TryGetDimension(this.World.DimensionName, out var codec);
 
         this.server.Logger.LogDebug("Loading into world: {}", this.World.Name);
 
@@ -679,7 +679,7 @@ public class Player : Living, IPlayer
             this.Health = 20f;//Player should never load data that has health at 0 
 
         var dimensionName = compound.GetString("Dimension");
-        if (!string.IsNullOrWhiteSpace(dimensionName) && Registry.TryGetDimensionCodec(dimensionName, out var codec))
+        if (!string.IsNullOrWhiteSpace(dimensionName) && CodecRegistry.TryGetDimension(dimensionName, out var codec))
         {
             //TODO load into dimension ^ ^
         }

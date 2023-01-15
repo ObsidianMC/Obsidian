@@ -33,58 +33,58 @@ public static partial class Registry
         }
     };
 
-    public static async Task RegisterCodecsAsync()
-    {
-        var asm = Assembly.GetExecutingAssembly()!;
+    //public static async Task RegisterCodecsAsync()
+    //{
+    //    var asm = Assembly.GetExecutingAssembly()!;
 
-        await using var biomes = asm.GetManifestResourceStream($"{mainDomain}.biome_codec.json");
+    //    await using var biomes = asm.GetManifestResourceStream($"{mainDomain}.biome_codec.json");
 
-        var baseCodec = await biomes.FromJsonAsync<BaseCodec<BiomeCodec>>(codecJsonOptions);
+    //    var baseCodec = await biomes.FromJsonAsync<BaseCodec<BiomeCodec>>(codecJsonOptions);
 
-        var registered = 0;
-        foreach (var codec in baseCodec.Value)
-        {
-            Biomes.TryAdd(codec.Id, codec);
+    //    var registered = 0;
+    //    foreach (var codec in baseCodec.Value)
+    //    {
+    //        Biomes.TryAdd(codec.Id, codec);
 
-            registered++;
-        }
+    //        registered++;
+    //    }
 
-        GlobalBitsPerBiomes = (int)Math.Ceiling(Math.Log2(registered));
+    //    GlobalBitsPerBiomes = (int)Math.Ceiling(Math.Log2(registered));
 
-        Logger?.LogDebug($"Successfully registered {registered} biomes...");
+    //    Logger?.LogDebug($"Successfully registered {registered} biomes...");
 
-        await using var dimensions = asm.GetManifestResourceStream($"{mainDomain}.default_dimensions.json");
+    //    await using var dimensions = asm.GetManifestResourceStream($"{mainDomain}.default_dimensions.json");
 
-        var dimensionDict = await dimensions.FromJsonAsync<Dictionary<string, List<DimensionCodec>>>(codecJsonOptions);
+    //    var dimensionDict = await dimensions.FromJsonAsync<Dictionary<string, List<DimensionCodec>>>(codecJsonOptions);
 
-        registered = 0;
-        foreach (var (_, values) in dimensionDict)
-            foreach (var codec in values)
-            {
-                Dimensions.TryAdd(codec.Id, codec);
+    //    registered = 0;
+    //    foreach (var (_, values) in dimensionDict)
+    //        foreach (var codec in values)
+    //        {
+    //            Dimensions.TryAdd(codec.Id, codec);
 
-                Logger?.LogDebug($"Added codec: {codec.Name}:{codec.Id}");
-                registered++;
-            }
+    //            Logger?.LogDebug($"Added codec: {codec.Name}:{codec.Id}");
+    //            registered++;
+    //        }
 
-        Logger?.LogDebug($"Successfully registered {registered} dimensions...");
+    //    Logger?.LogDebug($"Successfully registered {registered} dimensions...");
 
-        await using var chatTypes = asm.GetManifestResourceStream($"{mainDomain}.chat_type_codec.json");
+    //    await using var chatTypes = asm.GetManifestResourceStream($"{mainDomain}.chat_type_codec.json");
 
-        var chatTypesDict = await chatTypes.FromJsonAsync<Dictionary<string, List<ChatCodec>>>(codecJsonOptions);
+    //    var chatTypesDict = await chatTypes.FromJsonAsync<Dictionary<string, List<ChatCodec>>>(codecJsonOptions);
 
-        registered = 0;
-        foreach (var (_, values) in chatTypesDict)
-            foreach (var codec in values)
-            {
-                ChatTypes.TryAdd(codec.Id, codec);
+    //    registered = 0;
+    //    foreach (var (_, values) in chatTypesDict)
+    //        foreach (var codec in values)
+    //        {
+    //            ChatTypes.TryAdd(codec.Id, codec);
 
-                Logger?.LogDebug($"Added codec: {codec.Name}:{codec.Id}");
-                registered++;
-            }
+    //            Logger?.LogDebug($"Added codec: {codec.Name}:{codec.Id}");
+    //            registered++;
+    //        }
 
-        Logger?.LogDebug($"Successfully registered {registered} chat types...");
-    }
+    //    Logger?.LogDebug($"Successfully registered {registered} chat types...");
+    //}
 
     //public static async Task RegisterRecipesAsync()
     //{

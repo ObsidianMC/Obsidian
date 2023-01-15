@@ -256,8 +256,6 @@ public partial class Server : IServer
 
         await UserCache.LoadAsync(this._cancelTokenSource.Token);
 
-        await Task.WhenAll(Registry.RegisterCodecsAsync());
-
         _logger.LogInformation($"Loading properties...");
 
         await (Operators as OperatorList).InitializeAsync();

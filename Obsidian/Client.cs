@@ -497,7 +497,7 @@ public sealed class Client : IDisposable
             Logger.LogError("Failed to add player {Username} to online players. Undefined behavior ahead!", Player.Username);
         }
 
-        if (!Registry.TryGetDimensionCodec(Player.World.DimensionName, out var codec) || !Registry.TryGetDimensionCodec("minecraft:overworld", out codec))
+        if (!CodecRegistry.TryGetDimension(Player.World.DimensionName, out var codec) || !CodecRegistry.TryGetDimension("minecraft:overworld", out codec))
         {
             // TODO: Change the exception type to be more specific
             throw new ApplicationException("Failed to retrieve proper dimension for player.");
@@ -507,7 +507,7 @@ public sealed class Client : IDisposable
         {
             EntityId = id,
             Gamemode = Player.Gamemode,
-            DimensionNames = Registry.Dimensions.Values.Select(x => x.Name).ToList(),
+            DimensionNames = CodecRegistry.Dimensions.All.Select(x => x.Value.Name).ToList(),
             Codecs = new MixedCodec
             {
                 Dimensions = Registry.Dimensions,

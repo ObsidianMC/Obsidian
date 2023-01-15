@@ -6,10 +6,24 @@ public partial class RegistryAssetsGenerator
 {
     private static void GenerateDimensions(Codec[] dimensions, CodeBuilder builder, SourceProductionContext ctx)
     {
-        builder.Statement($"internal static CodecCollection<int, DimensionCodec> Dimensions = new(\"minecraft:dimension_type\")");
+        builder.Type($"public static class Dimensions");
+
+        builder.Indent().Append("public const string CodecKey = \"minecraft:dimension_type\";").Line().Line();
+
+        builder.Statement("public static IReadOnlyDictionary<string, DimensionCodec> All { get; } = new Dictionary<string, DimensionCodec>");
+
+        foreach(var name in dimensions.Select(x => x.Name))
+        {
+            var propertyName = name.RemoveNamespace().ToPascalCase();
+            builder.Line($"{{ \"{name}\", {propertyName} }},");
+        }
+
+        builder.EndScope(".AsReadOnly()", true).Line();
+
         foreach (var dimension in dimensions)
         {
-            builder.Indent().Append($"{{ {dimension.RegistryId}, new() {{ Id = {dimension.RegistryId}, Name = \"{dimension.Name}\", Element = new() {{ ");
+            var propertyName = dimension.Name.RemoveNamespace().ToPascalCase();
+            builder.Indent().Append($"public static DimensionCodec {propertyName} {{ get; }} = new() {{ Id = {dimension.RegistryId}, Name = \"{dimension.Name}\", Element = new() {{ ");
 
             foreach (var property in dimension.Properties)
             {
@@ -24,38 +38,12 @@ public partial class RegistryAssetsGenerator
                     continue;
                 }
 
-                switch (value.ValueKind)
-                {
-                    case JsonValueKind.String:
-                        builder.Append($"\"{value.GetString()}\", ");
-                        break;
-                    case JsonValueKind.Number:
-                    {
-                        if (value.TryGetInt32(out var intValue))
-                            builder.Append($"{intValue}, ");
-                        else if (value.TryGetInt64(out var longValue))
-                            builder.Append($"{longValue}, ");
-                        else if (value.TryGetSingle(out var floatValue))
-                            builder.Append($"{floatValue}f, ");
-                        else if (value.TryGetDouble(out var doubleValue))
-                            builder.Append($"{doubleValue}d, ");
-                        break;
-                    }
-                    case JsonValueKind.True:
-                    case JsonValueKind.False:
-                        builder.Append($"{value.GetBoolean().ToString().ToLower()}, ");
-                        break;
-                    case JsonValueKind.Null:
-                        break;
-                    default:
-                        ctx.ReportDiagnostic(DiagnosticSeverity.Error, "Found an invalid property type in json.");
-                        break;
-                }
+                AppendValueType(builder, value, ctx);
             }
 
-            builder.Append("} } },").Line();
+            builder.Append("} };").Line();
         }
-        builder.EndScope(true);
+        builder.EndScope();
     }
 
     private static void ParseMonsterLightValue(CodeBuilder builder, JsonElement element)
