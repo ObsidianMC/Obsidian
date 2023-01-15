@@ -2,5 +2,5 @@
 
 public sealed record class BiomeOption
 {
-    public string Type { get; set; }
+    public required string Type { get; set; }
 }

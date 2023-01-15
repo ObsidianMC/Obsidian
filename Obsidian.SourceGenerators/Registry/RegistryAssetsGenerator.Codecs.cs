@@ -1,5 +1,4 @@
 ﻿using Obsidian.SourceGenerators.Registry.Models;
-using System.Text.Json;
 
 namespace Obsidian.SourceGenerators.Registry;
 public partial class RegistryAssetsGenerator
@@ -19,6 +18,7 @@ public partial class RegistryAssetsGenerator
         var codecs = assets.Codecs;
 
         GenerateDimensions(codecs["dimensions"].ToArray(), builder, ctx);
+        GenerateBiomes(codecs["biomes"].ToArray(), builder, ctx);
 
         builder.EndScope();
 
