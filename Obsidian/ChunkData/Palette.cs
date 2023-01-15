@@ -19,6 +19,6 @@ public static class Palette
         if (bitsPerEntry <= 3)
             return new InternalIndirectPalette<Biome>(bitsPerEntry);
 
-        return new GlobalBiomePalette(Registry.GlobalBitsPerBiomes);
+        return new GlobalBiomePalette(CodecRegistry.Biomes.GlobalBitsPerEntry);
     }
 }

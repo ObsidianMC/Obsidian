@@ -9,6 +9,7 @@ public partial class RegistryAssetsGenerator
         builder.Type($"public static class Biomes");
 
         builder.Indent().Append("public const string CodecKey = \"minecraft:worldgen/biome\";").Line().Line();
+        builder.Indent().Append($"public const int GlobalBitsPerEntry = {(int)Math.Ceiling(Math.Log(biomes.Length, 2))};").Line().Line();
 
         builder.Statement("public static IReadOnlyDictionary<string, BiomeCodec> All { get; } = new Dictionary<string, BiomeCodec>");
 

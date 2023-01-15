@@ -1,12 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Registry.Codecs;
-using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.Registry.Codecs.Chat;
-using Obsidian.API.Registry.Codecs.Dimensions;
-using Obsidian.Utilities.Converters;
-using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
-using System.Text.Json;
 
 namespace Obsidian.Registries;
 
@@ -14,24 +8,8 @@ public static partial class Registry
 {
     internal static ILogger Logger { get; set; }
 
-
-    public static int GlobalBitsPerBiomes { get; internal set; }
-
-    public static CodecCollection<int, DimensionCodec> Dimensions { get; } = new("minecraft:dimension_type");
-    public static CodecCollection<int, BiomeCodec> Biomes { get; } = new("minecraft:worldgen/biome");
-
     public static CodecCollection<int, ChatCodec> ChatTypes { get; } = new("minecraft:chat_type");
 
-    private static readonly string mainDomain = "Obsidian.Assets";
-
-    private static readonly JsonSerializerOptions codecJsonOptions = new(Globals.JsonOptions)
-    {
-        PropertyNamingPolicy = SnakeCaseNamingPolicy.Instance,
-        Converters =
-        {
-            new IntToBoolConverter(),
-        }
-    };
 
     //public static async Task RegisterCodecsAsync()
     //{
