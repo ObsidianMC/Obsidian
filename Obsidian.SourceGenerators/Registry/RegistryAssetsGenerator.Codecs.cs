@@ -18,7 +18,7 @@ public partial class RegistryAssetsGenerator
 
         var codecs = assets.Codecs;
 
-        GenerateDimensions(codecs["dimensions"].Cast<Dimension>().ToArray(), builder, ctx);
+        GenerateDimensions(codecs["dimensions"].ToArray(), builder, ctx);
 
         builder.EndScope();
 

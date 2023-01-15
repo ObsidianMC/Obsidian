@@ -4,14 +4,14 @@ using System.Text.Json;
 namespace Obsidian.SourceGenerators.Registry;
 public partial class RegistryAssetsGenerator
 {
-    private static void GenerateDimensions(Codec[] dimensions, CodeBuilder builder, SourceProductionContext ctx)
+    private static void GenerateBiomes(Biome[] biomes, CodeBuilder builder, SourceProductionContext ctx)
     {
-        builder.Statement($"internal static CodecCollection<int, DimensionCodec> Dimensions = new(\"minecraft:dimension_type\")");
-        foreach (var dimension in dimensions)
+        builder.Statement($"internal static CodecCollection<int, BiomeCodec> Dimensions = new(\"minecraft:worldgen/biome\")");
+        foreach (var biome in biomes)
         {
-            builder.Indent().Append($"{{ {dimension.RegistryId}, new() {{ Id = {dimension.RegistryId}, Name = \"{dimension.Name}\", Element = new() {{ ");
+            builder.Indent().Append($"{{ {biome.RegistryId}, new() {{ Id = {biome.RegistryId}, Name = \"{biome.Name}\", Element = new() {{ ");
 
-            foreach (var property in dimension.Properties)
+            foreach (var property in biome.Properties)
             {
                 var name = property.Key;
                 var value = property.Value;
@@ -56,34 +56,5 @@ public partial class RegistryAssetsGenerator
             builder.Append("} } },").Line();
         }
         builder.EndScope(true);
-    }
-
-    private static void ParseMonsterLightValue(CodeBuilder builder, JsonElement element)
-    {
-        builder.Append("new() { ");
-
-        if (element.ValueKind == JsonValueKind.Number)
-            builder.Append($"IntValue = {element.GetInt32()} ");
-        else
-        {
-            builder.Append("Value = new() { ");
-            foreach (var property in element.EnumerateObject())
-            {
-                var name = property.Name.ToPascalCase();
-
-                if (name == "Value")
-                {
-                    foreach (var valueProperty in property.Value.EnumerateObject())
-                        builder.Append($"{valueProperty.Name.ToPascalCase()} = {valueProperty.Value.GetInt32()}, ");
-
-                    continue;
-                }
-
-                builder.Append($"{name} = \"{property.Value.GetString()}\",");
-            }
-            builder.Append("} ");
-        }
-
-        builder.Append("}, ");
     }
 }

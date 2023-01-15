@@ -9,9 +9,9 @@ internal sealed class Assets
     public Tag[] Tags { get; }
     public Item[] Items { get; }
 
-    public Dictionary<string, IRegistryItem[]> Codecs { get; }
+    public Dictionary<string, Codec[]> Codecs { get; }
 
-    private Assets(Block[] blocks, Tag[] tags, Item[] items, Dictionary<string, IRegistryItem[]> codecs)
+    private Assets(Block[] blocks, Tag[] tags, Item[] items, Dictionary<string, Codec[]> codecs)
     {
         Blocks = blocks;
         Tags = tags;
@@ -25,36 +25,34 @@ internal sealed class Assets
         Fluid[] fluids = GetFluids(files.GetJsonFromArray("fluids"));
         Tag[] tags = GetTags(files.GetJsonFromArray("tags"), blocks, fluids);
         Item[] items = GetItems(files.GetJsonFromArray("items"));
-        Dictionary<string, IRegistryItem[]> codecs = GetCodecs(files);
+        Dictionary<string, Codec[]> codecs = GetCodecs(files);
 
         return new Assets(blocks, tags, items, codecs);
     }
 
-    public static Dictionary<string, IRegistryItem[]> GetCodecs(ImmutableArray<(string name, string json)> files)
+    public static Dictionary<string, Codec[]> GetCodecs(ImmutableArray<(string name, string json)> files)
     {
-        return new Dictionary<string, IRegistryItem[]>
+        return new Dictionary<string, Codec[]>
         {
-            { "dimensions", ParseDimensions(files.GetJsonFromArray("dimensions")) },
-            { "biomes", ParseDimensions(files.GetJsonFromArray("biomes")) },
+            { "dimensions", ParseCodec(files.GetJsonFromArray("dimensions")) },
+            { "biomes", ParseCodec(files.GetJsonFromArray("biomes")) },
         };
     }
 
-    private static Dimension[] ParseDimensions(string json)
+    private static Codec[] ParseCodec(string json)
     {
         if (json is null)
-            return Array.Empty<Dimension>();
+            return Array.Empty<Codec>();
 
         using var document = JsonDocument.Parse(json);
 
-        var properties = new Dictionary<string, object>();
-
-        var dimensions = new List<Dimension>();
+        var dimensions = new List<Codec>();
 
         var dimensionElements = document.RootElement.GetProperty("value").EnumerateArray();
 
         foreach (var dimension in dimensionElements)
         {
-            var obj = new Dimension(dimension.GetProperty("name").GetString(), dimension.GetProperty("id").GetInt32());
+            var obj = new Codec(dimension.GetProperty("name").GetString(), dimension.GetProperty("id").GetInt32());
 
             foreach (var property in dimension.EnumerateObject())
             {
@@ -72,39 +70,6 @@ internal sealed class Assets
 
         return dimensions.ToArray();
     }
-
-    private static Biome[] ParseBiomes(string json)
-    {
-        if(json is null)
-            return Array.Empty<Biome>();
-
-        using var document = JsonDocument.Parse(json);
-
-        var biomes = new List<Biome>();
-
-        var biomeElements = document.RootElement.GetProperty("value").EnumerateArray();
-
-        foreach (var biome in biomeElements)
-        {
-            var obj = new Biome(biome.GetProperty("name").GetString(), biome.GetProperty("id").GetInt32());
-
-            foreach (var property in biome.EnumerateObject())
-            {
-                if (property.Name is "name" or "id")
-                    continue;
-
-                foreach (var elementProperty in property.Value.EnumerateObject())
-                {
-                    obj.Properties.Add(elementProperty.Name.ToPascalCase(), elementProperty.Value.Clone());
-                }
-            }
-
-            biomes.Add(obj);
-        }
-
-        return biomes.ToArray();
-    }
-
 
     public static Fluid[] GetFluids(string? json)
     {
