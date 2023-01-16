@@ -12,7 +12,7 @@ namespace Obsidian.Tests;
 
 public class Noise
 {
-    private OverworldTerrainNoise noiseGen = new OverworldTerrainNoise(654321, true);
+    private OverworldTerrainNoise noiseGen = new OverworldTerrainNoise(654321);
 
     [Fact(DisplayName = "Biomes", Timeout = 10000)]
     public async void BiomesAsync()
@@ -100,9 +100,9 @@ public class Noise
             LinearNoiseCubeBuilder lncb = new()
             {
                 DestNoiseCube = nc,
-                SourceModule = noiseGen.terrain
+                SourceModule = noiseGen.terrainSelector
             };
-            lncb.SetBounds(-800, 800, 0, 320, -600, 600);
+            lncb.SetBounds(-800, 800, 32, 256, -600, 600);
             lncb.SetDestSize(1600, 320, 1200);
             lncb.Build();
 
@@ -136,7 +136,7 @@ public class Noise
     {
         await Task.Run(() =>
         {
-            var noise = noiseGen.TemperaturePerlin;
+            var noise = noiseGen.tempNoise;
             var map = new NoiseMap();
             PlaneNoiseMapBuilder builder =
                 new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noise };
@@ -161,7 +161,7 @@ public class Noise
     {
         await Task.Run(() =>
         {
-            var noise = noiseGen.HeightPerlin;
+            var noise = noiseGen.heightNoise;
             var map = new NoiseMap();
             PlaneNoiseMapBuilder builder =
                 new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noise };
@@ -181,12 +181,62 @@ public class Noise
         });
     }
 
+    [Fact(DisplayName = "Squash", Timeout = 10000)]
+    public async void SquashAsync()
+    {
+        await Task.Run(() =>
+        {
+            var noise = noiseGen.squashNoise;
+            var map = new NoiseMap();
+            PlaneNoiseMapBuilder builder =
+                new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noise };
+
+            var image = new Image();
+            var transitionsRenderer = new ImageRenderer() { SourceNoiseMap = map, DestinationImage = image };
+            transitionsRenderer.BuildGrayscaleGradient();
+            builder.SetBounds(-800, 800, -600, 600);
+            builder.SetDestSize(1600, 1200);
+            builder.Build();
+            transitionsRenderer.Render();
+
+            var bmp = transitionsRenderer.DestinationImage.ToGdiBitmap();
+            bmp.Save("_squash.bmp");
+
+            Assert.Equal(0, 0);
+        });
+    }
+
+    [Fact(DisplayName = "Humidity", Timeout = 10000)]
+    public async void HumidityAsync()
+    {
+        await Task.Run(() =>
+        {
+            var noise = noiseGen.humidityNoise;
+            var map = new NoiseMap();
+            PlaneNoiseMapBuilder builder =
+                new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noise };
+
+            var image = new Image();
+            var transitionsRenderer = new ImageRenderer() { SourceNoiseMap = map, DestinationImage = image };
+            transitionsRenderer.BuildGrayscaleGradient();
+            builder.SetBounds(-800, 800, -600, 600);
+            builder.SetDestSize(1600, 1200);
+            builder.Build();
+            transitionsRenderer.Render();
+
+            var bmp = transitionsRenderer.DestinationImage.ToGdiBitmap();
+            bmp.Save("_humidity.bmp");
+
+            Assert.Equal(0, 0);
+        });
+    }
+
     [Fact(DisplayName = "Erosion", Timeout = 10000)]
     public async void ErosionAsync()
     {
         await Task.Run(() =>
         {
-            var noise = noiseGen.SquashNoise;
+            var noise = noiseGen.erosionNoise;
             var map = new NoiseMap();
             PlaneNoiseMapBuilder builder =
                 new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noise };
@@ -201,31 +251,6 @@ public class Noise
 
             var bmp = transitionsRenderer.DestinationImage.ToGdiBitmap();
             bmp.Save("_erosion.bmp");
-
-            Assert.Equal(0, 0);
-        });
-    }
-
-    [Fact(DisplayName = "Humidity", Timeout = 10000)]
-    public async void HumidityAsync()
-    {
-        await Task.Run(() =>
-        {
-            var noise = noiseGen.HumidityPerlin;
-            var map = new NoiseMap();
-            PlaneNoiseMapBuilder builder =
-                new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noise };
-
-            var image = new Image();
-            var transitionsRenderer = new ImageRenderer() { SourceNoiseMap = map, DestinationImage = image };
-            transitionsRenderer.BuildGrayscaleGradient();
-            builder.SetBounds(-800, 800, -600, 600);
-            builder.SetDestSize(1600, 1200);
-            builder.Build();
-            transitionsRenderer.Render();
-
-            var bmp = transitionsRenderer.DestinationImage.ToGdiBitmap();
-            bmp.Save("_hummidity.bmp");
 
             Assert.Equal(0, 0);
         });

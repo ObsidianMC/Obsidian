@@ -10,108 +10,58 @@ namespace Obsidian.WorldData.Generators.Overworld;
 
     public OverworldTerrainSettings Settings { get; private set; } = new OverworldTerrainSettings();
 
-    public readonly Module terrainPerlin, heightPerlin, erosionPerlin, biomeSelector;
+    public readonly Module heightNoise, squashNoise, humidityNoise, tempNoise, erosionNoise;
 
-    public readonly Module terrain;
+    public readonly Module terrainSelector, biomeSelector;
 
     public readonly Module tunnels;
 
     private readonly int seed;
 
-    private bool isUnitTest;
-
-    public OverworldTerrainNoise(int seed, bool isUnitTest = false)
+    public OverworldTerrainNoise(int seed)
     {
-        this.isUnitTest = isUnitTest;
         this.seed = seed + 765; // add offset
 
-
-        heightPerlin = new Cache
+        humidityNoise = new Cache()
         {
-            Source0 = new Perlin()
+            Source0 = new Clamp()
             {
-                Frequency = 0.002,
-                Quality = SharpNoise.NoiseQuality.Best,
-                Seed = seed + 4
-            }
-        };
-
-        erosionPerlin = new Cache
-        {
-            Source0 = new Perlin()
-            {
-                Frequency = 0.001,
-                Quality = SharpNoise.NoiseQuality.Best,
-                Seed = seed + 5
-            }
-        };
-
-        terrainPerlin = new Turbulence()
-        {
-            Frequency = 0.1234,
-            Power = 2,
-            Roughness = 3,
-            Seed = seed + 1,
-            Source0 = new Perlin()
-            {
-                Frequency = 0.0356,
-                OctaveCount = 3,
-                Lacunarity = 0.8899,
-                Persistence = 0.1334,
-                Quality = SharpNoise.NoiseQuality.Fast,
-                Seed = seed
-            }
-        };
-
-        terrain = new OverworldTerrain(HeightPerlin, SquashNoise)
-        {
-            Seed = seed,
-            TerrainStretch = 15
-        };
-
-        biomeSelector = new BiomeSelector(TemperaturePerlin, HumidityPerlin, HeightPerlin);
-    }
-
-    public Module TemperaturePerlin => new Cache()
-    {
-        Source0 = new Clamp()
-        {
-            Source0 = new Blur()
-            {
-                Source0 = new Perlin()
+                Source0 = new Blur()
                 {
-                    Frequency = 0.001,
-                    Quality = SharpNoise.NoiseQuality.Best,
-                    Seed = seed + 2
+                    Source0 = new Perlin()
+                    {
+                        Frequency = 0.004,
+                        Quality = SharpNoise.NoiseQuality.Fast,
+                        Seed = seed + 3
+                    }
+
                 }
             }
-        }
-    };
+        };
 
-    public Module HumidityPerlin => new Cache()
-    {
-        Source0 = new Clamp()
+        tempNoise = new Cache()
         {
-            Source0 = new Blur()
+            Source0 = new Clamp()
             {
-                Source0 = new Perlin()
+                Source0 = new Blur()
                 {
-                    Frequency = 0.004,
-                    Quality = SharpNoise.NoiseQuality.Fast,
-                    Seed = seed + 3
+                    Source0 = new Perlin()
+                    {
+                        Frequency = 0.001,
+                        Quality = SharpNoise.NoiseQuality.Best,
+                        Seed = seed + 2
+                    }
                 }
-
             }
-        }
-    };
+        };
 
-    public Module HeightPerlin => new Cache()
-    {
-        Source0 = new Clamp()
+        heightNoise = new Cache()
         {
-            Source0 = new Curve
+            Source0 = new Clamp()
             {
-                ControlPoints = new List<ControlPoint>()
+                Source0 = new Curve
+                {
+                    ControlPoints = new List<ControlPoint>()
                 {
                      new Curve.ControlPoint(-1, -0.75),
                      new Curve.ControlPoint(-0.6, -0.75),
@@ -122,35 +72,63 @@ namespace Obsidian.WorldData.Generators.Overworld;
                      new Curve.ControlPoint(0.7, 0.1),
                      new Curve.ControlPoint(1, 0.12)
                 },
-                Source0 = heightPerlin
+                    Source0 = new Perlin()
+                    {
+                        Frequency = 0.002,
+                        Quality = SharpNoise.NoiseQuality.Best,
+                        Seed = seed + 4
+                    }
+                }
             }
-        }
-    };
+        };
 
-    public Module SquashNoise => new Cache()
-    {
-        Source0 = new Clamp()
+        erosionNoise = new Cache()
         {
-            Source0 = new Curve
+            Source0 = new Clamp()
             {
-                ControlPoints = new List<ControlPoint>()
+                Source0 = new Curve
                 {
-                     new Curve.ControlPoint(-2, 1),
-                     new Curve.ControlPoint(0, 1),
-                     new Curve.ControlPoint(0.1, 0.5),
-                     new Curve.ControlPoint(0.25, 0),
-                     new Curve.ControlPoint(0.3, 0.1),
-                     new Curve.ControlPoint(0.45, -0.75),
-                     new Curve.ControlPoint(0.7, -0.8),
-                     new Curve.ControlPoint(0.75, -0.25),
-                     new Curve.ControlPoint(0.85, -0.25),
-                     new Curve.ControlPoint(0.9, -0.8),
+                    ControlPoints = new List<ControlPoint>()
+                {
+                     new Curve.ControlPoint(-1, 0.5),
+                     new Curve.ControlPoint(-0.5, 0),
+                     new Curve.ControlPoint(-0.45, 0.2),
+                     new Curve.ControlPoint(-0.2, -0.8),
+                     new Curve.ControlPoint(2.5, -0.85),
+                     new Curve.ControlPoint(0.5, -0.85),
+                     new Curve.ControlPoint(0.55, -0.5),
+                     new Curve.ControlPoint(0.7, -0.5),
+                     new Curve.ControlPoint(0.75, -0.85),
                      new Curve.ControlPoint(1, -1)
                 },
-                Source0 = erosionPerlin
+                    Source0 = new Perlin()
+                    {
+                        Frequency = 0.002,
+                        Quality = SharpNoise.NoiseQuality.Best,
+                        Seed = seed + 5
+                    }
+                }
             }
-        }
-    };
+        };
+
+        squashNoise = new Cache
+        {
+            Source0 = new Perlin()
+            {
+                Frequency = 0.001,
+                Quality = SharpNoise.NoiseQuality.Best,
+                Seed = seed + 5
+            }
+        };
+
+        terrainSelector = new OverworldTerrain(heightNoise, squashNoise, erosionNoise)
+        {
+            Seed = seed,
+            TerrainStretch = 15
+        };
+
+        biomeSelector = new BiomeSelector(tempNoise, humidityNoise, heightNoise);
+    }
 
     public int GetTerrainHeight(int x, int z)
     {
@@ -166,7 +144,7 @@ namespace Obsidian.WorldData.Generators.Overworld;
 
     public bool IsTerrain(int x, int y, int z)
     {
-        return terrain.GetValue(x, (y+22)*2, z) > 0;
+        return terrainSelector.GetValue(x, (y+22)*2, z) > 0;
     }
 
     public Module Cave => new Turbulence()

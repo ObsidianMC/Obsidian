@@ -9,10 +9,11 @@ internal class OverworldTerrain : Module
 
     protected readonly Module terrainPerlin;
 
-    public OverworldTerrain(Module height, Module erosion) : base(2)
+    public OverworldTerrain(Module height, Module squash, Module erosion) : base(3)
     {
         SourceModules[0] = height;
-        SourceModules[1] = erosion;
+        SourceModules[1] = squash;
+        SourceModules[2] = erosion;
         terrainPerlin = new Turbulence()
         {
             Frequency = 1/TerrainStretch,
@@ -33,26 +34,26 @@ internal class OverworldTerrain : Module
 
     public override double GetValue(double x, double y, double z)
     {
-        var erosion = SourceModules[1].GetValue(x, 0, z) + 1.1d; // Can't be zero
+        var squash = SourceModules[1].GetValue(x, 0, z) + 1.1d; // Can't be zero
         var height = SourceModules[0].GetValue(x, 0, z);
-        if (height >= 0.02)
+
+        // Beash/Ocean flat, everything else amplified
+        squash = height < 0.02 ? squash * 0.5d : Math.Pow(squash, 7);
+
+        var result = terrainPerlin.GetValue(x, y, z);
+        if (height > 0) // If above ocean, add erosion
         {
-            erosion = Math.Pow(erosion, 5);
-        } else
-        {
-            erosion *= 0.5d;
+            height *= (SourceModules[2].GetValue(x, 0, z) + 0.6) * 10.0 ;
         }
-        double yOffset = y + (height * -128);
+        double yOffset = y + (height * 128 * -1);
         double bias = yOffset - 192; // put half world height to 0
-        bias = Math.Pow(bias, 3) / erosion;
-        bias = bias / 192d; // world height to -1 < y < 1
-        var result = Math.Clamp(terrainPerlin.GetValue(x, y, z) - bias, -1, 1);
+        bias = Math.Pow(bias, 3) / squash;
+        bias /= 192d; // world height to -1 < y < 1
 
-        if (result >= 0.2)
-        {
+        
 
-        }
+        result -= bias;
 
-        return result;
+        return Math.Clamp(result, -1, 1);
     }
 }
