@@ -1,5 +1,7 @@
 ﻿using Obsidian.API;
+using Obsidian.API.Noise;
 using Obsidian.WorldData.Generators.Overworld;
+using Org.BouncyCastle.Crypto.Engines;
 using SharpNoise;
 using SharpNoise.Builders;
 using SharpNoise.Utilities.Imaging;
@@ -10,9 +12,9 @@ namespace Obsidian.Tests;
 
 public class Noise
 {
-    private OverworldTerrainNoise noiseGen = new OverworldTerrainNoise(123456, true);
+    private OverworldTerrainNoise noiseGen = new OverworldTerrainNoise(654321);
 
-    [Fact(DisplayName = "Biomes", Timeout = 100000)]
+    [Fact(DisplayName = "Biomes", Timeout = 10000)]
     public async void BiomesAsync()
     {
 
@@ -74,8 +76,8 @@ public class Noise
             biomesRenderer.AddGradientPoint((int)Biomes.MushroomFields, new Color(119, 103, 84, 255));
 
 
-            builder.SetBounds(-400, 400, -300, 300);
-            builder.SetDestSize(800, 600);
+            builder.SetBounds(-800, 800, -600, 600);
+            builder.SetDestSize(1600, 1200);
             builder.Build();
             biomesRenderer.Render();
 
@@ -86,51 +88,40 @@ public class Noise
         });
     }
 
-    [Fact(DisplayName = "Transitions", Timeout = 100000)]
-    public async void TransitionsAsync()
-    {
-        await Task.Run(() =>
-        {
-            var map = new NoiseMap();
-            PlaneNoiseMapBuilder builder =
-                new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noiseGen.transitions };
-
-            var image = new Image();
-            var transitionsRenderer = new ImageRenderer() { SourceNoiseMap = map, DestinationImage = image };
-            transitionsRenderer.BuildGrayscaleGradient();
-            builder.SetBounds(-400, 400, -300, 300);
-            builder.SetDestSize(800, 600);
-            builder.Build();
-            transitionsRenderer.Render();
-
-            var bmp = transitionsRenderer.DestinationImage.ToGdiBitmap();
-            bmp.Save("_transitions.bmp");
-
-            Assert.Equal(0, 0);
-        });
-    }
-
-    [Fact(DisplayName = "Terrain", Timeout = 100000)]
+    [Fact(DisplayName = "Terrain", Timeout = 1000000)]
     public async void TerrainAsync()
     {
+        
         await Task.Run(() =>
         {
-            var noise = new SharpNoise.Modules.ScaleBias()
+            NoiseCube nc = new();
+            NoiseMap nm = new();
+
+            LinearNoiseCubeBuilder lncb = new()
             {
-                Scale = 4,
-                Source0 = noiseGen.biomeTerrain
+                DestNoiseCube = nc,
+                SourceModule = noiseGen.terrainSelector
+            };
+            lncb.SetBounds(-800, 800, 32, 256, -600, 600);
+            lncb.SetDestSize(1600, 320, 1200);
+            lncb.Build();
+
+            HeightNoiseMapBuilder dnmb = new()
+            {
+                DestNoiseMap = nm,
+                SourceNoiseCube = nc
+            };
+            dnmb.SetDestSize(1600, 1200);
+            dnmb.Build();
+
+            Image img = new();
+            ImageRenderer transitionsRenderer = new()
+            {
+                SourceNoiseMap = nm,
+                DestinationImage = img
             };
 
-            var map = new NoiseMap();
-            PlaneNoiseMapBuilder builder =
-                new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noise };
-
-            var image = new Image();
-            var transitionsRenderer = new ImageRenderer() { SourceNoiseMap = map, DestinationImage = image };
             transitionsRenderer.BuildTerrainGradient();
-            builder.SetBounds(-400, 400, -300, 300);
-            builder.SetDestSize(800, 600);
-            builder.Build();
             transitionsRenderer.Render();
 
             var bmp = transitionsRenderer.DestinationImage.ToGdiBitmap();
@@ -140,17 +131,37 @@ public class Noise
         });
     }
 
-    [Fact(DisplayName = "Terrain Blending", Timeout = 1000000)]
-    public async void TerrainBlendAsync()
+    [Fact(DisplayName = "Temp", Timeout = 10000)]
+    public async void TempAsync()
     {
         await Task.Run(() =>
         {
-            var noise = new SharpNoise.Modules.ScaleBias()
-            {
-                Scale = 4,
-                Source0 = noiseGen.selectiveBlend
-            };
+            var noise = noiseGen.tempNoise;
+            var map = new NoiseMap();
+            PlaneNoiseMapBuilder builder =
+                new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noise };
 
+            var image = new Image();
+            var transitionsRenderer = new ImageRenderer() { SourceNoiseMap = map, DestinationImage = image };
+            transitionsRenderer.BuildGrayscaleGradient();
+            builder.SetBounds(-800, 800, -600, 600);
+            builder.SetDestSize(1600, 1200);
+            builder.Build();
+            transitionsRenderer.Render();
+
+            var bmp = transitionsRenderer.DestinationImage.ToGdiBitmap();
+            bmp.Save("_temp.bmp");
+
+            Assert.Equal(0, 0);
+        });
+    }
+
+    [Fact(DisplayName = "Height", Timeout = 10000)]
+    public async void HeightAsync()
+    {
+        await Task.Run(() =>
+        {
+            var noise = noiseGen.heightNoise;
             var map = new NoiseMap();
             PlaneNoiseMapBuilder builder =
                 new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noise };
@@ -158,13 +169,88 @@ public class Noise
             var image = new Image();
             var transitionsRenderer = new ImageRenderer() { SourceNoiseMap = map, DestinationImage = image };
             transitionsRenderer.BuildTerrainGradient();
-            builder.SetBounds(-400, 400, -300, 300);
-            builder.SetDestSize(800, 600);
+            builder.SetBounds(-800, 800, -600, 600);
+            builder.SetDestSize(1600, 1200);
             builder.Build();
             transitionsRenderer.Render();
 
             var bmp = transitionsRenderer.DestinationImage.ToGdiBitmap();
-            bmp.Save("_blendedterrain.bmp");
+            bmp.Save("_height.bmp");
+
+            Assert.Equal(0, 0);
+        });
+    }
+
+    [Fact(DisplayName = "Squash", Timeout = 10000)]
+    public async void SquashAsync()
+    {
+        await Task.Run(() =>
+        {
+            var noise = noiseGen.squashNoise;
+            var map = new NoiseMap();
+            PlaneNoiseMapBuilder builder =
+                new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noise };
+
+            var image = new Image();
+            var transitionsRenderer = new ImageRenderer() { SourceNoiseMap = map, DestinationImage = image };
+            transitionsRenderer.BuildGrayscaleGradient();
+            builder.SetBounds(-800, 800, -600, 600);
+            builder.SetDestSize(1600, 1200);
+            builder.Build();
+            transitionsRenderer.Render();
+
+            var bmp = transitionsRenderer.DestinationImage.ToGdiBitmap();
+            bmp.Save("_squash.bmp");
+
+            Assert.Equal(0, 0);
+        });
+    }
+
+    [Fact(DisplayName = "Humidity", Timeout = 10000)]
+    public async void HumidityAsync()
+    {
+        await Task.Run(() =>
+        {
+            var noise = noiseGen.humidityNoise;
+            var map = new NoiseMap();
+            PlaneNoiseMapBuilder builder =
+                new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noise };
+
+            var image = new Image();
+            var transitionsRenderer = new ImageRenderer() { SourceNoiseMap = map, DestinationImage = image };
+            transitionsRenderer.BuildGrayscaleGradient();
+            builder.SetBounds(-800, 800, -600, 600);
+            builder.SetDestSize(1600, 1200);
+            builder.Build();
+            transitionsRenderer.Render();
+
+            var bmp = transitionsRenderer.DestinationImage.ToGdiBitmap();
+            bmp.Save("_humidity.bmp");
+
+            Assert.Equal(0, 0);
+        });
+    }
+
+    [Fact(DisplayName = "Erosion", Timeout = 10000)]
+    public async void ErosionAsync()
+    {
+        await Task.Run(() =>
+        {
+            var noise = noiseGen.erosionNoise;
+            var map = new NoiseMap();
+            PlaneNoiseMapBuilder builder =
+                new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noise };
+
+            var image = new Image();
+            var transitionsRenderer = new ImageRenderer() { SourceNoiseMap = map, DestinationImage = image };
+            transitionsRenderer.BuildGrayscaleGradient();
+            builder.SetBounds(-800, 800, -600, 600);
+            builder.SetDestSize(1600, 1200);
+            builder.Build();
+            transitionsRenderer.Render();
+
+            var bmp = transitionsRenderer.DestinationImage.ToGdiBitmap();
+            bmp.Save("_erosion.bmp");
 
             Assert.Equal(0, 0);
         });
