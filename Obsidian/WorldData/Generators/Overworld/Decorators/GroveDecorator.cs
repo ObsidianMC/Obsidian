@@ -19,7 +19,7 @@ public class GroveDecorator : BaseDecorator
     {
         if (pos.Y < noise.Settings.WaterLevel)
         {
-            FillSand();
+            FillWater();
             return;
         }
 

@@ -51,7 +51,7 @@ public sealed class OverworldGenerator : IWorldGenerator
         }
 
         //ChunkBuilder.FillChunk(chunk);
-        ChunkBuilder.CarveCaves(helper, chunk);
+        //ChunkBuilder.CarveCaves(helper, chunk);
         await OverworldDecorator.DecorateAsync(chunk, helper);
 
         chunk.isGenerated = true;
