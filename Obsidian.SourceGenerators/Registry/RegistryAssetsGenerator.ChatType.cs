@@ -10,16 +10,6 @@ public partial class RegistryAssetsGenerator
 
         builder.Indent().Append("public const string CodecKey = \"minecraft:chat_type\";").Line().Line();
 
-        builder.Statement("public static IReadOnlyDictionary<string, ChatCodec> All { get; } = new Dictionary<string, ChatCodec>");
-
-        foreach (var name in chatTypes.Select(x => x.Name))
-        {
-            var propertyName = name.RemoveNamespace().ToPascalCase();
-            builder.Line($"{{ \"{name}\", {propertyName} }},");
-        }
-
-        builder.EndScope(".AsReadOnly()", true).Line();
-
         foreach (var chatType in chatTypes)
         {
             var propertyName = chatType.Name.RemoveNamespace().ToPascalCase();
@@ -44,6 +34,17 @@ public partial class RegistryAssetsGenerator
 
             builder.Append("} };").Line();
         }
+
+        builder.Line().Statement("public static IReadOnlyDictionary<string, ChatCodec> All { get; } = new Dictionary<string, ChatCodec>");
+
+        foreach (var name in chatTypes.Select(x => x.Name))
+        {
+            var propertyName = name.RemoveNamespace().ToPascalCase();
+            builder.Line($"{{ \"{name}\", {propertyName} }},");
+        }
+
+        builder.EndScope(".AsReadOnly()", true).Line();
+
         builder.EndScope();
     }
 

@@ -10,16 +10,6 @@ public partial class RegistryAssetsGenerator
 
         builder.Indent().Append("public const string CodecKey = \"minecraft:dimension_type\";").Line().Line();
 
-        builder.Statement("public static IReadOnlyDictionary<string, DimensionCodec> All { get; } = new Dictionary<string, DimensionCodec>");
-
-        foreach(var name in dimensions.Select(x => x.Name))
-        {
-            var propertyName = name.RemoveNamespace().ToPascalCase();
-            builder.Line($"{{ \"{name}\", {propertyName} }},");
-        }
-
-        builder.EndScope(".AsReadOnly()", true).Line();
-
         foreach (var dimension in dimensions)
         {
             var propertyName = dimension.Name.RemoveNamespace().ToPascalCase();
@@ -43,6 +33,17 @@ public partial class RegistryAssetsGenerator
 
             builder.Append("} };").Line();
         }
+
+        builder.Line().Statement("public static IReadOnlyDictionary<string, DimensionCodec> All { get; } = new Dictionary<string, DimensionCodec>");
+
+        foreach (var name in dimensions.Select(x => x.Name))
+        {
+            var propertyName = name.RemoveNamespace().ToPascalCase();
+            builder.Line($"{{ \"{name}\", {propertyName} }},");
+        }
+
+        builder.EndScope(".AsReadOnly()", true).Line();
+
         builder.EndScope();
     }
 

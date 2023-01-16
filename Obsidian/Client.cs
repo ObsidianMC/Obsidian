@@ -508,7 +508,7 @@ public sealed class Client : IDisposable
             EntityId = id,
             Gamemode = Player.Gamemode,
             DimensionNames = CodecRegistry.Dimensions.All.Select(x => x.Value.Name).ToList(),
-            Codecs = new(),//Don't need this anymore
+            Codecs = new(),
             DimensionType = codec.Name,
             DimensionName = codec.Name,
             HashedSeed = 0,
@@ -521,14 +521,14 @@ public sealed class Client : IDisposable
         await QueuePacketAsync(UpdateTagsPacket.FromRegistry);
         await SendCommandsAsync();
 
-        await QueuePacketAsync(UpdateRecipesPacket.FromRegistry);
+        //await QueuePacketAsync(UpdateRecipesPacket.FromRegistry);
 
-        await QueuePacketAsync(new UpdateRecipeBookPacket
-        {
-            Action = UnlockRecipeAction.Init,
-            FirstRecipeIds = RecipesRegistry.Recipes.Keys.ToList(),
-            SecondRecipeIds = RecipesRegistry.Recipes.Keys.ToList()
-        });
+        //await QueuePacketAsync(new UpdateRecipeBookPacket
+        //{
+        //    Action = UnlockRecipeAction.Init,
+        //    FirstRecipeIds = RecipesRegistry.Recipes.Keys.ToList(),
+        //    SecondRecipeIds = RecipesRegistry.Recipes.Keys.ToList()
+        //});
 
         await SendPlayerListDecoration();
         await SendPlayerInfoAsync();

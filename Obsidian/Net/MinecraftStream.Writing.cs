@@ -704,7 +704,7 @@ public partial class MinecraftStream
         writer.WriteTag(dimensions);
 
         this.WriteBiomeCodec(writer);
-        this.WriteChatCodec(value, writer);
+        this.WriteChatCodec(writer);
 
         writer.EndCompound();
         writer.TryFinish();

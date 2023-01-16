@@ -11,16 +11,6 @@ public partial class RegistryAssetsGenerator
         builder.Indent().Append("public const string CodecKey = \"minecraft:worldgen/biome\";").Line().Line();
         builder.Indent().Append($"public const int GlobalBitsPerEntry = {(int)Math.Ceiling(Math.Log(biomes.Length, 2))};").Line().Line();
 
-        builder.Statement("public static IReadOnlyDictionary<string, BiomeCodec> All { get; } = new Dictionary<string, BiomeCodec>");
-
-        foreach (var name in biomes.Select(x => x.Name))
-        {
-            var propertyName = name.RemoveNamespace().ToPascalCase();
-            builder.Line($"{{ \"{name}\", {propertyName} }},");
-        }
-
-        builder.EndScope(".AsReadOnly()", true).Line();
-
         foreach (var biome in biomes)
         {
             var propertyName = biome.Name.RemoveNamespace().ToPascalCase();
@@ -45,6 +35,17 @@ public partial class RegistryAssetsGenerator
 
             builder.Append("} };").Line();
         }
+
+        builder.Line().Statement("public static IReadOnlyDictionary<string, BiomeCodec> All { get; } = new Dictionary<string, BiomeCodec>");
+
+        foreach (var name in biomes.Select(x => x.Name))
+        {
+            var propertyName = name.RemoveNamespace().ToPascalCase();
+            builder.Line($"{{ \"{name}\", {propertyName} }},");
+        }
+
+        builder.EndScope(".AsReadOnly()", true).Line();
+
         builder.EndScope();
     }
 }
