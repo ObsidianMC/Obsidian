@@ -2,7 +2,7 @@
 
 public sealed class ShapedRecipe : IRecipe
 {
-    public string Identifier { get; internal set; }
+    public required string Identifier { get; init; }
 
     public required CraftingType Type { get; init; }
 
@@ -15,4 +15,5 @@ public sealed class ShapedRecipe : IRecipe
     public required IReadOnlyList<string> Pattern { get; init; }
 
     public required IReadOnlyDictionary<char, Ingredient> Key { get; init; }
+    internal ShapedRecipe() { }
 }

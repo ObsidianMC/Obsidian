@@ -507,7 +507,7 @@ public sealed class Client : IDisposable
         {
             EntityId = id,
             Gamemode = Player.Gamemode,
-            DimensionNames = CodecRegistry.Dimensions.All.Select(x => x.Value.Name).ToList(),
+            DimensionNames = CodecRegistry.Dimensions.All.Keys.ToList(),
             Codecs = new(),
             DimensionType = codec.Name,
             DimensionName = codec.Name,
