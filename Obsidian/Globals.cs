@@ -26,6 +26,7 @@ public static class Globals
                 new DefaultEnumConverter<EClickAction>(),
                 new DefaultEnumConverter<CraftingBookCategory>(),
                 new DefaultEnumConverter<CookingBookCategory>(),
+                new RecipesConverter(),
                 new HexColorConverter(),
                 new GuidJsonConverter()
             },

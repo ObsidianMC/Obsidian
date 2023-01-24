@@ -254,6 +254,8 @@ public partial class Server : IServer
             return;
         }
 
+        await RecipesRegistry.InitializeAsync();
+
         await UserCache.LoadAsync(this._cancelTokenSource.Token);
 
         _logger.LogInformation($"Loading properties...");

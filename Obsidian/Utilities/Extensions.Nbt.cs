@@ -355,13 +355,15 @@ public partial class Extensions
         var elements = new NbtCompound("element")
         {
             new NbtTag<string>("precipitation", value.Element.Precipitation),
-            new NbtTag<string>("category", value.Element.Category),
 
             new NbtTag<float>("depth", value.Element.Depth),
             new NbtTag<float>("temperature", value.Element.Temperature),
             new NbtTag<float>("scale", value.Element.Scale),
             new NbtTag<float>("downfall", value.Element.Downfall)
         };
+
+        if (!value.Element.Category.IsNullOrEmpty())
+            elements.Add(new NbtTag<string>("category", value.Element.Category!));
 
         value.Element.Effects.WriteEffect(elements);
 

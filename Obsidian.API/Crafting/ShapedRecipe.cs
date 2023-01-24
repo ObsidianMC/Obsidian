@@ -15,5 +15,6 @@ public sealed class ShapedRecipe : IRecipe
     public required IReadOnlyList<string> Pattern { get; init; }
 
     public required IReadOnlyDictionary<char, Ingredient> Key { get; init; }
+
     internal ShapedRecipe() { }
 }

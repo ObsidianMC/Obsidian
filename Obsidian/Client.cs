@@ -521,14 +521,14 @@ public sealed class Client : IDisposable
         await QueuePacketAsync(UpdateTagsPacket.FromRegistry);
         await SendCommandsAsync();
 
-        //await QueuePacketAsync(UpdateRecipesPacket.FromRegistry);
+        await QueuePacketAsync(UpdateRecipesPacket.FromRegistry);
 
-        //await QueuePacketAsync(new UpdateRecipeBookPacket
-        //{
-        //    Action = UnlockRecipeAction.Init,
-        //    FirstRecipeIds = RecipesRegistry.Recipes.Keys.ToList(),
-        //    SecondRecipeIds = RecipesRegistry.Recipes.Keys.ToList()
-        //});
+        await QueuePacketAsync(new UpdateRecipeBookPacket
+        {
+            Action = UnlockRecipeAction.Init,
+            FirstRecipeIds = RecipesRegistry.Recipes.Keys.ToList(),
+            SecondRecipeIds = RecipesRegistry.Recipes.Keys.ToList()
+        });
 
         await SendPlayerListDecoration();
         await SendPlayerInfoAsync();
