@@ -1,148 +1,150 @@
 ﻿using Obsidian.API.Noise;
-using Obsidian.WorldData.Generators.Overworld.Terrain;
 using SharpNoise.Modules;
 using static SharpNoise.Modules.Curve;
-using Blend = Obsidian.API.Noise.Blend;
 
 namespace Obsidian.WorldData.Generators.Overworld;
 
-public class OverworldTerrainNoise
+    public class OverworldTerrainNoise
 {
     public Module Heightmap { get; set; }
 
     public OverworldTerrainSettings Settings { get; private set; } = new OverworldTerrainSettings();
 
-    public readonly Module ocean, deepocean, badlands, plains, hills, mountains, rivers;
+    public readonly Module heightNoise, squashNoise, humidityNoise, tempNoise, erosionNoise;
+
+    public readonly Module terrainSelector, biomeSelector;
 
     public readonly Module tunnels;
 
-    public readonly Module transitions, biomeTerrain, blendPass1, selectiveBlend;
-
     private readonly int seed;
 
-    private bool isUnitTest;
-
-    public OverworldTerrainNoise(int seed, bool isUnitTest = false)
+    public OverworldTerrainNoise(int seed)
     {
-        this.isUnitTest = isUnitTest;
         this.seed = seed + 765; // add offset
-        ocean = new OceanTerrain(seed, Settings);
-        deepocean = new DeepOceanTerrain(seed, Settings);
-        plains = new PlainsTerrain(seed, Settings);
-        hills = new HillsTerrain(seed, Settings);
-        badlands = new BadlandsTerrain(seed, Settings);
-        mountains = new MountainsTerrain(seed, Settings);
-        rivers = new RiverTerrain(seed, Settings);
 
-        tunnels = new VoronoiTunnels()
+        humidityNoise = new Cache()
         {
-            Frequency = 0.0123456,
-            Seed = this.seed
+            Source0 = new Clamp()
+            {
+                Source0 = new Blur()
+                {
+                    Source0 = new Perlin()
+                    {
+                        Frequency = 0.004,
+                        Quality = SharpNoise.NoiseQuality.Fast,
+                        Seed = seed + 3
+                    }
+
+                }
+            }
         };
 
-        Dictionary<Biome, Module> biomesTerrainMap = new()
+        tempNoise = new Cache()
         {
-            { API.Biome.Badlands, badlands },
-            { API.Biome.BambooJungle, plains },
-            { API.Biome.BasaltDeltas, plains },
-            { API.Biome.Beach, new Constant() { ConstantValue = 0 } },
-            { API.Biome.BirchForest, plains },
-            { API.Biome.ColdOcean, ocean },
-            { API.Biome.CrimsonForest, plains },
-            { API.Biome.DarkForest, plains },
-            { API.Biome.DeepColdOcean, deepocean },
-            { API.Biome.DeepFrozenOcean, deepocean },
-            { API.Biome.DeepLukewarmOcean, deepocean },
-            { API.Biome.DeepOcean, deepocean },
-            { API.Biome.Desert, plains },
-            { API.Biome.DripstoneCaves, plains },
-            { API.Biome.EndBarrens, plains },
-            { API.Biome.EndHighlands, plains },
-            { API.Biome.EndMidlands, plains },
-            { API.Biome.ErodedBadlands, badlands },
-            { API.Biome.FlowerForest, plains },
-            { API.Biome.Forest, plains },
-            { API.Biome.FrozenOcean, ocean },
-            { API.Biome.FrozenPeaks, mountains },
-            { API.Biome.FrozenRiver, rivers },
-            { API.Biome.Grove, plains },
-            { API.Biome.IceSpikes, badlands },
-            { API.Biome.JaggedPeaks, mountains },
-            { API.Biome.Jungle, plains },
-            { API.Biome.LukewarmOcean, ocean },
-            { API.Biome.LushCaves, plains },
-            { API.Biome.Meadow, plains },
-            { API.Biome.MushroomFields, plains },
-            { API.Biome.NetherWastes, plains },
-            { API.Biome.Ocean, ocean },
-            { API.Biome.OldGrowthBirchForest, plains },
-            { API.Biome.OldGrowthPineTaiga, plains },
-            { API.Biome.OldGrowthSpruceTaiga, plains },
-            { API.Biome.Plains, plains },
-            { API.Biome.River, rivers },
-            { API.Biome.Savanna, plains },
-            { API.Biome.SavannaPlateau, hills },
-            { API.Biome.SmallEndIslands, plains },
-            { API.Biome.SnowyBeach, new Constant() { ConstantValue = 0 } },
-            { API.Biome.SnowyPlains, plains },
-            { API.Biome.SnowySlopes, hills },
-            { API.Biome.SnowyTaiga, plains },
-            { API.Biome.SoulSandValley, plains },
-            { API.Biome.SparseJungle, plains },
-            { API.Biome.StonyPeaks, mountains },
-            { API.Biome.StonyShore, plains },
-            { API.Biome.SunflowerPlains, plains },
-            { API.Biome.Swamp, badlands },
-            { API.Biome.Taiga, hills },
-            { API.Biome.TheEnd, plains },
-            { API.Biome.TheVoid, plains },
-            { API.Biome.WarmOcean, ocean },
-            { API.Biome.WarpedForest, plains },
-            { API.Biome.WindsweptForest, plains },
-            { API.Biome.WindsweptGravellyHills, hills },
-            { API.Biome.WindsweptHills, hills },
-            { API.Biome.WindsweptSavanna, plains },
-            { API.Biome.WoodedBadlands, badlands }
+            Source0 = new Clamp()
+            {
+                Source0 = new Blur()
+                {
+                    Source0 = new Perlin()
+                    {
+                        Frequency = 0.001,
+                        Quality = SharpNoise.NoiseQuality.Best,
+                        Seed = seed + 2
+                    }
+                }
+            }
         };
 
-        transitions = new Blend(new TransitionMap(Biome, 9))
+        heightNoise = new Cache()
         {
-            Distance = 3
+            Source0 = new Clamp()
+            {
+                Source0 = new Curve
+                {
+                    ControlPoints = new List<ControlPoint>()
+                {
+                     new Curve.ControlPoint(-1, -0.75),
+                     new Curve.ControlPoint(-0.6, -0.75),
+                     new Curve.ControlPoint(-0.525, -0.33),
+                     new Curve.ControlPoint(-0.3, -0.33),
+                     new Curve.ControlPoint(-0.1, -0.08),
+                     new Curve.ControlPoint(0.2, 0.04),
+                     new Curve.ControlPoint(0.7, 0.1),
+                     new Curve.ControlPoint(1, 0.12)
+                },
+                    Source0 = new Perlin()
+                    {
+                        Frequency = 0.002,
+                        Quality = SharpNoise.NoiseQuality.Best,
+                        Seed = seed + 4
+                    }
+                }
+            }
         };
 
-        biomeTerrain = new TerrainSelect(Biome)
+        erosionNoise = new Cache()
         {
-            Control = transitions,
-            TerrainModules = biomesTerrainMap
+            Source0 = new Clamp()
+            {
+                Source0 = new Curve
+                {
+                    ControlPoints = new List<ControlPoint>()
+                {
+                     new Curve.ControlPoint(-1, 0.5),
+                     new Curve.ControlPoint(-0.5, 0),
+                     new Curve.ControlPoint(-0.45, 0.2),
+                     new Curve.ControlPoint(-0.2, -0.8),
+                     new Curve.ControlPoint(2.5, -0.85),
+                     new Curve.ControlPoint(0.5, -0.85),
+                     new Curve.ControlPoint(0.55, -0.5),
+                     new Curve.ControlPoint(0.7, -0.5),
+                     new Curve.ControlPoint(0.75, -0.85),
+                     new Curve.ControlPoint(1, -1)
+                },
+                    Source0 = new Perlin()
+                    {
+                        Frequency = 0.002,
+                        Quality = SharpNoise.NoiseQuality.Best,
+                        Seed = seed + 5
+                    }
+                }
+            }
         };
 
-
-        blendPass1 = new Blend(biomeTerrain)
+        squashNoise = new Cache
         {
-            Distance = 2
+            Source0 = new Perlin()
+            {
+                Frequency = 0.001,
+                Quality = SharpNoise.NoiseQuality.Best,
+                Seed = seed + 5
+            }
         };
 
-        // Only blend on transitions for performance
-        selectiveBlend = new Select()
+        terrainSelector = new OverworldTerrain(heightNoise, squashNoise, erosionNoise)
         {
-            Source0 = biomeTerrain,
-            Source1 = blendPass1,
-            Control = transitions,
-            LowerBound = -0.9,
-            UpperBound = 1.0,
-            EdgeFalloff = 0
+            Seed = seed,
+            TerrainStretch = 15
         };
 
-        var scaledWorld = new SplitScaleBias()
-        {
-            Source0 = selectiveBlend,
-            Center = 0,
-            AboveCenterScale = 256, // world height minus sea level
-            BelowCenterScale = 128, // sea level + abs(world floor)
-            Bias = 64 // sea level
-        };
+        biomeSelector = new BiomeSelector(tempNoise, humidityNoise, heightNoise);
+    }
 
-        Heightmap = isUnitTest ? blendPass1 : scaledWorld;
+    public int GetTerrainHeight(int x, int z)
+    {
+        for (int y = 320; y > 64; y--)
+        {
+            if (IsTerrain(x, y, z))
+            {
+                return y;
+            }
+        }
+        return 0;
+    }
+
+    public bool IsTerrain(int x, int y, int z)
+    {
+        return terrainSelector.GetValue(x, (y+22)*2, z) > 0;
     }
 
     public Module Cave => new Turbulence()
@@ -195,20 +197,9 @@ public class OverworldTerrainNoise
 
     public Module Biome => new Cache
     {
-        Source0 = new Turbulence
-        {
-            Frequency = 0.007119,
-            Power = 16,
-            Roughness = 3,
-            Seed = seed + 4,
-            Source0 = new VoronoiBiomes(isUnitTest)
-            {
-                Frequency = 0.0054159,
-                Seed = seed + 5
-            }
-        }
+        Source0 = biomeSelector
     };
 
     // Set a constant biome here for development
-    //public Module Biome => new Constant() { ConstantValue = (int)Biomes.Jungle };
+    //public Module Biome => new Constant() { ConstantValue = (int)Biomes.Forest };
 }

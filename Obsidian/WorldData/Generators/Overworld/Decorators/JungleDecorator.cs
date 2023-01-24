@@ -21,7 +21,7 @@ public class JungleDecorator : BaseDecorator
     {
         if (pos.Y < noise.Settings.WaterLevel)
         {
-            FillSand();
+            FillWater();
             return;
         }
 
