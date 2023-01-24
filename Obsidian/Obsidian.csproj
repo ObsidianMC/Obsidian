@@ -85,7 +85,7 @@
 		<AdditionalFiles Include="Assets\biomes.json" CopyToOutputDirectory="Never" />
 		<AdditionalFiles Include="Assets\blocks.json" CopyToOutputDirectory="Never" />
 		<AdditionalFiles Include="Assets\chat_type.json" CopyToOutputDirectory="Never" />
-		<AdditionalFiles Include="Assets\dimensions.json" CopyToOutputDirectory="Never"/>
+		<AdditionalFiles Include="Assets\dimensions.json" CopyToOutputDirectory="Never" />
 		<AdditionalFiles Include="Assets\items.json" CopyToOutputDirectory="Never" />
 		<AdditionalFiles Include="Assets\tags.json" CopyToOutputDirectory="Never" />
 		<AdditionalFiles Include="Assets\fluids.json" CopyToOutputDirectory="Never" />

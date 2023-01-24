@@ -5,8 +5,7 @@ using System.Text.Json.Serialization;
 
 namespace Obsidian.Utilities.Converters;
 
-//TODO: re-do this class
-public class IngredientConverter : JsonConverter<Ingredient>
+public sealed class IngredientConverter : JsonConverter<Ingredient>
 {
     public override Ingredient Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
@@ -14,15 +13,15 @@ public class IngredientConverter : JsonConverter<Ingredient>
 
         if (element.ValueKind == JsonValueKind.Array)
         {
-            var rawRecipeItems = element.ToString().FromJson<List<RawRecipeItem>>();
+            var rawRecipeItems = element.ToString().FromJson<RawRecipeItem[]>();
 
             var ingredient = new Ingredient();
-            foreach (var rawRecipe in rawRecipeItems)
+            foreach (var rawRecipe in rawRecipeItems!)
             {
                 if (rawRecipe.Item == null && rawRecipe.Tag != null)
                 {
                     var tag = TagsRegistry.Items.All.FirstOrDefault(x => x.Name.EqualsIgnoreCase(rawRecipe.Tag.Replace("minecraft:", "")));
-                    foreach (var id in tag.Entries)
+                    foreach (var id in tag!.Entries)
                     {
                         var item = ItemsRegistry.Get(id);
 
@@ -31,7 +30,7 @@ public class IngredientConverter : JsonConverter<Ingredient>
                 }
                 else
                 {
-                    var i = ItemsRegistry.Get(rawRecipe.Item);
+                    var i = ItemsRegistry.Get(rawRecipe.Item!);
 
                     ingredient.Add(new ItemStack(i.Type, (short)rawRecipe.Count));
                 }
@@ -43,18 +42,18 @@ public class IngredientConverter : JsonConverter<Ingredient>
         {
             var ingredient = element.ValueKind == JsonValueKind.String ? new RawRecipeItem { Item = element.ToString() } : element.ToString().FromJson<RawRecipeItem>(); ;
 
-            return new Ingredient { ItemsRegistry.GetSingleItem(ingredient.Item) };
+            return new Ingredient { ItemsRegistry.GetSingleItem(ingredient.Item!) };
         }
     }
 
     public override void Write(Utf8JsonWriter writer, Ingredient value, JsonSerializerOptions options) => throw new NotImplementedException();
 
-    private class RawRecipeItem
+    private readonly struct RawRecipeItem
     {
-        public string Item { get; set; }
+        public string? Item { get; init; }
 
-        public string Tag { get; set; }
+        public string? Tag { get; init; }
 
-        public int Count { get; set; }
+        public int Count { get; init; }
     }
 }

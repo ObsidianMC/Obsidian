@@ -10,7 +10,6 @@ internal sealed class Assets
     public Item[] Items { get; }
 
     public Dictionary<string, Codec[]> Codecs { get; }
-
     private Assets(Block[] blocks, Tag[] tags, Item[] items, Dictionary<string, Codec[]> codecs)
     {
         Blocks = blocks;
@@ -49,13 +48,13 @@ internal sealed class Assets
 
         var dimensions = new List<Codec>();
 
-        var dimensionElements = document.RootElement.GetProperty("value").EnumerateArray();
+        var codecElements = document.RootElement.GetProperty("value").EnumerateArray();
 
-        foreach (var dimension in dimensionElements)
+        foreach (var codec in codecElements)
         {
-            var obj = new Codec(dimension.GetProperty("name").GetString(), dimension.GetProperty("id").GetInt32());
+            var obj = new Codec(codec.GetProperty("name").GetString()!, codec.GetProperty("id").GetInt32());
 
-            foreach (var property in dimension.EnumerateObject())
+            foreach (var property in codec.EnumerateObject())
             {
                 if (property.Name is "name" or "id")
                     continue;
