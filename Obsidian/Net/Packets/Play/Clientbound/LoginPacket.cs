@@ -6,13 +6,7 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public class MixedCodec
-{
-    public CodecCollection<int, DimensionCodec> Dimensions { get; init; }
-    public CodecCollection<int, BiomeCodec> Biomes { get; init; }
-
-    public CodecCollection<int, ChatCodec> ChatTypes { get; init; }
-}
+public sealed class MixedCodec { }
 
 public partial class LoginPacket : IClientboundPacket
 {

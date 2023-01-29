@@ -2,7 +2,7 @@
 
 public sealed record class BiomeParticle
 {
-    public float Probability { get; set; }
+    public required float Probability { get; set; }
 
-    public BiomeOption Options { get; set; }
+    public required BiomeOption Options { get; set; }
 }

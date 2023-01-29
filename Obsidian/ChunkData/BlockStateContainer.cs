@@ -1,6 +1,6 @@
 ﻿using Obsidian.Net;
+using Obsidian.Registries;
 using Obsidian.Utilities.Collection;
-using Obsidian.Utilities.Registry;
 
 namespace Obsidian.ChunkData;
 

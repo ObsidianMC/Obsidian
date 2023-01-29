@@ -2,6 +2,7 @@
 using Obsidian.API.Registry.Codecs.Chat;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.Nbt;
+using Obsidian.Registries;
 
 namespace Obsidian.Utilities;
 
@@ -88,7 +89,7 @@ public partial class Extensions
         if (item is null)
             return null;
 
-        var itemStack = Registry.Registry.GetSingleItem(item.GetString("id"));
+        var itemStack = ItemsRegistry.GetSingleItem(item.GetString("id"));
 
         var itemMetaBuilder = new ItemMetaBuilder();
 
@@ -354,13 +355,15 @@ public partial class Extensions
         var elements = new NbtCompound("element")
         {
             new NbtTag<string>("precipitation", value.Element.Precipitation),
-            new NbtTag<string>("category", value.Element.Category),
 
             new NbtTag<float>("depth", value.Element.Depth),
             new NbtTag<float>("temperature", value.Element.Temperature),
             new NbtTag<float>("scale", value.Element.Scale),
             new NbtTag<float>("downfall", value.Element.Downfall)
         };
+
+        if (!value.Element.Category.IsNullOrEmpty())
+            elements.Add(new NbtTag<string>("category", value.Element.Category!));
 
         value.Element.Effects.WriteEffect(elements);
 

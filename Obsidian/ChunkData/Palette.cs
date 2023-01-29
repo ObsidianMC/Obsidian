@@ -1,4 +1,4 @@
-﻿using Obsidian.Utilities.Registry;
+﻿using Obsidian.Registries;
 
 namespace Obsidian.ChunkData;
 
@@ -14,11 +14,11 @@ public static class Palette
         return new GlobalBlockStatePalette(BlocksRegistry.GlobalBitsPerBlocks);
     }
 
-    public static IPalette<Biomes> DetermineBiomePalette(this byte bitsPerEntry)
+    public static IPalette<Biome> DetermineBiomePalette(this byte bitsPerEntry)
     {
         if (bitsPerEntry <= 3)
-            return new InternalIndirectPalette<Biomes>(bitsPerEntry);
+            return new InternalIndirectPalette<Biome>(bitsPerEntry);
 
-        return new GlobalBiomePalette(Registry.GlobalBitsPerBiomes);
+        return new GlobalBiomePalette(CodecRegistry.Biomes.GlobalBitsPerEntry);
     }
 }

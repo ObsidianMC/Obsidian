@@ -1,12 +1,9 @@
 ﻿using Obsidian.Commands;
 using Obsidian.Nbt;
+using Obsidian.Registries;
 using Obsidian.Serialization.Attributes;
-using Obsidian.Utilities.Registry;
 using System.Buffers.Binary;
-using System.ComponentModel;
 using System.IO;
-using System.Net.WebSockets;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Obsidian.Net;
@@ -581,7 +578,7 @@ public partial class MinecraftStream
 
         if (present)
         {
-            var item = Registry.GetItem(ReadVarInt());
+            var item = ItemsRegistry.Get(ReadVarInt());
 
             var itemStack = new ItemStack(item.Type, ReadUnsignedByte())
             {
@@ -693,7 +690,7 @@ public partial class MinecraftStream
 
         if (present)
         {
-            var item = Registry.GetItem((short)await this.ReadVarIntAsync());
+            var item = ItemsRegistry.Get((short)await this.ReadVarIntAsync());
 
             var itemStack = new ItemStack(item.Type, await this.ReadByteAsync())
             {

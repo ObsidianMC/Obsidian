@@ -9,7 +9,7 @@ public partial class RegistryAssetsGenerator
         var builder = new CodeBuilder();
         builder.Using("Obsidian.Net.Packets.Play.Clientbound");
         builder.Line();
-        builder.Namespace("Obsidian.Utilities.Registry");
+        builder.Namespace("Obsidian.Registries");
         builder.Line();
         builder.Type("internal static class TagsRegistry");
 

@@ -3,7 +3,7 @@ using Obsidian.Commands.Framework;
 using Obsidian.Events;
 using Obsidian.Plugins.PluginProviders;
 using Obsidian.Plugins.ServiceProviders;
-using Obsidian.Utilities.Registry;
+using Obsidian.Registries;
 
 namespace Obsidian.Plugins;
 
@@ -143,7 +143,7 @@ public sealed class PluginManager
             {
                 commands.RegisterCommandClass(plugin, root, null);
             }
-            Registry.RegisterCommands((Server)server);
+            CommandsRegistry.Register((Server)server);
 
             plugin.Loaded = true;
             ExposePluginAsDependency(plugin);

@@ -2,7 +2,7 @@
 
 public sealed class SmeltingRecipe : IRecipe
 {
-    public string Identifier { get; internal set; }
+    public required string Identifier { get; init; }
 
     public required CraftingType Type { get; init; }
 
@@ -17,4 +17,6 @@ public sealed class SmeltingRecipe : IRecipe
     public required int CookingTime { get; init; }
 
     public required CookingBookCategory Category { get; init; }
+
+    internal SmeltingRecipe() { }
 }

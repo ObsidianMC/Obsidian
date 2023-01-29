@@ -11,9 +11,9 @@ public partial class RegistryAssetsGenerator
         builder.Using("Obsidian.API");
         builder.Using("Obsidian.Items");
         builder.Line();
-        builder.Namespace("Obsidian.Utilities.Registry");
+        builder.Namespace("Obsidian.Registries");
         builder.Line();
-        builder.Type("public static class ItemsRegistry");
+        builder.Type("public static partial class ItemsRegistry");
 
         builder.Statement("internal static Dictionary<Material, Item> Items = new()");
 

@@ -145,6 +145,20 @@ public sealed class CodeBuilder
         return this;
     }
 
+    public CodeBuilder EndScope(string code, bool semicolon)
+    {
+        _indent--;
+        if (semicolon)
+        {
+            AppendLine($"}}{code};");
+        }
+        else
+        {
+            AppendLine($"}}{code}");
+        }
+        return this;
+    }
+
     public CodeBuilder XmlSummary(string summary)
     {
         return Xml("summary", summary, inline: false);

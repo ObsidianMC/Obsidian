@@ -1,9 +1,7 @@
-﻿using Obsidian.API.Registry.Converters;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace Obsidian.API.Registry.Codecs.Dimensions;
 
-[JsonConverter(typeof(DimensionElementConverter))]
 public sealed record class DimensionElement
 {
     public int MonsterSpawnBlockLightLimit { get; set; }

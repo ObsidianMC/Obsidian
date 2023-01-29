@@ -12,8 +12,8 @@ using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Net.Packets.Status;
+using Obsidian.Registries;
 using Obsidian.Utilities.Mojang;
-using Obsidian.Utilities.Registry;
 using Obsidian.WorldData;
 using System.Diagnostics;
 using System.Net;
@@ -497,7 +497,7 @@ public sealed class Client : IDisposable
             Logger.LogError("Failed to add player {Username} to online players. Undefined behavior ahead!", Player.Username);
         }
 
-        if (!Registry.TryGetDimensionCodec(Player.World.DimensionName, out var codec) || !Registry.TryGetDimensionCodec("minecraft:overworld", out codec))
+        if (!CodecRegistry.TryGetDimension(Player.World.DimensionName, out var codec) || !CodecRegistry.TryGetDimension("minecraft:overworld", out codec))
         {
             // TODO: Change the exception type to be more specific
             throw new ApplicationException("Failed to retrieve proper dimension for player.");
@@ -507,13 +507,8 @@ public sealed class Client : IDisposable
         {
             EntityId = id,
             Gamemode = Player.Gamemode,
-            DimensionNames = Registry.Dimensions.Values.Select(x => x.Name).ToList(),
-            Codecs = new MixedCodec
-            {
-                Dimensions = Registry.Dimensions,
-                Biomes = Registry.Biomes,
-                ChatTypes = Registry.ChatTypes
-            },
+            DimensionNames = CodecRegistry.Dimensions.All.Keys.ToList(),
+            Codecs = new(),
             DimensionType = codec.Name,
             DimensionName = codec.Name,
             HashedSeed = 0,
@@ -531,8 +526,8 @@ public sealed class Client : IDisposable
         await QueuePacketAsync(new UpdateRecipeBookPacket
         {
             Action = UnlockRecipeAction.Init,
-            FirstRecipeIds = Registry.Recipes.Keys.ToList(),
-            SecondRecipeIds = Registry.Recipes.Keys.ToList()
+            FirstRecipeIds = RecipesRegistry.Recipes.Keys.ToList(),
+            SecondRecipeIds = RecipesRegistry.Recipes.Keys.ToList()
         });
 
         await SendPlayerListDecoration();
@@ -628,7 +623,7 @@ public sealed class Client : IDisposable
         //}).ConfigureAwait(false);
     }
 
-    internal Task SendCommandsAsync() => QueuePacketAsync(Registry.CommandsPacket);
+    internal Task SendCommandsAsync() => QueuePacketAsync(CommandsRegistry.Packet);
 
     internal Task RemovePlayerFromListAsync(IPlayer player) => QueuePacketAsync(new PlayerInfoRemovePacket
     {

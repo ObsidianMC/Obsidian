@@ -1,5 +1,4 @@
-﻿using Obsidian.API;
-using Obsidian.API.Advancements;
+﻿using Obsidian.API.Advancements;
 using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registry.Codecs.Dimensions;
@@ -10,10 +9,8 @@ using Obsidian.Net.Actions.BossBar;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.WindowProperties;
+using Obsidian.Registries;
 using Obsidian.Serialization.Attributes;
-using Obsidian.Utilities.Mojang;
-using Obsidian.Utilities.Registry;
-using Org.BouncyCastle.Utilities;
 using System.Buffers.Binary;
 using System.Text;
 
@@ -526,7 +523,7 @@ public partial class MinecraftStream
             this.WriteChat(advancement.Display.Title);
             this.WriteChat(advancement.Display.Description);
 
-            this.WriteItemStack(Registry.GetSingleItem(advancement.Display.Icon.Type));
+            this.WriteItemStack(ItemsRegistry.GetSingleItem(advancement.Display.Icon.Type));
 
             this.WriteVarInt(advancement.Display.AdvancementFrameType);
 
@@ -688,41 +685,41 @@ public partial class MinecraftStream
     }
 
     [WriteMethod]
-    public void WriteMixedCodec(MixedCodec value)
+    public void WriteMixedCodec(MixedCodec _)
     {
         var writer = new NbtWriter(this, "");
 
         var list = new NbtList(NbtTagType.Compound, "value");
 
-        foreach (var (_, codec) in value.Dimensions)
+        foreach (var (_, codec) in CodecRegistry.Dimensions.All)
             codec.Write(list);
 
-        var dimensions = new NbtCompound(value.Dimensions.Name)
+        var dimensions = new NbtCompound(CodecRegistry.Dimensions.CodecKey)
         {
-            new NbtTag<string>("type", value.Dimensions.Name),
+            new NbtTag<string>("type", CodecRegistry.Dimensions.CodecKey),
 
             list
         };
 
         writer.WriteTag(dimensions);
 
-        this.WriteBiomeCodec(value, writer);
-        this.WriteChatCodec(value, writer);
+        this.WriteBiomeCodec(writer);
+        this.WriteChatCodec(writer);
 
         writer.EndCompound();
         writer.TryFinish();
     }
 
-    private void WriteChatCodec(MixedCodec value, NbtWriter writer)
+    private void WriteChatCodec(NbtWriter writer)
     {
         var chatTypes = new NbtList(NbtTagType.Compound, "value");
 
-        foreach (var (_, chatType) in value.ChatTypes)
+        foreach (var (_, chatType) in CodecRegistry.ChatType.All)
             chatType.Write(chatTypes);
 
-        var chatTypesCompound = new NbtCompound(value.ChatTypes.Name)
+        var chatTypesCompound = new NbtCompound(CodecRegistry.ChatType.CodecKey)
         {
-            new NbtTag<string>("type", value.ChatTypes.Name),
+            new NbtTag<string>("type", CodecRegistry.ChatType.CodecKey),
 
             chatTypes
         };
@@ -730,16 +727,16 @@ public partial class MinecraftStream
         writer.WriteTag(chatTypesCompound);
     }
 
-    private void WriteBiomeCodec(MixedCodec value, NbtWriter writer)
+    private void WriteBiomeCodec(NbtWriter writer)
     {
         var biomes = new NbtList(NbtTagType.Compound, "value");
 
-        foreach (var (_, biome) in value.Biomes)
+        foreach (var (_, biome) in CodecRegistry.Biomes.All)
             biome.Write(biomes);
 
-        var biomeCompound = new NbtCompound(value.Biomes.Name)
+        var biomeCompound = new NbtCompound(CodecRegistry.Biomes.CodecKey)
         {
-            new NbtTag<string>("type", value.Biomes.Name),
+            new NbtTag<string>("type", CodecRegistry.Biomes.CodecKey),
 
             biomes
         };

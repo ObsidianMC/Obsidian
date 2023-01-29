@@ -1,5 +1,4 @@
-﻿using Obsidian.Utilities.Registry;
-using Obsidian.WorldData.Generators.Overworld;
+﻿using Obsidian.Registries;
 using Obsidian.WorldData.Generators.Overworld.Decorators;
 
 namespace Obsidian.WorldData.Generators;
@@ -31,7 +30,7 @@ public sealed class OverworldGenerator : IWorldGenerator
                 // Determine Biome
                 if (bx % 4 == 0 && bz % 4 == 0) // Biomes are in 4x4x4 blocks. Do a 2D array for now and just copy it vertically.
                 {
-                    var biome = (Biomes)helper.Noise.Biome.GetValue(worldX, 0, worldZ);
+                    var biome = (Biome)helper.Noise.Biome.GetValue(worldX, 0, worldZ);
                     for (int y = -64; y < 320; y += 4)
                     {
                         chunk.SetBiome(bx, y, bz, biome);

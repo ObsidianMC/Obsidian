@@ -1,11 +1,11 @@
-﻿using Obsidian.Utilities.Registry;
+﻿using Obsidian.Registries;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 
 public class RiverDecorator : BaseDecorator
 {
 
-    public RiverDecorator(Biomes biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
+    public RiverDecorator(Biome biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
     }
 

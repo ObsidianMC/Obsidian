@@ -9,11 +9,13 @@ internal sealed class Assets
     public Tag[] Tags { get; }
     public Item[] Items { get; }
 
-    private Assets(Block[] blocks, Tag[] tags, Item[] items)
+    public Dictionary<string, Codec[]> Codecs { get; }
+    private Assets(Block[] blocks, Tag[] tags, Item[] items, Dictionary<string, Codec[]> codecs)
     {
         Blocks = blocks;
         Tags = tags;
         Items = items;
+        Codecs = codecs;
     }
 
     public static Assets Get(ImmutableArray<(string name, string json)> files, SourceProductionContext ctx)
@@ -22,8 +24,51 @@ internal sealed class Assets
         Fluid[] fluids = GetFluids(files.GetJsonFromArray("fluids"));
         Tag[] tags = GetTags(files.GetJsonFromArray("tags"), blocks, fluids);
         Item[] items = GetItems(files.GetJsonFromArray("items"));
+        Dictionary<string, Codec[]> codecs = GetCodecs(files);
 
-        return new Assets(blocks, tags, items);
+        return new Assets(blocks, tags, items, codecs);
+    }
+
+    public static Dictionary<string, Codec[]> GetCodecs(ImmutableArray<(string name, string json)> files)
+    {
+        return new Dictionary<string, Codec[]>
+        {
+            { "dimensions", ParseCodec(files.GetJsonFromArray("dimensions")) },
+            { "biomes", ParseCodec(files.GetJsonFromArray("biomes")) },
+            { "chat_type", ParseCodec(files.GetJsonFromArray("chat_type")) },
+        };
+    }
+
+    private static Codec[] ParseCodec(string json)
+    {
+        if (json is null)
+            return Array.Empty<Codec>();
+
+        using var document = JsonDocument.Parse(json);
+
+        var dimensions = new List<Codec>();
+
+        var codecElements = document.RootElement.GetProperty("value").EnumerateArray();
+
+        foreach (var codec in codecElements)
+        {
+            var obj = new Codec(codec.GetProperty("name").GetString()!, codec.GetProperty("id").GetInt32());
+
+            foreach (var property in codec.EnumerateObject())
+            {
+                if (property.Name is "name" or "id")
+                    continue;
+
+                foreach (var elementProperty in property.Value.EnumerateObject())
+                {
+                    obj.Properties.Add(elementProperty.Name.ToPascalCase(), elementProperty.Value.Clone());
+                }
+            }
+
+            dimensions.Add(obj);
+        }
+
+        return dimensions.ToArray();
     }
 
     public static Fluid[] GetFluids(string? json)
@@ -36,7 +81,7 @@ internal sealed class Assets
 
         var fluidProperties = document.RootElement.EnumerateObject();
 
-        foreach(JsonProperty property in fluidProperties)
+        foreach (JsonProperty property in fluidProperties)
         {
             var name = property.Name;
 
@@ -108,7 +153,7 @@ internal sealed class Assets
             taggables.Add(block.Tag, block);
         }
 
-        foreach(Fluid fluid in fluids)
+        foreach (Fluid fluid in fluids)
             taggables.Add(fluid.Tag, fluid);
 
         var tags = new List<Tag>();

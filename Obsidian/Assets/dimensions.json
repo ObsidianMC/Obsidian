@@ -112,5 +112,6 @@
       "name": "minecraft:overworld_caves",
       "id": 3
     }
-  ]
+  ],
+  "type": "minecraft:dimension_type"
 }

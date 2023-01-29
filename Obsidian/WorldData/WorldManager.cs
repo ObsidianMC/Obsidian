@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.Utilities.Registry;
+using Obsidian.Registries;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.WorldData;
@@ -35,7 +35,7 @@ public sealed class WorldManager
 
             var world = new World(serverWorld.Name, this.server, serverWorld.Seed, value);
 
-            if (!Registry.TryGetDimensionCodec(serverWorld.DefaultDimension, out var defaultCodec) || !Registry.TryGetDimensionCodec("minecraft:overworld", out defaultCodec))
+            if (!CodecRegistry.TryGetDimension(serverWorld.DefaultDimension, out var defaultCodec) || !CodecRegistry.TryGetDimension("minecraft:overworld", out defaultCodec))
                 throw new InvalidOperationException("Failed to get default dimension codec.");
 
             if (!await world.LoadAsync(defaultCodec))
@@ -47,7 +47,7 @@ public sealed class WorldManager
                 //TODO maybe make a method that takes in params
                 foreach (var dimensionName in serverWorld.ChildDimensions)
                 {
-                    if (!Registry.TryGetDimensionCodec(dimensionName, out var codec))
+                    if (!CodecRegistry.TryGetDimension(dimensionName, out var codec))
                     {
                         this.server.Logger.LogWarning($"Failed to find dimension with the name {dimensionName}");
                         continue;

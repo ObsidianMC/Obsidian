@@ -1,6 +1,6 @@
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Entities;
-using Obsidian.Utilities.Registry;
+using Obsidian.Registries;
 using Obsidian.WorldData;
 using System.Data;
 using System.Diagnostics;
@@ -192,7 +192,7 @@ public class MainCommandModule
     [Command("declarecmds", "declarecommands")]
     [CommandInfo("Debug command for testing the Declare Commands packet", "/declarecmds")]
     [IssuerScope(CommandIssuers.Client)]
-    public Task DeclareCommandsTestAsync(CommandContext ctx) => ((Player)ctx.Player).client.QueuePacketAsync(Registry.CommandsPacket);
+    public Task DeclareCommandsTestAsync(CommandContext ctx) => ((Player)ctx.Player).client.QueuePacketAsync(CommandsRegistry.Packet);
 
     [Command("gamemode")]
     [CommandInfo("Change your gamemode.", "/gamemode <survival/creative/adventure/spectator>")]
