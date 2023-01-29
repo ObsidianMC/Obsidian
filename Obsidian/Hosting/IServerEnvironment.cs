@@ -43,6 +43,6 @@ public interface IServerEnvironment
     /// Create a <see cref="DefaultServerEnvironment"/> asynchronously, which is aimed for use in Console Applications.
     /// </summary>
     /// <returns></returns>
-    public static Task<DefaultServerEnvironment> CreateDefaultAsync(ILogger logger) => DefaultServerEnvironment.CreateAsync(logger);
+    public static Task<DefaultServerEnvironment> CreateDefaultAsync() => DefaultServerEnvironment.CreateAsync();
 
 }
