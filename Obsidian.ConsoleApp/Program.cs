@@ -9,32 +9,28 @@ namespace Obsidian.ConsoleApp;
 
 public static class Program
 {
-#if DEBUG
-    const LogLevel LOGLEVEL = LogLevel.Trace;
-#else
-    const LogLevel LOGLEVEL = LogLevel.Information;
-#endif
     private static async Task Main()
     {
-        var loggerProvider = new LoggerProvider(LOGLEVEL);
-        var startupLogger = loggerProvider.CreateLogger("Startup");
-
         Console.Title = $"Obsidian for {Server.DefaultProtocol} ({Server.VERSION})";
         Console.BackgroundColor = ConsoleColor.White;
         Console.ForegroundColor = ConsoleColor.Black;
         Console.CursorVisible = false;
         Console.WriteLine(asciilogo);
         Console.ResetColor();
-        startupLogger.LogInformation("A C# implementation of the Minecraft server protocol. Targeting: {description}", Server.DefaultProtocol.GetDescription());
 
-        IServerEnvironment env = await IServerEnvironment.CreateDefaultAsync(startupLogger);
+        var env = await IServerEnvironment.CreateDefaultAsync();
+
+        var loggerProvider = new LoggerProvider(env.Configuration.LogLevel);
+        var startupLogger = loggerProvider.CreateLogger("Startup");
+
+        startupLogger.LogInformation("A C# implementation of the Minecraft server protocol. Targeting: {description}", Server.DefaultProtocol.GetDescription());
 
         var host = Host.CreateDefaultBuilder()
             .ConfigureLogging(options =>
             {
                 options.ClearProviders();
                 options.AddProvider(loggerProvider);
-                options.SetMinimumLevel(LOGLEVEL);
+                options.SetMinimumLevel(env.Configuration.LogLevel);
                 //  Shhh... Only let Microsoft log when stuff crashes.
                 //options.AddFilter("Microsoft", LogLevel.Warning);
             })
