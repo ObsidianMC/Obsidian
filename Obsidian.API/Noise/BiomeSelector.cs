@@ -60,10 +60,10 @@ public class BiomeSelector : Module
             var riverVal = SourceModules[4].GetValue(x, 0, z);
             if (riverVal < 0)
             {
-                return (double)Biomes.River;
+                return (double)Biome.River;
             }
         }
-        if (heightVal >= -0.1 && heightVal < 0.019) { return (double)Biomes.Beach; }
+        if (heightVal >= -0.1 && heightVal < 0.019) { return (double)Biome.Beach; }
         var heightIndex = heightVal switch
         {
             double v when v < -0.6 => 0,
