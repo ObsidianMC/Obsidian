@@ -2,7 +2,7 @@
 
 public sealed class ShapelessRecipe : IRecipe
 {
-    public string Identifier { get; internal set; }
+    public required string Identifier { get; init; }
 
     public required CraftingType Type { get; init; }
 
@@ -13,4 +13,6 @@ public sealed class ShapelessRecipe : IRecipe
     public required Ingredient Result { get; init; }
 
     public required IReadOnlyList<Ingredient> Ingredients { get; init; }
+
+    internal ShapelessRecipe() { }
 }

@@ -1,4 +1,4 @@
-﻿using Obsidian.Utilities.Registry;
+﻿using Obsidian.Registries;
 using Obsidian.WorldData.Generators.Overworld.Features.Flora;
 using Obsidian.WorldData.Generators.Overworld.Features.Trees;
 
@@ -6,7 +6,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 
 public class BirchForestDecorator : BaseDecorator
 {
-    public BirchForestDecorator(Biomes biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
+    public BirchForestDecorator(Biome biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, typeof(OakTree)));
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(6, typeof(BirchTree)));

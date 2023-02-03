@@ -3,7 +3,7 @@
 public class LukewarmOceanDecorator : OceanDecorator
 {
 
-    public LukewarmOceanDecorator(Biomes biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
+    public LukewarmOceanDecorator(Biome biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
         primarySurface = sand;
         secondarySurface = clay;

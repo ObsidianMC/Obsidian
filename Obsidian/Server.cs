@@ -16,7 +16,7 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Net.Rcon;
 using Obsidian.Plugins;
-using Obsidian.Utilities.Registry;
+using Obsidian.Registries;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators;
 using System.Diagnostics;
@@ -166,7 +166,7 @@ public partial class Server : IServer
     public void RegisterRecipes(params IRecipe[] recipes)
     {
         foreach (var recipe in recipes)
-            Registry.Recipes.Add(recipe.Identifier.ToSnakeCase(), recipe);
+            RecipesRegistry.Recipes.Add(recipe.Identifier.ToSnakeCase(), recipe);
     }
 
     /// <summary>
@@ -254,10 +254,9 @@ public partial class Server : IServer
             return;
         }
 
-        await UserCache.LoadAsync(this._cancelTokenSource.Token);
+        await RecipesRegistry.InitializeAsync();
 
-        await Task.WhenAll(Registry.RegisterCodecsAsync(),
-                           Registry.RegisterRecipesAsync());
+        await UserCache.LoadAsync(this._cancelTokenSource.Token);
 
         _logger.LogInformation($"Loading properties...");
 
@@ -282,7 +281,7 @@ public partial class Server : IServer
         if (!Config.OnlineMode)
             _logger.LogInformation($"Starting in offline mode...");
 
-        Registry.RegisterCommands(this);
+        CommandsRegistry.Register(this);
 
         var serverTasks = new List<Task>()
         {
@@ -472,7 +471,7 @@ public partial class Server : IServer
 
     internal async Task BroadcastNewCommandsAsync()
     {
-        Registry.RegisterCommands(this);
+        CommandsRegistry.Register(this);
         foreach (Player player in Players)
             await player.client.SendCommandsAsync();
     }
@@ -586,7 +585,7 @@ public partial class Server : IServer
 
                 BroadcastPacket(new BlockUpdatePacket(digging.Position, 0));
 
-                var droppedItem = Registry.GetItem(block.Material);
+                var droppedItem = ItemsRegistry.Get(block.Material);
 
                 if (droppedItem.Id == 0) { break; }
 

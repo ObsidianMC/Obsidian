@@ -8,7 +8,7 @@ public partial class RegistryAssetsGenerator
     {
         var builder = new CodeBuilder();
 
-        builder.Namespace("Obsidian.Utilities.Registry");
+        builder.Namespace("Obsidian.Registries");
         builder.Line();
         builder.Type("internal static partial class BlocksRegistry");
 

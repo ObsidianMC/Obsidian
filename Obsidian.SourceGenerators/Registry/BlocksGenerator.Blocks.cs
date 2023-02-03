@@ -9,7 +9,7 @@ public partial class BlocksGenerator
         var blocksBuilder = new CodeBuilder()
             .Using("Obsidian.Blocks")
             .Line()
-            .Namespace("Obsidian.Utilities.Registry")
+            .Namespace("Obsidian.Registries")
             .Type("internal partial class BlocksRegistry");
 
         foreach (var block in blocks)

@@ -1,6 +1,6 @@
 ﻿using Obsidian.API;
 using Obsidian.API.BlockStates.Builders;
-using Obsidian.Utilities.Registry;
+using Obsidian.Registries;
 
 namespace Obsidian.WorldData.Generators.Overworld.Features.Trees;
 

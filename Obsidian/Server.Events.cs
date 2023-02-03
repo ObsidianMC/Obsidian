@@ -3,7 +3,6 @@ using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Utilities.Registry;
 
 namespace Obsidian;
 

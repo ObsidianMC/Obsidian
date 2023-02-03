@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 
@@ -39,7 +40,7 @@ public sealed class DefaultServerEnvironment : IServerEnvironment
             await server.ExecuteCommand(input);
         }
     }
-     
+
     Task IServerEnvironment.OnServerStoppedGracefullyAsync(ILogger logger)
     {
         logger.LogInformation("Goodbye!");
@@ -71,13 +72,13 @@ public sealed class DefaultServerEnvironment : IServerEnvironment
     /// Create a <see cref="DefaultServerEnvironment"/> asynchronously.
     /// </summary>
     /// <returns></returns>
-    public static async Task<DefaultServerEnvironment> CreateAsync(ILogger logger)
+    public static async Task<DefaultServerEnvironment> CreateAsync()
     {
-        var config = await LoadServerConfigurationAsync(logger);
-        var worlds = await LoadServerWorldsAsync(logger);
+        var config = await LoadServerConfigurationAsync();
+        var worlds = await LoadServerWorldsAsync();
         return new DefaultServerEnvironment(true, config, worlds);
     }
-    private static async Task<ServerConfiguration> LoadServerConfigurationAsync(ILogger logger)
+    private static async Task<ServerConfiguration> LoadServerConfigurationAsync()
     {
         if (!Directory.Exists("config"))
             Directory.CreateDirectory("config");
@@ -93,17 +94,20 @@ public sealed class DefaultServerEnvironment : IServerEnvironment
 
         var config = new ServerConfiguration();
 
-        using (var fileStream = configFile.Create())
-            await config.ToJsonAsync(fileStream);
+        using var fileStream = configFile.Create();
 
-        logger.LogInformation($"Created new configuration file for Server");
-        logger.LogInformation($"Please fill in your config with the values you wish to use for your server.");
-        logger.LogInformation(configFile.FullName);
+        await config.ToJsonAsync(fileStream);
+
+        Console.WriteLine($"Created new configuration file for Server");
+        Console.WriteLine($"Please fill in your config with the values you wish to use for your server.");
+        Console.WriteLine(configFile.FullName);
+
         Console.ReadKey();
         Environment.Exit(0);
-        throw new Exception("Unreachable");
+
+        throw new UnreachableException();
     }
-    private static async Task<List<ServerWorld>> LoadServerWorldsAsync(ILogger logger)
+    private static async Task<List<ServerWorld>> LoadServerWorldsAsync()
     {
         if (!Directory.Exists("config"))
             Directory.CreateDirectory("config");
@@ -129,10 +133,8 @@ public sealed class DefaultServerEnvironment : IServerEnvironment
                 }
             };
 
-
         using var fileStream = worldsFile.Create();
         await worlds.ToJsonAsync(fileStream);
-
 
         return worlds;
     }

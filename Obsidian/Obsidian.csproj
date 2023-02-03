@@ -28,8 +28,8 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-	  <Deterministic>False</Deterministic>
-	  <SourceRevisionId>$(GIT_SHA)</SourceRevisionId>
+		<Deterministic>False</Deterministic>
+		<SourceRevisionId>$(GIT_SHA)</SourceRevisionId>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -72,47 +72,29 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<EmbeddedResource Remove="Assets\biomes.json" />
+		<EmbeddedResource Remove="Assets\chat_type.json" />
+		<EmbeddedResource Remove="Assets\dimensions.json" />
 		<EmbeddedResource Remove="Assets\blocks.json" />
-		<EmbeddedResource Remove="Assets\default_dimensions.xaml" />
 		<EmbeddedResource Remove="Assets\items.json" />
 		<EmbeddedResource Remove="Assets\tags.json" />
 		<EmbeddedResource Remove="Assets\fluids.json" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<AdditionalFiles Include="Assets\blocks.json">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</AdditionalFiles>
-		<AdditionalFiles Include="Assets\items.json">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</AdditionalFiles>
-		<AdditionalFiles Include="Assets\tags.json">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</AdditionalFiles>
-		<AdditionalFiles Include="Assets\fluids.json">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</AdditionalFiles>
+		<AdditionalFiles Include="Assets\biomes.json" CopyToOutputDirectory="Never" />
+		<AdditionalFiles Include="Assets\blocks.json" CopyToOutputDirectory="Never" />
+		<AdditionalFiles Include="Assets\chat_type.json" CopyToOutputDirectory="Never" />
+		<AdditionalFiles Include="Assets\dimensions.json" CopyToOutputDirectory="Never" />
+		<AdditionalFiles Include="Assets\items.json" CopyToOutputDirectory="Never" />
+		<AdditionalFiles Include="Assets\tags.json" CopyToOutputDirectory="Never" />
+		<AdditionalFiles Include="Assets\fluids.json" CopyToOutputDirectory="Never" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\Obsidian.API\Obsidian.API.csproj" />
 		<ProjectReference Include="..\Obsidian.SourceGenerators\Obsidian.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 		<ProjectReference Include="..\Obsidian.Nbt\Obsidian.Nbt.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<EmbeddedResource Update="Assets\biome_codec.json">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</EmbeddedResource>
-		<EmbeddedResource Update="Assets\block_registry.json">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</EmbeddedResource>
-		<EmbeddedResource Update="Assets\chat_type_codec.json">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</EmbeddedResource>
-		<EmbeddedResource Update="Assets\default_dimensions.json">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</EmbeddedResource>
 	</ItemGroup>
 
 	<ItemGroup>

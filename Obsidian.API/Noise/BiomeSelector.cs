@@ -4,31 +4,37 @@ namespace Obsidian.API.Noise;
 
 public class BiomeSelector : Module
 {
-    // 3D: 4 heights, 4 temp, 3 humidity
-    private readonly Biomes[,,] BiomeLookup = new Biomes[4, 4, 3] {
+    // 3D: 5 heights, 4 temp, 3 humidity
+    private readonly Biome[,,] BiomeLookup = new Biome[5, 4, 3] {
         {
-            { Biomes.DeepFrozenOcean, Biomes.DeepFrozenOcean, Biomes.DeepFrozenOcean }, // deep ocean, frozen, low-med-high humidity
-            { Biomes.DeepColdOcean, Biomes.DeepColdOcean, Biomes.DeepColdOcean }, // deep ocean, cold, low-med-high humidity
-            { Biomes.DeepLukewarmOcean, Biomes.DeepLukewarmOcean, Biomes.DeepLukewarmOcean }, // deep ocean, warm, low-med-high humidity
-            { Biomes.DeepOcean, Biomes.DeepOcean, Biomes.DeepOcean }, // deep ocean, hot, low-med-high humidity
+            { Biome.DeepFrozenOcean, Biome.DeepFrozenOcean, Biome.DeepFrozenOcean }, // deep ocean, frozen, low-med-high humidity
+            { Biome.DeepColdOcean, Biome.DeepColdOcean, Biome.DeepColdOcean }, // deep ocean, cold, low-med-high humidity
+            { Biome.DeepLukewarmOcean, Biome.DeepLukewarmOcean, Biome.DeepLukewarmOcean }, // deep ocean, warm, low-med-high humidity
+            { Biome.DeepOcean, Biome.DeepOcean, Biome.DeepOcean }, // deep ocean, hot, low-med-high humidity
         },
         {
-            { Biomes.FrozenOcean, Biomes.FrozenOcean, Biomes.FrozenOcean }, //  ocean, frozen, low-med-high humidity
-            { Biomes.ColdOcean, Biomes.ColdOcean, Biomes.ColdOcean }, //  ocean, cold, low-med-high humidity
-            { Biomes.LukewarmOcean, Biomes.LukewarmOcean, Biomes.LukewarmOcean }, //  ocean, warm, low-med-high humidity
-            { Biomes.Ocean, Biomes.Ocean, Biomes.Ocean }, //  ocean, hot, low-med-high humidity
+            { Biome.FrozenOcean, Biome.FrozenOcean, Biome.FrozenOcean }, //  ocean, frozen, low-med-high humidity
+            { Biome.ColdOcean, Biome.ColdOcean, Biome.ColdOcean }, //  ocean, cold, low-med-high humidity
+            { Biome.LukewarmOcean, Biome.LukewarmOcean, Biome.LukewarmOcean }, //  ocean, warm, low-med-high humidity
+            { Biome.Ocean, Biome.Ocean, Biome.Ocean }, //  ocean, hot, low-med-high humidity
         },
         {
-            { Biomes.IceSpikes, Biomes.SnowyPlains, Biomes.SnowyTaiga }, // flatland, frozen, low-med-high humidity
-            { Biomes.Plains, Biomes.Plains, Biomes.Taiga }, // flatland, cold, low-med-high humidity
-            { Biomes.Forest, Biomes.Forest, Biomes.WindsweptSavanna }, // flatland, warm, low-med-high humidity
-            { Biomes.Savanna, Biomes.Desert, Biomes.Swamp }, // flatland, hot, low-med-high humidity
+            { Biome.IceSpikes, Biome.SnowyPlains, Biome.SnowyTaiga }, // flatland, frozen, low-med-high humidity
+            { Biome.Plains, Biome.Plains, Biome.Taiga }, // flatland, cold, low-med-high humidity
+            { Biome.Forest, Biome.Forest, Biome.WindsweptSavanna }, // flatland, warm, low-med-high humidity
+            { Biome.Savanna, Biome.Desert, Biome.Swamp }, // flatland, hot, low-med-high humidity
         },
         {
-            { Biomes.FrozenPeaks, Biomes.FrozenPeaks, Biomes.IceSpikes }, // mountains, frozen, low-med-high humidity
-            { Biomes.FrozenPeaks, Biomes.SnowySlopes, Biomes.SnowySlopes }, // mountains, cold, low-med-high humidity
-            { Biomes.StonyPeaks, Biomes.StonyPeaks, Biomes.JaggedPeaks }, // mountains, warm, low-med-high humidity
-            { Biomes.StonyPeaks, Biomes.JaggedPeaks, Biomes.JaggedPeaks }, // mountains, hot, low-med-high humidity
+            { Biome.WindsweptForest, Biome.SnowySlopes, Biome.SnowySlopes }, // hills, frozen, low-med-high humidity
+            { Biome.WindsweptHills, Biome.Grove, Biome.Forest }, // hills, cold, low-med-high humidity
+            { Biome.WindsweptGravellyHills, Biome.SunflowerPlains, Biome.Jungle }, // hills, warm, low-med-high humidity
+            { Biome.SavannaPlateau, Biome.Badlands, Biome.MangroveSwamp }, // hills, hot, low-med-high humidity
+        },
+        {
+            { Biome.FrozenPeaks, Biome.FrozenPeaks, Biome.IceSpikes }, // mountains, frozen, low-med-high humidity
+            { Biome.FrozenPeaks, Biome.SnowySlopes, Biome.SnowySlopes }, // mountains, cold, low-med-high humidity
+            { Biome.StonyPeaks, Biome.StonyPeaks, Biome.JaggedPeaks }, // mountains, warm, low-med-high humidity
+            { Biome.StonyPeaks, Biome.JaggedPeaks, Biome.JaggedPeaks }, // mountains, hot, low-med-high humidity
         }
     };
 

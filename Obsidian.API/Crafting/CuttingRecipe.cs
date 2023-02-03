@@ -2,7 +2,7 @@
 
 public sealed class CuttingRecipe : IRecipe
 {
-    public string Identifier { get; set; }
+    public required string Identifier { get; init; }
 
     public required CraftingType Type { get; init; }
 
@@ -13,4 +13,6 @@ public sealed class CuttingRecipe : IRecipe
     public required Ingredient Ingredient { get; init; }
 
     public required int Count { get; init; }
+
+    internal CuttingRecipe() { }
 }

@@ -2,7 +2,7 @@
 
 public sealed class SmithingRecipe : IRecipe
 {
-    public string Identifier { get; internal set; }
+    public required string Identifier { get; init; }
 
     public required CraftingType Type { get; init; }
 
@@ -13,4 +13,6 @@ public sealed class SmithingRecipe : IRecipe
     public required Ingredient Base { get; init; }
 
     public required Ingredient Addition { get; init; }
+
+    internal SmithingRecipe() { }
 }

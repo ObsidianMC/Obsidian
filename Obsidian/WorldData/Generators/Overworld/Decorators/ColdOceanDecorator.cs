@@ -3,7 +3,7 @@
 public class ColdOceanDecorator : OceanDecorator
 {
 
-    public ColdOceanDecorator(Biomes biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
+    public ColdOceanDecorator(Biome biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
         hasMagma = false;
         hasKelp = false;

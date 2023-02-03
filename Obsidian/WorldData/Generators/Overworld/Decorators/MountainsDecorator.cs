@@ -1,10 +1,10 @@
-﻿using Obsidian.Utilities.Registry;
+﻿using Obsidian.Registries;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 
 public class MountainsDecorator : BaseDecorator
 {
-    public MountainsDecorator(Biomes biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
+    public MountainsDecorator(Biome biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
     }
 

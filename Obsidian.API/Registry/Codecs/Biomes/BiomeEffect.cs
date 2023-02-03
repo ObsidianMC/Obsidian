@@ -2,15 +2,14 @@ namespace Obsidian.API.Registry.Codecs.Biomes;
 
 public sealed record class BiomeEffect
 {
-    public BiomeMusicEffect Music { get; set; }
+    public required BiomeMoodSound MoodSound { get; set; }
 
-    public string GrassColorModifier { get; set; }
-    public string AmbientSound { get; set; }
+    public string? GrassColorModifier { get; set; }
+    public string? AmbientSound { get; set; }
 
-    public BiomeAdditionSound AdditionsSound { get; set; }
-    public BiomeMoodSound MoodSound { get; set; }
-
-    public BiomeParticle Particle { get; set; }
+    public BiomeMusicEffect? Music { get; set; }
+    public BiomeAdditionSound? AdditionsSound { get; set; }
+    public BiomeParticle? Particle { get; set; }
 
     public int SkyColor { get; set; }
     public int WaterFogColor { get; set; }

@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API;
 
-public enum Biomes : int
+public enum Biome : int
 {
     Default = -1,
     Badlands = 0,

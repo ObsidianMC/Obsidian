@@ -1,9 +1,7 @@
-﻿using Microsoft.Win32;
-using Obsidian.Blocks;
+﻿using Obsidian.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Nbt;
 using Obsidian.Net;
-using Obsidian.Utilities.Registry;
 
 namespace Obsidian.WorldData;
 
@@ -70,9 +68,9 @@ public class Chunk
         return Sections[i].GetBlock(x, y, z);
     }
 
-    public Biomes GetBiome(Vector position) => GetBiome(position.X, position.Y, position.Z);
+    public Biome GetBiome(Vector position) => GetBiome(position.X, position.Y, position.Z);
 
-    public Biomes GetBiome(int x, int y, int z)
+    public Biome GetBiome(int x, int y, int z)
     {
         var i = SectionIndex(y);
 
@@ -83,9 +81,9 @@ public class Chunk
         return Sections[i].GetBiome(x, y, z);
     }
 
-    public void SetBiome(Vector position, Biomes biome) => SetBiome(position.X, position.Y, position.Z, biome);
+    public void SetBiome(Vector position, Biome biome) => SetBiome(position.X, position.Y, position.Z, biome);
 
-    public void SetBiome(int x, int y, int z, Biomes biome)
+    public void SetBiome(int x, int y, int z, Biome biome)
     {
         int i = SectionIndex(y);
 

@@ -1,13 +1,10 @@
-﻿using System.Text.Json.Serialization;
+﻿namespace Obsidian.API.Registry.Codecs.Dimensions;
 
-namespace Obsidian.API.Registry.Codecs.Dimensions;
-
-[JsonConverter(typeof(DimensionCodecConverter))]
 public sealed record class DimensionCodec : ICodec
 {
-    public string Name { get; set; }
+    public required string Name { get; init; }
 
-    public int Id { get; internal set; }
+    public required int Id { get; init; }
 
     public DimensionElement Element { get; internal set; } = new();
 

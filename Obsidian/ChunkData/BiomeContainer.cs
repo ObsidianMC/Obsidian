@@ -3,9 +3,9 @@ using Obsidian.Utilities.Collection;
 
 namespace Obsidian.ChunkData;
 
-public sealed class BiomeContainer : DataContainer<Biomes>
+public sealed class BiomeContainer : DataContainer<Biome>
 {
-    public override IPalette<Biomes> Palette { get; internal set; }
+    public override IPalette<Biome> Palette { get; internal set; }
 
     public override DataArray DataArray { get; protected set; }
 
@@ -15,13 +15,13 @@ public sealed class BiomeContainer : DataContainer<Biomes>
         this.DataArray = new(bitsPerEntry, 64);
     }
 
-    private BiomeContainer(IPalette<Biomes> palette, DataArray dataArray)
+    private BiomeContainer(IPalette<Biome> palette, DataArray dataArray)
     {
         Palette = palette;
         DataArray = dataArray;
     }
 
-    public void Set(int x, int y, int z, Biomes biome)
+    public void Set(int x, int y, int z, Biome biome)
     {
         var index = this.GetIndex(x, y, z);
 
@@ -33,7 +33,7 @@ public sealed class BiomeContainer : DataContainer<Biomes>
         this.DataArray[index] = paletteIndex;
     }
 
-    public Biomes Get(int x, int y, int z)
+    public Biome Get(int x, int y, int z)
     {
         var storageId = this.DataArray[this.GetIndex(x, y, z)];
 
