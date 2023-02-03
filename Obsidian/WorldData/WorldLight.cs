@@ -64,9 +64,10 @@ internal class WorldLight
 
             foreach (Vector dir in Vector.CardinalDirs)
             {
-                if (chunk.GetBlock(pos + (0, spreadY, 0) + dir).IsTransparent)
+                if (!chunk.GetBlock(pos + (0, spreadY, 0) + dir).IsTransparent)
                 {
                     chunk.SetLightLevel(pos + (0, spreadY, 0), lt, level);
+                    break;
                 }
             }
         }

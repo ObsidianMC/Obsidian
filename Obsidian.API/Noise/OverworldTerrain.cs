@@ -52,12 +52,12 @@ internal class OverworldTerrain : Module
         if (height > 0.1) // If above ocean, add erosion and rivers
         {
             var erosionVal = (SourceModules[2].GetValue(x, 0, z) + 2) / 1.0d;
-            //height *= erosionVal;
+            height *= erosionVal;
         }
         if (height >= 0.4) // Add mountain peaks/valleys
         {
-            var peakVal = Math.Min(SourceModules[4].GetValue(x, 0, z) + 3.5, 1.3);
-            //height *= peakVal;
+            var peakVal = Math.Min(SourceModules[4].GetValue(x, 0, z) + 3.5, 1.0);
+            height *= peakVal;
 
         }
         if (height > -0.1)
@@ -67,7 +67,7 @@ internal class OverworldTerrain : Module
         }        
 
         // Beash/Ocean flat, everything else amplified
-        //squash = height < 0.1 ? squash * 0.3d : 1.12 * Math.Pow(squash,3);
+        squash = height < 0.1 ? squash * 0.3d : 1.12 * Math.Pow(squash,3);
         double yOffset = y + (height * 128 * -1);
         double bias = yOffset - 192; // put half world height to 0
         bias = Math.Pow(bias, 3) / squash;

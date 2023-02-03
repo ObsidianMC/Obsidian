@@ -962,7 +962,7 @@ public class Player : Living, IPlayer
             client.LoadedChunks.TryRemove(chunkLoc);
         });
 
-        await Parallel.ForEachAsync(clientNeededChunks.Take(50), async (chunkLoc, _) =>
+        await Parallel.ForEachAsync(clientNeededChunks.Take(100), async (chunkLoc, _) =>
         {
             var chunk = await World.GetChunkAsync(chunkLoc.X, chunkLoc.Z);
             if (chunk is not null)
