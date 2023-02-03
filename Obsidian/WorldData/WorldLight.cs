@@ -1,4 +1,7 @@
 ﻿
+using Obsidian.Blocks;
+using System.Runtime.CompilerServices;
+
 namespace Obsidian.WorldData;
 
 internal class WorldLight
@@ -33,17 +36,17 @@ internal class WorldLight
                     }
                 }
 
-                var worldPos = new Vector(x + (chunk.X << 4), surfaceY, z + (chunk.Z << 4));
-                await SetLightAndSpread(worldPos, LightType.Sky, 15);
+                //var worldPos = new Vector(x + (chunk.X << 4), surfaceY, z + (chunk.Z << 4));
+                await SetLightAndSpread(new Vector(x, surfaceY, z), LightType.Sky, 15, chunk);
             }
         }
 
         //TODO: Check neighboring chunks (if exist) for light on edges
     }
 
-    public async Task SetLightAndSpread(Vector pos, LightType lt, int level)
+    public async Task SetLightAndSpread(Vector pos, LightType lt, int level, Chunk chunk)
     {
-        var chunk = await world.GetChunkAsync(pos, false);
+        //var chunk = await world.GetChunkAsync(pos, false);
         if (chunk is null) { return; }
         if (!chunk.isGenerated) { return; }
 
@@ -61,7 +64,7 @@ internal class WorldLight
 
             foreach (Vector dir in Vector.CardinalDirs)
             {
-                if (await world.GetBlockAsync(pos + (0, spreadY, 0) + dir) is { IsTransparent: false })
+                if (chunk.GetBlock(pos + (0, spreadY, 0) + dir).IsTransparent)
                 {
                     chunk.SetLightLevel(pos + (0, spreadY, 0), lt, level);
                 }
@@ -76,7 +79,17 @@ internal class WorldLight
         // No level lost for travelling vertically.
         foreach (Vector dir in Vector.CardinalDirs)
         {
-            var highY = await world.GetWorldSurfaceHeightAsync(pos.X + dir.X, pos.Z + dir.Z) + 1;
+            // If light would propogate to another chunk, bail out now
+            // TODO: don't bail out lol - get new chunk ref
+            if (pos.X == 0 && dir == Vector.West ||
+                pos.X == 15 && dir == Vector.East ||
+                pos.Z == 0 && dir == Vector.North ||
+                pos.Z == 15 && dir == Vector.South)
+            {
+                continue;
+            }
+
+            var highY = chunk.Heightmaps[ChunkData.HeightmapType.MotionBlocking].GetHeight(pos.X, pos.Z) + 1;
 
             // Spread up
             for (int spreadY = 1; spreadY < (highY - pos.Y); spreadY++)
@@ -84,28 +97,28 @@ internal class WorldLight
                 // To spread up, there must only be transparent blocks above the source
                 var upBlock = chunk.GetBlock(pos + (0, spreadY, 0));
                 if (!upBlock.IsTransparent) { break; }
-
+                
                 var scanPos = pos + dir + (0, spreadY, 0);
-                if (await world.GetBlockAsync(scanPos) is { IsTransparent: true })
+                if (chunk.GetBlock(scanPos).IsTransparent)
                 {
-                    if (await world.GetBlockAsync(scanPos + Vector.Down) is { IsTransparent: false })
+                    if (!chunk.GetBlock(scanPos + Vector.Down).IsTransparent)
                     {
-                        await SetLightAndSpread(scanPos + Vector.Down, lt, level);
+                        await SetLightAndSpread(scanPos + Vector.Down, lt, level, chunk);
                     }
                 }
             }
 
             // Spread down
             // To spread down, the block above the adjacent must be transparent
-            if (await world.GetBlockAsync(pos + dir + Vector.Up) is { IsTransparent: false }) { continue; }
+            if (!chunk.GetBlock(pos + dir + Vector.Up).IsTransparent) { continue; }
 
             // Find the first non-transparent block and set level
             for (int spreadY = 0; spreadY > (-64 - pos.Y); spreadY--)
             {
                 var scanPos = pos + dir + (0, spreadY, 0);
-                if (await world.GetBlockAsync(scanPos) is { IsTransparent: false })
+                if (!chunk.GetBlock(scanPos).IsTransparent)
                 {
-                    await SetLightAndSpread(scanPos, lt, level);
+                    await SetLightAndSpread(scanPos, lt, level, chunk);
                     break;
                 }
             }

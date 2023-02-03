@@ -66,7 +66,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                     }
                     finalValue /= yExtent;
                     finalValue *= 2.0f;
-                    finalValue -= 1;
+                    finalValue -= 1.33f;
                     DestNoiseMap[x, z] = finalValue;
                 }
             });

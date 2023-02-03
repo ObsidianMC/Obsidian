@@ -422,7 +422,7 @@ public class World : IWorld
     {
         long value = NumericsHelper.IntsToLong(regionX, regionZ);
 
-        if(this.Regions.TryGetValue(value, out var region))
+        if (this.Regions.TryGetValue(value, out var region))
         {
             if (await region.InitAsync())
                 _ = Task.Run(() => region.BeginTickAsync(this.Server._cancelTokenSource.Token));
@@ -485,9 +485,12 @@ public class World : IWorld
                 // Set chunk now so that it no longer comes back as null. #threadlyfe
                 region.SetChunk(c);
             }
-            c = await Generator.GenerateChunkAsync(job.x, job.z, c);
+            if (!c.isGenerated)
+            {
+                c = await Generator.GenerateChunkAsync(job.x, job.z, c);
+                //await worldLight.ProcessSkyLightForChunk(c);
+            }
             region.SetChunk(c);
-          // await worldLight.ProcessSkyLightForChunk(c);
         });
     }
 
