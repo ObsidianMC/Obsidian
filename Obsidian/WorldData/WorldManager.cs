@@ -11,7 +11,7 @@ public sealed class WorldManager
     private readonly Dictionary<string, World> worlds = new();
     private readonly List<ServerWorld> serverWorlds;
 
-    public int GeneratingChunkCount => worlds.SelectMany(pair => pair.Value.Regions.Where(r => r.Value is not null)).Sum(r => r.Value.LoadedChunkCount);
+    public int GeneratingChunkCount => worlds.Sum(w => w.Value.ChunksToGen.Count);
 
     public int RegionCount => worlds.Sum(pair => pair.Value.Regions.Count);
 
@@ -34,6 +34,7 @@ public sealed class WorldManager
                 logger.LogWarning($"Unknown generator type {serverWorld.Generator}");
 
             var world = new World(serverWorld.Name, this.server, serverWorld.Seed, value);
+            this.worlds.Add(world.Name, world);
 
             if (!CodecRegistry.TryGetDimension(serverWorld.DefaultDimension, out var defaultCodec) || !CodecRegistry.TryGetDimension("minecraft:overworld", out defaultCodec))
                 throw new InvalidOperationException("Failed to get default dimension codec.");
@@ -66,7 +67,6 @@ public sealed class WorldManager
             if (serverWorld.Default && this.DefaultWorld == null)
                 this.DefaultWorld = world;
 
-            this.worlds.Add(world.Name, world);
         }
 
         //No default world was defined so choose the first one to come up

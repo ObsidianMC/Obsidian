@@ -4,13 +4,13 @@ using static SharpNoise.Modules.Curve;
 
 namespace Obsidian.WorldData.Generators.Overworld;
 
-    public class OverworldTerrainNoise
+public class OverworldTerrainNoise
 {
     public Module Heightmap { get; set; }
 
     public OverworldTerrainSettings Settings { get; private set; } = new OverworldTerrainSettings();
 
-    public readonly Module heightNoise, squashNoise, humidityNoise, tempNoise, erosionNoise;
+    public readonly Module heightNoise, squashNoise, humidityNoise, tempNoise, erosionNoise, riverNoise, peakValleyNoise;
 
     public readonly Module terrainSelector, biomeSelector;
 
@@ -21,6 +21,21 @@ namespace Obsidian.WorldData.Generators.Overworld;
     public OverworldTerrainNoise(int seed)
     {
         this.seed = seed + 765; // add offset
+
+        peakValleyNoise = new Cache()
+        {
+            Source0 = new Clamp()
+            {
+                Source0 = new Perlin()
+                {
+                    Seed = seed,
+                    Frequency = 0.05,
+                    Lacunarity = 2.132,
+                    Quality = SharpNoise.NoiseQuality.Best,
+                    OctaveCount = 3
+                }
+            }
+        };
 
         humidityNoise = new Cache()
         {
@@ -57,28 +72,20 @@ namespace Obsidian.WorldData.Generators.Overworld;
 
         heightNoise = new Cache()
         {
-            Source0 = new Clamp()
+            Source0 = new ContinentSelector
             {
-                Source0 = new Curve
+                TerrainNoise = new SharpNoise.Modules.ScaleBias
                 {
-                    ControlPoints = new List<ControlPoint>()
-                {
-                     new Curve.ControlPoint(-1, -0.75),
-                     new Curve.ControlPoint(-0.6, -0.75),
-                     new Curve.ControlPoint(-0.525, -0.33),
-                     new Curve.ControlPoint(-0.3, -0.33),
-                     new Curve.ControlPoint(-0.1, -0.08),
-                     new Curve.ControlPoint(0.2, 0.04),
-                     new Curve.ControlPoint(0.7, 0.1),
-                     new Curve.ControlPoint(1, 0.12)
-                },
+                    Scale = 1.0,
+                    Bias = 0.08,
                     Source0 = new Perlin()
                     {
-                        Frequency = 0.002,
+                        Frequency = 0.0013,
                         Quality = SharpNoise.NoiseQuality.Best,
                         Seed = seed + 4
                     }
                 }
+
             }
         };
 
@@ -86,26 +93,25 @@ namespace Obsidian.WorldData.Generators.Overworld;
         {
             Source0 = new Clamp()
             {
-                Source0 = new Curve
+                Source0 = new Blur()
                 {
-                    ControlPoints = new List<ControlPoint>()
-                {
-                     new Curve.ControlPoint(-1, 0.5),
-                     new Curve.ControlPoint(-0.5, 0),
-                     new Curve.ControlPoint(-0.45, 0.2),
-                     new Curve.ControlPoint(-0.2, -0.8),
-                     new Curve.ControlPoint(2.5, -0.85),
-                     new Curve.ControlPoint(0.5, -0.85),
-                     new Curve.ControlPoint(0.55, -0.5),
-                     new Curve.ControlPoint(0.7, -0.5),
-                     new Curve.ControlPoint(0.75, -0.85),
-                     new Curve.ControlPoint(1, -1)
-                },
-                    Source0 = new Perlin()
+                    Source0 = new Curve
                     {
-                        Frequency = 0.002,
-                        Quality = SharpNoise.NoiseQuality.Best,
-                        Seed = seed + 5
+                        ControlPoints = new List<ControlPoint>()
+                        {
+                             new Curve.ControlPoint(-1, 0.5),
+                             new Curve.ControlPoint(-0.5, 0),
+                             new Curve.ControlPoint(-0.2, -0.8),
+                             new Curve.ControlPoint(0.5, -0.85),
+                             new Curve.ControlPoint(0.75, -0.85),
+                             new Curve.ControlPoint(1, -1)
+                        },
+                        Source0 = new Perlin()
+                        {
+                            Frequency = 0.002,
+                            Quality = SharpNoise.NoiseQuality.Best,
+                            Seed = seed + 5
+                        }
                     }
                 }
             }
@@ -115,19 +121,34 @@ namespace Obsidian.WorldData.Generators.Overworld;
         {
             Source0 = new Perlin()
             {
-                Frequency = 0.001,
+                Frequency = 0.0005,
                 Quality = SharpNoise.NoiseQuality.Best,
                 Seed = seed + 5
             }
         };
 
-        terrainSelector = new OverworldTerrain(heightNoise, squashNoise, erosionNoise)
+        riverNoise = new Cache
+        {
+            Source0 = new RiverSelector
+            {
+                RiverNoise = new Perlin
+                {
+                    Frequency = 0.003,
+                    Quality= SharpNoise.NoiseQuality.Fast,
+                    Seed = seed + 6,
+                    OctaveCount = 4,
+                    Lacunarity = 1.5
+                }
+            }            
+        };
+
+        terrainSelector = new OverworldTerrain(heightNoise, squashNoise, erosionNoise, riverNoise, peakValleyNoise)
         {
             Seed = seed,
             TerrainStretch = 15
         };
 
-        biomeSelector = new BiomeSelector(tempNoise, humidityNoise, heightNoise);
+        biomeSelector = new BiomeSelector(tempNoise, humidityNoise, heightNoise, erosionNoise, riverNoise);
     }
 
     public int GetTerrainHeight(int x, int z)
@@ -144,7 +165,7 @@ namespace Obsidian.WorldData.Generators.Overworld;
 
     public bool IsTerrain(int x, int y, int z)
     {
-        return terrainSelector.GetValue(x, (y+22)*2, z) > 0;
+        return terrainSelector.GetValue(x, (y + 32) * 2, z) > 0;
     }
 
     public Module Cave => new Turbulence()
@@ -164,12 +185,12 @@ namespace Obsidian.WorldData.Generators.Overworld;
                 Source0 = new Curve
                 {
                     ControlPoints = new List<ControlPoint>()
-                {
-                     new Curve.ControlPoint(-1, -1),
-                     new Curve.ControlPoint(-0.7, -0.5),
-                     new Curve.ControlPoint(-0.4, -0.5),
-                     new Curve.ControlPoint(1, 1),
-                },
+                    {
+                         new Curve.ControlPoint(-1, -1),
+                         new Curve.ControlPoint(-0.7, -0.5),
+                         new Curve.ControlPoint(-0.4, -0.5),
+                         new Curve.ControlPoint(1, 1),
+                    },
                     Source0 = new Billow
                     {
                         Frequency = 18.12345,

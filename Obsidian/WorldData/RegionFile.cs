@@ -183,6 +183,7 @@ public sealed class RegionFile : IAsyncDisposable
 
     private async Task WriteNewChunkAsync(byte[] bytes, int size, int tableIndex)
     {
+        if (this.regionFileStream is null) { return; }
         var offset = this.regionFileStream.Length > 0 ? (int)this.regionFileStream.Length : sectionSize * 2;
 
         this.SetLocation(tableIndex, offset / sectionSize, size);

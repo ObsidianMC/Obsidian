@@ -9,26 +9,22 @@ internal class OverworldTerrain : Module
 
     protected readonly Module terrainPerlin;
 
-    public OverworldTerrain(Module height, Module squash, Module erosion) : base(3)
+    public OverworldTerrain(Module height, Module squash, Module erosion, Module river, Module peaks) : base(5)
     {
         SourceModules[0] = height;
         SourceModules[1] = squash;
         SourceModules[2] = erosion;
-        terrainPerlin = new Turbulence()
+        SourceModules[3] = river;
+        SourceModules[4] = peaks;
+
+        terrainPerlin = new Perlin()
         {
-            Frequency = 1/TerrainStretch,
-            Power = 2,
-            Roughness = 3,
-            Seed = Seed + 1,
-            Source0 = new Perlin()
-            {
-                Frequency = 0.333/TerrainStretch,
-                OctaveCount = 3,
-                Lacunarity = 0.8899,
-                Persistence = 0.1334,
-                Quality = SharpNoise.NoiseQuality.Fast,
-                Seed = Seed + 2
-            }
+            Frequency = 0.333 / TerrainStretch,
+            OctaveCount = 3,
+            Lacunarity = 0.8899,
+            Persistence = 0.1334,
+            Quality = SharpNoise.NoiseQuality.Fast,
+            Seed = Seed + 2
         };
     }
 
@@ -37,21 +33,31 @@ internal class OverworldTerrain : Module
         var squash = SourceModules[1].GetValue(x, 0, z) + 1.1d; // Can't be zero
         var height = SourceModules[0].GetValue(x, 0, z);
 
-        // Beash/Ocean flat, everything else amplified
-        squash = height < 0.02 ? squash * 0.5d : Math.Pow(squash, 7);
 
-        var result = terrainPerlin.GetValue(x, y, z);
-        if (height > 0) // If above ocean, add erosion
+        if (height > 0.1) // If above ocean, add erosion and rivers
         {
-            height *= (SourceModules[2].GetValue(x, 0, z) + 0.6) * 10.0 ;
+            var erosionVal = (SourceModules[2].GetValue(x, 0, z) + 2) / 1.0d;
+            height *= erosionVal;
         }
+        if (height >= 0.4) // Add mountain peaks/valleys
+        {
+            var peakVal = Math.Min(SourceModules[4].GetValue(x, 0, z) + 3.5, 1.0);
+            height *= peakVal;
+
+        }
+        if (height > -0.1)
+        {
+            var riverVal = SourceModules[3].GetValue(x, 0, z);
+            height = Math.Min(height, riverVal);
+        }        
+
+        // Beash/Ocean flat, everything else amplified
+        squash = height < 0.1 ? squash * 0.3d : 1.12 * Math.Pow(squash,3);
         double yOffset = y + (height * 128 * -1);
         double bias = yOffset - 192; // put half world height to 0
         bias = Math.Pow(bias, 3) / squash;
         bias /= 192d; // world height to -1 < y < 1
-
-        
-
+        var result = terrainPerlin.GetValue(x, y, z);
         result -= bias;
 
         return Math.Clamp(result, -1, 1);

@@ -38,11 +38,13 @@ public class BiomeSelector : Module
         }
     };
 
-    public BiomeSelector(Module temp, Module humidity, Module height) : base(3)
+    public BiomeSelector(Module temp, Module humidity, Module height, Module erosion, Module river) : base(5)
     {
         SourceModules[0] = temp;
         SourceModules[1] = humidity;
         SourceModules[2] = height;
+        SourceModules[3] = erosion;
+        SourceModules[4] = river;
     }
 
     public override double GetValue(double x, double y, double z)
@@ -50,7 +52,27 @@ public class BiomeSelector : Module
         // 5 heights, 4 temps, 3 humidities
         var tempIndex = (int)((SourceModules[0].GetValue(x, 0, z) + 0.999d) * 2.0d);
         var humidityIndex = (int)((SourceModules[1].GetValue(x, 0, z) + 0.999d) * 1.5d);
-        var heightIndex = (int)((SourceModules[2].GetValue(x, 0, z) + 0.999d) * 2.5d);
+
+        var heightVal = SourceModules[2].GetValue(x, 0, z);
+        if (heightVal >= -0.01)
+        {
+            // Check river
+            var riverVal = SourceModules[4].GetValue(x, 0, z);
+            if (riverVal < 0)
+            {
+                return (double)Biome.River;
+            }
+        }
+        if (heightVal >= -0.1 && heightVal < 0.019) { return (double)Biome.Beach; }
+        var heightIndex = heightVal switch
+        {
+            double v when v < -0.6 => 0,
+            double v when v >= -0.6 && v < 0 => 1,
+            double v when v >= 0 && v < 0.3 => 2,
+            _ => 3,
+        };
+
+        //var heightIndex = (int)((heightVal + 1d) * 2.5d);
         return (double) BiomeLookup[heightIndex, tempIndex, humidityIndex];
     }
 }
