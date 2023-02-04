@@ -36,7 +36,6 @@ internal class WorldLight
                     }
                 }
 
-                //var worldPos = new Vector(x + (chunk.X << 4), surfaceY, z + (chunk.Z << 4));
                 await SetLightAndSpread(new Vector(x, surfaceY, z), LightType.Sky, 15, chunk);
             }
         }
@@ -46,7 +45,6 @@ internal class WorldLight
 
     public async Task SetLightAndSpread(Vector pos, LightType lt, int level, Chunk chunk)
     {
-        //var chunk = await world.GetChunkAsync(pos, false);
         if (chunk is null) { return; }
         if (!chunk.isGenerated) { return; }
 

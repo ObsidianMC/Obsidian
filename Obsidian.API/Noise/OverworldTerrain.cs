@@ -16,22 +16,7 @@ internal class OverworldTerrain : Module
         SourceModules[2] = erosion;
         SourceModules[3] = river;
         SourceModules[4] = peaks;
-/*        terrainPerlin = new Turbulence()
-        {
-            Frequency = 1/TerrainStretch,
-            Power = 2,
-            Roughness = 3,
-            Seed = Seed + 1,
-            Source0 = new Perlin()
-            {
-                Frequency = 0.333/TerrainStretch,
-                OctaveCount = 3,
-                Lacunarity = 0.8899,
-                Persistence = 0.1334,
-                Quality = SharpNoise.NoiseQuality.Fast,
-                Seed = Seed + 2
-            }
-        };*/
+
         terrainPerlin = new Perlin()
         {
             Frequency = 0.333 / TerrainStretch,
