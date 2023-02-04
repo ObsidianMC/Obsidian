@@ -423,19 +423,15 @@ public class World : IWorld
         long value = NumericsHelper.IntsToLong(regionX, regionZ);
 
         if (this.Regions.TryGetValue(value, out var region))
-        {
-            if (await region.InitAsync())
-                _ = Task.Run(() => region.BeginTickAsync(this.Server._cancelTokenSource.Token));
-
             return region;
-        }
 
         region = new Region(regionX, regionZ, this.FolderPath);
 
-        this.Regions.TryAdd(value, region);
-
         if (await region.InitAsync())
+        {
+            this.Regions.TryAdd(value, region);//Add after its initialized
             _ = Task.Run(() => region.BeginTickAsync(this.Server._cancelTokenSource.Token));
+        }
 
         return region;
     }
