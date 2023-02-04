@@ -2,7 +2,7 @@
 
 public class SunflowerFlora : BaseTallFlora
 {
-    public SunflowerFlora(World world) : base(world, Material.Sunflower)
+    public SunflowerFlora(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.Sunflower)
     {
 
     }

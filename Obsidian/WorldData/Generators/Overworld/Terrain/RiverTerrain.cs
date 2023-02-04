@@ -7,17 +7,20 @@ public class RiverTerrain : BaseTerrain
 {
     // Generates the plains terrain.
     // Outputs will be between -0.3 and -0.1
-    public RiverTerrain() : base()
+    public RiverTerrain(int seed, OverworldTerrainSettings settings) : base(seed, settings)
     {
-        result = new ScalePoint()
+        result = new Cache()
         {
-            XScale = 4.0,
-            ZScale = 4.0,
-            Source0 = new ScaleBias()
+            Source0 = new ScalePoint()
             {
-                Bias = -0.05,
-                Scale = 0.2,
-                Source0 = new PlainsTerrain()
+                XScale = 4.0,
+                ZScale = 4.0,
+                Source0 = new ScaleBias()
+                {
+                    Bias = -0.05,
+                    Scale = 0.2,
+                    Source0 = new PlainsTerrain(seed, settings)
+                }
             }
         };
     }

@@ -9,13 +9,13 @@ public sealed class BiomeContainer : DataContainer<Biomes>
 
     public override DataArray DataArray { get; protected set; }
 
-    internal BiomeContainer(byte bitsPerEntry = 2) : base(bitsPerEntry)
+    internal BiomeContainer(byte bitsPerEntry = 2)
     {
         this.Palette = bitsPerEntry.DetermineBiomePalette();
-        this.DataArray = new(this.BitsPerEntry, 64);
+        this.DataArray = new(bitsPerEntry, 64);
     }
 
-    private BiomeContainer(IPalette<Biomes> palette, DataArray dataArray, byte bitsPerEntry) : base(bitsPerEntry)
+    private BiomeContainer(IPalette<Biomes> palette, DataArray dataArray)
     {
         Palette = palette;
         DataArray = dataArray;
@@ -60,14 +60,13 @@ public sealed class BiomeContainer : DataContainer<Biomes>
         this.Palette.WriteTo(stream);
 
         stream.WriteVarInt(this.DataArray.storage.Length);
-
-        long[] storage = this.DataArray.storage;
-        for (int i = 0; i < storage.Length; i++)
-            stream.WriteLong(storage[i]);
+        stream.WriteLongArray(this.DataArray.storage);
     }
 
     public BiomeContainer Clone()
     {
-        return new BiomeContainer(Palette.Clone(), DataArray.Clone(), BitsPerEntry);
+        return new BiomeContainer(Palette.Clone(), DataArray.Clone());
     }
+
+    public override int GetIndex(int x, int y, int z) => (y << 2 | z) << 2 | x;
 }

@@ -1,12 +1,11 @@
 ﻿using Obsidian.Utilities.Registry;
-using Obsidian.WorldData.Generators.Overworld.BiomeNoise;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 
 public class RiverDecorator : BaseDecorator
 {
 
-    public RiverDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
+    public RiverDecorator(Biomes biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
     }
 
@@ -18,7 +17,7 @@ public class RiverDecorator : BaseDecorator
 
         FillWater();
 
-        if (pos.Y <= noise.settings.WaterLevel)
+        if (pos.Y <= noise.Settings.WaterLevel)
         {
             chunk.SetBlock(pos, gravel);
         }

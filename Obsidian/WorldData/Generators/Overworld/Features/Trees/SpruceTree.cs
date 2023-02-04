@@ -2,7 +2,7 @@
 
 public class SpruceTree : BaseTree
 {
-    public SpruceTree(World world) : base(world, Material.SpruceLeaves, Material.SpruceLog, 9)
+    public SpruceTree(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.SpruceLeaves, Material.SpruceLog, 9)
     {
     }
 }

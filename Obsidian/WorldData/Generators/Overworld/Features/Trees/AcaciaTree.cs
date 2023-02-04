@@ -2,7 +2,7 @@
 
 public class AcaciaTree : BaseTree
 {
-    public AcaciaTree(World world) : base(world, Material.AcaciaLeaves, Material.AcaciaLog, 7)
+    public AcaciaTree(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.AcaciaLeaves, Material.AcaciaLog, 7)
     {
     }
 
@@ -20,7 +20,7 @@ public class AcaciaTree : BaseTree
                     {
                         if (x != origin.X - 3 && x != origin.X + 3 && z != origin.Z - 3 && z != origin.Z + 3)
                         {
-                            await world.SetBlockUntrackedAsync(x, y, z, new Block(leaf));
+                            await helper.SetBlockAsync(x, y, z, new Block(leaf), chunk);
                         }
                     }
                     else if (!(
@@ -30,7 +30,7 @@ public class AcaciaTree : BaseTree
                         (x == origin.X + 3 && z == origin.Z + 3)
                         ))
                     {
-                        await world.SetBlockUntrackedAsync(x, y, z, new Block(leaf));
+                        await helper.SetBlockAsync(x, y, z, new Block(leaf), chunk);
                     }
                 }
             }

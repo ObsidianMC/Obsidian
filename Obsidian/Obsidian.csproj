@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <Nullable>enable</Nullable>
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
   </PropertyGroup>
@@ -16,7 +16,7 @@
 		<Company>Obsidian Team</Company>
 		<Authors>Obsidian Team</Authors>
 		<PackageLicenseExpression></PackageLicenseExpression>
-		<Description>A C# implementation of the Minecraft server protocol (.NET 6)</Description>
+		<Description>A C# implementation of the Minecraft server protocol (.NET)</Description>
 		<PackageProjectUrl>https://github.com/ObsidianMC/Obsidian</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/ObsidianMC/Obsidian</RepositoryUrl>
 		<PackageTags>minecraft-server-protocol minecraft-server minecraft</PackageTags>
@@ -50,8 +50,6 @@
 		<None Remove="Assets\biome_codec.json" />
 		<None Remove="Assets\default_dimensions.json" />
 		<None Remove="Assets\default_dimensions.xaml" />
-		<None Remove="Assets\entity_types.json" />
-		<None Remove="Assets\fluids.json" />
 		<None Remove="Assets\tags.json" />
 		<None Remove="Serializer\Attributes\NewFile1.txt" />
 		<None Remove="Serializer\Enums\NewFile1.txt" />
@@ -70,7 +68,22 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<EmbeddedResource Remove="Assets\blocks.json" />
 		<EmbeddedResource Remove="Assets\default_dimensions.xaml" />
+		<EmbeddedResource Remove="Assets\items.json" />
+		<EmbeddedResource Remove="Assets\tags.json" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <AdditionalFiles Include="Assets\blocks.json">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </AdditionalFiles>
+	  <AdditionalFiles Include="Assets\items.json">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </AdditionalFiles>
+	  <AdditionalFiles Include="Assets\tags.json">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </AdditionalFiles>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -89,22 +102,7 @@
 		<EmbeddedResource Update="Assets\biome_codec.json">
 			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</EmbeddedResource>
-		<EmbeddedResource Update="Assets\blocks.json">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</EmbeddedResource>
 		<EmbeddedResource Update="Assets\default_dimensions.json">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</EmbeddedResource>
-		<EmbeddedResource Update="Assets\entity_types.json">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</EmbeddedResource>
-		<EmbeddedResource Update="Assets\fluids.json">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</EmbeddedResource>
-		<EmbeddedResource Update="Assets\items.json">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</EmbeddedResource>
-		<EmbeddedResource Update="Assets\tags.json">
 			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</EmbeddedResource>
 	</ItemGroup>

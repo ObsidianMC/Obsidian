@@ -2,7 +2,7 @@
 
 public class LargeSpruceTree : BaseTree
 {
-    public LargeSpruceTree(World world) : base(world, Material.SpruceLeaves, Material.SpruceLog, 18)
+    public LargeSpruceTree(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.SpruceLeaves, Material.SpruceLog, 18)
     {
     }
 
@@ -73,14 +73,14 @@ public class LargeSpruceTree : BaseTree
             {
                 for (int y = topY; y > 0; y--)
                 {
-                    await world.SetBlockUntrackedAsync(origin + (x, y, z), new Block(trunk, 1));
+                    await helper.SetBlockAsync(origin + (x, y, z), new Block(trunk, 1), chunk);
                 }
 
                 // Fill in any air gaps under the trunk
-                var b = await world.GetBlockAsync(origin + (x, -1, z));
+                var b = await helper.GetBlockAsync(origin + (x, -1, z), chunk);
                 if (b.Value.IsAir)
                 {
-                    await world.SetBlockUntrackedAsync(origin + (x, -1, z), new Block(trunk, 1));
+                    await helper.SetBlockAsync(origin + (x, -1, z), new Block(trunk, 1), chunk);
                 }
             }
         }
@@ -94,9 +94,9 @@ public class LargeSpruceTree : BaseTree
                 {
                     for (int y = -2; y < 2; y++)
                     {
-                        var b = await world.GetBlockAsync(origin + (x - 4, y, z - 4));
+                        var b = await helper.GetBlockAsync(origin + (x - 4, y, z - 4), chunk);
                         if ((Material)b.Value.Id == Material.GrassBlock)
-                            await world.SetBlockUntrackedAsync(origin + (x - 4, y, z - 4), new Block(Material.Podzol, 1));
+                            await helper.SetBlockAsync(origin + (x - 4, y, z - 4), new Block(Material.Podzol, 1), chunk);
                     }
                 }
             }
@@ -127,7 +127,7 @@ public class LargeSpruceTree : BaseTree
                     {
                         if (leaves[x, z])
                         {
-                            await world.SetBlockUntrackedAsync(origin + (x - 4, y - level, z - 4), new Block(leaf));
+                            await helper.SetBlockAsync(origin + (x - 4, y - level, z - 4), new Block(leaf), chunk);
                         }
                     }
                 }

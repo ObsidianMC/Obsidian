@@ -13,13 +13,13 @@ public class MountainsTerrain : BaseTerrain
     // [Hilly-terrain group]: Caches the output value from the warped-hilly-
     // terrain module.  This is the output value for the entire hilly-
     // terrain group.
-    public MountainsTerrain() : base()
+    public MountainsTerrain(int seed, OverworldTerrainSettings settings) : base(seed, settings)
     {
         result = new Cache
         {
             Source0 = new Max
             {
-                Source0 = new PlainsTerrain(),
+                Source0 = new PlainsTerrain(seed, settings),
                 Source1 = new ScalePoint
                 {
                     XScale = 1 / 140.103,
@@ -63,7 +63,7 @@ public class MountainsTerrain : BaseTerrain
             // module, adding some fine detail to it.
             Source0 = new Turbulence
             {
-                Seed = settings.Seed + 33,
+                Seed = seed + 33,
                 Frequency = 12,
                 Power = 1.0 / 1020157.0 * settings.MountainsTwist,
                 // [Coarse-turbulence module]: This turbulence module warps the output
@@ -71,7 +71,7 @@ public class MountainsTerrain : BaseTerrain
                 // to it.
                 Source0 = new Turbulence
                 {
-                    Seed = settings.Seed + 32,
+                    Seed = seed + 32,
                     Frequency = 6,
                     Power = 1.0 / 60730.0 * settings.MountainsTwist,
                     Roughness = 1,
@@ -106,7 +106,7 @@ public class MountainsTerrain : BaseTerrain
                             // generates the mountain ridges.
                             Source0 = new RidgedMulti
                             {
-                                Seed = settings.Seed + 30,
+                                Seed = seed + 30,
                                 Frequency = 3,
                                 Lacunarity = settings.MountainLacunarity,
                                 OctaveCount = 4,
@@ -129,7 +129,7 @@ public class MountainsTerrain : BaseTerrain
                             // next step.
                             Source0 = new RidgedMulti
                             {
-                                Seed = settings.Seed + 31,
+                                Seed = seed + 31,
                                 Frequency = 1.23,
                                 Lacunarity = settings.MountainLacunarity,
                                 OctaveCount = 1,

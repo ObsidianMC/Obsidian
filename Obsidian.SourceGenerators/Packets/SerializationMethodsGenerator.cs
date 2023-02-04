@@ -25,6 +25,9 @@ public partial class SerializationMethodsGenerator : ISourceGenerator
 
     public void Execute(GeneratorExecutionContext context)
     {
+        if (context.Compilation.AssemblyName != "Obsidian")
+            return;
+
         try
         {
             DangerousExecute(context);

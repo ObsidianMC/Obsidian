@@ -2,13 +2,13 @@
 
 public abstract class BaseTallFlora : BaseFlora
 {
-    protected readonly short lowerState;
-    protected readonly short upperState;
+    protected readonly ushort lowerState;
+    protected readonly ushort upperState;
 
-    protected BaseTallFlora(World world, Material floraMat, int maxHeight = 2, int lowerState = 1, int upperState = 0) : base(world, floraMat)
+    protected BaseTallFlora(GenHelper helper, Chunk chunk, Material floraMat, int maxHeight = 2, int lowerState = 1, int upperState = 0) : base(helper, chunk, floraMat)
     {
-        this.lowerState = (short)lowerState;
-        this.upperState = (short)upperState;
+        this.lowerState = (ushort)lowerState;
+        this.upperState = (ushort)upperState;
         this.height = maxHeight;
     }
 
@@ -26,11 +26,11 @@ public abstract class BaseTallFlora : BaseFlora
         // Grow base
         for (int y = 0; y < growHeight - 1; y++)
         {
-            await world.SetBlockUntrackedAsync(placeVector + (0, y, 0), new Block(FloraMat, lowerState));
+            await helper.SetBlockAsync(placeVector + (0, y, 0), new Block(FloraMat, lowerState), chunk);
         }
 
         // Top
-        await world.SetBlockUntrackedAsync(placeVector + (0, growHeight - 1, 0), new Block(FloraMat, upperState));
+        await helper.SetBlockAsync(placeVector + (0, growHeight - 1, 0), new Block(FloraMat, upperState), chunk);
         return true;
     }
 }

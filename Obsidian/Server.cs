@@ -29,7 +29,7 @@ namespace Obsidian;
 
 public partial class Server : IServer
 {
-    public static readonly ProtocolVersion DefaultProtocol = ProtocolVersion.v1_18;
+    public static readonly ProtocolVersion DefaultProtocol = ProtocolVersion.v1_18_2;
     public ProtocolVersion Protocol => DefaultProtocol;
 
     public int Tps { get; private set; }
@@ -224,12 +224,13 @@ public partial class Server : IServer
             return;
         }
 
-        await Task.WhenAll(Registry.RegisterBlocksAsync(),
-                           Registry.RegisterItemsAsync(),
-                           Registry.RegisterCodecsAsync(),
-                           Registry.RegisterTagsAsync(),
+        await Task.WhenAll(Registry.RegisterCodecsAsync(),
                            Registry.RegisterRecipesAsync());
 
+        Block.blockNames = BlocksRegistry.Names;
+        Block.numericToBase = BlocksRegistry.NumericToBase;
+        Block.stateToNumeric = BlocksRegistry.StateToNumeric;
+        Block.stateToBase = BlocksRegistry.StateToBase;
         Block.Initialize();
 
         Logger.LogInformation($"Loading properties...");

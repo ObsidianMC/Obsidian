@@ -2,7 +2,7 @@
 
 public class PeonyFlora : BaseTallFlora
 {
-    public PeonyFlora(World world) : base(world, Material.Peony)
+    public PeonyFlora(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.Peony)
     {
 
     }
