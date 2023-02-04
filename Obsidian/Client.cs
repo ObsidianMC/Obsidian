@@ -276,7 +276,7 @@ public sealed class Client : IDisposable
                                 {
                                     if (DateTimeOffset.UtcNow < timeLeft)
                                     {
-                                        this.Logger.LogInformation("{ip} has been throttled for reconnecting too fast.", ip);
+                                        this.Logger.LogDebug("{ip} has been throttled for reconnecting too fast.", ip);
                                         await this.DisconnectAsync("Connection Throttled! Please wait before reconnecting.");
                                         this.Disconnect();
                                     }
@@ -367,12 +367,18 @@ public sealed class Client : IDisposable
         }
         else if (nextState is not ClientState.Status or ClientState.Login or ClientState.Handshaking)
         {
-            Logger.LogDebug("Client sent unexpected state ({RedText}{ClientState}{WhiteText}), forcing it to disconnect.", ChatColor.Red, nextState, ChatColor.White);
+            Logger.LogWarning("Client sent unexpected state ({RedText}{ClientState}{WhiteText}), forcing it to disconnect.", ChatColor.Red, nextState, ChatColor.White);
             await DisconnectAsync($"Invalid client state! Expected Status or Login, received {nextState}.");
         }
 
         State = nextState == ClientState.Login && handshake.Version != Server.Protocol ? ClientState.Closed : nextState;
-        Logger.LogInformation("Handshaking with client (protocol: {YellowText}{VersionDescription}{WhiteText} [{YellowText}{Version}{WhiteText}], server: {YellowText}{ServerAddress}:{ServerPort}{WhiteText})", ChatColor.Yellow, handshake.Version.GetDescription(), ChatColor.White, ChatColor.Yellow, handshake.Version, ChatColor.White, ChatColor.Yellow, handshake.ServerAddress, handshake.ServerPort, ChatColor.White);
+
+
+        var versionDesc = handshake.Version.GetDescription();
+        if (versionDesc is null)
+            return;//No need to log if version description is null
+
+        Logger.LogInformation("Handshaking with client (protocol: {YellowText}{VersionDescription}{WhiteText} [{YellowText}{Version}{WhiteText}], server: {YellowText}{ServerAddress}:{ServerPort}{WhiteText})", ChatColor.Yellow, versionDesc, ChatColor.White, ChatColor.Yellow, handshake.Version, ChatColor.White, ChatColor.Yellow, handshake.ServerAddress, handshake.ServerPort, ChatColor.White);
     }
 
     private async Task HandleLoginStartAsync(byte[] data)
@@ -717,7 +723,7 @@ public sealed class Client : IDisposable
         }
         catch (Exception e)
         {
-            Logger.LogError(e, "Sending packet {PacketId} failed", packet.Id);
+            Logger.LogDebug(e, "Sending packet {PacketId} failed", packet.Id);
         }
     }
 
