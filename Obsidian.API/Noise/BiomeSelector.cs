@@ -38,13 +38,14 @@ public class BiomeSelector : Module
         }
     };
 
-    public BiomeSelector(Module temp, Module humidity, Module height, Module erosion, Module river) : base(5)
+    public BiomeSelector(Module temp, Module humidity, Module height, Module erosion, Module river, Module peaks) : base(5)
     {
         SourceModules[0] = temp;
         SourceModules[1] = humidity;
         SourceModules[2] = height;
         SourceModules[3] = erosion;
         SourceModules[4] = river;
+        SourceModules[5] = peaks;
     }
 
     public override double GetValue(double x, double y, double z)
@@ -52,9 +53,10 @@ public class BiomeSelector : Module
         // 5 heights, 4 temps, 3 humidities
         var tempIndex = (int)((SourceModules[0].GetValue(x, 0, z) + 0.999d) * 2.0d);
         var humidityIndex = (int)((SourceModules[1].GetValue(x, 0, z) + 0.999d) * 1.5d);
+        var erosionVal = SourceModules[3].GetValue(x, 0, z) + 2.0;
 
-        var heightVal = SourceModules[2].GetValue(x, 0, z);
-        if (heightVal >= -0.01)
+        var height = SourceModules[2].GetValue(x, 0, z);
+        if (height >= -0.01)
         {
             // Check river
             var riverVal = SourceModules[4].GetValue(x, 0, z);
@@ -63,13 +65,25 @@ public class BiomeSelector : Module
                 return (double)Biome.River;
             }
         }
-        if (heightVal >= -0.1 && heightVal < 0.019) { return (double)Biome.Beach; }
-        var heightIndex = heightVal switch
+        if (height >= -0.1 && height < 0.025) { return (double)Biome.Beach; }
+        if (height > 0.1) // If above ocean, add erosion and rivers
+        {
+            erosionVal = (height - 0.1) * erosionVal;
+            height += erosionVal;
+        }
+        if (height >= 0.6) // Add mountain peaks/valleys
+        {
+            var peakVal = (height - 0.6) * Math.Max(SourceModules[5].GetValue(x, 0, z) + 1.6, 1.0) * 0.5;
+            height += peakVal;// * (erosionVal - 0.5);
+        }
+
+        var heightIndex = height switch
         {
             double v when v < -0.6 => 0,
             double v when v >= -0.6 && v < 0 => 1,
             double v when v >= 0 && v < 0.3 => 2,
-            _ => 3,
+            double v when v >= 0.3 && v < 1 => 3,
+            _ => 4,
         };
 
         //var heightIndex = (int)((heightVal + 1d) * 2.5d);

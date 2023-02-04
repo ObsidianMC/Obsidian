@@ -488,7 +488,7 @@ public class World : IWorld
             if (!c.isGenerated)
             {
                 c = await Generator.GenerateChunkAsync(job.x, job.z, c);
-                //await worldLight.ProcessSkyLightForChunk(c);
+                await worldLight.ProcessSkyLightForChunk(c);
             }
             region.SetChunk(c);
         });
@@ -626,7 +626,7 @@ public class World : IWorld
             return false;
 
         // Todo: this better
-        if (TagsRegistry.Blocks.GravityAffected.Entries.Contains(block.RegistryId))
+        if (Utilities.Registry.TagsRegistry.Blocks.GravityAffected.Entries.Contains(block.RegistryId))
             return await BlockUpdates.HandleFallingBlock(bu);
 
         if (block.IsLiquid)

@@ -32,27 +32,29 @@ internal class OverworldTerrain : Module
     {
         var squash = SourceModules[1].GetValue(x, 0, z) + 1.1d; // Can't be zero
         var height = SourceModules[0].GetValue(x, 0, z);
+        var erosionVal = SourceModules[2].GetValue(x, 0, z) + 2.0;
 
 
         if (height > 0.1) // If above ocean, add erosion and rivers
         {
-            var erosionVal = (SourceModules[2].GetValue(x, 0, z) + 2) / 1.0d;
-            height *= erosionVal;
+            erosionVal = (height - 0.1) * erosionVal;
+            height += erosionVal;
         }
-        if (height >= 0.4) // Add mountain peaks/valleys
-        {
-            var peakVal = Math.Min(SourceModules[4].GetValue(x, 0, z) + 3.5, 1.0);
-            height *= peakVal;
 
-        }
         if (height > -0.1)
         {
             var riverVal = SourceModules[3].GetValue(x, 0, z);
             height = Math.Min(height, riverVal);
-        }        
+        }
 
         // Beash/Ocean flat, everything else amplified
         squash = height < 0.1 ? squash * 0.3d : 1.12 * Math.Pow(squash,3);
+        if (height >= 0.6) // Add mountain peaks/valleys
+        {
+            var peakVal = (height - 0.6) * Math.Max(SourceModules[4].GetValue(x, 0, z) + 1.6, 1.0)*0.5;
+            height += peakVal;// * (erosionVal - 0.5);
+        }
+
         double yOffset = y + (height * 128 * -1);
         double bias = yOffset - 192; // put half world height to 0
         bias = Math.Pow(bias, 3) / squash;

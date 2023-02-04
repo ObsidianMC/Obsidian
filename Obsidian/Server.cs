@@ -563,7 +563,7 @@ public partial class Server : IServer
 
                 if (player.Gamemode == Gamemode.Creative)
                 {
-                    await player.World.SetBlockAsync(digging.Position, BlocksRegistry.Air);
+                    await player.World.SetBlockAsync(digging.Position, BlocksRegistry.Get(Material.Air));
                 }
             }
             break;
@@ -648,7 +648,7 @@ public partial class Server : IServer
             while (await timer.WaitForNextTickAsync(this._cancelTokenSource.Token))
             {
                 _logger.LogInformation("Saving world...");
-                await WorldManager.FlushLoadedWorldsAsync();
+                //await WorldManager.FlushLoadedWorldsAsync();
                 await UserCache.SaveAsync();
             }
         }
