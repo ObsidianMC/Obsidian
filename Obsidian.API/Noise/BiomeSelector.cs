@@ -38,7 +38,7 @@ public class BiomeSelector : Module
         }
     };
 
-    public BiomeSelector(Module temp, Module humidity, Module height, Module erosion, Module river, Module peaks) : base(5)
+    public BiomeSelector(Module temp, Module humidity, Module height, Module erosion, Module river, Module peaks) : base(6)
     {
         SourceModules[0] = temp;
         SourceModules[1] = humidity;

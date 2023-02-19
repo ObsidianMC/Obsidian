@@ -28,7 +28,7 @@ public abstract class BaseDecorator : IDecorator
 
     protected void FillWater()
     {
-        if (chunk is null) { return; }
+/*        if (chunk is null) { return; }
 
         if (pos.Y <= noise.Settings.WaterLevel)
         {
@@ -37,7 +37,7 @@ public abstract class BaseDecorator : IDecorator
             {
                 chunk.SetBlock(pos.X, y, pos.Z, BlocksRegistry.Water);
             }
-        }
+        }*/
     }
 
     protected void FillSand()

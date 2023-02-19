@@ -61,9 +61,9 @@ public class OverworldTerrainNoise
             {
                 RiverNoise = new Perlin
                 {
-                    Frequency = 0.002,
+                    Frequency = 0.001,
                     Quality = SharpNoise.NoiseQuality.Fast,
-                    Seed = seed + 3,
+                    Seed = seed + 2,
                     OctaveCount = 3,
                     Lacunarity = 1.5
                 }
@@ -90,7 +90,7 @@ public class OverworldTerrainNoise
         {
             Source0 = new ContinentSelector
             {
-                TerrainNoise = new SharpNoise.Modules.ScaleBias
+                TerrainNoise = new ScaleBias
                 {
                     Scale = 1.0,
                     Bias = 0.08,

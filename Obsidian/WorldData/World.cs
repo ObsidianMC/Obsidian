@@ -622,7 +622,7 @@ public class World : IWorld
             return false;
 
         // Todo: this better
-        if (Utilities.Registry.TagsRegistry.Blocks.GravityAffected.Entries.Contains(block.RegistryId))
+        if (TagsRegistry.Blocks.GravityAffected.Entries.Contains(block.RegistryId))
             return await BlockUpdates.HandleFallingBlock(bu);
 
         if (block.IsLiquid)
