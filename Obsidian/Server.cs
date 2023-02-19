@@ -649,7 +649,7 @@ public partial class Server : IServer
             while (await timer.WaitForNextTickAsync(this._cancelTokenSource.Token))
             {
                 _logger.LogInformation("Saving world...");
-                //await WorldManager.FlushLoadedWorldsAsync();
+                await WorldManager.FlushLoadedWorldsAsync();
                 await UserCache.SaveAsync();
             }
         }
