@@ -316,8 +316,9 @@ public partial class Server : IServer
 
     private async Task HandleServerShutdown()
     {
-        _logger.LogDebug("Flushing regions");
+        _logger.LogDebug("Flushing and disposing regions");
         await WorldManager.FlushLoadedWorldsAsync();
+        await WorldManager.DisposeAsync();
 
         await UserCache.SaveAsync();
     }

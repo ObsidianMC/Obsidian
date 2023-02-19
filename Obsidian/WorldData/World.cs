@@ -9,7 +9,7 @@ using System.IO;
 
 namespace Obsidian.WorldData;
 
-public class World : IWorld
+public class World : IWorld, IAsyncDisposable
 {
     private float rainLevel = 0f;
     private bool initialized = false;
@@ -855,5 +855,13 @@ public class World : IWorld
         };
 
         writer.WriteTag(worldGenSettingsCompound);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        foreach (var region in Regions)
+        {
+            await region.Value.DisposeAsync();
+        }
     }
 }

@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.WorldData;
 
-public sealed class WorldManager
+public sealed class WorldManager : IAsyncDisposable
 {
     private readonly ILogger logger;
     private readonly Server server;
@@ -80,4 +80,12 @@ public sealed class WorldManager
 
     public Task TickWorldsAsync() => Task.WhenAll(this.worlds.Select(pair => pair.Value.DoWorldTickAsync()));
     public Task FlushLoadedWorldsAsync() => Task.WhenAll(this.worlds.Select(pair => pair.Value.FlushRegionsAsync()));
+    
+    public async ValueTask DisposeAsync()
+    {
+        foreach (var world in worlds)
+        {
+            await world.Value.DisposeAsync();
+        }
+    }
 }

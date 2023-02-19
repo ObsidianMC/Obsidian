@@ -94,9 +94,10 @@ public sealed class DefaultServerEnvironment : IServerEnvironment
 
         var config = new ServerConfiguration();
 
-        using var fileStream = configFile.Create();
+        await using var fileStream = configFile.Create();
 
         await config.ToJsonAsync(fileStream);
+        await fileStream.FlushAsync();
 
         Console.WriteLine($"Created new configuration file for Server");
         Console.WriteLine($"Please fill in your config with the values you wish to use for your server.");

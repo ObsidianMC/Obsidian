@@ -9,7 +9,7 @@ using System.Threading;
 
 namespace Obsidian.WorldData;
 
-public class Region
+public class Region : IAsyncDisposable
 {
     public const int cubicRegionSizeShift = 5;
     public const int cubicRegionSize = 1 << cubicRegionSizeShift;
@@ -318,4 +318,6 @@ public class Region
         };
     }
     #endregion NBT Ops
+
+    public async ValueTask DisposeAsync() => await regionFile.DisposeAsync();
 }
