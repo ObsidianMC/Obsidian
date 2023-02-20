@@ -25,7 +25,6 @@ public sealed class OverworldGenerator : IWorldGenerator
             {
                 int worldX = bx + (cx << 4);
                 int worldZ = bz + (cz << 4);
-                //chunk.Heightmaps[ChunkData.HeightmapType.MotionBlocking].Set(bx, bz, (int)helper.Noise.Heightmap.GetValue(worldX, 0, worldZ));
 
                 // Determine Biome
                 if (bx % 4 == 0 && bz % 4 == 0) // Biomes are in 4x4x4 blocks. Do a 2D array for now and just copy it vertically.
@@ -36,16 +35,61 @@ public sealed class OverworldGenerator : IWorldGenerator
                         chunk.SetBiome(bx, y, bz, biome);
                     }
                 }
-                int maxY = -64;
-                for (int y = -64; y < 320; y++)
+
+                int terrainHeight = -64;
+                // Search for the surface. Start at sea level...
+                // If stone, scan upwards until 64 consecutive air
+                // If air, scan downwards until 64 consecutive stone
+                if (helper.Noise.IsTerrain(worldX, 64, worldZ))
                 {
-                    if (helper.Noise.IsTerrain(worldX, y, worldZ))
+                    int airCount = 0;
+                    for (int y = 64; y < 320; y++)
+                    {
+                        if (helper.Noise.IsTerrain(worldX, y, worldZ))
+                        {
+                            terrainHeight = y;
+                            chunk.SetBlock(bx, y, bz, BlocksRegistry.Stone);
+                        }
+                        else
+                        {
+                            airCount++;
+                        }
+                        if (airCount == 30)
+                        {
+                            break;
+                        }
+                    }
+                    for (int y = 64; y >= -64; y--)
                     {
                         chunk.SetBlock(bx, y, bz, BlocksRegistry.Stone);
-                        maxY = Math.Max(maxY, y);
                     }
                 }
-                chunk.Heightmaps[ChunkData.HeightmapType.MotionBlocking].Set(bx, bz, maxY);
+                else
+                {
+                    int solidCount = 0;
+                    for (int y = 64; y >= -64; y--)
+                    {
+                        if (solidCount <= 30)
+                        {
+                            if (helper.Noise.IsTerrain(worldX, y, worldZ))
+                            {
+                                solidCount++;
+                                chunk.SetBlock(bx, y, bz, BlocksRegistry.Stone);
+                                terrainHeight = Math.Max(terrainHeight, y);
+                            }
+                            else
+                            {
+                                chunk.SetBlock(bx, y, bz, BlocksRegistry.Water);
+                            }
+                        }
+                        else
+                        {
+                            chunk.SetBlock(bx, y, bz, BlocksRegistry.Stone);
+                        }
+                    }
+                }
+
+                chunk.Heightmaps[ChunkData.HeightmapType.MotionBlocking].Set(bx, bz, terrainHeight);
             }
         }
 

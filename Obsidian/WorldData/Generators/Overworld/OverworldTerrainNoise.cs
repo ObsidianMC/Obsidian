@@ -29,7 +29,7 @@ public class OverworldTerrainNoise
                 Source0 = new Perlin()
                 {
                     Seed = seed,
-                    Frequency = 0.05,
+                    Frequency = 0.02,
                     Lacunarity = 2.132,
                     Quality = SharpNoise.NoiseQuality.Best,
                     OctaveCount = 3
@@ -45,11 +45,27 @@ public class OverworldTerrainNoise
                 {
                     Source0 = new Perlin()
                     {
-                        Frequency = 0.004,
+                        Frequency = 0.002,
                         Quality = SharpNoise.NoiseQuality.Fast,
-                        Seed = seed + 3
+                        Seed = seed + 3,
+                        OctaveCount = 3,
+                        Lacunarity = 1.5
                     }
+                }
+            }
+        };
 
+        riverNoise = new Cache
+        {
+            Source0 = new RiverSelector
+            {
+                RiverNoise = new Perlin
+                {
+                    Frequency = 0.001,
+                    Quality = SharpNoise.NoiseQuality.Fast,
+                    Seed = seed + 2,
+                    OctaveCount = 3,
+                    Lacunarity = 1.5
                 }
             }
         };
@@ -74,7 +90,7 @@ public class OverworldTerrainNoise
         {
             Source0 = new ContinentSelector
             {
-                TerrainNoise = new SharpNoise.Modules.ScaleBias
+                TerrainNoise = new ScaleBias
                 {
                     Scale = 1.0,
                     Bias = 0.08,
@@ -93,26 +109,11 @@ public class OverworldTerrainNoise
         {
             Source0 = new Clamp()
             {
-                Source0 = new Blur()
+                Source0 = new Perlin()
                 {
-                    Source0 = new Curve
-                    {
-                        ControlPoints = new List<ControlPoint>()
-                        {
-                             new Curve.ControlPoint(-1, 0.5),
-                             new Curve.ControlPoint(-0.5, 0),
-                             new Curve.ControlPoint(-0.2, -0.8),
-                             new Curve.ControlPoint(0.5, -0.85),
-                             new Curve.ControlPoint(0.75, -0.85),
-                             new Curve.ControlPoint(1, -1)
-                        },
-                        Source0 = new Perlin()
-                        {
-                            Frequency = 0.002,
-                            Quality = SharpNoise.NoiseQuality.Best,
-                            Seed = seed + 5
-                        }
-                    }
+                    Frequency = 0.002,
+                    Quality = SharpNoise.NoiseQuality.Best,
+                    Seed = seed + 5
                 }
             }
         };
@@ -127,28 +128,13 @@ public class OverworldTerrainNoise
             }
         };
 
-        riverNoise = new Cache
-        {
-            Source0 = new RiverSelector
-            {
-                RiverNoise = new Perlin
-                {
-                    Frequency = 0.003,
-                    Quality= SharpNoise.NoiseQuality.Fast,
-                    Seed = seed + 6,
-                    OctaveCount = 4,
-                    Lacunarity = 1.5
-                }
-            }            
-        };
-
         terrainSelector = new OverworldTerrain(heightNoise, squashNoise, erosionNoise, riverNoise, peakValleyNoise)
         {
             Seed = seed,
             TerrainStretch = 15
         };
 
-        biomeSelector = new BiomeSelector(tempNoise, humidityNoise, heightNoise, erosionNoise, riverNoise);
+        biomeSelector = new BiomeSelector(tempNoise, humidityNoise, heightNoise, erosionNoise, riverNoise, peakValleyNoise);
     }
 
     public int GetTerrainHeight(int x, int z)

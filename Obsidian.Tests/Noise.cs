@@ -10,7 +10,7 @@ namespace Obsidian.Tests;
 
 public class Noise
 {
-    private OverworldTerrainNoise noiseGen = new OverworldTerrainNoise(641259876);
+    private OverworldTerrainNoise noiseGen = new OverworldTerrainNoise(0);
 
     [Fact(DisplayName = "Biomes", Timeout = 10000)]
     public async void BiomesAsync()
