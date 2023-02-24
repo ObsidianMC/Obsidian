@@ -18,7 +18,7 @@ public struct StreamPacketOutput : IPacketOutput
         written = 0;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
     public void WriteByte(byte b)
     {
@@ -26,7 +26,7 @@ public struct StreamPacketOutput : IPacketOutput
         written++;   
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
     public void WriteBytes(in ReadOnlySpan<byte> bytes)
     {
@@ -34,7 +34,7 @@ public struct StreamPacketOutput : IPacketOutput
         written += bytes.Length;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
     public bool TryGetDirectBuffer(int length, out Span<byte> buffer)
     {

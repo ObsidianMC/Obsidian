@@ -18,29 +18,31 @@ public struct ArrayPoolPacketOutput : IPacketOutput
 
     public long Written => bufferLength;
 
+    private const int InitialArraySize = 256;
+    private const int ArrayGrowthFactor = 2;
 
     public ArrayPoolPacketOutput(ArrayPool<byte> pool)
     {
         Pool = pool;
-        poolBuffer = Pool.Rent(1);
+        poolBuffer = Pool.Rent(InitialArraySize);
         bufferLength = 0;
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
     public void WriteByte(byte b)
     {
-        if (RequiresGrowth(1)) GrowBuffer();
+        if (RequiresGrowth(sizeof(byte))) GrowBuffer(sizeof(byte));
         GetTail() = b;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
     public void WriteBytes(in ReadOnlySpan<byte> bytes)
     {
         var len = bytes.Length;
-        if (RequiresGrowth(len)) GrowBuffer();
+        if (RequiresGrowth(len)) GrowBuffer(len);
         var span = MemoryMarshal.CreateSpan(
             ref GetTail(),
             len);
@@ -48,11 +50,11 @@ public struct ArrayPoolPacketOutput : IPacketOutput
         bufferLength += len;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
     public bool TryGetDirectBuffer(int length, out Span<byte> buffer)
     {
-        if (RequiresGrowth(length)) GrowBuffer();
+        if (RequiresGrowth(length)) GrowBuffer(length);
 
         buffer = MemoryMarshal.CreateSpan(
             ref GetTail(),
@@ -63,20 +65,24 @@ public struct ArrayPoolPacketOutput : IPacketOutput
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
-    private bool RequiresGrowth(int required) => bufferLength + required > this.poolBuffer.Length;
+    private bool RequiresGrowth(int required) => bufferLength + required > poolBuffer.Length;
 
     
-    private void GrowBuffer()
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    [SkipLocalsInit]
+    private void GrowBuffer(int required)
     {
-        var newBuffer = Pool.Rent(poolBuffer.Length * 2);
+        const int alignment = 8;
+        var alignedRequired = (required + (alignment - 1)) & ~(alignment - 1);
+        var newBuffer = Pool.Rent((poolBuffer.Length + alignedRequired) * ArrayGrowthFactor);
         poolBuffer.CopyTo(newBuffer, 0);
         Pool.Return(poolBuffer);
         poolBuffer = newBuffer;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
     private ref byte GetTail()
     {

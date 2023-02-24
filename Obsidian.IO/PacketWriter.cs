@@ -22,11 +22,11 @@ public struct PacketWriter<TOutput> where TOutput : IPacketOutput
     /// </summary>
     /// <param name="value">The value to write</param>
     /// <typeparam name="T">The type of the value</typeparam>
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
     public void Write<T>(in T value) where T : IPacketWritable => value.WriteToPacketWriter(ref this);
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
     private unsafe void WriteValue<T>(ref T value) where T : unmanaged
     {
@@ -42,7 +42,7 @@ public struct PacketWriter<TOutput> where TOutput : IPacketOutput
         }
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
     private unsafe void WriteValue<T>(T value) where T : unmanaged
     {
@@ -58,48 +58,48 @@ public struct PacketWriter<TOutput> where TOutput : IPacketOutput
         }
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
     public void WriteBytes(in Span<byte> bytes) => output.WriteBytes(bytes);
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
     public void WriteByte(sbyte b) => WriteUByte((byte)b);
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
     public void WriteUByte(byte b) => output.WriteByte(b);
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
     public void WriteShort(short s)
     {
         WriteValue(BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(s) : s);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
     public void WriteUShort(ushort s)
     {
         WriteValue(BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(s) : s);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
     public void WriteInt(int i)
     {
         WriteValue(BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(i) : i);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
     public void WriteLong(long l)
     {
         WriteValue(BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(l) : l);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
     public void WriteFloat(float f)
     {
@@ -108,7 +108,7 @@ public struct PacketWriter<TOutput> where TOutput : IPacketOutput
             : f);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
     public void WriteDouble(double d)
     {
@@ -117,7 +117,7 @@ public struct PacketWriter<TOutput> where TOutput : IPacketOutput
             : d);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
     public unsafe void WriteVarInt(int value)
     {
@@ -141,7 +141,7 @@ public struct PacketWriter<TOutput> where TOutput : IPacketOutput
         WriteBytes(new Span<byte>(ptr, len));
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
     public unsafe void WriteVarLong(long value)
     {
@@ -165,14 +165,14 @@ public struct PacketWriter<TOutput> where TOutput : IPacketOutput
         WriteBytes(new Span<byte>(ptr, len));
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
     public void WriteUuid(Guid uuid)
     {
         WriteValue(ref uuid);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
     public void WriteVarString(ReadOnlySpan<char> value)
     {
@@ -187,7 +187,7 @@ public struct PacketWriter<TOutput> where TOutput : IPacketOutput
         WriteString(value, bytesCount);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
     public void WriteShortString(ReadOnlySpan<char> value)
     {
@@ -203,7 +203,7 @@ public struct PacketWriter<TOutput> where TOutput : IPacketOutput
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
     private void WriteString(ReadOnlySpan<char> value, int bytes)
     {
