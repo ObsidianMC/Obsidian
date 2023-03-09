@@ -1,0 +1,2778 @@
+{
+  "minecraft:allay": {
+    "id": 0,
+    "translation_key": "entity.minecraft.allay",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/allay",
+    "width": 0.35,
+    "height": 0.6,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 20.0,
+      "minecraft:generic.follow_range": 48.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.10000000149011612,
+      "minecraft:generic.flying_speed": 0.10000000149011612,
+      "minecraft:generic.attack_damage": 2.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "AllayEntity",
+    "meta": {
+      "IS_DANCING": 16,
+      "CAN_DUPLICATE": 17
+    },
+    "parent": "PathAwareEntity"
+  },
+  "minecraft:area_effect_cloud": {
+    "id": 1,
+    "translation_key": "entity.minecraft.area_effect_cloud",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": true,
+    "loot_table": "minecraft:entities/area_effect_cloud",
+    "width": 6.0,
+    "height": 0.5,
+    "size_fixed": false,
+    "class": "AreaEffectCloudEntity",
+    "meta": {
+      "AREA_EFFECT_CLOUD_RADIUS": 8,
+      "AREA_EFFECT_CLOUD_COLOR": 9,
+      "AREA_EFFECT_CLOUD_WAITING": 10,
+      "AREA_EFFECT_CLOUD_PARTICLE": 11
+    },
+    "parent": "Entity"
+  },
+  "minecraft:armor_stand": {
+    "id": 2,
+    "translation_key": "entity.minecraft.armor_stand",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/armor_stand",
+    "width": 0.5,
+    "height": 1.975,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 20.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.699999988079071,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "ArmorStandEntity",
+    "meta": {
+      "ARMOR_STAND_FLAGS": 15,
+      "ARMOR_STAND_HEAD_ROTATION": 16,
+      "ARMOR_STAND_BODY_ROTATION": 17,
+      "ARMOR_STAND_LEFT_ARM_ROTATION": 18,
+      "ARMOR_STAND_RIGHT_ARM_ROTATION": 19,
+      "ARMOR_STAND_LEFT_LEG_ROTATION": 20,
+      "ARMOR_STAND_RIGHT_LEG_ROTATION": 21
+    },
+    "parent": "LivingEntity"
+  },
+  "minecraft:arrow": {
+    "id": 3,
+    "translation_key": "entity.minecraft.arrow",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/arrow",
+    "width": 0.5,
+    "height": 0.5,
+    "size_fixed": false,
+    "class": "ArrowEntity",
+    "meta": {
+      "ARROW_EFFECT_COLOR": 10
+    },
+    "parent": "PersistentProjectileEntity"
+  },
+  "minecraft:axolotl": {
+    "id": 4,
+    "translation_key": "entity.minecraft.axolotl",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/axolotl",
+    "width": 0.75,
+    "height": 0.42,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 14.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 1.0,
+      "minecraft:generic.attack_damage": 2.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "AxolotlEntity",
+    "meta": {
+      "AXOLOTL_VARIANT": 17,
+      "AXOLOTL_PLAYING_DEAD": 18,
+      "AXOLOTL_FROM_BUCKET": 19
+    },
+    "parent": "AnimalEntity"
+  },
+  "minecraft:bat": {
+    "id": 5,
+    "translation_key": "entity.minecraft.bat",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/bat",
+    "width": 0.5,
+    "height": 0.9,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 6.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.699999988079071,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "BatEntity",
+    "meta": {
+      "BAT_FLAGS": 16
+    },
+    "parent": "AmbientEntity"
+  },
+  "minecraft:bee": {
+    "id": 6,
+    "translation_key": "entity.minecraft.bee",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/bee",
+    "width": 0.7,
+    "height": 0.6,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 10.0,
+      "minecraft:generic.follow_range": 48.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.30000001192092896,
+      "minecraft:generic.flying_speed": 0.6000000238418579,
+      "minecraft:generic.attack_damage": 2.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "BeeEntity",
+    "meta": {
+      "BEE_FLAGS": 17,
+      "BEE_REMAINING_ANGER_TIME": 18
+    },
+    "parent": "AnimalEntity"
+  },
+  "minecraft:blaze": {
+    "id": 7,
+    "translation_key": "entity.minecraft.blaze",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": true,
+    "loot_table": "minecraft:entities/blaze",
+    "width": 0.6,
+    "height": 1.8,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 20.0,
+      "minecraft:generic.follow_range": 48.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.23000000417232513,
+      "minecraft:generic.attack_damage": 6.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "BlazeEntity",
+    "meta": {
+      "BLAZE_FLAGS": 16
+    },
+    "parent": "HostileEntity"
+  },
+  "minecraft:boat": {
+    "id": 8,
+    "translation_key": "entity.minecraft.boat",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/boat",
+    "width": 1.375,
+    "height": 0.5625,
+    "size_fixed": false,
+    "class": "BoatEntity",
+    "meta": {
+      "BOAT_HURT": 8,
+      "BOAT_HURT_DIRECTION": 9,
+      "BOAT_DAMAGE_TAKEN": 10,
+      "BOAT_MATERIAL": 11,
+      "BOAT_PADDLE_LEFT": 12,
+      "BOAT_PADDLE_RIGHT": 13,
+      "BOAT_BUBBLE_TIME": 14
+    },
+    "parent": "Entity"
+  },
+  "minecraft:chest_boat": {
+    "id": 9,
+    "translation_key": "entity.minecraft.chest_boat",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/chest_boat",
+    "width": 1.375,
+    "height": 0.5625,
+    "size_fixed": false,
+    "class": "ChestBoatEntity",
+    "parent": "BoatEntity"
+  },
+  "minecraft:cat": {
+    "id": 10,
+    "translation_key": "entity.minecraft.cat",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/cat",
+    "width": 0.6,
+    "height": 0.7,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 10.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.30000001192092896,
+      "minecraft:generic.attack_damage": 3.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "CatEntity",
+    "meta": {
+      "CAT_VARIANT": 19,
+      "CAT_IS_LYING": 20,
+      "CAT_IS_RELAXED": 21,
+      "CAT_GET_COLLAR_COLOR": 22
+    },
+    "parent": "TameableEntity"
+  },
+  "minecraft:camel": {
+    "id": 11,
+    "translation_key": "entity.minecraft.camel",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/camel",
+    "width": 1.7,
+    "height": 2.375,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 32.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.09000000357627869,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0,
+      "minecraft:horse.jump_strength": 0.41999998688697815
+    },
+    "class": "CamelEntity",
+    "meta": {
+      "DASHING": 19,
+      "LAST_POSE_TICK": 20
+    },
+    "parent": "AbstractHorseEntity"
+  },
+  "minecraft:cave_spider": {
+    "id": 12,
+    "translation_key": "entity.minecraft.cave_spider",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/cave_spider",
+    "width": 0.7,
+    "height": 0.5,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 12.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.30000001192092896,
+      "minecraft:generic.attack_damage": 2.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "CaveSpiderEntity",
+    "parent": "SpiderEntity"
+  },
+  "minecraft:chicken": {
+    "id": 13,
+    "translation_key": "entity.minecraft.chicken",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/chicken",
+    "width": 0.4,
+    "height": 0.7,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 4.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.25,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "ChickenEntity",
+    "parent": "AnimalEntity"
+  },
+  "minecraft:cod": {
+    "id": 14,
+    "translation_key": "entity.minecraft.cod",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/cod",
+    "width": 0.5,
+    "height": 0.3,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 3.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.699999988079071,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "CodEntity",
+    "parent": "SchoolingFishEntity"
+  },
+  "minecraft:cow": {
+    "id": 15,
+    "translation_key": "entity.minecraft.cow",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/cow",
+    "width": 0.9,
+    "height": 1.4,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 10.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.20000000298023224,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "CowEntity",
+    "parent": "AnimalEntity"
+  },
+  "minecraft:creeper": {
+    "id": 16,
+    "translation_key": "entity.minecraft.creeper",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/creeper",
+    "width": 0.6,
+    "height": 1.7,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 20.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.25,
+      "minecraft:generic.attack_damage": 2.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "CreeperEntity",
+    "meta": {
+      "CREEPER_STATE": 16,
+      "CREEPER_IS_CHARGED": 17,
+      "CREEPER_IS_IGNITED": 18
+    },
+    "parent": "HostileEntity"
+  },
+  "minecraft:dolphin": {
+    "id": 17,
+    "translation_key": "entity.minecraft.dolphin",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/dolphin",
+    "width": 0.9,
+    "height": 0.6,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 10.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 1.2000000476837158,
+      "minecraft:generic.attack_damage": 3.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "DolphinEntity",
+    "meta": {
+      "DOLPHIN_TREASURE_POSITION": 16,
+      "DOLPHIN_HAS_FISH": 17,
+      "DOLPHIN_MOISTNESS_LEVEL": 18
+    },
+    "parent": "WaterCreatureEntity"
+  },
+  "minecraft:donkey": {
+    "id": 18,
+    "translation_key": "entity.minecraft.donkey",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/donkey",
+    "width": 1.3964844,
+    "height": 1.5,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 53.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.17499999701976776,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0,
+      "minecraft:horse.jump_strength": 0.5
+    },
+    "class": "DonkeyEntity",
+    "parent": "AbstractDonkeyEntity"
+  },
+  "minecraft:dragon_fireball": {
+    "id": 19,
+    "translation_key": "entity.minecraft.dragon_fireball",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/dragon_fireball",
+    "width": 1.0,
+    "height": 1.0,
+    "size_fixed": false,
+    "class": "DragonFireballEntity",
+    "parent": "ExplosiveProjectileEntity"
+  },
+  "minecraft:drowned": {
+    "id": 20,
+    "translation_key": "entity.minecraft.drowned",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/drowned",
+    "width": 0.6,
+    "height": 1.95,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 20.0,
+      "minecraft:generic.follow_range": 35.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.23000000417232513,
+      "minecraft:generic.attack_damage": 3.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 2.0,
+      "minecraft:generic.armor_toughness": 0.0,
+      "minecraft:zombie.spawn_reinforcements": 0.0
+    },
+    "class": "DrownedEntity",
+    "parent": "ZombieEntity"
+  },
+  "minecraft:elder_guardian": {
+    "id": 21,
+    "translation_key": "entity.minecraft.elder_guardian",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/elder_guardian",
+    "width": 1.9975,
+    "height": 1.9975,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 80.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.30000001192092896,
+      "minecraft:generic.attack_damage": 8.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "ElderGuardianEntity",
+    "parent": "GuardianEntity"
+  },
+  "minecraft:end_crystal": {
+    "id": 22,
+    "translation_key": "entity.minecraft.end_crystal",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/end_crystal",
+    "width": 2.0,
+    "height": 2.0,
+    "size_fixed": false,
+    "class": "EndCrystalEntity",
+    "meta": {
+      "END_CRYSTAL_BEAM_TARGET": 8,
+      "END_CRYSTAL_SHOW_BOTTOM": 9
+    },
+    "parent": "Entity"
+  },
+  "minecraft:ender_dragon": {
+    "id": 23,
+    "translation_key": "entity.minecraft.ender_dragon",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": true,
+    "loot_table": "minecraft:entities/ender_dragon",
+    "width": 16.0,
+    "height": 8.0,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 200.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.699999988079071,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "EnderDragonEntity",
+    "meta": {
+      "ENDER_DRAGON_PHASE": 16
+    },
+    "parent": "MobEntity"
+  },
+  "minecraft:enderman": {
+    "id": 24,
+    "translation_key": "entity.minecraft.enderman",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/enderman",
+    "width": 0.6,
+    "height": 2.9,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 40.0,
+      "minecraft:generic.follow_range": 64.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.30000001192092896,
+      "minecraft:generic.attack_damage": 7.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "EndermanEntity",
+    "meta": {
+      "ENDERMAN_CARRIED_BLOCK": 16,
+      "ENDERMAN_IS_SCREAMING": 17,
+      "ENDERMAN_IS_STARRING": 18
+    },
+    "parent": "HostileEntity"
+  },
+  "minecraft:endermite": {
+    "id": 25,
+    "translation_key": "entity.minecraft.endermite",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/endermite",
+    "width": 0.4,
+    "height": 0.3,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 8.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.25,
+      "minecraft:generic.attack_damage": 2.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "EndermiteEntity",
+    "parent": "HostileEntity"
+  },
+  "minecraft:evoker": {
+    "id": 26,
+    "translation_key": "entity.minecraft.evoker",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/evoker",
+    "width": 0.6,
+    "height": 1.95,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 24.0,
+      "minecraft:generic.follow_range": 12.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.5,
+      "minecraft:generic.attack_damage": 2.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "EvokerEntity",
+    "parent": "SpellcastingIllagerEntity"
+  },
+  "minecraft:evoker_fangs": {
+    "id": 27,
+    "translation_key": "entity.minecraft.evoker_fangs",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/evoker_fangs",
+    "width": 0.5,
+    "height": 0.8,
+    "size_fixed": false,
+    "class": "EvokerFangsEntity",
+    "parent": "Entity"
+  },
+  "minecraft:experience_orb": {
+    "id": 28,
+    "translation_key": "entity.minecraft.experience_orb",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/experience_orb",
+    "width": 0.5,
+    "height": 0.5,
+    "size_fixed": false,
+    "class": "ExperienceOrbEntity",
+    "parent": "Entity"
+  },
+  "minecraft:eye_of_ender": {
+    "id": 29,
+    "translation_key": "entity.minecraft.eye_of_ender",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/eye_of_ender",
+    "width": 0.25,
+    "height": 0.25,
+    "size_fixed": false,
+    "class": "EyeOfEnderEntity",
+    "meta": {
+      "THROWN_EYE_OF_ENDER_ITEM": 8
+    },
+    "parent": "Entity"
+  },
+  "minecraft:falling_block": {
+    "id": 30,
+    "translation_key": "entity.minecraft.falling_block",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/falling_block",
+    "width": 0.98,
+    "height": 0.98,
+    "size_fixed": false,
+    "class": "FallingBlockEntity",
+    "meta": {
+      "FALLING_BLOCK_SPAWN_POSITION": 8
+    },
+    "parent": "Entity"
+  },
+  "minecraft:firework_rocket": {
+    "id": 31,
+    "translation_key": "entity.minecraft.firework_rocket",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/firework_rocket",
+    "width": 0.25,
+    "height": 0.25,
+    "size_fixed": false,
+    "class": "FireworkRocketEntity",
+    "meta": {
+      "FIREWORK_ROCKET_ENTITY_ITEM": 8,
+      "FIREWORK_ROCKET_ENTITY_ATTACHED_ENTITY": 9,
+      "FIREWORK_ROCKET_ENTITY_SHOT_AT_ANGLE": 10
+    },
+    "parent": "ProjectileEntity"
+  },
+  "minecraft:fox": {
+    "id": 32,
+    "translation_key": "entity.minecraft.fox",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/fox",
+    "width": 0.6,
+    "height": 0.7,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 10.0,
+      "minecraft:generic.follow_range": 32.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.30000001192092896,
+      "minecraft:generic.attack_damage": 2.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "FoxEntity",
+    "meta": {
+      "FOX_VARIANT": 17,
+      "FOX_FLAGS": 18,
+      "FOX_TRUSTED_1": 19,
+      "FOX_TRUSTED_2": 20
+    },
+    "parent": "AnimalEntity"
+  },
+  "minecraft:frog": {
+    "id": 33,
+    "translation_key": "entity.minecraft.frog",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/frog",
+    "width": 0.5,
+    "height": 0.5,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 10.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 1.0,
+      "minecraft:generic.attack_damage": 10.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "FrogEntity",
+    "meta": {
+      "FROG_TYPE": 17,
+      "FROG_TARGET": 18
+    },
+    "parent": "AnimalEntity"
+  },
+  "minecraft:ghast": {
+    "id": 34,
+    "translation_key": "entity.minecraft.ghast",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": true,
+    "loot_table": "minecraft:entities/ghast",
+    "width": 4.0,
+    "height": 4.0,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 10.0,
+      "minecraft:generic.follow_range": 100.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.699999988079071,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "GhastEntity",
+    "meta": {
+      "GHAST_IS_ATTACKING": 16
+    },
+    "parent": "FlyingEntity"
+  },
+  "minecraft:giant": {
+    "id": 35,
+    "translation_key": "entity.minecraft.giant",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/giant",
+    "width": 3.6,
+    "height": 12.0,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 100.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.5,
+      "minecraft:generic.attack_damage": 50.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "GiantEntity",
+    "parent": "HostileEntity"
+  },
+  "minecraft:glow_item_frame": {
+    "id": 36,
+    "translation_key": "entity.minecraft.glow_item_frame",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/glow_item_frame",
+    "width": 0.5,
+    "height": 0.5,
+    "size_fixed": false,
+    "class": "GlowItemFrameEntity",
+    "parent": "ItemFrameEntity"
+  },
+  "minecraft:glow_squid": {
+    "id": 37,
+    "translation_key": "entity.minecraft.glow_squid",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/glow_squid",
+    "width": 0.8,
+    "height": 0.8,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 10.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.699999988079071,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "GlowSquidEntity",
+    "meta": {
+      "GLOW_SQUID_DARK_TICKS_REMAINING": 16
+    },
+    "parent": "SquidEntity"
+  },
+  "minecraft:goat": {
+    "id": 38,
+    "translation_key": "entity.minecraft.goat",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/goat",
+    "width": 0.9,
+    "height": 1.3,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 10.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.20000000298023224,
+      "minecraft:generic.attack_damage": 2.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "GoatEntity",
+    "meta": {
+      "GOAT_IS_SCREAMING": 17,
+      "LEFT_HORN": 18,
+      "RIGHT_HORN": 19
+    },
+    "parent": "AnimalEntity"
+  },
+  "minecraft:guardian": {
+    "id": 39,
+    "translation_key": "entity.minecraft.guardian",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/guardian",
+    "width": 0.85,
+    "height": 0.85,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 30.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.5,
+      "minecraft:generic.attack_damage": 6.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "GuardianEntity",
+    "meta": {
+      "GUARDIAN_IS_MOVING": 16,
+      "GUARDIAN_TARGET_ENTITY_ID": 17
+    },
+    "parent": "HostileEntity"
+  },
+  "minecraft:hoglin": {
+    "id": 40,
+    "translation_key": "entity.minecraft.hoglin",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/hoglin",
+    "width": 1.3964844,
+    "height": 1.4,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 40.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.6000000238418579,
+      "minecraft:generic.movement_speed": 0.30000001192092896,
+      "minecraft:generic.attack_damage": 6.0,
+      "minecraft:generic.attack_knockback": 1.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "HoglinEntity",
+    "meta": {
+      "AGEABLE_IS_BABY": 17
+    },
+    "parent": "AnimalEntity"
+  },
+  "minecraft:horse": {
+    "id": 41,
+    "translation_key": "entity.minecraft.horse",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/horse",
+    "width": 1.3964844,
+    "height": 1.6,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 53.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.22499999403953552,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0,
+      "minecraft:horse.jump_strength": 0.7
+    },
+    "class": "HorseEntity",
+    "meta": {
+      "HORSE_VARIANT": 19
+    },
+    "parent": "AbstractHorseEntity"
+  },
+  "minecraft:husk": {
+    "id": 42,
+    "translation_key": "entity.minecraft.husk",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/husk",
+    "width": 0.6,
+    "height": 1.95,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 20.0,
+      "minecraft:generic.follow_range": 35.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.23000000417232513,
+      "minecraft:generic.attack_damage": 3.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 2.0,
+      "minecraft:generic.armor_toughness": 0.0,
+      "minecraft:zombie.spawn_reinforcements": 0.0
+    },
+    "class": "HuskEntity",
+    "parent": "ZombieEntity"
+  },
+  "minecraft:illusioner": {
+    "id": 43,
+    "translation_key": "entity.minecraft.illusioner",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/illusioner",
+    "width": 0.6,
+    "height": 1.95,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 32.0,
+      "minecraft:generic.follow_range": 18.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.5,
+      "minecraft:generic.attack_damage": 2.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "IllusionerEntity",
+    "parent": "SpellcastingIllagerEntity"
+  },
+  "minecraft:iron_golem": {
+    "id": 44,
+    "translation_key": "entity.minecraft.iron_golem",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/iron_golem",
+    "width": 1.4,
+    "height": 2.7,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 100.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 1.0,
+      "minecraft:generic.movement_speed": 0.25,
+      "minecraft:generic.attack_damage": 15.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "IronGolemEntity",
+    "meta": {
+      "IRON_GOLEM_FLAGS": 16
+    },
+    "parent": "GolemEntity"
+  },
+  "minecraft:item": {
+    "id": 45,
+    "translation_key": "entity.minecraft.item",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/item",
+    "width": 0.25,
+    "height": 0.25,
+    "size_fixed": false,
+    "class": "ItemEntity",
+    "meta": {
+      "ITEM_ITEM": 8
+    },
+    "parent": "Entity"
+  },
+  "minecraft:item_frame": {
+    "id": 46,
+    "translation_key": "entity.minecraft.item_frame",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/item_frame",
+    "width": 0.5,
+    "height": 0.5,
+    "size_fixed": false,
+    "class": "ItemFrameEntity",
+    "meta": {
+      "ITEM_FRAME_ITEM": 8,
+      "ITEM_FRAME_ROTATION": 9
+    },
+    "parent": "AbstractDecorationEntity"
+  },
+  "minecraft:fireball": {
+    "id": 47,
+    "translation_key": "entity.minecraft.fireball",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/fireball",
+    "width": 1.0,
+    "height": 1.0,
+    "size_fixed": false,
+    "class": "FireballEntity",
+    "parent": "AbstractFireballEntity"
+  },
+  "minecraft:leash_knot": {
+    "id": 48,
+    "translation_key": "entity.minecraft.leash_knot",
+    "serializable": false,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/leash_knot",
+    "width": 0.375,
+    "height": 0.5,
+    "size_fixed": false,
+    "class": "LeashKnotEntity",
+    "parent": "AbstractDecorationEntity"
+  },
+  "minecraft:lightning_bolt": {
+    "id": 49,
+    "translation_key": "entity.minecraft.lightning_bolt",
+    "serializable": false,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/lightning_bolt",
+    "width": 0.0,
+    "height": 0.0,
+    "size_fixed": false,
+    "class": "LightningEntity",
+    "parent": "Entity"
+  },
+  "minecraft:llama": {
+    "id": 50,
+    "translation_key": "entity.minecraft.llama",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/llama",
+    "width": 0.9,
+    "height": 1.87,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 53.0,
+      "minecraft:generic.follow_range": 40.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.17499999701976776,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0,
+      "minecraft:horse.jump_strength": 0.5
+    },
+    "class": "LlamaEntity",
+    "meta": {
+      "LLAMA_STRENGTH": 20,
+      "LLAMA_CARPET_COLOR": 21,
+      "LLAMA_VARIANT": 22
+    },
+    "parent": "AbstractDonkeyEntity"
+  },
+  "minecraft:llama_spit": {
+    "id": 51,
+    "translation_key": "entity.minecraft.llama_spit",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/llama_spit",
+    "width": 0.25,
+    "height": 0.25,
+    "size_fixed": false,
+    "class": "LlamaSpitEntity",
+    "parent": "ProjectileEntity"
+  },
+  "minecraft:magma_cube": {
+    "id": 52,
+    "translation_key": "entity.minecraft.magma_cube",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": true,
+    "loot_table": "minecraft:entities/magma_cube",
+    "width": 2.04,
+    "height": 2.04,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 20.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.20000000298023224,
+      "minecraft:generic.attack_damage": 2.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "MagmaCubeEntity",
+    "parent": "SlimeEntity"
+  },
+  "minecraft:marker": {
+    "id": 53,
+    "translation_key": "entity.minecraft.marker",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/marker",
+    "width": 0.0,
+    "height": 0.0,
+    "size_fixed": false,
+    "class": "MarkerEntity",
+    "parent": "Entity"
+  },
+  "minecraft:minecart": {
+    "id": 54,
+    "translation_key": "entity.minecraft.minecart",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/minecart",
+    "width": 0.98,
+    "height": 0.7,
+    "size_fixed": false,
+    "class": "MinecartEntity",
+    "parent": "AbstractMinecartEntity"
+  },
+  "minecraft:chest_minecart": {
+    "id": 55,
+    "translation_key": "entity.minecraft.chest_minecart",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/chest_minecart",
+    "width": 0.98,
+    "height": 0.7,
+    "size_fixed": false,
+    "class": "ChestMinecartEntity",
+    "parent": "StorageMinecartEntity"
+  },
+  "minecraft:command_block_minecart": {
+    "id": 56,
+    "translation_key": "entity.minecraft.command_block_minecart",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/command_block_minecart",
+    "width": 0.98,
+    "height": 0.7,
+    "size_fixed": false,
+    "class": "CommandBlockMinecartEntity",
+    "meta": {
+      "MINECART_COMMAND_BLOCK_COMMAND": 14,
+      "MINECART_COMMAND_BLOCK_LAST_OUTPUT": 15
+    },
+    "parent": "AbstractMinecartEntity"
+  },
+  "minecraft:furnace_minecart": {
+    "id": 57,
+    "translation_key": "entity.minecraft.furnace_minecart",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/furnace_minecart",
+    "width": 0.98,
+    "height": 0.7,
+    "size_fixed": false,
+    "class": "FurnaceMinecartEntity",
+    "meta": {
+      "MINECART_FURNACE_HAS_FUEL": 14
+    },
+    "parent": "AbstractMinecartEntity"
+  },
+  "minecraft:hopper_minecart": {
+    "id": 58,
+    "translation_key": "entity.minecraft.hopper_minecart",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/hopper_minecart",
+    "width": 0.98,
+    "height": 0.7,
+    "size_fixed": false,
+    "class": "HopperMinecartEntity",
+    "parent": "StorageMinecartEntity"
+  },
+  "minecraft:spawner_minecart": {
+    "id": 59,
+    "translation_key": "entity.minecraft.spawner_minecart",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/spawner_minecart",
+    "width": 0.98,
+    "height": 0.7,
+    "size_fixed": false,
+    "class": "SpawnerMinecartEntity",
+    "parent": "AbstractMinecartEntity"
+  },
+  "minecraft:tnt_minecart": {
+    "id": 60,
+    "translation_key": "entity.minecraft.tnt_minecart",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/tnt_minecart",
+    "width": 0.98,
+    "height": 0.7,
+    "size_fixed": false,
+    "class": "TntMinecartEntity",
+    "parent": "AbstractMinecartEntity"
+  },
+  "minecraft:mule": {
+    "id": 61,
+    "translation_key": "entity.minecraft.mule",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/mule",
+    "width": 1.3964844,
+    "height": 1.6,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 53.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.17499999701976776,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0,
+      "minecraft:horse.jump_strength": 0.5
+    },
+    "class": "MuleEntity",
+    "parent": "AbstractDonkeyEntity"
+  },
+  "minecraft:mooshroom": {
+    "id": 62,
+    "translation_key": "entity.minecraft.mooshroom",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/mooshroom",
+    "width": 0.9,
+    "height": 1.4,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 10.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.20000000298023224,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "MooshroomEntity",
+    "meta": {
+      "MOOSHROOM_VARIANT": 17
+    },
+    "parent": "CowEntity"
+  },
+  "minecraft:ocelot": {
+    "id": 63,
+    "translation_key": "entity.minecraft.ocelot",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/ocelot",
+    "width": 0.6,
+    "height": 0.7,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 10.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.30000001192092896,
+      "minecraft:generic.attack_damage": 3.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "OcelotEntity",
+    "meta": {
+      "OCELOT_IS_TRUSTING": 17
+    },
+    "parent": "AnimalEntity"
+  },
+  "minecraft:painting": {
+    "id": 64,
+    "translation_key": "entity.minecraft.painting",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/painting",
+    "width": 0.5,
+    "height": 0.5,
+    "size_fixed": false,
+    "class": "PaintingEntity",
+    "meta": {
+      "MOTIF": 8
+    },
+    "parent": "AbstractDecorationEntity"
+  },
+  "minecraft:panda": {
+    "id": 65,
+    "translation_key": "entity.minecraft.panda",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/panda",
+    "width": 1.3,
+    "height": 1.25,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 20.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.15000000596046448,
+      "minecraft:generic.attack_damage": 6.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "PandaEntity",
+    "meta": {
+      "PANDA_UNHAPPY_TIMER": 17,
+      "PANDA_SNEEZE_TIMER": 18,
+      "PANDA_EAT_TIMER": 19,
+      "PANDA_MAIN_GENE": 20,
+      "PANDA_HIDDEN_GAME": 21,
+      "PANDA_FLAGS": 22
+    },
+    "parent": "AnimalEntity"
+  },
+  "minecraft:parrot": {
+    "id": 66,
+    "translation_key": "entity.minecraft.parrot",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/parrot",
+    "width": 0.5,
+    "height": 0.9,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 6.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.20000000298023224,
+      "minecraft:generic.flying_speed": 0.4000000059604645,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "ParrotEntity",
+    "meta": {
+      "PARROT_VARIANT": 19
+    },
+    "parent": "TameableShoulderEntity"
+  },
+  "minecraft:phantom": {
+    "id": 67,
+    "translation_key": "entity.minecraft.phantom",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/phantom",
+    "width": 0.9,
+    "height": 0.5,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 20.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.699999988079071,
+      "minecraft:generic.attack_damage": 2.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "PhantomEntity",
+    "meta": {
+      "PHANTOM_SIZE": 16
+    },
+    "parent": "FlyingEntity"
+  },
+  "minecraft:pig": {
+    "id": 68,
+    "translation_key": "entity.minecraft.pig",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/pig",
+    "width": 0.9,
+    "height": 0.9,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 10.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.25,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "PigEntity",
+    "meta": {
+      "PIG_HAS_SADDLE": 17,
+      "PIG_BOOST_TIME": 18
+    },
+    "parent": "AnimalEntity"
+  },
+  "minecraft:piglin": {
+    "id": 69,
+    "translation_key": "entity.minecraft.piglin",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/piglin",
+    "width": 0.6,
+    "height": 1.95,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 16.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.3499999940395355,
+      "minecraft:generic.attack_damage": 5.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "PiglinEntity",
+    "meta": {
+      "PIGLIN_IS_BABY": 17,
+      "PIGLIN_IS_CHARGING_CROSSBOW": 18,
+      "PIGLIN_IS_DANCING": 19
+    },
+    "parent": "AbstractPiglinEntity"
+  },
+  "minecraft:piglin_brute": {
+    "id": 70,
+    "translation_key": "entity.minecraft.piglin_brute",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/piglin_brute",
+    "width": 0.6,
+    "height": 1.95,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 50.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.3499999940395355,
+      "minecraft:generic.attack_damage": 7.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "PiglinBruteEntity",
+    "parent": "AbstractPiglinEntity"
+  },
+  "minecraft:pillager": {
+    "id": 71,
+    "translation_key": "entity.minecraft.pillager",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/pillager",
+    "width": 0.6,
+    "height": 1.95,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 24.0,
+      "minecraft:generic.follow_range": 32.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.3499999940395355,
+      "minecraft:generic.attack_damage": 5.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "PillagerEntity",
+    "meta": {
+      "PILLAGER_IS_CHARGING_CROSSBOW": 17
+    },
+    "parent": "IllagerEntity"
+  },
+  "minecraft:polar_bear": {
+    "id": 72,
+    "translation_key": "entity.minecraft.polar_bear",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/polar_bear",
+    "width": 1.4,
+    "height": 1.4,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 30.0,
+      "minecraft:generic.follow_range": 20.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.25,
+      "minecraft:generic.attack_damage": 6.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "PolarBearEntity",
+    "meta": {
+      "POLAR_BEAR_STANDING": 17
+    },
+    "parent": "AnimalEntity"
+  },
+  "minecraft:tnt": {
+    "id": 73,
+    "translation_key": "entity.minecraft.tnt",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": true,
+    "loot_table": "minecraft:entities/tnt",
+    "width": 0.98,
+    "height": 0.98,
+    "size_fixed": false,
+    "class": "TntEntity",
+    "meta": {
+      "PRIMED_TNT_FUSE_TIME": 8
+    },
+    "parent": "Entity"
+  },
+  "minecraft:pufferfish": {
+    "id": 74,
+    "translation_key": "entity.minecraft.pufferfish",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/pufferfish",
+    "width": 0.7,
+    "height": 0.7,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 3.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.699999988079071,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "PufferfishEntity",
+    "meta": {
+      "PUFFERFISH_PUFF_STATE": 17
+    },
+    "parent": "FishEntity"
+  },
+  "minecraft:rabbit": {
+    "id": 75,
+    "translation_key": "entity.minecraft.rabbit",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/rabbit",
+    "width": 0.4,
+    "height": 0.5,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 3.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.30000001192092896,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "RabbitEntity",
+    "meta": {
+      "RABBIT_VARIANT": 17
+    },
+    "parent": "AnimalEntity"
+  },
+  "minecraft:ravager": {
+    "id": 76,
+    "translation_key": "entity.minecraft.ravager",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/ravager",
+    "width": 1.95,
+    "height": 2.2,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 100.0,
+      "minecraft:generic.follow_range": 32.0,
+      "minecraft:generic.knockback_resistance": 0.75,
+      "minecraft:generic.movement_speed": 0.3,
+      "minecraft:generic.attack_damage": 12.0,
+      "minecraft:generic.attack_knockback": 1.5,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "RavagerEntity",
+    "parent": "RaiderEntity"
+  },
+  "minecraft:salmon": {
+    "id": 77,
+    "translation_key": "entity.minecraft.salmon",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/salmon",
+    "width": 0.7,
+    "height": 0.4,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 3.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.699999988079071,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "SalmonEntity",
+    "parent": "SchoolingFishEntity"
+  },
+  "minecraft:sheep": {
+    "id": 78,
+    "translation_key": "entity.minecraft.sheep",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/sheep",
+    "width": 0.9,
+    "height": 1.3,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 8.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.23000000417232513,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "SheepEntity",
+    "meta": {
+      "SHEEP_FLAGS": 17
+    },
+    "parent": "AnimalEntity"
+  },
+  "minecraft:shulker": {
+    "id": 79,
+    "translation_key": "entity.minecraft.shulker",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": true,
+    "loot_table": "minecraft:entities/shulker",
+    "width": 1.0,
+    "height": 1.0,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 30.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.699999988079071,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "ShulkerEntity",
+    "meta": {
+      "SHULKER_ATTACH_FACE": 16,
+      "SHULKER_PEEK": 17,
+      "SHULKER_COLOR": 18
+    },
+    "parent": "GolemEntity"
+  },
+  "minecraft:shulker_bullet": {
+    "id": 80,
+    "translation_key": "entity.minecraft.shulker_bullet",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/shulker_bullet",
+    "width": 0.3125,
+    "height": 0.3125,
+    "size_fixed": false,
+    "class": "ShulkerBulletEntity",
+    "parent": "ProjectileEntity"
+  },
+  "minecraft:silverfish": {
+    "id": 81,
+    "translation_key": "entity.minecraft.silverfish",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/silverfish",
+    "width": 0.4,
+    "height": 0.3,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 8.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.25,
+      "minecraft:generic.attack_damage": 1.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "SilverfishEntity",
+    "parent": "HostileEntity"
+  },
+  "minecraft:skeleton": {
+    "id": 82,
+    "translation_key": "entity.minecraft.skeleton",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/skeleton",
+    "width": 0.6,
+    "height": 1.99,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 20.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.25,
+      "minecraft:generic.attack_damage": 2.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "SkeletonEntity",
+    "meta": {
+      "SKELETON_STRAY_FREEZE_CONVERTING": 16
+    },
+    "parent": "AbstractSkeletonEntity"
+  },
+  "minecraft:skeleton_horse": {
+    "id": 83,
+    "translation_key": "entity.minecraft.skeleton_horse",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/skeleton_horse",
+    "width": 1.3964844,
+    "height": 1.6,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 15.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.20000000298023224,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0,
+      "minecraft:horse.jump_strength": 0.7
+    },
+    "class": "SkeletonHorseEntity",
+    "parent": "AbstractHorseEntity"
+  },
+  "minecraft:slime": {
+    "id": 84,
+    "translation_key": "entity.minecraft.slime",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/slime",
+    "width": 2.04,
+    "height": 2.04,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 20.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.699999988079071,
+      "minecraft:generic.attack_damage": 2.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "SlimeEntity",
+    "meta": {
+      "SLIME_SIZE": 16
+    },
+    "parent": "MobEntity"
+  },
+  "minecraft:small_fireball": {
+    "id": 85,
+    "translation_key": "entity.minecraft.small_fireball",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/small_fireball",
+    "width": 0.3125,
+    "height": 0.3125,
+    "size_fixed": false,
+    "class": "SmallFireballEntity",
+    "parent": "AbstractFireballEntity"
+  },
+  "minecraft:snow_golem": {
+    "id": 86,
+    "translation_key": "entity.minecraft.snow_golem",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/snow_golem",
+    "width": 0.7,
+    "height": 1.9,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 4.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.20000000298023224,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "SnowGolemEntity",
+    "meta": {
+      "SNOW_GOLEM_FLAGS": 16
+    },
+    "parent": "GolemEntity"
+  },
+  "minecraft:snowball": {
+    "id": 87,
+    "translation_key": "entity.minecraft.snowball",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/snowball",
+    "width": 0.25,
+    "height": 0.25,
+    "size_fixed": false,
+    "class": "SnowballEntity",
+    "parent": "ThrownItemEntity"
+  },
+  "minecraft:spectral_arrow": {
+    "id": 88,
+    "translation_key": "entity.minecraft.spectral_arrow",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/spectral_arrow",
+    "width": 0.5,
+    "height": 0.5,
+    "size_fixed": false,
+    "class": "SpectralArrowEntity",
+    "parent": "PersistentProjectileEntity"
+  },
+  "minecraft:spider": {
+    "id": 89,
+    "translation_key": "entity.minecraft.spider",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/spider",
+    "width": 1.4,
+    "height": 0.9,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 16.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.30000001192092896,
+      "minecraft:generic.attack_damage": 2.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "SpiderEntity",
+    "meta": {
+      "SPIDER_FLAGS": 16
+    },
+    "parent": "HostileEntity"
+  },
+  "minecraft:squid": {
+    "id": 90,
+    "translation_key": "entity.minecraft.squid",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/squid",
+    "width": 0.8,
+    "height": 0.8,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 10.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.699999988079071,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "SquidEntity",
+    "parent": "WaterCreatureEntity"
+  },
+  "minecraft:stray": {
+    "id": 91,
+    "translation_key": "entity.minecraft.stray",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/stray",
+    "width": 0.6,
+    "height": 1.99,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 20.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.25,
+      "minecraft:generic.attack_damage": 2.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "StrayEntity",
+    "parent": "AbstractSkeletonEntity"
+  },
+  "minecraft:strider": {
+    "id": 92,
+    "translation_key": "entity.minecraft.strider",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": true,
+    "loot_table": "minecraft:entities/strider",
+    "width": 0.9,
+    "height": 1.7,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 20.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.17499999701976776,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "StriderEntity",
+    "meta": {
+      "STRIDER_TIME_TO_BOOST": 17,
+      "STRIDER_IS_SUFFOCATING": 18,
+      "STRIDER_HAS_SADDLE": 19
+    },
+    "parent": "AnimalEntity"
+  },
+  "minecraft:tadpole": {
+    "id": 93,
+    "translation_key": "entity.minecraft.tadpole",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/tadpole",
+    "width": 0.4,
+    "height": 0.3,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 6.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 1.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "TadpoleEntity",
+    "parent": "FishEntity"
+  },
+  "minecraft:egg": {
+    "id": 94,
+    "translation_key": "entity.minecraft.egg",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/egg",
+    "width": 0.25,
+    "height": 0.25,
+    "size_fixed": false,
+    "class": "EggEntity",
+    "parent": "ThrownItemEntity"
+  },
+  "minecraft:ender_pearl": {
+    "id": 95,
+    "translation_key": "entity.minecraft.ender_pearl",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/ender_pearl",
+    "width": 0.25,
+    "height": 0.25,
+    "size_fixed": false,
+    "class": "EnderPearlEntity",
+    "parent": "ThrownItemEntity"
+  },
+  "minecraft:experience_bottle": {
+    "id": 96,
+    "translation_key": "entity.minecraft.experience_bottle",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/experience_bottle",
+    "width": 0.25,
+    "height": 0.25,
+    "size_fixed": false,
+    "class": "ExperienceBottleEntity",
+    "parent": "ThrownItemEntity"
+  },
+  "minecraft:potion": {
+    "id": 97,
+    "translation_key": "entity.minecraft.potion",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/potion",
+    "width": 0.25,
+    "height": 0.25,
+    "size_fixed": false,
+    "class": "PotionEntity",
+    "parent": "ThrownItemEntity"
+  },
+  "minecraft:trident": {
+    "id": 98,
+    "translation_key": "entity.minecraft.trident",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/trident",
+    "width": 0.5,
+    "height": 0.5,
+    "size_fixed": false,
+    "class": "TridentEntity",
+    "meta": {
+      "THROWN_TRIDENT_LOYALTY_LEVEL": 10,
+      "THROWN_TRIDENT_FOIL": 11
+    },
+    "parent": "PersistentProjectileEntity"
+  },
+  "minecraft:trader_llama": {
+    "id": 99,
+    "translation_key": "entity.minecraft.trader_llama",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/trader_llama",
+    "width": 0.9,
+    "height": 1.87,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 53.0,
+      "minecraft:generic.follow_range": 40.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.17499999701976776,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0,
+      "minecraft:horse.jump_strength": 0.5
+    },
+    "class": "TraderLlamaEntity",
+    "parent": "LlamaEntity"
+  },
+  "minecraft:tropical_fish": {
+    "id": 100,
+    "translation_key": "entity.minecraft.tropical_fish",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/tropical_fish",
+    "width": 0.5,
+    "height": 0.4,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 3.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.699999988079071,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "TropicalFishEntity",
+    "meta": {
+      "TROPICAL_FISH_VARIANT": 17
+    },
+    "parent": "SchoolingFishEntity"
+  },
+  "minecraft:turtle": {
+    "id": 101,
+    "translation_key": "entity.minecraft.turtle",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/turtle",
+    "width": 1.2,
+    "height": 0.4,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 30.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.25,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "TurtleEntity",
+    "meta": {
+      "TURTLE_HOME_POSITION": 17,
+      "TURTLE_HAS_EGG": 18,
+      "TURTLE_IS_LAYING_EGG": 19,
+      "TURTLE_TRAVEL_POSITION": 20,
+      "TURTLE_IS_GOING_HOME": 21,
+      "TURTLE_IS_TRAVELING": 22
+    },
+    "parent": "AnimalEntity"
+  },
+  "minecraft:vex": {
+    "id": 102,
+    "translation_key": "entity.minecraft.vex",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": true,
+    "loot_table": "minecraft:entities/vex",
+    "width": 0.4,
+    "height": 0.8,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 14.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.699999988079071,
+      "minecraft:generic.attack_damage": 4.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "VexEntity",
+    "meta": {
+      "VEX_FLAGS": 16
+    },
+    "parent": "HostileEntity"
+  },
+  "minecraft:villager": {
+    "id": 103,
+    "translation_key": "entity.minecraft.villager",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/villager",
+    "width": 0.6,
+    "height": 1.95,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 20.0,
+      "minecraft:generic.follow_range": 48.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.5,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "VillagerEntity",
+    "meta": {
+      "VILLAGER_VILLAGER_DATA": 18
+    },
+    "parent": "MerchantEntity"
+  },
+  "minecraft:vindicator": {
+    "id": 104,
+    "translation_key": "entity.minecraft.vindicator",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/vindicator",
+    "width": 0.6,
+    "height": 1.95,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 24.0,
+      "minecraft:generic.follow_range": 12.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.3499999940395355,
+      "minecraft:generic.attack_damage": 5.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "VindicatorEntity",
+    "parent": "IllagerEntity"
+  },
+  "minecraft:wandering_trader": {
+    "id": 105,
+    "translation_key": "entity.minecraft.wandering_trader",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/wandering_trader",
+    "width": 0.6,
+    "height": 1.95,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 20.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.699999988079071,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "WanderingTraderEntity",
+    "parent": "MerchantEntity"
+  },
+  "minecraft:warden": {
+    "id": 106,
+    "translation_key": "entity.minecraft.warden",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": true,
+    "loot_table": "minecraft:entities/warden",
+    "width": 0.9,
+    "height": 2.9,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 500.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 1.0,
+      "minecraft:generic.movement_speed": 0.30000001192092896,
+      "minecraft:generic.attack_damage": 30.0,
+      "minecraft:generic.attack_knockback": 1.5,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "WardenEntity",
+    "meta": {
+      "WARDEN_ANGER": 16
+    },
+    "parent": "HostileEntity"
+  },
+  "minecraft:witch": {
+    "id": 107,
+    "translation_key": "entity.minecraft.witch",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/witch",
+    "width": 0.6,
+    "height": 1.95,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 26.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.25,
+      "minecraft:generic.attack_damage": 2.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "WitchEntity",
+    "meta": {
+      "WITCH_IS_DRINKING_POTION": 17
+    },
+    "parent": "RaiderEntity"
+  },
+  "minecraft:wither": {
+    "id": 108,
+    "translation_key": "entity.minecraft.wither",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": true,
+    "loot_table": "minecraft:entities/wither",
+    "width": 0.9,
+    "height": 3.5,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 300.0,
+      "minecraft:generic.follow_range": 40.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.6000000238418579,
+      "minecraft:generic.flying_speed": 0.6000000238418579,
+      "minecraft:generic.attack_damage": 2.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 4.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "WitherEntity",
+    "meta": {
+      "WITHER_BOSS_CENTER_HEAD_TARGET_ENTITY_ID": 16,
+      "WITHER_BOSS_LEFT_HEAD_TARGET_ENTITY_ID": 17,
+      "WITHER_BOSS_RIGHT_HEAD_TARGET_ENTITY_ID": 18,
+      "WITHER_BOSS_INVULNERABLE_TIME": 19
+    },
+    "parent": "HostileEntity"
+  },
+  "minecraft:wither_skeleton": {
+    "id": 109,
+    "translation_key": "entity.minecraft.wither_skeleton",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": true,
+    "loot_table": "minecraft:entities/wither_skeleton",
+    "width": 0.7,
+    "height": 2.4,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 20.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.25,
+      "minecraft:generic.attack_damage": 2.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "WitherSkeletonEntity",
+    "parent": "AbstractSkeletonEntity"
+  },
+  "minecraft:wither_skull": {
+    "id": 110,
+    "translation_key": "entity.minecraft.wither_skull",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/wither_skull",
+    "width": 0.3125,
+    "height": 0.3125,
+    "size_fixed": false,
+    "class": "WitherSkullEntity",
+    "meta": {
+      "WITHER_SKULL_DANGEROUS": 8
+    },
+    "parent": "ExplosiveProjectileEntity"
+  },
+  "minecraft:wolf": {
+    "id": 111,
+    "translation_key": "entity.minecraft.wolf",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/wolf",
+    "width": 0.6,
+    "height": 0.85,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 8.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.30000001192092896,
+      "minecraft:generic.attack_damage": 4.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "WolfEntity",
+    "meta": {
+      "WOLF_IS_BEGGING": 19,
+      "WOLF_COLLAR_COLOR": 20,
+      "WOLF_ANGER_TIME": 21
+    },
+    "parent": "TameableEntity"
+  },
+  "minecraft:zoglin": {
+    "id": 112,
+    "translation_key": "entity.minecraft.zoglin",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": true,
+    "loot_table": "minecraft:entities/zoglin",
+    "width": 1.3964844,
+    "height": 1.4,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 40.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.6000000238418579,
+      "minecraft:generic.movement_speed": 0.30000001192092896,
+      "minecraft:generic.attack_damage": 6.0,
+      "minecraft:generic.attack_knockback": 1.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0
+    },
+    "class": "ZoglinEntity",
+    "meta": {
+      "ZOGLIN_IS_BABY": 16
+    },
+    "parent": "HostileEntity"
+  },
+  "minecraft:zombie": {
+    "id": 113,
+    "translation_key": "entity.minecraft.zombie",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/zombie",
+    "width": 0.6,
+    "height": 1.95,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 20.0,
+      "minecraft:generic.follow_range": 35.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.23000000417232513,
+      "minecraft:generic.attack_damage": 3.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 2.0,
+      "minecraft:generic.armor_toughness": 0.0,
+      "minecraft:zombie.spawn_reinforcements": 0.0
+    },
+    "class": "ZombieEntity",
+    "meta": {
+      "ZOMBIE_IS_BABY": 16,
+      "ZOMBIE_SPECIAL_TYPE": 17,
+      "ZOMBIE_DROWNING_CONVERSION": 18
+    },
+    "parent": "HostileEntity"
+  },
+  "minecraft:zombie_horse": {
+    "id": 114,
+    "translation_key": "entity.minecraft.zombie_horse",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/zombie_horse",
+    "width": 1.3964844,
+    "height": 1.6,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 15.0,
+      "minecraft:generic.follow_range": 16.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.20000000298023224,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0,
+      "minecraft:horse.jump_strength": 0.7
+    },
+    "class": "ZombieHorseEntity",
+    "parent": "AbstractHorseEntity"
+  },
+  "minecraft:zombie_villager": {
+    "id": 115,
+    "translation_key": "entity.minecraft.zombie_villager",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/zombie_villager",
+    "width": 0.6,
+    "height": 1.95,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 20.0,
+      "minecraft:generic.follow_range": 35.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.23000000417232513,
+      "minecraft:generic.attack_damage": 3.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 2.0,
+      "minecraft:generic.armor_toughness": 0.0,
+      "minecraft:zombie.spawn_reinforcements": 0.0
+    },
+    "class": "ZombieVillagerEntity",
+    "meta": {
+      "ZOMBIE_VILLAGER_IS_CONVERTING": 19,
+      "ZOMBIE_VILLAGER_DATA": 20
+    },
+    "parent": "ZombieEntity"
+  },
+  "minecraft:zombified_piglin": {
+    "id": 116,
+    "translation_key": "entity.minecraft.zombified_piglin",
+    "serializable": true,
+    "summonable": true,
+    "is_fire_immune": true,
+    "loot_table": "minecraft:entities/zombified_piglin",
+    "width": 0.6,
+    "height": 1.95,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 20.0,
+      "minecraft:generic.follow_range": 35.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.23000000417232513,
+      "minecraft:generic.attack_damage": 5.0,
+      "minecraft:generic.attack_knockback": 0.0,
+      "minecraft:generic.armor": 2.0,
+      "minecraft:generic.armor_toughness": 0.0,
+      "minecraft:zombie.spawn_reinforcements": 0.0
+    },
+    "class": "ZombifiedPiglinEntity",
+    "parent": "ZombieEntity"
+  },
+  "minecraft:player": {
+    "id": 117,
+    "translation_key": "entity.minecraft.player",
+    "serializable": false,
+    "summonable": false,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/player",
+    "width": 0.6,
+    "height": 1.8,
+    "size_fixed": false,
+    "attributes": {
+      "minecraft:generic.max_health": 20.0,
+      "minecraft:generic.knockback_resistance": 0.0,
+      "minecraft:generic.movement_speed": 0.10000000149011612,
+      "minecraft:generic.attack_damage": 1.0,
+      "minecraft:generic.attack_speed": 4.0,
+      "minecraft:generic.armor": 0.0,
+      "minecraft:generic.armor_toughness": 0.0,
+      "minecraft:generic.luck": 0.0
+    },
+    "class": "PlayerEntity",
+    "parent": "LivingEntity",
+    "meta": {
+      "PLAYER_ABSORPTION_HEARTS": 15,
+      "PLAYER_SCORE": 16,
+      "PLAYER_SKIN_PARTS_FLAGS": 17,
+      "PLAYER_SKIN_MAIN_HAND": 18,
+      "PLAYER_LEFT_SHOULDER_DATA": 19,
+      "PLAYER_RIGHT_SHOULDER_DATA": 20
+    }
+  },
+  "minecraft:fishing_bobber": {
+    "id": 118,
+    "translation_key": "entity.minecraft.fishing_bobber",
+    "serializable": false,
+    "summonable": false,
+    "is_fire_immune": false,
+    "loot_table": "minecraft:entities/fishing_bobber",
+    "width": 0.25,
+    "height": 0.25,
+    "size_fixed": false,
+    "class": "FishingBobberEntity",
+    "meta": {
+      "FISHING_HOOK_HOOKED_ENTITY": 8,
+      "FISHING_HOOK_CATCHABLE": 9
+    },
+    "parent": "ProjectileEntity"
+  },
+  "PathAwareEntity": {
+    "parent": "MobEntity"
+  },
+  "MobEntity": {
+    "meta": {
+      "MOB_FLAGS": 15
+    },
+    "parent": "LivingEntity"
+  },
+  "LivingEntity": {
+    "meta": {
+      "LIVING_ENTITY_FLAGS": 8,
+      "LIVING_ENTITY_HEALTH": 9,
+      "LIVING_ENTITY_EFFECT_COLOR": 10,
+      "LIVING_ENTITY_EFFECT_AMBIENCE": 11,
+      "LIVING_ENTITY_ARROW_COUNT": 12,
+      "LIVING_ENTITY_ABSORPTION_HEARTS": 13,
+      "LIVING_ENTITY_BED_POSITION": 14
+    },
+    "parent": "Entity"
+  },
+  "Entity": {
+    "meta": {
+      "ENTITY_FLAGS": 0,
+      "ENTITY_AIR_SUPPLY": 1,
+      "ENTITY_CUSTOM_NAME": 2,
+      "ENTITY_CUSTOM_NAME_VISIBLE": 3,
+      "ENTITY_SILENT": 4,
+      "ENTITY_NO_GRAVITY": 5,
+      "ENTITY_POSE": 6,
+      "ENTITY_TICKS_FROZEN": 7
+    }
+  },
+  "PersistentProjectileEntity": {
+    "meta": {
+      "ABSTRACT_ARROW_FLAGS": 8,
+      "ABSTRACT_ARROW_PIERCE_LEVEL": 9
+    },
+    "parent": "ProjectileEntity"
+  },
+  "ProjectileEntity": {
+    "parent": "Entity"
+  },
+  "AnimalEntity": {
+    "parent": "PassiveEntity"
+  },
+  "PassiveEntity": {
+    "meta": {
+      "AGEABLE_IS_BABY": 16
+    },
+    "parent": "PathAwareEntity"
+  },
+  "AmbientEntity": {
+    "parent": "MobEntity"
+  },
+  "HostileEntity": {
+    "parent": "PathAwareEntity"
+  },
+  "TameableEntity": {
+    "meta": {
+      "TAMABLE_ENTITY_FLAGS": 17,
+      "TAMABLE_ENTITY_OWNER_UUID": 18
+    },
+    "parent": "AnimalEntity"
+  },
+  "AbstractHorseEntity": {
+    "meta": {
+      "ABSTRACT_HORSE_FLAGS": 17,
+      "ABSTRACT_HORSE_OWNER_UUID": 18
+    },
+    "parent": "AnimalEntity"
+  },
+  "SchoolingFishEntity": {
+    "parent": "FishEntity"
+  },
+  "FishEntity": {
+    "meta": {
+      "ABSTRACT_FISH_FROM_BUCKET": 16
+    },
+    "parent": "WaterCreatureEntity"
+  },
+  "WaterCreatureEntity": {
+    "parent": "PathAwareEntity"
+  },
+  "AbstractDonkeyEntity": {
+    "meta": {
+      "ABSTRACT_CHESTED_HORSE_HAS_CHEST": 19
+    },
+    "parent": "AbstractHorseEntity"
+  },
+  "ExplosiveProjectileEntity": {
+    "parent": "ProjectileEntity"
+  },
+  "SpellcastingIllagerEntity": {
+    "meta": {
+      "SPELLCASTER_ILLAGER_SPELL": 17
+    },
+    "parent": "IllagerEntity"
+  },
+  "IllagerEntity": {
+    "parent": "RaiderEntity"
+  },
+  "RaiderEntity": {
+    "meta": {
+      "RAIDER_IS_CELEBRATING": 16
+    },
+    "parent": "PatrolEntity"
+  },
+  "PatrolEntity": {
+    "parent": "HostileEntity"
+  },
+  "FlyingEntity": {
+    "parent": "MobEntity"
+  },
+  "AbstractDecorationEntity": {
+    "parent": "Entity"
+  },
+  "GolemEntity": {
+    "parent": "PathAwareEntity"
+  },
+  "AbstractFireballEntity": {
+    "meta": {
+      "FIREBALL_ITEM": 8
+    },
+    "parent": "ExplosiveProjectileEntity"
+  },
+  "AbstractMinecartEntity": {
+    "meta": {
+      "MINECART_HURT": 8,
+      "MINECART_HURT_DIRECTION": 9,
+      "MINECART_DAMAGE_TAKEN": 10,
+      "MINECART_BLOCK_ID": 11,
+      "MINECART_BLOCK_Y_OFFSET": 12,
+      "MINECART_SHOW_BLOCK": 13
+    },
+    "parent": "Entity"
+  },
+  "StorageMinecartEntity": {
+    "parent": "AbstractMinecartEntity"
+  },
+  "TameableShoulderEntity": {
+    "parent": "TameableEntity"
+  },
+  "AbstractPiglinEntity": {
+    "meta": {
+      "ABSTRACT_PIGLIN_IMMUNE_TO_ZOMBIFICATION": 16
+    },
+    "parent": "HostileEntity"
+  },
+  "AbstractSkeletonEntity": {
+    "parent": "HostileEntity"
+  },
+  "ThrownItemEntity": {
+    "meta": {
+      "THROWABLE_ITEM_PROJECTILE_ITEM": 8
+    },
+    "parent": "ThrownEntity"
+  },
+  "ThrownEntity": {
+    "parent": "ProjectileEntity"
+  },
+  "MerchantEntity": {
+    "meta": {
+      "ABSTRACT_VILLAGER_UNHAPPY_TIMER": 17
+    },
+    "parent": "PassiveEntity"
+  }
+}
