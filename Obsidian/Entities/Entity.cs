@@ -31,6 +31,9 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public Pose Pose { get; set; } = Pose.Standing;
 
+    public virtual BoundingBox BoundingBox { get; protected set; } = new(VectorF.Zero, VectorF.Zero);
+    public virtual EntityDimension Dimension { get; protected set; } = new() { Height = 0, Width = 0 };
+
     public int PowderedSnowTicks { get; set; } = 0;
 
     public EntityType Type { get; set; }
@@ -56,11 +59,6 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public INavigator Navigator { get; set; }
     public IGoalController GoalController { get; set; }
-
-    public Entity()
-    {
-
-    }
 
     #region Update methods
     internal virtual async Task UpdateAsync(VectorF position, bool onGround)
@@ -166,6 +164,7 @@ public class Entity : IEquatable<Entity>, IEntity
         }
 
         this.OnGround = onGround;
+        this.BoundingBox = this.Dimension.CreateBBFromPosition(pos);
     }
 
     public async Task UpdatePositionAsync(VectorF pos, Angle yaw, Angle pitch, bool onGround = true)
@@ -181,6 +180,7 @@ public class Entity : IEquatable<Entity>, IEntity
         this.Yaw = yaw;
         this.Pitch = pitch;
         this.OnGround = onGround;
+        this.BoundingBox = this.Dimension.CreateBBFromPosition(pos);
     }
 
     public void UpdatePosition(Angle yaw, Angle pitch, bool onGround = true)

@@ -1,10 +1,11 @@
 ﻿namespace Obsidian.API;
 
-public struct BoundingBox : IEquatable<BoundingBox>
+public readonly struct BoundingBox : IEquatable<BoundingBox>
 {
     public const int CornerCount = 8;
-    public VectorF Max;
-    public VectorF Min;
+
+    public readonly VectorF Max;
+    public readonly VectorF Min;
 
     public BoundingBox(VectorF min, VectorF max)
     {

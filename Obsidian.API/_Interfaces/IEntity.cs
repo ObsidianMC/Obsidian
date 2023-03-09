@@ -21,6 +21,8 @@ public interface IEntity
     public Pose Pose { get; set; }
     public EntityType Type { get; }
 
+    public BoundingBox BoundingBox { get; }
+    public EntityDimension Dimension { get; }
     public int Air { get; set; }
 
     public float Health { get; set; }
