@@ -7,7 +7,7 @@ public sealed class BiomeContainer : DataContainer<Biome>
 {
     public override IPalette<Biome> Palette { get; internal set; }
 
-    public override DataArray DataArray { get; protected set; }
+    internal override DataArray DataArray { get; private protected set; }
 
     internal BiomeContainer(byte bitsPerEntry = 2)
     {
