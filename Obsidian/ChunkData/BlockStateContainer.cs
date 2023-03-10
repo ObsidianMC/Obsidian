@@ -10,7 +10,7 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
 
     public bool IsEmpty => DataArray.storage.Length == 0;
 
-    public override DataArray DataArray { get; protected set; }
+    internal override DataArray DataArray { get; private protected set; }
 
 
 #if CACHE_VALID_BLOCKS

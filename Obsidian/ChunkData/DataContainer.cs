@@ -8,7 +8,7 @@ public abstract class DataContainer<T>
 
     public abstract IPalette<T> Palette { get; internal set; }
 
-    public abstract DataArray DataArray { get; protected set; }
+    internal abstract DataArray DataArray { get; private protected set; }
 
     public virtual int GetIndex(int x, int y, int z) => (y << this.BitsPerEntry | z) << this.BitsPerEntry | x;
 
