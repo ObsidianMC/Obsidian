@@ -146,11 +146,17 @@ public partial class Server : IServer
             _ = Task.Run(async () =>
             {
                 var udpClient = new UdpClient("224.0.2.60", 4445);
-                while (!_cancelTokenSource.IsCancellationRequested)
+                var timer = new PeriodicTimer(TimeSpan.FromSeconds(1.5));
+                string? lastMotd = null;
+                byte[] bytes = Array.Empty<byte>(); // Cached motd as utf-8 bytes
+                while (await timer.WaitForNextTickAsync(_cancelTokenSource.Token))
                 {
-                    await Task.Delay(1500, _cancelTokenSource.Token); // TODO (.NET 6), use PeriodicTimer
-                    byte[] motd = Encoding.UTF8.GetBytes($"[MOTD]{Config.Motd.Replace('[', '(').Replace(']', ')')}[/MOTD][AD]{Config.Port}[/AD]");
-                    await udpClient.SendAsync(motd, motd.Length);
+                    if (Config.Motd != lastMotd)
+                    {
+                        lastMotd = Config.Motd;
+                        bytes = Encoding.UTF8.GetBytes($"[MOTD]{Config.Motd.Replace('[', '(').Replace(']', ')')}[/MOTD][AD]{Config.Port}[/AD]");
+                    }
+                    await udpClient.SendAsync(bytes, bytes.Length);
                 }
             });
         }
