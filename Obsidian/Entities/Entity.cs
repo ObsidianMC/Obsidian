@@ -32,7 +32,7 @@ public class Entity : IEquatable<Entity>, IEntity
     public Pose Pose { get; set; } = Pose.Standing;
 
     public virtual BoundingBox BoundingBox { get; protected set; } = new(VectorF.Zero, VectorF.Zero);
-    public virtual EntityDimension Dimension { get; protected set; } = new() { Height = 0, Width = 0 };
+    public virtual EntityDimension Dimension { get; protected set; } = EntityDimension.Zero;
 
     public int PowderedSnowTicks { get; set; } = 0;
 
@@ -164,7 +164,9 @@ public class Entity : IEquatable<Entity>, IEntity
         }
 
         this.OnGround = onGround;
-        this.BoundingBox = this.Dimension.CreateBBFromPosition(pos);
+
+        if (this.Dimension != EntityDimension.Zero)
+            this.BoundingBox = this.Dimension.CreateBBFromPosition(pos);
     }
 
     public async Task UpdatePositionAsync(VectorF pos, Angle yaw, Angle pitch, bool onGround = true)
@@ -180,7 +182,9 @@ public class Entity : IEquatable<Entity>, IEntity
         this.Yaw = yaw;
         this.Pitch = pitch;
         this.OnGround = onGround;
-        this.BoundingBox = this.Dimension.CreateBBFromPosition(pos);
+
+        if(this.Dimension != EntityDimension.Zero)
+            this.BoundingBox = this.Dimension.CreateBBFromPosition(pos);
     }
 
     public void UpdatePosition(Angle yaw, Angle pitch, bool onGround = true)
