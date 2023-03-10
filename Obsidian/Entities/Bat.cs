@@ -1,6 +1,7 @@
 ﻿namespace Obsidian.Entities;
 
-public class Bat : Ambient
+[MinecraftEntity("minecraft:bat")]
+public sealed partial class Bat : Ambient
 {
     public bool IsHanging { get; }
 }

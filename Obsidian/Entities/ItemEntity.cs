@@ -3,7 +3,8 @@ using Obsidian.Registries;
 
 namespace Obsidian.Entities;
 
-public class ItemEntity : Entity
+[MinecraftEntity("minecraft:item")]
+public partial class ItemEntity : Entity
 {
     public int Id { get; set; }
 

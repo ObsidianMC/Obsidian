@@ -50,7 +50,7 @@ public class Entity : IEquatable<Entity>, IEntity
     public bool OnGround { get; set; }
     public bool Sneaking { get; set; }
     public bool Sprinting { get; set; }
-    public bool CanBeSeen { get; set; }
+    public bool CanBeSeen { get; set; }//What does this do???
     public bool Glowing { get; set; }
     public bool Invisible { get; set; }
     public bool Burning { get; set; }
@@ -282,7 +282,6 @@ public class Entity : IEquatable<Entity>, IEntity
     public IEnumerable<IEntity> GetEntitiesNear(float distance) => this.World.GetEntitiesNear(this.Position, distance).Where(x => x != this);
 
     public virtual Task TickAsync() => Task.CompletedTask;
-
 
     //TODO check for other entities and handle accordingly 
     public async Task DamageAsync(IEntity source, float amount = 1.0f)

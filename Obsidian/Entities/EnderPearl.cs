@@ -1,5 +1,6 @@
 ﻿namespace Obsidian.Entities;
 
-public class EnderPearl : Throwable
+[MinecraftEntity("minecraft:ender_pearl")]
+public sealed partial class EnderPearl : Throwable
 {
 }

@@ -1,6 +1,7 @@
 ﻿namespace Obsidian.Entities;
 
-public class EndCrystal : Entity
+[MinecraftEntity("minecraft:end_crystal")]
+public sealed partial class EndCrystal : Entity
 {
     public VectorF BeamTarget { get; private set; }
 

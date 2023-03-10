@@ -2,7 +2,8 @@
 
 namespace Obsidian.Entities;
 
-public class FallingBlock : Entity
+[MinecraftEntity("minecraft:falling_block")]
+public sealed partial class FallingBlock : Entity
 {
     public required IBlock Block { get; init; } 
 

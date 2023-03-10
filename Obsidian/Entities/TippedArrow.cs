@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.Entities;
 
-public class TippedArrow : Arrow
+public sealed class TippedArrow : Arrow
 {
     public int Color { get; private set; }
 }

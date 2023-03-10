@@ -13,7 +13,8 @@ using System.Net;
 
 namespace Obsidian.Entities;
 
-public class Player : Living, IPlayer
+[MinecraftEntity("minecraft:player")]
+public sealed partial class Player : Living, IPlayer
 {
     private byte containerId = 0;
 

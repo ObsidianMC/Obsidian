@@ -2,7 +2,8 @@
 
 namespace Obsidian.Entities;
 
-public class Pig : Animal
+[MinecraftEntity("minecraft:pig")]
+public sealed partial class Pig : Animal
 {
     public bool HasSaddle { get; set; }
 

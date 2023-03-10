@@ -1,6 +1,7 @@
 ﻿namespace Obsidian.Entities;
 
-public class Trident : Arrow
+[MinecraftEntity("minecraft:trident")]
+public sealed partial class Trident : Arrow
 {
     public int LoyaltyLevel { get; private set; }
 }
