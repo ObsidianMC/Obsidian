@@ -23,7 +23,7 @@ public sealed partial class EntityGenerator : IIncrementalGenerator
         IncrementalValuesProvider<ClassDeclarationSyntax> classDeclarations = ctx.SyntaxProvider
             .CreateSyntaxProvider(
                 static (node, _) => node is ClassDeclarationSyntax syntax,
-                static (context, _) => TranformData(context.Node as ClassDeclarationSyntax, context))
+                static (context, _) => TransformData(context.Node as ClassDeclarationSyntax, context))
             .Where(static m => m is not null)!;
 
         var compilation = ctx.CompilationProvider.Combine(classDeclarations.Collect()).Combine(jsonFiles.Collect());
@@ -32,7 +32,7 @@ public sealed partial class EntityGenerator : IIncrementalGenerator
             (spc, src) => this.Generate(spc, src.Left.Left, src.Left.Right, src.Right.First()));
     }
 
-    private static ClassDeclarationSyntax? TranformData(ClassDeclarationSyntax? syntax, GeneratorSyntaxContext ctx)
+    private static ClassDeclarationSyntax? TransformData(ClassDeclarationSyntax? syntax, GeneratorSyntaxContext ctx)
     {
         if (syntax is null)
             return null;
@@ -53,38 +53,38 @@ public sealed partial class EntityGenerator : IIncrementalGenerator
 
         var asm = compilation.AssemblyName;
 
-        if (asm == "Obsidian")
+        if (asm != "Obsidian")
+            return;
+
+        var classes = new List<EntityClass>();
+
+        foreach (var @class in typeList)
         {
-            var classes = new List<EntityClass>();
+            var model = compilation.GetSemanticModel(@class.SyntaxTree);
+            var symbol = model.GetDeclaredSymbol(@class);
 
-            foreach (var @class in typeList)
+            if (symbol is null)
+                continue;
+
+            var attribute = @class.AttributeLists.SelectMany(x => x.Attributes).FirstOrDefault(x => x.Name.ToString() == CleanedAttributeName);
+
+            if (attribute is null)
+                continue;
+
+            if (!@class.Modifiers.Any(x => x.IsKind(SyntaxKind.PartialKeyword)))
             {
-                var model = compilation.GetSemanticModel(@class.SyntaxTree);
-                var symbol = model.GetDeclaredSymbol(@class);
-
-                if (symbol is null)
-                    continue;
-
-                var attribute = @class.AttributeLists.SelectMany(x => x.Attributes).FirstOrDefault(x => x.Name.ToString() == CleanedAttributeName);
-
-                if (attribute is null)
-                    continue;
-
-                if (!@class.Modifiers.Any(x => x.IsKind(SyntaxKind.PartialKeyword)))
-                {
-                    context.ReportDiagnostic(DiagnosticSeverity.Error, $"Type {symbol.Name} must be marked as partial in order to generate required properties.", @class);
-                    continue;
-                }
-
-                var arg = attribute.ArgumentList!.Arguments[0];
-                var expression = arg.Expression;
-                var value = model.GetConstantValue(expression).ToString();
-
-                classes.Add(new EntityClass(symbol, value));
+                context.ReportDiagnostic(DiagnosticSeverity.Error, $"Type {symbol.Name} must be marked as partial in order to generate required properties.", @class);
+                continue;
             }
 
-            this.GenerateClasses(classes, document, context);
+            var arg = attribute.ArgumentList!.Arguments[0];
+            var expression = arg.Expression;
+            var value = model.GetConstantValue(expression).ToString();
+
+            classes.Add(new EntityClass(symbol, value));
         }
+
+        this.GenerateClasses(classes, document, context);
     }
 
     private void GenerateClasses(List<EntityClass> classes, JsonDocument document, SourceProductionContext context)
@@ -98,16 +98,58 @@ public sealed partial class EntityGenerator : IIncrementalGenerator
                 context.ReportDiagnostic(DiagnosticSeverity.Warning, $"Failed to find valid entity {@class.EntityResourceLocation}");
                 continue;
             }
+
+            if (!entityElement.TryGetProperty("width", out var widthElement))
+            {
+                context.ReportDiagnostic(DiagnosticSeverity.Error, $"Failed to find valid width for {@class.EntityResourceLocation}");
+                continue;
+            }
+
+            if (!entityElement.TryGetProperty("height", out var heightElement))
+            {
+                context.ReportDiagnostic(DiagnosticSeverity.Error, $"Failed to find valid height for {@class.EntityResourceLocation}");
+                continue;
+            }
+
             var builder = new CodeBuilder()
                 .Namespace("Obsidian.Entities")
                 .Line()
                 .Type($"public partial class {@class.Symbol.Name}");
 
             builder.Indent().Append("public override EntityDimension Dimension { get; protected set; } = new() { ")
-                .Append($"Width = {entityElement.GetProperty("width").GetSingle()}f, ")
-                .Append($"Height = {entityElement.GetProperty("height").GetSingle()}f }}; ")
+                .Append($"Width = {widthElement.GetSingle()}f, ")
+                .Append($"Height = {heightElement.GetSingle()}f }}; ")
                 .Line()
                 .Line();
+
+            if (entityElement.TryGetProperty("is_fire_immune", out var fireImmuneElement))
+            {
+                builder.Indent().Append($"public override bool IsFireImmune {{ get; set; }} = {fireImmuneElement.GetBoolean().ToString().ToLowerInvariant()};")
+                    .Line()
+                    .Line();
+            }
+
+            if (entityElement.TryGetProperty("summonable", out var summonableElement))
+            {
+                builder.Indent().Append($"public override bool Summonable {{ get; set; }} = {summonableElement.GetBoolean().ToString().ToLowerInvariant()};")
+                    .Line()
+                    .Line();
+            }
+
+            if(entityElement.TryGetProperty("attributes", out var attributesElement))
+            {
+                builder.Method("public override ConcurrentDictionary<string, float> Attributes { get; } = new(new Dictionary<string, float>");
+
+                foreach(var attrElement in attributesElement.EnumerateObject())
+                {
+                    var name = attrElement.Name;
+                    var value = attrElement.Value.GetSingle();
+
+                    builder.Line($"{{ \"{name}\", {value}f }}, ");
+                }
+
+                builder.EndScope(")", true);
+            }
 
             builder.EndScope();
 

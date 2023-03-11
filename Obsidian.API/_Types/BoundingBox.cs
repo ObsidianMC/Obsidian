@@ -75,7 +75,7 @@ public readonly struct BoundingBox : IEquatable<BoundingBox>
         }
 
         if (empty)
-            throw new InvalidOperationException("Invalid points specified.");
+            throw new ArgumentException("Invalid points specified.");
 
         return new BoundingBox(pos2, pos1);
     }

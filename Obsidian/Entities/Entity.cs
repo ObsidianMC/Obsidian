@@ -8,6 +8,8 @@ namespace Obsidian.Entities;
 
 public class Entity : IEquatable<Entity>, IEntity
 {
+    protected virtual ConcurrentDictionary<string, float> Attributes { get; } = new();
+
     public IServer Server { get; set; }
 
     protected Server server => this.Server as Server;
@@ -44,6 +46,8 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public ChatMessage CustomName { get; set; }
 
+    public virtual string TranslationKey { get; protected set; }
+
     public bool CustomNameVisible { get; set; }
     public bool Silent { get; set; }
     public bool NoGravity { get; set; }
@@ -57,8 +61,14 @@ public class Entity : IEquatable<Entity>, IEntity
     public bool Swimming { get; set; }
     public bool FlyingWithElytra { get; set; }
 
+    public virtual bool Summonable { get; set; }
+
+    public virtual bool IsFireImmune { get; set; }
+
     public INavigator Navigator { get; set; }
     public IGoalController GoalController { get; set; }
+
+    
 
     #region Update methods
     internal virtual async Task UpdateAsync(VectorF position, bool onGround)
@@ -412,4 +422,21 @@ public class Entity : IEquatable<Entity>, IEntity
             Yaw = this.Yaw
         });
     }
+
+    public bool TryAddAttribute(string attributeResourceName, float value) => 
+        this.Attributes.TryAdd(attributeResourceName, value);
+
+    public bool TryUpdateAttribute(string attributeResourceName, float newValue)
+    {
+        if (!this.Attributes.TryGetValue(attributeResourceName, out var value))
+            return false;
+
+        return this.Attributes.TryUpdate(attributeResourceName, newValue, value);
+    }
+
+    public bool HasAttribute(string attributeResourceName) =>
+        this.Attributes.ContainsKey(attributeResourceName);
+
+    public float GetAttributeValue(string attributeResourceName) =>
+        this.Attributes.GetValueOrDefault(attributeResourceName);
 }

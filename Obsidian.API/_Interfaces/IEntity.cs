@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.AI;
+using System.Collections.Concurrent;
 
 namespace Obsidian.API;
 
@@ -16,6 +17,7 @@ public interface IEntity
     public VectorF Position { get; set; }
     public Angle Pitch { get; set; }
     public Angle Yaw { get; set; }
+
     public int EntityId { get; }
 
     public Pose Pose { get; set; }
@@ -29,6 +31,8 @@ public interface IEntity
 
     public ChatMessage CustomName { get; set; }
 
+    public string TranslationKey { get; }
+
     public bool CustomNameVisible { get; }
     public bool Silent { get; }
     public bool NoGravity { get; }
@@ -40,6 +44,8 @@ public interface IEntity
     public bool Burning { get; }
     public bool Swimming { get; }
     public bool FlyingWithElytra { get; }
+    public bool Summonable { get; }
+    public bool IsFireImmune { get; }
 
     public Task RemoveAsync();
     public Task TickAsync();
@@ -55,4 +61,10 @@ public interface IEntity
     public IEnumerable<IEntity> GetEntitiesNear(float distance);
 
     public VectorF GetLookDirection();
+
+    public bool HasAttribute(string attributeResourceName);
+    public bool TryAddAttribute(string attributeResourceName, float value);
+    public bool TryUpdateAttribute(string attributeResourceName, float newValue);
+
+    public float GetAttributeValue(string attributeResourceName);
 }
