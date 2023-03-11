@@ -136,11 +136,18 @@ public sealed partial class EntityGenerator : IIncrementalGenerator
                     .Line();
             }
 
-            if(entityElement.TryGetProperty("attributes", out var attributesElement))
+            if (entityElement.TryGetProperty("translation_key", out var translationKeyElement))
             {
-                builder.Method("public override ConcurrentDictionary<string, float> Attributes { get; } = new(new Dictionary<string, float>");
+                builder.Indent().Append($"public override string TranslationKey {{ get; protected set; }} = \"{translationKeyElement.GetString()}\";")
+                   .Line()
+                   .Line();
+            }
 
-                foreach(var attrElement in attributesElement.EnumerateObject())
+            if (entityElement.TryGetProperty("attributes", out var attributesElement))
+            {
+                builder.Method("protected override ConcurrentDictionary<string, float> Attributes { get; } = new(new Dictionary<string, float>");
+
+                foreach (var attrElement in attributesElement.EnumerateObject())
                 {
                     var name = attrElement.Name;
                     var value = attrElement.Value.GetSingle();
