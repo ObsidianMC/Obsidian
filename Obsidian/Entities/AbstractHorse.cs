@@ -8,7 +8,7 @@ public class AbstractHorse : Animal
 
     public Guid Owner { get; set; }
 
-    public override async Task WriteAsync(MinecraftStream stream)
+    public async override Task WriteAsync(MinecraftStream stream)
     {
         await base.WriteAsync(stream);
 
@@ -31,9 +31,6 @@ public class AbstractHorse : Animal
             stream.WriteUuid(Owner);
     }
 }
-
-public class ZombieHorse : AbstractHorse { }
-public class SkeletonHorse : AbstractHorse { }
 
 public enum HorseMask
 {

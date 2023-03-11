@@ -1,5 +1,6 @@
 ﻿namespace Obsidian.Entities;
 
-public class Dolphin : Mob
+[MinecraftEntity("minecraft:dolphin")]
+public sealed partial class Dolphin : Mob
 {
 }

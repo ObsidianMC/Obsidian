@@ -1,6 +1,7 @@
 ﻿namespace Obsidian.Entities;
 
-public class ArmorStand : Living
+[MinecraftEntity("minecraft:armor_stand")]
+public sealed partial class ArmorStand : Living
 {
     public StandProperties StandProperties { get; set; }
 
@@ -12,10 +13,11 @@ public class ArmorStand : Living
     public Rotation RightLeft { get; set; }
 }
 
-public struct StandProperties
+[Flags]
+public enum StandProperties
 {
-    public bool IsSmall;
-    public bool HasArms;
-    public bool NoBasePlate;
-    public bool SetMarker;
+    IsSmall = 0x01,
+    HasArms = 0x04,
+    NoBasePlate = 0x08,
+    SetMarker = 0x10
 }

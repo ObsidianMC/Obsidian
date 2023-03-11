@@ -1,9 +1,8 @@
 ﻿namespace Obsidian.Entities;
 
-[MinecraftEntity("minecraft:item_frame")]
-public partial class ItemFrame : Entity
+[MinecraftEntity("minecraft:firework_rocket")]
+public sealed partial class FireworkRocket : Entity
 {
     public ItemStack? Item { get; private set; }
-
     public int Rotation { get; private set; }
 }

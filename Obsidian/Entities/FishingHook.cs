@@ -1,5 +1,6 @@
 ﻿namespace Obsidian.Entities;
 
-public class FishingHook : Entity
+[MinecraftEntity("minecraft:fishing_bobber")]
+public sealed partial class FishingHook : Entity
 {
 }

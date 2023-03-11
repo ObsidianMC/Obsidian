@@ -76,9 +76,14 @@
 		<EmbeddedResource Remove="Assets\chat_type.json" />
 		<EmbeddedResource Remove="Assets\dimensions.json" />
 		<EmbeddedResource Remove="Assets\blocks.json" />
+		<EmbeddedResource Remove="Assets\entities.json" />
 		<EmbeddedResource Remove="Assets\items.json" />
 		<EmbeddedResource Remove="Assets\tags.json" />
 		<EmbeddedResource Remove="Assets\fluids.json" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="Assets\entities.json" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -86,9 +91,14 @@
 		<AdditionalFiles Include="Assets\blocks.json" CopyToOutputDirectory="Never" />
 		<AdditionalFiles Include="Assets\chat_type.json" CopyToOutputDirectory="Never" />
 		<AdditionalFiles Include="Assets\dimensions.json" CopyToOutputDirectory="Never" />
+		<AdditionalFiles Include="Assets\entities.json" />
 		<AdditionalFiles Include="Assets\items.json" CopyToOutputDirectory="Never" />
 		<AdditionalFiles Include="Assets\tags.json" CopyToOutputDirectory="Never" />
 		<AdditionalFiles Include="Assets\fluids.json" CopyToOutputDirectory="Never" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ApplicationDefinition Include="Assets\entities.json" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -2,7 +2,8 @@
 
 namespace Obsidian.Entities;
 
-public class AreaEffectCloud : Entity
+[MinecraftEntity("minecraft:area_effect_cloud")]
+public sealed partial class AreaEffectCloud : Entity
 {
     public float Radius { get; private set; }
 

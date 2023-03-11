@@ -1,6 +1,7 @@
 ﻿namespace Obsidian.Entities;
 
-public class Boat : Entity
+[MinecraftEntity("minecraft:boat")]
+public sealed partial class Boat : Entity
 {
     public int LastTimeHit { get; private set; }
     public int ForwardDirection { get; private set; }

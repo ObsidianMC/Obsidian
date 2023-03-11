@@ -8,6 +8,8 @@ namespace Obsidian.Entities;
 
 public class Entity : IEquatable<Entity>, IEntity
 {
+    protected virtual ConcurrentDictionary<string, float> Attributes { get; } = new();
+
     public IServer Server { get; set; }
 
     protected Server server => this.Server as Server;
@@ -31,6 +33,9 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public Pose Pose { get; set; } = Pose.Standing;
 
+    public virtual BoundingBox BoundingBox { get; protected set; } = new(VectorF.Zero, VectorF.Zero);
+    public virtual EntityDimension Dimension { get; protected set; } = EntityDimension.Zero;
+
     public int PowderedSnowTicks { get; set; } = 0;
 
     public EntityType Type { get; set; }
@@ -41,26 +46,29 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public ChatMessage CustomName { get; set; }
 
+    public virtual string TranslationKey { get; protected set; }
+
     public bool CustomNameVisible { get; set; }
     public bool Silent { get; set; }
     public bool NoGravity { get; set; }
     public bool OnGround { get; set; }
     public bool Sneaking { get; set; }
     public bool Sprinting { get; set; }
-    public bool CanBeSeen { get; set; }
+    public bool CanBeSeen { get; set; }//What does this do???
     public bool Glowing { get; set; }
     public bool Invisible { get; set; }
     public bool Burning { get; set; }
     public bool Swimming { get; set; }
     public bool FlyingWithElytra { get; set; }
 
+    public virtual bool Summonable { get; set; }
+
+    public virtual bool IsFireImmune { get; set; }
+
     public INavigator Navigator { get; set; }
     public IGoalController GoalController { get; set; }
 
-    public Entity()
-    {
-
-    }
+    
 
     #region Update methods
     internal virtual async Task UpdateAsync(VectorF position, bool onGround)
@@ -166,6 +174,9 @@ public class Entity : IEquatable<Entity>, IEntity
         }
 
         this.OnGround = onGround;
+
+        if (this.Dimension != EntityDimension.Zero)
+            this.BoundingBox = this.Dimension.CreateBBFromPosition(pos);
     }
 
     public async Task UpdatePositionAsync(VectorF pos, Angle yaw, Angle pitch, bool onGround = true)
@@ -181,6 +192,9 @@ public class Entity : IEquatable<Entity>, IEntity
         this.Yaw = yaw;
         this.Pitch = pitch;
         this.OnGround = onGround;
+
+        if(this.Dimension != EntityDimension.Zero)
+            this.BoundingBox = this.Dimension.CreateBBFromPosition(pos);
     }
 
     public void UpdatePosition(Angle yaw, Angle pitch, bool onGround = true)
@@ -282,7 +296,6 @@ public class Entity : IEquatable<Entity>, IEntity
     public IEnumerable<IEntity> GetEntitiesNear(float distance) => this.World.GetEntitiesNear(this.Position, distance).Where(x => x != this);
 
     public virtual Task TickAsync() => Task.CompletedTask;
-
 
     //TODO check for other entities and handle accordingly 
     public async Task DamageAsync(IEntity source, float amount = 1.0f)
@@ -409,4 +422,21 @@ public class Entity : IEquatable<Entity>, IEntity
             Yaw = this.Yaw
         });
     }
+
+    public bool TryAddAttribute(string attributeResourceName, float value) => 
+        this.Attributes.TryAdd(attributeResourceName, value);
+
+    public bool TryUpdateAttribute(string attributeResourceName, float newValue)
+    {
+        if (!this.Attributes.TryGetValue(attributeResourceName, out var value))
+            return false;
+
+        return this.Attributes.TryUpdate(attributeResourceName, newValue, value);
+    }
+
+    public bool HasAttribute(string attributeResourceName) =>
+        this.Attributes.ContainsKey(attributeResourceName);
+
+    public float GetAttributeValue(string attributeResourceName) =>
+        this.Attributes.GetValueOrDefault(attributeResourceName);
 }

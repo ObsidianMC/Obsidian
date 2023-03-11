@@ -2,7 +2,8 @@
 
 namespace Obsidian.Entities;
 
-public class Horse : AbstractHorse
+[MinecraftEntity("minecraft:horse")]
+public partial class Horse : AbstractHorse
 {
     public int Variant { get; set; }
 

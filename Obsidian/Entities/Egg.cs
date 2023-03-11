@@ -1,5 +1,6 @@
 ﻿namespace Obsidian.Entities;
 
-public class Egg : Throwable
+[MinecraftEntity("minecraft:egg")]
+public partial class Egg : Throwable
 {
 }
