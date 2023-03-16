@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.Blocks;
+using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -28,7 +29,9 @@ public class World : IWorld, IAsyncDisposable
 
     public ConcurrentQueue<(int X, int Z)> ChunksToGen { get; private set; } = new();
 
-    public ConcurrentBag<(int X, int Z)> SpawnChunks { get; private set; } = new();
+    public ConcurrentHashSet<(int X, int Z)> SpawnChunks { get; private set; } = new();
+
+    public ConcurrentHashSet<(int X, int Z)> LoadedChunks { get; private set; } = new();
 
     public string Name { get; }
     public string Seed { get; }
@@ -121,6 +124,7 @@ public class World : IWorld, IAsyncDisposable
                 return null;
             }
 
+            LoadedChunks.Add((chunkX, chunkZ));
             return chunk;
         }
 
@@ -138,6 +142,7 @@ public class World : IWorld, IAsyncDisposable
             isGenerated = false // Not necessary; just being explicit.
         };
         region.SetChunk(chunk);
+        LoadedChunks.Add((chunkX, chunkZ));
         return chunk;
     }
 
@@ -295,7 +300,11 @@ public class World : IWorld, IAsyncDisposable
             this.Server.BroadcastPacket(new UpdateTimePacket(this.LevelData.Time, this.LevelData.Time % 24000));
         }
 
-        await this.ManageChunksAsync();
+        // Check for chunks to load every second
+        if (this.LevelData.Time % 20 == 0)
+        {
+            await this.ManageChunksAsync();
+        }
     }
 
     #region world loading/saving
@@ -306,7 +315,7 @@ public class World : IWorld, IAsyncDisposable
 
         this.Init(codec);
 
-        var dataPath = Path.Join(Server.ServerFolderPath, this.ParentWorldName ?? this.Name, "level.dat");
+        var dataPath = Path.Join(Server.ServerFolderPath, "worlds", this.ParentWorldName ?? this.Name, "level.dat");
 
         var fi = new FileInfo(dataPath);
 
@@ -455,6 +464,26 @@ public class World : IWorld, IAsyncDisposable
 
     public async Task ManageChunksAsync()
     {
+        // Check for chunks to unload every 30 seconds
+        if (LevelData.Time > 0 && LevelData.Time % (20 * 30) == 0)
+        {
+            List<(int X, int Z)> chunksToKeep = new();
+            this.Players.Where(p => p.Value.World == this).ForEach(p =>
+            {
+                chunksToKeep.AddRange(p.Value.client.LoadedChunks);
+            });
+
+            LoadedChunks.Except(chunksToKeep).Except(SpawnChunks).ForEach(async c =>
+            {
+                if (LoadedChunks.TryRemove(c))
+                {
+                    var r = GetRegionForChunk(c.X, c.Z);
+                    await r.UnloadChunk(c.X, c.Z);
+                }
+
+            });
+        }
+
         if (ChunksToGen.IsEmpty) { return; }
 
         // Pull some jobs out of the queue
@@ -742,7 +771,15 @@ public class World : IWorld, IAsyncDisposable
         await FlushRegionsAsync();
 
         if (setWorldSpawn)
+        {
             await SetWorldSpawnAsync();
+            // spawn chunks are radius 12 from spawn,
+            var radius = 12;
+            var (x, z) = this.LevelData.SpawnPosition.ToChunkCoord();
+            for (var cx = x - radius; cx < x + radius; cx++)
+                for (var cz = z - radius; cz < z + radius; cz++)
+                    SpawnChunks.Add((cx, cz));
+        }
     }
 
     internal async Task SetWorldSpawnAsync()
