@@ -72,6 +72,14 @@ public class Region : IAsyncDisposable
         return chunk;
     }
 
+    internal async Task UnloadChunk(int x, int z)
+    {
+        var chunk = loadedChunks[x, z];
+        if (chunk is null) { return; }
+        await SerializeChunkAsync(chunk);
+        loadedChunks[x, z] = null;
+    }
+
     private async Task<Chunk?> GetChunkFromFileAsync(int x, int z)
     {
         var chunkBuffer = await regionFile.GetChunkBytesAsync(x, z);
