@@ -472,7 +472,7 @@ public class World : IWorld, IAsyncDisposable
             {
                 chunksToKeep.AddRange(p.Value.client.LoadedChunks);
             });
-
+            //TODO: Task.WhenAll for the slow IO ops 
             LoadedChunks.Except(chunksToKeep).Except(SpawnChunks).ForEach(async c =>
             {
                 if (LoadedChunks.TryRemove(c))
@@ -480,7 +480,6 @@ public class World : IWorld, IAsyncDisposable
                     var r = GetRegionForChunk(c.X, c.Z);
                     await r.UnloadChunk(c.X, c.Z);
                 }
-
             });
         }
 
