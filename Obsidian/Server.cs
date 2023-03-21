@@ -107,7 +107,6 @@ public partial class Server : IServer
 
         Config = environment.Configuration;
         Port = Config.Port;
-        ServerFolderPath = Directory.GetCurrentDirectory();
 
         _tcpListener = new TcpListener(IPAddress.Any, Port);
 
@@ -136,10 +135,10 @@ public partial class Server : IServer
         Events.PlayerAttackEntity += PlayerAttack;
         Events.PlayerInteract += OnPlayerInteract;
 
+        ServerFolderPath = Directory.GetCurrentDirectory();
         PersistentDataPath = Path.Combine(ServerFolderPath, "persistentdata");
 
-        Directory.CreateDirectory(PermissionPath);
-        Directory.CreateDirectory(PersistentDataPath);
+        CreateDirectories();
 
         if (Config.UDPBroadcast)
         {
@@ -160,6 +159,12 @@ public partial class Server : IServer
                 }
             });
         }
+    }
+
+    public virtual void CreateDirectories()
+    {
+        Directory.CreateDirectory(PermissionPath);
+        Directory.CreateDirectory(PersistentDataPath);
     }
 
     public void RegisterCommandClass<T>(PluginContainer plugin, T instance) =>

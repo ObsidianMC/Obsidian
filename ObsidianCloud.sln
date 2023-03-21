@@ -1,0 +1,57 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33205.214
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ObsidianCloud", "ObsidianCloud\ObsidianCloud\ObsidianCloud.csproj", "{66F64EB3-5D4D-45A7-8759-AE714746B04C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Obsidian", "Obsidian\Obsidian.csproj", "{5B32A2DF-2CA5-4412-B699-9A91CCCAD756}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Obsidian.API", "Obsidian.API\Obsidian.API.csproj", "{2AE594C8-5448-4FE8-8A63-1DED17727559}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Obsidian.SourceGenerators", "Obsidian.SourceGenerators\Obsidian.SourceGenerators.csproj", "{BFF0601F-9983-40B6-BBBB-20BDEE03E68B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{49917E9B-D76B-4C88-965E-42F7A9ADEA76}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Obsidian.Nbt", "Obsidian.Nbt\Obsidian.Nbt.csproj", "{54CDB397-576E-41AC-A730-47F4779FED8B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ObsidianCloud.ClientService", "ObsidianCloud\ObsidianCloud.ClientService\ObsidianCloud.ClientService.csproj", "{F6F72C80-089E-45E0-8DC6-774461A27090}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{66F64EB3-5D4D-45A7-8759-AE714746B04C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{66F64EB3-5D4D-45A7-8759-AE714746B04C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{66F64EB3-5D4D-45A7-8759-AE714746B04C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{66F64EB3-5D4D-45A7-8759-AE714746B04C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5B32A2DF-2CA5-4412-B699-9A91CCCAD756}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5B32A2DF-2CA5-4412-B699-9A91CCCAD756}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5B32A2DF-2CA5-4412-B699-9A91CCCAD756}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5B32A2DF-2CA5-4412-B699-9A91CCCAD756}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2AE594C8-5448-4FE8-8A63-1DED17727559}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2AE594C8-5448-4FE8-8A63-1DED17727559}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2AE594C8-5448-4FE8-8A63-1DED17727559}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2AE594C8-5448-4FE8-8A63-1DED17727559}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BFF0601F-9983-40B6-BBBB-20BDEE03E68B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BFF0601F-9983-40B6-BBBB-20BDEE03E68B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BFF0601F-9983-40B6-BBBB-20BDEE03E68B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BFF0601F-9983-40B6-BBBB-20BDEE03E68B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{54CDB397-576E-41AC-A730-47F4779FED8B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{54CDB397-576E-41AC-A730-47F4779FED8B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{54CDB397-576E-41AC-A730-47F4779FED8B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{54CDB397-576E-41AC-A730-47F4779FED8B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F6F72C80-089E-45E0-8DC6-774461A27090}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F6F72C80-089E-45E0-8DC6-774461A27090}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F6F72C80-089E-45E0-8DC6-774461A27090}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F6F72C80-089E-45E0-8DC6-774461A27090}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D78346FD-6D79-4E37-8C4C-D324E3172ABD}
+	EndGlobalSection
+EndGlobal
