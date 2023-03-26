@@ -26,6 +26,8 @@ jobs:
       - name: Install DocFX
         run: dotnet tool update -g docfx
         continue-on-error: true
+      - name: Build Obsidian
+        run: dotnet build
       - name: Build documentation
         run: docfx Obsidian.Docs/docfx.json
       - name: Upload GitHub Pages artifact
