@@ -5,10 +5,7 @@
         {
           "src": "..",
           "files": [
-            "Obsidian/bin/**/**/Obsidian.dll",
             "Obsidian.API/bin/**/**/Obsidian.API.dll",
-            "Obsidian.ConsoleApp/bin/**/**/Obsidian.ConsoleApp.dll",
-            "Obsidian.Nbt/bin/**/**/Obsidian.Nbt.dll",
             "Obsidian.SourceGenerators/bin/**/**/Obsidian.SourceGenerators.dll"
           ]
         }
