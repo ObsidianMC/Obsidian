@@ -54,6 +54,8 @@ public enum WindowType : int
     Loom,
     Merchant,
     ShulkerBox,
+    LegacySmithing,
+    Smithing,
     Smoker,
     CartographyTable,
     Stonecutter
