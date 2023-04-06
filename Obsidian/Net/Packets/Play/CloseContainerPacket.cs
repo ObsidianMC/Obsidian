@@ -9,7 +9,7 @@ public partial class CloseContainerPacket : IClientboundPacket, IServerboundPack
     [Field(0)]
     public byte WindowId { get; private set; }
 
-    public int Id => 0x0F;
+    public int Id => 0x11;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {

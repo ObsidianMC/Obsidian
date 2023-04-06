@@ -11,7 +11,7 @@ public partial class ChangeDifficultyPacket : IClientboundPacket
     [Field(1)]
     public bool DifficultyLocked { get; init; }
 
-    public int Id => 0x0B;
+    public int Id => 0x0C;
 
     public ChangeDifficultyPacket(Difficulty difficulty)
     {

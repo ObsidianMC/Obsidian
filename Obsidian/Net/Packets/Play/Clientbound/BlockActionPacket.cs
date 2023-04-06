@@ -16,5 +16,5 @@ public partial class BlockActionPacket : IClientboundPacket
     [Field(3), VarLength]
     public int BlockType { get; init; }
 
-    public int Id => 0x08;
+    public int Id => 0x09;
 }

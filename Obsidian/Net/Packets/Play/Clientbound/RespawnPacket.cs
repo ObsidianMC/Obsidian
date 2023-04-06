@@ -37,5 +37,5 @@ public partial class RespawnPacket : IClientboundPacket
     [Field(10), Condition(nameof(HasDeathLocation))]
     public VectorF DeathLocation { get; init; }
 
-    public int Id => 0x3D;
+    public int Id => 0x41;
 }

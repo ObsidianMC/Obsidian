@@ -18,7 +18,7 @@ public partial class AwardStatisticsPacket : IClientboundPacket
         Stats.Clear();
     }
 
-    public int Id => 0x04;
+    public int Id => 0x06;
 }
 
 public readonly struct Statistic

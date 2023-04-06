@@ -10,5 +10,5 @@ public partial class SetEntityVelocityPacket : IClientboundPacket
     [Field(1)]
     public Velocity Velocity { get; init; }
 
-    public int Id => 0x50;
+    public int Id => 0x54;
 }
