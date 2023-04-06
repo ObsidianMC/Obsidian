@@ -8,7 +8,7 @@ public abstract class BaseRecipeBuilder<TRecipe> : IGroupedRecipe<TRecipe>, INam
 
     protected string? Group { get; set; }
 
-    protected ItemStack Result { get; set; }
+    protected ItemStack? Result { get; set; }
 
     public virtual IRecipeResult<TRecipe> WithIdentifier(string identifier)
     {

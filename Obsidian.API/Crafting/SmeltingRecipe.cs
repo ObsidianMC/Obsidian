@@ -8,7 +8,7 @@ public sealed class SmeltingRecipe : IRecipe
 
     public string? Group { get; init; }
 
-    public required Ingredient Result { get; init; }
+    public required Ingredient? Result { get; init; }
 
     public required Ingredient Ingredient { get; init; }
 

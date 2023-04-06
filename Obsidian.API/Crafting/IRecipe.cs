@@ -8,5 +8,5 @@ public interface IRecipe
 
     public string? Group { get; init; }
 
-    public Ingredient Result { get; init; }
+    public Ingredient? Result { get; init; }
 }

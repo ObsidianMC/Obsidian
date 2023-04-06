@@ -10,7 +10,7 @@ public sealed class ShapedRecipe : IRecipe
 
     public required CraftingBookCategory Category { get; init; }
 
-    public required Ingredient Result { get; init; }
+    public required Ingredient? Result { get; init; }
 
     public required IReadOnlyList<string> Pattern { get; init; }
 
