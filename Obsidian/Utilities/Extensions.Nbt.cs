@@ -1,5 +1,7 @@
-﻿using Obsidian.API.Registry.Codecs.Biomes;
+﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.Registry.Codecs.Chat;
+using Obsidian.API.Registry.Codecs.DamageTypes;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.Nbt;
 using Obsidian.Registries;
@@ -98,73 +100,73 @@ public partial class Extensions
             switch (name.ToUpperInvariant())
             {
                 case "ENCHANTMENTS":
+                {
+                    var enchantments = (NbtList)child;
+
+                    foreach (var enchant in enchantments)
                     {
-                        var enchantments = (NbtList)child;
-
-                        foreach (var enchant in enchantments)
+                        if (enchant is NbtCompound compound)
                         {
-                            if (enchant is NbtCompound compound)
-                            {
-                                itemMetaBuilder.AddEnchantment(compound.GetString("id").ToEnchantType(), compound.GetShort("lvl"));
-                            }
+                            itemMetaBuilder.AddEnchantment(compound.GetString("id").ToEnchantType(), compound.GetShort("lvl"));
                         }
-
-                        break;
                     }
+
+                    break;
+                }
 
                 case "STOREDENCHANTMENTS":
+                {
+                    var enchantments = (NbtList)child;
+
+                    foreach (var enchantment in enchantments)
                     {
-                        var enchantments = (NbtList)child;
-
-                        foreach (var enchantment in enchantments)
+                        if (enchantment is NbtCompound compound)
                         {
-                            if (enchantment is NbtCompound compound)
-                            {
-                                compound.TryGetTag("id", out var id);
-                                compound.TryGetTag("lvl", out var lvl);
+                            compound.TryGetTag("id", out var id);
+                            compound.TryGetTag("lvl", out var lvl);
 
-                                itemMetaBuilder.AddStoredEnchantment(compound.GetString("id").ToEnchantType(), compound.GetShort("lvl"));
-                            }
+                            itemMetaBuilder.AddStoredEnchantment(compound.GetString("id").ToEnchantType(), compound.GetShort("lvl"));
                         }
-                        break;
                     }
+                    break;
+                }
 
                 case "SLOT":
-                    {
-                        var byteTag = (NbtTag<byte>)child;
+                {
+                    var byteTag = (NbtTag<byte>)child;
 
-                        itemStack.Slot = byteTag.Value;
-                        break;
-                    }
+                    itemStack.Slot = byteTag.Value;
+                    break;
+                }
 
                 case "DAMAGE":
-                    {
-                        var intTag = (NbtTag<int>)child;
+                {
+                    var intTag = (NbtTag<int>)child;
 
-                        itemMetaBuilder.WithDurability(intTag.Value);
-                        break;
-                    }
+                    itemMetaBuilder.WithDurability(intTag.Value);
+                    break;
+                }
 
                 case "DISPLAY":
+                {
+                    var display = (NbtCompound)child;
+
+                    foreach (var (displayTagName, displayTag) in display)
                     {
-                        var display = (NbtCompound)child;
-
-                        foreach (var (displayTagName, displayTag) in display)
+                        if (displayTagName.EqualsIgnoreCase("name") && displayTag is NbtTag<string> stringTag)
                         {
-                            if (displayTagName.EqualsIgnoreCase("name") && displayTag is NbtTag<string> stringTag)
-                            {
-                                itemMetaBuilder.WithName(stringTag.Value);
-                            }
-                            else if (displayTag.Name.EqualsIgnoreCase("lore"))
-                            {
-                                var loreTag = (NbtList)displayTag;
-
-                                foreach (NbtTag<string> lore in loreTag)
-                                    itemMetaBuilder.AddLore(lore.Value.FromJson<ChatMessage>());
-                            }
+                            itemMetaBuilder.WithName(stringTag.Value);
                         }
-                        break;
+                        else if (displayTag.Name.EqualsIgnoreCase("lore"))
+                        {
+                            var loreTag = (NbtList)displayTag;
+
+                            foreach (NbtTag<string> lore in loreTag)
+                                itemMetaBuilder.AddLore(lore.Value.FromJson<ChatMessage>());
+                        }
                     }
+                    break;
+                }
             }
         }
 
@@ -276,6 +278,42 @@ public partial class Extensions
     }
     #endregion
 
+
+    #region Damage Type Codec Writing
+    public static void Write(this DamageTypeCodec value, NbtList list)
+    {
+        var compound = new NbtCompound
+        {
+            new NbtTag<int>("id", value.Id),
+
+            new NbtTag<string>("name", value.Name),
+
+            value.WriteElement()
+        };
+
+        list.Add(compound);
+    }
+
+    public static NbtCompound WriteElement(this DamageTypeCodec value)
+    {
+        var damageTypeElement = value.Element;
+
+        var element = new NbtCompound("element")
+        {
+            new NbtTag<float>("exhaustion", damageTypeElement.Exhaustion),
+            new NbtTag<string>("message_id", damageTypeElement.MessageId),
+            new NbtTag<string>("scaling", damageTypeElement.Scaling.ToString().ToSnakeCase())
+        };
+
+        if (damageTypeElement.DeathMessageType is DeathMessageType deathMessageType)
+            element.Add(new NbtTag<string>("death_message_type", deathMessageType.ToString().ToSnakeCase()));
+        if (damageTypeElement.Effects is DamageEffects damageEffects)
+            element.Add(new NbtTag<string>("effects", damageEffects.ToString().ToSnakeCase()));
+
+        return element;
+    }
+    #endregion
+
     #region Chat Codec Writing
     public static void Write(this ChatCodec value, NbtList list)
     {
@@ -311,7 +349,7 @@ public partial class Extensions
             new NbtTag<string>("translation_key", chat.TranslationKey)
         };
 
-        if(chat.Style is ChatStyle style)
+        if (chat.Style is ChatStyle style)
         {
             chatCompound.Add(new NbtCompound("style")
             {
