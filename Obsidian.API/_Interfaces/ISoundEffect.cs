@@ -14,7 +14,7 @@ public interface ISoundEffect
     /// <remarks>
     /// Present if <see cref="SoundName"/> has a value.
     /// </remarks>
-    public bool? HasFixedRange { get; init; }
+    public bool HasFixedRange { get; init; }
 
     /// <summary>
     /// The fixed range of the sound.
@@ -22,7 +22,7 @@ public interface ISoundEffect
     /// <remarks>
     /// Has value if <see cref="HasFixedRange"/> is true.
     /// </remarks>
-    public float? Range { get; init; }
+    public float Range { get; init; }
 
     /// <summary>
     /// The category that this sound will be played from.
@@ -38,7 +38,7 @@ public interface ISoundEffect
     public SoundPosition? SoundPosition { get; init; }
 
     /// <summary>
-    /// The entity that the sound originated from.
+    /// The entity id that the sound originated from.
     /// </summary>
     /// <remarks>
     ///  Null if <see cref="SoundPosition"/> has a value.
@@ -58,5 +58,5 @@ public interface ISoundEffect
     /// <summary>
     /// Seed used to pick sound variant.
     /// </summary>
-    public float Seed { get; init; }
+    public long Seed { get; init; }
 }

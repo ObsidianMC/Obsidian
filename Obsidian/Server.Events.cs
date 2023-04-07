@@ -1,4 +1,5 @@
-﻿using Obsidian.API.Containers;
+﻿using Obsidian.API.Builders;
+using Obsidian.API.Containers;
 using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Nbt;
@@ -91,7 +92,9 @@ public partial class Server
                     ActionParam = 1,
                     BlockType = block.RegistryId
                 });
-                await player.SendSoundAsync(SoundId.BlockChestOpen, blockPosition.SoundPosition, SoundCategory.Blocks);
+                await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockChestOpen, SoundCategory.Blocks)
+                    .WithSoundPosition(blockPosition.SoundPosition)
+                    .Build());
             }
             else if (type == Material.EnderChest)
             {
@@ -110,7 +113,9 @@ public partial class Server
                     ActionParam = 1,
                     BlockType = block.RegistryId
                 });
-                await player.SendSoundAsync(SoundId.BlockEnderChestOpen, blockPosition.SoundPosition, SoundCategory.Blocks);
+                await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockEnderChestOpen, SoundCategory.Blocks)
+                    .WithSoundPosition(blockPosition.SoundPosition)
+                    .Build());
             }
             else if (type == Material.Furnace || type == Material.BlastFurnace || type == Material.Smoker)
             {
@@ -145,7 +150,9 @@ public partial class Server
                     ActionParam = 1,
                     BlockType = block.RegistryId
                 });
-                await player.SendSoundAsync(SoundId.BlockShulkerBoxOpen, blockPosition.SoundPosition, SoundCategory.Blocks);
+                await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockShulkerBoxOpen, SoundCategory.Blocks)
+                    .WithSoundPosition(blockPosition.SoundPosition)
+                    .Build());
             }
             else if (type == Material.Barrel)
             {
@@ -156,7 +163,9 @@ public partial class Server
                     BlockPosition = blockPosition,
                     Id = "Barrel"
                 };
-                await player.SendSoundAsync(SoundId.BlockBarrelOpen, blockPosition.SoundPosition, SoundCategory.Blocks);
+                await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockBarrelOpen, SoundCategory.Blocks)
+                    .WithSoundPosition(blockPosition.SoundPosition)
+                    .Build());
             }
             else if (type == Material.Lectern)
             {

@@ -14,9 +14,9 @@ public abstract class BaseSoundEffectBuilder : ISoundEffectBuilder, ISoundEffect
 
     protected SoundPosition? SoundPosition { get; set; }
 
-    protected bool? HasFixedRange { get; set; }
+    protected bool HasFixedRange { get; set; }
 
-    protected float? Range { get; set; }
+    protected float Range { get; set; }
 
     protected float Volume { get; set; } = .5f;
 

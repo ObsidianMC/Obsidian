@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Boss;
+using Obsidian.API.Builders;
 using Obsidian.API.Crafting;
 using Obsidian.API.Events;
 using Obsidian.Commands;
@@ -692,7 +693,9 @@ public partial class Server : IServer
                     foreach (Player player in Players)
                     {
                         var soundPosition = new SoundPosition(player.Position.X, player.Position.Y, player.Position.Z);
-                        await player.SendSoundAsync(SoundId.EntitySheepAmbient, soundPosition, SoundCategory.Master, 1.0f, 1.0f);
+                        await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.EntitySheepAmbient)
+                            .WithSoundPosition(soundPosition)
+                            .Build());
                     }
                 }
 

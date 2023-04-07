@@ -4,15 +4,15 @@ namespace Obsidian.Net.Packets.Play.Clientbound;
 public partial class SoundEffectPacket : IClientboundPacket
 {
     [Field(0), ActualType(typeof(int)), VarLength]
-    public required SoundId Sound { get; init; }
+    public required SoundId SoundId { get; init; }
 
-    [Field(1), Condition("SoundId == Sounds.None")]
+    [Field(1), Condition("SoundId == SoundId.None")]
     public string SoundName { get; init; }
 
-    [Field(2), Condition("SoundId == Sounds.None")]
+    [Field(2), Condition("SoundId == SoundId.None")]
     public bool HasFixedRange { get; init; }
 
-    [Field(3), Condition("SoundId == Sounds.None && HasFixedRange")]
+    [Field(3), Condition("SoundId == SoundId.None && HasFixedRange")]
     public float Range { get; init; }
 
     [Field(4), ActualType(typeof(int)), VarLength]

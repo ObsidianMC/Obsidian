@@ -1,4 +1,5 @@
-﻿using Obsidian.Entities;
+﻿using Obsidian.API.Builders;
+using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
 
@@ -32,7 +33,10 @@ public partial class CloseContainerPacket : IClientboundPacket, IServerboundPack
                 ActionParam = 0,
                 BlockType = block.BaseId
             });
-            await player.SendSoundAsync(SoundId.BlockChestClose, position.SoundPosition);
+
+            await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockChestClose)
+                .WithSoundPosition(position.SoundPosition)
+                .Build());
         }
         else if (block.Is(Material.EnderChest))
         {
@@ -43,7 +47,9 @@ public partial class CloseContainerPacket : IClientboundPacket, IServerboundPack
                 ActionParam = 0,
                 BlockType = block.BaseId
             });
-            await player.SendSoundAsync(SoundId.BlockEnderChestClose, position.SoundPosition);
+            await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockEnderChestClose)
+                .WithSoundPosition(position.SoundPosition)
+                .Build());
         }
 
         player.OpenedContainer = null;
