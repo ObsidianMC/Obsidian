@@ -354,6 +354,7 @@ public partial class Extensions
     {
         var elements = new NbtCompound("element")
         {
+            new NbtTag<bool>("has_precipitation", value.Element.HasPrecipitation),
             new NbtTag<float>("depth", value.Element.Depth),
             new NbtTag<float>("temperature", value.Element.Temperature),
             new NbtTag<float>("scale", value.Element.Scale),

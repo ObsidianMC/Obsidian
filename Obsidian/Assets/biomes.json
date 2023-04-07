@@ -23,6 +23,7 @@
         "temperature": 2,
         "scale": 0,
         "downfall": 0,
+        "has_precipitation": false,
         "player_spawn_friendly": false
       }
     },
@@ -54,6 +55,7 @@
         "temperature": 0.95,
         "scale": 0,
         "downfall": 0.9,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -96,6 +98,7 @@
         "temperature": 2,
         "scale": 0,
         "downfall": 0,
+        "has_precipitation": false,
         "player_spawn_friendly": false
       }
     },
@@ -121,6 +124,7 @@
         "temperature": 0.8,
         "scale": 0,
         "downfall": 0.4,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -152,6 +156,7 @@
         "temperature": 0.6,
         "scale": 0,
         "downfall": 0.6,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -177,6 +182,7 @@
         "temperature": 0.5,
         "scale": 0,
         "downfall": 0.5,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -219,6 +225,7 @@
         "temperature": 2,
         "scale": 0,
         "downfall": 0,
+        "has_precipitation": false,
         "player_spawn_friendly": false
       }
     },
@@ -251,6 +258,7 @@
         "temperature": 0.7,
         "scale": 0,
         "downfall": 0.8,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -276,6 +284,7 @@
         "temperature": 0.5,
         "scale": 0,
         "downfall": 0.5,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -307,6 +316,7 @@
         "temperature": 0.8,
         "scale": 0,
         "downfall": 0.4,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -332,6 +342,7 @@
         "temperature": 0.5,
         "scale": 0,
         "downfall": 0.5,
+        "has_precipitation": true,
         "temperature_modifier": "frozen",
         "player_spawn_friendly": false
       }
@@ -358,6 +369,7 @@
         "temperature": 0.5,
         "scale": 0,
         "downfall": 0.5,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -383,6 +395,7 @@
         "temperature": 0.5,
         "scale": 0,
         "downfall": 0.5,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -408,6 +421,7 @@
         "temperature": 2,
         "scale": 0,
         "downfall": 0,
+        "has_precipitation": false,
         "player_spawn_friendly": false
       }
     },
@@ -439,6 +453,7 @@
         "temperature": 0.8,
         "scale": 0,
         "downfall": 0.4,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -464,6 +479,7 @@
         "temperature": 0.5,
         "scale": 0,
         "downfall": 0.5,
+        "has_precipitation": false,
         "player_spawn_friendly": false
       }
     },
@@ -489,6 +505,7 @@
         "temperature": 0.5,
         "scale": 0,
         "downfall": 0.5,
+        "has_precipitation": false,
         "player_spawn_friendly": false
       }
     },
@@ -514,6 +531,7 @@
         "temperature": 0.5,
         "scale": 0,
         "downfall": 0.5,
+        "has_precipitation": false,
         "player_spawn_friendly": false
       }
     },
@@ -539,6 +557,7 @@
         "temperature": 2,
         "scale": 0,
         "downfall": 0,
+        "has_precipitation": false,
         "player_spawn_friendly": false
       }
     },
@@ -570,6 +589,7 @@
         "temperature": 0.7,
         "scale": 0,
         "downfall": 0.8,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -601,6 +621,7 @@
         "temperature": 0.7,
         "scale": 0,
         "downfall": 0.8,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -626,6 +647,7 @@
         "temperature": 0,
         "scale": 0,
         "downfall": 0.5,
+        "has_precipitation": true,
         "temperature_modifier": "frozen",
         "player_spawn_friendly": false
       }
@@ -658,6 +680,7 @@
         "temperature": -0.7,
         "scale": 0,
         "downfall": 0.9,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -683,6 +706,7 @@
         "temperature": 0,
         "scale": 0,
         "downfall": 0.5,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -714,6 +738,7 @@
         "temperature": -0.2,
         "scale": 0,
         "downfall": 0.8,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -739,6 +764,7 @@
         "temperature": 0,
         "scale": 0,
         "downfall": 0.5,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -770,6 +796,7 @@
         "temperature": -0.7,
         "scale": 0,
         "downfall": 0.9,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -801,6 +828,7 @@
         "temperature": 0.95,
         "scale": 0,
         "downfall": 0.9,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -826,6 +854,7 @@
         "temperature": 0.5,
         "scale": 0,
         "downfall": 0.5,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -857,6 +886,7 @@
         "temperature": 0.5,
         "scale": 0,
         "downfall": 0.5,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -889,6 +919,7 @@
         "temperature": 0.8,
         "scale": 0,
         "downfall": 0.9,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -920,6 +951,7 @@
         "temperature": 0.5,
         "scale": 0,
         "downfall": 0.8,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -945,6 +977,7 @@
         "temperature": 0.9,
         "scale": 0,
         "downfall": 1,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -981,6 +1014,7 @@
         "temperature": 2,
         "scale": 0,
         "downfall": 0,
+        "has_precipitation": false,
         "player_spawn_friendly": false
       }
     },
@@ -1006,6 +1040,7 @@
         "temperature": 0.5,
         "scale": 0,
         "downfall": 0.5,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -1037,6 +1072,7 @@
         "temperature": 0.6,
         "scale": 0,
         "downfall": 0.6,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -1068,6 +1104,7 @@
         "temperature": 0.3,
         "scale": 0,
         "downfall": 0.8,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -1099,6 +1136,7 @@
         "temperature": 0.25,
         "scale": 0,
         "downfall": 0.8,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -1124,6 +1162,7 @@
         "temperature": 0.8,
         "scale": 0,
         "downfall": 0.4,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -1149,6 +1188,7 @@
         "temperature": 0.5,
         "scale": 0,
         "downfall": 0.5,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -1174,6 +1214,7 @@
         "temperature": 2,
         "scale": 0,
         "downfall": 0,
+        "has_precipitation": false,
         "player_spawn_friendly": false
       }
     },
@@ -1199,6 +1240,7 @@
         "temperature": 2,
         "scale": 0,
         "downfall": 0,
+        "has_precipitation": false,
         "player_spawn_friendly": false
       }
     },
@@ -1224,6 +1266,7 @@
         "temperature": 0.5,
         "scale": 0,
         "downfall": 0.5,
+        "has_precipitation": false,
         "player_spawn_friendly": false
       }
     },
@@ -1249,6 +1292,7 @@
         "temperature": 0.05,
         "scale": 0,
         "downfall": 0.3,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -1274,6 +1318,7 @@
         "temperature": 0,
         "scale": 0,
         "downfall": 0.5,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -1305,6 +1350,7 @@
         "temperature": -0.3,
         "scale": 0,
         "downfall": 0.9,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -1330,6 +1376,7 @@
         "temperature": -0.5,
         "scale": 0,
         "downfall": 0.4,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -1372,6 +1419,7 @@
         "temperature": 2,
         "scale": 0,
         "downfall": 0,
+        "has_precipitation": false,
         "player_spawn_friendly": false
       }
     },
@@ -1403,6 +1451,7 @@
         "temperature": 0.95,
         "scale": 0,
         "downfall": 0.8,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -1434,6 +1483,7 @@
         "temperature": 1,
         "scale": 0,
         "downfall": 0.3,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -1459,6 +1509,7 @@
         "temperature": 0.2,
         "scale": 0,
         "downfall": 0.3,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -1484,6 +1535,7 @@
         "temperature": 0.8,
         "scale": 0,
         "downfall": 0.4,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -1516,6 +1568,7 @@
         "temperature": 0.8,
         "scale": 0,
         "downfall": 0.9,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -1541,6 +1594,7 @@
         "temperature": 0.25,
         "scale": 0,
         "downfall": 0.8,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -1566,6 +1620,7 @@
         "temperature": 0.5,
         "scale": 0,
         "downfall": 0.5,
+        "has_precipitation": false,
         "player_spawn_friendly": false
       }
     },
@@ -1591,6 +1646,7 @@
         "temperature": 0.5,
         "scale": 0,
         "downfall": 0.5,
+        "has_precipitation": false,
         "player_spawn_friendly": false
       }
     },
@@ -1616,6 +1672,7 @@
         "temperature": 0.5,
         "scale": 0,
         "downfall": 0.5,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -1658,6 +1715,7 @@
         "temperature": 2,
         "scale": 0,
         "downfall": 0,
+        "has_precipitation": false,
         "player_spawn_friendly": false
       }
     },
@@ -1683,6 +1741,7 @@
         "temperature": 0.2,
         "scale": 0,
         "downfall": 0.3,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -1708,6 +1767,7 @@
         "temperature": 0.2,
         "scale": 0,
         "downfall": 0.3,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -1733,6 +1793,7 @@
         "temperature": 0.2,
         "scale": 0,
         "downfall": 0.3,
+        "has_precipitation": true,
         "player_spawn_friendly": false
       }
     },
@@ -1758,6 +1819,7 @@
         "temperature": 2,
         "scale": 0,
         "downfall": 0,
+        "has_precipitation": false,
         "player_spawn_friendly": false
       }
     },
@@ -1783,6 +1845,7 @@
         "temperature": 2,
         "scale": 0,
         "downfall": 0,
+        "has_precipitation": false,
         "player_spawn_friendly": false
       }
     }

@@ -4,6 +4,9 @@ public sealed record class BiomeElement
 {
     public required BiomeEffect Effects { get; set; }
 
+    public required bool HasPrecipitation { get; set; }
+
+
     public float Depth { get; set; }
     public float Temperature { get; set; }
     public float Scale { get; set; }
