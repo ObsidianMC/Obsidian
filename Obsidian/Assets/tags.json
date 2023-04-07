@@ -58,17 +58,6 @@
       "minecraft:cave_air"
     ]
   },
-  "blocks/flowers": {
-    "name": "flowers",
-    "type": "blocks",
-    "values": [
-      "#minecraft:small_flowers",
-      "#minecraft:tall_flowers",
-      "minecraft:flowering_azalea_leaves",
-      "minecraft:flowering_azalea",
-      "minecraft:mangrove_propagule"
-    ]
-  },
   "banner_pattern/no_item_required": {
     "name": "no_item_required",
     "type": "banner_pattern",
@@ -796,6 +785,17 @@
       "minecraft:potted_mangrove_propagule"
     ]
   },
+  "blocks/flowers": {
+    "name": "flowers",
+    "type": "blocks",
+    "values": [
+      "#minecraft:small_flowers",
+      "#minecraft:tall_flowers",
+      "minecraft:flowering_azalea_leaves",
+      "minecraft:flowering_azalea",
+      "minecraft:mangrove_propagule"
+    ]
+  },
   "blocks/foxes_spawnable_on": {
     "name": "foxes_spawnable_on",
     "type": "blocks",
@@ -841,6 +841,7 @@
     "name": "goats_spawnable_on",
     "type": "blocks",
     "values": [
+      "#minecraft:animals_spawnable_on",
       "minecraft:stone",
       "minecraft:snow",
       "minecraft:snow_block",
@@ -2033,6 +2034,14 @@
       "minecraft:wither_rose"
     ]
   },
+  "blocks/smelts_to_glass": {
+    "name": "smelts_to_glass",
+    "type": "blocks",
+    "values": [
+      "minecraft:sand",
+      "minecraft:red_sand"
+    ]
+  },
   "blocks/snaps_goat_horn": {
     "name": "snaps_goat_horn",
     "type": "blocks",
@@ -2556,6 +2565,213 @@
       "minecraft:all_black"
     ]
   },
+  "damage_type/always_hurts_ender_dragons": {
+    "name": "always_hurts_ender_dragons",
+    "type": "damage_type",
+    "values": [
+      "#minecraft:is_explosion"
+    ]
+  },
+  "damage_type/always_most_significant_fall": {
+    "name": "always_most_significant_fall",
+    "type": "damage_type",
+    "values": [
+      "minecraft:out_of_world"
+    ]
+  },
+  "damage_type/always_triggers_silverfish": {
+    "name": "always_triggers_silverfish",
+    "type": "damage_type",
+    "values": [
+      "minecraft:magic"
+    ]
+  },
+  "damage_type/avoids_guardian_thorns": {
+    "name": "avoids_guardian_thorns",
+    "type": "damage_type",
+    "values": [
+      "minecraft:magic",
+      "minecraft:thorns",
+      "#minecraft:is_explosion"
+    ]
+  },
+  "damage_type/burns_armor_stands": {
+    "name": "burns_armor_stands",
+    "type": "damage_type",
+    "values": [
+      "minecraft:on_fire"
+    ]
+  },
+  "damage_type/bypasses_armor": {
+    "name": "bypasses_armor",
+    "type": "damage_type",
+    "values": [
+      "minecraft:on_fire",
+      "minecraft:in_wall",
+      "minecraft:cramming",
+      "minecraft:drown",
+      "minecraft:fly_into_wall",
+      "minecraft:generic",
+      "minecraft:wither",
+      "minecraft:dragon_breath",
+      "minecraft:starve",
+      "minecraft:fall",
+      "minecraft:freeze",
+      "minecraft:stalagmite",
+      "minecraft:magic",
+      "minecraft:indirect_magic",
+      "minecraft:out_of_world",
+      "minecraft:sonic_boom"
+    ]
+  },
+  "damage_type/bypasses_effects": {
+    "name": "bypasses_effects",
+    "type": "damage_type",
+    "values": [
+      "minecraft:starve"
+    ]
+  },
+  "damage_type/bypasses_enchantments": {
+    "name": "bypasses_enchantments",
+    "type": "damage_type",
+    "values": [
+      "minecraft:sonic_boom"
+    ]
+  },
+  "damage_type/bypasses_invulnerability": {
+    "name": "bypasses_invulnerability",
+    "type": "damage_type",
+    "values": [
+      "minecraft:out_of_world"
+    ]
+  },
+  "damage_type/bypasses_resistance": {
+    "name": "bypasses_resistance",
+    "type": "damage_type",
+    "values": [
+      "minecraft:out_of_world"
+    ]
+  },
+  "damage_type/bypasses_shield": {
+    "name": "bypasses_shield",
+    "type": "damage_type",
+    "values": [
+      "#minecraft:bypasses_armor",
+      "minecraft:falling_anvil",
+      "minecraft:falling_stalactite"
+    ]
+  },
+  "damage_type/damages_helmet": {
+    "name": "damages_helmet",
+    "type": "damage_type",
+    "values": [
+      "minecraft:falling_anvil",
+      "minecraft:falling_block",
+      "minecraft:falling_stalactite"
+    ]
+  },
+  "damage_type/ignites_armor_stands": {
+    "name": "ignites_armor_stands",
+    "type": "damage_type",
+    "values": [
+      "minecraft:in_fire"
+    ]
+  },
+  "damage_type/is_drowning": {
+    "name": "is_drowning",
+    "type": "damage_type",
+    "values": [
+      "minecraft:drown"
+    ]
+  },
+  "damage_type/is_explosion": {
+    "name": "is_explosion",
+    "type": "damage_type",
+    "values": [
+      "minecraft:fireworks",
+      "minecraft:explosion",
+      "minecraft:player_explosion",
+      "minecraft:bad_respawn_point"
+    ]
+  },
+  "damage_type/is_fall": {
+    "name": "is_fall",
+    "type": "damage_type",
+    "values": [
+      "minecraft:fall",
+      "minecraft:stalagmite"
+    ]
+  },
+  "damage_type/is_fire": {
+    "name": "is_fire",
+    "type": "damage_type",
+    "values": [
+      "minecraft:in_fire",
+      "minecraft:on_fire",
+      "minecraft:lava",
+      "minecraft:hot_floor",
+      "minecraft:unattributed_fireball",
+      "minecraft:fireball"
+    ]
+  },
+  "damage_type/is_freezing": {
+    "name": "is_freezing",
+    "type": "damage_type",
+    "values": [
+      "minecraft:freeze"
+    ]
+  },
+  "damage_type/is_lightning": {
+    "name": "is_lightning",
+    "type": "damage_type",
+    "values": [
+      "minecraft:lightning_bolt"
+    ]
+  },
+  "damage_type/is_projectile": {
+    "name": "is_projectile",
+    "type": "damage_type",
+    "values": [
+      "minecraft:arrow",
+      "minecraft:trident",
+      "minecraft:mob_projectile",
+      "minecraft:unattributed_fireball",
+      "minecraft:fireball",
+      "minecraft:wither_skull",
+      "minecraft:thrown"
+    ]
+  },
+  "damage_type/no_anger": {
+    "name": "no_anger",
+    "type": "damage_type",
+    "values": [
+      "minecraft:mob_attack_no_aggro"
+    ]
+  },
+  "damage_type/no_impact": {
+    "name": "no_impact",
+    "type": "damage_type",
+    "values": [
+      "minecraft:drown"
+    ]
+  },
+  "damage_type/witch_resistant_to": {
+    "name": "witch_resistant_to",
+    "type": "damage_type",
+    "values": [
+      "minecraft:magic",
+      "minecraft:indirect_magic",
+      "minecraft:sonic_boom",
+      "minecraft:thorns"
+    ]
+  },
+  "damage_type/wither_immune_to": {
+    "name": "wither_immune_to",
+    "type": "damage_type",
+    "values": [
+      "minecraft:drown"
+    ]
+  },
   "entity_types/arrows": {
     "name": "arrows",
     "type": "entity_types",
@@ -2591,6 +2807,45 @@
     "type": "entity_types",
     "values": [
       "minecraft:bee"
+    ]
+  },
+  "entity_types/dismounts_underwater": {
+    "name": "dismounts_underwater",
+    "type": "entity_types",
+    "values": [
+      "minecraft:camel",
+      "minecraft:chicken",
+      "minecraft:donkey",
+      "minecraft:horse",
+      "minecraft:llama",
+      "minecraft:mule",
+      "minecraft:pig",
+      "minecraft:ravager",
+      "minecraft:spider",
+      "minecraft:strider",
+      "minecraft:trader_llama",
+      "minecraft:zombie_horse"
+    ]
+  },
+  "entity_types/fall_damage_immune": {
+    "name": "fall_damage_immune",
+    "type": "entity_types",
+    "values": [
+      "minecraft:iron_golem",
+      "minecraft:snow_golem",
+      "minecraft:shulker",
+      "minecraft:allay",
+      "minecraft:bat",
+      "minecraft:bee",
+      "minecraft:blaze",
+      "minecraft:cat",
+      "minecraft:chicken",
+      "minecraft:ghast",
+      "minecraft:phantom",
+      "minecraft:magma_cube",
+      "minecraft:ocelot",
+      "minecraft:parrot",
+      "minecraft:wither"
     ]
   },
   "entity_types/freeze_hurts_extra_types": {
@@ -2681,13 +2936,6 @@
       "minecraft:flowing_water"
     ]
   },
-  "fluids/empty": {
-    "name": "empty",
-    "type": "fluids",
-    "values": [
-      "minecraft:empty"
-    ]
-  },
   "game_events/allay_can_listen": {
     "name": "allay_can_listen",
     "type": "game_events",
@@ -2735,7 +2983,9 @@
       "minecraft:elytra_glide",
       "minecraft:entity_damage",
       "minecraft:entity_die",
+      "minecraft:entity_dismount",
       "minecraft:entity_interact",
+      "minecraft:entity_mount",
       "minecraft:entity_place",
       "minecraft:entity_roar",
       "minecraft:entity_shake",
@@ -2782,7 +3032,9 @@
       "minecraft:elytra_glide",
       "minecraft:entity_damage",
       "minecraft:entity_die",
+      "minecraft:entity_dismount",
       "minecraft:entity_interact",
+      "minecraft:entity_mount",
       "minecraft:entity_place",
       "minecraft:entity_roar",
       "minecraft:entity_shake",
@@ -2863,6 +3115,18 @@
       "minecraft:arrow",
       "minecraft:tipped_arrow",
       "minecraft:spectral_arrow"
+    ]
+  },
+  "items/axes": {
+    "name": "axes",
+    "type": "items",
+    "values": [
+      "minecraft:diamond_axe",
+      "minecraft:stone_axe",
+      "minecraft:golden_axe",
+      "minecraft:netherite_axe",
+      "minecraft:wooden_axe",
+      "minecraft:iron_axe"
     ]
   },
   "items/axolotl_tempt_items": {
@@ -3216,6 +3480,18 @@
       "minecraft:deepslate_gold_ore"
     ]
   },
+  "items/hoes": {
+    "name": "hoes",
+    "type": "items",
+    "values": [
+      "minecraft:diamond_hoe",
+      "minecraft:stone_hoe",
+      "minecraft:golden_hoe",
+      "minecraft:netherite_hoe",
+      "minecraft:wooden_hoe",
+      "minecraft:iron_hoe"
+    ]
+  },
   "items/ignored_by_piglin_babies": {
     "name": "ignored_by_piglin_babies",
     "type": "items",
@@ -3358,6 +3634,18 @@
       "minecraft:stripped_oak_wood"
     ]
   },
+  "items/pickaxes": {
+    "name": "pickaxes",
+    "type": "items",
+    "values": [
+      "minecraft:diamond_pickaxe",
+      "minecraft:stone_pickaxe",
+      "minecraft:golden_pickaxe",
+      "minecraft:netherite_pickaxe",
+      "minecraft:wooden_pickaxe",
+      "minecraft:iron_pickaxe"
+    ]
+  },
   "items/piglin_food": {
     "name": "piglin_food",
     "type": "items",
@@ -3460,6 +3748,18 @@
       "minecraft:mangrove_propagule"
     ]
   },
+  "items/shovels": {
+    "name": "shovels",
+    "type": "items",
+    "values": [
+      "minecraft:diamond_shovel",
+      "minecraft:stone_shovel",
+      "minecraft:golden_shovel",
+      "minecraft:netherite_shovel",
+      "minecraft:wooden_shovel",
+      "minecraft:iron_shovel"
+    ]
+  },
   "items/signs": {
     "name": "signs",
     "type": "items",
@@ -3544,6 +3844,14 @@
       "minecraft:cornflower",
       "minecraft:lily_of_the_valley",
       "minecraft:wither_rose"
+    ]
+  },
+  "items/smelts_to_glass": {
+    "name": "smelts_to_glass",
+    "type": "items",
+    "values": [
+      "minecraft:sand",
+      "minecraft:red_sand"
     ]
   },
   "items/soul_fire_base_blocks": {
@@ -3640,6 +3948,18 @@
       "minecraft:cobbled_deepslate"
     ]
   },
+  "items/swords": {
+    "name": "swords",
+    "type": "items",
+    "values": [
+      "minecraft:diamond_sword",
+      "minecraft:stone_sword",
+      "minecraft:golden_sword",
+      "minecraft:netherite_sword",
+      "minecraft:wooden_sword",
+      "minecraft:iron_sword"
+    ]
+  },
   "items/tall_flowers": {
     "name": "tall_flowers",
     "type": "items",
@@ -3671,6 +3991,18 @@
       "minecraft:green_terracotta",
       "minecraft:red_terracotta",
       "minecraft:black_terracotta"
+    ]
+  },
+  "items/tools": {
+    "name": "tools",
+    "type": "items",
+    "values": [
+      "#minecraft:swords",
+      "#minecraft:axes",
+      "#minecraft:pickaxes",
+      "#minecraft:shovels",
+      "#minecraft:hoes",
+      "minecraft:trident"
     ]
   },
   "items/trapdoors": {
@@ -4250,6 +4582,20 @@
       "minecraft:dark_forest"
     ]
   },
+  "worldgen/biome/increased_fire_burnout": {
+    "name": "biome/increased_fire_burnout",
+    "type": "worldgen",
+    "values": [
+      "minecraft:bamboo_jungle",
+      "minecraft:mushroom_fields",
+      "minecraft:mangrove_swamp",
+      "minecraft:snowy_slopes",
+      "minecraft:frozen_peaks",
+      "minecraft:jagged_peaks",
+      "minecraft:swamp",
+      "minecraft:jungle"
+    ]
+  },
   "worldgen/biome/is_badlands": {
     "name": "biome/is_badlands",
     "type": "worldgen",
@@ -4451,13 +4797,6 @@
       "#minecraft:is_river"
     ]
   },
-  "worldgen/biome/only_allows_snow_and_gold_rabbits": {
-    "name": "biome/only_allows_snow_and_gold_rabbits",
-    "type": "worldgen",
-    "values": [
-      "minecraft:desert"
-    ]
-  },
   "worldgen/biome/plays_underwater_music": {
     "name": "biome/plays_underwater_music",
     "type": "worldgen",
@@ -4496,6 +4835,24 @@
       "#minecraft:is_river"
     ]
   },
+  "worldgen/biome/snow_golem_melts": {
+    "name": "biome/snow_golem_melts",
+    "type": "worldgen",
+    "values": [
+      "minecraft:badlands",
+      "minecraft:basalt_deltas",
+      "minecraft:crimson_forest",
+      "minecraft:desert",
+      "minecraft:eroded_badlands",
+      "minecraft:nether_wastes",
+      "minecraft:savanna",
+      "minecraft:savanna_plateau",
+      "minecraft:soul_sand_valley",
+      "minecraft:warped_forest",
+      "minecraft:windswept_savanna",
+      "minecraft:wooded_badlands"
+    ]
+  },
   "worldgen/biome/spawns_cold_variant_frogs": {
     "name": "biome/spawns_cold_variant_frogs",
     "type": "worldgen",
@@ -4515,6 +4872,29 @@
       "#minecraft:is_end"
     ]
   },
+  "worldgen/biome/spawns_gold_rabbits": {
+    "name": "biome/spawns_gold_rabbits",
+    "type": "worldgen",
+    "values": [
+      "minecraft:desert"
+    ]
+  },
+  "worldgen/biome/spawns_snow_foxes": {
+    "name": "biome/spawns_snow_foxes",
+    "type": "worldgen",
+    "values": [
+      "minecraft:snowy_plains",
+      "minecraft:ice_spikes",
+      "minecraft:frozen_ocean",
+      "minecraft:snowy_taiga",
+      "minecraft:frozen_river",
+      "minecraft:snowy_beach",
+      "minecraft:frozen_peaks",
+      "minecraft:jagged_peaks",
+      "minecraft:snowy_slopes",
+      "minecraft:grove"
+    ]
+  },
   "worldgen/biome/spawns_warm_variant_frogs": {
     "name": "biome/spawns_warm_variant_frogs",
     "type": "worldgen",
@@ -4526,6 +4906,22 @@
       "#minecraft:is_nether",
       "#minecraft:is_badlands",
       "minecraft:mangrove_swamp"
+    ]
+  },
+  "worldgen/biome/spawns_white_rabbits": {
+    "name": "biome/spawns_white_rabbits",
+    "type": "worldgen",
+    "values": [
+      "minecraft:snowy_plains",
+      "minecraft:ice_spikes",
+      "minecraft:frozen_ocean",
+      "minecraft:snowy_taiga",
+      "minecraft:frozen_river",
+      "minecraft:snowy_beach",
+      "minecraft:frozen_peaks",
+      "minecraft:jagged_peaks",
+      "minecraft:snowy_slopes",
+      "minecraft:grove"
     ]
   },
   "worldgen/biome/stronghold_biased_to": {

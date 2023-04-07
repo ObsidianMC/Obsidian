@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API;
 
-public enum GameEvents : int
+public enum GameEvent : int
 {
     BlockActivate,
     BlockAttach,
@@ -19,7 +19,9 @@ public enum GameEvents : int
     ElytraGlide,
     EntityDamage,
     EntityDie,
+    EntityDismount,
     EntityInteract,
+    EntityMount,
     EntityPlace,
     EntityRoar,
     EntityShake,
