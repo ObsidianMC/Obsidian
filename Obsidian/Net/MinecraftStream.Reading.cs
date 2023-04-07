@@ -334,6 +334,14 @@ public partial class MinecraftStream
         };
 
     [ReadMethod]
+    public SignatureData ReadSignatureData() => new()
+    {
+        ExpirationTime = this.ReadDateTimeOffset(),
+        PublicKey = this.ReadByteArray(),
+        Signature = this.ReadByteArray()
+    };
+
+    [ReadMethod]
     public DateTimeOffset ReadDateTimeOffset() => DateTimeOffset.FromUnixTimeMilliseconds(this.ReadLong());
 
     [ReadMethod]
