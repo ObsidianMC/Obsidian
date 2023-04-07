@@ -32,7 +32,7 @@ public partial class CloseContainerPacket : IClientboundPacket, IServerboundPack
                 ActionParam = 0,
                 BlockType = block.BaseId
             });
-            await player.SendSoundAsync(Sounds.BlockChestClose, position.SoundPosition);
+            await player.SendSoundAsync(SoundId.BlockChestClose, position.SoundPosition);
         }
         else if (block.Is(Material.EnderChest))
         {
@@ -43,7 +43,7 @@ public partial class CloseContainerPacket : IClientboundPacket, IServerboundPack
                 ActionParam = 0,
                 BlockType = block.BaseId
             });
-            await player.SendSoundAsync(Sounds.BlockEnderChestClose, position.SoundPosition);
+            await player.SendSoundAsync(SoundId.BlockEnderChestClose, position.SoundPosition);
         }
 
         player.OpenedContainer = null;

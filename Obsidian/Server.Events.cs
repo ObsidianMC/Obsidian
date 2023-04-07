@@ -91,7 +91,7 @@ public partial class Server
                     ActionParam = 1,
                     BlockType = block.RegistryId
                 });
-                await player.SendSoundAsync(Sounds.BlockChestOpen, blockPosition.SoundPosition, SoundCategory.Blocks);
+                await player.SendSoundAsync(SoundId.BlockChestOpen, blockPosition.SoundPosition, SoundCategory.Blocks);
             }
             else if (type == Material.EnderChest)
             {
@@ -110,7 +110,7 @@ public partial class Server
                     ActionParam = 1,
                     BlockType = block.RegistryId
                 });
-                await player.SendSoundAsync(Sounds.BlockEnderChestOpen, blockPosition.SoundPosition, SoundCategory.Blocks);
+                await player.SendSoundAsync(SoundId.BlockEnderChestOpen, blockPosition.SoundPosition, SoundCategory.Blocks);
             }
             else if (type == Material.Furnace || type == Material.BlastFurnace || type == Material.Smoker)
             {
@@ -145,7 +145,7 @@ public partial class Server
                     ActionParam = 1,
                     BlockType = block.RegistryId
                 });
-                await player.SendSoundAsync(Sounds.BlockShulkerBoxOpen, blockPosition.SoundPosition, SoundCategory.Blocks);
+                await player.SendSoundAsync(SoundId.BlockShulkerBoxOpen, blockPosition.SoundPosition, SoundCategory.Blocks);
             }
             else if (type == Material.Barrel)
             {
@@ -156,7 +156,7 @@ public partial class Server
                     BlockPosition = blockPosition,
                     Id = "Barrel"
                 };
-                await player.SendSoundAsync(Sounds.BlockBarrelOpen, blockPosition.SoundPosition, SoundCategory.Blocks);
+                await player.SendSoundAsync(SoundId.BlockBarrelOpen, blockPosition.SoundPosition, SoundCategory.Blocks);
             }
             else if (type == Material.Lectern)
             {

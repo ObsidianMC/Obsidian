@@ -1,7 +1,8 @@
 ﻿namespace Obsidian.API;
 
-public enum Sounds : int
+public enum SoundId : int
 {
+    None = 0,
     AmbientBasaltDeltasAdditions = 9,
     AmbientBasaltDeltasLoop = 10,
     AmbientBasaltDeltasMood = 11,

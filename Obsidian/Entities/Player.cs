@@ -284,14 +284,51 @@ public sealed partial class Player : Living, IPlayer
     public Task SetActionBarTextAsync(ChatMessage message) =>
         this.client.QueuePacketAsync(new SystemChatMessagePacket(message, true));
 
-    public Task SendEntitySoundAsync(Sounds soundId, int entityId, SoundCategory category = SoundCategory.Master, float volume = 1f, float pitch = 1f) =>
-        client.QueuePacketAsync(new EntitySoundEffectPacket(soundId, entityId, category, volume, pitch));
+    public Task SendEntitySoundAsync(SoundId soundId, int entityId, SoundCategory category = SoundCategory.Master, float volume = 1f, float pitch = 1f) =>
+        client.QueuePacketAsync(new EntitySoundEffectPacket
+        {
+            SoundId = soundId,
+            EntityId = entityId,
+            Category = category,
+            Volume = volume,
+            Pitch = pitch
+        });
 
-    public Task SendSoundAsync(Sounds soundId, SoundPosition soundPosition, SoundCategory category = SoundCategory.Master, float volume = 1f, float pitch = 1f) =>
-        client.QueuePacketAsync(new SoundEffectPacket(soundId, soundPosition, category, volume, pitch));
+    public Task SendSoundAsync(SoundId soundId, SoundPosition soundPosition, SoundCategory category = SoundCategory.Master, float volume = 1f, float pitch = 1f) =>
+        client.QueuePacketAsync(new SoundEffectPacket
+        {
+            Sound = soundId,
+            SoundPosition = soundPosition,
+            Category = category,
+            Volume = volume,
+            Pitch = pitch,
+            
+        });
 
-    public Task SendCustomSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float volume = 1f, float pitch = 1f) =>
-        client.QueuePacketAsync(new CustomSoundEffectPacket(name, position, category, volume, pitch));
+    public Task SendEntitySoundAsync(string soundName, int entityId, SoundCategory category = SoundCategory.Master, float volume = 1f, float pitch = 1f) =>
+       client.QueuePacketAsync(new EntitySoundEffectPacket
+       {
+           SoundId = SoundId.None,
+           SoundName = soundName,
+           EntityId = entityId,
+           Category = category,
+           Volume = volume,
+           Pitch = pitch
+       });
+
+    //TODO MAYBE USE A BUILDER??
+    public Task SendSoundAsync(string soundName, SoundPosition soundPosition, SoundCategory category = SoundCategory.Master, float volume = 1f, float pitch = 1f) =>
+        client.QueuePacketAsync(new SoundEffectPacket
+        {
+            Sound = SoundId.None,
+            SoundName = soundName,
+            HasFixedRange = false,
+            SoundPosition = soundPosition,
+            Category = category,
+            Volume = volume,
+            Pitch = pitch,
+
+        });
 
     public Task KickAsync(string reason) => this.client.DisconnectAsync(ChatMessage.Simple(reason));
     public Task KickAsync(ChatMessage reason) => this.client.DisconnectAsync(reason);

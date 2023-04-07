@@ -692,7 +692,7 @@ public partial class Server : IServer
                     foreach (Player player in Players)
                     {
                         var soundPosition = new SoundPosition(player.Position.X, player.Position.Y, player.Position.Z);
-                        await player.SendSoundAsync(Sounds.EntitySheepAmbient, soundPosition, SoundCategory.Master, 1.0f, 1.0f);
+                        await player.SendSoundAsync(SoundId.EntitySheepAmbient, soundPosition, SoundCategory.Master, 1.0f, 1.0f);
                     }
                 }
 
