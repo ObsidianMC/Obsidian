@@ -286,7 +286,7 @@ public sealed class Client : IDisposable
                                     Server.throttler.TryAdd(ip, DateTimeOffset.UtcNow.AddMilliseconds(this.Server.Config.ConnectionThrottle));
                                 }
                             }
-                            
+
                             await HandleLoginStartAsync(data);
                             break;
                         }
@@ -504,10 +504,7 @@ public sealed class Client : IDisposable
         }
 
         if (!CodecRegistry.TryGetDimension(Player.World.DimensionName, out var codec) || !CodecRegistry.TryGetDimension("minecraft:overworld", out codec))
-        {
-            // TODO: Change the exception type to be more specific
-            throw new ApplicationException("Failed to retrieve proper dimension for player.");
-        }
+            throw new UnreachableException("Failed to retrieve proper dimension for player.");
 
         await QueuePacketAsync(new LoginPacket
         {
