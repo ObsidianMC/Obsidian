@@ -10,6 +10,7 @@ public partial class RegistryAssetsGenerator
             .Using("Obsidian.API.Registry.Codecs.Biomes")
             .Using("Obsidian.API.Registry.Codecs.Chat")
             .Using("Obsidian.API.Registry.Codecs.Dimensions")
+            .Using("Obsidian.API.Registry.Codecs.DamageTypes")
             .Line()
             .Namespace("Obsidian.Registries")
             .Line()
@@ -20,6 +21,7 @@ public partial class RegistryAssetsGenerator
         GenerateDimensions(codecs["dimensions"].ToArray(), builder, ctx);
         GenerateBiomes(codecs["biomes"].ToArray(), builder, ctx);
         GenerateChatType(codecs["chat_type"].ToArray(), builder, ctx);
+        GenerateDamageTypes(codecs["damage_type"].ToArray(), builder, ctx);
 
         builder.EndScope();
 
