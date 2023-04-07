@@ -11,6 +11,8 @@ public sealed class ShapedRecipeBuilder : BaseRecipeBuilder<ShapedRecipe>, IPatt
 
     private readonly Dictionary<char, Ingredient> key = new();
 
+    private bool showNotification;
+
     private ShapedRecipeBuilder(CraftingBookCategory category) => this.category = category;
 
     public static IPatternedRecipe Create(CraftingBookCategory category) => new ShapedRecipeBuilder(category);
@@ -39,6 +41,13 @@ public sealed class ShapedRecipeBuilder : BaseRecipeBuilder<ShapedRecipe>, IPatt
         return this;
     }
 
+    public IPatternedRecipe HasNotification(bool show = true)
+    {
+        this.showNotification = show;
+
+        return this;
+    }
+
     public override ShapedRecipe Build()
     {
         if (this.pattern.Count <= 0)
@@ -55,7 +64,8 @@ public sealed class ShapedRecipeBuilder : BaseRecipeBuilder<ShapedRecipe>, IPatt
             Result = this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),
             Pattern = new ReadOnlyCollection<string>(new List<string>(this.pattern)),
             Key = new ReadOnlyDictionary<char, Ingredient>(new Dictionary<char, Ingredient>(this.key)),
-            Category = this.category
+            Category = this.category,
+            ShowNotification = this.showNotification,
         };
     }
 

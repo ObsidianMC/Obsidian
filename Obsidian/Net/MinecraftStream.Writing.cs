@@ -1169,6 +1169,7 @@ public partial class MinecraftStream
             }
 
             WriteItemStack(shapedRecipe.Result.First());
+            WriteBoolean(shapedRecipe.ShowNotification);
         }
         else if (recipe is ShapelessRecipe shapelessRecipe)
         {
