@@ -30,8 +30,5 @@ public partial class SynchronizePlayerPositionPacket : IClientboundPacket
     [Field(4), VarLength]
     public int TeleportId { get; init; }
 
-    [Field(5)]
-    public bool DismountVehicle { get; init; }
-
-    public int Id => 0x38;
+    public int Id => 0x3C;
 }

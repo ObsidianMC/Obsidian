@@ -23,6 +23,10 @@ public enum CraftingType
     Blasting,
     Smoking,
     CampfireCooking,
+
     Stonecutting,
+
     Smithing,
+    SmithingTransform,
+    SmithingTrim
 }

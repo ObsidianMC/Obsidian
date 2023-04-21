@@ -7,7 +7,7 @@ public partial class KeepAlivePacket : IClientboundPacket, IServerboundPacket
     [Field(0)]
     public long KeepAliveId { get; private set; }
 
-    public int Id => 0x1F;
+    public int Id => 0x23;
 
     public KeepAlivePacket()
     {

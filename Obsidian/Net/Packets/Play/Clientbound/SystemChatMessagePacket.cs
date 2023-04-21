@@ -9,7 +9,7 @@ public partial class SystemChatMessagePacket : IClientboundPacket
     [Field(1)]
     public bool Overlay { get; }
 
-    public int Id => 0x60;
+    public int Id => 0x64;
 
     public SystemChatMessagePacket(ChatMessage message, bool overlay)
     {

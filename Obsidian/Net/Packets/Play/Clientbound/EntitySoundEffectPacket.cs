@@ -5,28 +5,31 @@ namespace Obsidian.Net.Packets.Play.Clientbound;
 public partial class EntitySoundEffectPacket : IClientboundPacket
 {
     [Field(0), ActualType(typeof(int)), VarLength]
-    public Sounds SoundId { get; }
+    public required SoundId SoundId { get; init; }
 
-    [Field(1), ActualType(typeof(int)), VarLength]
-    public SoundCategory Category { get; }
+    [Field(1), Condition("SoundId == SoundId.None")]
+    public string SoundName { get; init; }
 
-    [Field(2), VarLength]
-    public int EntityId { get; }
+    [Field(2), Condition("SoundId == SoundId.None")]
+    public bool HasFixedRange { get; init; }
 
-    [Field(3)]
-    public float Volume { get; }
+    [Field(3), Condition("SoundId == SoundId.None && HasFixedRange")]
+    public float Range { get; init; }
 
-    [Field(4)]
-    public float Pitch { get; }
+    [Field(4), ActualType(typeof(int)), VarLength]
+    public required SoundCategory Category { get; init; }
 
-    public int Id => 0x5D;
+    [Field(5), VarLength]
+    public required int EntityId { get; init; }
 
-    public EntitySoundEffectPacket(Sounds soundId, int entityId, SoundCategory category = SoundCategory.Master, float volume = 1f, float pitch = 1f)
-    {
-        SoundId = soundId;
-        Category = category;
-        EntityId = entityId;
-        Volume = volume;
-        Pitch = pitch;
-    }
+    [Field(6)]
+    public required float Volume { get; init; }
+
+    [Field(7)]
+    public required float Pitch { get; init; }
+
+    [Field(8)]
+    public long Seed { get; init; } = Globals.Random.Next();
+
+    public int Id => 0x61;
 }

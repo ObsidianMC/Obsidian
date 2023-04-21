@@ -705,9 +705,27 @@ public partial class MinecraftStream
 
         this.WriteBiomeCodec(writer);
         this.WriteChatCodec(writer);
+        this.WriteDamageTypeCodec(writer);
 
         writer.EndCompound();
         writer.TryFinish();
+    }
+
+    private void WriteDamageTypeCodec(NbtWriter writer)
+    {
+        var damageTypes = new NbtList(NbtTagType.Compound, "value");
+
+        foreach (var (_, damageType) in CodecRegistry.DamageTypes.All)
+            damageType.Write(damageTypes);
+
+        var damageTypesCompound = new NbtCompound(CodecRegistry.DamageTypes.CodecKey)
+        {
+            new NbtTag<string>("type", CodecRegistry.DamageTypes.CodecKey),
+
+            damageTypes
+        };
+
+        writer.WriteTag(damageTypesCompound);
     }
 
     private void WriteChatCodec(NbtWriter writer)
@@ -1169,6 +1187,7 @@ public partial class MinecraftStream
             }
 
             WriteItemStack(shapedRecipe.Result.First());
+            WriteBoolean(shapedRecipe.ShowNotification);
         }
         else if (recipe is ShapelessRecipe shapelessRecipe)
         {

@@ -13,7 +13,7 @@ public partial class SpawnExperienceOrbPacket : IClientboundPacket
     [Field(2)]
     public short Count { get; }
 
-    public int Id => 0x01;
+    public int Id => 0x02;
 
     public SpawnExperienceOrbPacket(short count, VectorF position)
     {

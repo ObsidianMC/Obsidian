@@ -10,7 +10,7 @@ public partial class RemoveEntityEffectPacket : IClientboundPacket
     [Field(1), VarLength]
     public int EffectId { get; init; }
 
-    public int Id => 0x3B;
+    public int Id => 0x3F;
 
     public RemoveEntityEffectPacket(int entityId, int effectId)
     {

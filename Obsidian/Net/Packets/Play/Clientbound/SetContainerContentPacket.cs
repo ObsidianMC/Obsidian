@@ -16,7 +16,7 @@ public partial class SetContainerContentPacket : IClientboundPacket
     [Field(3)]
     public ItemStack CarriedItem { get; set; }
 
-    public int Id => 0x10;
+    public int Id => 0x12;
 
     public SetContainerContentPacket(byte windowId, List<ItemStack> items)
     {

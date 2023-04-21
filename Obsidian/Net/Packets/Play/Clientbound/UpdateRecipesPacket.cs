@@ -9,7 +9,7 @@ public partial class UpdateRecipesPacket : IClientboundPacket
     [Field(0)]
     public IDictionary<string, IRecipe> Recipes { get; }
 
-    public int Id => 0x69;
+    public int Id => 0x6D;
 
     public static readonly UpdateRecipesPacket FromRegistry = new(RecipesRegistry.Recipes);
 

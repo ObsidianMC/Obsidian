@@ -39,7 +39,8 @@ public sealed class RecipesConverter : JsonConverter<IRecipe[]>
                         Category = Enum.Parse<CraftingBookCategory>(value.GetProperty("category").GetString()!, true),
                         Key = value.GetProperty("key").Deserialize<Dictionary<char, Ingredient>>(options)!.AsReadOnly(),
                         Pattern = value.GetProperty("pattern").Deserialize<string[]>(options)!.AsReadOnly(),
-                        Result = result
+                        Result = result,
+                        ShowNotification = value.GetProperty("show_notification").GetBoolean()
                     });
                     break;
                 case CraftingType.CraftingShapeless:

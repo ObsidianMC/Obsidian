@@ -11,5 +11,5 @@ public partial class SetContainerPropertyPacket : IClientboundPacket
     [Field(1)]
     public IWindowProperty WindowProperty { get; init; }
 
-    public int Id => 0x11;
+    public int Id => 0x13;
 }

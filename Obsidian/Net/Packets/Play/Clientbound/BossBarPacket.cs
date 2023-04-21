@@ -8,7 +8,7 @@ public partial class BossBarPacket : IClientboundPacket
     [Field(0)]
     public BossBarAction Action { get; }
 
-    public int Id => 0x0A;
+    public int Id => 0x0B;
 
     public BossBarPacket(BossBarAction action)
     {

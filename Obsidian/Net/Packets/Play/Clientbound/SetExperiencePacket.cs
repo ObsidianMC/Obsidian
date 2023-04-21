@@ -13,7 +13,7 @@ public partial class SetExperiencePacket : IClientboundPacket
     [Field(2), VarLength]
     public int TotalExperience { get; }
 
-    public int Id => 0x52;
+    public int Id => 0x56;
 
     public SetExperiencePacket(float experienceBar, int level, int totalExperience)
     {

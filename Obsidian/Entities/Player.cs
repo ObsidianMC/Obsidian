@@ -284,14 +284,39 @@ public sealed partial class Player : Living, IPlayer
     public Task SetActionBarTextAsync(ChatMessage message) =>
         this.client.QueuePacketAsync(new SystemChatMessagePacket(message, true));
 
-    public Task SendEntitySoundAsync(Sounds soundId, int entityId, SoundCategory category = SoundCategory.Master, float volume = 1f, float pitch = 1f) =>
-        client.QueuePacketAsync(new EntitySoundEffectPacket(soundId, entityId, category, volume, pitch));
+    public async Task SendSoundAsync(ISoundEffect soundEffect)
+    {
+        if(soundEffect.SoundPosition is SoundPosition soundPosition)
+        {
+            await client.QueuePacketAsync(new SoundEffectPacket
+            {
+                SoundId = soundEffect.SoundId,
+                SoundPosition = soundPosition,
+                Category = soundEffect.SoundCategory,
+                Volume = soundEffect.Volume,
+                Pitch = soundEffect.Pitch,
+                Seed = soundEffect.Seed,
+                SoundName = soundEffect.SoundName,
+                HasFixedRange = soundEffect.HasFixedRange,
+                Range = soundEffect.Range
+            });
 
-    public Task SendSoundAsync(Sounds soundId, SoundPosition soundPosition, SoundCategory category = SoundCategory.Master, float volume = 1f, float pitch = 1f) =>
-        client.QueuePacketAsync(new SoundEffectPacket(soundId, soundPosition, category, volume, pitch));
+            return;
+        }
 
-    public Task SendCustomSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float volume = 1f, float pitch = 1f) =>
-        client.QueuePacketAsync(new CustomSoundEffectPacket(name, position, category, volume, pitch));
+        await this.client.QueuePacketAsync(new EntitySoundEffectPacket
+        {
+            SoundId = soundEffect.SoundId,
+            EntityId = soundEffect.EntityId!.Value,
+            Category = soundEffect.SoundCategory,
+            Volume = soundEffect.Volume,
+            Pitch = soundEffect.Pitch,
+            Seed = soundEffect.Seed,
+            SoundName = soundEffect.SoundName,
+            HasFixedRange = soundEffect.HasFixedRange,
+            Range = soundEffect.Range
+        });
+    }
 
     public Task KickAsync(string reason) => this.client.DisconnectAsync(ChatMessage.Simple(reason));
     public Task KickAsync(ChatMessage reason) => this.client.DisconnectAsync(reason);

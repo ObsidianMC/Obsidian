@@ -11,5 +11,5 @@ public partial class SetEntityMetadataPacket : IClientboundPacket
     [Field(1)]
     public Entity Entity { get; init; }
 
-    public int Id => 0x4E;
+    public int Id => 0x52;
 }
