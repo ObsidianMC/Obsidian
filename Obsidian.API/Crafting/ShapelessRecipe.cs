@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API.Crafting;
 
-public sealed class ShapelessRecipe : IRecipe
+public sealed class ShapelessRecipe : IRecipeWithResult
 {
     public required string Identifier { get; init; }
 
@@ -10,7 +10,7 @@ public sealed class ShapelessRecipe : IRecipe
 
     public string? Group { get; init; }
 
-    public required Ingredient? Result { get; init; }
+    public required Ingredient Result { get; init; }
 
     public required IReadOnlyList<Ingredient> Ingredients { get; init; }
 

@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API.Crafting;
 
-public sealed class SmithingRecipe : IRecipe
+public sealed class SmithingRecipe : IRecipeWithResult
 {
     public required string Identifier { get; init; }
 
@@ -24,7 +24,7 @@ public sealed class SmithingRecipe : IRecipe
 /// <remarks>
 /// Only used if 1.20 feature flag was enabled.
 /// </remarks>
-public sealed class SmithingTransformRecipe : IRecipe
+public sealed class SmithingTransformRecipe : IRecipeWithResult
 {
     public required string Identifier { get; init; }
 
@@ -32,7 +32,7 @@ public sealed class SmithingTransformRecipe : IRecipe
 
     public string? Group { get; init; }
 
-    public required Ingredient? Result { get; init; }
+    public required Ingredient Result { get; init; }
 
     public required Ingredient Base { get; init; }
 
@@ -63,8 +63,6 @@ public sealed class SmithingTrimRecipe : IRecipe
     public required Ingredient Addition { get; init; }
 
     public required Ingredient Template { get; init; }
-
-    Ingredient? IRecipe.Result { get; init; } = null;
 
     internal SmithingTrimRecipe() { }
 }
