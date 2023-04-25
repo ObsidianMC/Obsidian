@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API.Crafting;
 
-public sealed class SmeltingRecipe : IRecipe
+public sealed class SmeltingRecipe : IRecipeWithResult
 {
     public required string Identifier { get; init; }
 
@@ -8,7 +8,7 @@ public sealed class SmeltingRecipe : IRecipe
 
     public string? Group { get; init; }
 
-    public required Ingredient? Result { get; init; }
+    public required Ingredient Result { get; init; }
 
     public required Ingredient Ingredient { get; init; }
 
