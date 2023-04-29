@@ -136,6 +136,7 @@ public partial class Server : IServer
         Events.PlayerJoin += OnPlayerJoin;
         Events.PlayerAttackEntity += PlayerAttack;
         Events.PlayerInteract += OnPlayerInteract;
+        Events.ContainerClosed += OnContainerClosed;
 
         PersistentDataPath = Path.Combine(ServerFolderPath, "persistentdata");
 

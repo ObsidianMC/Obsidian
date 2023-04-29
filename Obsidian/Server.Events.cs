@@ -20,6 +20,81 @@ public partial class Server
         }
     }
 
+    private async Task OnContainerClosed(ContainerClosedEventArgs e)
+    {
+        if (e.Cancel || e.Container is not IBlockEntity blockEntity)
+            return;
+
+        var position = blockEntity.BlockPosition;
+        var block = await e.Player.WorldLocation.GetBlockAsync(position);
+
+        if (block is null)
+            return;
+
+        var player = (e.Player as Player)!;
+
+        switch (block.Material)
+        {
+            case Material.Chest:
+            {
+                await player.client.QueuePacketAsync(new BlockActionPacket
+                {
+                    Position = position,
+                    ActionId = 1,
+                    ActionParam = 0,
+                    BlockType = block.BaseId
+                });
+
+                await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockChestClose)
+                    .WithSoundPosition(position.SoundPosition)
+                    .Build());
+
+                break;
+            }
+            case Material.EnderChest:
+            {
+                await player.client.QueuePacketAsync(new BlockActionPacket
+                {
+                    Position = position,
+                    ActionId = 1,
+                    ActionParam = 0,
+                    BlockType = block.BaseId
+                });
+
+                await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockEnderChestClose)
+                    .WithSoundPosition(position.SoundPosition)
+                    .Build());
+                break;
+            }
+            case Material.Barrel:
+            {
+                await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockBarrelClose)
+                    .WithSoundPosition(position.SoundPosition)
+                    .Build());
+
+                break;
+            }
+            case Material.ShulkerBox:
+            {
+                await player.client.QueuePacketAsync(new BlockActionPacket
+                {
+                    Position = position,
+                    ActionId = 1,
+                    ActionParam = 0,
+                    BlockType = block.BaseId
+                });
+
+                await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockShulkerBoxClose)
+                    .WithSoundPosition(position.SoundPosition)
+                    .Build());
+
+                break;
+            }
+        }
+
+        player.OpenedContainer = null;
+    }
+
     private async Task OnPlayerInteract(PlayerInteractEventArgs e)
     {
         var item = e.Item;

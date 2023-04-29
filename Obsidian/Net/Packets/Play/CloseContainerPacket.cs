@@ -1,6 +1,5 @@
-﻿using Obsidian.API.Builders;
+﻿using Obsidian.API.Events;
 using Obsidian.Entities;
-using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play;
@@ -14,43 +13,10 @@ public partial class CloseContainerPacket : IClientboundPacket, IServerboundPack
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
-        if (WindowId == 0 || (player.OpenedContainer is not IBlockEntity tileEntity))
+        if (WindowId == 0)
             return;
 
-        var position = tileEntity.BlockPosition;
-
-        var block = await player.World.GetBlockAsync(position);
-
-        if (block == null)
-            return;
-
-        if (block.Is(Material.Chest))
-        {
-            await player.client.QueuePacketAsync(new BlockActionPacket
-            {
-                Position = position,
-                ActionId = 1,
-                ActionParam = 0,
-                BlockType = block.BaseId
-            });
-
-            await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockChestClose)
-                .WithSoundPosition(position.SoundPosition)
-                .Build());
-        }
-        else if (block.Is(Material.EnderChest))
-        {
-            await player.client.QueuePacketAsync(new BlockActionPacket
-            {
-                Position = position,
-                ActionId = 1,
-                ActionParam = 0,
-                BlockType = block.BaseId
-            });
-            await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockEnderChestClose)
-                .WithSoundPosition(position.SoundPosition)
-                .Build());
-        }
+        await server.Events.InvokeContainerClosedAsync(new ContainerClosedEventArgs(player) { Container = player.OpenedContainer });
 
         player.OpenedContainer = null;
     }
