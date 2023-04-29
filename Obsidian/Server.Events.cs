@@ -22,14 +22,10 @@ public partial class Server
 
     private async Task OnContainerClosed(ContainerClosedEventArgs e)
     {
-        var player = (e.Player as Player)!;
-
         if (e.Cancel)
-        {
-            //Resend open container again.
-            await player.OpenInventoryAsync(e.Container);
             return;
-        }
+
+        var player = (e.Player as Player)!;
 
         //Player successfully exited container
         player.OpenedContainer = null;
