@@ -16,8 +16,6 @@ public partial class CloseContainerPacket : IClientboundPacket, IServerboundPack
         if (WindowId == 0)
             return;
 
-        await server.Events.InvokeContainerClosedAsync(new ContainerClosedEventArgs(player) { Container = player.OpenedContainer });
-
-        player.OpenedContainer = null;
+        await server.Events.InvokeContainerClosedAsync(new ContainerClosedEventArgs(player) { Container = player.OpenedContainer! });
     }
 }
