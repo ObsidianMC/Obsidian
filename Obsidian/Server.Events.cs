@@ -22,7 +22,19 @@ public partial class Server
 
     private async Task OnContainerClosed(ContainerClosedEventArgs e)
     {
-        if (e.Cancel || e.Container is not IBlockEntity blockEntity)
+        var player = (e.Player as Player)!;
+
+        if (e.Cancel)
+        {
+            //Resend open container again.
+            await player.OpenInventoryAsync(e.Container);
+            return;
+        }
+
+        //Player successfully exited container
+        player.OpenedContainer = null;
+
+        if (e.Container is not IBlockEntity blockEntity)
             return;
 
         var position = blockEntity.BlockPosition;
@@ -30,8 +42,6 @@ public partial class Server
 
         if (block is null)
             return;
-
-        var player = (e.Player as Player)!;
 
         switch (block.Material)
         {
@@ -66,7 +76,7 @@ public partial class Server
                     .Build());
                 break;
             }
-            case Material.Barrel:
+            case Material.Barrel://Barrels don't have a block action
             {
                 await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockBarrelClose)
                     .WithSoundPosition(position.SoundPosition)
@@ -91,8 +101,6 @@ public partial class Server
                 break;
             }
         }
-
-        player.OpenedContainer = null;
     }
 
     private async Task OnPlayerInteract(PlayerInteractEventArgs e)
