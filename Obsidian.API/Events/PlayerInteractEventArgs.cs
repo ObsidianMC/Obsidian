@@ -22,7 +22,14 @@ public sealed class PlayerInteractEventArgs : PlayerEventArgs, ICancellable
     /// </summary>
     public Vector? BlockLocation { get; init; }
 
-    public bool Cancel { get; set; }
+    /// <inheritdoc />
+    public bool IsCancelled { get; private set; }
 
     public PlayerInteractEventArgs(IPlayer player) : base(player) { }
+
+    /// <inheritdoc />
+    public void Cancel()
+    {
+        IsCancelled = true;
+    }
 }

@@ -12,10 +12,11 @@ public sealed class PacketReceivedEventArgs : PlayerEventArgs, ICancellable
     /// </summary>
     public ReadOnlyMemory<byte> Data { get; }
 
-    /// <summary>
+    /// <inheritdoc />
+    /// <remarks>
     /// If true, packet will be ignored by the server.
-    /// </summary>
-    public bool Cancel { get; set; }
+    /// </remarks>
+    public bool IsCancelled { get; private set; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PacketReceivedEventArgs"/> class
@@ -28,5 +29,11 @@ public sealed class PacketReceivedEventArgs : PlayerEventArgs, ICancellable
     {
         Id = id;
         Data = data;
+    }
+
+    /// <inheritdoc />
+    public void Cancel()
+    {
+        IsCancelled = true;
     }
 }

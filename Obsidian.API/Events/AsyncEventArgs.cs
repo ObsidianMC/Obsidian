@@ -6,7 +6,15 @@
 public abstract class AsyncEventArgs : EventArgs
 {
     /// <summary>
-    /// Gets or sets whether the event was completely handled. Setting this to true will prevent remaining handlers from running.
+    /// Gets a value indicating whether the event was completely handled.
     /// </summary>
-    public bool Handled { get; set; }
+    public bool Handled { get; private set; }
+
+    /// <summary>
+    /// Marks an event as handled. Setting this flag will prevent remaining handlers from running.
+    /// </summary>
+    public void SetHandled()
+    {
+        Handled = true;
+    }
 }

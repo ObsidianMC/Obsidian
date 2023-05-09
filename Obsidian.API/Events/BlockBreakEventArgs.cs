@@ -8,10 +8,16 @@ public class BlockBreakEventArgs : BlockEventArgs, ICancellable
     public IPlayer Player { get; }
 
     /// <inheritdoc/>
-    public bool Cancel { get; set; }
+    public bool IsCancelled { get; private set; }
 
     internal BlockBreakEventArgs(IServer server, IPlayer player, IBlock block, Vector location) : base(server, block, location)
     {
         Player = player;
+    }
+
+    /// <inheritdoc />
+    public void Cancel()
+    {
+        IsCancelled = true;
     }
 }
