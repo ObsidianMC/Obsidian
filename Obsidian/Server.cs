@@ -443,7 +443,7 @@ public partial class Server : IServer
         var message = packet.Message;
 
         var chat = await Events.InvokeIncomingChatMessageAsync(new IncomingChatMessageEventArgs(source.Player, message, format));
-        if (chat.Cancel)
+        if (chat.IsCancelled)
             return;
 
         //TODO add bool for sending secure chat messages
