@@ -7,10 +7,17 @@ public class EntityEventArgs : BaseMinecraftEventArgs, ICancellable
     /// </summary>
     public IEntity Entity { get; }
 
-    public bool Cancel { get; set; }
+    /// <inheritdoc />
+    public bool IsCancelled { get; private set; }
 
     public EntityEventArgs(IEntity entity, IServer server) : base(server)
     {
         this.Entity = entity;
+    }
+
+    /// <inheritdoc />
+    public void Cancel()
+    {
+        IsCancelled = true;
     }
 }

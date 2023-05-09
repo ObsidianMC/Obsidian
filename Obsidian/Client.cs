@@ -309,7 +309,7 @@ public sealed class Client : IDisposable
                     var packetReceivedEventArgs = new PacketReceivedEventArgs(Player, id, data);
                     await Server.Events.InvokePacketReceivedAsync(packetReceivedEventArgs);
 
-                    if (!packetReceivedEventArgs.Cancel)
+                    if (!packetReceivedEventArgs.IsCancelled)
                     {
                         await handler.HandlePlayPackets(id, data, this);
                     }
@@ -727,7 +727,7 @@ public sealed class Client : IDisposable
     internal async Task QueuePacketAsync(IClientboundPacket packet)
     {
         var args = await Server.Events.InvokeQueuePacketAsync(new QueuePacketEventArgs(this, packet));
-        if (args.Cancel)
+        if (args.IsCancelled)
         {
             Logger.LogDebug("Packet {PacketId} was sent to the queue, however an event handler registered in {Name} has cancelled it.", args.Packet.Id, nameof(Server.Events));
         }

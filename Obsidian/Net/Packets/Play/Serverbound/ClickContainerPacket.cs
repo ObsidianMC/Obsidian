@@ -276,7 +276,7 @@ public partial class ClickContainerPacket : IServerboundPacket
                 Slot = slot
             });
 
-            if (@event.Cancel)
+            if (@event.IsCancelled)
                 return;
 
             player.LastClickedItem = CarriedItem;
