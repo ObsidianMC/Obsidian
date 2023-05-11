@@ -22,7 +22,7 @@ public partial class Server
 
     private async Task OnContainerClosed(ContainerClosedEventArgs e)
     {
-        if (e.Cancel)
+        if (e.IsCancelled)
             return;
 
         var player = (e.Player as Player)!;
