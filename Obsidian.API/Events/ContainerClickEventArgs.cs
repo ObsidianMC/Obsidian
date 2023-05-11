@@ -14,12 +14,19 @@ public sealed class ContainerClickEventArgs : ContainerEventArgs, ICancellable
     /// </summary>
     public int Slot { get; set; }
 
-    public bool Cancel { get; set; }
+    /// <inheritdoc />
+    public bool IsCancelled { get; private set; }
 
     [SetsRequiredMembers]
     internal ContainerClickEventArgs(IPlayer player, BaseContainer container, ItemStack item) : base(player)
     {
         this.Container = container;
         this.Item = item;
+    }
+
+    /// <inheritdoc />
+    public void Cancel()
+    {
+        IsCancelled = true;
     }
 }

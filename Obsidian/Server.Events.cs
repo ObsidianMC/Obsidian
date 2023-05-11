@@ -107,7 +107,7 @@ public partial class Server
         var server = e.Server as Server;
         var player = e.Player as Player;
 
-        if (e.Cancel)
+        if (e.IsCancelled)
             return;
 
         if (block is not null)
