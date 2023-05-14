@@ -994,10 +994,6 @@ public sealed partial class Player : Living, IPlayer
             var chunk = await World.GetChunkAsync(chunkLoc.X, chunkLoc.Z);
             if (chunk is not null && chunk.isGenerated)
             {
-                if (chunk.Sections[0].IsEmpty)
-                {
-                      Debugger.Break();
-                }
                 await client.SendChunkAsync(chunk);
                 client.LoadedChunks.Add((chunk.X, chunk.Z));
             }
