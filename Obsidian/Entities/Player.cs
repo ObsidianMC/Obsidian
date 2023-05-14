@@ -8,6 +8,7 @@ using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
 using Obsidian.WorldData;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 
@@ -991,8 +992,12 @@ public sealed partial class Player : Living, IPlayer
         await Parallel.ForEachAsync(clientNeededChunks.Take(100), async (chunkLoc, _) =>
         {
             var chunk = await World.GetChunkAsync(chunkLoc.X, chunkLoc.Z);
-            if (chunk is not null)
+            if (chunk is not null && chunk.isGenerated)
             {
+                if (chunk.Sections[0].IsEmpty)
+                {
+                      Debugger.Break();
+                }
                 await client.SendChunkAsync(chunk);
                 client.LoadedChunks.Add((chunk.X, chunk.Z));
             }
