@@ -21,7 +21,7 @@ public class BiomeSelector : Module
         {
             { Biome.IceSpikes, Biome.SnowyPlains, Biome.SnowyTaiga }, // flatland, frozen, low-med-high humidity
             { Biome.Plains, Biome.Plains, Biome.Taiga }, // flatland, cold, low-med-high humidity
-            { Biome.Forest, Biome.Forest, Biome.WindsweptSavanna }, // flatland, warm, low-med-high humidity
+            { Biome.Forest, Biome.Forest, Biome.BambooJungle}, // flatland, warm, low-med-high humidity
             { Biome.Savanna, Biome.Desert, Biome.Swamp }, // flatland, hot, low-med-high humidity
         },
         {
@@ -34,7 +34,7 @@ public class BiomeSelector : Module
             { Biome.FrozenPeaks, Biome.FrozenPeaks, Biome.IceSpikes }, // mountains, frozen, low-med-high humidity
             { Biome.FrozenPeaks, Biome.SnowySlopes, Biome.SnowySlopes }, // mountains, cold, low-med-high humidity
             { Biome.StonyPeaks, Biome.StonyPeaks, Biome.JaggedPeaks }, // mountains, warm, low-med-high humidity
-            { Biome.StonyPeaks, Biome.JaggedPeaks, Biome.JaggedPeaks }, // mountains, hot, low-med-high humidity
+            { Biome.WindsweptSavanna, Biome.JaggedPeaks, Biome.JaggedPeaks }, // mountains, hot, low-med-high humidity
         }
     };
 
@@ -87,6 +87,6 @@ public class BiomeSelector : Module
         };
 
         //var heightIndex = (int)((heightVal + 1d) * 2.5d);
-        return (double) BiomeLookup[heightIndex, tempIndex, humidityIndex];
+        return (double)BiomeLookup[heightIndex, tempIndex, humidityIndex];
     }
 }
