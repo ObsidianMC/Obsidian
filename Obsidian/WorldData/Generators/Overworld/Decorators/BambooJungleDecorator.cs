@@ -26,9 +26,6 @@ public class BambooJungleDecorator : BaseDecorator
             return;
         }
 
-        //int worldX = (chunk.X << 4) + pos.X;
-        //int worldZ = (chunk.Z << 4) + pos.Z;
-
         chunk.SetBlock(pos, BlocksRegistry.GrassBlock);
         for (int y = -1; y > -4; y--)
             chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Dirt);
