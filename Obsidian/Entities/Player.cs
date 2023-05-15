@@ -41,7 +41,7 @@ public sealed partial class Player : Living, IPlayer
     public Container Inventory { get; }
     public Container EnderInventory { get; }
 
-    public BaseContainer OpenedContainer { get; set; }
+    public BaseContainer? OpenedContainer { get; set; }
 
     public List<SkinProperty> SkinProperties { get; set; } = new();
 

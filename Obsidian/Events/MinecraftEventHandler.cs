@@ -19,6 +19,7 @@ public class MinecraftEventHandler
     public AsyncEvent<EntityInteractEventArgs> EntityInteract;
     public AsyncEvent<PlayerAttackEntityEventArgs> PlayerAttackEntity;
     public AsyncEvent<PlayerInteractEventArgs> PlayerInteract;
+    public AsyncEvent<ContainerClosedEventArgs> ContainerClosed;
     public AsyncEvent ServerTick;
 
     public MinecraftEventHandler()
@@ -40,6 +41,7 @@ public class MinecraftEventHandler
         EntityInteract = new("EntityInteract", HandleException);
         PlayerAttackEntity = new("PlayerAttackEntity", HandleException);
         PlayerInteract = new("PlayerInteract", HandleException);
+        ContainerClosed = new("ContainerClosed", HandleException);
     }
 
     private void HandleException(AsyncEvent e, Exception exception)
@@ -48,6 +50,12 @@ public class MinecraftEventHandler
 
     private void HandleException<T>(AsyncEvent<T> e, Exception exception)
     {
+    }
+
+    internal async ValueTask<ContainerClosedEventArgs> InvokeContainerClosedAsync(ContainerClosedEventArgs eventArgs)
+    {
+        await ContainerClosed.InvokeAsync(eventArgs);
+        return eventArgs;
     }
 
     internal async ValueTask<QueuePacketEventArgs> InvokeQueuePacketAsync(QueuePacketEventArgs eventArgs)
