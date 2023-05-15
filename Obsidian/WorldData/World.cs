@@ -142,7 +142,6 @@ public class World : IWorld, IAsyncDisposable
             isGenerated = false // Not necessary; just being explicit.
         };
         region.SetChunk(chunk);
-        LoadedChunks.Add((chunkX, chunkZ));
         return chunk;
     }
 

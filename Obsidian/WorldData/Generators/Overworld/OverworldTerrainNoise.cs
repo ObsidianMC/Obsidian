@@ -208,5 +208,5 @@ public class OverworldTerrainNoise
     };
 
     // Set a constant biome here for development
-    //public Module Biome => new Constant() { ConstantValue = (int)Biomes.Forest };
+    // public Module Biome => new Constant() { ConstantValue = (int)API.Biome.BambooJungle };
 }

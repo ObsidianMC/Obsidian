@@ -162,10 +162,7 @@ public class Region : IAsyncDisposable
         int x = chunkCompound.GetInt("xPos");
         int z = chunkCompound.GetInt("zPos");
 
-        var chunk = new Chunk(x, z)
-        {
-            isGenerated = true
-        };
+        var chunk = new Chunk(x, z);
 
         foreach (var child in (NbtList)chunkCompound["sections"])
         {
@@ -243,6 +240,8 @@ public class Region : IAsyncDisposable
 
             chunk.SetBlockEntity(tileEntityCompound.GetInt("x"), tileEntityCompound.GetInt("y"), tileEntityCompound.GetInt("z"), tileEntityCompound);
         }
+
+        chunk.isGenerated = !chunk.Sections.All(c => c.IsEmpty);
 
         return chunk;
     }
