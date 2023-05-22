@@ -30,6 +30,8 @@ public enum EntityMetadataType : int
 
     OptUuid,
 
+    BlockId,
+
     OptBlockId,
 
     Nbt,

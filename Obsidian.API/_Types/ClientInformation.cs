@@ -16,5 +16,4 @@ public readonly record struct ClientInformation
     public required bool EnableTextFiltering { get; init; }
 
     public required bool AllowServerListings { get; init; }
-
 }

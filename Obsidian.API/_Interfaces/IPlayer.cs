@@ -15,7 +15,6 @@ public interface IPlayer : ILiving
     public string Username { get; }
 
     public bool IsOperator { get; }
-    public bool Listed { get; }
 
     public Vector? LastDeathLocation { get; set; }
 
