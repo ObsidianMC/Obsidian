@@ -128,7 +128,7 @@ public sealed class Client : IDisposable
     /// <summary>
     /// The client settings. Consists of the view distance, locale, skin parts and other useful information about the client.
     /// </summary>
-    public ClientInformationPacket? ClientSettings { get; internal set; }
+    public ClientInformationPacket ClientSettings { get; internal set; }
 
     /// <summary>
     /// Which state of the protocol the client is currently in.
@@ -566,6 +566,12 @@ public sealed class Client : IDisposable
             StateId = Player.Inventory.StateId++,
             CarriedItem = Player.GetHeldItem(),
         });
+
+        await QueuePacketAsync(new SetEntityMetadataPacket
+        {
+            EntityId = this.Player.EntityId,
+            Entity = this.Player
+        });
     }
 
     internal Task DisconnectAsync(ChatMessage reason) => Task.Run(() => SendPacket(new DisconnectPacket(reason, State)));
@@ -656,7 +662,7 @@ public sealed class Client : IDisposable
         {
             addAction,
             new UpdatePingInfoAction(player.Ping),
-            new UpdateListedInfoAction(player.Listed),
+            new UpdateListedInfoAction(player.ClientInformation.AllowServerListings),
         };
 
         await QueuePacketAsync(new PlayerInfoUpdatePacket(new Dictionary<Guid, List<InfoAction>>()
@@ -686,7 +692,7 @@ public sealed class Client : IDisposable
             var list = new List<InfoAction>
             {
                 addPlayerInforAction,
-                new UpdateListedInfoAction(player.Listed),
+                new UpdateListedInfoAction(player.ClientInformation.AllowServerListings),
                 new UpdateDisplayNameInfoAction(player.Username),
                 new UpdatePingInfoAction(player.Ping)
             };

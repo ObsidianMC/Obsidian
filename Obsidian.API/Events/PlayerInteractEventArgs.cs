@@ -3,7 +3,7 @@
 /// <summary>
 /// An event for when a player interacts with a item and/or block.
 /// You can get which hand was used by the player when interacting by checking 
-/// <seealso cref="IPlayer.MainHand"/>
+/// <seealso cref="PlayerInteractEventArgs.Hand"/>
 /// </summary>
 public sealed class PlayerInteractEventArgs : PlayerEventArgs, ICancellable
 {
@@ -21,6 +21,8 @@ public sealed class PlayerInteractEventArgs : PlayerEventArgs, ICancellable
     /// The location of the clicked block. Null if no block was clicked.
     /// </summary>
     public Vector? BlockLocation { get; init; }
+
+    public Hand Hand { get; init; }
 
     /// <inheritdoc />
     public bool IsCancelled { get; private set; }

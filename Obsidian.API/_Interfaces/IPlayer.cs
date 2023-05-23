@@ -10,18 +10,16 @@ public interface IPlayer : ILiving
 
     public List<SkinProperty> SkinProperties { get; set; }
 
+    public ClientInformation ClientInformation { get; }
+
     public string Username { get; }
 
-    public Guid Uuid { get; }
     public bool IsOperator { get; }
-    public bool Listed { get; }
 
     public Vector? LastDeathLocation { get; set; }
 
     public IPAddress? ClientIP { get; }
     public Gamemode Gamemode { get; set; }
-    public Hand MainHand { get; set; }
-    public PlayerBitMask PlayerBitMask { get; set; }
 
     public bool Sleeping { get; set; }
     public bool InHorseInventory { get; set; }

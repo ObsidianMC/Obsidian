@@ -8,7 +8,6 @@ using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
 using Obsidian.WorldData;
-using System.Diagnostics;
 using System.IO;
 using System.Net;
 
@@ -31,9 +30,10 @@ public sealed partial class Player : Living, IPlayer
     internal int TeleportId { get; set; }
 
     public bool IsOperator => Server.Operators.IsOperator(this);
-    public bool Listed { get; set; } = true;
 
     public string Username { get; }
+
+    public ClientInformation ClientInformation { get; internal set; }
 
     /// <summary>
     /// The players inventory.
@@ -51,10 +51,7 @@ public sealed partial class Player : Living, IPlayer
 
     public IBlock LastClickedBlock { get; internal set; }
 
-    public PlayerBitMask PlayerBitMask { get; set; }
     public Gamemode Gamemode { get; set; }
-
-    public Hand MainHand { get; set; } = Hand.MainHand;
 
     public IScoreboard CurrentScoreboard { get; set; }
 
@@ -388,55 +385,47 @@ public sealed partial class Player : Living, IPlayer
     {
         await base.WriteAsync(stream);
 
-        await stream.WriteEntityMetdata(14, EntityMetadataType.Float, this.AdditionalHearts);
+        await stream.WriteEntityMetdata(15, EntityMetadataType.Float, this.AdditionalHearts);
 
-        await stream.WriteEntityMetdata(15, EntityMetadataType.VarInt, this.XpP);
+        await stream.WriteEntityMetdata(16, EntityMetadataType.VarInt, this.XpP);
 
-        await stream.WriteEntityMetdata(16, EntityMetadataType.Byte, (byte)this.PlayerBitMask);
+        await stream.WriteEntityMetdata(17, EntityMetadataType.Byte, (byte)this.client.ClientSettings.DisplayedSkinParts);
 
-        await stream.WriteEntityMetdata(17, EntityMetadataType.Byte, (byte)this.MainHand);
+        await stream.WriteEntityMetdata(18, EntityMetadataType.Byte, (byte)this.client.ClientSettings.MainHand);
 
         if (this.LeftShoulder != null)
-            await stream.WriteEntityMetdata(18, EntityMetadataType.Nbt, this.LeftShoulder);
+            await stream.WriteEntityMetdata(19, EntityMetadataType.Nbt, this.LeftShoulder);
 
         if (this.RightShoulder != null)
-            await stream.WriteEntityMetdata(19, EntityMetadataType.Nbt, this.RightShoulder);
-
-        await stream.WriteEntityMetdata(20, EntityMetadataType.OptPosition, this.LastDeathLocation.Value, !this.LastDeathLocation.HasValue);
+            await stream.WriteEntityMetdata(20, EntityMetadataType.Nbt, this.RightShoulder);
     }
 
     public override void Write(MinecraftStream stream)
     {
         base.Write(stream);
 
-        stream.WriteEntityMetadataType(14, EntityMetadataType.Float);
+        stream.WriteEntityMetadataType(15, EntityMetadataType.Float);
         stream.WriteFloat(AdditionalHearts);
 
-        stream.WriteEntityMetadataType(15, EntityMetadataType.VarInt);
+        stream.WriteEntityMetadataType(16, EntityMetadataType.VarInt);
         stream.WriteVarInt(XpTotal);
 
-        stream.WriteEntityMetadataType(16, EntityMetadataType.Byte);
-        stream.WriteByte((byte)PlayerBitMask);
-
         stream.WriteEntityMetadataType(17, EntityMetadataType.Byte);
-        stream.WriteByte((byte)MainHand);
+        stream.WriteByte((byte)this.ClientInformation.DisplayedSkinParts);
+
+        stream.WriteEntityMetadataType(18, EntityMetadataType.Byte);
+        stream.WriteByte((byte)this.ClientInformation.MainHand);
 
         if (LeftShoulder is not null)
         {
-            stream.WriteEntityMetadataType(18, EntityMetadataType.Nbt);
+            stream.WriteEntityMetadataType(19, EntityMetadataType.Nbt);
             stream.WriteVarInt(LeftShoulder);
         }
 
         if (RightShoulder is not null)
         {
-            stream.WriteEntityMetadataType(19, EntityMetadataType.Nbt);
+            stream.WriteEntityMetadataType(20, EntityMetadataType.Nbt);
             stream.WriteVarInt(RightShoulder);
-        }
-
-        if (this.LastDeathLocation is not null)
-        {
-            stream.WriteEntityMetadataType(20, EntityMetadataType.OptPosition);
-            stream.WritePosition(this.LastDeathLocation.Value);
         }
     }
 
