@@ -735,6 +735,7 @@ public partial class Server : IServer
     {
         this.RegisterWorldGenerator<SuperflatGenerator>();
         this.RegisterWorldGenerator<OverworldGenerator>();
+        this.RegisterWorldGenerator<IslandGenerator>();
         this.RegisterWorldGenerator<EmptyWorldGenerator>();
     }
 
