@@ -1,4 +1,5 @@
-﻿using Obsidian.ChunkData;
+﻿using Obsidian.Blocks;
+using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Registries;
@@ -23,7 +24,7 @@ public class Region : IAsyncDisposable
 
     public ConcurrentDictionary<int, Entity> Entities { get; } = new();
 
-    public int LoadedChunkCount => loadedChunks.Count(c => c.isGenerated);
+    public int LoadedChunkCount => loadedChunks.Count(c => c.IsGenerated);
 
     private DenseCollection<Chunk> loadedChunks { get; } = new(cubicRegionSize, cubicRegionSize);
 
@@ -65,11 +66,15 @@ public class Region : IAsyncDisposable
         var chunk = loadedChunks[x, z];
         if (chunk is null)
         {
+            if (x == 0 && z == 0)
+            {
+                Console.WriteLine("What");
+            }
             chunk = await GetChunkFromFileAsync(x, z); // Still might be null but that's okay.
-            loadedChunks[x, z] = chunk;
+            loadedChunks[x, z] = chunk!;
         }
 
-        return chunk;
+        return chunk!;
     }
 
     internal async Task UnloadChunk(int x, int z)
@@ -97,7 +102,7 @@ public class Region : IAsyncDisposable
     {
         foreach (var c in loadedChunks)
         {
-            if (c is not null && c.isGenerated)
+            if (c is not null && c.IsGenerated)
             {
                 yield return c;
             }
@@ -241,7 +246,7 @@ public class Region : IAsyncDisposable
             chunk.SetBlockEntity(tileEntityCompound.GetInt("x"), tileEntityCompound.GetInt("y"), tileEntityCompound.GetInt("z"), tileEntityCompound);
         }
 
-        chunk.isGenerated = !chunk.Sections.All(c => c.IsEmpty);
+        chunk.chunkStatus = (ChunkStatus)(Enum.TryParse(typeof(ChunkStatus), chunkCompound.GetString("Status"), out var status) ? status : ChunkStatus.empty);
 
         return chunk;
     }
@@ -313,6 +318,8 @@ public class Region : IAsyncDisposable
         {
             new NbtTag<int>("xPos", chunk.X),
             new NbtTag<int>("zPos", chunk.Z),
+            new NbtTag<int>("yPos", -4),
+            new NbtTag<string>("Status", chunk.chunkStatus.ToString()),
             new NbtCompound("Heightmaps")
             {
                 new NbtArray<long>("MOTION_BLOCKING", chunk.Heightmaps[HeightmapType.MotionBlocking].data.storage),

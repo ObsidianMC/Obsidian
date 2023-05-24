@@ -168,7 +168,7 @@ public class Entity : IEquatable<Entity>, IEntity
     {
         var (x, z) = pos.ToChunkCoord();
         var chunk = await this.World.GetChunkAsync(x, z, false);
-        if (chunk != null && chunk.isGenerated)
+        if (chunk != null && chunk.IsGenerated)
         {
             this.Position = pos;
         }
@@ -184,7 +184,7 @@ public class Entity : IEquatable<Entity>, IEntity
         var (x, z) = pos.ToChunkCoord();
         var chunk = await this.World.GetChunkAsync(x, z, false);
 
-        if (chunk != null && chunk.isGenerated)
+        if (chunk != null && chunk.IsGenerated)
         {
             this.Position = pos;
         }

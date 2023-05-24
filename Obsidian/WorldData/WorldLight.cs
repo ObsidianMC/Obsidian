@@ -46,7 +46,7 @@ internal class WorldLight
     public async Task SetLightAndSpread(Vector pos, LightType lt, int level, Chunk chunk)
     {
         if (chunk is null) { return; }
-        if (!chunk.isGenerated) { return; }
+        if (!chunk.IsGenerated) { return; }
 
         int curLevel = chunk.GetLightLevel(pos, lt);
         if (level <= curLevel) { return; }
