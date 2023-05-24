@@ -980,17 +980,9 @@ public sealed partial class Player : Living, IPlayer
 
         await Parallel.ForEachAsync(clientNeededChunks, async (chunkLoc, _) =>
         {
-            if (chunkLoc.X == 0 && chunkLoc.Z == 0)
-            {
-                Console.WriteLine("Going to send 0, 0");
-            }
             var chunk = await World.GetChunkAsync(chunkLoc.X, chunkLoc.Z);
             if (chunk is not null && chunk.IsGenerated)
             {
-                if (chunk.X == 0 && chunk.Z == 0)
-                {
-                    Console.WriteLine("Actually sent 0, 0!");
-                }
                 await client.SendChunkAsync(chunk);
                 client.LoadedChunks.Add((chunk.X, chunk.Z));
             }
