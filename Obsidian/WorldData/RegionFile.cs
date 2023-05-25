@@ -38,6 +38,8 @@ public sealed class RegionFile : IAsyncDisposable
     {
         this.filePath = filePath;
         this.cubicRegionSize = cubicRegionSize;
+
+        this.op = cubicRegionSize - 1;
     }
 
     public async Task<bool> InitializeAsync()
@@ -122,7 +124,7 @@ public sealed class RegionFile : IAsyncDisposable
 
         await this.WriteHeadersAsync();
 
-        BinaryPrimitives.WriteInt32BigEndian(mem.Span[..4], bytes.Length);
+        BinaryPrimitives.WriteInt32BigEndian(mem.Span[..4], bytes.Length + 1);
 
         mem.Span[4] = (byte)compression;
 
@@ -216,7 +218,7 @@ public sealed class RegionFile : IAsyncDisposable
         (int)Math.Ceiling((length + 5) / (double)sectionSize);
 
     private int GetChunkTableIndex(int x, int z) =>
-       NumericsHelper.Modulo(x, cubicRegionSize) + NumericsHelper.Modulo(z, this.cubicRegionSize) * this.cubicRegionSize;
+       (x & this.op) + (z & this.op) * this.cubicRegionSize;
 
     private (int offset, int size) GetLocation(int tableIndex)
     {
