@@ -91,6 +91,7 @@ public sealed class RegionFile : IAsyncDisposable
         var tableIndex = this.GetChunkTableIndex(x, z);
 
         var (offset, size) = this.GetLocation(tableIndex);
+
         this.ResetPosition();
 
         if (offset == 0 && size == 0)
@@ -153,7 +154,6 @@ public sealed class RegionFile : IAsyncDisposable
             return null;
         }
 
-        this.ResetPosition();
         this.regionFileStream.Position = offset;
 
         var chunk = new Memory<byte>(new byte[size]);
@@ -187,7 +187,6 @@ public sealed class RegionFile : IAsyncDisposable
 
         await this.WriteHeadersAsync();
 
-        this.ResetPosition();
         this.regionFileStream.Position = offset;
 
         await this.WriteChunkHeaderAsync(bytes.Length + 1, 0x02);
