@@ -92,6 +92,8 @@ public sealed class RegionFile : IAsyncDisposable
 
         var (offset, size) = this.GetLocation(tableIndex);
 
+        this.ResetPosition();
+
         if (offset == 0 && size == 0)
         {
             await this.WriteNewChunkAsync(bytes, chunkSectionSize, tableIndex);
@@ -100,10 +102,6 @@ public sealed class RegionFile : IAsyncDisposable
 
             return;
         }
-
-        this.ResetPosition();
-
-        this.regionFileStream.Position = offset;
 
         using var mem = new RentedArray<byte>(size);
 
@@ -133,7 +131,7 @@ public sealed class RegionFile : IAsyncDisposable
         mem.Span[4] = (byte)compression;
 
         bytes.CopyTo(mem.Span[5..]);
-
+        this.regionFileStream.Position = offset;
         await this.regionFileStream.WriteAsync(mem);
 
         this.semaphore.Release();
@@ -213,7 +211,7 @@ public sealed class RegionFile : IAsyncDisposable
         this.Timestamps[tableIndex] = time;
 
     private void SetLocation(int tableIndex, int offset, int size) =>
-        this.Locations[tableIndex] = (offset << 8) | (size & 0xFF);
+        this.Locations[tableIndex] = ((offset + 2) << 8) | (size & 0xFF);
 
     private int CalculateChunkSize(long length) =>
         (int)Math.Ceiling((length + 5) / (double)sectionSize);

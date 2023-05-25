@@ -13,7 +13,7 @@ public partial class SwingArmPacket : IServerboundPacket
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
-        var entities = player.GetEntitiesNear(player.client.ClientSettings?.ViewDistance ?? 16);
+        var entities = player.GetEntitiesNear(player.client.ClientSettings?.ViewDistance ?? 8);
         foreach (var otherEntity in entities)
         {
             if (otherEntity is not Player otherPlayer)
