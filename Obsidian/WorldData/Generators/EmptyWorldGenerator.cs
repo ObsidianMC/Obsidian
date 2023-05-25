@@ -47,13 +47,13 @@ public class EmptyWorldGenerator : IWorldGenerator
             }
         }
 
-        empty.isGenerated = true;
-        spawn.isGenerated = true;
+        empty.chunkStatus = ChunkStatus.full;
+        spawn.chunkStatus = ChunkStatus.full;
     }
 
     public async Task<Chunk> GenerateChunkAsync(int x, int z, Chunk? chunk = null)
     {
-        if (chunk is { isGenerated: true })
+        if (chunk is { IsGenerated: true })
             return chunk;
 
         if (x == 0 && z == 0)

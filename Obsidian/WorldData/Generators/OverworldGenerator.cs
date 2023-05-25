@@ -14,7 +14,7 @@ public sealed class OverworldGenerator : IWorldGenerator
         chunk ??= new Chunk(cx, cz);
 
         // Sanity checks
-        if (chunk.isGenerated)
+        if (chunk.IsGenerated)
             return chunk;
         if (helper is null)
             throw new NullReferenceException("GenHelper must not be null. Call Init()");
@@ -97,7 +97,7 @@ public sealed class OverworldGenerator : IWorldGenerator
         //ChunkBuilder.CarveCaves(helper, chunk);
         await OverworldDecorator.DecorateAsync(chunk, helper);
 
-        chunk.isGenerated = true;
+        chunk.chunkStatus = ChunkStatus.full;
         return chunk;
     }
 

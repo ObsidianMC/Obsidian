@@ -117,7 +117,7 @@ public class World : IWorld, IAsyncDisposable
 
         if (chunk is not null)
         {
-            if (!chunk.isGenerated && scheduleGeneration)
+            if (!chunk.IsGenerated && scheduleGeneration)
             {
                 if (!ChunksToGen.Contains((chunkX, chunkZ)))
                     ChunksToGen.Enqueue((chunkX, chunkZ));
@@ -139,7 +139,7 @@ public class World : IWorld, IAsyncDisposable
         // Create a partial chunk.
         chunk = new Chunk(chunkX, chunkZ)
         {
-            isGenerated = false // Not necessary; just being explicit.
+            chunkStatus = ChunkStatus.structure_starts
         };
         region.SetChunk(chunk);
         return chunk;
@@ -503,12 +503,12 @@ public class World : IWorld, IAsyncDisposable
             {
                 c = new Chunk(job.x, job.z)
                 {
-                    isGenerated = false // Not necessary; just being explicit.
+                    chunkStatus = ChunkStatus.structure_starts
                 };
                 // Set chunk now so that it no longer comes back as null. #threadlyfe
                 region.SetChunk(c);
             }
-            if (!c.isGenerated)
+            if (!c.IsGenerated)
             {
                 c = await Generator.GenerateChunkAsync(job.x, job.z, c);
                 await worldLight.ProcessSkyLightForChunk(c);

@@ -956,8 +956,8 @@ public sealed partial class Player : Living, IPlayer
 
         (int playerChunkX, int playerChunkZ) = Position.ToChunkCoord();
         (int lastPlayerChunkX, int lastPlayerChunkZ) = LastPosition.ToChunkCoord();
-
-        int dist = distance < 1? ((client.ClientSettings?.ViewDistance ?? 14) - 2) : 2;
+ 
+        int dist = distance < 1 ? client.ClientSettings?.ViewDistance ?? 7 : distance;
         for (int x = playerChunkX + dist; x > playerChunkX - dist; x--)
             for (int z = playerChunkZ + dist; z > playerChunkZ - dist; z--)
                 clientNeededChunks.Add((x, z));
@@ -978,10 +978,10 @@ public sealed partial class Player : Living, IPlayer
             client.LoadedChunks.TryRemove(chunkLoc);
         });
 
-        await Parallel.ForEachAsync(clientNeededChunks.Take(100), async (chunkLoc, _) =>
+        await Parallel.ForEachAsync(clientNeededChunks, async (chunkLoc, _) =>
         {
             var chunk = await World.GetChunkAsync(chunkLoc.X, chunkLoc.Z);
-            if (chunk is not null && chunk.isGenerated)
+            if (chunk is not null && chunk.IsGenerated)
             {
                 await client.SendChunkAsync(chunk);
                 client.LoadedChunks.Add((chunk.X, chunk.Z));

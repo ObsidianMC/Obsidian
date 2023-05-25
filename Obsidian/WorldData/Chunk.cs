@@ -10,7 +10,9 @@ public class Chunk
     public int X { get; }
     public int Z { get; }
 
-    public bool isGenerated = false;
+    public bool IsGenerated => chunkStatus == ChunkStatus.full;
+
+    public ChunkStatus chunkStatus = ChunkStatus.empty;
 
     private const int width = 16;
     private const int worldHeight = 320;
@@ -44,15 +46,13 @@ public class Chunk
         }
     }
 
-    private Chunk(int x, int z, ChunkSection[] sections, Dictionary<HeightmapType, Heightmap> heightmaps, bool isGenerated)
+    private Chunk(int x, int z, ChunkSection[] sections, Dictionary<HeightmapType, Heightmap> heightmaps)
     {
         X = x;
         Z = z;
 
         Heightmaps = heightmaps;
         Sections = sections;
-
-        this.isGenerated = isGenerated;
     }
 
     public IBlock GetBlock(Vector position) => GetBlock(position.X, position.Y, position.Z);
@@ -280,12 +280,14 @@ public class Chunk
 
         var heightmaps = new Dictionary<HeightmapType, Heightmap>();
 
-        var chunk = new Chunk(x, z, sections, heightmaps, isGenerated);
+        var chunk = new Chunk(x, z, sections, heightmaps);
 
         foreach (var (type, heightmap) in Heightmaps)
         {
             heightmaps.Add(type, heightmap.Clone(chunk));
         }
+
+        chunk.chunkStatus = chunkStatus;
 
         return chunk;
     }
