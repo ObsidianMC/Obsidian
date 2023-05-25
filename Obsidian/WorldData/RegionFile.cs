@@ -91,6 +91,7 @@ public sealed class RegionFile : IAsyncDisposable
         var tableIndex = this.GetChunkTableIndex(x, z);
 
         var (offset, size) = this.GetLocation(tableIndex);
+        this.ResetPosition();
 
         if (offset == 0 && size == 0)
         {
@@ -129,8 +130,7 @@ public sealed class RegionFile : IAsyncDisposable
         mem.Span[4] = (byte)compression;
 
         bytes.CopyTo(mem.Span[5..]);
-        this.ResetPosition();
-        this.regionFileStream.Position += offset;
+        this.regionFileStream.Position = offset;
         await this.regionFileStream.WriteAsync(mem);
 
         this.semaphore.Release();
@@ -154,7 +154,7 @@ public sealed class RegionFile : IAsyncDisposable
         }
 
         this.ResetPosition();
-        this.regionFileStream.Position += offset;
+        this.regionFileStream.Position = offset;
 
         var chunk = new Memory<byte>(new byte[size]);
 
@@ -188,7 +188,7 @@ public sealed class RegionFile : IAsyncDisposable
         await this.WriteHeadersAsync();
 
         this.ResetPosition();
-        this.regionFileStream.Position += offset;
+        this.regionFileStream.Position = offset;
 
         await this.WriteChunkHeaderAsync(bytes.Length + 1, 0x02);
 
@@ -212,13 +212,13 @@ public sealed class RegionFile : IAsyncDisposable
         this.Timestamps[tableIndex] = time;
 
     private void SetLocation(int tableIndex, int offset, int size) =>
-        this.Locations[tableIndex] = (offset << 8) | (size & 0xFF);
+        this.Locations[tableIndex] = ((offset + 2) << 8) | (size & 0xFF);
 
     private int CalculateChunkSize(long length) =>
         (int)Math.Ceiling((length + 5) / (double)sectionSize);
 
     private int GetChunkTableIndex(int x, int z) =>
-       (x & this.op) + (z & this.op) * this.cubicRegionSize;
+        (x & this.op) + (z & this.op) * this.cubicRegionSize;
 
     private (int offset, int size) GetLocation(int tableIndex)
     {
