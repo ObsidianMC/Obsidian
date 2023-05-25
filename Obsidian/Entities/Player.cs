@@ -1,4 +1,4 @@
-﻿// This would be saved in a file called [playeruuid].dat which holds a bunch of NBT data.
+// This would be saved in a file called [playeruuid].dat which holds a bunch of NBT data.
 // https://wiki.vg/Map_Format
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
@@ -389,9 +389,9 @@ public sealed partial class Player : Living, IPlayer
 
         await stream.WriteEntityMetdata(16, EntityMetadataType.VarInt, this.XpP);
 
-        await stream.WriteEntityMetdata(17, EntityMetadataType.Byte, (byte)this.client.ClientSettings.DisplayedSkinParts);
+        await stream.WriteEntityMetdata(17, EntityMetadataType.Byte, (byte)this.ClientInformation.DisplayedSkinParts);
 
-        await stream.WriteEntityMetdata(18, EntityMetadataType.Byte, (byte)this.client.ClientSettings.MainHand);
+        await stream.WriteEntityMetdata(18, EntityMetadataType.Byte, (byte)this.ClientInformation.MainHand);
 
         if (this.LeftShoulder != null)
             await stream.WriteEntityMetdata(19, EntityMetadataType.Nbt, this.LeftShoulder);
@@ -877,7 +877,11 @@ public sealed partial class Player : Living, IPlayer
 
     private async Task TrySpawnPlayerAsync(VectorF position)
     {
-        foreach (var (_, player) in this.World.Players.Except(this.Uuid).Where(x => VectorF.Distance(position, x.Value.Position) <= (x.Value.client.ClientSettings?.ViewDistance ?? 10)))
+        var players = this.World.Players
+            .Except(this.Uuid)
+            .Where(x => VectorF.Distance(position, x.Value.Position) <= x.Value.ClientInformation.ViewDistance);
+
+        foreach (var (_, player) in players)
         {
             if (player.Alive && !this.visiblePlayers.Contains(player.EntityId))
             {
@@ -957,7 +961,7 @@ public sealed partial class Player : Living, IPlayer
         (int playerChunkX, int playerChunkZ) = Position.ToChunkCoord();
         (int lastPlayerChunkX, int lastPlayerChunkZ) = LastPosition.ToChunkCoord();
  
-        int dist = distance < 1 ? client.ClientSettings?.ViewDistance ?? 7 : distance;
+        int dist = distance < 1 ? this.ClientInformation.ViewDistance : distance;
         for (int x = playerChunkX + dist; x > playerChunkX - dist; x--)
             for (int z = playerChunkZ + dist; z > playerChunkZ - dist; z--)
                 clientNeededChunks.Add((x, z));
