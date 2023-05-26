@@ -94,7 +94,7 @@ public abstract class BaseTree
                         chunk);
 
                     if (xx == 0 || zz == 0)
-                        await helper.SetBlockAsync(origin.X + xx, trunkHeight + origin.Y + 2, origin.Z + zz,
+                        await helper.SetBlockAsync(origin.X + xx, trunkHeight + origin.Y + heightOffset, origin.Z + zz,
                             this.leafBlock, chunk);
                 }
             }
