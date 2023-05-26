@@ -663,7 +663,7 @@ public sealed partial class Player : Living, IPlayer
 
         if (!playerDataFile.Exists)
         {
-            this.Position = new VectorF(0, 128, 0);
+            this.Position = World.LevelData.SpawnPosition;
             return;
         }
 
@@ -938,8 +938,9 @@ public sealed partial class Player : Living, IPlayer
     /// <param name="unloadAll"></param>
     /// <param name="distance"></param>
     /// <returns></returns>
-    internal async Task UpdateChunksAsync(bool unloadAll = false, int distance = 0)
+    internal async Task<bool> UpdateChunksAsync(bool unloadAll = false, int distance = 0)
     {
+        bool sentAll = true;
         if (unloadAll)
         {
             if (!Respawning)
@@ -986,7 +987,12 @@ public sealed partial class Player : Living, IPlayer
                 await client.SendChunkAsync(chunk);
                 client.LoadedChunks.Add((chunk.X, chunk.Z));
             }
+            else
+            {
+                sentAll = false;
+            }
         });
+        return sentAll;
     }
 
     private void WriteItems(NbtWriter writer, bool inventory = true)

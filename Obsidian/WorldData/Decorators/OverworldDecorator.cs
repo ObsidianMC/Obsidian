@@ -67,7 +67,7 @@ public static class OverworldDecorator
         }
     }
 
-    private static async Task GenerateFloraAsync(Vector pos, DecoratorFeatures features, GenHelper helper, Chunk chunk)
+    internal static async Task GenerateFloraAsync(Vector pos, DecoratorFeatures features, GenHelper helper, Chunk chunk)
     {
         for(int i = 0; i < features.Flora.Count; i++)
         {
@@ -97,7 +97,7 @@ public static class OverworldDecorator
         await tree.TryGenerateTreeAsync(position, offset);
     }
 
-    private static async Task GenerateTreesAsync(Vector pos, DecoratorFeatures features, GenHelper helper, Chunk chunk)
+    internal static async Task GenerateTreesAsync(Vector pos, DecoratorFeatures features, GenHelper helper, Chunk chunk)
     {
         for(int i = 0; i < features.Trees.Count; i++)
         {

@@ -656,9 +656,12 @@ public partial class Server : IServer
         {
             while (await timer.WaitForNextTickAsync(this._cancelTokenSource.Token))
             {
-                _logger.LogInformation("Saving world...");
-                await WorldManager.FlushLoadedWorldsAsync();
-                await UserCache.SaveAsync();
+                if (WorldManager.GetAvailableWorlds().All(w => w.ChunksToGen.IsEmpty))
+                {
+                    _logger.LogInformation("Saving world...");
+                    await WorldManager.FlushLoadedWorldsAsync();
+                    await UserCache.SaveAsync();
+                }
             }
         }
         catch { }

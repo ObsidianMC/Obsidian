@@ -6,17 +6,48 @@ namespace Obsidian.WorldData.Generators;
 
 public sealed class IslandGenerator : IWorldGenerator
 {
+    public string Id => "islands";
     private GenHelper helper;
     private Module noiseGenerator;
-
-    public string Id => "island";
+    private Random r;
+    private static readonly Biome[] biomes = new Biome[22] {
+        Biome.Badlands,
+        Biome.BambooJungle,
+        Biome.BirchForest,
+        Biome.DarkForest,
+        Biome.Desert,
+        Biome.ErodedBadlands,
+        Biome.FlowerForest,
+        Biome.Forest,
+        Biome.FrozenPeaks,
+        Biome.Grove,
+        Biome.Jungle,
+        Biome.MushroomFields,
+        Biome.OldGrowthBirchForest,
+        Biome.OldGrowthSpruceTaiga,
+        Biome.Plains,
+        Biome.Savanna,
+        Biome.SnowySlopes,
+        Biome.SnowyTaiga,
+        Biome.StonyPeaks,
+        Biome.SunflowerPlains,
+        Biome.Taiga,
+        Biome.WoodedBadlands
+    };
+    private static readonly IBlock[] hangingBlocks = new IBlock[4]
+    {
+        BlocksRegistry.Stone,
+        BlocksRegistry.Cobblestone,
+        BlocksRegistry.MossyCobblestone,
+        BlocksRegistry.Andesite
+    };
 
     public async Task<Chunk> GenerateChunkAsync(int cx, int cz, Chunk? chunk = null)
     {
         chunk ??= new Chunk(cx, cz);
 
         // Sanity checks
-        if (chunk.isGenerated)
+        if (chunk.IsGenerated)
             return chunk;
         if (helper is null)
             throw new NullReferenceException("GenHelper must not be null. Call Init()");
@@ -27,47 +58,112 @@ public sealed class IslandGenerator : IWorldGenerator
             {
                 int worldX = bx + (cx << 4);
                 int worldZ = bz + (cz << 4);
-
-                // Determine Biome
-                if (bx % 4 == 0 && bz % 4 == 0) // Biomes are in 4x4x4 blocks. Do a 2D array for now and just copy it vertically.
-                {
-                    var biome = (Biome)helper.Noise.Biome.GetValue(worldX, 0, worldZ);
-                    for (int y = -64; y < 320; y += 4)
-                    {
-                        chunk.SetBiome(bx, y, bz, biome);
-                    }
-                }
                 for (int y = -64; y < 320; y++)
                 {
-                    var val = noiseGenerator.GetValue(worldX, y, worldZ);
-                    var isIsland = val > 9;
-                    if (isIsland)
+                    // The integer of a noise float b/w -100.0 and 100.0 will be used to determine if it's an
+                    // island and what type of island it is.
+                    var noiseVal = noiseGenerator.GetValue(worldX, y, worldZ);
+                    var islandType = (int)noiseVal;
+                    var isIsland = islandType % 10 == 0;
+                    var biome = biomes[(islandType / 10) + 11];
+
+                    // The decimal of the noise will determine the density of the island.
+                    // Islands become less dense toward the Y axis extremes, and more dense
+                    // toward the center, using a sine curve in the middle 1/3 of the Y axis.
+                    var dec = Math.Abs(noiseVal - Math.Truncate(noiseVal));
+                    var yPct = (y + 64) / 384.0;
+                    var yDensity = 1.0 - (Math.Abs(dec - 0.5) * 2);
+                    var yDensityMap = yPct < 0.33 | yPct > 0.66 ? 0 : -0.5 * Math.Cos(Math.PI * yPct * 6) + 0.5;
+
+                    if (isIsland & yDensity < yDensityMap)
                     {
+                        if (bx % 4 == 0 && bz % 4 == 0 & y % 4 == 0)
+                        {
+                            chunk.SetBiome(bx, y, bz, biome);
+                        }
                         chunk.SetBlock(bx, y, bz, BlocksRegistry.Stone);
+                        chunk.Heightmaps[ChunkData.HeightmapType.MotionBlocking].Set(bx, bz, y);
+                    }
+                    else
+                    {
+                        if (bx % 4 == 0 && bz % 4 == 0 & y % 4 == 0)
+                        {
+                            chunk.SetBiome(bx, y, bz, Biome.StonyShore);
+                        }
                     }
                 }
-
-                chunk.Heightmaps[ChunkData.HeightmapType.MotionBlocking].Set(bx, bz, 0);
             }
         }
 
-        //ChunkBuilder.FillChunk(chunk);
-        //ChunkBuilder.CarveCaves(helper, chunk);
-        //await OverworldDecorator.DecorateAsync(chunk, helper);
 
-        chunk.isGenerated = true;
+        for (int bx = 0; bx < 16; bx++)
+        {
+            for (int bz = 0; bz < 16; bz++)
+            {
+                // Scan up from the bottom to find island bottoms
+                for (int by = 20; by < 200; by++)
+                {
+                    var pos = new Vector(bx, by, bz);
+                    var isHanging = chunk.GetBlock(pos).Is(Material.Stone) && chunk.GetBlock(pos + Vector.Down).IsAir;
+                    if (isHanging && r.Next(0,5) == 0)
+                    {
+                        IBlock b = hangingBlocks[r.Next(0, 4)];
+                        int length = r.Next(0, 5);
+                        for (int y = 0; y < length; y++)
+                        {
+                            chunk.SetBlock(pos + (Vector.Down * y), b);
+                        }
+                    }
+                }
+                // Scan down from the top to decorate the surface
+                for (int by = 200; by > 20; by--)
+                {
+                    var pos = new Vector(bx, by, bz);
+                    var worldPos = new Vector(bx + (cx << 4), by, bz + (cz << 4));
+                    var isSurface = !chunk.GetBlock(pos).IsAir && chunk.GetBlock(pos + Vector.Up).IsAir;
+                    if (isSurface)
+                    {
+                        var biome = chunk.GetBiome(pos + Vector.Down);
+                        IDecorator decorator = DecoratorFactory.GetDecorator(biome, chunk, worldPos, helper);
+                        decorator.Decorate();
+                        await OverworldDecorator.GenerateTreesAsync(worldPos, decorator.Features, helper, chunk);
+                        await OverworldDecorator.GenerateFloraAsync(worldPos, decorator.Features, helper, chunk);
+                    }
+                }
+            }
+        }
+
+        chunk.chunkStatus = ChunkStatus.full;
         return chunk;
     }
 
     public void Init(IWorld world)
     {
         helper = new GenHelper(world);
-        noiseGenerator = new Cell()
+        r = new Random(helper.Seed);
+        var stuff = new ScalePoint()
         {
-            Type = Cell.CellType.Voronoi,
-            Displacement = 10D,
-            Frequency = 0.08,
-            Seed = 12345
+            XScale = 0.2D,
+            ZScale = 0.2D,
+            YScale = 0.5D,
+            Source0 = new Cell()
+            {
+                Type = Cell.CellType.Manhattan,
+                Displacement = 100D,
+                Frequency = 0.08D,
+                Seed = helper.Seed + 1,
+                //EnableDistance = true
+            }
         };
+        var thing = new Turbulence()
+        {
+            Frequency = 0.0987,
+            Power = 1.1,
+            Roughness = 2,
+            Seed = helper.Seed + 2,
+            Source0 = stuff
+        };
+
+        noiseGenerator = thing;
     }
 }
