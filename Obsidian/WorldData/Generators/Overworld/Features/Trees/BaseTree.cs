@@ -78,28 +78,24 @@ public abstract class BaseTree
 
     protected virtual async Task GenerateLeavesAsync(Vector origin, int heightOffset)
     {
-        int topY = origin.Y + trunkHeight + heightOffset + 1;
-        for (int y = topY; y >= topY - 3; y--)
-        {
-            for (int x = origin.X - 2; x <= origin.X + 2; x++)
-            {
-                for (int z = origin.Z - 2; z <= origin.Z + 2; z++)
-                {
-                    // Skip the top edges.
-                    if (y == topY)
-                    {
-                        if (x != origin.X - 2 && x != origin.X + 2 && z != origin.Z - 2 && z != origin.Z + 2)
-                        {
-                            await helper.SetBlockAsync(x, y, z, this.leafBlock, chunk);
-                        }
-                    }
-                    else
-                    {
-                        await helper.SetBlockAsync(x, y, z, this.leafBlock, chunk);
-                    }
-                }
-            }
-        }
+        
+		// Make leaves
+		for (int xx = -2; xx <= 2; xx++)
+		{
+			for (int zz = -2; zz <= 2; zz++)
+			{
+                await helper.SetBlockAsync(origin.X + xx, trunkHeight + origin.Y - 1, origin.Z + zz, this.leafBlock, chunk);
+                await helper.SetBlockAsync(origin.X + xx, trunkHeight + origin.Y, origin.Z + zz, this.leafBlock, chunk);
+
+				if (Math.Abs(xx) < 2 && Math.Abs(zz) < 2)
+				{
+                    await helper.SetBlockAsync(origin.X + xx, trunkHeight + origin.Y + 1, origin.Z + zz, this.leafBlock, chunk);
+
+					if (xx == 0 || zz == 0)
+                        await helper.SetBlockAsync(origin.X + xx, trunkHeight + origin.Y + 2, origin.Z + zz, this.leafBlock, chunk);				}
+			}
+		}
+
     }
 
     protected virtual async Task GenerateTrunkAsync(Vector origin, int heightOffset)
