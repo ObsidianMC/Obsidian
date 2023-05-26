@@ -126,11 +126,6 @@ public sealed class Client : IDisposable
     public bool EncryptionEnabled { get; private set; }
 
     /// <summary>
-    /// The client settings. Consists of the view distance, locale, skin parts and other useful information about the client.
-    /// </summary>
-    public ClientInformationPacket ClientSettings { get; internal set; }
-
-    /// <summary>
     /// Which state of the protocol the client is currently in.
     /// </summary>
     public ClientState State { get; private set; } = ClientState.Handshaking;
@@ -544,9 +539,7 @@ public sealed class Client : IDisposable
     internal async Task SendInfoAsync()
     {
         if (Player is null)
-        {
-            throw new InvalidOperationException("Player is null, which means the client has not yet logged in.");
-        }
+            throw new UnreachableException("Player is null, which means the client has not yet logged in.");
 
         Player.TeleportId = Globals.Random.Next(0, 999);
         await QueuePacketAsync(new SetDefaultSpawnPositionPacket(Player.World.LevelData.SpawnPosition));
@@ -743,7 +736,12 @@ public sealed class Client : IDisposable
         }
     }
 
-    internal Task SendChunkAsync(Chunk chunk) => chunk is not null ? QueuePacketAsync(new ChunkDataAndUpdateLightPacket(chunk)) : Task.CompletedTask;
+    internal async Task SendChunkAsync(Chunk chunk)
+    {
+        ArgumentNullException.ThrowIfNull(chunk);
+
+        await QueuePacketAsync(new ChunkDataAndUpdateLightPacket(chunk));
+    }
     internal Task UnloadChunkAsync(int x, int z) => LoadedChunks.Contains((x, z)) ? QueuePacketAsync(new UnloadChunkPacket(x, z)) : Task.CompletedTask;
 
     private async Task SendServerBrand()
