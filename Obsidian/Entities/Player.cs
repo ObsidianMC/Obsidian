@@ -590,7 +590,7 @@ public sealed partial class Player : Living, IPlayer
         await using var playerFileStream = playerDataFile.Create();
         await using var writer = new NbtWriter(playerFileStream, NbtCompression.GZip, "");
 
-        writer.WriteInt("DataVersion", 2724);
+        writer.WriteInt("DataVersion", 3337);
         writer.WriteInt("playerGameType", (int)this.Gamemode);
         writer.WriteInt("previousPlayerGameType", (int)this.Gamemode);
         writer.WriteInt("Score", 0);
