@@ -7,9 +7,9 @@ namespace Obsidian.WorldData.Generators;
 public sealed class IslandGenerator : IWorldGenerator
 {
     public string Id => "islands";
-    private GenHelper helper;
-    private Module noiseGenerator;
-    private Random r;
+    private GenHelper? helper;
+    private Module? noiseGenerator;
+    private Random? r;
     private static readonly Biome[] biomes = new Biome[22] {
         Biome.Badlands,
         Biome.BambooJungle,
@@ -62,18 +62,18 @@ public sealed class IslandGenerator : IWorldGenerator
                 {
                     // The integer of a noise float b/w -100.0 and 100.0 will be used to determine if it's an
                     // island and what type of island it is.
-                    var noiseVal = noiseGenerator.GetValue(worldX, y, worldZ);
+                    var noiseVal = noiseGenerator!.GetValue(worldX, y, worldZ);
                     var islandType = (int)noiseVal;
                     var isIsland = islandType % 10 == 0;
                     var biome = biomes[(islandType / 10) + 11];
 
                     // The decimal of the noise will determine the density of the island.
                     // Islands become less dense toward the Y axis extremes, and more dense
-                    // toward the center, using a sine curve in the middle 1/3 of the Y axis.
+                    // toward the center.
                     var dec = Math.Abs(noiseVal - Math.Truncate(noiseVal));
                     var yPct = (y + 64) / 384.0;
-                    var yDensity = 1.0 - (Math.Abs(dec - 0.5) * 2);
-                    var yDensityMap = yPct < 0.33 | yPct > 0.66 ? 0 : -0.5 * Math.Cos(Math.PI * yPct * 6) + 0.5;
+                    var yDensity = 1 - (Math.Abs(dec - 0.5) * 2);
+                    var yDensityMap = -1 * Math.Abs(6 * yPct - 3) + 1;
 
                     if (isIsland & yDensity < yDensityMap)
                     {
@@ -105,10 +105,10 @@ public sealed class IslandGenerator : IWorldGenerator
                 {
                     var pos = new Vector(bx, by, bz);
                     var isHanging = chunk.GetBlock(pos).Is(Material.Stone) && chunk.GetBlock(pos + Vector.Down).IsAir;
-                    if (isHanging && r.Next(0,5) == 0)
+                    if (isHanging && r!.Next(0,5) == 0)
                     {
-                        IBlock b = hangingBlocks[r.Next(0, 4)];
-                        int length = r.Next(0, 5);
+                        IBlock b = hangingBlocks[r!.Next(0, 4)];
+                        int length = r!.Next(0, 5);
                         for (int y = 0; y < length; y++)
                         {
                             chunk.SetBlock(pos + (Vector.Down * y), b);
@@ -141,29 +141,25 @@ public sealed class IslandGenerator : IWorldGenerator
     {
         helper = new GenHelper(world);
         r = new Random(helper.Seed);
-        var stuff = new ScalePoint()
-        {
-            XScale = 0.2D,
-            ZScale = 0.2D,
-            YScale = 0.5D,
-            Source0 = new Cell()
-            {
-                Type = Cell.CellType.Manhattan,
-                Displacement = 100D,
-                Frequency = 0.08D,
-                Seed = helper.Seed + 1,
-                //EnableDistance = true
-            }
-        };
-        var thing = new Turbulence()
+        noiseGenerator = new Turbulence()
         {
             Frequency = 0.0987,
             Power = 1.1,
             Roughness = 2,
             Seed = helper.Seed + 2,
-            Source0 = stuff
+            Source0 = new ScalePoint()
+            {
+                XScale = 0.2D,
+                ZScale = 0.2D,
+                YScale = 0.5D,
+                Source0 = new Cell()
+                {
+                    Type = Cell.CellType.Manhattan,
+                    Displacement = 100D,
+                    Frequency = 0.08D,
+                    Seed = helper.Seed + 1
+                }
+            }
         };
-
-        noiseGenerator = thing;
     }
 }
