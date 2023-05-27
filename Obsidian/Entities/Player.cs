@@ -962,7 +962,7 @@ public sealed partial class Player : Living, IPlayer
         (int playerChunkX, int playerChunkZ) = Position.ToChunkCoord();
         (int lastPlayerChunkX, int lastPlayerChunkZ) = LastPosition.ToChunkCoord();
  
-        int dist = distance < 1 ? this.ClientInformation.ViewDistance : distance;
+        int dist = distance < 1 ? ClientInformation.ViewDistance : distance;
         for (int x = playerChunkX + dist; x > playerChunkX - dist; x--)
             for (int z = playerChunkZ + dist; z > playerChunkZ - dist; z--)
                 clientNeededChunks.Add((x, z));

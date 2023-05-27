@@ -105,7 +105,7 @@ public sealed class IslandGenerator : IWorldGenerator
                 {
                     var pos = new Vector(bx, by, bz);
                     var isHanging = chunk.GetBlock(pos).Is(Material.Stone) && chunk.GetBlock(pos + Vector.Down).IsAir;
-                    if (isHanging && r!.Next(0,5) == 0)
+                    if (isHanging && r!.Next(0, 5) == 0)
                     {
                         IBlock b = hangingBlocks[r!.Next(0, 4)];
                         int length = r!.Next(0, 5);
