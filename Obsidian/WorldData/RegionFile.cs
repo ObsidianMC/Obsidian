@@ -211,7 +211,7 @@ public sealed class RegionFile : IAsyncDisposable
         this.Timestamps[tableIndex] = time;
 
     private void SetLocation(int tableIndex, int offset, int size) =>
-        this.Locations[tableIndex] = ((offset + 2) << 8) | (size & 0xFF);
+        this.Locations[tableIndex] = (offset << 8) | (size & 0xFF);
 
     private int CalculateChunkSize(long length) =>
         (int)Math.Ceiling((length + 5) / (double)sectionSize);
