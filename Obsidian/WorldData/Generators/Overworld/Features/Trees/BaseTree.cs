@@ -13,8 +13,6 @@ public abstract class BaseTree
 
     protected readonly Chunk chunk;
 
-    protected readonly Material leaf, trunk;
-
     protected int trunkHeight;
 
     protected readonly List<Material> ValidSourceBlocks = new()
@@ -30,40 +28,21 @@ public abstract class BaseTree
     {
         this.helper = helper;
         this.chunk = chunk;
-        this.leaf = leaf;
-        this.trunk = trunk;
         this.trunkHeight = trunkHeight;
 
         this.leafBlock = BlocksRegistry.Get(leaf);
 
-        IBlockState? state = null;
-
-        switch (trunk)
+        IBlockState? state = trunk switch
         {
-            case Material.AcaciaLog:
-                state = new AcaciaLogStateBuilder().WithAxis(Axis.Y).Build();
-                break;
-            case Material.JungleLog:
-                state = new JungleLogStateBuilder().WithAxis(Axis.Y).Build();
-                break;
-            case Material.BirchLog:
-                state = new BirchLogStateBuilder().WithAxis(Axis.Y).Build();
-                break;
-            case Material.DarkOakLog:
-                state = new DarkOakLogStateBuilder().WithAxis(Axis.Y).Build();
-                break;
-            case Material.MangroveLog:
-                state = new MangroveLogStateBuilder().WithAxis(Axis.Y).Build();
-                break;
-            case Material.OakLog:
-                state = new OakLogStateBuilder().WithAxis(Axis.Y).Build();
-                break;
-            case Material.SpruceLog:
-                state = new SpruceLogStateBuilder().WithAxis(Axis.Y).Build();
-                break;
-            default:
-                break;
-        }
+            Material.AcaciaLog => new AcaciaLogStateBuilder().WithAxis(Axis.Y).Build(),
+            Material.JungleLog => new JungleLogStateBuilder().WithAxis(Axis.Y).Build(),
+            Material.BirchLog => new BirchLogStateBuilder().WithAxis(Axis.Y).Build(),
+            Material.DarkOakLog => new DarkOakLogStateBuilder().WithAxis(Axis.Y).Build(),
+            Material.MangroveLog => new MangroveLogStateBuilder().WithAxis(Axis.Y).Build(),
+            Material.OakLog => new OakLogStateBuilder().WithAxis(Axis.Y).Build(),
+            Material.SpruceLog => new SpruceLogStateBuilder().WithAxis(Axis.Y).Build(),
+            _ => null
+        };
 
         this.trunkBlock = BlocksRegistry.Get(trunk, state);
     }
@@ -77,20 +56,23 @@ public abstract class BaseTree
         return true;
     }
 
-    protected virtual async Task GenerateLeavesAsync(Vector origin, int heightOffset)
+    protected async virtual Task GenerateLeavesAsync(Vector origin, int heightOffset)
     {
         // Make leaves
         for (int xx = -2; xx <= 2; xx++)
         {
             for (int zz = -2; zz <= 2; zz++)
             {
-                await helper.SetBlockAsync(origin.X + xx, trunkHeight + origin.Y - 1, origin.Z + zz, this.leafBlock,
+                await helper.SetBlockAsync(origin.X + xx, trunkHeight + origin.Y - 1 + heightOffset, origin.Z + zz,
+                    this.leafBlock,
                     chunk);
-                await helper.SetBlockAsync(origin.X + xx, trunkHeight + origin.Y, origin.Z + zz, this.leafBlock, chunk);
+                await helper.SetBlockAsync(origin.X + xx, trunkHeight + origin.Y + heightOffset, origin.Z + zz,
+                    this.leafBlock, chunk);
 
                 if (Math.Abs(xx) < 2 && Math.Abs(zz) < 2)
                 {
-                    await helper.SetBlockAsync(origin.X + xx, trunkHeight + origin.Y + 1, origin.Z + zz, this.leafBlock,
+                    await helper.SetBlockAsync(origin.X + xx, trunkHeight + origin.Y + 1 + heightOffset, origin.Z + zz,
+                        this.leafBlock,
                         chunk);
 
                     if (xx == 0 || zz == 0)
@@ -101,7 +83,7 @@ public abstract class BaseTree
         }
     }
 
-    protected virtual async Task GenerateTrunkAsync(Vector origin, int heightOffset)
+    protected async virtual Task GenerateTrunkAsync(Vector origin, int heightOffset)
     {
         int topY = trunkHeight + heightOffset;
         for (int y = topY; y > 0; y--)
@@ -112,7 +94,7 @@ public abstract class BaseTree
         await helper.SetBlockAsync(origin, BlocksRegistry.Dirt, chunk);
     }
 
-    protected virtual async Task<bool> TreeCanGrowAsync(Vector origin)
+    protected async virtual Task<bool> TreeCanGrowAsync(Vector origin)
     {
         var surfaceBlock = await helper.GetBlockAsync(origin, chunk);
         bool surfaceValid = ValidSourceBlocks.Contains(surfaceBlock.Material);
