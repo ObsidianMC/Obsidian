@@ -3,7 +3,6 @@ using Obsidian.Nbt;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using System.IO;
 using System.Threading;
 
@@ -52,7 +51,7 @@ public sealed class RegionFile : IAsyncDisposable
         {
             this.regionFileStream = new(this.filePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
         }
-        catch { return false; }
+        catch { throw; }
 
         this.initialized = true;
 
@@ -166,9 +165,6 @@ public sealed class RegionFile : IAsyncDisposable
         var compression = (NbtCompression)chunk.Span[4];
 
         this.semaphore.Release();
-
-        if (length == 0)
-            return null;
 
         if (length > size)
             throw new UnreachableException($"{length} > {size}");
