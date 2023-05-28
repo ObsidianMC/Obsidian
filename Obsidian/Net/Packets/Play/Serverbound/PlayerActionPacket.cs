@@ -29,10 +29,10 @@ public partial class PlayerActionPacket : IServerboundPacket
 
         if (Status == DiggingStatus.FinishedDigging || (Status == DiggingStatus.StartedDigging && player.Gamemode == Gamemode.Creative))
         {
-            await player.World.SetBlockUntrackedAsync(Position, BlocksRegistry.Air, true);
+            await player.World.SetBlockAsync(Position, BlocksRegistry.Air, true);
 
             var blockBreakEvent = await server.Events.InvokeBlockBreakAsync(new BlockBreakEventArgs(server, player, block, Position));
-            if (blockBreakEvent.IsCancelled)
+            if (blockBreakEvent.Handled)
                 return;
         }
 
@@ -41,11 +41,6 @@ public partial class PlayerActionPacket : IServerboundPacket
             Player = player.Uuid,
             Packet = this
         }, block);
-
-        if (Status == DiggingStatus.FinishedDigging)
-        {
-            await player.World.BlockUpdateNeighborsAsync(new BlockUpdate(player.World, Position));
-        }
     }
 }
 

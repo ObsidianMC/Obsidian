@@ -1,4 +1,6 @@
-﻿using Obsidian.WorldData;
+﻿using Microsoft.CodeAnalysis;
+using Obsidian.Registries;
+using Obsidian.WorldData;
 
 namespace Obsidian.Entities;
 
@@ -21,10 +23,11 @@ public sealed partial class FallingBlock : Entity
 
     private World world;
 
-    public FallingBlock(World world) : base()
+    public FallingBlock(World world, VectorF position) : base()
     {
-        SpawnPosition = Position;
-        LastPosition = Position;
+        SpawnPosition = position;
+        LastPosition = position;
+        Position = position;
         AliveTime = 0;
         DeltaPosition = new VectorF(0F, 0F, 0F);
         this.world = world;
@@ -32,6 +35,11 @@ public sealed partial class FallingBlock : Entity
 
     public async override Task TickAsync()
     {
+        if (AliveTime == 0)
+        {
+            //world.AcknowledgeBlockChange();
+            //await world.SetBlockAsync((Vector)SpawnPosition, BlocksRegistry.Air);
+        }
         AliveTime++;
         LastPosition = Position;
         if (!this.NoGravity)
@@ -50,13 +58,7 @@ public sealed partial class FallingBlock : Entity
             checkedBlocks.Add(upcomingBlockPos);
 
             var upcomingBlock = await world.GetBlockAsync(upcomingBlockPos);
-
-            if (upcomingBlock is IBlock block &&
-                (!block.IsLiquid || !block.IsAir)  &&
-                block.Material != Material.Grass &&
-                block.Material != Material.DeadBush &&
-                block.Material != Material.Snow
-                )
+            if (upcomingBlock is IBlock block && !TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(block.RegistryId) && !block.IsLiquid)
             {
                 await ConvertToBlock(upcomingBlockPos + (0, 1, 0));
             }
@@ -65,8 +67,6 @@ public sealed partial class FallingBlock : Entity
 
     private async Task ConvertToBlock(Vector loc)
     {
-        await world.SetBlockUntrackedAsync(loc, this.Block);
-
         await world.SetBlockAsync(loc, this.Block);
 
         await world.DestroyEntityAsync(this);

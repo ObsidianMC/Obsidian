@@ -16,7 +16,6 @@ internal static class BlockUpdates
         if (await world.GetBlockAsync(location + Vector.Down) is IBlock below &&
             (TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(below.RegistryId) || below.IsLiquid))
         {
-            await world.SetBlockAsync(location, BlocksRegistry.Air);
             world.SpawnFallingBlock(location, material);
             return true;
         }

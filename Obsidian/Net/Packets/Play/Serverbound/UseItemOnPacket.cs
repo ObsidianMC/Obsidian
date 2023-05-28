@@ -109,6 +109,15 @@ public partial class UseItemOnPacket : IServerboundPacket
                 break;
         }
 
+        if (TagsRegistry.Blocks.GravityAffected.Entries.Contains(block.RegistryId))
+        {
+            if (await player.World.GetBlockAsync(position + Vector.Down) is IBlock down && (down.IsAir || down.IsLiquid))
+            {
+                await player.World.SetBlockAsync(position, BlocksRegistry.Air, true);
+                player.World.SpawnFallingBlock(position, block.Material);
+            }
+        }
+
         await player.World.SetBlockAsync(position, block, doBlockUpdate: true);
     }
 }
