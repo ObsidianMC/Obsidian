@@ -34,7 +34,12 @@ public class LocationTypeParser : BaseArgumentParser<VectorF>
                 }
             else if (text.StartsWith("~"))
             {
-                var player = (Player)ctx.Player;
+                if (ctx.Player is not Player player)
+                {
+                    result = default;
+                    return false;
+                }
+
                 float.TryParse(text.Replace("~", ""), out float relative);
                 switch (i)
                 {
@@ -42,10 +47,10 @@ public class LocationTypeParser : BaseArgumentParser<VectorF>
                         location.X = player.Position.X + relative;
                         break;
                     case 1:
-                        location.Y = player.Position.Y + relative; ;
+                        location.Y = player.Position.Y + relative;
                         break;
                     case 2:
-                        location.Z = player.Position.Z + relative; ;
+                        location.Z = player.Position.Z + relative;
                         break;
                     default:
                         throw new IndexOutOfRangeException("Count went out of range");
