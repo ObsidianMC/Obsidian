@@ -819,6 +819,7 @@ public class World : IWorld, IAsyncDisposable
                 }
             }
         }
+        Server.Logger.LogWarning($"Failed to set World Spawn.");
     }
 
     internal bool TryAddEntity(Entity entity)

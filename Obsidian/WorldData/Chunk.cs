@@ -74,9 +74,9 @@ public class Chunk
     {
         var i = SectionIndex(y);
 
-        x = NumericsHelper.Modulo(x, 16);
-        z = NumericsHelper.Modulo(z, 16);
-        y = (y + 64) % 16 / 4;
+        x = NumericsHelper.Modulo(x, 16) >> 2;
+        z = NumericsHelper.Modulo(z, 16) >> 2;
+        y = NumericsHelper.Modulo(y + 64, 16) >> 2;
 
         return Sections[i].GetBiome(x, y, z);
     }
@@ -87,9 +87,9 @@ public class Chunk
     {
         int i = SectionIndex(y);
 
-        x = NumericsHelper.Modulo(x, 16);
-        y = (y + 64) % 16 / 4;
-        z = NumericsHelper.Modulo(z, 16);
+        x = NumericsHelper.Modulo(x, 16) >> 2;
+        y = NumericsHelper.Modulo(y + 64, 16) >> 2;
+        z = NumericsHelper.Modulo(z, 16) >> 2;
 
         Sections[i].SetBiome(x, y, z, biome);
     }

@@ -40,7 +40,7 @@ public partial class Server : IServer
         get
         {
             var informalVersion = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>();
-            if(informalVersion != null && informalVersion.InformationalVersion.Contains('+'))
+            if (informalVersion != null && informalVersion.InformationalVersion.Contains('+'))
                 return informalVersion.InformationalVersion.Split('+')[1];
 
             return "0.1";
@@ -364,7 +364,7 @@ public partial class Server : IServer
                 return;
             }
 
-            if(this.Config.CanThrottle)
+            if (this.Config.CanThrottle)
             {
                 if (throttler.TryGetValue(ip, out var time) && time <= DateTimeOffset.UtcNow)
                 {
@@ -507,62 +507,62 @@ public partial class Server : IServer
         switch (digging.Status)
         {
             case DiggingStatus.DropItem:
-            {
-                var droppedItem = player.GetHeldItem();
-
-                if (droppedItem is null or { Type: Material.Air })
-                    return;
-
-                var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
-
-                var item = new ItemEntity
                 {
-                    EntityId = player + player.World.GetTotalLoadedEntities() + 1,
-                    Count = 1,
-                    Id = droppedItem.AsItem().Id,
-                    Glowing = true,
-                    World = player.World,
-                    Position = loc
-                };
+                    var droppedItem = player.GetHeldItem();
 
-                TryAddEntity(player.World, item);
+                    if (droppedItem is null or { Type: Material.Air })
+                        return;
 
-                var lookDir = player.GetLookDirection();
+                    var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
 
-                var vel = Velocity.FromDirection(loc, lookDir);//TODO properly shoot the item towards the direction the players looking at
+                    var item = new ItemEntity
+                    {
+                        EntityId = player + player.World.GetTotalLoadedEntities() + 1,
+                        Count = 1,
+                        Id = droppedItem.AsItem().Id,
+                        Glowing = true,
+                        World = player.World,
+                        Position = loc
+                    };
 
-                BroadcastPacket(new SpawnEntityPacket
-                {
-                    EntityId = item.EntityId,
-                    Uuid = item.Uuid,
-                    Type = EntityType.Item,
-                    Position = item.Position,
-                    Pitch = 0,
-                    Yaw = 0,
-                    Data = 1,
-                    Velocity = vel
-                });
-                BroadcastPacket(new SetEntityMetadataPacket
-                {
-                    EntityId = item.EntityId,
-                    Entity = item
-                });
+                    TryAddEntity(player.World, item);
 
-                player.Inventory.RemoveItem(player.inventorySlot, player.Sneaking ? 64 : 1);//TODO get max stack size for the item
+                    var lookDir = player.GetLookDirection();
 
-                player.client.SendPacket(new SetContainerSlotPacket
-                {
-                    Slot = player.inventorySlot,
+                    var vel = Velocity.FromDirection(loc, lookDir);//TODO properly shoot the item towards the direction the players looking at
 
-                    WindowId = 0,
+                    BroadcastPacket(new SpawnEntityPacket
+                    {
+                        EntityId = item.EntityId,
+                        Uuid = item.Uuid,
+                        Type = EntityType.Item,
+                        Position = item.Position,
+                        Pitch = 0,
+                        Yaw = 0,
+                        Data = 1,
+                        Velocity = vel
+                    });
+                    BroadcastPacket(new SetEntityMetadataPacket
+                    {
+                        EntityId = item.EntityId,
+                        Entity = item
+                    });
 
-                    SlotData = player.GetHeldItem(),
+                    player.Inventory.RemoveItem(player.inventorySlot, player.Sneaking ? 64 : 1);//TODO get max stack size for the item
 
-                    StateId = player.Inventory.StateId++
-                });
+                    player.client.SendPacket(new SetContainerSlotPacket
+                    {
+                        Slot = player.inventorySlot,
 
-                break;
-            }
+                        WindowId = 0,
+
+                        SlotData = player.GetHeldItem(),
+
+                        StateId = player.Inventory.StateId++
+                    });
+
+                    break;
+                }
             case DiggingStatus.StartedDigging:
                 break;
             case DiggingStatus.CancelledDigging:
@@ -578,43 +578,43 @@ public partial class Server : IServer
 
                 var droppedItem = ItemsRegistry.Get(block.Material);
 
-                if (droppedItem.Id == 0) { break; }
+                    if (droppedItem.Id == 0) { break; }
 
-                var item = new ItemEntity
-                {
-                    EntityId = player + player.World.GetTotalLoadedEntities() + 1,
-                    Count = 1,
-                    Id = droppedItem.Id,
-                    Glowing = true,
-                    World = player.World,
-                    Position = digging.Position,
-                    Server = this
-                };
+                    var item = new ItemEntity
+                    {
+                        EntityId = player + player.World.GetTotalLoadedEntities() + 1,
+                        Count = 1,
+                        Id = droppedItem.Id,
+                        Glowing = true,
+                        World = player.World,
+                        Position = digging.Position,
+                        Server = this
+                    };
 
-                TryAddEntity(player.World, item);
+                    TryAddEntity(player.World, item);
 
-                BroadcastPacket(new SpawnEntityPacket
-                {
-                    EntityId = item.EntityId,
-                    Uuid = item.Uuid,
-                    Type = EntityType.Item,
-                    Position = item.Position,
-                    Pitch = 0,
-                    Yaw = 0,
-                    Data = 1,
-                    Velocity = Velocity.FromVector(digging.Position + new VectorF(
-                        (Globals.Random.NextFloat() * 0.5f) + 0.25f,
-                        (Globals.Random.NextFloat() * 0.5f) + 0.25f,
-                        (Globals.Random.NextFloat() * 0.5f) + 0.25f))
-                });
+                    BroadcastPacket(new SpawnEntityPacket
+                    {
+                        EntityId = item.EntityId,
+                        Uuid = item.Uuid,
+                        Type = EntityType.Item,
+                        Position = item.Position,
+                        Pitch = 0,
+                        Yaw = 0,
+                        Data = 1,
+                        Velocity = Velocity.FromVector(digging.Position + new VectorF(
+                            (Globals.Random.NextFloat() * 0.5f) + 0.25f,
+                            (Globals.Random.NextFloat() * 0.5f) + 0.25f,
+                            (Globals.Random.NextFloat() * 0.5f) + 0.25f))
+                    });
 
-                BroadcastPacket(new SetEntityMetadataPacket
-                {
-                    EntityId = item.EntityId,
-                    Entity = item
-                });
-                break;
-            }
+                    BroadcastPacket(new SetEntityMetadataPacket
+                    {
+                        EntityId = item.EntityId,
+                        Entity = item
+                    });
+                    break;
+                }
         }
     }
 
@@ -717,6 +717,7 @@ public partial class Server : IServer
     {
         this.RegisterWorldGenerator<SuperflatGenerator>();
         this.RegisterWorldGenerator<OverworldGenerator>();
+        this.RegisterWorldGenerator<IslandGenerator>();
         this.RegisterWorldGenerator<EmptyWorldGenerator>();
     }
 
