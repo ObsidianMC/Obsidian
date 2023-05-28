@@ -7,7 +7,7 @@ namespace Obsidian.WorldData;
 /// </summary>
 public sealed class Level
 {
-    public const int DataVersion = 2230;
+    public const int DataVersion = 3337;
 
     /// <summary>
     /// 1 or 0 (true/false) - true if cheats are enabled.

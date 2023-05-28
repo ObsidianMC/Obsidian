@@ -324,7 +324,7 @@ public class Region : IAsyncDisposable
             },
             blockEntities,
             sectionsCompound,
-            new NbtTag<int>("DataVersion", 3105)// Hardcoded version try to get data version through minecraft data and use data correctly
+            new NbtTag<int>("DataVersion", 3337)// Hardcoded version try to get data version through minecraft data and use data correctly
         };
     }
     #endregion NBT Ops
