@@ -1,5 +1,5 @@
 ﻿using Obsidian.Registries;
-using Obsidian.WorldData.Generators.Overworld.Decorators;
+using Obsidian.WorldData.Decorators;
 
 namespace Obsidian.WorldData.Generators;
 

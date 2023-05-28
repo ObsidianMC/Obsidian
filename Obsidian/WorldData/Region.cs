@@ -63,7 +63,6 @@ public class Region : IAsyncDisposable
 
     internal async ValueTask<Chunk> GetChunkAsync(int x, int z)
     {
-        (x, z) = (NumericsHelper.Modulo(x, cubicRegionSize), NumericsHelper.Modulo(z, cubicRegionSize));
         var chunk = loadedChunks[x, z];
         if (chunk is null)
         {
@@ -76,7 +75,6 @@ public class Region : IAsyncDisposable
 
     internal async Task UnloadChunk(int x, int z)
     {
-        (x, z) = (NumericsHelper.Modulo(x, cubicRegionSize), NumericsHelper.Modulo(z, cubicRegionSize));
         var chunk = loadedChunks[x, z];
         if (chunk is null) { return; }
         await SerializeChunkAsync(chunk);
