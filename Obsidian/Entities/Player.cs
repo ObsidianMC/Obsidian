@@ -941,7 +941,7 @@ public sealed partial class Player : Living, IPlayer
     /// </summary>
     /// <param name="unloadAll"></param>
     /// <param name="distance"></param>
-    /// <returns></returns>
+    /// <returns>Whether all chunks have been sent.</returns>
     internal async Task<bool> UpdateChunksAsync(bool unloadAll = false, int distance = 0)
     {
         bool sentAll = true;

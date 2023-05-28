@@ -530,7 +530,7 @@ public sealed class Client : IDisposable
 
         await SendPlayerListDecoration();
         await SendPlayerInfoAsync();
-        while (!await Player.UpdateChunksAsync(distance: 7)) { Thread.Sleep(1); }
+        await Player.UpdateChunksAsync(distance: 7);
         await SendInfoAsync();
         await Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(Player, DateTimeOffset.Now));
     }
