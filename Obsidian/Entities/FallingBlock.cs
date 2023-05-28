@@ -1,5 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
-using Obsidian.Registries;
+﻿using Obsidian.Registries;
 using Obsidian.WorldData;
 
 namespace Obsidian.Entities;
