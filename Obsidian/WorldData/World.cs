@@ -548,14 +548,6 @@ public class World : IWorld, IAsyncDisposable
 
         return entity;
     }
-    
-    public void AcknowledgeBlockChange()
-    {
-        Server.BroadcastPacket(new AcknowledgeBlockChangePacket
-        {
-            SequenceID = 0
-        });
-    }
 
     public async Task<IEntity> SpawnEntityAsync(VectorF position, EntityType type)
     {

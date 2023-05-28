@@ -17,7 +17,6 @@ internal static class BlockUpdates
             (TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(below.RegistryId) || below.IsLiquid))
         {
             world.SpawnFallingBlock(location, material);
-            return true;
         }
 
         return false;

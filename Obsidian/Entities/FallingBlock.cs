@@ -15,7 +15,7 @@ public sealed partial class FallingBlock : Entity
 
     private VectorF DeltaPosition { get; set; }
 
-    private readonly VectorF gravity = new VectorF(0F, -0.02F, 0F);
+    private readonly float gravity = 1.92F;
 
     private readonly float windResFactor = 0.98F;
 
@@ -35,22 +35,18 @@ public sealed partial class FallingBlock : Entity
 
     public async override Task TickAsync()
     {
-        if (AliveTime == 0)
-        {
-            //world.AcknowledgeBlockChange();
-            //await world.SetBlockAsync((Vector)SpawnPosition, BlocksRegistry.Air);
-        }
         AliveTime++;
         LastPosition = Position;
-        if (!this.NoGravity)
-            DeltaPosition += gravity; // y - 0.04
-        DeltaPosition *= windResFactor; // * 0.98
+        var deltaY = (Math.Pow(windResFactor, AliveTime) - 1) * gravity;
+        DeltaPosition = new VectorF(0.0F, (float)deltaY, 0.0F);
         Position += DeltaPosition;
+        if (AliveTime < 5) 
+            return;
 
         // Check below to see if we're about to hit a solid block.
         var upcomingBlockPos = new Vector(
             (int)Math.Floor(Position.X),
-            (int)Math.Floor(Position.Y - 1),
+            (int)Math.Floor(Position.Y - 0.1),
             (int)Math.Floor(Position.Z));
 
         if (!checkedBlocks.Contains(upcomingBlockPos))
