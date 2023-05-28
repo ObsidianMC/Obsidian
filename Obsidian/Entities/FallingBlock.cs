@@ -15,7 +15,7 @@ public sealed partial class FallingBlock : Entity
 
     private VectorF DeltaPosition { get; set; }
 
-    private readonly float gravity = 1.92F;
+    private readonly float gravity = 1.75F;
 
     private readonly float windResFactor = 0.98F;
 
@@ -29,7 +29,7 @@ public sealed partial class FallingBlock : Entity
         LastPosition = position;
         Position = position;
         AliveTime = 0;
-        DeltaPosition = new VectorF(0F, 0F, 0F);
+        DeltaPosition = VectorF.Zero;
         this.world = world;
     }
 
@@ -40,13 +40,11 @@ public sealed partial class FallingBlock : Entity
         var deltaY = (Math.Pow(windResFactor, AliveTime) - 1) * gravity;
         DeltaPosition = new VectorF(0.0F, (float)deltaY, 0.0F);
         Position += DeltaPosition;
-        if (AliveTime < 5) 
-            return;
 
         // Check below to see if we're about to hit a solid block.
         var upcomingBlockPos = new Vector(
             (int)Math.Floor(Position.X),
-            (int)Math.Floor(Position.Y - 0.1),
+            (int)Math.Floor(Position.Y - 1),
             (int)Math.Floor(Position.Z));
 
         if (!checkedBlocks.Contains(upcomingBlockPos))
@@ -56,7 +54,7 @@ public sealed partial class FallingBlock : Entity
             var upcomingBlock = await world.GetBlockAsync(upcomingBlockPos);
             if (upcomingBlock is IBlock block && !TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(block.RegistryId) && !block.IsLiquid)
             {
-                await ConvertToBlock(upcomingBlockPos + (0, 1, 0));
+                await ConvertToBlock(upcomingBlockPos + Vector.Up);
             }
         }
     }

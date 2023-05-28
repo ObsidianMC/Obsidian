@@ -568,15 +568,15 @@ public partial class Server : IServer
             case DiggingStatus.CancelledDigging:
                 break;
             case DiggingStatus.FinishedDigging:
-            {
-                BroadcastPacket(new SetBlockDestroyStagePacket
                 {
-                    EntityId = player,
-                    Position = digging.Position,
-                    DestroyStage = -1
-                });
+                    BroadcastPacket(new SetBlockDestroyStagePacket
+                    {
+                        EntityId = player,
+                        Position = digging.Position,
+                        DestroyStage = -1
+                    });
 
-                var droppedItem = ItemsRegistry.Get(block.Material);
+                    var droppedItem = ItemsRegistry.Get(block.Material);
 
                     if (droppedItem.Id == 0) { break; }
 
