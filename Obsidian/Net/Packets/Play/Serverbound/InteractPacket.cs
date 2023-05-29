@@ -30,15 +30,15 @@ public partial class InteractPacket : IServerboundPacket
         switch (Type)
         {
             case InteractionType.Interact:
-                await server.Events.InvokeEntityInteractAsync(new EntityInteractEventArgs(player, entity, server, Sneaking));
+                await server.Events.EntityInteract.InvokeAsync(new EntityInteractEventArgs(player, entity, server, Sneaking));
                 break;
 
             case InteractionType.Attack:
-                await server.Events.InvokePlayerAttackEntityAsync(new PlayerAttackEntityEventArgs(player, entity, server, Sneaking));
+                await server.Events.PlayerAttackEntity.InvokeAsync(new PlayerAttackEntityEventArgs(player, entity, server, Sneaking));
                 break;
 
             case InteractionType.InteractAt:
-                await server.Events.InvokeEntityInteractAsync(new EntityInteractEventArgs(player, entity, server, Hand, Target, Sneaking));
+                await server.Events.EntityInteract.InvokeAsync(new EntityInteractEventArgs(player, entity, server, Hand, Target, Sneaking));
                 break;
         }
     }

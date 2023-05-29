@@ -31,7 +31,7 @@ public partial class PlayerActionPacket : IServerboundPacket
         {
             await player.World.SetBlockUntrackedAsync(Position, BlocksRegistry.Air, true);
 
-            var blockBreakEvent = await server.Events.InvokeBlockBreakAsync(new BlockBreakEventArgs(server, player, block, Position));
+            var blockBreakEvent = await server.Events.BlockBreak.InvokeAsync(new BlockBreakEventArgs(server, player, block, Position));
             if (blockBreakEvent.IsCancelled)
                 return;
         }
