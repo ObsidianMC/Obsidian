@@ -25,22 +25,17 @@ public class ErodedBadlandsDecorator : BaseDecorator
         {
             //TODO SET BLOCK COLOR
             var a = (pos.Y + y) % 15;
-            if (a == 15)
-                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.BrownTerracotta);
-            else if (a == 14)
-                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.WhiteTerracotta);
-            else if (a == 13)
-                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.GrayTerracotta);
-            else if (a >= 11)
-                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.YellowTerracotta);
-            else if (a == 8 || a == 9)
-                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.RedTerracotta);
-            else if (a == 6)
-                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.OrangeTerracotta);
-            else if (a == 3)
-                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.YellowTerracotta);
-            else
-                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Terracotta);
+            chunk.SetBlock(pos + (0, y, 0), a switch
+            {
+                15 => BlocksRegistry.BrownTerracotta,
+                14 => BlocksRegistry.WhiteTerracotta,
+                13 => BlocksRegistry.GrayTerracotta,
+                >= 11 => BlocksRegistry.YellowTerracotta,
+                8 or 9 => BlocksRegistry.RedTerracotta,
+                6 => BlocksRegistry.OrangeTerracotta,
+                3 => BlocksRegistry.YellowTerracotta,
+                _ => BlocksRegistry.Terracotta
+            });
         }
 
         var bushNoise = noise.Decoration.GetValue(worldX * 0.1, 0, worldZ * 0.1);

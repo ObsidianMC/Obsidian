@@ -40,18 +40,13 @@ public partial class MinecraftStream
     public async Task<bool> ReadBooleanAsync()
     {
         var value = (int)await this.ReadByteAsync();
-        if (value == 0x00)
+        return value switch
         {
-            return false;
-        }
-        else if (value == 0x01)
-        {
-            return true;
-        }
-        else
-        {
-            throw new ArgumentOutOfRangeException("Byte returned by stream is out of range (0x00 or 0x01)", nameof(BaseStream));
-        }
+            0x00 => false,
+            0x01 => true,
+            _ => throw new ArgumentOutOfRangeException("Byte returned by stream is out of range (0x00 or 0x01)",
+                nameof(BaseStream))
+        };
     }
 
     [ReadMethod]

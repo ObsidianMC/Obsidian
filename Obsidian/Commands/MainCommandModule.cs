@@ -97,13 +97,12 @@ public class MainCommandModule
     {
         var sender = ctx.Sender;
 
-        ChatColor color;
-        if (ctx.Server.Tps > 15)
-            color = ChatColor.BrightGreen;
-        else if (ctx.Server.Tps > 10)
-            color = ChatColor.Yellow;
-        else
-            color = ChatColor.Red;
+        ChatColor color = ctx.Server.Tps switch
+        {
+            > 15 => ChatColor.BrightGreen,
+            > 10 => ChatColor.Yellow,
+            _ => ChatColor.Red
+        };
 
         await sender.SendMessageAsync($"{ChatColor.Gold}Current server TPS: {color}{ctx.Server.Tps}");
     }

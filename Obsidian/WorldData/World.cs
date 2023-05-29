@@ -524,10 +524,10 @@ public class World : IWorld, IAsyncDisposable
         // offset position so it spawns in the right spot
         position.X += 0.5f;
         position.Z += 0.5f;
-        FallingBlock entity = new(this)
+        
+        FallingBlock entity = new(this, position)
         {
             Type = EntityType.FallingBlock,
-            Position = position,
             EntityId = GetTotalLoadedEntities() + 1,
             Server = Server,
             Block = BlocksRegistry.Get(mat)
