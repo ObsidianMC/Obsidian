@@ -25,34 +25,16 @@ public class ErodedBadlandsDecorator : BaseDecorator
         {
             //TODO SET BLOCK COLOR
             var a = (pos.Y + y) % 15;
-            switch (a)
+            chunk.SetBlock(pos + (0, y, 0), a switch
             {
-                case 15:
-                    chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.BrownTerracotta);
-                    break;
-                case 14:
-                    chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.WhiteTerracotta);
-                    break;
-                case 13:
-                    chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.GrayTerracotta);
-                    break;
-                case >= 11:
-                    chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.YellowTerracotta);
-                    break;
-                case 8:
-                case 9:
-                    chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.RedTerracotta);
-                    break;
-                case 6:
-                    chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.OrangeTerracotta);
-                    break;
-                case 3:
-                    chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.YellowTerracotta);
-                    break;
-                default:
-                    chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Terracotta);
-                    break;
-            }
+                15 => BlocksRegistry.BrownTerracotta,
+                13 => BlocksRegistry.GrayTerracotta,
+                >= 11 => BlocksRegistry.YellowTerracotta,
+                8 or 9 => BlocksRegistry.RedTerracotta,
+                6 => BlocksRegistry.OrangeTerracotta,
+                3 => BlocksRegistry.YellowTerracotta,
+                _ => BlocksRegistry.Terracotta
+            });
         }
 
         var bushNoise = noise.Decoration.GetValue(worldX * 0.1, 0, worldZ * 0.1);
