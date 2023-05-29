@@ -28,6 +28,7 @@ public class ErodedBadlandsDecorator : BaseDecorator
             chunk.SetBlock(pos + (0, y, 0), a switch
             {
                 15 => BlocksRegistry.BrownTerracotta,
+                14 => BlocksRegistry.WhiteTerracotta,
                 13 => BlocksRegistry.GrayTerracotta,
                 >= 11 => BlocksRegistry.YellowTerracotta,
                 8 or 9 => BlocksRegistry.RedTerracotta,
