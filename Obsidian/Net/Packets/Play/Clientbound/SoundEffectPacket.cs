@@ -7,7 +7,7 @@ public partial class SoundEffectPacket : IClientboundPacket
     public required SoundId SoundId { get; init; }
 
     [Field(1), Condition("SoundId == SoundId.None")]
-    public string SoundName { get; init; }
+    public string? SoundName { get; init; }
 
     [Field(2), Condition("SoundId == SoundId.None")]
     public bool HasFixedRange { get; init; }

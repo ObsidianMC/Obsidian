@@ -33,7 +33,7 @@ public partial class UseItemOnPacket : IServerboundPacket
         var currentItem = player.GetHeldItem() ?? player.GetOffHandItem();
         var position = this.Position;
 
-        var b = await player.World.GetBlockAsync(position);
+        var b = await player.world.GetBlockAsync(position);
 
         if (b is not IBlock interactedBlock)
             return;
@@ -109,6 +109,6 @@ public partial class UseItemOnPacket : IServerboundPacket
                 break;
         }
 
-        await player.World.SetBlockAsync(position, block, doBlockUpdate: true);
+        await player.world.SetBlockAsync(position, block, doBlockUpdate: true);
     }
 }

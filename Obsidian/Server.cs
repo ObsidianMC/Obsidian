@@ -517,15 +517,16 @@ public partial class Server : IServer
 
                     var item = new ItemEntity
                     {
-                        EntityId = player + player.World.GetTotalLoadedEntities() + 1,
+                        EntityId = player + player.world.GetTotalLoadedEntities() + 1,
                         Count = 1,
                         Id = droppedItem.AsItem().Id,
                         Glowing = true,
-                        World = player.World,
+                        World = player.world,
+                        Server = player.Server,
                         Position = loc
                     };
 
-                    TryAddEntity(player.World, item);
+                    TryAddEntity(player.world, item);
 
                     var lookDir = player.GetLookDirection();
 
@@ -572,7 +573,7 @@ public partial class Server : IServer
 
                     if (player.Gamemode == Gamemode.Creative)
                     {
-                        await player.World.SetBlockAsync(digging.Position, BlocksRegistry.Get(Material.Air));
+                        await player.world.SetBlockAsync(digging.Position, BlocksRegistry.Get(Material.Air));
                     }
                 }
                 break;
@@ -600,16 +601,16 @@ public partial class Server : IServer
 
                     var item = new ItemEntity
                     {
-                        EntityId = player + player.World.GetTotalLoadedEntities() + 1,
+                        EntityId = player + player.world.GetTotalLoadedEntities() + 1,
                         Count = 1,
                         Id = droppedItem.Id,
                         Glowing = true,
-                        World = player.World,
+                        World = player.world,
                         Position = digging.Position,
                         Server = this
                     };
 
-                    TryAddEntity(player.World, item);
+                    TryAddEntity(player.world, item);
 
                     BroadcastPacket(new SpawnEntityPacket
                     {

@@ -195,6 +195,6 @@ public interface IPlayer : ILiving
 
     public Task UpdateDisplayNameAsync(string newDisplayName);
 
-    public ItemStack GetHeldItem();
-    public ItemStack GetOffHandItem();
+    public ItemStack? GetHeldItem();
+    public ItemStack? GetOffHandItem();
 }

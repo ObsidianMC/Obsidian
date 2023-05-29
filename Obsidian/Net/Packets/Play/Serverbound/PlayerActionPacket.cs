@@ -23,13 +23,13 @@ public partial class PlayerActionPacket : IServerboundPacket
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
-        IBlock? b = await player.World.GetBlockAsync(Position);
+        IBlock? b = await player.world.GetBlockAsync(Position);
         if (b is not IBlock block)
             return;
 
         if (Status == DiggingStatus.FinishedDigging || (Status == DiggingStatus.StartedDigging && player.Gamemode == Gamemode.Creative))
         {
-            await player.World.SetBlockUntrackedAsync(Position, BlocksRegistry.Air, true);
+            await player.world.SetBlockUntrackedAsync(Position, BlocksRegistry.Air, true);
 
             var blockBreakEvent = await server.Events.InvokeBlockBreakAsync(new BlockBreakEventArgs(server, player, block, Position));
             if (blockBreakEvent.IsCancelled)
@@ -44,7 +44,7 @@ public partial class PlayerActionPacket : IServerboundPacket
 
         if (Status == DiggingStatus.FinishedDigging)
         {
-            await player.World.BlockUpdateNeighborsAsync(new BlockUpdate(player.World, Position));
+            await player.world.BlockUpdateNeighborsAsync(new BlockUpdate(player.world, Position));
         }
     }
 }

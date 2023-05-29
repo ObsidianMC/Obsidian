@@ -498,7 +498,7 @@ public sealed class Client : IDisposable
             Logger.LogError("Failed to add player {Username} to online players. Undefined behavior ahead!", Player.Username);
         }
 
-        if (!CodecRegistry.TryGetDimension(Player.World.DimensionName, out var codec) || !CodecRegistry.TryGetDimension("minecraft:overworld", out codec))
+        if (!CodecRegistry.TryGetDimension(Player.world.DimensionName, out var codec) || !CodecRegistry.TryGetDimension("minecraft:overworld", out codec))
             throw new UnreachableException("Failed to retrieve proper dimension for player.");
 
         await QueuePacketAsync(new LoginPacket
@@ -542,7 +542,7 @@ public sealed class Client : IDisposable
             throw new UnreachableException("Player is null, which means the client has not yet logged in.");
 
         Player.TeleportId = Globals.Random.Next(0, 999);
-        await QueuePacketAsync(new SetDefaultSpawnPositionPacket(Player.World.LevelData.SpawnPosition));
+        await QueuePacketAsync(new SetDefaultSpawnPositionPacket(Player.world.LevelData.SpawnPosition));
         await QueuePacketAsync(new SynchronizePlayerPositionPacket
         {
             Position = Player.Position,
@@ -568,8 +568,8 @@ public sealed class Client : IDisposable
     }
 
     internal Task DisconnectAsync(ChatMessage reason) => Task.Run(() => SendPacket(new DisconnectPacket(reason, State)));
-    internal Task SendTimeUpdateAsync() => QueuePacketAsync(new UpdateTimePacket(Player!.World.LevelData.Time, Player.World.LevelData.DayTime));
-    internal Task SendWeatherUpdateAsync() => QueuePacketAsync(new GameEventPacket(Player!.World.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
+    internal Task SendTimeUpdateAsync() => QueuePacketAsync(new UpdateTimePacket(Player!.world.LevelData.Time, Player.world.LevelData.DayTime));
+    internal Task SendWeatherUpdateAsync() => QueuePacketAsync(new GameEventPacket(Player!.world.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
 
     internal void HandleKeepAlive(KeepAlivePacket keepAlive)
     {

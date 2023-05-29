@@ -12,6 +12,7 @@ using Obsidian.Net.WindowProperties;
 using Obsidian.Registries;
 using Obsidian.Serialization.Attributes;
 using System.Buffers.Binary;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Obsidian.Net;
@@ -180,6 +181,20 @@ public partial class MinecraftStream
     [WriteMethod]
     public void WriteString(string value, int maxLength = short.MaxValue)
     {
+        System.Diagnostics.Debug.Assert(value.Length <= maxLength);
+
+        using var bytes = new RentedArray<byte>(Encoding.UTF8.GetByteCount(value));
+        Encoding.UTF8.GetBytes(value, bytes.Span);
+        WriteVarInt(bytes.Length);
+        Write(bytes);
+    }
+
+    [WriteMethod]
+    public void WriteNullableString(string? value, int maxLength = short.MaxValue)
+    {
+        if (value is null)
+            return;
+
         System.Diagnostics.Debug.Assert(value.Length <= maxLength);
 
         using var bytes = new RentedArray<byte>(Encoding.UTF8.GetByteCount(value));

@@ -1,11 +1,9 @@
-﻿using Obsidian.WorldData;
-
-namespace Obsidian.Entities;
+﻿namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:falling_block")]
 public sealed partial class FallingBlock : Entity
 {
-    public required IBlock Block { get; init; } 
+    public required IBlock Block { get; init; }
 
     public VectorF SpawnPosition { get; private set; }
 
@@ -19,15 +17,12 @@ public sealed partial class FallingBlock : Entity
 
     private HashSet<Vector> checkedBlocks = new();
 
-    private World world;
-
-    public FallingBlock(World world) : base()
+    public FallingBlock() : base()
     {
         SpawnPosition = Position;
         LastPosition = Position;
         AliveTime = 0;
-        DeltaPosition = new VectorF(0F, 0F, 0F);
-        this.world = world;
+        DeltaPosition = VectorF.Zero;
     }
 
     public async override Task TickAsync()
@@ -52,7 +47,7 @@ public sealed partial class FallingBlock : Entity
             var upcomingBlock = await world.GetBlockAsync(upcomingBlockPos);
 
             if (upcomingBlock is IBlock block &&
-                (!block.IsLiquid || !block.IsAir)  &&
+                (!block.IsLiquid || !block.IsAir) &&
                 block.Material != Material.Grass &&
                 block.Material != Material.DeadBush &&
                 block.Material != Material.Snow
