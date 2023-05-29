@@ -1,5 +1,6 @@
 ﻿using Obsidian.API.Events;
 using Obsidian.Entities;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
 using Obsidian.Serialization.Attributes;
 
@@ -109,6 +110,25 @@ public partial class UseItemOnPacket : IServerboundPacket
                 break;
         }
 
+        if (TagsRegistry.Blocks.GravityAffected.Entries.Contains(block.RegistryId))
+        {
+            if (await player.World.GetBlockAsync(position + Vector.Down) is IBlock below &&
+                (TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(below.RegistryId) || below.IsLiquid))
+            {
+                await player.world.SetBlockAsync(position, BlocksRegistry.Air, true);
+                player.client.SendPacket(new AcknowledgeBlockChangePacket
+                {
+                    SequenceID = Sequence
+                });
+                player.world.SpawnFallingBlock(position, block.Material);
+                return;
+            }
+        }
+
         await player.world.SetBlockAsync(position, block, doBlockUpdate: true);
+        player.client.SendPacket(new AcknowledgeBlockChangePacket
+        {
+            SequenceID = Sequence
+        });
     }
 }

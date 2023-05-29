@@ -18,12 +18,12 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
 
     public NbtWriter(Stream outstream, NbtCompression compressionMode = NbtCompression.None)
     {
-        if (compressionMode == NbtCompression.GZip)
-            this.BaseStream = new GZipStream(outstream, CompressionMode.Compress);
-        else if (compressionMode == NbtCompression.ZLib)
-            this.BaseStream = new ZLibStream(outstream, CompressionMode.Compress);
-        else
-            this.BaseStream = outstream;
+        this.BaseStream = compressionMode switch
+        {
+            NbtCompression.GZip => new GZipStream(outstream, CompressionMode.Compress),
+            NbtCompression.ZLib => new ZLibStream(outstream, CompressionMode.Compress),
+            _ => outstream
+        };
     }
 
     public NbtWriter(Stream outstream, string name)
@@ -38,12 +38,12 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
 
     public NbtWriter(Stream outstream, NbtCompression compressionMode, string name)
     {
-        if (compressionMode == NbtCompression.GZip)
-            this.BaseStream = new GZipStream(outstream, CompressionMode.Compress);
-        else if (compressionMode == NbtCompression.ZLib)
-            this.BaseStream = new ZLibStream(outstream, CompressionMode.Compress);
-        else
-            this.BaseStream = outstream;
+        this.BaseStream = compressionMode switch
+        {
+            NbtCompression.GZip => new GZipStream(outstream, CompressionMode.Compress),
+            NbtCompression.ZLib => new ZLibStream(outstream, CompressionMode.Compress),
+            _ => outstream
+        };
 
         this.Write(NbtTagType.Compound);
         this.WriteStringInternal(name);

@@ -1,4 +1,7 @@
-﻿namespace Obsidian.Entities;
+﻿using Obsidian.Registries;
+using Obsidian.WorldData;
+
+namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:falling_block")]
 public sealed partial class FallingBlock : Entity
@@ -11,16 +14,17 @@ public sealed partial class FallingBlock : Entity
 
     private VectorF DeltaPosition { get; set; }
 
-    private readonly VectorF gravity = new VectorF(0F, -0.02F, 0F);
+    private readonly float gravity = 1.75F;
 
     private readonly float windResFactor = 0.98F;
 
     private HashSet<Vector> checkedBlocks = new();
 
-    public FallingBlock() : base()
+    public FallingBlock(VectorF position) : base()
     {
-        SpawnPosition = Position;
-        LastPosition = Position;
+        SpawnPosition = position;
+        LastPosition = position;
+        Position = position;
         AliveTime = 0;
         DeltaPosition = VectorF.Zero;
     }
@@ -29,9 +33,8 @@ public sealed partial class FallingBlock : Entity
     {
         AliveTime++;
         LastPosition = Position;
-        if (!this.NoGravity)
-            DeltaPosition += gravity; // y - 0.04
-        DeltaPosition *= windResFactor; // * 0.98
+        var deltaY = (Math.Pow(windResFactor, AliveTime) - 1) * gravity;
+        DeltaPosition = new VectorF(0.0F, (float)deltaY, 0.0F);
         Position += DeltaPosition;
 
         // Check below to see if we're about to hit a solid block.
@@ -45,23 +48,15 @@ public sealed partial class FallingBlock : Entity
             checkedBlocks.Add(upcomingBlockPos);
 
             var upcomingBlock = await world.GetBlockAsync(upcomingBlockPos);
-
-            if (upcomingBlock is IBlock block &&
-                (!block.IsLiquid || !block.IsAir) &&
-                block.Material != Material.Grass &&
-                block.Material != Material.DeadBush &&
-                block.Material != Material.Snow
-                )
+            if (upcomingBlock is IBlock block && !TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(block.RegistryId) && !block.IsLiquid)
             {
-                await ConvertToBlock(upcomingBlockPos + (0, 1, 0));
+                await ConvertToBlock(upcomingBlockPos + Vector.Up);
             }
         }
     }
 
     private async Task ConvertToBlock(Vector loc)
     {
-        await world.SetBlockUntrackedAsync(loc, this.Block);
-
         await world.SetBlockAsync(loc, this.Block);
 
         await world.DestroyEntityAsync(this);

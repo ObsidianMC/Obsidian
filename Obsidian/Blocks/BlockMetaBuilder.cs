@@ -5,7 +5,7 @@ namespace Obsidian.Blocks;
 
 public class BlockMetaBuilder
 {
-    public ChatMessage Name { get; internal set; }
+    public ChatMessage? Name { get; internal set; }
 
     public NbtCompound BlockEntityTag { get; }
     public NbtCompound BlockStateTag { get; }

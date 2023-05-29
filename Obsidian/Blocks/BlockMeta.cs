@@ -4,7 +4,7 @@ namespace Obsidian.Blocks;
 
 public struct BlockMeta
 {
-    public ChatMessage Name { get; internal set; }
+    public ChatMessage? Name { get; internal set; }
     public IReadOnlyList<ChatMessage> Lore { get; internal set; }
 
     public IReadOnlyList<string> CanPlaceOn { get; internal set; }

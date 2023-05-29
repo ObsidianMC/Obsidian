@@ -15,21 +15,24 @@ public class CommandHandler
     internal CommandParser _commandParser;
     internal List<BaseArgumentParser> _argumentParsers;
     internal string _prefix;
-    internal PluginManager pluginManager;
+    internal PluginManager? pluginManager;
 
     public CommandHandler()
     {
-        this._commandParser = new CommandParser(DefaultPrefix);
-        this._commands = new List<Command>();
-        this._argumentParsers = new List<BaseArgumentParser>();
-        this._prefix = DefaultPrefix;
+        _commandParser = new CommandParser(DefaultPrefix);
+        _commands = new List<Command>();
+        _argumentParsers = new List<BaseArgumentParser>();
+        _prefix = DefaultPrefix;
 
         // Find all predefined argument parsers
         var parsers = typeof(StringArgumentParser).Assembly.GetTypes().Where(type => typeof(BaseArgumentParser).IsAssignableFrom(type) && !type.IsAbstract);
 
         foreach (var parser in parsers)
         {
-            _argumentParsers.Add((BaseArgumentParser)Activator.CreateInstance(parser));
+            if (Activator.CreateInstance(parser) is BaseArgumentParser parserInstance)
+            {
+                _argumentParsers.Add(parserInstance);
+            }
         }
     }
 
@@ -40,13 +43,12 @@ public class CommandHandler
 
     public (int id, string mctype) FindMinecraftType(Type type)
     {
-        var parserType = _argumentParsers.FirstOrDefault(x => x.GetType().BaseType.GetGenericArguments()[0] == type)?.GetType();
+        var parserType = _argumentParsers.FirstOrDefault(x => x.GetType().BaseType?.GetGenericArguments()[0] == type)?.GetType();
 
-        if (parserType is null)
+        if (parserType is null || Activator.CreateInstance(parserType) is not BaseArgumentParser parserInstance)
             throw new Exception("No such parser registered!");
 
-        var parser = (BaseArgumentParser)Activator.CreateInstance(parserType);
-        return (parser.Id, parser.ParserIdentifier);
+        return (parserInstance.Id, parserInstance.ParserIdentifier);
     }
 
     public Command[] GetAllCommands()
@@ -65,6 +67,9 @@ public class CommandHandler
 
         // Get command name from first constructor argument for command attribute.
         var cmd = m.GetCustomAttribute<CommandAttribute>();
+        if (cmd is null)
+            return; // TODO Log warning (?)
+
         var name = cmd.CommandName;
         // Get aliases
         var aliases = cmd.Aliases;
@@ -76,26 +81,29 @@ public class CommandHandler
         var command = new Command(name, aliases, info?.Description ?? string.Empty, info?.Usage ?? string.Empty, null, checks.ToArray(), this, plugin, null, t, issuers);
         command.Overloads.Add(m);
 
-        this._commands.Add(command);
+        _commands.Add(command);
     }
 
     public void UnregisterPluginCommands(PluginContainer plugin)
     {
-        this._commands.RemoveAll(x => x.Plugin == plugin);
+        _commands.RemoveAll(x => x.Plugin == plugin);
     }
 
     public void RegisterCommandClass<T>(PluginContainer plugin, T instance) => RegisterCommandClass(plugin, typeof(T), instance);
 
-    public void RegisterCommandClass(PluginContainer plugin, Type type, object instance = null)
+#pragma warning disable IDE0060 // TODO Remove unused parameter
+    public void RegisterCommandClass(PluginContainer plugin, Type type, object? instance = null)
     {
         RegisterSubgroups(type, plugin);
         RegisterSubcommands(type, plugin);
     }
+#pragma warning restore IDE0060 // Remove unused parameter
 
-    public object CreateCommandRootInstance(Type type, PluginContainer plugin)
+    public object? CreateCommandRootInstance(Type type, PluginContainer plugin)
     {
-        // get constructor with most params.
-        var instance = Activator.CreateInstance(type);
+        object? instance = Activator.CreateInstance(type);
+        if (instance is null)
+            return null;
 
         var injectables = type.GetProperties().Where(x => x.GetCustomAttribute<InjectAttribute>() != null);
         foreach (var injectable in injectables)
@@ -106,21 +114,21 @@ public class CommandHandler
             }
             else
             {
-                pluginManager.serviceProvider.InjectServices(instance, plugin, pluginManager.logger);
+                pluginManager?.serviceProvider.InjectServices(instance, plugin, pluginManager.logger);
             }
         }
 
         return instance;
     }
 
-    private void RegisterSubgroups(Type type, PluginContainer plugin, Command parent = null)
+    private void RegisterSubgroups(Type type, PluginContainer plugin, Command? parent = null)
     {
         // find all command groups under this command
         var subtypes = type.GetNestedTypes().Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandGroupAttribute)));
 
         foreach (var st in subtypes)
         {
-            var group = st.GetCustomAttribute<CommandGroupAttribute>();
+            var group = st.GetCustomAttribute<CommandGroupAttribute>()!;
             // Get command name from first constructor argument for command attribute.
             var name = group.GroupName;
             // Get aliases
@@ -136,7 +144,7 @@ public class CommandHandler
             RegisterSubgroups(st, plugin, cmd);
             RegisterSubcommands(st, plugin, cmd);
 
-            this._commands.Add(cmd);
+            _commands.Add(cmd);
         }
     }
 
@@ -156,6 +164,9 @@ public class CommandHandler
         {
             // Get command name from first constructor argument for command attribute.
             var cmd = m.GetCustomAttribute<CommandAttribute>();
+            if (cmd is null)
+                continue; // TODO Log warning (?)
+
             var name = cmd.CommandName;
             // Get aliases
             var aliases = cmd.Aliases;
@@ -170,7 +181,7 @@ public class CommandHandler
             // Add overloads.
             command.Overloads.AddRange(methods.Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandOverloadAttribute)) && x.Name == m.Name));
 
-            this._commands.Add(command);
+            _commands.Add(command);
         }
     }
 

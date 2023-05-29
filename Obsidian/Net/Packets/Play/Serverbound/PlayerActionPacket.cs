@@ -1,5 +1,6 @@
 ﻿using Obsidian.API.Events;
 using Obsidian.Entities;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
 using Obsidian.Serialization.Attributes;
 
@@ -29,10 +30,14 @@ public partial class PlayerActionPacket : IServerboundPacket
 
         if (Status == DiggingStatus.FinishedDigging || (Status == DiggingStatus.StartedDigging && player.Gamemode == Gamemode.Creative))
         {
-            await player.world.SetBlockUntrackedAsync(Position, BlocksRegistry.Air, true);
+            await player.world.SetBlockAsync(Position, BlocksRegistry.Air, true);
+            player.client.SendPacket(new AcknowledgeBlockChangePacket
+            {
+                SequenceID = Sequence
+            });
 
             var blockBreakEvent = await server.Events.InvokeBlockBreakAsync(new BlockBreakEventArgs(server, player, block, Position));
-            if (blockBreakEvent.IsCancelled)
+            if (blockBreakEvent.Handled)
                 return;
         }
 
@@ -41,11 +46,6 @@ public partial class PlayerActionPacket : IServerboundPacket
             Player = player.Uuid,
             Packet = this
         }, block);
-
-        if (Status == DiggingStatus.FinishedDigging)
-        {
-            await player.world.BlockUpdateNeighborsAsync(new BlockUpdate(player.world, Position));
-        }
     }
 }
 

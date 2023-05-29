@@ -306,10 +306,12 @@ public partial class ClickContainerPacket : IServerboundPacket
     {
         if (ClickedSlot == Outsideinventory)
         {
-            if (Button == 0 || Button == 4 || Button == 8)
-                player.isDragging = true;
-            else if (Button == 2 || Button == 6 || Button == 10)
-                player.isDragging = false;
+            player.isDragging = Button switch
+            {
+                0 or 4 or 8 => true,
+                2 or 6 or 10 => false,
+                _ => player.isDragging
+            };
         }
         else if (player.isDragging)
         {

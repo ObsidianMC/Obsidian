@@ -565,35 +565,17 @@ public partial class Server : IServer
                     break;
                 }
             case DiggingStatus.StartedDigging:
-                {
-                    BroadcastPacket(new AcknowledgeBlockChangePacket
-                    {
-                        SequenceID = 0
-                    });
-
-                    if (player.Gamemode == Gamemode.Creative)
-                    {
-                        await player.world.SetBlockAsync(digging.Position, BlocksRegistry.Get(Material.Air));
-                    }
-                }
                 break;
             case DiggingStatus.CancelledDigging:
                 break;
             case DiggingStatus.FinishedDigging:
                 {
-                    BroadcastPacket(new AcknowledgeBlockChangePacket//TODO properly implement this
-                    {
-                        SequenceID = 0
-                    });
-
                     BroadcastPacket(new SetBlockDestroyStagePacket
                     {
                         EntityId = player,
                         Position = digging.Position,
                         DestroyStage = -1
                     });
-
-                    BroadcastPacket(new BlockUpdatePacket(digging.Position, 0));
 
                     var droppedItem = ItemsRegistry.Get(block.Material);
 
