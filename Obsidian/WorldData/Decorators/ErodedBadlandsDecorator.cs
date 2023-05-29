@@ -25,22 +25,34 @@ public class ErodedBadlandsDecorator : BaseDecorator
         {
             //TODO SET BLOCK COLOR
             var a = (pos.Y + y) % 15;
-            if (a == 15)
-                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.BrownTerracotta);
-            else if (a == 14)
-                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.WhiteTerracotta);
-            else if (a == 13)
-                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.GrayTerracotta);
-            else if (a >= 11)
-                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.YellowTerracotta);
-            else if (a == 8 || a == 9)
-                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.RedTerracotta);
-            else if (a == 6)
-                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.OrangeTerracotta);
-            else if (a == 3)
-                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.YellowTerracotta);
-            else
-                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Terracotta);
+            switch (a)
+            {
+                case 15:
+                    chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.BrownTerracotta);
+                    break;
+                case 14:
+                    chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.WhiteTerracotta);
+                    break;
+                case 13:
+                    chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.GrayTerracotta);
+                    break;
+                case >= 11:
+                    chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.YellowTerracotta);
+                    break;
+                case 8:
+                case 9:
+                    chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.RedTerracotta);
+                    break;
+                case 6:
+                    chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.OrangeTerracotta);
+                    break;
+                case 3:
+                    chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.YellowTerracotta);
+                    break;
+                default:
+                    chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Terracotta);
+                    break;
+            }
         }
 
         var bushNoise = noise.Decoration.GetValue(worldX * 0.1, 0, worldZ * 0.1);
