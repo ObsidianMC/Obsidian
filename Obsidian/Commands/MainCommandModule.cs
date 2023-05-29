@@ -160,9 +160,10 @@ public class MainCommandModule
     [CommandInfo("Save World", "/save")]
     public async Task SaveAsync(CommandContext ctx)
     {
-        var player = (Player)ctx.Player;
-        var world = player.World;
-        await world.FlushRegionsAsync();
+        if (ctx.Player?.WorldLocation is World world)
+        {
+            await world.FlushRegionsAsync();
+        }
     }
 
     [Command("forcechunkreload")]
@@ -170,9 +171,10 @@ public class MainCommandModule
     [IssuerScope(CommandIssuers.Client)]
     public async Task ForceChunkReloadAsync(CommandContext ctx)
     {
-        var player = (Player)ctx.Player;
-
-        await player.UpdateChunksAsync(true);
+        if (ctx.Player is Player player)
+        {
+            await player.UpdateChunksAsync(true);
+        }
     }
 
     [Command("echo")]
@@ -192,7 +194,13 @@ public class MainCommandModule
     [Command("declarecmds", "declarecommands")]
     [CommandInfo("Debug command for testing the Declare Commands packet", "/declarecmds")]
     [IssuerScope(CommandIssuers.Client)]
-    public Task DeclareCommandsTestAsync(CommandContext ctx) => ((Player)ctx.Player).client.QueuePacketAsync(CommandsRegistry.Packet);
+    public async Task DeclareCommandsTestAsync(CommandContext ctx)
+    {
+        if (ctx.Player is Player player)
+        {
+            await player.client.QueuePacketAsync(CommandsRegistry.Packet);
+        }
+    }
 
     [Command("gamemode")]
     [CommandInfo("Change your gamemode.", "/gamemode <survival/creative/adventure/spectator>")]
@@ -200,7 +208,8 @@ public class MainCommandModule
     [RequirePermission(op: true, permissions: "obsidian.gamemode")]
     public async Task GamemodeAsync(CommandContext ctx, string gamemode)
     {
-        var player = ctx.Player;
+        if (ctx.Player is not Player player)
+            return;
 
         if (!Enum.TryParse<Gamemode>(gamemode, true, out var result))
         {
@@ -211,10 +220,7 @@ public class MainCommandModule
         if (player.Gamemode != result)
         {
             await player.SetGamemodeAsync(result);
-
-
             await player.SendMessageAsync($"{ChatColor.Reset}Gamemode set to {ChatColor.Red}{gamemode}{ChatColor.Reset}.");
-
             return;
         }
 
@@ -226,7 +232,8 @@ public class MainCommandModule
     [IssuerScope(CommandIssuers.Client)]
     public async Task TeleportAsync(CommandContext ctx, [Remaining] VectorF location)
     {
-        var player = ctx.Player;
+        if (ctx.Player is not IPlayer player)
+            return;
 
         await player.SendMessageAsync($"Teleporting to {location.X} {location.Y} {location.Z}");
         await player.TeleportAsync(location);
@@ -264,10 +271,10 @@ public class MainCommandModule
     [Command("oprequest", "opreq")]
     [CommandInfo("Request operator rights.", "/oprequest [<code>]")]
     [IssuerScope(CommandIssuers.Client)]
-    public async Task RequestOpAsync(CommandContext ctx, string code = null)
+    public async Task RequestOpAsync(CommandContext ctx, string? code = null)
     {
-        var server = (Server)ctx.Server;
-        var player = ctx.Player;
+        if (ctx.Server is not Server server || ctx.Player is not IPlayer player)
+            return;
 
         if (!server.Config.AllowOperatorRequests)
         {
@@ -278,14 +285,12 @@ public class MainCommandModule
         if (server.Operators.ProcessRequest(player, code))
         {
             await player.SendMessageAsync("Your request has been accepted");
-
             return;
         }
 
         if (server.Operators.CreateRequest(player))
         {
             await player.SendMessageAsync("A request has been to the server console");
-
             return;
         }
 
@@ -297,9 +302,10 @@ public class MainCommandModule
     [IssuerScope(CommandIssuers.Client)]
     public async Task SendTitleAsync(CommandContext ctx)
     {
-        var player = ctx.Player;
-
-        await player.SendTitleAsync("Test Title", "Test subtitle", 20, 40, 20);
+        if (ctx.Player is IPlayer player)
+        {
+            await player.SendTitleAsync("Test Title", "Test subtitle", 20, 40, 20);
+        }
     }
 
     [Command("spawnentity")]
@@ -307,11 +313,12 @@ public class MainCommandModule
     [IssuerScope(CommandIssuers.Client)]
     public async Task SpawnEntityAsync(CommandContext context, string entityType)
     {
-        var player = context.Player;
+        if (context.Player is not IPlayer player)
+            return;
+
         if (!Enum.TryParse<EntityType>(entityType, true, out var type))
         {
             await player.SendMessageAsync("&4Invalid entity type");
-
             return;
         }
 
@@ -339,31 +346,35 @@ public class MainCommandModule
     [CommandOverload]
     public async Task TimeAsync(CommandContext ctx, int time)
     {
-        var player = ctx.Player as Player;
-        player.World.LevelData.DayTime = time;
-        await ctx.Player.SendMessageAsync($"Time set to {time}");
+        if (ctx.Player is Player player)
+        {
+            player.World.LevelData.DayTime = time;
+            await ctx.Player.SendMessageAsync($"Time set to {time}");
+        }
     }
 
     [Command("toggleweather", "weather")]
     [RequirePermission(permissions: "obsidian.weather")]
     public async Task WeatherAsync(CommandContext ctx)
     {
-        var player = (Player)ctx.Player;
-        player.World.LevelData.RainTime = 0;
-        await ctx.Sender.SendMessageAsync("Toggled weather for this world.");
+        if (ctx.Player is Player player)
+        {
+            player.World.LevelData.RainTime = 0;
+            await ctx.Sender.SendMessageAsync("Toggled weather for this world.");
+        }
     }
 
     [Command("world")]
     public async Task WorldAsync(CommandContext ctx, string worldname)
     {
-        var server = (Server)ctx.Server;
-        var player = ctx.Player;
-        if (server.WorldManager.TryGetWorld(worldname, out World world))
+        if (ctx.Server is not Server server || ctx.Player is not IPlayer player)
+            return;
+
+        if (server.WorldManager.TryGetWorld(worldname, out World? world))
         {
             if (player.WorldLocation.Name.EqualsIgnoreCase(worldname))
             {
                 await player.SendMessageAsync("You can't switch to a world you're already in!");
-
                 return;
             }
 
@@ -380,9 +391,11 @@ public class MainCommandModule
     [Command("listworlds")]
     public async Task ListAsync(CommandContext ctx)
     {
-        var server = (Server)ctx.Server;
+        if (ctx.Server is not Server server)
+            return;
+
         string available = string.Join("§r, §a", server.WorldManager.GetAvailableWorlds().Select(x => x.Name));
-        await ctx.Player.SendMessageAsync($"Available worlds: §a{available}§r");
+        await ctx.Sender.SendMessageAsync($"Available worlds: §a{available}§r");
     }
 
 #if DEBUG
