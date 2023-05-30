@@ -159,7 +159,7 @@ public class MainCommandModule
     [CommandInfo("Save World", "/save")]
     public async Task SaveAsync(CommandContext ctx)
     {
-        if (ctx.Player?.WorldLocation is World world)
+        if (ctx.Player?.World is World world)
         {
             await world.FlushRegionsAsync();
         }
@@ -321,7 +321,7 @@ public class MainCommandModule
             return;
         }
 
-        await player.WorldLocation.SpawnEntityAsync(player.Position, type);
+        await player.World.SpawnEntityAsync(player.Position, type);
         await player.SendMessageAsync($"Spawning: {type}");
     }
 
@@ -347,7 +347,7 @@ public class MainCommandModule
     {
         if (ctx.Player is Player player)
         {
-            player.World.LevelData.DayTime = time;
+            player.world.LevelData.DayTime = time;
             await ctx.Player.SendMessageAsync($"Time set to {time}");
         }
     }
@@ -358,7 +358,7 @@ public class MainCommandModule
     {
         if (ctx.Player is Player player)
         {
-            player.World.LevelData.RainTime = 0;
+            player.world.LevelData.RainTime = 0;
             await ctx.Sender.SendMessageAsync("Toggled weather for this world.");
         }
     }
@@ -371,7 +371,7 @@ public class MainCommandModule
 
         if (server.WorldManager.TryGetWorld(worldname, out World? world))
         {
-            if (player.WorldLocation.Name.EqualsIgnoreCase(worldname))
+            if (player.World.Name.EqualsIgnoreCase(worldname))
             {
                 await player.SendMessageAsync("You can't switch to a world you're already in!");
                 return;

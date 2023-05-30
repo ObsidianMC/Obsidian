@@ -129,11 +129,12 @@ public partial class ClickContainerPacket : IServerboundPacket
 
                         var item = new ItemEntity
                         {
-                            EntityId = player + player.World.GetTotalLoadedEntities() + 1,
+                            EntityId = player + player.world.GetTotalLoadedEntities() + 1,
                             Count = 1,
                             Id = removedItem.AsItem().Id,
                             Glowing = true,
-                            World = player.World,
+                            World = player.world,
+                            Server = player.Server,
                             Position = loc
                         };
 
@@ -176,7 +177,7 @@ public partial class ClickContainerPacket : IServerboundPacket
 
         if (container is IBlockEntity tileEntityContainer)
         {
-            var blockEntity = await player.World.GetBlockEntityAsync(tileEntityContainer.BlockPosition);
+            var blockEntity = await player.world.GetBlockEntityAsync(tileEntityContainer.BlockPosition);
 
             if (blockEntity is null)
                 return;

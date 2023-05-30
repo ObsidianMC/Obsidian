@@ -17,7 +17,7 @@ public sealed partial class AreaEffectCloud : Entity
     /// </summary>
     public bool SinglePoint { get; private set; }
 
-    public IParticle Effect { get; private set; }
+    public IParticle? Effect { get; private set; }
 
     public override void Write(MinecraftStream stream)
     {

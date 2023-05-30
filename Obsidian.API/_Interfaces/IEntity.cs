@@ -1,5 +1,4 @@
 ﻿using Obsidian.API.AI;
-using System.Collections.Concurrent;
 
 namespace Obsidian.API;
 
@@ -7,10 +6,10 @@ public interface IEntity
 {
     public IServer Server { get; }
 
-    public IWorld WorldLocation { get; }
-    public INavigator Navigator { get; set; }
+    public IWorld World { get; }
+    public INavigator? Navigator { get; set; }
 
-    public IGoalController GoalController { get; set; }
+    public IGoalController? GoalController { get; set; }
 
     public Guid Uuid { get; set; }
 
@@ -29,9 +28,9 @@ public interface IEntity
 
     public float Health { get; set; }
 
-    public ChatMessage CustomName { get; set; }
+    public ChatMessage? CustomName { get; set; }
 
-    public string TranslationKey { get; }
+    public string? TranslationKey { get; }
 
     public bool CustomNameVisible { get; }
     public bool Silent { get; }

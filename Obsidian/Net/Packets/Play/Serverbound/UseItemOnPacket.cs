@@ -34,7 +34,7 @@ public partial class UseItemOnPacket : IServerboundPacket
         var currentItem = player.GetHeldItem() ?? player.GetOffHandItem();
         var position = this.Position;
 
-        var b = await player.World.GetBlockAsync(position);
+        var b = await player.world.GetBlockAsync(position);
 
         if (b is not IBlock interactedBlock)
             return;
@@ -115,17 +115,17 @@ public partial class UseItemOnPacket : IServerboundPacket
             if (await player.World.GetBlockAsync(position + Vector.Down) is IBlock below &&
                 (TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(below.RegistryId) || below.IsLiquid))
             {
-                await player.World.SetBlockAsync(position, BlocksRegistry.Air, true);
+                await player.world.SetBlockAsync(position, BlocksRegistry.Air, true);
                 player.client.SendPacket(new AcknowledgeBlockChangePacket
                 {
                     SequenceID = Sequence
                 });
-                player.World.SpawnFallingBlock(position, block.Material);
+                player.world.SpawnFallingBlock(position, block.Material);
                 return;
             }
         }
 
-        await player.World.SetBlockAsync(position, block, doBlockUpdate: true);
+        await player.world.SetBlockAsync(position, block, doBlockUpdate: true);
         player.client.SendPacket(new AcknowledgeBlockChangePacket
         {
             SequenceID = Sequence

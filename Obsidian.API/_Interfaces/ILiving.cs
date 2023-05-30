@@ -6,8 +6,6 @@ public interface ILiving : IEntity
 {
     public LivingBitMask LivingBitMask { get; set; }
 
-    public float Health { get; set; }
-
     public uint ActiveEffectColor { get; }
 
     public bool AmbientPotionEffect { get; set; }

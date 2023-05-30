@@ -6,7 +6,7 @@ namespace Obsidian.Entities;
 [MinecraftEntity("minecraft:falling_block")]
 public sealed partial class FallingBlock : Entity
 {
-    public required IBlock Block { get; init; } 
+    public required IBlock Block { get; init; }
 
     public VectorF SpawnPosition { get; private set; }
 
@@ -20,16 +20,13 @@ public sealed partial class FallingBlock : Entity
 
     private HashSet<Vector> checkedBlocks = new();
 
-    private World world;
-
-    public FallingBlock(World world, VectorF position) : base()
+    public FallingBlock(VectorF position) : base()
     {
         SpawnPosition = position;
         LastPosition = position;
         Position = position;
         AliveTime = 0;
         DeltaPosition = VectorF.Zero;
-        this.world = world;
     }
 
     public async override Task TickAsync()

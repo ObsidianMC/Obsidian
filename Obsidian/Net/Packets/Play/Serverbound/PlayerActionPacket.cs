@@ -24,13 +24,13 @@ public partial class PlayerActionPacket : IServerboundPacket
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
-        IBlock? b = await player.World.GetBlockAsync(Position);
+        IBlock? b = await player.world.GetBlockAsync(Position);
         if (b is not IBlock block)
             return;
 
         if (Status == DiggingStatus.FinishedDigging || (Status == DiggingStatus.StartedDigging && player.Gamemode == Gamemode.Creative))
         {
-            await player.World.SetBlockAsync(Position, BlocksRegistry.Air, true);
+            await player.world.SetBlockAsync(Position, BlocksRegistry.Air, true);
             player.client.SendPacket(new AcknowledgeBlockChangePacket
             {
                 SequenceID = Sequence
