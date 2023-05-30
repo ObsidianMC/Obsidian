@@ -41,7 +41,7 @@ public partial class UseItemOnPacket : IServerboundPacket
 
         if (TagsRegistry.Blocks.PlayersCanInteract.Entries.Contains(interactedBlock.RegistryId) && !player.Sneaking)
         {
-            await server.Events.InvokePlayerInteractAsync(new PlayerInteractEventArgs(player)
+            await server.Events.PlayerInteract.InvokeAsync(new PlayerInteractEventArgs(player)
             {
                 Item = currentItem,
                 Block = interactedBlock,

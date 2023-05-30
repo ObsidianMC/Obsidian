@@ -17,41 +17,6 @@ public partial class CloseContainerPacket : IClientboundPacket, IServerboundPack
         if (WindowId == 0 || (player.OpenedContainer is not IBlockEntity tileEntity))
             return;
 
-        var position = tileEntity.BlockPosition;
-
-        var block = await player.World.GetBlockAsync(position);
-
-        if (block == null)
-            return;
-
-        if (block.Is(Material.Chest))
-        {
-            await player.client.QueuePacketAsync(new BlockActionPacket
-            {
-                Position = position,
-                ActionId = 1,
-                ActionParam = 0,
-                BlockType = block.BaseId
-            });
-
-            await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockChestClose)
-                .WithSoundPosition(position.SoundPosition)
-                .Build());
-        }
-        else if (block.Is(Material.EnderChest))
-        {
-            await player.client.QueuePacketAsync(new BlockActionPacket
-            {
-                Position = position,
-                ActionId = 1,
-                ActionParam = 0,
-                BlockType = block.BaseId
-            });
-            await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockEnderChestClose)
-                .WithSoundPosition(position.SoundPosition)
-                .Build());
-        }
-
-        player.OpenedContainer = null;
+        await server.Events.ContainerClosed.InvokeAsync(new ContainerClosedEventArgs(player) { Container = player.OpenedContainer! });
     }
 }
