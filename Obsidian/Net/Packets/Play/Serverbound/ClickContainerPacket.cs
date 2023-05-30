@@ -271,7 +271,7 @@ public partial class ClickContainerPacket : IServerboundPacket
     {
         if (!CarriedItem.IsAir)
         {
-            var @event = await server.Events.InvokeContainerClickAsync(new ContainerClickEventArgs(player, container, CarriedItem)
+            var @event = await server.Events.ContainerClick.InvokeAsync(new ContainerClickEventArgs(player, container, CarriedItem)
             {
                 Slot = slot
             });

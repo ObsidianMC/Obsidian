@@ -302,7 +302,7 @@ public sealed class Client : IDisposable
                 case ClientState.Play:
                     Debug.Assert(Player is not null);
                     var packetReceivedEventArgs = new PacketReceivedEventArgs(Player, id, data);
-                    await Server.Events.InvokePacketReceivedAsync(packetReceivedEventArgs);
+                    await Server.Events.PacketReceived.InvokeAsync(packetReceivedEventArgs);
 
                     if (!packetReceivedEventArgs.IsCancelled)
                     {
@@ -320,7 +320,7 @@ public sealed class Client : IDisposable
         if (State == ClientState.Play)
         {
             Debug.Assert(Player is not null);
-            await Server.Events.InvokePlayerLeaveAsync(new PlayerLeaveEventArgs(Player, DateTimeOffset.Now));
+            await Server.Events.PlayerLeave.InvokeAsync(new PlayerLeaveEventArgs(Player, DateTimeOffset.Now));
         }
 
         Disconnected?.Invoke(this);
@@ -331,7 +331,7 @@ public sealed class Client : IDisposable
     {
         var status = new ServerStatus(Server);
 
-        _ = await Server.Events.InvokeServerStatusRequest(new ServerStatusRequestEventArgs(Server, status));
+        _ = await Server.Events.ServerStatusRequest.InvokeAsync(new ServerStatusRequestEventArgs(Server, status));
 
         SendPacket(new RequestResponse(status));
     }
@@ -532,7 +532,7 @@ public sealed class Client : IDisposable
         await SendPlayerInfoAsync();
         await Player.UpdateChunksAsync(distance: 7);
         await SendInfoAsync();
-        await Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(Player, DateTimeOffset.Now));
+        await Server.Events.PlayerJoin.InvokeAsync(new PlayerJoinEventArgs(Player, DateTimeOffset.Now));
     }
 
     #region Packet sending
@@ -725,7 +725,7 @@ public sealed class Client : IDisposable
 
     internal async Task QueuePacketAsync(IClientboundPacket packet)
     {
-        var args = await Server.Events.InvokeQueuePacketAsync(new QueuePacketEventArgs(this, packet));
+        var args = await Server.Events.QueuePacket.InvokeAsync(new QueuePacketEventArgs(this, packet));
         if (args.IsCancelled)
         {
             Logger.LogDebug("Packet {PacketId} was sent to the queue, however an event handler registered in {Name} has cancelled it.", args.Packet.Id, nameof(Server.Events));

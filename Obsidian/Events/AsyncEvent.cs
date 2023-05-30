@@ -3,8 +3,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-#nullable enable
-
 namespace Obsidian.Events;
 
 public sealed class AsyncEvent : IEventRegistry

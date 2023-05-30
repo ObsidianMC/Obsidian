@@ -443,7 +443,7 @@ public partial class Server : IServer
         var format = "<{0}> {1}";
         var message = packet.Message;
 
-        var chat = await Events.InvokeIncomingChatMessageAsync(new IncomingChatMessageEventArgs(source.Player, message, format));
+        var chat = await Events.IncomingChatMessage.InvokeAsync(new IncomingChatMessageEventArgs(source.Player, message, format));
         if (chat.IsCancelled)
             return;
 
@@ -658,7 +658,7 @@ public partial class Server : IServer
         {
             while (await timer.WaitForNextTickAsync())
             {
-                await Events.InvokeServerTickAsync();
+                await Events.ServerTick.InvokeAsync();
 
                 keepAliveTicks++;
                 if (keepAliveTicks > (Config.KeepAliveInterval / 50)) // to clarify: one tick is 50 milliseconds. 50 * 200 = 10000 millis means 10 seconds

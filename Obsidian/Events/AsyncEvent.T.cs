@@ -2,8 +2,6 @@
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-#nullable enable
-
 namespace Obsidian.Events;
 
 public sealed class AsyncEvent<T> : IEventRegistry
@@ -68,7 +66,7 @@ public sealed class AsyncEvent<T> : IEventRegistry
         semaphore.Release();
     }
 
-    public async ValueTask InvokeAsync(T args)
+    public async ValueTask<T> InvokeAsync(T args)
     {
         // This might block hook registration, but that is not expected to happen so often,
         // unlike invoking events. That's why it's better to just lock the collection instead
@@ -89,6 +87,8 @@ public sealed class AsyncEvent<T> : IEventRegistry
             }
         }
         semaphore.Release();
+
+        return args;
     }
 
     public bool TryRegisterEvent(MethodInfo method, object? instance, out Delegate? @delegate)
