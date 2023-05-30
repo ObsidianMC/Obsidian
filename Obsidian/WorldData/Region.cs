@@ -181,27 +181,27 @@ public class Region : IAsyncDisposable
 
             var section = chunk.Sections[secY + 4];
 
-            if (statesCompound.TryGetTag("data", out var dataArrayTag))
-            {
-                var data = dataArrayTag as NbtArray<long>;
-
-                section.BlockStateContainer.DataArray.storage = data!.GetArray();
-            }
-
             var chunkSecPalette = section.BlockStateContainer.Palette;
 
-            if (statesCompound.TryGetTag("palette", out var palleteArrayTag))
+            if (statesCompound!.TryGetTag("palette", out var palleteArrayTag))
             {
                 var blockStatesPalette = palleteArrayTag as NbtList;
-                foreach (NbtCompound entry in blockStatesPalette)
+                foreach (NbtCompound entry in blockStatesPalette!)
                 {
-                    var name = entry.GetString("Name");
                     var id = entry.GetInt("Id");
 
                     chunkSecPalette.GetOrAddId(BlocksRegistry.Get(id));//TODO PROCESS ADDED PROPERTIES TO GET CORRECT BLOCK STATE
                 }
 
                 section.BlockStateContainer.GrowDataArray();
+            }
+
+            //TODO find a way around this (We shouldn't be storing the states data array in nbt anyway.)
+            if (statesCompound.TryGetTag("data", out var dataArrayTag))
+            {
+                var data = dataArrayTag as NbtArray<long>;
+
+                section.BlockStateContainer.DataArray.storage = data!.GetArray();
             }
 
             var biomesCompound = sectionCompound["biomes"] as NbtCompound;
