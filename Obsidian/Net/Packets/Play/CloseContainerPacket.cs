@@ -1,6 +1,5 @@
-﻿using Obsidian.API.Builders;
+﻿using Obsidian.API.Events;
 using Obsidian.Entities;
-using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play;
@@ -14,7 +13,7 @@ public partial class CloseContainerPacket : IClientboundPacket, IServerboundPack
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
-        if (WindowId == 0 || (player.OpenedContainer is not IBlockEntity tileEntity))
+        if (WindowId == 0)
             return;
 
         await server.Events.ContainerClosed.InvokeAsync(new ContainerClosedEventArgs(player) { Container = player.OpenedContainer! });
