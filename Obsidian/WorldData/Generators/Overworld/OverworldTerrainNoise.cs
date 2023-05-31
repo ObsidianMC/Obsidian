@@ -154,40 +154,51 @@ public class OverworldTerrainNoise
         return terrainSelector.GetValue(x, (y + 32) * 2, z) > 0;
     }
 
-    public Module Cave => new Turbulence()
+    public Module Cave => new ScalePoint()
     {
-        Frequency = 0.1234,
-        Power = 1,
-        Roughness = 3,
-        Seed = seed + 1,
-        Source0 = new Max()
+        XScale = 1.0D,
+        ZScale = 1.0D,
+        YScale = 2.5D,
+        Source0 = new Perlin
         {
-            Source0 = tunnels,
-            Source1 = new ScalePoint
-            {
-                XScale = 1 / 1024.0,
-                YScale = 1 / 384.0,
-                ZScale = 1 / 1024.0,
-                Source0 = new Curve
-                {
-                    ControlPoints = new List<ControlPoint>()
-                    {
-                         new Curve.ControlPoint(-1, -1),
-                         new Curve.ControlPoint(-0.7, -0.5),
-                         new Curve.ControlPoint(-0.4, -0.5),
-                         new Curve.ControlPoint(1, 1),
-                    },
-                    Source0 = new Billow
-                    {
-                        Frequency = 18.12345,
-                        Seed = seed + 2,
-                        Quality = SharpNoise.NoiseQuality.Fast,
-                        OctaveCount = 6,
-                        Lacunarity = 1.2234,
-                        Persistence = 1.23
-                    }
-                }
-            }
+            Frequency = 0.023,
+            Lacunarity = 1.9,
+            OctaveCount = 3,
+            Persistence = 0.9,
+            Quality = SharpNoise.NoiseQuality.Standard,
+            Seed = seed
+        }
+    };
+
+    public Module Ore(int index) => new SharpNoise.Modules.TranslatePoint
+    {
+        XTranslation = index * 1000,
+        YTranslation = index * 1000,
+        ZTranslation = index * 1000,
+        Source0 = new Perlin
+        {
+            Frequency = 0.123,
+            Lacunarity = 1.3,
+            OctaveCount = 3,
+            Persistence = 0.9,
+            Quality = SharpNoise.NoiseQuality.Fast,
+            Seed = seed
+        }
+    };
+
+    public Module Stone(int index) => new SharpNoise.Modules.TranslatePoint
+    {
+        XTranslation = index * 1000,
+        YTranslation = index * 1000,
+        ZTranslation = index * 1000,
+        Source0 = new Perlin
+        {
+            Frequency = 0.093,
+            Lacunarity = 1.3,
+            OctaveCount = 3,
+            Persistence = 0.9,
+            Quality = SharpNoise.NoiseQuality.Fast,
+            Seed = seed
         }
     };
 

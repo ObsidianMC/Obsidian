@@ -716,10 +716,11 @@ public partial class Server : IServer
     /// Might be used for more stuff later so I'll leave this here - tides
     private void RegisterDefaults()
     {
-        this.RegisterWorldGenerator<SuperflatGenerator>();
-        this.RegisterWorldGenerator<OverworldGenerator>();
-        this.RegisterWorldGenerator<IslandGenerator>();
-        this.RegisterWorldGenerator<EmptyWorldGenerator>();
+        RegisterWorldGenerator<SuperflatGenerator>();
+        RegisterWorldGenerator<OverworldGenerator>();
+        RegisterWorldGenerator<IslandGenerator>();
+        RegisterWorldGenerator<DevGenerator>();
+        RegisterWorldGenerator<EmptyWorldGenerator>();
     }
 
     internal void UpdateStatusConsole()
