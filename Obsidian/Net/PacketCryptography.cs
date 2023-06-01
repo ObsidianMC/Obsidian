@@ -50,9 +50,7 @@ public class PacketCryptography
 
     public (byte[] publicKey, byte[] randomToken) GeneratePublicKeyAndToken()
     {
-        var randomToken = new byte[4];
-        using var provider = new RNGCryptoServiceProvider();
-        provider.GetBytes(randomToken);
+        var randomToken = RandomNumberGenerator.GetBytes(4);
 
         this.VerifyToken = randomToken;
         this.PublicKey = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(this.KeyPair.Public).ToAsn1Object().GetDerEncoded();
