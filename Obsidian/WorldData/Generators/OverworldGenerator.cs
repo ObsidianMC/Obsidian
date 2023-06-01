@@ -94,8 +94,7 @@ public sealed class OverworldGenerator : IWorldGenerator
             }
         }
 
-        ChunkBuilder.AddOresAndStoneAlts(helper, chunk);
-        ChunkBuilder.CarveCaves(helper, chunk);
+        ChunkBuilder.CavesAndOres(helper, chunk);
         await OverworldDecorator.DecorateAsync(chunk, helper);
 
         chunk.chunkStatus = ChunkStatus.full;

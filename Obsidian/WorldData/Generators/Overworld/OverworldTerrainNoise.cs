@@ -27,7 +27,7 @@ public class OverworldTerrainNoise
                     Seed = seed,
                     Frequency = 0.02,
                     Lacunarity = 2.132,
-                    Quality = SharpNoise.NoiseQuality.Best,
+                    Quality = SharpNoise.NoiseQuality.Fast,
                     OctaveCount = 3
                 }
             }
@@ -75,7 +75,7 @@ public class OverworldTerrainNoise
                     Source0 = new Perlin()
                     {
                         Frequency = 0.001,
-                        Quality = SharpNoise.NoiseQuality.Best,
+                        Quality = SharpNoise.NoiseQuality.Fast,
                         Seed = seed + 2
                     }
                 }
@@ -93,7 +93,7 @@ public class OverworldTerrainNoise
                     Source0 = new Perlin()
                     {
                         Frequency = 0.0013,
-                        Quality = SharpNoise.NoiseQuality.Best,
+                        Quality = SharpNoise.NoiseQuality.Fast,
                         Seed = seed + 4
                     }
                 }
@@ -108,7 +108,7 @@ public class OverworldTerrainNoise
                 Source0 = new Perlin()
                 {
                     Frequency = 0.002,
-                    Quality = SharpNoise.NoiseQuality.Best,
+                    Quality = SharpNoise.NoiseQuality.Fast,
                     Seed = seed + 5
                 }
             }
@@ -119,7 +119,7 @@ public class OverworldTerrainNoise
             Source0 = new Perlin()
             {
                 Frequency = 0.0005,
-                Quality = SharpNoise.NoiseQuality.Best,
+                Quality = SharpNoise.NoiseQuality.Fast,
                 Seed = seed + 5
             }
         };
@@ -154,12 +154,12 @@ public class OverworldTerrainNoise
     {
         XScale = 1.0D,
         ZScale = 1.0D,
-        YScale = 2.5D,
+        YScale = 2.0D,
         Source0 = new Perlin
         {
             Frequency = 0.023,
             Lacunarity = 1.9,
-            OctaveCount = 3,
+            OctaveCount = 2,
             Persistence = 0.9,
             Quality = SharpNoise.NoiseQuality.Fast,
             Seed = seed
@@ -173,9 +173,9 @@ public class OverworldTerrainNoise
         ZTranslation = 0,
         Source0 = new Perlin
         {
-            Frequency = 0.123,
+            Frequency = 0.203,
             Lacunarity = 1.3,
-            OctaveCount = 3,
+            OctaveCount = 1,
             Persistence = 0.9,
             Quality = SharpNoise.NoiseQuality.Fast,
             Seed = seed
@@ -191,7 +191,7 @@ public class OverworldTerrainNoise
         {
             Frequency = 0.093,
             Lacunarity = 1.3,
-            OctaveCount = 3,
+            OctaveCount = 1,
             Persistence = 0.9,
             Quality = SharpNoise.NoiseQuality.Fast,
             Seed = seed
@@ -205,7 +205,8 @@ public class OverworldTerrainNoise
         {
             Frequency = 1.14,
             Lacunarity = 2.222,
-            Seed = seed + 3
+            Seed = seed + 3,
+            OctaveCount = 3
         }
     };
 
