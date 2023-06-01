@@ -6,15 +6,11 @@ namespace Obsidian.WorldData.Generators.Overworld;
 
 public class OverworldTerrainNoise
 {
-    public Module Heightmap { get; set; }
-
-    public OverworldTerrainSettings Settings { get; private set; } = new OverworldTerrainSettings();
+    public readonly int waterLevel = 64;
 
     public readonly Module heightNoise, squashNoise, humidityNoise, tempNoise, erosionNoise, riverNoise, peakValleyNoise;
 
     public readonly Module terrainSelector, biomeSelector;
-
-    public readonly Module tunnels;
 
     private readonly int seed;
 
@@ -165,12 +161,12 @@ public class OverworldTerrainNoise
             Lacunarity = 1.9,
             OctaveCount = 3,
             Persistence = 0.9,
-            Quality = SharpNoise.NoiseQuality.Standard,
+            Quality = SharpNoise.NoiseQuality.Fast,
             Seed = seed
         }
     };
 
-    public Module Ore(int index) => new SharpNoise.Modules.TranslatePoint
+    public Module Ore(int index) => new TranslatePoint
     {
         XTranslation = 0,
         YTranslation = index * 384,
@@ -186,7 +182,7 @@ public class OverworldTerrainNoise
         }
     };
 
-    public Module Stone(int index) => new SharpNoise.Modules.TranslatePoint
+    public Module Stone(int index) => new TranslatePoint
     {
         XTranslation = 0,
         YTranslation = index * 384,

@@ -32,10 +32,10 @@ public abstract class BaseDecorator : IDecorator
     {
 /*        if (chunk is null) { return; }
 
-        if (pos.Y <= noise.Settings.WaterLevel)
+        if (pos.Y <= noise.waterLevel)
         {
             chunk.SetBlock(pos, BlocksRegistry.Sand);
-            for (int y = noise.Settings.WaterLevel; y > pos.Y; y--)
+            for (int y = noise.waterLevel; y > pos.Y; y--)
             {
                 chunk.SetBlock(pos.X, y, pos.Z, BlocksRegistry.Water);
             }
@@ -46,7 +46,7 @@ public abstract class BaseDecorator : IDecorator
     {
         if (chunk is null) { return; }
 
-        if (pos.Y <= noise.Settings.WaterLevel)
+        if (pos.Y <= noise.waterLevel)
         {
             chunk.SetBlock(pos, BlocksRegistry.Sand);
         }

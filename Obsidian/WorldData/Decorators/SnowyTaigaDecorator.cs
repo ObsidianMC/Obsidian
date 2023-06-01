@@ -13,7 +13,7 @@ public class SnowyTaigaDecorator : BaseDecorator
 
     public override void Decorate()
     {
-        if (pos.Y < noise.Settings.WaterLevel)
+        if (pos.Y < noise.waterLevel)
         {
             FillWater();
             return;

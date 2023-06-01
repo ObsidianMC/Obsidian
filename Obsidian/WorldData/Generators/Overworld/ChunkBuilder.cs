@@ -7,30 +7,32 @@ namespace Obsidian.WorldData.Generators.Overworld;
 internal static class ChunkBuilder
 {
     private const float caveSize = 0.45F;
+
+    private static readonly IBlock[] stoneAlts = new IBlock[5]
+    {
+        BlocksRegistry.Andesite,
+        BlocksRegistry.Diorite,
+        BlocksRegistry.Granite,
+        BlocksRegistry.Gravel,
+        BlocksRegistry.Dirt
+    };
+
+    private static readonly IBlock[] ores = new IBlock[8]
+    {
+        BlocksRegistry.DiamondOre,
+        BlocksRegistry.RedstoneOre,
+        BlocksRegistry.LapisOre,
+        BlocksRegistry.CopperOre,
+        BlocksRegistry.GoldOre,
+        BlocksRegistry.EmeraldOre,
+        BlocksRegistry.IronOre,
+        BlocksRegistry.CoalOre
+    };
+
     internal static void AddOresAndStoneAlts(GenHelper helper, Chunk chunk)
     {
         int chunkOffsetX = chunk.X * 16;
         int chunkOffsetZ = chunk.Z * 16;
-        var stoneAlts = new IBlock[5]
-        {
-            BlocksRegistry.Andesite,
-            BlocksRegistry.Diorite,
-            BlocksRegistry.Granite,
-            BlocksRegistry.Gravel,
-            BlocksRegistry.Dirt
-        };
-
-        var ores = new IBlock[8]
-        {
-            BlocksRegistry.DiamondOre,
-            BlocksRegistry.RedstoneOre,
-            BlocksRegistry.LapisOre,
-            BlocksRegistry.CopperOre,
-            BlocksRegistry.GoldOre,
-            BlocksRegistry.EmeraldOre,
-            BlocksRegistry.IronOre,
-            BlocksRegistry.CoalOre
-        };
 
         for (int x = 0; x < 16; x++)
         {
