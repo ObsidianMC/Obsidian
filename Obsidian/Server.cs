@@ -719,7 +719,6 @@ public partial class Server : IServer
         RegisterWorldGenerator<SuperflatGenerator>();
         RegisterWorldGenerator<OverworldGenerator>();
         RegisterWorldGenerator<IslandGenerator>();
-        RegisterWorldGenerator<DevGenerator>();
         RegisterWorldGenerator<EmptyWorldGenerator>();
     }
 

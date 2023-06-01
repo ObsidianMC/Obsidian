@@ -172,9 +172,9 @@ public class OverworldTerrainNoise
 
     public Module Ore(int index) => new SharpNoise.Modules.TranslatePoint
     {
-        XTranslation = index * 1000,
-        YTranslation = index * 1000,
-        ZTranslation = index * 1000,
+        XTranslation = 0,
+        YTranslation = index * 384,
+        ZTranslation = 0,
         Source0 = new Perlin
         {
             Frequency = 0.123,
@@ -188,9 +188,9 @@ public class OverworldTerrainNoise
 
     public Module Stone(int index) => new SharpNoise.Modules.TranslatePoint
     {
-        XTranslation = index * 1000,
-        YTranslation = index * 1000,
-        ZTranslation = index * 1000,
+        XTranslation = 0,
+        YTranslation = index * 384,
+        ZTranslation = 0,
         Source0 = new Perlin
         {
             Frequency = 0.093,

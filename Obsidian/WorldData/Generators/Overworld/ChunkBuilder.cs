@@ -6,6 +6,7 @@ namespace Obsidian.WorldData.Generators.Overworld;
 
 internal static class ChunkBuilder
 {
+    private const float caveSize = 0.45F;
     internal static void AddOresAndStoneAlts(GenHelper helper, Chunk chunk)
     {
         int chunkOffsetX = chunk.X * 16;
@@ -36,34 +37,28 @@ internal static class ChunkBuilder
             for (int z = 0; z < 16; z++)
             {
                 int terrainY = chunk.Heightmaps[HeightmapType.MotionBlocking].GetHeight(x, z);
-                var (bx, bz) = (x + chunkOffsetX, z + chunkOffsetZ);
+                var (worldX, worldZ) = (x + chunkOffsetX, z + chunkOffsetZ);
 
-                for (int y = -30; y < terrainY; y++)
+                for (int y = -60; y < terrainY; y++)
                 {
                     for (int i = 0; i < stoneAlts.Length; i++)
                     {
-                        var stoneNoise1 = helper.Noise.Stone(i).GetValue(bx, y, bz);
-                        var stoneNoise2 = helper.Noise.Stone(i + stoneAlts.Length).GetValue(bx, y, bz);
+                        var stoneNoise1 = helper.Noise.Stone(i).GetValue(worldX, y, worldZ);
+                        var stoneNoise2 = helper.Noise.Stone(i + stoneAlts.Length).GetValue(worldX, y, worldZ);
                         if (stoneNoise1 > 0.5 && stoneNoise2 > 0.5)
                         {
-                            if (!chunk.GetBlock(bx, y, bz).IsAir)
-                            {
-                                chunk.SetBlock(bx, y, bz, stoneAlts[i]);
-                            }
+                            chunk.SetBlock(worldX, y, worldZ, stoneAlts[i]);
                         }
                     }
 
                     for (int i = 0; i < ores.Length; i++)
                     {
-                        var oreNoise1 = helper.Noise.Ore(i).GetValue(bx, y, bz);
-                        var oreNoise2 = helper.Noise.Ore(i + ores.Length).GetValue(bx, y, bz);
+                        var oreNoise1 = helper.Noise.Ore(i).GetValue(worldX, y, worldZ);
+                        var oreNoise2 = helper.Noise.Ore(i + ores.Length).GetValue(worldX, y, worldZ);
                         
                         if (oreNoise1 > 1.0 && oreNoise2 > 1.0)
                         {
-                            if (TagsRegistry.Blocks.StoneOreReplaceables.Entries.Contains(chunk.GetBlock(bx, y, bz)?.DefaultId ?? 0))
-                            {
-                                chunk.SetBlock(bx, y, bz, ores[i]);
-                            }
+                            chunk.SetBlock(worldX, y, worldZ, ores[i]);
                         }
                     }
                 }
@@ -75,19 +70,16 @@ internal static class ChunkBuilder
     {
         int chunkOffsetX = chunk.X * 16;
         int chunkOffsetZ = chunk.Z * 16;
-        for (int bx = 0; bx < 16; bx++)
+        for (int x = 0; x < 16; x++)
         {
-            for (int bz = 0; bz < 16; bz++)
+            for (int z = 0; z < 16; z++)
             {
-                int terrainY = chunk.Heightmaps[HeightmapType.MotionBlocking].GetHeight(bx, bz);
-                int brY = -60;
-                for (int by = brY; by <= terrainY + 2; by++)
+                int terrainY = chunk.Heightmaps[HeightmapType.MotionBlocking].GetHeight(x, z);
+                for (int by = -60; by <= terrainY + 5; by++)
                 {
-                    bool isCave = util.Noise.Cave.GetValue(bx + chunkOffsetX, by, bz + chunkOffsetZ) > 0.55;
-                    if (isCave)
-                    {
-                        chunk.SetBlock(bx, by, bz, BlocksRegistry.CaveAir);
-                    }
+                    bool isCave = util.Noise.Cave.GetValue(x + chunkOffsetX, by, z + chunkOffsetZ) > 1 - caveSize;
+                    if (isCave && chunk.GetBlock(x, by+1, z) is IBlock b && !b.IsLiquid)
+                        chunk.SetBlock(x, by, z, BlocksRegistry.CaveAir);
                 }
             }
         }
