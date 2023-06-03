@@ -46,7 +46,7 @@ public abstract class BaseDecorator : IDecorator
     {
         if (chunk is null) { return; }
 
-        if (pos.Y <= noise.waterLevel)
+        if (pos.Y <= noise.WaterLevel)
         {
             chunk.SetBlock(pos, BlocksRegistry.Sand);
         }

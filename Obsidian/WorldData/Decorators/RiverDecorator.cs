@@ -14,7 +14,7 @@ public class RiverDecorator : BaseDecorator
     {
         FillWater();
 
-        if (pos.Y <= noise.waterLevel)
+        if (pos.Y <= noise.WaterLevel)
         {
             chunk.SetBlock(pos, BlocksRegistry.Gravel);
         }

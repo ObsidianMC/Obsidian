@@ -54,7 +54,7 @@ public class OceanDecorator : BaseDecorator
         if (hasMagma & IsMagma)
         {
             chunk.SetBlock(pos, magma);
-            for (int y = pos.Y + 1; y <= noise.waterLevel; y++)
+            for (int y = pos.Y + 1; y <= noise.WaterLevel; y++)
             {
                 chunk.SetBlock(pos.X, y, pos.Z, bubble);
             }
@@ -74,7 +74,7 @@ public class OceanDecorator : BaseDecorator
 
         if (hasKelp & IsKelp)
         {
-            for (int y = pos.Y + 1; y <= noise.waterLevel; y++)
+            for (int y = pos.Y + 1; y <= noise.WaterLevel; y++)
             {
                 chunk.SetBlock(pos.X, y, pos.Z, kelp);
             }

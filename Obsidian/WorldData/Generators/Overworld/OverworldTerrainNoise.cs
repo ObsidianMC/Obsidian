@@ -1,24 +1,30 @@
 ﻿using Obsidian.API.Noise;
 using SharpNoise.Modules;
-using static SharpNoise.Modules.Curve;
 
 namespace Obsidian.WorldData.Generators.Overworld;
 
-public class OverworldTerrainNoise
+public sealed class OverworldTerrainNoise
 {
-    public readonly int waterLevel = 64;
-
-    public readonly Module heightNoise, squashNoise, humidityNoise, tempNoise, erosionNoise, riverNoise, peakValleyNoise;
-
-    public readonly Module terrainSelector, biomeSelector;
+    private readonly Module biomeSelector;
 
     private readonly int seed;
+
+    public int WaterLevel { get; } = 64;
+
+    public Module RiverNoise { get; }
+    public Module ErosionNoise { get; }
+    public Module TempNoise { get; }
+    public Module HumidityNoise { get; }
+    public Module SquashNoise { get; set; }
+    public Module HeightNoise { get; }
+    public Module PeakValleyNoise { get; }
+    public Module TerrainSelector { get; }
 
     public OverworldTerrainNoise(int seed)
     {
         this.seed = seed + 765; // add offset
 
-        peakValleyNoise = new Cache()
+        PeakValleyNoise = new Cache()
         {
             Source0 = new Clamp()
             {
@@ -33,7 +39,7 @@ public class OverworldTerrainNoise
             }
         };
 
-        humidityNoise = new Cache()
+        HumidityNoise = new Cache()
         {
             Source0 = new Clamp()
             {
@@ -51,7 +57,7 @@ public class OverworldTerrainNoise
             }
         };
 
-        riverNoise = new Cache
+        RiverNoise = new Cache
         {
             Source0 = new RiverSelector
             {
@@ -66,7 +72,7 @@ public class OverworldTerrainNoise
             }
         };
 
-        tempNoise = new Cache()
+        TempNoise = new Cache()
         {
             Source0 = new Clamp()
             {
@@ -82,7 +88,7 @@ public class OverworldTerrainNoise
             }
         };
 
-        heightNoise = new Cache()
+        HeightNoise = new Cache()
         {
             Source0 = new ContinentSelector
             {
@@ -101,7 +107,7 @@ public class OverworldTerrainNoise
             }
         };
 
-        erosionNoise = new Cache()
+        ErosionNoise = new Cache()
         {
             Source0 = new Clamp()
             {
@@ -114,7 +120,7 @@ public class OverworldTerrainNoise
             }
         };
 
-        squashNoise = new Cache
+        SquashNoise = new Cache
         {
             Source0 = new Perlin()
             {
@@ -124,13 +130,13 @@ public class OverworldTerrainNoise
             }
         };
 
-        terrainSelector = new OverworldTerrain(heightNoise, squashNoise, erosionNoise, riverNoise, peakValleyNoise)
+        TerrainSelector = new OverworldTerrain(HeightNoise, SquashNoise, ErosionNoise, RiverNoise, PeakValleyNoise)
         {
             Seed = seed,
             TerrainStretch = 15
         };
 
-        biomeSelector = new BiomeSelector(tempNoise, humidityNoise, heightNoise, erosionNoise, riverNoise, peakValleyNoise);
+        biomeSelector = new BiomeSelector(TempNoise, HumidityNoise, HeightNoise, ErosionNoise, RiverNoise, PeakValleyNoise);
     }
 
     public int GetTerrainHeight(int x, int z)
@@ -147,7 +153,7 @@ public class OverworldTerrainNoise
 
     public bool IsTerrain(int x, int y, int z)
     {
-        return terrainSelector.GetValue(x, (y + 32) * 2, z) > 0;
+        return TerrainSelector.GetValue(x, (y + 32) * 2, z) > 0;
     }
 
     public Module Cave => new ScalePoint()
