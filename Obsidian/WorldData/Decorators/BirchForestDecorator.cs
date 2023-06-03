@@ -23,7 +23,7 @@ public class BirchForestDecorator : BaseDecorator
 
     public override void Decorate()
     {
-        if (pos.Y < noise.Settings.WaterLevel)
+        if (pos.Y < noise.WaterLevel)
         {
             FillWater();
             return;

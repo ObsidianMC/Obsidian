@@ -98,7 +98,7 @@ public class Noise
             LinearNoiseCubeBuilder lncb = new()
             {
                 DestNoiseCube = nc,
-                SourceModule = noiseGen.terrainSelector
+                SourceModule = noiseGen.TerrainSelector
             };
             lncb.SetBounds(0, 1600, -64, 320, 0, 1200);
             lncb.SetDestSize(1600, 384, 1200);
@@ -134,7 +134,7 @@ public class Noise
     {
         await Task.Run(() =>
         {
-            var noise = noiseGen.peakValleyNoise;
+            var noise = noiseGen.PeakValleyNoise;
             var map = new NoiseMap();
             PlaneNoiseMapBuilder builder =
                 new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noise };
@@ -159,7 +159,7 @@ public class Noise
     {
         await Task.Run(() =>
         {
-            var noise = noiseGen.tempNoise;
+            var noise = noiseGen.TempNoise;
             var map = new NoiseMap();
             PlaneNoiseMapBuilder builder =
                 new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noise };
@@ -184,7 +184,7 @@ public class Noise
     {
         await Task.Run(() =>
         {
-            var noise = noiseGen.heightNoise;
+            var noise = noiseGen.HeightNoise;
             var map = new NoiseMap();
             PlaneNoiseMapBuilder builder =
                 new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noise };
@@ -209,7 +209,7 @@ public class Noise
     {
         await Task.Run(() =>
         {
-            var noise = noiseGen.squashNoise;
+            var noise = noiseGen.SquashNoise;
             var map = new NoiseMap();
             PlaneNoiseMapBuilder builder =
                 new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noise };
@@ -234,7 +234,7 @@ public class Noise
     {
         await Task.Run(() =>
         {
-            var noise = noiseGen.riverNoise;
+            var noise = noiseGen.RiverNoise;
             var map = new NoiseMap();
             PlaneNoiseMapBuilder builder =
                 new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noise };
@@ -259,7 +259,7 @@ public class Noise
     {
         await Task.Run(() =>
         {
-            var noise = noiseGen.humidityNoise;
+            var noise = noiseGen.HumidityNoise;
             var map = new NoiseMap();
             PlaneNoiseMapBuilder builder =
                 new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noise };
@@ -284,7 +284,7 @@ public class Noise
     {
         await Task.Run(() =>
         {
-            var noise = noiseGen.erosionNoise;
+            var noise = noiseGen.ErosionNoise;
             var map = new NoiseMap();
             PlaneNoiseMapBuilder builder =
                 new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noise };

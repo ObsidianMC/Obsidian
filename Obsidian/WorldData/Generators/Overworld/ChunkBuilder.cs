@@ -5,44 +5,74 @@ namespace Obsidian.WorldData.Generators.Overworld;
 
 internal static class ChunkBuilder
 {
-    internal static void FillChunk(Chunk chunk)
-    {
-        var terrainHeightmap = chunk.Heightmaps[HeightmapType.MotionBlocking];
-        for (int bx = 0; bx < 16; bx++)
-        {
-            for (int bz = 0; bz < 16; bz++)
-            {
-                for (int by = -32; by < terrainHeightmap.GetHeight(bx, bz); by++)
-                {
-                    if (by <= -30 && by > 0) //TODO: better looking bedrock
-                    {
-                        chunk.SetBlock(bx, by, bz, BlocksRegistry.Bedrock);
-                    }
-                    else if (by <= terrainHeightmap.GetHeight(bx, bz))
-                    {
-                        chunk.SetBlock(bx, by, bz, BlocksRegistry.Stone);
-                    }
-                }
-            }
-        }
-    }
+    private const float CaveSize = 0.35F;
+    private const float OreSize = 0.4F;
+    private const float StoneAltSize = 1F;
 
-    internal static void CarveCaves(GenHelper util, Chunk chunk)
+    private static readonly IBlock[] stoneAlts = new IBlock[5]
+    {
+        BlocksRegistry.Andesite,
+        BlocksRegistry.Diorite,
+        BlocksRegistry.Granite,
+        BlocksRegistry.Gravel,
+        BlocksRegistry.Dirt
+    };
+
+    private static readonly IBlock[] ores = new IBlock[8]
+    {
+        BlocksRegistry.CoalOre,
+        BlocksRegistry.IronOre,
+        BlocksRegistry.CopperOre,
+        BlocksRegistry.GoldOre,
+        BlocksRegistry.LapisOre,
+        BlocksRegistry.RedstoneOre,
+        BlocksRegistry.EmeraldOre,
+        BlocksRegistry.DiamondOre,
+    };
+
+    internal static void CavesAndOres(GenHelper helper, Chunk chunk)
     {
         int chunkOffsetX = chunk.X * 16;
         int chunkOffsetZ = chunk.Z * 16;
-        for (int bx = 0; bx < 16; bx++)
+        for (int x = 0; x < 16; x++)
         {
-            for (int bz = 0; bz < 16; bz++)
+            for (int z = 0; z < 16; z++)
             {
-                int terrainY = chunk.Heightmaps[HeightmapType.MotionBlocking].GetHeight(bx, bz);
-                int brY = -30;
-                for (int by = brY; by < terrainY; by++)
+                int terrainY = chunk.Heightmaps[HeightmapType.MotionBlocking].GetHeight(x, z);
+                var (worldX, worldZ) = (x + chunkOffsetX, z + chunkOffsetZ);
+                for (int y = -60; y <= terrainY + 10; y++)
                 {
-                    bool isCave = util.Noise.Cave.GetValue(bx + chunkOffsetX, by, bz + chunkOffsetZ) > 0;
+                    bool isCave = helper.Noise.Cave.GetValue(x + chunkOffsetX, y, z + chunkOffsetZ) > 1 - CaveSize;
                     if (isCave)
                     {
-                        chunk.SetBlock(bx, by, bz, BlocksRegistry.CaveAir);
+                        if (chunk.GetBlock(x, y + 1, z) is IBlock b && !b.IsLiquid)
+                            chunk.SetBlock(x, y, z, BlocksRegistry.CaveAir);
+                        continue;
+                    }
+                    if (y > terrainY - 5) { continue; }
+                    var orePlaced = false;
+                    for (int i = 0; i < ores.Length; i++)
+                    {
+                        var oreNoise1 = helper.Noise.Ore(i).GetValue(worldX, y, worldZ);
+                        var oreNoise2 = helper.Noise.Ore(i + ores.Length).GetValue(worldX, y, worldZ);
+                        if (oreNoise1 > 1.0 - OreSize && oreNoise2 > 1.0 - OreSize)
+                        {
+                            chunk.SetBlock(worldX, y, worldZ, ores[i]);
+                            orePlaced = true;
+                            break;
+                        }
+                    }
+                    if (orePlaced) { continue; }
+
+                    for (int i = 0; i < stoneAlts.Length; i++)
+                    {
+                        var stoneNoise1 = helper.Noise.Stone(i).GetValue(worldX, y, worldZ);
+                        var stoneNoise2 = helper.Noise.Stone(i + stoneAlts.Length).GetValue(worldX, y, worldZ);
+                        if (stoneNoise1 > 1.5 - StoneAltSize && stoneNoise2 > 1.5 - StoneAltSize)
+                        {
+                            chunk.SetBlock(worldX, y, worldZ, stoneAlts[i]);
+                            break;
+                        }
                     }
                 }
             }

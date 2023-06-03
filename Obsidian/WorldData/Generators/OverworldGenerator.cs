@@ -1,5 +1,6 @@
 ﻿using Obsidian.Registries;
 using Obsidian.WorldData.Decorators;
+using Obsidian.WorldData.Generators.Overworld;
 
 namespace Obsidian.WorldData.Generators;
 
@@ -93,8 +94,7 @@ public sealed class OverworldGenerator : IWorldGenerator
             }
         }
 
-        //ChunkBuilder.FillChunk(chunk);
-        //ChunkBuilder.CarveCaves(helper, chunk);
+        ChunkBuilder.CavesAndOres(helper, chunk);
         await OverworldDecorator.DecorateAsync(chunk, helper);
 
         chunk.chunkStatus = ChunkStatus.full;

@@ -1,28 +1,30 @@
 ﻿using Obsidian.API.Noise;
 using SharpNoise.Modules;
-using static SharpNoise.Modules.Curve;
 
 namespace Obsidian.WorldData.Generators.Overworld;
 
-public class OverworldTerrainNoise
+public sealed class OverworldTerrainNoise
 {
-    public Module Heightmap { get; set; }
-
-    public OverworldTerrainSettings Settings { get; private set; } = new OverworldTerrainSettings();
-
-    public readonly Module heightNoise, squashNoise, humidityNoise, tempNoise, erosionNoise, riverNoise, peakValleyNoise;
-
-    public readonly Module terrainSelector, biomeSelector;
-
-    public readonly Module tunnels;
+    private readonly Module biomeSelector;
 
     private readonly int seed;
+
+    public int WaterLevel { get; } = 64;
+
+    public Module RiverNoise { get; }
+    public Module ErosionNoise { get; }
+    public Module TempNoise { get; }
+    public Module HumidityNoise { get; }
+    public Module SquashNoise { get; set; }
+    public Module HeightNoise { get; }
+    public Module PeakValleyNoise { get; }
+    public Module TerrainSelector { get; }
 
     public OverworldTerrainNoise(int seed)
     {
         this.seed = seed + 765; // add offset
 
-        peakValleyNoise = new Cache()
+        PeakValleyNoise = new Cache()
         {
             Source0 = new Clamp()
             {
@@ -31,13 +33,13 @@ public class OverworldTerrainNoise
                     Seed = seed,
                     Frequency = 0.02,
                     Lacunarity = 2.132,
-                    Quality = SharpNoise.NoiseQuality.Best,
+                    Quality = SharpNoise.NoiseQuality.Fast,
                     OctaveCount = 3
                 }
             }
         };
 
-        humidityNoise = new Cache()
+        HumidityNoise = new Cache()
         {
             Source0 = new Clamp()
             {
@@ -55,7 +57,7 @@ public class OverworldTerrainNoise
             }
         };
 
-        riverNoise = new Cache
+        RiverNoise = new Cache
         {
             Source0 = new RiverSelector
             {
@@ -70,7 +72,7 @@ public class OverworldTerrainNoise
             }
         };
 
-        tempNoise = new Cache()
+        TempNoise = new Cache()
         {
             Source0 = new Clamp()
             {
@@ -79,14 +81,14 @@ public class OverworldTerrainNoise
                     Source0 = new Perlin()
                     {
                         Frequency = 0.001,
-                        Quality = SharpNoise.NoiseQuality.Best,
+                        Quality = SharpNoise.NoiseQuality.Fast,
                         Seed = seed + 2
                     }
                 }
             }
         };
 
-        heightNoise = new Cache()
+        HeightNoise = new Cache()
         {
             Source0 = new ContinentSelector
             {
@@ -97,7 +99,7 @@ public class OverworldTerrainNoise
                     Source0 = new Perlin()
                     {
                         Frequency = 0.0013,
-                        Quality = SharpNoise.NoiseQuality.Best,
+                        Quality = SharpNoise.NoiseQuality.Fast,
                         Seed = seed + 4
                     }
                 }
@@ -105,36 +107,36 @@ public class OverworldTerrainNoise
             }
         };
 
-        erosionNoise = new Cache()
+        ErosionNoise = new Cache()
         {
             Source0 = new Clamp()
             {
                 Source0 = new Perlin()
                 {
                     Frequency = 0.002,
-                    Quality = SharpNoise.NoiseQuality.Best,
+                    Quality = SharpNoise.NoiseQuality.Fast,
                     Seed = seed + 5
                 }
             }
         };
 
-        squashNoise = new Cache
+        SquashNoise = new Cache
         {
             Source0 = new Perlin()
             {
                 Frequency = 0.0005,
-                Quality = SharpNoise.NoiseQuality.Best,
+                Quality = SharpNoise.NoiseQuality.Fast,
                 Seed = seed + 5
             }
         };
 
-        terrainSelector = new OverworldTerrain(heightNoise, squashNoise, erosionNoise, riverNoise, peakValleyNoise)
+        TerrainSelector = new OverworldTerrain(HeightNoise, SquashNoise, ErosionNoise, RiverNoise, PeakValleyNoise)
         {
             Seed = seed,
             TerrainStretch = 15
         };
 
-        biomeSelector = new BiomeSelector(tempNoise, humidityNoise, heightNoise, erosionNoise, riverNoise, peakValleyNoise);
+        biomeSelector = new BiomeSelector(TempNoise, HumidityNoise, HeightNoise, ErosionNoise, RiverNoise, PeakValleyNoise);
     }
 
     public int GetTerrainHeight(int x, int z)
@@ -151,43 +153,54 @@ public class OverworldTerrainNoise
 
     public bool IsTerrain(int x, int y, int z)
     {
-        return terrainSelector.GetValue(x, (y + 32) * 2, z) > 0;
+        return TerrainSelector.GetValue(x, (y + 32) * 2, z) > 0;
     }
 
-    public Module Cave => new Turbulence()
+    public Module Cave => new ScalePoint()
     {
-        Frequency = 0.1234,
-        Power = 1,
-        Roughness = 3,
-        Seed = seed + 1,
-        Source0 = new Max()
+        XScale = 1.0D,
+        ZScale = 1.0D,
+        YScale = 2.0D,
+        Source0 = new Perlin
         {
-            Source0 = tunnels,
-            Source1 = new ScalePoint
-            {
-                XScale = 1 / 1024.0,
-                YScale = 1 / 384.0,
-                ZScale = 1 / 1024.0,
-                Source0 = new Curve
-                {
-                    ControlPoints = new List<ControlPoint>()
-                    {
-                         new Curve.ControlPoint(-1, -1),
-                         new Curve.ControlPoint(-0.7, -0.5),
-                         new Curve.ControlPoint(-0.4, -0.5),
-                         new Curve.ControlPoint(1, 1),
-                    },
-                    Source0 = new Billow
-                    {
-                        Frequency = 18.12345,
-                        Seed = seed + 2,
-                        Quality = SharpNoise.NoiseQuality.Fast,
-                        OctaveCount = 6,
-                        Lacunarity = 1.2234,
-                        Persistence = 1.23
-                    }
-                }
-            }
+            Frequency = 0.023,
+            Lacunarity = 1.9,
+            OctaveCount = 2,
+            Persistence = 0.9,
+            Quality = SharpNoise.NoiseQuality.Fast,
+            Seed = seed
+        }
+    };
+
+    public Module Ore(int index) => new TranslatePoint
+    {
+        XTranslation = 0,
+        YTranslation = index * 384,
+        ZTranslation = 0,
+        Source0 = new Perlin
+        {
+            Frequency = 0.203,
+            Lacunarity = 1.3,
+            OctaveCount = 1,
+            Persistence = 0.9,
+            Quality = SharpNoise.NoiseQuality.Fast,
+            Seed = seed
+        }
+    };
+
+    public Module Stone(int index) => new TranslatePoint
+    {
+        XTranslation = 0,
+        YTranslation = index * 384,
+        ZTranslation = 0,
+        Source0 = new Perlin
+        {
+            Frequency = 0.093,
+            Lacunarity = 1.3,
+            OctaveCount = 1,
+            Persistence = 0.9,
+            Quality = SharpNoise.NoiseQuality.Fast,
+            Seed = seed
         }
     };
 
@@ -198,7 +211,8 @@ public class OverworldTerrainNoise
         {
             Frequency = 1.14,
             Lacunarity = 2.222,
-            Seed = seed + 3
+            Seed = seed + 3,
+            OctaveCount = 3
         }
     };
 
