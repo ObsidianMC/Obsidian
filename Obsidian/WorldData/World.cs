@@ -82,7 +82,7 @@ public class World : IWorld, IAsyncDisposable
 
     public Region? GetRegionForChunk(int chunkX, int chunkZ)
     {
-        long value = NumericsHelper.IntsToLong(chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
+        long value = NumericsHelper.IntsToLong(chunkX >> Region.CubicRegionSizeShift, chunkZ >> Region.CubicRegionSizeShift);
 
         return Regions.TryGetValue(value, out Region? region) ? region : null;
     }
@@ -103,7 +103,7 @@ public class World : IWorld, IAsyncDisposable
 
         if (region is null)
         {
-            region = await LoadRegionAsync(chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
+            region = await LoadRegionAsync(chunkX >> Region.CubicRegionSizeShift, chunkZ >> Region.CubicRegionSizeShift);
         }
 
         if (region is null)
@@ -111,7 +111,7 @@ public class World : IWorld, IAsyncDisposable
             return null;
         }
 
-        var (x, z) = (NumericsHelper.Modulo(chunkX, Region.cubicRegionSize), NumericsHelper.Modulo(chunkZ, Region.cubicRegionSize));
+        var (x, z) = (NumericsHelper.Modulo(chunkX, Region.CubicRegionSize), NumericsHelper.Modulo(chunkZ, Region.CubicRegionSize));
 
         var chunk = await region.GetChunkAsync(x, z);
 
@@ -422,7 +422,7 @@ public class World : IWorld, IAsyncDisposable
 
     public async Task<Region?> LoadRegionByChunkAsync(int chunkX, int chunkZ)
     {
-        int regionX = chunkX >> Region.cubicRegionSizeShift, regionZ = chunkZ >> Region.cubicRegionSizeShift;
+        int regionX = chunkX >> Region.CubicRegionSizeShift, regionZ = chunkZ >> Region.CubicRegionSizeShift;
         return await LoadRegionAsync(regionX, regionZ);
     }
 
@@ -496,7 +496,7 @@ public class World : IWorld, IAsyncDisposable
         {
             Region region = GetRegionForChunk(job.x, job.z) ?? await LoadRegionByChunkAsync(job.x, job.z);
 
-            var (x, z) = (NumericsHelper.Modulo(job.x, Region.cubicRegionSize), NumericsHelper.Modulo(job.z, Region.cubicRegionSize));
+            var (x, z) = (NumericsHelper.Modulo(job.x, Region.CubicRegionSize), NumericsHelper.Modulo(job.z, Region.CubicRegionSize));
 
             Chunk c = await region.GetChunkAsync(x, z);
             if (c is null)
@@ -739,7 +739,7 @@ public class World : IWorld, IAsyncDisposable
         Server.Logger.LogInformation($"Generating world... (Config pregeneration size is {Server.Config.PregenerateChunkRange})");
         int pregenerationRange = Server.Config.PregenerateChunkRange;
 
-        int regionPregenRange = (pregenerationRange >> Region.cubicRegionSizeShift) + 1;
+        int regionPregenRange = (pregenerationRange >> Region.CubicRegionSizeShift) + 1;
 
         Parallel.For(-regionPregenRange, regionPregenRange, async x =>
         {
