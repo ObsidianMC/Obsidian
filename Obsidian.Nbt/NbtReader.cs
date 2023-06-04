@@ -70,32 +70,32 @@ public class NbtReader
         switch (type)
         {
             case NbtTagType.ByteArray:
-                {
-                    var buffer = new byte[length];
+            {
+                var buffer = new byte[length];
 
-                    this.BaseStream.Read(buffer);
+                this.BaseStream.Read(buffer);
 
-                    return new NbtArray<byte>(name, buffer);
-                }
+                return new NbtArray<byte>(name, buffer);
+            }
             case NbtTagType.IntArray:
-                {
-                    var array = new NbtArray<int>(name, length);
+            {
+                var array = new NbtArray<int>(name, length);
 
-                    for (int i = 0; i < array.Count; i++)
-                    {
-                        array[i] = this.ReadInt32();
-                    }
-                    return array;
+                for (int i = 0; i < array.Count; i++)
+                {
+                    array[i] = this.ReadInt32();
                 }
+                return array;
+            }
             case NbtTagType.LongArray:
-                {
-                    var array = new NbtArray<long>(name, length);
+            {
+                var array = new NbtArray<long>(name, length);
 
-                    for (int i = 0; i < array.Count; i++)
-                        array[i] = this.ReadInt64();
+                for (int i = 0; i < array.Count; i++)
+                    array[i] = this.ReadInt64();
 
-                    return array;
-                }
+                return array;
+            }
             default:
                 throw new InvalidOperationException();
         }
@@ -153,14 +153,14 @@ public class NbtReader
             case NbtTagType.Float:
             case NbtTagType.Double:
             case NbtTagType.String:
-                {
-                    var tag = this.GetCurrentTag(firstType, !readName);
+            {
+                var tag = this.GetCurrentTag(firstType, !readName);
 
-                    if (readName)
-                        tag.Name = tagName;
+                if (readName)
+                    tag.Name = tagName;
 
-                    return tag;
-                }
+                return tag;
+            }
             case NbtTagType.List:
                 var listType = this.ReadTagType();
 
