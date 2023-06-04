@@ -5,13 +5,14 @@ using System.Buffers.Binary;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Threading;
 
 namespace Obsidian.WorldData;
 
 public sealed class RegionFile : IAsyncDisposable
 {
-    internal static ILogger logger;
+    private readonly ILogger? logger = null;
 
     private const int HeaderTableSize = 1024;
     private const int SectorSize = 4096;
@@ -40,15 +41,17 @@ public sealed class RegionFile : IAsyncDisposable
     /// <summary>
     /// Reference Material: https://wiki.vg/Region_Files#Structure
     /// </summary>
-    public RegionFile(string filePath, NbtCompression compression, int cubicRegionSize = 32)
+    public RegionFile(string filePath, NbtCompression compression, int cubicRegionSize = 32, ILogger? logger = null)
     {
         this.filePath = filePath;
-        Compression = compression;
         this.cubicRegionSize = cubicRegionSize;
 
         this.op = cubicRegionSize - 1;
 
         this.regionFileStream = new(this.filePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+        this.logger = logger;
+
+        this.Compression = compression;
     }
 
     public async Task<bool> InitializeAsync()
@@ -125,14 +128,12 @@ public sealed class RegionFile : IAsyncDisposable
 
         if (chunkSectorSizeBytesLength > size)
         {
-            logger?.LogDebug("Chunk exceeded original size({oldSize}). Attempting resize to ({newSize}). Old Offset: {offset}", size, chunkSectorSizeBytesLength, offset);
+            logger?.LogTrace("Chunk exceeded original size of ({oldSize}). Attempting resize to ({newSize}).", size, chunkSectorSizeBytesLength);
 
             offset = this.FindFreeSector(chunkSectorSize);
 
             if (offset == -1)
                 offset = this.EndOfFile;
-
-            logger?.LogDebug("New offset: {offset}", offset);
         }
 
         await this.WriteChunkAsync(new()
@@ -177,7 +178,30 @@ public sealed class RegionFile : IAsyncDisposable
         if (length > size)
             throw new UnreachableException($"{length} > {size}");
 
-        return chunk.Memory.Slice(5, length - 1);
+        await using var compressedDataStream = new ReadOnlyStream(chunk.Memory.Slice(5, length - 1));
+        await using var uncompressedData = new MemoryStream();
+
+        switch (this.Compression)
+        {
+            case NbtCompression.GZip:
+            {
+                await using var gzipStream = new GZipStream(compressedDataStream, CompressionMode.Decompress);
+
+                await gzipStream.CopyToAsync(uncompressedData);
+                break;
+            }
+            case NbtCompression.ZLib:
+            {
+                await using var zlibStream = new ZLibStream(compressedDataStream, CompressionMode.Decompress);
+
+                await zlibStream.CopyToAsync(uncompressedData);
+                break;
+            }
+            default:
+                break;
+        }
+
+        return uncompressedData.ToArray();
     }
 
     public async Task FlushAsync()

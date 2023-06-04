@@ -1,4 +1,5 @@
-﻿using Obsidian.Blocks;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Nbt;
@@ -34,14 +35,15 @@ public class Region : IAsyncDisposable
 
     private readonly ConcurrentDictionary<Vector, BlockUpdate> blockUpdates = new();
 
-    internal Region(int x, int z, string worldFolderPath, NbtCompression chunkCompression = NbtCompression.ZLib)
+    internal Region(int x, int z, string worldFolderPath, NbtCompression chunkCompression = NbtCompression.ZLib, 
+        ILoggerFactory? loggerFactory = null)
     {
         X = x;
         Z = z;
         RegionFolder = Path.Join(worldFolderPath, "regions");
         Directory.CreateDirectory(RegionFolder);
         var filePath = Path.Join(RegionFolder, $"r.{X}.{Z}.mca");
-        regionFile = new RegionFile(filePath, chunkCompression, CubicRegionSize);
+        regionFile = new RegionFile(filePath, chunkCompression, CubicRegionSize, loggerFactory?.CreateLogger($"r.{x}.{z}"));
         ChunkCompression = chunkCompression;
     }
 
@@ -91,7 +93,7 @@ public class Region : IAsyncDisposable
             return null;
 
         await using var bytesStream = new ReadOnlyStream(chunkData);
-        var nbtReader = new NbtReader(bytesStream, this.ChunkCompression);
+        var nbtReader = new NbtReader(bytesStream);
 
         return DeserializeChunk(nbtReader.ReadNextTag() as NbtCompound);
     }
