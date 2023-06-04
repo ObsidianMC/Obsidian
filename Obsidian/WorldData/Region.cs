@@ -35,15 +35,15 @@ public class Region : IAsyncDisposable
 
     private readonly ConcurrentDictionary<Vector, BlockUpdate> blockUpdates = new();
 
-    internal Region(int x, int z, string worldFolderPath, NbtCompression chunkCompression = NbtCompression.ZLib, 
-        ILoggerFactory? loggerFactory = null)
+    internal Region(int x, int z, string worldFolderPath, NbtCompression chunkCompression = NbtCompression.ZLib,
+        ILogger? logger = null)
     {
         X = x;
         Z = z;
         RegionFolder = Path.Join(worldFolderPath, "regions");
         Directory.CreateDirectory(RegionFolder);
         var filePath = Path.Join(RegionFolder, $"r.{X}.{Z}.mca");
-        regionFile = new RegionFile(filePath, chunkCompression, CubicRegionSize, loggerFactory?.CreateLogger($"r.{x}.{z}"));
+        regionFile = new RegionFile(filePath, chunkCompression, CubicRegionSize, logger);
         ChunkCompression = chunkCompression;
     }
 
@@ -271,7 +271,7 @@ public class Region : IAsyncDisposable
                 var palette = new NbtList(NbtTagType.Compound, "palette");
 
                 Span<int> span = indirect.Values;
-                for(int i = 0; i < indirect.Count; i++)
+                for (int i = 0; i < indirect.Count; i++)
                 {
                     var id = span[i];
                     var block = BlocksRegistry.Get(id);
