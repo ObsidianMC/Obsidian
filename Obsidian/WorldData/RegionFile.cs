@@ -12,11 +12,11 @@ namespace Obsidian.WorldData;
 
 public sealed class RegionFile : IAsyncDisposable
 {
-    private readonly ILogger? logger = null;
-
     private const int HeaderTableSize = 1024;
     private const int SectorSize = 4096;
     private const int MaxSectorSize = 256;
+
+    private readonly ILogger? logger;
 
     private readonly string filePath;
 
@@ -39,7 +39,7 @@ public sealed class RegionFile : IAsyncDisposable
     public NbtCompression Compression { get; }
 
     /// <summary>
-    /// Reference Material: https://wiki.vg/Region_Files#Structure
+    /// Reference Material: <see href="https://wiki.vg/Region_Files#Structure">Region File Structure</see>
     /// </summary>
     public RegionFile(string filePath, NbtCompression compression, int cubicRegionSize = 32, ILogger? logger = null)
     {
@@ -95,21 +95,26 @@ public sealed class RegionFile : IAsyncDisposable
         return true;
     }
 
-    public async Task SetChunkAsync(int x, int z, Memory<byte> bytes)
+    /// <summary>
+    /// Writes the provided chunk data to the region file.
+    /// </summary>
+    /// <param name="chunkX">The chunks local x coordinate.</param>
+    /// <param name="chunkZ">The chunks local z coordinate</param>
+    /// <param name="chunkData">The serialized nbt data as bytes</param>
+    /// <exception cref="NotSupportedException"></exception>
+    public async Task SetChunkAsync(int chunkX, int chunkZ, Memory<byte> chunkData)
     {
         await this.semaphore.WaitAsync();
 
-        var chunkSectorSize = this.CalculateSectorSize(bytes.Length);
+        var chunkSectorSize = this.CalculateSectorSize(chunkData.Length);
 
         if (chunkSectorSize > MaxSectorSize)
-            throw new InvalidOperationException($"{nameof(bytes)} calculated length({chunkSectorSize}) exceeds the max section size({MaxSectorSize})");
+            throw new NotSupportedException($"{nameof(chunkData)} calculated length({chunkSectorSize}) exceeds the max section size({MaxSectorSize}).");
 
         var chunkSectorSizeBytesLength = chunkSectorSize * SectorSize;
-        var tableIndex = this.GetChunkTableIndex(x, z);
+        var tableIndex = this.GetChunkTableIndex(chunkX, chunkZ);
 
         var (offset, size) = this.GetLocation(tableIndex);
-
-        this.ResetPosition();
 
         if (offset == 0 && size == 0)
         {
@@ -118,7 +123,7 @@ public sealed class RegionFile : IAsyncDisposable
                 Start = (int)(this.EndOfFile / SectorSize),
                 Size = chunkSectorSizeBytesLength,
                 TableIndex = tableIndex,
-                ChunkData = bytes
+                ChunkData = chunkData
             });
 
             this.semaphore.Release();
@@ -141,17 +146,23 @@ public sealed class RegionFile : IAsyncDisposable
             Start = (int)(offset / SectorSize),
             Size = chunkSectorSizeBytesLength,
             TableIndex = tableIndex,
-            ChunkData = bytes
+            ChunkData = chunkData
         });
 
         this.semaphore.Release();
     }
 
-    public async Task<Memory<byte>?> GetChunkBytesAsync(int x, int z)
+    /// <summary>
+    /// Reads through the region file to try and retrieve the compressed nbt chunk data from the region file.
+    /// </summary>
+    /// <param name="chunkX">The chunks local x coordinate.</param>
+    /// <param name="chunkZ">The chunks local z coordinate</param>
+    /// <returns>The uncompressed nbt chunk data, or null if no chunk was found at the specified coordinate.</returns>
+    public async Task<Memory<byte>?> GetChunkBytesAsync(int chunkX, int chunkZ)
     {
         await this.semaphore.WaitAsync();
 
-        var tableIndex = this.GetChunkTableIndex(x, z);
+        var tableIndex = this.GetChunkTableIndex(chunkX, chunkZ);
 
         var (offset, size) = this.GetLocation(tableIndex);
 
@@ -284,7 +295,7 @@ public sealed class RegionFile : IAsyncDisposable
 
     private void UpdateFreeSectors()
     {
-        var fileSectorSize = (int)this.regionFileStream.Length / SectorSize;
+        var fileSectorSize = (int)(this.EndOfFile / SectorSize);
 
         if (this.freeSectors.Length != fileSectorSize)
             Array.Resize(ref this.freeSectors, fileSectorSize);
@@ -303,7 +314,7 @@ public sealed class RegionFile : IAsyncDisposable
                 continue;
 
             for (int sectorCount = 0; sectorCount < chunkSectorSize; sectorCount++)
-                this.freeSectors[sectorCount + sectorStart] = false;
+                this.freeSectors[sectorCount + sectorStart] = false;//False because the sector is used
         }
     }
 
@@ -314,7 +325,7 @@ public sealed class RegionFile : IAsyncDisposable
         for (int i = sectorStart; i < sectorStart + sectorCount; i++)
         {
             if (i < this.freeSectors.Length)
-                this.freeSectors[i] = false;
+                this.freeSectors[i] = false;//Sector is not free
             else
                 missedSectors++;
         }
@@ -357,8 +368,6 @@ public sealed class RegionFile : IAsyncDisposable
 
         this.regionFileStream.SetLength(this.EndOfFile + (SectorSize - missing));
     }
-
-    private void ResetPosition() => this.regionFileStream.Position = SectorSize * 2;
 
     #region IDisposable
     private async Task DisposeAsync(bool disposing)
