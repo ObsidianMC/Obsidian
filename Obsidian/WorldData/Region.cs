@@ -1,4 +1,5 @@
-﻿using Obsidian.Blocks;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Nbt;
@@ -12,8 +13,8 @@ namespace Obsidian.WorldData;
 
 public class Region : IAsyncDisposable
 {
-    public const int cubicRegionSizeShift = 5;
-    public const int cubicRegionSize = 1 << cubicRegionSizeShift;
+    public const int CubicRegionSizeShift = 5;
+    public const int CubicRegionSize = 1 << CubicRegionSizeShift;
 
     public int X { get; }
     public int Z { get; }
@@ -22,25 +23,28 @@ public class Region : IAsyncDisposable
 
     public string RegionFolder { get; }
 
+    public NbtCompression ChunkCompression { get; }
+
     public ConcurrentDictionary<int, Entity> Entities { get; } = new();
 
     public int LoadedChunkCount => loadedChunks.Count(c => c.IsGenerated);
 
-    private DenseCollection<Chunk> loadedChunks { get; } = new(cubicRegionSize, cubicRegionSize);
+    private DenseCollection<Chunk> loadedChunks { get; } = new(CubicRegionSize, CubicRegionSize);
 
     private readonly RegionFile regionFile;
 
     private readonly ConcurrentDictionary<Vector, BlockUpdate> blockUpdates = new();
 
-    internal Region(int x, int z, string worldFolderPath)
+    internal Region(int x, int z, string worldFolderPath, NbtCompression chunkCompression = NbtCompression.ZLib,
+        ILogger? logger = null)
     {
         X = x;
         Z = z;
         RegionFolder = Path.Join(worldFolderPath, "regions");
         Directory.CreateDirectory(RegionFolder);
         var filePath = Path.Join(RegionFolder, $"r.{X}.{Z}.mca");
-        regionFile = new RegionFile(filePath, cubicRegionSize);
-
+        regionFile = new RegionFile(filePath, chunkCompression, CubicRegionSize, logger);
+        ChunkCompression = chunkCompression;
     }
 
     internal void AddBlockUpdate(BlockUpdate bu)
@@ -85,11 +89,11 @@ public class Region : IAsyncDisposable
     {
         var chunkBuffer = await regionFile.GetChunkBytesAsync(x, z);
 
-        if (chunkBuffer is not ChunkBuffer value)
+        if (chunkBuffer is not Memory<byte> chunkData)
             return null;
 
-        await using var bytesStream = new ReadOnlyStream(value.Memory);
-        var nbtReader = new NbtReader(bytesStream, value.Compression);
+        await using var bytesStream = new ReadOnlyStream(chunkData);
+        var nbtReader = new NbtReader(bytesStream);
 
         return DeserializeChunk(nbtReader.ReadNextTag() as NbtCompound);
     }
@@ -108,24 +112,24 @@ public class Region : IAsyncDisposable
     internal void SetChunk(Chunk chunk)
     {
         if (chunk is null) { return; } // I dunno... maybe we'll need to null out a chunk someday?
-        var (x, z) = (NumericsHelper.Modulo(chunk.X, cubicRegionSize), NumericsHelper.Modulo(chunk.Z, cubicRegionSize));
+        var (x, z) = (NumericsHelper.Modulo(chunk.X, CubicRegionSize), NumericsHelper.Modulo(chunk.Z, CubicRegionSize));
         loadedChunks[x, z] = chunk;
     }
 
-    internal async Task SerializeChunkAsync(Chunk chunk, NbtCompression compression = NbtCompression.ZLib)
+    internal async Task SerializeChunkAsync(Chunk chunk)
     {
         NbtCompound chunkNbt = SerializeChunk(chunk);
 
-        var (x, z) = (NumericsHelper.Modulo(chunk.X, cubicRegionSize), NumericsHelper.Modulo(chunk.Z, cubicRegionSize));
+        var (x, z) = (NumericsHelper.Modulo(chunk.X, CubicRegionSize), NumericsHelper.Modulo(chunk.Z, CubicRegionSize));
 
         await using MemoryStream strm = new();
-        await using NbtWriter writer = new(strm, compression);
+        await using NbtWriter writer = new(strm, ChunkCompression);
 
         writer.WriteTag(chunkNbt);
 
         await writer.TryFinishAsync();
 
-        await regionFile.SetChunkAsync(x, z, strm.ToArray(), compression);
+        await regionFile.SetChunkAsync(x, z, strm.ToArray());
     }
 
     internal async Task BeginTickAsync(CancellationToken cts)
@@ -267,7 +271,7 @@ public class Region : IAsyncDisposable
                 var palette = new NbtList(NbtTagType.Compound, "palette");
 
                 Span<int> span = indirect.Values;
-                for(int i = 0; i < indirect.Count; i++)
+                for (int i = 0; i < indirect.Count; i++)
                 {
                     var id = span[i];
                     var block = BlocksRegistry.Get(id);
