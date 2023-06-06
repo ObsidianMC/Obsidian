@@ -1,12 +1,16 @@
 ﻿using Obsidian.API.BlockStates;
 using Obsidian.API.BlockStates.Builders;
-using Obsidian.Entities;
 using Obsidian.Registries;
 
 namespace Obsidian.WorldData;
 
 internal static class BlockUpdates
 {
+    /// <summary>
+    /// Perform gravity affected block tick logic
+    /// </summary>
+    /// <param name="blockUpdate">Info about the block update</param>
+    /// <returns>Whether caller should block update neighbors</returns>
     internal static async Task<bool> HandleFallingBlock(BlockUpdate blockUpdate)
     {
         if (blockUpdate.Block is null) { return false; }
@@ -26,14 +30,13 @@ internal static class BlockUpdates
     }
 
     /// <summary>
-    /// 
+    /// Perform tick logic for fluids
     /// </summary>
-    /// <param name="blockUpdate"></param>
+    /// <param name="blockUpdate">Info about the block update</param>
     /// <returns>Whether caller should block update neighbors</returns>
     internal static async Task<bool> HandleLiquidPhysicsAsync(BlockUpdate blockUpdate)
     {
         if (blockUpdate.Block is null) { return false; }
-
 
         var block = blockUpdate.Block;
         var world = blockUpdate.world;
@@ -47,7 +50,6 @@ internal static class BlockUpdates
             return false;
         }
 
-
         var horizontalNeighbors = new Dictionary<Vector, IBlock?>() {
             {position + Vector.Forwards, await world.GetBlockAsync(position + Vector.Forwards)},
             {position + Vector.Backwards, await world.GetBlockAsync(position + Vector.Backwards)},
@@ -56,8 +58,6 @@ internal static class BlockUpdates
         };
 
         // Handle fluid interactions
-        // If flowing lava spreads into water, turn lava into cobble
-        // If lava source spreads into water, turn lava into obsidian
         foreach (var (loc, neighborBlock) in horizontalNeighbors)
         {
             if (neighborBlock is null) { continue; }
@@ -67,6 +67,7 @@ internal static class BlockUpdates
             }
         }
 
+        // Spread
         // Handle the initial search for closet path downwards.
         // Just going to do a crappy pathfind for now. We can do
         // proper pathfinding some other time.
@@ -149,6 +150,7 @@ internal static class BlockUpdates
                 }
             }
 
+            // Check liquid discipate
             if (liquidLevel > 0)
             {
                 // On some side of the block, there should be another water block with a lower state.
@@ -170,6 +172,7 @@ internal static class BlockUpdates
                 }
             }
 
+            // Handle falling downward
             if (await world.GetBlockAsync(belowPos) is IBlock below)
             {
                 if (below.Material == block.Material) { return false; }
@@ -205,6 +208,7 @@ internal static class BlockUpdates
             // the lowest level of water can only go down, so bail now.
             if (liquidLevel == 7) { return false; }
 
+            // Spread horizontally
             foreach (var (loc, neighborBlock) in horizontalNeighbors)
             {
                 if (neighborBlock is null) { continue; }
