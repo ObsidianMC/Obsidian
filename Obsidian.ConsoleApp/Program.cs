@@ -36,6 +36,12 @@ public static class Program
             })
             .ConfigureServices(services =>
             {
+                services.AddLogging(options =>
+                {
+                    options.ClearProviders();
+                    options.AddProvider(loggerProvider);
+                    options.SetMinimumLevel(env.Configuration.LogLevel);
+                });
                 services.AddObsidian(env);
 
                 // Give the server some time to shut down after CTRL-C or SIGTERM.
