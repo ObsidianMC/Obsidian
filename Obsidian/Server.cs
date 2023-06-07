@@ -59,6 +59,7 @@ public partial class Server : IServer
     private readonly TcpListener _tcpListener;
     private readonly RconServer _rconServer;
     private readonly ILogger _logger;
+    private readonly IServiceProvider provider;
 
     public ProtocolVersion Protocol => DefaultProtocol;
 
@@ -95,16 +96,18 @@ public partial class Server : IServer
     /// Creates a new instance of <see cref="Server"/>.
     /// </summary>
     public Server(
+        IServiceProvider provider,
         IHostApplicationLifetime lifetime,
         IServerEnvironment environment,
         ILogger<Server> logger,
         RconServer rconServer)
     {
         _logger = logger;
-        _logger.LogInformation($"SHA / Version: {VERSION}");
+        _logger.LogInformation("SHA / Version: {version}", VERSION);
         _cancelTokenSource = CancellationTokenSource.CreateLinkedTokenSource(lifetime.ApplicationStopping);
         _cancelTokenSource.Token.Register(() => _logger.LogWarning("Obsidian is shutting down..."));
         _rconServer = rconServer;
+        this.provider = provider;
 
         Config = environment.Configuration;
         Port = Config.Port;
@@ -117,7 +120,7 @@ public partial class Server : IServer
         _logger.LogDebug(message: "Initializing command handler...");
         CommandsHandler = new CommandHandler();
 
-        PluginManager = new PluginManager(Events, this, _logger, CommandsHandler);
+        PluginManager = new PluginManager(this.provider, Events, this, _logger, CommandsHandler);
         CommandsHandler.LinkPluginManager(PluginManager);
 
         _logger.LogDebug("Registering commands...");
