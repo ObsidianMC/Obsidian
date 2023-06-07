@@ -20,9 +20,28 @@ public sealed class OverworldTerrainNoise
     public Module PeakValleyNoise { get; }
     public Module TerrainSelector { get; }
 
+    public List<Perlin> OreNoises { get; } = new();
+    public List<Perlin> StoneNoises { get; } = new();
+
     public OverworldTerrainNoise(int seed)
     {
         this.seed = seed + 765; // add offset
+
+        OreNoises.Add(new Perlin()
+        {
+            Frequency = 0.203,
+            OctaveCount = 1,
+            Quality = SharpNoise.NoiseQuality.Fast,
+            Seed = seed + 100
+        });
+
+        StoneNoises.Add(new Perlin()
+        {
+            Frequency = 0.093,
+            OctaveCount = 1,
+            Quality = SharpNoise.NoiseQuality.Fast,
+            Seed = seed + 200
+        });
 
         PeakValleyNoise = new Cache()
         {
@@ -65,7 +84,7 @@ public sealed class OverworldTerrainNoise
                 {
                     Frequency = 0.001,
                     Quality = SharpNoise.NoiseQuality.Fast,
-                    Seed = seed + 2,
+                    Seed = seed + 1,
                     OctaveCount = 3,
                     Lacunarity = 1.5
                 }
@@ -126,7 +145,7 @@ public sealed class OverworldTerrainNoise
             {
                 Frequency = 0.0005,
                 Quality = SharpNoise.NoiseQuality.Fast,
-                Seed = seed + 5
+                Seed = seed + 6
             }
         };
 
@@ -172,37 +191,39 @@ public sealed class OverworldTerrainNoise
         }
     };
 
-    public Module Ore(int index) => new TranslatePoint
+    public Module Ore(int index)
     {
-        XTranslation = 0,
-        YTranslation = index * 384,
-        ZTranslation = 0,
-        Source0 = new Perlin
+        var noisesToAdd = index + 1 - OreNoises.Count;
+        for (int i = 0; i < noisesToAdd; i++)
         {
-            Frequency = 0.203,
-            Lacunarity = 1.3,
-            OctaveCount = 1,
-            Persistence = 0.9,
-            Quality = SharpNoise.NoiseQuality.Fast,
-            Seed = seed
+            OreNoises.Add(new Perlin()
+            {
+                Frequency = OreNoises[0].Frequency,
+                OctaveCount = OreNoises[0].OctaveCount,
+                Quality = OreNoises[0].Quality,
+                Seed = OreNoises[0].Seed + i + OreNoises.Count
+            });
         }
-    };
 
-    public Module Stone(int index) => new TranslatePoint
+        return OreNoises[index];
+    }
+
+    public Module Stone(int index)
     {
-        XTranslation = 0,
-        YTranslation = index * 384,
-        ZTranslation = 0,
-        Source0 = new Perlin
+        var noisesToAdd = index + 1 - StoneNoises.Count;
+        for (int i = 0; i < noisesToAdd; i++)
         {
-            Frequency = 0.093,
-            Lacunarity = 1.3,
-            OctaveCount = 1,
-            Persistence = 0.9,
-            Quality = SharpNoise.NoiseQuality.Fast,
-            Seed = seed
+            StoneNoises.Add(new Perlin()
+            {
+                Frequency = StoneNoises[0].Frequency,
+                OctaveCount = StoneNoises[0].OctaveCount,
+                Quality = StoneNoises[0].Quality,
+                Seed = StoneNoises[0].Seed + i + StoneNoises.Count
+            });
         }
-    };
+
+        return StoneNoises[index];
+    }
 
     public Module Decoration => new Multiply
     {
