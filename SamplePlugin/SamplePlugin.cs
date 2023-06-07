@@ -1,7 +1,7 @@
-﻿using Obsidian.API;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.API.Plugins;
-using Obsidian.API.Plugins.Services;
 using System;
 using System.Threading.Tasks;
 
@@ -13,7 +13,8 @@ namespace SamplePlugin
     public class SamplePlugin : PluginBase
     {
         // Any interface from Obsidian.Plugins.Services can be injected into properties
-        [Inject] public ILogger Logger { get; set; }
+        [Inject] 
+        public ILogger Logger { get; set; }
 
         // Dependencies will be injected automatically, if dependency class and field/property names match
         // Plugins won't load until all their required dependencies are added
@@ -22,19 +23,21 @@ namespace SamplePlugin
         public MyWrapper SampleRemotePlugin { get; set; }
 
         // One of server messages, called when an event occurs
-        public void OnLoad(IServer server)
+
+        public override ValueTask OnLoadAsync(IServer server)
         {
-            Logger.Log(message: $"§a{Info.Name} §floaded! Hello §a{server.DefaultWorld.Name}§f!");
+            Logger.LogInformation("§a{pluginName} §floaded! Hello §aEveryone§f!", Info.Name);
+            return ValueTask.CompletedTask;
         }
 
         public void OnPermissionRevoked(PermissionRevokedEventArgs args)
         {
-            Logger.Log(message: $"Permission {args.Permission} revoked from player {args.Player.Username}");
+            Logger.LogInformation("Permission {permission} revoked from player {user}", args.Permission, args.Player.Username);
         }
 
         public void OnPermissionGranted(PermissionGrantedEventArgs args)
         {
-            Logger.Log(message: $"Permission {args.Permission} granted to player {args.Player.Username}");
+            Logger.LogInformation("Permission {permission} granted to player {user}", args.Permission, args.Player.Username);
         }
 
         public async Task OnPlayerJoin(PlayerJoinEventArgs playerJoinEvent)
@@ -65,8 +68,8 @@ namespace SamplePlugin
         [CommandInfo("woop dee doo this command is from a plugin")]
         public async Task MyCommandAsync(CommandContext ctx)
         {
-            Plugin.Logger.Log("Testing Plugin as injected dependency");
-            Logger.Log("Testing Services as injected dependency");
+            Plugin.Logger.LogInformation("Testing Plugin as injected dependency");
+            Logger.LogInformation("Testing Services as injected dependency");
             await ctx.Player.SendMessageAsync("Hello from plugin command!");
         }
     }
