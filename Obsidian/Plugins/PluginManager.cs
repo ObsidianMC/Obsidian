@@ -9,6 +9,21 @@ namespace Obsidian.Plugins;
 
 public sealed class PluginManager
 {
+    private const string loadEvent = "OnLoad";
+
+    internal readonly ILogger logger;
+    //internal readonly ServiceProvider serviceProvider = ServiceProvider.Create();
+    internal readonly IServiceProvider serviceProvider;
+
+    private readonly List<PluginContainer> plugins = new();
+    private readonly List<PluginContainer> stagedPlugins = new();
+    private readonly List<EventContainer> events = new();
+
+    private readonly object eventSource;
+    private readonly IServer server;
+
+    private readonly CommandHandler commands;
+
     /// <summary>
     /// List of all loaded plugins.
     /// <br/><b>Important note:</b> keeping references to plugin containers outside this class will make them unloadable.
@@ -26,31 +41,9 @@ public sealed class PluginManager
     /// </summary>
     public DirectoryWatcher DirectoryWatcher { get; } = new();
 
-    private readonly List<PluginContainer> plugins = new();
-    private readonly List<PluginContainer> stagedPlugins = new();
-    internal readonly ServiceProvider serviceProvider = ServiceProvider.Create();
-    private readonly object eventSource;
-    private readonly IServer server;
-    private readonly List<EventContainer> events = new();
-    internal readonly ILogger logger;
-    private readonly CommandHandler commands;
-
-    private const string loadEvent = "OnLoad";
-
-    public PluginManager(CommandHandler commands) : this(null, null, null, commands)
+    public PluginManager(IServiceProvider serviceProvider, object eventSource, IServer server, ILogger logger, CommandHandler commands)
     {
-    }
-
-    public PluginManager(object eventSource, CommandHandler commands) : this(eventSource, null, null, commands)
-    {
-    }
-
-    public PluginManager(object eventSource, IServer server, CommandHandler commands) : this(eventSource, server, null, commands)
-    {
-    }
-
-    public PluginManager(object eventSource, IServer server, ILogger logger, CommandHandler commands)
-    {
+        this.serviceProvider = serviceProvider;
         this.server = server;
         this.logger = logger;
         this.eventSource = eventSource;
@@ -83,7 +76,7 @@ public sealed class PluginManager
         IPluginProvider provider = PluginProviderSelector.GetPluginProvider(path);
         if (provider is null)
         {
-            logger?.LogError($"Couldn't load plugin from path '{path}'");
+            logger?.LogError("Couldn't load plugin from path '{path}'", path);
             return null;
         }
 
@@ -102,7 +95,7 @@ public sealed class PluginManager
         IPluginProvider provider = PluginProviderSelector.GetPluginProvider(path);
         if (provider is null)
         {
-            logger?.LogError($"Couldn't load plugin from path '{path}'");
+            logger?.LogError("Couldn't load plugin from path '{path}'", path);
             return null;
         }
 
@@ -111,6 +104,8 @@ public sealed class PluginManager
         return HandlePlugin(plugin);
     }
 
+
+
     private PluginContainer? HandlePlugin(PluginContainer plugin)
     {
         if (plugin?.Plugin is null)
@@ -118,7 +113,7 @@ public sealed class PluginManager
             return plugin;
         }
 
-        serviceProvider.InjectServices(plugin, logger);
+        PluginServiceHandler.InjectServices(this.serviceProvider, plugin, logger);
 
         plugin.RegisterDependencies(this, logger);
 
@@ -162,7 +157,7 @@ public sealed class PluginManager
                 if (!plugin.HasDependencies)
                     stageMessage.Append(", missing dependencies");
 
-                logger.LogWarning(stageMessage.ToString());
+                logger.LogWarning("{}", stageMessage.ToString());
             }
         }
 
@@ -203,17 +198,17 @@ public sealed class PluginManager
         {
             var exception = plugin.Plugin.SafeInvoke("Dispose");
             if (exception is not null)
-                logger?.LogError(exception, $"Unhandled exception occured when disposing {plugin.Info.Name}");
+                logger?.LogError(exception, "Unhandled exception occured when disposing {pluginName}", plugin.Info.Name);
         }
         else if (plugin.Plugin is IAsyncDisposable)
         {
             var exception = plugin.Plugin.SafeInvokeAsync("DisposeAsync");
             if (exception is not null)
-                logger?.LogError(exception, $"Unhandled exception occured when disposing {plugin.Info.Name}");
+                logger?.LogError(exception, "Unhandled exception occured when disposing {pluginName}", plugin.Info.Name);
         }
 
         plugin.LoadContext.Unload();
-        plugin.LoadContext.Unloading += _ => logger?.LogInformation($"Finished unloading {plugin.Info.Name} plugin");
+        plugin.LoadContext.Unloading += _ => logger?.LogInformation("Finished unloading {pluginName} plugin", plugin.Info.Name);
 
         plugin.Dispose();
     }
@@ -359,7 +354,7 @@ public sealed class PluginManager
 
     private void InvokeOnLoad(PluginContainer plugin)
     {
-        var task = plugin.Plugin.FriendlyInvokeAsync(loadEvent, server);
+        var task = plugin.Plugin.OnLoadAsync(this.server).AsTask();
         if (task.Status == TaskStatus.Created)
         {
             task.RunSynchronously();

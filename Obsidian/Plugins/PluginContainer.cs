@@ -48,7 +48,7 @@ public sealed class PluginContainer : IDisposable
     }
 
     #region Dependencies
-    public void RegisterDependencies(PluginManager manager, ILogger logger = null)
+    public void RegisterDependencies(PluginManager manager, ILogger? logger = null)
     {
         // FieldInfo[] and PropertyInfo[] can't be merged into MemberInfo[], since it includes methods etc. and MemberInfo doesn't have SetValue method
 
@@ -61,7 +61,8 @@ public sealed class PluginContainer : IDisposable
             {
                 if (field.FieldType != typeof(PluginBase) && !field.FieldType.IsSubclassOf(typeof(PluginWrapper)))
                 {
-                    logger?.LogWarning($"Failed injecting into {Info.Name}.{field.Name} property, because it's not PluginBase or PluginWrapper.");
+                    logger?.LogWarning("Failed injecting into {pluginName}.{fieldName} property, because it's not PluginBase or PluginWrapper.", 
+                        Info.Name, field.Name);
                     continue;
                 }
 
@@ -92,7 +93,7 @@ public sealed class PluginContainer : IDisposable
             {
                 if (property.PropertyType != typeof(PluginBase) && !property.PropertyType.IsSubclassOf(typeof(PluginWrapper)))
                 {
-                    logger?.LogWarning($"Failed injecting into {Info.Name}.{property.Name} property, because it's not PluginBase or PluginWrapper.");
+                    logger?.LogWarning("Failed injecting into {pluginName}.{propertyName} property, because it's not PluginBase or PluginWrapper.", Info.Name, property.Name);
                     continue;
                 }
 
@@ -115,7 +116,7 @@ public sealed class PluginContainer : IDisposable
         }
     }
 
-    private static object CreateInjection(Type targetType, PluginBase plugin, ILogger logger = null)
+    private static object? CreateInjection(Type targetType, PluginBase plugin, ILogger? logger = null)
     {
         if (targetType == typeof(PluginBase))
         {
@@ -126,11 +127,11 @@ public sealed class PluginContainer : IDisposable
             PluginWrapper wrapper;
             try
             {
-                wrapper = (PluginWrapper)Activator.CreateInstance(targetType);
+                wrapper = (PluginWrapper)Activator.CreateInstance(targetType)!;
             }
             catch
             {
-                logger?.LogWarning($"Failed while creating '{targetType.Name}', because it doesn't have accesible parameterless constructor.");
+                logger?.LogWarning("Failed while creating '{targetName}', because it doesn't have accesible parameterless constructor.", targetType.Name);
                 return null;
             }
 
@@ -147,7 +148,8 @@ public sealed class PluginContainer : IDisposable
                 var method = methods.Where(m => m.Name == methodName).FirstOrDefault(m => m.ReturnType == returnType && m.GetParameters().Select(p => p.ParameterType).SequenceEqual(parameterTypes));
                 if (method == null)
                 {
-                    logger?.LogWarning($"Couldn't inject into {targetType.Name}.{property.Name}, because no method with matching name was found.");
+                    logger?.LogWarning("Couldn't inject into {targetTypeName}.{propertyName}, because no method with matching name was found.",
+                        targetType.Name, property.Name);
                     continue;
                 }
 
@@ -158,7 +160,8 @@ public sealed class PluginContainer : IDisposable
                 }
                 catch
                 {
-                    logger?.LogWarning($"Couldn't inject into {targetType.Name}.{property.Name}, because no method with matching signature was found.");
+                    logger?.LogWarning("Couldn't inject into {targetTypeName}.{propertyName}, because no method with matching signature was found.", 
+                        targetType.Name, property.Name);
                     continue;
                 }
                 property.SetValue(wrapper, @delegate);
@@ -168,7 +171,7 @@ public sealed class PluginContainer : IDisposable
         }
     }
 
-    private static PluginContainer GetDependency(PluginManager manager, ILogger logger, string name, Version minVersion)
+    private static PluginContainer? GetDependency(PluginManager manager, ILogger logger, string name, Version minVersion)
     {
         foreach (var plugin in manager.Plugins)
         {
@@ -208,7 +211,8 @@ public sealed class PluginContainer : IDisposable
         {
             if (minVersion != null && actual.Info.Version != null && actual.Info.Version < minVersion)
             {
-                logger?.LogWarning($"Found matching dependency '{actual.Info.Name}', but with older version {actual.Info.Version} (minimum: {minVersion})");
+                logger?.LogWarning("Found matching dependency '{pluginName}', but with older version {pluginVersion} (minimum: {minVersion})", actual.Info.Name, 
+                    actual.Info.Version, minVersion);
                 return false;
             }
             return true;

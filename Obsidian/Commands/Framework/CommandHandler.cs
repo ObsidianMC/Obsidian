@@ -2,6 +2,7 @@
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Commands.Framework.Exceptions;
 using Obsidian.Plugins;
+using Obsidian.Plugins.ServiceProviders;
 using System.Reflection;
 
 namespace Obsidian.Commands.Framework;
@@ -114,7 +115,7 @@ public class CommandHandler
             }
             else
             {
-                pluginManager?.serviceProvider.InjectServices(instance, plugin, pluginManager.logger);
+                PluginServiceHandler.InjectServices(this.pluginManager!.serviceProvider, instance, plugin, pluginManager.logger);
             }
         }
 
