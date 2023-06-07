@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace Obsidian.Plugins.PluginProviders;
 
-public class CompiledPluginProvider : IPluginProvider
+public sealed class CompiledPluginProvider : IPluginProvider
 {
     public PluginContainer GetPlugin(string path, ILogger logger)
     {
@@ -17,9 +17,9 @@ public class CompiledPluginProvider : IPluginProvider
 
     internal PluginContainer HandlePlugin(PluginLoadContext loadContext, Assembly assembly, string path, ILogger logger)
     {
-        Type pluginType = assembly.GetTypes().FirstOrDefault(type => type.IsSubclassOf(typeof(PluginBase)));
+        Type? pluginType = assembly.GetTypes().FirstOrDefault(type => type.IsSubclassOf(typeof(PluginBase)));
 
-        PluginBase plugin;
+        PluginBase? plugin;
         if (pluginType == null || pluginType.GetConstructor(Array.Empty<Type>()) == null)
         {
             plugin = default;
@@ -29,15 +29,16 @@ public class CompiledPluginProvider : IPluginProvider
         else
         {
             logger?.LogInformation("Creating plugin instance...");
-            plugin = (PluginBase)Activator.CreateInstance(pluginType);
+            plugin = (PluginBase)Activator.CreateInstance(pluginType)!;
         }
 
-        string name = assembly.GetName().Name;
+        string name = assembly.GetName().Name!;
         var attribute = pluginType.GetCustomAttribute<PluginAttribute>();
         var info = attribute != null ? new PluginInfo(name, attribute) : new PluginInfo(name);
 
         if (attribute == null)
-            logger?.LogWarning($"Plugin is missing {nameof(PluginAttribute)}. Name defaults to '{info.Name}', version defaults to {info.Version}.");
+            logger?.LogWarning("Plugin is missing {attribute}. Name defaults to '{pluginName}', version defaults to {pluginVersion}.", 
+                nameof(PluginAttribute), info.Name, info.Version);
 
         return new PluginContainer(plugin, info, assembly, loadContext, path);
     }
