@@ -238,4 +238,8 @@ public abstract class PluginBase
 
         return (null, -1);
     }
+
+    public override sealed bool Equals(object? obj) => base.Equals(obj);
+    public override sealed int GetHashCode() => base.GetHashCode();
+    public override sealed string ToString() => Info?.Name ?? GetType().Name;
 }
