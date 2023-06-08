@@ -161,6 +161,15 @@
     },
     {
       "id": 17,
+      "name": "minecraft:generic_kill",
+      "element": {
+        "exhaustion": 0,
+        "message_id": "genericKill",
+        "scaling": "when_caused_by_living_non_player"
+      }
+    },
+    {
+      "id": 18,
       "name": "minecraft:hot_floor",
       "element": {
         "exhaustion": 0.1,
@@ -170,7 +179,7 @@
       }
     },
     {
-      "id": 18,
+      "id": 19,
       "name": "minecraft:indirect_magic",
       "element": {
         "exhaustion": 0,
@@ -179,7 +188,7 @@
       }
     },
     {
-      "id": 19,
+      "id": 20,
       "name": "minecraft:in_fire",
       "element": {
         "exhaustion": 0.1,
@@ -189,7 +198,7 @@
       }
     },
     {
-      "id": 20,
+      "id": 21,
       "name": "minecraft:in_wall",
       "element": {
         "exhaustion": 0,
@@ -198,7 +207,7 @@
       }
     },
     {
-      "id": 21,
+      "id": 22,
       "name": "minecraft:lava",
       "element": {
         "exhaustion": 0.1,
@@ -208,7 +217,7 @@
       }
     },
     {
-      "id": 22,
+      "id": 23,
       "name": "minecraft:lightning_bolt",
       "element": {
         "exhaustion": 0.1,
@@ -217,7 +226,7 @@
       }
     },
     {
-      "id": 23,
+      "id": 24,
       "name": "minecraft:magic",
       "element": {
         "exhaustion": 0,
@@ -226,7 +235,7 @@
       }
     },
     {
-      "id": 24,
+      "id": 25,
       "name": "minecraft:mob_attack",
       "element": {
         "exhaustion": 0.1,
@@ -235,7 +244,7 @@
       }
     },
     {
-      "id": 25,
+      "id": 26,
       "name": "minecraft:mob_attack_no_aggro",
       "element": {
         "exhaustion": 0.1,
@@ -244,7 +253,7 @@
       }
     },
     {
-      "id": 26,
+      "id": 27,
       "name": "minecraft:mob_projectile",
       "element": {
         "exhaustion": 0.1,
@@ -253,7 +262,7 @@
       }
     },
     {
-      "id": 27,
+      "id": 28,
       "name": "minecraft:on_fire",
       "element": {
         "exhaustion": 0,
@@ -263,7 +272,16 @@
       }
     },
     {
-      "id": 28,
+      "id": 29,
+      "name": "minecraft:outside_border",
+      "element": {
+        "exhaustion": 0,
+        "message_id": "outsideBorder",
+        "scaling": "when_caused_by_living_non_player"
+      }
+    },
+    {
+      "id": 30,
       "name": "minecraft:out_of_world",
       "element": {
         "exhaustion": 0,
@@ -272,7 +290,7 @@
       }
     },
     {
-      "id": 29,
+      "id": 31,
       "name": "minecraft:player_attack",
       "element": {
         "exhaustion": 0.1,
@@ -281,7 +299,7 @@
       }
     },
     {
-      "id": 30,
+      "id": 32,
       "name": "minecraft:player_explosion",
       "element": {
         "exhaustion": 0.1,
@@ -290,7 +308,7 @@
       }
     },
     {
-      "id": 31,
+      "id": 33,
       "name": "minecraft:sonic_boom",
       "element": {
         "exhaustion": 0,
@@ -299,7 +317,7 @@
       }
     },
     {
-      "id": 32,
+      "id": 34,
       "name": "minecraft:stalagmite",
       "element": {
         "exhaustion": 0,
@@ -308,7 +326,7 @@
       }
     },
     {
-      "id": 33,
+      "id": 35,
       "name": "minecraft:starve",
       "element": {
         "exhaustion": 0,
@@ -317,7 +335,7 @@
       }
     },
     {
-      "id": 34,
+      "id": 36,
       "name": "minecraft:sting",
       "element": {
         "exhaustion": 0.1,
@@ -326,7 +344,7 @@
       }
     },
     {
-      "id": 35,
+      "id": 37,
       "name": "minecraft:sweet_berry_bush",
       "element": {
         "exhaustion": 0.1,
@@ -336,7 +354,7 @@
       }
     },
     {
-      "id": 36,
+      "id": 38,
       "name": "minecraft:thorns",
       "element": {
         "exhaustion": 0.1,
@@ -346,7 +364,7 @@
       }
     },
     {
-      "id": 37,
+      "id": 39,
       "name": "minecraft:thrown",
       "element": {
         "exhaustion": 0.1,
@@ -355,7 +373,7 @@
       }
     },
     {
-      "id": 38,
+      "id": 40,
       "name": "minecraft:trident",
       "element": {
         "exhaustion": 0.1,
@@ -364,7 +382,7 @@
       }
     },
     {
-      "id": 39,
+      "id": 41,
       "name": "minecraft:unattributed_fireball",
       "element": {
         "exhaustion": 0.1,
@@ -374,7 +392,7 @@
       }
     },
     {
-      "id": 40,
+      "id": 42,
       "name": "minecraft:wither",
       "element": {
         "exhaustion": 0,
@@ -383,7 +401,7 @@
       }
     },
     {
-      "id": 41,
+      "id": 43,
       "name": "minecraft:wither_skull",
       "element": {
         "exhaustion": 0.1,
