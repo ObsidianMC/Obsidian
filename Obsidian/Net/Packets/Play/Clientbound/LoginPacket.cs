@@ -67,5 +67,8 @@ public partial class LoginPacket : IClientboundPacket
     [Field(19), Condition("HasDeathLocation")]
     public Vector DeathLocation { get; init; }
 
+    [Field(20), VarLength]
+    public int PortalCooldown { get; init; }
+
     public int Id => 0x28;
 }
