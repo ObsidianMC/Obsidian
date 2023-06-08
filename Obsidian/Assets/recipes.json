@@ -131,6 +131,34 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
+  "acacia_hanging_sign": {
+    "category": "misc",
+    "group": "hanging_sign",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:stripped_acacia_log",
+        "tag": null
+      },
+      "X": {
+        "count": 1,
+        "item": "minecraft:chain",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "X X",
+      "###",
+      "###"
+    ],
+    "result": {
+      "count": 6,
+      "item": "minecraft:acacia_hanging_sign",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
   "acacia_planks": {
     "category": "building",
     "group": "planks",
@@ -572,6 +600,397 @@
     "result": "minecraft:baked_potato",
     "type": "minecraft:smoking"
   },
+  "bamboo_block": {
+    "category": "building",
+    "ingredients": [
+      {
+        "item": "minecraft:bamboo"
+      },
+      {
+        "item": "minecraft:bamboo"
+      },
+      {
+        "item": "minecraft:bamboo"
+      },
+      {
+        "item": "minecraft:bamboo"
+      },
+      {
+        "item": "minecraft:bamboo"
+      },
+      {
+        "item": "minecraft:bamboo"
+      },
+      {
+        "item": "minecraft:bamboo"
+      },
+      {
+        "item": "minecraft:bamboo"
+      },
+      {
+        "item": "minecraft:bamboo"
+      }
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:bamboo_block",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "bamboo_button": {
+    "category": "redstone",
+    "group": "wooden_button",
+    "ingredients": [
+      {
+        "item": "minecraft:bamboo_planks"
+      }
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:bamboo_button",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "bamboo_chest_raft": {
+    "category": "misc",
+    "group": "chest_boat",
+    "ingredients": [
+      {
+        "item": "minecraft:chest"
+      },
+      {
+        "item": "minecraft:bamboo_raft"
+      }
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:bamboo_chest_raft",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "bamboo_door": {
+    "category": "redstone",
+    "group": "wooden_door",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:bamboo_planks",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "##",
+      "##",
+      "##"
+    ],
+    "result": {
+      "count": 3,
+      "item": "minecraft:bamboo_door",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "bamboo_fence": {
+    "category": "misc",
+    "group": "wooden_custom_fence",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:stick",
+        "tag": null
+      },
+      "W": {
+        "count": 1,
+        "item": "minecraft:bamboo_planks",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "W#W",
+      "W#W"
+    ],
+    "result": {
+      "count": 3,
+      "item": "minecraft:bamboo_fence",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "bamboo_fence_gate": {
+    "category": "redstone",
+    "group": "wooden_custom_fence_gate",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:stick",
+        "tag": null
+      },
+      "W": {
+        "count": 1,
+        "item": "minecraft:bamboo_planks",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "#W#",
+      "#W#"
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:bamboo_fence_gate",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "bamboo_hanging_sign": {
+    "category": "misc",
+    "group": "hanging_sign",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:stripped_bamboo_block",
+        "tag": null
+      },
+      "X": {
+        "count": 1,
+        "item": "minecraft:chain",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "X X",
+      "###",
+      "###"
+    ],
+    "result": {
+      "count": 6,
+      "item": "minecraft:bamboo_hanging_sign",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "bamboo_mosaic": {
+    "category": "misc",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:bamboo_slab",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "#",
+      "#"
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:bamboo_mosaic",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "bamboo_mosaic_slab": {
+    "category": "building",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:bamboo_mosaic",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "###"
+    ],
+    "result": {
+      "count": 6,
+      "item": "minecraft:bamboo_mosaic_slab",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "bamboo_mosaic_stairs": {
+    "category": "building",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:bamboo_mosaic",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "#  ",
+      "## ",
+      "###"
+    ],
+    "result": {
+      "count": 4,
+      "item": "minecraft:bamboo_mosaic_stairs",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "bamboo_planks": {
+    "category": "building",
+    "group": "planks",
+    "ingredients": [
+      {
+        "tag": "minecraft:bamboo_blocks"
+      }
+    ],
+    "result": {
+      "count": 2,
+      "item": "minecraft:bamboo_planks",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "bamboo_pressure_plate": {
+    "category": "redstone",
+    "group": "wooden_pressure_plate",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:bamboo_planks",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "##"
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:bamboo_pressure_plate",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "bamboo_raft": {
+    "category": "misc",
+    "group": "boat",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:bamboo_planks",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "# #",
+      "###"
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:bamboo_raft",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "bamboo_sign": {
+    "category": "misc",
+    "group": "wooden_sign",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:bamboo_planks",
+        "tag": null
+      },
+      "X": {
+        "count": 1,
+        "item": "minecraft:stick",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "###",
+      "###",
+      " X "
+    ],
+    "result": {
+      "count": 3,
+      "item": "minecraft:bamboo_sign",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "bamboo_slab": {
+    "category": "building",
+    "group": "wooden_slab",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:bamboo_planks",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "###"
+    ],
+    "result": {
+      "count": 6,
+      "item": "minecraft:bamboo_slab",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "bamboo_stairs": {
+    "category": "building",
+    "group": "wooden_stairs",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:bamboo_planks",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "#  ",
+      "## ",
+      "###"
+    ],
+    "result": {
+      "count": 4,
+      "item": "minecraft:bamboo_stairs",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "bamboo_trapdoor": {
+    "category": "redstone",
+    "group": "wooden_trapdoor",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:bamboo_planks",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "###",
+      "###"
+    ],
+    "result": {
+      "count": 2,
+      "item": "minecraft:bamboo_trapdoor",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
   "banner_duplicate": {
     "category": "misc",
     "type": "minecraft:crafting_special_bannerduplicate"
@@ -823,6 +1242,34 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
+  "birch_hanging_sign": {
+    "category": "misc",
+    "group": "hanging_sign",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:stripped_birch_log",
+        "tag": null
+      },
+      "X": {
+        "count": 1,
+        "item": "minecraft:chain",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "X X",
+      "###",
+      "###"
+    ],
+    "result": {
+      "count": 6,
+      "item": "minecraft:birch_hanging_sign",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
   "birch_planks": {
     "category": "building",
     "group": "planks",
@@ -1029,24 +1476,6 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
-  "black_bed_from_white_bed": {
-    "category": "misc",
-    "group": "dyed_bed",
-    "ingredients": [
-      {
-        "item": "minecraft:white_bed"
-      },
-      {
-        "item": "minecraft:black_dye"
-      }
-    ],
-    "result": {
-      "count": 1,
-      "item": "minecraft:black_bed",
-      "tag": null
-    },
-    "type": "minecraft:crafting_shapeless"
-  },
   "black_candle": {
     "category": "misc",
     "group": "dyed_candle",
@@ -1080,34 +1509,6 @@
     ],
     "result": {
       "count": 3,
-      "item": "minecraft:black_carpet",
-      "tag": null
-    },
-    "show_notification": true,
-    "type": "minecraft:crafting_shaped"
-  },
-  "black_carpet_from_white_carpet": {
-    "category": "misc",
-    "group": "carpet",
-    "key": {
-      "#": {
-        "count": 1,
-        "item": "minecraft:white_carpet",
-        "tag": null
-      },
-      "$": {
-        "count": 1,
-        "item": "minecraft:black_dye",
-        "tag": null
-      }
-    },
-    "pattern": [
-      "###",
-      "#$#",
-      "###"
-    ],
-    "result": {
-      "count": 8,
       "item": "minecraft:black_carpet",
       "tag": null
     },
@@ -1300,24 +1701,6 @@
     },
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
-  },
-  "black_wool": {
-    "category": "building",
-    "group": "wool",
-    "ingredients": [
-      {
-        "item": "minecraft:black_dye"
-      },
-      {
-        "item": "minecraft:white_wool"
-      }
-    ],
-    "result": {
-      "count": 1,
-      "item": "minecraft:black_wool",
-      "tag": null
-    },
-    "type": "minecraft:crafting_shapeless"
   },
   "blackstone_slab": {
     "category": "building",
@@ -1512,24 +1895,6 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
-  "blue_bed_from_white_bed": {
-    "category": "misc",
-    "group": "dyed_bed",
-    "ingredients": [
-      {
-        "item": "minecraft:white_bed"
-      },
-      {
-        "item": "minecraft:blue_dye"
-      }
-    ],
-    "result": {
-      "count": 1,
-      "item": "minecraft:blue_bed",
-      "tag": null
-    },
-    "type": "minecraft:crafting_shapeless"
-  },
   "blue_candle": {
     "category": "misc",
     "group": "dyed_candle",
@@ -1563,34 +1928,6 @@
     ],
     "result": {
       "count": 3,
-      "item": "minecraft:blue_carpet",
-      "tag": null
-    },
-    "show_notification": true,
-    "type": "minecraft:crafting_shaped"
-  },
-  "blue_carpet_from_white_carpet": {
-    "category": "misc",
-    "group": "carpet",
-    "key": {
-      "#": {
-        "count": 1,
-        "item": "minecraft:white_carpet",
-        "tag": null
-      },
-      "$": {
-        "count": 1,
-        "item": "minecraft:blue_dye",
-        "tag": null
-      }
-    },
-    "pattern": [
-      "###",
-      "#$#",
-      "###"
-    ],
-    "result": {
-      "count": 8,
       "item": "minecraft:blue_carpet",
       "tag": null
     },
@@ -1821,24 +2158,6 @@
     },
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
-  },
-  "blue_wool": {
-    "category": "building",
-    "group": "wool",
-    "ingredients": [
-      {
-        "item": "minecraft:blue_dye"
-      },
-      {
-        "item": "minecraft:white_wool"
-      }
-    ],
-    "result": {
-      "count": 1,
-      "item": "minecraft:blue_wool",
-      "tag": null
-    },
-    "type": "minecraft:crafting_shapeless"
   },
   "bone_block": {
     "category": "building",
@@ -2217,24 +2536,6 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
-  "brown_bed_from_white_bed": {
-    "category": "misc",
-    "group": "dyed_bed",
-    "ingredients": [
-      {
-        "item": "minecraft:white_bed"
-      },
-      {
-        "item": "minecraft:brown_dye"
-      }
-    ],
-    "result": {
-      "count": 1,
-      "item": "minecraft:brown_bed",
-      "tag": null
-    },
-    "type": "minecraft:crafting_shapeless"
-  },
   "brown_candle": {
     "category": "misc",
     "group": "dyed_candle",
@@ -2268,34 +2569,6 @@
     ],
     "result": {
       "count": 3,
-      "item": "minecraft:brown_carpet",
-      "tag": null
-    },
-    "show_notification": true,
-    "type": "minecraft:crafting_shaped"
-  },
-  "brown_carpet_from_white_carpet": {
-    "category": "misc",
-    "group": "carpet",
-    "key": {
-      "#": {
-        "count": 1,
-        "item": "minecraft:white_carpet",
-        "tag": null
-      },
-      "$": {
-        "count": 1,
-        "item": "minecraft:brown_dye",
-        "tag": null
-      }
-    },
-    "pattern": [
-      "###",
-      "#$#",
-      "###"
-    ],
-    "result": {
-      "count": 8,
       "item": "minecraft:brown_carpet",
       "tag": null
     },
@@ -2474,23 +2747,37 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
-  "brown_wool": {
-    "category": "building",
-    "group": "wool",
-    "ingredients": [
-      {
-        "item": "minecraft:brown_dye"
+  "brush": {
+    "category": "equipment",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:copper_ingot",
+        "tag": null
       },
-      {
-        "item": "minecraft:white_wool"
+      "I": {
+        "count": 1,
+        "item": "minecraft:stick",
+        "tag": null
+      },
+      "X": {
+        "count": 1,
+        "item": "minecraft:feather",
+        "tag": null
       }
+    },
+    "pattern": [
+      "X",
+      "#",
+      "I"
     ],
     "result": {
       "count": 1,
-      "item": "minecraft:brown_wool",
+      "item": "minecraft:brush",
       "tag": null
     },
-    "type": "minecraft:crafting_shapeless"
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
   },
   "bucket": {
     "category": "misc",
@@ -2545,6 +2832,32 @@
     "result": {
       "count": 1,
       "item": "minecraft:cake",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "calibrated_sculk_sensor": {
+    "category": "redstone",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:amethyst_shard",
+        "tag": null
+      },
+      "X": {
+        "count": 1,
+        "item": "minecraft:sculk_sensor",
+        "tag": null
+      }
+    },
+    "pattern": [
+      " # ",
+      "#X#"
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:calibrated_sculk_sensor",
       "tag": null
     },
     "show_notification": true,
@@ -2718,6 +3031,318 @@
     "result": "minecraft:charcoal",
     "type": "minecraft:smelting"
   },
+  "cherry_boat": {
+    "category": "misc",
+    "group": "boat",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:cherry_planks",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "# #",
+      "###"
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:cherry_boat",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "cherry_button": {
+    "category": "redstone",
+    "group": "wooden_button",
+    "ingredients": [
+      {
+        "item": "minecraft:cherry_planks"
+      }
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:cherry_button",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "cherry_chest_boat": {
+    "category": "misc",
+    "group": "chest_boat",
+    "ingredients": [
+      {
+        "item": "minecraft:chest"
+      },
+      {
+        "item": "minecraft:cherry_boat"
+      }
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:cherry_chest_boat",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "cherry_door": {
+    "category": "redstone",
+    "group": "wooden_door",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:cherry_planks",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "##",
+      "##",
+      "##"
+    ],
+    "result": {
+      "count": 3,
+      "item": "minecraft:cherry_door",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "cherry_fence": {
+    "category": "misc",
+    "group": "wooden_fence",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:stick",
+        "tag": null
+      },
+      "W": {
+        "count": 1,
+        "item": "minecraft:cherry_planks",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "W#W",
+      "W#W"
+    ],
+    "result": {
+      "count": 3,
+      "item": "minecraft:cherry_fence",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "cherry_fence_gate": {
+    "category": "redstone",
+    "group": "wooden_fence_gate",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:stick",
+        "tag": null
+      },
+      "W": {
+        "count": 1,
+        "item": "minecraft:cherry_planks",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "#W#",
+      "#W#"
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:cherry_fence_gate",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "cherry_hanging_sign": {
+    "category": "misc",
+    "group": "hanging_sign",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:stripped_cherry_log",
+        "tag": null
+      },
+      "X": {
+        "count": 1,
+        "item": "minecraft:chain",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "X X",
+      "###",
+      "###"
+    ],
+    "result": {
+      "count": 6,
+      "item": "minecraft:cherry_hanging_sign",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "cherry_planks": {
+    "category": "building",
+    "group": "planks",
+    "ingredients": [
+      {
+        "tag": "minecraft:cherry_logs"
+      }
+    ],
+    "result": {
+      "count": 4,
+      "item": "minecraft:cherry_planks",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "cherry_pressure_plate": {
+    "category": "redstone",
+    "group": "wooden_pressure_plate",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:cherry_planks",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "##"
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:cherry_pressure_plate",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "cherry_sign": {
+    "category": "misc",
+    "group": "wooden_sign",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:cherry_planks",
+        "tag": null
+      },
+      "X": {
+        "count": 1,
+        "item": "minecraft:stick",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "###",
+      "###",
+      " X "
+    ],
+    "result": {
+      "count": 3,
+      "item": "minecraft:cherry_sign",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "cherry_slab": {
+    "category": "building",
+    "group": "wooden_slab",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:cherry_planks",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "###"
+    ],
+    "result": {
+      "count": 6,
+      "item": "minecraft:cherry_slab",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "cherry_stairs": {
+    "category": "building",
+    "group": "wooden_stairs",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:cherry_planks",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "#  ",
+      "## ",
+      "###"
+    ],
+    "result": {
+      "count": 4,
+      "item": "minecraft:cherry_stairs",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "cherry_trapdoor": {
+    "category": "redstone",
+    "group": "wooden_trapdoor",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:cherry_planks",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "###",
+      "###"
+    ],
+    "result": {
+      "count": 2,
+      "item": "minecraft:cherry_trapdoor",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "cherry_wood": {
+    "category": "building",
+    "group": "bark",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:cherry_log",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "##",
+      "##"
+    ],
+    "result": {
+      "count": 3,
+      "item": "minecraft:cherry_wood",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
   "chest": {
     "category": "misc",
     "key": {
@@ -2755,6 +3380,31 @@
       "tag": null
     },
     "type": "minecraft:crafting_shapeless"
+  },
+  "chiseled_bookshelf": {
+    "category": "building",
+    "key": {
+      "#": {
+        "count": 1,
+        "tag": "minecraft:planks"
+      },
+      "X": {
+        "count": 1,
+        "tag": "minecraft:wooden_slabs"
+      }
+    },
+    "pattern": [
+      "###",
+      "XXX",
+      "###"
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:chiseled_bookshelf",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
   },
   "chiseled_deepslate": {
     "category": "building",
@@ -3154,6 +3804,50 @@
     },
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
+  },
+  "coast_armor_trim_smithing_template": {
+    "category": "misc",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:diamond",
+        "tag": null
+      },
+      "C": {
+        "count": 1,
+        "item": "minecraft:cobblestone",
+        "tag": null
+      },
+      "S": {
+        "count": 1,
+        "item": "minecraft:coast_armor_trim_smithing_template",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "#S#",
+      "#C#",
+      "###"
+    ],
+    "result": {
+      "count": 2,
+      "item": "minecraft:coast_armor_trim_smithing_template",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "coast_armor_trim_smithing_template_smithing_trim": {
+    "addition": {
+      "tag": "minecraft:trim_materials"
+    },
+    "base": {
+      "tag": "minecraft:trimmable_armor"
+    },
+    "template": {
+      "item": "minecraft:coast_armor_trim_smithing_template"
+    },
+    "type": "minecraft:smithing_trim"
   },
   "cobbled_deepslate_slab": {
     "category": "building",
@@ -4044,6 +4738,34 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
+  "crimson_hanging_sign": {
+    "category": "misc",
+    "group": "hanging_sign",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:stripped_crimson_stem",
+        "tag": null
+      },
+      "X": {
+        "count": 1,
+        "item": "minecraft:chain",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "X X",
+      "###",
+      "###"
+    ],
+    "result": {
+      "count": 6,
+      "item": "minecraft:crimson_hanging_sign",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
   "crimson_hyphae": {
     "category": "building",
     "group": "bark",
@@ -4542,24 +5264,6 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
-  "cyan_bed_from_white_bed": {
-    "category": "misc",
-    "group": "dyed_bed",
-    "ingredients": [
-      {
-        "item": "minecraft:white_bed"
-      },
-      {
-        "item": "minecraft:cyan_dye"
-      }
-    ],
-    "result": {
-      "count": 1,
-      "item": "minecraft:cyan_bed",
-      "tag": null
-    },
-    "type": "minecraft:crafting_shapeless"
-  },
   "cyan_candle": {
     "category": "misc",
     "group": "dyed_candle",
@@ -4593,34 +5297,6 @@
     ],
     "result": {
       "count": 3,
-      "item": "minecraft:cyan_carpet",
-      "tag": null
-    },
-    "show_notification": true,
-    "type": "minecraft:crafting_shaped"
-  },
-  "cyan_carpet_from_white_carpet": {
-    "category": "misc",
-    "group": "carpet",
-    "key": {
-      "#": {
-        "count": 1,
-        "item": "minecraft:white_carpet",
-        "tag": null
-      },
-      "$": {
-        "count": 1,
-        "item": "minecraft:cyan_dye",
-        "tag": null
-      }
-    },
-    "pattern": [
-      "###",
-      "#$#",
-      "###"
-    ],
-    "result": {
-      "count": 8,
       "item": "minecraft:cyan_carpet",
       "tag": null
     },
@@ -4668,12 +5344,28 @@
   },
   "cyan_dye": {
     "category": "misc",
+    "group": "cyan_dye",
     "ingredients": [
       {
         "item": "minecraft:blue_dye"
       },
       {
         "item": "minecraft:green_dye"
+      }
+    ],
+    "result": {
+      "count": 2,
+      "item": "minecraft:cyan_dye",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "cyan_dye_from_pitcher_plant": {
+    "category": "misc",
+    "group": "cyan_dye",
+    "ingredients": [
+      {
+        "item": "minecraft:pitcher_plant"
       }
     ],
     "result": {
@@ -4800,24 +5492,6 @@
     },
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
-  },
-  "cyan_wool": {
-    "category": "building",
-    "group": "wool",
-    "ingredients": [
-      {
-        "item": "minecraft:cyan_dye"
-      },
-      {
-        "item": "minecraft:white_wool"
-      }
-    ],
-    "result": {
-      "count": 1,
-      "item": "minecraft:cyan_wool",
-      "tag": null
-    },
-    "type": "minecraft:crafting_shapeless"
   },
   "dark_oak_boat": {
     "category": "misc",
@@ -4946,6 +5620,34 @@
     "result": {
       "count": 1,
       "item": "minecraft:dark_oak_fence_gate",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "dark_oak_hanging_sign": {
+    "category": "misc",
+    "group": "hanging_sign",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:stripped_dark_oak_log",
+        "tag": null
+      },
+      "X": {
+        "count": 1,
+        "item": "minecraft:chain",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "X X",
+      "###",
+      "###"
+    ],
+    "result": {
+      "count": 6,
+      "item": "minecraft:dark_oak_hanging_sign",
       "tag": null
     },
     "show_notification": true,
@@ -5218,6 +5920,32 @@
     "result": {
       "count": 1,
       "item": "minecraft:daylight_detector",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "decorated_pot": {
+    "category": "misc",
+    "type": "minecraft:crafting_decorated_pot"
+  },
+  "decorated_pot_simple": {
+    "category": "misc",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:brick",
+        "tag": null
+      }
+    },
+    "pattern": [
+      " # ",
+      "# #",
+      " # "
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:decorated_pot",
       "tag": null
     },
     "show_notification": true,
@@ -6275,6 +7003,3026 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
+  "dune_armor_trim_smithing_template": {
+    "category": "misc",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:diamond",
+        "tag": null
+      },
+      "C": {
+        "count": 1,
+        "item": "minecraft:sandstone",
+        "tag": null
+      },
+      "S": {
+        "count": 1,
+        "item": "minecraft:dune_armor_trim_smithing_template",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "#S#",
+      "#C#",
+      "###"
+    ],
+    "result": {
+      "count": 2,
+      "item": "minecraft:dune_armor_trim_smithing_template",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "dune_armor_trim_smithing_template_smithing_trim": {
+    "addition": {
+      "tag": "minecraft:trim_materials"
+    },
+    "base": {
+      "tag": "minecraft:trimmable_armor"
+    },
+    "template": {
+      "item": "minecraft:dune_armor_trim_smithing_template"
+    },
+    "type": "minecraft:smithing_trim"
+  },
+  "dye_black_bed": {
+    "category": "building",
+    "group": "bed",
+    "ingredients": [
+      {
+        "item": "minecraft:black_dye"
+      },
+      [
+        {
+          "item": "minecraft:blue_bed"
+        },
+        {
+          "item": "minecraft:brown_bed"
+        },
+        {
+          "item": "minecraft:cyan_bed"
+        },
+        {
+          "item": "minecraft:gray_bed"
+        },
+        {
+          "item": "minecraft:green_bed"
+        },
+        {
+          "item": "minecraft:light_blue_bed"
+        },
+        {
+          "item": "minecraft:light_gray_bed"
+        },
+        {
+          "item": "minecraft:lime_bed"
+        },
+        {
+          "item": "minecraft:magenta_bed"
+        },
+        {
+          "item": "minecraft:orange_bed"
+        },
+        {
+          "item": "minecraft:pink_bed"
+        },
+        {
+          "item": "minecraft:purple_bed"
+        },
+        {
+          "item": "minecraft:red_bed"
+        },
+        {
+          "item": "minecraft:yellow_bed"
+        },
+        {
+          "item": "minecraft:white_bed"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:black_bed",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_black_carpet": {
+    "category": "building",
+    "group": "carpet",
+    "ingredients": [
+      {
+        "item": "minecraft:black_dye"
+      },
+      [
+        {
+          "item": "minecraft:blue_carpet"
+        },
+        {
+          "item": "minecraft:brown_carpet"
+        },
+        {
+          "item": "minecraft:cyan_carpet"
+        },
+        {
+          "item": "minecraft:gray_carpet"
+        },
+        {
+          "item": "minecraft:green_carpet"
+        },
+        {
+          "item": "minecraft:light_blue_carpet"
+        },
+        {
+          "item": "minecraft:light_gray_carpet"
+        },
+        {
+          "item": "minecraft:lime_carpet"
+        },
+        {
+          "item": "minecraft:magenta_carpet"
+        },
+        {
+          "item": "minecraft:orange_carpet"
+        },
+        {
+          "item": "minecraft:pink_carpet"
+        },
+        {
+          "item": "minecraft:purple_carpet"
+        },
+        {
+          "item": "minecraft:red_carpet"
+        },
+        {
+          "item": "minecraft:yellow_carpet"
+        },
+        {
+          "item": "minecraft:white_carpet"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:black_carpet",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_black_wool": {
+    "category": "building",
+    "group": "wool",
+    "ingredients": [
+      {
+        "item": "minecraft:black_dye"
+      },
+      [
+        {
+          "item": "minecraft:blue_wool"
+        },
+        {
+          "item": "minecraft:brown_wool"
+        },
+        {
+          "item": "minecraft:cyan_wool"
+        },
+        {
+          "item": "minecraft:gray_wool"
+        },
+        {
+          "item": "minecraft:green_wool"
+        },
+        {
+          "item": "minecraft:light_blue_wool"
+        },
+        {
+          "item": "minecraft:light_gray_wool"
+        },
+        {
+          "item": "minecraft:lime_wool"
+        },
+        {
+          "item": "minecraft:magenta_wool"
+        },
+        {
+          "item": "minecraft:orange_wool"
+        },
+        {
+          "item": "minecraft:pink_wool"
+        },
+        {
+          "item": "minecraft:purple_wool"
+        },
+        {
+          "item": "minecraft:red_wool"
+        },
+        {
+          "item": "minecraft:yellow_wool"
+        },
+        {
+          "item": "minecraft:white_wool"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:black_wool",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_blue_bed": {
+    "category": "building",
+    "group": "bed",
+    "ingredients": [
+      {
+        "item": "minecraft:blue_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_bed"
+        },
+        {
+          "item": "minecraft:brown_bed"
+        },
+        {
+          "item": "minecraft:cyan_bed"
+        },
+        {
+          "item": "minecraft:gray_bed"
+        },
+        {
+          "item": "minecraft:green_bed"
+        },
+        {
+          "item": "minecraft:light_blue_bed"
+        },
+        {
+          "item": "minecraft:light_gray_bed"
+        },
+        {
+          "item": "minecraft:lime_bed"
+        },
+        {
+          "item": "minecraft:magenta_bed"
+        },
+        {
+          "item": "minecraft:orange_bed"
+        },
+        {
+          "item": "minecraft:pink_bed"
+        },
+        {
+          "item": "minecraft:purple_bed"
+        },
+        {
+          "item": "minecraft:red_bed"
+        },
+        {
+          "item": "minecraft:yellow_bed"
+        },
+        {
+          "item": "minecraft:white_bed"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:blue_bed",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_blue_carpet": {
+    "category": "building",
+    "group": "carpet",
+    "ingredients": [
+      {
+        "item": "minecraft:blue_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_carpet"
+        },
+        {
+          "item": "minecraft:brown_carpet"
+        },
+        {
+          "item": "minecraft:cyan_carpet"
+        },
+        {
+          "item": "minecraft:gray_carpet"
+        },
+        {
+          "item": "minecraft:green_carpet"
+        },
+        {
+          "item": "minecraft:light_blue_carpet"
+        },
+        {
+          "item": "minecraft:light_gray_carpet"
+        },
+        {
+          "item": "minecraft:lime_carpet"
+        },
+        {
+          "item": "minecraft:magenta_carpet"
+        },
+        {
+          "item": "minecraft:orange_carpet"
+        },
+        {
+          "item": "minecraft:pink_carpet"
+        },
+        {
+          "item": "minecraft:purple_carpet"
+        },
+        {
+          "item": "minecraft:red_carpet"
+        },
+        {
+          "item": "minecraft:yellow_carpet"
+        },
+        {
+          "item": "minecraft:white_carpet"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:blue_carpet",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_blue_wool": {
+    "category": "building",
+    "group": "wool",
+    "ingredients": [
+      {
+        "item": "minecraft:blue_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_wool"
+        },
+        {
+          "item": "minecraft:brown_wool"
+        },
+        {
+          "item": "minecraft:cyan_wool"
+        },
+        {
+          "item": "minecraft:gray_wool"
+        },
+        {
+          "item": "minecraft:green_wool"
+        },
+        {
+          "item": "minecraft:light_blue_wool"
+        },
+        {
+          "item": "minecraft:light_gray_wool"
+        },
+        {
+          "item": "minecraft:lime_wool"
+        },
+        {
+          "item": "minecraft:magenta_wool"
+        },
+        {
+          "item": "minecraft:orange_wool"
+        },
+        {
+          "item": "minecraft:pink_wool"
+        },
+        {
+          "item": "minecraft:purple_wool"
+        },
+        {
+          "item": "minecraft:red_wool"
+        },
+        {
+          "item": "minecraft:yellow_wool"
+        },
+        {
+          "item": "minecraft:white_wool"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:blue_wool",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_brown_bed": {
+    "category": "building",
+    "group": "bed",
+    "ingredients": [
+      {
+        "item": "minecraft:brown_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_bed"
+        },
+        {
+          "item": "minecraft:blue_bed"
+        },
+        {
+          "item": "minecraft:cyan_bed"
+        },
+        {
+          "item": "minecraft:gray_bed"
+        },
+        {
+          "item": "minecraft:green_bed"
+        },
+        {
+          "item": "minecraft:light_blue_bed"
+        },
+        {
+          "item": "minecraft:light_gray_bed"
+        },
+        {
+          "item": "minecraft:lime_bed"
+        },
+        {
+          "item": "minecraft:magenta_bed"
+        },
+        {
+          "item": "minecraft:orange_bed"
+        },
+        {
+          "item": "minecraft:pink_bed"
+        },
+        {
+          "item": "minecraft:purple_bed"
+        },
+        {
+          "item": "minecraft:red_bed"
+        },
+        {
+          "item": "minecraft:yellow_bed"
+        },
+        {
+          "item": "minecraft:white_bed"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:brown_bed",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_brown_carpet": {
+    "category": "building",
+    "group": "carpet",
+    "ingredients": [
+      {
+        "item": "minecraft:brown_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_carpet"
+        },
+        {
+          "item": "minecraft:blue_carpet"
+        },
+        {
+          "item": "minecraft:cyan_carpet"
+        },
+        {
+          "item": "minecraft:gray_carpet"
+        },
+        {
+          "item": "minecraft:green_carpet"
+        },
+        {
+          "item": "minecraft:light_blue_carpet"
+        },
+        {
+          "item": "minecraft:light_gray_carpet"
+        },
+        {
+          "item": "minecraft:lime_carpet"
+        },
+        {
+          "item": "minecraft:magenta_carpet"
+        },
+        {
+          "item": "minecraft:orange_carpet"
+        },
+        {
+          "item": "minecraft:pink_carpet"
+        },
+        {
+          "item": "minecraft:purple_carpet"
+        },
+        {
+          "item": "minecraft:red_carpet"
+        },
+        {
+          "item": "minecraft:yellow_carpet"
+        },
+        {
+          "item": "minecraft:white_carpet"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:brown_carpet",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_brown_wool": {
+    "category": "building",
+    "group": "wool",
+    "ingredients": [
+      {
+        "item": "minecraft:brown_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_wool"
+        },
+        {
+          "item": "minecraft:blue_wool"
+        },
+        {
+          "item": "minecraft:cyan_wool"
+        },
+        {
+          "item": "minecraft:gray_wool"
+        },
+        {
+          "item": "minecraft:green_wool"
+        },
+        {
+          "item": "minecraft:light_blue_wool"
+        },
+        {
+          "item": "minecraft:light_gray_wool"
+        },
+        {
+          "item": "minecraft:lime_wool"
+        },
+        {
+          "item": "minecraft:magenta_wool"
+        },
+        {
+          "item": "minecraft:orange_wool"
+        },
+        {
+          "item": "minecraft:pink_wool"
+        },
+        {
+          "item": "minecraft:purple_wool"
+        },
+        {
+          "item": "minecraft:red_wool"
+        },
+        {
+          "item": "minecraft:yellow_wool"
+        },
+        {
+          "item": "minecraft:white_wool"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:brown_wool",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_cyan_bed": {
+    "category": "building",
+    "group": "bed",
+    "ingredients": [
+      {
+        "item": "minecraft:cyan_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_bed"
+        },
+        {
+          "item": "minecraft:blue_bed"
+        },
+        {
+          "item": "minecraft:brown_bed"
+        },
+        {
+          "item": "minecraft:gray_bed"
+        },
+        {
+          "item": "minecraft:green_bed"
+        },
+        {
+          "item": "minecraft:light_blue_bed"
+        },
+        {
+          "item": "minecraft:light_gray_bed"
+        },
+        {
+          "item": "minecraft:lime_bed"
+        },
+        {
+          "item": "minecraft:magenta_bed"
+        },
+        {
+          "item": "minecraft:orange_bed"
+        },
+        {
+          "item": "minecraft:pink_bed"
+        },
+        {
+          "item": "minecraft:purple_bed"
+        },
+        {
+          "item": "minecraft:red_bed"
+        },
+        {
+          "item": "minecraft:yellow_bed"
+        },
+        {
+          "item": "minecraft:white_bed"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:cyan_bed",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_cyan_carpet": {
+    "category": "building",
+    "group": "carpet",
+    "ingredients": [
+      {
+        "item": "minecraft:cyan_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_carpet"
+        },
+        {
+          "item": "minecraft:blue_carpet"
+        },
+        {
+          "item": "minecraft:brown_carpet"
+        },
+        {
+          "item": "minecraft:gray_carpet"
+        },
+        {
+          "item": "minecraft:green_carpet"
+        },
+        {
+          "item": "minecraft:light_blue_carpet"
+        },
+        {
+          "item": "minecraft:light_gray_carpet"
+        },
+        {
+          "item": "minecraft:lime_carpet"
+        },
+        {
+          "item": "minecraft:magenta_carpet"
+        },
+        {
+          "item": "minecraft:orange_carpet"
+        },
+        {
+          "item": "minecraft:pink_carpet"
+        },
+        {
+          "item": "minecraft:purple_carpet"
+        },
+        {
+          "item": "minecraft:red_carpet"
+        },
+        {
+          "item": "minecraft:yellow_carpet"
+        },
+        {
+          "item": "minecraft:white_carpet"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:cyan_carpet",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_cyan_wool": {
+    "category": "building",
+    "group": "wool",
+    "ingredients": [
+      {
+        "item": "minecraft:cyan_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_wool"
+        },
+        {
+          "item": "minecraft:blue_wool"
+        },
+        {
+          "item": "minecraft:brown_wool"
+        },
+        {
+          "item": "minecraft:gray_wool"
+        },
+        {
+          "item": "minecraft:green_wool"
+        },
+        {
+          "item": "minecraft:light_blue_wool"
+        },
+        {
+          "item": "minecraft:light_gray_wool"
+        },
+        {
+          "item": "minecraft:lime_wool"
+        },
+        {
+          "item": "minecraft:magenta_wool"
+        },
+        {
+          "item": "minecraft:orange_wool"
+        },
+        {
+          "item": "minecraft:pink_wool"
+        },
+        {
+          "item": "minecraft:purple_wool"
+        },
+        {
+          "item": "minecraft:red_wool"
+        },
+        {
+          "item": "minecraft:yellow_wool"
+        },
+        {
+          "item": "minecraft:white_wool"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:cyan_wool",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_gray_bed": {
+    "category": "building",
+    "group": "bed",
+    "ingredients": [
+      {
+        "item": "minecraft:gray_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_bed"
+        },
+        {
+          "item": "minecraft:blue_bed"
+        },
+        {
+          "item": "minecraft:brown_bed"
+        },
+        {
+          "item": "minecraft:cyan_bed"
+        },
+        {
+          "item": "minecraft:green_bed"
+        },
+        {
+          "item": "minecraft:light_blue_bed"
+        },
+        {
+          "item": "minecraft:light_gray_bed"
+        },
+        {
+          "item": "minecraft:lime_bed"
+        },
+        {
+          "item": "minecraft:magenta_bed"
+        },
+        {
+          "item": "minecraft:orange_bed"
+        },
+        {
+          "item": "minecraft:pink_bed"
+        },
+        {
+          "item": "minecraft:purple_bed"
+        },
+        {
+          "item": "minecraft:red_bed"
+        },
+        {
+          "item": "minecraft:yellow_bed"
+        },
+        {
+          "item": "minecraft:white_bed"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:gray_bed",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_gray_carpet": {
+    "category": "building",
+    "group": "carpet",
+    "ingredients": [
+      {
+        "item": "minecraft:gray_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_carpet"
+        },
+        {
+          "item": "minecraft:blue_carpet"
+        },
+        {
+          "item": "minecraft:brown_carpet"
+        },
+        {
+          "item": "minecraft:cyan_carpet"
+        },
+        {
+          "item": "minecraft:green_carpet"
+        },
+        {
+          "item": "minecraft:light_blue_carpet"
+        },
+        {
+          "item": "minecraft:light_gray_carpet"
+        },
+        {
+          "item": "minecraft:lime_carpet"
+        },
+        {
+          "item": "minecraft:magenta_carpet"
+        },
+        {
+          "item": "minecraft:orange_carpet"
+        },
+        {
+          "item": "minecraft:pink_carpet"
+        },
+        {
+          "item": "minecraft:purple_carpet"
+        },
+        {
+          "item": "minecraft:red_carpet"
+        },
+        {
+          "item": "minecraft:yellow_carpet"
+        },
+        {
+          "item": "minecraft:white_carpet"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:gray_carpet",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_gray_wool": {
+    "category": "building",
+    "group": "wool",
+    "ingredients": [
+      {
+        "item": "minecraft:gray_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_wool"
+        },
+        {
+          "item": "minecraft:blue_wool"
+        },
+        {
+          "item": "minecraft:brown_wool"
+        },
+        {
+          "item": "minecraft:cyan_wool"
+        },
+        {
+          "item": "minecraft:green_wool"
+        },
+        {
+          "item": "minecraft:light_blue_wool"
+        },
+        {
+          "item": "minecraft:light_gray_wool"
+        },
+        {
+          "item": "minecraft:lime_wool"
+        },
+        {
+          "item": "minecraft:magenta_wool"
+        },
+        {
+          "item": "minecraft:orange_wool"
+        },
+        {
+          "item": "minecraft:pink_wool"
+        },
+        {
+          "item": "minecraft:purple_wool"
+        },
+        {
+          "item": "minecraft:red_wool"
+        },
+        {
+          "item": "minecraft:yellow_wool"
+        },
+        {
+          "item": "minecraft:white_wool"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:gray_wool",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_green_bed": {
+    "category": "building",
+    "group": "bed",
+    "ingredients": [
+      {
+        "item": "minecraft:green_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_bed"
+        },
+        {
+          "item": "minecraft:blue_bed"
+        },
+        {
+          "item": "minecraft:brown_bed"
+        },
+        {
+          "item": "minecraft:cyan_bed"
+        },
+        {
+          "item": "minecraft:gray_bed"
+        },
+        {
+          "item": "minecraft:light_blue_bed"
+        },
+        {
+          "item": "minecraft:light_gray_bed"
+        },
+        {
+          "item": "minecraft:lime_bed"
+        },
+        {
+          "item": "minecraft:magenta_bed"
+        },
+        {
+          "item": "minecraft:orange_bed"
+        },
+        {
+          "item": "minecraft:pink_bed"
+        },
+        {
+          "item": "minecraft:purple_bed"
+        },
+        {
+          "item": "minecraft:red_bed"
+        },
+        {
+          "item": "minecraft:yellow_bed"
+        },
+        {
+          "item": "minecraft:white_bed"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:green_bed",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_green_carpet": {
+    "category": "building",
+    "group": "carpet",
+    "ingredients": [
+      {
+        "item": "minecraft:green_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_carpet"
+        },
+        {
+          "item": "minecraft:blue_carpet"
+        },
+        {
+          "item": "minecraft:brown_carpet"
+        },
+        {
+          "item": "minecraft:cyan_carpet"
+        },
+        {
+          "item": "minecraft:gray_carpet"
+        },
+        {
+          "item": "minecraft:light_blue_carpet"
+        },
+        {
+          "item": "minecraft:light_gray_carpet"
+        },
+        {
+          "item": "minecraft:lime_carpet"
+        },
+        {
+          "item": "minecraft:magenta_carpet"
+        },
+        {
+          "item": "minecraft:orange_carpet"
+        },
+        {
+          "item": "minecraft:pink_carpet"
+        },
+        {
+          "item": "minecraft:purple_carpet"
+        },
+        {
+          "item": "minecraft:red_carpet"
+        },
+        {
+          "item": "minecraft:yellow_carpet"
+        },
+        {
+          "item": "minecraft:white_carpet"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:green_carpet",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_green_wool": {
+    "category": "building",
+    "group": "wool",
+    "ingredients": [
+      {
+        "item": "minecraft:green_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_wool"
+        },
+        {
+          "item": "minecraft:blue_wool"
+        },
+        {
+          "item": "minecraft:brown_wool"
+        },
+        {
+          "item": "minecraft:cyan_wool"
+        },
+        {
+          "item": "minecraft:gray_wool"
+        },
+        {
+          "item": "minecraft:light_blue_wool"
+        },
+        {
+          "item": "minecraft:light_gray_wool"
+        },
+        {
+          "item": "minecraft:lime_wool"
+        },
+        {
+          "item": "minecraft:magenta_wool"
+        },
+        {
+          "item": "minecraft:orange_wool"
+        },
+        {
+          "item": "minecraft:pink_wool"
+        },
+        {
+          "item": "minecraft:purple_wool"
+        },
+        {
+          "item": "minecraft:red_wool"
+        },
+        {
+          "item": "minecraft:yellow_wool"
+        },
+        {
+          "item": "minecraft:white_wool"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:green_wool",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_light_blue_bed": {
+    "category": "building",
+    "group": "bed",
+    "ingredients": [
+      {
+        "item": "minecraft:light_blue_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_bed"
+        },
+        {
+          "item": "minecraft:blue_bed"
+        },
+        {
+          "item": "minecraft:brown_bed"
+        },
+        {
+          "item": "minecraft:cyan_bed"
+        },
+        {
+          "item": "minecraft:gray_bed"
+        },
+        {
+          "item": "minecraft:green_bed"
+        },
+        {
+          "item": "minecraft:light_gray_bed"
+        },
+        {
+          "item": "minecraft:lime_bed"
+        },
+        {
+          "item": "minecraft:magenta_bed"
+        },
+        {
+          "item": "minecraft:orange_bed"
+        },
+        {
+          "item": "minecraft:pink_bed"
+        },
+        {
+          "item": "minecraft:purple_bed"
+        },
+        {
+          "item": "minecraft:red_bed"
+        },
+        {
+          "item": "minecraft:yellow_bed"
+        },
+        {
+          "item": "minecraft:white_bed"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:light_blue_bed",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_light_blue_carpet": {
+    "category": "building",
+    "group": "carpet",
+    "ingredients": [
+      {
+        "item": "minecraft:light_blue_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_carpet"
+        },
+        {
+          "item": "minecraft:blue_carpet"
+        },
+        {
+          "item": "minecraft:brown_carpet"
+        },
+        {
+          "item": "minecraft:cyan_carpet"
+        },
+        {
+          "item": "minecraft:gray_carpet"
+        },
+        {
+          "item": "minecraft:green_carpet"
+        },
+        {
+          "item": "minecraft:light_gray_carpet"
+        },
+        {
+          "item": "minecraft:lime_carpet"
+        },
+        {
+          "item": "minecraft:magenta_carpet"
+        },
+        {
+          "item": "minecraft:orange_carpet"
+        },
+        {
+          "item": "minecraft:pink_carpet"
+        },
+        {
+          "item": "minecraft:purple_carpet"
+        },
+        {
+          "item": "minecraft:red_carpet"
+        },
+        {
+          "item": "minecraft:yellow_carpet"
+        },
+        {
+          "item": "minecraft:white_carpet"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:light_blue_carpet",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_light_blue_wool": {
+    "category": "building",
+    "group": "wool",
+    "ingredients": [
+      {
+        "item": "minecraft:light_blue_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_wool"
+        },
+        {
+          "item": "minecraft:blue_wool"
+        },
+        {
+          "item": "minecraft:brown_wool"
+        },
+        {
+          "item": "minecraft:cyan_wool"
+        },
+        {
+          "item": "minecraft:gray_wool"
+        },
+        {
+          "item": "minecraft:green_wool"
+        },
+        {
+          "item": "minecraft:light_gray_wool"
+        },
+        {
+          "item": "minecraft:lime_wool"
+        },
+        {
+          "item": "minecraft:magenta_wool"
+        },
+        {
+          "item": "minecraft:orange_wool"
+        },
+        {
+          "item": "minecraft:pink_wool"
+        },
+        {
+          "item": "minecraft:purple_wool"
+        },
+        {
+          "item": "minecraft:red_wool"
+        },
+        {
+          "item": "minecraft:yellow_wool"
+        },
+        {
+          "item": "minecraft:white_wool"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:light_blue_wool",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_light_gray_bed": {
+    "category": "building",
+    "group": "bed",
+    "ingredients": [
+      {
+        "item": "minecraft:light_gray_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_bed"
+        },
+        {
+          "item": "minecraft:blue_bed"
+        },
+        {
+          "item": "minecraft:brown_bed"
+        },
+        {
+          "item": "minecraft:cyan_bed"
+        },
+        {
+          "item": "minecraft:gray_bed"
+        },
+        {
+          "item": "minecraft:green_bed"
+        },
+        {
+          "item": "minecraft:light_blue_bed"
+        },
+        {
+          "item": "minecraft:lime_bed"
+        },
+        {
+          "item": "minecraft:magenta_bed"
+        },
+        {
+          "item": "minecraft:orange_bed"
+        },
+        {
+          "item": "minecraft:pink_bed"
+        },
+        {
+          "item": "minecraft:purple_bed"
+        },
+        {
+          "item": "minecraft:red_bed"
+        },
+        {
+          "item": "minecraft:yellow_bed"
+        },
+        {
+          "item": "minecraft:white_bed"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:light_gray_bed",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_light_gray_carpet": {
+    "category": "building",
+    "group": "carpet",
+    "ingredients": [
+      {
+        "item": "minecraft:light_gray_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_carpet"
+        },
+        {
+          "item": "minecraft:blue_carpet"
+        },
+        {
+          "item": "minecraft:brown_carpet"
+        },
+        {
+          "item": "minecraft:cyan_carpet"
+        },
+        {
+          "item": "minecraft:gray_carpet"
+        },
+        {
+          "item": "minecraft:green_carpet"
+        },
+        {
+          "item": "minecraft:light_blue_carpet"
+        },
+        {
+          "item": "minecraft:lime_carpet"
+        },
+        {
+          "item": "minecraft:magenta_carpet"
+        },
+        {
+          "item": "minecraft:orange_carpet"
+        },
+        {
+          "item": "minecraft:pink_carpet"
+        },
+        {
+          "item": "minecraft:purple_carpet"
+        },
+        {
+          "item": "minecraft:red_carpet"
+        },
+        {
+          "item": "minecraft:yellow_carpet"
+        },
+        {
+          "item": "minecraft:white_carpet"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:light_gray_carpet",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_light_gray_wool": {
+    "category": "building",
+    "group": "wool",
+    "ingredients": [
+      {
+        "item": "minecraft:light_gray_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_wool"
+        },
+        {
+          "item": "minecraft:blue_wool"
+        },
+        {
+          "item": "minecraft:brown_wool"
+        },
+        {
+          "item": "minecraft:cyan_wool"
+        },
+        {
+          "item": "minecraft:gray_wool"
+        },
+        {
+          "item": "minecraft:green_wool"
+        },
+        {
+          "item": "minecraft:light_blue_wool"
+        },
+        {
+          "item": "minecraft:lime_wool"
+        },
+        {
+          "item": "minecraft:magenta_wool"
+        },
+        {
+          "item": "minecraft:orange_wool"
+        },
+        {
+          "item": "minecraft:pink_wool"
+        },
+        {
+          "item": "minecraft:purple_wool"
+        },
+        {
+          "item": "minecraft:red_wool"
+        },
+        {
+          "item": "minecraft:yellow_wool"
+        },
+        {
+          "item": "minecraft:white_wool"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:light_gray_wool",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_lime_bed": {
+    "category": "building",
+    "group": "bed",
+    "ingredients": [
+      {
+        "item": "minecraft:lime_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_bed"
+        },
+        {
+          "item": "minecraft:blue_bed"
+        },
+        {
+          "item": "minecraft:brown_bed"
+        },
+        {
+          "item": "minecraft:cyan_bed"
+        },
+        {
+          "item": "minecraft:gray_bed"
+        },
+        {
+          "item": "minecraft:green_bed"
+        },
+        {
+          "item": "minecraft:light_blue_bed"
+        },
+        {
+          "item": "minecraft:light_gray_bed"
+        },
+        {
+          "item": "minecraft:magenta_bed"
+        },
+        {
+          "item": "minecraft:orange_bed"
+        },
+        {
+          "item": "minecraft:pink_bed"
+        },
+        {
+          "item": "minecraft:purple_bed"
+        },
+        {
+          "item": "minecraft:red_bed"
+        },
+        {
+          "item": "minecraft:yellow_bed"
+        },
+        {
+          "item": "minecraft:white_bed"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:lime_bed",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_lime_carpet": {
+    "category": "building",
+    "group": "carpet",
+    "ingredients": [
+      {
+        "item": "minecraft:lime_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_carpet"
+        },
+        {
+          "item": "minecraft:blue_carpet"
+        },
+        {
+          "item": "minecraft:brown_carpet"
+        },
+        {
+          "item": "minecraft:cyan_carpet"
+        },
+        {
+          "item": "minecraft:gray_carpet"
+        },
+        {
+          "item": "minecraft:green_carpet"
+        },
+        {
+          "item": "minecraft:light_blue_carpet"
+        },
+        {
+          "item": "minecraft:light_gray_carpet"
+        },
+        {
+          "item": "minecraft:magenta_carpet"
+        },
+        {
+          "item": "minecraft:orange_carpet"
+        },
+        {
+          "item": "minecraft:pink_carpet"
+        },
+        {
+          "item": "minecraft:purple_carpet"
+        },
+        {
+          "item": "minecraft:red_carpet"
+        },
+        {
+          "item": "minecraft:yellow_carpet"
+        },
+        {
+          "item": "minecraft:white_carpet"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:lime_carpet",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_lime_wool": {
+    "category": "building",
+    "group": "wool",
+    "ingredients": [
+      {
+        "item": "minecraft:lime_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_wool"
+        },
+        {
+          "item": "minecraft:blue_wool"
+        },
+        {
+          "item": "minecraft:brown_wool"
+        },
+        {
+          "item": "minecraft:cyan_wool"
+        },
+        {
+          "item": "minecraft:gray_wool"
+        },
+        {
+          "item": "minecraft:green_wool"
+        },
+        {
+          "item": "minecraft:light_blue_wool"
+        },
+        {
+          "item": "minecraft:light_gray_wool"
+        },
+        {
+          "item": "minecraft:magenta_wool"
+        },
+        {
+          "item": "minecraft:orange_wool"
+        },
+        {
+          "item": "minecraft:pink_wool"
+        },
+        {
+          "item": "minecraft:purple_wool"
+        },
+        {
+          "item": "minecraft:red_wool"
+        },
+        {
+          "item": "minecraft:yellow_wool"
+        },
+        {
+          "item": "minecraft:white_wool"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:lime_wool",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_magenta_bed": {
+    "category": "building",
+    "group": "bed",
+    "ingredients": [
+      {
+        "item": "minecraft:magenta_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_bed"
+        },
+        {
+          "item": "minecraft:blue_bed"
+        },
+        {
+          "item": "minecraft:brown_bed"
+        },
+        {
+          "item": "minecraft:cyan_bed"
+        },
+        {
+          "item": "minecraft:gray_bed"
+        },
+        {
+          "item": "minecraft:green_bed"
+        },
+        {
+          "item": "minecraft:light_blue_bed"
+        },
+        {
+          "item": "minecraft:light_gray_bed"
+        },
+        {
+          "item": "minecraft:lime_bed"
+        },
+        {
+          "item": "minecraft:orange_bed"
+        },
+        {
+          "item": "minecraft:pink_bed"
+        },
+        {
+          "item": "minecraft:purple_bed"
+        },
+        {
+          "item": "minecraft:red_bed"
+        },
+        {
+          "item": "minecraft:yellow_bed"
+        },
+        {
+          "item": "minecraft:white_bed"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:magenta_bed",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_magenta_carpet": {
+    "category": "building",
+    "group": "carpet",
+    "ingredients": [
+      {
+        "item": "minecraft:magenta_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_carpet"
+        },
+        {
+          "item": "minecraft:blue_carpet"
+        },
+        {
+          "item": "minecraft:brown_carpet"
+        },
+        {
+          "item": "minecraft:cyan_carpet"
+        },
+        {
+          "item": "minecraft:gray_carpet"
+        },
+        {
+          "item": "minecraft:green_carpet"
+        },
+        {
+          "item": "minecraft:light_blue_carpet"
+        },
+        {
+          "item": "minecraft:light_gray_carpet"
+        },
+        {
+          "item": "minecraft:lime_carpet"
+        },
+        {
+          "item": "minecraft:orange_carpet"
+        },
+        {
+          "item": "minecraft:pink_carpet"
+        },
+        {
+          "item": "minecraft:purple_carpet"
+        },
+        {
+          "item": "minecraft:red_carpet"
+        },
+        {
+          "item": "minecraft:yellow_carpet"
+        },
+        {
+          "item": "minecraft:white_carpet"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:magenta_carpet",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_magenta_wool": {
+    "category": "building",
+    "group": "wool",
+    "ingredients": [
+      {
+        "item": "minecraft:magenta_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_wool"
+        },
+        {
+          "item": "minecraft:blue_wool"
+        },
+        {
+          "item": "minecraft:brown_wool"
+        },
+        {
+          "item": "minecraft:cyan_wool"
+        },
+        {
+          "item": "minecraft:gray_wool"
+        },
+        {
+          "item": "minecraft:green_wool"
+        },
+        {
+          "item": "minecraft:light_blue_wool"
+        },
+        {
+          "item": "minecraft:light_gray_wool"
+        },
+        {
+          "item": "minecraft:lime_wool"
+        },
+        {
+          "item": "minecraft:orange_wool"
+        },
+        {
+          "item": "minecraft:pink_wool"
+        },
+        {
+          "item": "minecraft:purple_wool"
+        },
+        {
+          "item": "minecraft:red_wool"
+        },
+        {
+          "item": "minecraft:yellow_wool"
+        },
+        {
+          "item": "minecraft:white_wool"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:magenta_wool",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_orange_bed": {
+    "category": "building",
+    "group": "bed",
+    "ingredients": [
+      {
+        "item": "minecraft:orange_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_bed"
+        },
+        {
+          "item": "minecraft:blue_bed"
+        },
+        {
+          "item": "minecraft:brown_bed"
+        },
+        {
+          "item": "minecraft:cyan_bed"
+        },
+        {
+          "item": "minecraft:gray_bed"
+        },
+        {
+          "item": "minecraft:green_bed"
+        },
+        {
+          "item": "minecraft:light_blue_bed"
+        },
+        {
+          "item": "minecraft:light_gray_bed"
+        },
+        {
+          "item": "minecraft:lime_bed"
+        },
+        {
+          "item": "minecraft:magenta_bed"
+        },
+        {
+          "item": "minecraft:pink_bed"
+        },
+        {
+          "item": "minecraft:purple_bed"
+        },
+        {
+          "item": "minecraft:red_bed"
+        },
+        {
+          "item": "minecraft:yellow_bed"
+        },
+        {
+          "item": "minecraft:white_bed"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:orange_bed",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_orange_carpet": {
+    "category": "building",
+    "group": "carpet",
+    "ingredients": [
+      {
+        "item": "minecraft:orange_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_carpet"
+        },
+        {
+          "item": "minecraft:blue_carpet"
+        },
+        {
+          "item": "minecraft:brown_carpet"
+        },
+        {
+          "item": "minecraft:cyan_carpet"
+        },
+        {
+          "item": "minecraft:gray_carpet"
+        },
+        {
+          "item": "minecraft:green_carpet"
+        },
+        {
+          "item": "minecraft:light_blue_carpet"
+        },
+        {
+          "item": "minecraft:light_gray_carpet"
+        },
+        {
+          "item": "minecraft:lime_carpet"
+        },
+        {
+          "item": "minecraft:magenta_carpet"
+        },
+        {
+          "item": "minecraft:pink_carpet"
+        },
+        {
+          "item": "minecraft:purple_carpet"
+        },
+        {
+          "item": "minecraft:red_carpet"
+        },
+        {
+          "item": "minecraft:yellow_carpet"
+        },
+        {
+          "item": "minecraft:white_carpet"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:orange_carpet",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_orange_wool": {
+    "category": "building",
+    "group": "wool",
+    "ingredients": [
+      {
+        "item": "minecraft:orange_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_wool"
+        },
+        {
+          "item": "minecraft:blue_wool"
+        },
+        {
+          "item": "minecraft:brown_wool"
+        },
+        {
+          "item": "minecraft:cyan_wool"
+        },
+        {
+          "item": "minecraft:gray_wool"
+        },
+        {
+          "item": "minecraft:green_wool"
+        },
+        {
+          "item": "minecraft:light_blue_wool"
+        },
+        {
+          "item": "minecraft:light_gray_wool"
+        },
+        {
+          "item": "minecraft:lime_wool"
+        },
+        {
+          "item": "minecraft:magenta_wool"
+        },
+        {
+          "item": "minecraft:pink_wool"
+        },
+        {
+          "item": "minecraft:purple_wool"
+        },
+        {
+          "item": "minecraft:red_wool"
+        },
+        {
+          "item": "minecraft:yellow_wool"
+        },
+        {
+          "item": "minecraft:white_wool"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:orange_wool",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_pink_bed": {
+    "category": "building",
+    "group": "bed",
+    "ingredients": [
+      {
+        "item": "minecraft:pink_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_bed"
+        },
+        {
+          "item": "minecraft:blue_bed"
+        },
+        {
+          "item": "minecraft:brown_bed"
+        },
+        {
+          "item": "minecraft:cyan_bed"
+        },
+        {
+          "item": "minecraft:gray_bed"
+        },
+        {
+          "item": "minecraft:green_bed"
+        },
+        {
+          "item": "minecraft:light_blue_bed"
+        },
+        {
+          "item": "minecraft:light_gray_bed"
+        },
+        {
+          "item": "minecraft:lime_bed"
+        },
+        {
+          "item": "minecraft:magenta_bed"
+        },
+        {
+          "item": "minecraft:orange_bed"
+        },
+        {
+          "item": "minecraft:purple_bed"
+        },
+        {
+          "item": "minecraft:red_bed"
+        },
+        {
+          "item": "minecraft:yellow_bed"
+        },
+        {
+          "item": "minecraft:white_bed"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:pink_bed",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_pink_carpet": {
+    "category": "building",
+    "group": "carpet",
+    "ingredients": [
+      {
+        "item": "minecraft:pink_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_carpet"
+        },
+        {
+          "item": "minecraft:blue_carpet"
+        },
+        {
+          "item": "minecraft:brown_carpet"
+        },
+        {
+          "item": "minecraft:cyan_carpet"
+        },
+        {
+          "item": "minecraft:gray_carpet"
+        },
+        {
+          "item": "minecraft:green_carpet"
+        },
+        {
+          "item": "minecraft:light_blue_carpet"
+        },
+        {
+          "item": "minecraft:light_gray_carpet"
+        },
+        {
+          "item": "minecraft:lime_carpet"
+        },
+        {
+          "item": "minecraft:magenta_carpet"
+        },
+        {
+          "item": "minecraft:orange_carpet"
+        },
+        {
+          "item": "minecraft:purple_carpet"
+        },
+        {
+          "item": "minecraft:red_carpet"
+        },
+        {
+          "item": "minecraft:yellow_carpet"
+        },
+        {
+          "item": "minecraft:white_carpet"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:pink_carpet",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_pink_wool": {
+    "category": "building",
+    "group": "wool",
+    "ingredients": [
+      {
+        "item": "minecraft:pink_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_wool"
+        },
+        {
+          "item": "minecraft:blue_wool"
+        },
+        {
+          "item": "minecraft:brown_wool"
+        },
+        {
+          "item": "minecraft:cyan_wool"
+        },
+        {
+          "item": "minecraft:gray_wool"
+        },
+        {
+          "item": "minecraft:green_wool"
+        },
+        {
+          "item": "minecraft:light_blue_wool"
+        },
+        {
+          "item": "minecraft:light_gray_wool"
+        },
+        {
+          "item": "minecraft:lime_wool"
+        },
+        {
+          "item": "minecraft:magenta_wool"
+        },
+        {
+          "item": "minecraft:orange_wool"
+        },
+        {
+          "item": "minecraft:purple_wool"
+        },
+        {
+          "item": "minecraft:red_wool"
+        },
+        {
+          "item": "minecraft:yellow_wool"
+        },
+        {
+          "item": "minecraft:white_wool"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:pink_wool",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_purple_bed": {
+    "category": "building",
+    "group": "bed",
+    "ingredients": [
+      {
+        "item": "minecraft:purple_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_bed"
+        },
+        {
+          "item": "minecraft:blue_bed"
+        },
+        {
+          "item": "minecraft:brown_bed"
+        },
+        {
+          "item": "minecraft:cyan_bed"
+        },
+        {
+          "item": "minecraft:gray_bed"
+        },
+        {
+          "item": "minecraft:green_bed"
+        },
+        {
+          "item": "minecraft:light_blue_bed"
+        },
+        {
+          "item": "minecraft:light_gray_bed"
+        },
+        {
+          "item": "minecraft:lime_bed"
+        },
+        {
+          "item": "minecraft:magenta_bed"
+        },
+        {
+          "item": "minecraft:orange_bed"
+        },
+        {
+          "item": "minecraft:pink_bed"
+        },
+        {
+          "item": "minecraft:red_bed"
+        },
+        {
+          "item": "minecraft:yellow_bed"
+        },
+        {
+          "item": "minecraft:white_bed"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:purple_bed",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_purple_carpet": {
+    "category": "building",
+    "group": "carpet",
+    "ingredients": [
+      {
+        "item": "minecraft:purple_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_carpet"
+        },
+        {
+          "item": "minecraft:blue_carpet"
+        },
+        {
+          "item": "minecraft:brown_carpet"
+        },
+        {
+          "item": "minecraft:cyan_carpet"
+        },
+        {
+          "item": "minecraft:gray_carpet"
+        },
+        {
+          "item": "minecraft:green_carpet"
+        },
+        {
+          "item": "minecraft:light_blue_carpet"
+        },
+        {
+          "item": "minecraft:light_gray_carpet"
+        },
+        {
+          "item": "minecraft:lime_carpet"
+        },
+        {
+          "item": "minecraft:magenta_carpet"
+        },
+        {
+          "item": "minecraft:orange_carpet"
+        },
+        {
+          "item": "minecraft:pink_carpet"
+        },
+        {
+          "item": "minecraft:red_carpet"
+        },
+        {
+          "item": "minecraft:yellow_carpet"
+        },
+        {
+          "item": "minecraft:white_carpet"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:purple_carpet",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_purple_wool": {
+    "category": "building",
+    "group": "wool",
+    "ingredients": [
+      {
+        "item": "minecraft:purple_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_wool"
+        },
+        {
+          "item": "minecraft:blue_wool"
+        },
+        {
+          "item": "minecraft:brown_wool"
+        },
+        {
+          "item": "minecraft:cyan_wool"
+        },
+        {
+          "item": "minecraft:gray_wool"
+        },
+        {
+          "item": "minecraft:green_wool"
+        },
+        {
+          "item": "minecraft:light_blue_wool"
+        },
+        {
+          "item": "minecraft:light_gray_wool"
+        },
+        {
+          "item": "minecraft:lime_wool"
+        },
+        {
+          "item": "minecraft:magenta_wool"
+        },
+        {
+          "item": "minecraft:orange_wool"
+        },
+        {
+          "item": "minecraft:pink_wool"
+        },
+        {
+          "item": "minecraft:red_wool"
+        },
+        {
+          "item": "minecraft:yellow_wool"
+        },
+        {
+          "item": "minecraft:white_wool"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:purple_wool",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_red_bed": {
+    "category": "building",
+    "group": "bed",
+    "ingredients": [
+      {
+        "item": "minecraft:red_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_bed"
+        },
+        {
+          "item": "minecraft:blue_bed"
+        },
+        {
+          "item": "minecraft:brown_bed"
+        },
+        {
+          "item": "minecraft:cyan_bed"
+        },
+        {
+          "item": "minecraft:gray_bed"
+        },
+        {
+          "item": "minecraft:green_bed"
+        },
+        {
+          "item": "minecraft:light_blue_bed"
+        },
+        {
+          "item": "minecraft:light_gray_bed"
+        },
+        {
+          "item": "minecraft:lime_bed"
+        },
+        {
+          "item": "minecraft:magenta_bed"
+        },
+        {
+          "item": "minecraft:orange_bed"
+        },
+        {
+          "item": "minecraft:pink_bed"
+        },
+        {
+          "item": "minecraft:purple_bed"
+        },
+        {
+          "item": "minecraft:yellow_bed"
+        },
+        {
+          "item": "minecraft:white_bed"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:red_bed",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_red_carpet": {
+    "category": "building",
+    "group": "carpet",
+    "ingredients": [
+      {
+        "item": "minecraft:red_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_carpet"
+        },
+        {
+          "item": "minecraft:blue_carpet"
+        },
+        {
+          "item": "minecraft:brown_carpet"
+        },
+        {
+          "item": "minecraft:cyan_carpet"
+        },
+        {
+          "item": "minecraft:gray_carpet"
+        },
+        {
+          "item": "minecraft:green_carpet"
+        },
+        {
+          "item": "minecraft:light_blue_carpet"
+        },
+        {
+          "item": "minecraft:light_gray_carpet"
+        },
+        {
+          "item": "minecraft:lime_carpet"
+        },
+        {
+          "item": "minecraft:magenta_carpet"
+        },
+        {
+          "item": "minecraft:orange_carpet"
+        },
+        {
+          "item": "minecraft:pink_carpet"
+        },
+        {
+          "item": "minecraft:purple_carpet"
+        },
+        {
+          "item": "minecraft:yellow_carpet"
+        },
+        {
+          "item": "minecraft:white_carpet"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:red_carpet",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_red_wool": {
+    "category": "building",
+    "group": "wool",
+    "ingredients": [
+      {
+        "item": "minecraft:red_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_wool"
+        },
+        {
+          "item": "minecraft:blue_wool"
+        },
+        {
+          "item": "minecraft:brown_wool"
+        },
+        {
+          "item": "minecraft:cyan_wool"
+        },
+        {
+          "item": "minecraft:gray_wool"
+        },
+        {
+          "item": "minecraft:green_wool"
+        },
+        {
+          "item": "minecraft:light_blue_wool"
+        },
+        {
+          "item": "minecraft:light_gray_wool"
+        },
+        {
+          "item": "minecraft:lime_wool"
+        },
+        {
+          "item": "minecraft:magenta_wool"
+        },
+        {
+          "item": "minecraft:orange_wool"
+        },
+        {
+          "item": "minecraft:pink_wool"
+        },
+        {
+          "item": "minecraft:purple_wool"
+        },
+        {
+          "item": "minecraft:yellow_wool"
+        },
+        {
+          "item": "minecraft:white_wool"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:red_wool",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_white_bed": {
+    "category": "building",
+    "group": "bed",
+    "ingredients": [
+      {
+        "item": "minecraft:white_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_bed"
+        },
+        {
+          "item": "minecraft:blue_bed"
+        },
+        {
+          "item": "minecraft:brown_bed"
+        },
+        {
+          "item": "minecraft:cyan_bed"
+        },
+        {
+          "item": "minecraft:gray_bed"
+        },
+        {
+          "item": "minecraft:green_bed"
+        },
+        {
+          "item": "minecraft:light_blue_bed"
+        },
+        {
+          "item": "minecraft:light_gray_bed"
+        },
+        {
+          "item": "minecraft:lime_bed"
+        },
+        {
+          "item": "minecraft:magenta_bed"
+        },
+        {
+          "item": "minecraft:orange_bed"
+        },
+        {
+          "item": "minecraft:pink_bed"
+        },
+        {
+          "item": "minecraft:purple_bed"
+        },
+        {
+          "item": "minecraft:red_bed"
+        },
+        {
+          "item": "minecraft:yellow_bed"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:white_bed",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_white_carpet": {
+    "category": "building",
+    "group": "carpet",
+    "ingredients": [
+      {
+        "item": "minecraft:white_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_carpet"
+        },
+        {
+          "item": "minecraft:blue_carpet"
+        },
+        {
+          "item": "minecraft:brown_carpet"
+        },
+        {
+          "item": "minecraft:cyan_carpet"
+        },
+        {
+          "item": "minecraft:gray_carpet"
+        },
+        {
+          "item": "minecraft:green_carpet"
+        },
+        {
+          "item": "minecraft:light_blue_carpet"
+        },
+        {
+          "item": "minecraft:light_gray_carpet"
+        },
+        {
+          "item": "minecraft:lime_carpet"
+        },
+        {
+          "item": "minecraft:magenta_carpet"
+        },
+        {
+          "item": "minecraft:orange_carpet"
+        },
+        {
+          "item": "minecraft:pink_carpet"
+        },
+        {
+          "item": "minecraft:purple_carpet"
+        },
+        {
+          "item": "minecraft:red_carpet"
+        },
+        {
+          "item": "minecraft:yellow_carpet"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:white_carpet",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_white_wool": {
+    "category": "building",
+    "group": "wool",
+    "ingredients": [
+      {
+        "item": "minecraft:white_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_wool"
+        },
+        {
+          "item": "minecraft:blue_wool"
+        },
+        {
+          "item": "minecraft:brown_wool"
+        },
+        {
+          "item": "minecraft:cyan_wool"
+        },
+        {
+          "item": "minecraft:gray_wool"
+        },
+        {
+          "item": "minecraft:green_wool"
+        },
+        {
+          "item": "minecraft:light_blue_wool"
+        },
+        {
+          "item": "minecraft:light_gray_wool"
+        },
+        {
+          "item": "minecraft:lime_wool"
+        },
+        {
+          "item": "minecraft:magenta_wool"
+        },
+        {
+          "item": "minecraft:orange_wool"
+        },
+        {
+          "item": "minecraft:pink_wool"
+        },
+        {
+          "item": "minecraft:purple_wool"
+        },
+        {
+          "item": "minecraft:red_wool"
+        },
+        {
+          "item": "minecraft:yellow_wool"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:white_wool",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_yellow_bed": {
+    "category": "building",
+    "group": "bed",
+    "ingredients": [
+      {
+        "item": "minecraft:yellow_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_bed"
+        },
+        {
+          "item": "minecraft:blue_bed"
+        },
+        {
+          "item": "minecraft:brown_bed"
+        },
+        {
+          "item": "minecraft:cyan_bed"
+        },
+        {
+          "item": "minecraft:gray_bed"
+        },
+        {
+          "item": "minecraft:green_bed"
+        },
+        {
+          "item": "minecraft:light_blue_bed"
+        },
+        {
+          "item": "minecraft:light_gray_bed"
+        },
+        {
+          "item": "minecraft:lime_bed"
+        },
+        {
+          "item": "minecraft:magenta_bed"
+        },
+        {
+          "item": "minecraft:orange_bed"
+        },
+        {
+          "item": "minecraft:pink_bed"
+        },
+        {
+          "item": "minecraft:purple_bed"
+        },
+        {
+          "item": "minecraft:red_bed"
+        },
+        {
+          "item": "minecraft:white_bed"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:yellow_bed",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_yellow_carpet": {
+    "category": "building",
+    "group": "carpet",
+    "ingredients": [
+      {
+        "item": "minecraft:yellow_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_carpet"
+        },
+        {
+          "item": "minecraft:blue_carpet"
+        },
+        {
+          "item": "minecraft:brown_carpet"
+        },
+        {
+          "item": "minecraft:cyan_carpet"
+        },
+        {
+          "item": "minecraft:gray_carpet"
+        },
+        {
+          "item": "minecraft:green_carpet"
+        },
+        {
+          "item": "minecraft:light_blue_carpet"
+        },
+        {
+          "item": "minecraft:light_gray_carpet"
+        },
+        {
+          "item": "minecraft:lime_carpet"
+        },
+        {
+          "item": "minecraft:magenta_carpet"
+        },
+        {
+          "item": "minecraft:orange_carpet"
+        },
+        {
+          "item": "minecraft:pink_carpet"
+        },
+        {
+          "item": "minecraft:purple_carpet"
+        },
+        {
+          "item": "minecraft:red_carpet"
+        },
+        {
+          "item": "minecraft:white_carpet"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:yellow_carpet",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dye_yellow_wool": {
+    "category": "building",
+    "group": "wool",
+    "ingredients": [
+      {
+        "item": "minecraft:yellow_dye"
+      },
+      [
+        {
+          "item": "minecraft:black_wool"
+        },
+        {
+          "item": "minecraft:blue_wool"
+        },
+        {
+          "item": "minecraft:brown_wool"
+        },
+        {
+          "item": "minecraft:cyan_wool"
+        },
+        {
+          "item": "minecraft:gray_wool"
+        },
+        {
+          "item": "minecraft:green_wool"
+        },
+        {
+          "item": "minecraft:light_blue_wool"
+        },
+        {
+          "item": "minecraft:light_gray_wool"
+        },
+        {
+          "item": "minecraft:lime_wool"
+        },
+        {
+          "item": "minecraft:magenta_wool"
+        },
+        {
+          "item": "minecraft:orange_wool"
+        },
+        {
+          "item": "minecraft:pink_wool"
+        },
+        {
+          "item": "minecraft:purple_wool"
+        },
+        {
+          "item": "minecraft:red_wool"
+        },
+        {
+          "item": "minecraft:white_wool"
+        }
+      ]
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:yellow_wool",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
   "emerald": {
     "category": "misc",
     "ingredients": [
@@ -6763,6 +10511,50 @@
     },
     "result": "minecraft:exposed_cut_copper_stairs",
     "type": "minecraft:stonecutting"
+  },
+  "eye_armor_trim_smithing_template": {
+    "category": "misc",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:diamond",
+        "tag": null
+      },
+      "C": {
+        "count": 1,
+        "item": "minecraft:end_stone",
+        "tag": null
+      },
+      "S": {
+        "count": 1,
+        "item": "minecraft:eye_armor_trim_smithing_template",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "#S#",
+      "#C#",
+      "###"
+    ],
+    "result": {
+      "count": 2,
+      "item": "minecraft:eye_armor_trim_smithing_template",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "eye_armor_trim_smithing_template_smithing_trim": {
+    "addition": {
+      "tag": "minecraft:trim_materials"
+    },
+    "base": {
+      "tag": "minecraft:trimmable_armor"
+    },
+    "template": {
+      "item": "minecraft:eye_armor_trim_smithing_template"
+    },
+    "type": "minecraft:smithing_trim"
   },
   "fermented_spider_eye": {
     "category": "misc",
@@ -7837,24 +11629,6 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
-  "gray_bed_from_white_bed": {
-    "category": "misc",
-    "group": "dyed_bed",
-    "ingredients": [
-      {
-        "item": "minecraft:white_bed"
-      },
-      {
-        "item": "minecraft:gray_dye"
-      }
-    ],
-    "result": {
-      "count": 1,
-      "item": "minecraft:gray_bed",
-      "tag": null
-    },
-    "type": "minecraft:crafting_shapeless"
-  },
   "gray_candle": {
     "category": "misc",
     "group": "dyed_candle",
@@ -7888,34 +11662,6 @@
     ],
     "result": {
       "count": 3,
-      "item": "minecraft:gray_carpet",
-      "tag": null
-    },
-    "show_notification": true,
-    "type": "minecraft:crafting_shaped"
-  },
-  "gray_carpet_from_white_carpet": {
-    "category": "misc",
-    "group": "carpet",
-    "key": {
-      "#": {
-        "count": 1,
-        "item": "minecraft:white_carpet",
-        "tag": null
-      },
-      "$": {
-        "count": 1,
-        "item": "minecraft:gray_dye",
-        "tag": null
-      }
-    },
-    "pattern": [
-      "###",
-      "#$#",
-      "###"
-    ],
-    "result": {
-      "count": 8,
       "item": "minecraft:gray_carpet",
       "tag": null
     },
@@ -8096,24 +11842,6 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
-  "gray_wool": {
-    "category": "building",
-    "group": "wool",
-    "ingredients": [
-      {
-        "item": "minecraft:gray_dye"
-      },
-      {
-        "item": "minecraft:white_wool"
-      }
-    ],
-    "result": {
-      "count": 1,
-      "item": "minecraft:gray_wool",
-      "tag": null
-    },
-    "type": "minecraft:crafting_shapeless"
-  },
   "green_banner": {
     "category": "misc",
     "group": "banner",
@@ -8168,24 +11896,6 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
-  "green_bed_from_white_bed": {
-    "category": "misc",
-    "group": "dyed_bed",
-    "ingredients": [
-      {
-        "item": "minecraft:white_bed"
-      },
-      {
-        "item": "minecraft:green_dye"
-      }
-    ],
-    "result": {
-      "count": 1,
-      "item": "minecraft:green_bed",
-      "tag": null
-    },
-    "type": "minecraft:crafting_shapeless"
-  },
   "green_candle": {
     "category": "misc",
     "group": "dyed_candle",
@@ -8219,34 +11929,6 @@
     ],
     "result": {
       "count": 3,
-      "item": "minecraft:green_carpet",
-      "tag": null
-    },
-    "show_notification": true,
-    "type": "minecraft:crafting_shaped"
-  },
-  "green_carpet_from_white_carpet": {
-    "category": "misc",
-    "group": "carpet",
-    "key": {
-      "#": {
-        "count": 1,
-        "item": "minecraft:white_carpet",
-        "tag": null
-      },
-      "$": {
-        "count": 1,
-        "item": "minecraft:green_dye",
-        "tag": null
-      }
-    },
-    "pattern": [
-      "###",
-      "#$#",
-      "###"
-    ],
-    "result": {
-      "count": 8,
       "item": "minecraft:green_carpet",
       "tag": null
     },
@@ -8421,24 +12103,6 @@
     },
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
-  },
-  "green_wool": {
-    "category": "building",
-    "group": "wool",
-    "ingredients": [
-      {
-        "item": "minecraft:green_dye"
-      },
-      {
-        "item": "minecraft:white_wool"
-      }
-    ],
-    "result": {
-      "count": 1,
-      "item": "minecraft:green_wool",
-      "tag": null
-    },
-    "type": "minecraft:crafting_shapeless"
   },
   "grindstone": {
     "category": "misc",
@@ -8639,6 +12303,50 @@
       "tag": null
     },
     "type": "minecraft:crafting_shapeless"
+  },
+  "host_armor_trim_smithing_template": {
+    "category": "misc",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:diamond",
+        "tag": null
+      },
+      "C": {
+        "count": 1,
+        "item": "minecraft:terracotta",
+        "tag": null
+      },
+      "S": {
+        "count": 1,
+        "item": "minecraft:host_armor_trim_smithing_template",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "#S#",
+      "#C#",
+      "###"
+    ],
+    "result": {
+      "count": 2,
+      "item": "minecraft:host_armor_trim_smithing_template",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "host_armor_trim_smithing_template_smithing_trim": {
+    "addition": {
+      "tag": "minecraft:trim_materials"
+    },
+    "base": {
+      "tag": "minecraft:trimmable_armor"
+    },
+    "template": {
+      "item": "minecraft:host_armor_trim_smithing_template"
+    },
+    "type": "minecraft:smithing_trim"
   },
   "iron_axe": {
     "category": "equipment",
@@ -9446,6 +13154,34 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
+  "jungle_hanging_sign": {
+    "category": "misc",
+    "group": "hanging_sign",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:stripped_jungle_log",
+        "tag": null
+      },
+      "X": {
+        "count": 1,
+        "item": "minecraft:chain",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "X X",
+      "###",
+      "###"
+    ],
+    "result": {
+      "count": 6,
+      "item": "minecraft:jungle_hanging_sign",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
   "jungle_planks": {
     "category": "building",
     "group": "planks",
@@ -9997,24 +13733,6 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
-  "light_blue_bed_from_white_bed": {
-    "category": "misc",
-    "group": "dyed_bed",
-    "ingredients": [
-      {
-        "item": "minecraft:white_bed"
-      },
-      {
-        "item": "minecraft:light_blue_dye"
-      }
-    ],
-    "result": {
-      "count": 1,
-      "item": "minecraft:light_blue_bed",
-      "tag": null
-    },
-    "type": "minecraft:crafting_shapeless"
-  },
   "light_blue_candle": {
     "category": "misc",
     "group": "dyed_candle",
@@ -10048,34 +13766,6 @@
     ],
     "result": {
       "count": 3,
-      "item": "minecraft:light_blue_carpet",
-      "tag": null
-    },
-    "show_notification": true,
-    "type": "minecraft:crafting_shaped"
-  },
-  "light_blue_carpet_from_white_carpet": {
-    "category": "misc",
-    "group": "carpet",
-    "key": {
-      "#": {
-        "count": 1,
-        "item": "minecraft:white_carpet",
-        "tag": null
-      },
-      "$": {
-        "count": 1,
-        "item": "minecraft:light_blue_dye",
-        "tag": null
-      }
-    },
-    "pattern": [
-      "###",
-      "#$#",
-      "###"
-    ],
-    "result": {
-      "count": 8,
       "item": "minecraft:light_blue_carpet",
       "tag": null
     },
@@ -10272,24 +13962,6 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
-  "light_blue_wool": {
-    "category": "building",
-    "group": "wool",
-    "ingredients": [
-      {
-        "item": "minecraft:light_blue_dye"
-      },
-      {
-        "item": "minecraft:white_wool"
-      }
-    ],
-    "result": {
-      "count": 1,
-      "item": "minecraft:light_blue_wool",
-      "tag": null
-    },
-    "type": "minecraft:crafting_shapeless"
-  },
   "light_gray_banner": {
     "category": "misc",
     "group": "banner",
@@ -10344,24 +14016,6 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
-  "light_gray_bed_from_white_bed": {
-    "category": "misc",
-    "group": "dyed_bed",
-    "ingredients": [
-      {
-        "item": "minecraft:white_bed"
-      },
-      {
-        "item": "minecraft:light_gray_dye"
-      }
-    ],
-    "result": {
-      "count": 1,
-      "item": "minecraft:light_gray_bed",
-      "tag": null
-    },
-    "type": "minecraft:crafting_shapeless"
-  },
   "light_gray_candle": {
     "category": "misc",
     "group": "dyed_candle",
@@ -10395,34 +14049,6 @@
     ],
     "result": {
       "count": 3,
-      "item": "minecraft:light_gray_carpet",
-      "tag": null
-    },
-    "show_notification": true,
-    "type": "minecraft:crafting_shaped"
-  },
-  "light_gray_carpet_from_white_carpet": {
-    "category": "misc",
-    "group": "carpet",
-    "key": {
-      "#": {
-        "count": 1,
-        "item": "minecraft:white_carpet",
-        "tag": null
-      },
-      "$": {
-        "count": 1,
-        "item": "minecraft:light_gray_dye",
-        "tag": null
-      }
-    },
-    "pattern": [
-      "###",
-      "#$#",
-      "###"
-    ],
-    "result": {
-      "count": 8,
       "item": "minecraft:light_gray_carpet",
       "tag": null
     },
@@ -10670,24 +14296,6 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
-  "light_gray_wool": {
-    "category": "building",
-    "group": "wool",
-    "ingredients": [
-      {
-        "item": "minecraft:light_gray_dye"
-      },
-      {
-        "item": "minecraft:white_wool"
-      }
-    ],
-    "result": {
-      "count": 1,
-      "item": "minecraft:light_gray_wool",
-      "tag": null
-    },
-    "type": "minecraft:crafting_shapeless"
-  },
   "light_weighted_pressure_plate": {
     "category": "redstone",
     "key": {
@@ -10784,24 +14392,6 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
-  "lime_bed_from_white_bed": {
-    "category": "misc",
-    "group": "dyed_bed",
-    "ingredients": [
-      {
-        "item": "minecraft:white_bed"
-      },
-      {
-        "item": "minecraft:lime_dye"
-      }
-    ],
-    "result": {
-      "count": 1,
-      "item": "minecraft:lime_bed",
-      "tag": null
-    },
-    "type": "minecraft:crafting_shapeless"
-  },
   "lime_candle": {
     "category": "misc",
     "group": "dyed_candle",
@@ -10835,34 +14425,6 @@
     ],
     "result": {
       "count": 3,
-      "item": "minecraft:lime_carpet",
-      "tag": null
-    },
-    "show_notification": true,
-    "type": "minecraft:crafting_shaped"
-  },
-  "lime_carpet_from_white_carpet": {
-    "category": "misc",
-    "group": "carpet",
-    "key": {
-      "#": {
-        "count": 1,
-        "item": "minecraft:white_carpet",
-        "tag": null
-      },
-      "$": {
-        "count": 1,
-        "item": "minecraft:lime_dye",
-        "tag": null
-      }
-    },
-    "pattern": [
-      "###",
-      "#$#",
-      "###"
-    ],
-    "result": {
-      "count": 8,
       "item": "minecraft:lime_carpet",
       "tag": null
     },
@@ -11055,24 +14617,6 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
-  "lime_wool": {
-    "category": "building",
-    "group": "wool",
-    "ingredients": [
-      {
-        "item": "minecraft:lime_dye"
-      },
-      {
-        "item": "minecraft:white_wool"
-      }
-    ],
-    "result": {
-      "count": 1,
-      "item": "minecraft:lime_wool",
-      "tag": null
-    },
-    "type": "minecraft:crafting_shapeless"
-  },
   "lodestone": {
     "category": "misc",
     "key": {
@@ -11179,24 +14723,6 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
-  "magenta_bed_from_white_bed": {
-    "category": "misc",
-    "group": "dyed_bed",
-    "ingredients": [
-      {
-        "item": "minecraft:white_bed"
-      },
-      {
-        "item": "minecraft:magenta_dye"
-      }
-    ],
-    "result": {
-      "count": 1,
-      "item": "minecraft:magenta_bed",
-      "tag": null
-    },
-    "type": "minecraft:crafting_shapeless"
-  },
   "magenta_candle": {
     "category": "misc",
     "group": "dyed_candle",
@@ -11230,34 +14756,6 @@
     ],
     "result": {
       "count": 3,
-      "item": "minecraft:magenta_carpet",
-      "tag": null
-    },
-    "show_notification": true,
-    "type": "minecraft:crafting_shaped"
-  },
-  "magenta_carpet_from_white_carpet": {
-    "category": "misc",
-    "group": "carpet",
-    "key": {
-      "#": {
-        "count": 1,
-        "item": "minecraft:white_carpet",
-        "tag": null
-      },
-      "$": {
-        "count": 1,
-        "item": "minecraft:magenta_dye",
-        "tag": null
-      }
-    },
-    "pattern": [
-      "###",
-      "#$#",
-      "###"
-    ],
-    "result": {
-      "count": 8,
       "item": "minecraft:magenta_carpet",
       "tag": null
     },
@@ -11514,24 +15012,6 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
-  "magenta_wool": {
-    "category": "building",
-    "group": "wool",
-    "ingredients": [
-      {
-        "item": "minecraft:magenta_dye"
-      },
-      {
-        "item": "minecraft:white_wool"
-      }
-    ],
-    "result": {
-      "count": 1,
-      "item": "minecraft:magenta_wool",
-      "tag": null
-    },
-    "type": "minecraft:crafting_shapeless"
-  },
   "magma_block": {
     "category": "building",
     "key": {
@@ -11697,6 +15177,34 @@
     "result": {
       "count": 1,
       "item": "minecraft:mangrove_fence_gate",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "mangrove_hanging_sign": {
+    "category": "misc",
+    "group": "hanging_sign",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:stripped_mangrove_log",
+        "tag": null
+      },
+      "X": {
+        "count": 1,
+        "item": "minecraft:chain",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "X X",
+      "###",
+      "###"
+    ],
+    "result": {
+      "count": 6,
+      "item": "minecraft:mangrove_hanging_sign",
       "tag": null
     },
     "show_notification": true,
@@ -12649,7 +16157,10 @@
       "item": "minecraft:netherite_axe",
       "tag": null
     },
-    "type": "minecraft:smithing"
+    "template": {
+      "item": "minecraft:netherite_upgrade_smithing_template"
+    },
+    "type": "minecraft:smithing_transform"
   },
   "netherite_block": {
     "category": "building",
@@ -12685,7 +16196,10 @@
       "item": "minecraft:netherite_boots",
       "tag": null
     },
-    "type": "minecraft:smithing"
+    "template": {
+      "item": "minecraft:netherite_upgrade_smithing_template"
+    },
+    "type": "minecraft:smithing_transform"
   },
   "netherite_chestplate_smithing": {
     "addition": {
@@ -12699,7 +16213,10 @@
       "item": "minecraft:netherite_chestplate",
       "tag": null
     },
-    "type": "minecraft:smithing"
+    "template": {
+      "item": "minecraft:netherite_upgrade_smithing_template"
+    },
+    "type": "minecraft:smithing_transform"
   },
   "netherite_helmet_smithing": {
     "addition": {
@@ -12713,7 +16230,10 @@
       "item": "minecraft:netherite_helmet",
       "tag": null
     },
-    "type": "minecraft:smithing"
+    "template": {
+      "item": "minecraft:netherite_upgrade_smithing_template"
+    },
+    "type": "minecraft:smithing_transform"
   },
   "netherite_hoe_smithing": {
     "addition": {
@@ -12727,7 +16247,10 @@
       "item": "minecraft:netherite_hoe",
       "tag": null
     },
-    "type": "minecraft:smithing"
+    "template": {
+      "item": "minecraft:netherite_upgrade_smithing_template"
+    },
+    "type": "minecraft:smithing_transform"
   },
   "netherite_ingot": {
     "category": "misc",
@@ -12792,7 +16315,10 @@
       "item": "minecraft:netherite_leggings",
       "tag": null
     },
-    "type": "minecraft:smithing"
+    "template": {
+      "item": "minecraft:netherite_upgrade_smithing_template"
+    },
+    "type": "minecraft:smithing_transform"
   },
   "netherite_pickaxe_smithing": {
     "addition": {
@@ -12806,7 +16332,10 @@
       "item": "minecraft:netherite_pickaxe",
       "tag": null
     },
-    "type": "minecraft:smithing"
+    "template": {
+      "item": "minecraft:netherite_upgrade_smithing_template"
+    },
+    "type": "minecraft:smithing_transform"
   },
   "netherite_scrap": {
     "category": "misc",
@@ -12844,7 +16373,10 @@
       "item": "minecraft:netherite_shovel",
       "tag": null
     },
-    "type": "minecraft:smithing"
+    "template": {
+      "item": "minecraft:netherite_upgrade_smithing_template"
+    },
+    "type": "minecraft:smithing_transform"
   },
   "netherite_sword_smithing": {
     "addition": {
@@ -12858,7 +16390,42 @@
       "item": "minecraft:netherite_sword",
       "tag": null
     },
-    "type": "minecraft:smithing"
+    "template": {
+      "item": "minecraft:netherite_upgrade_smithing_template"
+    },
+    "type": "minecraft:smithing_transform"
+  },
+  "netherite_upgrade_smithing_template": {
+    "category": "misc",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:diamond",
+        "tag": null
+      },
+      "C": {
+        "count": 1,
+        "item": "minecraft:netherrack",
+        "tag": null
+      },
+      "S": {
+        "count": 1,
+        "item": "minecraft:netherite_upgrade_smithing_template",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "#S#",
+      "#C#",
+      "###"
+    ],
+    "result": {
+      "count": 2,
+      "item": "minecraft:netherite_upgrade_smithing_template",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
   },
   "note_block": {
     "category": "redstone",
@@ -13013,6 +16580,34 @@
     "result": {
       "count": 1,
       "item": "minecraft:oak_fence_gate",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "oak_hanging_sign": {
+    "category": "misc",
+    "group": "hanging_sign",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:stripped_oak_log",
+        "tag": null
+      },
+      "X": {
+        "count": 1,
+        "item": "minecraft:chain",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "X X",
+      "###",
+      "###"
+    ],
+    "result": {
+      "count": 6,
+      "item": "minecraft:oak_hanging_sign",
       "tag": null
     },
     "show_notification": true,
@@ -13256,24 +16851,6 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
-  "orange_bed_from_white_bed": {
-    "category": "misc",
-    "group": "dyed_bed",
-    "ingredients": [
-      {
-        "item": "minecraft:white_bed"
-      },
-      {
-        "item": "minecraft:orange_dye"
-      }
-    ],
-    "result": {
-      "count": 1,
-      "item": "minecraft:orange_bed",
-      "tag": null
-    },
-    "type": "minecraft:crafting_shapeless"
-  },
   "orange_candle": {
     "category": "misc",
     "group": "dyed_candle",
@@ -13307,34 +16884,6 @@
     ],
     "result": {
       "count": 3,
-      "item": "minecraft:orange_carpet",
-      "tag": null
-    },
-    "show_notification": true,
-    "type": "minecraft:crafting_shaped"
-  },
-  "orange_carpet_from_white_carpet": {
-    "category": "misc",
-    "group": "carpet",
-    "key": {
-      "#": {
-        "count": 1,
-        "item": "minecraft:white_carpet",
-        "tag": null
-      },
-      "$": {
-        "count": 1,
-        "item": "minecraft:orange_dye",
-        "tag": null
-      }
-    },
-    "pattern": [
-      "###",
-      "#$#",
-      "###"
-    ],
-    "result": {
-      "count": 8,
       "item": "minecraft:orange_carpet",
       "tag": null
     },
@@ -13408,6 +16957,21 @@
     ],
     "result": {
       "count": 2,
+      "item": "minecraft:orange_dye",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "orange_dye_from_torchflower": {
+    "category": "misc",
+    "group": "orange_dye",
+    "ingredients": [
+      {
+        "item": "minecraft:torchflower"
+      }
+    ],
+    "result": {
+      "count": 1,
       "item": "minecraft:orange_dye",
       "tag": null
     },
@@ -13530,24 +17094,6 @@
     },
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
-  },
-  "orange_wool": {
-    "category": "building",
-    "group": "wool",
-    "ingredients": [
-      {
-        "item": "minecraft:orange_dye"
-      },
-      {
-        "item": "minecraft:white_wool"
-      }
-    ],
-    "result": {
-      "count": 1,
-      "item": "minecraft:orange_wool",
-      "tag": null
-    },
-    "type": "minecraft:crafting_shapeless"
   },
   "oxidized_cut_copper": {
     "category": "building",
@@ -13817,24 +17363,6 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
-  "pink_bed_from_white_bed": {
-    "category": "misc",
-    "group": "dyed_bed",
-    "ingredients": [
-      {
-        "item": "minecraft:white_bed"
-      },
-      {
-        "item": "minecraft:pink_dye"
-      }
-    ],
-    "result": {
-      "count": 1,
-      "item": "minecraft:pink_bed",
-      "tag": null
-    },
-    "type": "minecraft:crafting_shapeless"
-  },
   "pink_candle": {
     "category": "misc",
     "group": "dyed_candle",
@@ -13868,34 +17396,6 @@
     ],
     "result": {
       "count": 3,
-      "item": "minecraft:pink_carpet",
-      "tag": null
-    },
-    "show_notification": true,
-    "type": "minecraft:crafting_shaped"
-  },
-  "pink_carpet_from_white_carpet": {
-    "category": "misc",
-    "group": "carpet",
-    "key": {
-      "#": {
-        "count": 1,
-        "item": "minecraft:white_carpet",
-        "tag": null
-      },
-      "$": {
-        "count": 1,
-        "item": "minecraft:pink_dye",
-        "tag": null
-      }
-    },
-    "pattern": [
-      "###",
-      "#$#",
-      "###"
-    ],
-    "result": {
-      "count": 8,
       "item": "minecraft:pink_carpet",
       "tag": null
     },
@@ -13951,6 +17451,21 @@
     ],
     "result": {
       "count": 2,
+      "item": "minecraft:pink_dye",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "pink_dye_from_pink_petals": {
+    "category": "misc",
+    "group": "pink_dye",
+    "ingredients": [
+      {
+        "item": "minecraft:pink_petals"
+      }
+    ],
+    "result": {
+      "count": 1,
       "item": "minecraft:pink_dye",
       "tag": null
     },
@@ -14106,24 +17621,6 @@
     },
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
-  },
-  "pink_wool": {
-    "category": "building",
-    "group": "wool",
-    "ingredients": [
-      {
-        "item": "minecraft:pink_dye"
-      },
-      {
-        "item": "minecraft:white_wool"
-      }
-    ],
-    "result": {
-      "count": 1,
-      "item": "minecraft:pink_wool",
-      "tag": null
-    },
-    "type": "minecraft:crafting_shapeless"
   },
   "piston": {
     "category": "redstone",
@@ -15413,24 +18910,6 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
-  "purple_bed_from_white_bed": {
-    "category": "misc",
-    "group": "dyed_bed",
-    "ingredients": [
-      {
-        "item": "minecraft:white_bed"
-      },
-      {
-        "item": "minecraft:purple_dye"
-      }
-    ],
-    "result": {
-      "count": 1,
-      "item": "minecraft:purple_bed",
-      "tag": null
-    },
-    "type": "minecraft:crafting_shapeless"
-  },
   "purple_candle": {
     "category": "misc",
     "group": "dyed_candle",
@@ -15464,34 +18943,6 @@
     ],
     "result": {
       "count": 3,
-      "item": "minecraft:purple_carpet",
-      "tag": null
-    },
-    "show_notification": true,
-    "type": "minecraft:crafting_shaped"
-  },
-  "purple_carpet_from_white_carpet": {
-    "category": "misc",
-    "group": "carpet",
-    "key": {
-      "#": {
-        "count": 1,
-        "item": "minecraft:white_carpet",
-        "tag": null
-      },
-      "$": {
-        "count": 1,
-        "item": "minecraft:purple_dye",
-        "tag": null
-      }
-    },
-    "pattern": [
-      "###",
-      "#$#",
-      "###"
-    ],
-    "result": {
-      "count": 8,
       "item": "minecraft:purple_carpet",
       "tag": null
     },
@@ -15671,24 +19122,6 @@
     },
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
-  },
-  "purple_wool": {
-    "category": "building",
-    "group": "wool",
-    "ingredients": [
-      {
-        "item": "minecraft:purple_dye"
-      },
-      {
-        "item": "minecraft:white_wool"
-      }
-    ],
-    "result": {
-      "count": 1,
-      "item": "minecraft:purple_wool",
-      "tag": null
-    },
-    "type": "minecraft:crafting_shapeless"
   },
   "purpur_block": {
     "category": "building",
@@ -16092,6 +19525,50 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
+  "raiser_armor_trim_smithing_template": {
+    "category": "misc",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:diamond",
+        "tag": null
+      },
+      "C": {
+        "count": 1,
+        "item": "minecraft:terracotta",
+        "tag": null
+      },
+      "S": {
+        "count": 1,
+        "item": "minecraft:raiser_armor_trim_smithing_template",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "#S#",
+      "#C#",
+      "###"
+    ],
+    "result": {
+      "count": 2,
+      "item": "minecraft:raiser_armor_trim_smithing_template",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "raiser_armor_trim_smithing_template_smithing_trim": {
+    "addition": {
+      "tag": "minecraft:trim_materials"
+    },
+    "base": {
+      "tag": "minecraft:trimmable_armor"
+    },
+    "template": {
+      "item": "minecraft:raiser_armor_trim_smithing_template"
+    },
+    "type": "minecraft:smithing_trim"
+  },
   "raw_copper": {
     "category": "misc",
     "ingredients": [
@@ -16281,24 +19758,6 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
-  "red_bed_from_white_bed": {
-    "category": "misc",
-    "group": "dyed_bed",
-    "ingredients": [
-      {
-        "item": "minecraft:white_bed"
-      },
-      {
-        "item": "minecraft:red_dye"
-      }
-    ],
-    "result": {
-      "count": 1,
-      "item": "minecraft:red_bed",
-      "tag": null
-    },
-    "type": "minecraft:crafting_shapeless"
-  },
   "red_candle": {
     "category": "misc",
     "group": "dyed_candle",
@@ -16332,34 +19791,6 @@
     ],
     "result": {
       "count": 3,
-      "item": "minecraft:red_carpet",
-      "tag": null
-    },
-    "show_notification": true,
-    "type": "minecraft:crafting_shaped"
-  },
-  "red_carpet_from_white_carpet": {
-    "category": "misc",
-    "group": "carpet",
-    "key": {
-      "#": {
-        "count": 1,
-        "item": "minecraft:white_carpet",
-        "tag": null
-      },
-      "$": {
-        "count": 1,
-        "item": "minecraft:red_dye",
-        "tag": null
-      }
-    },
-    "pattern": [
-      "###",
-      "#$#",
-      "###"
-    ],
-    "result": {
-      "count": 8,
       "item": "minecraft:red_carpet",
       "tag": null
     },
@@ -16835,24 +20266,6 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
-  "red_wool": {
-    "category": "building",
-    "group": "wool",
-    "ingredients": [
-      {
-        "item": "minecraft:red_dye"
-      },
-      {
-        "item": "minecraft:white_wool"
-      }
-    ],
-    "result": {
-      "count": 1,
-      "item": "minecraft:red_wool",
-      "tag": null
-    },
-    "type": "minecraft:crafting_shapeless"
-  },
   "redstone": {
     "category": "redstone",
     "ingredients": [
@@ -17056,6 +20469,50 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
+  "rib_armor_trim_smithing_template": {
+    "category": "misc",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:diamond",
+        "tag": null
+      },
+      "C": {
+        "count": 1,
+        "item": "minecraft:netherrack",
+        "tag": null
+      },
+      "S": {
+        "count": 1,
+        "item": "minecraft:rib_armor_trim_smithing_template",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "#S#",
+      "#C#",
+      "###"
+    ],
+    "result": {
+      "count": 2,
+      "item": "minecraft:rib_armor_trim_smithing_template",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "rib_armor_trim_smithing_template_smithing_trim": {
+    "addition": {
+      "tag": "minecraft:trim_materials"
+    },
+    "base": {
+      "tag": "minecraft:trimmable_armor"
+    },
+    "template": {
+      "item": "minecraft:rib_armor_trim_smithing_template"
+    },
+    "type": "minecraft:smithing_trim"
+  },
   "sandstone": {
     "category": "building",
     "key": {
@@ -17243,6 +20700,94 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
+  "sentry_armor_trim_smithing_template": {
+    "category": "misc",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:diamond",
+        "tag": null
+      },
+      "C": {
+        "count": 1,
+        "item": "minecraft:cobblestone",
+        "tag": null
+      },
+      "S": {
+        "count": 1,
+        "item": "minecraft:sentry_armor_trim_smithing_template",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "#S#",
+      "#C#",
+      "###"
+    ],
+    "result": {
+      "count": 2,
+      "item": "minecraft:sentry_armor_trim_smithing_template",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "sentry_armor_trim_smithing_template_smithing_trim": {
+    "addition": {
+      "tag": "minecraft:trim_materials"
+    },
+    "base": {
+      "tag": "minecraft:trimmable_armor"
+    },
+    "template": {
+      "item": "minecraft:sentry_armor_trim_smithing_template"
+    },
+    "type": "minecraft:smithing_trim"
+  },
+  "shaper_armor_trim_smithing_template": {
+    "category": "misc",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:diamond",
+        "tag": null
+      },
+      "C": {
+        "count": 1,
+        "item": "minecraft:terracotta",
+        "tag": null
+      },
+      "S": {
+        "count": 1,
+        "item": "minecraft:shaper_armor_trim_smithing_template",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "#S#",
+      "#C#",
+      "###"
+    ],
+    "result": {
+      "count": 2,
+      "item": "minecraft:shaper_armor_trim_smithing_template",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "shaper_armor_trim_smithing_template_smithing_trim": {
+    "addition": {
+      "tag": "minecraft:trim_materials"
+    },
+    "base": {
+      "tag": "minecraft:trimmable_armor"
+    },
+    "template": {
+      "item": "minecraft:shaper_armor_trim_smithing_template"
+    },
+    "type": "minecraft:smithing_trim"
+  },
   "shears": {
     "category": "equipment",
     "key": {
@@ -17324,6 +20869,50 @@
   "shulker_box_coloring": {
     "category": "misc",
     "type": "minecraft:crafting_special_shulkerboxcoloring"
+  },
+  "silence_armor_trim_smithing_template": {
+    "category": "misc",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:diamond",
+        "tag": null
+      },
+      "C": {
+        "count": 1,
+        "item": "minecraft:cobbled_deepslate",
+        "tag": null
+      },
+      "S": {
+        "count": 1,
+        "item": "minecraft:silence_armor_trim_smithing_template",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "#S#",
+      "#C#",
+      "###"
+    ],
+    "result": {
+      "count": 2,
+      "item": "minecraft:silence_armor_trim_smithing_template",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "silence_armor_trim_smithing_template_smithing_trim": {
+    "addition": {
+      "tag": "minecraft:trim_materials"
+    },
+    "base": {
+      "tag": "minecraft:trimmable_armor"
+    },
+    "template": {
+      "item": "minecraft:silence_armor_trim_smithing_template"
+    },
+    "type": "minecraft:smithing_trim"
   },
   "skull_banner_pattern": {
     "category": "misc",
@@ -17706,6 +21295,50 @@
     "result": "minecraft:smooth_stone_slab",
     "type": "minecraft:stonecutting"
   },
+  "snout_armor_trim_smithing_template": {
+    "category": "misc",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:diamond",
+        "tag": null
+      },
+      "C": {
+        "count": 1,
+        "item": "minecraft:blackstone",
+        "tag": null
+      },
+      "S": {
+        "count": 1,
+        "item": "minecraft:snout_armor_trim_smithing_template",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "#S#",
+      "#C#",
+      "###"
+    ],
+    "result": {
+      "count": 2,
+      "item": "minecraft:snout_armor_trim_smithing_template",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "snout_armor_trim_smithing_template_smithing_trim": {
+    "addition": {
+      "tag": "minecraft:trim_materials"
+    },
+    "base": {
+      "tag": "minecraft:trimmable_armor"
+    },
+    "template": {
+      "item": "minecraft:snout_armor_trim_smithing_template"
+    },
+    "type": "minecraft:smithing_trim"
+  },
   "snow": {
     "category": "misc",
     "key": {
@@ -17869,6 +21502,50 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
+  "spire_armor_trim_smithing_template": {
+    "category": "misc",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:diamond",
+        "tag": null
+      },
+      "C": {
+        "count": 1,
+        "item": "minecraft:purpur_block",
+        "tag": null
+      },
+      "S": {
+        "count": 1,
+        "item": "minecraft:spire_armor_trim_smithing_template",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "#S#",
+      "#C#",
+      "###"
+    ],
+    "result": {
+      "count": 2,
+      "item": "minecraft:spire_armor_trim_smithing_template",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "spire_armor_trim_smithing_template_smithing_trim": {
+    "addition": {
+      "tag": "minecraft:trim_materials"
+    },
+    "base": {
+      "tag": "minecraft:trimmable_armor"
+    },
+    "template": {
+      "item": "minecraft:spire_armor_trim_smithing_template"
+    },
+    "type": "minecraft:smithing_trim"
+  },
   "sponge": {
     "category": "blocks",
     "cookingtime": 200,
@@ -18008,6 +21685,34 @@
     "result": {
       "count": 1,
       "item": "minecraft:spruce_fence_gate",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "spruce_hanging_sign": {
+    "category": "misc",
+    "group": "hanging_sign",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:stripped_spruce_log",
+        "tag": null
+      },
+      "X": {
+        "count": 1,
+        "item": "minecraft:chain",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "X X",
+      "###",
+      "###"
+    ],
+    "result": {
+      "count": 6,
+      "item": "minecraft:spruce_hanging_sign",
       "tag": null
     },
     "show_notification": true,
@@ -18723,6 +22428,28 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
+  "stripped_cherry_wood": {
+    "category": "building",
+    "group": "bark",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:stripped_cherry_log",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "##",
+      "##"
+    ],
+    "result": {
+      "count": 3,
+      "item": "minecraft:stripped_cherry_wood",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
   "stripped_crimson_hyphae": {
     "category": "building",
     "group": "bark",
@@ -18950,6 +22677,50 @@
     "result": "minecraft:terracotta",
     "type": "minecraft:smelting"
   },
+  "tide_armor_trim_smithing_template": {
+    "category": "misc",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:diamond",
+        "tag": null
+      },
+      "C": {
+        "count": 1,
+        "item": "minecraft:prismarine",
+        "tag": null
+      },
+      "S": {
+        "count": 1,
+        "item": "minecraft:tide_armor_trim_smithing_template",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "#S#",
+      "#C#",
+      "###"
+    ],
+    "result": {
+      "count": 2,
+      "item": "minecraft:tide_armor_trim_smithing_template",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "tide_armor_trim_smithing_template_smithing_trim": {
+    "addition": {
+      "tag": "minecraft:trim_materials"
+    },
+    "base": {
+      "tag": "minecraft:trimmable_armor"
+    },
+    "template": {
+      "item": "minecraft:tide_armor_trim_smithing_template"
+    },
+    "type": "minecraft:smithing_trim"
+  },
   "tinted_glass": {
     "category": "building",
     "key": {
@@ -19134,6 +22905,94 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
+  "vex_armor_trim_smithing_template": {
+    "category": "misc",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:diamond",
+        "tag": null
+      },
+      "C": {
+        "count": 1,
+        "item": "minecraft:cobblestone",
+        "tag": null
+      },
+      "S": {
+        "count": 1,
+        "item": "minecraft:vex_armor_trim_smithing_template",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "#S#",
+      "#C#",
+      "###"
+    ],
+    "result": {
+      "count": 2,
+      "item": "minecraft:vex_armor_trim_smithing_template",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "vex_armor_trim_smithing_template_smithing_trim": {
+    "addition": {
+      "tag": "minecraft:trim_materials"
+    },
+    "base": {
+      "tag": "minecraft:trimmable_armor"
+    },
+    "template": {
+      "item": "minecraft:vex_armor_trim_smithing_template"
+    },
+    "type": "minecraft:smithing_trim"
+  },
+  "ward_armor_trim_smithing_template": {
+    "category": "misc",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:diamond",
+        "tag": null
+      },
+      "C": {
+        "count": 1,
+        "item": "minecraft:cobbled_deepslate",
+        "tag": null
+      },
+      "S": {
+        "count": 1,
+        "item": "minecraft:ward_armor_trim_smithing_template",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "#S#",
+      "#C#",
+      "###"
+    ],
+    "result": {
+      "count": 2,
+      "item": "minecraft:ward_armor_trim_smithing_template",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "ward_armor_trim_smithing_template_smithing_trim": {
+    "addition": {
+      "tag": "minecraft:trim_materials"
+    },
+    "base": {
+      "tag": "minecraft:trimmable_armor"
+    },
+    "template": {
+      "item": "minecraft:ward_armor_trim_smithing_template"
+    },
+    "type": "minecraft:smithing_trim"
+  },
   "warped_button": {
     "category": "redstone",
     "group": "wooden_button",
@@ -19247,6 +23106,34 @@
     "result": {
       "count": 1,
       "item": "minecraft:warped_fungus_on_a_stick",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "warped_hanging_sign": {
+    "category": "misc",
+    "group": "hanging_sign",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:stripped_warped_stem",
+        "tag": null
+      },
+      "X": {
+        "count": 1,
+        "item": "minecraft:chain",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "X X",
+      "###",
+      "###"
+    ],
+    "result": {
+      "count": 6,
+      "item": "minecraft:warped_hanging_sign",
       "tag": null
     },
     "show_notification": true,
@@ -20156,6 +24043,50 @@
     "result": "minecraft:waxed_weathered_cut_copper_stairs",
     "type": "minecraft:stonecutting"
   },
+  "wayfinder_armor_trim_smithing_template": {
+    "category": "misc",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:diamond",
+        "tag": null
+      },
+      "C": {
+        "count": 1,
+        "item": "minecraft:terracotta",
+        "tag": null
+      },
+      "S": {
+        "count": 1,
+        "item": "minecraft:wayfinder_armor_trim_smithing_template",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "#S#",
+      "#C#",
+      "###"
+    ],
+    "result": {
+      "count": 2,
+      "item": "minecraft:wayfinder_armor_trim_smithing_template",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "wayfinder_armor_trim_smithing_template_smithing_trim": {
+    "addition": {
+      "tag": "minecraft:trim_materials"
+    },
+    "base": {
+      "tag": "minecraft:trimmable_armor"
+    },
+    "template": {
+      "item": "minecraft:wayfinder_armor_trim_smithing_template"
+    },
+    "type": "minecraft:smithing_trim"
+  },
   "weathered_cut_copper": {
     "category": "building",
     "key": {
@@ -20584,6 +24515,50 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
+  "wild_armor_trim_smithing_template": {
+    "category": "misc",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:diamond",
+        "tag": null
+      },
+      "C": {
+        "count": 1,
+        "item": "minecraft:mossy_cobblestone",
+        "tag": null
+      },
+      "S": {
+        "count": 1,
+        "item": "minecraft:wild_armor_trim_smithing_template",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "#S#",
+      "#C#",
+      "###"
+    ],
+    "result": {
+      "count": 2,
+      "item": "minecraft:wild_armor_trim_smithing_template",
+      "tag": null
+    },
+    "show_notification": true,
+    "type": "minecraft:crafting_shaped"
+  },
+  "wild_armor_trim_smithing_template_smithing_trim": {
+    "addition": {
+      "tag": "minecraft:trim_materials"
+    },
+    "base": {
+      "tag": "minecraft:trimmable_armor"
+    },
+    "template": {
+      "item": "minecraft:wild_armor_trim_smithing_template"
+    },
+    "type": "minecraft:smithing_trim"
+  },
   "wooden_axe": {
     "category": "equipment",
     "key": {
@@ -20788,24 +24763,6 @@
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
-  "yellow_bed_from_white_bed": {
-    "category": "misc",
-    "group": "dyed_bed",
-    "ingredients": [
-      {
-        "item": "minecraft:white_bed"
-      },
-      {
-        "item": "minecraft:yellow_dye"
-      }
-    ],
-    "result": {
-      "count": 1,
-      "item": "minecraft:yellow_bed",
-      "tag": null
-    },
-    "type": "minecraft:crafting_shapeless"
-  },
   "yellow_candle": {
     "category": "misc",
     "group": "dyed_candle",
@@ -20839,34 +24796,6 @@
     ],
     "result": {
       "count": 3,
-      "item": "minecraft:yellow_carpet",
-      "tag": null
-    },
-    "show_notification": true,
-    "type": "minecraft:crafting_shaped"
-  },
-  "yellow_carpet_from_white_carpet": {
-    "category": "misc",
-    "group": "carpet",
-    "key": {
-      "#": {
-        "count": 1,
-        "item": "minecraft:white_carpet",
-        "tag": null
-      },
-      "$": {
-        "count": 1,
-        "item": "minecraft:yellow_dye",
-        "tag": null
-      }
-    },
-    "pattern": [
-      "###",
-      "#$#",
-      "###"
-    ],
-    "result": {
-      "count": 8,
       "item": "minecraft:yellow_carpet",
       "tag": null
     },
@@ -21059,23 +24988,5 @@
     },
     "show_notification": true,
     "type": "minecraft:crafting_shaped"
-  },
-  "yellow_wool": {
-    "category": "building",
-    "group": "wool",
-    "ingredients": [
-      {
-        "item": "minecraft:yellow_dye"
-      },
-      {
-        "item": "minecraft:white_wool"
-      }
-    ],
-    "result": {
-      "count": 1,
-      "item": "minecraft:yellow_wool",
-      "tag": null
-    },
-    "type": "minecraft:crafting_shapeless"
   }
 }
