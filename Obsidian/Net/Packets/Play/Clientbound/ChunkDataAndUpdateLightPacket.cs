@@ -48,8 +48,6 @@ public partial class ChunkDataAndUpdateLightPacket : IClientboundPacket
         stream.WriteVarInt(0);
 
         // Lighting
-        // Trust edges
-        stream.WriteBoolean(true);
 
         // Sky Light Mask
         Chunk.WriteLightMaskTo(stream, LightType.Sky);
