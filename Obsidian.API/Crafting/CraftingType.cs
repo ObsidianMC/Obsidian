@@ -26,7 +26,6 @@ public enum CraftingType
 
     Stonecutting,
 
-    Smithing,
     SmithingTransform,
     SmithingTrim
 }
