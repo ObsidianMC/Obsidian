@@ -1,5 +1,5 @@
 ﻿using Obsidian.Net;
-using Obsidian.Utilities.Collection;
+using Obsidian.Utilities.Collections;
 
 namespace Obsidian.ChunkData;
 public abstract class DataContainer<T>

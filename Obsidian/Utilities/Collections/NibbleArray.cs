@@ -1,7 +1,7 @@
 ﻿using Obsidian.Nbt;
 using System.Collections.ObjectModel;
 
-namespace Obsidian.Utilities.Collection;
+namespace Obsidian.Utilities.Collections;
 
 /// <summary>
 /// Represents an array of 4-bit values.
