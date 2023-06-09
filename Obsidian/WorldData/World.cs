@@ -741,19 +741,13 @@ public class World : IWorld, IAsyncDisposable
 
         int regionPregenRange = (pregenerationRange >> Region.CubicRegionSizeShift) + 1;
 
-        Parallel.For(-regionPregenRange, regionPregenRange, async x =>
+        await Parallel.ForEachAsync(Enumerable.Range(-regionPregenRange, regionPregenRange * 2 + 1), async (x, _) =>
         {
             for (int z = -regionPregenRange; z < regionPregenRange; z++)
             {
                 await LoadRegionAsync(x, z);
             };
         });
-
-        // I don't know why we still have null regions when we get here ¯\_(ツ)_/¯
-        while (Regions.Any(r => r.Value is null))
-        {
-            await Task.Delay(100);
-        }
 
         for (int x = -pregenerationRange; x < pregenerationRange; x++)
         {
