@@ -297,6 +297,8 @@ public struct Vector : IEquatable<Vector>
     /// </summary>
     public static readonly IEnumerable<Vector> CardinalDirs = new[] { Vector.North, Vector.South, Vector.West, Vector.East };
 
+    internal static readonly Vector[] AllDirections = new[] { North, South, West, East, Up, Down };
+
     private string GetDebuggerDisplay()
     {
         return ToString();
