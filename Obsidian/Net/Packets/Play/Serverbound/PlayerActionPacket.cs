@@ -9,7 +9,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound;
 public partial class PlayerActionPacket : IServerboundPacket
 {
     [Field(0), ActualType(typeof(int)), VarLength]
-    public DiggingStatus Status { get; private set; }
+    public PlayerActionStatus Status { get; private set; }
 
     [Field(1)]
     public Vector Position { get; private set; }
@@ -28,7 +28,7 @@ public partial class PlayerActionPacket : IServerboundPacket
         if (b is not IBlock block)
             return;
 
-        if (Status == DiggingStatus.FinishedDigging || (Status == DiggingStatus.StartedDigging && player.Gamemode == Gamemode.Creative))
+        if (Status == PlayerActionStatus.FinishedDigging || (Status == PlayerActionStatus.StartedDigging && player.Gamemode == Gamemode.Creative))
         {
             await player.world.SetBlockAsync(Position, BlocksRegistry.Air, true);
             player.client.SendPacket(new AcknowledgeBlockChangePacket
@@ -41,7 +41,7 @@ public partial class PlayerActionPacket : IServerboundPacket
                 return;
         }
 
-        await server.BroadcastPlayerDigAsync(new PlayerDiggingStore
+        server.BroadcastPlayerAction(new PlayerActionStore
         {
             Player = player.Uuid,
             Packet = this
@@ -49,13 +49,13 @@ public partial class PlayerActionPacket : IServerboundPacket
     }
 }
 
-public class PlayerDiggingStore
+public readonly struct PlayerActionStore
 {
-    public Guid Player { get; init; }
-    public PlayerActionPacket Packet { get; init; }
+    public required Guid Player { get; init; }
+    public required PlayerActionPacket Packet { get; init; }
 }
 
-public enum DiggingStatus : int
+public enum PlayerActionStatus : int
 {
     StartedDigging,
     CancelledDigging,
