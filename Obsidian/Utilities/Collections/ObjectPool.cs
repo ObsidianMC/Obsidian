@@ -1,4 +1,4 @@
-﻿namespace Obsidian.Utilities.Collection;
+﻿namespace Obsidian.Utilities.Collections;
 
 public abstract class ObjectPool<T> where T : new()
 {

@@ -4,7 +4,7 @@ using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Registries;
-using Obsidian.Utilities.Collection;
+using Obsidian.Utilities.Collections;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
