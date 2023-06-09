@@ -321,7 +321,7 @@ public sealed partial class Player : Living, IPlayer
     public Task KickAsync(string reason) => client.DisconnectAsync(ChatMessage.Simple(reason));
     public Task KickAsync(ChatMessage reason) => client.DisconnectAsync(reason);
 
-    public async Task RespawnAsync(DataKept dataKept = DataKept.Metadata)
+    public async Task RespawnAsync(bool copyMetadata = false)
     {
         if (!Alive)
         {
@@ -344,7 +344,7 @@ public sealed partial class Player : Living, IPlayer
             HashedSeed = 0,
             IsFlat = false,
             IsDebug = false,
-            DataKept = dataKept
+            CopyMetadata = copyMetadata
         });
 
         visiblePlayers.Clear();
@@ -897,7 +897,7 @@ public sealed partial class Player : Living, IPlayer
 
     private async Task PickupNearbyItemsAsync(float distance = 0.5f)
     {
-        foreach (var entity in world.GetEntitiesNear(Position, distance))
+        foreach (var entity in world.GetEntitiesInRange(Position, distance))
         {
             if (entity is not ItemEntity item)
                 continue;

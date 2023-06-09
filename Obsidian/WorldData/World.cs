@@ -80,6 +80,14 @@ public class World : IWorld, IAsyncDisposable
         return region.Entities.TryRemove(entity.EntityId, out _);
     }
 
+    public Region? GetRegionForLocation(VectorF location)
+    {
+        (int chunkX, int chunkZ) = location.ToChunkCoord();
+        long key = NumericsHelper.IntsToLong(chunkX >> Region.CubicRegionSizeShift, chunkZ >> Region.CubicRegionSizeShift);
+        Regions.TryGetValue(key, out Region? region);
+        return region;
+    }
+
     public Region? GetRegionForChunk(int chunkX, int chunkZ)
     {
         long value = NumericsHelper.IntsToLong(chunkX >> Region.CubicRegionSizeShift, chunkZ >> Region.CubicRegionSizeShift);
@@ -228,20 +236,88 @@ public class World : IWorld, IAsyncDisposable
 
     public Task<BlockMeta?> GetBlockMeta(Vector location) => GetBlockMeta(location.X, location.Y, location.Z);
 
-    public IEnumerable<Entity> GetEntitiesNear(VectorF location, float distance = 10f)
+    public IEnumerable<Entity> GetEntitiesInRange(VectorF location, float distance = 10f)
     {
-        var (chunkX, chunkZ) = location.ToChunkCoord();
+        foreach (Player player in GetPlayersInRange(location, distance))
+        {
+            yield return player;
+        }
 
-        Region? region = GetRegionForChunk(chunkX, chunkZ);
+        foreach (Entity entity in GetNonPlayerEntitiesInRange(location, distance))
+        {
+            yield return entity;
+        }
+    }
 
-        if (region is null)
-            return new List<Entity>();
+    public IEnumerable<Entity> GetNonPlayerEntitiesInRange(VectorF location, float distance)
+    {
+        if (float.IsNaN(distance) || distance < 0f)
+        {
+            yield break;
+        }
 
-        var selected = region.Entities.Select(x => x.Value).Where(x => VectorF.Distance(location, x.Position) <= distance).ToList();
+        // Get corner chunk coordinates
+        (int left, int top) = (location - new VectorF(distance)).ToChunkCoord();
+        (int right, int bottom) = (location + new VectorF(distance)).ToChunkCoord();
 
-        selected.AddRange(Players.Select(x => x.Value).Where(x => VectorF.Distance(location, x.Position) <= distance));
+        distance *= distance; // distance^2 <= deltaX^2 + deltaY^2
 
-        return selected;
+        // Iterate over chunks, taking one from each region, then getting the region itself
+        for (int x = left; x <= right; x += Region.CubicRegionSize)
+        {
+            for (int y = top; y >= bottom; y -= Region.CubicRegionSize)
+            {
+                if (GetRegionForChunk(x, y) is not Region region)
+                    continue;
+
+                // Return entities in range
+                foreach ((_, Entity entity) in region.Entities)
+                {
+                    VectorF entityLocation = entity.Position;
+                    float differenceX = entityLocation.X - location.X;
+                    float differenceY = entityLocation.Y - location.Y;
+
+                    if (differenceX * differenceX + differenceY * differenceY <= distance)
+                    {
+                        yield return entity;
+                    }
+                }
+            }
+        }
+    }
+
+    public IEnumerable<Player> GetPlayersInRange(VectorF location, float distance)
+    {
+        if (float.IsNaN(distance) || distance < 0f)
+        {
+            yield break;
+        }
+
+        if (distance == 0f)
+        {
+            foreach ((_, Player player) in Players)
+            {
+                if (player.Position == location)
+                {
+                    yield return player;
+                }
+            }
+            yield break;
+        }
+
+        distance *= distance; // distance^2 <= deltaX^2 + deltaY^2
+
+        foreach ((_, Player player) in Players)
+        {
+            VectorF playerLocation = player.Position;
+            float differenceX = playerLocation.X - location.X;
+            float differenceY = playerLocation.Y - location.Y;
+
+            if (differenceX * differenceX + differenceY * differenceY <= distance)
+            {
+                yield return player;
+            }
+        }
     }
 
     public bool TryAddPlayer(Player player) => Players.TryAdd(player.Uuid, player);
