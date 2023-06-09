@@ -498,82 +498,92 @@ public partial class Server : IServer
 
     private bool TryAddEntity(World world, Entity entity) => world.TryAddEntity(entity);
 
-    internal void BroadcastPlayerDig(PlayerDiggingStore store, IBlock block)
+    private void DropItem(Player player, sbyte amountToRemove)
     {
-        var digging = store.Packet;
+        var droppedItem = player.GetHeldItem();
 
-        var player = OnlinePlayers.GetValueOrDefault(store.Player);
+        if (droppedItem is null or { Type: Material.Air })
+            return;
 
-        switch (digging.Status)
+        var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
+
+        var item = new ItemEntity
         {
-            case DiggingStatus.DropItem:
+            EntityId = player + player.world.GetTotalLoadedEntities() + 1,
+            Count = amountToRemove,
+            Id = droppedItem.AsItem().Id,
+            Glowing = true,
+            World = player.world,
+            Server = player.Server,
+            Position = loc
+        };
+
+        TryAddEntity(player.world, item);
+
+        var lookDir = player.GetLookDirection();
+
+        var vel = Velocity.FromDirection(loc, lookDir);//TODO properly shoot the item towards the direction the players looking at
+
+        BroadcastPacket(new SpawnEntityPacket
+        {
+            EntityId = item.EntityId,
+            Uuid = item.Uuid,
+            Type = EntityType.Item,
+            Position = item.Position,
+            Pitch = 0,
+            Yaw = 0,
+            Data = 1,
+            Velocity = vel
+        });
+        BroadcastPacket(new SetEntityMetadataPacket
+        {
+            EntityId = item.EntityId,
+            Entity = item
+        });
+
+        player.Inventory.RemoveItem(player.inventorySlot, amountToRemove);
+
+        player.client.SendPacket(new SetContainerSlotPacket
+        {
+            Slot = player.inventorySlot,
+
+            WindowId = 0,
+
+            SlotData = player.GetHeldItem(),
+
+            StateId = player.Inventory.StateId++
+        });
+
+    }
+
+    internal void BroadcastPlayerAction(PlayerActionStore store, IBlock block)
+    {
+        var action = store.Packet;
+
+        if (!OnlinePlayers.TryGetValue(store.Player, out var player))//This should NEVER return false but who knows :)))
+            return;
+
+        switch (action.Status)
+        {
+            case PlayerActionStatus.DropItem:
             {
-                var droppedItem = player.GetHeldItem();
-
-                if (droppedItem is null or { Type: Material.Air })
-                    return;
-
-                var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
-
-                var item = new ItemEntity
-                {
-                    EntityId = player + player.world.GetTotalLoadedEntities() + 1,
-                    Count = 1,
-                    Id = droppedItem.AsItem().Id,
-                    Glowing = true,
-                    World = player.world,
-                    Server = player.Server,
-                    Position = loc
-                };
-
-                TryAddEntity(player.world, item);
-
-                var lookDir = player.GetLookDirection();
-
-                var vel = Velocity.FromDirection(loc, lookDir);//TODO properly shoot the item towards the direction the players looking at
-
-                BroadcastPacket(new SpawnEntityPacket
-                {
-                    EntityId = item.EntityId,
-                    Uuid = item.Uuid,
-                    Type = EntityType.Item,
-                    Position = item.Position,
-                    Pitch = 0,
-                    Yaw = 0,
-                    Data = 1,
-                    Velocity = vel
-                });
-                BroadcastPacket(new SetEntityMetadataPacket
-                {
-                    EntityId = item.EntityId,
-                    Entity = item
-                });
-
-                player.Inventory.RemoveItem(player.inventorySlot, player.Sneaking ? 64 : 1);//TODO get max stack size for the item
-
-                player.client.SendPacket(new SetContainerSlotPacket
-                {
-                    Slot = player.inventorySlot,
-
-                    WindowId = 0,
-
-                    SlotData = player.GetHeldItem(),
-
-                    StateId = player.Inventory.StateId++
-                });
-
+                DropItem(player, 1);
                 break;
             }
-            case DiggingStatus.StartedDigging:
+            case PlayerActionStatus.DropItemStack:
+            {
+                DropItem(player, 64);
                 break;
-            case DiggingStatus.CancelledDigging:
+            }
+            case PlayerActionStatus.StartedDigging:
+            case PlayerActionStatus.CancelledDigging:
                 break;
-            case DiggingStatus.FinishedDigging:
+            case PlayerActionStatus.FinishedDigging:
             {
                 BroadcastPacket(new SetBlockDestroyStagePacket
                 {
                     EntityId = player,
-                    Position = digging.Position,
+                    Position = action.Position,
                     DestroyStage = -1
                 });
 
@@ -588,7 +598,7 @@ public partial class Server : IServer
                     Id = droppedItem.Id,
                     Glowing = true,
                     World = player.world,
-                    Position = digging.Position,
+                    Position = action.Position,
                     Server = this
                 };
 
