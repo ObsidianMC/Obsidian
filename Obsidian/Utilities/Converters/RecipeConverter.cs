@@ -20,13 +20,28 @@ public sealed class RecipesConverter : JsonConverter<IRecipe[]>
             var type = value.GetProperty("type").GetString()!.TrimResourceTag();
             var group = value.TryGetProperty("group", out var groupValue) ? groupValue.GetString()! : string.Empty;
 
-            if (!value.TryGetProperty("result", out var resultValue))
-                continue;
-
-            var result = resultValue.Deserialize<Ingredient>(options)!;
-
             if (!Enum.TryParse<CraftingType>(type, true, out var craftingType))
                 throw new JsonException();
+
+            if (!value.TryGetProperty("result", out var resultValue))
+            {
+                if (craftingType == CraftingType.SmithingTrim)
+                {
+                    recipes.Add(new SmithingTrimRecipe
+                    {
+                        Identifier = recipeName,
+                        Type = craftingType,
+                        Group = group,
+                        Template = value.GetProperty("template").Deserialize<Ingredient>(options)!,
+                        Addition = value.GetProperty("addition").Deserialize<Ingredient>(options)!,
+                        Base = value.GetProperty("base").Deserialize<Ingredient>(options)!
+                    });
+                }
+
+                continue;
+            }
+
+            var result = resultValue.Deserialize<Ingredient>(options)!;
 
             switch (craftingType)
             {
@@ -81,12 +96,13 @@ public sealed class RecipesConverter : JsonConverter<IRecipe[]>
                         Result = result
                     });
                     break;
-                case CraftingType.Smithing:
-                    recipes.Add(new SmithingRecipe
+                case CraftingType.SmithingTransform:
+                    recipes.Add(new SmithingTransformRecipe
                     {
                         Identifier = recipeName,
                         Type = craftingType,
                         Group = group,
+                        Template = value.GetProperty("template").Deserialize<Ingredient>(options)!,
                         Addition = value.GetProperty("addition").Deserialize<Ingredient>(options)!,
                         Base = value.GetProperty("base").Deserialize<Ingredient>(options)!,
                         Result = result

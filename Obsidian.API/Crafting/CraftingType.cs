@@ -18,6 +18,7 @@ public enum CraftingType
     CraftingSpecialShulkerboxcoloring,
     CraftingSpecialSuspiciousstew,
     CraftingSpecialRepairitem,
+    CraftingDecoratedPot,
 
     Smelting,
     Blasting,
@@ -26,7 +27,6 @@ public enum CraftingType
 
     Stonecutting,
 
-    Smithing,
     SmithingTransform,
     SmithingTrim
 }

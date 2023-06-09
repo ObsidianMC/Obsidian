@@ -321,7 +321,7 @@ public sealed partial class Player : Living, IPlayer
     public Task KickAsync(string reason) => client.DisconnectAsync(ChatMessage.Simple(reason));
     public Task KickAsync(ChatMessage reason) => client.DisconnectAsync(reason);
 
-    public async Task RespawnAsync(bool copyMetadata = false)
+    public async Task RespawnAsync(DataKept dataKept = DataKept.Metadata)
     {
         if (!Alive)
         {
@@ -344,7 +344,7 @@ public sealed partial class Player : Living, IPlayer
             HashedSeed = 0,
             IsFlat = false,
             IsDebug = false,
-            CopyMetadata = copyMetadata
+            DataKept = dataKept
         });
 
         visiblePlayers.Clear();

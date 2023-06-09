@@ -1116,17 +1116,35 @@ public partial class MinecraftStream
 
             await WriteSlotAsync(result);
         }
-        else if (recipe is SmithingRecipe smithingRecipe)
+        else if (recipe is SmithingTransformRecipe smithingTransformRecipe)
         {
-            await WriteVarIntAsync(smithingRecipe.Base.Count);
-            foreach (var item in smithingRecipe.Base)
+            await WriteVarIntAsync(smithingTransformRecipe.Template.Count);
+            foreach (var item in smithingTransformRecipe.Template)
                 await WriteSlotAsync(item);
 
-            await WriteVarIntAsync(smithingRecipe.Addition.Count);
-            foreach (var item in smithingRecipe.Addition)
+            await WriteVarIntAsync(smithingTransformRecipe.Base.Count);
+            foreach (var item in smithingTransformRecipe.Base)
                 await WriteSlotAsync(item);
 
-            await WriteSlotAsync(smithingRecipe.Result.First());
+            await WriteVarIntAsync(smithingTransformRecipe.Addition.Count);
+            foreach (var item in smithingTransformRecipe.Addition)
+                await WriteSlotAsync(item);
+
+            await WriteSlotAsync(smithingTransformRecipe.Result.First());
+        }
+        else if (recipe is SmithingTrimRecipe smithingTrimRecipe)
+        {
+            await WriteVarIntAsync(smithingTrimRecipe.Template.Count);
+            foreach (var item in smithingTrimRecipe.Template)
+                await WriteSlotAsync(item);
+
+            await WriteVarIntAsync(smithingTrimRecipe.Base.Count);
+            foreach (var item in smithingTrimRecipe.Base)
+                await WriteSlotAsync(item);
+
+            await WriteVarIntAsync(smithingTrimRecipe.Addition.Count);
+            foreach (var item in smithingTrimRecipe.Addition)
+                await WriteSlotAsync(item);
         }
     }
 
@@ -1253,17 +1271,35 @@ public partial class MinecraftStream
 
             WriteItemStack(result);
         }
-        else if (recipe is SmithingRecipe smithingRecipe)
+        else if (recipe is SmithingTransformRecipe smithingTransformRecipe)
         {
-            WriteVarInt(smithingRecipe.Base.Count);
-            foreach (var item in smithingRecipe.Base)
+            WriteVarInt(smithingTransformRecipe.Template.Count);
+            foreach (var item in smithingTransformRecipe.Template)
                 WriteItemStack(item);
 
-            WriteVarInt(smithingRecipe.Addition.Count);
-            foreach (var item in smithingRecipe.Addition)
+            WriteVarInt(smithingTransformRecipe.Base.Count);
+            foreach (var item in smithingTransformRecipe.Base)
                 WriteItemStack(item);
 
-            WriteItemStack(smithingRecipe.Result.First());
+            WriteVarInt(smithingTransformRecipe.Addition.Count);
+            foreach (var item in smithingTransformRecipe.Addition)
+                WriteItemStack(item);
+
+            WriteItemStack(smithingTransformRecipe.Result.First());
+        }
+        else if (recipe is SmithingTrimRecipe smithingTrimRecipe)
+        {
+            WriteVarInt(smithingTrimRecipe.Template.Count);
+            foreach (var item in smithingTrimRecipe.Template)
+                WriteItemStack(item);
+
+            WriteVarInt(smithingTrimRecipe.Base.Count);
+            foreach (var item in smithingTrimRecipe.Base)
+                WriteItemStack(item);
+
+            WriteVarInt(smithingTrimRecipe.Addition.Count);
+            foreach (var item in smithingTrimRecipe.Addition)
+                WriteItemStack(item);
         }
     }
 
