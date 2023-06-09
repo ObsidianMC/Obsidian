@@ -41,7 +41,7 @@ public partial class PlayerActionPacket : IServerboundPacket
                 return;
         }
 
-        await server.BroadcastPlayerDigAsync(new PlayerDiggingStore
+        server.BroadcastPlayerDig(new PlayerDiggingStore
         {
             Player = player.Uuid,
             Packet = this

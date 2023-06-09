@@ -845,7 +845,7 @@ public sealed partial class Player : Living, IPlayer
 
         await TrySpawnPlayerAsync(position);
 
-        await PickupNearbyItemsAsync(1);
+        await PickupNearbyItemsAsync();
     }
 
     internal async override Task UpdateAsync(VectorF position, Angle yaw, Angle pitch, bool onGround)
@@ -856,14 +856,14 @@ public sealed partial class Player : Living, IPlayer
 
         await TrySpawnPlayerAsync(position);
 
-        await PickupNearbyItemsAsync(0.8f);
+        await PickupNearbyItemsAsync();
     }
 
     internal async override Task UpdateAsync(Angle yaw, Angle pitch, bool onGround)
     {
         await base.UpdateAsync(yaw, pitch, onGround);
 
-        await PickupNearbyItemsAsync(2);
+        await PickupNearbyItemsAsync();
     }
 
     private async Task TrySpawnPlayerAsync(VectorF position)
@@ -909,14 +909,13 @@ public sealed partial class Player : Living, IPlayer
                 PickupItemCount = item.Count
             });
 
-            var itemStack = new ItemStack(item.Material, item.Count, item.ItemMeta);
-            var slot = Inventory.AddItem(itemStack);
+            var slot = Inventory.AddItem(new ItemStack(item.Material, item.Count, item.ItemMeta));
 
             client.SendPacket(new SetContainerSlotPacket
             {
                 Slot = (short)slot,
                 WindowId = 0,
-                SlotData = itemStack,
+                SlotData = Inventory.GetItem(slot)!,
                 StateId = Inventory.StateId++
             });
 
