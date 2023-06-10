@@ -287,7 +287,7 @@ public class Entity : IEquatable<Entity>, IEntity
         stream.WriteVarInt(PowderedSnowTicks);
     }
 
-    public IEnumerable<IEntity> GetEntitiesNear(float distance) => world.GetEntitiesNear(Position, distance).Where(x => x != this);
+    public IEnumerable<IEntity> GetEntitiesNear(float distance) => world.GetEntitiesInRange(Position, distance).Where(x => x != this);
 
     public virtual Task TickAsync() => Task.CompletedTask;
 

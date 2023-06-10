@@ -57,7 +57,7 @@ public class World : IWorld, IAsyncDisposable
 
         Seed = seed ?? throw new ArgumentNullException(nameof(seed));
 
-        Generator = (IWorldGenerator)Activator.CreateInstance(generatorType);
+        Generator = Activator.CreateInstance(generatorType) as IWorldGenerator ?? throw new ArgumentException("Invalid generator type.", nameof(generatorType));
         Generator.Init(this);
         worldLight = new(this);
     }
@@ -78,6 +78,14 @@ public class World : IWorld, IAsyncDisposable
             throw new InvalidOperationException("Region is null this wasn't supposed to happen.");
 
         return region.Entities.TryRemove(entity.EntityId, out _);
+    }
+
+    public Region? GetRegionForLocation(VectorF location)
+    {
+        (int chunkX, int chunkZ) = location.ToChunkCoord();
+        long key = NumericsHelper.IntsToLong(chunkX >> Region.CubicRegionSizeShift, chunkZ >> Region.CubicRegionSizeShift);
+        Regions.TryGetValue(key, out Region? region);
+        return region;
     }
 
     public Region? GetRegionForChunk(int chunkX, int chunkZ)
@@ -228,20 +236,88 @@ public class World : IWorld, IAsyncDisposable
 
     public Task<BlockMeta?> GetBlockMeta(Vector location) => GetBlockMeta(location.X, location.Y, location.Z);
 
-    public IEnumerable<Entity> GetEntitiesNear(VectorF location, float distance = 10f)
+    public IEnumerable<Entity> GetEntitiesInRange(VectorF location, float distance = 10f)
     {
-        var (chunkX, chunkZ) = location.ToChunkCoord();
+        foreach (Player player in GetPlayersInRange(location, distance))
+        {
+            yield return player;
+        }
 
-        Region? region = GetRegionForChunk(chunkX, chunkZ);
+        foreach (Entity entity in GetNonPlayerEntitiesInRange(location, distance))
+        {
+            yield return entity;
+        }
+    }
 
-        if (region is null)
-            return new List<Entity>();
+    public IEnumerable<Entity> GetNonPlayerEntitiesInRange(VectorF location, float distance)
+    {
+        if (float.IsNaN(distance) || distance < 0f)
+        {
+            yield break;
+        }
 
-        var selected = region.Entities.Select(x => x.Value).Where(x => VectorF.Distance(location, x.Position) <= distance).ToList();
+        // Get corner chunk coordinates
+        (int left, int top) = (location - new VectorF(distance)).ToChunkCoord();
+        (int right, int bottom) = (location + new VectorF(distance)).ToChunkCoord();
 
-        selected.AddRange(Players.Select(x => x.Value).Where(x => VectorF.Distance(location, x.Position) <= distance));
+        distance *= distance; // distance^2 <= deltaX^2 + deltaY^2
 
-        return selected;
+        // Iterate over chunks, taking one from each region, then getting the region itself
+        for (int x = left; x <= right; x += Region.CubicRegionSize)
+        {
+            for (int y = top; y >= bottom; y -= Region.CubicRegionSize)
+            {
+                if (GetRegionForChunk(x, y) is not Region region)
+                    continue;
+
+                // Return entities in range
+                foreach ((_, Entity entity) in region.Entities)
+                {
+                    VectorF entityLocation = entity.Position;
+                    float differenceX = entityLocation.X - location.X;
+                    float differenceY = entityLocation.Y - location.Y;
+
+                    if (differenceX * differenceX + differenceY * differenceY <= distance)
+                    {
+                        yield return entity;
+                    }
+                }
+            }
+        }
+    }
+
+    public IEnumerable<Player> GetPlayersInRange(VectorF location, float distance)
+    {
+        if (float.IsNaN(distance) || distance < 0f)
+        {
+            yield break;
+        }
+
+        if (distance == 0f)
+        {
+            foreach ((_, Player player) in Players)
+            {
+                if (player.Position == location)
+                {
+                    yield return player;
+                }
+            }
+            yield break;
+        }
+
+        distance *= distance; // distance^2 <= deltaX^2 + deltaY^2
+
+        foreach ((_, Player player) in Players)
+        {
+            VectorF playerLocation = player.Position;
+            float differenceX = playerLocation.X - location.X;
+            float differenceY = playerLocation.Y - location.Y;
+
+            if (differenceX * differenceX + differenceY * differenceY <= distance)
+            {
+                yield return player;
+            }
+        }
     }
 
     public bool TryAddPlayer(Player player) => Players.TryAdd(player.Uuid, player);
@@ -645,50 +721,34 @@ public class World : IWorld, IAsyncDisposable
     /// </summary>
     /// <param name="worldLoc"></param>
     /// <returns>Whether to update neighbor blocks.</returns>
-    internal async Task<bool> HandleBlockUpdateAsync(BlockUpdate bu)
+    internal async ValueTask<bool> HandleBlockUpdateAsync(BlockUpdate update)
     {
-        var block = bu.Block;
-        if (block is null)
+        if (update.Block is not IBlock block)
             return false;
 
         // Todo: this better
         if (TagsRegistry.Blocks.GravityAffected.Entries.Contains(block.RegistryId))
-            return await BlockUpdates.HandleFallingBlock(bu);
+            return await BlockUpdates.HandleFallingBlock(update);
 
         if (block.IsLiquid)
-            return await BlockUpdates.HandleLiquidPhysicsAsync(bu);
+            return await BlockUpdates.HandleLiquidPhysicsAsync(update);
 
         return false;
     }
 
-    internal async Task BlockUpdateNeighborsAsync(BlockUpdate bu)
+    internal async Task BlockUpdateNeighborsAsync(BlockUpdate update)
     {
-        bu.Block = null;
-        bu.delayCounter = bu.Delay;
-        var north = bu;
-        north.position += Vector.Forwards;
+        update = update with
+        {
+            Block = null,
+            delayCounter = update.Delay
+        };
 
-        var south = bu;
-        south.position += Vector.Backwards;
-
-        var west = bu;
-        west.position += Vector.Left;
-
-        var east = bu;
-        east.position += Vector.Right;
-
-        var up = bu;
-        up.position += Vector.Up;
-
-        var down = bu;
-        down.position += Vector.Down;
-
-        await ScheduleBlockUpdateAsync(north);
-        await ScheduleBlockUpdateAsync(south);
-        await ScheduleBlockUpdateAsync(west);
-        await ScheduleBlockUpdateAsync(east);
-        await ScheduleBlockUpdateAsync(up);
-        await ScheduleBlockUpdateAsync(down);
+        Vector[] directions = Vector.AllDirections;
+        for (int i = 0; i < directions.Length; i++)
+        {
+            await ScheduleBlockUpdateAsync(update with { position = update.position + directions[i] });
+        }
     }
 
     /// <summary>
@@ -703,15 +763,15 @@ public class World : IWorld, IAsyncDisposable
         // Make sure we set the right paths
         if (string.IsNullOrWhiteSpace(parentWorldName))
         {
-            FolderPath = Path.Combine(Path.Combine(Server.ServerFolderPath, "worlds"), Name);
+            FolderPath = Path.Combine(Server.ServerFolderPath, "worlds", Name);
             LevelDataFilePath = Path.Combine(FolderPath, "level.dat");
             PlayerDataPath = Path.Combine(FolderPath, "playerdata");
         }
         else
         {
-            FolderPath = Path.Combine(Path.Combine(Server.ServerFolderPath, "worlds"), parentWorldName, Name);
-            LevelDataFilePath = Path.Combine(Path.Combine(Server.ServerFolderPath, "worlds"), parentWorldName, "level.dat");
-            PlayerDataPath = Path.Combine(Path.Combine(Server.ServerFolderPath, "worlds"), parentWorldName, "playerdata");
+            FolderPath = Path.Combine(Server.ServerFolderPath, "worlds", parentWorldName, Name);
+            LevelDataFilePath = Path.Combine(Server.ServerFolderPath, "worlds", parentWorldName, "level.dat");
+            PlayerDataPath = Path.Combine(Server.ServerFolderPath, "worlds", parentWorldName, "playerdata");
         }
 
         ParentWorldName = parentWorldName;
@@ -787,37 +847,45 @@ public class World : IWorld, IAsyncDisposable
     {
         if (LevelData.SpawnPosition.Y != 0) { return; }
 
-        foreach (var r in Regions.Values)
+        foreach (var region in Regions.Values)
         {
-            foreach (var c in r.GeneratedChunks())
+            foreach (var chunk in region.GeneratedChunks())
             {
                 for (int bx = 0; bx < 16; bx++)
                 {
                     for (int bz = 0; bz < 16; bz++)
                     {
-                        var by = c.Heightmaps[ChunkData.HeightmapType.MotionBlocking].GetHeight(bx, bz);
-                        IBlock block = c.GetBlock(bx, by, bz);
-                        if (by >= 64 && (block.Is(Material.GrassBlock) || block.Is(Material.Sand)))
+                        // Get topmost block
+                        var by = chunk.Heightmaps[ChunkData.HeightmapType.MotionBlocking].GetHeight(bx, bz);
+                        IBlock block = chunk.GetBlock(bx, by, bz);
+
+                        // Block must be high enough and either grass or sand
+                        if (by < 64 || !block.Is(Material.GrassBlock) && !block.Is(Material.Sand))
                         {
-                            if (c.GetBlock(bx, by + 1, bz).IsAir && c.GetBlock(bx, by + 2, bz).IsAir)
+                            continue;
+                        }
+
+                        // Block must have enough empty space above for player to spawn in
+                        if (!chunk.GetBlock(bx, by + 1, bz).IsAir || !chunk.GetBlock(bx, by + 2, bz).IsAir)
+                        {
+                            continue;
+                        }
+
+                        var worldPos = new VectorF(bx + 0.5f + (chunk.X * 16), by + 1, bz + 0.5f + (chunk.Z * 16));
+                        LevelData.SpawnPosition = worldPos;
+                        Server.Logger.LogInformation($"World Spawn set to {worldPos}");
+
+                        // Should spawn be far from (0,0), queue up chunks in generation range.
+                        // Just feign a request for a chunk and if it doesn't exist, it'll get queued for gen.
+                        for (int x = chunk.X - Server.Config.PregenerateChunkRange; x < chunk.X + Server.Config.PregenerateChunkRange; x++)
+                        {
+                            for (int z = chunk.Z - Server.Config.PregenerateChunkRange; z < chunk.Z + Server.Config.PregenerateChunkRange; z++)
                             {
-                                var worldPos = new VectorF(bx + 0.5f + (c.X * 16), by + 1, bz + 0.5f + (c.Z * 16));
-                                LevelData.SpawnPosition = worldPos;
-                                Server.Logger.LogInformation($"World Spawn set to {worldPos}");
-
-                                // Should spawn be far from (0,0), queue up chunks in generation range.
-                                // Just feign a request for a chunk and if it doesn't exist, it'll get queued for gen.
-                                for (int x = c.X - Server.Config.PregenerateChunkRange; x < c.X + Server.Config.PregenerateChunkRange; x++)
-                                {
-                                    for (int z = c.Z - Server.Config.PregenerateChunkRange; z < c.Z + Server.Config.PregenerateChunkRange; z++)
-                                    {
-                                        await GetChunkAsync(x, z);
-                                    }
-                                }
-
-                                return;
+                                await GetChunkAsync(x, z);
                             }
                         }
+
+                        return;
                     }
                 }
             }
@@ -898,9 +966,9 @@ public class World : IWorld, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        foreach (var region in Regions)
+        foreach ((_, Region region) in Regions)
         {
-            await region.Value.DisposeAsync();
+            await region.DisposeAsync();
         }
     }
 }

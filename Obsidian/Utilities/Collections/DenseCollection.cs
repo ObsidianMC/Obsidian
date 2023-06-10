@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 
-namespace Obsidian.Utilities.Collection;
+namespace Obsidian.Utilities.Collections;
 
 public class DenseCollection<T> : IEnumerable<T> where T : class
 {

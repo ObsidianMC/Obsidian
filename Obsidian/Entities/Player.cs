@@ -12,6 +12,7 @@ using Obsidian.WorldData;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
 using System.Net;
 
 namespace Obsidian.Entities;
@@ -844,7 +845,7 @@ public sealed partial class Player : Living, IPlayer
 
         await TrySpawnPlayerAsync(position);
 
-        await PickupNearbyItemsAsync(1);
+        await PickupNearbyItemsAsync();
     }
 
     internal async override Task UpdateAsync(VectorF position, Angle yaw, Angle pitch, bool onGround)
@@ -855,24 +856,23 @@ public sealed partial class Player : Living, IPlayer
 
         await TrySpawnPlayerAsync(position);
 
-        await PickupNearbyItemsAsync(0.8f);
+        await PickupNearbyItemsAsync();
     }
 
     internal async override Task UpdateAsync(Angle yaw, Angle pitch, bool onGround)
     {
         await base.UpdateAsync(yaw, pitch, onGround);
 
-        await PickupNearbyItemsAsync(2);
+        await PickupNearbyItemsAsync();
     }
 
     private async Task TrySpawnPlayerAsync(VectorF position)
     {
-        var players = world.Players
-            .Except(Uuid)
-            .Where(x => VectorF.Distance(position, x.Value.Position) <= x.Value.ClientInformation.ViewDistance);
-
-        foreach (var (_, player) in players)
+        foreach (var player in world.GetPlayersInRange(position, ClientInformation.ViewDistance))
         {
+            if (player == this)
+                continue;
+
             if (player.Alive && !visiblePlayers.Contains(player.EntityId))
             {
                 visiblePlayers.Add(player.EntityId);
@@ -897,7 +897,7 @@ public sealed partial class Player : Living, IPlayer
 
     private async Task PickupNearbyItemsAsync(float distance = 0.5f)
     {
-        foreach (var entity in world.GetEntitiesNear(Position, distance))
+        foreach (var entity in world.GetNonPlayerEntitiesInRange(Position, distance))
         {
             if (entity is not ItemEntity item)
                 continue;
@@ -909,14 +909,13 @@ public sealed partial class Player : Living, IPlayer
                 PickupItemCount = item.Count
             });
 
-            var itemStack = new ItemStack(item.Material, item.Count, item.ItemMeta);
-            var slot = Inventory.AddItem(itemStack);
+            var slot = Inventory.AddItem(new ItemStack(item.Material, item.Count, item.ItemMeta));
 
             client.SendPacket(new SetContainerSlotPacket
             {
                 Slot = (short)slot,
                 WindowId = 0,
-                SlotData = itemStack,
+                SlotData = Inventory.GetItem(slot)!,
                 StateId = Inventory.StateId++
             });
 
