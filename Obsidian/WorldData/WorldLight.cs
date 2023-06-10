@@ -1,7 +1,4 @@
-﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Obsidian.Registries;
-using System.Diagnostics;
-using System.Text.Json.Serialization.Metadata;
+﻿using Obsidian.Registries;
 
 namespace Obsidian.WorldData;
 
@@ -34,8 +31,6 @@ internal class WorldLight
                     }
 
                     IBlock b = chunk.GetBlock(x, y, z);
-/*                    if (b.Is(BlocksRegistry.Grass.Material)) { 
-                        Console.WriteLine("stop here"); }*/
                     if (TagsRegistry.Blocks.Semitransparent.Entries.Contains(b.RegistryId) || b.Is(BlocksRegistry.Water.Material)) { diffuse = 1; }
                     else if (!TagsRegistry.Blocks.Transparent.Entries.Contains(b.RegistryId)) { lightLevel = 0; }
 
@@ -58,7 +53,7 @@ internal class WorldLight
         }
     }
 
-    public static void SetLightAndSpread(Vector pos, LightType lt, int level, Chunk chunk, bool initial=false)
+    public static void SetLightAndSpread(Vector pos, LightType lt, int level, Chunk chunk, bool initial = false)
     {
         if (chunk is null) { return; }
 

@@ -63,8 +63,8 @@ internal static class ChunkBuilder
                 int worldZ = z + (chunk.Z << 4);
                 int terrainHeight = -64;
                 // Search for the surface. Start at sea level...
-                // If stone, scan upwards until 64 consecutive air
-                // If air, scan downwards until 64 consecutive stone
+                // If stone, scan upwards until 30 consecutive air
+                // If air, scan downwards until 30 consecutive stone
                 if (helper.Noise.IsTerrain(worldX, 64, worldZ))
                 {
                     int airCount = 0;
@@ -216,7 +216,7 @@ internal static class ChunkBuilder
                     }
 
                     if (!motionBlockingSet &&
-                        !TagsRegistry.Blocks.ReplaceablePlants.Entries.Contains(b.RegistryId) &&
+                        !TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(b.RegistryId) &&
                         !TagsRegistry.Blocks.Saplings.Entries.Contains(b.RegistryId) &&
                         !TagsRegistry.Blocks.Crops.Entries.Contains(b.RegistryId) &&
                         !TagsRegistry.Blocks.Flowers.Entries.Contains(b.RegistryId) &&
@@ -228,7 +228,7 @@ internal static class ChunkBuilder
                     }
 
                     if (!motionBlockingLeavesSet &&
-                        !TagsRegistry.Blocks.ReplaceablePlants.Entries.Contains(b.RegistryId) &&
+                        !TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(b.RegistryId) &&
                         !TagsRegistry.Blocks.Saplings.Entries.Contains(b.RegistryId) &&
                         !TagsRegistry.Blocks.Crops.Entries.Contains(b.RegistryId) &&
                         !TagsRegistry.Blocks.Flowers.Entries.Contains(b.RegistryId) &&
