@@ -587,7 +587,6 @@ public class World : IWorld, IAsyncDisposable
             if (!c.IsGenerated)
             {
                 c = await Generator.GenerateChunkAsync(job.x, job.z, c);
-                await worldLight.ProcessSkyLightForChunk(c);
             }
             region.SetChunk(c);
         });
