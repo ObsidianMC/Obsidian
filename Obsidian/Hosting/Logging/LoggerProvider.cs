@@ -1,11 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
-using System.Collections.Concurrent;
 
-namespace Obsidian.ConsoleApp.Logging;
-
+namespace Obsidian.Hosting.Logging;
 public sealed class LoggerProvider : ILoggerProvider
 {
-    private ConcurrentDictionary<string, Logger> loggers = new();
+    private ConcurrentDictionary<string, Logger>? loggers = new();
 
     private LogLevel MinimumLevel { get; }
 
@@ -18,10 +16,9 @@ public sealed class LoggerProvider : ILoggerProvider
 
     public ILogger CreateLogger(string categoryName)
     {
-        if (disposed)
-            throw new ObjectDisposedException("This logger provider is already disposed.");
+        ObjectDisposedException.ThrowIf(disposed, this);
 
-        return loggers.GetOrAdd(categoryName, name => new Logger(name, MinimumLevel));
+        return loggers!.GetOrAdd(categoryName, name => new Logger(name, MinimumLevel));
     }
 
     public void Dispose()

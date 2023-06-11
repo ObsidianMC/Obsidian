@@ -1,4 +1,4 @@
-﻿using Obsidian.API._Types.Config;
+﻿using Obsidian.API.Config;
 
 namespace Obsidian.API;
 

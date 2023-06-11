@@ -33,12 +33,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<Compile Remove="PluginMessages\**" />
-		<Compile Remove="Sounds\**" />
-		<EmbeddedResource Remove="PluginMessages\**" />
-		<EmbeddedResource Remove="Sounds\**" />
-		<None Remove="PluginMessages\**" />
-		<None Remove="Sounds\**" />
 		<None Include="..\.editorconfig" Link=".editorconfig" />
 		<None Include="..\LICENSE">
 			<Pack>True</Pack>
@@ -56,9 +50,10 @@
 
 	<ItemGroup>
 		<PackageReference Include="BouncyCastle.NetCoreSdk" Version="1.9.7" />
-		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.4.0" />
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.6.0" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="7.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="7.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
 		<PackageReference Include="SharpNoise" Version="0.12.1.1" />
 	</ItemGroup>
@@ -108,9 +103,5 @@
 		<ProjectReference Include="..\Obsidian.API\Obsidian.API.csproj" />
 		<ProjectReference Include="..\Obsidian.SourceGenerators\Obsidian.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 		<ProjectReference Include="..\Obsidian.Nbt\Obsidian.Nbt.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<Folder Include="Plugins\Services\" />
 	</ItemGroup>
 </Project>

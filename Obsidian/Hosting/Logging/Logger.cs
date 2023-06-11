@@ -1,10 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.API;
-using Obsidian.Utilities;
-using System.Diagnostics;
 
-namespace Obsidian.ConsoleApp.Logging;
-
+namespace Obsidian.Hosting.Logging;
 public class Logger : ILogger<Server>
 {
     protected static readonly object _lock = new();
@@ -19,7 +15,7 @@ public class Logger : ILogger<Server>
         Prefix = prefix;
     }
 
-    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
     {
         if (!IsEnabled(logLevel))
             return;
@@ -35,7 +31,7 @@ public class Logger : ILogger<Server>
             LogLevel.Error => ChatColor.DarkRed,
             LogLevel.Critical => ChatColor.Red,
             _ => ChatColor.Gray,
-        }).ConsoleColor.Value;
+        }).ConsoleColor!.Value;
 
         var level = logLevel switch
         {
@@ -65,7 +61,7 @@ public class Logger : ILogger<Server>
         var lines = message.Split('\n');
 
         if (message.IsNullOrEmpty())
-        { 
+        {
             this.LogTrace($"Empty log message sent. Dumping stacktrace:\n{new System.Diagnostics.StackTrace().ToString().Replace("\n", "            ")}");
             return;
         }
@@ -83,5 +79,6 @@ public class Logger : ILogger<Server>
 
     public bool IsEnabled(LogLevel logLevel) => logLevel >= MinimumLevel;
 
-    public IDisposable BeginScope<TState>(TState state) => throw new NotImplementedException();
+    public IDisposable BeginScope<TState>(TState state) where TState : notnull 
+        => throw new NotImplementedException();
 }
