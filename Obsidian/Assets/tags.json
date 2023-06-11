@@ -17,6 +17,64 @@
       "minecraft:brewing_stand"
     ]
   },
+  "blocks/transparent": {
+    "name": "transparent",
+    "type": "blocks",
+    "values": [
+      "minecraft:air",
+      "minecraft:cave_air",
+      "minecraft:void_air",
+      "minecraft:glass",
+      "#minecraft:wool_carpets",
+      "#minecraft:fences",
+      "#minecraft:fence_gates",
+      "#minecraft:walls",
+      "#minecraft:saplings",
+      "#minecraft:crops",
+      "#minecraft:flowers",
+      "minecraft:sugar_cane",
+      "minecraft:sweet_berry_bush",
+      "minecraft:tall_grass",
+      "minecraft:cocoa",
+      "minecraft:fern",
+      "minecraft:dead_bush",
+      "minecraft:vine",
+      "minecraft:glow_lichen",
+      "minecraft:sunflower",
+      "minecraft:lilac",
+      "minecraft:rose_bush",
+      "minecraft:peony",
+      "minecraft:large_fern",
+      "minecraft:hanging_roots",
+      "minecraft:grass"
+    ]
+  },
+  "blocks/semitransparent": {
+    "name": "semitransparent",
+    "type": "blocks",
+    "values": [
+      "#minecraft:leaves",
+      "#minecraft:water",
+      "minecraft:white_stained_glass",
+      "minecraft:orange_stained_glass",
+      "minecraft:magenta_stained_glass",
+      "minecraft:light_blue_stained_glass",
+      "minecraft:yellow_stained_glass",
+      "minecraft:lime_stained_glass",
+      "minecraft:pink_stained_glass",
+      "minecraft:gray_stained_glass",
+      "minecraft:light_gray_stained_glass",
+      "minecraft:cyan_stained_glass",
+      "minecraft:purple_stained_glass",
+      "minecraft:blue_stained_glass",
+      "minecraft:brown_stained_glass",
+      "minecraft:green_stained_glass",
+      "minecraft:red_stained_glass",
+      "minecraft:black_stained_glass",
+      "minecraft:tinted_glass",
+      "#minecraft:ice"
+    ]
+  },
   "blocks/gravity_affected": {
     "name": "gravity_affected",
     "type": "blocks",
@@ -47,7 +105,7 @@
     "name": "replaceable_by_liquid",
     "type": "blocks",
     "values": [
-      "#minecraft:replaceable_plants",
+      "#minecraft:replaceable_by_trees",
       "#minecraft:saplings",
       "#minecraft:crops",
       "#minecraft:flowers",

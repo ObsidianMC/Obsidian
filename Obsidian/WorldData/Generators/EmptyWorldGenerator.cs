@@ -51,7 +51,7 @@ public class EmptyWorldGenerator : IWorldGenerator
         spawn.chunkStatus = ChunkStatus.full;
     }
 
-    public async Task<Chunk> GenerateChunkAsync(int x, int z, Chunk? chunk = null)
+    public async Task<Chunk> GenerateChunkAsync(int x, int z, Chunk? chunk = null, ChunkStatus minlevel = ChunkStatus.full)
     {
         if (chunk is { IsGenerated: true })
             return chunk;
