@@ -277,10 +277,11 @@ public partial class Server : IServer
         ScoreboardManager = new ScoreboardManager(this);
         _logger.LogInformation("Loading plugins...");
 
-        Directory.CreateDirectory(Path.Join(ServerFolderPath, "plugins"));
+        var pluginPath = Path.Join(ServerFolderPath, "plugins");
+        Directory.CreateDirectory(pluginPath);
 
         PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
-        PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
+        PluginManager.DirectoryWatcher.Watch(pluginPath);
 
         await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
@@ -293,6 +294,8 @@ public partial class Server : IServer
             _logger.LogInformation($"Starting in offline mode...");
 
         CommandsRegistry.Register(this);
+
+        PluginManager.ServerReady();
 
         var serverTasks = new List<Task>()
         {

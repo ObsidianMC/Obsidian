@@ -1,5 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Obsidian.API.Plugins;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.Loader;
 
@@ -7,6 +9,11 @@ namespace Obsidian.Plugins;
 
 public sealed class PluginContainer : IDisposable
 {
+    private Type pluginType;
+
+    internal List<ScheduledDependencyInjection> ScheduledDependencyInjections { get; } = new();
+    internal Dictionary<EventContainer, Delegate> EventHandlers { get; } = new();
+
     public PluginBase Plugin { get; private set; }
     public PluginInfo Info { get; }
     public string Source { get; internal set; }
@@ -16,12 +23,6 @@ public sealed class PluginContainer : IDisposable
     public bool HasDependencies { get; private set; } = true;
     public bool IsReady => HasDependencies;
     public bool Loaded { get; internal set; }
-
-    internal List<IDisposable> DisposableServices { get; } = new();
-    internal List<ScheduledDependencyInjection> ScheduledDependencyInjections { get; } = new();
-    internal Dictionary<EventContainer, Delegate> EventHandlers { get; } = new();
-
-    private Type pluginType;
 
     public PluginContainer(PluginInfo info, string source)
     {
@@ -38,13 +39,7 @@ public sealed class PluginContainer : IDisposable
 
         pluginType = plugin.GetType();
         ClassName = pluginType.Name;
-
         Plugin.Info = Info;
-    }
-
-    internal void RegisterDisposableService(IDisposable disposableService)
-    {
-        DisposableServices.Add(disposableService);
     }
 
     #region Dependencies
@@ -67,7 +62,7 @@ public sealed class PluginContainer : IDisposable
                 }
 
                 string name = field.GetCustomAttribute<AliasAttribute>()?.Identifier ?? field.Name;
-                PluginBase dependency = GetDependency(manager, logger, name, attribute.GetMinVersion())?.Plugin;
+                var dependency = GetDependency(manager, logger, name, attribute.GetMinVersion())?.Plugin;
 
                 if (dependency != null)
                 {
@@ -139,7 +134,9 @@ public sealed class PluginContainer : IDisposable
 
             Type pluginType = plugin.GetType();
             var methods = pluginType.GetMethods();
-            foreach (var property in targetType.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static).Where(p => p.PropertyType.IsSubclassOf(typeof(Delegate))))
+            var properties = targetType.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)
+                .Where(p => p.PropertyType.IsSubclassOf(typeof(Delegate)));
+            foreach (var property in properties)
             {
                 string methodName = property.GetCustomAttribute<AliasAttribute>()?.Identifier ?? property.Name;
                 var delegateSignature = property.PropertyType.GetMethod("Invoke");

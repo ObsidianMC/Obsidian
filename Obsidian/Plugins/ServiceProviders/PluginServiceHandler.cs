@@ -7,37 +7,46 @@ namespace Obsidian.Plugins.ServiceProviders;
 
 public static class PluginServiceHandler
 {
-    public static void InjectServices(IServiceProvider serviceProvider, PluginContainer container, ILogger logger) => InjectServices(serviceProvider, container.Plugin, container, logger);
+    public static void InjectServices(IServiceProvider provider, PluginContainer container, ILogger logger) =>
+        InjectServices(provider, container.Plugin, container, logger);
 
-    public static void InjectServices(IServiceProvider serviceProvider, object o, PluginContainer container, ILogger logger)
+    public static void InjectServices(IServiceProvider provider, object target, PluginContainer container, ILogger logger)
     {
-        var loggerProvider = serviceProvider.GetRequiredService<ILoggerProvider>();
-
-        PropertyInfo[] properties = o.GetType().GetProperties();
+        PropertyInfo[] properties = target.GetType().GetProperties();
         foreach (var property in properties)
+            InjectService(provider, property, target, logger, container.Info.Name);
+    }
+
+    private static void InjectService(IServiceProvider provider, PropertyInfo property, object target, ILogger logger, string pluginName)
+    {
+        if (property.GetCustomAttribute<InjectAttribute>() == null)
+            return;
+
+        if (property.PropertyType.IsAssignableTo(typeof(PluginBase)))
+            return;
+
+        if (property.GetValue(target) != null)
+            return;
+
+        try
         {
-            if (property.GetCustomAttribute<InjectAttribute>() == null)
-                continue;
+            object service = default!;
 
-            if (property.PropertyType.IsAssignableTo(typeof(PluginBase)))
-                continue;
-
-            try
+            if (property.PropertyType == typeof(ILogger))
             {
-                object service = default!;
-                if (property.PropertyType == typeof(ILogger))
-                    service = loggerProvider.CreateLogger(container.Info.Name);
-                else
-                    service = serviceProvider.GetRequiredService(property.PropertyType);
+                var loggerProvider = provider.GetRequiredService<ILoggerProvider>();
 
+                service = loggerProvider.CreateLogger(pluginName);
+            }
+            else
+                service = provider.GetRequiredService(property.PropertyType);
 
-                property.SetValue(o, service);
-            }
-            catch
-            {
-                logger?.LogError("Failed injecting into {pluginName}.{propertyName} property, because {propertyType} is not a valid service.", container.Info.Name,
-                   property.Name, property.PropertyType);
-            }
+            property.SetValue(target, service);
+        }
+        catch
+        {
+            logger?.LogError("Failed injecting into {pluginName}.{propertyName} property, because {propertyType} is not a valid service.", pluginName,
+               property.Name, property.PropertyType);
         }
     }
 }

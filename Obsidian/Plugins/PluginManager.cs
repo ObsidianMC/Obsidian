@@ -1,6 +1,9 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Obsidian.Commands.Framework;
 using Obsidian.Events;
+using Obsidian.Hosting;
+using Obsidian.Hosting.Logging;
 using Obsidian.Plugins.PluginProviders;
 using Obsidian.Plugins.ServiceProviders;
 using Obsidian.Registries;
@@ -12,17 +15,17 @@ public sealed class PluginManager
     private const string loadEvent = "OnLoad";
 
     internal readonly ILogger logger;
-    //internal readonly ServiceProvider serviceProvider = ServiceProvider.Create();
-    internal readonly IServiceProvider serviceProvider;
 
     private readonly List<PluginContainer> plugins = new();
     private readonly List<PluginContainer> stagedPlugins = new();
     private readonly List<EventContainer> events = new();
-
+    private readonly IServiceProvider serverProvider;
     private readonly object eventSource;
     private readonly IServer server;
 
     private readonly CommandHandler commands;
+
+    private IServiceCollection serviceCollection = new ServiceCollection();
 
     /// <summary>
     /// List of all loaded plugins.
@@ -41,13 +44,17 @@ public sealed class PluginManager
     /// </summary>
     public DirectoryWatcher DirectoryWatcher { get; } = new();
 
-    public PluginManager(IServiceProvider serviceProvider, object eventSource, IServer server, ILogger logger, CommandHandler commands)
+    public IServiceProvider PluginServiceProvider { get; private set; }
+
+    public PluginManager(IServiceProvider serverProvider, object eventSource, IServer server, ILogger logger, CommandHandler commands)
     {
-        this.serviceProvider = serviceProvider;
         this.server = server;
         this.logger = logger;
+        this.serverProvider = serverProvider;
         this.eventSource = eventSource;
         this.commands = commands;
+
+        ConfigureInitialServices(serverProvider);
 
         DirectoryWatcher.FileChanged += (path) => Task.Run(() =>
         {
@@ -63,6 +70,19 @@ public sealed class PluginManager
 
         if (eventSource != null)
             GetEvents(eventSource);
+    }
+
+    private void ConfigureInitialServices(IServiceProvider serverProvider)
+    {
+        var env = serverProvider.GetRequiredService<IServerEnvironment>();
+
+        this.serviceCollection.AddLogging((builder) =>
+        {
+            builder.ClearProviders();
+            builder.AddProvider(new LoggerProvider(env.Configuration.LogLevel));
+            builder.SetMinimumLevel(env.Configuration.LogLevel);
+        });
+        this.serviceCollection.AddSingleton<IServerConfiguration>(x => env.Configuration);
     }
 
     /// <summary>
@@ -104,8 +124,6 @@ public sealed class PluginManager
         return HandlePlugin(plugin);
     }
 
-
-
     private PluginContainer? HandlePlugin(PluginContainer plugin)
     {
         if (plugin?.Plugin is null)
@@ -113,7 +131,8 @@ public sealed class PluginManager
             return plugin;
         }
 
-        PluginServiceHandler.InjectServices(this.serviceProvider, plugin, logger);
+        //Inject first wave of services (services initialized by obsidian e.x ILogger, IServerConfiguration)
+        PluginServiceHandler.InjectServices(this.serverProvider, plugin, logger);
 
         plugin.RegisterDependencies(this, logger);
 
@@ -126,19 +145,8 @@ public sealed class PluginManager
             {
                 plugins.Add(plugin);
             }
-            RegisterEvents(plugin);
-            InvokeOnLoad(plugin);
 
-            // Registering commands from within the plugin
-            commands.RegisterCommandClass(plugin, plugin.Plugin.GetType(), plugin.Plugin);
-
-            // Registering commands found in the plugin assembly
-            var commandRoots = plugin.Plugin.GetType().Assembly.GetTypes().Where(x => x.GetCustomAttributes(false).Any(y => y.GetType() == typeof(CommandRootAttribute)));
-            foreach (var root in commandRoots)
-            {
-                commands.RegisterCommandClass(plugin, root, null);
-            }
-            CommandsRegistry.Register((Server)server);
+            plugin.Plugin.ConfigureServices(serviceCollection);
 
             plugin.Loaded = true;
             ExposePluginAsDependency(plugin);
@@ -189,11 +197,6 @@ public sealed class PluginManager
 
         UnregisterEvents(plugin);
 
-        foreach (var service in plugin.DisposableServices)
-        {
-            service.Dispose();
-        }
-
         if (plugin.Plugin is IDisposable)
         {
             var exception = plugin.Plugin.SafeInvoke("Dispose");
@@ -219,6 +222,33 @@ public sealed class PluginManager
     public async Task UnloadPluginAsync(PluginContainer plugin)
     {
         await Task.Run(() => UnloadPlugin(plugin));
+    }
+
+    public void ServerReady()
+    {
+        PluginServiceProvider ??= this.serviceCollection.BuildServiceProvider(true);
+        foreach(var plugin in this.plugins)
+        {
+            if (!plugin.Loaded)
+                continue;
+
+            RegisterEvents(plugin);
+
+            PluginServiceHandler.InjectServices(PluginServiceProvider, plugin, logger);
+
+            // Registering commands from within the plugin
+            commands.RegisterCommandClass(plugin, plugin.Plugin.GetType(), plugin.Plugin);
+
+            // Registering commands found in the plugin assembly
+            var commandRoots = plugin.Plugin.GetType().Assembly.GetTypes().Where(x => x.GetCustomAttributes(false).Any(y => y.GetType() == typeof(CommandRootAttribute)));
+            foreach (var root in commandRoots)
+            {
+                commands.RegisterCommandClass(plugin, root, null);
+            }
+            CommandsRegistry.Register((Server)server);
+
+            InvokeOnLoad(plugin);
+        }
     }
 
     private void OnPluginStateChanged(PluginContainer plugin)
@@ -339,13 +369,13 @@ public sealed class PluginManager
             for (int i = 0; i < stagedPlugins.Count; i++)
             {
                 var other = stagedPlugins[i];
-                if (other.TryAddDependency(plugin, logger))
+                if (other.TryAddDependency(plugin, logger!))
                 {
                     OnPluginStateChanged(other);
                     if (other.Loaded)
                     {
                         i--;
-                        logger?.LogDebug($"Plugin {other.Info.Name} unstaged. Required dependencies were supplied.");
+                        logger?.LogDebug("Plugin {pluginName} unstaged. Required dependencies were supplied.", other.Info.Name);
                     }
                 }
             }
@@ -361,7 +391,7 @@ public sealed class PluginManager
         }
         if (task.Status == TaskStatus.Faulted)
         {
-            logger?.LogError(task.Exception?.InnerException, $"Invoking {plugin.Info.Name}.{loadEvent} faulted.");
+            logger?.LogError(task.Exception?.InnerException, "Invoking {pluginName}.{loadEvent} faulted.", plugin.Info.Name, loadEvent);
         }
     }
 }

@@ -17,4 +17,8 @@
     <ProjectReference Include="..\Obsidian\Obsidian.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Logging\" />
+  </ItemGroup>
+
 </Project>

@@ -12,9 +12,9 @@ namespace SamplePlugin
             ProjectUrl = "https://github.com/Naamloos/Obsidian")]
     public class SamplePlugin : PluginBase
     {
-        // Any interface from Obsidian.Plugins.Services can be injected into properties
+        // Services that were registered into the ServiceCollection will be injected
         [Inject] 
-        public ILogger Logger { get; set; }
+        public ILogger<SamplePlugin> Logger { get; set; }
 
         // Dependencies will be injected automatically, if dependency class and field/property names match
         // Plugins won't load until all their required dependencies are added
@@ -22,8 +22,8 @@ namespace SamplePlugin
         [Dependency(minVersion: "2.0", optional: true), Alias(identifier: "Sample Remote Plugin")]
         public MyWrapper SampleRemotePlugin { get; set; }
 
-        // One of server messages, called when an event occurs
 
+        //Called when the world has loaded and the server is ready for connections
         public override ValueTask OnLoadAsync(IServer server)
         {
             Logger.LogInformation("§a{pluginName} §floaded! Hello §aEveryone§f!", Info.Name);

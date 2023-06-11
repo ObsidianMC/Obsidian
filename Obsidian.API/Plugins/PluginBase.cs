@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
 
 namespace Obsidian.API.Plugins;
 
@@ -26,6 +27,18 @@ public abstract class PluginBase
         registerSingleCommand(action);
     }
 
+    /// <summary>
+    /// Used for registering services.
+    /// </summary>
+    /// <remarks>
+    /// Only services from the Server will be injected when this method is called. e.x (ILogger, IServerConfiguration).
+    /// Services registered through this method will be availiable/injected when <seealso cref="OnLoadAsync(IServer)"/> is called.
+    /// </remarks>
+    public virtual void ConfigureServices(IServiceCollection services) { }
+
+    /// <summary>
+    /// Called when the world has loaded and the server is joinable.
+    /// </summary>
     public virtual ValueTask OnLoadAsync(IServer server) => ValueTask.CompletedTask;
 
     /// <summary>
