@@ -1,6 +1,4 @@
-﻿
-using Obsidian.Blocks;
-using System.Runtime.CompilerServices;
+﻿using Obsidian.Registries;
 
 namespace Obsidian.WorldData;
 
@@ -13,45 +11,58 @@ internal class WorldLight
         this.world = world;
     }
 
-    public async Task ProcessSkyLightForChunk(Chunk chunk)
+    public static void InitialFillSkyLight(Chunk chunk)
     {
-        // No skylight for nether/end
-        if (world.Name != "overworld") { return; }
-
+        // Start by directly lighting the entire chunk
         for (int x = 0; x < 16; x++)
         {
             for (int z = 0; z < 16; z++)
             {
-                var surfaceY = chunk.Heightmaps[ChunkData.HeightmapType.MotionBlocking].GetHeight(x, z);
-                for (int y = 319; y > surfaceY; y--)
+                int lightLevel = 15;
+                int diffuse = 0;
+                var surfaceY = chunk.Heightmaps[ChunkData.HeightmapType.WorldSurfaceWG].GetHeight(x, z);
+                for (int y = 319; y >= surfaceY; y--)
                 {
                     var secIndex = (y >> 4) + 4;
                     if (chunk.Sections[secIndex].IsEmpty)
                     {
                         y -= 15;
+                        continue;
                     }
-                    else
-                    {
-                        chunk.SetLightLevel(x, y, z, LightType.Sky, 15);
-                    }
-                }
 
-                await SetLightAndSpread(new Vector(x, surfaceY, z), LightType.Sky, 15, chunk);
+                    IBlock b = chunk.GetBlock(x, y, z);
+                    if (TagsRegistry.Blocks.Semitransparent.Entries.Contains(b.RegistryId) || b.Is(BlocksRegistry.Water.Material)) { diffuse = 1; }
+                    else if (!TagsRegistry.Blocks.Transparent.Entries.Contains(b.RegistryId)) { lightLevel = 0; }
+
+                    lightLevel = Math.Max(0, lightLevel - diffuse);
+                    chunk.SetLightLevel(x, y, z, LightType.Sky, lightLevel);
+                    if (lightLevel == 0) { break; }
+                }
             }
         }
-
-        //TODO: Check neighboring chunks (if exist) for light on edges
+        // Go back over the chunk and spread light.
+        for (int x = 0; x < 16; x++)
+        {
+            for (int z = 0; z < 16; z++)
+            {
+                var y = chunk.Heightmaps[ChunkData.HeightmapType.WorldSurfaceWG].GetHeight(x, z);
+                var pos = new Vector(x, y, z);
+                var level = chunk.GetLightLevel(pos + Vector.Up, LightType.Sky);
+                SetLightAndSpread(pos, LightType.Sky, level, chunk, initial: true);
+            }
+        }
     }
 
-    public async Task SetLightAndSpread(Vector pos, LightType lt, int level, Chunk chunk)
+    public static void SetLightAndSpread(Vector pos, LightType lt, int level, Chunk chunk, bool initial = false)
     {
         if (chunk is null) { return; }
-        if (!chunk.IsGenerated) { return; }
 
-        int curLevel = chunk.GetLightLevel(pos, lt);
-        if (level <= curLevel) { return; }
-
-        chunk.SetLightLevel(pos, lt, level);
+        if (!initial)
+        {
+            int curLevel = chunk.GetLightLevel(pos, lt);
+            if (curLevel >= level) { return; }
+            chunk.SetLightLevel(pos, lt, level);
+        }
 
         // Can spread up with no loss of level
         // as long as there is a neighbor that's non-transparent.
@@ -62,7 +73,7 @@ internal class WorldLight
 
             foreach (Vector dir in Vector.CardinalDirs)
             {
-                if (!chunk.GetBlock(pos + (0, spreadY, 0) + dir).IsTransparent)
+                if (chunk.GetBlock(pos + (0, spreadY, 0) + dir) is IBlock b && !(b.IsLiquid || b.IsAir))
                 {
                     chunk.SetLightLevel(pos + (0, spreadY, 0), lt, level);
                     break;
@@ -95,30 +106,35 @@ internal class WorldLight
             {
                 // To spread up, there must only be transparent blocks above the source
                 var upBlock = chunk.GetBlock(pos + (0, spreadY, 0));
-                if (!upBlock.IsTransparent) { break; }
-                
+                if (!TagsRegistry.Blocks.Transparent.Entries.Contains(upBlock.RegistryId)) { break; }
+
                 var scanPos = pos + dir + (0, spreadY, 0);
-                if (chunk.GetBlock(scanPos).IsTransparent)
+                if (TagsRegistry.Blocks.Transparent.Entries.Contains(chunk.GetBlock(scanPos).RegistryId))
                 {
-                    if (!chunk.GetBlock(scanPos + Vector.Down).IsTransparent)
+                    chunk.SetLightLevel(scanPos, lt, level);
+                    if (!TagsRegistry.Blocks.Transparent.Entries.Contains(chunk.GetBlock(scanPos + Vector.Down).RegistryId))
                     {
-                        await SetLightAndSpread(scanPos + Vector.Down, lt, level, chunk);
+                        SetLightAndSpread(scanPos + Vector.Down, lt, level, chunk);
                     }
                 }
             }
 
             // Spread down
             // To spread down, the block above the adjacent must be transparent
-            if (!chunk.GetBlock(pos + dir + Vector.Up).IsTransparent) { continue; }
+            if (!TagsRegistry.Blocks.Transparent.Entries.Contains(chunk.GetBlock(pos + dir + Vector.Up).RegistryId)) { continue; }
 
             // Find the first non-transparent block and set level
             for (int spreadY = 0; spreadY > (-64 - pos.Y); spreadY--)
             {
                 var scanPos = pos + dir + (0, spreadY, 0);
-                if (!chunk.GetBlock(scanPos).IsTransparent)
+                if (!TagsRegistry.Blocks.Transparent.Entries.Contains(chunk.GetBlock(scanPos).RegistryId))
                 {
-                    await SetLightAndSpread(scanPos, lt, level, chunk);
+                    SetLightAndSpread(scanPos, lt, level, chunk);
                     break;
+                }
+                else
+                {
+                    chunk.SetLightLevel(scanPos, lt, level);
                 }
             }
         }
