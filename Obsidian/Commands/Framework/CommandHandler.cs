@@ -115,7 +115,7 @@ public class CommandHandler
             }
             else
             {
-                PluginServiceHandler.InjectServices(this.pluginManager!.PluginServiceProvider, instance, plugin, pluginManager.logger);
+                PluginServiceHandler.InjectServices(this.pluginManager!.PluginServiceProvider, instance, plugin, pluginManager.logger, pluginManager.loggerProvider);
             }
         }
 

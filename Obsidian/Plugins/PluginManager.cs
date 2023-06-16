@@ -15,6 +15,7 @@ public sealed class PluginManager
     private const string loadEvent = "OnLoad";
 
     internal readonly ILogger logger;
+    internal readonly ILoggerProvider loggerProvider;
 
     private readonly List<PluginContainer> plugins = new();
     private readonly List<PluginContainer> stagedPlugins = new();
@@ -24,7 +25,7 @@ public sealed class PluginManager
     private readonly IServer server;
 
     private readonly CommandHandler commands;
-
+    
     private IServiceCollection serviceCollection = new ServiceCollection();
 
     /// <summary>
@@ -48,13 +49,16 @@ public sealed class PluginManager
 
     public PluginManager(IServiceProvider serverProvider, object eventSource, IServer server, ILogger logger, CommandHandler commands)
     {
+        var env = serverProvider.GetRequiredService<IServerEnvironment>();
+
         this.server = server;
         this.logger = logger;
         this.serverProvider = serverProvider;
         this.eventSource = eventSource;
         this.commands = commands;
+        this.loggerProvider = new LoggerProvider(env.Configuration.LogLevel);
 
-        ConfigureInitialServices(serverProvider);
+        ConfigureInitialServices(env);
 
         DirectoryWatcher.FileChanged += (path) => Task.Run(() =>
         {
@@ -72,14 +76,12 @@ public sealed class PluginManager
             GetEvents(eventSource);
     }
 
-    private void ConfigureInitialServices(IServiceProvider serverProvider)
+    private void ConfigureInitialServices(IServerEnvironment env)
     {
-        var env = serverProvider.GetRequiredService<IServerEnvironment>();
-
         this.serviceCollection.AddLogging((builder) =>
         {
             builder.ClearProviders();
-            builder.AddProvider(new LoggerProvider(env.Configuration.LogLevel));
+            builder.AddProvider(this.loggerProvider);
             builder.SetMinimumLevel(env.Configuration.LogLevel);
         });
         this.serviceCollection.AddSingleton<IServerConfiguration>(x => env.Configuration);
@@ -132,7 +134,7 @@ public sealed class PluginManager
         }
 
         //Inject first wave of services (services initialized by obsidian e.x ILogger, IServerConfiguration)
-        PluginServiceHandler.InjectServices(this.serverProvider, plugin, logger);
+        PluginServiceHandler.InjectServices(this.serverProvider, plugin, this.logger, this.loggerProvider);
 
         plugin.RegisterDependencies(this, logger);
 
@@ -234,7 +236,7 @@ public sealed class PluginManager
 
             RegisterEvents(plugin);
 
-            PluginServiceHandler.InjectServices(PluginServiceProvider, plugin, logger);
+            PluginServiceHandler.InjectServices(PluginServiceProvider, plugin, logger, loggerProvider);
 
             // Registering commands from within the plugin
             commands.RegisterCommandClass(plugin, plugin.Plugin.GetType(), plugin.Plugin);

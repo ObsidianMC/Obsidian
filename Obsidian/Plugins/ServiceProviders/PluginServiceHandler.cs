@@ -7,25 +7,28 @@ namespace Obsidian.Plugins.ServiceProviders;
 
 public static class PluginServiceHandler
 {
-    public static void InjectServices(IServiceProvider provider, PluginContainer container, ILogger logger) =>
-        InjectServices(provider, container.Plugin, container, logger);
+    public static void InjectServices(IServiceProvider provider, PluginContainer container, ILogger logger, ILoggerProvider loggerProvider) =>
+        InjectServices(provider, container.Plugin, container, logger, loggerProvider);
 
-    public static void InjectServices(IServiceProvider provider, object target, PluginContainer container, ILogger logger)
+    public static void InjectServices(IServiceProvider provider, object target, PluginContainer container, ILogger logger, ILoggerProvider loggerProvider)
     {
         PropertyInfo[] properties = target.GetType().GetProperties();
         foreach (var property in properties)
-            InjectService(provider, property, target, logger, container.Info.Name);
+            InjectService(provider, new() { Property = property, Target = target }, container.Info.Name, logger, loggerProvider);
     }
 
-    private static void InjectService(IServiceProvider provider, PropertyInfo property, object target, ILogger logger, string pluginName)
+    private static void InjectService(IServiceProvider provider, Injectable injectable, string pluginName, ILogger logger, ILoggerProvider loggerProvider)
     {
+        var property = injectable.Property;
+        var target = injectable.Target;
+
         if (property.GetCustomAttribute<InjectAttribute>() == null)
             return;
 
         if (property.PropertyType.IsAssignableTo(typeof(PluginBase)))
             return;
 
-        if (property.GetValue(target) != null)
+        if (property.GetValue(injectable.Target) != null)
             return;
 
         try
@@ -33,11 +36,7 @@ public static class PluginServiceHandler
             object service = default!;
 
             if (property.PropertyType == typeof(ILogger))
-            {
-                var loggerProvider = provider.GetRequiredService<ILoggerProvider>();
-
                 service = loggerProvider.CreateLogger(pluginName);
-            }
             else
                 service = provider.GetRequiredService(property.PropertyType);
 
@@ -49,4 +48,11 @@ public static class PluginServiceHandler
                property.Name, property.PropertyType);
         }
     }
+}
+
+public readonly struct Injectable
+{
+    public required PropertyInfo Property { get; init; }
+
+    public required object Target { get; init; }
 }
