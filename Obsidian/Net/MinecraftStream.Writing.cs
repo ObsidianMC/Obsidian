@@ -1004,7 +1004,7 @@ public partial class MinecraftStream
             writer.WriteByte("Count", (byte)slot.Count);
 
             writer.EndCompound();
-            writer.TryFinish();
+            await writer.TryFinishAsync();
         }
     }
 

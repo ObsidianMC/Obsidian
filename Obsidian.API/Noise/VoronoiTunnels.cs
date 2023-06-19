@@ -55,10 +55,9 @@ public class VoronoiTunnels : Module
             }
         }
 
-        VoronoiCell primary, secondary, tertiary;
-        Unsafe.SkipInit(out primary);
-        Unsafe.SkipInit(out secondary);
-        Unsafe.SkipInit(out tertiary);
+        Unsafe.SkipInit(out VoronoiCell primary);
+        Unsafe.SkipInit(out VoronoiCell secondary);
+        Unsafe.SkipInit(out VoronoiCell tertiary);
         GetMin(cells, ref primary, ref secondary, ref tertiary);
 
         if (primary.DistanceToPoint < 0.123)

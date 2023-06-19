@@ -196,7 +196,7 @@ public partial class Server
                     .WithSoundPosition(blockPosition.SoundPosition)
                     .Build());
             }
-            else if (type == Material.Furnace || type == Material.BlastFurnace || type == Material.Smoker)
+            else if (type is Material.Furnace or Material.BlastFurnace or Material.Smoker)
             {
                 InventoryType actualType = type switch
                 {

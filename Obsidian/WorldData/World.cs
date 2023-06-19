@@ -802,10 +802,7 @@ public class World : IWorld, IAsyncDisposable
 
         await Parallel.ForEachAsync(Enumerable.Range(-regionPregenRange, regionPregenRange * 2 + 1), async (x, _) =>
         {
-            for (int z = -regionPregenRange; z < regionPregenRange; z++)
-            {
-                await LoadRegionAsync(x, z);
-            };
+            for (int z = -regionPregenRange; z < regionPregenRange; z++) await LoadRegionAsync(x, z);
         });
 
         for (int x = -pregenerationRange; x < pregenerationRange; x++)

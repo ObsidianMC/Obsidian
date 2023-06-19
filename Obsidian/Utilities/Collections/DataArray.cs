@@ -11,8 +11,8 @@ internal sealed class DataArray
     // Multiplier and shifter should be selected with index [bitsPerEntry]
     // This trick may yield incorrect results when "dividing" numbers out of range 0..4096,
     // but DataArray shouldn't be used for that many elements
-    private static ReadOnlySpan<int> Multipliers => new int[] { 0, 1, 1, 3121, 1, 2731, 3277, 3641, 1, 2341, 2731, 3277, 3277, 1, 1, 1, 1, 2731, 2731, 2731, 2731, 2731, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
-    private static ReadOnlySpan<int> Shifts => new int[] { 0, 6, 5, 16, 4, 15, 15, 15, 3, 14, 14, 14, 14, 2, 2, 2, 2, 13, 13, 13, 13, 13, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    private static ReadOnlySpan<int> Multipliers => new[] { 0, 1, 1, 3121, 1, 2731, 3277, 3641, 1, 2341, 2731, 3277, 3277, 1, 1, 1, 1, 2731, 2731, 2731, 2731, 2731, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+    private static ReadOnlySpan<int> Shifts => new[] { 0, 6, 5, 16, 4, 15, 15, 15, 3, 14, 14, 14, 14, 2, 2, 2, 2, 13, 13, 13, 13, 13, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
     public int BitsPerEntry => bitsPerEntry;
     public int Length => entriesCount;
