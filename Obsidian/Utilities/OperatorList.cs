@@ -24,12 +24,12 @@ public class OperatorList : IOperatorList
 
         if (fi.Exists)
         {
-            using var fs = fi.OpenRead();
+            await using var fs = fi.OpenRead();
             this.ops = await fs.FromJsonAsync<List<Operator>>();
         }
         else
         {
-            using var fs = fi.Create();
+            await using var fs = fi.Create();
 
             await this.ops.ToJsonAsync(fs);
         }

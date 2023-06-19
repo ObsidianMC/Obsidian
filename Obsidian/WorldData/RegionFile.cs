@@ -427,6 +427,6 @@ public sealed class RegionFile : IAsyncDisposable
         /// </summary>
         public required Memory<byte> ChunkData { get; init; }
 
-        public int ChunkSectorSize => this.Size / RegionFile.SectorSize;
+        public int ChunkSectorSize => this.Size / SectorSize;
     }
 }

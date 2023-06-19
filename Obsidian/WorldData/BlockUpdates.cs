@@ -82,8 +82,8 @@ internal static class BlockUpdates
                     (TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(pathSide.RegistryId) || pathSide.IsLiquid))
                 {
                     var pathBelow = await world.GetBlockAsync(pathLoc + Vector.Down);
-                    if (pathBelow is IBlock pBelow &&
-                        (TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(pBelow.RegistryId) || pBelow.IsLiquid))
+                    if (pathBelow is IBlock &&
+                        (TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(pathBelow.RegistryId) || pathBelow.IsLiquid))
                     {
                         validPaths.Add(pathLoc);
                     }
@@ -135,9 +135,9 @@ internal static class BlockUpdates
             {
                 // if 2 neighbors are source blocks (state = 0), then become source block
                 int sourceNeighborCount = 0;
-                foreach (var (loc, neighborBlock) in horizontalNeighbors)
+                foreach (var (_, neighborBlock) in horizontalNeighbors)
                 {
-                    if (neighborBlock is IBlock neighbor && neighbor.Is(block.Material) && (GetLiquidState(neighbor) == 0))
+                    if (neighborBlock is IBlock && neighborBlock.Is(block.Material) && (GetLiquidState(neighborBlock) == 0))
                     {
                         sourceNeighborCount++;
                     }
@@ -155,7 +155,7 @@ internal static class BlockUpdates
             {
                 // On some side of the block, there should be another water block with a lower state.
                 int lowestState = liquidLevel;
-                foreach (var (loc, neighborBlock) in horizontalNeighbors)
+                foreach (var (_, neighborBlock) in horizontalNeighbors)
                 {
                     var neighborState = neighborBlock!.IsLiquid ? GetLiquidState(neighborBlock) : 0;
 

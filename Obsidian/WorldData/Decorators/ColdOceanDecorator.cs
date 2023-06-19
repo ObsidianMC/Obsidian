@@ -1,5 +1,5 @@
 ﻿namespace Obsidian.WorldData.Decorators;
-using Obsidian.WorldData.Generators;
+using Generators;
 
 public class ColdOceanDecorator : OceanDecorator
 {

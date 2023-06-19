@@ -25,12 +25,7 @@ internal sealed class ReadOnlyStream : Stream
             throw new ArgumentException($"'{nameof(memory)}' must be backed up by an array.");
         }
 
-        if (segment.Array is null)
-        {
-            throw new ArgumentException($"'{nameof(memory)}' contains a null reference.");
-        }
-
-        data = segment.Array;
+        data = segment.Array ?? throw new ArgumentException($"'{nameof(memory)}' contains a null reference.");
         offset = segment.Offset;
         length = segment.Count;
         index = 0;

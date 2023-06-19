@@ -360,7 +360,7 @@ public partial class Server : IServer
             if (Config.IpWhitelistEnabled && !Config.WhitelistedIPs.Contains(ip))
             {
                 _logger.LogInformation("{ip} is not whitelisted. Closing connection", ip);
-                socket.Disconnect(false);
+                await socket.DisconnectAsync(false);
                 return;
             }
 

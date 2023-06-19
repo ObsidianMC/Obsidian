@@ -457,8 +457,8 @@ public class World : IWorld, IAsyncDisposable
             worldFile.Delete();
         }
 
-        using var fs = worldFile.Create();
-        using var writer = new NbtWriter(fs, NbtCompression.GZip, "");
+        await using var fs = worldFile.Create();
+        await using var writer = new NbtWriter(fs, NbtCompression.GZip, "");
 
         writer.WriteBool("hardcore", LevelData.Hardcore);
         writer.WriteBool("MapFeatures", LevelData.MapFeatures);
@@ -802,10 +802,7 @@ public class World : IWorld, IAsyncDisposable
 
         await Parallel.ForEachAsync(Enumerable.Range(-regionPregenRange, regionPregenRange * 2 + 1), async (x, _) =>
         {
-            for (int z = -regionPregenRange; z < regionPregenRange; z++)
-            {
-                await LoadRegionAsync(x, z);
-            };
+            for (int z = -regionPregenRange; z < regionPregenRange; z++) await LoadRegionAsync(x, z);
         });
 
         for (int x = -pregenerationRange; x < pregenerationRange; x++)

@@ -178,7 +178,7 @@ public class RemotePluginProvider : IPluginProvider
 
     private async Task<JsonDocument> ScanDirectoryAsync(string owner, string name, string tree)
     {
-        using var stream = await GetFileStreamAsync($"https://api.github.com/repos/{owner}/{name}/git/trees/{tree}?recursive=1");
+        await using var stream = await GetFileStreamAsync($"https://api.github.com/repos/{owner}/{name}/git/trees/{tree}?recursive=1");
         if (stream == null)
             return null;
         return await JsonDocument.ParseAsync(stream);
@@ -186,7 +186,7 @@ public class RemotePluginProvider : IPluginProvider
 
     private async Task<JsonDocument> GetJsonFileAsync(string owner, string name, string tree, string path)
     {
-        using var stream = await GetFileStreamAsync($"https://www.github.com/{owner}/{name}/raw/{tree}/{path}");
+        await using var stream = await GetFileStreamAsync($"https://www.github.com/{owner}/{name}/raw/{tree}/{path}");
         if (stream == null)
             return null;
         return await JsonDocument.ParseAsync(stream);
@@ -194,7 +194,7 @@ public class RemotePluginProvider : IPluginProvider
 
     private async Task<XmlDocument> GetXmlFileAsync(string owner, string name, string tree, string path)
     {
-        using var stream = await GetFileStreamAsync($"https://www.github.com/{owner}/{name}/raw/{tree}/{path}");
+        await using var stream = await GetFileStreamAsync($"https://www.github.com/{owner}/{name}/raw/{tree}/{path}");
         if (stream == null)
             return null;
 
