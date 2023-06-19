@@ -10,6 +10,7 @@ namespace Obsidian.Utilities;
 /// source https://github.com/ORelio/Minecraft-Console-Client/blob/master/MinecraftClient/ConsoleIO.cs
 /// 
 /// Modified by GasInfinity -> Fix Linux Console Blocking - 18/05/2022
+/// Modified by InFTord -> Use index from end - 19/06/2023
 /// </summary>
 public static class ConsoleIO
 {
