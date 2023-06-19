@@ -17,17 +17,17 @@ public struct BlockUpdate
         set
         {
             _block = value;
-            if (value is IBlock b)
+            if (value is IBlock)
             {
-                if (TagsRegistry.Blocks.GravityAffected.Entries.Contains(b.RegistryId))
+                if (TagsRegistry.Blocks.GravityAffected.Entries.Contains(value.RegistryId))
                 {
                     Delay = 1;
                 }
-                else if (b.Material == Material.Lava)
+                else if (value.Material == Material.Lava)
                 {
                     Delay = 40;
                 }
-                else if (b.Material == Material.Water)
+                else if (value.Material == Material.Water)
                 {
                     Delay = 5;
                 }

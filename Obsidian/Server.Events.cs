@@ -270,9 +270,9 @@ public partial class Server
 
                     player.world.SetBlockEntity(blockPosition, tileEntity);
                 }
-                else if (tileEntity is NbtCompound dataCompound)
+                else if (tileEntity is NbtCompound)
                 {
-                    if (dataCompound.TryGetTag("Items", out var tag))
+                    if (tileEntity.TryGetTag("Items", out var tag))
                     {
                         var items = tag as NbtList;
 

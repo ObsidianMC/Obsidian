@@ -36,15 +36,15 @@ public partial class UseItemOnPacket : IServerboundPacket
 
         var b = await player.world.GetBlockAsync(position);
 
-        if (b is not IBlock interactedBlock)
+        if (b is not IBlock)
             return;
 
-        if (TagsRegistry.Blocks.PlayersCanInteract.Entries.Contains(interactedBlock.RegistryId) && !player.Sneaking)
+        if (TagsRegistry.Blocks.PlayersCanInteract.Entries.Contains(b.RegistryId) && !player.Sneaking)
         {
             await server.Events.PlayerInteract.InvokeAsync(new PlayerInteractEventArgs(player)
             {
                 Item = currentItem,
-                Block = interactedBlock,
+                Block = b,
                 BlockLocation = this.Position,
             });
 

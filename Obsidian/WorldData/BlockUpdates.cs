@@ -82,8 +82,8 @@ internal static class BlockUpdates
                     (TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(pathSide.RegistryId) || pathSide.IsLiquid))
                 {
                     var pathBelow = await world.GetBlockAsync(pathLoc + Vector.Down);
-                    if (pathBelow is IBlock pBelow &&
-                        (TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(pBelow.RegistryId) || pBelow.IsLiquid))
+                    if (pathBelow is IBlock &&
+                        (TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(pathBelow.RegistryId) || pathBelow.IsLiquid))
                     {
                         validPaths.Add(pathLoc);
                     }
@@ -137,7 +137,7 @@ internal static class BlockUpdates
                 int sourceNeighborCount = 0;
                 foreach (var (loc, neighborBlock) in horizontalNeighbors)
                 {
-                    if (neighborBlock is IBlock neighbor && neighbor.Is(block.Material) && (GetLiquidState(neighbor) == 0))
+                    if (neighborBlock is IBlock && neighborBlock.Is(block.Material) && (GetLiquidState(neighborBlock) == 0))
                     {
                         sourceNeighborCount++;
                     }
