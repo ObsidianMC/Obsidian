@@ -203,7 +203,7 @@ public sealed class Client : IDisposable
         var packetId = 0;
         var packetData = Array.Empty<byte>();
 
-        using (var packetStream = new MinecraftStream(receivedData))
+        await using (var packetStream = new MinecraftStream(receivedData))
         {
             try
             {
@@ -746,7 +746,7 @@ public sealed class Client : IDisposable
 
     private async Task SendServerBrand()
     {
-        using var stream = new MinecraftStream();
+        await using var stream = new MinecraftStream();
         await stream.WriteStringAsync(Server.Brand);
         await QueuePacketAsync(new PluginMessagePacket("minecraft:brand", stream.ToArray()));
         Logger.LogDebug("Sent server brand.");

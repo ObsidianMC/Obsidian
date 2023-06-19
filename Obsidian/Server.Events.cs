@@ -268,7 +268,7 @@ public partial class Server
                         new NbtTag<string>("CustomName", container.Title.ToJson())
                     };
 
-                    player.world.SetBlockEntity(blockPosition, tileEntity);
+                    await player.world.SetBlockEntity(blockPosition, tileEntity);
                 }
                 else if (tileEntity is NbtCompound)
                 {

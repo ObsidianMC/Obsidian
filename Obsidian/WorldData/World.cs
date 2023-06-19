@@ -457,8 +457,8 @@ public class World : IWorld, IAsyncDisposable
             worldFile.Delete();
         }
 
-        using var fs = worldFile.Create();
-        using var writer = new NbtWriter(fs, NbtCompression.GZip, "");
+        await using var fs = worldFile.Create();
+        await using var writer = new NbtWriter(fs, NbtCompression.GZip, "");
 
         writer.WriteBool("hardcore", LevelData.Hardcore);
         writer.WriteBool("MapFeatures", LevelData.MapFeatures);
