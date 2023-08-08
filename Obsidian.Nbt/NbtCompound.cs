@@ -1,7 +1,4 @@
-﻿using System.Collections;
-using System.Text;
-
-namespace Obsidian.Nbt;
+﻿namespace Obsidian.Nbt;
 
 public class NbtCompound : INbtTag, IEnumerable<KeyValuePair<string, INbtTag>>
 {

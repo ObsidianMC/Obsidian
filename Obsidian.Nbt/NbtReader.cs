@@ -1,7 +1,6 @@
 ﻿using System.Buffers.Binary;
 using System.IO;
 using System.IO.Compression;
-using System.Text;
 
 namespace Obsidian.Nbt;
 

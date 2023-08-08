@@ -1,6 +1,4 @@
-﻿using System.Collections;
-
-namespace Obsidian.Nbt;
+﻿namespace Obsidian.Nbt;
 
 public class NbtArray<T> : INbtTag, IEnumerable, ICollection
 {
