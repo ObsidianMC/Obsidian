@@ -3,7 +3,7 @@
 public class NbtTag<T> : INbtTag
 {
     public NbtTagType Type { get; }
-
+    
     public string Name { get; set; }
 
     /// <summary>
@@ -32,6 +32,9 @@ public class NbtTag<T> : INbtTag
         };
     }
 
+    /// <summary>
+    /// Returns a string form of NBT tag
+    /// </summary>
     public override string ToString()
     {
         switch (this.Type)
@@ -45,10 +48,14 @@ public class NbtTag<T> : INbtTag
             case NbtTagType.String:
                 return $"TAG_{this.Type}('{this.Name}'): {this.Value}";
             default:
-                throw new NotSupportedException("Only generic types are supported.");
+                throw new NotSupportedException($"NBT with name [{this.Name}] " +
+                    $"and type [{this.Type}] is not supported by NbtTag.ToString() function.");
         }
     }
 
+    /// <summary>
+    /// Returns a pretty string form of NBT tag, the difference between ToString() function is formatting
+    /// </summary>
     public string PrettyString(int depth = 2, int addBraceDepth = 1)
     {
         switch (this.Type)
@@ -65,18 +72,8 @@ public class NbtTag<T> : INbtTag
                     return name.PadLeft(name.Length + depth);
                 }
             default:
-                throw new NotSupportedException("Only generic types are supported.");
+                throw new NotSupportedException($"NBT with name [{this.Name}] " +
+                    $"and type [{this.Type}] is not supported by NbtTag.ToString() function.");
         }
     }
-}
-
-public interface INbtTag
-{
-    public NbtTagType Type { get; }
-
-    public string Name { get; set; }
-
-    public INbtTag Parent { get; set; }
-
-    public string PrettyString(int depth = 2, int addBraceDepth = 1);
 }
