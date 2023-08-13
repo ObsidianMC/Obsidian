@@ -157,7 +157,7 @@ internal static class ChunkBuilder
         }
     }
 
-    internal static bool GenerateOreCheck(int x, int height, int z, int OreType)
+    internal static bool GenerateOreCheck(int height, int OreType)
     {
         if (OreType == 0) // Coal
         {
@@ -267,7 +267,7 @@ internal static class ChunkBuilder
                     {
                         var oreNoise1 = helper.Noise.Ore(i).GetValue(worldX, y, worldZ);
                         var oreNoise2 = helper.Noise.Ore(i + ores.Length).GetValue(worldX, y, worldZ);
-                        if (oreNoise1 > 1.0 - OreSize && oreNoise2 > 1.0 - OreSize && GenerateOreCheck(worldX, y, worldZ, i))
+                        if (oreNoise1 > 1.0 - OreSize && oreNoise2 > 1.0 - OreSize && GenerateOreCheck(y, i))
                         {
                             if (y <= 0 && y > -64)
                             {
@@ -287,7 +287,7 @@ internal static class ChunkBuilder
                             {
                                 if (i == 6)
                                 {
-                                    if (chunk.GetBiome(x, height, z) == Biome.WindsweptHills || chunk.GetBiome(x, height, z) == Biome.WindsweptGravellyHills || chunk.GetBiome(x, height, z) == Biome.Meadow || chunk.GetBiome(x, height, z) == Biome.Grove || chunk.GetBiome(x, height, z) == Biome.SnowySlopes || chunk.GetBiome(x, height, z) == Biome.FrozenPeaks || chunk.GetBiome(x, height, z) == Biome.JaggedPeaks || chunk.GetBiome(x, height, z) == Biome.StonyPeaks)
+                                    if (chunk.GetBiome(x, y, z) == Biome.WindsweptHills || chunk.GetBiome(x, y, z) == Biome.WindsweptGravellyHills || chunk.GetBiome(x, y, z) == Biome.Meadow || chunk.GetBiome(x, y, z) == Biome.Grove || chunk.GetBiome(x, y, z) == Biome.SnowySlopes || chunk.GetBiome(x, y, z) == Biome.FrozenPeaks || chunk.GetBiome(x, y, z) == Biome.JaggedPeaks || chunk.GetBiome(x, y, z) == Biome.StonyPeaks)
                                     {
                                         chunk.SetBlock(worldX, y, worldZ, ores[i]);
                                     }
