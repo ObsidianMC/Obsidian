@@ -229,14 +229,7 @@ internal static class ChunkBuilder
         {
             if (height >= -16 && height <= 320)
             {
-                if (chunk.GetBiome(x, height, z) == Biome.WindsweptHills || chunk.GetBiome(x, height, z) == Biome.WindsweptGravellyHills || chunk.GetBiome(x, height, z) == Biome.Meadow || chunk.GetBiome(x, height, z) == Biome.Grove || chunk.GetBiome(x, height, z) == Biome.SnowySlopes || chunk.GetBiome(x, height, z) == Biome.FrozenPeaks || chunk.GetBiome(x, height, z) == Biome.JaggedPeaks || chunk.GetBiome(x, height, z) == Biome.StonyPeaks)
-                {
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
+                return true;
             }
             else
             {
@@ -278,11 +271,31 @@ internal static class ChunkBuilder
                         {
                             if (y <= 0 && y > -64)
                             {
-                                chunk.SetBlock(worldX, y, worldZ, deepores[i]);
+                                if (i == 6)
+                                {
+                                    if (chunk.GetBiome(x, height, z) == Biome.WindsweptHills || chunk.GetBiome(x, height, z) == Biome.WindsweptGravellyHills || chunk.GetBiome(x, height, z) == Biome.Meadow || chunk.GetBiome(x, height, z) == Biome.Grove || chunk.GetBiome(x, height, z) == Biome.SnowySlopes || chunk.GetBiome(x, height, z) == Biome.FrozenPeaks || chunk.GetBiome(x, height, z) == Biome.JaggedPeaks || chunk.GetBiome(x, height, z) == Biome.StonyPeaks)
+                                    {
+                                        chunk.SetBlock(worldX, y, worldZ, deepores[i]);
+                                    }
+                                }
+                                else
+                                {
+                                    chunk.SetBlock(worldX, y, worldZ, deepores[i]);
+                                }
                             }
                             else if(y > 0)
                             {
-                                chunk.SetBlock(worldX, y, worldZ, ores[i]);
+                                if (i == 6)
+                                {
+                                    if (chunk.GetBiome(x, height, z) == Biome.WindsweptHills || chunk.GetBiome(x, height, z) == Biome.WindsweptGravellyHills || chunk.GetBiome(x, height, z) == Biome.Meadow || chunk.GetBiome(x, height, z) == Biome.Grove || chunk.GetBiome(x, height, z) == Biome.SnowySlopes || chunk.GetBiome(x, height, z) == Biome.FrozenPeaks || chunk.GetBiome(x, height, z) == Biome.JaggedPeaks || chunk.GetBiome(x, height, z) == Biome.StonyPeaks)
+                                    {
+                                        chunk.SetBlock(worldX, y, worldZ, ores[i]);
+                                    }
+                                }
+                                else
+                                {
+                                    chunk.SetBlock(worldX, y, worldZ, ores[i]);
+                                }
                             }
                             orePlaced = true;
                             break;
