@@ -159,7 +159,7 @@ internal static class ChunkBuilder
 
     internal static bool GenerateOreCheck(int height, int OreType)
     {
-        if (OreType == 1) // Coal
+        if (OreType == 0) // Coal
         {
             if (height >= 0 && height <= 320)
             {
@@ -170,7 +170,7 @@ internal static class ChunkBuilder
                 return false;
             }
         }
-        else if (OreType == 2) // Iron
+        else if (OreType == 1) // Iron
         {
             if ((height >= -63 && height <= 72) || (height >= 80 && height <= 320))
             {
@@ -181,7 +181,7 @@ internal static class ChunkBuilder
                 return false;
             }
         }
-        else if (OreType == 3) // Copper
+        else if (OreType == 2) // Copper
         {
             if (height >= -16 && height <= 112)
             {
@@ -192,7 +192,7 @@ internal static class ChunkBuilder
                 return false;
             }
         }
-        else if (OreType == 4) // Gold
+        else if (OreType == 3) // Gold
         {
             if (height >= -63 && height <= 30)
             {
@@ -203,7 +203,7 @@ internal static class ChunkBuilder
                 return false;
             }
         }
-        else if (OreType == 5) // Lapis
+        else if (OreType == 4) // Lapis
         {
             if (height >= -63 && height <= 64)
             {
@@ -214,7 +214,7 @@ internal static class ChunkBuilder
                 return false;
             }
         }
-        else if (OreType == 6 || OreType == 8) // Redstone and Diamond
+        else if (OreType == 5 || OreType == 7) // Redstone and Diamond
         {
             if (height >= -63 && height <= 16)
             {
@@ -225,7 +225,7 @@ internal static class ChunkBuilder
                 return false;
             }
         }
-        else if (OreType == 7) // Emerald
+        else if (OreType == 6) // Emerald
         {
             if (height >= -16 && height <= 320)
             {
@@ -238,7 +238,7 @@ internal static class ChunkBuilder
         }
         else
         {
-            return false;
+            return true;
         }
     }
     
