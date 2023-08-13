@@ -238,7 +238,7 @@ internal static class ChunkBuilder
         }
         else
         {
-            return true;
+            return false;
         }
     }
     
