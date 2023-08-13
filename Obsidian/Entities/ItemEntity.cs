@@ -39,7 +39,7 @@ public partial class ItemEntity : Entity
     {
         await base.TickAsync();
 
-        if (!CanPickup && this.TimeDropped.Subtract(DateTimeOffset.UtcNow).TotalSeconds > 5)
+        if (!CanPickup && this.TimeDropped.Subtract(DateTimeOffset.UtcNow).TotalSeconds > 1)
             this.CanPickup = true;
 
         foreach (var ent in this.world.GetNonPlayerEntitiesInRange(this.Position, 1.5f))
