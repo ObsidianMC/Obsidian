@@ -157,7 +157,7 @@ internal static class ChunkBuilder
         }
     }
 
-    internal static bool GenerateOreCheck(int height, int OreType)
+    internal static bool GenerateOreCheck(int x, int height, int z, int OreType)
     {
         if (OreType == 0) // Coal
         {
@@ -229,7 +229,14 @@ internal static class ChunkBuilder
         {
             if (height >= -16 && height <= 320)
             {
-                return true;
+                if (chunk.GetBiome(x, height, z) == Biome.WindsweptHills || chunk.GetBiome(x, height, z) == Biome.WindsweptGravellyHills || chunk.GetBiome(x, height, z) == Biome.Meadow || chunk.GetBiome(x, height, z) == Biome.Grove || chunk.GetBiome(x, height, z) == Biome.SnowySlopes || chunk.GetBiome(x, height, z) == Biome.FrozenPeaks || chunk.GetBiome(x, height, z) == Biome.JaggedPeaks || chunk.GetBiome(x, height, z) == Biome.StonyPeaks)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
             }
             else
             {
@@ -267,7 +274,7 @@ internal static class ChunkBuilder
                     {
                         var oreNoise1 = helper.Noise.Ore(i).GetValue(worldX, y, worldZ);
                         var oreNoise2 = helper.Noise.Ore(i + ores.Length).GetValue(worldX, y, worldZ);
-                        if (oreNoise1 > 1.0 - OreSize && oreNoise2 > 1.0 - OreSize && GenerateOreCheck(y, i))
+                        if (oreNoise1 > 1.0 - OreSize && oreNoise2 > 1.0 - OreSize && GenerateOreCheck(worldX, y, worldZ, i))
                         {
                             if (y <= 0 && y > -64)
                             {
