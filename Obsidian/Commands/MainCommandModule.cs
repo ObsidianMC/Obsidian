@@ -328,14 +328,12 @@ public class MainCommandModule
     [Command("stop")]
     [CommandInfo("Stops the server.", "/stop")]
     [RequirePermission(permissions: "obsidian.stop")]
-    public Task StopAsync(CommandContext ctx)
+    public async Task StopAsync(CommandContext ctx)
     {
         var server = (Server)ctx.Server;
         server.BroadcastMessage($"Stopping server...");
 
-        server.Stop();
-
-        return Task.CompletedTask;
+        await server.StopAsync();
     }
 
     [Command("time")]

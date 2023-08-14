@@ -55,6 +55,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="BouncyCastle.NetCoreSdk" Version="1.9.7" />
 		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.4.0" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.AspNetCore.Connections;
+using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
@@ -103,7 +104,7 @@ public sealed class Client : IDisposable
     /// <summary>
     /// The base network stream used by the <see cref="minecraftStream"/>.
     /// </summary>
-    private readonly NetworkStream networkStream;
+    private readonly DuplexPipeStream networkStream;
 
     /// <summary>
     /// Used to continuously send and receive encrypted packets from the client.
@@ -113,7 +114,7 @@ public sealed class Client : IDisposable
     /// <summary>
     /// The socket associated with the <see cref="networkStream"/>.
     /// </summary>
-    private readonly Socket socket;
+    private readonly ConnectionContext socket;
 
     /// <summary>
     /// The current server configuration.
@@ -165,7 +166,7 @@ public sealed class Client : IDisposable
     /// </summary>
     public string? Brand { get; set; }
 
-    public Client(Socket socket, ServerConfiguration config, int playerId, Server originServer)
+    public Client(ConnectionContext socket, ServerConfiguration config, int playerId, Server originServer)
     {
         this.socket = socket;
         this.config = config;
@@ -175,7 +176,7 @@ public sealed class Client : IDisposable
         LoadedChunks = new();
         packetCryptography = new();
         handler = new(config);
-        networkStream = new(socket);
+        networkStream = new(socket.Transport);
         minecraftStream = new(networkStream);
 
         missedKeepAlives = new List<long>();
@@ -183,7 +184,7 @@ public sealed class Client : IDisposable
         var blockOptions = new ExecutionDataflowBlockOptions { CancellationToken = cancellationSource.Token, EnsureOrdered = true };
         var sendPacketBlock = new ActionBlock<IClientboundPacket>(packet =>
         {
-            if (socket.Connected)
+            if (socket.IsConnected())
                 SendPacket(packet);
         }, blockOptions);
 
@@ -227,7 +228,7 @@ public sealed class Client : IDisposable
 
     public async Task StartConnectionAsync()
     {
-        while (!cancellationSource.IsCancellationRequested && socket.Connected)
+        while (!cancellationSource.IsCancellationRequested && socket.IsConnected())
         {
             (var id, var data) = await GetNextPacketAsync();
 
@@ -712,7 +713,7 @@ public sealed class Client : IDisposable
         catch (SocketException)
         {
             // Clients can disconnect at any point, causing exception to be raised
-            if (!socket.Connected)
+            if (!socket.IsConnected())
             {
                 Disconnect();
             }
@@ -778,7 +779,7 @@ public sealed class Client : IDisposable
         disposed = true;
 
         minecraftStream.Dispose();
-        socket.Dispose();
+        socket.Abort();
         cancellationSource?.Dispose();
 
         GC.SuppressFinalize(this);

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Boss;
@@ -12,6 +13,7 @@ using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Events;
 using Obsidian.Hosting;
+using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
@@ -56,10 +58,11 @@ public partial class Server : IServer
 
     private readonly ConcurrentQueue<IClientboundPacket> _chatMessagesQueue = new();
     private readonly ConcurrentHashSet<Client> _clients = new();
-    private readonly TcpListener _tcpListener;
     private readonly RconServer _rconServer;
     private readonly ILogger _logger;
 
+    private IConnectionListener? _tcpListener;
+    
     public ProtocolVersion Protocol => DefaultProtocol;
 
     public int Tps { get; private set; }
@@ -109,8 +112,6 @@ public partial class Server : IServer
         Config = environment.Configuration;
         Port = Config.Port;
         ServerFolderPath = Directory.GetCurrentDirectory();
-
-        _tcpListener = new TcpListener(IPAddress.Any, Port);
 
         Operators = new OperatorList(this);
 
@@ -258,7 +259,7 @@ public partial class Server : IServer
         if (Config.MulitplayerDebugMode && Config.OnlineMode)
         {
             _logger.LogError("Incompatible Config: Multiplayer debug mode can't be enabled at the same time as online mode since usernames will be overwritten");
-            Stop();
+            await StopAsync();
             return;
         }
 
@@ -333,14 +334,21 @@ public partial class Server : IServer
 
     private async Task AcceptClientsAsync()
     {
-        _tcpListener.Start();
+        _tcpListener = await SocketFactory.CreateListenerAsync(new IPEndPoint(IPAddress.Any, Port), token: _cancelTokenSource.Token);
 
         while (!_cancelTokenSource.Token.IsCancellationRequested)
         {
-            Socket socket;
+            ConnectionContext socket;
             try
             {
-                socket = await _tcpListener.AcceptSocketAsync(_cancelTokenSource.Token);
+                var connection = await _tcpListener.AcceptAsync(_cancelTokenSource.Token);
+                if (connection is null)
+                {
+                    // No longer accepting clients.
+                    break;
+                }
+
+                socket = connection;
             }
             catch (OperationCanceledException)
             {
@@ -360,7 +368,7 @@ public partial class Server : IServer
             if (Config.IpWhitelistEnabled && !Config.WhitelistedIPs.Contains(ip))
             {
                 _logger.LogInformation("{ip} is not whitelisted. Closing connection", ip);
-                await socket.DisconnectAsync(false);
+                socket.Abort();
                 return;
             }
 
@@ -390,7 +398,7 @@ public partial class Server : IServer
         }
 
         _logger.LogInformation("No longer accepting new clients");
-        _tcpListener.Stop();
+        await _tcpListener.UnbindAsync();
     }
 
     public IBossBar CreateBossBar(ChatMessage title, float health, BossBarColor color, BossBarDivisionType divisionType, BossBarFlags flags) => new BossBar(this)
@@ -629,10 +637,15 @@ public partial class Server : IServer
         }
     }
 
-    public void Stop()
+    public async Task StopAsync()
     {
         _cancelTokenSource.Cancel();
-        _tcpListener.Stop();
+        
+        if (_tcpListener is not null)
+        {
+            await _tcpListener.UnbindAsync();
+        }
+        
         WorldGenerators.Clear();
         foreach (var client in _clients)
         {
