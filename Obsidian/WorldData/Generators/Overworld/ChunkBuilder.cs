@@ -20,8 +20,12 @@ internal static class ChunkBuilder
         BlocksRegistry.Tuff
     };
 
-    private static readonly IBlock[] deepstoneAlts = new IBlock[2]
+    private static readonly IBlock[] deepstoneAlts = new IBlock[6]
     {
+        BlocksRegistry.Gravel,
+        BlocksRegistry.Tuff,
+        BlocksRegistry.Gravel,
+        BlocksRegistry.Tuff,
         BlocksRegistry.Gravel,
         BlocksRegistry.Tuff
     };
@@ -159,86 +163,90 @@ internal static class ChunkBuilder
 
     internal static bool GenerateOreCheck(int height, int OreType)
     {
-        if (OreType == 0) // Coal
+        switch (OreType)
         {
-            if (height >= 0 && height <= 320)
-            {
+            case 0:
+                if (height >= 0 && height <= 320)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+                break;
+            case 1:
+                if ((height >= -63 && height <= 72) || (height >= 80 && height <= 320))
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+                break;
+            case 2:
+                if (height >= -16 && height <= 112)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+                break;
+            case 3:
+                if (height >= -63 && height <= 30)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+                break;
+            case 4:
+                if (height >= -63 && height <= 64)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+                break;
+            case 5:
+                if (height >= -63 && height <= 16)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+                break;
+            case 6:
+                if (height >= -16 && height <= 320)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+                break;
+            case 7:
+                if (height >= -63 && height <= 16)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+                break;
+            default:
                 return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-        else if (OreType == 1) // Iron
-        {
-            if ((height >= -63 && height <= 72) || (height >= 80 && height <= 320))
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-        else if (OreType == 2) // Copper
-        {
-            if (height >= -16 && height <= 112)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-        else if (OreType == 3) // Gold
-        {
-            if (height >= -63 && height <= 30)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-        else if (OreType == 4) // Lapis
-        {
-            if (height >= -63 && height <= 64)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-        else if (OreType == 5 || OreType == 7) // Redstone and Diamond
-        {
-            if (height >= -63 && height <= 16)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-        else if (OreType == 6) // Emerald
-        {
-            if (height >= -16 && height <= 320)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-        else
-        {
-            return true;
         }
     }
     
@@ -273,7 +281,8 @@ internal static class ChunkBuilder
                             {
                                 if (i == 6)
                                 {
-                                    if (chunk.GetBiome(x, y, z) == Biome.WindsweptHills || chunk.GetBiome(x, y, z) == Biome.WindsweptGravellyHills || chunk.GetBiome(x, y, z) == Biome.Meadow || chunk.GetBiome(x, y, z) == Biome.Grove || chunk.GetBiome(x, y, z) == Biome.SnowySlopes || chunk.GetBiome(x, y, z) == Biome.FrozenPeaks || chunk.GetBiome(x, y, z) == Biome.JaggedPeaks || chunk.GetBiome(x, y, z) == Biome.StonyPeaks)
+                                    var b = chunk.GetBiome(x, y, z);
+                                    if (new List<Biome> {Biome.WindsweptHills, Biome.WindsweptGravellyHills, Biome.Meadow, Biome.Grove, Biome.SnowySlopes, Biome.FrozenPeaks, Biome.JaggedPeaks, Biome.StonyPeaks}.Contains(b))
                                     {
                                         chunk.SetBlock(worldX, y, worldZ, deepores[i]);
                                     }
@@ -283,11 +292,12 @@ internal static class ChunkBuilder
                                     chunk.SetBlock(worldX, y, worldZ, deepores[i]);
                                 }
                             }
-                            else if(y > 0)
+                            else if (y > 0)
                             {
                                 if (i == 6)
                                 {
-                                    if (chunk.GetBiome(x, y, z) == Biome.WindsweptHills || chunk.GetBiome(x, y, z) == Biome.WindsweptGravellyHills || chunk.GetBiome(x, y, z) == Biome.Meadow || chunk.GetBiome(x, y, z) == Biome.Grove || chunk.GetBiome(x, y, z) == Biome.SnowySlopes || chunk.GetBiome(x, y, z) == Biome.FrozenPeaks || chunk.GetBiome(x, y, z) == Biome.JaggedPeaks || chunk.GetBiome(x, y, z) == Biome.StonyPeaks)
+                                    var b = chunk.GetBiome(x, y, z);
+                                    if (new List<Biome> {Biome.WindsweptHills, Biome.WindsweptGravellyHills, Biome.Meadow, Biome.Grove, Biome.SnowySlopes, Biome.FrozenPeaks, Biome.JaggedPeaks, Biome.StonyPeaks}.Contains(b))
                                     {
                                         chunk.SetBlock(worldX, y, worldZ, ores[i]);
                                     }
@@ -300,6 +310,9 @@ internal static class ChunkBuilder
                             orePlaced = true;
                             break;
                         }
+                        chunk.SetBlock(worldX, y, worldZ, y > 0 ? ores[i] : deepores[i]);
+                        orePlaced = true;
+                        break;
                     }
                     if (orePlaced) { continue; }
 
@@ -309,24 +322,7 @@ internal static class ChunkBuilder
                         var stoneNoise2 = helper.Noise.Stone(i + stoneAlts.Length).GetValue(worldX, y, worldZ);
                         if (stoneNoise1 > 1.5 - StoneAltSize && stoneNoise2 > 1.5 - StoneAltSize)
                         {
-                            if (y > 0)
-                            {
-                                chunk.SetBlock(worldX, y, worldZ, stoneAlts[i]);
-                            }
-                            break;
-                        }
-                    }
-
-                    for (int i = 0; i < deepstoneAlts.Length; i++)
-                    {
-                        var stoneNoise1 = helper.Noise.Stone(i).GetValue(worldX, y, worldZ);
-                        var stoneNoise2 = helper.Noise.Stone(i + stoneAlts.Length).GetValue(worldX, y, worldZ);
-                        if (stoneNoise1 > 1.5 - StoneAltSize && stoneNoise2 > 1.5 - StoneAltSize)
-                        {
-                            if (y < 0 && y > -64)
-                            {
-                                chunk.SetBlock(worldX, y, worldZ, deepstoneAlts[i]);
-                            }
+                            chunk.SetBlock(worldX, y, worldZ, y > 0 ? stoneAlts[i] : deepstoneAlts[i]);
                             break;
                         }
                     }
