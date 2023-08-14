@@ -310,9 +310,6 @@ internal static class ChunkBuilder
                             orePlaced = true;
                             break;
                         }
-                        chunk.SetBlock(worldX, y, worldZ, y > 0 ? ores[i] : deepores[i]);
-                        orePlaced = true;
-                        break;
                     }
                     if (orePlaced) { continue; }
 
