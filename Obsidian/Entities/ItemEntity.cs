@@ -42,17 +42,17 @@ public partial class ItemEntity : Entity
         if (!CanPickup && this.TimeDropped.Subtract(DateTimeOffset.UtcNow).TotalSeconds > 1)
             this.CanPickup = true;
 
-        // foreach (var ent in this.world.GetNonPlayerEntitiesInRange(this.Position, 1.5f))
-        // {
-        //     if (ent is ItemEntity item)
-        //     {
-        //         if (item == this)
-        //             continue;
+        foreach (var ent in this.world.GetNonPlayerEntitiesInRange(this.Position, 1.5f))
+        {
+            if (ent is ItemEntity item)
+            {
+                if (item == this)
+                    continue;
 
-        //         this.Count += item.Count;
+                this.Count += item.Count;
 
-        //         await item.RemoveAsync();//TODO find a better way to removed item entities that merged
-        //     }
-        // }// remove item merging because of fix some bugs
+                await item.RemoveAsync();//TODO find a better way to removed item entities that merged
+            }
+        }
     }
 }
