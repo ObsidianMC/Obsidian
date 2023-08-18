@@ -249,6 +249,8 @@ internal static class ChunkBuilder
                 return true;
         }
     }
+
+    List<Biome> emeraldBiomes = {Biome.WindsweptHills, Biome.WindsweptGravellyHills, Biome.Meadow, Biome.Grove, Biome.SnowySlopes, Biome.FrozenPeaks, Biome.JaggedPeaks, Biome.StonyPeaks};
     
     internal static void CavesAndOres(GenHelper helper, Chunk chunk)
     {
@@ -282,7 +284,7 @@ internal static class ChunkBuilder
                                 if (i == 6)
                                 {
                                     var b = chunk.GetBiome(x, y, z);
-                                    if (new List<Biome> {Biome.WindsweptHills, Biome.WindsweptGravellyHills, Biome.Meadow, Biome.Grove, Biome.SnowySlopes, Biome.FrozenPeaks, Biome.JaggedPeaks, Biome.StonyPeaks}.Contains(b))
+                                    if (emeraldBiomes.Contains(b))
                                     {
                                         chunk.SetBlock(worldX, y, worldZ, deepores[i]);
                                     }
@@ -297,7 +299,7 @@ internal static class ChunkBuilder
                                 if (i == 6)
                                 {
                                     var b = chunk.GetBiome(x, y, z);
-                                    if (new List<Biome> {Biome.WindsweptHills, Biome.WindsweptGravellyHills, Biome.Meadow, Biome.Grove, Biome.SnowySlopes, Biome.FrozenPeaks, Biome.JaggedPeaks, Biome.StonyPeaks}.Contains(b))
+                                    if (emeraldBiomes.Contains(b))
                                     {
                                         chunk.SetBlock(worldX, y, worldZ, ores[i]);
                                     }
