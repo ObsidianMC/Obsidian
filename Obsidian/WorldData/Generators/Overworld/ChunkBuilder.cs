@@ -249,13 +249,12 @@ internal static class ChunkBuilder
                 return true;
         }
     }
-
-    List<Biome> emeraldBiomes = {Biome.WindsweptHills, Biome.WindsweptGravellyHills, Biome.Meadow, Biome.Grove, Biome.SnowySlopes, Biome.FrozenPeaks, Biome.JaggedPeaks, Biome.StonyPeaks};
     
     internal static void CavesAndOres(GenHelper helper, Chunk chunk)
     {
         int chunkOffsetX = chunk.X * 16;
         int chunkOffsetZ = chunk.Z * 16;
+        List<Biome> emeraldBiomes = {Biome.WindsweptHills, Biome.WindsweptGravellyHills, Biome.Meadow, Biome.Grove, Biome.SnowySlopes, Biome.FrozenPeaks, Biome.JaggedPeaks, Biome.StonyPeaks};
         for (int x = 0; x < 16; x++)
         {
             for (int z = 0; z < 16; z++)
