@@ -173,7 +173,7 @@ internal static class ChunkBuilder
         }
     }
 
-    internal static bool GenerateOreCheck(int height, Oretype type) => type switch
+    internal static bool GenerateOreCheck(int height, OreType type) => type switch
     {
         OreType.Coal => height >= 0 && height <= 320,
         OreType.Iron => (height >= -63 && height <= 72) || (height >= 80 && height <= 320),
