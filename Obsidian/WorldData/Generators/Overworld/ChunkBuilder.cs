@@ -54,6 +54,18 @@ internal static class ChunkBuilder
         BlocksRegistry.DeepslateDiamondOre,
     };
 
+    internal enum OreType : int
+    {
+        Coal,
+        Iron,
+        Copper,
+        Gold,
+        Lapis,
+        Redstone,
+        Emerald,
+        Diamond
+    }
+    
     internal static void Biomes(GenHelper helper, Chunk chunk)
     {
         for (int x = 0; x < 16; x++)
@@ -161,94 +173,18 @@ internal static class ChunkBuilder
         }
     }
 
-    internal static bool GenerateOreCheck(int height, int OreType)
+    internal static bool GenerateOreCheck(int height, Oretype type) => type switch
     {
-        switch (OreType)
-        {
-            case 0:
-                if (height >= 0 && height <= 320)
-                {
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-                break;
-            case 1:
-                if ((height >= -63 && height <= 72) || (height >= 80 && height <= 320))
-                {
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-                break;
-            case 2:
-                if (height >= -16 && height <= 112)
-                {
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-                break;
-            case 3:
-                if (height >= -63 && height <= 30)
-                {
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-                break;
-            case 4:
-                if (height >= -63 && height <= 64)
-                {
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-                break;
-            case 5:
-                if (height >= -63 && height <= 16)
-                {
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-                break;
-            case 6:
-                if (height >= -16 && height <= 320)
-                {
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-                break;
-            case 7:
-                if (height >= -63 && height <= 16)
-                {
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-                break;
-            default:
-                return true;
-        }
-    }
+        OreType.Coal => height >= 0 && height <= 320,
+        OreType.Iron => (height >= -63 && height <= 72) || (height >= 80 && height <= 320),
+        OreType.Copper => height >= -16 && height <= 112,
+        OreType.Gold => height >= -63 && height <= 30,
+        OreType.Lapis => height >= -63 && height <= 64,
+        OreType.Redstone => height >= -63 && height <= 16,
+        OreType.Emerald => height >= -16 && height <= 320,
+        OreType.Diamond => height >= -63 && height <= 16,
+        _ => true
+    };
     
     internal static void CavesAndOres(GenHelper helper, Chunk chunk)
     {
@@ -271,43 +207,29 @@ internal static class ChunkBuilder
                         continue;
                     }
                     if (y > terrainY - 5) { continue; }
-                    var orePlaced = false;
-                    for (int i = 0; i < ores.Length; i++)
+                    var orePlaced = false; //Thanks Jonpro03 for line 210 to 237!
+                    foreach (OreType i in Enum.GetValues(typeof(OreType)))
                     {
-                        var oreNoise1 = helper.Noise.Ore(i).GetValue(worldX, y, worldZ);
-                        var oreNoise2 = helper.Noise.Ore(i + ores.Length).GetValue(worldX, y, worldZ);
-                        if (oreNoise1 > 1.0 - OreSize && oreNoise2 > 1.0 - OreSize && GenerateOreCheck(y, i))
+                        // Check if we should be placing a given ore at this Y level
+                        if (!GenerateOreCheck(y, i))
                         {
-                            if (y <= 0 && y > -64)
-                            {
-                                if (i == 6)
-                                {
-                                    var b = chunk.GetBiome(x, y, z);
-                                    if (emeraldBiomes.Contains(b))
-                                    {
-                                        chunk.SetBlock(worldX, y, worldZ, deepores[i]);
-                                    }
-                                }
-                                else
-                                {
-                                    chunk.SetBlock(worldX, y, worldZ, deepores[i]);
-                                }
-                            }
-                            else if (y > 0)
-                            {
-                                if (i == 6)
-                                {
-                                    var b = chunk.GetBiome(x, y, z);
-                                    if (emeraldBiomes.Contains(b))
-                                    {
-                                        chunk.SetBlock(worldX, y, worldZ, ores[i]);
-                                    }
-                                }
-                                else
-                                {
-                                    chunk.SetBlock(worldX, y, worldZ, ores[i]);
-                                }
-                            }
+                            // move on to the next ore
+                            continue;
+                        }
+                    
+                        var b = chunk.GetBiome(x, y, z);
+                        // Check that Emerald is only placed in the right biomes
+                        if (i == OreType.Emerald && !emeraldBiomes.Contains(b))
+                        {
+                            continue;
+                        }
+                    
+                        var oreNoise1 = helper.Noise.Ore((int)i).GetValue(worldX, y, worldZ);
+                        var oreNoise2 = helper.Noise.Ore((int)i + ores.Length).GetValue(worldX, y, worldZ);
+                        if (oreNoise1 > 1.0 - OreSize && oreNoise2 > 1.0 - OreSize)
+                        {
+                            // If Y is below 0, switch to deepore varients
+                            chunk.SetBlock(worldX, y, worldZ, y > 0 ? ores[(int)i] : deepores[(int)i]);
                             orePlaced = true;
                             break;
                         }
