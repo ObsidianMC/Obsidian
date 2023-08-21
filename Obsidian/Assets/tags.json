@@ -98,14 +98,15 @@
       "minecraft:red_concrete_powder",
       "minecraft:black_concrete_powder",
       "minecraft:scaffolding",
-      "minecraft:dragon_egg"
+      "minecraft:dragon_egg",
+      "minecraft:gravel",
+      "minecraft:suspicious_gravel"
     ]
   },
   "blocks/replaceable_by_liquid": {
     "name": "replaceable_by_liquid",
     "type": "blocks",
     "values": [
-      "#minecraft:replaceable_by_trees",
       "#minecraft:saplings",
       "#minecraft:crops",
       "#minecraft:flowers",
@@ -113,7 +114,11 @@
       "minecraft:sweet_berry_bush",
       "minecraft:tall_grass",
       "minecraft:air",
-      "minecraft:cave_air"
+      "minecraft:cave_air",
+      "minecraft:snow",
+      "minecraft:nether_sprouts",
+      "minecraft:twisting_vines",
+      "minecraft:weeping_vines"
     ]
   },
   "banner_pattern/no_item_required": {
@@ -2075,7 +2080,6 @@
     "values": [
       "minecraft:sand",
       "minecraft:red_sand",
-      "minecraft:suspicious_sand",
       "minecraft:suspicious_sand"
     ]
   },
