@@ -75,7 +75,6 @@ public partial class ClickContainerPacket : IServerboundPacket
                     await HandleMouseClick(container, server, player, slot);
                     break;
                 }
-
             case InventoryOperationMode.ShiftMouseClick:
                 {
                     if (CarriedItem == null)
