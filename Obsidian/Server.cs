@@ -338,17 +338,17 @@ public partial class Server : IServer
 
         while (!_cancelTokenSource.Token.IsCancellationRequested)
         {
-            ConnectionContext socket;
+            ConnectionContext connection;
             try
             {
-                var connection = await _tcpListener.AcceptAsync(_cancelTokenSource.Token);
-                if (connection is null)
+                var acceptedConnection = await _tcpListener.AcceptAsync(_cancelTokenSource.Token);
+                if (acceptedConnection is null)
                 {
                     // No longer accepting clients.
                     break;
                 }
 
-                socket = connection;
+                connection = acceptedConnection;
             }
             catch (OperationCanceledException)
             {
@@ -361,14 +361,14 @@ public partial class Server : IServer
                 break;
             }
 
-            _logger.LogDebug("New connection from client with IP {ip}", socket.RemoteEndPoint);
+            _logger.LogDebug("New connection from client with IP {ip}", connection.RemoteEndPoint);
 
-            string ip = ((IPEndPoint)socket.RemoteEndPoint!).Address.ToString();
+            string ip = ((IPEndPoint)connection.RemoteEndPoint!).Address.ToString();
 
             if (Config.IpWhitelistEnabled && !Config.WhitelistedIPs.Contains(ip))
             {
                 _logger.LogInformation("{ip} is not whitelisted. Closing connection", ip);
-                socket.Abort();
+                connection.Abort();
                 return;
             }
 
@@ -382,7 +382,7 @@ public partial class Server : IServer
             }
 
             // TODO Entity ids need to be unique on the entire server, not per world
-            var client = new Client(socket, Config, Math.Max(0, _clients.Count + WorldManager.DefaultWorld.GetTotalLoadedEntities()), this);
+            var client = new Client(connection, Config, Math.Max(0, _clients.Count + WorldManager.DefaultWorld.GetTotalLoadedEntities()), this);
 
             _clients.Add(client);
 
