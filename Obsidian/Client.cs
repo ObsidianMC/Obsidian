@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.AspNetCore.Connections;
+using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
@@ -10,7 +11,6 @@ using Obsidian.Net.Packets.Handshaking;
 using Obsidian.Net.Packets.Login;
 using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Net.Packets.Status;
 using Obsidian.Registries;
 using Obsidian.Utilities.Mojang;
@@ -103,7 +103,7 @@ public sealed class Client : IDisposable
     /// <summary>
     /// The base network stream used by the <see cref="minecraftStream"/>.
     /// </summary>
-    private readonly NetworkStream networkStream;
+    private readonly DuplexPipeStream networkStream;
 
     /// <summary>
     /// Used to continuously send and receive encrypted packets from the client.
@@ -111,9 +111,9 @@ public sealed class Client : IDisposable
     private readonly PacketCryptography packetCryptography;
 
     /// <summary>
-    /// The socket associated with the <see cref="networkStream"/>.
+    /// The connection context associated with the <see cref="networkStream"/>.
     /// </summary>
-    private readonly Socket socket;
+    private readonly ConnectionContext connectionContext;
 
     /// <summary>
     /// The current server configuration.
@@ -138,7 +138,7 @@ public sealed class Client : IDisposable
     /// <summary>
     /// The client's ip and port used to establish this connection.
     /// </summary>
-    public EndPoint? RemoteEndPoint => socket.RemoteEndPoint;
+    public EndPoint? RemoteEndPoint => connectionContext.RemoteEndPoint;
 
     /// <summary>
     /// Executed when the client disconnects.
@@ -165,9 +165,9 @@ public sealed class Client : IDisposable
     /// </summary>
     public string? Brand { get; set; }
 
-    public Client(Socket socket, ServerConfiguration config, int playerId, Server originServer)
+    public Client(ConnectionContext connectionContext, ServerConfiguration config, int playerId, Server originServer)
     {
-        this.socket = socket;
+        this.connectionContext = connectionContext;
         this.config = config;
         id = playerId;
         Server = originServer;
@@ -175,7 +175,7 @@ public sealed class Client : IDisposable
         LoadedChunks = new();
         packetCryptography = new();
         handler = new(config);
-        networkStream = new(socket);
+        networkStream = new(connectionContext.Transport);
         minecraftStream = new(networkStream);
 
         missedKeepAlives = new List<long>();
@@ -183,7 +183,7 @@ public sealed class Client : IDisposable
         var blockOptions = new ExecutionDataflowBlockOptions { CancellationToken = cancellationSource.Token, EnsureOrdered = true };
         var sendPacketBlock = new ActionBlock<IClientboundPacket>(packet =>
         {
-            if (socket.Connected)
+            if (connectionContext.IsConnected())
                 SendPacket(packet);
         }, blockOptions);
 
@@ -227,7 +227,7 @@ public sealed class Client : IDisposable
 
     public async Task StartConnectionAsync()
     {
-        while (!cancellationSource.IsCancellationRequested && socket.Connected)
+        while (!cancellationSource.IsCancellationRequested && connectionContext.IsConnected())
         {
             (var id, var data) = await GetNextPacketAsync();
 
@@ -265,7 +265,7 @@ public sealed class Client : IDisposable
                         {
                             if (this.Server.Config.CanThrottle)
                             {
-                                string ip = ((IPEndPoint)socket.RemoteEndPoint!).Address.ToString();
+                                string ip = ((IPEndPoint)connectionContext.RemoteEndPoint!).Address.ToString();
 
                                 if (Server.throttler.TryGetValue(ip, out var timeLeft))
                                 {
@@ -712,7 +712,7 @@ public sealed class Client : IDisposable
         catch (SocketException)
         {
             // Clients can disconnect at any point, causing exception to be raised
-            if (!socket.Connected)
+            if (!connectionContext.IsConnected())
             {
                 Disconnect();
             }
@@ -778,7 +778,7 @@ public sealed class Client : IDisposable
         disposed = true;
 
         minecraftStream.Dispose();
-        socket.Dispose();
+        connectionContext.Abort();
         cancellationSource?.Dispose();
 
         GC.SuppressFinalize(this);

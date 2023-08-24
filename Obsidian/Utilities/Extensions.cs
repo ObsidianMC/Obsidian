@@ -1,4 +1,5 @@
-﻿using Obsidian.Entities;
+﻿using Microsoft.AspNetCore.Connections;
+using Obsidian.Entities;
 using Obsidian.Registries;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -84,6 +85,12 @@ public static partial class Extensions
         }
     }
 
+    // Just to make stuff easier.
+    public static bool IsConnected(this ConnectionContext context)
+    {
+        return !context.ConnectionClosed.IsCancellationRequested;
+    }
+    
     // Derived from https://gist.github.com/ammaraskar/7b4a3f73bee9dc4136539644a0f27e63
     [SuppressMessage("Roslyn", "CA5350", Justification = "SHA1 is required by the Minecraft protocol.")]
     public static string MinecraftShaDigest(this IEnumerable<byte> data)
