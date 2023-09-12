@@ -1,6 +1,8 @@
+using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Boss;
+using Obsidian.API.Builders;
 using Obsidian.API.Crafting;
 using Obsidian.API.Events;
 using Obsidian.Commands;
@@ -11,6 +13,7 @@ using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Events;
 using Obsidian.Hosting;
+using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
@@ -39,14 +42,14 @@ public partial class Server : IServer
         get
         {
             var informalVersion = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>();
-            if(informalVersion != null && informalVersion.InformationalVersion.Contains('+'))
+            if (informalVersion != null && informalVersion.InformationalVersion.Contains('+'))
                 return informalVersion.InformationalVersion.Split('+')[1];
 
             return "0.1";
         }
     }
 #endif
-    public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_19_3;
+    public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_20;
 
     internal static readonly ConcurrentDictionary<string, DateTimeOffset> throttler = new();
 
@@ -55,10 +58,11 @@ public partial class Server : IServer
 
     private readonly ConcurrentQueue<IClientboundPacket> _chatMessagesQueue = new();
     private readonly ConcurrentHashSet<Client> _clients = new();
-    private readonly TcpListener _tcpListener;
     private readonly RconServer _rconServer;
     private readonly ILogger _logger;
 
+    private IConnectionListener? _tcpListener;
+    
     public ProtocolVersion Protocol => DefaultProtocol;
 
     public int Tps { get; private set; }
@@ -108,8 +112,6 @@ public partial class Server : IServer
         Config = environment.Configuration;
         Port = Config.Port;
 
-        _tcpListener = new TcpListener(IPAddress.Any, Port);
-
         Operators = new OperatorList(this);
 
         _logger.LogDebug(message: "Initializing command handler...");
@@ -134,6 +136,7 @@ public partial class Server : IServer
         Events.PlayerJoin += OnPlayerJoin;
         Events.PlayerAttackEntity += PlayerAttack;
         Events.PlayerInteract += OnPlayerInteract;
+        Events.ContainerClosed += OnContainerClosed;
 
         ServerFolderPath = Directory.GetCurrentDirectory();
         PersistentDataPath = Path.Combine(ServerFolderPath, "persistentdata");
@@ -261,7 +264,7 @@ public partial class Server : IServer
         if (Config.MulitplayerDebugMode && Config.OnlineMode)
         {
             _logger.LogError("Incompatible Config: Multiplayer debug mode can't be enabled at the same time as online mode since usernames will be overwritten");
-            Stop();
+            await StopAsync();
             return;
         }
 
@@ -336,14 +339,21 @@ public partial class Server : IServer
 
     private async Task AcceptClientsAsync()
     {
-        _tcpListener.Start();
+        _tcpListener = await SocketFactory.CreateListenerAsync(new IPEndPoint(IPAddress.Any, Port), token: _cancelTokenSource.Token);
 
         while (!_cancelTokenSource.Token.IsCancellationRequested)
         {
-            Socket socket;
+            ConnectionContext connection;
             try
             {
-                socket = await _tcpListener.AcceptSocketAsync(_cancelTokenSource.Token);
+                var acceptedConnection = await _tcpListener.AcceptAsync(_cancelTokenSource.Token);
+                if (acceptedConnection is null)
+                {
+                    // No longer accepting clients.
+                    break;
+                }
+
+                connection = acceptedConnection;
             }
             catch (OperationCanceledException)
             {
@@ -356,18 +366,18 @@ public partial class Server : IServer
                 break;
             }
 
-            _logger.LogDebug("New connection from client with IP {ip}", socket.RemoteEndPoint);
+            _logger.LogDebug("New connection from client with IP {ip}", connection.RemoteEndPoint);
 
-            string ip = ((IPEndPoint)socket.RemoteEndPoint!).Address.ToString();
+            string ip = ((IPEndPoint)connection.RemoteEndPoint!).Address.ToString();
 
             if (Config.IpWhitelistEnabled && !Config.WhitelistedIPs.Contains(ip))
             {
                 _logger.LogInformation("{ip} is not whitelisted. Closing connection", ip);
-                socket.Disconnect(false);
+                connection.Abort();
                 return;
             }
 
-            if(this.Config.CanThrottle)
+            if (this.Config.CanThrottle)
             {
                 if (throttler.TryGetValue(ip, out var time) && time <= DateTimeOffset.UtcNow)
                 {
@@ -377,7 +387,7 @@ public partial class Server : IServer
             }
 
             // TODO Entity ids need to be unique on the entire server, not per world
-            var client = new Client(socket, Config, Math.Max(0, _clients.Count + WorldManager.DefaultWorld.GetTotalLoadedEntities()), this);
+            var client = new Client(connection, Config, Math.Max(0, _clients.Count + WorldManager.DefaultWorld.GetTotalLoadedEntities()), this);
 
             _clients.Add(client);
 
@@ -393,7 +403,7 @@ public partial class Server : IServer
         }
 
         _logger.LogInformation("No longer accepting new clients");
-        _tcpListener.Stop();
+        await _tcpListener.UnbindAsync();
     }
 
     public IBossBar CreateBossBar(ChatMessage title, float health, BossBarColor color, BossBarDivisionType divisionType, BossBarFlags flags) => new BossBar(this)
@@ -446,8 +456,8 @@ public partial class Server : IServer
         var format = "<{0}> {1}";
         var message = packet.Message;
 
-        var chat = await Events.InvokeIncomingChatMessageAsync(new IncomingChatMessageEventArgs(source.Player, message, format));
-        if (chat.Cancel)
+        var chat = await Events.IncomingChatMessage.InvokeAsync(new IncomingChatMessageEventArgs(source.Player, message, format));
+        if (chat.IsCancelled)
             return;
 
         //TODO add bool for sending secure chat messages
@@ -501,101 +511,94 @@ public partial class Server : IServer
 
     private bool TryAddEntity(World world, Entity entity) => world.TryAddEntity(entity);
 
-    internal async Task BroadcastPlayerDigAsync(PlayerDiggingStore store, IBlock block)
+    private void DropItem(Player player, sbyte amountToRemove)
     {
-        var digging = store.Packet;
+        var droppedItem = player.GetHeldItem();
 
-        var player = OnlinePlayers.GetValueOrDefault(store.Player);
+        if (droppedItem is null or { Type: Material.Air })
+            return;
 
-        switch (digging.Status)
+        var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
+
+        var item = new ItemEntity
         {
-            case DiggingStatus.DropItem:
+            EntityId = player + player.world.GetTotalLoadedEntities() + 1,
+            Count = amountToRemove,
+            Id = droppedItem.AsItem().Id,
+            Glowing = true,
+            World = player.world,
+            Server = player.Server,
+            Position = loc
+        };
+
+        TryAddEntity(player.world, item);
+
+        var lookDir = player.GetLookDirection();
+
+        var vel = Velocity.FromDirection(loc, lookDir);//TODO properly shoot the item towards the direction the players looking at
+
+        BroadcastPacket(new SpawnEntityPacket
+        {
+            EntityId = item.EntityId,
+            Uuid = item.Uuid,
+            Type = EntityType.Item,
+            Position = item.Position,
+            Pitch = 0,
+            Yaw = 0,
+            Data = 1,
+            Velocity = vel
+        });
+        BroadcastPacket(new SetEntityMetadataPacket
+        {
+            EntityId = item.EntityId,
+            Entity = item
+        });
+
+        player.Inventory.RemoveItem(player.inventorySlot, amountToRemove);
+
+        player.client.SendPacket(new SetContainerSlotPacket
+        {
+            Slot = player.inventorySlot,
+
+            WindowId = 0,
+
+            SlotData = player.GetHeldItem(),
+
+            StateId = player.Inventory.StateId++
+        });
+
+    }
+
+    internal void BroadcastPlayerAction(PlayerActionStore store, IBlock block)
+    {
+        var action = store.Packet;
+
+        if (!OnlinePlayers.TryGetValue(store.Player, out var player))//This should NEVER return false but who knows :)))
+            return;
+
+        switch (action.Status)
+        {
+            case PlayerActionStatus.DropItem:
             {
-                var droppedItem = player.GetHeldItem();
-
-                if (droppedItem is null or { Type: Material.Air })
-                    return;
-
-                var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
-
-                var item = new ItemEntity
-                {
-                    EntityId = player + player.World.GetTotalLoadedEntities() + 1,
-                    Count = 1,
-                    Id = droppedItem.AsItem().Id,
-                    Glowing = true,
-                    World = player.World,
-                    Position = loc
-                };
-
-                TryAddEntity(player.World, item);
-
-                var lookDir = player.GetLookDirection();
-
-                var vel = Velocity.FromDirection(loc, lookDir);//TODO properly shoot the item towards the direction the players looking at
-
-                BroadcastPacket(new SpawnEntityPacket
-                {
-                    EntityId = item.EntityId,
-                    Uuid = item.Uuid,
-                    Type = EntityType.Item,
-                    Position = item.Position,
-                    Pitch = 0,
-                    Yaw = 0,
-                    Data = 1,
-                    Velocity = vel
-                });
-                BroadcastPacket(new SetEntityMetadataPacket
-                {
-                    EntityId = item.EntityId,
-                    Entity = item
-                });
-
-                player.Inventory.RemoveItem(player.inventorySlot, player.Sneaking ? 64 : 1);//TODO get max stack size for the item
-
-                player.client.SendPacket(new SetContainerSlotPacket
-                {
-                    Slot = player.inventorySlot,
-
-                    WindowId = 0,
-
-                    SlotData = player.GetHeldItem(),
-
-                    StateId = player.Inventory.StateId++
-                });
-
+                DropItem(player, 1);
                 break;
             }
-            case DiggingStatus.StartedDigging:
+            case PlayerActionStatus.DropItemStack:
             {
-                BroadcastPacket(new AcknowledgeBlockChangePacket
-                {
-                    SequenceID = 0
-                });
-
-                if (player.Gamemode == Gamemode.Creative)
-                {
-                    await player.World.SetBlockAsync(digging.Position, BlocksRegistry.Get(Material.Air));
-                }
-            }
-            break;
-            case DiggingStatus.CancelledDigging:
+                DropItem(player, 64);
                 break;
-            case DiggingStatus.FinishedDigging:
+            }
+            case PlayerActionStatus.StartedDigging:
+            case PlayerActionStatus.CancelledDigging:
+                break;
+            case PlayerActionStatus.FinishedDigging:
             {
-                BroadcastPacket(new AcknowledgeBlockChangePacket//TODO properly implement this
-                {
-                    SequenceID = 0
-                });
-
                 BroadcastPacket(new SetBlockDestroyStagePacket
                 {
                     EntityId = player,
-                    Position = digging.Position,
+                    Position = action.Position,
                     DestroyStage = -1
                 });
-
-                BroadcastPacket(new BlockUpdatePacket(digging.Position, 0));
 
                 var droppedItem = ItemsRegistry.Get(block.Material);
 
@@ -603,16 +606,16 @@ public partial class Server : IServer
 
                 var item = new ItemEntity
                 {
-                    EntityId = player + player.World.GetTotalLoadedEntities() + 1,
+                    EntityId = player + player.world.GetTotalLoadedEntities() + 1,
                     Count = 1,
                     Id = droppedItem.Id,
                     Glowing = true,
-                    World = player.World,
-                    Position = digging.Position,
+                    World = player.world,
+                    Position = action.Position,
                     Server = this
                 };
 
-                TryAddEntity(player.World, item);
+                TryAddEntity(player.world, item);
 
                 BroadcastPacket(new SpawnEntityPacket
                 {
@@ -623,10 +626,10 @@ public partial class Server : IServer
                     Pitch = 0,
                     Yaw = 0,
                     Data = 1,
-                    Velocity = Velocity.FromVector(digging.Position + new VectorF(
-                        (Globals.Random.NextFloat() * 0.5f) + 0.25f,
-                        (Globals.Random.NextFloat() * 0.5f) + 0.25f,
-                        (Globals.Random.NextFloat() * 0.5f) + 0.25f))
+                    Velocity = Velocity.FromVector(new VectorF(
+                        Globals.Random.NextFloat() * 0.5f, 
+                        Globals.Random.NextFloat() * 0.5f,
+                        Globals.Random.NextFloat() * 0.5f))
                 });
 
                 BroadcastPacket(new SetEntityMetadataPacket
@@ -639,10 +642,15 @@ public partial class Server : IServer
         }
     }
 
-    public void Stop()
+    public async Task StopAsync()
     {
         _cancelTokenSource.Cancel();
-        _tcpListener.Stop();
+        
+        if (_tcpListener is not null)
+        {
+            await _tcpListener.UnbindAsync();
+        }
+        
         WorldGenerators.Clear();
         foreach (var client in _clients)
         {
@@ -679,7 +687,7 @@ public partial class Server : IServer
         {
             while (await timer.WaitForNextTickAsync())
             {
-                await Events.InvokeServerTickAsync();
+                await Events.ServerTick.InvokeAsync();
 
                 keepAliveTicks++;
                 if (keepAliveTicks > (Config.KeepAliveInterval / 50)) // to clarify: one tick is 50 milliseconds. 50 * 200 = 10000 millis means 10 seconds
@@ -697,7 +705,9 @@ public partial class Server : IServer
                     foreach (Player player in Players)
                     {
                         var soundPosition = new SoundPosition(player.Position.X, player.Position.Y, player.Position.Z);
-                        await player.SendSoundAsync(Sounds.EntitySheepAmbient, soundPosition, SoundCategory.Master, 1.0f, 1.0f);
+                        await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.EntitySheepAmbient)
+                            .WithSoundPosition(soundPosition)
+                            .Build());
                     }
                 }
 
@@ -734,9 +744,10 @@ public partial class Server : IServer
     /// Might be used for more stuff later so I'll leave this here - tides
     private void RegisterDefaults()
     {
-        this.RegisterWorldGenerator<SuperflatGenerator>();
-        this.RegisterWorldGenerator<OverworldGenerator>();
-        this.RegisterWorldGenerator<EmptyWorldGenerator>();
+        RegisterWorldGenerator<SuperflatGenerator>();
+        RegisterWorldGenerator<OverworldGenerator>();
+        RegisterWorldGenerator<IslandGenerator>();
+        RegisterWorldGenerator<EmptyWorldGenerator>();
     }
 
     internal void UpdateStatusConsole()

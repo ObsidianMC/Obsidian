@@ -16,9 +16,13 @@ public class Living : Entity, ILiving
 
     public int AbsorbtionAmount { get; set; }
 
+    public int AbsorbedStingers { get; set; }
+
     public Vector BedBlockPosition { get; set; }
 
-    public IReadOnlyDictionary<PotionEffect, PotionEffectData> ActivePotionEffects => activePotionEffects;
+    public bool Alive => this.Health > 0f;
+
+    public IReadOnlyDictionary<PotionEffect, PotionEffectData> ActivePotionEffects => activePotionEffects.AsReadOnly();
 
     private readonly ConcurrentDictionary<PotionEffect, PotionEffectData> activePotionEffects;
 
@@ -79,52 +83,50 @@ public class Living : Entity, ILiving
         await this.server.QueueBroadcastPacketAsync(new RemoveEntityEffectPacket(EntityId, (int)potion));
         activePotionEffects.TryRemove(potion, out _);
     }
-
-
-    public bool Alive => this.Health > 0f;
+    
 
     public override async Task WriteAsync(MinecraftStream stream)
     {
         await base.WriteAsync(stream);
 
-        await stream.WriteEntityMetdata(7, EntityMetadataType.Byte, (byte)this.LivingBitMask);
+        await stream.WriteEntityMetdata(8, EntityMetadataType.Byte, (byte)this.LivingBitMask);
 
-        await stream.WriteEntityMetdata(8, EntityMetadataType.Float, this.Health);
+        await stream.WriteEntityMetdata(9, EntityMetadataType.Float, this.Health);
 
-        await stream.WriteEntityMetdata(9, EntityMetadataType.VarInt, (int)this.ActiveEffectColor);
+        await stream.WriteEntityMetdata(10, EntityMetadataType.VarInt, (int)this.ActiveEffectColor);
 
-        await stream.WriteEntityMetdata(10, EntityMetadataType.Boolean, this.AmbientPotionEffect);
+        await stream.WriteEntityMetdata(11, EntityMetadataType.Boolean, this.AmbientPotionEffect);
 
-        await stream.WriteEntityMetdata(11, EntityMetadataType.VarInt, this.AbsorbedArrows);
+        await stream.WriteEntityMetdata(12, EntityMetadataType.VarInt, this.AbsorbedArrows);
 
-        await stream.WriteEntityMetdata(12, EntityMetadataType.VarInt, this.AbsorbtionAmount);
+        await stream.WriteEntityMetdata(13, EntityMetadataType.VarInt, this.AbsorbedStingers);
 
-        await stream.WriteEntityMetdata(13, EntityMetadataType.OptPosition, this.BedBlockPosition, this.BedBlockPosition != API.Vector.Zero);
+        await stream.WriteEntityMetdata(14, EntityMetadataType.OptPosition, this.BedBlockPosition, this.BedBlockPosition != Vector.Zero);
     }
 
     public override void Write(MinecraftStream stream)
     {
         base.Write(stream);
 
-        stream.WriteEntityMetadataType(7, EntityMetadataType.Byte);
+        stream.WriteEntityMetadataType(8, EntityMetadataType.Byte);
         stream.WriteByte((byte)LivingBitMask);
 
-        stream.WriteEntityMetadataType(8, EntityMetadataType.Float);
+        stream.WriteEntityMetadataType(9, EntityMetadataType.Float);
         stream.WriteFloat(Health);
 
-        stream.WriteEntityMetadataType(9, EntityMetadataType.VarInt);
+        stream.WriteEntityMetadataType(10, EntityMetadataType.VarInt);
         stream.WriteVarInt((int)ActiveEffectColor);
 
-        stream.WriteEntityMetadataType(10, EntityMetadataType.Boolean);
+        stream.WriteEntityMetadataType(11, EntityMetadataType.Boolean);
         stream.WriteBoolean(AmbientPotionEffect);
 
-        stream.WriteEntityMetadataType(11, EntityMetadataType.VarInt);
+        stream.WriteEntityMetadataType(12, EntityMetadataType.VarInt);
         stream.WriteVarInt(AbsorbedArrows);
 
-        stream.WriteEntityMetadataType(12, EntityMetadataType.VarInt);
-        stream.WriteVarInt(AbsorbtionAmount);
+        stream.WriteEntityMetadataType(13, EntityMetadataType.VarInt);
+        stream.WriteVarInt(AbsorbedStingers);
 
-        stream.WriteEntityMetadataType(13, EntityMetadataType.OptPosition);
+        stream.WriteEntityMetadataType(14, EntityMetadataType.OptPosition);
         stream.WriteBoolean(BedBlockPosition != default);
         if (BedBlockPosition != default)
             stream.WritePositionF(BedBlockPosition);

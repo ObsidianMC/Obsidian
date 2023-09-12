@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API.Crafting;
 
-public sealed class ShapelessRecipe : IRecipe
+public sealed class ShapelessRecipe : IRecipeWithResult
 {
     public required string Identifier { get; init; }
 

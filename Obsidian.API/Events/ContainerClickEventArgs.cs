@@ -1,12 +1,9 @@
-﻿namespace Obsidian.API.Events;
+﻿using System.Diagnostics.CodeAnalysis;
 
-public class ContainerClickEventArgs : PlayerEventArgs, ICancellable
+namespace Obsidian.API.Events;
+
+public sealed class ContainerClickEventArgs : ContainerEventArgs, ICancellable
 {
-    /// <summary>
-    /// Gets the clicked container
-    /// </summary>
-    public BaseContainer Container { get; }
-
     /// <summary>
     /// Gets the current item that was clicked
     /// </summary>
@@ -17,11 +14,19 @@ public class ContainerClickEventArgs : PlayerEventArgs, ICancellable
     /// </summary>
     public int Slot { get; set; }
 
-    public bool Cancel { get; set; }
+    /// <inheritdoc />
+    public bool IsCancelled { get; private set; }
 
+    [SetsRequiredMembers]
     internal ContainerClickEventArgs(IPlayer player, BaseContainer container, ItemStack item) : base(player)
     {
         this.Container = container;
         this.Item = item;
+    }
+
+    /// <inheritdoc />
+    public void Cancel()
+    {
+        IsCancelled = true;
     }
 }

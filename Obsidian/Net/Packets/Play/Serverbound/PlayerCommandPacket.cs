@@ -19,7 +19,7 @@ public partial class PlayerCommandPacket : IServerboundPacket
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
-        var block = await player.World.GetBlockAsync((int)player.Position.X, (int)player.HeadY, (int)player.Position.Z);
+        var block = await player.world.GetBlockAsync((int)player.Position.X, (int)player.HeadY, (int)player.Position.Z);
 
         switch (Action)
         {

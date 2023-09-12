@@ -6,46 +6,75 @@ namespace Obsidian.WorldData;
 
 internal static class BlockUpdates
 {
+    /// <summary>
+    /// Perform gravity affected block tick logic
+    /// </summary>
+    /// <param name="blockUpdate">Info about the block update</param>
+    /// <returns>Whether caller should block update neighbors</returns>
     internal static async Task<bool> HandleFallingBlock(BlockUpdate blockUpdate)
     {
         if (blockUpdate.Block is null) { return false; }
 
         var world = blockUpdate.world;
-        var location = blockUpdate.position;
+        var position = blockUpdate.position;
         var material = blockUpdate.Block.Material;
-        if (await world.GetBlockAsync(location + Vector.Down) is IBlock below &&
+        if (await world.GetBlockAsync(position + Vector.Down) is IBlock below &&
             (TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(below.RegistryId) || below.IsLiquid))
         {
-            await world.SetBlockAsync(location, BlocksRegistry.Air);
-            world.SpawnFallingBlock(location, material);
+            await world.SetBlockAsync(position, BlocksRegistry.Air);
+            world.SpawnFallingBlock(position, material);
             return true;
         }
 
         return false;
     }
 
+    /// <summary>
+    /// Perform tick logic for fluids
+    /// </summary>
+    /// <param name="blockUpdate">Info about the block update</param>
+    /// <returns>Whether caller should block update neighbors</returns>
     internal static async Task<bool> HandleLiquidPhysicsAsync(BlockUpdate blockUpdate)
     {
         if (blockUpdate.Block is null) { return false; }
 
         var block = blockUpdate.Block;
         var world = blockUpdate.world;
-        var location = blockUpdate.position;
+        var position = blockUpdate.position;
         int liquidLevel = GetLiquidState(block);
-        Vector belowPos = location + Vector.Down;
+        Vector belowPos = position + Vector.Down;
 
+        // Sanity check that the block update still matches the block in the world
+        if (await world.GetBlockAsync(position) is IBlock b && !b.Is(block.Material))
+        {
+            return false;
+        }
+
+        var horizontalNeighbors = new Dictionary<Vector, IBlock?>() {
+            {position + Vector.Forwards, await world.GetBlockAsync(position + Vector.Forwards)},
+            {position + Vector.Backwards, await world.GetBlockAsync(position + Vector.Backwards)},
+            {position + Vector.Left, await world.GetBlockAsync(position + Vector.Left)},
+            {position + Vector.Right, await world.GetBlockAsync(position + Vector.Right)}
+        };
+
+        // Handle fluid interactions
+        foreach (var (loc, neighborBlock) in horizontalNeighbors)
+        {
+            if (neighborBlock is null) { continue; }
+            if (block.Is(BlocksRegistry.Water.Material) && neighborBlock.Is(BlocksRegistry.Lava.Material))
+            {
+                await world.SetBlockAsync(loc, GetLiquidState(neighborBlock) == 0 ? BlocksRegistry.ObsidianBlock : BlocksRegistry.Cobblestone);
+            }
+        }
+
+        // Spread
         // Handle the initial search for closet path downwards.
         // Just going to do a crappy pathfind for now. We can do
         // proper pathfinding some other time.
         if (liquidLevel == 0)
         {
             var validPaths = new List<Vector>();
-            var paths = new List<Vector>() {
-                    {location + Vector.Forwards},
-                    {location + Vector.Backwards},
-                    {location + Vector.Left},
-                    {location + Vector.Right}
-                };
+            var paths = horizontalNeighbors.Keys.ToList();
 
             foreach (var pathLoc in paths)
             {
@@ -53,8 +82,8 @@ internal static class BlockUpdates
                     (TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(pathSide.RegistryId) || pathSide.IsLiquid))
                 {
                     var pathBelow = await world.GetBlockAsync(pathLoc + Vector.Down);
-                    if (pathBelow is IBlock pBelow &&
-                        (TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(pBelow.RegistryId) || pBelow.IsLiquid))
+                    if (pathBelow is IBlock &&
+                        (TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(pathBelow.RegistryId) || pathBelow.IsLiquid))
                     {
                         validPaths.Add(pathLoc);
                     }
@@ -76,9 +105,9 @@ internal static class BlockUpdates
         if (liquidLevel >= 8) // Falling water
         {
             // If above me is no longer water, than I should disappear too
-            if (await world.GetBlockAsync(location + Vector.Up) is IBlock up && !up.IsLiquid)
+            if (await world.GetBlockAsync(position + Vector.Up) is IBlock up && !up.IsLiquid)
             {
-                await world.SetBlockAsync(location, BlocksRegistry.Air);
+                await world.SetBlockAsync(position, BlocksRegistry.Air);
                 await world.ScheduleBlockUpdateAsync(new BlockUpdate(world, belowPos));
                 return false;
             }
@@ -95,27 +124,20 @@ internal static class BlockUpdates
             {
                 // Falling water has hit something solid. Change state to spread.
                 liquidLevel = 1;
-                await world.SetBlockUntrackedAsync(location, BlocksRegistry.Get(block.Material, DetermineBlockState(block.Material, liquidLevel)));
+                await world.SetBlockUntrackedAsync(position, BlocksRegistry.Get(block.Material, DetermineBlockState(block.Material, liquidLevel)));
             }
         }
 
         if (liquidLevel < 8)
         {
-            var horizontalNeighbors = new Dictionary<Vector, IBlock?>() {
-                    {location + Vector.Forwards, await world.GetBlockAsync(location + Vector.Forwards)},
-                    {location + Vector.Backwards, await world.GetBlockAsync(location + Vector.Backwards)},
-                    {location + Vector.Left, await world.GetBlockAsync(location + Vector.Left)},
-                    {location + Vector.Right, await world.GetBlockAsync(location + Vector.Right)}
-                };
-
             // Check infinite source blocks
-            if (liquidLevel == 1 && block.IsLiquid)
+            if (liquidLevel == 1 && block.Is(BlocksRegistry.Water.Material))
             {
                 // if 2 neighbors are source blocks (state = 0), then become source block
                 int sourceNeighborCount = 0;
-                foreach (var (loc, neighborBlock) in horizontalNeighbors)
+                foreach (var (_, neighborBlock) in horizontalNeighbors)
                 {
-                    if (neighborBlock is IBlock neighbor && neighbor.Is(block.Material) && (GetLiquidState(neighbor) == 0))
+                    if (neighborBlock is IBlock && neighborBlock.Is(block.Material) && (GetLiquidState(neighborBlock) == 0))
                     {
                         sourceNeighborCount++;
                     }
@@ -123,35 +145,55 @@ internal static class BlockUpdates
 
                 if (sourceNeighborCount > 1)
                 {
-                    await world.SetBlockAsync(location, BlocksRegistry.Get(block.Material));//Lava shouldn't have infinite source
+                    await world.SetBlockAsync(position, BlocksRegistry.Get(block.Material));
                     return true;
                 }
             }
 
+            // Check liquid discipate
             if (liquidLevel > 0)
             {
                 // On some side of the block, there should be another water block with a lower state.
                 int lowestState = liquidLevel;
-                foreach (var (loc, neighborBlock) in horizontalNeighbors)
+                foreach (var (_, neighborBlock) in horizontalNeighbors)
                 {
-                    var neighborState = neighborBlock.IsLiquid ? GetLiquidState(neighborBlock) : 0; 
+                    var neighborState = neighborBlock!.IsLiquid ? GetLiquidState(neighborBlock) : 0;
 
                     if (neighborBlock.Material == block.Material)
                         lowestState = Math.Min(lowestState, neighborState);
                 }
 
                 // If not, turn to air and update neighbors.
-                var bUp = await world.GetBlockAsync(location + Vector.Up);
-                if (lowestState >= liquidLevel && bUp.Material != block.Material)
+                var bUp = await world.GetBlockAsync(position + Vector.Up);
+                if (lowestState >= liquidLevel && bUp!.Material != block.Material)
                 {
-                    await world.SetBlockAsync(location, BlocksRegistry.Air);
+                    await world.SetBlockAsync(position, BlocksRegistry.Air);
                     return true;
                 }
             }
 
+            // Handle falling downward
             if (await world.GetBlockAsync(belowPos) is IBlock below)
             {
                 if (below.Material == block.Material) { return false; }
+
+                // Handle lava landing on water
+                if (block.Is(BlocksRegistry.Lava.Material) && below.Is(BlocksRegistry.Water.Material))
+                {
+                    await world.SetBlockAsync(position + Vector.Down, BlocksRegistry.Stone);
+                    var update = new BlockUpdate(world, position, block);
+                    await world.ScheduleBlockUpdateAsync(update);
+                    return false;
+                }
+
+                // Handle water landing on lava
+                if (block.Is(BlocksRegistry.Water.Material) && below.Is(BlocksRegistry.Lava.Material))
+                {
+                    await world.SetBlockAsync(position + Vector.Down, BlocksRegistry.ObsidianBlock);
+                    var update = new BlockUpdate(world, position, block);
+                    await world.ScheduleBlockUpdateAsync(update);
+                    return false;
+                }
 
                 if (TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(below.RegistryId))
                 {
@@ -166,6 +208,7 @@ internal static class BlockUpdates
             // the lowest level of water can only go down, so bail now.
             if (liquidLevel == 7) { return false; }
 
+            // Spread horizontally
             foreach (var (loc, neighborBlock) in horizontalNeighbors)
             {
                 if (neighborBlock is null) { continue; }
@@ -179,6 +222,24 @@ internal static class BlockUpdates
                     await world.SetBlockAsync(loc, newBlock);
                     var neighborUpdate = new BlockUpdate(world, loc, newBlock);
                     await world.ScheduleBlockUpdateAsync(neighborUpdate);
+
+                    // If any of the neighbors of this new block are a different liquid,
+                    // they need a block update
+                    var newNeighbors = new Dictionary<Vector, IBlock?>() {
+                        {loc + Vector.Forwards, await world.GetBlockAsync(loc + Vector.Forwards)},
+                        {loc + Vector.Backwards, await world.GetBlockAsync(loc + Vector.Backwards)},
+                        {loc + Vector.Left, await world.GetBlockAsync(loc + Vector.Left)},
+                        {loc + Vector.Right, await world.GetBlockAsync(loc + Vector.Right)}
+                    };
+                    foreach (var (newloc, newNeighbor) in newNeighbors)
+                    {
+                        if (newNeighbor is null || !newNeighbor.IsLiquid) { continue; }
+                        if (newNeighbor.Material != block.Material)
+                        {
+                            var newNeighborUpdate = new BlockUpdate(world, newloc, newNeighbor);
+                            await world.ScheduleBlockUpdateAsync(newNeighborUpdate);
+                        }
+                    }
                 }
             }
         }

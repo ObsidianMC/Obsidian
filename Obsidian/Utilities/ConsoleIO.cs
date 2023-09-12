@@ -10,6 +10,7 @@ namespace Obsidian.Utilities;
 /// source https://github.com/ORelio/Minecraft-Console-Client/blob/master/MinecraftClient/ConsoleIO.cs
 /// 
 /// Modified by GasInfinity -> Fix Linux Console Blocking - 18/05/2022
+/// Modified by InFTord -> Use index from end - 19/06/2023
 /// </summary>
 public static class ConsoleIO
 {
@@ -150,7 +151,7 @@ public static class ConsoleIO
                         }
                         if (!String.IsNullOrEmpty(word_autocomplete) && word_autocomplete != buffer)
                         {
-                            while (buffer.Length > 0 && buffer[buffer.Length - 1] != ' ') { RemoveOneChar(); }
+                            while (buffer.Length > 0 && buffer[^1] != ' ') { RemoveOneChar(); }
                             foreach (char c in word_autocomplete) { AddChar(c); }
                         }
                         break;
@@ -347,7 +348,7 @@ public static class ConsoleIO
             }
             else
             {
-                Console.CursorLeft = Console.CursorLeft - 1;
+                Console.CursorLeft -= 1;
             }
         }
         catch (ArgumentOutOfRangeException) { /* Console was resized!? */ }
@@ -360,7 +361,7 @@ public static class ConsoleIO
     {
         if (buffer.Length > 0)
         {
-            buffer2 = "" + buffer[buffer.Length - 1] + buffer2;
+            buffer2 = "" + buffer[^1] + buffer2;
             buffer = buffer.Substring(0, buffer.Length - 1);
             GoBack();
         }
@@ -373,7 +374,7 @@ public static class ConsoleIO
     {
         if (buffer2.Length > 0)
         {
-            buffer = buffer + buffer2[0];
+            buffer += buffer2[0];
             Console.Write(buffer2[0]);
             buffer2 = buffer2.Substring(1);
         }

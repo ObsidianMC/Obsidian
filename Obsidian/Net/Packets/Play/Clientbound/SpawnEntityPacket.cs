@@ -31,5 +31,5 @@ public partial class SpawnEntityPacket : IClientboundPacket
     [Field(8)]
     public Velocity Velocity { get; init; }
 
-    public int Id => 0x00;
+    public int Id => 0x01;
 }

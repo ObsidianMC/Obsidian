@@ -1,5 +1,6 @@
 ﻿using Obsidian.API.Events;
 using Obsidian.Entities;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
 using Obsidian.Serialization.Attributes;
 
@@ -8,7 +9,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound;
 public partial class PlayerActionPacket : IServerboundPacket
 {
     [Field(0), ActualType(typeof(int)), VarLength]
-    public DiggingStatus Status { get; private set; }
+    public PlayerActionStatus Status { get; private set; }
 
     [Field(1)]
     public Vector Position { get; private set; }
@@ -23,39 +24,38 @@ public partial class PlayerActionPacket : IServerboundPacket
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
-        IBlock? b = await player.World.GetBlockAsync(Position);
-        if (b is not IBlock block)
+        IBlock? b = await player.world.GetBlockAsync(Position);
+        if (b is not IBlock)
             return;
 
-        if (Status == DiggingStatus.FinishedDigging || (Status == DiggingStatus.StartedDigging && player.Gamemode == Gamemode.Creative))
+        if (Status == PlayerActionStatus.FinishedDigging || (Status == PlayerActionStatus.StartedDigging && player.Gamemode == Gamemode.Creative))
         {
-            await player.World.SetBlockUntrackedAsync(Position, BlocksRegistry.Air, true);
+            await player.world.SetBlockAsync(Position, BlocksRegistry.Air, true);
+            player.client.SendPacket(new AcknowledgeBlockChangePacket
+            {
+                SequenceID = Sequence
+            });
 
-            var blockBreakEvent = await server.Events.InvokeBlockBreakAsync(new BlockBreakEventArgs(server, player, block, Position));
-            if (blockBreakEvent.Cancel)
+            var blockBreakEvent = await server.Events.BlockBreak.InvokeAsync(new BlockBreakEventArgs(server, player, b, Position));
+            if (blockBreakEvent.Handled)
                 return;
         }
 
-        await server.BroadcastPlayerDigAsync(new PlayerDiggingStore
+        server.BroadcastPlayerAction(new PlayerActionStore
         {
             Player = player.Uuid,
             Packet = this
-        }, block);
-
-        if (Status == DiggingStatus.FinishedDigging)
-        {
-            await player.World.BlockUpdateNeighborsAsync(new BlockUpdate(player.World, Position));
-        }
+        }, b);
     }
 }
 
-public class PlayerDiggingStore
+public readonly struct PlayerActionStore
 {
-    public Guid Player { get; init; }
-    public PlayerActionPacket Packet { get; init; }
+    public required Guid Player { get; init; }
+    public required PlayerActionPacket Packet { get; init; }
 }
 
-public enum DiggingStatus : int
+public enum PlayerActionStatus : int
 {
     StartedDigging,
     CancelledDigging,

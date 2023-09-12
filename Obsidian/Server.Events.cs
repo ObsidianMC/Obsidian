@@ -1,4 +1,5 @@
-﻿using Obsidian.API.Containers;
+﻿using Obsidian.API.Builders;
+using Obsidian.API.Containers;
 using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Nbt;
@@ -19,6 +20,85 @@ public partial class Server
         }
     }
 
+    private async Task OnContainerClosed(ContainerClosedEventArgs e)
+    {
+        if (e.IsCancelled)
+            return;
+
+        var player = (e.Player as Player)!;
+
+        //Player successfully exited container
+        player.OpenedContainer = null;
+
+        if (e.Container is not IBlockEntity blockEntity)
+            return;
+
+        var position = blockEntity.BlockPosition;
+        var block = await e.Player.World.GetBlockAsync(position);
+
+        if (block is null)
+            return;
+
+        switch (block.Material)
+        {
+            case Material.Chest:
+            {
+                await player.client.QueuePacketAsync(new BlockActionPacket
+                {
+                    Position = position,
+                    ActionId = 1,
+                    ActionParam = 0,
+                    BlockType = block.BaseId
+                });
+
+                await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockChestClose)
+                    .WithSoundPosition(position.SoundPosition)
+                    .Build());
+
+                break;
+            }
+            case Material.EnderChest:
+            {
+                await player.client.QueuePacketAsync(new BlockActionPacket
+                {
+                    Position = position,
+                    ActionId = 1,
+                    ActionParam = 0,
+                    BlockType = block.BaseId
+                });
+
+                await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockEnderChestClose)
+                    .WithSoundPosition(position.SoundPosition)
+                    .Build());
+                break;
+            }
+            case Material.Barrel://Barrels don't have a block action
+            {
+                await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockBarrelClose)
+                    .WithSoundPosition(position.SoundPosition)
+                    .Build());
+
+                break;
+            }
+            case Material.ShulkerBox:
+            {
+                await player.client.QueuePacketAsync(new BlockActionPacket
+                {
+                    Position = position,
+                    ActionId = 1,
+                    ActionParam = 0,
+                    BlockType = block.BaseId
+                });
+
+                await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockShulkerBoxClose)
+                    .WithSoundPosition(position.SoundPosition)
+                    .Build());
+
+                break;
+            }
+        }
+    }
+
     private async Task OnPlayerInteract(PlayerInteractEventArgs e)
     {
         var item = e.Item;
@@ -27,7 +107,7 @@ public partial class Server
         var server = e.Server as Server;
         var player = e.Player as Player;
 
-        if (e.Cancel)
+        if (e.IsCancelled)
             return;
 
         if (block is not null)
@@ -91,7 +171,9 @@ public partial class Server
                     ActionParam = 1,
                     BlockType = block.RegistryId
                 });
-                await player.SendSoundAsync(Sounds.BlockChestOpen, blockPosition.SoundPosition, SoundCategory.Blocks);
+                await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockChestOpen, SoundCategory.Blocks)
+                    .WithSoundPosition(blockPosition.SoundPosition)
+                    .Build());
             }
             else if (type == Material.EnderChest)
             {
@@ -110,9 +192,11 @@ public partial class Server
                     ActionParam = 1,
                     BlockType = block.RegistryId
                 });
-                await player.SendSoundAsync(Sounds.BlockEnderChestOpen, blockPosition.SoundPosition, SoundCategory.Blocks);
+                await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockEnderChestOpen, SoundCategory.Blocks)
+                    .WithSoundPosition(blockPosition.SoundPosition)
+                    .Build());
             }
-            else if (type == Material.Furnace || type == Material.BlastFurnace || type == Material.Smoker)
+            else if (type is Material.Furnace or Material.BlastFurnace or Material.Smoker)
             {
                 InventoryType actualType = type switch
                 {
@@ -145,7 +229,9 @@ public partial class Server
                     ActionParam = 1,
                     BlockType = block.RegistryId
                 });
-                await player.SendSoundAsync(Sounds.BlockShulkerBoxOpen, blockPosition.SoundPosition, SoundCategory.Blocks);
+                await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockShulkerBoxOpen, SoundCategory.Blocks)
+                    .WithSoundPosition(blockPosition.SoundPosition)
+                    .Build());
             }
             else if (type == Material.Barrel)
             {
@@ -156,7 +242,9 @@ public partial class Server
                     BlockPosition = blockPosition,
                     Id = "Barrel"
                 };
-                await player.SendSoundAsync(Sounds.BlockBarrelOpen, blockPosition.SoundPosition, SoundCategory.Blocks);
+                await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockBarrelOpen, SoundCategory.Blocks)
+                    .WithSoundPosition(blockPosition.SoundPosition)
+                    .Build());
             }
             else if (type == Material.Lectern)
             {
@@ -165,7 +253,7 @@ public partial class Server
 
             if (container is IBlockEntity)
             {
-                var tileEntity = await player.World.GetBlockEntityAsync(blockPosition);
+                var tileEntity = await player.world.GetBlockEntityAsync(blockPosition);
 
                 if (tileEntity == null)
                 {
@@ -180,11 +268,11 @@ public partial class Server
                         new NbtTag<string>("CustomName", container.Title.ToJson())
                     };
 
-                    player.World.SetBlockEntity(blockPosition, tileEntity);
+                    await player.world.SetBlockEntity(blockPosition, tileEntity);
                 }
-                else if (tileEntity is NbtCompound dataCompound)
+                else if (tileEntity is NbtCompound)
                 {
-                    if (dataCompound.TryGetTag("Items", out var tag))
+                    if (tileEntity.TryGetTag("Items", out var tag))
                     {
                         var items = tag as NbtList;
 
@@ -212,7 +300,7 @@ public partial class Server
 
         await player.SaveAsync();
 
-        player.World.TryRemovePlayer(player);
+        player.world.TryRemovePlayer(player);
 
         var destroy = new RemoveEntitiesPacket(player.EntityId);
 
@@ -233,7 +321,7 @@ public partial class Server
     {
         var joined = e.Player as Player;
 
-        joined.World.TryAddPlayer(joined);
+        joined.world.TryAddPlayer(joined);
 
         BroadcastMessage(new ChatMessage
         {

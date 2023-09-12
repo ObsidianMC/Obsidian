@@ -12,7 +12,7 @@ public partial class SetPlayerPositionPacket : IServerboundPacket
     [Field(1)]
     public bool OnGround { get; private set; }
 
-    public int Id => 0x13;
+    public int Id => 0x14;
 
     public SetPlayerPositionPacket()
     {
@@ -29,7 +29,7 @@ public partial class SetPlayerPositionPacket : IServerboundPacket
         await player.UpdateAsync(Position, OnGround);
         if (player.Position.ToChunkCoord() != player.LastPosition.ToChunkCoord())
         {
-            await player.UpdateChunksAsync();
+            await player.UpdateChunksAsync(distance: player.ClientInformation.ViewDistance);
             (int cx, int cz) = player.Position.ToChunkCoord();
             player.client.SendPacket(new SetCenterChunkPacket(cx, cz));
         }

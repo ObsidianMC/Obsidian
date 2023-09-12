@@ -12,6 +12,7 @@ using Obsidian.Net.WindowProperties;
 using Obsidian.Registries;
 using Obsidian.Serialization.Attributes;
 using System.Buffers.Binary;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Obsidian.Net;
@@ -180,6 +181,20 @@ public partial class MinecraftStream
     [WriteMethod]
     public void WriteString(string value, int maxLength = short.MaxValue)
     {
+        System.Diagnostics.Debug.Assert(value.Length <= maxLength);
+
+        using var bytes = new RentedArray<byte>(Encoding.UTF8.GetByteCount(value));
+        Encoding.UTF8.GetBytes(value, bytes.Span);
+        WriteVarInt(bytes.Length);
+        Write(bytes);
+    }
+
+    [WriteMethod]
+    public void WriteNullableString(string? value, int maxLength = short.MaxValue)
+    {
+        if (value is null)
+            return;
+
         System.Diagnostics.Debug.Assert(value.Length <= maxLength);
 
         using var bytes = new RentedArray<byte>(Encoding.UTF8.GetByteCount(value));
@@ -705,9 +720,27 @@ public partial class MinecraftStream
 
         this.WriteBiomeCodec(writer);
         this.WriteChatCodec(writer);
+        this.WriteDamageTypeCodec(writer);
 
         writer.EndCompound();
         writer.TryFinish();
+    }
+
+    private void WriteDamageTypeCodec(NbtWriter writer)
+    {
+        var damageTypes = new NbtList(NbtTagType.Compound, "value");
+
+        foreach (var (_, damageType) in CodecRegistry.DamageTypes.All)
+            damageType.Write(damageTypes);
+
+        var damageTypesCompound = new NbtCompound(CodecRegistry.DamageTypes.CodecKey)
+        {
+            new NbtTag<string>("type", CodecRegistry.DamageTypes.CodecKey),
+
+            damageTypes
+        };
+
+        writer.WriteTag(damageTypesCompound);
     }
 
     private void WriteChatCodec(NbtWriter writer)
@@ -971,7 +1004,7 @@ public partial class MinecraftStream
             writer.WriteByte("Count", (byte)slot.Count);
 
             writer.EndCompound();
-            writer.TryFinish();
+            await writer.TryFinishAsync();
         }
     }
 
@@ -1083,17 +1116,35 @@ public partial class MinecraftStream
 
             await WriteSlotAsync(result);
         }
-        else if (recipe is SmithingRecipe smithingRecipe)
+        else if (recipe is SmithingTransformRecipe smithingTransformRecipe)
         {
-            await WriteVarIntAsync(smithingRecipe.Base.Count);
-            foreach (var item in smithingRecipe.Base)
+            await WriteVarIntAsync(smithingTransformRecipe.Template.Count);
+            foreach (var item in smithingTransformRecipe.Template)
                 await WriteSlotAsync(item);
 
-            await WriteVarIntAsync(smithingRecipe.Addition.Count);
-            foreach (var item in smithingRecipe.Addition)
+            await WriteVarIntAsync(smithingTransformRecipe.Base.Count);
+            foreach (var item in smithingTransformRecipe.Base)
                 await WriteSlotAsync(item);
 
-            await WriteSlotAsync(smithingRecipe.Result.First());
+            await WriteVarIntAsync(smithingTransformRecipe.Addition.Count);
+            foreach (var item in smithingTransformRecipe.Addition)
+                await WriteSlotAsync(item);
+
+            await WriteSlotAsync(smithingTransformRecipe.Result.First());
+        }
+        else if (recipe is SmithingTrimRecipe smithingTrimRecipe)
+        {
+            await WriteVarIntAsync(smithingTrimRecipe.Template.Count);
+            foreach (var item in smithingTrimRecipe.Template)
+                await WriteSlotAsync(item);
+
+            await WriteVarIntAsync(smithingTrimRecipe.Base.Count);
+            foreach (var item in smithingTrimRecipe.Base)
+                await WriteSlotAsync(item);
+
+            await WriteVarIntAsync(smithingTrimRecipe.Addition.Count);
+            foreach (var item in smithingTrimRecipe.Addition)
+                await WriteSlotAsync(item);
         }
     }
 
@@ -1169,6 +1220,7 @@ public partial class MinecraftStream
             }
 
             WriteItemStack(shapedRecipe.Result.First());
+            WriteBoolean(shapedRecipe.ShowNotification);
         }
         else if (recipe is ShapelessRecipe shapelessRecipe)
         {
@@ -1219,17 +1271,35 @@ public partial class MinecraftStream
 
             WriteItemStack(result);
         }
-        else if (recipe is SmithingRecipe smithingRecipe)
+        else if (recipe is SmithingTransformRecipe smithingTransformRecipe)
         {
-            WriteVarInt(smithingRecipe.Base.Count);
-            foreach (var item in smithingRecipe.Base)
+            WriteVarInt(smithingTransformRecipe.Template.Count);
+            foreach (var item in smithingTransformRecipe.Template)
                 WriteItemStack(item);
 
-            WriteVarInt(smithingRecipe.Addition.Count);
-            foreach (var item in smithingRecipe.Addition)
+            WriteVarInt(smithingTransformRecipe.Base.Count);
+            foreach (var item in smithingTransformRecipe.Base)
                 WriteItemStack(item);
 
-            WriteItemStack(smithingRecipe.Result.First());
+            WriteVarInt(smithingTransformRecipe.Addition.Count);
+            foreach (var item in smithingTransformRecipe.Addition)
+                WriteItemStack(item);
+
+            WriteItemStack(smithingTransformRecipe.Result.First());
+        }
+        else if (recipe is SmithingTrimRecipe smithingTrimRecipe)
+        {
+            WriteVarInt(smithingTrimRecipe.Template.Count);
+            foreach (var item in smithingTrimRecipe.Template)
+                WriteItemStack(item);
+
+            WriteVarInt(smithingTrimRecipe.Base.Count);
+            foreach (var item in smithingTrimRecipe.Base)
+                WriteItemStack(item);
+
+            WriteVarInt(smithingTrimRecipe.Addition.Count);
+            foreach (var item in smithingTrimRecipe.Addition)
+                WriteItemStack(item);
         }
     }
 

@@ -42,12 +42,12 @@ public class SuperflatGenerator : IWorldGenerator
             }
         }
 
-        model.isGenerated = true;
+        model.chunkStatus = ChunkStatus.full;
     }
 
-    public async Task<Chunk> GenerateChunkAsync(int x, int z, Chunk? chunk = null)
+    public async Task<Chunk> GenerateChunkAsync(int x, int z, Chunk? chunk = null, ChunkStatus minlevel = ChunkStatus.full)
     {
-        if (chunk is { isGenerated: true })
+        if (chunk is { IsGenerated: true })
             return chunk;
 
         return model.Clone(x, z);

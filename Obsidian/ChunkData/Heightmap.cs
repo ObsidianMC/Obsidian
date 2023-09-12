@@ -1,4 +1,4 @@
-﻿using Obsidian.Utilities.Collection;
+﻿using Obsidian.Utilities.Collections;
 using Obsidian.WorldData;
 
 namespace Obsidian.ChunkData;

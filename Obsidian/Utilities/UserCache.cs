@@ -27,7 +27,7 @@ public static class UserCache
     {
         var escapedUsername = Sanitize(username);
 
-        CachedUser? cachedUser = null;
+        CachedUser? cachedUser;
         if (cache.Any(x => x.Value.Name == username))
         {
             cachedUser = cache.First(x => x.Value.Name == username).Value;

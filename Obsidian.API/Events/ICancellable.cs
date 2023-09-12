@@ -6,7 +6,13 @@
 public interface ICancellable
 {
     /// <summary>
-    /// Gets or sets a value indicating whether the default behaviour should be cancelled.
+    /// Gets a value indicating whether the default behaviour should be cancelled.
     /// </summary>
-    public bool Cancel { get; set; }
+    public bool IsCancelled { get; }
+
+    /// <summary>
+    /// Sets a flag which prevents default (vanilla) behavior from executing.
+    /// </summary>
+    /// <remarks>This flag only affects vanilla behavior. If you wish to prevent other handlers from running, see <see cref="AsyncEventArgs.Handled"/>.</remarks>
+    public void Cancel();
 }

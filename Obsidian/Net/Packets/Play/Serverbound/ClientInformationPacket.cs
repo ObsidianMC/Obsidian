@@ -18,10 +18,10 @@ public partial class ClientInformationPacket : IServerboundPacket
     public bool ChatColors { get; private set; }
 
     [Field(4), ActualType(typeof(byte))]
-    public PlayerBitMask SkinParts { get; private set; } // Skin parts that are displayed. Might not be necessary to decode?
+    public PlayerBitMask DisplayedSkinParts { get; private set; } // Skin parts that are displayed. Might not be necessary to decode?
 
-    [Field(5), VarLength]
-    public int MainHand { get; private set; }
+    [Field(5), ActualType(typeof(int)), VarLength]
+    public MainHand MainHand { get; private set; }
 
     [Field(6)]
     public bool EnableTextFiltering { get; private set; }
@@ -33,9 +33,17 @@ public partial class ClientInformationPacket : IServerboundPacket
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
-        player.client.ClientSettings = this;
-
-        player.Listed = this.AllowServerListings;
+        player.ClientInformation = new()
+        {
+            Locale = this.Locale,
+            ViewDistance = this.ViewDistance,
+            ChatMode = this.ChatMode,
+            ChatColors = this.ChatColors,
+            DisplayedSkinParts = this.DisplayedSkinParts,
+            MainHand = this.MainHand,
+            EnableTextFiltering = this.EnableTextFiltering,
+            AllowServerListings = this.AllowServerListings
+        };
 
         await player.client.SendInfoAsync();
     }

@@ -48,11 +48,12 @@ public abstract class PluginBase
         try
         {
             var result = method?.Invoke(this, args);
-            if (result is Task task)
-                return task;
-            else if (result is ValueTask valueTask)
-                return valueTask.AsTask();
-            return Task.FromResult(result);
+            return result switch
+            {
+                Task task => task,
+                ValueTask valueTask => valueTask.AsTask(),
+                _ => Task.FromResult(result)
+            };
         }
         catch (Exception e)
         {
@@ -68,11 +69,12 @@ public abstract class PluginBase
     {
         var method = GetMethod(methodName, args);
         var result = method?.Invoke(this, args);
-        if (result is Task task)
-            return task;
-        else if (result is ValueTask valueTask)
-            return valueTask.AsTask();
-        return Task.FromResult(result);
+        return result switch
+        {
+            Task task => task,
+            ValueTask valueTask => valueTask.AsTask(),
+            _ => Task.FromResult(result)
+        };
     }
 
     /// <summary>
@@ -92,11 +94,12 @@ public abstract class PluginBase
     {
         var method = GetMethod(methodName, args);
         var result = method?.Invoke(this, args);
-        if (result is Task<T?> task)
-            return task;
-        else if (result is ValueTask<T?> valueTask)
-            return valueTask.AsTask();
-        return Task.FromResult((T?)result);
+        return result switch
+        {
+            Task<T?> task => task,
+            ValueTask<T?> valueTask => valueTask.AsTask(),
+            _ => Task.FromResult((T?)result)
+        };
     }
 
     /// <summary>
@@ -233,4 +236,8 @@ public abstract class PluginBase
 
         return (null, -1);
     }
+
+    public override sealed bool Equals(object? obj) => base.Equals(obj);
+    public override sealed int GetHashCode() => base.GetHashCode();
+    public override sealed string ToString() => Info?.Name ?? GetType().Name;
 }

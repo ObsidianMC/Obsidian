@@ -68,9 +68,13 @@ public partial class ClickContainerPacket : IServerboundPacket
         switch (Mode)
         {
             case InventoryOperationMode.MouseClick:
-                await HandleMouseClick(container, server, player, slot);
-                break;
-
+                {
+                    if (CarriedItem == null)
+                        return;
+                        
+                    await HandleMouseClick(container, server, player, slot);
+                    break;
+                }
             case InventoryOperationMode.ShiftMouseClick:
                 {
                     if (CarriedItem == null)
@@ -129,11 +133,12 @@ public partial class ClickContainerPacket : IServerboundPacket
 
                         var item = new ItemEntity
                         {
-                            EntityId = player + player.World.GetTotalLoadedEntities() + 1,
+                            EntityId = player + player.world.GetTotalLoadedEntities() + 1,
                             Count = 1,
                             Id = removedItem.AsItem().Id,
                             Glowing = true,
-                            World = player.World,
+                            World = player.world,
+                            Server = player.Server,
                             Position = loc
                         };
 
@@ -176,7 +181,7 @@ public partial class ClickContainerPacket : IServerboundPacket
 
         if (container is IBlockEntity tileEntityContainer)
         {
-            var blockEntity = await player.World.GetBlockEntityAsync(tileEntityContainer.BlockPosition);
+            var blockEntity = await player.world.GetBlockEntityAsync(tileEntityContainer.BlockPosition);
 
             if (blockEntity is null)
                 return;
@@ -271,12 +276,12 @@ public partial class ClickContainerPacket : IServerboundPacket
     {
         if (!CarriedItem.IsAir)
         {
-            var @event = await server.Events.InvokeContainerClickAsync(new ContainerClickEventArgs(player, container, CarriedItem)
+            var @event = await server.Events.ContainerClick.InvokeAsync(new ContainerClickEventArgs(player, container, CarriedItem)
             {
                 Slot = slot
             });
 
-            if (@event.Cancel)
+            if (@event.IsCancelled)
                 return;
 
             player.LastClickedItem = CarriedItem;
@@ -305,10 +310,12 @@ public partial class ClickContainerPacket : IServerboundPacket
     {
         if (ClickedSlot == Outsideinventory)
         {
-            if (Button == 0 || Button == 4 || Button == 8)
-                player.isDragging = true;
-            else if (Button == 2 || Button == 6 || Button == 10)
-                player.isDragging = false;
+            player.isDragging = Button switch
+            {
+                0 or 4 or 8 => true,
+                2 or 6 or 10 => false,
+                _ => player.isDragging
+            };
         }
         else if (player.isDragging)
         {

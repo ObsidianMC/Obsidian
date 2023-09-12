@@ -20,7 +20,7 @@ public partial class MinecraftStream
     public byte ReadUnsignedByte()
     {
         Span<byte> buffer = stackalloc byte[1];
-        BaseStream.Read(buffer);
+        BaseStream.ReadExactly(buffer);
         return buffer[0];
     }
 
@@ -40,25 +40,20 @@ public partial class MinecraftStream
     public async Task<bool> ReadBooleanAsync()
     {
         var value = (int)await this.ReadByteAsync();
-        if (value == 0x00)
+        return value switch
         {
-            return false;
-        }
-        else if (value == 0x01)
-        {
-            return true;
-        }
-        else
-        {
-            throw new ArgumentOutOfRangeException("Byte returned by stream is out of range (0x00 or 0x01)", nameof(BaseStream));
-        }
+            0x00 => false,
+            0x01 => true,
+            _ => throw new ArgumentOutOfRangeException("Byte returned by stream is out of range (0x00 or 0x01)",
+                nameof(BaseStream))
+        };
     }
 
     [ReadMethod]
     public ushort ReadUnsignedShort()
     {
         Span<byte> buffer = stackalloc byte[2];
-        this.Read(buffer);
+        this.ReadExactly(buffer);
         return BinaryPrimitives.ReadUInt16BigEndian(buffer);
     }
 
@@ -73,14 +68,14 @@ public partial class MinecraftStream
     public short ReadShort()
     {
         Span<byte> buffer = stackalloc byte[2];
-        this.Read(buffer);
+        this.ReadExactly(buffer);
         return BinaryPrimitives.ReadInt16BigEndian(buffer);
     }
 
     public async Task<short> ReadShortAsync()
     {
         using var buffer = new RentedArray<byte>(sizeof(short));
-        await this.ReadAsync(buffer);
+        await this.ReadExactlyAsync(buffer);
         return BinaryPrimitives.ReadInt16BigEndian(buffer);
     }
 
@@ -88,14 +83,14 @@ public partial class MinecraftStream
     public int ReadInt()
     {
         Span<byte> buffer = stackalloc byte[4];
-        this.Read(buffer);
+        this.ReadExactly(buffer);
         return BinaryPrimitives.ReadInt32BigEndian(buffer);
     }
 
     public async Task<int> ReadIntAsync()
     {
         using var buffer = new RentedArray<byte>(sizeof(int));
-        await this.ReadAsync(buffer);
+        await this.ReadExactlyAsync(buffer);
         return BinaryPrimitives.ReadInt32BigEndian(buffer);
     }
 
@@ -103,14 +98,14 @@ public partial class MinecraftStream
     public long ReadLong()
     {
         Span<byte> buffer = stackalloc byte[8];
-        this.Read(buffer);
+        this.ReadExactly(buffer);
         return BinaryPrimitives.ReadInt64BigEndian(buffer);
     }
 
     public async Task<long> ReadLongAsync()
     {
         using var buffer = new RentedArray<byte>(sizeof(long));
-        await this.ReadAsync(buffer);
+        await this.ReadExactlyAsync(buffer);
         return BinaryPrimitives.ReadInt64BigEndian(buffer);
     }
 
@@ -118,14 +113,14 @@ public partial class MinecraftStream
     public ulong ReadUnsignedLong()
     {
         Span<byte> buffer = stackalloc byte[8];
-        this.Read(buffer);
+        this.ReadExactly(buffer);
         return BinaryPrimitives.ReadUInt64BigEndian(buffer);
     }
 
     public async Task<ulong> ReadUnsignedLongAsync()
     {
         using var buffer = new RentedArray<byte>(sizeof(ulong));
-        await this.ReadAsync(buffer);
+        await this.ReadExactlyAsync(buffer);
         return BinaryPrimitives.ReadUInt64BigEndian(buffer);
     }
 
@@ -133,14 +128,14 @@ public partial class MinecraftStream
     public float ReadFloat()
     {
         Span<byte> buffer = stackalloc byte[4];
-        this.Read(buffer);
+        this.ReadExactly(buffer);
         return BinaryPrimitives.ReadSingleBigEndian(buffer);
     }
 
     public async Task<float> ReadFloatAsync()
     {
         using var buffer = new RentedArray<byte>(sizeof(float));
-        await this.ReadAsync(buffer);
+        await this.ReadExactlyAsync(buffer);
         return BinaryPrimitives.ReadSingleBigEndian(buffer);
     }
 
@@ -148,14 +143,14 @@ public partial class MinecraftStream
     public double ReadDouble()
     {
         Span<byte> buffer = stackalloc byte[8];
-        this.Read(buffer);
+        this.ReadExactly(buffer);
         return BinaryPrimitives.ReadDoubleBigEndian(buffer);
     }
 
     public async Task<double> ReadDoubleAsync()
     {
         using var buffer = new RentedArray<byte>(sizeof(double));
-        await this.ReadAsync(buffer);
+        await this.ReadExactlyAsync(buffer);
         return BinaryPrimitives.ReadDoubleBigEndian(buffer);
     }
 
@@ -164,7 +159,7 @@ public partial class MinecraftStream
     {
         var length = ReadVarInt();
         var buffer = new byte[length];
-        this.Read(buffer, 0, length);
+        this.ReadExactly(buffer);
 
         var value = Encoding.UTF8.GetString(buffer);
         if (maxLength > 0 && value.Length > maxLength)
@@ -182,7 +177,7 @@ public partial class MinecraftStream
         {
             buffer.Span.Reverse();
         }
-        await this.ReadAsync(buffer);
+        await this.ReadExactlyAsync(buffer);
 
         var value = Encoding.UTF8.GetString(buffer);
         if (maxLength > 0 && value.Length > maxLength)
@@ -332,6 +327,14 @@ public partial class MinecraftStream
             UserId = this.ReadGuid(),
             Signature = this.ReadUInt8Array()
         };
+
+    [ReadMethod]
+    public SignatureData ReadSignatureData() => new()
+    {
+        ExpirationTime = this.ReadDateTimeOffset(),
+        PublicKey = this.ReadByteArray(),
+        Signature = this.ReadByteArray()
+    };
 
     [ReadMethod]
     public DateTimeOffset ReadDateTimeOffset() => DateTimeOffset.FromUnixTimeMilliseconds(this.ReadLong());

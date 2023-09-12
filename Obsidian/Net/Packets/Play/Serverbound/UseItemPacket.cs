@@ -16,20 +16,10 @@ public partial class UseItemPacket : IServerboundPacket
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
-        switch (Hand)
+        await server.Events.PlayerInteract.InvokeAsync(new PlayerInteractEventArgs(player)
         {
-            case Hand.MainHand:
-                await server.Events.InvokePlayerInteractAsync(new PlayerInteractEventArgs(player)
-                {
-                    Item = player.GetHeldItem()
-                });
-                break;
-            case Hand.OffHand:
-                await server.Events.InvokePlayerInteractAsync(new PlayerInteractEventArgs(player)
-                {
-                    Item = player.GetOffHandItem()
-                });
-                break;
-        }
+            Item = this.Hand == Hand.MainHand ? player.GetHeldItem() : player.GetOffHandItem(),
+            Hand = this.Hand,
+        });
     }
 }

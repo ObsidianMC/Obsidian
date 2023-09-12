@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API.Crafting;
 
-public sealed class ShapedRecipe : IRecipe
+public sealed class ShapedRecipe : IRecipeWithResult
 {
     public required string Identifier { get; init; }
 
@@ -15,6 +15,8 @@ public sealed class ShapedRecipe : IRecipe
     public required IReadOnlyList<string> Pattern { get; init; }
 
     public required IReadOnlyDictionary<char, Ingredient> Key { get; init; }
+
+    public required bool ShowNotification { get; init; }
 
     internal ShapedRecipe() { }
 }

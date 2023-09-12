@@ -18,11 +18,15 @@ public enum CraftingType
     CraftingSpecialShulkerboxcoloring,
     CraftingSpecialSuspiciousstew,
     CraftingSpecialRepairitem,
+    CraftingDecoratedPot,
 
     Smelting,
     Blasting,
     Smoking,
     CampfireCooking,
+
     Stonecutting,
-    Smithing,
+
+    SmithingTransform,
+    SmithingTrim
 }

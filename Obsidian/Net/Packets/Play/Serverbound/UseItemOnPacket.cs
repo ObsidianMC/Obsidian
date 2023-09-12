@@ -1,5 +1,6 @@
 ﻿using Obsidian.API.Events;
 using Obsidian.Entities;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
 using Obsidian.Serialization.Attributes;
 
@@ -33,17 +34,17 @@ public partial class UseItemOnPacket : IServerboundPacket
         var currentItem = player.GetHeldItem() ?? player.GetOffHandItem();
         var position = this.Position;
 
-        var b = await player.World.GetBlockAsync(position);
+        var b = await player.world.GetBlockAsync(position);
 
-        if (b is not IBlock interactedBlock)
+        if (b is not IBlock)
             return;
 
-        if (TagsRegistry.Blocks.PlayersCanInteract.Entries.Contains(interactedBlock.RegistryId) && !player.Sneaking)
+        if (TagsRegistry.Blocks.PlayersCanInteract.Entries.Contains(b.RegistryId) && !player.Sneaking)
         {
-            await server.Events.InvokePlayerInteractAsync(new PlayerInteractEventArgs(player)
+            await server.Events.PlayerInteract.InvokeAsync(new PlayerInteractEventArgs(player)
             {
                 Item = currentItem,
-                Block = interactedBlock,
+                Block = b,
                 BlockLocation = this.Position,
             });
 
@@ -109,6 +110,25 @@ public partial class UseItemOnPacket : IServerboundPacket
                 break;
         }
 
-        await player.World.SetBlockAsync(position, block, doBlockUpdate: true);
+        if (TagsRegistry.Blocks.GravityAffected.Entries.Contains(block.RegistryId))
+        {
+            if (await player.World.GetBlockAsync(position + Vector.Down) is IBlock below &&
+                (TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(below.RegistryId) || below.IsLiquid))
+            {
+                await player.world.SetBlockAsync(position, BlocksRegistry.Air, true);
+                player.client.SendPacket(new AcknowledgeBlockChangePacket
+                {
+                    SequenceID = Sequence
+                });
+                player.world.SpawnFallingBlock(position, block.Material);
+                return;
+            }
+        }
+
+        await player.world.SetBlockAsync(position, block, doBlockUpdate: true);
+        player.client.SendPacket(new AcknowledgeBlockChangePacket
+        {
+            SequenceID = Sequence
+        });
     }
 }

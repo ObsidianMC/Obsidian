@@ -17,7 +17,7 @@ public partial class PlayerChatMessagePacket : IClientboundPacket
     [Field(3)]
     public required PlayerChatMessageNetworkTarget NetworkTarget { get; init; }
 
-    public int Id => 0x31;
+    public int Id => 0x35;
 
     public void Serialize(MinecraftStream stream)
     {

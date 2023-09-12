@@ -1,8 +1,10 @@
-﻿using Obsidian.ChunkData;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.Blocks;
+using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Registries;
-using Obsidian.Utilities.Collection;
+using Obsidian.Utilities.Collections;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -11,8 +13,8 @@ namespace Obsidian.WorldData;
 
 public class Region : IAsyncDisposable
 {
-    public const int cubicRegionSizeShift = 5;
-    public const int cubicRegionSize = 1 << cubicRegionSizeShift;
+    public const int CubicRegionSizeShift = 5;
+    public const int CubicRegionSize = 1 << CubicRegionSizeShift;
 
     public int X { get; }
     public int Z { get; }
@@ -21,25 +23,28 @@ public class Region : IAsyncDisposable
 
     public string RegionFolder { get; }
 
+    public NbtCompression ChunkCompression { get; }
+
     public ConcurrentDictionary<int, Entity> Entities { get; } = new();
 
-    public int LoadedChunkCount => loadedChunks.Count(c => c.isGenerated);
+    public int LoadedChunkCount => loadedChunks.Count(c => c.IsGenerated);
 
-    private DenseCollection<Chunk> loadedChunks { get; } = new(cubicRegionSize, cubicRegionSize);
+    private DenseCollection<Chunk> loadedChunks { get; } = new(CubicRegionSize, CubicRegionSize);
 
     private readonly RegionFile regionFile;
 
     private readonly ConcurrentDictionary<Vector, BlockUpdate> blockUpdates = new();
 
-    internal Region(int x, int z, string worldFolderPath)
+    internal Region(int x, int z, string worldFolderPath, NbtCompression chunkCompression = NbtCompression.ZLib,
+        ILogger? logger = null)
     {
         X = x;
         Z = z;
         RegionFolder = Path.Join(worldFolderPath, "regions");
         Directory.CreateDirectory(RegionFolder);
         var filePath = Path.Join(RegionFolder, $"r.{X}.{Z}.mca");
-        regionFile = new RegionFile(filePath, cubicRegionSize);
-
+        regionFile = new RegionFile(filePath, chunkCompression, CubicRegionSize, logger);
+        ChunkCompression = chunkCompression;
     }
 
     internal void AddBlockUpdate(BlockUpdate bu)
@@ -66,10 +71,10 @@ public class Region : IAsyncDisposable
         if (chunk is null)
         {
             chunk = await GetChunkFromFileAsync(x, z); // Still might be null but that's okay.
-            loadedChunks[x, z] = chunk;
+            loadedChunks[x, z] = chunk!;
         }
 
-        return chunk;
+        return chunk!;
     }
 
     internal async Task UnloadChunk(int x, int z)
@@ -84,11 +89,11 @@ public class Region : IAsyncDisposable
     {
         var chunkBuffer = await regionFile.GetChunkBytesAsync(x, z);
 
-        if (chunkBuffer is not ChunkBuffer value)
+        if (chunkBuffer is not Memory<byte> chunkData)
             return null;
 
-        await using var bytesStream = new ReadOnlyStream(value.Memory);
-        var nbtReader = new NbtReader(bytesStream, value.Compression);
+        await using var bytesStream = new ReadOnlyStream(chunkData);
+        var nbtReader = new NbtReader(bytesStream);
 
         return DeserializeChunk(nbtReader.ReadNextTag() as NbtCompound);
     }
@@ -97,7 +102,7 @@ public class Region : IAsyncDisposable
     {
         foreach (var c in loadedChunks)
         {
-            if (c is not null && c.isGenerated)
+            if (c is not null && c.IsGenerated)
             {
                 yield return c;
             }
@@ -107,24 +112,24 @@ public class Region : IAsyncDisposable
     internal void SetChunk(Chunk chunk)
     {
         if (chunk is null) { return; } // I dunno... maybe we'll need to null out a chunk someday?
-        var (x, z) = (NumericsHelper.Modulo(chunk.X, cubicRegionSize), NumericsHelper.Modulo(chunk.Z, cubicRegionSize));
+        var (x, z) = (NumericsHelper.Modulo(chunk.X, CubicRegionSize), NumericsHelper.Modulo(chunk.Z, CubicRegionSize));
         loadedChunks[x, z] = chunk;
     }
 
-    internal async Task SerializeChunkAsync(Chunk chunk, NbtCompression compression = NbtCompression.ZLib)
+    internal async Task SerializeChunkAsync(Chunk chunk)
     {
         NbtCompound chunkNbt = SerializeChunk(chunk);
 
-        var (x, z) = (NumericsHelper.Modulo(chunk.X, cubicRegionSize), NumericsHelper.Modulo(chunk.Z, cubicRegionSize));
+        var (x, z) = (NumericsHelper.Modulo(chunk.X, CubicRegionSize), NumericsHelper.Modulo(chunk.Z, CubicRegionSize));
 
         await using MemoryStream strm = new();
-        await using NbtWriter writer = new(strm, compression);
+        await using NbtWriter writer = new(strm, ChunkCompression);
 
         writer.WriteTag(chunkNbt);
 
         await writer.TryFinishAsync();
 
-        await regionFile.SetChunkAsync(x, z, strm.ToArray(), compression);
+        await regionFile.SetChunkAsync(x, z, strm.ToArray());
     }
 
     internal async Task BeginTickAsync(CancellationToken cts)
@@ -162,10 +167,7 @@ public class Region : IAsyncDisposable
         int x = chunkCompound.GetInt("xPos");
         int z = chunkCompound.GetInt("zPos");
 
-        var chunk = new Chunk(x, z)
-        {
-            isGenerated = true
-        };
+        var chunk = new Chunk(x, z);
 
         foreach (var child in (NbtList)chunkCompound["sections"])
         {
@@ -183,27 +185,27 @@ public class Region : IAsyncDisposable
 
             var section = chunk.Sections[secY + 4];
 
-            if (statesCompound.TryGetTag("data", out var dataArrayTag))
-            {
-                var data = dataArrayTag as NbtArray<long>;
-
-                section.BlockStateContainer.DataArray.storage = data!.GetArray();
-            }
-
             var chunkSecPalette = section.BlockStateContainer.Palette;
 
-            if (statesCompound.TryGetTag("palette", out var palleteArrayTag))
+            if (statesCompound!.TryGetTag("palette", out var palleteArrayTag))
             {
                 var blockStatesPalette = palleteArrayTag as NbtList;
-                foreach (NbtCompound entry in blockStatesPalette)
+                foreach (NbtCompound entry in blockStatesPalette!)
                 {
-                    var name = entry.GetString("Name");
                     var id = entry.GetInt("Id");
 
                     chunkSecPalette.GetOrAddId(BlocksRegistry.Get(id));//TODO PROCESS ADDED PROPERTIES TO GET CORRECT BLOCK STATE
                 }
 
                 section.BlockStateContainer.GrowDataArray();
+            }
+
+            //TODO find a way around this (We shouldn't be storing the states data array in nbt anyway.)
+            if (statesCompound.TryGetTag("data", out var dataArrayTag))
+            {
+                var data = dataArrayTag as NbtArray<long>;
+
+                section.BlockStateContainer.DataArray.storage = data!.GetArray();
             }
 
             var biomesCompound = sectionCompound["biomes"] as NbtCompound;
@@ -244,6 +246,8 @@ public class Region : IAsyncDisposable
             chunk.SetBlockEntity(tileEntityCompound.GetInt("x"), tileEntityCompound.GetInt("y"), tileEntityCompound.GetInt("z"), tileEntityCompound);
         }
 
+        chunk.chunkStatus = (ChunkStatus)(Enum.TryParse(typeof(ChunkStatus), chunkCompound.GetString("Status"), out var status) ? status : ChunkStatus.empty);
+
         return chunk;
     }
 
@@ -267,7 +271,7 @@ public class Region : IAsyncDisposable
                 var palette = new NbtList(NbtTagType.Compound, "palette");
 
                 Span<int> span = indirect.Values;
-                for(int i = 0; i < indirect.Count; i++)
+                for (int i = 0; i < indirect.Count; i++)
                 {
                     var id = span[i];
                     var block = BlocksRegistry.Get(id);
@@ -314,6 +318,8 @@ public class Region : IAsyncDisposable
         {
             new NbtTag<int>("xPos", chunk.X),
             new NbtTag<int>("zPos", chunk.Z),
+            new NbtTag<int>("yPos", -4),
+            new NbtTag<string>("Status", chunk.chunkStatus.ToString()),
             new NbtCompound("Heightmaps")
             {
                 new NbtArray<long>("MOTION_BLOCKING", chunk.Heightmaps[HeightmapType.MotionBlocking].data.storage),
@@ -322,7 +328,7 @@ public class Region : IAsyncDisposable
             },
             blockEntities,
             sectionsCompound,
-            new NbtTag<int>("DataVersion", 3105)// Hardcoded version try to get data version through minecraft data and use data correctly
+            new NbtTag<int>("DataVersion", 3337)// Hardcoded version try to get data version through minecraft data and use data correctly
         };
     }
     #endregion NBT Ops

@@ -8,3 +8,8 @@ public interface IUpgradeIngredientRecipe<TRecipe>
 {
     public INamedRecipe<TRecipe> WithUpgradeIngredient(params ItemStack[] items);
 }
+
+public interface ITemplateIngredientRecipe<TRecipe>
+{
+    public IBaseIngredientRecipe<TRecipe> WithTemplateIngredient(params ItemStack[] items);
+}

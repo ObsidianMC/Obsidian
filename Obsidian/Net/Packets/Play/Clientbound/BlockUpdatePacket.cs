@@ -10,7 +10,7 @@ public partial class BlockUpdatePacket : IClientboundPacket
     [Field(1), VarLength]
     public int BlockId { get; }
 
-    public int Id => 0x09;
+    public int Id => 0x0A;
 
     public BlockUpdatePacket(Vector position, int block)
     {

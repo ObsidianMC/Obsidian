@@ -19,5 +19,5 @@ public partial class SpawnPlayerPacket : IClientboundPacket
     [Field(4)]
     public Angle Pitch { get; init; }
 
-    public int Id => 0x02;
+    public int Id => 0x03;
 }

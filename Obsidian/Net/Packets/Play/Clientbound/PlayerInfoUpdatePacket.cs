@@ -14,7 +14,7 @@ public partial class PlayerInfoUpdatePacket : IClientboundPacket
     [Field(1)]
     public Dictionary<Guid, List<InfoAction>> Actions { get; set; } = new();
 
-    public int Id => 0x36;
+    public int Id => 0x3A;
 
     public PlayerInfoUpdatePacket(Dictionary<Guid, List<InfoAction>> infoActions)
     {

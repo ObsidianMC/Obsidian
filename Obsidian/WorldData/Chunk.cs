@@ -10,7 +10,9 @@ public class Chunk
     public int X { get; }
     public int Z { get; }
 
-    public bool isGenerated = false;
+    public bool IsGenerated => chunkStatus == ChunkStatus.full;
+
+    public ChunkStatus chunkStatus = ChunkStatus.empty;
 
     private const int width = 16;
     private const int worldHeight = 320;
@@ -34,6 +36,7 @@ public class Chunk
             { HeightmapType.MotionBlocking, new Heightmap(HeightmapType.MotionBlocking, this) },
             { HeightmapType.OceanFloor, new Heightmap(HeightmapType.OceanFloor, this) },
             { HeightmapType.WorldSurface, new Heightmap(HeightmapType.WorldSurface, this) },
+            { HeightmapType.WorldSurfaceWG, new Heightmap(HeightmapType.WorldSurfaceWG, this) },
             { HeightmapType.MotionBlockingNoLeaves, new Heightmap(HeightmapType.MotionBlockingNoLeaves, this) }
         };
 
@@ -44,15 +47,13 @@ public class Chunk
         }
     }
 
-    private Chunk(int x, int z, ChunkSection[] sections, Dictionary<HeightmapType, Heightmap> heightmaps, bool isGenerated)
+    private Chunk(int x, int z, ChunkSection[] sections, Dictionary<HeightmapType, Heightmap> heightmaps)
     {
         X = x;
         Z = z;
 
         Heightmaps = heightmaps;
         Sections = sections;
-
-        this.isGenerated = isGenerated;
     }
 
     public IBlock GetBlock(Vector position) => GetBlock(position.X, position.Y, position.Z);
@@ -74,9 +75,9 @@ public class Chunk
     {
         var i = SectionIndex(y);
 
-        x = NumericsHelper.Modulo(x, 16);
-        z = NumericsHelper.Modulo(z, 16);
-        y = (y + 64) % 16 / 4;
+        x = NumericsHelper.Modulo(x, 16) >> 2;
+        z = NumericsHelper.Modulo(z, 16) >> 2;
+        y = NumericsHelper.Modulo(y + 64, 16) >> 2;
 
         return Sections[i].GetBiome(x, y, z);
     }
@@ -87,9 +88,9 @@ public class Chunk
     {
         int i = SectionIndex(y);
 
-        x = NumericsHelper.Modulo(x, 16);
-        y = (y + 64) % 16 / 4;
-        z = NumericsHelper.Modulo(z, 16);
+        x = NumericsHelper.Modulo(x, 16) >> 2;
+        y = NumericsHelper.Modulo(y + 64, 16) >> 2;
+        z = NumericsHelper.Modulo(z, 16) >> 2;
 
         Sections[i].SetBiome(x, y, z, biome);
     }
@@ -280,12 +281,14 @@ public class Chunk
 
         var heightmaps = new Dictionary<HeightmapType, Heightmap>();
 
-        var chunk = new Chunk(x, z, sections, heightmaps, isGenerated);
+        var chunk = new Chunk(x, z, sections, heightmaps);
 
         foreach (var (type, heightmap) in Heightmaps)
         {
             heightmaps.Add(type, heightmap.Clone(chunk));
         }
+
+        chunk.chunkStatus = chunkStatus;
 
         return chunk;
     }

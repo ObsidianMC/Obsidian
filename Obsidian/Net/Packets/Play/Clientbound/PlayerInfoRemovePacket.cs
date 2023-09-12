@@ -6,5 +6,5 @@ public sealed partial class PlayerInfoRemovePacket : IClientboundPacket
     [Field(0)]
     public List<Guid> UUIDs { get; init; }
 
-    public int Id => 0x35;
+    public int Id => 0x39;
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.AspNetCore.Connections;
+using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
@@ -10,7 +11,6 @@ using Obsidian.Net.Packets.Handshaking;
 using Obsidian.Net.Packets.Login;
 using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Net.Packets.Status;
 using Obsidian.Registries;
 using Obsidian.Utilities.Mojang;
@@ -103,7 +103,7 @@ public sealed class Client : IDisposable
     /// <summary>
     /// The base network stream used by the <see cref="minecraftStream"/>.
     /// </summary>
-    private readonly NetworkStream networkStream;
+    private readonly DuplexPipeStream networkStream;
 
     /// <summary>
     /// Used to continuously send and receive encrypted packets from the client.
@@ -111,9 +111,9 @@ public sealed class Client : IDisposable
     private readonly PacketCryptography packetCryptography;
 
     /// <summary>
-    /// The socket associated with the <see cref="networkStream"/>.
+    /// The connection context associated with the <see cref="networkStream"/>.
     /// </summary>
-    private readonly Socket socket;
+    private readonly ConnectionContext connectionContext;
 
     /// <summary>
     /// The current server configuration.
@@ -124,11 +124,6 @@ public sealed class Client : IDisposable
     /// Whether the stream has encryption enabled. This can be set to false when the client is connecting through LAN or when the server is in offline mode.
     /// </summary>
     public bool EncryptionEnabled { get; private set; }
-
-    /// <summary>
-    /// The client settings. Consists of the view distance, locale, skin parts and other useful information about the client.
-    /// </summary>
-    public ClientInformationPacket? ClientSettings { get; internal set; }
 
     /// <summary>
     /// Which state of the protocol the client is currently in.
@@ -143,7 +138,7 @@ public sealed class Client : IDisposable
     /// <summary>
     /// The client's ip and port used to establish this connection.
     /// </summary>
-    public EndPoint? RemoteEndPoint => socket.RemoteEndPoint;
+    public EndPoint? RemoteEndPoint => connectionContext.RemoteEndPoint;
 
     /// <summary>
     /// Executed when the client disconnects.
@@ -170,9 +165,9 @@ public sealed class Client : IDisposable
     /// </summary>
     public string? Brand { get; set; }
 
-    public Client(Socket socket, ServerConfiguration config, int playerId, Server originServer)
+    public Client(ConnectionContext connectionContext, ServerConfiguration config, int playerId, Server originServer)
     {
-        this.socket = socket;
+        this.connectionContext = connectionContext;
         this.config = config;
         id = playerId;
         Server = originServer;
@@ -180,7 +175,7 @@ public sealed class Client : IDisposable
         LoadedChunks = new();
         packetCryptography = new();
         handler = new(config);
-        networkStream = new(socket);
+        networkStream = new(connectionContext.Transport);
         minecraftStream = new(networkStream);
 
         missedKeepAlives = new List<long>();
@@ -188,7 +183,7 @@ public sealed class Client : IDisposable
         var blockOptions = new ExecutionDataflowBlockOptions { CancellationToken = cancellationSource.Token, EnsureOrdered = true };
         var sendPacketBlock = new ActionBlock<IClientboundPacket>(packet =>
         {
-            if (socket.Connected)
+            if (connectionContext.IsConnected())
                 SendPacket(packet);
         }, blockOptions);
 
@@ -208,7 +203,7 @@ public sealed class Client : IDisposable
         var packetId = 0;
         var packetData = Array.Empty<byte>();
 
-        using (var packetStream = new MinecraftStream(receivedData))
+        await using (var packetStream = new MinecraftStream(receivedData))
         {
             try
             {
@@ -232,7 +227,7 @@ public sealed class Client : IDisposable
 
     public async Task StartConnectionAsync()
     {
-        while (!cancellationSource.IsCancellationRequested && socket.Connected)
+        while (!cancellationSource.IsCancellationRequested && connectionContext.IsConnected())
         {
             (var id, var data) = await GetNextPacketAsync();
 
@@ -270,7 +265,7 @@ public sealed class Client : IDisposable
                         {
                             if (this.Server.Config.CanThrottle)
                             {
-                                string ip = ((IPEndPoint)socket.RemoteEndPoint!).Address.ToString();
+                                string ip = ((IPEndPoint)connectionContext.RemoteEndPoint!).Address.ToString();
 
                                 if (Server.throttler.TryGetValue(ip, out var timeLeft))
                                 {
@@ -286,7 +281,7 @@ public sealed class Client : IDisposable
                                     Server.throttler.TryAdd(ip, DateTimeOffset.UtcNow.AddMilliseconds(this.Server.Config.ConnectionThrottle));
                                 }
                             }
-                            
+
                             await HandleLoginStartAsync(data);
                             break;
                         }
@@ -307,9 +302,9 @@ public sealed class Client : IDisposable
                 case ClientState.Play:
                     Debug.Assert(Player is not null);
                     var packetReceivedEventArgs = new PacketReceivedEventArgs(Player, id, data);
-                    await Server.Events.InvokePacketReceivedAsync(packetReceivedEventArgs);
+                    await Server.Events.PacketReceived.InvokeAsync(packetReceivedEventArgs);
 
-                    if (!packetReceivedEventArgs.Cancel)
+                    if (!packetReceivedEventArgs.IsCancelled)
                     {
                         await handler.HandlePlayPackets(id, data, this);
                     }
@@ -325,7 +320,7 @@ public sealed class Client : IDisposable
         if (State == ClientState.Play)
         {
             Debug.Assert(Player is not null);
-            await Server.Events.InvokePlayerLeaveAsync(new PlayerLeaveEventArgs(Player, DateTimeOffset.Now));
+            await Server.Events.PlayerLeave.InvokeAsync(new PlayerLeaveEventArgs(Player, DateTimeOffset.Now));
         }
 
         Disconnected?.Invoke(this);
@@ -336,7 +331,7 @@ public sealed class Client : IDisposable
     {
         var status = new ServerStatus(Server);
 
-        _ = await Server.Events.InvokeServerStatusRequest(new ServerStatusRequestEventArgs(Server, status));
+        _ = await Server.Events.ServerStatusRequest.InvokeAsync(new ServerStatusRequestEventArgs(Server, status));
 
         SendPacket(new RequestResponse(status));
     }
@@ -503,11 +498,8 @@ public sealed class Client : IDisposable
             Logger.LogError("Failed to add player {Username} to online players. Undefined behavior ahead!", Player.Username);
         }
 
-        if (!CodecRegistry.TryGetDimension(Player.World.DimensionName, out var codec) || !CodecRegistry.TryGetDimension("minecraft:overworld", out codec))
-        {
-            // TODO: Change the exception type to be more specific
-            throw new ApplicationException("Failed to retrieve proper dimension for player.");
-        }
+        if (!CodecRegistry.TryGetDimension(Player.world.DimensionName, out var codec) || !CodecRegistry.TryGetDimension("minecraft:overworld", out codec))
+            throw new UnreachableException("Failed to retrieve proper dimension for player.");
 
         await QueuePacketAsync(new LoginPacket
         {
@@ -538,21 +530,19 @@ public sealed class Client : IDisposable
 
         await SendPlayerListDecoration();
         await SendPlayerInfoAsync();
-        await Player.UpdateChunksAsync(distance: 2);
+        await Player.UpdateChunksAsync(distance: 7);
         await SendInfoAsync();
-        await Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(Player, DateTimeOffset.Now));
+        await Server.Events.PlayerJoin.InvokeAsync(new PlayerJoinEventArgs(Player, DateTimeOffset.Now));
     }
 
     #region Packet sending
     internal async Task SendInfoAsync()
     {
         if (Player is null)
-        {
-            throw new InvalidOperationException("Player is null, which means the client has not yet logged in.");
-        }
+            throw new UnreachableException("Player is null, which means the client has not yet logged in.");
 
         Player.TeleportId = Globals.Random.Next(0, 999);
-        await QueuePacketAsync(new SetDefaultSpawnPositionPacket(Player.World.LevelData.SpawnPosition));
+        await QueuePacketAsync(new SetDefaultSpawnPositionPacket(Player.world.LevelData.SpawnPosition));
         await QueuePacketAsync(new SynchronizePlayerPositionPacket
         {
             Position = Player.Position,
@@ -569,11 +559,17 @@ public sealed class Client : IDisposable
             StateId = Player.Inventory.StateId++,
             CarriedItem = Player.GetHeldItem(),
         });
+
+        await QueuePacketAsync(new SetEntityMetadataPacket
+        {
+            EntityId = this.Player.EntityId,
+            Entity = this.Player
+        });
     }
 
     internal Task DisconnectAsync(ChatMessage reason) => Task.Run(() => SendPacket(new DisconnectPacket(reason, State)));
-    internal Task SendTimeUpdateAsync() => QueuePacketAsync(new UpdateTimePacket(Player!.World.LevelData.Time, Player.World.LevelData.DayTime));
-    internal Task SendWeatherUpdateAsync() => QueuePacketAsync(new GameEventPacket(Player!.World.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
+    internal Task SendTimeUpdateAsync() => QueuePacketAsync(new UpdateTimePacket(Player!.world.LevelData.Time, Player.world.LevelData.DayTime));
+    internal Task SendWeatherUpdateAsync() => QueuePacketAsync(new GameEventPacket(Player!.world.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
 
     internal void HandleKeepAlive(KeepAlivePacket keepAlive)
     {
@@ -659,7 +655,7 @@ public sealed class Client : IDisposable
         {
             addAction,
             new UpdatePingInfoAction(player.Ping),
-            new UpdateListedInfoAction(player.Listed),
+            new UpdateListedInfoAction(player.ClientInformation.AllowServerListings),
         };
 
         await QueuePacketAsync(new PlayerInfoUpdatePacket(new Dictionary<Guid, List<InfoAction>>()
@@ -689,7 +685,7 @@ public sealed class Client : IDisposable
             var list = new List<InfoAction>
             {
                 addPlayerInforAction,
-                new UpdateListedInfoAction(player.Listed),
+                new UpdateListedInfoAction(player.ClientInformation.AllowServerListings),
                 new UpdateDisplayNameInfoAction(player.Username),
                 new UpdatePingInfoAction(player.Ping)
             };
@@ -716,7 +712,7 @@ public sealed class Client : IDisposable
         catch (SocketException)
         {
             // Clients can disconnect at any point, causing exception to be raised
-            if (!socket.Connected)
+            if (!connectionContext.IsConnected())
             {
                 Disconnect();
             }
@@ -729,8 +725,8 @@ public sealed class Client : IDisposable
 
     internal async Task QueuePacketAsync(IClientboundPacket packet)
     {
-        var args = await Server.Events.InvokeQueuePacketAsync(new QueuePacketEventArgs(this, packet));
-        if (args.Cancel)
+        var args = await Server.Events.QueuePacket.InvokeAsync(new QueuePacketEventArgs(this, packet));
+        if (args.IsCancelled)
         {
             Logger.LogDebug("Packet {PacketId} was sent to the queue, however an event handler registered in {Name} has cancelled it.", args.Packet.Id, nameof(Server.Events));
         }
@@ -740,12 +736,17 @@ public sealed class Client : IDisposable
         }
     }
 
-    internal Task SendChunkAsync(Chunk chunk) => chunk is not null ? QueuePacketAsync(new ChunkDataAndUpdateLightPacket(chunk)) : Task.CompletedTask;
+    internal async Task SendChunkAsync(Chunk chunk)
+    {
+        ArgumentNullException.ThrowIfNull(chunk);
+
+        await QueuePacketAsync(new ChunkDataAndUpdateLightPacket(chunk));
+    }
     internal Task UnloadChunkAsync(int x, int z) => LoadedChunks.Contains((x, z)) ? QueuePacketAsync(new UnloadChunkPacket(x, z)) : Task.CompletedTask;
 
     private async Task SendServerBrand()
     {
-        using var stream = new MinecraftStream();
+        await using var stream = new MinecraftStream();
         await stream.WriteStringAsync(Server.Brand);
         await QueuePacketAsync(new PluginMessagePacket("minecraft:brand", stream.ToArray()));
         Logger.LogDebug("Sent server brand.");
@@ -777,7 +778,7 @@ public sealed class Client : IDisposable
         disposed = true;
 
         minecraftStream.Dispose();
-        socket.Dispose();
+        connectionContext.Abort();
         cancellationSource?.Dispose();
 
         GC.SuppressFinalize(this);
