@@ -7,7 +7,7 @@ namespace Obsidian.Net;
 
 // https://raw.githubusercontent.com/StarlkYT/BedrockFramework/main/src/Bedrock.Framework/Infrastructure/DuplexPipeStream.cs
 // With some small changes.
-internal sealed class DuplexPipeStream : Stream
+public class DuplexPipeStream : Stream
 {
     private readonly PipeReader _input;
     private readonly PipeWriter _output;

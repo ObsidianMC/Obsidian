@@ -15,7 +15,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Obsidian.Nbt", "Obsidian.Nbt\Obsidian.Nbt.csproj", "{54CDB397-576E-41AC-A730-47F4779FED8B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ObsidianCloud.ClientService", "ObsidianCloud\ObsidianCloud.ClientService\ObsidianCloud.ClientService.csproj", "{F6F72C80-089E-45E0-8DC6-774461A27090}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ObsidianCloud.ClientService", "ObsidianCloud\ObsidianCloud.ClientService\ObsidianCloud.ClientService.csproj", "{F6F72C80-089E-45E0-8DC6-774461A27090}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ObsidianCloud.AWS.ClientService", "ObsidianCloud\ObsidianCloud.AWS.ClientService\ObsidianCloud.AWS.ClientService.csproj", "{C4D92BC3-E70C-46BB-91FC-F5B77DCC830B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -47,6 +49,10 @@ Global
 		{F6F72C80-089E-45E0-8DC6-774461A27090}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F6F72C80-089E-45E0-8DC6-774461A27090}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F6F72C80-089E-45E0-8DC6-774461A27090}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C4D92BC3-E70C-46BB-91FC-F5B77DCC830B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C4D92BC3-E70C-46BB-91FC-F5B77DCC830B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C4D92BC3-E70C-46BB-91FC-F5B77DCC830B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C4D92BC3-E70C-46BB-91FC-F5B77DCC830B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
