@@ -1,6 +1,7 @@
 pushd ..\..\
 
 docker build -f ObsidianCloud\ObsidianCloud.AWS.ClientService\Dockerfile -t %AWS_ACCOUNT%.dkr.ecr.%AWS_REGION%.amazonaws.com/obsidianclient:latest .
+docker build -f ObsidianCloud\ObsidianCloud.AWS.ClientService\Dockerfile -t %AWS_ACCOUNT%.dkr.ecr.%AWS_REGION%.amazonaws.com/obsidianworld:latest .
 
 @echo off
 if errorlevel 1 (
@@ -14,5 +15,6 @@ for /f %%i in ('aws ecr get-login-password --region %AWS_REGION%') do (
 )
 @echo on
 docker push %AWS_ACCOUNT%.dkr.ecr.%AWS_REGION%.amazonaws.com/obsidianclient:latest
+docker push %AWS_ACCOUNT%.dkr.ecr.%AWS_REGION%.amazonaws.com/obsidianworld:latest
 
 popd

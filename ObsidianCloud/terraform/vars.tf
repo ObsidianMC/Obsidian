@@ -14,7 +14,7 @@ variable "runtime" {
 }
 
 variable "minecraft_port" {
-    description = "Port for the minecraft client to connect to. Ex: 25565"
-    type = number
-    default = 25565
+  description = "Port for the minecraft client to connect to. Ex: 25565"
+  type        = number
+  default     = 25565
 }

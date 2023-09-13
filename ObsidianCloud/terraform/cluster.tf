@@ -19,7 +19,7 @@ POLICY
 }
 
 resource "aws_iam_role" "ecs_task_execute" {
-  name = join("-", [var.namespace, var.name, var.runtime, "task", "execute"])
+  name               = join("-", [var.namespace, var.name, var.runtime, "task", "execute"])
   assume_role_policy = <<POLICY
 {
    "Version":"2012-10-17",
@@ -39,7 +39,7 @@ POLICY
 }
 
 resource "aws_iam_role_policy_attachment" "ecs_task_execute" {
-  role = aws_iam_role.ecs_task_execute.name
+  role       = aws_iam_role.ecs_task_execute.name
   policy_arn = aws_iam_policy.ecs_task_execute.arn
 }
 
@@ -70,7 +70,7 @@ POLICY
 }
 
 resource "aws_iam_role" "ecs_task" {
-  name = join("-", [var.namespace, var.name, var.runtime, "task"])
+  name               = join("-", [var.namespace, var.name, var.runtime, "task"])
   assume_role_policy = <<POLICY
 {
    "Version":"2012-10-17",
@@ -90,19 +90,25 @@ POLICY
 }
 
 resource "aws_iam_role_policy_attachment" "ecs_task" {
-  role = aws_iam_role.ecs_task.name
+  role       = aws_iam_role.ecs_task.name
+  policy_arn = aws_iam_policy.ecs_task.arn
+}
+
+# Also give it to task execute
+resource "aws_iam_role_policy_attachment" "ecs_task_execute2" {
+  role       = aws_iam_role.ecs_task_execute.name
   policy_arn = aws_iam_policy.ecs_task.arn
 }
 
 resource "aws_ecs_task_definition" "obsidian_cloud_services" {
-  family = "obsidian_cloud_services"
-  task_role_arn = aws_iam_role.ecs_task.arn
+  family             = "obsidian_cloud_services"
+  task_role_arn      = aws_iam_role.ecs_task.arn
   execution_role_arn = aws_iam_role.ecs_task_execute.arn
-  network_mode = "awsvpc"
-  cpu = 1024
-  memory = 5120
+  network_mode       = "awsvpc"
+  cpu                = 1024
+  memory             = 5120
   runtime_platform {
-    cpu_architecture = "X86_64"
+    cpu_architecture        = "X86_64"
     operating_system_family = "LINUX"
   }
   container_definitions = jsonencode([
@@ -190,29 +196,40 @@ resource "aws_lb_listener" "obsidian_cloud" {
   }
 }
 
-resource "aws_security_group" "allow_minecraft" {
+resource "aws_security_group" "cluster" {
   name        = join("-", [var.namespace, var.name, var.runtime, "minecraft"])
   description = "Allow inbound minecraft traffic"
   vpc_id      = module.vpc.vpc_id
 }
 
-resource "aws_security_group_rule" "allow_minecraft" {
-  type = "ingress"
-  from_port = var.minecraft_port
-  to_port = var.minecraft_port
-  protocol = "tcp"
-  cidr_blocks = ["0.0.0.0/0"]
-  security_group_id  = aws_security_group.allow_minecraft.id
+resource "aws_security_group_rule" "cluster_ingress" {
+  type              = "ingress"
+  from_port         = 0
+  to_port           = 65535
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.cluster.id
+}
+
+resource "aws_security_group_rule" "cluster_egress" {
+  type              = "egress"
+  from_port         = 0
+  to_port           = 65535
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.cluster.id
 }
 
 resource "aws_ecs_service" "obsidian_cloud" {
   name            = join("-", [var.namespace, var.name, var.runtime, "client"])
   cluster         = aws_ecs_cluster.obsidian_cloud.id
+  launch_type     = "FARGATE"
   task_definition = aws_ecs_task_definition.obsidian_cloud_services.arn
   desired_count   = 1
 
   network_configuration {
-    subnets = module.dynamic_subnets.public_subnet_ids
+    subnets          = module.dynamic_subnets.public_subnet_ids
+    security_groups = [aws_security_group.cluster.id]
     assign_public_ip = true
   }
 
