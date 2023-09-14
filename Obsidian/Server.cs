@@ -5,6 +5,8 @@ using Obsidian.API.Boss;
 using Obsidian.API.Builders;
 using Obsidian.API.Crafting;
 using Obsidian.API.Events;
+using Obsidian.API.Logging;
+using Obsidian.API.Utilities;
 using Obsidian.Commands;
 using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Entities;
@@ -91,9 +93,6 @@ public partial class Server : IServer
     public IWorld DefaultWorld => WorldManager.DefaultWorld;
     public IEnumerable<IPlayer> Players => GetPlayers();
 
-    // TODO: This should be removed. Services should get their own logger.
-    public ILogger Logger => _logger;
-
     /// <summary>
     /// Creates a new instance of <see cref="Server"/>.
     /// </summary>
@@ -103,13 +102,14 @@ public partial class Server : IServer
         ILogger<Server> logger,
         RconServer rconServer)
     {
-        _logger = logger;
+        Config = environment.Configuration;
+        var loggerProvider = new LoggerProvider(Config.LogLevel);
+        _logger = loggerProvider.CreateLogger("Server");
         _logger.LogInformation($"SHA / Version: {VERSION}");
         _cancelTokenSource = CancellationTokenSource.CreateLinkedTokenSource(lifetime.ApplicationStopping);
         _cancelTokenSource.Token.Register(() => _logger.LogWarning("Obsidian is shutting down..."));
         _rconServer = rconServer;
 
-        Config = environment.Configuration;
         Port = Config.Port;
         ServerFolderPath = Directory.GetCurrentDirectory();
 
@@ -377,7 +377,7 @@ public partial class Server : IServer
                 if (throttler.TryGetValue(ip, out var time) && time <= DateTimeOffset.UtcNow)
                 {
                     throttler.Remove(ip, out _);
-                    this.Logger.LogDebug("Removed {ip} from throttler", ip);
+                    _logger.LogDebug("Removed {ip} from throttler", ip);
                 }
             }
 

@@ -2,6 +2,8 @@
 // https://wiki.vg/Map_Format
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
+using Obsidian.API.Logging;
+using Obsidian.API.Utilities;
 using Obsidian.Nbt;
 using Obsidian.Net;
 using Obsidian.Net.Actions.PlayerInfo;
@@ -14,6 +16,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net;
+using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace Obsidian.Entities;
 
@@ -23,6 +26,11 @@ public sealed partial class Player : Living, IPlayer
     private byte containerId = 0;
 
     internal readonly Client client;
+
+    /// <summary>
+    /// Used to log actions caused by the client.
+    /// </summary>
+    protected ILogger Logger { get; private set; }
 
     internal HashSet<int> visiblePlayers = new();
 
@@ -115,6 +123,9 @@ public sealed partial class Player : Living, IPlayer
         Username = username;
         this.client = client;
         EntityId = client.id;
+        var loggerProvider = new LoggerProvider();
+        Logger = loggerProvider.CreateLogger("Player");
+
         Inventory = new Container(9 * 5 + 1, InventoryType.Generic)
         {
             Owner = uuid,
@@ -334,7 +345,7 @@ public sealed partial class Player : Living, IPlayer
         CodecRegistry.TryGetDimension(world.DimensionName, out var codec);
         Debug.Assert(codec is not null); // TODO Handle missing codec
 
-        server.Logger.LogDebug("Loading into world: {}", world.Name);
+        Logger.LogDebug("Loading into world: {}", world.Name);
 
         await client.QueuePacketAsync(new RespawnPacket
         {
@@ -650,12 +661,12 @@ public sealed partial class Player : Living, IPlayer
             {
                 var worldName = persistentDataCompound.GetString("worldName");
 
-                server.Logger.LogInformation($"persistent world: {worldName}");
+                Logger.LogInformation($"persistent world: {worldName}");
 
                 if (loadFromPersistentWorld && server.WorldManager.TryGetWorld(worldName, out var world))
                 {
                     base.world = world;
-                    server.Logger.LogInformation($"Loading from persistent world: {worldName}");
+                    Logger.LogInformation($"Loading from persistent world: {worldName}");
                 }
             }
         }

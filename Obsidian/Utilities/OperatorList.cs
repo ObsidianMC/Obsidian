@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Logging;
 using System.Collections.Immutable;
 using System.IO;
 
@@ -9,6 +10,7 @@ public class OperatorList : IOperatorList
     private List<Operator> ops;
     private readonly List<OperatorRequest> reqs;
     private readonly Server server;
+    private readonly ILogger _logger;
     private string Path => System.IO.Path.Combine(System.IO.Path.Combine(this.server.ServerFolderPath, "config"), "ops.json");
 
     public OperatorList(Server server)
@@ -16,6 +18,8 @@ public class OperatorList : IOperatorList
         this.ops = new List<Operator>();
         this.reqs = new List<OperatorRequest>();
         this.server = server;
+        var loggerProvider = new LoggerProvider();
+        _logger = loggerProvider.CreateLogger("OperatorList");
     }
 
     public async Task InitializeAsync()
@@ -56,7 +60,7 @@ public class OperatorList : IOperatorList
             var req = new OperatorRequest(p);
             reqs.Add(req);
 
-            server.Logger.LogWarning($"New operator request from {p.Username}: {req.Code}");
+            _logger.LogWarning($"New operator request from {p.Username}: {req.Code}");
         }
 
         return result;

@@ -292,7 +292,6 @@ public partial class ClickContainerPacket : IServerboundPacket
         {
             if (Button == 0)
             {
-                server.Logger.LogDebug("Placed: {} in container: {}", player.LastClickedItem?.Type, container.Title?.Text);
                 container.SetItem(slot, player.LastClickedItem);
 
                 player.LastClickedItem = CarriedItem;

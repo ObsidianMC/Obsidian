@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 
 namespace Obsidian.API.Utilities;
-public static class Extensions
+public static partial class Extensions
 {
     public static List<string> GetStateValues(this string key, Dictionary<string, string[]> valueStores)
     {

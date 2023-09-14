@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Obsidian.ConsoleApp.Logging;
+using Obsidian.API.Logging;
+using Obsidian.API.Utilities;
 using Obsidian.Hosting;
-using Obsidian.Utilities;
 
 namespace Obsidian.ConsoleApp;
 

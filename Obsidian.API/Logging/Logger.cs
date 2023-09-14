@@ -1,11 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.API;
-using Obsidian.Utilities;
+using Obsidian.API.Utilities;
 using System.Diagnostics;
 
-namespace Obsidian.ConsoleApp.Logging;
+namespace Obsidian.API.Logging;
 
-public class Logger : ILogger<Server>
+public class Logger : ILogger
 {
     protected static readonly object _lock = new();
 

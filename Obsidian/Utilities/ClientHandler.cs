@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Logging;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -11,10 +12,13 @@ public class ClientHandler
 {
     private ConcurrentDictionary<int, IServerboundPacket> Packets { get; } = new ConcurrentDictionary<int, IServerboundPacket>();
     private ServerConfiguration config;
+    private readonly ILogger _logger;
 
     public ClientHandler(ServerConfiguration config)
     {
         this.config = config;
+        var loggerProvider = new LoggerProvider(LogLevel.Error);
+        _logger = loggerProvider.CreateLogger("ClientHanlder");
     }
 
     public void RegisterHandlers()
@@ -73,84 +77,84 @@ public class ClientHandler
         switch (id)
         {
             case 0x00:
-                await HandleFromPoolAsync<ConfirmTeleportationPacket>(data, client);
+                await HandleFromPoolAsync<ConfirmTeleportationPacket>(data, client, _logger);
                 break;
             case 0x04:
-                await HandleFromPoolAsync<ChatCommandPacket>(data, client);
+                await HandleFromPoolAsync<ChatCommandPacket>(data, client, _logger);
                 break;
             case 0x05:
-                await HandleFromPoolAsync<ChatMessagePacket>(data, client);
+                await HandleFromPoolAsync<ChatMessagePacket>(data, client, _logger);
                 break;
             case 0x06:
-                await HandleFromPoolAsync<PlayerSessionPacket>(data, client);
+                await HandleFromPoolAsync<PlayerSessionPacket>(data, client, _logger);
                 break;
             case 0x07:
-                await HandleFromPoolAsync<ClientCommandPacket>(data, client);
+                await HandleFromPoolAsync<ClientCommandPacket>(data, client, _logger);
                 break;
             case 0x08:
-                await HandleFromPoolAsync<ClientInformationPacket>(data, client);
+                await HandleFromPoolAsync<ClientInformationPacket>(data, client, _logger);
                 break;
             case 0x0A:
-                await HandleFromPoolAsync<ClickContainerButtonPacket>(data, client);
+                await HandleFromPoolAsync<ClickContainerButtonPacket>(data, client, _logger);
                 break;
 
             case 0x0B:
-                await HandleFromPoolAsync<ClickContainerPacket>(data, client);
+                await HandleFromPoolAsync<ClickContainerPacket>(data, client, _logger);
                 break;
 
             case 0x0C:
-                await HandleFromPoolAsync<CloseContainerPacket>(data, client);
+                await HandleFromPoolAsync<CloseContainerPacket>(data, client, _logger);
                 break;
 
             case 0x0D:
-                await HandleFromPoolAsync<PluginMessagePacket>(data, client);
+                await HandleFromPoolAsync<PluginMessagePacket>(data, client, _logger);
                 break;
 
             case 0x10:
-                await HandleFromPoolAsync<InteractPacket>(data, client);
+                await HandleFromPoolAsync<InteractPacket>(data, client, _logger);
                 break;
 
             case 0x12:
-                await HandleFromPoolAsync<KeepAlivePacket>(data, client);
+                await HandleFromPoolAsync<KeepAlivePacket>(data, client, _logger);
                 break;
 
             case 0x1A:
-                await HandleFromPoolAsync<PickItemPacket>(data, client);
+                await HandleFromPoolAsync<PickItemPacket>(data, client, _logger);
                 break;
 
             case 0x1B:
-                await HandleFromPoolAsync<PlaceRecipePacket>(data, client);
+                await HandleFromPoolAsync<PlaceRecipePacket>(data, client, _logger);
                 break;
 
             case 0x1D:
-                await HandleFromPoolAsync<PlayerActionPacket>(data, client);
+                await HandleFromPoolAsync<PlayerActionPacket>(data, client, _logger);
                 break;
 
             case 0x1E:
-                await HandleFromPoolAsync<PlayerCommandPacket>(data, client);
+                await HandleFromPoolAsync<PlayerCommandPacket>(data, client, _logger);
                 break;
 
             case 0x22:
-                await HandleFromPoolAsync<SetSeenRecipePacket>(data, client);
+                await HandleFromPoolAsync<SetSeenRecipePacket>(data, client, _logger);
                 break;
 
             case 0x23:
-                await HandleFromPoolAsync<RenameItemPacket>(data, client);
+                await HandleFromPoolAsync<RenameItemPacket>(data, client, _logger);
                 break;
 
             case 0x2B:
-                await HandleFromPoolAsync<SetCreativeModeSlotPacket>(data, client);
+                await HandleFromPoolAsync<SetCreativeModeSlotPacket>(data, client, _logger);
                 break;
 
             case 0x2F:
-                await HandleFromPoolAsync<SwingArmPacket>(data, client);
+                await HandleFromPoolAsync<SwingArmPacket>(data, client, _logger);
                 break;
 
             case 0x31:
-                await HandleFromPoolAsync<UseItemOnPacket>(data, client);
+                await HandleFromPoolAsync<UseItemOnPacket>(data, client, _logger);
                 break;
             case 0x32:
-                await HandleFromPoolAsync<UseItemPacket>(data, client);
+                await HandleFromPoolAsync<UseItemPacket>(data, client, _logger);
                 break;
 
             default:
@@ -165,13 +169,13 @@ public class ClientHandler
                 catch (Exception e)
                 {
                     if (this.config.VerboseExceptionLogging)
-                        client.Logger.LogError(e.Message + Environment.NewLine + e.StackTrace);
+                        _logger.LogError(e.Message + Environment.NewLine + e.StackTrace);
                 }
                 break;
         }
     }
 
-    private static async Task HandleFromPoolAsync<T>(byte[] data, Client client) where T : IServerboundPacket, new()
+    private static async Task HandleFromPoolAsync<T>(byte[] data, Client client, ILogger logger) where T : IServerboundPacket, new()
     {
         var packet = ObjectPool<T>.Shared.Rent();
         try
@@ -182,7 +186,7 @@ public class ClientHandler
         catch (Exception e)
         {
             if (client.Server.Config.VerboseExceptionLogging)
-                client.Logger.LogError(e.Message + Environment.NewLine + e.StackTrace);
+                logger.LogError(e.Message + Environment.NewLine + e.StackTrace);
         }
         ObjectPool<T>.Shared.Return(packet);
     }

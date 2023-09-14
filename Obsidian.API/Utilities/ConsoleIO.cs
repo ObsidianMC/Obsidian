@@ -1,6 +1,6 @@
 ﻿using System.Threading;
 
-namespace Obsidian.Utilities;
+namespace Obsidian.API.Utilities;
 
 /// <summary>
 /// Allows simultaneous console input and output without breaking user input

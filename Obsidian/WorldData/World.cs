@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Logging;
 using Obsidian.API.Registry.Codecs.Dimensions;
+using Obsidian.API.Utilities;
 using Obsidian.Blocks;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
@@ -50,6 +52,11 @@ public class World : IWorld, IAsyncDisposable
     public string? ParentWorldName { get; private set; }
     private WorldLight worldLight;
 
+    /// <summary>
+    /// Used to log actions caused by the client.
+    /// </summary>
+    protected ILogger Logger { get; private set; }
+
     internal World(string name, Server server, string seed, Type generatorType)
     {
         Name = name ?? throw new ArgumentNullException(nameof(name));
@@ -60,6 +67,8 @@ public class World : IWorld, IAsyncDisposable
         Generator = Activator.CreateInstance(generatorType) as IWorldGenerator ?? throw new ArgumentException("Invalid generator type.", nameof(generatorType));
         Generator.Init(this);
         worldLight = new(this);
+        var loggerProvider = new LoggerProvider();
+        Logger = loggerProvider.CreateLogger("World");
     }
 
     public int GetTotalLoadedEntities() => Regions.Values.Sum(e => e == null ? 0 : e.Entities.Count);
@@ -350,7 +359,7 @@ public class World : IWorld, IAsyncDisposable
             }
             LevelData.RainTime = rainTime;
 
-            Server.Logger.LogInformation($"Toggled rain: {LevelData.Raining} for {LevelData.RainTime} ticks.");
+            Logger.LogInformation($"Toggled rain: {LevelData.Raining} for {LevelData.RainTime} ticks.");
         }
 
         // Gradually increase and decrease rain levels based on
@@ -422,7 +431,7 @@ public class World : IWorld, IAsyncDisposable
         if (levelCompound.TryGetTag("Version", out var tag))
             LevelData.VersionData = tag as NbtCompound;
 
-        Server.Logger.LogInformation($"Loading spawn chunks into memory...");
+        Logger.LogInformation($"Loading spawn chunks into memory...");
         for (int rx = -1; rx < 1; rx++)
             for (int rz = -1; rz < 1; rz++)
                 _ = await LoadRegionAsync(rx, rz);
@@ -795,7 +804,7 @@ public class World : IWorld, IAsyncDisposable
         if (!initialized)
             throw new InvalidOperationException("World hasn't been initialized please call World.Init() before trying to generate the world.");
 
-        Server.Logger.LogInformation($"Generating world... (Config pregeneration size is {Server.Config.PregenerateChunkRange})");
+        Logger.LogInformation($"Generating world... (Config pregeneration size is {Server.Config.PregenerateChunkRange})");
         int pregenerationRange = Server.Config.PregenerateChunkRange;
 
         int regionPregenRange = (pregenerationRange >> Region.CubicRegionSizeShift) + 1;
@@ -863,7 +872,7 @@ public class World : IWorld, IAsyncDisposable
 
                         var worldPos = new VectorF(bx + 0.5f + (chunk.X * 16), by + 1, bz + 0.5f + (chunk.Z * 16));
                         LevelData.SpawnPosition = worldPos;
-                        Server.Logger.LogInformation($"World Spawn set to {worldPos}");
+                        Logger.LogInformation($"World Spawn set to {worldPos}");
 
                         // Should spawn be far from (0,0), queue up chunks in generation range.
                         // Just feign a request for a chunk and if it doesn't exist, it'll get queued for gen.
@@ -880,7 +889,7 @@ public class World : IWorld, IAsyncDisposable
                 }
             }
         }
-        Server.Logger.LogWarning($"Failed to set World Spawn.");
+        Logger.LogWarning($"Failed to set World Spawn.");
     }
 
     internal bool TryAddEntity(Entity entity)
