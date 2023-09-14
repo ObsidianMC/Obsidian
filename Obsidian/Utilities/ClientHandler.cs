@@ -77,84 +77,84 @@ public class ClientHandler
         switch (id)
         {
             case 0x00:
-                await HandleFromPoolAsync<ConfirmTeleportationPacket>(data, client, _logger);
+                await HandleFromPoolAsync<ConfirmTeleportationPacket>(data, client);
                 break;
             case 0x04:
-                await HandleFromPoolAsync<ChatCommandPacket>(data, client, _logger);
+                await HandleFromPoolAsync<ChatCommandPacket>(data, client);
                 break;
             case 0x05:
-                await HandleFromPoolAsync<ChatMessagePacket>(data, client, _logger);
+                await HandleFromPoolAsync<ChatMessagePacket>(data, client);
                 break;
             case 0x06:
-                await HandleFromPoolAsync<PlayerSessionPacket>(data, client, _logger);
+                await HandleFromPoolAsync<PlayerSessionPacket>(data, client);
                 break;
             case 0x07:
-                await HandleFromPoolAsync<ClientCommandPacket>(data, client, _logger);
+                await HandleFromPoolAsync<ClientCommandPacket>(data, client);
                 break;
             case 0x08:
-                await HandleFromPoolAsync<ClientInformationPacket>(data, client, _logger);
+                await HandleFromPoolAsync<ClientInformationPacket>(data, client);
                 break;
             case 0x0A:
-                await HandleFromPoolAsync<ClickContainerButtonPacket>(data, client, _logger);
+                await HandleFromPoolAsync<ClickContainerButtonPacket>(data, client);
                 break;
 
             case 0x0B:
-                await HandleFromPoolAsync<ClickContainerPacket>(data, client, _logger);
+                await HandleFromPoolAsync<ClickContainerPacket>(data, client);
                 break;
 
             case 0x0C:
-                await HandleFromPoolAsync<CloseContainerPacket>(data, client, _logger);
+                await HandleFromPoolAsync<CloseContainerPacket>(data, client);
                 break;
 
             case 0x0D:
-                await HandleFromPoolAsync<PluginMessagePacket>(data, client, _logger);
+                await HandleFromPoolAsync<PluginMessagePacket>(data, client);
                 break;
 
             case 0x10:
-                await HandleFromPoolAsync<InteractPacket>(data, client, _logger);
+                await HandleFromPoolAsync<InteractPacket>(data, client);
                 break;
 
             case 0x12:
-                await HandleFromPoolAsync<KeepAlivePacket>(data, client, _logger);
+                await HandleFromPoolAsync<KeepAlivePacket>(data, client);
                 break;
 
             case 0x1A:
-                await HandleFromPoolAsync<PickItemPacket>(data, client, _logger);
+                await HandleFromPoolAsync<PickItemPacket>(data, client);
                 break;
 
             case 0x1B:
-                await HandleFromPoolAsync<PlaceRecipePacket>(data, client, _logger);
+                await HandleFromPoolAsync<PlaceRecipePacket>(data, client);
                 break;
 
             case 0x1D:
-                await HandleFromPoolAsync<PlayerActionPacket>(data, client, _logger);
+                await HandleFromPoolAsync<PlayerActionPacket>(data, client);
                 break;
 
             case 0x1E:
-                await HandleFromPoolAsync<PlayerCommandPacket>(data, client, _logger);
+                await HandleFromPoolAsync<PlayerCommandPacket>(data, client);
                 break;
 
             case 0x22:
-                await HandleFromPoolAsync<SetSeenRecipePacket>(data, client, _logger);
+                await HandleFromPoolAsync<SetSeenRecipePacket>(data, client);
                 break;
 
             case 0x23:
-                await HandleFromPoolAsync<RenameItemPacket>(data, client, _logger);
+                await HandleFromPoolAsync<RenameItemPacket>(data, client);
                 break;
 
             case 0x2B:
-                await HandleFromPoolAsync<SetCreativeModeSlotPacket>(data, client, _logger);
+                await HandleFromPoolAsync<SetCreativeModeSlotPacket>(data, client);
                 break;
 
             case 0x2F:
-                await HandleFromPoolAsync<SwingArmPacket>(data, client, _logger);
+                await HandleFromPoolAsync<SwingArmPacket>(data, client);
                 break;
 
             case 0x31:
-                await HandleFromPoolAsync<UseItemOnPacket>(data, client, _logger);
+                await HandleFromPoolAsync<UseItemOnPacket>(data, client);
                 break;
             case 0x32:
-                await HandleFromPoolAsync<UseItemPacket>(data, client, _logger);
+                await HandleFromPoolAsync<UseItemPacket>(data, client);
                 break;
 
             default:
@@ -175,7 +175,7 @@ public class ClientHandler
         }
     }
 
-    private static async Task HandleFromPoolAsync<T>(byte[] data, Client client, ILogger logger) where T : IServerboundPacket, new()
+    private async Task HandleFromPoolAsync<T>(byte[] data, Client client) where T : IServerboundPacket, new()
     {
         var packet = ObjectPool<T>.Shared.Rent();
         try
@@ -186,7 +186,7 @@ public class ClientHandler
         catch (Exception e)
         {
             if (client.Server.Config.VerboseExceptionLogging)
-                logger.LogError(e.Message + Environment.NewLine + e.StackTrace);
+                _logger.LogError(e.Message + Environment.NewLine + e.StackTrace);
         }
         ObjectPool<T>.Shared.Return(packet);
     }
