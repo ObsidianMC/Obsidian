@@ -1,4 +1,4 @@
-﻿namespace Obsidian.Utilities;
+﻿namespace Obsidian.API.Utilities;
 
 public static partial class Extensions
 {

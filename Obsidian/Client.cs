@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
+using Obsidian.API.Logging;
+using Obsidian.API.Utilities;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
@@ -148,7 +150,7 @@ public sealed class Client : IDisposable
     /// <summary>
     /// Used to log actions caused by the client.
     /// </summary>
-    public ILogger Logger => Server.Logger;
+    protected ILogger Logger { get; private set; }
 
     /// <summary>
     /// The player that the client is logged in as.
@@ -169,6 +171,9 @@ public sealed class Client : IDisposable
     {
         this.connectionContext = connectionContext;
         this.config = config;
+        var loggerProvider = new LoggerProvider(config.LogLevel);
+        Logger = loggerProvider.CreateLogger("Client");
+
         id = playerId;
         Server = originServer;
 
@@ -575,7 +580,7 @@ public sealed class Client : IDisposable
     {
         if (!missedKeepAlives.Contains(keepAlive.KeepAliveId))
         {
-            Server.Logger.LogWarning($"Received invalid KeepAlive from {Player.Username}?? Naughty???? ({Player.Uuid})");
+            Logger.LogWarning($"Received invalid KeepAlive from {Player.Username}?? Naughty???? ({Player.Uuid})");
             DisconnectAsync(ChatMessage.Simple("Kicked for invalid KeepAlive."));
             return;
         }

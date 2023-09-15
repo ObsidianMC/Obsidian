@@ -2,6 +2,7 @@
 using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registry.Codecs.Dimensions;
+using Obsidian.API.Utilities;
 using Obsidian.Commands;
 using Obsidian.Entities;
 using Obsidian.Nbt;
@@ -12,7 +13,6 @@ using Obsidian.Net.WindowProperties;
 using Obsidian.Registries;
 using Obsidian.Serialization.Attributes;
 using System.Buffers.Binary;
-using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Obsidian.Net;

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Logging;
 
 namespace Obsidian;
 
@@ -19,8 +20,10 @@ public sealed class ScoreboardManager : IScoreboardManager
 
     public IScoreboard CreateScoreboard(string name)
     {
+        var loggerProvider = new LoggerProvider(LogLevel.Warning);
+        var logger = loggerProvider.CreateLogger("ScoreboardManager");
         if (!this.scoreboards.Add(name))
-            this.server.Logger.LogWarning($"Scoreboard with the name: {name} already exists. This might cause some issues and override already existing scoreboards displaying on clients.");
+            logger.LogWarning($"Scoreboard with the name: {name} already exists. This might cause some issues and override already existing scoreboards displaying on clients.");
 
         return new Scoreboard(name, this.server);
     }

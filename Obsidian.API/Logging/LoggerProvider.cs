@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 
-namespace Obsidian.ConsoleApp.Logging;
+namespace Obsidian.API.Logging;
 
-public sealed class LoggerProvider : ILoggerProvider
+public class LoggerProvider : ILoggerProvider
 {
     private ConcurrentDictionary<string, Logger> loggers = new();
 
@@ -11,7 +11,7 @@ public sealed class LoggerProvider : ILoggerProvider
 
     private bool disposed = false;
 
-    internal LoggerProvider(LogLevel minLevel = LogLevel.Information)
+    public LoggerProvider(LogLevel minLevel = LogLevel.Information)
     {
         MinimumLevel = minLevel;
     }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Logging;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -11,10 +12,13 @@ public class ClientHandler
 {
     private ConcurrentDictionary<int, IServerboundPacket> Packets { get; } = new ConcurrentDictionary<int, IServerboundPacket>();
     private ServerConfiguration config;
+    private readonly ILogger _logger;
 
     public ClientHandler(ServerConfiguration config)
     {
         this.config = config;
+        var loggerProvider = new LoggerProvider(LogLevel.Error);
+        _logger = loggerProvider.CreateLogger("ClientHanlder");
     }
 
     public void RegisterHandlers()
@@ -165,13 +169,13 @@ public class ClientHandler
                 catch (Exception e)
                 {
                     if (this.config.VerboseExceptionLogging)
-                        client.Logger.LogError(e.Message + Environment.NewLine + e.StackTrace);
+                        _logger.LogError(e.Message + Environment.NewLine + e.StackTrace);
                 }
                 break;
         }
     }
 
-    private static async Task HandleFromPoolAsync<T>(byte[] data, Client client) where T : IServerboundPacket, new()
+    private async Task HandleFromPoolAsync<T>(byte[] data, Client client) where T : IServerboundPacket, new()
     {
         var packet = ObjectPool<T>.Shared.Rent();
         try
@@ -182,7 +186,7 @@ public class ClientHandler
         catch (Exception e)
         {
             if (client.Server.Config.VerboseExceptionLogging)
-                client.Logger.LogError(e.Message + Environment.NewLine + e.StackTrace);
+                _logger.LogError(e.Message + Environment.NewLine + e.StackTrace);
         }
         ObjectPool<T>.Shared.Return(packet);
     }

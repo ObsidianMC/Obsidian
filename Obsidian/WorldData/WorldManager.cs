@@ -50,7 +50,7 @@ public sealed class WorldManager : IAsyncDisposable
                 {
                     if (!CodecRegistry.TryGetDimension(dimensionName, out var codec))
                     {
-                        this.server.Logger.LogWarning($"Failed to find dimension with the name {dimensionName}");
+                        logger.LogWarning($"Failed to find dimension with the name {dimensionName}");
                         continue;
                     }
 

@@ -4,7 +4,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
-namespace Obsidian.Utilities;
+namespace Obsidian.API.Utilities;
 
 public static partial class Extensions
 {
