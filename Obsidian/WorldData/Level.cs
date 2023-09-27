@@ -3,7 +3,7 @@ using Obsidian.Nbt;
 namespace Obsidian.WorldData;
 
 /// <summary>
-/// https://minecraft.gamepedia.com/Java_Edition_level_format
+/// https://minecraft.wiki/w/Java_Edition_level_format
 /// </summary>
 public sealed class Level
 {

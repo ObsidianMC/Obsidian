@@ -9,7 +9,7 @@ public struct BlockMeta
 
     public IReadOnlyList<string> CanPlaceOn { get; internal set; }
 
-    // https://minecraft.gamepedia.com/Chunk_format#Block_entity_format
+    // https://minecraft.wiki/w/Chunk_format#Block_entity_format
     public NbtCompound BlockEntityTag { get; internal set; }
     public NbtCompound BlockStateTag { get; internal set; }
 }
