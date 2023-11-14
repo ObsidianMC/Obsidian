@@ -1,4 +1,6 @@
-﻿namespace Obsidian.SourceGenerators.Registry;
+﻿using System.Text.Json;
+
+namespace Obsidian.SourceGenerators.Registry;
 
 internal static class NameHelper
 {

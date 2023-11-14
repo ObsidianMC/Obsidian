@@ -36,7 +36,9 @@ internal sealed class Assets
             { "dimensions", ParseCodec(files.GetJsonFromArray("dimensions")) },
             { "biomes", ParseCodec(files.GetJsonFromArray("biomes")) },
             { "chat_type", ParseCodec(files.GetJsonFromArray("chat_type")) },
-            { "damage_type", ParseCodec(files.GetJsonFromArray("damage_type")) }
+            { "damage_type", ParseCodec(files.GetJsonFromArray("damage_type")) },
+            { "trim_pattern", ParseCodec(files.GetJsonFromArray("trim_pattern")) },
+            { "trim_material", ParseCodec(files.GetJsonFromArray("trim_material")) }
         };
     }
 
