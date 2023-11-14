@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Logging;
 using Obsidian.Net.Packets;
+using Obsidian.Net.Packets.Configuration;
 using Obsidian.Net.Packets.Configuration.Serverbound;
 using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Clientbound;

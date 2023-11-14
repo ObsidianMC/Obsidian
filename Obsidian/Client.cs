@@ -9,6 +9,7 @@ using Obsidian.Events.EventArgs;
 using Obsidian.Net;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets;
+using Obsidian.Net.Packets.Configuration;
 using Obsidian.Net.Packets.Configuration.Clientbound;
 using Obsidian.Net.Packets.Handshaking;
 using Obsidian.Net.Packets.Login;
@@ -299,7 +300,10 @@ public sealed class Client : IDisposable
                         case 0x02:
                             // Login Plugin Response
                             break;
-
+                        case 0x03:
+                            //Login Acknowledged
+                            await this.ConfigureAsync();
+                            break;
                         default:
                             Logger.LogError("Client in state Login tried to send an unimplemented packet. Forcing it to disconnect.");
                             await DisconnectAsync("Unknown Packet Id.");
@@ -341,6 +345,17 @@ public sealed class Client : IDisposable
         Disconnected?.Invoke(this);
         this.Dispose();//Dispose client after
     }
+
+    private async Task ConfigureAsync()
+    {
+        this.State = ClientState.Configuration;
+
+        await this.QueuePacketAsync(RegistryDataPacket.Default);
+        await this.QueuePacketAsync(UpdateTagsPacket.FromRegistry);
+
+        this.SendPacket(FinishConfigurationPacket.Default);
+    }
+
 
     private async Task HandleServerStatusRequestAsync()
     {
@@ -436,8 +451,10 @@ public sealed class Client : IDisposable
         {
             Player = new Player(GuidHelper.FromStringHash($"OfflinePlayer:{username}"), username, this, world);
 
-            //Switch to configuration stage
-            this.State = ClientState.Configuration;
+            this.SendPacket(new LoginSuccess(Player.Uuid, Player.Username)
+            {
+                SkinProperties = this.Player.SkinProperties,
+            });
         }
     }
 
@@ -477,9 +494,10 @@ public sealed class Client : IDisposable
         EncryptionEnabled = true;
         minecraftStream = new EncryptedMinecraftStream(networkStream, sharedKey);
 
-        // TODO: Fix compression
-        //await this.SetCompression();
-        this.State = ClientState.Configuration;
+        this.SendPacket(new LoginSuccess(Player.Uuid, Player.Username)
+        {
+            SkinProperties = this.Player.SkinProperties,
+        });
     }
 
     // TODO fix compression now????
@@ -495,10 +513,7 @@ public sealed class Client : IDisposable
         if (Player is null)
             throw new UnreachableException("Player is null, which means the client has not yet logged in.");
 
-        await QueuePacketAsync(new LoginSuccess(Player.Uuid, Player.Username)
-        {
-            SkinProperties = this.Player.SkinProperties,
-        });
+       
 
         Logger.LogDebug("Sent Login success to user {Username} {UUID}", Player.Username, Player.Uuid);
 
@@ -527,7 +542,7 @@ public sealed class Client : IDisposable
         });
 
         await SendServerBrand();
-        await QueuePacketAsync(UpdateTagsPacket.FromRegistry);
+       
         await SendCommandsAsync();
 
         await QueuePacketAsync(UpdateRecipesPacket.FromRegistry);

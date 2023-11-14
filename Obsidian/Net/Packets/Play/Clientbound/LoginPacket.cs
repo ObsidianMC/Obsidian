@@ -1,12 +1,6 @@
-﻿using Obsidian.API.Registry.Codecs;
-using Obsidian.API.Registry.Codecs.Biomes;
-using Obsidian.API.Registry.Codecs.Chat;
-using Obsidian.API.Registry.Codecs.Dimensions;
-using Obsidian.Serialization.Attributes;
+﻿using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
-
-public sealed class MixedCodec { }
 
 public partial class LoginPacket : IClientboundPacket
 {

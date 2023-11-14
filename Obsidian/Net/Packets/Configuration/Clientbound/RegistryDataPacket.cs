@@ -1,11 +1,15 @@
 ﻿using Obsidian.Nbt;
+using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Configuration.Clientbound;
-public sealed class RegistryDataPacket : IClientboundPacket
+public sealed partial class RegistryDataPacket : IClientboundPacket
 {
-    public int Id => 0x05;
+    public static RegistryDataPacket Default { get; } = new();
 
-    public required NbtCompound RegistryCodec { get; init; }
+    [Field(0)]
+    public MixedCodec Codec { get; init; } = new();
+
+    public int Id => 0x05;
 
     public void Serialize(MinecraftStream stream)
     {
