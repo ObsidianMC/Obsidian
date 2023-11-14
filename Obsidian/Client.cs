@@ -513,8 +513,6 @@ public sealed class Client : IDisposable
         if (Player is null)
             throw new UnreachableException("Player is null, which means the client has not yet logged in.");
 
-       
-
         Logger.LogDebug("Sent Login success to user {Username} {UUID}", Player.Username, Player.Uuid);
 
         this.State = ClientState.Play;
@@ -532,7 +530,6 @@ public sealed class Client : IDisposable
             EntityId = id,
             Gamemode = Player.Gamemode,
             DimensionNames = CodecRegistry.Dimensions.All.Keys.ToList(),
-            Codecs = new(),
             DimensionType = codec.Name,
             DimensionName = codec.Name,
             HashedSeed = 0,
@@ -542,10 +539,8 @@ public sealed class Client : IDisposable
         });
 
         await SendServerBrand();
-       
-        await SendCommandsAsync();
 
-        await QueuePacketAsync(UpdateRecipesPacket.FromRegistry);
+        await SendCommandsAsync();
 
         await QueuePacketAsync(new UpdateRecipeBookPacket
         {
