@@ -131,7 +131,7 @@ public sealed class Client : IDisposable
     /// <summary>
     /// Which state of the protocol the client is currently in.
     /// </summary>
-    public ClientState State { get; private set; } = ClientState.Handshaking;
+    public ClientState State { get; internal set; } = ClientState.Handshaking;
 
     /// <summary>
     /// Which chunks the player should have loaded around them.
@@ -240,6 +240,8 @@ public sealed class Client : IDisposable
             if (State == ClientState.Play && data.Length < 1)
                 Disconnect();
 
+            var packetReceivedEventArgs = new PacketReceivedEventArgs(Player, id, data);
+
             switch (State)
             {
                 case ClientState.Status: // Server ping/list
@@ -304,16 +306,23 @@ public sealed class Client : IDisposable
                             break;
                     }
                     break;
-
-                case ClientState.Play:
+                case ClientState.Configuration:
                     Debug.Assert(Player is not null);
-                    var packetReceivedEventArgs = new PacketReceivedEventArgs(Player, id, data);
+
                     await Server.Events.PacketReceived.InvokeAsync(packetReceivedEventArgs);
 
                     if (!packetReceivedEventArgs.IsCancelled)
-                    {
+                        await this.handler.HandleConfigurationPackets(id, data, this);
+
+                    break;
+                case ClientState.Play:
+                    Debug.Assert(Player is not null);
+
+                    await Server.Events.PacketReceived.InvokeAsync(packetReceivedEventArgs);
+
+                    if (!packetReceivedEventArgs.IsCancelled)
                         await handler.HandlePlayPackets(id, data, this);
-                    }
+
                     break;
                 case ClientState.Closed:
                 default:

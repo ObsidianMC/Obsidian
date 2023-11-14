@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.CodeAnalysis.Operations;
+using Microsoft.Extensions.Logging;
 using Obsidian.API.Logging;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Configuration.Serverbound;
@@ -77,7 +78,23 @@ public class ClientHandler
     {
         switch (id)
         {
-
+            case 0x00:
+                await HandleFromPoolAsync<ClientInformationPacket>(data, client);
+                break;
+            case 0x01:
+                await HandleFromPoolAsync<PluginMessagePacket>(data, client);
+                break;
+            case 0x02:
+                await HandleFromPoolAsync<FinishConfigurationPacket>(data, client);
+                break;
+            case 0x03:
+                await HandleFromPoolAsync<KeepAlivePacket>(data, client);
+                break;
+            case 0x04://pong useless
+                break;
+            case 0x05:
+                await HandleFromPoolAsync<ResourcePackResponse>(data, client);
+                break;
             default:
             {
                 if (!Packets.TryGetValue(id, out var packet))
@@ -186,7 +203,7 @@ public class ClientHandler
                 try
                 {
                     packet.Populate(data);
-                    await packet.HandleAsync(client.Server, client.Player);
+                    await packet.HandleAsync(client.Server, client.Player!);
                 }
                 catch (Exception e)
                 {
