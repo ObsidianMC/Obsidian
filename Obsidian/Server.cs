@@ -64,7 +64,7 @@ public partial class Server : IServer
     private readonly ILogger _logger;
 
     private IConnectionListener? _tcpListener;
-    
+
     public ProtocolVersion Protocol => DefaultProtocol;
 
     public int Tps { get; private set; }
@@ -622,7 +622,7 @@ public partial class Server : IServer
                     Yaw = 0,
                     Data = 1,
                     Velocity = Velocity.FromVector(new VectorF(
-                        Globals.Random.NextFloat() * 0.5f, 
+                        Globals.Random.NextFloat() * 0.5f,
                         Globals.Random.NextFloat() * 0.5f,
                         Globals.Random.NextFloat() * 0.5f))
                 });
@@ -640,12 +640,12 @@ public partial class Server : IServer
     public async Task StopAsync()
     {
         _cancelTokenSource.Cancel();
-        
+
         if (_tcpListener is not null)
         {
             await _tcpListener.UnbindAsync();
         }
-        
+
         WorldGenerators.Clear();
         foreach (var client in _clients)
         {
@@ -689,7 +689,7 @@ public partial class Server : IServer
                 {
                     var keepAliveTime = DateTimeOffset.Now;
 
-                    foreach (var client in _clients.Where(x => x.State == ClientState.Play))
+                    foreach (var client in _clients.Where(x => x.State == ClientState.Play || x.State == ClientState.Configuration))
                         client.SendKeepAlive(keepAliveTime);
 
                     keepAliveTicks = 0;

@@ -416,7 +416,6 @@ public sealed class Client : IDisposable
             }
 
             Player = new Player(loginStart.PlayerUuid ?? this.cachedUser.Id, loginStart.Username, this, world);
-
             packetCryptography.GenerateKeyPair();
 
             var (publicKey, randomToken) = packetCryptography.GeneratePublicKeyAndToken();
@@ -437,9 +436,8 @@ public sealed class Client : IDisposable
         {
             Player = new Player(GuidHelper.FromStringHash($"OfflinePlayer:{username}"), username, this, world);
 
-            // TODO: Compression, .net 6 (see method below)
-            //await this.SetCompression();
-            await ConnectAsync();
+            //Switch to configuration stage
+            this.State = ClientState.Configuration;
         }
     }
 
@@ -481,10 +479,10 @@ public sealed class Client : IDisposable
 
         // TODO: Fix compression
         //await this.SetCompression();
-        await ConnectAsync();
+        this.State = ClientState.Configuration;
     }
 
-    // TODO fix compression (.net 6)
+    // TODO fix compression now????
     private void SetCompression()
     {
         SendPacket(new SetCompression(CompressionThreshold));
@@ -492,12 +490,10 @@ public sealed class Client : IDisposable
         Logger.LogDebug("Compression has been enabled.");
     }
 
-    private async Task ConnectAsync()
+    internal async Task ConnectAsync()
     {
         if (Player is null)
-        {
-            throw new InvalidOperationException("Player is null, which means the client has not yet logged in.");
-        }
+            throw new UnreachableException("Player is null, which means the client has not yet logged in.");
 
         await QueuePacketAsync(new LoginSuccess(Player.Uuid, Player.Username)
         {
@@ -506,7 +502,7 @@ public sealed class Client : IDisposable
 
         Logger.LogDebug("Sent Login success to user {Username} {UUID}", Player.Username, Player.Uuid);
 
-        State = ClientState.Play;
+        this.State = ClientState.Play;
         await Player.LoadAsync();
         if (!Server.OnlinePlayers.TryAdd(Player.Uuid, Player))
         {
@@ -617,27 +613,15 @@ public sealed class Client : IDisposable
             return;
         }
 
-        Logger.LogDebug($"Doing KeepAlive ({keepAliveId}) with {Player.Username} ({Player.Uuid})");
+        Logger.LogDebug("Doing KeepAlive ({keepAliveId}) with {Username} ({Uuid})", keepAliveId, Player.Username, Player.Uuid);
         // now that all is fine and dandy, we'd be fine to enqueue the new keepalive
-        SendPacket(new KeepAlivePacket(keepAliveId));
+        SendPacket(new KeepAlivePacket(keepAliveId)
+        {
+            Id = this.State == ClientState.Configuration ? 0x03 : 0x24
+        });
         missedKeepAlives.Add(keepAliveId);
 
         // TODO: reimplement this? probably in KeepAlivePacket:HandleAsync ⬇️
-
-        //// Sending ping change in background
-        //await Task.Run(async delegate ()
-        //{
-        //    foreach (Client client in OriginServer.Clients.Where(c => c.IsPlaying))
-        //    {
-        //        await PacketHandler.CreateAsync(new PlayerInfo(2, new List<PlayerInfoAction>()
-        //        {
-        //            new PlayerInfoUpdatePingAction()
-        //            {
-        //                Ping = this.Ping
-        //            }
-        //        }), this.MinecraftStream);
-        //    }
-        //}).ConfigureAwait(false);
     }
 
     internal Task SendCommandsAsync() => QueuePacketAsync(CommandsRegistry.Packet);
