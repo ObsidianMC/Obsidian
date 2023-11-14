@@ -1,12 +1,13 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Logging;
 using Obsidian.Net.Packets;
+using Obsidian.Net.Packets.Configuration.Serverbound;
 using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Utilities.Collections;
 
-namespace Obsidian;
+namespace Obsidian.Net;
 
 public class ClientHandler
 {
@@ -72,6 +73,32 @@ public class ClientHandler
         Packets.TryAdd(0x32, new UseItemPacket());
     }
 
+    public async Task HandleConfigurationPackets(int id, byte[] data, Client client)
+    {
+        switch (id)
+        {
+
+            default:
+            {
+                if (!Packets.TryGetValue(id, out var packet))
+                    return;
+
+                try
+                {
+                    packet.Populate(data);
+                    await packet.HandleAsync(client.Server, client.Player);
+                }
+                catch (Exception e)
+                {
+                    if (config.VerboseExceptionLogging)
+                        _logger.LogError(e, e.Message);
+                }
+
+                break;
+            }
+        }
+    }
+
     public async Task HandlePlayPackets(int id, byte[] data, Client client)
     {
         switch (id)
@@ -97,19 +124,15 @@ public class ClientHandler
             case 0x0A:
                 await HandleFromPoolAsync<ClickContainerButtonPacket>(data, client);
                 break;
-
             case 0x0B:
                 await HandleFromPoolAsync<ClickContainerPacket>(data, client);
                 break;
-
             case 0x0C:
                 await HandleFromPoolAsync<CloseContainerPacket>(data, client);
                 break;
-
             case 0x0D:
                 await HandleFromPoolAsync<PluginMessagePacket>(data, client);
                 break;
-
             case 0x10:
                 await HandleFromPoolAsync<InteractPacket>(data, client);
                 break;
@@ -156,7 +179,6 @@ public class ClientHandler
             case 0x32:
                 await HandleFromPoolAsync<UseItemPacket>(data, client);
                 break;
-
             default:
                 if (!Packets.TryGetValue(id, out var packet))
                     return;
@@ -168,8 +190,8 @@ public class ClientHandler
                 }
                 catch (Exception e)
                 {
-                    if (this.config.VerboseExceptionLogging)
-                        _logger.LogError(e.Message + Environment.NewLine + e.StackTrace);
+                    if (config.VerboseExceptionLogging)
+                        _logger.LogError(e, e.Message);
                 }
                 break;
         }
@@ -181,12 +203,12 @@ public class ClientHandler
         try
         {
             packet.Populate(data);
-            await packet.HandleAsync(client.Server, client.Player);
+            await packet.HandleAsync(client.Server, client.Player!);
         }
         catch (Exception e)
         {
             if (client.Server.Config.VerboseExceptionLogging)
-                _logger.LogError(e.Message + Environment.NewLine + e.StackTrace);
+                _logger.LogError(e, "{message}", e.Message);
         }
         ObjectPool<T>.Shared.Return(packet);
     }
