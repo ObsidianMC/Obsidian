@@ -10,7 +10,7 @@
           "translate": "trim_pattern.minecraft.coast"
         },
         "asset_id": "minecraft:coast",
-        "decal": 0
+        "decal": false
       }
     },
     {
@@ -22,7 +22,7 @@
           "translate": "trim_pattern.minecraft.dune"
         },
         "asset_id": "minecraft:dune",
-        "decal": 0
+        "decal": false
       }
     },
     {
@@ -34,7 +34,7 @@
           "translate": "trim_pattern.minecraft.eye"
         },
         "asset_id": "minecraft:eye",
-        "decal": 0
+        "decal": false
       }
     },
     {
@@ -46,7 +46,7 @@
           "translate": "trim_pattern.minecraft.host"
         },
         "asset_id": "minecraft:host",
-        "decal": 0
+        "decal": false
       }
     },
     {
@@ -58,7 +58,7 @@
           "translate": "trim_pattern.minecraft.raiser"
         },
         "asset_id": "minecraft:raiser",
-        "decal": 0
+        "decal": false
       }
     },
     {
@@ -70,7 +70,7 @@
           "translate": "trim_pattern.minecraft.rib"
         },
         "asset_id": "minecraft:rib",
-        "decal": 0
+        "decal": false
       }
     },
     {
@@ -82,7 +82,7 @@
           "translate": "trim_pattern.minecraft.sentry"
         },
         "asset_id": "minecraft:sentry",
-        "decal": 0
+        "decal": false
       }
     },
     {
@@ -94,7 +94,7 @@
           "translate": "trim_pattern.minecraft.shaper"
         },
         "asset_id": "minecraft:shaper",
-        "decal": 0
+        "decal": false
       }
     },
     {
@@ -106,7 +106,7 @@
           "translate": "trim_pattern.minecraft.silence"
         },
         "asset_id": "minecraft:silence",
-        "decal": 0
+        "decal": false
       }
     },
     {
@@ -118,7 +118,7 @@
           "translate": "trim_pattern.minecraft.snout"
         },
         "asset_id": "minecraft:snout",
-        "decal": 0
+        "decal": false
       }
     },
     {
@@ -130,7 +130,7 @@
           "translate": "trim_pattern.minecraft.spire"
         },
         "asset_id": "minecraft:spire",
-        "decal": 0
+        "decal": false
       }
     },
     {
@@ -142,7 +142,7 @@
           "translate": "trim_pattern.minecraft.tide"
         },
         "asset_id": "minecraft:tide",
-        "decal": 0
+        "decal": false
       }
     },
     {
@@ -154,7 +154,7 @@
           "translate": "trim_pattern.minecraft.vex"
         },
         "asset_id": "minecraft:vex",
-        "decal": 0
+        "decal": false
       }
     },
     {
@@ -166,7 +166,7 @@
           "translate": "trim_pattern.minecraft.ward"
         },
         "asset_id": "minecraft:ward",
-        "decal": 0
+        "decal": false
       }
     },
     {
@@ -178,7 +178,7 @@
           "translate": "trim_pattern.minecraft.wayfinder"
         },
         "asset_id": "minecraft:wayfinder",
-        "decal": 0
+        "decal": false
       }
     },
     {
@@ -190,7 +190,7 @@
           "translate": "trim_pattern.minecraft.wild"
         },
         "asset_id": "minecraft:wild",
-        "decal": 0
+        "decal": false
       }
     }
   ]

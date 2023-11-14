@@ -49,7 +49,7 @@
           "translation_key": "commands.message.display.incoming",
           "style": {
             "color": "gray",
-            "italic": 1
+            "italic": true
           },
           "parameters": [
             "sender",
@@ -73,7 +73,7 @@
           "translation_key": "commands.message.display.outgoing",
           "style": {
             "color": "gray",
-            "italic": 1
+            "italic": true
           },
           "parameters": [
             "target",

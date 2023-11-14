@@ -7,7 +7,7 @@
       "element": {
         "effects": {
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.overworld.badlands",
             "min_delay": 12000
@@ -25,7 +25,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 0,
+        "has_precipitation": false,
         "temperature": 2.0,
         "downfall": 0.0
       }
@@ -36,7 +36,7 @@
       "element": {
         "effects": {
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.overworld.bamboo_jungle",
             "min_delay": 12000
@@ -52,7 +52,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.95,
         "downfall": 0.9
       }
@@ -63,7 +63,7 @@
       "element": {
         "effects": {
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.nether.basalt_deltas",
             "min_delay": 12000
@@ -90,7 +90,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 0,
+        "has_precipitation": false,
         "temperature": 2.0,
         "downfall": 0.0
       }
@@ -111,7 +111,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.8,
         "downfall": 0.4
       }
@@ -122,7 +122,7 @@
       "element": {
         "effects": {
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.overworld.forest",
             "min_delay": 12000
@@ -138,7 +138,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.6,
         "downfall": 0.6
       }
@@ -149,7 +149,7 @@
       "element": {
         "effects": {
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.overworld.cherry_grove",
             "min_delay": 12000
@@ -167,7 +167,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.5,
         "downfall": 0.8
       }
@@ -188,7 +188,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.5,
         "downfall": 0.5
       }
@@ -199,7 +199,7 @@
       "element": {
         "effects": {
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.nether.crimson_forest",
             "min_delay": 12000
@@ -226,7 +226,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 0,
+        "has_precipitation": false,
         "temperature": 2.0,
         "downfall": 0.0
       }
@@ -238,7 +238,7 @@
         "effects": {
           "grass_color_modifier": "dark_forest",
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.overworld.forest",
             "min_delay": 12000
@@ -254,7 +254,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.7,
         "downfall": 0.8
       }
@@ -275,7 +275,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.5,
         "downfall": 0.5
       }
@@ -286,7 +286,7 @@
       "element": {
         "effects": {
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.overworld.deep_dark",
             "min_delay": 12000
@@ -302,7 +302,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.8,
         "downfall": 0.4
       }
@@ -323,7 +323,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.5,
         "downfall": 0.5,
         "temperature_modifier": "frozen"
@@ -345,7 +345,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.5,
         "downfall": 0.5
       }
@@ -366,7 +366,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.5,
         "downfall": 0.5
       }
@@ -377,7 +377,7 @@
       "element": {
         "effects": {
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.overworld.desert",
             "min_delay": 12000
@@ -393,7 +393,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 0,
+        "has_precipitation": false,
         "temperature": 2.0,
         "downfall": 0.0
       }
@@ -404,7 +404,7 @@
       "element": {
         "effects": {
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.overworld.dripstone_caves",
             "min_delay": 12000
@@ -420,7 +420,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.8,
         "downfall": 0.4
       }
@@ -441,7 +441,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 0,
+        "has_precipitation": false,
         "temperature": 0.5,
         "downfall": 0.5
       }
@@ -462,7 +462,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 0,
+        "has_precipitation": false,
         "temperature": 0.5,
         "downfall": 0.5
       }
@@ -483,7 +483,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 0,
+        "has_precipitation": false,
         "temperature": 0.5,
         "downfall": 0.5
       }
@@ -494,7 +494,7 @@
       "element": {
         "effects": {
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.overworld.badlands",
             "min_delay": 12000
@@ -512,7 +512,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 0,
+        "has_precipitation": false,
         "temperature": 2.0,
         "downfall": 0.0
       }
@@ -523,7 +523,7 @@
       "element": {
         "effects": {
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.overworld.flower_forest",
             "min_delay": 12000
@@ -539,7 +539,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.7,
         "downfall": 0.8
       }
@@ -550,7 +550,7 @@
       "element": {
         "effects": {
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.overworld.forest",
             "min_delay": 12000
@@ -566,7 +566,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.7,
         "downfall": 0.8
       }
@@ -587,7 +587,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.0,
         "downfall": 0.5,
         "temperature_modifier": "frozen"
@@ -599,7 +599,7 @@
       "element": {
         "effects": {
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.overworld.frozen_peaks",
             "min_delay": 12000
@@ -615,7 +615,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": -0.7,
         "downfall": 0.9
       }
@@ -636,7 +636,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.0,
         "downfall": 0.5
       }
@@ -647,7 +647,7 @@
       "element": {
         "effects": {
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.overworld.grove",
             "min_delay": 12000
@@ -663,7 +663,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": -0.2,
         "downfall": 0.8
       }
@@ -684,7 +684,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.0,
         "downfall": 0.5
       }
@@ -695,7 +695,7 @@
       "element": {
         "effects": {
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.overworld.jagged_peaks",
             "min_delay": 12000
@@ -711,7 +711,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": -0.7,
         "downfall": 0.9
       }
@@ -722,7 +722,7 @@
       "element": {
         "effects": {
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.overworld.jungle",
             "min_delay": 12000
@@ -738,7 +738,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.95,
         "downfall": 0.9
       }
@@ -759,7 +759,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.5,
         "downfall": 0.5
       }
@@ -770,7 +770,7 @@
       "element": {
         "effects": {
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.overworld.lush_caves",
             "min_delay": 12000
@@ -786,7 +786,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.5,
         "downfall": 0.5
       }
@@ -798,7 +798,7 @@
         "effects": {
           "grass_color_modifier": "swamp",
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.overworld.swamp",
             "min_delay": 12000
@@ -815,7 +815,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.8,
         "downfall": 0.9
       }
@@ -826,7 +826,7 @@
       "element": {
         "effects": {
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.overworld.meadow",
             "min_delay": 12000
@@ -842,7 +842,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.5,
         "downfall": 0.8
       }
@@ -863,7 +863,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.9,
         "downfall": 1.0
       }
@@ -874,7 +874,7 @@
       "element": {
         "effects": {
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.nether.nether_wastes",
             "min_delay": 12000
@@ -895,7 +895,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 0,
+        "has_precipitation": false,
         "temperature": 2.0,
         "downfall": 0.0
       }
@@ -916,7 +916,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.5,
         "downfall": 0.5
       }
@@ -927,7 +927,7 @@
       "element": {
         "effects": {
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.overworld.forest",
             "min_delay": 12000
@@ -943,7 +943,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.6,
         "downfall": 0.6
       }
@@ -954,7 +954,7 @@
       "element": {
         "effects": {
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.overworld.old_growth_taiga",
             "min_delay": 12000
@@ -970,7 +970,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.3,
         "downfall": 0.8
       }
@@ -981,7 +981,7 @@
       "element": {
         "effects": {
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.overworld.old_growth_taiga",
             "min_delay": 12000
@@ -997,7 +997,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.25,
         "downfall": 0.8
       }
@@ -1018,7 +1018,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.8,
         "downfall": 0.4
       }
@@ -1039,7 +1039,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.5,
         "downfall": 0.5
       }
@@ -1060,7 +1060,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 0,
+        "has_precipitation": false,
         "temperature": 2.0,
         "downfall": 0.0
       }
@@ -1081,7 +1081,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 0,
+        "has_precipitation": false,
         "temperature": 2.0,
         "downfall": 0.0
       }
@@ -1102,7 +1102,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 0,
+        "has_precipitation": false,
         "temperature": 0.5,
         "downfall": 0.5
       }
@@ -1123,7 +1123,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.05,
         "downfall": 0.3
       }
@@ -1144,7 +1144,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.0,
         "downfall": 0.5
       }
@@ -1155,7 +1155,7 @@
       "element": {
         "effects": {
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.overworld.snowy_slopes",
             "min_delay": 12000
@@ -1171,7 +1171,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": -0.3,
         "downfall": 0.9
       }
@@ -1192,7 +1192,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": -0.5,
         "downfall": 0.4
       }
@@ -1203,7 +1203,7 @@
       "element": {
         "effects": {
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.nether.soul_sand_valley",
             "min_delay": 12000
@@ -1230,7 +1230,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 0,
+        "has_precipitation": false,
         "temperature": 2.0,
         "downfall": 0.0
       }
@@ -1241,7 +1241,7 @@
       "element": {
         "effects": {
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.overworld.sparse_jungle",
             "min_delay": 12000
@@ -1257,7 +1257,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.95,
         "downfall": 0.8
       }
@@ -1268,7 +1268,7 @@
       "element": {
         "effects": {
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.overworld.stony_peaks",
             "min_delay": 12000
@@ -1284,7 +1284,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 1.0,
         "downfall": 0.3
       }
@@ -1305,7 +1305,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.2,
         "downfall": 0.3
       }
@@ -1326,7 +1326,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.8,
         "downfall": 0.4
       }
@@ -1338,7 +1338,7 @@
         "effects": {
           "grass_color_modifier": "swamp",
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.overworld.swamp",
             "min_delay": 12000
@@ -1355,7 +1355,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.8,
         "downfall": 0.9
       }
@@ -1376,7 +1376,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.25,
         "downfall": 0.8
       }
@@ -1397,7 +1397,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 0,
+        "has_precipitation": false,
         "temperature": 0.5,
         "downfall": 0.5
       }
@@ -1418,7 +1418,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 0,
+        "has_precipitation": false,
         "temperature": 0.5,
         "downfall": 0.5
       }
@@ -1439,7 +1439,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.5,
         "downfall": 0.5
       }
@@ -1450,7 +1450,7 @@
       "element": {
         "effects": {
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.nether.warped_forest",
             "min_delay": 12000
@@ -1477,7 +1477,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 0,
+        "has_precipitation": false,
         "temperature": 2.0,
         "downfall": 0.0
       }
@@ -1498,7 +1498,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.2,
         "downfall": 0.3
       }
@@ -1519,7 +1519,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.2,
         "downfall": 0.3
       }
@@ -1540,7 +1540,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 1,
+        "has_precipitation": true,
         "temperature": 0.2,
         "downfall": 0.3
       }
@@ -1561,7 +1561,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 0,
+        "has_precipitation": false,
         "temperature": 2.0,
         "downfall": 0.0
       }
@@ -1572,7 +1572,7 @@
       "element": {
         "effects": {
           "music": {
-            "replace_current_music": 0,
+            "replace_current_music": false,
             "max_delay": 24000,
             "sound": "minecraft:music.overworld.badlands",
             "min_delay": 12000
@@ -1590,7 +1590,7 @@
             "block_search_extent": 8
           }
         },
-        "has_precipitation": 0,
+        "has_precipitation": false,
         "temperature": 2.0,
         "downfall": 0.0
       }
