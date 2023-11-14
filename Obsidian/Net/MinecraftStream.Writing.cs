@@ -721,10 +721,47 @@ public partial class MinecraftStream
         this.WriteBiomeCodec(writer);
         this.WriteChatCodec(writer);
         this.WriteDamageTypeCodec(writer);
+        this.WriteTrimPatternCodec(writer);
+        this.WriteTrimMaterialCodec(writer);
 
         writer.EndCompound();
         writer.TryFinish();
     }
+
+    private void WriteTrimPatternCodec(NbtWriter writer)
+    {
+        var trimPatterns = new NbtList(NbtTagType.Compound, "value");
+
+        foreach (var (_, trimPattern) in CodecRegistry.TrimPatterns.All)
+            trimPattern.Write(trimPatterns);
+
+        var trimPatternsCompound = new NbtCompound(CodecRegistry.TrimPatterns.CodecKey)
+        {
+            new NbtTag<string>("type", CodecRegistry.TrimPatterns.CodecKey),
+
+            trimPatterns
+        };
+
+        writer.WriteTag(trimPatternsCompound);
+    }
+
+    private void WriteTrimMaterialCodec(NbtWriter writer)
+    {
+        var trimMaterials = new NbtList(NbtTagType.Compound, "value");
+
+        foreach (var (_, trimMaterial) in CodecRegistry.TrimMaterials.All)
+            trimMaterial.Write(trimMaterials);
+
+        var trimMaterialsCompound = new NbtCompound(CodecRegistry.TrimMaterials.CodecKey)
+        {
+            new NbtTag<string>("type", CodecRegistry.TrimMaterials.CodecKey),
+
+            trimMaterials
+        };
+
+        writer.WriteTag(trimMaterialsCompound);
+    }
+
 
     private void WriteDamageTypeCodec(NbtWriter writer)
     {
