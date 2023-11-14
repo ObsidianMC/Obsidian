@@ -13,4 +13,6 @@ public sealed partial class FinishConfigurationPacket : IServerboundPacket, ICli
 
     public void Populate(byte[] data) { }
     public void Populate(MinecraftStream stream) { }
+
+    public void Serialize(MinecraftStream stream) { }
 }
