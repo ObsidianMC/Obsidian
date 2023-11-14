@@ -85,11 +85,15 @@
 		<EmbeddedResource Remove="Assets\items.json" />
 		<EmbeddedResource Remove="Assets\tags.json" />
 		<EmbeddedResource Remove="Assets\fluids.json" />
+		<EmbeddedResource Remove="Assets\trim_material.json" />
+		<EmbeddedResource Remove="Assets\trim_pattern.json" />
 	</ItemGroup>
 
 	<ItemGroup>
 	  <None Remove="Assets\damage_type.json" />
 	  <None Remove="Assets\entities.json" />
+	  <None Remove="assets\trim_material.json" />
+	  <None Remove="assets\trim_pattern.json" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -102,6 +106,8 @@
 		<AdditionalFiles Include="Assets\items.json" CopyToOutputDirectory="Never" />
 		<AdditionalFiles Include="Assets\tags.json" CopyToOutputDirectory="Never" />
 		<AdditionalFiles Include="Assets\fluids.json" CopyToOutputDirectory="Never" />
+		<AdditionalFiles Include="Assets\trim_material.json" />
+		<AdditionalFiles Include="Assets\trim_pattern.json" />
 	</ItemGroup>
 
 	<ItemGroup>
