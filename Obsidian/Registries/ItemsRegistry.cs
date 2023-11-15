@@ -30,8 +30,8 @@ public partial class ItemsRegistry
         return ingredient;
     }
 
-    public static Ingredient GetIngredientFromName(string name, short count) => new()
-    {
+    public static Ingredient GetIngredientFromName(string name, short count) =>
+    [
         Get(name, count)
-    };
+    ];
 }

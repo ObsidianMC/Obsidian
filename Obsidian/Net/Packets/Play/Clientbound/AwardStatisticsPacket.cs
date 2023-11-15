@@ -6,7 +6,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound;
 public partial class AwardStatisticsPacket : IClientboundPacket
 {
     [Field(0)]
-    public List<Statistic> Stats { get; } = new();
+    public List<Statistic> Stats { get; } = [];
 
     public void Add(Statistic stat)
     {

@@ -82,7 +82,7 @@ public class ServerPlayers : IServerPlayers
     public int Max { get; set; }
     public int Online { get; set; }
 
-    public List<object> Sample { get; set; } = new();
+    public List<object> Sample { get; set; } = [];
 
     public ServerPlayers(Server server)
     {

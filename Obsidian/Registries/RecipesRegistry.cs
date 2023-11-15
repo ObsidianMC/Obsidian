@@ -4,7 +4,7 @@ using System.Reflection;
 namespace Obsidian.Registries;
 public static partial class RecipesRegistry
 {
-    public static readonly Dictionary<string, IRecipe> Recipes = new();
+    public static readonly Dictionary<string, IRecipe> Recipes = [];
 
     public static async Task InitializeAsync()
     {

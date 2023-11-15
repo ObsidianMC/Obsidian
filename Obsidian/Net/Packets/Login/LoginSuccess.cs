@@ -11,7 +11,7 @@ public partial class LoginSuccess : IClientboundPacket
     public string Username { get; }
 
     [Field(3)]
-    public List<SkinProperty> SkinProperties { get; init; } = new();
+    public List<SkinProperty> SkinProperties { get; init; } = [];
 
     public int Id => 0x02;
 

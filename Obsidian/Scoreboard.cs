@@ -8,11 +8,11 @@ public class Scoreboard : IScoreboard
 
     internal readonly string name;
 
-    internal readonly Dictionary<string, Score> scores = new Dictionary<string, Score>();
+    internal readonly Dictionary<string, Score> scores = [];
 
     public ScoreboardObjective Objective { get; private set; }
 
-    public List<ITeam> Teams { get; set; } = new();
+    public List<ITeam> Teams { get; set; } = [];
 
     public Scoreboard(string name, Server server)
     {

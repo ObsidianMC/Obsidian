@@ -20,8 +20,8 @@ internal class AStarPath
 
     private readonly IWorld world;
 
-    private readonly List<Vector> validMoves = new()
-    {
+    private readonly List<Vector> validMoves =
+    [
         Vector.Left,
         Vector.Right,
         Vector.Forwards,
@@ -43,7 +43,7 @@ internal class AStarPath
         Vector.Backwards + Vector.Down,
         Vector.Left + Vector.Down,
         Vector.Right + Vector.Down,
-    };
+    ];
 
     public AStarPath(IWorld world)
     {
@@ -58,11 +58,11 @@ internal class AStarPath
         // Out of range?
         float distanceSquared = (targetPos - startPos).MagnitudeSquared();
         if (distanceSquared > MaxRange * MaxRange)
-            return new List<Vector>();
+            return [];
 
 
-        List<Node> openList = new();
-        List<Node> closedList = new();
+        List<Node> openList = [];
+        List<Node> closedList = [];
 
         openList.Add(startNode);
 
@@ -130,7 +130,7 @@ internal class AStarPath
             }
         }
 
-        return new List<Vector>();
+        return [];
     }
 
     private bool IsValidMove(Vector curPos, Vector nextPos)

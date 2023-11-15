@@ -7,7 +7,7 @@ public sealed class ScoreboardManager : IScoreboardManager
 {
     private readonly Server server;
 
-    internal readonly HashSet<string> scoreboards = new HashSet<string>();
+    internal readonly HashSet<string> scoreboards = [];
 
     public IScoreboard DefaultScoreboard { get; }
 

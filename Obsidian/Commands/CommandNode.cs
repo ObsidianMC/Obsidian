@@ -15,7 +15,7 @@ public class CommandNode
 
     public CommandNodeType Type { get; set; }
 
-    public HashSet<CommandNode> Children = new();
+    public HashSet<CommandNode> Children = [];
 
     public async Task CopyToAsync(MinecraftStream stream)
     {

@@ -21,10 +21,10 @@ public class JungleTree : BaseTree
     protected override async Task GenerateLeavesAsync(Vector origin, int heightOffset)
     {
         int topY = origin.Y + trunkHeight + heightOffset + 1;
-        List<Vector> vineCandidates = new()
-        {
+        List<Vector> vineCandidates =
+        [
             origin + (0, heightOffset + trunkHeight - 2, 0)
-        };
+        ];
         for (int y = topY - 2; y < topY + 1; y++)
         {
             for (int x = -leavesRadius; x <= leavesRadius; x++)

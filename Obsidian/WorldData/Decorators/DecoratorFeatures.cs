@@ -7,12 +7,12 @@ public class DecoratorFeatures
     /// <summary>
     /// List of Tree types and frequency of each.
     /// </summary>
-    public List<TreeInfo> Trees { get; set; } = new List<TreeInfo>();
+    public List<TreeInfo> Trees { get; set; } = [];
 
     /// <summary>
     /// List of Flora types
     /// </summary>
-    public List<FloraInfo> Flora { get; set; } = new List<FloraInfo>();
+    public List<FloraInfo> Flora { get; set; } = [];
 
     public class TreeInfo
     {

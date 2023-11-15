@@ -15,8 +15,8 @@ public class OperatorList : IOperatorList
 
     public OperatorList(Server server)
     {
-        this.ops = new List<Operator>();
-        this.reqs = new List<OperatorRequest>();
+        this.ops = [];
+        this.reqs = [];
         this.server = server;
         var loggerProvider = new LoggerProvider();
         _logger = loggerProvider.CreateLogger("OperatorList");

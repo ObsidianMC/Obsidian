@@ -11,8 +11,8 @@ public sealed class DirectoryWatcher : IDisposable
     public event Action<string, string> FileRenamed;
     public event Action<string> FileDeleted;
 
-    private readonly Dictionary<string, FileSystemWatcher> watchers = new();
-    private readonly Dictionary<string, DateTime> updateTimestamps = new();
+    private readonly Dictionary<string, FileSystemWatcher> watchers = [];
+    private readonly Dictionary<string, DateTime> updateTimestamps = [];
 
     private const double minUpdateInterval = 3.0;
 

@@ -14,7 +14,7 @@ public class LargeJungleTree : JungleTree
 
     protected override async Task GenerateLeavesAsync(Vector origin, int heightOffset)
     {
-        List<Vector> vineCandidates = new();
+        List<Vector> vineCandidates = [];
         int topY = origin.Y + trunkHeight + heightOffset + 1;
 
         for (int y = topY - 3; y < topY + 1; y++)
@@ -43,7 +43,7 @@ public class LargeJungleTree : JungleTree
 
     protected override async Task GenerateTrunkAsync(Vector origin, int heightOffset)
     {
-        List<Vector> vineCandidates = new();
+        List<Vector> vineCandidates = [];
         int topY = trunkHeight + heightOffset;
 
         for (int x = 0; x < 2; x++)

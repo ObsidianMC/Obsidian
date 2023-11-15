@@ -8,7 +8,7 @@ public sealed class CookingRecipeBuilder : BaseRecipeBuilder<SmeltingRecipe>, II
 
     private readonly SmeltingType type;
 
-    private Ingredient ingredient = new();
+    private Ingredient ingredient = [];
 
     private float experience;
 
@@ -62,7 +62,7 @@ public sealed class CookingRecipeBuilder : BaseRecipeBuilder<SmeltingRecipe>, II
             Identifier = this.Identifier ?? throw new NullReferenceException("Recipe must have a name"),
             Type = type,
             Group = this.Group,
-            Result = this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),
+            Result = this.Result != null ? [this.Result] : throw new NullReferenceException("Result is not set."),
             Ingredient = this.ingredient,
             Experience = this.experience,
             CookingTime = this.cookingTime,

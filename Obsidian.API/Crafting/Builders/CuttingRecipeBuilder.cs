@@ -4,7 +4,7 @@ namespace Obsidian.API.Crafting.Builders;
 
 public sealed class CuttingRecipeBuilder : BaseRecipeBuilder<CuttingRecipe>, IIngredientRecipe<IOutputCountRecipe<CuttingRecipe>>, IOutputCountRecipe<CuttingRecipe>
 {
-    private Ingredient ingredient = new();
+    private Ingredient ingredient = [];
 
     public int Count { get; set; }
 
@@ -37,7 +37,7 @@ public sealed class CuttingRecipeBuilder : BaseRecipeBuilder<CuttingRecipe>, IIn
             Identifier = this.Identifier ?? throw new NullReferenceException("Name must not be null"),
             Type = CraftingType.Stonecutting,
             Group = this.Group,
-            Result = this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),
+            Result = this.Result != null ? [this.Result] : throw new NullReferenceException("Result is not set."),
             Ingredient = this.ingredient ?? throw new NullReferenceException("Ingredient must not be null"),
             Count = this.Count
         };

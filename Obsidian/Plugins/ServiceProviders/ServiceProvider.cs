@@ -66,8 +66,8 @@ public class ServiceProvider
 
     private static void Initialize()
     {
-        serviceImplementationTypes = new Dictionary<Type, Type>();
-        singletons = new Dictionary<Type, SingletonServiceBase>();
+        serviceImplementationTypes = [];
+        singletons = [];
 
         var modelTypes = Assembly.GetAssembly(typeof(IService)).GetTypes().Where(type => type.Namespace == serviceModelsSource);
         var allTypes = Assembly.GetAssembly(typeof(ServiceProvider)).GetTypes();

@@ -190,7 +190,7 @@ internal static class ChunkBuilder
     {
         int chunkOffsetX = chunk.X * 16;
         int chunkOffsetZ = chunk.Z * 16;
-        List<Biome> emeraldBiomes = new List<Biome>(){Biome.WindsweptHills, Biome.WindsweptGravellyHills, Biome.Meadow, Biome.Grove, Biome.SnowySlopes, Biome.FrozenPeaks, Biome.JaggedPeaks, Biome.StonyPeaks};
+        List<Biome> emeraldBiomes = [Biome.WindsweptHills, Biome.WindsweptGravellyHills, Biome.Meadow, Biome.Grove, Biome.SnowySlopes, Biome.FrozenPeaks, Biome.JaggedPeaks, Biome.StonyPeaks];
         for (int x = 0; x < 16; x++)
         {
             for (int z = 0; z < 16; z++)

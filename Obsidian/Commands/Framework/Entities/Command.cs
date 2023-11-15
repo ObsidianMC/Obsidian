@@ -35,7 +35,7 @@ public class Command
         Plugin = plugin;
         ParentType = parentType;
         AllowedIssuers = allowedIssuers;
-        Overloads = new List<MethodInfo>();
+        Overloads = [];
     }
 
     public bool CheckCommand(string[] input, Command? parent)

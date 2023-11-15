@@ -47,14 +47,14 @@ public partial class SetHeldItemPacket : IServerboundPacket, IClientboundPacket
         await server.QueueBroadcastPacketAsync(new SetEquipmentPacket
         {
             EntityId = player.EntityId,
-            Equipment = new()
-            {
+            Equipment =
+            [
                 new()
                 {
                     Slot = EquipmentSlot.MainHand,
                     Item = heldItem
                 }
-            }
+            ]
         },
         excluded: player);
     }

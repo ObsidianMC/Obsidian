@@ -8,7 +8,7 @@ public sealed class WorldManager : IAsyncDisposable
 {
     private readonly ILogger logger;
     private readonly Server server;
-    private readonly Dictionary<string, World> worlds = new();
+    private readonly Dictionary<string, World> worlds = [];
     private readonly List<ServerWorld> serverWorlds;
 
     public int GeneratingChunkCount => worlds.Sum(w => w.Value.ChunksToGen.Count);

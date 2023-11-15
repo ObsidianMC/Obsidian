@@ -7,7 +7,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound;
 public partial class CommandsPacket : IClientboundPacket
 {
     [Field(0)]
-    public List<CommandNode> Nodes { get; } = new();
+    public List<CommandNode> Nodes { get; } = [];
 
     [Field(1), VarLength]
     public int RootIndex { get; }

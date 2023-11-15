@@ -43,7 +43,7 @@ public sealed class IngredientConverter : JsonConverter<Ingredient>
         {
             var ingredient = element.ValueKind == JsonValueKind.String ? new RawRecipeItem { Item = element.ToString() } : element.ToString().FromJson<RawRecipeItem>(); ;
 
-            return new Ingredient { ItemsRegistry.GetSingleItem(ingredient.Item!) };
+            return [ItemsRegistry.GetSingleItem(ingredient.Item!)];
         }
     }
 

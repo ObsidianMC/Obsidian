@@ -15,14 +15,14 @@ public abstract class BaseTree
 
     protected int trunkHeight;
 
-    protected readonly List<Material> ValidSourceBlocks = new()
-    {
+    protected readonly List<Material> ValidSourceBlocks =
+    [
         Material.GrassBlock,
         Material.Dirt,
         Material.Podzol,
         Material.Farmland,
         Material.SnowBlock
-    };
+    ];
 
     protected BaseTree(GenHelper helper, Chunk chunk, Material leaf, Material trunk, int trunkHeight)
     {

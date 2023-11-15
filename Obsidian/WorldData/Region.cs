@@ -140,8 +140,8 @@ public class Region : IAsyncDisposable
         {
             await Task.WhenAll(Entities.Select(entityEntry => entityEntry.Value.TickAsync()));
 
-            List<BlockUpdate> neighborUpdates = new();
-            List<BlockUpdate> delayed = new();
+            List<BlockUpdate> neighborUpdates = [];
+            List<BlockUpdate> delayed = [];
 
             foreach (var pos in blockUpdates.Keys)
             {
@@ -315,8 +315,8 @@ public class Region : IAsyncDisposable
         foreach (var (_, blockEntity) in chunk.BlockEntities)
             blockEntities.Add(blockEntity);
 
-        return new NbtCompound
-        {
+        return
+        [
             new NbtTag<int>("xPos", chunk.X),
             new NbtTag<int>("zPos", chunk.Z),
             new NbtTag<int>("yPos", -4),
@@ -330,7 +330,7 @@ public class Region : IAsyncDisposable
             blockEntities,
             sectionsCompound,
             new NbtTag<int>("DataVersion", 3337)// Hardcoded version try to get data version through minecraft data and use data correctly
-        };
+        ];
     }
     #endregion NBT Ops
 

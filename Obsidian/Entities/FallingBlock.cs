@@ -18,7 +18,7 @@ public sealed partial class FallingBlock : Entity
 
     private readonly float windResFactor = 0.98F;
 
-    private HashSet<Vector> checkedBlocks = new();
+    private HashSet<Vector> checkedBlocks = [];
 
     public FallingBlock(VectorF position) : base()
     {

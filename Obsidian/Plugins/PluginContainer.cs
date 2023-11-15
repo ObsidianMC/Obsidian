@@ -17,9 +17,9 @@ public sealed class PluginContainer : IDisposable
     public bool IsReady => HasDependencies;
     public bool Loaded { get; internal set; }
 
-    internal List<IDisposable> DisposableServices { get; } = new();
-    internal List<ScheduledDependencyInjection> ScheduledDependencyInjections { get; } = new();
-    internal Dictionary<EventContainer, Delegate> EventHandlers { get; } = new();
+    internal List<IDisposable> DisposableServices { get; } = [];
+    internal List<ScheduledDependencyInjection> ScheduledDependencyInjections { get; } = [];
+    internal Dictionary<EventContainer, Delegate> EventHandlers { get; } = [];
 
     private Type pluginType;
 
