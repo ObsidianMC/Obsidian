@@ -134,7 +134,7 @@ public class ClientHandler
                 await HandleFromPoolAsync<PlayerSessionPacket>(data, client);
                 break;
             case 0x07:
-                await HandleFromPoolAsync<ClientCommandPacket>(data, client);
+                await HandleFromPoolAsync<ClientStatusPacket>(data, client);
                 break;
             case 0x08:
                 await HandleFromPoolAsync<ClientInformationPacket>(data, client);

@@ -121,6 +121,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Folder Include="Net\Packets\Configuration\Serverbound\" />
 		<Folder Include="Plugins\Services\" />
 	</ItemGroup>
 </Project>

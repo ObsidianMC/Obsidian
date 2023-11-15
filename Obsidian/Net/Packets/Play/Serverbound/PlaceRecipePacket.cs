@@ -15,7 +15,7 @@ public partial class PlaceRecipePacket : IServerboundPacket
     [Field(2)]
     public bool MakeAll { get; private set; }
 
-    public int Id => 0x1A;
+    public int Id => 0x1E;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {

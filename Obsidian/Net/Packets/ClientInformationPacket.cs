@@ -1,7 +1,7 @@
 ﻿using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 
-namespace Obsidian.Net.Packets.Configuration.Serverbound;
+namespace Obsidian.Net.Packets;
 public sealed partial class ClientInformationPacket : IServerboundPacket
 {
     [Field(0)]
@@ -28,7 +28,8 @@ public sealed partial class ClientInformationPacket : IServerboundPacket
     [Field(7)]
     public bool AllowServerListings { get; private set; }
 
-    public int Id => 0x00;
+    //0x09 for play state
+    public int Id { get; init; } = 0x00;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {

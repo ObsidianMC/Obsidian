@@ -17,7 +17,7 @@ public partial class SetPlayerPositionAndRotationPacket : IServerboundPacket
     [Field(3)]
     public bool OnGround { get; private set; }
 
-    public int Id => 0x15;
+    public int Id => 0x17;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {

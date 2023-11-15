@@ -21,7 +21,7 @@ public partial class InteractPacket : IServerboundPacket
     [Field(4)]
     public bool Sneaking { get; private set; }
 
-    public int Id => 0x0F;
+    public int Id => 0x12;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
