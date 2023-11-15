@@ -12,7 +12,7 @@ public sealed class MojangUser
 
     public bool? Demo { get; init; }
 
-    public required List<SkinProperty> Properties { get; init; }
+    public List<SkinProperty>? Properties { get; init; }
 }
 
 public sealed class CachedUser
