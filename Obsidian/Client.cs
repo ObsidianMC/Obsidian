@@ -423,7 +423,7 @@ public sealed class Client : IDisposable
 
         if (config.OnlineMode)
         {
-            cachedUser = await UserCache.GetUserFromUuidAsync(loginStart.PlayerUuid ?? throw new NullReferenceException(nameof(loginStart.PlayerUuid)));
+            cachedUser = await UserCache.GetUserFromNameAsync(loginStart.Username ?? throw new NullReferenceException(nameof(loginStart.PlayerUuid)));
 
             if (cachedUser is null)
             {
@@ -436,7 +436,7 @@ public sealed class Client : IDisposable
                 return;
             }
 
-            Player = new Player(loginStart.PlayerUuid ?? this.cachedUser.Id, loginStart.Username, this, world);
+            Player = new Player(this.cachedUser.Id, loginStart.Username, this, world);
             packetCryptography.GenerateKeyPair();
 
             var (publicKey, randomToken) = packetCryptography.GeneratePublicKeyAndToken();
