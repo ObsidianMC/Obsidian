@@ -12,7 +12,7 @@ public partial class CommandsPacket : IClientboundPacket
     [Field(1), VarLength]
     public int RootIndex { get; }
 
-    public int Id => 0x11S;
+    public int Id => 0x11;
 
     public void AddNode(CommandNode node)
     {

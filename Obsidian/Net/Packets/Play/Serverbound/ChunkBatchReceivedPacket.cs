@@ -5,7 +5,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound;
 public sealed partial class ChunkBatchReceivedPacket : IServerboundPacket
 {
     [Field(0)]
-    public float ChunksPerTick { get; init; }
+    public float ChunksPerTick { get; set; }
 
     public int Id => 0x07;
 
