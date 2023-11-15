@@ -32,7 +32,7 @@ public sealed partial class Player : Living, IPlayer
     /// </summary>
     protected ILogger Logger { get; private set; }
 
-    internal HashSet<int> visiblePlayers = new();
+    internal HashSet<int> visiblePlayers = [];
 
     //TODO: better name??
     internal short inventorySlot = 36;
@@ -55,7 +55,7 @@ public sealed partial class Player : Living, IPlayer
 
     public BaseContainer? OpenedContainer { get; set; }
 
-    public List<SkinProperty> SkinProperties { get; set; } = new();
+    public List<SkinProperty> SkinProperties { get; set; } = [];
 
     public Vector? LastDeathLocation { get; set; }
 
@@ -954,7 +954,7 @@ public sealed partial class Player : Living, IPlayer
             client.LoadedChunks.Clear();
         }
 
-        List<(int X, int Z)> clientNeededChunks = new();
+        List<(int X, int Z)> clientNeededChunks = [];
         List<(int X, int Z)> clientUnneededChunks = new(client.LoadedChunks);
 
         (int playerChunkX, int playerChunkZ) = Position.ToChunkCoord();

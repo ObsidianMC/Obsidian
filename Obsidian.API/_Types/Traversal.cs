@@ -33,7 +33,7 @@ public class Traverse
     public List<VectorF> Run()
     {
 
-        List<VectorF> blocks = new List<VectorF>();
+        List<VectorF> blocks = [];
 
         float tMaxX, tMaxY, tMaxZ, tDeltaX, tDeltaY, tDeltaZ;
         VectorF voxel = new VectorF();
