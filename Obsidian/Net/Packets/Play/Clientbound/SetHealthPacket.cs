@@ -13,7 +13,7 @@ public partial class SetHealthPacket : IClientboundPacket
     [Field(2)]
     public float FoodSaturation { get; }
 
-    public int Id => 0x57;
+    public int Id => 0x59;
 
     public SetHealthPacket(float health, int food, float foodSaturation)
     {

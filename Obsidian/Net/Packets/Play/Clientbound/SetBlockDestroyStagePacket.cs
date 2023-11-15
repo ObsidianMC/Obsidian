@@ -16,5 +16,5 @@ public partial class SetBlockDestroyStagePacket : IClientboundPacket
     [Field(2)]
     public sbyte DestroyStage { get; init; }
 
-    public int Id => 0x07;
+    public int Id => 0x06;
 }

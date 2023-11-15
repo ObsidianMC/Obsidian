@@ -1,4 +1,5 @@
-﻿using Obsidian.API.Events;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
@@ -26,7 +27,7 @@ public partial class UseItemOnPacket : IServerboundPacket
     [Field(7), VarLength]
     public int Sequence { get; private set; }
 
-    public int Id => 0x31;
+    public int Id => 0x34;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {

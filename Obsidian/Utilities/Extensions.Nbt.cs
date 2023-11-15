@@ -1,4 +1,6 @@
-﻿using Obsidian.API.Registry.Codecs.Biomes;
+﻿using Obsidian.API.Registry.Codecs.ArmorTrims.TrimMaterial;
+using Obsidian.API.Registry.Codecs.ArmorTrims.TrimPattern;
+using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.Registry.Codecs.Chat;
 using Obsidian.API.Registry.Codecs.DamageTypes;
 using Obsidian.API.Registry.Codecs.Dimensions;
@@ -504,6 +506,89 @@ public partial class Extensions
         }
 
         compound.Add(particle);
+    }
+    #endregion
+
+    #region Trim Pattern Writing 
+    public static void Write(this TrimPatternCodec value, NbtList list)
+    {
+        var compound = new NbtCompound
+        {
+            new NbtTag<int>("id", value.Id),
+
+            new NbtTag<string>("name", value.Name),
+
+            value.WriteElement()
+        };
+
+        list.Add(compound);
+    }
+
+    public static NbtCompound WriteElement(this TrimPatternCodec value)
+    {
+        var patternElement = value.Element;
+
+        var description = new NbtList(NbtTagType.String, "description")
+        {
+            new NbtTag<string>("translate", patternElement.Description.Translate)
+        };
+
+        var element = new NbtCompound("element")
+        {
+            new NbtTag<string>("template_item", patternElement.TemplateItem),
+            description,
+            new NbtTag<string>("asset_id", patternElement.AssetId),
+            new NbtTag<bool>("decal", patternElement.Decal)
+        };
+
+        return element;
+    }
+    #endregion
+
+    #region Trim Material Writing
+    public static void Write(this TrimMaterialCodec value, NbtList list)
+    {
+        var compound = new NbtCompound
+        {
+            new NbtTag<int>("id", value.Id),
+
+            new NbtTag<string>("name", value.Name),
+
+            value.WriteElement()
+        };
+
+        list.Add(compound);
+    }
+
+    public static NbtCompound WriteElement(this TrimMaterialCodec value)
+    {
+        var materialElement = value.Element;
+
+        var description = new NbtList(NbtTagType.String, "description")
+        {
+            new NbtTag<string>("translate", materialElement.Description.Translate),
+            new NbtTag<string>("color", materialElement.Description.Color!)
+        };
+
+        var element = new NbtCompound("element")
+        {
+            new NbtTag<string>("ingredient", materialElement.Ingredient),
+            description,
+            new NbtTag<string>("asset_name", materialElement.AssetName),
+            new NbtTag<double>("item_model_index", materialElement.ItemModelIndex)
+        };
+
+        if (materialElement.OverrideArmorMaterials is Dictionary<string, string> overrideArmorMats)
+        {
+            var overrideArmorMaterialsCompound = new NbtCompound("override_armor_materials");
+
+            foreach (var (type, replacement) in overrideArmorMats)
+                overrideArmorMaterialsCompound.Add(new NbtTag<string>(type, replacement));
+
+            element.Add(overrideArmorMaterialsCompound);
+        }
+
+        return element;
     }
     #endregion
 }

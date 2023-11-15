@@ -8,7 +8,7 @@ public partial class SetSeenRecipePacket : IServerboundPacket
     [Field(0)]
     public string RecipeId { get; private set; }
 
-    public int Id => 0x22;
+    public int Id => 0x25;
 
     public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
 }

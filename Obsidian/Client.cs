@@ -9,6 +9,8 @@ using Obsidian.Events.EventArgs;
 using Obsidian.Net;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets;
+using Obsidian.Net.Packets.Configuration;
+using Obsidian.Net.Packets.Configuration.Clientbound;
 using Obsidian.Net.Packets.Handshaking;
 using Obsidian.Net.Packets.Login;
 using Obsidian.Net.Packets.Play;
@@ -130,7 +132,7 @@ public sealed class Client : IDisposable
     /// <summary>
     /// Which state of the protocol the client is currently in.
     /// </summary>
-    public ClientState State { get; private set; } = ClientState.Handshaking;
+    public ClientState State { get; internal set; } = ClientState.Handshaking;
 
     /// <summary>
     /// Which chunks the player should have loaded around them.
@@ -150,7 +152,7 @@ public sealed class Client : IDisposable
     /// <summary>
     /// Used to log actions caused by the client.
     /// </summary>
-    protected ILogger Logger { get; private set; }
+    public ILogger Logger { get; private set; }
 
     /// <summary>
     /// The player that the client is logged in as.
@@ -239,6 +241,8 @@ public sealed class Client : IDisposable
             if (State == ClientState.Play && data.Length < 1)
                 Disconnect();
 
+            
+
             switch (State)
             {
                 case ClientState.Status: // Server ping/list
@@ -296,23 +300,41 @@ public sealed class Client : IDisposable
                         case 0x02:
                             // Login Plugin Response
                             break;
+                        case 0x03:
+                            //Login Acknowledged
+                            this.Logger.LogDebug("Login Acknowledged switching to configuration state.");
 
+                            this.State = ClientState.Configuration;
+
+                            this.Configure();
+                            break;
                         default:
                             Logger.LogError("Client in state Login tried to send an unimplemented packet. Forcing it to disconnect.");
                             await DisconnectAsync("Unknown Packet Id.");
                             break;
                     }
                     break;
+                case ClientState.Configuration:
+                    Debug.Assert(Player is not null);
 
+                    var configurationPacketReceived = new PacketReceivedEventArgs(Player, id, data);
+
+                    await Server.Events.PacketReceived.InvokeAsync(configurationPacketReceived);
+
+                    if (!configurationPacketReceived.IsCancelled)
+                        await this.handler.HandleConfigurationPackets(id, data, this);
+
+                    break;
                 case ClientState.Play:
                     Debug.Assert(Player is not null);
-                    var packetReceivedEventArgs = new PacketReceivedEventArgs(Player, id, data);
-                    await Server.Events.PacketReceived.InvokeAsync(packetReceivedEventArgs);
 
-                    if (!packetReceivedEventArgs.IsCancelled)
-                    {
+                    var playPacketReceived = new PacketReceivedEventArgs(Player, id, data);
+
+                    await Server.Events.PacketReceived.InvokeAsync(playPacketReceived);
+
+                    if (!playPacketReceived.IsCancelled)
                         await handler.HandlePlayPackets(id, data, this);
-                    }
+
                     break;
                 case ClientState.Closed:
                 default:
@@ -331,6 +353,15 @@ public sealed class Client : IDisposable
         Disconnected?.Invoke(this);
         this.Dispose();//Dispose client after
     }
+
+    private void Configure()
+    {
+        this.SendPacket(RegistryDataPacket.Default);
+        this.SendPacket(UpdateTagsPacket.FromRegistry);
+
+        this.SendPacket(FinishConfigurationPacket.Default);
+    }
+
 
     private async Task HandleServerStatusRequestAsync()
     {
@@ -406,7 +437,6 @@ public sealed class Client : IDisposable
             }
 
             Player = new Player(loginStart.PlayerUuid ?? this.cachedUser.Id, loginStart.Username, this, world);
-
             packetCryptography.GenerateKeyPair();
 
             var (publicKey, randomToken) = packetCryptography.GeneratePublicKeyAndToken();
@@ -427,9 +457,10 @@ public sealed class Client : IDisposable
         {
             Player = new Player(GuidHelper.FromStringHash($"OfflinePlayer:{username}"), username, this, world);
 
-            // TODO: Compression, .net 6 (see method below)
-            //await this.SetCompression();
-            await ConnectAsync();
+            this.SendPacket(new LoginSuccess(Player.Uuid, Player.Username)
+            {
+                SkinProperties = this.Player.SkinProperties,
+            });
         }
     }
 
@@ -469,12 +500,13 @@ public sealed class Client : IDisposable
         EncryptionEnabled = true;
         minecraftStream = new EncryptedMinecraftStream(networkStream, sharedKey);
 
-        // TODO: Fix compression
-        //await this.SetCompression();
-        await ConnectAsync();
+        this.SendPacket(new LoginSuccess(Player.Uuid, Player.Username)
+        {
+            SkinProperties = this.Player.SkinProperties,
+        });
     }
 
-    // TODO fix compression (.net 6)
+    // TODO fix compression now????
     private void SetCompression()
     {
         SendPacket(new SetCompression(CompressionThreshold));
@@ -482,21 +514,14 @@ public sealed class Client : IDisposable
         Logger.LogDebug("Compression has been enabled.");
     }
 
-    private async Task ConnectAsync()
+    internal async Task ConnectAsync()
     {
         if (Player is null)
-        {
-            throw new InvalidOperationException("Player is null, which means the client has not yet logged in.");
-        }
-
-        await QueuePacketAsync(new LoginSuccess(Player.Uuid, Player.Username)
-        {
-            SkinProperties = this.Player.SkinProperties,
-        });
+            throw new UnreachableException("Player is null, which means the client has not yet logged in.");
 
         Logger.LogDebug("Sent Login success to user {Username} {UUID}", Player.Username, Player.Uuid);
 
-        State = ClientState.Play;
+        this.State = ClientState.Play;
         await Player.LoadAsync();
         if (!Server.OnlinePlayers.TryAdd(Player.Uuid, Player))
         {
@@ -511,7 +536,6 @@ public sealed class Client : IDisposable
             EntityId = id,
             Gamemode = Player.Gamemode,
             DimensionNames = CodecRegistry.Dimensions.All.Keys.ToList(),
-            Codecs = new(),
             DimensionType = codec.Name,
             DimensionName = codec.Name,
             HashedSeed = 0,
@@ -521,10 +545,8 @@ public sealed class Client : IDisposable
         });
 
         await SendServerBrand();
-        await QueuePacketAsync(UpdateTagsPacket.FromRegistry);
-        await SendCommandsAsync();
 
-        await QueuePacketAsync(UpdateRecipesPacket.FromRegistry);
+        await SendCommandsAsync();
 
         await QueuePacketAsync(new UpdateRecipeBookPacket
         {
@@ -607,27 +629,15 @@ public sealed class Client : IDisposable
             return;
         }
 
-        Logger.LogDebug($"Doing KeepAlive ({keepAliveId}) with {Player.Username} ({Player.Uuid})");
+        Logger.LogDebug("Doing KeepAlive ({keepAliveId}) with {Username} ({Uuid})", keepAliveId, Player.Username, Player.Uuid);
         // now that all is fine and dandy, we'd be fine to enqueue the new keepalive
-        SendPacket(new KeepAlivePacket(keepAliveId));
+        SendPacket(new KeepAlivePacket(keepAliveId)
+        {
+            Id = this.State == ClientState.Configuration ? 0x03 : 0x24
+        });
         missedKeepAlives.Add(keepAliveId);
 
         // TODO: reimplement this? probably in KeepAlivePacket:HandleAsync ⬇️
-
-        //// Sending ping change in background
-        //await Task.Run(async delegate ()
-        //{
-        //    foreach (Client client in OriginServer.Clients.Where(c => c.IsPlaying))
-        //    {
-        //        await PacketHandler.CreateAsync(new PlayerInfo(2, new List<PlayerInfoAction>()
-        //        {
-        //            new PlayerInfoUpdatePingAction()
-        //            {
-        //                Ping = this.Ping
-        //            }
-        //        }), this.MinecraftStream);
-        //    }
-        //}).ConfigureAwait(false);
     }
 
     internal Task SendCommandsAsync() => QueuePacketAsync(CommandsRegistry.Packet);

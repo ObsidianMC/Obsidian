@@ -15,7 +15,7 @@ public partial class PlayerCommandPacket : IServerboundPacket
     [Field(2), VarLength]
     public int JumpBoost { get; set; }
 
-    public int Id => 0x1D;
+    public int Id => 0x21;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {

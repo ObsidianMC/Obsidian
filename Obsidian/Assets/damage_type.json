@@ -2,411 +2,411 @@
   "type": "minecraft:damage_type",
   "value": [
     {
-      "id": 0,
       "name": "minecraft:arrow",
+      "id": 0,
       "element": {
+        "scaling": "when_caused_by_living_non_player",
         "exhaustion": 0.1,
-        "message_id": "arrow",
-        "scaling": "when_caused_by_living_non_player"
+        "message_id": "arrow"
       }
     },
     {
-      "id": 1,
       "name": "minecraft:bad_respawn_point",
+      "id": 1,
       "element": {
-        "death_message_type": "intentional_game_design",
+        "scaling": "always",
         "exhaustion": 0.1,
         "message_id": "badRespawnPoint",
-        "scaling": "always"
+        "death_message_type": "intentional_game_design"
       }
     },
     {
-      "id": 2,
       "name": "minecraft:cactus",
+      "id": 2,
       "element": {
+        "scaling": "when_caused_by_living_non_player",
         "exhaustion": 0.1,
-        "message_id": "cactus",
-        "scaling": "when_caused_by_living_non_player"
+        "message_id": "cactus"
       }
     },
     {
-      "id": 3,
       "name": "minecraft:cramming",
+      "id": 3,
       "element": {
-        "exhaustion": 0,
-        "message_id": "cramming",
-        "scaling": "when_caused_by_living_non_player"
+        "scaling": "when_caused_by_living_non_player",
+        "exhaustion": 0.0,
+        "message_id": "cramming"
       }
     },
     {
-      "id": 4,
       "name": "minecraft:dragon_breath",
+      "id": 4,
       "element": {
-        "exhaustion": 0,
-        "message_id": "dragonBreath",
-        "scaling": "when_caused_by_living_non_player"
+        "scaling": "when_caused_by_living_non_player",
+        "exhaustion": 0.0,
+        "message_id": "dragonBreath"
       }
     },
     {
-      "id": 5,
       "name": "minecraft:drown",
+      "id": 5,
       "element": {
-        "exhaustion": 0,
-        "message_id": "drown",
+        "effects": "drowning",
         "scaling": "when_caused_by_living_non_player",
-        "effects": "drowning"
+        "exhaustion": 0.0,
+        "message_id": "drown"
       }
     },
     {
-      "id": 6,
       "name": "minecraft:dry_out",
+      "id": 6,
       "element": {
+        "scaling": "when_caused_by_living_non_player",
         "exhaustion": 0.1,
-        "message_id": "dryout",
-        "scaling": "when_caused_by_living_non_player"
+        "message_id": "dryout"
       }
     },
     {
-      "id": 7,
       "name": "minecraft:explosion",
+      "id": 7,
       "element": {
+        "scaling": "always",
         "exhaustion": 0.1,
-        "message_id": "explosion",
-        "scaling": "always"
+        "message_id": "explosion"
       }
     },
     {
-      "id": 8,
       "name": "minecraft:fall",
+      "id": 8,
       "element": {
-        "death_message_type": "fall_variants",
-        "exhaustion": 0,
+        "scaling": "when_caused_by_living_non_player",
+        "exhaustion": 0.0,
         "message_id": "fall",
-        "scaling": "when_caused_by_living_non_player"
+        "death_message_type": "fall_variants"
       }
     },
     {
-      "id": 9,
       "name": "minecraft:falling_anvil",
+      "id": 9,
       "element": {
+        "scaling": "when_caused_by_living_non_player",
         "exhaustion": 0.1,
-        "message_id": "anvil",
-        "scaling": "when_caused_by_living_non_player"
+        "message_id": "anvil"
       }
     },
     {
-      "id": 10,
       "name": "minecraft:falling_block",
+      "id": 10,
       "element": {
+        "scaling": "when_caused_by_living_non_player",
         "exhaustion": 0.1,
-        "message_id": "fallingBlock",
-        "scaling": "when_caused_by_living_non_player"
+        "message_id": "fallingBlock"
       }
     },
     {
-      "id": 11,
       "name": "minecraft:falling_stalactite",
+      "id": 11,
       "element": {
+        "scaling": "when_caused_by_living_non_player",
         "exhaustion": 0.1,
-        "message_id": "fallingStalactite",
-        "scaling": "when_caused_by_living_non_player"
+        "message_id": "fallingStalactite"
       }
     },
     {
-      "id": 12,
       "name": "minecraft:fireball",
+      "id": 12,
       "element": {
-        "exhaustion": 0.1,
-        "message_id": "fireball",
+        "effects": "burning",
         "scaling": "when_caused_by_living_non_player",
-        "effects": "burning"
+        "exhaustion": 0.1,
+        "message_id": "fireball"
       }
     },
     {
-      "id": 13,
       "name": "minecraft:fireworks",
+      "id": 13,
       "element": {
+        "scaling": "when_caused_by_living_non_player",
         "exhaustion": 0.1,
-        "message_id": "fireworks",
-        "scaling": "when_caused_by_living_non_player"
+        "message_id": "fireworks"
       }
     },
     {
-      "id": 14,
       "name": "minecraft:fly_into_wall",
+      "id": 14,
       "element": {
-        "exhaustion": 0,
-        "message_id": "flyIntoWall",
-        "scaling": "when_caused_by_living_non_player"
+        "scaling": "when_caused_by_living_non_player",
+        "exhaustion": 0.0,
+        "message_id": "flyIntoWall"
       }
     },
     {
-      "id": 15,
       "name": "minecraft:freeze",
+      "id": 15,
       "element": {
-        "exhaustion": 0,
-        "message_id": "freeze",
+        "effects": "freezing",
         "scaling": "when_caused_by_living_non_player",
-        "effects": "freezing"
+        "exhaustion": 0.0,
+        "message_id": "freeze"
       }
     },
     {
-      "id": 16,
       "name": "minecraft:generic",
+      "id": 16,
       "element": {
-        "exhaustion": 0,
-        "message_id": "generic",
-        "scaling": "when_caused_by_living_non_player"
+        "scaling": "when_caused_by_living_non_player",
+        "exhaustion": 0.0,
+        "message_id": "generic"
       }
     },
     {
-      "id": 17,
       "name": "minecraft:generic_kill",
+      "id": 17,
       "element": {
-        "exhaustion": 0,
-        "message_id": "genericKill",
-        "scaling": "when_caused_by_living_non_player"
+        "scaling": "when_caused_by_living_non_player",
+        "exhaustion": 0.0,
+        "message_id": "genericKill"
       }
     },
     {
-      "id": 18,
       "name": "minecraft:hot_floor",
+      "id": 18,
       "element": {
-        "exhaustion": 0.1,
-        "message_id": "hotFloor",
+        "effects": "burning",
         "scaling": "when_caused_by_living_non_player",
-        "effects": "burning"
+        "exhaustion": 0.1,
+        "message_id": "hotFloor"
       }
     },
     {
-      "id": 19,
-      "name": "minecraft:indirect_magic",
-      "element": {
-        "exhaustion": 0,
-        "message_id": "indirectMagic",
-        "scaling": "when_caused_by_living_non_player"
-      }
-    },
-    {
-      "id": 20,
       "name": "minecraft:in_fire",
+      "id": 19,
       "element": {
-        "exhaustion": 0.1,
-        "message_id": "inFire",
+        "effects": "burning",
         "scaling": "when_caused_by_living_non_player",
-        "effects": "burning"
+        "exhaustion": 0.1,
+        "message_id": "inFire"
       }
     },
     {
-      "id": 21,
       "name": "minecraft:in_wall",
+      "id": 20,
       "element": {
-        "exhaustion": 0,
-        "message_id": "inWall",
-        "scaling": "when_caused_by_living_non_player"
+        "scaling": "when_caused_by_living_non_player",
+        "exhaustion": 0.0,
+        "message_id": "inWall"
       }
     },
     {
-      "id": 22,
+      "name": "minecraft:indirect_magic",
+      "id": 21,
+      "element": {
+        "scaling": "when_caused_by_living_non_player",
+        "exhaustion": 0.0,
+        "message_id": "indirectMagic"
+      }
+    },
+    {
       "name": "minecraft:lava",
+      "id": 22,
       "element": {
-        "exhaustion": 0.1,
-        "message_id": "lava",
+        "effects": "burning",
         "scaling": "when_caused_by_living_non_player",
-        "effects": "burning"
+        "exhaustion": 0.1,
+        "message_id": "lava"
       }
     },
     {
-      "id": 23,
       "name": "minecraft:lightning_bolt",
+      "id": 23,
       "element": {
+        "scaling": "when_caused_by_living_non_player",
         "exhaustion": 0.1,
-        "message_id": "lightningBolt",
-        "scaling": "when_caused_by_living_non_player"
+        "message_id": "lightningBolt"
       }
     },
     {
-      "id": 24,
       "name": "minecraft:magic",
+      "id": 24,
       "element": {
-        "exhaustion": 0,
-        "message_id": "magic",
-        "scaling": "when_caused_by_living_non_player"
+        "scaling": "when_caused_by_living_non_player",
+        "exhaustion": 0.0,
+        "message_id": "magic"
       }
     },
     {
-      "id": 25,
       "name": "minecraft:mob_attack",
+      "id": 25,
       "element": {
+        "scaling": "when_caused_by_living_non_player",
         "exhaustion": 0.1,
-        "message_id": "mob",
-        "scaling": "when_caused_by_living_non_player"
+        "message_id": "mob"
       }
     },
     {
-      "id": 26,
       "name": "minecraft:mob_attack_no_aggro",
+      "id": 26,
       "element": {
+        "scaling": "when_caused_by_living_non_player",
         "exhaustion": 0.1,
-        "message_id": "mob",
-        "scaling": "when_caused_by_living_non_player"
+        "message_id": "mob"
       }
     },
     {
-      "id": 27,
       "name": "minecraft:mob_projectile",
+      "id": 27,
       "element": {
+        "scaling": "when_caused_by_living_non_player",
         "exhaustion": 0.1,
-        "message_id": "mob",
-        "scaling": "when_caused_by_living_non_player"
+        "message_id": "mob"
       }
     },
     {
-      "id": 28,
       "name": "minecraft:on_fire",
+      "id": 28,
       "element": {
-        "exhaustion": 0,
-        "message_id": "onFire",
+        "effects": "burning",
         "scaling": "when_caused_by_living_non_player",
-        "effects": "burning"
+        "exhaustion": 0.0,
+        "message_id": "onFire"
       }
     },
     {
-      "id": 29,
-      "name": "minecraft:outside_border",
-      "element": {
-        "exhaustion": 0,
-        "message_id": "outsideBorder",
-        "scaling": "when_caused_by_living_non_player"
-      }
-    },
-    {
-      "id": 30,
       "name": "minecraft:out_of_world",
+      "id": 29,
       "element": {
-        "exhaustion": 0,
-        "message_id": "outOfWorld",
-        "scaling": "when_caused_by_living_non_player"
+        "scaling": "when_caused_by_living_non_player",
+        "exhaustion": 0.0,
+        "message_id": "outOfWorld"
       }
     },
     {
-      "id": 31,
+      "name": "minecraft:outside_border",
+      "id": 30,
+      "element": {
+        "scaling": "when_caused_by_living_non_player",
+        "exhaustion": 0.0,
+        "message_id": "outsideBorder"
+      }
+    },
+    {
       "name": "minecraft:player_attack",
+      "id": 31,
       "element": {
+        "scaling": "when_caused_by_living_non_player",
         "exhaustion": 0.1,
-        "message_id": "player",
-        "scaling": "when_caused_by_living_non_player"
+        "message_id": "player"
       }
     },
     {
-      "id": 32,
       "name": "minecraft:player_explosion",
+      "id": 32,
       "element": {
+        "scaling": "always",
         "exhaustion": 0.1,
-        "message_id": "explosion.player",
-        "scaling": "always"
+        "message_id": "explosion.player"
       }
     },
     {
-      "id": 33,
       "name": "minecraft:sonic_boom",
+      "id": 33,
       "element": {
-        "exhaustion": 0,
-        "message_id": "sonic_boom",
-        "scaling": "always"
+        "scaling": "always",
+        "exhaustion": 0.0,
+        "message_id": "sonic_boom"
       }
     },
     {
-      "id": 34,
       "name": "minecraft:stalagmite",
+      "id": 34,
       "element": {
-        "exhaustion": 0,
-        "message_id": "stalagmite",
-        "scaling": "when_caused_by_living_non_player"
+        "scaling": "when_caused_by_living_non_player",
+        "exhaustion": 0.0,
+        "message_id": "stalagmite"
       }
     },
     {
-      "id": 35,
       "name": "minecraft:starve",
+      "id": 35,
       "element": {
-        "exhaustion": 0,
-        "message_id": "starve",
-        "scaling": "when_caused_by_living_non_player"
+        "scaling": "when_caused_by_living_non_player",
+        "exhaustion": 0.0,
+        "message_id": "starve"
       }
     },
     {
-      "id": 36,
       "name": "minecraft:sting",
+      "id": 36,
       "element": {
+        "scaling": "when_caused_by_living_non_player",
         "exhaustion": 0.1,
-        "message_id": "sting",
-        "scaling": "when_caused_by_living_non_player"
+        "message_id": "sting"
       }
     },
     {
-      "id": 37,
       "name": "minecraft:sweet_berry_bush",
+      "id": 37,
       "element": {
-        "exhaustion": 0.1,
-        "message_id": "sweetBerryBush",
+        "effects": "poking",
         "scaling": "when_caused_by_living_non_player",
-        "effects": "poking"
+        "exhaustion": 0.1,
+        "message_id": "sweetBerryBush"
       }
     },
     {
-      "id": 38,
       "name": "minecraft:thorns",
+      "id": 38,
       "element": {
-        "exhaustion": 0.1,
-        "message_id": "thorns",
+        "effects": "thorns",
         "scaling": "when_caused_by_living_non_player",
-        "effects": "thorns"
+        "exhaustion": 0.1,
+        "message_id": "thorns"
       }
     },
     {
-      "id": 39,
       "name": "minecraft:thrown",
+      "id": 39,
       "element": {
-        "exhaustion": 0.1,
-        "message_id": "thrown",
-        "scaling": "when_caused_by_living_non_player"
-      }
-    },
-    {
-      "id": 40,
-      "name": "minecraft:trident",
-      "element": {
-        "exhaustion": 0.1,
-        "message_id": "trident",
-        "scaling": "when_caused_by_living_non_player"
-      }
-    },
-    {
-      "id": 41,
-      "name": "minecraft:unattributed_fireball",
-      "element": {
-        "exhaustion": 0.1,
-        "message_id": "onFire",
         "scaling": "when_caused_by_living_non_player",
-        "effects": "burning"
-      }
-    },
-    {
-      "id": 42,
-      "name": "minecraft:wither",
-      "element": {
-        "exhaustion": 0,
-        "message_id": "wither",
-        "scaling": "when_caused_by_living_non_player"
-      }
-    },
-    {
-      "id": 43,
-      "name": "minecraft:wither_skull",
-      "element": {
         "exhaustion": 0.1,
-        "message_id": "witherSkull",
-        "scaling": "when_caused_by_living_non_player"
+        "message_id": "thrown"
+      }
+    },
+    {
+      "name": "minecraft:trident",
+      "id": 40,
+      "element": {
+        "scaling": "when_caused_by_living_non_player",
+        "exhaustion": 0.1,
+        "message_id": "trident"
+      }
+    },
+    {
+      "name": "minecraft:unattributed_fireball",
+      "id": 41,
+      "element": {
+        "effects": "burning",
+        "scaling": "when_caused_by_living_non_player",
+        "exhaustion": 0.1,
+        "message_id": "onFire"
+      }
+    },
+    {
+      "name": "minecraft:wither",
+      "id": 42,
+      "element": {
+        "scaling": "when_caused_by_living_non_player",
+        "exhaustion": 0.0,
+        "message_id": "wither"
+      }
+    },
+    {
+      "name": "minecraft:wither_skull",
+      "id": 43,
+      "element": {
+        "scaling": "when_caused_by_living_non_player",
+        "exhaustion": 0.1,
+        "message_id": "witherSkull"
       }
     }
   ]
