@@ -5,7 +5,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound;
 public partial class SpawnExperienceOrbPacket : IClientboundPacket
 {
     [Field(0), VarLength]
-    private const int EntityId = 2; // Source: https://minecraft.wiki/w/Java_Edition_data_values/Pre-flattening/Entity_IDs
+    public int EntityId { get; init; }
 
     [Field(1), DataFormat(typeof(double))]
     public VectorF Position { get; }

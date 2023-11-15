@@ -1,12 +1,13 @@
 ﻿using Obsidian.Serialization.Attributes;
 
-namespace Obsidian.Net.Packets.Configuration.Clientbound;
+namespace Obsidian.Net.Packets;
 public sealed partial class UpdateTagsPacket : IClientboundPacket
 {
     [Field(0)]
     public IDictionary<string, Tag[]> Tags { get; }
 
-    public int Id => 0x08;
+    //0x70 for play state
+    public int Id { get; init; } = 0x08;
 
     public static UpdateTagsPacket FromRegistry { get; } = new(Registries.TagsRegistry.Categories);
 

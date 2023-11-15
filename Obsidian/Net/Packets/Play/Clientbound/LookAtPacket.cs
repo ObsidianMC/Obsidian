@@ -19,7 +19,7 @@ public partial class LookAtPacket : IClientboundPacket
     [Field(4), VarLength, ActualType(typeof(int)), Condition(nameof(IsEntity))]
     public AimType AimEntity { get; set; }
 
-    public int Id => 0x3B;
+    public int Id => 0x3D;
 }
 
 public enum AimType : int

@@ -26,7 +26,7 @@ public partial class EntityEffectPacket : IClientboundPacket
     [Field(6), Condition("HasFactorData")]
     public NbtCompound FactorCodec { get; init; }
 
-    public int Id => 0x6C;
+    public int Id => 0x6E;
 
     public EntityEffectPacket(int entityId, int effectId, int duration)
     {

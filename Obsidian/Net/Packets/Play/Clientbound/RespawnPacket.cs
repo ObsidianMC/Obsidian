@@ -25,6 +25,18 @@ public partial class RespawnPacket : IClientboundPacket
     [Field(6)]
     public bool IsFlat { get; init; }
 
+    [Field(7)]
+    public bool HasDeathLocation { get; init; }
+
+    [Field(8), Condition(nameof(HasDeathLocation))]
+    public string DeathDimensionName { get; init; }
+
+    [Field(9), Condition(nameof(HasDeathLocation))]
+    public VectorF DeathLocation { get; init; }
+
+    [Field(10), VarLength]
+    public int PortalCooldown { get; init; }
+
     /// <summary>
     /// In the Notchian implementation, this is context dependent:<br/>
     /// <br/>
@@ -32,20 +44,8 @@ public partial class RespawnPacket : IClientboundPacket
     /// exiting the end poem/credits keeps the attributes;<br/>
     /// other dimension changes(portals or teleports) keep all data.
     /// </summary>
-    [Field(7), ActualType(typeof(sbyte))]
+    [Field(11), ActualType(typeof(sbyte))]
     public DataKept DataKept { get; init; }
 
-    [Field(8)]
-    public bool HasDeathLocation { get; init; }
-
-    [Field(9), Condition(nameof(HasDeathLocation))]
-    public string DeathDimensionName { get; init; }
-
-    [Field(10), Condition(nameof(HasDeathLocation))]
-    public VectorF DeathLocation { get; init; }
-
-    [Field(11), VarLength]
-    public int PortalCooldown { get; init; }
-
-    public int Id => 0x41;
+    public int Id => 0x43;
 }

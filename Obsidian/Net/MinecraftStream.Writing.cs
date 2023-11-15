@@ -1186,6 +1186,16 @@ public partial class MinecraftStream
     }
 
     [WriteMethod]
+    public void WriteChunkBiomes(ChunkBiome chunkBiome)
+    {
+        this.WriteInt(chunkBiome.X);
+        this.WriteInt(chunkBiome.Z);
+
+        this.WriteVarInt(chunkBiome.Data.Length);
+        this.WriteByteArray(chunkBiome.Data);
+    }
+
+    [WriteMethod]
     public void WriteRecipes(IDictionary<string, IRecipe> recipes)
     {
         WriteVarInt(recipes.Count);

@@ -64,5 +64,5 @@ public partial class LoginPacket : IClientboundPacket
     [Field(19), VarLength]
     public int PortalCooldown { get; init; }
 
-    public int Id => 0x28;
+    public int Id => 0x29;
 }

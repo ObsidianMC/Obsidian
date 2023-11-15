@@ -18,5 +18,5 @@ public sealed partial class DisguisedChatMessage : IClientboundPacket
     [Field(4)]
     public ChatMessage TargetName { get; init; }
 
-    public int Id => 0x1B;
+    public int Id => 0x1C;
 }

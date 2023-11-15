@@ -6,5 +6,5 @@ public sealed partial class ClearTitlesPacket : IClientboundPacket
     [Field(0)]
     public bool Reset { get; init; }
 
-    public int Id => 0x0E;
+    public int Id => 0x0F;
 }

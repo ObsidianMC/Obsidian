@@ -10,7 +10,7 @@ public partial class UnloadChunkPacket : IClientboundPacket
     [Field(1)]
     public int Z { get; }
 
-    public int Id => 0x1E;
+    public int Id => 0x1F;
 
     public UnloadChunkPacket(int x, int z)
     {

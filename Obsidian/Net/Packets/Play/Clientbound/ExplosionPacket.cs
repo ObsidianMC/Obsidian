@@ -13,10 +13,10 @@ public partial class ExplosionPacket : IClientboundPacket
     [Field(2)]
     public ExplosionRecord[] Records { get; init; }
 
-    [Field(3), DataFormat(typeof(float))]
-    public VectorF PlayerMotion { get; init; }
+    [Field(3)]
+    public Velocity PlayerMotion { get; init; }
 
-    public int Id => 0x1D;
+    public int Id => 0x1E;
 }
 
 public readonly struct ExplosionRecord

@@ -6,5 +6,5 @@ public partial class AcknowledgeBlockChangePacket : IClientboundPacket
     [Field(0), VarLength]
     public int SequenceID { get; init; }
 
-    public int Id => 0x06;
+    public int Id => 0x05;
 }

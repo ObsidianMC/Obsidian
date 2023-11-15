@@ -25,5 +25,5 @@ public partial class SetContainerSlotPacket : IClientboundPacket
     [Field(2)]
     public ItemStack SlotData { get; init; }
 
-    public int Id => 0x14;
+    public int Id => 0x15;
 }
