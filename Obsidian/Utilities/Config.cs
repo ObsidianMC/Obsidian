@@ -6,7 +6,7 @@ namespace Obsidian.Utilities;
 
 public class ServerConfiguration : IServerConfiguration
 {
-    public string Motd { get; set; } = "§k||||§r §5Obsidian §cPre§r-§cRelease §r§k||||§r \n§r§lRunning on .NET §l§c7 §r§l<3";
+    public string Motd { get; set; } = $"§k||||§r §5Obsidian §cPre§r-§cRelease §r§k||||§r \n§r§lRunning on .NET §l§c{Environment.Version} §r§l<3";
 
     public int Port { get; set; } = 25565;
 
@@ -14,22 +14,24 @@ public class ServerConfiguration : IServerConfiguration
 
     public string LeaveMessage { get; set; } = "§e{0} left the game";
 
-    public bool OnlineMode { get; set; } = false;
-    public int MaxPlayers { get; set; } = 1000000;
+    public bool OnlineMode { get; set; } = true;
+    public int MaxPlayers { get; set; } = 25;
 
-    public bool AllowOperatorRequests { get; set; }
+    public bool AllowOperatorRequests { get; set; } = true;
 
     /// <summary>
     /// If true, each login/client gets a random username where multiple connections from the same host will be allowed.
     /// </summary>
-    public bool MulitplayerDebugMode { get; set; }
+    public bool MulitplayerDebugMode { get; set; } = false;
 
-    public string Header { get; set; } = "§dObsidian > All other servers";
+    public string Header { get; set; } = "§dObsidian-powered minecraft server";
 
-    public string Footer { get; set; } = "§l( §cU §dw §cU §r§l)";
+    public string Footer { get; set; } = "§l( §cO §dw §cO §r§l)";
 
     public bool? Baah { get; set; }
+
     public bool WhitelistEnabled { get; set; }
+
     public bool IpWhitelistEnabled { get; set; }
 
     [JsonIgnore]
@@ -47,7 +49,10 @@ public class ServerConfiguration : IServerConfiguration
     public string[] DownloadPlugins { get; set; } = Array.Empty<string>();
     public RconConfig? Rcon { get; set; }
 
-    public bool UDPBroadcast = false;
+    /// <summary>
+    /// Allows the server to advertise itself as a LAN server to devices on your network.
+    /// </summary>
+    public bool UDPBroadcast = true; // Enabled because it's super useful for debugging tbh
 
     public int PregenerateChunkRange { get; set; } = 15; // by default, pregenerate range from -15 to 15
 
