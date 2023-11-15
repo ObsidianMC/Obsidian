@@ -69,7 +69,7 @@ internal sealed class Assets
             dimensions.Add(obj);
         }
 
-        return dimensions.ToArray();
+        return [.. dimensions];
     }
 
     public static Fluid[] GetFluids(string? json)
@@ -89,7 +89,7 @@ internal sealed class Assets
             fluids.Add(new Fluid(name, name.Substring(name.IndexOf(':') + 1), property.Value.GetInt32()));
         }
 
-        return fluids.ToArray();
+        return [.. fluids];
     }
 
     public static Block[] GetBlocks(string? json)
@@ -121,7 +121,7 @@ internal sealed class Assets
         foreach (var property in newBlocks.OrderBy(x => x.Key).Select(x => x.Value))
             blocks.Add(Block.Get(property, id++));
 
-        return blocks.ToArray();
+        return [.. blocks];
     }
 
     private static Item[] GetItems(string? json)
@@ -137,7 +137,7 @@ internal sealed class Assets
             items.Add(Item.Get(property));
         }
 
-        return items.ToArray();
+        return [.. items];
     }
 
     public static Tag[] GetTags(string? json, Block[] blocks, Fluid[] fluids)
@@ -171,7 +171,7 @@ internal sealed class Assets
         VerifyTags(knownTags, missedTags, taggables);
         VerifyTags(knownTags, missedTags, taggables);//I can't think of a better solution :skull:
 
-        return tags.ToArray();
+        return [.. tags];
     }
 
     private static void VerifyTags(Dictionary<string, Tag> knownTags, Dictionary<string, List<string>> missedTags, Dictionary<string, ITaggable> taggables)

@@ -57,7 +57,7 @@ public class NibbleArray //: INbtSerializable
 
     public void Deserialize(INbtTag value)
     {
-        this.Data = ((NbtArray<byte>)value).GetArray().ToArray();
+        this.Data = [.. ((NbtArray<byte>)value).GetArray()];
     }
 }
 

@@ -529,8 +529,8 @@ public sealed class Client : IDisposable
         await QueuePacketAsync(new UpdateRecipeBookPacket
         {
             Action = UnlockRecipeAction.Init,
-            FirstRecipeIds = RecipesRegistry.Recipes.Keys.ToList(),
-            SecondRecipeIds = RecipesRegistry.Recipes.Keys.ToList()
+            FirstRecipeIds = [.. RecipesRegistry.Recipes.Keys],
+            SecondRecipeIds = [.. RecipesRegistry.Recipes.Keys]
         });
 
         await SendPlayerListDecoration();
@@ -559,7 +559,7 @@ public sealed class Client : IDisposable
 
         await SendTimeUpdateAsync();
         await SendWeatherUpdateAsync();
-        await QueuePacketAsync(new SetContainerContentPacket(0, Player.Inventory.ToList())
+        await QueuePacketAsync(new SetContainerContentPacket(0, [.. Player.Inventory])
         {
             StateId = Player.Inventory.StateId++,
             CarriedItem = Player.GetHeldItem(),

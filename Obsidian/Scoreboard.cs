@@ -194,7 +194,7 @@ public class Scoreboard : IScoreboard
             NameTagVisibility = nameTagVisibility,
             CollisionRule = collisionRule,
             Color = color,
-            Entities = entities.ToHashSet()
+            Entities = [.. entities]
         };
 
         await team.CreateAsync();
@@ -215,7 +215,7 @@ public class Scoreboard : IScoreboard
             Color = color,
             Prefix = prefix,
             Suffix = suffix,
-            Entities = entities.ToHashSet()
+            Entities = [.. entities]
         };
 
         await team.CreateAsync();

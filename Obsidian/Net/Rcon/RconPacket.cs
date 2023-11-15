@@ -30,7 +30,7 @@ public class RconPacket
         {
             if (string.IsNullOrEmpty(value))
                 PayloadBytes = [0x00];
-            PayloadBytes = encoding.GetBytes(value).Append((byte)0x00).ToArray();
+            PayloadBytes = [.. encoding.GetBytes(value), (byte)0x00];
         }
     }
 
@@ -81,7 +81,7 @@ public class RconPacket
         {
             buf = new byte[payloadSize];
             await stream.ReadAsync(buf, ct);
-            packet.PayloadBytes = buf.ToArray();
+            packet.PayloadBytes = [.. buf];
         }
 
         buf = new byte[1];
