@@ -114,7 +114,7 @@ public sealed class RecipesConverter : JsonConverter<IRecipe[]>
             }
         }
 
-        return [.. recipes];
+        return recipes.ToArray();
     }
 
     public override void Write(Utf8JsonWriter writer, IRecipe[] value, JsonSerializerOptions options) => throw new NotImplementedException();

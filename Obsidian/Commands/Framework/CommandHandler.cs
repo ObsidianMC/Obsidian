@@ -53,7 +53,7 @@ public class CommandHandler
 
     public Command[] GetAllCommands()
     {
-        return [.. _commands];
+        return _commands.ToArray();
     }
 
     public void AddArgumentParser(BaseArgumentParser parser)
@@ -139,7 +139,7 @@ public class CommandHandler
             var info = st.GetCustomAttribute<CommandInfoAttribute>();
             var issuers = st.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? DefaultIssuerScope;
 
-            var cmd = new Command(name, [.. aliases], info?.Description ?? string.Empty, info?.Usage ?? string.Empty, parent, checks.ToArray(), this, plugin, null, st, issuers);
+            var cmd = new Command(name, aliases.ToArray(), info?.Description ?? string.Empty, info?.Usage ?? string.Empty, parent, checks.ToArray(), this, plugin, null, st, issuers);
 
             RegisterSubgroups(st, plugin, cmd);
             RegisterSubcommands(st, plugin, cmd);

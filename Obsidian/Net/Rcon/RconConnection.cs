@@ -125,7 +125,7 @@ public class RconConnection
                             {
                                 Type = RconPacketType.EncryptInitial,
                                 RequestId = packet.RequestId,
-                                PayloadBytes = [.. bytes]
+                                PayloadBytes = bytes.ToArray()
                             });
                             continue;
                         }

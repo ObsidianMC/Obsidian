@@ -88,6 +88,6 @@ public class CommandParser
             tokens.Add(buffer.ToString());
         }
 
-        return [.. tokens];
+        return tokens.ToArray();
     }
 }

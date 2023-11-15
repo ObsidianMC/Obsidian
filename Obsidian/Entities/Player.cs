@@ -216,7 +216,7 @@ public sealed partial class Player : Living, IPlayer
         await client.QueuePacketAsync(new OpenScreenPacket(container, nextId));
 
         if (container.HasItems())
-            await client.QueuePacketAsync(new SetContainerContentPacket(nextId, [.. container]));
+            await client.QueuePacketAsync(new SetContainerContentPacket(nextId, container.ToList()));
     }
 
     public async override Task TeleportAsync(VectorF pos)

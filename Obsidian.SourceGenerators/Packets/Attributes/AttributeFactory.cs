@@ -31,7 +31,7 @@ internal static class AttributeFactory
         }
 
         result.Sort((a, b) => a.Flag.CompareTo(b.Flag));
-        return [.. result];
+        return result.ToArray();
     }
 
     private static Dictionary<string, FactoryMethod> GetFactoryMethods()

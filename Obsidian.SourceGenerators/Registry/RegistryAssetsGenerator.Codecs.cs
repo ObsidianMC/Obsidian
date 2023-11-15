@@ -18,10 +18,10 @@ public partial class RegistryAssetsGenerator
 
         var codecs = assets.Codecs;
 
-        GenerateDimensions([.. codecs["dimensions"]], builder, ctx);
-        GenerateBiomes([.. codecs["biomes"]], builder, ctx);
-        GenerateChatType([.. codecs["chat_type"]], builder, ctx);
-        GenerateDamageTypes([.. codecs["damage_type"]], builder, ctx);
+        GenerateDimensions(codecs["dimensions"].ToArray(), builder, ctx);
+        GenerateBiomes(codecs["biomes"].ToArray(), builder, ctx);
+        GenerateChatType(codecs["chat_type"].ToArray(), builder, ctx);
+        GenerateDamageTypes(codecs["damage_type"].ToArray(), builder, ctx);
 
         builder.EndScope();
 

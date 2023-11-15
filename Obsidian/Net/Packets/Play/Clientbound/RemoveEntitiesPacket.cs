@@ -11,6 +11,6 @@ public partial class RemoveEntitiesPacket : IClientboundPacket
 
     public RemoveEntitiesPacket(params int[] entities)
     {
-        this.Entities = [.. entities];
+        this.Entities = entities.ToList();
     }
 }
