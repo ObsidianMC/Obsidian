@@ -4,7 +4,7 @@ public class MinecraftArgumentTypes
 {
     // TODO maybe make a Dictionary mapping an enum to a string?
     private static string[] mcTypes =
-    {
+    [
             "brigadier:bool",
             "brigadier:double",
             "brigadier:float",
@@ -52,7 +52,7 @@ public class MinecraftArgumentTypes
             "minecraft:time",
             // OBSIDIAN TYPES
             "obsidian:player"
-        };
+        ];
 
     public static bool IsValidMcType(string? input) => mcTypes.Contains(input);
 }

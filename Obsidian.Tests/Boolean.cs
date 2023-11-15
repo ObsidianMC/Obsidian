@@ -27,7 +27,7 @@ public class Boolean
     [Theory(DisplayName = "Deserialization of booleans", Timeout = 100)]
     public async void DeserializeAsync(bool input, byte @byte)
     {
-        using var stream = new MinecraftStream(new[] { @byte });
+        using var stream = new MinecraftStream([@byte]);
 
         bool boolean = await stream.ReadBooleanAsync();
 

@@ -10,28 +10,28 @@ internal static class ChunkBuilder
     private const float OreSize = 0.4F;
     private const float StoneAltSize = 1F;
 
-    private static readonly IBlock[] stoneAlts = new IBlock[6]
-    {
+    private static readonly IBlock[] stoneAlts =
+    [
         BlocksRegistry.Andesite,
         BlocksRegistry.Diorite,
         BlocksRegistry.Granite,
         BlocksRegistry.Gravel,
         BlocksRegistry.Dirt,
         BlocksRegistry.Tuff
-    };
+    ];
 
-    private static readonly IBlock[] deepstoneAlts = new IBlock[6]
-    {
+    private static readonly IBlock[] deepstoneAlts =
+    [
         BlocksRegistry.Gravel,
         BlocksRegistry.Tuff,
         BlocksRegistry.Gravel,
         BlocksRegistry.Tuff,
         BlocksRegistry.Gravel,
         BlocksRegistry.Tuff
-    };
+    ];
 
-    private static readonly IBlock[] ores = new IBlock[8]
-    {
+    private static readonly IBlock[] ores =
+    [
         BlocksRegistry.CoalOre,
         BlocksRegistry.IronOre,
         BlocksRegistry.CopperOre,
@@ -40,10 +40,10 @@ internal static class ChunkBuilder
         BlocksRegistry.RedstoneOre,
         BlocksRegistry.EmeraldOre,
         BlocksRegistry.DiamondOre,
-    };
+    ];
 
-    private static readonly IBlock[] deepores = new IBlock[8]
-    {
+    private static readonly IBlock[] deepores =
+    [
         BlocksRegistry.DeepslateCoalOre,
         BlocksRegistry.DeepslateIronOre,
         BlocksRegistry.DeepslateCopperOre,
@@ -52,7 +52,7 @@ internal static class ChunkBuilder
         BlocksRegistry.DeepslateRedstoneOre,
         BlocksRegistry.DeepslateEmeraldOre,
         BlocksRegistry.DeepslateDiamondOre,
-    };
+    ];
 
     internal enum OreType : int
     {

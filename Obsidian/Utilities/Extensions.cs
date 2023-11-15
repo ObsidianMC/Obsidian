@@ -16,7 +16,7 @@ namespace Obsidian.Utilities;
 
 public static partial class Extensions
 {
-    internal readonly static EntityType[] nonLiving = new[] { EntityType.Arrow,
+    internal readonly static EntityType[] nonLiving = [ EntityType.Arrow,
                 EntityType.SpectralArrow,
                 EntityType.Boat,
                 EntityType.DragonFireball,
@@ -50,7 +50,7 @@ public static partial class Extensions
                 EntityType.Potion,
                 EntityType.Trident,
                 EntityType.FishingBobber,
-                EntityType.EyeOfEnder};
+                EntityType.EyeOfEnder];
 
 
 
