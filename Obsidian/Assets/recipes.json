@@ -696,7 +696,7 @@
   },
   "bamboo_fence": {
     "category": "misc",
-    "group": "wooden_custom_fence",
+    "group": "wooden_fence",
     "key": {
       "#": {
         "count": 1,
@@ -723,7 +723,7 @@
   },
   "bamboo_fence_gate": {
     "category": "redstone",
-    "group": "wooden_custom_fence_gate",
+    "group": "wooden_fence_gate",
     "key": {
       "#": {
         "count": 1,
