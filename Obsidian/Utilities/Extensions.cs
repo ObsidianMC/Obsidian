@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Connections;
 using Obsidian.Entities;
+using Obsidian.Net;
+using Obsidian.Net.Packets;
 using Obsidian.Registries;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -53,6 +55,13 @@ public static partial class Extensions
                 EntityType.EyeOfEnder};
 
 
+    public static void WritePacketId(this IPacket packet, MinecraftStream stream)
+    {
+        stream.Lock.Wait();
+        stream.WriteVarInt(packet.Id.GetVarIntLength());
+        stream.WriteVarInt(packet.Id);
+        stream.Lock.Release();
+    }
 
     public static ParameterExpression[] GetParamExpressions(this Type[] types) => types.Select((t, i) => Expression.Parameter(t, $"param{i}")).ToArray();
 

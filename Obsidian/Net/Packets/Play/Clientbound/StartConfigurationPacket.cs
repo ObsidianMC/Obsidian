@@ -5,5 +5,5 @@ public sealed partial class StartConfigurationPacket : IClientboundPacket
 {
     public int Id => 0x65;
 
-    public void Serialize(MinecraftStream stream) { }
+    public void Serialize(MinecraftStream stream) => this.WritePacketId(stream);
 }

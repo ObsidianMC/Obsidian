@@ -152,7 +152,7 @@ public sealed class Client : IDisposable
     /// <summary>
     /// Used to log actions caused by the client.
     /// </summary>
-    protected ILogger Logger { get; private set; }
+    public ILogger Logger { get; private set; }
 
     /// <summary>
     /// The player that the client is logged in as.
@@ -302,7 +302,11 @@ public sealed class Client : IDisposable
                             break;
                         case 0x03:
                             //Login Acknowledged
-                            await this.ConfigureAsync();
+                            this.Logger.LogDebug("Login Acknowledged switching to configuration state.");
+
+                            this.State = ClientState.Configuration;
+
+                            this.Configure();
                             break;
                         default:
                             Logger.LogError("Client in state Login tried to send an unimplemented packet. Forcing it to disconnect.");
@@ -350,12 +354,10 @@ public sealed class Client : IDisposable
         this.Dispose();//Dispose client after
     }
 
-    private async Task ConfigureAsync()
+    private void Configure()
     {
-        this.State = ClientState.Configuration;
-
-        await this.QueuePacketAsync(RegistryDataPacket.Default);
-        await this.QueuePacketAsync(UpdateTagsPacket.FromRegistry);
+        this.SendPacket(RegistryDataPacket.Default);
+        this.SendPacket(UpdateTagsPacket.FromRegistry);
 
         this.SendPacket(FinishConfigurationPacket.Default);
     }

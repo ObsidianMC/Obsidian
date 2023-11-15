@@ -614,7 +614,7 @@ public partial class MinecraftStream
             WriteVarInt(item.Id);
             WriteByte((sbyte)value.Count);
 
-            NbtWriter writer = new(this, string.Empty);
+            NbtWriter writer = new(this, true);
 
             ItemMeta meta = value.ItemMeta;
 
@@ -702,7 +702,7 @@ public partial class MinecraftStream
     [WriteMethod]
     public void WriteMixedCodec(MixedCodec _)
     {
-        var writer = new NbtWriter(this, "");
+        var writer = new NbtWriter(this, true);
 
         var list = new NbtList(NbtTagType.Compound, "value");
 
@@ -817,7 +817,7 @@ public partial class MinecraftStream
     [WriteMethod]
     public void WriteDimensionCodec(DimensionCodec value)
     {
-        var writer = new NbtWriter(this, "");
+        var writer = new NbtWriter(this, true);
 
         value.WriteElement(writer);
 
@@ -979,7 +979,7 @@ public partial class MinecraftStream
             await WriteVarIntAsync(item.Id);
             await WriteByteAsync((sbyte)slot.Count);
 
-            var writer = new NbtWriter(this, "");
+            var writer = new NbtWriter(this, true);
 
             var itemMeta = slot.ItemMeta;
 

@@ -43,11 +43,11 @@ public partial class LoginPacket : IClientboundPacket
     [Field(12), ActualType(typeof(byte))]
     public Gamemode Gamemode { get; init; } = Gamemode.Survival;
 
-    [Field(13)]
-    public sbyte PreviousGamemode { get; init; } = 0;
+    [Field(13), ActualType(typeof(sbyte))]
+    public Gamemode PreviousGamemode { get; init; } = Gamemode.Survival;
 
     [Field(14)]
-    public bool Default { get; init; } = false;
+    public bool Debug { get; init; } = false;
 
     [Field(15)]
     public bool Flat { get; init; } = false;

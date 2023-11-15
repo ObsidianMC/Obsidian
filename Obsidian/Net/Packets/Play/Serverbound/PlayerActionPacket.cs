@@ -1,4 +1,5 @@
-﻿using Obsidian.API.Events;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
