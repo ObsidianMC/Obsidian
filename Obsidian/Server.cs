@@ -151,7 +151,7 @@ public partial class Server : IServer
                 var udpClient = new UdpClient("224.0.2.60", 4445);
                 var timer = new PeriodicTimer(TimeSpan.FromSeconds(1.5));
                 string? lastMotd = null;
-                byte[] bytes = Array.Empty<byte>(); // Cached motd as utf-8 bytes
+                byte[] bytes = []; // Cached motd as utf-8 bytes
                 while (await timer.WaitForNextTickAsync(_cancelTokenSource.Token))
                 {
                     if (Config.Motd != lastMotd)

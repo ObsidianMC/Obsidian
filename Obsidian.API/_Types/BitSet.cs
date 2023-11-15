@@ -3,7 +3,7 @@
 public sealed class BitSet
 {
     public ReadOnlyMemory<long> DataStorage => data.AsMemory();
-    private long[] data = Array.Empty<long>();
+    private long[] data = [];
 
     public void SetBit(int bitIndex, bool value)
     {

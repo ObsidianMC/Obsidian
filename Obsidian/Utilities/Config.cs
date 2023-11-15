@@ -44,7 +44,7 @@ public class ServerConfiguration : IServerConfiguration
 
     public long ConnectionThrottle { get; set; } = 15_000;
 
-    public string[] DownloadPlugins { get; set; } = Array.Empty<string>();
+    public string[] DownloadPlugins { get; set; } = [];
     public RconConfig? Rcon { get; set; }
 
     public bool UDPBroadcast = false;
