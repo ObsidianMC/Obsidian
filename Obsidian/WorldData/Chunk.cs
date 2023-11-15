@@ -19,11 +19,11 @@ public class Chunk
     private const int worldFloor = -64;
 
     //TODO try and do some temp caching
-    public Dictionary<short, BlockMeta> BlockMetaStore { get; private set; } = [];
-    public Dictionary<short, NbtCompound> BlockEntities { get; private set; } = [];
+    public Dictionary<short, BlockMeta> BlockMetaStore { get; private set; } = new Dictionary<short, BlockMeta>();
+    public Dictionary<short, NbtCompound> BlockEntities { get; private set; } = new Dictionary<short, NbtCompound>();
 
     public ChunkSection[] Sections { get; private set; } = new ChunkSection[24];
-    public Dictionary<HeightmapType, Heightmap> Heightmaps { get; private set; } = [];
+    public Dictionary<HeightmapType, Heightmap> Heightmaps { get; private set; } = new Dictionary<HeightmapType, Heightmap>();
 
 
     public Chunk(int x, int z)

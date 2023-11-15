@@ -14,17 +14,17 @@ public abstract class BaseFlora
 
     protected int height = 1;
 
-    protected List<Material> growsIn =
-    [
+    protected List<Material> growsIn = new()
+    {
         Material.Air
-    ];
+    };
 
-    protected List<Material> growsOn =
-    [
+    protected List<Material> growsOn = new()
+    {
         Material.GrassBlock,
         Material.Dirt,
         Material.Podzol
-    ];
+    };
 
     protected BaseFlora(GenHelper helper, Chunk chunk, Material mat = Material.RedTulip)
     {

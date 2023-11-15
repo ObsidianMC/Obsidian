@@ -17,7 +17,7 @@ public class World : IWorld, IAsyncDisposable
     private float rainLevel = 0f;
     private bool initialized = false;
 
-    internal Dictionary<string, World> dimensions = [];
+    internal Dictionary<string, World> dimensions = new();
 
     public Level LevelData { get; internal set; }
 
@@ -31,9 +31,9 @@ public class World : IWorld, IAsyncDisposable
 
     public ConcurrentQueue<(int X, int Z)> ChunksToGen { get; private set; } = new();
 
-    public ConcurrentHashSet<(int X, int Z)> SpawnChunks { get; private set; } = [];
+    public ConcurrentHashSet<(int X, int Z)> SpawnChunks { get; private set; } = new();
 
-    public ConcurrentHashSet<(int X, int Z)> LoadedChunks { get; private set; } = [];
+    public ConcurrentHashSet<(int X, int Z)> LoadedChunks { get; private set; } = new();
 
     public string Name { get; }
     public string Seed { get; }
@@ -551,7 +551,7 @@ public class World : IWorld, IAsyncDisposable
         // Check for chunks to unload every 30 seconds
         if (LevelData.Time > 0 && LevelData.Time % (20 * 30) == 0)
         {
-            List<(int X, int Z)> chunksToKeep = [];
+            List<(int X, int Z)> chunksToKeep = new();
             Players.Where(p => p.Value.World == this).ForEach(p =>
             {
                 chunksToKeep.AddRange(p.Value.client.LoadedChunks);

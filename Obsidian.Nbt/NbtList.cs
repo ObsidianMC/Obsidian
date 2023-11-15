@@ -5,7 +5,7 @@ namespace Obsidian.Nbt;
 
 public class NbtList : INbtTag, IList<INbtTag>
 {
-    private readonly List<INbtTag> baseList = [];
+    private readonly List<INbtTag> baseList = new();
 
     public int Count => this.baseList.Count;
 

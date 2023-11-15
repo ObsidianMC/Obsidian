@@ -26,12 +26,12 @@ public sealed class PluginManager
     /// </summary>
     public DirectoryWatcher DirectoryWatcher { get; } = new();
 
-    private readonly List<PluginContainer> plugins = [];
-    private readonly List<PluginContainer> stagedPlugins = [];
+    private readonly List<PluginContainer> plugins = new();
+    private readonly List<PluginContainer> stagedPlugins = new();
     internal readonly ServiceProvider serviceProvider = ServiceProvider.Create();
     private readonly object eventSource;
     private readonly IServer server;
-    private readonly List<EventContainer> events = [];
+    private readonly List<EventContainer> events = new();
     internal readonly ILogger logger;
     private readonly CommandHandler commands;
 

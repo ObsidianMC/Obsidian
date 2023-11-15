@@ -67,12 +67,12 @@ public sealed class Level
     /// <summary>
     ///  A collection of bossbars.
     /// </summary>
-    public List<NbtCompound> CustomBossEvents { get; set; } = [];
+    public List<NbtCompound> CustomBossEvents { get; set; } = new();
 
     /// <summary>
     /// Options for datapacks.
     /// </summary>
-    public List<NbtCompound> DataPacks { get; set; } = [];
+    public List<NbtCompound> DataPacks { get; set; } = new();
 
     /// <summary>
     /// The time of day. 0 is sunrise, 6000 is mid day, 12000 is sunset, 18000 is mid night, 24000 is the next day's 0.

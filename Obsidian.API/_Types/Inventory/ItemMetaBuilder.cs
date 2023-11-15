@@ -18,12 +18,12 @@ public class ItemMetaBuilder
 
     public IReadOnlyList<ChatMessage> Lore { get; }
 
-    private readonly Dictionary<EnchantmentType, Enchantment> enchantments = [];
-    private readonly Dictionary<EnchantmentType, Enchantment> storedEnchantments = [];
+    private readonly Dictionary<EnchantmentType, Enchantment> enchantments = new Dictionary<EnchantmentType, Enchantment>();
+    private readonly Dictionary<EnchantmentType, Enchantment> storedEnchantments = new Dictionary<EnchantmentType, Enchantment>();
 
-    private readonly List<string> canDestroy = [];
+    private readonly List<string> canDestroy = new List<string>();
 
-    private readonly List<ChatMessage> lore = [];
+    private readonly List<ChatMessage> lore = new List<ChatMessage>();
 
     public ItemMetaBuilder()
     {

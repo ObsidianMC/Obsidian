@@ -1045,7 +1045,7 @@ public partial class MinecraftStream
                     foreach (var item in key)
                     {
                         if (ingredients[index] is null)
-                            ingredients[index] = [item];
+                            ingredients[index] = new List<ItemStack> { item };
                         else
                             ingredients[index].Add(item);
                     }
@@ -1195,7 +1195,7 @@ public partial class MinecraftStream
                     foreach (var item in key)
                     {
                         if (ingredients[index] is null)
-                            ingredients[index] = [item];
+                            ingredients[index] = new List<ItemStack> { item };
                         else
                             ingredients[index].Add(item);
                     }

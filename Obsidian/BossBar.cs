@@ -10,7 +10,7 @@ public class BossBar : IBossBar
     private Server server;
 
     private BossBarRemoveAction removeAction;
-    public HashSet<Guid> Players { get; } = [];
+    public HashSet<Guid> Players { get; } = new();
 
     public Guid Uuid { get; } = Guid.NewGuid();
 

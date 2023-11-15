@@ -33,7 +33,7 @@ public partial class UpdateTeamsPacket : IClientboundPacket
     public ChatMessage TeamSuffix { get; set; }
 
     [Field(9), Condition("Mode != TeamModeOption.RemoveTeam || Mode != TeamModeOption.UpdateTeam")]
-    public HashSet<string> Entities { get; set; } = [];
+    public HashSet<string> Entities { get; set; } = new();
 
     public int Id => 0x5A;
 

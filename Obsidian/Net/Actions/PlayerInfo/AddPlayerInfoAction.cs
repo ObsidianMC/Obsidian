@@ -4,7 +4,7 @@ public class AddPlayerInfoAction : InfoAction
 {
     public string Name { get; set; }
 
-    public List<SkinProperty> Properties { get; set; } = [];
+    public List<SkinProperty> Properties { get; set; } = new List<SkinProperty>();
 
     public override PlayerInfoAction Type => PlayerInfoAction.AddPlayer;
 

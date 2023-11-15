@@ -258,8 +258,8 @@ public partial class Server
 
                 if (tileEntity == null)
                 {
-                    tileEntity =
-                    [
+                    tileEntity = new NbtCompound()
+                    {
                         new NbtTag<string>("id", (container as IBlockEntity).Id),
 
                         new NbtTag<int>("x", blockPosition.X),
@@ -267,7 +267,7 @@ public partial class Server
                         new NbtTag<int>("z", blockPosition.Z),
 
                         new NbtTag<string>("CustomName", container.Title.ToJson())
-                    ];
+                    };
 
                     await player.world.SetBlockEntity(blockPosition, tileEntity);
                 }

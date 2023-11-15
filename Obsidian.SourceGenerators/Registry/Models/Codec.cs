@@ -7,7 +7,7 @@ internal sealed class Codec : IHasName, IRegistryItem
 
     public int RegistryId { get; }
 
-    public Dictionary<string, JsonElement> Properties { get; set; } = [];
+    public Dictionary<string, JsonElement> Properties { get; set; } = new();
 
     public Codec(string name, int registryId)
     {

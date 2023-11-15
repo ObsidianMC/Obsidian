@@ -24,7 +24,7 @@ public sealed class RconServer
         _logger = logger;
         _config = config;
         _cmdHandler = commandHandler;
-        _connections = [];
+        _connections = new();
     }
 
     public async Task RunAsync(Server server, CancellationToken cToken)

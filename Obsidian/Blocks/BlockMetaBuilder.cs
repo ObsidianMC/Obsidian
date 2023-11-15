@@ -14,9 +14,9 @@ public class BlockMetaBuilder
 
     public IReadOnlyList<string> CanPlaceOn { get; }
 
-    private readonly List<string> canPlaceOn = [];
+    private readonly List<string> canPlaceOn = new List<string>();
 
-    private readonly List<ChatMessage> lore = [];
+    private readonly List<ChatMessage> lore = new List<ChatMessage>();
 
     public BlockMetaBuilder()
     {

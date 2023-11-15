@@ -7,8 +7,8 @@ internal sealed class MethodsRegistry
     public IReadOnlyList<Method> WriteMethods => writeMethods;
     public IReadOnlyList<Method> ReadMethods => readMethods;
 
-    private readonly List<Method> writeMethods = [];
-    private readonly List<Method> readMethods = [];
+    private readonly List<Method> writeMethods = new();
+    private readonly List<Method> readMethods = new();
 
     public bool TryGetWriteMethod(Property property, out Method method)
     {

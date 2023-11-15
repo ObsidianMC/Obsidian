@@ -12,7 +12,7 @@ public partial class PlayerInfoUpdatePacket : IClientboundPacket
     /// All action lists must set the same types of InfoAction set
     /// </remarks>
     [Field(1)]
-    public Dictionary<Guid, List<InfoAction>> Actions { get; set; } = [];
+    public Dictionary<Guid, List<InfoAction>> Actions { get; set; } = new();
 
     public int Id => 0x3A;
 
@@ -25,7 +25,7 @@ public partial class PlayerInfoUpdatePacket : IClientboundPacket
 
     public PlayerInfoUpdatePacket(Guid uuid, InfoAction infoAction)
     {
-        Actions.Add(uuid, [infoAction]);
+        Actions.Add(uuid, new() { infoAction });
 
         this.InitializeBitSet();
     }

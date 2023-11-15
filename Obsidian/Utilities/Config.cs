@@ -35,8 +35,8 @@ public class ServerConfiguration : IServerConfiguration
     [JsonIgnore]
     public bool CanThrottle => this.ConnectionThrottle > 0;
 
-    public List<string> WhitelistedIPs { get; set; } = [];
-    public List<WhitelistedPlayer> Whitelisted { get; set; } = [];
+    public List<string> WhitelistedIPs { get; set; } = new();
+    public List<WhitelistedPlayer> Whitelisted { get; set; } = new();
 
     public long KeepAliveInterval { get; set; } = 10_000; // 10 seconds per KeepAlive
 
@@ -78,7 +78,7 @@ public sealed class ServerWorld
 
     public string DefaultDimension { get; set; } = "minecraft:overworld";
 
-    public List<string> ChildDimensions { get; set; } = [];
+    public List<string> ChildDimensions { get; set; } = new();
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter))]

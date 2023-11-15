@@ -177,13 +177,13 @@ public sealed class Client : IDisposable
         id = playerId;
         Server = originServer;
 
-        LoadedChunks = [];
+        LoadedChunks = new();
         packetCryptography = new();
         handler = new(config);
         networkStream = new(connectionContext.Transport);
         minecraftStream = new(networkStream);
 
-        missedKeepAlives = [];
+        missedKeepAlives = new List<long>();
         var linkOptions = new DataflowLinkOptions { PropagateCompletion = true };
         var blockOptions = new ExecutionDataflowBlockOptions { CancellationToken = cancellationSource.Token, EnsureOrdered = true };
         var sendPacketBlock = new ActionBlock<IClientboundPacket>(packet =>
@@ -634,7 +634,7 @@ public sealed class Client : IDisposable
 
     internal Task RemovePlayerFromListAsync(IPlayer player) => QueuePacketAsync(new PlayerInfoRemovePacket
     {
-        UUIDs = [player.Uuid]
+        UUIDs = new() { player.Uuid }
     });
 
     internal async Task AddPlayerToListAsync(IPlayer player)

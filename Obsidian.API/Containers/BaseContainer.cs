@@ -14,7 +14,7 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
 
     public Guid Uuid { get; } = Guid.NewGuid();
 
-    public List<IPlayer> Viewers { get; } = [];
+    public List<IPlayer> Viewers { get; } = new();
 
     public ItemStack? this[int index] { get => this.items[index]; set => this.items[index] = value; }
 

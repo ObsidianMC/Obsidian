@@ -171,7 +171,7 @@ public class ChatMessage
 
     public ChatMessage AddChatComponent(ChatMessage message)
     {
-        this.With ??= [];
+        this.With ??= new();
         this.With.Add(message);
 
         return this;
@@ -179,7 +179,7 @@ public class ChatMessage
 
     public ChatMessage AddChatComponent(IEnumerable<ChatMessage> message)
     {
-        this.With ??= [];
+        this.With ??= new();
         this.With.AddRange(message);
 
         return this;
@@ -188,7 +188,7 @@ public class ChatMessage
 
     public ChatMessage AddExtra(ChatMessage message)
     {
-        Extra ??= [];
+        Extra ??= new List<ChatMessage>();
         Extra.Add(message);
 
         return this;

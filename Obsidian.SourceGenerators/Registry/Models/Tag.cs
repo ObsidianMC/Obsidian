@@ -65,7 +65,7 @@ internal sealed class Tag
     private static void UpdateMissedTags(string propertyName, string valueTag, Dictionary<string, List<string>> missedTags)
     {
         if (!missedTags.ContainsKey(propertyName))
-            missedTags.Add(propertyName, [valueTag]);
+            missedTags.Add(propertyName, new() { valueTag });
         else
             missedTags[propertyName].Add(valueTag);
     }

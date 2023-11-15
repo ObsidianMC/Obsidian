@@ -59,7 +59,7 @@ public partial class Server : IServer
     internal string PermissionPath => Path.Combine(ServerFolderPath, "permissions");
 
     private readonly ConcurrentQueue<IClientboundPacket> _chatMessagesQueue = new();
-    private readonly ConcurrentHashSet<Client> _clients = [];
+    private readonly ConcurrentHashSet<Client> _clients = new();
     private readonly RconServer _rconServer;
     private readonly ILogger _logger;
 
@@ -77,9 +77,9 @@ public partial class Server : IServer
     public IScoreboardManager ScoreboardManager { get; private set; }
 
     public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new();
-    public Dictionary<string, Type> WorldGenerators { get; } = [];
+    public Dictionary<string, Type> WorldGenerators { get; } = new();
 
-    public HashSet<string> RegisteredChannels { get; } = [];
+    public HashSet<string> RegisteredChannels { get; } = new();
     public CommandHandler CommandsHandler { get; }
 
     public ServerConfiguration Config { get; }

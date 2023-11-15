@@ -5,7 +5,7 @@ namespace Obsidian.Nbt;
 
 public class NbtCompound : INbtTag, IEnumerable<KeyValuePair<string, INbtTag>>
 {
-    private readonly Dictionary<string, INbtTag> children = [];
+    private readonly Dictionary<string, INbtTag> children = new();
 
     public int Count => this.children.Count;
 

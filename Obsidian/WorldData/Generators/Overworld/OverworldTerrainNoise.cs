@@ -20,8 +20,8 @@ public sealed class OverworldTerrainNoise
     public Module PeakValleyNoise { get; }
     public Module TerrainSelector { get; }
 
-    public List<Perlin> OreNoises { get; } = [];
-    public List<Perlin> StoneNoises { get; } = [];
+    public List<Perlin> OreNoises { get; } = new();
+    public List<Perlin> StoneNoises { get; } = new();
 
     public OverworldTerrainNoise(int seed)
     {
