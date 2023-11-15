@@ -51,7 +51,7 @@ public partial class Server : IServer
         }
     }
 #endif
-    public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_20;
+    public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_20_2;
 
     internal static readonly ConcurrentDictionary<string, DateTimeOffset> throttler = new();
 

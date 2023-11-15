@@ -241,7 +241,7 @@ public sealed class Client : IDisposable
             if (State == ClientState.Play && data.Length < 1)
                 Disconnect();
 
-            var packetReceivedEventArgs = new PacketReceivedEventArgs(Player, id, data);
+            
 
             switch (State)
             {
@@ -313,18 +313,22 @@ public sealed class Client : IDisposable
                 case ClientState.Configuration:
                     Debug.Assert(Player is not null);
 
-                    await Server.Events.PacketReceived.InvokeAsync(packetReceivedEventArgs);
+                    var configurationPacketReceived = new PacketReceivedEventArgs(Player, id, data);
 
-                    if (!packetReceivedEventArgs.IsCancelled)
+                    await Server.Events.PacketReceived.InvokeAsync(configurationPacketReceived);
+
+                    if (!configurationPacketReceived.IsCancelled)
                         await this.handler.HandleConfigurationPackets(id, data, this);
 
                     break;
                 case ClientState.Play:
                     Debug.Assert(Player is not null);
 
-                    await Server.Events.PacketReceived.InvokeAsync(packetReceivedEventArgs);
+                    var playPacketReceived = new PacketReceivedEventArgs(Player, id, data);
 
-                    if (!packetReceivedEventArgs.IsCancelled)
+                    await Server.Events.PacketReceived.InvokeAsync(playPacketReceived);
+
+                    if (!playPacketReceived.IsCancelled)
                         await handler.HandlePlayPackets(id, data, this);
 
                     break;
