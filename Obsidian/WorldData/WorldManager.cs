@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Obsidian.Hosting;
 using Obsidian.Registries;
 using Obsidian.Services;
+using Obsidian.WorldData.Generators;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
@@ -16,14 +17,15 @@ public sealed class WorldManager : BackgroundService, IWorldManager
     private readonly List<ServerWorld> serverWorlds;
     private readonly ILoggerFactory loggerFactory;
     private readonly IPacketBroadcaster packetBroadcaster;
+    private readonly IServerEnvironment serverEnvironment;
 
     public int GeneratingChunkCount => worlds.Values.Sum(w => w.ChunksToGenCount);
-
     public int RegionCount => worlds.Values.Sum(pair => pair.RegionCount);
-
     public int LoadedChunkCount => worlds.Values.Sum(pair => pair.LoadedChunkCount);
 
     public IWorld DefaultWorld { get; private set; }
+
+    public Dictionary<string, Type> WorldGenerators { get; } = new();
 
     public WorldManager(ILoggerFactory loggerFactory, IPacketBroadcaster packetBroadcaster, IServerEnvironment serverEnvironment)
     {
@@ -33,12 +35,14 @@ public sealed class WorldManager : BackgroundService, IWorldManager
         this.logger.LogInformation("Instantiated.");
         this.loggerFactory = loggerFactory;
         this.packetBroadcaster = packetBroadcaster;
+        this.serverEnvironment = serverEnvironment;
     }
 
     protected async override Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var timer = new BalancingTimer(1000, stoppingToken);
 
+        this.RegisterDefaults();
         // TODO: This should defenitly accept a cancellation token.
         // If Cancel is called, this method should stop within the configured timeout, otherwise code execution will simply stop here,
         // and server shutdown will not be handled correctly.
@@ -51,19 +55,40 @@ public sealed class WorldManager : BackgroundService, IWorldManager
         }
     }
 
+    /// <summary>
+    /// Registers new world generator(s) to the server.
+    /// </summary>
+    /// <param name="entries">A compatible list of entries.</param>
+    public void RegisterGenerator<T>() where T : IWorldGenerator, new()
+    {
+        var gen = new T();
+        if (string.IsNullOrWhiteSpace(gen.Id))
+            throw new InvalidOperationException($"Failed to get id for generator: {gen.Id}");
+
+        if (this.WorldGenerators.TryAdd(gen.Id, typeof(T)))
+            this.logger.LogDebug("Registered {generatorId}...", gen.Id);
+    }
+
     public async Task LoadWorldsAsync()
     {
         foreach (var serverWorld in this.serverWorlds)
         {
             //var server = (Server)this.server;
-            //if (!server.WorldGenerators.TryGetValue(serverWorld.Generator, out var value))
-            //{
-            //    this.logger.LogError("Unknown generator type {generator} for world {worldName}", serverWorld.Generator, serverWorld.Name);
-            //    return;
-            //}
+            if (!this.WorldGenerators.TryGetValue(serverWorld.Generator, out var generatorType))
+            {
+                this.logger.LogError("Unknown generator type {generator} for world {worldName}", serverWorld.Generator, serverWorld.Name);
+                return;
+            }
 
             //TODO fix
-            var world = new World(serverWorld.Name, serverWorld.Seed, this.loggerFactory.CreateLogger($"World [{serverWorld.Name}]"), this.packetBroadcaster, null);
+            var world = new World(this.loggerFactory.CreateLogger($"World [{serverWorld.Name}]"), generatorType, this)
+            {
+                Configuration = this.serverEnvironment.Configuration,
+                PacketBroadcaster = this.packetBroadcaster,
+                Name = serverWorld.Name,
+                Seed = serverWorld.Seed
+            };
+
             this.worlds.Add(world.Name, world);
 
             if (!CodecRegistry.TryGetDimension(serverWorld.DefaultDimension, out var defaultCodec) || !CodecRegistry.TryGetDimension("minecraft:overworld", out defaultCodec))
@@ -129,5 +154,17 @@ public sealed class WorldManager : BackgroundService, IWorldManager
         }
 
         this.Dispose();
+    }
+
+    /// <summary>
+    /// Registers the "obsidian-vanilla" entities and objects.
+    /// </summary>
+    /// Might be used for more stuff later so I'll leave this here - tides
+    private void RegisterDefaults()
+    {
+        this.RegisterGenerator<SuperflatGenerator>();
+        this.RegisterGenerator<OverworldGenerator>();
+        this.RegisterGenerator<IslandGenerator>();
+        this.RegisterGenerator<EmptyWorldGenerator>();
     }
 }

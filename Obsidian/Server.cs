@@ -78,7 +78,6 @@ public partial class Server : IServer
     public IWorldManager WorldManager { get; }
 
     public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new();
-    public Dictionary<string, Type> WorldGenerators { get; } = new();
 
     public HashSet<string> RegisteredChannels { get; } = new();
     public CommandHandler CommandsHandler { get; }
@@ -232,20 +231,6 @@ public partial class Server : IServer
     }
 
     /// <summary>
-    /// Registers new world generator(s) to the server.
-    /// </summary>
-    /// <param name="entries">A compatible list of entries.</param>
-    public void RegisterWorldGenerator<T>() where T : IWorldGenerator, new()
-    {
-        var gen = new T();
-        if (string.IsNullOrWhiteSpace(gen.Id))
-            throw new InvalidOperationException($"Failed to get id for generator: {gen.Id}");
-
-        if (this.WorldGenerators.TryAdd(gen.Id, typeof(T)))
-            this._logger.LogDebug($"Registered {gen.Id}...");
-    }
-
-    /// <summary>
     /// Starts this server asynchronously.
     /// </summary>
     public async Task RunAsync()
@@ -270,7 +255,6 @@ public partial class Server : IServer
         _logger.LogInformation($"Loading properties...");
 
         await (Operators as OperatorList).InitializeAsync();
-        RegisterDefaults();
 
         ScoreboardManager = new ScoreboardManager(this);
         _logger.LogInformation("Loading plugins...");
@@ -641,7 +625,6 @@ public partial class Server : IServer
             await _tcpListener.UnbindAsync();
         }
 
-        WorldGenerators.Clear();
         foreach (var client in _clients)
         {
             client.Disconnect();
@@ -726,18 +709,6 @@ public partial class Server : IServer
 
         _logger.LogInformation("The game loop has been stopped");
         await WorldManager.FlushLoadedWorldsAsync();
-    }
-
-    /// <summary>
-    /// Registers the "obsidian-vanilla" entities and objects.
-    /// </summary>
-    /// Might be used for more stuff later so I'll leave this here - tides
-    private void RegisterDefaults()
-    {
-        RegisterWorldGenerator<SuperflatGenerator>();
-        RegisterWorldGenerator<OverworldGenerator>();
-        RegisterWorldGenerator<IslandGenerator>();
-        RegisterWorldGenerator<EmptyWorldGenerator>();
     }
 
     internal void UpdateStatusConsole()

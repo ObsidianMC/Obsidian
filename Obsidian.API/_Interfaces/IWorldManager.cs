@@ -3,6 +3,8 @@
 namespace Obsidian.API;
 public interface IWorldManager : IAsyncDisposable
 {
+    public Dictionary<string, Type> WorldGenerators { get; }
+
     public int GeneratingChunkCount { get; }
     public int LoadedChunkCount { get; }
 
