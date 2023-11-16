@@ -39,7 +39,7 @@ public sealed class WorldManager : BackgroundService, IWorldManager
 
     protected async override Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var timer = new BalancingTimer(1000, stoppingToken);
+        var timer = new BalancingTimer(20, stoppingToken);
 
         this.RegisterDefaults();
         // TODO: This should defenitly accept a cancellation token.

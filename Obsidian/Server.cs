@@ -51,8 +51,8 @@ public partial class Server : IServer
 #endif
     public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_20_2;
 
-    public static string PersistentDataPath { get; } = Path.Combine("persistentdata");
-    public static string PermissionPath { get; } = Path.Combine("permissions");
+    public static string PersistentDataPath { get; } = "persistentdata";
+    public static string PermissionPath { get; } = "permissions";
 
     internal static readonly ConcurrentDictionary<string, DateTimeOffset> throttler = new();
 

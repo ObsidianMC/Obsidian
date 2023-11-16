@@ -19,10 +19,10 @@ public static class DependencyInjection
         services.AddSingleton<PacketBroadcaster>();
         services.AddSingleton<IServer, Server>();
 
-        services.AddHostedService(sp => sp.GetRequiredService<WorldManager>());
         services.AddHostedService(sp => sp.GetRequiredService<PacketBroadcaster>());
         services.AddHostedService<ObsidianHostingService>();
-        
+        services.AddHostedService(sp => sp.GetRequiredService<WorldManager>());
+
         services.AddSingleton<IWorldManager>(sp => sp.GetRequiredService<WorldManager>());
         services.AddSingleton<IPacketBroadcaster>(sp => sp.GetRequiredService<PacketBroadcaster>());
 
