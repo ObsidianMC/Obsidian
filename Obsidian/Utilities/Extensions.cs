@@ -1,17 +1,18 @@
 ﻿using Microsoft.AspNetCore.Connections;
+using Obsidian.API;
 using Obsidian.Entities;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
+using Obsidian.Services;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq.Expressions;
-using System.Numerics;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading;
-
 #nullable enable
 
 namespace Obsidian.Utilities;
@@ -54,6 +55,14 @@ public static partial class Extensions
                 EntityType.FishingBobber,
                 EntityType.EyeOfEnder};
 
+    public static void BroadcastBlockChange(this IPacketBroadcaster packetBroadcaster, IWorld world, IBlock block, Vector location)
+    {
+        var packet = new BlockUpdatePacket(location, block.GetHashCode());
+        foreach (Player player in world.PlayersInRange(world, location))
+        {
+            player.client.SendPacket(packet);
+        }
+    }
 
     public static void WritePacketId(this IPacket packet, MinecraftStream stream)
     {
@@ -108,7 +117,7 @@ public static partial class Extensions
         // Reverse the bytes since BigInteger uses little endian
         Array.Reverse(hash);
 
-        var b = new BigInteger(hash);
+        var b = new System.Numerics.BigInteger(hash);
         // very annoyingly, BigInteger in C# tries to be smart and puts in
         // a leading 0 when formatting as a hex number to allow roundtripping
         // of negative numbers, thus we have to trim it off.

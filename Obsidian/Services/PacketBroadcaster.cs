@@ -32,7 +32,7 @@ public sealed class PacketBroadcaster : BackgroundService, IPacketBroadcaster
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(50));
+        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(20));
 
         while (await timer.WaitForNextTickAsync(stoppingToken))
         {

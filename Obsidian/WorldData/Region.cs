@@ -133,33 +133,35 @@ public class Region : IRegion
         await regionFile.SetChunkAsync(x, z, strm.ToArray());
     }
 
-    internal async Task BeginTickAsync(CancellationToken cts)
+    internal async Task BeginTickAsync(CancellationToken cts = default)
     {
-        var timer = new BalancingTimer(50, cts);
-        while (await timer.WaitForNextTickAsync())
+        //var timer = new BalancingTimer(50, cts);
+        //while (await timer.WaitForNextTickAsync())
+        //{
+           
+        //}
+
+        await Task.WhenAll(Entities.Select(entityEntry => entityEntry.Value.TickAsync()));
+
+        List<BlockUpdate> neighborUpdates = new();
+        List<BlockUpdate> delayed = new();
+
+        foreach (var pos in blockUpdates.Keys)
         {
-            await Task.WhenAll(Entities.Select(entityEntry => entityEntry.Value.TickAsync()));
-
-            List<BlockUpdate> neighborUpdates = new();
-            List<BlockUpdate> delayed = new();
-
-            foreach (var pos in blockUpdates.Keys)
+            blockUpdates.Remove(pos, out var bu);
+            if (bu.delayCounter > 0)
             {
-                blockUpdates.Remove(pos, out var bu);
-                if (bu.delayCounter > 0)
-                {
-                    bu.delayCounter--;
-                    delayed.Add(bu);
-                }
-                else
-                {
-                    bool updateNeighbor = await bu.world.HandleBlockUpdateAsync(bu);
-                    if (updateNeighbor) { neighborUpdates.Add(bu); }
-                }
+                bu.delayCounter--;
+                delayed.Add(bu);
             }
-            delayed.ForEach(i => AddBlockUpdate(i));
-            neighborUpdates.ForEach(async u => await u.world.BlockUpdateNeighborsAsync(u));
+            else
+            {
+                bool updateNeighbor = await bu.world.HandleBlockUpdateAsync(bu);
+                if (updateNeighbor) { neighborUpdates.Add(bu); }
+            }
         }
+        delayed.ForEach(i => AddBlockUpdate(i));
+        neighborUpdates.ForEach(async u => await u.world.BlockUpdateNeighborsAsync(u));
     }
 
     #region NBT Ops

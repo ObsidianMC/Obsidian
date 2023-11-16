@@ -34,7 +34,7 @@ public interface IWorld : IAsyncDisposable
     public Task<int?> GetWorldSurfaceHeightAsync(int x, int z);
 
     public Task<IEntity> SpawnEntityAsync(VectorF position, EntityType type);
-    public Task SpawnExperienceOrbs(VectorF position, short count);
+    public void SpawnExperienceOrbs(VectorF position, short count);
 
     public Task DoWorldTickAsync();
     public Task FlushRegionsAsync();

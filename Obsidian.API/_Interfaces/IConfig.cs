@@ -33,6 +33,8 @@ public interface IServerConfiguration
     /// Maximum amount of players that is allowed to be connected at the same time.
     /// </summary>
     public int MaxPlayers { get; set; }
+    public int PregenerateChunkRange { get; set; }
+    public int TimeTickSpeedMultiplier { get; set; }
 
     public bool AllowOperatorRequests { get; set; }
 
