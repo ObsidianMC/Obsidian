@@ -12,7 +12,7 @@ using System.Threading;
 
 namespace Obsidian.WorldData;
 
-public class Region : IAsyncDisposable
+public class Region : IRegion
 {
     public const int CubicRegionSizeShift = 5;
     public const int CubicRegionSize = 1 << CubicRegionSizeShift;
