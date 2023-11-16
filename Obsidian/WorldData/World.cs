@@ -72,13 +72,14 @@ public class World : IWorld
     {
         Logger = logger;
         Generator = Activator.CreateInstance(generatorType) as IWorldGenerator ?? throw new ArgumentException("Invalid generator type.", nameof(generatorType));
-        Generator.Init(this);
         worldLight = new(this);
 
         this.WorldManager = worldManager;
     }
 
     public int GetTotalLoadedEntities() => Regions.Values.Sum(e => e == null ? 0 : e.Entities.Count);
+
+    public void InitGenerator() => this.Generator.Init(this);
 
     public ValueTask<bool> DestroyEntityAsync(Entity entity)
     {

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Obsidian.Hosting;
 using Obsidian.Registries;
@@ -16,8 +17,8 @@ public sealed class WorldManager : BackgroundService, IWorldManager
     private readonly Dictionary<string, IWorld> worlds = new();
     private readonly List<ServerWorld> serverWorlds;
     private readonly ILoggerFactory loggerFactory;
-    private readonly IPacketBroadcaster packetBroadcaster;
     private readonly IServerEnvironment serverEnvironment;
+    private readonly IServiceScope serviceScope;
 
     public int GeneratingChunkCount => worlds.Values.Sum(w => w.ChunksToGenCount);
     public int RegionCount => worlds.Values.Sum(pair => pair.RegionCount);
@@ -27,13 +28,13 @@ public sealed class WorldManager : BackgroundService, IWorldManager
 
     public Dictionary<string, Type> WorldGenerators { get; } = new();
 
-    public WorldManager(ILoggerFactory loggerFactory, IPacketBroadcaster packetBroadcaster, IServerEnvironment serverEnvironment)
+    public WorldManager(ILoggerFactory loggerFactory, IServiceProvider serviceProvider, IServerEnvironment serverEnvironment)
     {
         this.logger = loggerFactory.CreateLogger<WorldManager>();
         this.serverWorlds = serverEnvironment.ServerWorlds;
         this.loggerFactory = loggerFactory;
-        this.packetBroadcaster = packetBroadcaster;
         this.serverEnvironment = serverEnvironment;
+        this.serviceScope = serviceProvider.CreateScope();
     }
 
     protected async override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -82,10 +83,12 @@ public sealed class WorldManager : BackgroundService, IWorldManager
             var world = new World(this.loggerFactory.CreateLogger($"World [{serverWorld.Name}]"), generatorType, this)
             {
                 Configuration = this.serverEnvironment.Configuration,
-                PacketBroadcaster = this.packetBroadcaster,
+                PacketBroadcaster = this.serviceScope.ServiceProvider.GetRequiredService<IPacketBroadcaster>(),
                 Name = serverWorld.Name,
                 Seed = serverWorld.Seed
             };
+
+            world.InitGenerator();
 
             this.worlds.Add(world.Name, world);
 
@@ -150,6 +153,8 @@ public sealed class WorldManager : BackgroundService, IWorldManager
         {
             await world.DisposeAsync();
         }
+
+        this.serviceScope.Dispose();
 
         this.Dispose();
     }
