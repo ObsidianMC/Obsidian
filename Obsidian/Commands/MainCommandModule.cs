@@ -1,6 +1,7 @@
 using Obsidian.API.Utilities;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Entities;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
 using Obsidian.WorldData;
 using System.Data;
@@ -324,6 +325,51 @@ public class MainCommandModule
 
         await player.World.SpawnEntityAsync(player.Position, type);
         await player.SendMessageAsync($"Spawning: {type}");
+    }
+
+    [Command("derp")]
+    [CommandInfo("derpy derp", "/derp")]
+    [IssuerScope(CommandIssuers.Client)]
+    public async Task DerpAsync(CommandContext ctx, string entityType)
+    {
+        // I was bored
+        if (ctx.Player is not IPlayer player)
+            return;
+
+        if (!Enum.TryParse<EntityType>(entityType, true, out var type))
+        {
+            await player.SendMessageAsync("&4Invalid entity type");
+            return;
+        }
+
+        var frogge = await player.World.SpawnEntityAsync(player.Position, type);
+        var server = player.Server as Server;
+
+        _ = Task.Run(async () =>
+        {
+            while (true)
+            {
+                var rotato = new SetHeadRotationPacket() 
+                { 
+                    EntityId = frogge.EntityId, 
+                    HeadYaw = new Angle((byte)(new Random().Next(1, 255))) 
+                };
+
+                var rotato2 = new UpdateEntityRotationPacket()
+                {
+                    EntityId = frogge.EntityId,
+                    Pitch = new Angle((byte)(new Random().Next(1, 255))),
+                    Yaw = new Angle((byte)(new Random().Next(1, 255))),
+                    OnGround = false
+                };
+
+                server.BroadcastPacket(rotato);
+                server.BroadcastPacket(rotato2);
+                await Task.Delay(15);
+            }
+        });
+
+        server.BroadcastMessage(ChatMessage.Simple($"Spawned with entity ID {frogge.EntityId}"));
     }
 
     [Command("stop")]
