@@ -5,7 +5,6 @@ using Obsidian.API.Boss;
 using Obsidian.API.Builders;
 using Obsidian.API.Crafting;
 using Obsidian.API.Events;
-using Obsidian.API.Logging;
 using Obsidian.API.Utilities;
 using Obsidian.Commands;
 using Obsidian.Commands.Framework;
@@ -23,7 +22,6 @@ using Obsidian.Net.Rcon;
 using Obsidian.Plugins;
 using Obsidian.Registries;
 using Obsidian.WorldData;
-using Obsidian.WorldData.Generators;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
@@ -53,10 +51,12 @@ public partial class Server : IServer
 #endif
     public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_20_2;
 
+    public static string PersistentDataPath { get; } = Path.Combine("persistentdata");
+    public static string PermissionPath { get; } = Path.Combine("permissions");
+
     internal static readonly ConcurrentDictionary<string, DateTimeOffset> throttler = new();
 
     internal readonly CancellationTokenSource _cancelTokenSource;
-    internal string PermissionPath => Path.Combine(ServerFolderPath, "permissions");
 
     private readonly ConcurrentQueue<IClientboundPacket> _chatMessagesQueue = new();
     private readonly ConcurrentHashSet<Client> _clients = new();
@@ -85,8 +85,9 @@ public partial class Server : IServer
     public ServerConfiguration Config { get; }
     public IServerConfiguration Configuration => Config;
     public string Version => VERSION;
-    public string ServerFolderPath { get; }
-    public string PersistentDataPath { get; }
+
+    
+
     public string Brand { get; } = "obsidian";
     public int Port { get; }
     public IWorld DefaultWorld => WorldManager.DefaultWorld;
@@ -110,7 +111,6 @@ public partial class Server : IServer
         _rconServer = rconServer;
 
         Port = Config.Port;
-        ServerFolderPath = Directory.GetCurrentDirectory();
 
         Operators = new OperatorList(this);
 
@@ -137,8 +137,6 @@ public partial class Server : IServer
         Events.PlayerAttackEntity += PlayerAttack;
         Events.PlayerInteract += OnPlayerInteract;
         Events.ContainerClosed += OnContainerClosed;
-
-        PersistentDataPath = Path.Combine(ServerFolderPath, "persistentdata");
 
         Directory.CreateDirectory(PermissionPath);
         Directory.CreateDirectory(PersistentDataPath);
@@ -259,10 +257,10 @@ public partial class Server : IServer
         ScoreboardManager = new ScoreboardManager(this);
         _logger.LogInformation("Loading plugins...");
 
-        Directory.CreateDirectory(Path.Join(ServerFolderPath, "plugins"));
+        Directory.CreateDirectory("plugins");
 
         PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
-        PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
+        PluginManager.DirectoryWatcher.Watch("plugins");
 
         await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
@@ -442,12 +440,6 @@ public partial class Server : IServer
     internal async Task QueueBroadcastPacketAsync(IClientboundPacket packet)
     {
         foreach (Player player in Players)
-            await player.client.QueuePacketAsync(packet);
-    }
-
-    internal async Task QueueBroadcastPacketAsync(IClientboundPacket packet, params int[] excluded)
-    {
-        foreach (Player player in Players.Where(x => !excluded.Contains(x.EntityId)))
             await player.client.QueuePacketAsync(packet);
     }
 

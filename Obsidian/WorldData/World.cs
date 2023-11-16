@@ -14,7 +14,7 @@ namespace Obsidian.WorldData;
 
 public class World : IWorld
 {
-    private readonly IWorldManager worldManager;
+    public IWorldManager WorldManager { get; }
 
     private float rainLevel = 0f;
     private bool initialized = false;
@@ -75,7 +75,7 @@ public class World : IWorld
         Generator.Init(this);
         worldLight = new(this);
 
-        this.worldManager = worldManager;
+        this.WorldManager = worldManager;
     }
 
     public int GetTotalLoadedEntities() => Regions.Values.Sum(e => e == null ? 0 : e.Entities.Count);
@@ -735,11 +735,11 @@ public class World : IWorld
         if (dimensions.ContainsKey(codec.Name))
             throw new ArgumentException($"World already contains dimension with name: {codec.Name}");
 
-        if (!this.worldManager.WorldGenerators.TryGetValue(worldGeneratorId ?? codec.Name.TrimResourceTag(true), out var generatorType))
+        if (!this.WorldManager.WorldGenerators.TryGetValue(worldGeneratorId ?? codec.Name.TrimResourceTag(true), out var generatorType))
             throw new ArgumentException($"Failed to find generator with id: {worldGeneratorId}.");
 
         //TODO CREATE NEW TYPE CALLED DIMENSION AND IDIMENSION
-        var dimensionWorld = new World(this.Logger, generatorType, this.worldManager)
+        var dimensionWorld = new World(this.Logger, generatorType, this.WorldManager)
         {
             PacketBroadcaster = this.PacketBroadcaster,
             Configuration = this.Configuration,

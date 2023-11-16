@@ -55,15 +55,6 @@ public static partial class Extensions
                 EntityType.FishingBobber,
                 EntityType.EyeOfEnder};
 
-    public static void BroadcastBlockChange(this IPacketBroadcaster packetBroadcaster, IWorld world, IBlock block, Vector location)
-    {
-        var packet = new BlockUpdatePacket(location, block.GetHashCode());
-        foreach (Player player in world.PlayersInRange(world, location))
-        {
-            player.client.SendPacket(packet);
-        }
-    }
-
     public static void WritePacketId(this IPacket packet, MinecraftStream stream)
     {
         stream.Lock.Wait();

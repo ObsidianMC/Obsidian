@@ -14,9 +14,7 @@ using Obsidian.WorldData;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Linq;
 using System.Net;
-using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace Obsidian.Entities;
 
@@ -41,7 +39,8 @@ public sealed partial class Player : Living, IPlayer
 
     internal int TeleportId { get; set; }
 
-    public bool IsOperator => Server.Operators.IsOperator(this);
+    //TODO 
+    public bool IsOperator { get; }
 
     public string Username { get; }
 
@@ -123,8 +122,6 @@ public sealed partial class Player : Living, IPlayer
         Username = username;
         this.client = client;
         EntityId = client.id;
-        var loggerProvider = new LoggerProvider();
-        Logger = loggerProvider.CreateLogger("Player");
 
         Inventory = new Container(9 * 5 + 1, InventoryType.Generic)
         {
@@ -137,11 +134,10 @@ public sealed partial class Player : Living, IPlayer
         };
 
         base.world = world;
-        Server = client.Server;
         Type = EntityType.Player;
 
-        PersistentDataFile = Path.Join(server.PersistentDataPath, $"{Uuid}.dat");
-        PersistentDataBackupFile = Path.Join(server.PersistentDataPath, $"{Uuid}.dat.old");
+        PersistentDataFile = Path.Combine(Server.PersistentDataPath, $"{Uuid}.dat");
+        PersistentDataBackupFile = Path.Combine(Server.PersistentDataPath, $"{Uuid}.dat.old");
 
         Health = 20f;
     }
@@ -152,7 +148,7 @@ public sealed partial class Player : Living, IPlayer
     public async Task LoadPermsAsync()
     {
         // Load a JSON file that contains all permissions
-        var file = new FileInfo(Path.Combine(server.PermissionPath, $"{Uuid}.json"));
+        var file = new FileInfo(Path.Combine(Server.PermissionPath, $"{Uuid}.json"));
 
         if (file.Exists)
         {
@@ -165,7 +161,7 @@ public sealed partial class Player : Living, IPlayer
     public async Task SavePermsAsync()
     {
         // Save permissions to JSON file
-        var file = new FileInfo(Path.Combine(server.PermissionPath, $"{Uuid}.json"));
+        var file = new FileInfo(Path.Combine(Server.PermissionPath, $"{Uuid}.json"));
 
         await using var fs = file.Open(FileMode.OpenOrCreate, FileAccess.ReadWrite);
 
@@ -446,18 +442,20 @@ public sealed partial class Player : Living, IPlayer
 
     public async Task SetGamemodeAsync(Gamemode gamemode)
     {
-        await client.Server.QueueBroadcastPacketAsync(new PlayerInfoUpdatePacket(CompilePlayerInfo(new UpdateGamemodeInfoAction(gamemode))));
+        this.PacketBroadcaster.QueuePacketToWorld(this.World, new PlayerInfoUpdatePacket(CompilePlayerInfo(new UpdateGamemodeInfoAction(gamemode))));
 
         await client.QueuePacketAsync(new GameEventPacket(gamemode));
 
         Gamemode = gamemode;
     }
 
-    public async Task UpdateDisplayNameAsync(string newDisplayName)
+    public Task UpdateDisplayNameAsync(string newDisplayName)
     {
-        await client.Server.QueueBroadcastPacketAsync(new PlayerInfoUpdatePacket(CompilePlayerInfo(new UpdateDisplayNameInfoAction(newDisplayName))));
+        this.PacketBroadcaster.QueuePacketToWorld(this.World, new PlayerInfoUpdatePacket(CompilePlayerInfo(new UpdateDisplayNameInfoAction(newDisplayName))));
 
         CustomName = newDisplayName;
+
+        return Task.CompletedTask;
     }
 
     public async Task SendTitleAsync(ChatMessage title, int fadeIn, int stay, int fadeOut)
@@ -663,7 +661,7 @@ public sealed partial class Player : Living, IPlayer
 
                 Logger.LogInformation($"persistent world: {worldName}");
 
-                if (loadFromPersistentWorld && server.WorldManager.TryGetWorld<World>(worldName, out var world))
+                if (loadFromPersistentWorld && this.world.WorldManager.TryGetWorld<World>(worldName, out var world))
                 {
                     base.world = world;
                     Logger.LogInformation($"Loading from persistent world: {worldName}");
@@ -899,8 +897,8 @@ public sealed partial class Player : Living, IPlayer
             }
         }
 
-        var removed = visiblePlayers.Where(x => Server.GetPlayer(x) == null || !world.Players.Any(p => p.Value == x)).ToArray();
-        visiblePlayers.RemoveWhere(x => Server.GetPlayer(x) == null || !world.Players.Any(p => p.Value == x));
+        var removed = visiblePlayers.Where(x => !world.Players.Any(p => p.Value == x)).ToArray();
+        visiblePlayers.RemoveWhere(x => !world.Players.Any(p => p.Value == x));
 
         if (removed.Length > 0)
             await client.QueuePacketAsync(new RemoveEntitiesPacket(removed));
@@ -913,7 +911,7 @@ public sealed partial class Player : Living, IPlayer
             if (entity is not ItemEntity item)
                 continue;
 
-            server.BroadcastPacket(new PickupItemPacket
+            this.PacketBroadcaster.QueuePacketToWorld(this.World, new PickupItemPacket
             {
                 CollectedEntityId = item.EntityId,
                 CollectorEntityId = EntityId,
