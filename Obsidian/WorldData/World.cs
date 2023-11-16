@@ -384,11 +384,11 @@ public class World : IWorld, IAsyncDisposable
             Server.BroadcastPacket(new UpdateTimePacket(LevelData.Time, LevelData.Time % 24000));
         }
 
-        // Check for chunks to load every second
-        if (LevelData.Time % 20 == 0)
-        {
-            await ManageChunksAsync();
-        }
+        //// Check for chunks to load every second
+        //if (LevelData.Time % 20 == 0)
+        //{
+        //    await ManageChunksAsync();
+        //}
     }
 
     #region world loading/saving

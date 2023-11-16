@@ -282,11 +282,6 @@ public partial class Server : IServer
 
         await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
-        // TODO: This should defenitly accept a cancellation token.
-        // If Cancel is called, this method should stop within the configured timeout, otherwise code execution will simply stop here,
-        // and server shutdown will not be handled correctly.
-        await WorldManager.LoadWorldsAsync();
-
         if (!Config.OnlineMode)
             _logger.LogInformation($"Starting in offline mode...");
 

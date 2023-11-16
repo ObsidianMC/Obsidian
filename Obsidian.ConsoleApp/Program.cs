@@ -39,8 +39,11 @@ public static class Program
                 services.AddObsidian(env);
 
                 // Give the server some time to shut down after CTRL-C or SIGTERM.
-                services.Configure<HostOptions>(
-                    opts => opts.ShutdownTimeout = TimeSpan.FromSeconds(10));
+                //TODO SERVICES SET STOP CONCURRENTLY
+                services.Configure<HostOptions>(opts =>
+                {
+                    opts.ShutdownTimeout = TimeSpan.FromSeconds(10);
+                });
             })
             .Build();
 

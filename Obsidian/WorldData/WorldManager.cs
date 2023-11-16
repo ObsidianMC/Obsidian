@@ -1,10 +1,13 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Obsidian.Registries;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace Obsidian.WorldData;
 
-public sealed class WorldManager : IAsyncDisposable
+public sealed class WorldManager : BackgroundService, IAsyncDisposable
 {
     private readonly ILogger logger;
     private readonly Server server;
@@ -17,7 +20,7 @@ public sealed class WorldManager : IAsyncDisposable
 
     public int LoadedChunkCount => worlds.Sum(pair => pair.Value.Regions.Sum(x => x.Value.LoadedChunkCount));
 
-    public World DefaultWorld { get; private set; }
+    public World? DefaultWorld { get; private set; }
 
     public WorldManager(Server server, ILogger logger, List<ServerWorld> serverWorlds)
     {
@@ -26,22 +29,41 @@ public sealed class WorldManager : IAsyncDisposable
         this.serverWorlds = serverWorlds;
     }
 
+    protected async override Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        var timer = new BalancingTimer(1000, stoppingToken);
+
+        // TODO: This should defenitly accept a cancellation token.
+        // If Cancel is called, this method should stop within the configured timeout, otherwise code execution will simply stop here,
+        // and server shutdown will not be handled correctly.
+        // Load worlds on startup.
+        await this.LoadWorldsAsync();
+
+        while (await timer.WaitForNextTickAsync())
+        {
+            await Task.WhenAll(this.worlds.Values.Select(x => x.ManageChunksAsync()));
+        }
+    }
+
     public async Task LoadWorldsAsync()
     {
         foreach (var serverWorld in this.serverWorlds)
         {
             if (!server.WorldGenerators.TryGetValue(serverWorld.Generator, out var value))
-                logger.LogWarning($"Unknown generator type {serverWorld.Generator}");
+            {
+                this.logger.LogError("Unknown generator type {generator} for world {worldName}", serverWorld.Generator, serverWorld.Name);
+                return;
+            }
 
             var world = new World(serverWorld.Name, this.server, serverWorld.Seed, value);
             this.worlds.Add(world.Name, world);
 
             if (!CodecRegistry.TryGetDimension(serverWorld.DefaultDimension, out var defaultCodec) || !CodecRegistry.TryGetDimension("minecraft:overworld", out defaultCodec))
-                throw new InvalidOperationException("Failed to get default dimension codec.");
+                throw new UnreachableException("Failed to get default dimension codec.");
 
             if (!await world.LoadAsync(defaultCodec))
             {
-                logger.LogInformation($"Creating new world: {serverWorld.Name}...");
+                this.logger.LogInformation("Creating new world: {worldName}...", serverWorld.Name);
 
                 world.Init(defaultCodec);
 
@@ -50,7 +72,7 @@ public sealed class WorldManager : IAsyncDisposable
                 {
                     if (!CodecRegistry.TryGetDimension(dimensionName, out var codec))
                     {
-                        logger.LogWarning($"Failed to find dimension with the name {dimensionName}");
+                        this.logger.LogWarning("Failed to find dimension with the name {dimensionName}", dimensionName);
                         continue;
                     }
 
@@ -80,12 +102,15 @@ public sealed class WorldManager : IAsyncDisposable
 
     public Task TickWorldsAsync() => Task.WhenAll(this.worlds.Select(pair => pair.Value.DoWorldTickAsync()));
     public Task FlushLoadedWorldsAsync() => Task.WhenAll(this.worlds.Select(pair => pair.Value.FlushRegionsAsync()));
-    
+
+
     public async ValueTask DisposeAsync()
     {
         foreach (var world in worlds)
         {
             await world.Value.DisposeAsync();
         }
+
+        this.Dispose();
     }
 }
