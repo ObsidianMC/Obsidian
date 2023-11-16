@@ -11,7 +11,7 @@ internal partial class BlocksRegistry
 
     private static readonly ConcurrentDictionary<string, string> resourceIdToName = new();
 
-    private static readonly Type[] stateIdParameters = new[] { typeof(int) };
+    private static readonly Type[] stateIdParameters = [typeof(int)];
     private static readonly ParameterExpression[] stateIdParameterExpressions = stateIdParameters.GetParamExpressions();
 
     private static readonly Type blockType = typeof(IBlock);

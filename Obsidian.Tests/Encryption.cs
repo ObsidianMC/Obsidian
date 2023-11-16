@@ -42,7 +42,7 @@ public class Encryption
             {
                 var randomData = new byte[testDataLength];
                 random.NextBytes(randomData);
-                values.Add(new object[] { randomData });
+                values.Add([randomData]);
             }
 
             return values;

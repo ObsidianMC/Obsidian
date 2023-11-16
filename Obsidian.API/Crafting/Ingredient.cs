@@ -10,7 +10,7 @@ public class Ingredient : IEnumerable<ItemStack>
 
     public Ingredient()
     {
-        this.items = new List<ItemStack>();
+        this.items = [];
     }
 
     public void Add(ItemStack item) => this.items.Add(item);

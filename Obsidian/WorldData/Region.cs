@@ -143,8 +143,8 @@ public class Region : IRegion
 
         await Task.WhenAll(Entities.Select(entityEntry => entityEntry.Value.TickAsync()));
 
-        List<BlockUpdate> neighborUpdates = new();
-        List<BlockUpdate> delayed = new();
+        List<BlockUpdate> neighborUpdates = [];
+        List<BlockUpdate> delayed = [];
 
         foreach (var pos in blockUpdates.Keys)
         {
@@ -317,7 +317,8 @@ public class Region : IRegion
         foreach (var (_, blockEntity) in chunk.BlockEntities)
             blockEntities.Add(blockEntity);
 
-        return new NbtCompound
+#pragma warning disable IDE0028 // Use collection initializers - Will not compile with this suggestion applied
+    return new NbtCompound
         {
             new NbtTag<int>("xPos", chunk.X),
             new NbtTag<int>("zPos", chunk.Z),
@@ -333,7 +334,8 @@ public class Region : IRegion
             sectionsCompound,
             new NbtTag<int>("DataVersion", 3337)// Hardcoded version try to get data version through minecraft data and use data correctly
         };
-    }
+#pragma warning restore IDE0028 // Use collection initializers
+  }
     #endregion NBT Ops
 
     public async ValueTask DisposeAsync() => await regionFile.DisposeAsync();

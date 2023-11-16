@@ -20,7 +20,7 @@ public class CompiledPluginProvider : IPluginProvider
         Type pluginType = assembly.GetTypes().FirstOrDefault(type => type.IsSubclassOf(typeof(PluginBase)));
 
         PluginBase plugin;
-        if (pluginType == null || pluginType.GetConstructor(Array.Empty<Type>()) == null)
+        if (pluginType == null || pluginType.GetConstructor([]) == null)
         {
             plugin = default;
             logger?.LogError("Loaded assembly contains no type implementing PluginBase with public parameterless constructor.");

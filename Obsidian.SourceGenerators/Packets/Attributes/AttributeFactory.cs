@@ -55,7 +55,7 @@ internal static class AttributeFactory
     private static FactoryMethod GetFactoryMethod(this Type type)
     {
         var parameter = Expression.Parameter(typeof(AttributeSyntax));
-        var ctor = type.GetConstructor(new[] { typeof(AttributeSyntax) });
+        var ctor = type.GetConstructor([typeof(AttributeSyntax)]);
         var lambda = Expression.Lambda<FactoryMethod>(Expression.New(ctor, parameter), parameter);
         return lambda.Compile();
     }

@@ -152,3 +152,6 @@ dotnet_style_prefer_simplified_boolean_expressions=true:warning
 dotnet_style_prefer_conditional_expression_over_assignment=true:suggestion
 dotnet_style_prefer_conditional_expression_over_return=true:suggestion
 dotnet_code_quality_unused_parameters=all:warning
+
+# IDE0305: Simplify collection initializers (IDE0305) - See https://github.com/dotnet/roslyn/issues/70656
+dotnet_diagnostic.IDE0305.severity = none

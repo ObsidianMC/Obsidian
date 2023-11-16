@@ -15,10 +15,10 @@ public partial class SerializationMethodsGenerator : ISourceGenerator
         varInt = new Property
         {
             Type = "int",
-            Attributes = new AttributeBehaviorBase[]
-            {
+            Attributes =
+            [
                     new VarLengthBehavior(null)
-            },
+            ],
             Flags = AttributeFlags.Field | AttributeFlags.VarLength
         };
     }
