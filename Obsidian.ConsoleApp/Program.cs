@@ -1,64 +1,52 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Obsidian;
 using Obsidian.API.Logging;
-using Obsidian.API.Utilities;
 using Obsidian.Hosting;
 
-namespace Obsidian.ConsoleApp;
+// Cool startup console logo because that's cool
+// 10/10 -IGN
+const string asciilogo =
+    "\n" +
+    "      ▄▄▄▄   ▄▄       ▄▄▄▄  ▀   ▄▄▄   ▐ ▄ \n" +
+    "      ▐█ ▀█ ▐█ ▀  ██ ██  ██ ██ ▐█ ▀█  █▌▐█\n" +
+    " ▄█▀▄ ▐█▀▀█▄▄▀▀▀█▄▐█ ▐█  ▐█▌▐█ ▄█▀▀█ ▐█▐▐▌\n" +
+    "▐█▌ ▐▌██▄ ▐█▐█▄ ▐█▐█▌██  ██ ▐█▌▐█  ▐▌██▐█▌\n" +
+    " ▀█▄▀  ▀▀▀▀  ▀▀▀▀ ▀▀▀▀▀▀▀▀  ▀▀▀ ▀  ▀ ▀▀ █ \n\n";
 
-public static class Program
+Console.Title = $"Obsidian for {Server.DefaultProtocol} ({Server.VERSION})";
+Console.BackgroundColor = ConsoleColor.White;
+Console.ForegroundColor = ConsoleColor.Black;
+Console.CursorVisible = false;
+Console.WriteLine(asciilogo);
+Console.ResetColor();
+
+var env = await IServerEnvironment.CreateDefaultAsync();
+
+var loggerProvider = new LoggerProvider(env.Configuration.LogLevel);
+var startupLogger = loggerProvider.CreateLogger("Startup");
+
+var builder = Host.CreateApplicationBuilder();
+
+builder.Services.AddLogging(loggingBuilder =>
 {
-    private static async Task Main()
-    {
-        Console.Title = $"Obsidian for {Server.DefaultProtocol} ({Server.VERSION})";
-        Console.BackgroundColor = ConsoleColor.White;
-        Console.ForegroundColor = ConsoleColor.Black;
-        Console.CursorVisible = false;
-        Console.WriteLine(asciilogo);
-        Console.ResetColor();
+    loggingBuilder.ClearProviders();
+    loggingBuilder.AddProvider(loggerProvider);
+    loggingBuilder.SetMinimumLevel(env.Configuration.LogLevel);
+    //  Shhh... Only let Microsoft log when stuff crashes.
+    //options.AddFilter("Microsoft", LogLevel.Warning);
+});
 
-        var env = await IServerEnvironment.CreateDefaultAsync();
+builder.Services.AddObsidian(env);
 
-        var loggerProvider = new LoggerProvider(env.Configuration.LogLevel);
-        var startupLogger = loggerProvider.CreateLogger("Startup");
+// Give the server some time to shut down after CTRL-C or SIGTERM.
+//TODO SERVICES SET STOP CONCURRENTLY
+builder.Services.Configure<HostOptions>(opts =>
+{
+    opts.ShutdownTimeout = TimeSpan.FromSeconds(10);
+});
 
-        startupLogger.LogInformation("A C# implementation of the Minecraft server protocol. Targeting: {description}", Server.DefaultProtocol.GetDescription());
+var app = builder.Build();
 
-        var host = Host.CreateDefaultBuilder()
-            .ConfigureLogging(options =>
-            {
-                options.ClearProviders();
-                options.AddProvider(loggerProvider);
-                options.SetMinimumLevel(env.Configuration.LogLevel);
-                //  Shhh... Only let Microsoft log when stuff crashes.
-                //options.AddFilter("Microsoft", LogLevel.Warning);
-            })
-            .ConfigureServices(services =>
-            {
-                services.AddObsidian(env);
-
-                // Give the server some time to shut down after CTRL-C or SIGTERM.
-                //TODO SERVICES SET STOP CONCURRENTLY
-                services.Configure<HostOptions>(opts =>
-                {
-                    opts.ShutdownTimeout = TimeSpan.FromSeconds(10);
-                });
-            })
-            .Build();
-
-        await host.RunAsync();
-    }
-
-    // Cool startup console logo because that's cool
-    // 10/10 -IGN
-    private const string asciilogo =
-        "\n" +
-        "      ▄▄▄▄   ▄▄       ▄▄▄▄  ▀   ▄▄▄   ▐ ▄ \n" +
-        "      ▐█ ▀█ ▐█ ▀  ██ ██  ██ ██ ▐█ ▀█  █▌▐█\n" +
-        " ▄█▀▄ ▐█▀▀█▄▄▀▀▀█▄▐█ ▐█  ▐█▌▐█ ▄█▀▀█ ▐█▐▐▌\n" +
-        "▐█▌ ▐▌██▄ ▐█▐█▄ ▐█▐█▌██  ██ ▐█▌▐█  ▐▌██▐█▌\n" +
-        " ▀█▄▀  ▀▀▀▀  ▀▀▀▀ ▀▀▀▀▀▀▀▀  ▀▀▀ ▀  ▀ ▀▀ █ \n\n";
-
-}
-
+await app.RunAsync();
