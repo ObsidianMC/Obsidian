@@ -27,7 +27,7 @@ public sealed class PlayerInteractEventArgs : PlayerEventArgs, ICancellable
     /// <inheritdoc />
     public bool IsCancelled { get; private set; }
 
-    public PlayerInteractEventArgs(IPlayer player) : base(player) { }
+    public PlayerInteractEventArgs(IPlayer player, IServer server) : base(player, server) { }
 
     /// <inheritdoc />
     public void Cancel()

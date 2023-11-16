@@ -43,7 +43,7 @@ public interface ILiving : IEntity
     /// <param name="showParticles">Whether to show the particles or not.</param>
     /// <param name="showIcon">Whether to show the icon on the client or not.</param>
     /// <param name="isAmbient">Whether the potion is emitted by ambient source e.g. the beacon. The icon has a blue border in the HUD if its ambient.</param>
-    public Task AddPotionEffectAsync(PotionEffect potion, int duration, byte amplifier = 0, bool showParticles = true,
+    public void AddPotionEffect(PotionEffect potion, int duration, byte amplifier = 0, bool showParticles = true,
         bool showIcon = true, bool isAmbient = false);
 
     /// <summary>

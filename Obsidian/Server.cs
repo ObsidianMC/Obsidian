@@ -428,7 +428,7 @@ public partial class Server : IServer
         var format = "<{0}> {1}";
         var message = packet.Message;
 
-        var chat = await Events.IncomingChatMessage.InvokeAsync(new IncomingChatMessageEventArgs(source.Player, message, format));
+        var chat = await Events.IncomingChatMessage.InvokeAsync(new IncomingChatMessageEventArgs(source.Player, this, message, format));
         if (chat.IsCancelled)
             return;
 

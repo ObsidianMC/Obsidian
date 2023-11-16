@@ -317,7 +317,7 @@ public sealed class Client : IDisposable
                 case ClientState.Configuration:
                     Debug.Assert(Player is not null);
 
-                    var configurationPacketReceived = new PacketReceivedEventArgs(Player, id, data);
+                    var configurationPacketReceived = new PacketReceivedEventArgs(Player, this.Server, id, data);
 
                     await Server.Events.PacketReceived.InvokeAsync(configurationPacketReceived);
 
@@ -328,7 +328,7 @@ public sealed class Client : IDisposable
                 case ClientState.Play:
                     Debug.Assert(Player is not null);
 
-                    var playPacketReceived = new PacketReceivedEventArgs(Player, id, data);
+                    var playPacketReceived = new PacketReceivedEventArgs(Player, this.Server, id, data);
 
                     await Server.Events.PacketReceived.InvokeAsync(playPacketReceived);
 
@@ -347,7 +347,7 @@ public sealed class Client : IDisposable
         if (State == ClientState.Play)
         {
             Debug.Assert(Player is not null);
-            await Server.Events.PlayerLeave.InvokeAsync(new PlayerLeaveEventArgs(Player, DateTimeOffset.Now));
+            await Server.Events.PlayerLeave.InvokeAsync(new PlayerLeaveEventArgs(Player, this.Server, DateTimeOffset.Now));
         }
 
         Disconnected?.Invoke(this);
@@ -559,7 +559,7 @@ public sealed class Client : IDisposable
         await SendPlayerInfoAsync();
         await Player.UpdateChunksAsync(distance: 7);
         await SendInfoAsync();
-        await Server.Events.PlayerJoin.InvokeAsync(new PlayerJoinEventArgs(Player, DateTimeOffset.Now));
+        await Server.Events.PlayerJoin.InvokeAsync(new PlayerJoinEventArgs(Player, this.Server, DateTimeOffset.Now));
     }
 
     #region Packet sending

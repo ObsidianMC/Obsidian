@@ -7,7 +7,7 @@ public class PlayerLeaveEventArgs : PlayerEventArgs
     /// </summary>
     public DateTimeOffset LeaveDate { get; }
 
-    public PlayerLeaveEventArgs(IPlayer player, DateTimeOffset leave) : base(player)
+    public PlayerLeaveEventArgs(IPlayer player, IServer server, DateTimeOffset leave) : base(player, server)
     {
         this.LeaveDate = leave;
     }

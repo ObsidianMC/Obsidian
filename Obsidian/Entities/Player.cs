@@ -2,7 +2,6 @@
 // https://wiki.vg/Map_Format
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
-using Obsidian.API.Logging;
 using Obsidian.API.Utilities;
 using Obsidian.Nbt;
 using Obsidian.Net;
@@ -227,6 +226,7 @@ public sealed partial class Player : Living, IPlayer
             new PlayerTeleportEventArgs
             (
                 this,
+                this.client.Server,
                 Position,
                 pos
             ));
@@ -783,7 +783,7 @@ public sealed partial class Player : Living, IPlayer
         await SavePermsAsync();
 
         if (result)
-            await this.client.Server.Events.PermissionGranted.InvokeAsync(new PermissionGrantedEventArgs(this, permissionNode));
+            await this.client.Server.Events.PermissionGranted.InvokeAsync(new PermissionGrantedEventArgs(this, this.client.Server, permissionNode));
 
         return result;
     }
@@ -805,7 +805,7 @@ public sealed partial class Player : Living, IPlayer
                 parent.Children.Remove(childToRemove);
 
                 await this.SavePermsAsync();
-                await this.client.Server.Events.PermissionRevoked.InvokeAsync(new PermissionRevokedEventArgs(this, permissionNode));
+                await this.client.Server.Events.PermissionRevoked.InvokeAsync(new PermissionRevokedEventArgs(this, this.client.Server, permissionNode));
 
                 return true;
             }

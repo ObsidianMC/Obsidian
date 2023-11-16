@@ -11,7 +11,7 @@ public class OperatorList : IOperatorList
     private readonly List<OperatorRequest> reqs;
     private readonly Server server;
     private readonly ILogger _logger;
-    private string Path => System.IO.Path.Combine(System.IO.Path.Combine(this.server.ServerFolderPath, "config"), "ops.json");
+    private string Path => System.IO.Path.Combine(System.IO.Path.Combine("config"), "ops.json");
 
     public OperatorList(Server server)
     {
