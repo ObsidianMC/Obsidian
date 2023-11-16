@@ -32,7 +32,7 @@ public interface ILiving : IEntity
     /// <summary>
     /// Clears all potion effects of the entity.
     /// </summary>
-    public Task ClearPotionEffects();
+    public void ClearPotionEffects();
 
     /// <summary>
     /// Adds the given <see cref="PotionEffect"/> to the entity.
@@ -50,5 +50,5 @@ public interface ILiving : IEntity
     /// Removes the given <see cref="PotionEffect"/> from the entity.
     /// </summary>
     /// <param name="potion">The potion effect to be removed.</param>
-    public Task RemovePotionEffectAsync(PotionEffect potion);
+    public void RemovePotionEffect(PotionEffect potion);
 }

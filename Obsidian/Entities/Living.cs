@@ -31,7 +31,7 @@ public class Living : Entity, ILiving
         activePotionEffects = new ConcurrentDictionary<PotionEffect, PotionEffectData>();
     }
 
-    public async override Task TickAsync()
+    public override Task TickAsync()
     {
         foreach (var (potion, data) in activePotionEffects)
         {
@@ -39,9 +39,11 @@ public class Living : Entity, ILiving
 
             if (data.CurrentDuration <= 0)
             {
-                await RemovePotionEffectAsync(potion);
+                RemovePotionEffect(potion);
             }
         }
+
+        return Task.CompletedTask;
     }
 
     public bool HasPotionEffect(PotionEffect potion)
@@ -49,15 +51,15 @@ public class Living : Entity, ILiving
         return activePotionEffects.ContainsKey(potion);
     }
 
-    public async Task ClearPotionEffects()
+    public void ClearPotionEffects()
     {
         foreach (var (potion, _) in activePotionEffects)
         {
-            await RemovePotionEffectAsync(potion);
+            RemovePotionEffect(potion);
         }
     }
 
-    public async Task AddPotionEffectAsync(PotionEffect potion, int duration, byte amplifier = 0, bool showParticles = true,
+    public void AddPotionEffect(PotionEffect potion, int duration, byte amplifier = 0, bool showParticles = true,
         bool showIcon = true, bool isAmbient = false)
     {
         byte flags = 0;
@@ -68,7 +70,7 @@ public class Living : Entity, ILiving
         if (showIcon)
             flags |= 0x04;
 
-        await this.server.QueueBroadcastPacketAsync(new EntityEffectPacket(EntityId, (int)potion, duration)
+        this.PacketBroadcaster.QueuePacketToWorld(this.World, new EntityEffectPacket(EntityId, (int)potion, duration)
         {
             Amplifier = amplifier,
             Flags = flags
@@ -78,12 +80,12 @@ public class Living : Entity, ILiving
         activePotionEffects.AddOrUpdate(potion, _ => data, (_, _) => data);
     }
 
-    public async Task RemovePotionEffectAsync(PotionEffect potion)
+    public void RemovePotionEffect(PotionEffect potion)
     {
-        await this.server.QueueBroadcastPacketAsync(new RemoveEntityEffectPacket(EntityId, (int)potion));
+        this.PacketBroadcaster.QueuePacketToWorld(this.World, new RemoveEntityEffectPacket(EntityId, (int)potion));
         activePotionEffects.TryRemove(potion, out _);
     }
-    
+
 
     public override async Task WriteAsync(MinecraftStream stream)
     {
