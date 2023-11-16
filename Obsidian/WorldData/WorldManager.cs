@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.Hosting;
 using Obsidian.Registries;
+using Obsidian.Services;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
@@ -11,9 +12,10 @@ namespace Obsidian.WorldData;
 public sealed class WorldManager : BackgroundService, IWorldManager
 {
     private readonly ILogger logger;
-    private readonly IServer server;
     private readonly Dictionary<string, IWorld> worlds = new();
     private readonly List<ServerWorld> serverWorlds;
+    private readonly ILoggerFactory loggerFactory;
+    private readonly IPacketBroadcaster packetBroadcaster;
 
     public int GeneratingChunkCount => worlds.Values.Sum(w => w.ChunksToGenCount);
 
@@ -23,13 +25,14 @@ public sealed class WorldManager : BackgroundService, IWorldManager
 
     public IWorld DefaultWorld { get; private set; }
 
-    public WorldManager(IServer server, ILoggerFactory loggerFactory, IServerEnvironment serverEnvironment)
+    public WorldManager(ILoggerFactory loggerFactory, IPacketBroadcaster packetBroadcaster, IServerEnvironment serverEnvironment)
     {
-        this.server = server;
         this.logger = loggerFactory.CreateLogger<WorldManager>();
         this.serverWorlds = serverEnvironment.ServerWorlds;
 
         this.logger.LogInformation("Instantiated.");
+        this.loggerFactory = loggerFactory;
+        this.packetBroadcaster = packetBroadcaster;
     }
 
     protected async override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -52,14 +55,15 @@ public sealed class WorldManager : BackgroundService, IWorldManager
     {
         foreach (var serverWorld in this.serverWorlds)
         {
-            var server = (Server)this.server;
-            if (!server.WorldGenerators.TryGetValue(serverWorld.Generator, out var value))
-            {
-                this.logger.LogError("Unknown generator type {generator} for world {worldName}", serverWorld.Generator, serverWorld.Name);
-                return;
-            }
+            //var server = (Server)this.server;
+            //if (!server.WorldGenerators.TryGetValue(serverWorld.Generator, out var value))
+            //{
+            //    this.logger.LogError("Unknown generator type {generator} for world {worldName}", serverWorld.Generator, serverWorld.Name);
+            //    return;
+            //}
 
-            var world = new World(serverWorld.Name, server, serverWorld.Seed, value);
+            //TODO fix
+            var world = new World(serverWorld.Name, serverWorld.Seed, this.loggerFactory.CreateLogger($"World [{serverWorld.Name}]"), this.packetBroadcaster, null);
             this.worlds.Add(world.Name, world);
 
             if (!CodecRegistry.TryGetDimension(serverWorld.DefaultDimension, out var defaultCodec) || !CodecRegistry.TryGetDimension("minecraft:overworld", out defaultCodec))

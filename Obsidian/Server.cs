@@ -75,6 +75,7 @@ public partial class Server : IServer
 
     public IOperatorList Operators { get; }
     public IScoreboardManager ScoreboardManager { get; private set; }
+    public IWorldManager WorldManager { get; }
 
     public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new();
     public Dictionary<string, Type> WorldGenerators { get; } = new();
@@ -89,7 +90,6 @@ public partial class Server : IServer
     public string PersistentDataPath { get; }
     public string Brand { get; } = "obsidian";
     public int Port { get; }
-    public WorldManager WorldManager { get; private set; }
     public IWorld DefaultWorld => WorldManager.DefaultWorld;
     public IEnumerable<IPlayer> Players => GetPlayers();
 
@@ -99,13 +99,13 @@ public partial class Server : IServer
     public Server(
         IHostApplicationLifetime lifetime,
         IServerEnvironment environment,
-        ILogger<Server> logger,
+        ILoggerFactory loggerFactory,
+        IWorldManager worldManager,
         RconServer rconServer)
     {
         Config = environment.Configuration;
-        var loggerProvider = new LoggerProvider(Config.LogLevel);
-        _logger = loggerProvider.CreateLogger("Server");
-        _logger.LogInformation($"SHA / Version: {VERSION}");
+        _logger = loggerFactory.CreateLogger<Server>();
+        _logger.LogInformation("SHA / Version: {VERSION}", VERSION);
         _cancelTokenSource = CancellationTokenSource.CreateLinkedTokenSource(lifetime.ApplicationStopping);
         _cancelTokenSource.Token.Register(() => _logger.LogWarning("Obsidian is shutting down..."));
         _rconServer = rconServer;
@@ -131,7 +131,7 @@ public partial class Server : IServer
         _logger.LogDebug("Registering command context type...");
         _logger.LogDebug("Done registering commands.");
 
-        WorldManager = new WorldManager(this, _logger, environment.ServerWorlds);
+        this.WorldManager = worldManager;
 
         Events.PlayerLeave += OnPlayerLeave;
         Events.PlayerJoin += OnPlayerJoin;
@@ -377,7 +377,7 @@ public partial class Server : IServer
             }
 
             // TODO Entity ids need to be unique on the entire server, not per world
-            var client = new Client(connection, Config, Math.Max(0, _clients.Count + WorldManager.DefaultWorld.GetTotalLoadedEntities()), this);
+            var client = new Client(connection, Config, Math.Max(0, _clients.Count + this.DefaultWorld.GetTotalLoadedEntities()), this);
 
             _clients.Add(client);
 

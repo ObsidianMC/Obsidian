@@ -8,6 +8,7 @@ using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
+using Obsidian.Services;
 using System.IO;
 
 namespace Obsidian.WorldData;
@@ -24,8 +25,6 @@ public class World : IWorld
     public ConcurrentDictionary<Guid, Player> Players { get; private set; } = new();
 
     public IWorldGenerator Generator { get; internal set; }
-
-    public Server Server { get; }
 
     public ConcurrentDictionary<long, Region> Regions { get; private set; } = new();
 
@@ -59,20 +58,18 @@ public class World : IWorld
     /// <summary>
     /// Used to log actions caused by the client.
     /// </summary>
-    protected ILogger Logger { get; private set; }
+    protected ILogger Logger { get; }
 
-    internal World(string name, Server server, string seed, Type generatorType)
+    internal World(string name, string seed, ILogger logger, IPacketBroadcaster packetBroadcaster, Type generatorType)
     {
         Name = name ?? throw new ArgumentNullException(nameof(name));
-        Server = server;
-
         Seed = seed ?? throw new ArgumentNullException(nameof(seed));
+        Logger = logger;
+        this.packetBroadcaster = packetBroadcaster;
 
         Generator = Activator.CreateInstance(generatorType) as IWorldGenerator ?? throw new ArgumentException("Invalid generator type.", nameof(generatorType));
         Generator.Init(this);
         worldLight = new(this);
-        var loggerProvider = new LoggerProvider();
-        Logger = loggerProvider.CreateLogger("World");
     }
 
     public int GetTotalLoadedEntities() => Regions.Values.Sum(e => e == null ? 0 : e.Entities.Count);
@@ -549,6 +546,7 @@ public class World : IWorld
     }
 
     private ConcurrentDictionary<(int x, int z), (int x, int z)> moduloCache = new();
+    private readonly IPacketBroadcaster packetBroadcaster;
 
     public async Task ManageChunksAsync()
     {
