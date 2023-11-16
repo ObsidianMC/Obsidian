@@ -151,7 +151,7 @@ public partial class Server : IServer
                 var udpClient = new UdpClient("224.0.2.60", 4445);
                 var timer = new PeriodicTimer(TimeSpan.FromSeconds(1.5));
                 string? lastMotd = null;
-                byte[] bytes = Array.Empty<byte>(); // Cached motd as utf-8 bytes
+                byte[] bytes = []; // Cached motd as utf-8 bytes
                 while (await timer.WaitForNextTickAsync(_cancelTokenSource.Token))
                 {
                     if (Config.Motd != lastMotd)
@@ -277,7 +277,7 @@ public partial class Server : IServer
 
         Directory.CreateDirectory(Path.Join(ServerFolderPath, "plugins"));
 
-        PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
+        PluginManager.DirectoryWatcher.Filters = [".cs", ".dll"];
         PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
 
         await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));

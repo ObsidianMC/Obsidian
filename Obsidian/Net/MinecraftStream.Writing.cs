@@ -46,7 +46,7 @@ public partial class MinecraftStream
             await Globals.PacketLogger.LogDebugAsync($"Writing unsigned Byte (0x{value.ToString("X")})");
 #endif
 
-        await WriteAsync(new[] { value });
+        await WriteAsync([value]);
     }
 
     [WriteMethod]

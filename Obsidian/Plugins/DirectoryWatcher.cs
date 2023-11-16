@@ -4,8 +4,8 @@ namespace Obsidian.Plugins;
 
 public sealed class DirectoryWatcher : IDisposable
 {
-    private string[] _filters = Array.Empty<string>();
-    public string[] Filters { get => _filters; set => _filters = value ?? Array.Empty<string>(); }
+    private string[] _filters = [];
+    public string[] Filters { get => _filters; set => _filters = value ?? []; }
 
     public event Action<string> FileChanged;
     public event Action<string, string> FileRenamed;

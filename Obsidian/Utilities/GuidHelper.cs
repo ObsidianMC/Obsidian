@@ -30,8 +30,9 @@ public static class GuidHelper
         var mostSigBytes = BitConverter.GetBytes(mostSig);
         var leastSigBytes = BitConverter.GetBytes(leastSig);
 
-        Span<byte> guidBytes = stackalloc byte[16]//Is there a better way??
-        {
+        Span<byte> guidBytes =
+        //Is there a better way??
+        [
             mostSigBytes[4],
             mostSigBytes[5],
             mostSigBytes[6],
@@ -48,7 +49,7 @@ public static class GuidHelper
             leastSigBytes[2],
             leastSigBytes[1],
             leastSigBytes[0]
-        };
+        ];
 
         return new Guid(guidBytes);
     }

@@ -29,7 +29,7 @@ public sealed class RegionFile : IAsyncDisposable
     private bool disposed;
     private bool initialized;
 
-    private bool[] freeSectors = Array.Empty<bool>();
+    private bool[] freeSectors = [];
 
     public int[] Locations { get; private set; } = new int[HeaderTableSize];
     public int[] Timestamps { get; private set; } = new int[HeaderTableSize];

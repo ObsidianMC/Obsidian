@@ -181,7 +181,7 @@ public abstract class PluginBase
 
     private MethodInfo? GetMethod(string methodName, object[] args)
     {
-        args ??= Array.Empty<object>();
+        args ??= [];
         var types = new Type[args.Length];
         for (int i = 0; i < args.Length; i++)
         {
@@ -201,7 +201,7 @@ public abstract class PluginBase
     private (MethodInfo? method, int parameterCount) GetFriendlyMethod(string methodName, object[] args)
     {
         typeCache ??= GetType();
-        args ??= Array.Empty<object>();
+        args ??= [];
         IEnumerable<(MethodInfo method, ParameterInfo[] parameters)> methods = typeCache
             .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)
             .Where(method => method.Name == methodName)

@@ -15,7 +15,7 @@ internal class BlockProperty
     private const string BooleanName = "bool";
     private const string IntegerName = "int";
 
-    internal static Dictionary<string, string[]> enumValuesCache = new();
+    internal static Dictionary<string, string[]> enumValuesCache = [];
 
     private BlockProperty(string name, string tag, string type, string[] values, int? customOffset = null, bool isBooleanToggled = true)
     {

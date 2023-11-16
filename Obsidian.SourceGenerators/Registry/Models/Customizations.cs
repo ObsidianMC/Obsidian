@@ -7,7 +7,7 @@ internal static class Customizations
 
     static Customizations()
     {
-        BannedNames = new();
+        BannedNames = [];
         foreach (Type type in typeof(int).Assembly.GetTypes())
         {
             BannedNames.Add(type.Name);

@@ -39,7 +39,7 @@ public class String
                     value += (char)random.Next(' ', '~');
                 }
 
-                values.Add(new object[] { value });
+                values.Add([value]);
             }
 
             return values;

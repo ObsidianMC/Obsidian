@@ -10,7 +10,7 @@ public sealed class IslandGenerator : IWorldGenerator
     private GenHelper? helper;
     private Module? noiseGenerator;
     private Random? r;
-    private static readonly Biome[] biomes = new Biome[22] {
+    private static readonly Biome[] biomes = [
         Biome.Badlands,
         Biome.BambooJungle,
         Biome.BirchForest,
@@ -33,14 +33,14 @@ public sealed class IslandGenerator : IWorldGenerator
         Biome.SunflowerPlains,
         Biome.Taiga,
         Biome.WoodedBadlands
-    };
-    private static readonly IBlock[] hangingBlocks = new IBlock[4]
-    {
+    ];
+    private static readonly IBlock[] hangingBlocks =
+    [
         BlocksRegistry.Stone,
         BlocksRegistry.Cobblestone,
         BlocksRegistry.MossyCobblestone,
         BlocksRegistry.Andesite
-    };
+    ];
 
     public async Task<Chunk> GenerateChunkAsync(int cx, int cz, Chunk? chunk = null, ChunkStatus minlevel = ChunkStatus.full)
     {

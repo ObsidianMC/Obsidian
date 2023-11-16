@@ -12,7 +12,7 @@ public static class OverworldDecorator
     private static readonly ConcurrentDictionary<Type, Func<GenHelper, Chunk, BaseFlora>> floraCache = new();
     private static readonly ConcurrentDictionary<Type, Func<GenHelper, Chunk, BaseTree>> treeCache = new();
 
-    private static readonly Type[] argumentCache = new[] { typeof(GenHelper), typeof(Chunk) };
+    private static readonly Type[] argumentCache = [typeof(GenHelper), typeof(Chunk)];
     public static readonly ParameterExpression[] expressionParameters = argumentCache.Select((t, i) => Expression.Parameter(t, $"param{i}")).ToArray();
 
     static OverworldDecorator()
