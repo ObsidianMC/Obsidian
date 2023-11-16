@@ -139,6 +139,7 @@ public sealed partial class Player : Living, IPlayer
         PersistentDataBackupFile = Path.Combine(Server.PersistentDataPath, $"{Uuid}.dat.old");
 
         Health = 20f;
+        this.PacketBroadcaster = world.PacketBroadcaster;
     }
 
     public ItemStack? GetHeldItem() => Inventory.GetItem(inventorySlot);
