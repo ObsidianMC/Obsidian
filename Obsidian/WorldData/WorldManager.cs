@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Obsidian.Hosting;
 using Obsidian.Registries;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -7,26 +8,28 @@ using System.Threading;
 
 namespace Obsidian.WorldData;
 
-public sealed class WorldManager : BackgroundService, IAsyncDisposable
+public sealed class WorldManager : BackgroundService, IWorldManager
 {
     private readonly ILogger logger;
-    private readonly Server server;
-    private readonly Dictionary<string, World> worlds = new();
+    private readonly IServer server;
+    private readonly Dictionary<string, IWorld> worlds = new();
     private readonly List<ServerWorld> serverWorlds;
 
-    public int GeneratingChunkCount => worlds.Sum(w => w.Value.ChunksToGen.Count);
+    public int GeneratingChunkCount => worlds.Values.Sum(w => w.ChunksToGenCount);
 
-    public int RegionCount => worlds.Sum(pair => pair.Value.Regions.Count);
+    public int RegionCount => worlds.Values.Sum(pair => pair.RegionCount);
 
-    public int LoadedChunkCount => worlds.Sum(pair => pair.Value.Regions.Sum(x => x.Value.LoadedChunkCount));
+    public int LoadedChunkCount => worlds.Values.Sum(pair => pair.LoadedChunkCount);
 
-    public World? DefaultWorld { get; private set; }
+    public IWorld DefaultWorld { get; private set; }
 
-    public WorldManager(Server server, ILogger logger, List<ServerWorld> serverWorlds)
+    public WorldManager(IServer server, ILoggerFactory loggerFactory, IServerEnvironment serverEnvironment)
     {
         this.server = server;
-        this.logger = logger;
-        this.serverWorlds = serverWorlds;
+        this.logger = loggerFactory.CreateLogger<WorldManager>();
+        this.serverWorlds = serverEnvironment.ServerWorlds;
+
+        this.logger.LogInformation("Instantiated.");
     }
 
     protected async override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -41,7 +44,7 @@ public sealed class WorldManager : BackgroundService, IAsyncDisposable
 
         while (await timer.WaitForNextTickAsync())
         {
-            await Task.WhenAll(this.worlds.Values.Select(x => x.ManageChunksAsync()));
+            await Task.WhenAll(this.worlds.Values.Cast<World>().Select(x => x.ManageChunksAsync()));
         }
     }
 
@@ -49,13 +52,14 @@ public sealed class WorldManager : BackgroundService, IAsyncDisposable
     {
         foreach (var serverWorld in this.serverWorlds)
         {
+            var server = (Server)this.server;
             if (!server.WorldGenerators.TryGetValue(serverWorld.Generator, out var value))
             {
                 this.logger.LogError("Unknown generator type {generator} for world {worldName}", serverWorld.Generator, serverWorld.Name);
                 return;
             }
 
-            var world = new World(serverWorld.Name, this.server, serverWorld.Seed, value);
+            var world = new World(serverWorld.Name, server, serverWorld.Seed, value);
             this.worlds.Add(world.Name, world);
 
             if (!CodecRegistry.TryGetDimension(serverWorld.DefaultDimension, out var defaultCodec) || !CodecRegistry.TryGetDimension("minecraft:overworld", out defaultCodec))
@@ -92,23 +96,32 @@ public sealed class WorldManager : BackgroundService, IAsyncDisposable
         }
 
         //No default world was defined so choose the first one to come up
-        if (this.DefaultWorld == null)
-            this.DefaultWorld = this.worlds.FirstOrDefault().Value;
+        this.DefaultWorld ??= this.worlds.FirstOrDefault().Value;
     }
 
-    public IReadOnlyCollection<World> GetAvailableWorlds() => this.worlds.Values.ToList().AsReadOnly();
+    public IReadOnlyCollection<IWorld> GetAvailableWorlds() => this.worlds.Values.ToList().AsReadOnly();
 
-    public bool TryGetWorld(string name, [NotNullWhen(true)] out World? world) => this.worlds.TryGetValue(name, out world);
+    public bool TryGetWorld(string name, [NotNullWhen(true)] out IWorld? world) => this.worlds.TryGetValue(name, out world);
+    public bool TryGetWorld<TWorld>(string name, [NotNullWhen(true)] out TWorld? world) where TWorld : IWorld
+    {
+        if (this.worlds.TryGetValue(name, out var value))
+        {
+            world = (TWorld)value;
+            return true;
+        }
+
+        world = default;
+        return false;
+    }
 
     public Task TickWorldsAsync() => Task.WhenAll(this.worlds.Select(pair => pair.Value.DoWorldTickAsync()));
     public Task FlushLoadedWorldsAsync() => Task.WhenAll(this.worlds.Select(pair => pair.Value.FlushRegionsAsync()));
 
-
     public async ValueTask DisposeAsync()
     {
-        foreach (var world in worlds)
+        foreach (var world in this.worlds.Values)
         {
-            await world.Value.DisposeAsync();
+            await world.DisposeAsync();
         }
 
         this.Dispose();

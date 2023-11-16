@@ -12,7 +12,7 @@ using System.IO;
 
 namespace Obsidian.WorldData;
 
-public class World : IWorld, IAsyncDisposable
+public class World : IWorld
 {
     private float rainLevel = 0f;
     private bool initialized = false;
@@ -44,6 +44,10 @@ public class World : IWorld, IAsyncDisposable
     public bool Loaded { get; private set; }
 
     public long Time => LevelData.Time;
+
+    public int RegionCount => this.Regions.Count;
+    public int ChunksToGenCount => this.ChunksToGen.Count;
+    public int LoadedChunkCount => this.Regions.Values.Sum(x => x.LoadedChunkCount);
 
     public Gamemode DefaultGamemode => LevelData.DefaultGamemode;
 

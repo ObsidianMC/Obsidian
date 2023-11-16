@@ -663,7 +663,7 @@ public sealed partial class Player : Living, IPlayer
 
                 Logger.LogInformation($"persistent world: {worldName}");
 
-                if (loadFromPersistentWorld && server.WorldManager.TryGetWorld(worldName, out var world))
+                if (loadFromPersistentWorld && server.WorldManager.TryGetWorld<World>(worldName, out var world))
                 {
                     base.world = world;
                     Logger.LogInformation($"Loading from persistent world: {worldName}");
