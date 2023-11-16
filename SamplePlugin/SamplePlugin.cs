@@ -13,7 +13,7 @@ namespace SamplePlugin
     public class SamplePlugin : PluginBase
     {
         // Any interface from Obsidian.Plugins.Services can be injected into properties
-        [Inject] public ILogger Logger { get; set; }
+        //[Inject] public ILogger Logger { get; set; }
 
         // Dependencies will be injected automatically, if dependency class and field/property names match
         // Plugins won't load until all their required dependencies are added
@@ -24,17 +24,17 @@ namespace SamplePlugin
         // One of server messages, called when an event occurs
         public void OnLoad(IServer server)
         {
-            Logger.Log(message: $"§a{Info.Name} §floaded! Hello §a{server.DefaultWorld.Name}§f!");
+            //Logger.Log(message: $"§a{Info.Name} §floaded! Hello §a{server.DefaultWorld.Name}§f!");
         }
 
         public void OnPermissionRevoked(PermissionRevokedEventArgs args)
         {
-            Logger.Log(message: $"Permission {args.Permission} revoked from player {args.Player.Username}");
+            //Logger.Log(message: $"Permission {args.Permission} revoked from player {args.Player.Username}");
         }
 
         public void OnPermissionGranted(PermissionGrantedEventArgs args)
         {
-            Logger.Log(message: $"Permission {args.Permission} granted to player {args.Player.Username}");
+            //Logger.Log(message: $"Permission {args.Permission} granted to player {args.Player.Username}");
         }
 
         public async Task OnPlayerJoin(PlayerJoinEventArgs playerJoinEvent)
@@ -58,15 +58,15 @@ namespace SamplePlugin
         [Inject]
         public SamplePlugin Plugin { get; set; }
 
-        [Inject]
-        public ILogger Logger { get; set; }
+        //[Inject]
+        //public ILogger Logger { get; set; }
 
         [Command("mycommand")]
         [CommandInfo("woop dee doo this command is from a plugin")]
         public async Task MyCommandAsync(CommandContext ctx)
         {
-            Plugin.Logger.Log("Testing Plugin as injected dependency");
-            Logger.Log("Testing Services as injected dependency");
+            //Plugin.Logger.Log("Testing Plugin as injected dependency");
+            //Logger.Log("Testing Services as injected dependency");
             await ctx.Player.SendMessageAsync("Hello from plugin command!");
         }
     }
