@@ -83,7 +83,7 @@ public sealed class PluginManager
         IPluginProvider provider = PluginProviderSelector.GetPluginProvider(path);
         if (provider is null)
         {
-            logger?.LogError($"Couldn't load plugin from path '{path}'");
+            logger?.LogError("Couldn't load plugin from path '{0}'", path);
             return null;
         }
 
@@ -102,7 +102,7 @@ public sealed class PluginManager
         IPluginProvider provider = PluginProviderSelector.GetPluginProvider(path);
         if (provider is null)
         {
-            logger?.LogError($"Couldn't load plugin from path '{path}'");
+            logger?.LogError("Couldn't load plugin from path '{0}'", path);
             return null;
         }
 
@@ -203,17 +203,17 @@ public sealed class PluginManager
         {
             var exception = plugin.Plugin.SafeInvoke("Dispose");
             if (exception is not null)
-                logger?.LogError(exception, $"Unhandled exception occured when disposing {plugin.Info.Name}");
+                logger?.LogError(exception, "Unhandled exception occured when disposing {0}", plugin.Info.Name);
         }
         else if (plugin.Plugin is IAsyncDisposable)
         {
             var exception = plugin.Plugin.SafeInvokeAsync("DisposeAsync");
             if (exception is not null)
-                logger?.LogError(exception, $"Unhandled exception occured when disposing {plugin.Info.Name}");
+                logger?.LogError(exception, "Unhandled exception occured when disposing {0}", plugin.Info.Name);
         }
 
         plugin.LoadContext.Unload();
-        plugin.LoadContext.Unloading += _ => logger?.LogInformation($"Finished unloading {plugin.Info.Name} plugin");
+        plugin.LoadContext.Unloading += _ => logger?.LogInformation("Finished unloading {0} plugin", plugin.Info.Name);
 
         plugin.Dispose();
     }
@@ -350,7 +350,7 @@ public sealed class PluginManager
                     if (other.Loaded)
                     {
                         i--;
-                        logger?.LogDebug($"Plugin {other.Info.Name} unstaged. Required dependencies were supplied.");
+                        logger?.LogDebug("Plugin {0} unstaged. Required dependencies were supplied.", other.Info.Name);
                     }
                 }
             }
@@ -366,7 +366,7 @@ public sealed class PluginManager
         }
         if (task.Status == TaskStatus.Faulted)
         {
-            logger?.LogError(task.Exception?.InnerException, $"Invoking {plugin.Info.Name}.{loadEvent} faulted.");
+            logger?.LogError(task.Exception?.InnerException, "Invoking {0}.{1} faulted.", plugin.Info.Name, loadEvent);
         }
     }
 }

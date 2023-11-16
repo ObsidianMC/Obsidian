@@ -31,7 +31,7 @@ public sealed class WorldManager : IAsyncDisposable
         foreach (var serverWorld in this.serverWorlds)
         {
             if (!server.WorldGenerators.TryGetValue(serverWorld.Generator, out var value))
-                logger.LogWarning($"Unknown generator type {serverWorld.Generator}");
+                logger.LogWarning("Unknown generator type {0}", serverWorld.Generator);
 
             var world = new World(serverWorld.Name, this.server, serverWorld.Seed, value);
             this.worlds.Add(world.Name, world);
@@ -41,7 +41,7 @@ public sealed class WorldManager : IAsyncDisposable
 
             if (!await world.LoadAsync(defaultCodec))
             {
-                logger.LogInformation($"Creating new world: {serverWorld.Name}...");
+                logger.LogInformation("Creating new world: {0}...", serverWorld.Name);
 
                 world.Init(defaultCodec);
 
@@ -50,7 +50,7 @@ public sealed class WorldManager : IAsyncDisposable
                 {
                     if (!CodecRegistry.TryGetDimension(dimensionName, out var codec))
                     {
-                        logger.LogWarning($"Failed to find dimension with the name {dimensionName}");
+                        logger.LogWarning("Failed to find dimension with the name {0}", dimensionName);
                         continue;
                     }
 

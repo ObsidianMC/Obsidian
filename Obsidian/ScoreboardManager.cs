@@ -23,7 +23,7 @@ public sealed class ScoreboardManager : IScoreboardManager
         var loggerProvider = new LoggerProvider(LogLevel.Warning);
         var logger = loggerProvider.CreateLogger("ScoreboardManager");
         if (!this.scoreboards.Add(name))
-            logger.LogWarning($"Scoreboard with the name: {name} already exists. This might cause some issues and override already existing scoreboards displaying on clients.");
+            logger.LogWarning("Scoreboard with the name: {name} already exists. This might cause some issues and override already existing scoreboards displaying on clients.", name);
 
         return new Scoreboard(name, this.server);
     }

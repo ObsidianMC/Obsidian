@@ -37,7 +37,7 @@ public class CompiledPluginProvider : IPluginProvider
         var info = attribute != null ? new PluginInfo(name, attribute) : new PluginInfo(name);
 
         if (attribute == null)
-            logger?.LogWarning($"Plugin is missing {nameof(PluginAttribute)}. Name defaults to '{info.Name}', version defaults to {info.Version}.");
+            logger?.LogWarning("Plugin is missing {0}. Name defaults to '{1}', version defaults to {2}.", nameof(PluginAttribute), info.Name, info.Version);
 
         return new PluginContainer(plugin, info, assembly, loadContext, path);
     }

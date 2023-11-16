@@ -28,7 +28,7 @@ public partial class MinecraftStream
     public async Task WriteByteAsync(sbyte value)
     {
 #if PACKETLOG
-            await Globals.PacketLogger.LogDebugAsync($"Writing Byte (0x{value.ToString("X")})");
+            await Globals.PacketLogger.LogDebugAsync("Writing Byte (0x{0})", value.ToString("X"));
 #endif
 
         await WriteUnsignedByteAsync((byte)value);
@@ -43,7 +43,7 @@ public partial class MinecraftStream
     public async Task WriteUnsignedByteAsync(byte value)
     {
 #if PACKETLOG
-            await Globals.PacketLogger.LogDebugAsync($"Writing unsigned Byte (0x{value.ToString("X")})");
+            await Globals.PacketLogger.LogDebugAsync("Writing unsigned Byte (0x{0})", value.ToString("X"));
 #endif
 
         await WriteAsync([value]);
@@ -58,7 +58,7 @@ public partial class MinecraftStream
     public async Task WriteBooleanAsync(bool value)
     {
 #if PACKETLOG
-            await Globals.PacketLogger.LogDebugAsync($"Writing Boolean ({value})");
+            await Globals.PacketLogger.LogDebugAsync("Writing Boolean ({0})", value);
 #endif
 
         await WriteByteAsync((sbyte)(value ? 0x01 : 0x00));
@@ -75,7 +75,7 @@ public partial class MinecraftStream
     public async Task WriteUnsignedShortAsync(ushort value)
     {
 #if PACKETLOG
-            await Globals.PacketLogger.LogDebugAsync($"Writing unsigned Short ({value})");
+            await Globals.PacketLogger.LogDebugAsync("Writing unsigned Short ({0})", value);
 #endif
 
         using var write = new RentedArray<byte>(sizeof(ushort));
@@ -94,7 +94,7 @@ public partial class MinecraftStream
     public async Task WriteShortAsync(short value)
     {
 #if PACKETLOG
-            await Globals.PacketLogger.LogDebugAsync($"Writing Short ({value})");
+            await Globals.PacketLogger.LogDebugAsync("Writing Short ({0})", value);
 #endif
 
         using var write = new RentedArray<byte>(sizeof(short));
@@ -113,7 +113,7 @@ public partial class MinecraftStream
     public async Task WriteIntAsync(int value)
     {
 #if PACKETLOG
-            await Globals.PacketLogger.LogDebugAsync($"Writing Int ({value})");
+            await Globals.PacketLogger.LogDebugAsync("Writing Int ({0})", value);
 #endif
 
         using var write = new RentedArray<byte>(sizeof(int));
@@ -132,7 +132,7 @@ public partial class MinecraftStream
     public async Task WriteLongAsync(long value)
     {
 #if PACKETLOG
-            await Globals.PacketLogger.LogDebugAsync($"Writing Long ({value})");
+            await Globals.PacketLogger.LogDebugAsync("Writing Long ({0})", value);
 #endif
 
         using var write = new RentedArray<byte>(sizeof(long));
@@ -151,7 +151,7 @@ public partial class MinecraftStream
     public async Task WriteFloatAsync(float value)
     {
 #if PACKETLOG
-            await Globals.PacketLogger.LogDebugAsync($"Writing Float ({value})");
+            await Globals.PacketLogger.LogDebugAsync("Writing Float ({0})", value);
 #endif
 
         using var write = new RentedArray<byte>(sizeof(float));
@@ -170,7 +170,7 @@ public partial class MinecraftStream
     public async Task WriteDoubleAsync(double value)
     {
 #if PACKETLOG
-            await Globals.PacketLogger.LogDebugAsync($"Writing Double ({value})");
+            await Globals.PacketLogger.LogDebugAsync("Writing Double ({0})", value);
 #endif
 
         using var write = new RentedArray<byte>(sizeof(double));
@@ -311,7 +311,7 @@ public partial class MinecraftStream
     public async Task WriteVarLongAsync(long value)
     {
 #if PACKETLOG
-            await Globals.PacketLogger.LogDebugAsync($"Writing VarLong ({value})");
+            await Globals.PacketLogger.LogDebugAsync("Writing VarLong ({0})", value);
 #endif
 
         var unsigned = (ulong)value;

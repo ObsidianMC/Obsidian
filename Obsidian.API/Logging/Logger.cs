@@ -65,7 +65,7 @@ public class Logger : ILogger
 
         if (message.IsNullOrEmpty())
         { 
-            this.LogTrace($"Empty log message sent. Dumping stacktrace:\n{new StackTrace().ToString().Replace("\n", "            ")}");
+            this.LogTrace("Empty log message sent. Dumping stacktrace:\n{0}", new StackTrace().ToString().Replace("\n", "            "));
             return;
         }
 

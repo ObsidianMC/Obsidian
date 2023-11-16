@@ -61,7 +61,7 @@ public sealed class PluginContainer : IDisposable
             {
                 if (field.FieldType != typeof(PluginBase) && !field.FieldType.IsSubclassOf(typeof(PluginWrapper)))
                 {
-                    logger?.LogWarning($"Failed injecting into {Info.Name}.{field.Name} property, because it's not PluginBase or PluginWrapper.");
+                    logger?.LogWarning("Failed injecting into {0}.{1} property, because it's not PluginBase or PluginWrapper.", Info.Name, field.Name);
                     continue;
                 }
 
@@ -92,7 +92,7 @@ public sealed class PluginContainer : IDisposable
             {
                 if (property.PropertyType != typeof(PluginBase) && !property.PropertyType.IsSubclassOf(typeof(PluginWrapper)))
                 {
-                    logger?.LogWarning($"Failed injecting into {Info.Name}.{property.Name} property, because it's not PluginBase or PluginWrapper.");
+                    logger?.LogWarning("Failed injecting into {0}.{1} property, because it's not PluginBase or PluginWrapper.", Info.Name, property.Name);
                     continue;
                 }
 
@@ -130,7 +130,7 @@ public sealed class PluginContainer : IDisposable
             }
             catch
             {
-                logger?.LogWarning($"Failed while creating '{targetType.Name}', because it doesn't have accesible parameterless constructor.");
+                logger?.LogWarning("Failed while creating '{0}', because it doesn't have accesible parameterless constructor.", targetType.Name);
                 return null;
             }
 
@@ -147,7 +147,7 @@ public sealed class PluginContainer : IDisposable
                 var method = methods.Where(m => m.Name == methodName).FirstOrDefault(m => m.ReturnType == returnType && m.GetParameters().Select(p => p.ParameterType).SequenceEqual(parameterTypes));
                 if (method == null)
                 {
-                    logger?.LogWarning($"Couldn't inject into {targetType.Name}.{property.Name}, because no method with matching name was found.");
+                    logger?.LogWarning("Couldn't inject into {0}.{1}, because no method with matching name was found.", targetType.Name, property.Name);
                     continue;
                 }
 
@@ -158,7 +158,7 @@ public sealed class PluginContainer : IDisposable
                 }
                 catch
                 {
-                    logger?.LogWarning($"Couldn't inject into {targetType.Name}.{property.Name}, because no method with matching signature was found.");
+                    logger?.LogWarning("Couldn't inject into {0}.{1}, because no method with matching signature was found.", targetType.Name, property.Name);
                     continue;
                 }
                 property.SetValue(wrapper, @delegate);
@@ -208,7 +208,7 @@ public sealed class PluginContainer : IDisposable
         {
             if (minVersion != null && actual.Info.Version != null && actual.Info.Version < minVersion)
             {
-                logger?.LogWarning($"Found matching dependency '{actual.Info.Name}', but with older version {actual.Info.Version} (minimum: {minVersion})");
+                logger?.LogWarning("Found matching dependency '{0}', but with older version {1} (minimum: {2})", actual.Info.Name, actual.Info.Version, minVersion);
                 return false;
             }
             return true;

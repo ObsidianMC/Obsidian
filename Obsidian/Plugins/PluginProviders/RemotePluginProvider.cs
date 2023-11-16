@@ -122,7 +122,7 @@ public class RemotePluginProvider : IPluginProvider
                     if (diagnostic.Severity != DiagnosticSeverity.Error || diagnostic.IsWarningAsError)
                         continue;
 
-                    logger.LogError($"Compilation failed: {diagnostic.Location} {diagnostic.GetMessage()}");
+                    logger.LogError("Compilation failed: {0} {1}", diagnostic.Location, diagnostic.GetMessage());
                 }
             }
 
@@ -237,7 +237,7 @@ public class RemotePluginProvider : IPluginProvider
 
     private static PluginContainer Failed(string name, string path, ILogger logger = default, string reason = null)
     {
-        logger?.LogError($"Loading plugin {name} failed with reason: {reason}");
+        logger?.LogError("Loading plugin {name} failed with reason: {reason}", name, reason);
         return new PluginContainer(new PluginInfo(name), path);
     }
 }

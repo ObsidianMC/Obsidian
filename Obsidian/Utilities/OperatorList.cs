@@ -60,7 +60,7 @@ public class OperatorList : IOperatorList
             var req = new OperatorRequest(p);
             reqs.Add(req);
 
-            _logger.LogWarning($"New operator request from {p.Username}: {req.Code}");
+            _logger.LogWarning("New operator request from {0}: {1}", p.Username, req.Code);
         }
 
         return result;

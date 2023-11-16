@@ -51,7 +51,7 @@ public class ServiceProvider
             }
             else
             {
-                logger?.LogError($"Failed injecting into {container.Info.Name}.{property.Name} property, because {property.PropertyType} is not a valid service.");
+                logger?.LogError("Failed injecting into {0}.{1} property, because {2} is not a valid service.", container.Info.Name, property.Name, property.PropertyType);
             }
         }
     }
