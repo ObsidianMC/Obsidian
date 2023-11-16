@@ -24,18 +24,13 @@ Console.ResetColor();
 
 var env = await IServerEnvironment.CreateDefaultAsync();
 
-var loggerProvider = new LoggerProvider(env.Configuration.LogLevel);
-var startupLogger = loggerProvider.CreateLogger("Startup");
-
 var builder = Host.CreateApplicationBuilder();
 
 builder.Services.AddLogging(loggingBuilder =>
 {
     loggingBuilder.ClearProviders();
-    loggingBuilder.AddProvider(loggerProvider);
+    loggingBuilder.AddProvider(new LoggerProvider(env.Configuration.LogLevel));
     loggingBuilder.SetMinimumLevel(env.Configuration.LogLevel);
-    //  Shhh... Only let Microsoft log when stuff crashes.
-    //options.AddFilter("Microsoft", LogLevel.Warning);
 });
 
 builder.Services.AddObsidian(env);

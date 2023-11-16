@@ -23,7 +23,7 @@ public sealed class WorldManager : BackgroundService, IWorldManager
     public int RegionCount => worlds.Values.Sum(pair => pair.RegionCount);
     public int LoadedChunkCount => worlds.Values.Sum(pair => pair.LoadedChunkCount);
 
-    public IWorld DefaultWorld { get; private set; }
+    public IWorld DefaultWorld { get; private set; } = default!;
 
     public Dictionary<string, Type> WorldGenerators { get; } = new();
 
@@ -31,8 +31,6 @@ public sealed class WorldManager : BackgroundService, IWorldManager
     {
         this.logger = loggerFactory.CreateLogger<WorldManager>();
         this.serverWorlds = serverEnvironment.ServerWorlds;
-
-        this.logger.LogInformation("Instantiated.");
         this.loggerFactory = loggerFactory;
         this.packetBroadcaster = packetBroadcaster;
         this.serverEnvironment = serverEnvironment;

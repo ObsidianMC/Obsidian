@@ -235,7 +235,7 @@ public partial class Server : IServer
     {
         StartTime = DateTimeOffset.Now;
 
-        _logger.LogInformation($"Launching Obsidian Server v{Version}");
+        _logger.LogInformation("Launching Obsidian Server v{Version}", this.Version);
         var loadTimeStopwatch = Stopwatch.StartNew();
 
         // Check if MPDM and OM are enabled, if so, we can't handle connections
