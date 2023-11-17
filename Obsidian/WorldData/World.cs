@@ -9,6 +9,7 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
 using Obsidian.Services;
 using System.IO;
+using System.Threading;
 
 namespace Obsidian.WorldData;
 
@@ -61,7 +62,7 @@ public class World : IWorld
 
     public string? ParentWorldName { get; private set; }
     private WorldLight worldLight;
-    
+
 
     /// <summary>
     /// Used to log actions caused by the client.
@@ -124,17 +125,10 @@ public class World : IWorld
     /// <returns>Null if the region or chunk doesn't exist yet. Otherwise the full chunk or a partial chunk.</returns>
     public async Task<Chunk?> GetChunkAsync(int chunkX, int chunkZ, bool scheduleGeneration = true)
     {
-        Region? region = GetRegionForChunk(chunkX, chunkZ);
+        Region? region = GetRegionForChunk(chunkX, chunkZ) ?? LoadRegion(chunkX >> Region.CubicRegionSizeShift, chunkZ >> Region.CubicRegionSizeShift);
 
         if (region is null)
-        {
-            region = await LoadRegionAsync(chunkX >> Region.CubicRegionSizeShift, chunkZ >> Region.CubicRegionSizeShift);
-        }
-
-        if (region is null)
-        {
             return null;
-        }
 
         var (x, z) = (NumericsHelper.Modulo(chunkX, Region.CubicRegionSize), NumericsHelper.Modulo(chunkZ, Region.CubicRegionSize));
 
@@ -361,6 +355,9 @@ public class World : IWorld
     /// <returns></returns>
     public async Task DoWorldTickAsync()
     {
+        if (LevelData is null)
+            return;
+
         LevelData.Time += this.Configuration.TimeTickSpeedMultiplier;
         LevelData.RainTime -= this.Configuration.TimeTickSpeedMultiplier;
 
@@ -459,7 +456,7 @@ public class World : IWorld
         Logger.LogInformation($"Loading spawn chunks into memory...");
         for (int rx = -1; rx < 1; rx++)
             for (int rz = -1; rz < 1; rz++)
-                _ = await LoadRegionAsync(rx, rz);
+                LoadRegion(rx, rz);
 
         // spawn chunks are radius 12 from spawn,
         var radius = 12;
@@ -531,26 +528,30 @@ public class World : IWorld
     }
     #endregion
 
-    public async Task<Region?> LoadRegionByChunkAsync(int chunkX, int chunkZ)
+    public Region LoadRegionByChunk(int chunkX, int chunkZ)
     {
         int regionX = chunkX >> Region.CubicRegionSizeShift, regionZ = chunkZ >> Region.CubicRegionSizeShift;
-        return await LoadRegionAsync(regionX, regionZ);
+        return LoadRegion(regionX, regionZ);
     }
 
-    public async Task<Region?> LoadRegionAsync(int regionX, int regionZ)
+    private SemaphoreSlim semaphore = new(1, 1);
+
+    public Region LoadRegion(int regionX, int regionZ)
     {
         long value = NumericsHelper.IntsToLong(regionX, regionZ);
 
         if (Regions.TryGetValue(value, out var region))
             return region;
 
+        this.Logger.LogDebug("Trying to add {x}:{z}", regionX, regionZ);
+
         region = new Region(regionX, regionZ, FolderPath);
 
-        if (await region.InitAsync())
-        {
-            Regions.TryAdd(value, region);//Add after its initialized
-            //_ = Task.Run(() => region.BeginTickAsync(Server._cancelTokenSource.Token));
-        }
+        if (Regions.TryAdd(value, region))
+            this.Logger.LogDebug("Added region {x}:{z}", regionX, regionZ);
+
+        //DOesn't need to be blocking
+        _ = region.InitAsync();
 
         return region;
     }
@@ -604,7 +605,7 @@ public class World : IWorld
 
         await Parallel.ForEachAsync(jobs, async (job, _) =>
         {
-            Region region = GetRegionForChunk(job.x, job.z) ?? await LoadRegionByChunkAsync(job.x, job.z);
+            Region region = GetRegionForChunk(job.x, job.z) ?? LoadRegionByChunk(job.x, job.z);
 
             var (x, z) = (NumericsHelper.Modulo(job.x, Region.CubicRegionSize), NumericsHelper.Modulo(job.z, Region.CubicRegionSize));
 
@@ -835,14 +836,17 @@ public class World : IWorld
         if (!initialized)
             throw new InvalidOperationException("World hasn't been initialized please call World.Init() before trying to generate the world.");
 
-        Logger.LogInformation($"Generating world... (Config pregeneration size is {this.Configuration.PregenerateChunkRange})");
+        Logger.LogInformation("Generating world... (Config pregeneration size is {pregenRange})", this.Configuration.PregenerateChunkRange);
         int pregenerationRange = this.Configuration.PregenerateChunkRange;
 
         int regionPregenRange = (pregenerationRange >> Region.CubicRegionSizeShift) + 1;
 
-        await Parallel.ForEachAsync(Enumerable.Range(-regionPregenRange, regionPregenRange * 2 + 1), async (x, _) =>
+        await Parallel.ForEachAsync(Enumerable.Range(-regionPregenRange, regionPregenRange * 2 + 1), (x, _) =>
         {
-            for (int z = -regionPregenRange; z < regionPregenRange; z++) await LoadRegionAsync(x, z);
+            for (int z = -regionPregenRange; z < regionPregenRange; z++)
+                LoadRegion(x, z);
+
+            return ValueTask.CompletedTask;
         });
 
         for (int x = -pregenerationRange; x < pregenerationRange; x++)
