@@ -18,17 +18,32 @@ public sealed class PacketBroadcaster : BackgroundService, IPacketBroadcaster
         this.logger = loggerFactory.CreateLogger<PacketBroadcaster>();
     }
 
-    public void QueuePacket(IClientboundPacket packet, params int[] exluded) =>
-         this.priorityQueue.Enqueue(new() { Packet = packet, ExcludedIds = exluded }, 1);
+    public void QueuePacket(IClientboundPacket packet, params int[] excludedIds) =>
+         this.priorityQueue.Enqueue(new() { Packet = packet, ExcludedIds = excludedIds }, 1);
 
-    public void QueuePacketToWorld(IWorld world, IClientboundPacket packet, params int[] exluded) =>
-        this.priorityQueue.Enqueue(new() { Packet = packet, ExcludedIds = exluded }, 1);
+    public void QueuePacketToWorld(IWorld world, IClientboundPacket packet, params int[] excludedIds) =>
+        this.priorityQueue.Enqueue(new() { Packet = packet, ExcludedIds = excludedIds }, 1);
 
-    public void QueuePacketToWorld(IWorld world, int priority, IClientboundPacket packet, params int[] exluded) =>
-        this.priorityQueue.Enqueue(new() { Packet = packet, ExcludedIds = exluded, ToWorld = world }, priority);
+    public void QueuePacketToWorld(IWorld world, int priority, IClientboundPacket packet, params int[] excludedIds) =>
+        this.priorityQueue.Enqueue(new() { Packet = packet, ExcludedIds = excludedIds, ToWorld = world }, priority);
 
-    public void QueuePacket(IClientboundPacket packet, int priority, params int[] exluded) =>
-        this.priorityQueue.Enqueue(new() { Packet = packet, ExcludedIds = exluded }, priority);
+    public void QueuePacket(IClientboundPacket packet, int priority, params int[] excludedIds) =>
+        this.priorityQueue.Enqueue(new() { Packet = packet, ExcludedIds = excludedIds }, priority);
+
+    public void Broadcast(IClientboundPacket packet, params int[] excludedIds)
+    {
+        foreach (var player in this.server.Players.Cast<Player>().Where(player => excludedIds.Contains(player.EntityId)))
+            player.client.SendPacket(packet);
+    }
+
+    public void BroadcastToWorld(IWorld toWorld, IClientboundPacket packet, params int[] excludedIds)
+    {
+        if (toWorld is not World world)
+            return;
+
+        foreach (var player in world.Players.Values.Where(player => excludedIds.Contains(player.EntityId)))
+            player.client.SendPacket(packet);
+    }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -64,8 +79,53 @@ public sealed class PacketBroadcaster : BackgroundService, IPacketBroadcaster
 
 public interface IPacketBroadcaster
 {
-    public void QueuePacketToWorld(IWorld world, IClientboundPacket packet, params int[] exluded);
-    public void QueuePacket(IClientboundPacket packet, params int[] exluded);
-    public void QueuePacketToWorld(IWorld world, int priority, IClientboundPacket packet, params int[] exluded);
-    public void QueuePacket(IClientboundPacket packet, int priority, params int[] exluded);
+    /// <summary>
+    /// Sends the packets directly to connected clients without processing in a queue.
+    /// </summary>
+    /// <param name="packet">The packet to send.</param>
+    /// <param name="excludedIds">The list of entity ids to exlude from the broadcast.</param>
+    public void Broadcast(IClientboundPacket packet, params int[] excludedIds);
+
+
+    /// <summary>
+    /// Sends the packets directly to connected clients without processing in a queue.
+    /// </summary>
+    /// <param name="toWorld">The world to broadcast this packet to.</param>
+    /// <param name="packet">The packet to send.</param>
+    /// <param name="excludedIds">The list of entity ids to exlude from the broadcast.</param>
+    public void BroadcastToWorld(IWorld toWorld, IClientboundPacket packet, params int[] excludedIds);
+
+    /// <summary>
+    /// Puts the packet in a priority queue for processing then broadcasting when dequeued.
+    /// </summary>
+    /// <param name="toWorld">The world to broadcast this packet to.</param>
+    /// <param name="packet">The packet to send.</param>
+    /// <param name="excludedIds">The list of entity ids to exlude from the broadcast.</param>
+    /// /// <remarks>Packets queued without a priority set will be queued up with a priority of 1.</remarks>
+    public void QueuePacketToWorld(IWorld toWorld, IClientboundPacket packet, params int[] excludedIds);
+
+    /// <summary>
+    /// Puts the packet in a priority queue for processing then broadcasting when dequeued.
+    /// </summary>
+    /// <param name="packet">The packet to send.</param>
+    /// <param name="excludedIds">The list of entity ids to exlude from the broadcast.</param>
+    /// <remarks>Packets queued without a priority set will be queued up with a priority of 1.</remarks>
+    public void QueuePacket(IClientboundPacket packet, params int[] excludedIds);
+
+    /// <summary>
+    /// Puts the packet in a priority queue for processing then broadcasting when dequeued.
+    /// </summary>
+    /// <param name="toWorld">The world to broadcast this packet to.</param>
+    /// <param name="priority">The priority to set the packet in the queue. Higher priority = better</param>
+    /// <param name="packet">The packet to send.</param>
+    /// <param name="excludedIds">The list of entity ids to exlude from the broadcast.</param>
+    public void QueuePacketToWorld(IWorld toWorld, int priority, IClientboundPacket packet, params int[] excludedIds);
+
+    /// <summary>
+    /// Puts the packet in a priority queue for processing then broadcasting when dequeued.
+    /// </summary>
+    /// <param name="priority">The priority to set the packet in the queue. Higher priority = better</param>
+    /// <param name="packet">The packet to send.</param>
+    /// <param name="excludedIds">The list of entity ids to exlude from the broadcast.</param>
+    public void QueuePacket(IClientboundPacket packet, int priority, params int[] excludedIds);
 }
