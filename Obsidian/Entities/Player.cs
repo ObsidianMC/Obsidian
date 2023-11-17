@@ -660,12 +660,12 @@ public sealed partial class Player : Living, IPlayer
             {
                 var worldName = persistentDataCompound.GetString("worldName");
 
-                Logger.LogInformation($"persistent world: {worldName}");
+                Logger?.LogInformation("persistent world: {worldName}", worldName);
 
                 if (loadFromPersistentWorld && this.world.WorldManager.TryGetWorld<World>(worldName, out var world))
                 {
                     base.world = world;
-                    Logger.LogInformation($"Loading from persistent world: {worldName}");
+                    Logger?.LogInformation("Loading from persistent world: {worldName}", worldName);
                 }
             }
         }

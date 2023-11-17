@@ -281,6 +281,11 @@ public partial class Server : IServer
 
         loadTimeStopwatch.Stop();
         _logger.LogInformation("Server loaded in {time}", loadTimeStopwatch.Elapsed);
+
+        //Wait for worlds to load
+        while (!this.WorldManager.ReadyToJoin && !this._cancelTokenSource.IsCancellationRequested)
+            continue;
+
         _logger.LogInformation("Listening for new clients...");
 
         try

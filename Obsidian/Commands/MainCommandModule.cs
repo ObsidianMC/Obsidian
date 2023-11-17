@@ -343,7 +343,7 @@ public class MainCommandModule
         }
 
         var frogge = await player.World.SpawnEntityAsync(player.Position, type);
-        var server = player.Server as Server;
+        var server = (ctx.Server as Server)!;
 
         _ = Task.Run(async () =>
         {
@@ -363,8 +363,8 @@ public class MainCommandModule
                     OnGround = false
                 };
 
-                server.BroadcastPacket(rotato);
-                server.BroadcastPacket(rotato2);
+                //server.BroadcastPacket(rotato);
+                //server.BroadcastPacket(rotato2);
                 await Task.Delay(15);
             }
         });

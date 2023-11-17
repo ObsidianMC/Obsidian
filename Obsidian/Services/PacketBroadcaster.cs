@@ -41,13 +41,13 @@ public sealed class PacketBroadcaster : BackgroundService, IPacketBroadcaster
 
             if (queuedPacket.ToWorld is World toWorld)
             {
-                foreach (var player in toWorld.Players.Values.Where(player => !queuedPacket.ExcludedIds.Contains(player.EntityId)))
+                foreach (var player in toWorld.Players.Values.Where(player => queuedPacket.ExcludedIds != null && !queuedPacket.ExcludedIds.Contains(player.EntityId)))
                     await player.client.QueuePacketAsync(queuedPacket.Packet);
 
                 continue;
             }
 
-            foreach (var player in this.server.Players.Cast<Player>().Where(player => !queuedPacket.ExcludedIds.Contains(player.EntityId)))
+            foreach (var player in this.server.Players.Cast<Player>().Where(player => queuedPacket.ExcludedIds != null && !queuedPacket.ExcludedIds.Contains(player.EntityId)))
                 await player.client.QueuePacketAsync(queuedPacket.Packet);
         }
     }
@@ -56,7 +56,7 @@ public sealed class PacketBroadcaster : BackgroundService, IPacketBroadcaster
     {
         public required IClientboundPacket Packet { get; init; }
 
-        public int[] ExcludedIds { get; init; }
+        public int[]? ExcludedIds { get; init; }
 
         public IWorld? ToWorld { get; init; }
     }

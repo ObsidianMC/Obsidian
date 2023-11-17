@@ -20,6 +20,8 @@ public sealed class WorldManager : BackgroundService, IWorldManager
     private readonly IServerEnvironment serverEnvironment;
     private readonly IServiceScope serviceScope;
 
+    public bool ReadyToJoin { get; private set; }
+
     public int GeneratingChunkCount => worlds.Values.Sum(w => w.ChunksToGenCount);
     public int RegionCount => worlds.Values.Sum(pair => pair.RegionCount);
     public int LoadedChunkCount => worlds.Values.Sum(pair => pair.LoadedChunkCount);
@@ -76,7 +78,7 @@ public sealed class WorldManager : BackgroundService, IWorldManager
             if (!this.WorldGenerators.TryGetValue(serverWorld.Generator, out var generatorType))
             {
                 this.logger.LogError("Unknown generator type {generator} for world {worldName}", serverWorld.Generator, serverWorld.Name);
-                return;
+                continue;
             }
 
             //TODO fix
@@ -127,6 +129,7 @@ public sealed class WorldManager : BackgroundService, IWorldManager
 
         //No default world was defined so choose the first one to come up
         this.DefaultWorld ??= this.worlds.FirstOrDefault().Value;
+        this.ReadyToJoin = true;
     }
 
     public IReadOnlyCollection<IWorld> GetAvailableWorlds() => this.worlds.Values.ToList().AsReadOnly();
