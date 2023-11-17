@@ -27,7 +27,7 @@ public sealed class OverworldTerrainNoise
     {
         this.seed = seed + 765; // add offset
 
-        OreNoises.Add(new Perlin()
+        OreNoises.Add(new FastPerlin()
         {
             Frequency = 0.203,
             OctaveCount = 1,
@@ -35,7 +35,7 @@ public sealed class OverworldTerrainNoise
             Seed = seed + 100
         });
 
-        StoneNoises.Add(new Perlin()
+        StoneNoises.Add(new FastPerlin()
         {
             Frequency = 0.093,
             OctaveCount = 1,
@@ -47,7 +47,7 @@ public sealed class OverworldTerrainNoise
         {
             Source0 = new Clamp()
             {
-                Source0 = new Perlin()
+                Source0 = new FastPerlin()
                 {
                     Seed = seed,
                     Frequency = 0.02,
@@ -64,7 +64,7 @@ public sealed class OverworldTerrainNoise
             {
                 Source0 = new Blur()
                 {
-                    Source0 = new Perlin()
+                    Source0 = new FastPerlin()
                     {
                         Frequency = 0.002,
                         Quality = SharpNoise.NoiseQuality.Fast,
@@ -97,7 +97,7 @@ public sealed class OverworldTerrainNoise
             {
                 Source0 = new Blur()
                 {
-                    Source0 = new Perlin()
+                    Source0 = new FastPerlin()
                     {
                         Frequency = 0.001,
                         Quality = SharpNoise.NoiseQuality.Fast,
@@ -115,7 +115,7 @@ public sealed class OverworldTerrainNoise
                 {
                     Scale = 1.0,
                     Bias = 0.08,
-                    Source0 = new Perlin()
+                    Source0 = new FastPerlin()
                     {
                         Frequency = 0.0013,
                         Quality = SharpNoise.NoiseQuality.Fast,
@@ -130,7 +130,7 @@ public sealed class OverworldTerrainNoise
         {
             Source0 = new Clamp()
             {
-                Source0 = new Perlin()
+                Source0 = new FastPerlin()
                 {
                     Frequency = 0.002,
                     Quality = SharpNoise.NoiseQuality.Fast,
@@ -141,7 +141,7 @@ public sealed class OverworldTerrainNoise
 
         SquashNoise = new Cache
         {
-            Source0 = new Perlin()
+            Source0 = new FastPerlin()
             {
                 Frequency = 0.0005,
                 Quality = SharpNoise.NoiseQuality.Fast,
@@ -196,7 +196,7 @@ public sealed class OverworldTerrainNoise
         var noisesToAdd = index + 1 - OreNoises.Count;
         for (int i = 0; i < noisesToAdd; i++)
         {
-            OreNoises.Add(new Perlin()
+            OreNoises.Add(new FastPerlin()
             {
                 Frequency = OreNoises[0].Frequency,
                 OctaveCount = OreNoises[0].OctaveCount,
@@ -213,7 +213,7 @@ public sealed class OverworldTerrainNoise
         var noisesToAdd = index + 1 - StoneNoises.Count;
         for (int i = 0; i < noisesToAdd; i++)
         {
-            StoneNoises.Add(new Perlin()
+            StoneNoises.Add(new FastPerlin()
             {
                 Frequency = StoneNoises[0].Frequency,
                 OctaveCount = StoneNoises[0].OctaveCount,
