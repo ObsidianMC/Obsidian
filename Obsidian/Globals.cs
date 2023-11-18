@@ -1,5 +1,4 @@
-﻿using Obsidian.API.Utilities;
-using Obsidian.Utilities.Converters;
+﻿using Obsidian.Utilities.Converters;
 using System.Net.Http;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -33,13 +32,6 @@ public static class Globals
             },
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
-}
-
-public sealed class SnakeCaseNamingPolicy : JsonNamingPolicy
-{
-    public static SnakeCaseNamingPolicy Instance { get; } = new SnakeCaseNamingPolicy();
-
-    public override string ConvertName(string name) => name.ToSnakeCase();
 }
 
 file class GuidJsonConverter : JsonConverter<Guid>

@@ -2,14 +2,13 @@
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace Obsidian.API.Utilities;
 
 public static partial class Extensions
 {
-    public static readonly Regex pattern = new(@"[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+");
-
     /// <remarks>
     /// This method is not and shouldn't be used in performance-critical sections.
     /// Source: https://stackoverflow.com/a/1415187
@@ -38,7 +37,6 @@ public static partial class Extensions
         // Alternative implementation:
         // var textInfo = System.Globalization.CultureInfo.CurrentCulture.TextInfo;
         // return string.Join("", snakeCase.Split('_').Select(s => textInfo.ToTitleCase(s)));
-
         int spaceCount = 0;
         for (int i = 0; i < snakeCase.Length; i++)
         {
@@ -94,7 +92,7 @@ public static partial class Extensions
 
     public static bool EqualsIgnoreCase(this string a, string b) => a.Equals(b, StringComparison.OrdinalIgnoreCase);
 
-    public static string ToSnakeCase(this string str) => string.Join("_", pattern.Matches(str)).ToLower();
+    public static string ToSnakeCase(this string str) => JsonNamingPolicy.SnakeCaseLower.ConvertName(str);
 
     /// <summary>
     /// Trims resource tag from the start and removes '_' characters.
@@ -132,7 +130,7 @@ public static partial class Extensions
         });
     }
 
-    [Obsolete("Do not use. Kept as a masterpiece.")]
+    //[Obsolete("Do not use. Kept as a masterpiece.")]
     // This method is an absolute masterpiece. Its author must've entered
     // the highest plane of existance when writing it. The purpose of this
     // method is to make a string camelCase, but at all places where it was
@@ -153,15 +151,15 @@ public static partial class Extensions
     // The text appears 8 times in memory, in different forms (including the
     // returned string). That means that every call produces around 7 * str.Length
     // * sizeof(char) bytes of garbage.
-    public static string ToCamelCase(this string str)
-    {
-        return new string(
-          new CultureInfo("en-US", false)
-            .TextInfo
-            .ToTitleCase(string.Join(" ", pattern.Matches(str)).ToLower())
-            .Replace(@" ", "")
-            .Select((x, i) => i == 0 ? char.ToLower(x) : x)
-            .ToArray()
-        );
-    }
+    //public static string ToCamelCase(this string str)
+    //{
+    //    return new string(
+    //      new CultureInfo("en-US", false)
+    //        .TextInfo
+    //        .ToTitleCase(string.Join(" ", pattern.Matches(str)).ToLower())
+    //        .Replace(@" ", "")
+    //        .Select((x, i) => i == 0 ? char.ToLower(x) : x)
+    //        .ToArray()
+    //    );
+    //}
 }
