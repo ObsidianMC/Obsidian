@@ -974,16 +974,6 @@ public sealed partial class Player : Living, IPlayer
         });
 
         clientUnneededChunks.ForEach(c => client.LoadedChunks.TryRemove(c));
-        await Parallel.ForEachAsync(clientUnneededChunks, async (chunkLoc, _) =>
-        {
-            //await client.UnloadChunkAsync(chunkLoc.X, chunkLoc.Z);
-            if (!client.LoadedChunks.TryRemove(chunkLoc))
-            {
-                Logger.LogWarning("Failed to unload client chunk {0}", chunkLoc);
-            }
-        });
-
-        client.SendPacket(new SetCenterChunkPacket(playerChunkX, playerChunkZ));
 
         await Parallel.ForEachAsync(clientNeededChunks, async (chunkLoc, _) =>
         {
