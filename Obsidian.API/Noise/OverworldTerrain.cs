@@ -17,7 +17,7 @@ internal class OverworldTerrain : Module
         SourceModules[3] = river;
         SourceModules[4] = peaks;
 
-        terrainPerlin = new FastPerlin()
+        terrainPerlin = new FastPerlin3D()
         {
             Frequency = 0.333 / TerrainStretch,
             OctaveCount = 3,
