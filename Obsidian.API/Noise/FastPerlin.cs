@@ -20,7 +20,12 @@ public class FastPerlin : SharpNoise.Modules.Perlin
 
     public void Cleanup(int chunkX, int chunkZ)
     {
-        storage2.TryRemove((chunkX, chunkZ), out var _);
+        try
+        {
+            storage2.TryRemove((chunkX, chunkZ), out var _);
+        } catch(Exception e)  {
+            Console.WriteLine("");
+        }
     }
 
     public override double GetValue(double x, double y, double z)
@@ -31,7 +36,7 @@ public class FastPerlin : SharpNoise.Modules.Perlin
         {
             if (yDict.TryGetValue(y, out var arr))
             {
-                return arr[(((int)x - startX) << 4) + ((int)z - startZ)];
+                return arr[(((int)z - startZ) << 4) + ((int)x - startX)];
             }
         } 
         else
@@ -57,7 +62,7 @@ public class FastPerlin : SharpNoise.Modules.Perlin
         }
         storage2[(chunkX, chunkZ)][y] = resultArray;
 
-        return resultArray[(((int)x - startX) << 4) + ((int)z - startZ)];
+        return resultArray[(((int)z - startZ) << 4) + ((int)x - startX)];
 
 
         /*        double num = 0.0;

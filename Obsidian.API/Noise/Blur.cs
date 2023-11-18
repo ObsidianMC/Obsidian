@@ -7,7 +7,17 @@ public class Blur : Module
     /// <summary>
     /// Source to blur. Expensive ops should be cached.
     /// </summary>
-    public Module Source0 { get; set; }
+    public Module Source0
+    {
+        get
+        {
+            return SourceModules[0];
+        }
+        set
+        {
+            SourceModules[0] = value;
+        }
+    }
 
     /// <summary>
     /// ctor.
