@@ -59,6 +59,7 @@ public sealed class OverworldGenerator : IWorldGenerator
         }
 
         chunk.chunkStatus = ChunkStatus.full;
+        helper.Noise.Cleanup(chunk.X, chunk.Z);
         return chunk;
     }
 

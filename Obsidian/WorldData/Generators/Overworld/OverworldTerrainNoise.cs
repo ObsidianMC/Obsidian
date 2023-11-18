@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Noise;
+using Obsidian.Utilities;
 using SharpNoise.Modules;
 
 namespace Obsidian.WorldData.Generators.Overworld;
@@ -20,8 +21,22 @@ public sealed class OverworldTerrainNoise
     public Module PeakValleyNoise { get; }
     public Module TerrainSelector { get; }
 
-    public List<Perlin> OreNoises { get; } = new();
-    public List<Perlin> StoneNoises { get; } = new();
+    public List<FastPerlin> OreNoises { get; } = new();
+    public List<FastPerlin> StoneNoises { get; } = new();
+
+    public void Cleanup(int chunkX, int chunkZ)
+    {
+        StoneNoises.ForEach(n => n.Cleanup(chunkX, chunkZ));
+        OreNoises.ForEach(n => n.Cleanup(chunkX, chunkZ));
+        ((FastPerlin)PeakValleyNoise.SourceModules[0].SourceModules[0]).Cleanup(chunkX, chunkZ);
+        ((FastPerlin)HumidityNoise.SourceModules[0].SourceModules[0].SourceModules[0]).Cleanup(chunkX, chunkZ);
+        ((FastPerlin)((RiverSelector)RiverNoise.SourceModules[0]).RiverNoise).Cleanup(chunkX, chunkZ);
+        ((FastPerlin)TempNoise.SourceModules[0].SourceModules[0].SourceModules[0]).Cleanup(chunkX, chunkZ);
+        ((FastPerlin)((ContinentSelector)HeightNoise.SourceModules[0]).TerrainNoise.SourceModules[0]).Cleanup(chunkX, chunkZ);
+        ((FastPerlin)ErosionNoise.SourceModules[0].SourceModules[0]).Cleanup(chunkX, chunkZ);
+        ((FastPerlin)SquashNoise.SourceModules[0]).Cleanup(chunkX, chunkZ);
+    }
+
 
     public OverworldTerrainNoise(int seed)
     {
@@ -80,7 +95,7 @@ public sealed class OverworldTerrainNoise
         {
             Source0 = new RiverSelector
             {
-                RiverNoise = new Perlin
+                RiverNoise = new FastPerlin
                 {
                     Frequency = 0.001,
                     Quality = SharpNoise.NoiseQuality.Fast,
