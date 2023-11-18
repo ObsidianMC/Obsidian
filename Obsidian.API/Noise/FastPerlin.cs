@@ -11,7 +11,7 @@ public class FastPerlin : SharpNoise.Modules.Perlin
 {
     private readonly FastNoiseOO.Generators.Perlin prln;
 
-    private ConcurrentDictionary<(int chunkX, int chunkZ), ConcurrentDictionary<double, float[]>> storage = new();
+    private ConcurrentDictionary<(int chunkX, int chunkZ), Dictionary<double, float[]>> storage = new();
 
     public FastPerlin()
     {

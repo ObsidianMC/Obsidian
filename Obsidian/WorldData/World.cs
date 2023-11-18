@@ -8,6 +8,7 @@ using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
+using System.Diagnostics;
 using System.IO;
 
 namespace Obsidian.WorldData;
@@ -822,12 +823,23 @@ public class World : IWorld, IAsyncDisposable
             }
         }
 
+        float startChunks = ChunksToGen.Count;
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
+        Logger.LogInformation("{startChunks} chunks to generate...", startChunks);
+        var c = new FastNoiseOO.FastNoise("Perlin");
+        var lvl = c.GetSIMDLevel();
+        Logger.LogInformation("Using FastNoise {lvl} for Generation.", lvl);
         while (!ChunksToGen.IsEmpty)
         {
             await ManageChunksAsync();
-            Server.UpdateStatusConsole();
+            var pctComplete = (int)((1.0 - ChunksToGen.Count / startChunks) * 100);
+            var completedChunks = startChunks - ChunksToGen.Count;
+            var cps = completedChunks / (stopwatch.ElapsedMilliseconds / 1000.0);
+            int remain = ChunksToGen.Count / (int)cps;
+            Console.Write("\r{0} chunks/second - {1}% complete - {2} seconds remaining   ", cps.ToString("###.00"), pctComplete, remain);
         }
-
+        Console.WriteLine();
         await FlushRegionsAsync();
 
         if (setWorldSpawn)
