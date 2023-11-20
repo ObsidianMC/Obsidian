@@ -51,8 +51,8 @@ public partial class Server : IServer
 #endif
     public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_20_2;
 
-    public static string PersistentDataPath { get; } = "persistentdata";
-    public static string PermissionPath { get; } = "permissions";
+    public const string PersistentDataPath = "persistentdata";
+    public const string PermissionPath = "permissions";
 
     internal static readonly ConcurrentDictionary<string, DateTimeOffset> throttler = new();
 
@@ -112,7 +112,7 @@ public partial class Server : IServer
 
         Port = Config.Port;
 
-        Operators = new OperatorList(this);
+        Operators = new OperatorList(this, loggerFactory);
 
         _logger.LogDebug(message: "Initializing command handler...");
         CommandsHandler = new CommandHandler();

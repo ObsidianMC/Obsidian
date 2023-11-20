@@ -1,129 +1,119 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.API.Logging;
 using System.Collections.Immutable;
 using System.IO;
 
 namespace Obsidian.Utilities;
 
-public class OperatorList : IOperatorList
+public sealed class OperatorList : IOperatorList
 {
-    private List<Operator> ops;
-    private readonly List<OperatorRequest> reqs;
-    private readonly Server server;
+    private readonly List<Operator> operators = new();
+    private readonly Dictionary<string, OperatorRequest> requests = new();
+    private readonly IServer server;
     private readonly ILogger _logger;
-    private string Path => System.IO.Path.Combine(System.IO.Path.Combine("config"), "ops.json");
+    private string OpsFilePath => Path.Combine("config", "ops.json");
 
-    public OperatorList(Server server)
+    public OperatorList(IServer server, ILoggerFactory loggerFactory)
     {
-        this.ops = new List<Operator>();
-        this.reqs = new List<OperatorRequest>();
         this.server = server;
-        var loggerProvider = new LoggerProvider();
-        _logger = loggerProvider.CreateLogger("OperatorList");
+        _logger = loggerFactory.CreateLogger<OperatorList>();
     }
 
     public async Task InitializeAsync()
     {
-        var fi = new FileInfo(this.Path);
+        var fi = new FileInfo(this.OpsFilePath);
 
         if (fi.Exists)
         {
             await using var fs = fi.OpenRead();
-            this.ops = await fs.FromJsonAsync<List<Operator>>();
+            var ops = await fs.FromJsonAsync<List<Operator>>();
+
+            this.operators.AddRange(ops!);
         }
         else
         {
             await using var fs = fi.Create();
 
-            await this.ops.ToJsonAsync(fs);
+            await this.operators.ToJsonAsync(fs);
         }
     }
 
-    public void AddOperator(IPlayer p)
+    public bool CreateRequest(IPlayer player)
     {
-        ops.Add(new Operator { Username = p.Username, Uuid = p.Uuid });
+        if (!server.Configuration.AllowOperatorRequests)
+            return false;
 
-        UpdateList();
-    }
-
-    public bool CreateRequest(IPlayer p)
-    {
-        if (!server.Config.AllowOperatorRequests)
+        if (this.requests.Values.Any(x => x.Player == player))
         {
+            _logger.LogWarning("{Username} tried to put in another request but already has one pending.", player.Username);
             return false;
         }
 
-        var result = reqs.All(r => r.Player != p);
+        var request = new OperatorRequest(player);
+        requests.Add(request.Code, request);
 
-        if (result)
-        {
-            var req = new OperatorRequest(p);
-            reqs.Add(req);
-
-            _logger.LogWarning($"New operator request from {p.Username}: {req.Code}");
-        }
-
-        return result;
-    }
-
-    public bool ProcessRequest(IPlayer p, string code)
-    {
-        var result = reqs.FirstOrDefault(r => r.Player == p && r.Code == code);
-
-        if (result == null)
-        {
-            return false;
-        }
-
-        reqs.Remove(result);
-
-        AddOperator(p);
+        _logger.LogInformation("New operator request from {Username}: {Code}", player.Username, request.Code);
 
         return true;
     }
 
-    public void AddOperator(string username)
+    public bool ProcessRequest(IPlayer player, string code)
     {
-        this.ops.Add(new Operator { Username = username, Uuid = Guid.Empty });
+        if (!this.requests.TryGetValue(code, out var request))
+            return false;
+
+        if (!requests.Remove(request.Code))
+        {
+            _logger.LogWarning("Failed to process request with code: {code}", code);
+            return false;
+        }
+
+        AddOperator(player);
+
+        return true;
+    }
+
+    public void AddOperator(IPlayer player, int level = 4, bool bypassesPlayerLimit = false)
+    {
+        this.operators.Add(new Operator { Username = player.Username, Uuid = player.Uuid, Level = level, BypassesPlayerLimit = bypassesPlayerLimit  });
         this.UpdateList();
     }
 
-    public void RemoveOperator(IPlayer p)
+    public void RemoveOperator(IPlayer player)
     {
-        this.ops.RemoveAll(x => x.Uuid == p.Uuid || x.Username == p.Username);
+        this.operators.RemoveAll(x => x.Uuid == player.Uuid);
+
         this.UpdateList();
     }
 
-    public void RemoveOperator(string value)
-    {
-        this.ops.RemoveAll(x => x.Username == value || x.Uuid == Guid.Parse(value));
-        this.UpdateList();
-    }
-
-    public bool IsOperator(IPlayer p) => this.ops.Any(x => x.Username == p.Username || p.Uuid == x.Uuid);
+    public bool IsOperator(IPlayer player) => this.operators.Any(x => x.Uuid == player.Uuid);
 
     public ImmutableList<IPlayer> GetOnlineOperators() => server.Players.Where(IsOperator).ToImmutableList();
 
-    private void UpdateList()
+    private void UpdateList() =>
+        File.WriteAllText(OpsFilePath, operators.ToJson());
+
+    private readonly struct Operator
     {
-        File.WriteAllText(Path, ops.ToJson());
+        public required string Username { get; init; }
+
+        public required Guid Uuid { get; init; }
+
+        public required int Level { get; init; }
+
+        public required bool BypassesPlayerLimit { get; init; }
     }
 
-    private class Operator
+    private readonly struct OperatorRequest
     {
-        public string Username { get; set; }
+        public IPlayer Player { get; }
+        public string Code { get; }
 
-        public Guid Uuid { get; set; }
-    }
-
-    private class OperatorRequest
-    {
-        public IPlayer Player;
-        public string Code;
 
         public OperatorRequest(IPlayer player)
         {
-            Player = player ?? throw new ArgumentNullException(nameof(player));
+            ArgumentNullException.ThrowIfNull(player);
+
+            Player = player;
 
             static string GetCode()
             {
