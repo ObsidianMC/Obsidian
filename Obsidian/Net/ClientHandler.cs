@@ -102,7 +102,7 @@ public sealed class ClientHandler
                 try
                 {
                     packet.Populate(data);
-                    await packet.HandleAsync(client.Server, client.Player);
+                    await packet.HandleAsync(client.server, client.Player);
                 }
                 catch (Exception e)
                 {
@@ -208,7 +208,7 @@ public sealed class ClientHandler
                 try
                 {
                     packet.Populate(data);
-                    await packet.HandleAsync(client.Server, client.Player!);
+                    await packet.HandleAsync(client.server, client.Player!);
                 }
                 catch (Exception e)
                 {
@@ -225,11 +225,11 @@ public sealed class ClientHandler
         try
         {
             packet.Populate(data);
-            await packet.HandleAsync(client.Server, client.Player!);
+            await packet.HandleAsync(client.server, client.Player!);
         }
         catch (Exception e)
         {
-            if (client.Server.Config.VerboseExceptionLogging)
+            if (client.server.Configuration.VerboseExceptionLogging)
                 _logger.LogError(e, "{message}", e.Message);
         }
         ObjectPool<T>.Shared.Return(packet);

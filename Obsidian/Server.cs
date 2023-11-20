@@ -84,9 +84,7 @@ public sealed partial class Server : IServer
 
     public HashSet<string> RegisteredChannels { get; } = new();
     public CommandHandler CommandsHandler { get; }
-
-    public ServerConfiguration Config { get; }
-    public IServerConfiguration Configuration => Config;
+    public IServerConfiguration Configuration { get; }
     public string Version => VERSION;
 
     public string Brand { get; } = "obsidian";
@@ -105,14 +103,14 @@ public sealed partial class Server : IServer
         RconServer rconServer,
         IUserCache playerCache)
     {
-        Config = environment.Configuration;
+        Configuration = environment.Configuration;
         _logger = loggerFactory.CreateLogger<Server>();
         _logger.LogInformation("SHA / Version: {VERSION}", VERSION);
         _cancelTokenSource = CancellationTokenSource.CreateLinkedTokenSource(lifetime.ApplicationStopping);
         _cancelTokenSource.Token.Register(() => _logger.LogWarning("Obsidian is shutting down..."));
         _rconServer = rconServer;
 
-        Port = Config.Port;
+        Port = Configuration.Port;
 
         Operators = new OperatorList(this, loggerFactory);
         ScoreboardManager = new ScoreboardManager(this, loggerFactory);
@@ -146,7 +144,7 @@ public sealed partial class Server : IServer
         Directory.CreateDirectory(PermissionPath);
         Directory.CreateDirectory(PersistentDataPath);
 
-        if (Config.UDPBroadcast)
+        if (Configuration.UDPBroadcast)
         {
             _ = Task.Run(async () =>
             {
@@ -156,10 +154,10 @@ public sealed partial class Server : IServer
                 byte[] bytes = []; // Cached motd as utf-8 bytes
                 while (await timer.WaitForNextTickAsync(_cancelTokenSource.Token))
                 {
-                    if (Config.Motd != lastMotd)
+                    if (Configuration.Motd != lastMotd)
                     {
-                        lastMotd = Config.Motd;
-                        bytes = Encoding.UTF8.GetBytes($"[MOTD]{Config.Motd.Replace('[', '(').Replace(']', ')')}[/MOTD][AD]{Config.Port}[/AD]");
+                        lastMotd = Configuration.Motd;
+                        bytes = Encoding.UTF8.GetBytes($"[MOTD]{Configuration.Motd.Replace('[', '(').Replace(']', ')')}[/MOTD][AD]{Configuration.Port}[/AD]");
                     }
                     await udpClient.SendAsync(bytes, bytes.Length);
                 }
@@ -244,7 +242,7 @@ public sealed partial class Server : IServer
         var loadTimeStopwatch = Stopwatch.StartNew();
 
         // Check if MPDM and OM are enabled, if so, we can't handle connections
-        if (Config.MulitplayerDebugMode && Config.OnlineMode)
+        if (Configuration.MulitplayerDebugMode && Configuration.OnlineMode)
         {
             _logger.LogError("Incompatible Config: Multiplayer debug mode can't be enabled at the same time as online mode since usernames will be overwritten");
             await StopAsync();
@@ -266,9 +264,9 @@ public sealed partial class Server : IServer
         PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
         PluginManager.DirectoryWatcher.Watch("plugins");
 
-        await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
+        await Task.WhenAll(Configuration.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
-        if (!Config.OnlineMode)
+        if (!Configuration.OnlineMode)
             _logger.LogInformation($"Starting in offline mode...");
 
         CommandsRegistry.Register(this);
@@ -351,14 +349,14 @@ public sealed partial class Server : IServer
 
             string ip = ((IPEndPoint)connection.RemoteEndPoint!).Address.ToString();
 
-            if (Config.IpWhitelistEnabled && !Config.WhitelistedIPs.Contains(ip))
+            if (Configuration.IpWhitelistEnabled && !Configuration.WhitelistedIPs.Contains(ip))
             {
                 _logger.LogInformation("{ip} is not whitelisted. Closing connection", ip);
                 connection.Abort();
                 return;
             }
 
-            if (this.Config.CanThrottle)
+            if (this.Configuration.CanThrottle)
             {
                 if (throttler.TryGetValue(ip, out var time) && time <= DateTimeOffset.UtcNow)
                 {
@@ -368,7 +366,7 @@ public sealed partial class Server : IServer
             }
 
             // TODO Entity ids need to be unique on the entire server, not per world
-            var client = new Client(connection, Math.Max(0, _clients.Count + this.DefaultWorld.GetTotalLoadedEntities()), this.Configuration, this.loggerFactory, this.userCache);
+            var client = new Client(connection, Math.Max(0, _clients.Count + this.DefaultWorld.GetTotalLoadedEntities()), this.loggerFactory, this.userCache, this);
 
             _clients.Add(client);
 
@@ -510,7 +508,7 @@ public sealed partial class Server : IServer
                 await Events.ServerTick.InvokeAsync();
 
                 keepAliveTicks++;
-                if (keepAliveTicks > (Config.KeepAliveInterval / 50)) // to clarify: one tick is 50 milliseconds. 50 * 200 = 10000 millis means 10 seconds
+                if (keepAliveTicks > (Configuration.KeepAliveInterval / 50)) // to clarify: one tick is 50 milliseconds. 50 * 200 = 10000 millis means 10 seconds
                 {
                     var keepAliveTime = DateTimeOffset.Now;
 
@@ -520,7 +518,7 @@ public sealed partial class Server : IServer
                     keepAliveTicks = 0;
                 }
 
-                if (Config.Baah.HasValue)
+                if (Configuration.Baah.HasValue)
                 {
                     foreach (Player player in Players)
                     {

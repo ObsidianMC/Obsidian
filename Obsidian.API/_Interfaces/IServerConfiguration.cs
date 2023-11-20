@@ -4,6 +4,13 @@ namespace Obsidian.API;
 
 public interface IServerConfiguration
 {
+    public bool? Baah { get; set; }
+    public bool CanThrottle => this.ConnectionThrottle > 0;
+    public bool UDPBroadcast { get; set; }
+    public bool IpWhitelistEnabled { get; set; }
+
+    public long ConnectionThrottle { get; set; }
+
     /// <summary>
     /// Server description.
     /// </summary>

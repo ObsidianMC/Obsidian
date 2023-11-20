@@ -52,7 +52,7 @@ public sealed class ServerConfiguration : IServerConfiguration
     /// <summary>
     /// Allows the server to advertise itself as a LAN server to devices on your network.
     /// </summary>
-    public bool UDPBroadcast = true; // Enabled because it's super useful for debugging tbh
+    public bool UDPBroadcast { get; set; } = true; // Enabled because it's super useful for debugging tbh
 
     public int PregenerateChunkRange { get; set; } = 15; // by default, pregenerate range from -15 to 15
 

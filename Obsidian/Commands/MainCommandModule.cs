@@ -277,7 +277,7 @@ public class MainCommandModule
         if (ctx.Server is not Server server || ctx.Player is not IPlayer player)
             return;
 
-        if (!server.Config.AllowOperatorRequests)
+        if (!server.Configuration.AllowOperatorRequests)
         {
             await player.SendMessageAsync("§cOperator requests are disabled on this server.");
             return;
