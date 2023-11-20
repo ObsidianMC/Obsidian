@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 
 namespace Obsidian.Utilities;
 
-public class ServerStatus : IServerStatus
+public sealed class ServerStatus : IServerStatus
 {
     private readonly ILogger _logger;
     private static ReadOnlySpan<byte> PngHeader => [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];

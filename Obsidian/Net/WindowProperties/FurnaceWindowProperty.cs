@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.Net.WindowProperties;
 
-public class FurnaceWindowProperty : IWindowProperty
+public sealed class FurnaceWindowProperty : IWindowProperty
 {
     public short Property { get; }
 

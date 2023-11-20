@@ -1,11 +1,8 @@
 ﻿using Microsoft.AspNetCore.Connections;
-using Obsidian.API;
 using Obsidian.Entities;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
-using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
-using Obsidian.Services;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;

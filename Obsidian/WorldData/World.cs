@@ -14,7 +14,7 @@ using System.Threading;
 
 namespace Obsidian.WorldData;
 
-public class World : IWorld
+public sealed class World : IWorld
 {
     public IWorldManager WorldManager { get; }
 

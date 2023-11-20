@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.Net.Actions.BossBar;
 
-public class BossBarUpdateTitleAction : BossBarAction
+public sealed class BossBarUpdateTitleAction : BossBarAction
 {
     public ChatMessage Title { get; set; }
 

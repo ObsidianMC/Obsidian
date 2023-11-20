@@ -2,7 +2,7 @@
 
 namespace Obsidian.Registries;
 
-internal partial class BlocksRegistry
+internal static partial class BlocksRegistry
 {
     public static int GlobalBitsPerBlocks { get; private set; }
     static BlocksRegistry()

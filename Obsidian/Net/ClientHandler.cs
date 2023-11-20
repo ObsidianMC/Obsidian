@@ -9,7 +9,7 @@ using Obsidian.Utilities.Collections;
 
 namespace Obsidian.Net;
 
-public class ClientHandler
+public sealed class ClientHandler
 {
     private ConcurrentDictionary<int, IServerboundPacket> Packets { get; } = new ConcurrentDictionary<int, IServerboundPacket>();
     private IServerConfiguration config;

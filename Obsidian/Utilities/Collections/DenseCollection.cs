@@ -2,7 +2,7 @@
 
 namespace Obsidian.Utilities.Collections;
 
-public class DenseCollection<T> : IEnumerable<T> where T : class
+public sealed class DenseCollection<T> : IEnumerable<T> where T : class
 {
     private readonly object lockObject = new object();
 

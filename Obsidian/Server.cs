@@ -33,7 +33,7 @@ using System.Threading;
 
 namespace Obsidian;
 
-public partial class Server : IServer
+public sealed partial class Server : IServer
 {
 #if RELEASE
     public const string VERSION = "0.1";

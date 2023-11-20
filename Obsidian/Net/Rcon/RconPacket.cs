@@ -8,7 +8,7 @@ using System.Threading;
 
 namespace Obsidian.Net.Rcon;
 
-public class RconPacket
+public sealed class RconPacket
 {
     private readonly Encoding encoding;
 

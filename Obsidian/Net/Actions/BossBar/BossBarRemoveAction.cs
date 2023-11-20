@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.Net.Actions.BossBar;
 
-public class BossBarRemoveAction : BossBarAction
+public sealed class BossBarRemoveAction : BossBarAction
 {
     public BossBarRemoveAction() : base(1) { }
 }

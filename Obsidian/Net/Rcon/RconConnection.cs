@@ -18,7 +18,7 @@ using static Obsidian.Net.Rcon.RconServer;
 
 namespace Obsidian.Net.Rcon;
 
-public class RconConnection
+public sealed class RconConnection
 {
     public uint Id { get; }
     public TcpClient Client { get; }
