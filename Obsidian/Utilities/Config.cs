@@ -1,10 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.API._Types.Config;
+using Obsidian.API.Config;
 using System.Text.Json.Serialization;
 
 namespace Obsidian.Utilities;
 
-public class ServerConfiguration : IServerConfiguration
+public sealed class ServerConfiguration : IServerConfiguration
 {
     public string Motd { get; set; } = $"§k||||§r §5Obsidian §cPre§r-§cRelease §r§k||||§r \n§r§lRunning on .NET §l§c{Environment.Version} §r§l<3";
 

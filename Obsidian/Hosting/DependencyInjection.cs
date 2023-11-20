@@ -18,6 +18,9 @@ public static class DependencyInjection
         services.AddSingleton<WorldManager>();
         services.AddSingleton<PacketBroadcaster>();
         services.AddSingleton<IServer, Server>();
+        services.AddSingleton<IUserCache, UserCache>();
+
+        services.AddHttpClient();
 
         services.AddHostedService(sp => sp.GetRequiredService<PacketBroadcaster>());
         services.AddHostedService<ObsidianHostingService>();

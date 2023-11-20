@@ -21,6 +21,7 @@ using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Net.Rcon;
 using Obsidian.Plugins;
 using Obsidian.Registries;
+using Obsidian.Services;
 using Obsidian.WorldData;
 using System.Diagnostics;
 using System.IO;
@@ -60,7 +61,9 @@ public partial class Server : IServer
 
     private readonly ConcurrentQueue<IClientboundPacket> _chatMessagesQueue = new();
     private readonly ConcurrentHashSet<Client> _clients = new();
+    private readonly ILoggerFactory loggerFactory;
     private readonly RconServer _rconServer;
+    private readonly IUserCache userCache;
     private readonly ILogger _logger;
 
     private IConnectionListener? _tcpListener;
@@ -86,8 +89,6 @@ public partial class Server : IServer
     public IServerConfiguration Configuration => Config;
     public string Version => VERSION;
 
-    
-
     public string Brand { get; } = "obsidian";
     public int Port { get; }
     public IWorld DefaultWorld => WorldManager.DefaultWorld;
@@ -101,7 +102,8 @@ public partial class Server : IServer
         IServerEnvironment environment,
         ILoggerFactory loggerFactory,
         IWorldManager worldManager,
-        RconServer rconServer)
+        RconServer rconServer,
+        IUserCache playerCache)
     {
         Config = environment.Configuration;
         _logger = loggerFactory.CreateLogger<Server>();
@@ -131,6 +133,8 @@ public partial class Server : IServer
         _logger.LogDebug("Registering command context type...");
         _logger.LogDebug("Done registering commands.");
 
+        this.userCache = playerCache;
+        this.loggerFactory = loggerFactory;
         this.WorldManager = worldManager;
 
         Events.PlayerLeave += OnPlayerLeave;
@@ -249,7 +253,7 @@ public partial class Server : IServer
 
         await RecipesRegistry.InitializeAsync();
 
-        await UserCache.LoadAsync(this._cancelTokenSource.Token);
+        await this.userCache.LoadAsync(this._cancelTokenSource.Token);
 
         _logger.LogInformation($"Loading properties...");
 
@@ -311,7 +315,7 @@ public partial class Server : IServer
         await WorldManager.FlushLoadedWorldsAsync();
         await WorldManager.DisposeAsync();
 
-        await UserCache.SaveAsync();
+        await this.userCache.SaveAsync();
     }
 
     private async Task AcceptClientsAsync()
@@ -364,7 +368,7 @@ public partial class Server : IServer
             }
 
             // TODO Entity ids need to be unique on the entire server, not per world
-            var client = new Client(connection, Config, Math.Max(0, _clients.Count + this.DefaultWorld.GetTotalLoadedEntities()), this);
+            var client = new Client(connection, Math.Max(0, _clients.Count + this.DefaultWorld.GetTotalLoadedEntities()), this.Configuration, this.loggerFactory, this.userCache);
 
             _clients.Add(client);
 
@@ -485,7 +489,7 @@ public partial class Server : IServer
             {
                 _logger.LogInformation("Saving world...");
                 await WorldManager.FlushLoadedWorldsAsync();
-                await UserCache.SaveAsync();
+                await this.userCache.SaveAsync();
             }
         }
         catch { }

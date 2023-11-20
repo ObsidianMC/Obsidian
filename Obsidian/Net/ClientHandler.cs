@@ -12,10 +12,10 @@ namespace Obsidian.Net;
 public class ClientHandler
 {
     private ConcurrentDictionary<int, IServerboundPacket> Packets { get; } = new ConcurrentDictionary<int, IServerboundPacket>();
-    private ServerConfiguration config;
+    private IServerConfiguration config;
     private readonly ILogger _logger;
 
-    public ClientHandler(ServerConfiguration config)
+    public ClientHandler(IServerConfiguration config)
     {
         this.config = config;
         var loggerProvider = new LoggerProvider(LogLevel.Error);

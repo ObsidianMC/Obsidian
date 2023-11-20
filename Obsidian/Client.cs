@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
-using Obsidian.API.Logging;
 using Obsidian.API.Utilities;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
@@ -17,6 +16,7 @@ using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Status;
 using Obsidian.Registries;
+using Obsidian.Services;
 using Obsidian.Utilities.Mojang;
 using Obsidian.WorldData;
 using System.Diagnostics;
@@ -58,6 +58,14 @@ public sealed class Client : IDisposable
     /// Used for signing chat messages.
     /// </summary>
     internal MessageSigningData? messageSigningData;
+
+    /// <summary>
+    /// The current server configuration.
+    /// </summary>
+    private readonly IServerConfiguration configuration;
+
+
+    private readonly IUserCache userCache;
 
     /// <summary>
     /// Whether the client has compression enabled on the Minecraft stream.
@@ -120,11 +128,6 @@ public sealed class Client : IDisposable
     private readonly ConnectionContext connectionContext;
 
     /// <summary>
-    /// The current server configuration.
-    /// </summary>
-    private readonly ServerConfiguration config;
-
-    /// <summary>
     /// Whether the stream has encryption enabled. This can be set to false when the client is connecting through LAN or when the server is in offline mode.
     /// </summary>
     public bool EncryptionEnabled { get; private set; }
@@ -169,21 +172,22 @@ public sealed class Client : IDisposable
     /// </summary>
     public string? Brand { get; set; }
 
-    public Client(ConnectionContext connectionContext, ServerConfiguration config, int playerId, Server originServer)
+    public Client(ConnectionContext connectionContext, int playerId, 
+        IServerConfiguration configuration, ILoggerFactory loggerFactory, IUserCache playerCache)
     {
         this.connectionContext = connectionContext;
-        this.config = config;
-        var loggerProvider = new LoggerProvider(config.LogLevel);
-        Logger = loggerProvider.CreateLogger("Client");
+        this.configuration = configuration;
 
         id = playerId;
-        Server = originServer;
-
         LoadedChunks = [];
         packetCryptography = new();
-        handler = new(config);
+        handler = new(configuration);
         networkStream = new(connectionContext.Transport);
         minecraftStream = new(networkStream);
+
+        this.configuration = configuration;
+        this.userCache = playerCache;
+        this.Logger = loggerFactory.CreateLogger($"Client{playerId}");
 
         missedKeepAlives = [];
         var linkOptions = new DataflowLinkOptions { PropagateCompletion = true };
@@ -240,8 +244,6 @@ public sealed class Client : IDisposable
 
             if (State == ClientState.Play && data.Length < 1)
                 Disconnect();
-
-            
 
             switch (State)
             {
@@ -415,22 +417,22 @@ public sealed class Client : IDisposable
     private async Task HandleLoginStartAsync(byte[] data)
     {
         var loginStart = LoginStart.Deserialize(data);
-        var username = config.MulitplayerDebugMode ? $"Player{Globals.Random.Next(1, 999)}" : loginStart.Username;
+        var username = configuration.MulitplayerDebugMode ? $"Player{Globals.Random.Next(1, 999)}" : loginStart.Username;
         var world = (World)Server.DefaultWorld;
 
         Logger.LogDebug("Received login request from user {Username}", loginStart.Username);
         await Server.DisconnectIfConnectedAsync(username);
 
-        if (config.OnlineMode)
+        if (configuration.OnlineMode)
         {
-            cachedUser = await UserCache.GetUserFromNameAsync(loginStart.Username ?? throw new NullReferenceException(nameof(loginStart.PlayerUuid)));
+            cachedUser = await this.userCache.GetCachedUserFromNameAsync(loginStart.Username ?? throw new NullReferenceException(nameof(loginStart.PlayerUuid)));
 
             if (cachedUser is null)
             {
                 await DisconnectAsync("Account not found in the Mojang database");
                 return;
             }
-            else if (config.WhitelistEnabled && !config.Whitelisted.Any(x => x.Id == cachedUser.Id))
+            else if (configuration.WhitelistEnabled && !configuration.Whitelisted.Any(x => x.Id == cachedUser.Id))
             {
                 await DisconnectAsync("You are not whitelisted on this server\nContact server administrator");
                 return;
@@ -449,7 +451,7 @@ public sealed class Client : IDisposable
                 VerifyToken = randomToken
             });
         }
-        else if (config.WhitelistEnabled && !config.Whitelisted.Any(x => x.Name == username))
+        else if (configuration.WhitelistEnabled && !configuration.Whitelisted.Any(x => x.Name == username))
         {
             await DisconnectAsync("You are not whitelisted on this server\nContact server administrator");
         }
@@ -489,7 +491,7 @@ public sealed class Client : IDisposable
         }
 
         var serverId = sharedKey.Concat(packetCryptography.PublicKey).MinecraftShaDigest();
-        if (await UserCache.HasJoinedAsync(Player.Username, serverId) is not MojangUser user)
+        if (await this.userCache.HasJoinedAsync(Player.Username, serverId) is not MojangUser user)
         {
             Logger.LogWarning("Failed to auth {Username}", Player.Username);
             await DisconnectAsync("Unable to authenticate...");
@@ -622,7 +624,7 @@ public sealed class Client : IDisposable
     {
         long keepAliveId = time.ToUnixTimeMilliseconds();
         // first, check if there's any KeepAlives that are older than 30 seconds
-        if (missedKeepAlives.Any(x => keepAliveId - x > config.KeepAliveTimeoutInterval))
+        if (missedKeepAlives.Any(x => keepAliveId - x > this.configuration.KeepAliveTimeoutInterval))
         {
             // kick player, failed to respond within 30s
             cancellationSource.Cancel();
@@ -663,7 +665,7 @@ public sealed class Client : IDisposable
             Name = player.Username,
         };
 
-        if (config.OnlineMode)
+        if (this.configuration.OnlineMode)
             addAction.Properties.AddRange(player.SkinProperties);
 
         var list = new List<InfoAction>()
@@ -694,7 +696,7 @@ public sealed class Client : IDisposable
                 Name = player.Username,
             };
 
-            if (config.OnlineMode)
+            if (this.configuration.OnlineMode)
                 addPlayerInforAction.Properties.AddRange(player.SkinProperties);
 
             var list = new List<InfoAction>

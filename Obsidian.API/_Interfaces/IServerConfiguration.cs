@@ -1,4 +1,4 @@
-﻿using Obsidian.API._Types.Config;
+﻿using Obsidian.API.Config;
 
 namespace Obsidian.API;
 
@@ -38,6 +38,8 @@ public interface IServerConfiguration
 
     public bool AllowOperatorRequests { get; set; }
 
+    public bool WhitelistEnabled { get; set; }
+
     /// <summary>
     /// Whether each login/client gets a random username where multiple connections from the same host will be allowed.
     /// </summary>
@@ -75,8 +77,13 @@ public interface IServerConfiguration
     /// <remarks>See more at https://wiki.vg/RCON</remarks>
     public bool EnableRcon => Rcon is not null;
 
+    public bool VerboseExceptionLogging { get; set; }
+
     /// <summary>
     /// Remote Console configuration
     /// </summary>
     public RconConfig? Rcon { get; set; }
+
+    public List<string> WhitelistedIPs { get; set; }
+    public List<WhitelistedPlayer> Whitelisted { get; set; }
 }
