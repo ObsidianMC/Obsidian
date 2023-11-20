@@ -36,7 +36,6 @@ builder.Services.AddLogging(loggingBuilder =>
 builder.Services.AddObsidian(env);
 
 // Give the server some time to shut down after CTRL-C or SIGTERM.
-//TODO SERVICES SET STOP CONCURRENTLY
 builder.Services.Configure<HostOptions>(opts =>
 {
     opts.ShutdownTimeout = TimeSpan.FromSeconds(10);

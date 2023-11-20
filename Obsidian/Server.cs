@@ -113,6 +113,7 @@ public partial class Server : IServer
         Port = Config.Port;
 
         Operators = new OperatorList(this, loggerFactory);
+        ScoreboardManager = new ScoreboardManager(this, loggerFactory);
 
         _logger.LogDebug(message: "Initializing command handler...");
         CommandsHandler = new CommandHandler();
@@ -254,7 +255,6 @@ public partial class Server : IServer
 
         await (Operators as OperatorList).InitializeAsync();
 
-        ScoreboardManager = new ScoreboardManager(this);
         _logger.LogInformation("Loading plugins...");
 
         Directory.CreateDirectory("plugins");

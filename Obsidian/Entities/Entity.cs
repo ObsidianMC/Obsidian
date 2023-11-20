@@ -76,7 +76,7 @@ public class Entity : IEquatable<Entity>, IEntity
         {
             var delta = (Vector)((position * 32 - Position * 32) * 128);
 
-            this.PacketBroadcaster.QueuePacketToWorld(this.World, new UpdateEntityPositionPacket
+            this.PacketBroadcaster.BroadcastToWorld(this.World, new UpdateEntityPositionPacket
             {
                 EntityId = EntityId,
 
@@ -100,7 +100,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
             if (isNewRotation)
             {
-                this.PacketBroadcaster.QueuePacketToWorld(this.World, new UpdateEntityPositionAndRotationPacket
+                this.PacketBroadcaster.BroadcastToWorld(this.World, new UpdateEntityPositionAndRotationPacket
                 {
                     EntityId = EntityId,
 
@@ -112,7 +112,7 @@ public class Entity : IEquatable<Entity>, IEntity
                     OnGround = onGround
                 }, EntityId);
 
-                this.PacketBroadcaster.QueuePacketToWorld(this.World, new SetHeadRotationPacket
+                this.PacketBroadcaster.BroadcastToWorld(this.World, new SetHeadRotationPacket
                 {
                     EntityId = EntityId,
                     HeadYaw = yaw
@@ -120,7 +120,7 @@ public class Entity : IEquatable<Entity>, IEntity
             }
             else
             {
-                this.PacketBroadcaster.QueuePacketToWorld(this.World, new UpdateEntityPositionPacket
+                this.PacketBroadcaster.BroadcastToWorld(this.World, new UpdateEntityPositionPacket
                 {
                     EntityId = EntityId,
 
@@ -140,7 +140,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
         if (isNewRotation)
         {
-            this.PacketBroadcaster.QueuePacketToWorld(this.World, new UpdateEntityRotationPacket
+            this.PacketBroadcaster.BroadcastToWorld(this.World, new UpdateEntityRotationPacket
             {
                 EntityId = EntityId,
                 OnGround = onGround,
@@ -148,7 +148,7 @@ public class Entity : IEquatable<Entity>, IEntity
                 Pitch = pitch
             }, EntityId);
 
-            this.PacketBroadcaster.QueuePacketToWorld(this.World, new SetHeadRotationPacket
+            this.PacketBroadcaster.BroadcastToWorld(this.World, new SetHeadRotationPacket
             {
                 EntityId = EntityId,
                 HeadYaw = yaw

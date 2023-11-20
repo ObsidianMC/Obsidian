@@ -1,29 +1,28 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.API.Logging;
 
 namespace Obsidian;
 
 public sealed class ScoreboardManager : IScoreboardManager
 {
     private readonly Server server;
+    private readonly ILogger logger;
 
-    internal readonly HashSet<string> scoreboards = new HashSet<string>();
+    internal readonly HashSet<string> scoreboards = new();
 
     public IScoreboard DefaultScoreboard { get; }
 
-    public ScoreboardManager(Server server)
+    public ScoreboardManager(Server server, ILoggerFactory loggerFactory)
     {
         this.server = server;
+        this.logger = loggerFactory.CreateLogger<ScoreboardManager>();
 
         this.DefaultScoreboard = this.CreateScoreboard("default");
     }
 
     public IScoreboard CreateScoreboard(string name)
     {
-        var loggerProvider = new LoggerProvider(LogLevel.Warning);
-        var logger = loggerProvider.CreateLogger("ScoreboardManager");
         if (!this.scoreboards.Add(name))
-            logger.LogWarning($"Scoreboard with the name: {name} already exists. This might cause some issues and override already existing scoreboards displaying on clients.");
+            this.logger.LogWarning("Scoreboard with the name: {name} already exists. This might cause some issues and override already existing scoreboards displaying on clients.", name);
 
         return new Scoreboard(name, this.server);
     }
