@@ -230,7 +230,7 @@ public class Region : IAsyncDisposable
             {
                 var array = (NbtArray<byte>)blockLightTag;
 
-                section.SetLight(array.GetArray(), LightType.Sky);
+                section.SetLight(array.GetArray(), LightType.Block);
             }
         }
 
