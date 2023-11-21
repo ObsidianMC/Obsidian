@@ -64,6 +64,8 @@ public sealed class World : IWorld
     public string? ParentWorldName { get; private set; }
     private WorldLight worldLight;
 
+    private static Semaphore _regionLock;
+
 
     /// <summary>
     /// Used to log actions caused by the client.
@@ -75,6 +77,7 @@ public sealed class World : IWorld
         Logger = logger;
         Generator = Activator.CreateInstance(generatorType) as IWorldGenerator ?? throw new ArgumentException("Invalid generator type.", nameof(generatorType));
         worldLight = new(this);
+        _regionLock = new(1, 1);
 
         this.WorldManager = worldManager;
     }
@@ -535,14 +538,16 @@ public sealed class World : IWorld
         return LoadRegion(regionX, regionZ);
     }
 
-    private SemaphoreSlim semaphore = new(1, 1);
-
     public Region LoadRegion(int regionX, int regionZ)
     {
+        _regionLock.WaitOne();
         long value = NumericsHelper.IntsToLong(regionX, regionZ);
 
         if (Regions.TryGetValue(value, out var region))
+        {
+            _regionLock.Release();
             return region;
+        }
 
         this.Logger.LogDebug("Trying to add {x}:{z}", regionX, regionZ);
 
@@ -554,6 +559,7 @@ public sealed class World : IWorld
         //DOesn't need to be blocking
         _ = region.InitAsync();
 
+        _regionLock.Release();
         return region;
     }
 
