@@ -215,10 +215,10 @@ public sealed class RegionFile : IAsyncDisposable
         return uncompressedData.ToArray();
     }
 
-    public async Task FlushAsync()
+    public void Flush()
     {
         this.Pad();
-        await this.regionFileStream.FlushAsync();
+        this.regionFileStream.Flush(true);
     }
 
     private async Task WriteChunkAsync(Sector sector)
@@ -376,7 +376,7 @@ public sealed class RegionFile : IAsyncDisposable
         {
             if (disposing)
             {
-                await this.FlushAsync();
+                this.Flush();
                 await this.regionFileStream.DisposeAsync();
                 this.semaphore.Dispose();
             }

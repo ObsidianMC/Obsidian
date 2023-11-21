@@ -606,7 +606,11 @@ public sealed class World : IWorld
 
         await Parallel.ForEachAsync(jobs, async (job, _) =>
         {
-            Region region = GetRegionForChunk(job.x, job.z) ?? LoadRegionByChunk(job.x, job.z);
+            Region region = GetRegionForChunk(job.x, job.z)!;
+            if (region is null)
+            {
+                 region = LoadRegionByChunk(job.x, job.z);
+            }
 
             var (x, z) = (NumericsHelper.Modulo(job.x, Region.CubicRegionSize), NumericsHelper.Modulo(job.z, Region.CubicRegionSize));
 
@@ -832,6 +836,51 @@ public sealed class World : IWorld
         initialized = true;
     }
 
+    internal async Task GenerateWorldAsync2(bool setWorldSpawn = false)
+    {
+        if (!initialized)
+            throw new InvalidOperationException("World hasn't been initialized please call World.Init() before trying to generate the world.");
+        Logger.LogInformation("Generating first 4 regions of world...");
+        for (int rx=-1; rx<1; rx++)
+            for(int rz=-1; rz<1; rz++)
+            {
+                LoadRegion(rx, rz);
+                for (int cx = 32*rx; cx < 32*rx + 32; cx++)
+                    for (int cz = 32*rz; cz < 32*rz + 32; cz++)
+                    {
+                        ChunksToGen.Enqueue((cx, cz));
+                    }
+                float startChunks = ChunksToGen.Count;
+                var stopwatch = new Stopwatch();
+                stopwatch.Start();
+                Logger.LogInformation($"{startChunks} chunks to generate for r{rx}.{rz}");
+                while (!ChunksToGen.IsEmpty)
+                {
+                    await ManageChunksAsync();
+                    var pctComplete = (int)((1.0 - ChunksToGenCount / startChunks) * 100);
+                    var completedChunks = startChunks - ChunksToGenCount;
+                    var cps = completedChunks / (stopwatch.ElapsedMilliseconds / 1000.0);
+                    int remain = ChunksToGenCount / (int)cps;
+                    Console.Write("\r{0} chunks/second - {1}% complete - {2} seconds remaining   ", cps.ToString("###.00"), pctComplete, remain);
+                }
+                Console.WriteLine();
+                Logger.LogInformation($"Saving region {rx}.{rz}");
+                await FlushRegionsAsync();
+            }
+
+        if (setWorldSpawn)
+        {
+            await SetWorldSpawnAsync();
+            // spawn chunks are radius 12 from spawn,
+            var radius = 12;
+            var (x, z) = LevelData.SpawnPosition.ToChunkCoord();
+            for (var cx = x - radius; cx < x + radius; cx++)
+                for (var cz = z - radius; cz < z + radius; cz++)
+                    SpawnChunks.Add((cx, cz));
+        }
+    }
+
+
     internal async Task GenerateWorldAsync(bool setWorldSpawn = false)
     {
         if (!initialized)
@@ -870,6 +919,9 @@ public sealed class World : IWorld
             var cps = completedChunks / (stopwatch.ElapsedMilliseconds / 1000.0);
             int remain = ChunksToGenCount / (int)cps;
             Console.Write("\r{0} chunks/second - {1}% complete - {2} seconds remaining   ", cps.ToString("###.00"), pctComplete, remain);
+            if (completedChunks % 1024 == 0) {
+                await FlushRegionsAsync();
+            }
         }
         Console.WriteLine();
         await FlushRegionsAsync();

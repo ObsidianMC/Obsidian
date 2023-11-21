@@ -64,7 +64,7 @@ public class Region : IRegion
         foreach (Chunk c in loadedChunks)
             await SerializeChunkAsync(c);
 
-        await regionFile.FlushAsync();
+        regionFile.Flush();
     }
 
     internal async ValueTask<Chunk> GetChunkAsync(int x, int z)
@@ -75,6 +75,10 @@ public class Region : IRegion
             try
             {
                 chunk = await GetChunkFromFileAsync(x, z); // Still might be null but that's okay.
+                if (chunk is null)
+                {
+                    //Debugger.Break();
+                }
 
             } catch (Exception e)
             {
