@@ -82,7 +82,7 @@ public sealed class Heightmap
 
     public int GetHeight(int x, int z) => this.GetHeight(this.GetIndex(x, z));
 
-    private int GetHeight(int value) => this.data[value] + -64;
+    internal int GetHeight(int index) => this.data[index] + -64;
 
     private int GetIndex(int x, int z) => x + z * 16;
 
