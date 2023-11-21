@@ -60,12 +60,12 @@ public class BiomeSelector : Module
         {
             // Check river
             var riverVal = SourceModules[4].GetValue(x, 0, z);
-            if (riverVal < 0)
+            if (riverVal < 0.04)
             {
                 return (double)Biome.River;
             }
         }
-        if (height >= -0.1 && height < 0.025) { return (double)Biome.Beach; }
+        if (height >= -0.1 && height < 0.04) { return (double)Biome.Beach; }
         if (height > 0.1) // If above ocean, add erosion and rivers
         {
             erosionVal = (height - 0.1) * erosionVal;

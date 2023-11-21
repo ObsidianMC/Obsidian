@@ -28,6 +28,7 @@ internal class OverworldTerrain : Module
         };
     }
 
+    // note for jon: 1367 80 -230
     public override double GetValue(double x, double y, double z)
     {
         var squash = SourceModules[1].GetValue(x, 0, z) + 1.1d; // Can't be zero
@@ -52,7 +53,7 @@ internal class OverworldTerrain : Module
         if (height >= 0.6) // Add mountain peaks/valleys
         {
             var peakVal = (height - 0.6) * Math.Max(SourceModules[4].GetValue(x, 0, z) + 1.6, 1.0)*0.5;
-            height += peakVal;// * (erosionVal - 0.5);
+            height += peakVal * (erosionVal - 0.5);
         }
 
         double yOffset = y + (height * 128 * -1);

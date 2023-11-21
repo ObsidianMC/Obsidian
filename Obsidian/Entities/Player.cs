@@ -941,54 +941,64 @@ public sealed partial class Player : Living, IPlayer
     /// <returns>Whether all chunks have been sent.</returns>
     internal async Task<bool> UpdateChunksAsync(bool unloadAll = false, int distance = 0)
     {
-        bool sentAll = true;
-        if (unloadAll)
+        try
         {
-            if (!Respawning)
+
+            bool sentAll = true;
+            if (unloadAll)
             {
-                foreach (var (X, Z) in client.LoadedChunks)
-                    await client.UnloadChunkAsync(X, Z);
+                if (!Respawning)
+                {
+                    foreach (var (X, Z) in client.LoadedChunks)
+                        await client.UnloadChunkAsync(X, Z);
+                }
+
+                client.LoadedChunks.Clear();
             }
 
-            client.LoadedChunks.Clear();
+            List<(int X, int Z)> clientNeededChunks = [];
+            List<(int X, int Z)> clientUnneededChunks = new(client.LoadedChunks);
+
+            (int playerChunkX, int playerChunkZ) = Position.ToChunkCoord();
+
+            int dist = distance < 1 ? ClientInformation.ViewDistance : distance;
+            for (int x = playerChunkX + dist; x > playerChunkX - dist; x--)
+                for (int z = playerChunkZ + dist; z > playerChunkZ - dist; z--)
+                    clientNeededChunks.Add((x, z));
+
+            clientUnneededChunks = clientUnneededChunks.Except(clientNeededChunks).ToList();
+            clientNeededChunks = clientNeededChunks.Except(client.LoadedChunks).ToList();
+            clientNeededChunks.Sort((chunk1, chunk2) =>
+            {
+                return Math.Abs(playerChunkX - chunk1.X) +
+                Math.Abs(playerChunkZ - chunk1.Z) <
+                Math.Abs(playerChunkX - chunk2.X) +
+                Math.Abs(playerChunkZ - chunk2.Z) ? -1 : 1;
+            });
+
+            clientUnneededChunks.ForEach(c => client.LoadedChunks.TryRemove(c));
+
+            await Parallel.ForEachAsync(clientNeededChunks, async (chunkLoc, _) =>
+            {
+                var chunk = await world.GetChunkAsync(chunkLoc.X, chunkLoc.Z);
+                if (chunk is not null && chunk.IsGenerated)
+                {
+                    await client.SendChunkAsync(chunk);
+                    client.LoadedChunks.Add((chunk.X, chunk.Z));
+                }
+                else
+                {
+                    sentAll = false;
+                }
+            });
+            return sentAll;
         }
-
-        List<(int X, int Z)> clientNeededChunks = [];
-        List<(int X, int Z)> clientUnneededChunks = new(client.LoadedChunks);
-
-        (int playerChunkX, int playerChunkZ) = Position.ToChunkCoord();
-
-        int dist = distance < 1 ? ClientInformation.ViewDistance : distance;
-        for (int x = playerChunkX + dist; x > playerChunkX - dist; x--)
-            for (int z = playerChunkZ + dist; z > playerChunkZ - dist; z--)
-                clientNeededChunks.Add((x, z));
-
-        clientUnneededChunks = clientUnneededChunks.Except(clientNeededChunks).ToList();
-        clientNeededChunks = clientNeededChunks.Except(client.LoadedChunks).ToList();
-        clientNeededChunks.Sort((chunk1, chunk2) =>
+        catch(Exception e)
         {
-            return Math.Abs(playerChunkX - chunk1.X) +
-            Math.Abs(playerChunkZ - chunk1.Z) <
-            Math.Abs(playerChunkX - chunk2.X) +
-            Math.Abs(playerChunkZ - chunk2.Z) ? -1 : 1;
-        });
-
-        clientUnneededChunks.ForEach(c => client.LoadedChunks.TryRemove(c));
-
-        await Parallel.ForEachAsync(clientNeededChunks, async (chunkLoc, _) =>
-        {
-            var chunk = await world.GetChunkAsync(chunkLoc.X, chunkLoc.Z);
-            if (chunk is not null && chunk.IsGenerated)
-            {
-                await client.SendChunkAsync(chunk);
-                client.LoadedChunks.Add((chunk.X, chunk.Z));
-            }
-            else
-            {
-                sentAll = false;
-            }
-        });
-        return sentAll;
+            Console.WriteLine(e.Message);
+            return false;
+             
+        }
     }
 
     private void WriteItems(NbtWriter writer, bool inventory = true)

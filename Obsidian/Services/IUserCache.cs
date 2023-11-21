@@ -18,7 +18,7 @@ public sealed class UserCache(HttpClient httpClient) : IUserCache
 
     private readonly FileInfo cacheFile = new("usercache.json");
 
-    private ConcurrentDictionary<Guid, CachedUser> cachedUsers;
+    private ConcurrentDictionary<Guid, CachedUser> cachedUsers = new();
 
     public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new ();
 
