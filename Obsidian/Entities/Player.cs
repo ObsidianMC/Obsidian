@@ -978,7 +978,7 @@ public sealed partial class Player : Living, IPlayer
 
             clientUnneededChunks.ForEach(c => client.LoadedChunks.TryRemove(c));
 
-            await Parallel.ForEachAsync(clientNeededChunks, async (chunkLoc, _) =>
+            foreach (var chunkLoc in clientNeededChunks)
             {
                 var chunk = await world.GetChunkAsync(chunkLoc.X, chunkLoc.Z);
                 if (chunk is not null && chunk.IsGenerated)
@@ -990,7 +990,8 @@ public sealed partial class Player : Living, IPlayer
                 {
                     sentAll = false;
                 }
-            });
+            }
+
             return sentAll;
         }
         catch(Exception e)

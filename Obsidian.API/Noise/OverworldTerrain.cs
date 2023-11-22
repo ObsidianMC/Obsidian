@@ -20,9 +20,9 @@ internal class OverworldTerrain : Module
         terrainPerlin = new Perlin()
         {
             Frequency = 0.333 / TerrainStretch,
-            OctaveCount = 3,
-            Lacunarity = 0.8899,
-            Persistence = 0.1334,
+            OctaveCount = 5,
+            Lacunarity = 1.7899,
+            Persistence = 0.2334,
             Quality = SharpNoise.NoiseQuality.Fast,
             Seed = Seed + 2
         };
@@ -49,7 +49,7 @@ internal class OverworldTerrain : Module
         }
 
         // Beash/Ocean flat, everything else amplified
-        squash = height < 0.1 ? squash * 0.3d : 1.12 * Math.Pow(squash,3);
+        squash = height < 0 ? squash * 0.3d : 40 * height * Math.Pow(squash,5);
         if (height >= 0.6) // Add mountain peaks/valleys
         {
             var peakVal = (height - 0.6) * Math.Max(SourceModules[4].GetValue(x, 0, z) + 1.6, 1.0)*0.5;

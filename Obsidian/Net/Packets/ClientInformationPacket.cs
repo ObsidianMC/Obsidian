@@ -45,6 +45,11 @@ public sealed partial class ClientInformationPacket : IServerboundPacket
             AllowServerListings = this.AllowServerListings
         };
 
+        if (player.Position == Vector.Zero)
+        {
+            await player.LoadAsync();
+        }
+
         await player.client.SendInfoAsync();
     }
 }

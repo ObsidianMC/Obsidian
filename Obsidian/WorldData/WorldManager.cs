@@ -117,7 +117,7 @@ public sealed class WorldManager : BackgroundService, IWorldManager
                     world.RegisterDimension(codec, "overworld");
                 }
 
-                await world.GenerateWorldAsync2(true);
+                await world.GenerateWorldAsync(true);
 
                 await world.SaveAsync();
             }

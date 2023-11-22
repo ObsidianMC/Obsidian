@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.Extensions.Logging;
 using Obsidian.API.Logging;
 using Obsidian.API.Utilities;
 using Obsidian.Blocks;
@@ -253,7 +254,7 @@ public class Region : IRegion
             {
                 var array = (NbtArray<byte>)blockLightTag;
 
-                section.SetLight(array.GetArray(), LightType.Sky);
+                section.SetLight(array.GetArray(), LightType.Block);
             }
         }
 

@@ -14,6 +14,7 @@ using Obsidian.Net.Packets.Handshaking;
 using Obsidian.Net.Packets.Login;
 using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Net.Packets.Status;
 using Obsidian.Registries;
 using Obsidian.Services;
@@ -555,7 +556,11 @@ public sealed class Client : IDisposable
 
         await SendPlayerListDecoration();
         await SendPlayerInfoAsync();
-        await Player.UpdateChunksAsync(distance: 7);
+        while (!await Player.UpdateChunksAsync(distance: 9))
+        {
+            Logger.LogError("Failed to send {Username} their logon chunks! Retrying...", Player.Username);
+        }
+        
         await SendInfoAsync();
         await this.server.Events.PlayerJoin.InvokeAsync(new PlayerJoinEventArgs(Player, this.server, DateTimeOffset.Now));
     }

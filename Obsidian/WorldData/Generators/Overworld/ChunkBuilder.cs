@@ -199,7 +199,7 @@ internal static class ChunkBuilder
             {
                 int terrainY = chunk.Heightmaps[HeightmapType.WorldSurfaceWG].GetHeight(x, z);
                 var (worldX, worldZ) = (x + chunkOffsetX, z + chunkOffsetZ);
-                for (int y = -60; y <= terrainY; y++)
+                for (int y = -60; y <= terrainY-6; y++)
                 {
                     bool isCave = helper.Noise.Cave.GetValue(x + chunkOffsetX, y, z + chunkOffsetZ) > 1 - CaveSize;
                     if (isCave)

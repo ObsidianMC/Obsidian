@@ -69,7 +69,7 @@ public sealed class OverworldTerrainNoise
                         Frequency = 0.002,
                         Quality = SharpNoise.NoiseQuality.Fast,
                         Seed = seed + 3,
-                        OctaveCount = 3,
+                        OctaveCount = 1,
                         Lacunarity = 1.5
                     }
                 }
@@ -82,7 +82,7 @@ public sealed class OverworldTerrainNoise
             {
                 RiverNoise = new Perlin
                 {
-                    Frequency = 0.001,
+                    Frequency = 0.002,
                     Quality = SharpNoise.NoiseQuality.Fast,
                     Seed = seed + 1,
                     OctaveCount = 3,

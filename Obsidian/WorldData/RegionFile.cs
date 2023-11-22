@@ -217,8 +217,10 @@ public sealed class RegionFile : IAsyncDisposable
 
     public void Flush()
     {
+        this.semaphore.Wait();
         this.Pad();
         this.regionFileStream.Flush(true);
+        this.semaphore.Release();
     }
 
     private async Task WriteChunkAsync(Sector sector)

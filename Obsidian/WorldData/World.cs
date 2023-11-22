@@ -579,10 +579,10 @@ public sealed class World : IWorld
     }
 
 
-    public async Task ManageChunksAsync()
+    public async Task ManageChunksAsync(bool unload=false)
     {
         // Check for chunks to unload every 30 seconds
-        if (LevelData.Time > 0 && LevelData.Time % (20 * 30) == 0)
+        if (unload || LevelData.Time > 0 && LevelData.Time % (20 * 30) == 0)
         {
             List<(int X, int Z)> chunksToKeep = new();
             Players.Where(p => p.Value.World == this).ForEach(p =>
@@ -604,7 +604,7 @@ public sealed class World : IWorld
 
         // Pull some jobs out of the queue
         var jobs = new List<(int x, int z)>();
-        for (int a = 0; a < Environment.ProcessorCount; a++)
+        for (int a = 0; a < Environment.ProcessorCount -1; a++)
         {
             if (ChunksToGen.TryDequeue(out var job))
                 jobs.Add(job);
@@ -847,8 +847,8 @@ public sealed class World : IWorld
         if (!initialized)
             throw new InvalidOperationException("World hasn't been initialized please call World.Init() before trying to generate the world.");
         Logger.LogInformation("Generating first 4 regions of world...");
-        for (int rx=-1; rx<1; rx++)
-            for(int rz=-1; rz<1; rz++)
+        for (int rx=-3; rx<3; rx++)
+            for(int rz=-3; rz<3; rz++)
             {
                 LoadRegion(rx, rz);
                 for (int cx = 32*rx; cx < 32*rx + 32; cx++)
@@ -862,7 +862,7 @@ public sealed class World : IWorld
                 Logger.LogInformation($"{startChunks} chunks to generate for r{rx}.{rz}");
                 while (!ChunksToGen.IsEmpty)
                 {
-                    await ManageChunksAsync();
+                    await ManageChunksAsync(true);
                     var pctComplete = (int)((1.0 - ChunksToGenCount / startChunks) * 100);
                     var completedChunks = startChunks - ChunksToGenCount;
                     var cps = completedChunks / (stopwatch.ElapsedMilliseconds / 1000.0);
@@ -949,48 +949,47 @@ public sealed class World : IWorld
         if (LevelData.SpawnPosition.Y != 0) { return; }
 
         var pregenRange = this.Configuration.PregenerateChunkRange;
-        foreach (var region in Regions.Values)
+        var region = GetRegionForLocation(VectorF.Zero)!;
+        foreach (var chunk in region.GeneratedChunks())
         {
-            foreach (var chunk in region.GeneratedChunks())
+            for (int bx = 0; bx < 16; bx++)
             {
-                for (int bx = 0; bx < 16; bx++)
+                for (int bz = 0; bz < 16; bz++)
                 {
-                    for (int bz = 0; bz < 16; bz++)
+                    // Get topmost block
+                    var by = chunk.Heightmaps[ChunkData.HeightmapType.MotionBlocking].GetHeight(bx, bz);
+                    IBlock block = chunk.GetBlock(bx, by, bz);
+
+                    // Block must be high enough and either grass or sand
+                    if (by < 64 || !block.Is(Material.GrassBlock) && !block.Is(Material.Sand))
                     {
-                        // Get topmost block
-                        var by = chunk.Heightmaps[ChunkData.HeightmapType.MotionBlocking].GetHeight(bx, bz);
-                        IBlock block = chunk.GetBlock(bx, by, bz);
-
-                        // Block must be high enough and either grass or sand
-                        if (by < 64 || !block.Is(Material.GrassBlock) && !block.Is(Material.Sand))
-                        {
-                            continue;
-                        }
-
-                        // Block must have enough empty space above for player to spawn in
-                        if (!chunk.GetBlock(bx, by + 1, bz).IsAir || !chunk.GetBlock(bx, by + 2, bz).IsAir)
-                        {
-                            continue;
-                        }
-
-                        var worldPos = new VectorF(bx + 0.5f + (chunk.X * 16), by + 1, bz + 0.5f + (chunk.Z * 16));
-                        LevelData.SpawnPosition = worldPos;
-                        Logger.LogInformation("World Spawn set to {worldPos}", worldPos);
-
-                        // Should spawn be far from (0,0), queue up chunks in generation range.
-                        // Just feign a request for a chunk and if it doesn't exist, it'll get queued for gen.
-                        for (int x = chunk.X - pregenRange; x < chunk.X + pregenRange; x++)
-                        {
-                            for (int z = chunk.Z - pregenRange; z < chunk.Z + pregenRange; z++)
-                            {
-                                await GetChunkAsync(x, z);
-                            }
-                        }
-
-                        return;
+                        continue;
                     }
+
+                    // Block must have enough empty space above for player to spawn in
+                    if (!chunk.GetBlock(bx, by + 1, bz).IsAir || !chunk.GetBlock(bx, by + 2, bz).IsAir)
+                    {
+                        continue;
+                    }
+
+                    var worldPos = new VectorF(bx + 0.5f + (chunk.X * 16), by + 1, bz + 0.5f + (chunk.Z * 16));
+                    LevelData.SpawnPosition = worldPos;
+                    Logger.LogInformation("World Spawn set to {worldPos}", worldPos);
+
+                    // Should spawn be far from (0,0), queue up chunks in generation range.
+                    // Just feign a request for a chunk and if it doesn't exist, it'll get queued for gen.
+                    for (int x = chunk.X - pregenRange; x < chunk.X + pregenRange; x++)
+                    {
+                        for (int z = chunk.Z - pregenRange; z < chunk.Z + pregenRange; z++)
+                        {
+                            await GetChunkAsync(x, z);
+                        }
+                    }
+
+                    return;
                 }
             }
+
         }
         Logger.LogWarning("Failed to set World Spawn.");
     }

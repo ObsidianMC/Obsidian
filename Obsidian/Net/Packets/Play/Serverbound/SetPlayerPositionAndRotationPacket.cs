@@ -22,6 +22,9 @@ public partial class SetPlayerPositionAndRotationPacket : IServerboundPacket
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
+        // The first time we get this packet, it doesn't make sense so we should ignore it.
+        if (player.LastPosition == Vector.Zero) { return; }
+
         await player.UpdateAsync(Position, Yaw, Pitch, OnGround);
         if (player.Position.ToChunkCoord() != player.LastPosition.ToChunkCoord())
         {
