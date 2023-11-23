@@ -7,4 +7,8 @@ services:
     ports:
       - "25565:25565"
     volumes:
-      - "${PWD}/files:/files"
+      - obsidian-files:/files
+
+volumes:
+    obsidian-files:
+        {}
