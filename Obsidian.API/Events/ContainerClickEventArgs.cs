@@ -18,7 +18,7 @@ public sealed class ContainerClickEventArgs : ContainerEventArgs, ICancellable
     public bool IsCancelled { get; private set; }
 
     [SetsRequiredMembers]
-    internal ContainerClickEventArgs(IPlayer player, BaseContainer container, ItemStack item) : base(player)
+    internal ContainerClickEventArgs(IPlayer player, IServer server, BaseContainer container, ItemStack item) : base(player, server)
     {
         this.Container = container;
         this.Item = item;

@@ -1,4 +1,4 @@
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+﻿using Obsidian.Entities;
 using Obsidian.Utilities.Mojang;
 using System.Diagnostics;
 using System.IO;
@@ -9,28 +9,27 @@ using System.Text.Json;
 using System.Threading;
 using System.Web;
 
-namespace Obsidian.Utilities;
-
-public static class UserCache
+namespace Obsidian.Services;
+public sealed class UserCache(HttpClient httpClient) : IUserCache
 {
     private const string userWithNameEndpoint = "https://api.mojang.com/users/profiles/minecraft/";
     private const string userWithIdEndpoint = "https://sessionserver.mojang.com/session/minecraft/profile/";
     private const string verifySessionEndpoint = "https://sessionserver.mojang.com/session/minecraft/hasJoined";
 
-    private static readonly HttpClient httpClient = Globals.HttpClient;
+    private readonly FileInfo cacheFile = new("usercache.json");
 
-    private static ConcurrentDictionary<Guid, CachedUser> cache = new();
+    private ConcurrentDictionary<Guid, CachedUser> cachedUsers;
 
-    private static readonly FileInfo cacheFile = new("usercache.json");
+    public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new ();
 
-    public static async Task<CachedUser?> GetUserFromNameAsync(string username)
+    public async Task<CachedUser?> GetCachedUserFromNameAsync(string username)
     {
         var escapedUsername = Sanitize(username);
 
         CachedUser? cachedUser;
-        if (cache.Any(x => x.Value.Name == username))
+        if (cachedUsers.Any(x => x.Value.Name == username))
         {
-            cachedUser = cache.First(x => x.Value.Name == username).Value;
+            cachedUser = cachedUsers.First(x => x.Value.Name == username).Value;
 
             if (!cachedUser.Expired)
                 return cachedUser;
@@ -41,7 +40,7 @@ public static class UserCache
         if (user is null)
             return null;
 
-        if (cache.TryGetValue(user.Id, out cachedUser))
+        if (cachedUsers.TryGetValue(user.Id, out cachedUser))
         {
             if (cachedUser.Expired)
             {
@@ -59,23 +58,19 @@ public static class UserCache
             ExpiresOn = DateTimeOffset.UtcNow.AddMonths(1)
         };
 
-        cache.TryAdd(cachedUser.Id, cachedUser);
+        cachedUsers.TryAdd(cachedUser.Id, cachedUser);
 
         return cachedUser;
     }
 
-    public static async Task<CachedUser> GetUserFromUuidAsync(Guid uuid)
+    public async Task<CachedUser> GetCachedUserFromUuidAsync(Guid uuid)
     {
-        if (cache.TryGetValue(uuid, out var user) && !user.Expired)
+        if (cachedUsers.TryGetValue(uuid, out var user) && !user.Expired)
             return user;
 
         var escapedUuid = Sanitize(uuid.ToString("N"));
 
-        var mojangUser = await httpClient.GetFromJsonAsync<MojangUser>($"{userWithIdEndpoint}{escapedUuid}", Globals.JsonOptions);
-
-        if (mojangUser is null)
-            throw new UnreachableException();//This isn't supposed to happen
-
+        var mojangUser = await httpClient.GetFromJsonAsync<MojangUser>($"{userWithIdEndpoint}{escapedUuid}", Globals.JsonOptions) ?? throw new UnreachableException();
         user = new()
         {
             Name = mojangUser!.Name,
@@ -83,12 +78,12 @@ public static class UserCache
             ExpiresOn = DateTimeOffset.UtcNow.AddMonths(1)
         };
 
-        cache.TryAdd(uuid, user);
+        cachedUsers.TryAdd(uuid, user);
 
         return user;
     }
 
-    public static async Task<MojangUser?> HasJoinedAsync(string username, string serverId)
+    public async Task<MojangUser?> HasJoinedAsync(string username, string serverId)
     {
         var escapedUsername = Sanitize(username);
         var escapedServerId = Sanitize(serverId);
@@ -96,16 +91,16 @@ public static class UserCache
         return await httpClient.GetFromJsonAsync<MojangUser>($"{verifySessionEndpoint}?username={escapedUsername}&serverId={escapedServerId}", Globals.JsonOptions);
     }
 
-    public static async Task SaveAsync()
+    public async Task SaveAsync(CancellationToken cancellationToken = default)
     {
         await using var sw = cacheFile.Open(FileMode.Truncate, FileAccess.Write);
 
-        await JsonSerializer.SerializeAsync(sw, cache, Globals.JsonOptions);
+        await JsonSerializer.SerializeAsync(sw, cachedUsers, Globals.JsonOptions);
 
         await sw.FlushAsync();
     }
 
-    public static async Task LoadAsync(CancellationToken cancellationToken = default)
+    public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
         await using var sr = cacheFile.Open(FileMode.OpenOrCreate, FileAccess.Read);
 
@@ -117,8 +112,23 @@ public static class UserCache
         if (userCache is null)
             return;
 
-        cache = new(userCache);
+        cachedUsers = new(userCache);
     }
 
     private static string Sanitize(string value) => HttpUtility.UrlEncode(Encoding.UTF8.GetBytes(value));
+}
+
+public interface IUserCache
+{
+    public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; }
+
+    public Task<CachedUser?> GetCachedUserFromNameAsync(string username);
+
+    public Task<CachedUser> GetCachedUserFromUuidAsync(Guid uuid);
+
+    public Task<MojangUser?> HasJoinedAsync(string username, string serverId);
+
+    public Task SaveAsync(CancellationToken cancellationToken = default);
+
+    public Task LoadAsync(CancellationToken cancellationToken = default);
 }

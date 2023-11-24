@@ -14,7 +14,7 @@ public partial class SetCreativeModeSlotPacket : IServerboundPacket
 
     public int Id => 0x2E;
 
-    public async ValueTask HandleAsync(Server server, Player player)
+    public ValueTask HandleAsync(Server server, Player player)
     {
         var inventory = player.OpenedContainer ?? player.Inventory;
 
@@ -31,7 +31,7 @@ public partial class SetCreativeModeSlotPacket : IServerboundPacket
         {
             var heldItem = player.GetHeldItem();
 
-            await server.QueueBroadcastPacketAsync(new SetEquipmentPacket
+            player.PacketBroadcaster.QueuePacketToWorld(player.World, new SetEquipmentPacket
             {
                 EntityId = player.EntityId,
                 Equipment = new()
@@ -44,5 +44,7 @@ public partial class SetCreativeModeSlotPacket : IServerboundPacket
                 }
             }, player);
         }
+
+        return ValueTask.CompletedTask;
     }
 }

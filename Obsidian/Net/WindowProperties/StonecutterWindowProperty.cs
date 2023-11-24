@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.Net.WindowProperties;
 
-public class StonecutterWindowProperty : IWindowProperty
+public sealed class StonecutterWindowProperty : IWindowProperty
 {
     public short Property { get; }
 

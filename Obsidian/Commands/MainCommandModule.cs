@@ -277,7 +277,7 @@ public class MainCommandModule
         if (ctx.Server is not Server server || ctx.Player is not IPlayer player)
             return;
 
-        if (!server.Config.AllowOperatorRequests)
+        if (!server.Configuration.AllowOperatorRequests)
         {
             await player.SendMessageAsync("§cOperator requests are disabled on this server.");
             return;
@@ -343,7 +343,7 @@ public class MainCommandModule
         }
 
         var frogge = await player.World.SpawnEntityAsync(player.Position, type);
-        var server = player.Server as Server;
+        var server = (ctx.Server as Server)!;
 
         _ = Task.Run(async () =>
         {
@@ -363,8 +363,8 @@ public class MainCommandModule
                     OnGround = false
                 };
 
-                server.BroadcastPacket(rotato);
-                server.BroadcastPacket(rotato2);
+                //server.BroadcastPacket(rotato);
+                //server.BroadcastPacket(rotato2);
                 await Task.Delay(15);
             }
         });

@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.Net.WindowProperties;
 
-public class BrewingStandWindowProperty : IWindowProperty
+public sealed class BrewingStandWindowProperty : IWindowProperty
 {
     public short Property { get; }
 

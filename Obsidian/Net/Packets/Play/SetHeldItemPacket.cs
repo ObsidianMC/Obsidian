@@ -38,13 +38,13 @@ public partial class SetHeldItemPacket : IServerboundPacket, IClientboundPacket
         return packet;
     }
 
-    public async ValueTask HandleAsync(Server server, Player player)
+    public ValueTask HandleAsync(Server server, Player player)
     {
         player.CurrentSlot = Slot;
 
         var heldItem = player.GetHeldItem();
 
-        await server.QueueBroadcastPacketAsync(new SetEquipmentPacket
+        player.PacketBroadcaster.QueuePacketToWorld(player.World, new SetEquipmentPacket
         {
             EntityId = player.EntityId,
             Equipment = new()
@@ -55,7 +55,8 @@ public partial class SetHeldItemPacket : IServerboundPacket, IClientboundPacket
                     Item = heldItem
                 }
             }
-        },
-        excluded: player);
+        }, player.EntityId);
+
+        return ValueTask.CompletedTask;
     }
 }

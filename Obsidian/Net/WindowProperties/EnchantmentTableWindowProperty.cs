@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.Net.WindowProperties;
 
-public class EnchantmentTableWindowProperty : IWindowProperty
+public sealed class EnchantmentTableWindowProperty : IWindowProperty
 {
     public short Property { get; }
 

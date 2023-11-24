@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Obsidian.Commands.Framework;
 using Obsidian.Net.Rcon;
+using Obsidian.Services;
 using Obsidian.WorldData;
 
 namespace Obsidian.Hosting;
@@ -12,13 +13,21 @@ public static class DependencyInjection
         services.AddSingleton(env.Configuration);
         services.AddSingleton<IServerConfiguration>(f => f.GetRequiredService<ServerConfiguration>());
 
-        services.AddSingleton<WorldManager>();
         services.AddSingleton<CommandHandler>();
-        services.AddSingleton<Server>();
         services.AddSingleton<RconServer>();
+        services.AddSingleton<WorldManager>();
+        services.AddSingleton<PacketBroadcaster>();
+        services.AddSingleton<IServer, Server>();
+        services.AddSingleton<IUserCache, UserCache>();
 
-        services.AddSingleton<IServer>(f => f.GetRequiredService<Server>());
+        services.AddHttpClient();
+
+        services.AddHostedService(sp => sp.GetRequiredService<PacketBroadcaster>());
         services.AddHostedService<ObsidianHostingService>();
+        services.AddHostedService(sp => sp.GetRequiredService<WorldManager>());
+
+        services.AddSingleton<IWorldManager>(sp => sp.GetRequiredService<WorldManager>());
+        services.AddSingleton<IPacketBroadcaster>(sp => sp.GetRequiredService<PacketBroadcaster>());
 
         return services;
     }

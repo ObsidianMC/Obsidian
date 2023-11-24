@@ -25,7 +25,8 @@ public sealed class PacketReceivedEventArgs : PlayerEventArgs, ICancellable
     /// <param name="player">The player involved in this event.</param>
     /// <param name="id">Id of the received packet.</param>
     /// <param name="data">Packet data, excluding packet id and packet length.</param>
-    public PacketReceivedEventArgs(IPlayer player, int id, ReadOnlyMemory<byte> data) : base(player)
+    /// <param name="server">The server this took place in.</param>
+    public PacketReceivedEventArgs(IPlayer player, IServer server, int id, ReadOnlyMemory<byte> data) : base(player, server)
     {
         Id = id;
         Data = data;

@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.Net.Actions.BossBar;
 
-public class BossBarAction
+public abstract class BossBarAction
 {
     public Guid Uuid { get; set; }
 
@@ -20,7 +20,7 @@ public class BossBarAction
         stream.WriteVarInt(this.Action);
     }
 
-    public virtual async Task WriteToAsync(MinecraftStream stream)
+    public async virtual Task WriteToAsync(MinecraftStream stream)
     {
         if (this.Uuid == default)
             throw new InvalidOperationException("Uuid must be assigned a value.");

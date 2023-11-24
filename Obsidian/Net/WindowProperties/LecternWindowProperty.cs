@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.Net.WindowProperties;
 
-public class LecternWindowProperty : IWindowProperty
+public sealed class LecternWindowProperty : IWindowProperty
 {
     public short Property { get; }
 

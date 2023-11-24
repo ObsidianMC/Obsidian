@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 
 namespace Obsidian.Utilities;
 
-public class ServerStatus : IServerStatus
+public sealed class ServerStatus : IServerStatus
 {
     private readonly ILogger _logger;
     private static ReadOnlySpan<byte> PngHeader => [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
@@ -27,16 +27,17 @@ public class ServerStatus : IServerStatus
     /// <summary>
     /// Generates a server status from the specified <paramref name="server"/>.
     /// </summary>
-    public ServerStatus(Server server, bool anonymous = false)
+    public ServerStatus(IServer server, bool anonymous = false)
     {
         ArgumentNullException.ThrowIfNull(server);
         var loggerProvider = new LoggerProvider();
         _logger = loggerProvider.CreateLogger("ServerStatus");
 
-        Version = ServerVersion.Of(server);
+        Version = ServerVersion.Create();
         if (!anonymous)
             Players = new ServerPlayers(server);
-        Description = new ServerDescription(server);
+        Description = new ServerDescription(server.Configuration);
+
         var faviconFile = "favicon.png";
         if (File.Exists(faviconFile))
         {
@@ -71,47 +72,41 @@ public sealed class ServerVersion : IServerVersion
         Protocol = protocol;
     }
 
-    public static ServerVersion Of(Server server)
+    public static ServerVersion Create()
     {
-        return new ServerVersion($"Obsidian {server.Protocol.GetDescription()}", server.Protocol);
+        return new ServerVersion($"Obsidian {Server.DefaultProtocol.GetDescription()}", Server.DefaultProtocol);
     }
 }
 
-public class ServerPlayers : IServerPlayers
+public sealed class ServerPlayers : IServerPlayers
 {
     public int Max { get; set; }
     public int Online { get; set; }
 
     public List<object> Sample { get; set; } = new();
 
-    public ServerPlayers(Server server)
+    public ServerPlayers(IServer server)
     {
-        Max = server.Config.MaxPlayers;
+        Max = server.Configuration.MaxPlayers;
 
         foreach (Player player in server.Players)
         {
-            Sample.Add(new
-            {
-                name = player.Username,
-                id = player.Uuid
-            });
+            if (!player.ClientInformation.AllowServerListings)
+                continue;
+
+            this.AddPlayer(player.Username, player.Uuid);
             Online++; // Don't move out of the loop. The contents exposed through the enumerator may contain modifications made to the dictionary after GetEnumerator was called.
         }
     }
 
-    public void Clear()
-    {
+    public void Clear() =>
         Sample.Clear();
-    }
 
-    public void AddPlayer(string username, Guid uuid)
+    public void AddPlayer(string username, Guid uuid) => Sample.Add(new
     {
-        Sample.Add(new
-        {
-            name = username,
-            id = uuid
-        });
-    }
+        name = username,
+        id = uuid
+    });
 }
 
 public sealed class ServerDescription : IServerDescription
@@ -122,13 +117,7 @@ public sealed class ServerDescription : IServerDescription
     [JsonInclude]
     private string text;
 
-    public ServerDescription(Server server)
-    {
-        text = FormatText(server.Config.Motd);
-    }
+    public ServerDescription(IServerConfiguration configuration) => this.text = FormatText(configuration.Motd);
 
-    private static string FormatText(string text)
-    {
-        return text.Replace('&', '§');
-    }
+    private static string FormatText(string text) => text.Replace('&', '§');
 }

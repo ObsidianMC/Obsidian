@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.Net.Actions.BossBar;
 
-public class BossBarUpdateHealthAction : BossBarAction
+public sealed class BossBarUpdateHealthAction : BossBarAction
 {
     public float Health { get; set; }
 

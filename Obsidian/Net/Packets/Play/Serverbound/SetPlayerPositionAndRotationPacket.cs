@@ -1,4 +1,5 @@
 ﻿using Obsidian.Entities;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
@@ -22,5 +23,12 @@ public partial class SetPlayerPositionAndRotationPacket : IServerboundPacket
     public async ValueTask HandleAsync(Server server, Player player)
     {
         await player.UpdateAsync(Position, Yaw, Pitch, OnGround);
+        if (player.Position.ToChunkCoord() != player.LastPosition.ToChunkCoord())
+        {
+            (int cx, int cz) = player.Position.ToChunkCoord();
+            player.client.SendPacket(new SetCenterChunkPacket(cx, cz));
+        }
+
+        player.LastPosition = player.Position;
     }
 }

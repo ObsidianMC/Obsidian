@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace Obsidian.Utilities.Converters;
 
-public class HexColorConverter : JsonConverter<HexColor>
+public sealed class HexColorConverter : JsonConverter<HexColor>
 {
     public override HexColor Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => new HexColor(reader.GetString());
 

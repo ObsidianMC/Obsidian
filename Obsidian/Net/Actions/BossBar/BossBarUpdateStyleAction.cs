@@ -2,7 +2,7 @@
 
 namespace Obsidian.Net.Actions.BossBar;
 
-public class BossBarUpdateStyleAction : BossBarAction
+public sealed class BossBarUpdateStyleAction : BossBarAction
 {
     public BossBarColor Color { get; set; }
     public BossBarDivisionType Division { get; set; }

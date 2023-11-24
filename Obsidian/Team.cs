@@ -2,7 +2,7 @@
 
 namespace Obsidian;
 
-public class Team : ITeam
+public sealed class Team : ITeam
 {
     private readonly Scoreboard scoreboard;
     private readonly Server server;

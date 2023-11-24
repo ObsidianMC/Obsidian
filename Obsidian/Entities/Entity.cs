@@ -1,6 +1,7 @@
 ﻿using Obsidian.API.AI;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Services;
 using Obsidian.WorldData;
 using System.Diagnostics.CodeAnalysis;
 
@@ -10,8 +11,7 @@ public class Entity : IEquatable<Entity>, IEntity
 {
     protected virtual ConcurrentDictionary<string, float> Attributes { get; } = new();
 
-    public required IServer Server { get => server; init => server = (Server)value; }
-    protected Server server = null!;
+    public required IPacketBroadcaster PacketBroadcaster { get; init; }
 
     public required IWorld World { get => world; init => world = (World)value; }
     internal World world = null!;
@@ -76,7 +76,7 @@ public class Entity : IEquatable<Entity>, IEntity
         {
             var delta = (Vector)((position * 32 - Position * 32) * 128);
 
-            server.BroadcastPacket(new UpdateEntityPositionPacket
+            this.PacketBroadcaster.BroadcastToWorld(this.World, new UpdateEntityPositionPacket
             {
                 EntityId = EntityId,
 
@@ -100,7 +100,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
             if (isNewRotation)
             {
-                server.BroadcastPacket(new UpdateEntityPositionAndRotationPacket
+                this.PacketBroadcaster.BroadcastToWorld(this.World, new UpdateEntityPositionAndRotationPacket
                 {
                     EntityId = EntityId,
 
@@ -112,7 +112,7 @@ public class Entity : IEquatable<Entity>, IEntity
                     OnGround = onGround
                 }, EntityId);
 
-                server.BroadcastPacket(new SetHeadRotationPacket
+                this.PacketBroadcaster.BroadcastToWorld(this.World, new SetHeadRotationPacket
                 {
                     EntityId = EntityId,
                     HeadYaw = yaw
@@ -120,7 +120,7 @@ public class Entity : IEquatable<Entity>, IEntity
             }
             else
             {
-                server.BroadcastPacket(new UpdateEntityPositionPacket
+                this.PacketBroadcaster.BroadcastToWorld(this.World, new UpdateEntityPositionPacket
                 {
                     EntityId = EntityId,
 
@@ -140,7 +140,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
         if (isNewRotation)
         {
-            server.BroadcastPacket(new UpdateEntityRotationPacket
+            this.PacketBroadcaster.BroadcastToWorld(this.World, new UpdateEntityRotationPacket
             {
                 EntityId = EntityId,
                 OnGround = onGround,
@@ -148,7 +148,7 @@ public class Entity : IEquatable<Entity>, IEntity
                 Pitch = pitch
             }, EntityId);
 
-            server.BroadcastPacket(new SetHeadRotationPacket
+            this.PacketBroadcaster.BroadcastToWorld(this.World, new SetHeadRotationPacket
             {
                 EntityId = EntityId,
                 HeadYaw = yaw
@@ -210,7 +210,7 @@ public class Entity : IEquatable<Entity>, IEntity
         return new(-cosPitch * sinYaw, -sinPitch, cosPitch * cosYaw);
     }
 
-    public Task RemoveAsync() => world.DestroyEntityAsync(this);
+    public async Task RemoveAsync() => await this.world.DestroyEntityAsync(this);
 
     private EntityBitMask GenerateBitmask()
     {
@@ -298,7 +298,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
         if (this is ILiving living)
         {
-            await server.QueueBroadcastPacketAsync(new EntityAnimationPacket
+            this.PacketBroadcaster.QueuePacketToWorld(this.World, new EntityAnimationPacket
             {
                 EntityId = EntityId,
                 Animation = EntityAnimationType.TakeDamage
@@ -363,7 +363,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
         if (VectorF.Distance(Position, to.Position) > 8)
         {
-            await server.QueueBroadcastPacketAsync(new TeleportEntityPacket
+            this.PacketBroadcaster.QueuePacketToWorld(this.World, new TeleportEntityPacket
             {
                 EntityId = EntityId,
                 OnGround = OnGround,
@@ -377,7 +377,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
         var delta = (Vector)(to.Position * 32 - Position * 32) * 128;
 
-        await server.QueueBroadcastPacketAsync(new UpdateEntityPositionAndRotationPacket
+        this.PacketBroadcaster.QueuePacketToWorld(this.World, new UpdateEntityPositionAndRotationPacket
         {
             EntityId = EntityId,
             Delta = delta,
@@ -391,7 +391,7 @@ public class Entity : IEquatable<Entity>, IEntity
     {
         if (VectorF.Distance(Position, pos) > 8)
         {
-            await server.QueueBroadcastPacketAsync(new TeleportEntityPacket
+            this.PacketBroadcaster.QueuePacketToWorld(this.World, new TeleportEntityPacket
             {
                 EntityId = EntityId,
                 OnGround = OnGround,
@@ -405,7 +405,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
         var delta = (Vector)(pos * 32 - Position * 32) * 128;
 
-        await server.QueueBroadcastPacketAsync(new UpdateEntityPositionAndRotationPacket
+        this.PacketBroadcaster.QueuePacketToWorld(this.World, new UpdateEntityPositionAndRotationPacket
         {
             EntityId = EntityId,
             Delta = delta,

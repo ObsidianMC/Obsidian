@@ -9,13 +9,13 @@ using Obsidian.Utilities.Collections;
 
 namespace Obsidian.Net;
 
-public class ClientHandler
+public sealed class ClientHandler
 {
     private ConcurrentDictionary<int, IServerboundPacket> Packets { get; } = new ConcurrentDictionary<int, IServerboundPacket>();
-    private ServerConfiguration config;
+    private IServerConfiguration config;
     private readonly ILogger _logger;
 
-    public ClientHandler(ServerConfiguration config)
+    public ClientHandler(IServerConfiguration config)
     {
         this.config = config;
         var loggerProvider = new LoggerProvider(LogLevel.Error);
@@ -102,7 +102,7 @@ public class ClientHandler
                 try
                 {
                     packet.Populate(data);
-                    await packet.HandleAsync(client.Server, client.Player);
+                    await packet.HandleAsync(client.server, client.Player);
                 }
                 catch (Exception e)
                 {
@@ -208,7 +208,7 @@ public class ClientHandler
                 try
                 {
                     packet.Populate(data);
-                    await packet.HandleAsync(client.Server, client.Player!);
+                    await packet.HandleAsync(client.server, client.Player!);
                 }
                 catch (Exception e)
                 {
@@ -225,11 +225,11 @@ public class ClientHandler
         try
         {
             packet.Populate(data);
-            await packet.HandleAsync(client.Server, client.Player!);
+            await packet.HandleAsync(client.server, client.Player!);
         }
         catch (Exception e)
         {
-            if (client.Server.Config.VerboseExceptionLogging)
+            if (client.server.Configuration.VerboseExceptionLogging)
                 _logger.LogError(e, "{message}", e.Message);
         }
         ObjectPool<T>.Shared.Return(packet);

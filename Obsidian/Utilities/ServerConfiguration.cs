@@ -1,10 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.API._Types.Config;
+using Obsidian.API.Config;
 using System.Text.Json.Serialization;
 
 namespace Obsidian.Utilities;
 
-public class ServerConfiguration : IServerConfiguration
+public sealed class ServerConfiguration : IServerConfiguration
 {
     public string Motd { get; set; } = $"§k||||§r §5Obsidian §cPre§r-§cRelease §r§k||||§r \n§r§lRunning on .NET §l§c{Environment.Version} §r§l<3";
 
@@ -34,9 +34,6 @@ public class ServerConfiguration : IServerConfiguration
 
     public bool IpWhitelistEnabled { get; set; }
 
-    [JsonIgnore]
-    public bool CanThrottle => this.ConnectionThrottle > 0;
-
     public List<string> WhitelistedIPs { get; set; } = new();
     public List<WhitelistedPlayer> Whitelisted { get; set; } = new();
 
@@ -49,10 +46,7 @@ public class ServerConfiguration : IServerConfiguration
     public string[] DownloadPlugins { get; set; } = [];
     public RconConfig? Rcon { get; set; }
 
-    /// <summary>
-    /// Allows the server to advertise itself as a LAN server to devices on your network.
-    /// </summary>
-    public bool UDPBroadcast = true; // Enabled because it's super useful for debugging tbh
+    public bool AllowLan { get; set; } = true; // Enabled because it's super useful for debugging tbh
 
     public int PregenerateChunkRange { get; set; } = 15; // by default, pregenerate range from -15 to 15
 

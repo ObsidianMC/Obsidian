@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace Obsidian.Utilities.Converters;
 
-public class StringToBoolConverter : JsonConverter<bool>
+public sealed class StringToBoolConverter : JsonConverter<bool>
 {
     public override bool Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
@@ -17,7 +17,7 @@ public class StringToBoolConverter : JsonConverter<bool>
     public override void Write(Utf8JsonWriter writer, bool value, JsonSerializerOptions options) => throw new NotImplementedException();
 }
 
-public class IntToBoolConverter : JsonConverter<bool>
+public sealed class IntToBoolConverter : JsonConverter<bool>
 {
     public override bool Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {

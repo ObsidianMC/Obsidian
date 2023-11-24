@@ -7,11 +7,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq.Expressions;
-using System.Numerics;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading;
-
 #nullable enable
 
 namespace Obsidian.Utilities;
@@ -53,7 +51,6 @@ public static partial class Extensions
                 EntityType.Trident,
                 EntityType.FishingBobber,
                 EntityType.EyeOfEnder];
-
 
     public static void WritePacketId(this IPacket packet, MinecraftStream stream)
     {
@@ -108,7 +105,7 @@ public static partial class Extensions
         // Reverse the bytes since BigInteger uses little endian
         Array.Reverse(hash);
 
-        var b = new BigInteger(hash);
+        var b = new System.Numerics.BigInteger(hash);
         // very annoyingly, BigInteger in C# tries to be smart and puts in
         // a leading 0 when formatting as a hex number to allow roundtripping
         // of negative numbers, thus we have to trim it off.

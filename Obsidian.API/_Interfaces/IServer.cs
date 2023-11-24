@@ -17,6 +17,8 @@ public interface IServer
 
     public IScoreboardManager ScoreboardManager { get; }
 
+    public Task RunAsync();
+
     public bool IsPlayerOnline(string username);
     public bool IsPlayerOnline(Guid uuid);
     public void BroadcastMessage(string message);

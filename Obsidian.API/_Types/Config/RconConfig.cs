@@ -1,4 +1,4 @@
-namespace Obsidian.API._Types.Config;
+namespace Obsidian.API.Config;
 
 public class RconConfig
 {
