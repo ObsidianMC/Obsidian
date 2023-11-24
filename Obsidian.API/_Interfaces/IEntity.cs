@@ -59,6 +59,9 @@ public interface IEntity
 
     public VectorF GetLookDirection();
 
+    public void SetHeadRotation(Angle headYaw);
+    public void SetRotation(Angle yaw, Angle pitch, bool onGround = true);
+
     public bool HasAttribute(string attributeResourceName);
     public bool TryAddAttribute(string attributeResourceName, float value);
     public bool TryUpdateAttribute(string attributeResourceName, float newValue);

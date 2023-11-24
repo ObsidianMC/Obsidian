@@ -112,11 +112,7 @@ public class Entity : IEquatable<Entity>, IEntity
                     OnGround = onGround
                 }, EntityId);
 
-                this.PacketBroadcaster.BroadcastToWorld(this.World, new SetHeadRotationPacket
-                {
-                    EntityId = EntityId,
-                    HeadYaw = yaw
-                }, EntityId);
+                this.SetHeadRotation(yaw);
             }
             else
             {
@@ -140,23 +136,31 @@ public class Entity : IEquatable<Entity>, IEntity
 
         if (isNewRotation)
         {
-            this.PacketBroadcaster.BroadcastToWorld(this.World, new UpdateEntityRotationPacket
-            {
-                EntityId = EntityId,
-                OnGround = onGround,
-                Yaw = yaw,
-                Pitch = pitch
-            }, EntityId);
-
-            this.PacketBroadcaster.BroadcastToWorld(this.World, new SetHeadRotationPacket
-            {
-                EntityId = EntityId,
-                HeadYaw = yaw
-            }, EntityId);
-            UpdatePosition(yaw, pitch, onGround);
+            this.SetRotation(yaw, pitch, onGround);
+            this.SetHeadRotation(yaw);
         }
 
         return Task.CompletedTask;
+    }
+
+    public void SetHeadRotation(Angle headYaw) =>
+        this.PacketBroadcaster.BroadcastToWorld(this.World, new SetHeadRotationPacket
+        {
+            EntityId = EntityId,
+            HeadYaw = headYaw
+        }, EntityId);
+
+    public void SetRotation(Angle yaw, Angle pitch, bool onGround = true)
+    {
+        this.PacketBroadcaster.BroadcastToWorld(this.World, new UpdateEntityRotationPacket
+        {
+            EntityId = EntityId,
+            OnGround = onGround,
+            Yaw = yaw,
+            Pitch = pitch
+        }, EntityId);
+
+        this.UpdatePosition(yaw, pitch, onGround);
     }
 
     public async Task UpdatePositionAsync(VectorF pos, bool onGround = true)
@@ -415,7 +419,7 @@ public class Entity : IEquatable<Entity>, IEntity
         });
     }
 
-    public bool TryAddAttribute(string attributeResourceName, float value) => 
+    public bool TryAddAttribute(string attributeResourceName, float value) =>
         Attributes.TryAdd(attributeResourceName, value);
 
     public bool TryUpdateAttribute(string attributeResourceName, float newValue)

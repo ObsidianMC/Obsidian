@@ -349,22 +349,9 @@ public class MainCommandModule
         {
             while (true)
             {
-                var rotato = new SetHeadRotationPacket() 
-                { 
-                    EntityId = frogge.EntityId, 
-                    HeadYaw = new Angle((byte)(new Random().Next(1, 255))) 
-                };
+                frogge.SetHeadRotation(new Angle((byte)(Random.Shared.Next(1, 255))));
+                frogge.SetRotation(new Angle((byte)(Random.Shared.Next(1, 255))), new Angle((byte)(Random.Shared.Next(1, 255))), false);
 
-                var rotato2 = new UpdateEntityRotationPacket()
-                {
-                    EntityId = frogge.EntityId,
-                    Pitch = new Angle((byte)(new Random().Next(1, 255))),
-                    Yaw = new Angle((byte)(new Random().Next(1, 255))),
-                    OnGround = false
-                };
-
-                //server.BroadcastPacket(rotato);
-                //server.BroadcastPacket(rotato2);
                 await Task.Delay(15);
             }
         });
