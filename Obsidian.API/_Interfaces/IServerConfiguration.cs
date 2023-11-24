@@ -5,10 +5,22 @@ namespace Obsidian.API;
 public interface IServerConfiguration
 {
     public bool? Baah { get; set; }
+
+    /// <summary>
+    /// Returns true if <see cref="ConnectionThrottle"/> has a value greater than 0.
+    /// </summary>
     public bool CanThrottle => this.ConnectionThrottle > 0;
-    public bool UDPBroadcast { get; set; }
+
+    /// <summary>
+    /// Allows the server to advertise itself as a LAN server to devices on your network.
+    /// </summary>
+    public bool AllowLan { get; set; }
+
     public bool IpWhitelistEnabled { get; set; }
 
+    /// <summary>
+    /// The time in milliseconds to wait before an ip is allowed to try and connect again.
+    /// </summary>
     public long ConnectionThrottle { get; set; }
 
     /// <summary>
@@ -40,9 +52,17 @@ public interface IServerConfiguration
     /// Maximum amount of players that is allowed to be connected at the same time.
     /// </summary>
     public int MaxPlayers { get; set; }
+
     public int PregenerateChunkRange { get; set; }
+
+    /// <summary>
+    /// The speed at which world time & rain time go by.
+    /// </summary>
     public int TimeTickSpeedMultiplier { get; set; }
 
+    /// <summary>
+    /// Allow people to requests to become an operator.
+    /// </summary>
     public bool AllowOperatorRequests { get; set; }
 
     public bool WhitelistEnabled { get; set; }
@@ -61,7 +81,6 @@ public interface IServerConfiguration
     /// Lower text in the in-game TAB menu.
     /// </summary>
     public string Footer { get; set; }
-
 
     /// <summary>
     /// Interval between KeepAlive packets send by the server.

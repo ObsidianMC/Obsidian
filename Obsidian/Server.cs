@@ -144,7 +144,7 @@ public sealed partial class Server : IServer
         Directory.CreateDirectory(PermissionPath);
         Directory.CreateDirectory(PersistentDataPath);
 
-        if (Configuration.UDPBroadcast)
+        if (Configuration.AllowLan)
         {
             _ = Task.Run(async () =>
             {
