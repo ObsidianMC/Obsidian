@@ -53,7 +53,7 @@ public class BiomeSelector : Module
         // 5 heights, 4 temps, 3 humidities
         var tempIndex = (int)((SourceModules[0].GetValue(x, 0, z) + 0.999d) * 2.0d);
         var humidityIndex = (int)((SourceModules[1].GetValue(x, 0, z) + 0.999d) * 1.5d);
-        var erosionVal = SourceModules[3].GetValue(x, 0, z) + 2.0;
+        var erosionVal = SourceModules[3].GetValue(x, 0, z) + 1.0;
 
         var height = SourceModules[2].GetValue(x, 0, z);
         if (height >= -0.01)
@@ -61,20 +61,20 @@ public class BiomeSelector : Module
             // Check river
             var riverVal = SourceModules[4].GetValue(x, 0, z);
             if (riverVal < 0.04)
-            {
-                return (double)Biome.River;
-            }
+                return tempIndex < 1 ? (double)Biome.FrozenRiver : (double)Biome.River;
         }
-        if (height >= -0.1 && height < 0.04) { return (double)Biome.Beach; }
+        if (height >= -0.1 && height < 0.04) 
+            return tempIndex <= 1 ? (double)Biome.SnowyBeach : (double)Biome.Beach;
+
         if (height > 0.1) // If above ocean, add erosion and rivers
         {
-            erosionVal = (height - 0.1) * erosionVal;
+            erosionVal = (height - 0.1) * (erosionVal + 1.3);
             height += erosionVal;
         }
         if (height >= 0.6) // Add mountain peaks/valleys
         {
             var peakVal = (height - 0.6) * Math.Max(SourceModules[5].GetValue(x, 0, z) + 1.6, 1.0) * 0.5;
-            height += peakVal;// * (erosionVal - 0.5);
+            height += peakVal * (erosionVal + 0.5);
         }
 
         var heightIndex = height switch
@@ -82,7 +82,7 @@ public class BiomeSelector : Module
             double v when v < -0.6 => 0,
             double v when v >= -0.6 && v < 0 => 1,
             double v when v >= 0 && v < 0.3 => 2,
-            double v when v >= 0.3 && v < 1 => 3,
+            double v when v >= 0.3 && v < 1.5 => 3,
             _ => 4,
         };
 

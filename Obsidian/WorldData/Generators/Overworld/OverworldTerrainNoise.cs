@@ -43,50 +43,18 @@ public sealed class OverworldTerrainNoise
             Seed = seed + 200
         });
 
-        PeakValleyNoise = new Cache()
-        {
-            Source0 = new Clamp()
-            {
-                Source0 = new Perlin()
-                {
-                    Seed = seed,
-                    Frequency = 0.02,
-                    Lacunarity = 2.132,
-                    Quality = SharpNoise.NoiseQuality.Fast,
-                    OctaveCount = 3
-                }
-            }
-        };
-
-        HumidityNoise = new Cache()
-        {
-            Source0 = new Clamp()
-            {
-                Source0 = new Blur()
-                {
-                    Source0 = new Perlin()
-                    {
-                        Frequency = 0.002,
-                        Quality = SharpNoise.NoiseQuality.Fast,
-                        Seed = seed + 3,
-                        OctaveCount = 1,
-                        Lacunarity = 1.5
-                    }
-                }
-            }
-        };
-
         RiverNoise = new Cache
         {
             Source0 = new RiverSelector
             {
                 RiverNoise = new Perlin
                 {
-                    Frequency = 0.002,
-                    Quality = SharpNoise.NoiseQuality.Fast,
+                    Frequency = 0.0015,
+                    Quality = SharpNoise.NoiseQuality.Standard,
                     Seed = seed + 1,
-                    OctaveCount = 3,
-                    Lacunarity = 1.5
+                    OctaveCount = 2,
+                    Lacunarity = 10,
+                    Persistence = 0.05
                 }
             }
         };
@@ -95,15 +63,39 @@ public sealed class OverworldTerrainNoise
         {
             Source0 = new Clamp()
             {
-                Source0 = new Blur()
-                {
                     Source0 = new Perlin()
                     {
-                        Frequency = 0.001,
-                        Quality = SharpNoise.NoiseQuality.Fast,
-                        Seed = seed + 2
+                        Frequency = 0.0001,
+                        Quality = SharpNoise.NoiseQuality.Standard,
+                        Seed = seed + 2,
+                        OctaveCount = 2,
+                        // 1st octave smooth and low freq
+                        // 2nd octave low powered by high freq multi
+                        // to add ripples
+                        Lacunarity = 80,
+                        Persistence = 0.03
                     }
-                }
+                
+            }
+        };
+
+        HumidityNoise = new Cache()
+        {
+            Source0 = new Clamp()
+            {
+                    Source0 = new Perlin()
+                    {
+                        Frequency = 0.00013,
+                        Quality = SharpNoise.NoiseQuality.Standard,
+                        Seed = seed + 3,
+                        OctaveCount = 2,
+                        // 1st octave smooth and low freq
+                        // 2nd octave low powered by high freq multi
+                        // to add ripples
+                        Lacunarity = 80,
+                        Persistence = 0.03
+                    }
+                
             }
         };
 
@@ -114,7 +106,7 @@ public sealed class OverworldTerrainNoise
                 TerrainNoise = new ScaleBias
                 {
                     Scale = 1.0,
-                    Bias = 0.08,
+                    Bias = 0.08, // Favor more land than ocean
                     Source0 = new Perlin()
                     {
                         Frequency = 0.0013,
@@ -130,22 +122,49 @@ public sealed class OverworldTerrainNoise
         {
             Source0 = new Clamp()
             {
-                Source0 = new Perlin()
+                Source0 = new ScaleBias
                 {
-                    Frequency = 0.002,
-                    Quality = SharpNoise.NoiseQuality.Fast,
-                    Seed = seed + 5
+                    Scale = 1.0,
+                    Bias = -0.1, // Favor smoother terrain
+                    Source0 = new Perlin()
+                    {
+                        Frequency = 0.001,
+                        Quality = SharpNoise.NoiseQuality.Fast,
+                        Seed = seed + 6,
+                        Lacunarity = 1.1
+                    }
                 }
             }
         };
 
         SquashNoise = new Cache
         {
-            Source0 = new Perlin()
+            Source0 = new ScaleBias
             {
-                Frequency = 0.0005,
-                Quality = SharpNoise.NoiseQuality.Fast,
-                Seed = seed + 6
+                Scale = 1.0,
+                Bias = -0.1, // Favor smoother terrain
+                Source0 = new Perlin()
+                {
+                    Frequency = 0.0005,
+                    Quality = SharpNoise.NoiseQuality.Fast,
+                    Seed = seed + 98,
+                    Lacunarity = 1.5
+                }
+            }
+        };
+
+        PeakValleyNoise = new Cache()
+        {
+            Source0 = new Clamp()
+            {
+                Source0 = new Perlin()
+                {
+                    Seed = seed,
+                    Frequency = 0.02,
+                    Lacunarity = 2.132,
+                    Quality = SharpNoise.NoiseQuality.Fast,
+                    OctaveCount = 3
+                }
             }
         };
 
