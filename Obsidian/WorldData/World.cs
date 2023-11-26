@@ -612,11 +612,7 @@ public sealed class World : IWorld
 
         await Parallel.ForEachAsync(jobs, async (job, _) =>
         {
-            Region region = GetRegionForChunk(job.x, job.z)!;
-            if (region is null)
-            {
-                 region = LoadRegionByChunk(job.x, job.z);
-            }
+            Region region = GetRegionForChunk(job.x, job.z) ?? LoadRegionByChunk(job.x, job.z);
 
             var (x, z) = (NumericsHelper.Modulo(job.x, Region.CubicRegionSize), NumericsHelper.Modulo(job.z, Region.CubicRegionSize));
 

@@ -34,9 +34,6 @@ public sealed class ServerConfiguration : IServerConfiguration
 
     public bool IpWhitelistEnabled { get; set; }
 
-    [JsonIgnore]
-    public bool CanThrottle => this.ConnectionThrottle > 0;
-
     public List<string> WhitelistedIPs { get; set; } = new();
     public List<WhitelistedPlayer> Whitelisted { get; set; } = new();
 
@@ -49,10 +46,7 @@ public sealed class ServerConfiguration : IServerConfiguration
     public string[] DownloadPlugins { get; set; } = [];
     public RconConfig? Rcon { get; set; }
 
-    /// <summary>
-    /// Allows the server to advertise itself as a LAN server to devices on your network.
-    /// </summary>
-    public bool UDPBroadcast { get; set; } = true; // Enabled because it's super useful for debugging tbh
+    public bool AllowLan { get; set; } = true; // Enabled because it's super useful for debugging tbh
 
     public int PregenerateChunkRange { get; set; } = 15; // by default, pregenerate range from -15 to 15
 

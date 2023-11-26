@@ -976,7 +976,7 @@ public sealed partial class Player : Living, IPlayer
                 Math.Abs(playerChunkZ - chunk2.Z) ? -1 : 1;
             });
 
-            clientUnneededChunks.ForEach(c => client.LoadedChunks.TryRemove(c));
+        clientUnneededChunks.ForEach(c => client.LoadedChunks.TryRemove(c));
 
             foreach (var chunkLoc in clientNeededChunks)
             {
