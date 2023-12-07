@@ -12,7 +12,7 @@ public partial class SetPlayerPositionPacket : IServerboundPacket
     [Field(1)]
     public bool OnGround { get; private set; }
 
-    public int Id => 0x16;
+    public int Id => 0x17;
 
     public SetPlayerPositionPacket()
     {

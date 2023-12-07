@@ -12,7 +12,7 @@ public partial class SetCreativeModeSlotPacket : IServerboundPacket
     [Field(1)]
     public ItemStack ClickedItem { get; private set; }
 
-    public int Id => 0x2E;
+    public int Id => 0x2F;
 
     public ValueTask HandleAsync(Server server, Player player)
     {
