@@ -29,7 +29,7 @@ public sealed partial class EntityGenerator : IIncrementalGenerator
         var compilation = ctx.CompilationProvider.Combine(classDeclarations.Collect()).Combine(jsonFiles.Collect());
 
         ctx.RegisterSourceOutput(compilation,
-            (spc, src) => this.Generate(spc, src.Left.Left, src.Left.Right, src.Right.First()));
+            (spc, src) => this.Generate(spc, src.Left.Left, src.Left.Right, src.Right.FirstOrDefault()));
     }
 
     private static ClassDeclarationSyntax? TransformData(ClassDeclarationSyntax? syntax, GeneratorSyntaxContext ctx)
@@ -45,8 +45,10 @@ public sealed partial class EntityGenerator : IIncrementalGenerator
         return symbol.GetAttributes().Any(x => x.AttributeClass?.Name == AttributeName) ? syntax : null;
     }
 
-    private void Generate(SourceProductionContext context, Compilation compilation, ImmutableArray<ClassDeclarationSyntax> typeList, string entitiesJson)
+    private void Generate(SourceProductionContext context, Compilation compilation, ImmutableArray<ClassDeclarationSyntax> typeList, string? entitiesJson)
     {
+        if (entitiesJson == null) return;
+
         using var document = JsonDocument.Parse(entitiesJson);
 
         var elements = document.RootElement;
@@ -85,6 +87,7 @@ public sealed partial class EntityGenerator : IIncrementalGenerator
         }
 
         this.GenerateClasses(classes, document, context);
+
     }
 
     private void GenerateClasses(List<EntityClass> classes, JsonDocument document, SourceProductionContext context)
