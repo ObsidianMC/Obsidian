@@ -43,7 +43,7 @@ public class MountainsDecorator : BaseDecorator
 
         var cornFlowerNoise = noise.Decoration.GetValue(worldX * 0.03, 11, worldZ * 0.03); // 0.03 makes more groupings
         if (cornFlowerNoise > 1)
-            chunk.SetBlock(pos + (0, 1, 0), BlocksRegistry.Grass);
+            chunk.SetBlock(pos + (0, 1, 0), BlocksRegistry.ShortGrass);
 
         var azureNoise = noise.Decoration.GetValue(worldX * 0.03, 12, worldZ * 0.03); // 0.03 makes more groupings
         if (azureNoise > 1)

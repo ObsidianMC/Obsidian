@@ -43,7 +43,7 @@ public class StonyPeaksDecorator : BaseDecorator
 
         var grassNoise = noise.Decoration.GetValue(worldX * 0.03, 11, worldZ * 0.03);
         if (grassNoise > 1)
-            chunk.SetBlock(pos, BlocksRegistry.Grass);
+            chunk.SetBlock(pos, BlocksRegistry.ShortGrass);
 
         var coalNoise = noise.Decoration.GetValue(worldX * 0.03, 12, worldZ * 0.03);
         if (coalNoise > 1)

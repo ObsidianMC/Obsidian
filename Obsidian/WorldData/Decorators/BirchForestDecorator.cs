@@ -38,6 +38,6 @@ public class BirchForestDecorator : BaseDecorator
 
         var grassNoise = noise.Decoration.GetValue(worldX * 0.1, 8, worldZ * 0.1);
         if (grassNoise > 0 && grassNoise < 0.5) // 50% chance for grass
-            chunk.SetBlock(pos + (0, 1, 0), BlocksRegistry.Grass);
+            chunk.SetBlock(pos + (0, 1, 0), BlocksRegistry.ShortGrass);
     }
 }
