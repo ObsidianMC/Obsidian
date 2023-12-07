@@ -122,9 +122,9 @@ public sealed class ChatMessage
     /// <param name="value">The value which will be executed with the action.</param>
     /// <param name="translate">The translate value.</param>
     /// <returns>The given <see cref="ChatMessage"/>.</returns>
-    public static ChatMessage Click(ChatMessage message, ClickAction action, string value, string translate = "")
+    public static ChatMessage Click(ChatMessage message, ClickAction action, string value)
     {
-        message.ClickEvent = new ClickComponent(action, value, translate);
+        message.ClickEvent = new ClickComponent { Action = action, Value = value };
         return message;
     }
 
@@ -136,9 +136,9 @@ public sealed class ChatMessage
     /// <param name="contents">The contents which will be executed with the action.</param>
     /// <param name="translate">The translate value.</param>
     /// <returns>The given <see cref="ChatMessage"/>.</returns>
-    public static ChatMessage Hover(ChatMessage message, HoverAction action, object contents, string translate = "")
+    public static ChatMessage Hover(ChatMessage message, HoverAction action, IHoverContent contents)
     {
-        message.HoverEvent = new HoverComponent(action, contents, translate);
+        message.HoverEvent = new HoverComponent { Action = action, Contents = contents };
         return message;
     }
 

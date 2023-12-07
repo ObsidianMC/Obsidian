@@ -334,6 +334,35 @@ public partial class MinecraftStream
     }
 
     [WriteMethod]
+    //Just for types that aren't impl yet
+    public void WriteEmptyObject(object obj)
+    {
+    }
+
+    [WriteMethod]
+    public void WriteSoundEffect(SoundEffect sound)
+    {
+        this.WriteString(JsonNamingPolicy.SnakeCaseLower.ConvertName(sound.SoundName ?? sound.SoundId.ToString()));
+
+        if (sound.HasFixedRange)
+            this.WriteFloat(sound.Range);
+    }
+
+    [WriteMethod]
+    public void WriteNbtCompound(NbtCompound? compound)
+    {
+        if (compound == null)
+            return;
+
+        var writer = new NbtWriter(this, true);
+
+        foreach (var (_, tag) in compound)
+            writer.WriteTag(tag);
+
+        writer.TryFinish();
+    }
+
+    [WriteMethod]
     public void WriteDateTimeOffset(DateTimeOffset date)
     {
         this.WriteLong(date.ToUnixTimeMilliseconds());
@@ -379,8 +408,11 @@ public partial class MinecraftStream
     }
 
     [WriteMethod]
-    public void WriteChat(ChatMessage chatMessage)
+    public void WriteChat(ChatMessage? chatMessage)
     {
+        if (chatMessage == null)
+            return;
+
         var writer = new NbtWriter(this, true);
 
         this.WriteChatNbt(writer, chatMessage);
@@ -411,7 +443,7 @@ public partial class MinecraftStream
         if (chatMessage.HoverEvent != null)
             writer.WriteTag(chatMessage.HoverEvent.ToNbt());
 
-        if(chatMessage.Extra is List<ChatMessage> extras)
+        if (chatMessage.Extra is List<ChatMessage> extras)
         {
             var list = new NbtList(NbtTagType.Compound, "extra");
 
@@ -431,7 +463,7 @@ public partial class MinecraftStream
             writer.WriteTag(list);
         }
     }
-    
+
     [WriteMethod]
     public void WriteEquipment(Equipment equipment)
     {
@@ -1107,10 +1139,11 @@ public partial class MinecraftStream
 
             int width = patterns[0].Length, height = patterns.Count;
 
+            await WriteStringAsync(shapedRecipe.Group ?? "");
+            await WriteVarIntAsync(shapedRecipe.Category);
+
             await WriteVarIntAsync(width);
             await WriteVarIntAsync(height);
-
-            await WriteStringAsync(shapedRecipe.Group ?? "");
 
             var ingredients = new List<ItemStack>[width * height];
 
@@ -1161,6 +1194,7 @@ public partial class MinecraftStream
             var ingredients = shapelessRecipe.Ingredients;
 
             await WriteStringAsync(shapelessRecipe.Group ?? "");
+            await WriteVarIntAsync(shapelessRecipe.Category);
 
             await WriteVarIntAsync(ingredients.Count);
             foreach (var ingredient in ingredients)
@@ -1177,7 +1211,7 @@ public partial class MinecraftStream
         else if (recipe is SmeltingRecipe smeltingRecipe)
         {
             await WriteStringAsync(smeltingRecipe.Group ?? "");
-
+            await WriteVarIntAsync(smeltingRecipe.Category);
 
             await WriteVarIntAsync(smeltingRecipe.Ingredient.Count);
             foreach (var i in smeltingRecipe.Ingredient)
@@ -1269,7 +1303,6 @@ public partial class MinecraftStream
             WriteVarInt(height);
 
             WriteString(shapedRecipe.Group ?? string.Empty);
-
             WriteVarInt(shapedRecipe.Category);
 
             var ingredients = new List<ItemStack>[width * height];
@@ -1324,7 +1357,6 @@ public partial class MinecraftStream
             var ingredients = shapelessRecipe.Ingredients;
 
             WriteString(shapelessRecipe.Group ?? string.Empty);
-
             WriteVarInt(shapelessRecipe.Category);
 
             WriteVarInt(ingredients.Count);
@@ -1342,7 +1374,6 @@ public partial class MinecraftStream
         else if (recipe is SmeltingRecipe smeltingRecipe)
         {
             WriteString(smeltingRecipe.Group ?? string.Empty);
-
             WriteVarInt(smeltingRecipe.Category);
 
             WriteVarInt(smeltingRecipe.Ingredient.Count);
@@ -1415,12 +1446,6 @@ public partial class MinecraftStream
         WriteByte(record.Z);
     }
 
-    [WriteMethod]
-    public void WriteNbtCompound(NbtCompound compound)
-    {
-        using var writer = new NbtWriter(BaseStream);
-        writer.WriteTag(compound);
-    }
 
     [WriteMethod]
     public void WriteParticleData(ParticleData value)

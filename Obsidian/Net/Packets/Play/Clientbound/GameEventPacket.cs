@@ -92,5 +92,9 @@ public enum ChangeGameStateReason : byte
 
     PlayElderGuardianMobAppearance,
 
-    EnableRespawnScreen
+    EnableRespawnScreen,
+
+    LimitedCrafting,
+    
+    StartWaitingForLevelChunks,
 }
