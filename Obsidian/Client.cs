@@ -592,16 +592,16 @@ public sealed class Client : IDisposable
         });
     }
 
-    internal Task DisconnectAsync(ChatMessage reason) => Task.Run(() => SendPacket(new DisconnectPacket(reason, State)));
+    internal async Task DisconnectAsync(ChatMessage reason) => await this.QueuePacketAsync(new DisconnectPacket(reason, State));
     internal Task SendTimeUpdateAsync() => QueuePacketAsync(new UpdateTimePacket(Player!.world.LevelData.Time, Player.world.LevelData.DayTime));
     internal Task SendWeatherUpdateAsync() => QueuePacketAsync(new GameEventPacket(Player!.world.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
 
-    internal void HandleKeepAlive(KeepAlivePacket keepAlive)
+    internal async Task HandleKeepAliveAsync(KeepAlivePacket keepAlive)
     {
         if (!missedKeepAlives.Contains(keepAlive.KeepAliveId))
         {
             Logger.LogWarning($"Received invalid KeepAlive from {Player.Username}?? Naughty???? ({Player.Uuid})");
-            DisconnectAsync(ChatMessage.Simple("Kicked for invalid KeepAlive."));
+            await DisconnectAsync(ChatMessage.Simple("Kicked for invalid KeepAlive."));
             return;
         }
 
