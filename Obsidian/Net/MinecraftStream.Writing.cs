@@ -349,11 +349,8 @@ public partial class MinecraftStream
     }
 
     [WriteMethod]
-    public void WriteNbtCompound(NbtCompound? compound)
+    public void WriteNbtCompound(NbtCompound compound)
     {
-        if (compound == null)
-            return;
-
         var writer = new NbtWriter(this, true);
 
         foreach (var (_, tag) in compound)
@@ -408,7 +405,7 @@ public partial class MinecraftStream
     }
 
     [WriteMethod]
-    public void WriteChat(ChatMessage? chatMessage)
+    public void WriteChat(ChatMessage chatMessage)
     {
         if (chatMessage == null)
             return;

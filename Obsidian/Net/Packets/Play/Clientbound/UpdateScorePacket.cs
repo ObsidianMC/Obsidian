@@ -27,7 +27,7 @@ public partial class UpdateScorePacket : IClientboundPacket
     [Field(3)]
     public required bool HasDisplayName { get; init; }
 
-    [Field(4), Condition(nameof(HasDisplayName))]
+    [Field(4), Condition(nameof(HasDisplayName)), ActualType(typeof(ChatMessage))]
     public ChatMessage? DisplayName { get; init; }
 
     [Field(5)]
@@ -36,10 +36,10 @@ public partial class UpdateScorePacket : IClientboundPacket
     [Field(6), ActualType(typeof(int)), VarLength, Condition("HasNumberFormat")]
     public NumberFormat NumberFormat { get; init; }
 
-    [Field(7), Condition("NumberFormat == NumberFormat.Styled")]
+    [Field(7), Condition("NumberFormat == NumberFormat.Styled"), ActualType(typeof(NbtCompound))]
     public NbtCompound? StyledFormat { get; init; }
 
-    [Field(7), Condition("NumberFormat == NumberFormat.Fixed")]
+    [Field(7), Condition("NumberFormat == NumberFormat.Fixed"), ActualType(typeof(ChatMessage))]
     public ChatMessage? Content { get; init; }
 
     public int Id => 0x5F;
