@@ -280,7 +280,7 @@ public sealed class Client : IDisposable
                                     {
                                         this.Logger.LogDebug("{ip} has been throttled for reconnecting too fast.", ip);
                                         await this.DisconnectAsync("Connection Throttled! Please wait before reconnecting.");
-                                        this.Disconnect();
+                                        break;
                                     }
                                 }
                                 else
