@@ -10,7 +10,7 @@ public partial class SetTabListHeaderAndFooterPacket : IClientboundPacket
     [Field(1)]
     public ChatMessage Footer { get; }
 
-    public int Id => 0x68;
+    public int Id => 0x6A;
 
     //TODO send empty text component when writing chat message for this e.x {"text":""}
     public SetTabListHeaderAndFooterPacket(ChatMessage? header, ChatMessage? footer)

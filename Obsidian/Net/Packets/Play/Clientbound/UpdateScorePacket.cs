@@ -28,5 +28,5 @@ public partial class UpdateScorePacket : IClientboundPacket
     [Field(4), VarLength, Condition(nameof(Action) + " != 1")]
     public int Value { get; init; }
 
-    public int Id => 0x5D;
+    public int Id => 0x5F;
 }

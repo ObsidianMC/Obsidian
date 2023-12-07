@@ -17,5 +17,5 @@ public partial class SetCenterChunkPacket : IClientboundPacket
         ChunkZ = chunkZ;
     }
 
-    public int Id => 0x50;
+    public int Id => 0x52;
 }

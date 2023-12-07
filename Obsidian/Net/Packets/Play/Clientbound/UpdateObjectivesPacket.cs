@@ -16,7 +16,7 @@ public partial class UpdateObjectivesPacket : IClientboundPacket
     [Field(3), VarLength, ActualType(typeof(int)), Condition(nameof(ShouldWriteValue))]
     public DisplayType Type { get; init; }
 
-    public int Id => 0x5A;
+    public int Id => 0x5C;
 
     private bool ShouldWriteValue => Mode is ScoreboardMode.Create or ScoreboardMode.Update;
 }
