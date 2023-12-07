@@ -16,7 +16,5 @@ public sealed class ShapedRecipe : IRecipeWithResult
 
     public required IReadOnlyDictionary<char, Ingredient> Key { get; init; }
 
-    public required bool ShowNotification { get; init; }
-
     internal ShapedRecipe() { }
 }
