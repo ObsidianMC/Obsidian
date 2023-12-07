@@ -2,7 +2,7 @@
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-// Source: https://wiki.vg/index.php?title=Protocol#Update_View_Position
+// Source: https://wiki.vg/Protocol#Set_Center_Chunk
 public partial class SetCenterChunkPacket : IClientboundPacket
 {
     [Field(0), VarLength]

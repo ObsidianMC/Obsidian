@@ -7,7 +7,7 @@ public sealed partial class UpdateTagsPacket : IClientboundPacket
     public IDictionary<string, Tag[]> Tags { get; }
 
     //TODO FOR RELOADS 0x74 for play state
-    public int Id { get; init; } = 0x08;
+    public int Id { get; init; } = 0x09;
 
     public static UpdateTagsPacket FromRegistry { get; } = new(Registries.TagsRegistry.Categories);
 

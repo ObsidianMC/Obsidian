@@ -555,6 +555,7 @@ public sealed class Client : IDisposable
 
         await SendPlayerListDecoration();
         await SendPlayerInfoAsync();
+        await this.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
         await Player.UpdateChunksAsync(distance: 7);
         await SendInfoAsync();
         await this.server.Events.PlayerJoin.InvokeAsync(new PlayerJoinEventArgs(Player, this.server, DateTimeOffset.Now));

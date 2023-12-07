@@ -26,7 +26,7 @@ public partial class SetPlayerPositionAndRotationPacket : IServerboundPacket
         if (player.Position.ToChunkCoord() != player.LastPosition.ToChunkCoord())
         {
             (int cx, int cz) = player.Position.ToChunkCoord();
-            player.client.SendPacket(new SetCenterChunkPacket(cx, cz));
+            await player.client.QueuePacketAsync(new SetCenterChunkPacket(cx, cz));
         }
 
         player.LastPosition = player.Position;

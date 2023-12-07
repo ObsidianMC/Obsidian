@@ -1,7 +1,7 @@
 {
   "blocks/players_can_interact": {
     "name": "players_can_interact",
-    "type": "block",
+    "type": "blocks",
     "values": [
       "minecraft:chest",
       "minecraft:ender_chest",
