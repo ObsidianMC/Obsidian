@@ -22,8 +22,8 @@ public static class Globals
             {
                 new CraftingTypeConverter(),
                 new IngredientConverter(),
-                new DefaultEnumConverter<EHoverAction>(),
-                new DefaultEnumConverter<EClickAction>(),
+                new DefaultEnumConverter<HoverAction>(),
+                new DefaultEnumConverter<ClickAction>(),
                 new DefaultEnumConverter<CraftingBookCategory>(),
                 new DefaultEnumConverter<CookingBookCategory>(),
                 new RecipesConverter(),

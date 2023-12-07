@@ -280,7 +280,7 @@ public sealed class Client : IDisposable
                                     {
                                         this.Logger.LogDebug("{ip} has been throttled for reconnecting too fast.", ip);
                                         await this.DisconnectAsync("Connection Throttled! Please wait before reconnecting.");
-                                        this.Disconnect();
+                                        break;
                                     }
                                 }
                                 else
@@ -555,6 +555,7 @@ public sealed class Client : IDisposable
 
         await SendPlayerListDecoration();
         await SendPlayerInfoAsync();
+        await this.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
         await Player.UpdateChunksAsync(distance: 7);
         await SendInfoAsync();
         await this.server.Events.PlayerJoin.InvokeAsync(new PlayerJoinEventArgs(Player, this.server, DateTimeOffset.Now));
@@ -592,16 +593,16 @@ public sealed class Client : IDisposable
         });
     }
 
-    internal Task DisconnectAsync(ChatMessage reason) => Task.Run(() => SendPacket(new DisconnectPacket(reason, State)));
+    internal async Task DisconnectAsync(ChatMessage reason) => await this.QueuePacketAsync(new DisconnectPacket(reason, State));
     internal Task SendTimeUpdateAsync() => QueuePacketAsync(new UpdateTimePacket(Player!.world.LevelData.Time, Player.world.LevelData.DayTime));
     internal Task SendWeatherUpdateAsync() => QueuePacketAsync(new GameEventPacket(Player!.world.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
 
-    internal void HandleKeepAlive(KeepAlivePacket keepAlive)
+    internal async Task HandleKeepAliveAsync(KeepAlivePacket keepAlive)
     {
         if (!missedKeepAlives.Contains(keepAlive.KeepAliveId))
         {
             Logger.LogWarning($"Received invalid KeepAlive from {Player.Username}?? Naughty???? ({Player.Uuid})");
-            DisconnectAsync(ChatMessage.Simple("Kicked for invalid KeepAlive."));
+            await DisconnectAsync(ChatMessage.Simple("Kicked for invalid KeepAlive."));
             return;
         }
 

@@ -140,7 +140,9 @@ internal static partial class BlocksRegistry
     {
         var sanitizedBlockName = value;
         if (sanitizedBlockName == "Obsidian")
-            sanitizedBlockName = $"{value}Block";
+            sanitizedBlockName = "ObsidianBlock";
+        if (sanitizedBlockName == "TrialSpawner")
+            sanitizedBlockName = "TrialSpawnerBlock";
 
         return sanitizedBlockName;
     }

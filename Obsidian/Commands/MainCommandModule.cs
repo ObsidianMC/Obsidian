@@ -1,7 +1,6 @@
 using Obsidian.API.Utilities;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Entities;
-using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
 using Obsidian.WorldData;
 using System.Data;
@@ -72,15 +71,15 @@ public class MainCommandModule
             {
                 Text = $"\n{ChatColor.Gold}{usage}",
                 ClickEvent = new ClickComponent
-                (
-                    EClickAction.SuggestCommand,
-                    usage.Contains(' ') ? $"{usage[..usage.IndexOf(' ')]} " : usage
-                ),
+                {
+                    Action = ClickAction.SuggestCommand,
+                    Value = usage.Contains(' ') ? $"{usage[..usage.IndexOf(' ')]} " : usage
+                },
                 HoverEvent = new HoverComponent
-                (
-                    EHoverAction.ShowText,
-                    $"Click to suggest the command"
-                )
+                {
+                    Action = HoverAction.ShowText,
+                    Contents = new HoverChatContent() { ChatMessage = "Click to suggest the command" }
+                }
             };
             commands.AddExtra(commandName);
 
@@ -135,13 +134,13 @@ public class MainCommandModule
             plugin.Color = colorByState;
 
             plugin.HoverEvent = new HoverComponent
-            (
-                EHoverAction.ShowText,
-                $"{colorByState}{info.Name}{ChatColor.Reset}\nVersion: {colorByState}{info.Version}{ChatColor.Reset}\nAuthor(s): {colorByState}{info.Authors}{ChatColor.Reset}"
-            );
+            {
+                Action = HoverAction.ShowText,
+                Contents = new HoverChatContent { ChatMessage = $"{colorByState}{info.Name}{ChatColor.Reset}\nVersion: {colorByState}{info.Version}{ChatColor.Reset}\nAuthor(s): {colorByState}{info.Authors}{ChatColor.Reset}" }
+            };
 
             if (pluginContainer.Info.ProjectUrl != null)
-                plugin.ClickEvent = new ClickComponent(EClickAction.OpenUrl, pluginContainer.Info.ProjectUrl.AbsoluteUri);
+                plugin.ClickEvent = new ClickComponent { Action = ClickAction.OpenUrl, Value = pluginContainer.Info.ProjectUrl.AbsoluteUri };
 
             messages.Add(plugin);
             messages.Add(new ChatMessage
@@ -449,15 +448,15 @@ public class MainCommandModule
         {
             Text = $"{ChatColor.Red}{commandUsage}",
             ClickEvent = new ClickComponent
-            (
-                EClickAction.SuggestCommand,
-                $"{commandSuggest}"
-            ),
+            {
+                Action = ClickAction.SuggestCommand,
+                Value = commandSuggest
+            },
             HoverEvent = new HoverComponent
-            (
-                EHoverAction.ShowText,
-                $"Click to suggest the command"
-            )
+            {
+                Action = HoverAction.ShowText,
+                Contents = new HoverChatContent { ChatMessage = "Click to suggest the command" }
+            }
         };
 
         var prefix = new ChatMessage

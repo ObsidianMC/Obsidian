@@ -1,17 +1,25 @@
 ﻿namespace Obsidian.API;
 
-public class HoverComponent
+public sealed class HoverComponent
 {
-    public EHoverAction Action { get; set; }
+    public required HoverAction Action { get; set; }
 
-    public object Contents { get; set; }
-
-    public string Translate { get; set; }
-
-    public HoverComponent(EHoverAction action, object contents, string translate = "")
-    {
-        Action = action;
-        Contents = contents;
-        Translate = translate;
-    }
+    public required IHoverContent Contents { get; set; }
 }
+
+public sealed class HoverChatContent : IHoverContent
+{
+    public required ChatMessage ChatMessage { get; set; }
+}
+
+public sealed class HoverItemContent : IHoverContent
+{
+    public required ItemStack Item { get; set; }
+}
+
+public sealed class HoverEntityComponent : IHoverContent
+{
+    public required IEntity Entity { get; set; }
+}
+
+public interface IHoverContent { }

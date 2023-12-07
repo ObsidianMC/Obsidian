@@ -37,7 +37,7 @@ public class ForestDecorator : BaseDecorator
 
         var grassNoise = noise.Decoration.GetValue(worldX * 0.1, 0, worldZ * 0.1);
         if (grassNoise > 0 && grassNoise < 0.1)
-            chunk.SetBlock(pos + (0, 1, 0), BlocksRegistry.Grass);
+            chunk.SetBlock(pos + (0, 1, 0), BlocksRegistry.ShortGrass);
 
         if (noise.Decoration.GetValue(worldX * 0.03, 10, worldZ * 0.03) > 0.8)
         {

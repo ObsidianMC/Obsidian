@@ -77,10 +77,10 @@
 
 	<ItemGroup>
 		<EmbeddedResource Remove="Assets\biomes.json" />
+		<EmbeddedResource Remove="Assets\blocks.json" />
 		<EmbeddedResource Remove="Assets\chat_type.json" />
 		<EmbeddedResource Remove="Assets\damage_type.json" />
 		<EmbeddedResource Remove="Assets\dimensions.json" />
-		<EmbeddedResource Remove="Assets\blocks.json" />
 		<EmbeddedResource Remove="Assets\entities.json" />
 		<EmbeddedResource Remove="Assets\items.json" />
 		<EmbeddedResource Remove="Assets\tags.json" />
@@ -90,6 +90,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Remove="assets\blocks.json" />
 	  <None Remove="Assets\damage_type.json" />
 	  <None Remove="Assets\entities.json" />
 	  <None Remove="assets\trim_material.json" />
@@ -98,7 +99,9 @@
 
 	<ItemGroup>
 		<AdditionalFiles Include="Assets\biomes.json" CopyToOutputDirectory="Never" />
-		<AdditionalFiles Include="Assets\blocks.json" CopyToOutputDirectory="Never" />
+		<AdditionalFiles Include="Assets\blocks.json">
+		  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</AdditionalFiles>
 		<AdditionalFiles Include="Assets\chat_type.json" CopyToOutputDirectory="Never" />
 		<AdditionalFiles Include="Assets\damage_type.json" />
 		<AdditionalFiles Include="Assets\dimensions.json" CopyToOutputDirectory="Never" />

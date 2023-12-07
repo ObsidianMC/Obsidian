@@ -1,4 +1,5 @@
 ﻿using Obsidian.SourceGenerators.Registry.Models;
+using System.Diagnostics;
 
 namespace Obsidian.SourceGenerators.Registry;
 
@@ -18,6 +19,8 @@ public partial class BlocksGenerator
 
             if (blockName == "Obsidian")
                 blockName = "ObsidianBlock";
+            if (blockName == "TrialSpawner")
+                blockName = "TrialSpawnerBlock";
 
             var builder = new CodeBuilder()
                 .Using("Obsidian.API")
@@ -42,6 +45,7 @@ public partial class BlocksGenerator
             if (block.Properties.Length > 0)
             {
                 builder.Line().Method($"public {blockName}(int stateId)");
+
                 builder.Line($"this.State = new {blockName}StateBuilder(stateId).Build();");
                 builder.EndScope();
 
@@ -62,4 +66,5 @@ public partial class BlocksGenerator
 
         ctx.AddSource("BlocksRegistry.Blocks.g.cs", blocksBuilder.ToString());
     }
+
 }

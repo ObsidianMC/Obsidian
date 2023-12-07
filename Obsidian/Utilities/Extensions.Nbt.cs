@@ -7,12 +7,76 @@ using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.API.Utilities;
 using Obsidian.Nbt;
 using Obsidian.Registries;
+using System.Text.Json;
 
 namespace Obsidian.Utilities;
 
 //TODO MAKE NBT DE/SERIALIZERS PLEASE
 public partial class Extensions
 {
+    public static NbtCompound ToNbt(this ChatMessage chatMessage, string name = "")
+    {
+        var compound = new NbtCompound(name)
+        {
+            new NbtTag<bool>("bold", chatMessage.Bold),
+            new NbtTag<bool>("italic", chatMessage.Italic),
+            new NbtTag<bool>("underlined", chatMessage.Underlined),
+            new NbtTag<bool>("strikethrough", chatMessage.Strikethrough),
+            new NbtTag<bool>("obfuscated", chatMessage.Obfuscated)
+        };
+
+        if (!chatMessage.Text.IsNullOrEmpty())
+            compound.Add(new NbtTag<string>("text", chatMessage.Text!));
+        if (!chatMessage.Translate.IsNullOrEmpty())
+            compound.Add(new NbtTag<string>("translate", chatMessage.Translate!));
+        if (chatMessage.Color.HasValue)
+            compound.Add(new NbtTag<string>("color", chatMessage.Color.Value.ToString()));
+        if (!chatMessage.Insertion.IsNullOrEmpty())
+            compound.Add(new NbtTag<string>("insertion", chatMessage.Insertion!));
+
+        if (chatMessage.ClickEvent != null)
+            compound.Add(chatMessage.ClickEvent.ToNbt());
+        if (chatMessage.HoverEvent != null)
+            compound.Add(chatMessage.HoverEvent.ToNbt());
+
+        return compound;
+    }
+
+    public static NbtCompound ToNbt(this HoverComponent hoverComponent)
+    {
+        var compound = new NbtCompound("hoverEvent")
+        {
+            new NbtTag<string>("action", JsonNamingPolicy.SnakeCaseLower.ConvertName(hoverComponent.Action.ToString())),
+        };
+
+
+        if (hoverComponent.Contents is HoverChatContent chatContent)
+            compound.Add(chatContent.ChatMessage.ToNbt("contents"));
+        else if (hoverComponent.Contents is HoverItemContent)
+            throw new NotImplementedException("Missing properties from ItemStack can't implement.");
+        else if (hoverComponent.Contents is HoverEntityComponent entityComponent)
+        {
+            var entityCompound = new NbtCompound("contents")
+            {
+                new NbtTag<string>("id", entityComponent.Entity.Uuid.ToString()),
+            };
+
+            if (entityComponent.Entity.CustomName is ChatMessage name)
+                entityCompound.Add(name.ToNbt("name"));
+            else
+                entityCompound.Add(new NbtTag<string>("name", entityComponent.Entity.Type.ToString()));
+        }
+
+        return compound;
+    }
+
+    public static NbtCompound ToNbt(this ClickComponent clickComponent) => new("clickEvent")
+    {
+         new NbtTag<string>("action", JsonNamingPolicy.SnakeCaseLower.ConvertName(clickComponent.Action.ToString())),
+         new NbtTag<string>("value", clickComponent.Value)
+    };
+
+
     public static NbtCompound ToNbt(this ItemStack? value)
     {
         value ??= new ItemStack(0, 0) { Present = true };

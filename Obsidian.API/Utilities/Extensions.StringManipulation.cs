@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -71,10 +72,10 @@ public static partial class Extensions
     public static bool IsEmpty(this string value) => value.Length == 0;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsNullOrEmpty(this string value) => string.IsNullOrEmpty(value);
+    public static bool IsNullOrEmpty([AllowNull]this string value) => string.IsNullOrEmpty(value);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsNullOrWhitespace(this string value) => string.IsNullOrWhiteSpace(value);
+    public static bool IsNullOrWhitespace([AllowNull]this string value) => string.IsNullOrWhiteSpace(value);
 
     public static string Capitalize(this string value)
     {

@@ -50,5 +50,8 @@ public enum ProtocolVersion
     v1_20 = 763,
 
     [Description("1.20.2")]
-    v1_20_2 = 764
+    v1_20_2 = 764,
+
+    [Description("1.20.3")]
+    v1_20_3 = 765
 }

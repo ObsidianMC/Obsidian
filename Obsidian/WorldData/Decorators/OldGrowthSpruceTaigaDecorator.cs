@@ -33,7 +33,7 @@ public class OldGrowthSpruceTaigaDecorator : BaseDecorator
 
         var grassNoise = noise.Decoration.GetValue(worldX * 0.1, 0, worldZ * 0.1);
         if (grassNoise > 0 && grassNoise < 0.1)
-            chunk.SetBlock(pos + (0, 1, 0), BlocksRegistry.Grass);
+            chunk.SetBlock(pos + (0, 1, 0), BlocksRegistry.ShortGrass);
 
         var dandelionNoise = noise.Decoration.GetValue(worldX * 0.1, 1, worldZ * 0.1);
         if (dandelionNoise > 0 && dandelionNoise < 0.05)
