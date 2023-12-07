@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API;
 
-public enum EHoverAction
+public enum HoverAction
 {
     /// <summary>
     /// Shows a raw JSON text component.

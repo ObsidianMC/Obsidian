@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API;
 
-public enum EClickAction
+public enum ClickAction
 {
     /// <summary>
     /// Opens the given URL in the default web browser. Ignored if the player has opted to disable links in chat;
