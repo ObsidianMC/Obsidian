@@ -95,7 +95,7 @@ public sealed class Client : IDisposable
     /// <summary>
     /// The mojang user that the client and player is associated with.
     /// </summary>
-    private CachedUser? cachedUser;
+    private CachedProfile? cachedUser;
 
     /// <summary>
     /// Which packets are in queue to be sent to the client.
@@ -416,25 +416,25 @@ public sealed class Client : IDisposable
         var username = this.server.Configuration.MulitplayerDebugMode ? $"Player{Globals.Random.Next(1, 999)}" : loginStart.Username;
         var world = (World)this.server.DefaultWorld;
 
-        Logger.LogDebug("Received login request from user {Username}:{uuid}", loginStart.Username, loginStart.PlayerUuid);
+        Logger.LogDebug("Received login request from user {Username}}", loginStart.Username);
         await this.server.DisconnectIfConnectedAsync(username);
 
         if (this.server.Configuration.OnlineMode)
         {
-            cachedUser = await this.userCache.GetCachedUserFromNameAsync(loginStart.Username ?? throw new NullReferenceException(nameof(loginStart.PlayerUuid)));
+            cachedUser = await this.userCache.GetCachedUserFromNameAsync(loginStart.Username ?? throw new NullReferenceException(nameof(loginStart.Username)));
 
             if (cachedUser is null)
             {
                 await DisconnectAsync("Account not found in the Mojang database");
                 return;
             }
-            else if (this.server.Configuration.WhitelistEnabled && !this.server.Configuration.Whitelisted.Any(x => x.Id == cachedUser.Id))
+            else if (this.server.Configuration.WhitelistEnabled && !this.server.Configuration.Whitelisted.Any(x => x.Id == cachedUser.Uuid))
             {
                 await DisconnectAsync("You are not whitelisted on this server\nContact server administrator");
                 return;
             }
 
-            Player = new Player(this.cachedUser.Id, loginStart.Username, this, world);
+            Player = new Player(this.cachedUser.Uuid, loginStart.Username, this, world);
             packetCryptography.GenerateKeyPair();
 
             var (publicKey, randomToken) = packetCryptography.GeneratePublicKeyAndToken();
@@ -487,7 +487,7 @@ public sealed class Client : IDisposable
         }
 
         var serverId = sharedKey.Concat(packetCryptography.PublicKey).MinecraftShaDigest();
-        if (await this.userCache.HasJoinedAsync(Player.Username, serverId) is not MojangUser user)
+        if (await this.userCache.HasJoinedAsync(Player.Username, serverId) is not MojangProfile user)
         {
             Logger.LogWarning("Failed to auth {Username}", Player.Username);
             await DisconnectAsync("Unable to authenticate...");
