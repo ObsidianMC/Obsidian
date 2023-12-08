@@ -168,7 +168,7 @@ public sealed class Client : IDisposable
     /// </summary>
     public string? Brand { get; set; }
 
-    public Client(ConnectionContext connectionContext, int playerId, 
+    public Client(ConnectionContext connectionContext, int playerId,
         ILoggerFactory loggerFactory, IUserCache playerCache,
         Server server)
     {
@@ -416,7 +416,7 @@ public sealed class Client : IDisposable
         var username = this.server.Configuration.MulitplayerDebugMode ? $"Player{Globals.Random.Next(1, 999)}" : loginStart.Username;
         var world = (World)this.server.DefaultWorld;
 
-        Logger.LogDebug("Received login request from user {Username}", loginStart.Username);
+        Logger.LogDebug("Received login request from user {Username}:{uuid}", loginStart.Username, loginStart.PlayerUuid);
         await this.server.DisconnectIfConnectedAsync(username);
 
         if (this.server.Configuration.OnlineMode)
@@ -556,6 +556,17 @@ public sealed class Client : IDisposable
         await SendPlayerListDecoration();
         await SendPlayerInfoAsync();
         await this.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
+
+        Player.TeleportId = Globals.Random.Next(0, 999);
+        await QueuePacketAsync(new SynchronizePlayerPositionPacket
+        {
+            Position = Player.Position,
+            Yaw = 0,
+            Pitch = 0,
+            Flags = PositionFlags.None,
+            TeleportId = Player.TeleportId
+        });
+
         await Player.UpdateChunksAsync(distance: 7);
         await SendInfoAsync();
         await this.server.Events.PlayerJoin.InvokeAsync(new PlayerJoinEventArgs(Player, this.server, DateTimeOffset.Now));
@@ -566,17 +577,8 @@ public sealed class Client : IDisposable
     {
         if (Player is null)
             throw new UnreachableException("Player is null, which means the client has not yet logged in.");
-
-        Player.TeleportId = Globals.Random.Next(0, 999);
+        
         await QueuePacketAsync(new SetDefaultSpawnPositionPacket(Player.world.LevelData.SpawnPosition));
-        await QueuePacketAsync(new SynchronizePlayerPositionPacket
-        {
-            Position = Player.Position,
-            Yaw = 0,
-            Pitch = 0,
-            Flags = PositionFlags.None,
-            TeleportId = Player.TeleportId
-        });
 
         await SendTimeUpdateAsync();
         await SendWeatherUpdateAsync();
