@@ -20,7 +20,7 @@ public sealed class UserCache(HttpClient httpClient, ILogger<UserCache> logger) 
     private readonly FileInfo cacheFile = new("usercache.json");
     private readonly ILogger<UserCache> logger = logger;
 
-    private List<CachedProfile> cachedUsers = default!;
+    private List<CachedProfile> cachedUsers = new();
 
     public async Task<CachedProfile?> GetCachedUserFromNameAsync(string username)
     {
@@ -81,9 +81,9 @@ public sealed class UserCache(HttpClient httpClient, ILogger<UserCache> logger) 
     {
         await using var sw = cacheFile.Open(FileMode.Truncate, FileAccess.Write);
 
-        await JsonSerializer.SerializeAsync(sw, cachedUsers, Globals.JsonOptions);
+        await JsonSerializer.SerializeAsync(sw, cachedUsers, Globals.JsonOptions, cancellationToken);
 
-        await sw.FlushAsync();
+        await sw.FlushAsync(cancellationToken);
     }
 
     public async Task LoadAsync(CancellationToken cancellationToken = default)

@@ -416,7 +416,7 @@ public sealed class Client : IDisposable
         var username = this.server.Configuration.MulitplayerDebugMode ? $"Player{Globals.Random.Next(1, 999)}" : loginStart.Username;
         var world = (World)this.server.DefaultWorld;
 
-        Logger.LogDebug("Received login request from user {Username}}", loginStart.Username);
+        Logger.LogDebug("Received login request from user {Username}", username);
         await this.server.DisconnectIfConnectedAsync(username);
 
         if (this.server.Configuration.OnlineMode)
