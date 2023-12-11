@@ -2,7 +2,7 @@
 
 namespace Obsidian.Utilities.Mojang;
 
-public sealed class MojangUser
+public sealed class MojangProfile
 {
     public required Guid Id { get; init; }
 
@@ -15,11 +15,11 @@ public sealed class MojangUser
     public List<SkinProperty>? Properties { get; init; }
 }
 
-public sealed class CachedUser
+public sealed class CachedProfile
 {
     public required string Name { get; set; }
 
-    public required Guid Id { get; init; }
+    public required Guid Uuid { get; init; }
 
     public DateTimeOffset ExpiresOn { get; set; }
 

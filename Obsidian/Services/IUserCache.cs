@@ -1,4 +1,5 @@
-﻿using Obsidian.Entities;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.Entities;
 using Obsidian.Utilities.Mojang;
 using System.Diagnostics;
 using System.IO;
@@ -10,94 +11,79 @@ using System.Threading;
 using System.Web;
 
 namespace Obsidian.Services;
-public sealed class UserCache(HttpClient httpClient) : IUserCache
+public sealed class UserCache(HttpClient httpClient, ILogger<UserCache> logger) : IUserCache
 {
     private const string userWithNameEndpoint = "https://api.mojang.com/users/profiles/minecraft/";
     private const string userWithIdEndpoint = "https://sessionserver.mojang.com/session/minecraft/profile/";
     private const string verifySessionEndpoint = "https://sessionserver.mojang.com/session/minecraft/hasJoined";
 
     private readonly FileInfo cacheFile = new("usercache.json");
+    private readonly ILogger<UserCache> logger = logger;
 
-    private ConcurrentDictionary<Guid, CachedUser> cachedUsers;
+    private List<CachedProfile> cachedUsers = new();
 
-    public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new ();
-
-    public async Task<CachedUser?> GetCachedUserFromNameAsync(string username)
+    public async Task<CachedProfile?> GetCachedUserFromNameAsync(string username)
     {
         var escapedUsername = Sanitize(username);
 
-        CachedUser? cachedUser;
-        if (cachedUsers.Any(x => x.Value.Name == username))
-        {
-            cachedUser = cachedUsers.First(x => x.Value.Name == username).Value;
+        var cachedUser = this.cachedUsers.FirstOrDefault(x => x.Name == username);
+        if (cachedUser != null && !cachedUser.Expired)
+            return cachedUser;
 
-            if (!cachedUser.Expired)
-                return cachedUser;
-        }
-
-        var user = await httpClient.GetFromJsonAsync<MojangUser>($"{userWithNameEndpoint}{escapedUsername}", Globals.JsonOptions);
+        var user = await httpClient.GetFromJsonAsync<MojangProfile>($"{userWithNameEndpoint}{escapedUsername}", Globals.JsonOptions);
 
         if (user is null)
             return null;
 
-        if (cachedUsers.TryGetValue(user.Id, out cachedUser))
-        {
-            if (cachedUser.Expired)
-            {
-                cachedUser.ExpiresOn = DateTimeOffset.UtcNow.AddMonths(1);
-                cachedUser.Name = user.Name;
-            }
-
-            return cachedUser;
-        }
-
         cachedUser = new()
         {
-            Id = user.Id,
+            Uuid = user.Id,
             Name = user.Name,
             ExpiresOn = DateTimeOffset.UtcNow.AddMonths(1)
         };
 
-        cachedUsers.TryAdd(cachedUser.Id, cachedUser);
+        cachedUsers.Add(cachedUser);
 
         return cachedUser;
     }
 
-    public async Task<CachedUser> GetCachedUserFromUuidAsync(Guid uuid)
+    public async Task<CachedProfile> GetCachedUserFromUuidAsync(Guid uuid)
     {
-        if (cachedUsers.TryGetValue(uuid, out var user) && !user.Expired)
-            return user;
+        var cachedUser = this.cachedUsers.FirstOrDefault(x => x.Uuid == uuid);
+        if (cachedUser != null && !cachedUser.Expired)
+            return cachedUser;
 
         var escapedUuid = Sanitize(uuid.ToString("N"));
 
-        var mojangUser = await httpClient.GetFromJsonAsync<MojangUser>($"{userWithIdEndpoint}{escapedUuid}", Globals.JsonOptions) ?? throw new UnreachableException();
-        user = new()
+        var mojangProfile = await httpClient.GetFromJsonAsync<MojangProfile>($"{userWithIdEndpoint}{escapedUuid}", Globals.JsonOptions) ?? throw new UnreachableException();
+
+        cachedUser = new()
         {
-            Name = mojangUser!.Name,
-            Id = uuid,
+            Name = mojangProfile!.Name,
+            Uuid = uuid,
             ExpiresOn = DateTimeOffset.UtcNow.AddMonths(1)
         };
 
-        cachedUsers.TryAdd(uuid, user);
+        cachedUsers.Add(cachedUser);
 
-        return user;
+        return cachedUser;
     }
 
-    public async Task<MojangUser?> HasJoinedAsync(string username, string serverId)
+    public async Task<MojangProfile?> HasJoinedAsync(string username, string serverId)
     {
         var escapedUsername = Sanitize(username);
         var escapedServerId = Sanitize(serverId);
 
-        return await httpClient.GetFromJsonAsync<MojangUser>($"{verifySessionEndpoint}?username={escapedUsername}&serverId={escapedServerId}", Globals.JsonOptions);
+        return await httpClient.GetFromJsonAsync<MojangProfile>($"{verifySessionEndpoint}?username={escapedUsername}&serverId={escapedServerId}", Globals.JsonOptions);
     }
 
     public async Task SaveAsync(CancellationToken cancellationToken = default)
     {
         await using var sw = cacheFile.Open(FileMode.Truncate, FileAccess.Write);
 
-        await JsonSerializer.SerializeAsync(sw, cachedUsers, Globals.JsonOptions);
+        await JsonSerializer.SerializeAsync(sw, cachedUsers, Globals.JsonOptions, cancellationToken);
 
-        await sw.FlushAsync();
+        await sw.FlushAsync(cancellationToken);
     }
 
     public async Task LoadAsync(CancellationToken cancellationToken = default)
@@ -107,8 +93,7 @@ public sealed class UserCache(HttpClient httpClient) : IUserCache
         if (sr.Length == 0)
             return;
 
-        var userCache = await JsonSerializer.DeserializeAsync<Dictionary<Guid, CachedUser>>(sr, Globals.JsonOptions, cancellationToken);
-
+        var userCache = await JsonSerializer.DeserializeAsync<List<CachedProfile>>(sr, Globals.JsonOptions, cancellationToken);
         if (userCache is null)
             return;
 
@@ -120,13 +105,11 @@ public sealed class UserCache(HttpClient httpClient) : IUserCache
 
 public interface IUserCache
 {
-    public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; }
+    public Task<CachedProfile?> GetCachedUserFromNameAsync(string username);
 
-    public Task<CachedUser?> GetCachedUserFromNameAsync(string username);
+    public Task<CachedProfile> GetCachedUserFromUuidAsync(Guid uuid);
 
-    public Task<CachedUser> GetCachedUserFromUuidAsync(Guid uuid);
-
-    public Task<MojangUser?> HasJoinedAsync(string username, string serverId);
+    public Task<MojangProfile?> HasJoinedAsync(string username, string serverId);
 
     public Task SaveAsync(CancellationToken cancellationToken = default);
 
