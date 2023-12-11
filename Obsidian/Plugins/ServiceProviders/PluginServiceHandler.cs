@@ -2,17 +2,23 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Plugins;
 using System.Reflection;
+using System.Xml.Schema;
 
 namespace Obsidian.Plugins.ServiceProviders;
 
 public static class PluginServiceHandler
 {
+    private static readonly Type pluginBaseType = typeof(PluginBase);
+
     public static void InjectServices(IServiceProvider provider, PluginContainer container, ILogger logger, ILoggerProvider loggerProvider) =>
         InjectServices(provider, container.Plugin, container, logger, loggerProvider);
 
     public static void InjectServices(IServiceProvider provider, object target, PluginContainer container, ILogger logger, ILoggerProvider loggerProvider)
     {
-        PropertyInfo[] properties = target.GetType().GetProperties();
+        var properties = target.GetType()
+            .GetProperties()
+            .Where(x => x.GetCustomAttribute<InjectAttribute>() != null && !x.PropertyType.IsAssignableTo(pluginBaseType));
+
         foreach (var property in properties)
             InjectService(provider, new() { Property = property, Target = target }, container.Info.Name, logger, loggerProvider);
     }
@@ -21,12 +27,6 @@ public static class PluginServiceHandler
     {
         var property = injectable.Property;
         var target = injectable.Target;
-
-        if (property.GetCustomAttribute<InjectAttribute>() == null)
-            return;
-
-        if (property.PropertyType.IsAssignableTo(typeof(PluginBase)))
-            return;
 
         if (property.GetValue(injectable.Target) != null)
             return;
@@ -42,10 +42,9 @@ public static class PluginServiceHandler
 
             property.SetValue(target, service);
         }
-        catch
+        catch(Exception ex)
         {
-            logger?.LogError("Failed injecting into {pluginName}.{propertyName} property, because {propertyType} is not a valid service.", pluginName,
-               property.Name, property.PropertyType);
+            logger?.LogError(ex, "Failed to inject service.");
         }
     }
 }

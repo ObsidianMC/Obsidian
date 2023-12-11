@@ -133,7 +133,7 @@ public sealed class PluginManager
             return plugin;
         }
 
-        //Inject first wave of services (services initialized by obsidian e.x ILogger, IServerConfiguration)
+        //Inject first wave of services (services initialized by obsidian e.x IServerConfiguration)
         PluginServiceHandler.InjectServices(this.serverProvider, plugin, this.logger, this.loggerProvider);
 
         plugin.RegisterDependencies(this, logger);

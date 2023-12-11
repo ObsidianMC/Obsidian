@@ -10,7 +10,9 @@ public sealed class CompiledPluginProvider : IPluginProvider
     public PluginContainer GetPlugin(string path, ILogger logger)
     {
         var loadContext = new PluginLoadContext(Path.GetFileNameWithoutExtension(path) + "LoadContext", path);
-        var assembly = loadContext.LoadFromAssemblyPath(Path.Combine(Directory.GetCurrentDirectory(), path));
+        using var pluginStream = new FileStream(path, FileMode.Open);
+
+        var assembly = loadContext.LoadFromStream(pluginStream);
 
         return HandlePlugin(loadContext, assembly, path, logger);
     }
@@ -20,7 +22,7 @@ public sealed class CompiledPluginProvider : IPluginProvider
         Type? pluginType = assembly.GetTypes().FirstOrDefault(type => type.IsSubclassOf(typeof(PluginBase)));
 
         PluginBase? plugin;
-        if (pluginType == null || pluginType.GetConstructor(Array.Empty<Type>()) == null)
+        if (pluginType == null || pluginType.GetConstructor([]) == null)
         {
             plugin = default;
             logger?.LogError("Loaded assembly contains no type implementing PluginBase with public parameterless constructor.");

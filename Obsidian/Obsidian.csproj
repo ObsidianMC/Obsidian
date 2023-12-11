@@ -68,6 +68,9 @@
 
 	<ItemGroup>
 		<Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
+		<Compile Remove="Plugins\Services\**" />
+		<EmbeddedResource Remove="Plugins\Services\**" />
+		<None Remove="Plugins\Services\**" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -120,6 +123,5 @@
 
 	<ItemGroup>
 		<Folder Include="Net\Packets\Configuration\Serverbound\" />
-		<Folder Include="Plugins\Services\" />
 	</ItemGroup>
 </Project>
