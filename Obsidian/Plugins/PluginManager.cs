@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Obsidian.API.Logging;
 using Obsidian.Commands.Framework;
 using Obsidian.Events;
 using Obsidian.Hosting;
-using Obsidian.Hosting.Logging;
 using Obsidian.Plugins.PluginProviders;
 using Obsidian.Plugins.ServiceProviders;
 using Obsidian.Registries;

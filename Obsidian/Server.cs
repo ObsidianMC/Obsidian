@@ -65,7 +65,7 @@ public sealed partial class Server : IServer
     private readonly RconServer _rconServer;
     private readonly IUserCache userCache;
     private readonly ILogger _logger;
-    private readonly IServiceProvider provider;
+    private readonly IServiceProvider serviceProvider;
 
     private IConnectionListener? _tcpListener;
 
@@ -97,13 +97,13 @@ public sealed partial class Server : IServer
     /// Creates a new instance of <see cref="Server"/>.
     /// </summary>
     public Server(
-        IServiceProvider provider,
         IHostApplicationLifetime lifetime,
         IServerEnvironment environment,
         ILoggerFactory loggerFactory,
         IWorldManager worldManager,
         RconServer rconServer,
-        IUserCache playerCache)
+        IUserCache playerCache,
+        IServiceProvider serviceProvider)
     {
         Configuration = environment.Configuration;
         _logger = loggerFactory.CreateLogger<Server>();
@@ -111,7 +111,8 @@ public sealed partial class Server : IServer
         _cancelTokenSource = CancellationTokenSource.CreateLinkedTokenSource(lifetime.ApplicationStopping);
         _cancelTokenSource.Token.Register(() => _logger.LogWarning("Obsidian is shutting down..."));
         _rconServer = rconServer;
-        this.provider = provider;
+
+        this.serviceProvider = serviceProvider;
 
         Port = Configuration.Port;
 
@@ -121,7 +122,7 @@ public sealed partial class Server : IServer
         _logger.LogDebug(message: "Initializing command handler...");
         CommandsHandler = new CommandHandler();
 
-        PluginManager = new PluginManager(this.provider, Events, this, _logger, CommandsHandler);
+        PluginManager = new PluginManager(this.serviceProvider, this.Events, this, _logger, CommandsHandler);
         CommandsHandler.LinkPluginManager(PluginManager);
 
         _logger.LogDebug("Registering commands...");
@@ -274,8 +275,6 @@ public sealed partial class Server : IServer
 
         CommandsRegistry.Register(this);
 
-        PluginManager.ServerReady();
-
         var serverTasks = new List<Task>()
         {
             AcceptClientsAsync(),
@@ -292,6 +291,8 @@ public sealed partial class Server : IServer
         //Wait for worlds to load
         while (!this.WorldManager.ReadyToJoin && !this._cancelTokenSource.IsCancellationRequested)
             continue;
+
+        this.PluginManager.ServerReady();
 
         _logger.LogInformation("Listening for new clients...");
 
