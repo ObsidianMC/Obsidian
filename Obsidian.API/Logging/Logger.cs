@@ -1,16 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
-<<<<<<<< HEAD:Obsidian/Hosting/Logging/Logger.cs
-
-namespace Obsidian.Hosting.Logging;
-public class Logger : ILogger<Server>
-========
 using Obsidian.API.Utilities;
 using System.Diagnostics;
 
 namespace Obsidian.API.Logging;
 
 public class Logger : ILogger
->>>>>>>> master:Obsidian.API/Logging/Logger.cs
 {
     protected static readonly object _lock = new();
 
@@ -24,7 +18,7 @@ public class Logger : ILogger
         Prefix = prefix;
     }
 
-    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
     {
         if (!IsEnabled(logLevel))
             return;
@@ -40,7 +34,7 @@ public class Logger : ILogger
             LogLevel.Error => ChatColor.DarkRed,
             LogLevel.Critical => ChatColor.Red,
             _ => ChatColor.Gray,
-        }).ConsoleColor!.Value;
+        }).ConsoleColor.Value;
 
         var level = logLevel switch
         {
@@ -70,13 +64,8 @@ public class Logger : ILogger
         var lines = message.Split('\n');
 
         if (message.IsNullOrEmpty())
-<<<<<<<< HEAD:Obsidian/Hosting/Logging/Logger.cs
         {
-            this.LogTrace($"Empty log message sent. Dumping stacktrace:\n{new System.Diagnostics.StackTrace().ToString().Replace("\n", "            ")}");
-========
-        { 
             this.LogTrace($"Empty log message sent. Dumping stacktrace:\n{new StackTrace().ToString().Replace("\n", "            ")}");
->>>>>>>> master:Obsidian.API/Logging/Logger.cs
             return;
         }
 
@@ -93,10 +82,5 @@ public class Logger : ILogger
 
     public bool IsEnabled(LogLevel logLevel) => logLevel >= MinimumLevel;
 
-<<<<<<<< HEAD:Obsidian/Hosting/Logging/Logger.cs
-    public IDisposable BeginScope<TState>(TState state) where TState : notnull 
-        => throw new NotImplementedException();
-========
     public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
->>>>>>>> master:Obsidian.API/Logging/Logger.cs
 }
