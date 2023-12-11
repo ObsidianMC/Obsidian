@@ -36,14 +36,16 @@ internal sealed class Assets
             { "dimensions", ParseCodec(files.GetJsonFromArray("dimensions")) },
             { "biomes", ParseCodec(files.GetJsonFromArray("biomes")) },
             { "chat_type", ParseCodec(files.GetJsonFromArray("chat_type")) },
-            { "damage_type", ParseCodec(files.GetJsonFromArray("damage_type")) }
+            { "damage_type", ParseCodec(files.GetJsonFromArray("damage_type")) },
+            { "trim_pattern", ParseCodec(files.GetJsonFromArray("trim_pattern")) },
+            { "trim_material", ParseCodec(files.GetJsonFromArray("trim_material")) }
         };
     }
 
     private static Codec[] ParseCodec(string json)
     {
         if (json is null)
-            return Array.Empty<Codec>();
+            return [];
 
         using var document = JsonDocument.Parse(json);
 
@@ -75,7 +77,7 @@ internal sealed class Assets
     public static Fluid[] GetFluids(string? json)
     {
         if (json is null)
-            return Array.Empty<Fluid>();
+            return [];
 
         var fluids = new List<Fluid>();
         using var document = JsonDocument.Parse(json);
@@ -95,7 +97,7 @@ internal sealed class Assets
     public static Block[] GetBlocks(string? json)
     {
         if (json is null)
-            return Array.Empty<Block>();
+            return [];
 
         var blocks = new List<Block>();
         using var document = JsonDocument.Parse(json);
@@ -127,7 +129,7 @@ internal sealed class Assets
     private static Item[] GetItems(string? json)
     {
         if (json is null)
-            return Array.Empty<Item>();
+            return [];
 
         var items = new List<Item>();
         using var document = JsonDocument.Parse(json);
@@ -143,7 +145,7 @@ internal sealed class Assets
     public static Tag[] GetTags(string? json, Block[] blocks, Fluid[] fluids)
     {
         if (json is null)
-            return Array.Empty<Tag>();
+            return [];
 
         var taggables = new Dictionary<string, ITaggable>();
         foreach (Block block in blocks)

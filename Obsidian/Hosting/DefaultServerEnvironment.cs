@@ -87,7 +87,7 @@ public sealed class DefaultServerEnvironment : IServerEnvironment
 
         if (configFile.Exists)
         {
-            using var configFileStream = configFile.OpenRead();
+            await using var configFileStream = configFile.OpenRead();
             return await configFileStream.FromJsonAsync<ServerConfiguration>()
                 ?? throw new Exception("Server config file exists, but is invalid. Is it corrupt?");
         }
@@ -117,7 +117,7 @@ public sealed class DefaultServerEnvironment : IServerEnvironment
 
         if (worldsFile.Exists)
         {
-            using var worldsFileStream = worldsFile.OpenRead();
+            await using var worldsFileStream = worldsFile.OpenRead();
             return await worldsFileStream.FromJsonAsync<List<ServerWorld>>()
                 ?? throw new Exception("A worlds file does exist, but is invalid. Is it corrupt?");
         }
@@ -134,7 +134,7 @@ public sealed class DefaultServerEnvironment : IServerEnvironment
                 }
             };
 
-        using var fileStream = worldsFile.Create();
+        await using var fileStream = worldsFile.Create();
         await worlds.ToJsonAsync(fileStream);
 
         return worlds;

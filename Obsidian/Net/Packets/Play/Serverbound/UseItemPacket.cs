@@ -12,11 +12,11 @@ public partial class UseItemPacket : IServerboundPacket
     [Field(1), VarLength]
     public int Sequence { get; private set; }
 
-    public int Id => 0x32;
+    public int Id => 0x36;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
-        await server.Events.PlayerInteract.InvokeAsync(new PlayerInteractEventArgs(player)
+        await server.Events.PlayerInteract.InvokeAsync(new PlayerInteractEventArgs(player, server)
         {
             Item = this.Hand == Hand.MainHand ? player.GetHeldItem() : player.GetOffHandItem(),
             Hand = this.Hand,

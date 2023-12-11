@@ -22,8 +22,8 @@ public static class Globals
             {
                 new CraftingTypeConverter(),
                 new IngredientConverter(),
-                new DefaultEnumConverter<EHoverAction>(),
-                new DefaultEnumConverter<EClickAction>(),
+                new DefaultEnumConverter<HoverAction>(),
+                new DefaultEnumConverter<ClickAction>(),
                 new DefaultEnumConverter<CraftingBookCategory>(),
                 new DefaultEnumConverter<CookingBookCategory>(),
                 new RecipesConverter(),
@@ -32,13 +32,6 @@ public static class Globals
             },
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
-}
-
-public sealed class SnakeCaseNamingPolicy : JsonNamingPolicy
-{
-    public static SnakeCaseNamingPolicy Instance { get; } = new SnakeCaseNamingPolicy();
-
-    public override string ConvertName(string name) => name.ToSnakeCase();
 }
 
 file class GuidJsonConverter : JsonConverter<Guid>

@@ -84,8 +84,8 @@ public readonly struct BoundingBox : IEquatable<BoundingBox>
 
     public VectorF[] GetCorners()
     {
-        return new[]
-        {
+        return
+        [
                 new VectorF(Min.X, Max.Y, Max.Z),
                 new VectorF(Max.X, Max.Y, Max.Z),
                 new VectorF(Max.X, Min.Y, Max.Z),
@@ -94,7 +94,7 @@ public readonly struct BoundingBox : IEquatable<BoundingBox>
                 new VectorF(Max.X, Max.Y, Min.Z),
                 new VectorF(Max.X, Min.Y, Min.Z),
                 new VectorF(Min.X, Min.Y, Min.Z)
-            };
+            ];
     }
 
     public override bool Equals(object? obj) => (obj is BoundingBox box) && this.Equals(box);

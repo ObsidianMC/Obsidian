@@ -7,12 +7,12 @@ internal sealed class ObsidianHostingService : BackgroundService
 {
     private readonly IHostApplicationLifetime _lifetime;
     private readonly IServerEnvironment _environment;
-    private readonly Server _server;
+    private readonly IServer _server;
     private readonly ILogger _logger;
 
     public ObsidianHostingService(
         IHostApplicationLifetime lifetime,
-        Server server,
+        IServer server,
         IServerEnvironment env,
         ILogger<ObsidianHostingService> logger)
     {

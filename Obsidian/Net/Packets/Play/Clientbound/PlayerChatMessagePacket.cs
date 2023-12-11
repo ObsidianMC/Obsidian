@@ -3,21 +3,22 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
+//TODO this changed implement later
 public partial class PlayerChatMessagePacket : IClientboundPacket
 {
     [Field(0)]
     public required PlayerChatMessageHeader Header { get; init; }
 
-    [Field(1), VarLength]
-    public required List<PreviousMessage> PreviousMessages { get; init; }
-
-    [Field(2)]
+    [Field(1)]
     public required PlayerChatMessageBody Body { get; init; }
+
+    [Field(2), VarLength]
+    public required List<PreviousMessage> PreviousMessages { get; init; }
 
     [Field(3)]
     public required PlayerChatMessageNetworkTarget NetworkTarget { get; init; }
 
-    public int Id => 0x35;
+    public int Id => 0x37;
 
     public void Serialize(MinecraftStream stream)
     {

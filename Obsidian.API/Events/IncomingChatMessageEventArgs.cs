@@ -21,7 +21,8 @@ public class IncomingChatMessageEventArgs : PlayerEventArgs, ICancellable
     /// <param name="player">The player which sent the message.</param>
     /// <param name="message">The message which was sent.</param>
     /// <param name="format">Any formatting appied to the message.</param>
-    public IncomingChatMessageEventArgs(IPlayer player, string message, string format) : base(player)
+    /// <param name="server">The server this took place in.</param>
+    public IncomingChatMessageEventArgs(IPlayer player, IServer server, string message, string format) : base(player, server)
     {
         this.Message = message;
         this.Format = format;

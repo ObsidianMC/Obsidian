@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.Net.WindowProperties;
 
-public class BeaconWindowProperty : IWindowProperty
+public sealed class BeaconWindowProperty : IWindowProperty
 {
     public short Property { get; }
 

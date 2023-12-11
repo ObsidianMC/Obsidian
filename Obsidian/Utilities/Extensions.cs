@@ -1,21 +1,22 @@
-﻿using Obsidian.Entities;
+﻿using Microsoft.AspNetCore.Connections;
+using Obsidian.Entities;
+using Obsidian.Net;
+using Obsidian.Net.Packets;
 using Obsidian.Registries;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq.Expressions;
-using System.Numerics;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading;
-
 #nullable enable
 
 namespace Obsidian.Utilities;
 
 public static partial class Extensions
 {
-    internal readonly static EntityType[] nonLiving = new[] { EntityType.Arrow,
+    internal readonly static EntityType[] nonLiving = [ EntityType.Arrow,
                 EntityType.SpectralArrow,
                 EntityType.Boat,
                 EntityType.DragonFireball,
@@ -49,9 +50,15 @@ public static partial class Extensions
                 EntityType.Potion,
                 EntityType.Trident,
                 EntityType.FishingBobber,
-                EntityType.EyeOfEnder};
+                EntityType.EyeOfEnder];
 
-
+    public static void WritePacketId(this IPacket packet, MinecraftStream stream)
+    {
+        stream.Lock.Wait();
+        stream.WriteVarInt(packet.Id.GetVarIntLength());
+        stream.WriteVarInt(packet.Id);
+        stream.Lock.Release();
+    }
 
     public static ParameterExpression[] GetParamExpressions(this Type[] types) => types.Select((t, i) => Expression.Parameter(t, $"param{i}")).ToArray();
 
@@ -84,6 +91,12 @@ public static partial class Extensions
         }
     }
 
+    // Just to make stuff easier.
+    public static bool IsConnected(this ConnectionContext context)
+    {
+        return !context.ConnectionClosed.IsCancellationRequested;
+    }
+    
     // Derived from https://gist.github.com/ammaraskar/7b4a3f73bee9dc4136539644a0f27e63
     [SuppressMessage("Roslyn", "CA5350", Justification = "SHA1 is required by the Minecraft protocol.")]
     public static string MinecraftShaDigest(this IEnumerable<byte> data)
@@ -92,7 +105,7 @@ public static partial class Extensions
         // Reverse the bytes since BigInteger uses little endian
         Array.Reverse(hash);
 
-        var b = new BigInteger(hash);
+        var b = new System.Numerics.BigInteger(hash);
         // very annoyingly, BigInteger in C# tries to be smart and puts in
         // a leading 0 when formatting as a hex number to allow roundtripping
         // of negative numbers, thus we have to trim it off.

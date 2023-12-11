@@ -5,14 +5,16 @@ namespace Obsidian;
 public sealed class ScoreboardManager : IScoreboardManager
 {
     private readonly Server server;
+    private readonly ILogger logger;
 
-    internal readonly HashSet<string> scoreboards = new HashSet<string>();
+    internal readonly HashSet<string> scoreboards = new();
 
     public IScoreboard DefaultScoreboard { get; }
 
-    public ScoreboardManager(Server server)
+    public ScoreboardManager(Server server, ILoggerFactory loggerFactory)
     {
         this.server = server;
+        this.logger = loggerFactory.CreateLogger<ScoreboardManager>();
 
         this.DefaultScoreboard = this.CreateScoreboard("default");
     }
@@ -20,7 +22,7 @@ public sealed class ScoreboardManager : IScoreboardManager
     public IScoreboard CreateScoreboard(string name)
     {
         if (!this.scoreboards.Add(name))
-            this.server.Logger.LogWarning($"Scoreboard with the name: {name} already exists. This might cause some issues and override already existing scoreboards displaying on clients.");
+            this.logger.LogWarning("Scoreboard with the name: {name} already exists. This might cause some issues and override already existing scoreboards displaying on clients.", name);
 
         return new Scoreboard(name, this.server);
     }

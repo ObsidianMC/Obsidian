@@ -7,7 +7,7 @@ public class PlayerJoinEventArgs : PlayerEventArgs
     /// </summary>
     public DateTimeOffset JoinDate { get; }
 
-    public PlayerJoinEventArgs(IPlayer player, DateTimeOffset join) : base(player)
+    public PlayerJoinEventArgs(IPlayer player, IServer server, DateTimeOffset join) : base(player, server)
     {
         this.JoinDate = join;
     }

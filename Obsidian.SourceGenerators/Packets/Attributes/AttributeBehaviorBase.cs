@@ -14,7 +14,7 @@ internal abstract class AttributeBehaviorBase
     public AttributeBehaviorBase(AttributeSyntax attributeSyntax)
     {
         syntax = attributeSyntax;
-        arguments = attributeSyntax?.ArgumentList?.Arguments.Select(arg => arg).ToArray() ?? Array.Empty<AttributeArgumentSyntax>();
+        arguments = attributeSyntax?.ArgumentList?.Arguments.Select(arg => arg).ToArray() ?? [];
     }
 
     public virtual bool Matches(AttributeOwner other)

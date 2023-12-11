@@ -7,9 +7,9 @@ public sealed class SmithingTransformRecipeBuilder : BaseRecipeBuilder<SmithingT
     IUpgradeIngredientRecipe<SmithingTransformRecipe>,
     ITemplateIngredientRecipe<SmithingTransformRecipe>
 {
-    private Ingredient @base = new();
-    private Ingredient addition = new();
-    private Ingredient template = new();
+    private Ingredient @base = [];
+    private Ingredient addition = [];
+    private Ingredient template = [];
 
     private SmithingTransformRecipeBuilder() { }
 
@@ -55,7 +55,7 @@ public sealed class SmithingTransformRecipeBuilder : BaseRecipeBuilder<SmithingT
             Base = this.@base,
             Addition = this.addition,
             Template = template,
-            Result = this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set.")
+            Result = this.Result != null ? [this.Result] : throw new NullReferenceException("Result is not set.")
         };
     }
 }

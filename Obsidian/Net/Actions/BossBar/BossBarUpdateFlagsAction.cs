@@ -2,7 +2,7 @@
 
 namespace Obsidian.Net.Actions.BossBar;
 
-public class BossBarUpdateFlagsAction : BossBarAction
+public sealed class BossBarUpdateFlagsAction : BossBarAction
 {
     public BossBarFlags Flags { get; set; }
 

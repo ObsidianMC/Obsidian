@@ -26,7 +26,7 @@ public partial class UseItemOnPacket : IServerboundPacket
     [Field(7), VarLength]
     public int Sequence { get; private set; }
 
-    public int Id => 0x31;
+    public int Id => 0x35;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
@@ -36,15 +36,15 @@ public partial class UseItemOnPacket : IServerboundPacket
 
         var b = await player.world.GetBlockAsync(position);
 
-        if (b is not IBlock interactedBlock)
+        if (b is not IBlock)
             return;
 
-        if (TagsRegistry.Blocks.PlayersCanInteract.Entries.Contains(interactedBlock.RegistryId) && !player.Sneaking)
+        if (TagsRegistry.Blocks.PlayersCanInteract.Entries.Contains(b.RegistryId) && !player.Sneaking)
         {
-            await server.Events.PlayerInteract.InvokeAsync(new PlayerInteractEventArgs(player)
+            await server.Events.PlayerInteract.InvokeAsync(new PlayerInteractEventArgs(player, server)
             {
                 Item = currentItem,
-                Block = interactedBlock,
+                Block = b,
                 BlockLocation = this.Position,
             });
 

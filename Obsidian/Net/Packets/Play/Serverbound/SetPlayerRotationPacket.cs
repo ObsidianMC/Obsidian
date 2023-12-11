@@ -14,7 +14,7 @@ public partial class SetPlayerRotationPacket : IServerboundPacket
     [Field(2)]
     public bool OnGround { get; private set; }
 
-    public int Id => 0x16;
+    public int Id => 0x19;
 
     public SetPlayerRotationPacket()
     {

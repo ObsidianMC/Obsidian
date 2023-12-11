@@ -3,7 +3,7 @@ public sealed class ContainerClosedEventArgs : ContainerEventArgs, ICancellable
 {
     public bool IsCancelled { get; private set; }
 
-    internal ContainerClosedEventArgs(IPlayer player) : base(player)
+    internal ContainerClosedEventArgs(IPlayer player, IServer server) : base(player, server)
     {
     }
 

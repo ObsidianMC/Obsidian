@@ -1,7 +1,8 @@
 ﻿using Obsidian.API.Crafting;
+using Obsidian.API.Utilities;
 
 namespace Obsidian.Registries;
-public partial class ItemsRegistry
+public static partial class ItemsRegistry
 {
     public static Item Get(int id) => Items.Values.SingleOrDefault(x => x.Id == id);
     public static Item Get(Material mat) => Items.GetValueOrDefault(mat);

@@ -114,13 +114,12 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
     private short GetNonAirBlocks()
     {
         int validBlocksCount = 0;
-        int indexOne, indexTwo, indexThree;
 
-        if (!Palette.TryGetId(BlocksRegistry.Air, out indexOne))
+        if (!Palette.TryGetId(BlocksRegistry.Air, out var indexOne))
             goto NO_AIR;
-        if (!Palette.TryGetId(BlocksRegistry.CaveAir, out indexTwo))
+        if (!Palette.TryGetId(BlocksRegistry.CaveAir, out var indexTwo))
             goto NO_CAVE;
-        if (!Palette.TryGetId(BlocksRegistry.VoidAir, out indexThree))
+        if (!Palette.TryGetId(BlocksRegistry.VoidAir, out var indexThree))
             goto TWO_INDEXES;
 
         // 1 1 1

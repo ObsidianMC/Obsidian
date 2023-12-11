@@ -1,3 +1,4 @@
+using Obsidian.API.Utilities;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Entities;
 using Obsidian.Registries;
@@ -70,15 +71,15 @@ public class MainCommandModule
             {
                 Text = $"\n{ChatColor.Gold}{usage}",
                 ClickEvent = new ClickComponent
-                (
-                    EClickAction.SuggestCommand,
-                    usage.Contains(' ') ? $"{usage[..usage.IndexOf(' ')]} " : usage
-                ),
+                {
+                    Action = ClickAction.SuggestCommand,
+                    Value = usage.Contains(' ') ? $"{usage[..usage.IndexOf(' ')]} " : usage
+                },
                 HoverEvent = new HoverComponent
-                (
-                    EHoverAction.ShowText,
-                    $"Click to suggest the command"
-                )
+                {
+                    Action = HoverAction.ShowText,
+                    Contents = new HoverChatContent() { ChatMessage = "Click to suggest the command" }
+                }
             };
             commands.AddExtra(commandName);
 
@@ -133,13 +134,13 @@ public class MainCommandModule
             plugin.Color = colorByState;
 
             plugin.HoverEvent = new HoverComponent
-            (
-                EHoverAction.ShowText,
-                $"{colorByState}{info.Name}{ChatColor.Reset}\nVersion: {colorByState}{info.Version}{ChatColor.Reset}\nAuthor(s): {colorByState}{info.Authors}{ChatColor.Reset}"
-            );
+            {
+                Action = HoverAction.ShowText,
+                Contents = new HoverChatContent { ChatMessage = $"{colorByState}{info.Name}{ChatColor.Reset}\nVersion: {colorByState}{info.Version}{ChatColor.Reset}\nAuthor(s): {colorByState}{info.Authors}{ChatColor.Reset}" }
+            };
 
             if (pluginContainer.Info.ProjectUrl != null)
-                plugin.ClickEvent = new ClickComponent(EClickAction.OpenUrl, pluginContainer.Info.ProjectUrl.AbsoluteUri);
+                plugin.ClickEvent = new ClickComponent { Action = ClickAction.OpenUrl, Value = pluginContainer.Info.ProjectUrl.AbsoluteUri };
 
             messages.Add(plugin);
             messages.Add(new ChatMessage
@@ -275,7 +276,7 @@ public class MainCommandModule
         if (ctx.Server is not Server server || ctx.Player is not IPlayer player)
             return;
 
-        if (!server.Config.AllowOperatorRequests)
+        if (!server.Configuration.AllowOperatorRequests)
         {
             await player.SendMessageAsync("§cOperator requests are disabled on this server.");
             return;
@@ -325,17 +326,47 @@ public class MainCommandModule
         await player.SendMessageAsync($"Spawning: {type}");
     }
 
+    [Command("derp")]
+    [CommandInfo("derpy derp", "/derp")]
+    [IssuerScope(CommandIssuers.Client)]
+    public async Task DerpAsync(CommandContext ctx, string entityType)
+    {
+        // I was bored
+        if (ctx.Player is not IPlayer player)
+            return;
+
+        if (!Enum.TryParse<EntityType>(entityType, true, out var type))
+        {
+            await player.SendMessageAsync("&4Invalid entity type");
+            return;
+        }
+
+        var frogge = await player.World.SpawnEntityAsync(player.Position, type);
+        var server = (ctx.Server as Server)!;
+
+        _ = Task.Run(async () =>
+        {
+            while (true)
+            {
+                frogge.SetHeadRotation(new Angle((byte)(Random.Shared.Next(1, 255))));
+                frogge.SetRotation(new Angle((byte)(Random.Shared.Next(1, 255))), new Angle((byte)(Random.Shared.Next(1, 255))), false);
+
+                await Task.Delay(15);
+            }
+        });
+
+        server.BroadcastMessage(ChatMessage.Simple($"Spawned with entity ID {frogge.EntityId}"));
+    }
+
     [Command("stop")]
     [CommandInfo("Stops the server.", "/stop")]
     [RequirePermission(permissions: "obsidian.stop")]
-    public Task StopAsync(CommandContext ctx)
+    public async Task StopAsync(CommandContext ctx)
     {
         var server = (Server)ctx.Server;
         server.BroadcastMessage($"Stopping server...");
 
-        server.Stop();
-
-        return Task.CompletedTask;
+        await server.StopAsync();
     }
 
     [Command("time")]
@@ -417,15 +448,15 @@ public class MainCommandModule
         {
             Text = $"{ChatColor.Red}{commandUsage}",
             ClickEvent = new ClickComponent
-            (
-                EClickAction.SuggestCommand,
-                $"{commandSuggest}"
-            ),
+            {
+                Action = ClickAction.SuggestCommand,
+                Value = commandSuggest
+            },
             HoverEvent = new HoverComponent
-            (
-                EHoverAction.ShowText,
-                $"Click to suggest the command"
-            )
+            {
+                Action = HoverAction.ShowText,
+                Contents = new HoverChatContent { ChatMessage = "Click to suggest the command" }
+            }
         };
 
         var prefix = new ChatMessage

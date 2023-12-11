@@ -2,7 +2,7 @@ using System.Text;
 
 namespace Obsidian.Net.Rcon;
 
-public class RconCommandSender : ICommandSender
+public sealed class RconCommandSender : ICommandSender
 {
     public IPlayer Player => null!;
     public CommandIssuers Issuer => CommandIssuers.RemoteConsole;

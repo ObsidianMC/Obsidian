@@ -1,7 +1,9 @@
-﻿using Obsidian.API.Advancements;
+﻿using Obsidian.API;
+using Obsidian.API.Advancements;
 using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registry.Codecs.Dimensions;
+using Obsidian.API.Utilities;
 using Obsidian.Commands;
 using Obsidian.Entities;
 using Obsidian.Nbt;
@@ -12,8 +14,8 @@ using Obsidian.Net.WindowProperties;
 using Obsidian.Registries;
 using Obsidian.Serialization.Attributes;
 using System.Buffers.Binary;
-using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using System.Text.Json;
 
 namespace Obsidian.Net;
 
@@ -46,7 +48,7 @@ public partial class MinecraftStream
             await Globals.PacketLogger.LogDebugAsync($"Writing unsigned Byte (0x{value.ToString("X")})");
 #endif
 
-        await WriteAsync(new[] { value });
+        await WriteAsync([value]);
     }
 
     [WriteMethod]
@@ -332,6 +334,32 @@ public partial class MinecraftStream
     }
 
     [WriteMethod]
+    //Just for types that aren't impl yet
+    public void WriteEmptyObject(object obj)
+    {
+    }
+
+    [WriteMethod]
+    public void WriteSoundEffect(SoundEffect sound)
+    {
+        this.WriteString(JsonNamingPolicy.SnakeCaseLower.ConvertName(sound.SoundName ?? sound.SoundId.ToString()));
+
+        if (sound.HasFixedRange)
+            this.WriteFloat(sound.Range);
+    }
+
+    [WriteMethod]
+    public void WriteNbtCompound(NbtCompound compound)
+    {
+        var writer = new NbtWriter(this, true);
+
+        foreach (var (_, tag) in compound)
+            writer.WriteTag(tag);
+
+        writer.TryFinish();
+    }
+
+    [WriteMethod]
     public void WriteDateTimeOffset(DateTimeOffset date)
     {
         this.WriteLong(date.ToUnixTimeMilliseconds());
@@ -379,7 +407,58 @@ public partial class MinecraftStream
     [WriteMethod]
     public void WriteChat(ChatMessage chatMessage)
     {
-        WriteString(chatMessage.ToString(Globals.JsonOptions));
+        if (chatMessage == null)
+            return;
+
+        var writer = new NbtWriter(this, true);
+
+        this.WriteChatNbt(writer, chatMessage);
+
+        writer.EndCompound();
+        writer.TryFinish();
+    }
+
+    private void WriteChatNbt(NbtWriter writer, ChatMessage chatMessage)
+    {
+        if (!chatMessage.Text.IsNullOrEmpty())
+            writer.WriteString("text", chatMessage.Text);
+        if (!chatMessage.Translate.IsNullOrEmpty())
+            writer.WriteString("translate", chatMessage.Translate);
+        if (chatMessage.Color.HasValue)
+            writer.WriteString("color", chatMessage.Color.Value.ToString());
+        if (!chatMessage.Insertion.IsNullOrEmpty())
+            writer.WriteString("insertion", chatMessage.Insertion);
+
+        writer.WriteBool("bold", chatMessage.Bold);
+        writer.WriteBool("italic", chatMessage.Italic);
+        writer.WriteBool("underlined", chatMessage.Underlined);
+        writer.WriteBool("strikethrough", chatMessage.Strikethrough);
+        writer.WriteBool("obfuscated", chatMessage.Obfuscated);
+
+        if (chatMessage.ClickEvent != null)
+            writer.WriteTag(chatMessage.ClickEvent.ToNbt());
+        if (chatMessage.HoverEvent != null)
+            writer.WriteTag(chatMessage.HoverEvent.ToNbt());
+
+        if (chatMessage.Extra is List<ChatMessage> extras)
+        {
+            var list = new NbtList(NbtTagType.Compound, "extra");
+
+            foreach (var item in extras)
+                list.Add(item.ToNbt());
+
+            writer.WriteTag(list);
+        }
+
+        if (chatMessage.With is List<ChatMessage> extraChatComponents)
+        {
+            var list = new NbtList(NbtTagType.Compound, "with");
+
+            foreach (var item in extraChatComponents)
+                list.Add(item.ToNbt());
+
+            writer.WriteTag(list);
+        }
     }
 
     [WriteMethod]
@@ -614,7 +693,7 @@ public partial class MinecraftStream
             WriteVarInt(item.Id);
             WriteByte((sbyte)value.Count);
 
-            NbtWriter writer = new(this, string.Empty);
+            NbtWriter writer = new(this, true);
 
             ItemMeta meta = value.ItemMeta;
 
@@ -702,7 +781,7 @@ public partial class MinecraftStream
     [WriteMethod]
     public void WriteMixedCodec(MixedCodec _)
     {
-        var writer = new NbtWriter(this, "");
+        var writer = new NbtWriter(this, true);
 
         var list = new NbtList(NbtTagType.Compound, "value");
 
@@ -721,10 +800,47 @@ public partial class MinecraftStream
         this.WriteBiomeCodec(writer);
         this.WriteChatCodec(writer);
         this.WriteDamageTypeCodec(writer);
+        this.WriteTrimPatternCodec(writer);
+        this.WriteTrimMaterialCodec(writer);
 
         writer.EndCompound();
         writer.TryFinish();
     }
+
+    private void WriteTrimPatternCodec(NbtWriter writer)
+    {
+        var trimPatterns = new NbtList(NbtTagType.Compound, "value");
+
+        foreach (var (_, trimPattern) in CodecRegistry.TrimPatterns.All)
+            trimPattern.Write(trimPatterns);
+
+        var trimPatternsCompound = new NbtCompound(CodecRegistry.TrimPatterns.CodecKey)
+        {
+            new NbtTag<string>("type", CodecRegistry.TrimPatterns.CodecKey),
+
+            trimPatterns
+        };
+
+        writer.WriteTag(trimPatternsCompound);
+    }
+
+    private void WriteTrimMaterialCodec(NbtWriter writer)
+    {
+        var trimMaterials = new NbtList(NbtTagType.Compound, "value");
+
+        foreach (var (_, trimMaterial) in CodecRegistry.TrimMaterials.All)
+            trimMaterial.Write(trimMaterials);
+
+        var trimMaterialsCompound = new NbtCompound(CodecRegistry.TrimMaterials.CodecKey)
+        {
+            new NbtTag<string>("type", CodecRegistry.TrimMaterials.CodecKey),
+
+            trimMaterials
+        };
+
+        writer.WriteTag(trimMaterialsCompound);
+    }
+
 
     private void WriteDamageTypeCodec(NbtWriter writer)
     {
@@ -780,7 +896,7 @@ public partial class MinecraftStream
     [WriteMethod]
     public void WriteDimensionCodec(DimensionCodec value)
     {
-        var writer = new NbtWriter(this, "");
+        var writer = new NbtWriter(this, true);
 
         value.WriteElement(writer);
 
@@ -942,7 +1058,7 @@ public partial class MinecraftStream
             await WriteVarIntAsync(item.Id);
             await WriteByteAsync((sbyte)slot.Count);
 
-            var writer = new NbtWriter(this, "");
+            var writer = new NbtWriter(this, true);
 
             var itemMeta = slot.ItemMeta;
 
@@ -1004,7 +1120,7 @@ public partial class MinecraftStream
             writer.WriteByte("Count", (byte)slot.Count);
 
             writer.EndCompound();
-            writer.TryFinish();
+            await writer.TryFinishAsync();
         }
     }
 
@@ -1020,10 +1136,11 @@ public partial class MinecraftStream
 
             int width = patterns[0].Length, height = patterns.Count;
 
+            await WriteStringAsync(shapedRecipe.Group ?? "");
+            await WriteVarIntAsync(shapedRecipe.Category);
+
             await WriteVarIntAsync(width);
             await WriteVarIntAsync(height);
-
-            await WriteStringAsync(shapedRecipe.Group ?? "");
 
             var ingredients = new List<ItemStack>[width * height];
 
@@ -1074,6 +1191,7 @@ public partial class MinecraftStream
             var ingredients = shapelessRecipe.Ingredients;
 
             await WriteStringAsync(shapelessRecipe.Group ?? "");
+            await WriteVarIntAsync(shapelessRecipe.Category);
 
             await WriteVarIntAsync(ingredients.Count);
             foreach (var ingredient in ingredients)
@@ -1090,7 +1208,7 @@ public partial class MinecraftStream
         else if (recipe is SmeltingRecipe smeltingRecipe)
         {
             await WriteStringAsync(smeltingRecipe.Group ?? "");
-
+            await WriteVarIntAsync(smeltingRecipe.Category);
 
             await WriteVarIntAsync(smeltingRecipe.Ingredient.Count);
             foreach (var i in smeltingRecipe.Ingredient)
@@ -1149,6 +1267,16 @@ public partial class MinecraftStream
     }
 
     [WriteMethod]
+    public void WriteChunkBiomes(ChunkBiome chunkBiome)
+    {
+        this.WriteInt(chunkBiome.X);
+        this.WriteInt(chunkBiome.Z);
+
+        this.WriteVarInt(chunkBiome.Data.Length);
+        this.WriteByteArray(chunkBiome.Data);
+    }
+
+    [WriteMethod]
     public void WriteRecipes(IDictionary<string, IRecipe> recipes)
     {
         WriteVarInt(recipes.Count);
@@ -1172,7 +1300,6 @@ public partial class MinecraftStream
             WriteVarInt(height);
 
             WriteString(shapedRecipe.Group ?? string.Empty);
-
             WriteVarInt(shapedRecipe.Category);
 
             var ingredients = new List<ItemStack>[width * height];
@@ -1220,14 +1347,12 @@ public partial class MinecraftStream
             }
 
             WriteItemStack(shapedRecipe.Result.First());
-            WriteBoolean(shapedRecipe.ShowNotification);
         }
         else if (recipe is ShapelessRecipe shapelessRecipe)
         {
             var ingredients = shapelessRecipe.Ingredients;
 
             WriteString(shapelessRecipe.Group ?? string.Empty);
-
             WriteVarInt(shapelessRecipe.Category);
 
             WriteVarInt(ingredients.Count);
@@ -1245,7 +1370,6 @@ public partial class MinecraftStream
         else if (recipe is SmeltingRecipe smeltingRecipe)
         {
             WriteString(smeltingRecipe.Group ?? string.Empty);
-
             WriteVarInt(smeltingRecipe.Category);
 
             WriteVarInt(smeltingRecipe.Ingredient.Count);
@@ -1318,12 +1442,6 @@ public partial class MinecraftStream
         WriteByte(record.Z);
     }
 
-    [WriteMethod]
-    public void WriteNbtCompound(NbtCompound compound)
-    {
-        using var writer = new NbtWriter(BaseStream);
-        writer.WriteTag(compound);
-    }
 
     [WriteMethod]
     public void WriteParticleData(ParticleData value)

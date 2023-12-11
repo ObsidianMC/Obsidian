@@ -8,7 +8,7 @@ using System.Security.Cryptography;
 
 namespace Obsidian.Net;
 
-public class PacketCryptography
+public sealed class PacketCryptography
 {
     private RsaKeyPairGenerator provider;
 

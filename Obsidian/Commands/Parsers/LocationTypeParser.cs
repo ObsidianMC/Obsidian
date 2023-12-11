@@ -13,7 +13,6 @@ public class LocationTypeParser : BaseArgumentParser<VectorF>
         var splitted = input.Split(' ');
         var location = new VectorF();
 
-        var ctx = context;
         for (int i = 0; i < splitted.Length; i++)
         {
             var text = splitted[i];
@@ -34,7 +33,7 @@ public class LocationTypeParser : BaseArgumentParser<VectorF>
                 }
             else if (text.StartsWith("~"))
             {
-                if (ctx.Player is not Player player)
+                if (context.Player is not Player player)
                 {
                     result = default;
                     return false;

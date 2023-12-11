@@ -20,12 +20,11 @@ public partial class PlayerActionPacket : IServerboundPacket
     [Field(3), VarLength]
     public int Sequence { get; private set; }
 
-    public int Id => 0x1C;
+    public int Id => 0x21;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
-        IBlock? b = await player.world.GetBlockAsync(Position);
-        if (b is not IBlock block)
+        if (await player.world.GetBlockAsync(Position) is not IBlock block)
             return;
 
         if (Status == PlayerActionStatus.FinishedDigging || (Status == PlayerActionStatus.StartedDigging && player.Gamemode == Gamemode.Creative))
@@ -41,11 +40,133 @@ public partial class PlayerActionPacket : IServerboundPacket
                 return;
         }
 
-        server.BroadcastPlayerAction(new PlayerActionStore
+        this.BroadcastPlayerAction(player, block);
+    }
+
+    private void BroadcastPlayerAction(Player player, IBlock block)
+    {
+        switch (this.Status)
         {
-            Player = player.Uuid,
-            Packet = this
-        }, block);
+            case PlayerActionStatus.DropItem:
+            {
+                DropItem(player, 1);
+                break;
+            }
+            case PlayerActionStatus.DropItemStack:
+            {
+                DropItem(player, 64);
+                break;
+            }
+            case PlayerActionStatus.StartedDigging:
+            case PlayerActionStatus.CancelledDigging:
+                break;
+            case PlayerActionStatus.FinishedDigging:
+            {
+                player.PacketBroadcaster.QueuePacketToWorld(player.World, new SetBlockDestroyStagePacket
+                {
+                    EntityId = player,
+                    Position = this.Position,
+                    DestroyStage = -1
+                });
+
+                var droppedItem = ItemsRegistry.Get(block.Material);
+
+                if (droppedItem.Id == 0) { break; }
+
+                var item = new ItemEntity
+                {
+                    EntityId = player + player.world.GetTotalLoadedEntities() + 1,
+                    Count = 1,
+                    Id = droppedItem.Id,
+                    Glowing = true,
+                    World = player.world,
+                    Position = this.Position,
+                    PacketBroadcaster = player.PacketBroadcaster,
+                };
+
+                player.world.TryAddEntity(item);
+
+                player.PacketBroadcaster.QueuePacketToWorld(player.World, new SpawnEntityPacket
+                {
+                    EntityId = item.EntityId,
+                    Uuid = item.Uuid,
+                    Type = EntityType.Item,
+                    Position = item.Position,
+                    Pitch = 0,
+                    Yaw = 0,
+                    Data = 1,
+                    Velocity = Velocity.FromVector(new VectorF(
+                        Globals.Random.NextFloat() * 0.5f,
+                        Globals.Random.NextFloat() * 0.5f,
+                        Globals.Random.NextFloat() * 0.5f))
+                });
+
+                player.PacketBroadcaster.QueuePacketToWorld(player.World, new SetEntityMetadataPacket
+                {
+                    EntityId = item.EntityId,
+                    Entity = item
+                });
+                break;
+            }
+        }
+    }
+
+    private void DropItem(Player player, sbyte amountToRemove)
+    {
+        var droppedItem = player.GetHeldItem();
+
+        if (droppedItem is null or { Type: Material.Air })
+            return;
+
+        var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
+
+        var item = new ItemEntity
+        {
+            EntityId = player + player.world.GetTotalLoadedEntities() + 1,
+            Count = amountToRemove,
+            Id = droppedItem.AsItem().Id,
+            Glowing = true,
+            World = player.world,
+            PacketBroadcaster = player.PacketBroadcaster,
+            Position = loc
+        };
+
+        player.world.TryAddEntity(item);
+
+        var lookDir = player.GetLookDirection();
+
+        var vel = Velocity.FromDirection(loc, lookDir);//TODO properly shoot the item towards the direction the players looking at
+
+        player.PacketBroadcaster.QueuePacketToWorld(player.World, new SpawnEntityPacket
+        {
+            EntityId = item.EntityId,
+            Uuid = item.Uuid,
+            Type = EntityType.Item,
+            Position = item.Position,
+            Pitch = 0,
+            Yaw = 0,
+            Data = 1,
+            Velocity = vel
+        });
+        player.PacketBroadcaster.QueuePacketToWorld(player.World, new SetEntityMetadataPacket
+        {
+            EntityId = item.EntityId,
+            Entity = item
+        });
+
+        player.Inventory.RemoveItem(player.inventorySlot, amountToRemove);
+
+        player.client.SendPacket(new SetContainerSlotPacket
+        {
+            Slot = player.inventorySlot,
+
+            WindowId = 0,
+
+            SlotData = player.GetHeldItem(),
+
+            StateId = player.Inventory.StateId++
+        });
+
     }
 }
 

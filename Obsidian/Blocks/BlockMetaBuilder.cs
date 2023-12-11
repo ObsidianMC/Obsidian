@@ -3,7 +3,7 @@ using System.Collections.ObjectModel;
 
 namespace Obsidian.Blocks;
 
-public class BlockMetaBuilder
+public sealed class BlockMetaBuilder
 {
     public ChatMessage? Name { get; internal set; }
 

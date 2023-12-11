@@ -3,7 +3,7 @@ using Obsidian.Events.EventArgs;
 
 namespace Obsidian.Events;
 
-public class MinecraftEventHandler
+public sealed class MinecraftEventHandler
 {
     public AsyncEvent<PacketReceivedEventArgs> PacketReceived = new(nameof(PacketReceived), HandleException);
     public AsyncEvent<QueuePacketEventArgs> QueuePacket = new(nameof(QueuePacket), HandleException);

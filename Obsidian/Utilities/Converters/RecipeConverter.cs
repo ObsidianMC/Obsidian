@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Crafting;
+using Obsidian.API.Utilities;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -54,8 +55,7 @@ public sealed class RecipesConverter : JsonConverter<IRecipe[]>
                         Category = Enum.Parse<CraftingBookCategory>(value.GetProperty("category").GetString()!, true),
                         Key = value.GetProperty("key").Deserialize<Dictionary<char, Ingredient>>(options)!.AsReadOnly(),
                         Pattern = value.GetProperty("pattern").Deserialize<string[]>(options)!.AsReadOnly(),
-                        Result = result,
-                        ShowNotification = value.GetProperty("show_notification").GetBoolean()
+                        Result = result
                     });
                     break;
                 case CraftingType.CraftingShapeless:

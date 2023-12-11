@@ -1,4 +1,5 @@
-﻿using Obsidian.Nbt;
+﻿using Obsidian.API.Utilities;
+using Obsidian.Nbt;
 using Obsidian.WorldData;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
@@ -7,7 +8,7 @@ public partial class ChunkDataAndUpdateLightPacket : IClientboundPacket
 {
     public Chunk Chunk { get; }
 
-    public int Id => 0x24;
+    public int Id => 0x25;
 
     public ChunkDataAndUpdateLightPacket(Chunk chunk)
     {
@@ -23,7 +24,7 @@ public partial class ChunkDataAndUpdateLightPacket : IClientboundPacket
         stream.WriteInt(Chunk.Z);
 
         //Chunk.CalculateHeightmap();
-        var writer = new NbtWriter(stream, string.Empty);
+        var writer = new NbtWriter(stream, true);
         foreach (var (type, heightmap) in Chunk.Heightmaps)
             if (type == ChunkData.HeightmapType.MotionBlocking)
                 writer.WriteTag(new NbtArray<long>(type.ToString().ToSnakeCase().ToUpper(), heightmap.GetDataArray().Cast<long>()));

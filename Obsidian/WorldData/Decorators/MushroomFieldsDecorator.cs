@@ -30,7 +30,7 @@ public class MushroomFieldsDecorator : BaseDecorator
         // Flowers
         var grassNoise = noise.Decoration.GetValue(worldX * 0.1, 8, worldZ * 0.1);
         if (grassNoise > 0 && grassNoise < 0.5) // 50% chance for grass
-            chunk.SetBlock(pos + (0, 1, 0), BlocksRegistry.Grass);
+            chunk.SetBlock(pos + (0, 1, 0), BlocksRegistry.ShortGrass);
 
         var poppyNoise = noise.Decoration.GetValue(worldX * 0.03, 9, worldZ * 0.03); // 0.03 makes more groupings
         if (poppyNoise > 1)

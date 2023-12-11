@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Utilities;
 using Obsidian.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Entities;
@@ -11,7 +12,7 @@ using System.Threading;
 
 namespace Obsidian.WorldData;
 
-public class Region : IAsyncDisposable
+public class Region : IRegion
 {
     public const int CubicRegionSizeShift = 5;
     public const int CubicRegionSize = 1 << CubicRegionSizeShift;
@@ -132,33 +133,35 @@ public class Region : IAsyncDisposable
         await regionFile.SetChunkAsync(x, z, strm.ToArray());
     }
 
-    internal async Task BeginTickAsync(CancellationToken cts)
+    internal async Task BeginTickAsync(CancellationToken cts = default)
     {
-        var timer = new BalancingTimer(50, cts);
-        while (await timer.WaitForNextTickAsync())
+        //var timer = new BalancingTimer(50, cts);
+        //while (await timer.WaitForNextTickAsync())
+        //{
+           
+        //}
+
+        await Task.WhenAll(Entities.Select(entityEntry => entityEntry.Value.TickAsync()));
+
+        List<BlockUpdate> neighborUpdates = [];
+        List<BlockUpdate> delayed = [];
+
+        foreach (var pos in blockUpdates.Keys)
         {
-            await Task.WhenAll(Entities.Select(entityEntry => entityEntry.Value.TickAsync()));
-
-            List<BlockUpdate> neighborUpdates = new();
-            List<BlockUpdate> delayed = new();
-
-            foreach (var pos in blockUpdates.Keys)
+            blockUpdates.Remove(pos, out var bu);
+            if (bu.delayCounter > 0)
             {
-                blockUpdates.Remove(pos, out var bu);
-                if (bu.delayCounter > 0)
-                {
-                    bu.delayCounter--;
-                    delayed.Add(bu);
-                }
-                else
-                {
-                    bool updateNeighbor = await bu.world.HandleBlockUpdateAsync(bu);
-                    if (updateNeighbor) { neighborUpdates.Add(bu); }
-                }
+                bu.delayCounter--;
+                delayed.Add(bu);
             }
-            delayed.ForEach(i => AddBlockUpdate(i));
-            neighborUpdates.ForEach(async u => await u.world.BlockUpdateNeighborsAsync(u));
+            else
+            {
+                bool updateNeighbor = await bu.world.HandleBlockUpdateAsync(bu);
+                if (updateNeighbor) { neighborUpdates.Add(bu); }
+            }
         }
+        delayed.ForEach(i => AddBlockUpdate(i));
+        neighborUpdates.ForEach(async u => await u.world.BlockUpdateNeighborsAsync(u));
     }
 
     #region NBT Ops
@@ -229,7 +232,7 @@ public class Region : IAsyncDisposable
             {
                 var array = (NbtArray<byte>)blockLightTag;
 
-                section.SetLight(array.GetArray(), LightType.Sky);
+                section.SetLight(array.GetArray(), LightType.Block);
             }
         }
 
@@ -314,7 +317,8 @@ public class Region : IAsyncDisposable
         foreach (var (_, blockEntity) in chunk.BlockEntities)
             blockEntities.Add(blockEntity);
 
-        return new NbtCompound
+#pragma warning disable IDE0028 // Use collection initializers - Will not compile with this suggestion applied
+    return new NbtCompound
         {
             new NbtTag<int>("xPos", chunk.X),
             new NbtTag<int>("zPos", chunk.Z),
@@ -330,7 +334,8 @@ public class Region : IAsyncDisposable
             sectionsCompound,
             new NbtTag<int>("DataVersion", 3337)// Hardcoded version try to get data version through minecraft data and use data correctly
         };
-    }
+#pragma warning restore IDE0028 // Use collection initializers
+  }
     #endregion NBT Ops
 
     public async ValueTask DisposeAsync() => await regionFile.DisposeAsync();

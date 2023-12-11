@@ -9,7 +9,7 @@ public sealed class AsyncEvent<T> : IEventRegistry
     public string? Name { get; } // Name must be set in order to be visible to plugins
 
     private readonly SemaphoreSlim semaphore = new(1);
-    private readonly List<Hook<T>> hooks = new();
+    private readonly List<Hook<T>> hooks = [];
     private readonly Action<AsyncEvent<T>, Exception>? exceptionHandler;
 
     public AsyncEvent()

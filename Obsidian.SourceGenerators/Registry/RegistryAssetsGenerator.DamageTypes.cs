@@ -24,10 +24,12 @@ public partial class RegistryAssetsGenerator
 
                 if (value.ValueKind == JsonValueKind.String && name != "MessageId")
                 {
-                    if (name == "Scaling")
-                        name = "DamageScaling";
-                    else if (name == "Effects")
-                        name = "DamageEffects";
+                    name = name switch
+                    {
+                        "Scaling" => "DamageScaling",
+                        "Effects" => "DamageEffects",
+                        _ => name
+                    };
 
                     builder.Append($"{name}.{value.GetString()!.ToPascalCase()}, ");
                 }

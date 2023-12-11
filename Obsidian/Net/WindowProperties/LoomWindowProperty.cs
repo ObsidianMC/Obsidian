@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.Net.WindowProperties;
 
-public class LoomWindowProperty : IWindowProperty
+public sealed class LoomWindowProperty : IWindowProperty
 {
     public short Property { get; }
 

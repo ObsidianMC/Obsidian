@@ -4,7 +4,7 @@ using Obsidian.API.Registry.Codecs.Dimensions;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.Registries;
-public partial class CodecRegistry
+public static partial class CodecRegistry
 {
     public static bool TryGetChatType(string resourceId, [MaybeNullWhen(false)] out ChatCodec codec) =>
         ChatType.All.TryGetValue(resourceId, out codec);

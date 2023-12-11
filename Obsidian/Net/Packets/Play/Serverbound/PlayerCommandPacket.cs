@@ -15,7 +15,7 @@ public partial class PlayerCommandPacket : IServerboundPacket
     [Field(2), VarLength]
     public int JumpBoost { get; set; }
 
-    public int Id => 0x1D;
+    public int Id => 0x22;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
@@ -57,7 +57,7 @@ public partial class PlayerCommandPacket : IServerboundPacket
                 break;
         }
 
-        await server.QueueBroadcastPacketAsync(new SetEntityMetadataPacket
+        player.PacketBroadcaster.QueuePacketToWorld(player.World, new SetEntityMetadataPacket
         {
             EntityId = player.EntityId,
             Entity = player

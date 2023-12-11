@@ -80,14 +80,12 @@ public partial class BlocksGenerator
         {
             var name = property.Name.Replace("Is", string.Empty);
 
-            var method = "";
-
-            if (property.Type == "bool")
-                method = $"bool.Parse(values[{count}]);";
-            else if (property.Type == "int")
-                method = $"int.Parse(values[{count}]);";
-            else
-                method = $"Enum.Parse<{property.Type}>(values[{count}]);";
+            var method = property.Type switch
+            {
+                "bool" => $"bool.Parse(values[{count}]);",
+                "int" => $"int.Parse(values[{count}]);",
+                _ => $"Enum.Parse<{property.Type}>(values[{count}]);"
+            };
 
             stateBuilder.Line($"this.{name} = {method}");
 
@@ -105,6 +103,10 @@ public partial class BlocksGenerator
                 continue;
 
             var blockName = block.Name;
+
+            //TODO THIS NEEDS TO BE MOVED SOMEWHERE
+            if (blockName == "TrialSpawner")
+                blockName = "TrialSpawnerBlock";
 
             var fullName = $"{blockName}StateBuilder";
 

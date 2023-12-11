@@ -21,8 +21,8 @@ public class CommandHandler
     public CommandHandler()
     {
         _commandParser = new CommandParser(DefaultPrefix);
-        _commands = new List<Command>();
-        _argumentParsers = new List<BaseArgumentParser>();
+        _commands = [];
+        _argumentParsers = [];
         _prefix = DefaultPrefix;
 
         // Find all predefined argument parsers

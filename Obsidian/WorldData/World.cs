@@ -1,19 +1,28 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Registry.Codecs.Dimensions;
+using Obsidian.API.Utilities;
 using Obsidian.Blocks;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
+using Obsidian.Services;
+using System.Diagnostics;
 using System.IO;
+using System.Threading;
 
 namespace Obsidian.WorldData;
 
-public class World : IWorld, IAsyncDisposable
+public sealed class World : IWorld
 {
+    public IWorldManager WorldManager { get; }
+
     private float rainLevel = 0f;
     private bool initialized = false;
+
+    private ConcurrentDictionary<(int x, int z), (int x, int z)> moduloCache = new();
+
 
     internal Dictionary<string, World> dimensions = new();
 
@@ -23,8 +32,6 @@ public class World : IWorld, IAsyncDisposable
 
     public IWorldGenerator Generator { get; internal set; }
 
-    public Server Server { get; }
-
     public ConcurrentDictionary<long, Region> Regions { get; private set; } = new();
 
     public ConcurrentQueue<(int X, int Z)> ChunksToGen { get; private set; } = new();
@@ -33,8 +40,8 @@ public class World : IWorld, IAsyncDisposable
 
     public ConcurrentHashSet<(int X, int Z)> LoadedChunks { get; private set; } = new();
 
-    public string Name { get; }
-    public string Seed { get; }
+    public required string Name { get; init; }
+    public required string Seed { get; init; }
     public string FolderPath { get; private set; }
     public string PlayerDataPath { get; private set; }
     public string LevelDataFilePath { get; private set; }
@@ -43,6 +50,13 @@ public class World : IWorld, IAsyncDisposable
 
     public long Time => LevelData.Time;
 
+    public int RegionCount => this.Regions.Count;
+    public int ChunksToGenCount => this.ChunksToGen.Count;
+    public int LoadedChunkCount => this.Regions.Values.Sum(x => x.LoadedChunkCount);
+
+    public required IPacketBroadcaster PacketBroadcaster { get; init; }
+    public required IServerConfiguration Configuration { get; init; }
+
     public Gamemode DefaultGamemode => LevelData.DefaultGamemode;
 
     public string DimensionName { get; private set; }
@@ -50,25 +64,33 @@ public class World : IWorld, IAsyncDisposable
     public string? ParentWorldName { get; private set; }
     private WorldLight worldLight;
 
-    internal World(string name, Server server, string seed, Type generatorType)
+    private static Semaphore _regionLock;
+
+
+    /// <summary>
+    /// Used to log actions caused by the client.
+    /// </summary>
+    protected ILogger Logger { get; }
+
+    internal World(ILogger logger, Type generatorType, IWorldManager worldManager)
     {
-        Name = name ?? throw new ArgumentNullException(nameof(name));
-        Server = server;
-
-        Seed = seed ?? throw new ArgumentNullException(nameof(seed));
-
+        Logger = logger;
         Generator = Activator.CreateInstance(generatorType) as IWorldGenerator ?? throw new ArgumentException("Invalid generator type.", nameof(generatorType));
-        Generator.Init(this);
         worldLight = new(this);
+        _regionLock = new(1, 1);
+
+        this.WorldManager = worldManager;
     }
 
     public int GetTotalLoadedEntities() => Regions.Values.Sum(e => e == null ? 0 : e.Entities.Count);
 
-    public async Task<bool> DestroyEntityAsync(Entity entity)
+    public void InitGenerator() => this.Generator.Init(this);
+
+    public ValueTask<bool> DestroyEntityAsync(Entity entity)
     {
         var destroyed = new RemoveEntitiesPacket(entity);
 
-        await Server.QueueBroadcastPacketAsync(destroyed);
+        this.PacketBroadcaster.QueuePacketToWorld(this, destroyed);
 
         var (chunkX, chunkZ) = entity.Position.ToChunkCoord();
 
@@ -77,7 +99,7 @@ public class World : IWorld, IAsyncDisposable
         if (region is null)
             throw new InvalidOperationException("Region is null this wasn't supposed to happen.");
 
-        return region.Entities.TryRemove(entity.EntityId, out _);
+        return ValueTask.FromResult(region.Entities.TryRemove(entity.EntityId, out _));
     }
 
     public Region? GetRegionForLocation(VectorF location)
@@ -107,17 +129,10 @@ public class World : IWorld, IAsyncDisposable
     /// <returns>Null if the region or chunk doesn't exist yet. Otherwise the full chunk or a partial chunk.</returns>
     public async Task<Chunk?> GetChunkAsync(int chunkX, int chunkZ, bool scheduleGeneration = true)
     {
-        Region? region = GetRegionForChunk(chunkX, chunkZ);
+        Region? region = GetRegionForChunk(chunkX, chunkZ) ?? LoadRegion(chunkX >> Region.CubicRegionSizeShift, chunkZ >> Region.CubicRegionSizeShift);
 
         if (region is null)
-        {
-            region = await LoadRegionAsync(chunkX >> Region.CubicRegionSizeShift, chunkZ >> Region.CubicRegionSizeShift);
-        }
-
-        if (region is null)
-        {
             return null;
-        }
 
         var (x, z) = (NumericsHelper.Modulo(chunkX, Region.CubicRegionSize), NumericsHelper.Modulo(chunkZ, Region.CubicRegionSize));
 
@@ -196,7 +211,8 @@ public class World : IWorld, IAsyncDisposable
     public async Task SetBlockAsync(Vector location, IBlock block)
     {
         await SetBlockUntrackedAsync(location.X, location.Y, location.Z, block);
-        Server.BroadcastBlockChange(this, block, location);
+
+        this.BroadcastBlockChange(block, location);
     }
 
     public Task SetBlockAsync(int x, int y, int z, IBlock block, bool doBlockUpdate) => SetBlockAsync(new Vector(x, y, z), block, doBlockUpdate);
@@ -204,8 +220,21 @@ public class World : IWorld, IAsyncDisposable
     public async Task SetBlockAsync(Vector location, IBlock block, bool doBlockUpdate)
     {
         await SetBlockUntrackedAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
-        Server.BroadcastBlockChange(this, block, location);
+        this.BroadcastBlockChange(block, location);
     }
+
+    //TODO ?????
+    private void BroadcastBlockChange(IBlock block, Vector location)
+    {
+        var packet = new BlockUpdatePacket(location, block.GetHashCode());
+        foreach (Player player in this.PlayersInRange(location))
+        {
+            player.client.SendPacket(packet);
+        }
+    }
+
+    public IEnumerable<Player> PlayersInRange(Vector location) =>
+        this.Players.Values.Where(player => player.client.LoadedChunks.Contains(location.ToChunkCoord()));
 
     public Task SetBlockUntrackedAsync(Vector location, IBlock block, bool doBlockUpdate = false) => SetBlockUntrackedAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
 
@@ -330,8 +359,11 @@ public class World : IWorld, IAsyncDisposable
     /// <returns></returns>
     public async Task DoWorldTickAsync()
     {
-        LevelData.Time += Server.Config.TimeTickSpeedMultiplier;
-        LevelData.RainTime -= Server.Config.TimeTickSpeedMultiplier;
+        if (LevelData is null)
+            return;
+
+        LevelData.Time += this.Configuration.TimeTickSpeedMultiplier;
+        LevelData.RainTime -= this.Configuration.TimeTickSpeedMultiplier;
 
         if (LevelData.RainTime < 1)
         {
@@ -350,7 +382,7 @@ public class World : IWorld, IAsyncDisposable
             }
             LevelData.RainTime = rainTime;
 
-            Server.Logger.LogInformation($"Toggled rain: {LevelData.Raining} for {LevelData.RainTime} ticks.");
+            Logger.LogInformation("Toggled rain: {raining} for {rainTime} ticks.", LevelData.Raining, LevelData.RainTime);
         }
 
         // Gradually increase and decrease rain levels based on
@@ -364,22 +396,25 @@ public class World : IWorld, IAsyncDisposable
         if (oldLevel != rainLevel)
         {
             // send new level if updated
-            Server.BroadcastPacket(new GameEventPacket(ChangeGameStateReason.RainLevelChange, rainLevel));
+            this.PacketBroadcaster.QueuePacketToWorld(this, new GameEventPacket(ChangeGameStateReason.RainLevelChange, rainLevel));
             if (rainLevel < 0.3f && rainLevel > 0.1f)
-                Server.BroadcastPacket(new GameEventPacket(LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
+                this.PacketBroadcaster.QueuePacketToWorld(this, new GameEventPacket(LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
         }
 
-        if (LevelData.Time % (20 * Server.Config.TimeTickSpeedMultiplier) == 0)
+        if (LevelData.Time % (20 * this.Configuration.TimeTickSpeedMultiplier) == 0)
         {
             // Update client time every second / 20 ticks
-            Server.BroadcastPacket(new UpdateTimePacket(LevelData.Time, LevelData.Time % 24000));
+            this.PacketBroadcaster.QueuePacketToWorld(this, new UpdateTimePacket(LevelData.Time, LevelData.Time % 24000));
         }
 
-        // Check for chunks to load every second
-        if (LevelData.Time % 20 == 0)
-        {
-            await ManageChunksAsync();
-        }
+        //Tick regions within the world manager
+        await Task.WhenAll(this.Regions.Values.Select(r => r.BeginTickAsync()));
+
+        //// Check for chunks to load every second
+        //if (LevelData.Time % 20 == 0)
+        //{
+        //    await ManageChunksAsync();
+        //}
     }
 
     #region world loading/saving
@@ -390,7 +425,7 @@ public class World : IWorld, IAsyncDisposable
 
         Init(codec);
 
-        var dataPath = Path.Join(Server.ServerFolderPath, "worlds", ParentWorldName ?? Name, "level.dat");
+        var dataPath = Path.Combine("worlds", ParentWorldName ?? Name, "level.dat");
 
         var fi = new FileInfo(dataPath);
 
@@ -399,7 +434,7 @@ public class World : IWorld, IAsyncDisposable
 
         var reader = new NbtReader(fi.OpenRead(), NbtCompression.GZip);
 
-        var levelCompound = reader.ReadNextTag() as NbtCompound;
+        var levelCompound = (reader.ReadNextTag() as NbtCompound)!;
         LevelData = new Level()
         {
             Hardcore = levelCompound.GetBool("hardcore"),
@@ -422,10 +457,10 @@ public class World : IWorld, IAsyncDisposable
         if (levelCompound.TryGetTag("Version", out var tag))
             LevelData.VersionData = tag as NbtCompound;
 
-        Server.Logger.LogInformation($"Loading spawn chunks into memory...");
+        Logger.LogInformation($"Loading spawn chunks into memory...");
         for (int rx = -1; rx < 1; rx++)
             for (int rz = -1; rz < 1; rz++)
-                _ = await LoadRegionAsync(rx, rz);
+                LoadRegion(rx, rz);
 
         // spawn chunks are radius 12 from spawn,
         var radius = 12;
@@ -437,9 +472,10 @@ public class World : IWorld, IAsyncDisposable
         await Parallel.ForEachAsync(SpawnChunks, async (c, cts) =>
         {
             await GetChunkAsync(c.X, c.Z);
-            // Update status occasionally so we're not destroying consoleio
-            if (c.X % 5 == 0)
-                Server.UpdateStatusConsole();
+            //// Update status occasionally so we're not destroying consoleio
+            //// Removing this for now
+            //if (c.X % 5 == 0)
+            //    Server.UpdateStatusConsole();
         });
 
         Loaded = true;
@@ -457,8 +493,8 @@ public class World : IWorld, IAsyncDisposable
             worldFile.Delete();
         }
 
-        using var fs = worldFile.Create();
-        using var writer = new NbtWriter(fs, NbtCompression.GZip, "");
+        await using var fs = worldFile.Create();
+        await using var writer = new NbtWriter(fs, NbtCompression.GZip, "");
 
         writer.WriteBool("hardcore", LevelData.Hardcore);
         writer.WriteBool("MapFeatures", LevelData.MapFeatures);
@@ -496,27 +532,34 @@ public class World : IWorld, IAsyncDisposable
     }
     #endregion
 
-    public async Task<Region?> LoadRegionByChunkAsync(int chunkX, int chunkZ)
+    public Region LoadRegionByChunk(int chunkX, int chunkZ)
     {
         int regionX = chunkX >> Region.CubicRegionSizeShift, regionZ = chunkZ >> Region.CubicRegionSizeShift;
-        return await LoadRegionAsync(regionX, regionZ);
+        return LoadRegion(regionX, regionZ);
     }
 
-    public async Task<Region?> LoadRegionAsync(int regionX, int regionZ)
+    public Region LoadRegion(int regionX, int regionZ)
     {
+        _regionLock.WaitOne();
         long value = NumericsHelper.IntsToLong(regionX, regionZ);
 
         if (Regions.TryGetValue(value, out var region))
+        {
+            _regionLock.Release();
             return region;
+        }
+
+        this.Logger.LogDebug("Trying to add {x}:{z}", regionX, regionZ);
 
         region = new Region(regionX, regionZ, FolderPath);
 
-        if (await region.InitAsync())
-        {
-            Regions.TryAdd(value, region);//Add after its initialized
-            _ = Task.Run(() => region.BeginTickAsync(Server._cancelTokenSource.Token));
-        }
+        if (Regions.TryAdd(value, region))
+            this.Logger.LogDebug("Added region {x}:{z}", regionX, regionZ);
 
+        //DOesn't need to be blocking
+        _ = region.InitAsync();
+
+        _regionLock.Release();
         return region;
     }
 
@@ -535,7 +578,6 @@ public class World : IWorld, IAsyncDisposable
         region?.AddBlockUpdate(blockUpdate);
     }
 
-    private ConcurrentDictionary<(int x, int z), (int x, int z)> moduloCache = new();
 
     public async Task ManageChunksAsync()
     {
@@ -570,7 +612,7 @@ public class World : IWorld, IAsyncDisposable
 
         await Parallel.ForEachAsync(jobs, async (job, _) =>
         {
-            Region region = GetRegionForChunk(job.x, job.z) ?? await LoadRegionByChunkAsync(job.x, job.z);
+            Region region = GetRegionForChunk(job.x, job.z) ?? LoadRegionByChunk(job.x, job.z);
 
             var (x, z) = (NumericsHelper.Modulo(job.x, Region.CubicRegionSize), NumericsHelper.Modulo(job.z, Region.CubicRegionSize));
 
@@ -604,11 +646,11 @@ public class World : IWorld, IAsyncDisposable
             Type = EntityType.FallingBlock,
             EntityId = GetTotalLoadedEntities() + 1,
             World = this,
-            Server = Server,
+            PacketBroadcaster = this.PacketBroadcaster,
             Block = BlocksRegistry.Get(mat)
         };
 
-        Server.BroadcastPacket(new SpawnEntityPacket
+        this.PacketBroadcaster.QueuePacketToWorld(this, new SpawnEntityPacket
         {
             EntityId = entity.EntityId,
             Uuid = entity.Uuid,
@@ -646,7 +688,7 @@ public class World : IWorld, IAsyncDisposable
                 Position = position,
                 EntityId = GetTotalLoadedEntities() + 1,
                 World = this,
-                Server = Server
+                PacketBroadcaster = this.PacketBroadcaster
             };
 
             if (type == EntityType.ExperienceOrb || type == EntityType.ExperienceBottle)
@@ -655,7 +697,7 @@ public class World : IWorld, IAsyncDisposable
             }
             else
             {
-                await Server.QueueBroadcastPacketAsync(new SpawnEntityPacket
+                this.PacketBroadcaster.QueuePacketToWorld(this, new SpawnEntityPacket
                 {
                     EntityId = entity.EntityId,
                     Uuid = entity.Uuid,
@@ -676,10 +718,10 @@ public class World : IWorld, IAsyncDisposable
                 EntityId = GetTotalLoadedEntities() + 1,
                 Type = type,
                 World = this,
-                Server = Server
+                PacketBroadcaster = this.PacketBroadcaster
             };
 
-            await Server.QueueBroadcastPacketAsync(new SpawnEntityPacket
+            this.PacketBroadcaster.QueuePacketToWorld(this, new SpawnEntityPacket
             {
                 EntityId = entity.EntityId,
                 Uuid = entity.Uuid,
@@ -702,18 +744,24 @@ public class World : IWorld, IAsyncDisposable
         if (dimensions.ContainsKey(codec.Name))
             throw new ArgumentException($"World already contains dimension with name: {codec.Name}");
 
-        if (!Server.WorldGenerators.TryGetValue(worldGeneratorId ?? codec.Name.TrimResourceTag(true), out var generatorType))
+        if (!this.WorldManager.WorldGenerators.TryGetValue(worldGeneratorId ?? codec.Name.TrimResourceTag(true), out var generatorType))
             throw new ArgumentException($"Failed to find generator with id: {worldGeneratorId}.");
 
-        var dimensionWorld = new World(codec.Name.TrimResourceTag(true), Server, Seed, generatorType);
+        //TODO CREATE NEW TYPE CALLED DIMENSION AND IDIMENSION
+        var dimensionWorld = new World(this.Logger, generatorType, this.WorldManager)
+        {
+            PacketBroadcaster = this.PacketBroadcaster,
+            Configuration = this.Configuration,
+            Name = codec.Name.TrimResourceTag(true),
+            Seed = this.Seed
+        };
 
         dimensionWorld.Init(codec, Name);
 
         dimensions.Add(codec.Name, dimensionWorld);
     }
 
-    public Task SpawnExperienceOrbs(VectorF position, short count = 1) =>
-        Server.QueueBroadcastPacketAsync(new SpawnExperienceOrbPacket(count, position));
+    public void SpawnExperienceOrbs(VectorF position, short count = 1) => this.PacketBroadcaster.QueuePacketToWorld(this, new SpawnExperienceOrbPacket(count, position));
 
     /// <summary>
     /// 
@@ -762,15 +810,15 @@ public class World : IWorld, IAsyncDisposable
         // Make sure we set the right paths
         if (string.IsNullOrWhiteSpace(parentWorldName))
         {
-            FolderPath = Path.Combine(Server.ServerFolderPath, "worlds", Name);
+            FolderPath = Path.Combine("worlds", Name);
             LevelDataFilePath = Path.Combine(FolderPath, "level.dat");
             PlayerDataPath = Path.Combine(FolderPath, "playerdata");
         }
         else
         {
-            FolderPath = Path.Combine(Server.ServerFolderPath, "worlds", parentWorldName, Name);
-            LevelDataFilePath = Path.Combine(Server.ServerFolderPath, "worlds", parentWorldName, "level.dat");
-            PlayerDataPath = Path.Combine(Server.ServerFolderPath, "worlds", parentWorldName, "playerdata");
+            FolderPath = Path.Combine("worlds", parentWorldName, Name);
+            LevelDataFilePath = Path.Combine("worlds", parentWorldName, "level.dat");
+            PlayerDataPath = Path.Combine("worlds", parentWorldName, "playerdata");
         }
 
         ParentWorldName = parentWorldName;
@@ -795,24 +843,18 @@ public class World : IWorld, IAsyncDisposable
         if (!initialized)
             throw new InvalidOperationException("World hasn't been initialized please call World.Init() before trying to generate the world.");
 
-        Server.Logger.LogInformation($"Generating world... (Config pregeneration size is {Server.Config.PregenerateChunkRange})");
-        int pregenerationRange = Server.Config.PregenerateChunkRange;
+        Logger.LogInformation("Generating world... (Config pregeneration size is {pregenRange})", this.Configuration.PregenerateChunkRange);
+        int pregenerationRange = this.Configuration.PregenerateChunkRange;
 
         int regionPregenRange = (pregenerationRange >> Region.CubicRegionSizeShift) + 1;
 
-        Parallel.For(-regionPregenRange, regionPregenRange, async x =>
+        await Parallel.ForEachAsync(Enumerable.Range(-regionPregenRange, regionPregenRange * 2 + 1), (x, _) =>
         {
             for (int z = -regionPregenRange; z < regionPregenRange; z++)
-            {
-                await LoadRegionAsync(x, z);
-            };
-        });
+                LoadRegion(x, z);
 
-        // I don't know why we still have null regions when we get here ¯\_(ツ)_/¯
-        while (Regions.Any(r => r.Value is null))
-        {
-            await Task.Delay(100);
-        }
+            return ValueTask.CompletedTask;
+        });
 
         for (int x = -pregenerationRange; x < pregenerationRange; x++)
         {
@@ -822,12 +864,20 @@ public class World : IWorld, IAsyncDisposable
             }
         }
 
+        float startChunks = ChunksToGenCount;
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
+        Logger.LogInformation("{startChunks} chunks to generate...", startChunks);
         while (!ChunksToGen.IsEmpty)
         {
             await ManageChunksAsync();
-            Server.UpdateStatusConsole();
+            var pctComplete = (int)((1.0 - ChunksToGenCount / startChunks) * 100);
+            var completedChunks = startChunks - ChunksToGenCount;
+            var cps = completedChunks / (stopwatch.ElapsedMilliseconds / 1000.0);
+            int remain = ChunksToGenCount / (int)cps;
+            Console.Write("\r{0} chunks/second - {1}% complete - {2} seconds remaining   ", cps.ToString("###.00"), pctComplete, remain);
         }
-
+        Console.WriteLine();
         await FlushRegionsAsync();
 
         if (setWorldSpawn)
@@ -846,6 +896,7 @@ public class World : IWorld, IAsyncDisposable
     {
         if (LevelData.SpawnPosition.Y != 0) { return; }
 
+        var pregenRange = this.Configuration.PregenerateChunkRange;
         foreach (var region in Regions.Values)
         {
             foreach (var chunk in region.GeneratedChunks())
@@ -872,13 +923,13 @@ public class World : IWorld, IAsyncDisposable
 
                         var worldPos = new VectorF(bx + 0.5f + (chunk.X * 16), by + 1, bz + 0.5f + (chunk.Z * 16));
                         LevelData.SpawnPosition = worldPos;
-                        Server.Logger.LogInformation($"World Spawn set to {worldPos}");
+                        Logger.LogInformation("World Spawn set to {worldPos}", worldPos);
 
                         // Should spawn be far from (0,0), queue up chunks in generation range.
                         // Just feign a request for a chunk and if it doesn't exist, it'll get queued for gen.
-                        for (int x = chunk.X - Server.Config.PregenerateChunkRange; x < chunk.X + Server.Config.PregenerateChunkRange; x++)
+                        for (int x = chunk.X - pregenRange; x < chunk.X + pregenRange; x++)
                         {
-                            for (int z = chunk.Z - Server.Config.PregenerateChunkRange; z < chunk.Z + Server.Config.PregenerateChunkRange; z++)
+                            for (int z = chunk.Z - pregenRange; z < chunk.Z + pregenRange; z++)
                             {
                                 await GetChunkAsync(x, z);
                             }
@@ -889,7 +940,7 @@ public class World : IWorld, IAsyncDisposable
                 }
             }
         }
-        Server.Logger.LogWarning($"Failed to set World Spawn.");
+        Logger.LogWarning("Failed to set World Spawn.");
     }
 
     internal bool TryAddEntity(Entity entity)

@@ -1,10 +1,11 @@
 ﻿using Obsidian.API.Crafting;
+using Obsidian.API.Utilities;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Obsidian.Utilities.Converters;
 
-public class DefaultEnumConverter<T> : JsonConverter<T>
+public sealed class DefaultEnumConverter<T> : JsonConverter<T>
 {
     public override bool CanConvert(Type typeToConvert) => typeToConvert.IsEnum && typeToConvert == typeof(T);
 
@@ -21,7 +22,7 @@ public class DefaultEnumConverter<T> : JsonConverter<T>
     public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options) => writer.WriteStringValue(value.ToString().ToSnakeCase());
 }
 
-public class CraftingTypeConverter : JsonConverter<CraftingType>
+public sealed class CraftingTypeConverter : JsonConverter<CraftingType>
 {
     public override CraftingType Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {

@@ -10,17 +10,28 @@ internal static class ChunkBuilder
     private const float OreSize = 0.4F;
     private const float StoneAltSize = 1F;
 
-    private static readonly IBlock[] stoneAlts = new IBlock[5]
-    {
+    private static readonly IBlock[] stoneAlts =
+    [
         BlocksRegistry.Andesite,
         BlocksRegistry.Diorite,
         BlocksRegistry.Granite,
         BlocksRegistry.Gravel,
-        BlocksRegistry.Dirt
-    };
+        BlocksRegistry.Dirt,
+        BlocksRegistry.Tuff
+    ];
 
-    private static readonly IBlock[] ores = new IBlock[8]
-    {
+    private static readonly IBlock[] deepstoneAlts =
+    [
+        BlocksRegistry.Gravel,
+        BlocksRegistry.Tuff,
+        BlocksRegistry.Gravel,
+        BlocksRegistry.Tuff,
+        BlocksRegistry.Gravel,
+        BlocksRegistry.Tuff
+    ];
+
+    private static readonly IBlock[] ores =
+    [
         BlocksRegistry.CoalOre,
         BlocksRegistry.IronOre,
         BlocksRegistry.CopperOre,
@@ -29,8 +40,32 @@ internal static class ChunkBuilder
         BlocksRegistry.RedstoneOre,
         BlocksRegistry.EmeraldOre,
         BlocksRegistry.DiamondOre,
-    };
+    ];
 
+    private static readonly IBlock[] deepores =
+    [
+        BlocksRegistry.DeepslateCoalOre,
+        BlocksRegistry.DeepslateIronOre,
+        BlocksRegistry.DeepslateCopperOre,
+        BlocksRegistry.DeepslateGoldOre,
+        BlocksRegistry.DeepslateLapisOre,
+        BlocksRegistry.DeepslateRedstoneOre,
+        BlocksRegistry.DeepslateEmeraldOre,
+        BlocksRegistry.DeepslateDiamondOre,
+    ];
+
+    internal enum OreType : int
+    {
+        Coal,
+        Iron,
+        Copper,
+        Gold,
+        Lapis,
+        Redstone,
+        Emerald,
+        Diamond
+    }
+    
     internal static void Biomes(GenHelper helper, Chunk chunk)
     {
         for (int x = 0; x < 16; x++)
@@ -84,9 +119,13 @@ internal static class ChunkBuilder
                             break;
                         }
                     }
-                    for (int y = 64; y >= -64; y--)
+                    for (int y = 64; y > 0; y--)
                     {
                         chunk.SetBlock(x, y, z, BlocksRegistry.Stone);
+                    }
+                    for (int y = 0; y >= -63; y--)
+                    {
+                        chunk.SetBlock(x, y, z, BlocksRegistry.Deepslate);
                     }
                 }
                 else
@@ -99,7 +138,14 @@ internal static class ChunkBuilder
                             if (helper.Noise.IsTerrain(worldX, y, worldZ))
                             {
                                 solidCount++;
-                                chunk.SetBlock(x, y, z, BlocksRegistry.Stone);
+                                if (y <= 0)
+                                {
+                                    chunk.SetBlock(x, y, z, BlocksRegistry.Deepslate);
+                                }
+                                else
+                                {
+                                    chunk.SetBlock(x, y, z, BlocksRegistry.Stone);
+                                }
                                 terrainHeight = Math.Max(terrainHeight, y);
                             }
                             else
@@ -109,20 +155,42 @@ internal static class ChunkBuilder
                         }
                         else
                         {
-                            chunk.SetBlock(x, y, z, BlocksRegistry.Stone);
+                            if (y <= 0)
+                            {
+                                chunk.SetBlock(x, y, z, BlocksRegistry.Deepslate);
+                            }
+                            else
+                            {
+                                chunk.SetBlock(x, y, z, BlocksRegistry.Stone);
+                            }
                         }
                     }
                 }
 
+                chunk.SetBlock(x, -64, z, BlocksRegistry.Bedrock);
                 chunk.Heightmaps[HeightmapType.WorldSurfaceWG].Set(x, z, terrainHeight);
             }
         }
     }
 
+    internal static bool GenerateOreCheck(int height, OreType type) => type switch
+    {
+        OreType.Coal => height >= 0 && height <= 320,
+        OreType.Iron => (height >= -63 && height <= 72) || (height >= 80 && height <= 320),
+        OreType.Copper => height >= -16 && height <= 112,
+        OreType.Gold => height >= -63 && height <= 30,
+        OreType.Lapis => height >= -63 && height <= 64,
+        OreType.Redstone => height >= -63 && height <= 16,
+        OreType.Emerald => height >= -16 && height <= 320,
+        OreType.Diamond => height >= -63 && height <= 16,
+        _ => true
+    };
+    
     internal static void CavesAndOres(GenHelper helper, Chunk chunk)
     {
         int chunkOffsetX = chunk.X * 16;
         int chunkOffsetZ = chunk.Z * 16;
+        List<Biome> emeraldBiomes = new List<Biome>(){Biome.WindsweptHills, Biome.WindsweptGravellyHills, Biome.Meadow, Biome.Grove, Biome.SnowySlopes, Biome.FrozenPeaks, Biome.JaggedPeaks, Biome.StonyPeaks};
         for (int x = 0; x < 16; x++)
         {
             for (int z = 0; z < 16; z++)
@@ -139,14 +207,29 @@ internal static class ChunkBuilder
                         continue;
                     }
                     if (y > terrainY - 5) { continue; }
-                    var orePlaced = false;
-                    for (int i = 0; i < ores.Length; i++)
+                    var orePlaced = false; //Thanks Jonpro03 for line 210 to 237!
+                    foreach (OreType i in Enum.GetValues(typeof(OreType)))
                     {
-                        var oreNoise1 = helper.Noise.Ore(i).GetValue(worldX, y, worldZ);
-                        var oreNoise2 = helper.Noise.Ore(i + ores.Length).GetValue(worldX, y, worldZ);
+                        // Check if we should be placing a given ore at this Y level
+                        if (!GenerateOreCheck(y, i))
+                        {
+                            // move on to the next ore
+                            continue;
+                        }
+                    
+                        var b = chunk.GetBiome(x, y, z);
+                        // Check that Emerald is only placed in the right biomes
+                        if (i == OreType.Emerald && !emeraldBiomes.Contains(b))
+                        {
+                            continue;
+                        }
+                    
+                        var oreNoise1 = helper.Noise.Ore((int)i).GetValue(worldX, y, worldZ);
+                        var oreNoise2 = helper.Noise.Ore((int)i + ores.Length).GetValue(worldX, y, worldZ);
                         if (oreNoise1 > 1.0 - OreSize && oreNoise2 > 1.0 - OreSize)
                         {
-                            chunk.SetBlock(worldX, y, worldZ, ores[i]);
+                            // If Y is below 0, switch to deepore varients
+                            chunk.SetBlock(worldX, y, worldZ, y > 0 ? ores[(int)i] : deepores[(int)i]);
                             orePlaced = true;
                             break;
                         }
@@ -159,7 +242,7 @@ internal static class ChunkBuilder
                         var stoneNoise2 = helper.Noise.Stone(i + stoneAlts.Length).GetValue(worldX, y, worldZ);
                         if (stoneNoise1 > 1.5 - StoneAltSize && stoneNoise2 > 1.5 - StoneAltSize)
                         {
-                            chunk.SetBlock(worldX, y, worldZ, stoneAlts[i]);
+                            chunk.SetBlock(worldX, y, worldZ, y > 0 ? stoneAlts[i] : deepstoneAlts[i]);
                             break;
                         }
                     }

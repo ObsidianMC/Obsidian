@@ -7,7 +7,7 @@ public class PlayerEventArgs : BaseMinecraftEventArgs
     /// </summary>
     public IPlayer Player { get; }
 
-    protected PlayerEventArgs(IPlayer player) : base(player.Server)
+    protected PlayerEventArgs(IPlayer player, IServer server) : base(server)
     {
         Player = player;
     }

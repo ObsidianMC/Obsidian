@@ -1,6 +1,7 @@
 ﻿using Obsidian.API.Builders;
 using Obsidian.API.Containers;
 using Obsidian.API.Events;
+using Obsidian.API.Utilities;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -196,7 +197,7 @@ public partial class Server
                     .WithSoundPosition(blockPosition.SoundPosition)
                     .Build());
             }
-            else if (type == Material.Furnace || type == Material.BlastFurnace || type == Material.Smoker)
+            else if (type is Material.Furnace or Material.BlastFurnace or Material.Smoker)
             {
                 InventoryType actualType = type switch
                 {
@@ -268,11 +269,11 @@ public partial class Server
                         new NbtTag<string>("CustomName", container.Title.ToJson())
                     };
 
-                    player.world.SetBlockEntity(blockPosition, tileEntity);
+                    await player.world.SetBlockEntity(blockPosition, tileEntity);
                 }
-                else if (tileEntity is NbtCompound dataCompound)
+                else if (tileEntity is NbtCompound)
                 {
-                    if (dataCompound.TryGetTag("Items", out var tag))
+                    if (tileEntity.TryGetTag("Items", out var tag))
                     {
                         var items = tag as NbtList;
 
@@ -314,7 +315,7 @@ public partial class Server
                 await other.client.QueuePacketAsync(destroy);
         }
 
-        BroadcastMessage(string.Format(Config.LeaveMessage, e.Player.Username));
+        BroadcastMessage(string.Format(Configuration.LeaveMessage, e.Player.Username));
     }
 
     private async Task OnPlayerJoin(PlayerJoinEventArgs e)
@@ -325,7 +326,7 @@ public partial class Server
 
         BroadcastMessage(new ChatMessage
         {
-            Text = string.Format(Config.JoinMessage, e.Player.Username),
+            Text = string.Format(Configuration.JoinMessage, e.Player.Username),
             Color = HexColor.Yellow
         });
 

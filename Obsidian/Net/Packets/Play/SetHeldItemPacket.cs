@@ -14,7 +14,7 @@ public partial class SetHeldItemPacket : IServerboundPacket, IClientboundPacket
 
     public SetHeldItemPacket(bool toClient)
     {
-        this.Id = toClient ? 0x4D : 0x28;
+        this.Id = toClient ? 0x51 : 0x2C;
     }
 
     public void Serialize(MinecraftStream stream)
@@ -38,13 +38,13 @@ public partial class SetHeldItemPacket : IServerboundPacket, IClientboundPacket
         return packet;
     }
 
-    public async ValueTask HandleAsync(Server server, Player player)
+    public ValueTask HandleAsync(Server server, Player player)
     {
         player.CurrentSlot = Slot;
 
         var heldItem = player.GetHeldItem();
 
-        await server.QueueBroadcastPacketAsync(new SetEquipmentPacket
+        player.PacketBroadcaster.QueuePacketToWorld(player.World, new SetEquipmentPacket
         {
             EntityId = player.EntityId,
             Equipment = new()
@@ -55,7 +55,8 @@ public partial class SetHeldItemPacket : IServerboundPacket, IClientboundPacket
                     Item = heldItem
                 }
             }
-        },
-        excluded: player);
+        }, player.EntityId);
+
+        return ValueTask.CompletedTask;
     }
 }

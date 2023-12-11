@@ -30,5 +30,5 @@ public partial class SoundEffectPacket : IClientboundPacket
     [Field(8)]
     public long Seed { get; init; }
 
-    public int Id => 0x62;
+    public int Id => 0x66;
 }

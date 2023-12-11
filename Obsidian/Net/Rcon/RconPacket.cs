@@ -8,7 +8,7 @@ using System.Threading;
 
 namespace Obsidian.Net.Rcon;
 
-public class RconPacket
+public sealed class RconPacket
 {
     private readonly Encoding encoding;
 
@@ -20,7 +20,7 @@ public class RconPacket
     public int Length => 4 + 4 + PayloadBytes.Length + 1; // RequestId (Int32) + Type (Int32) + PayloadBytes (varies) + padding (1)
     public int RequestId { get; set; }
     public RconPacketType Type { get; set; }
-    public byte[] PayloadBytes { get; set; } = { 0x00 };
+    public byte[] PayloadBytes { get; set; } = [0x00];
     public string PayloadText
     {
         get => PayloadBytes.Length > 1
@@ -29,7 +29,7 @@ public class RconPacket
         set
         {
             if (string.IsNullOrEmpty(value))
-                PayloadBytes = new byte[] { 0x00 };
+                PayloadBytes = [0x00];
             PayloadBytes = encoding.GetBytes(value).Append((byte)0x00).ToArray();
         }
     }
@@ -124,7 +124,7 @@ public class RconPacket
         if (PayloadBytes.Length > 0)
             await stream.WriteAsync(PayloadBytes, ct);
 
-        buf = new byte[] { 0x00 };
+        buf = [0x00];
         await stream.WriteAsync(buf, ct); // Padding
     }
 }

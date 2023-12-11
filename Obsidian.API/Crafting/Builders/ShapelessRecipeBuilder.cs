@@ -7,7 +7,7 @@ public sealed class ShapelessRecipeBuilder : BaseRecipeBuilder<ShapelessRecipe>,
 {
     private readonly CraftingBookCategory category;
 
-    private readonly List<Ingredient> ingredients = new();
+    private readonly List<Ingredient> ingredients = [];
 
     private ShapelessRecipeBuilder(CraftingBookCategory category) => this.category = category;
 
@@ -31,7 +31,7 @@ public sealed class ShapelessRecipeBuilder : BaseRecipeBuilder<ShapelessRecipe>,
             Identifier = this.Identifier ?? throw new NullReferenceException("Recipe must have a name"),
             Type = CraftingType.CraftingShapeless,
             Group = this.Group,
-            Result = this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),
+            Result = this.Result != null ? [this.Result] : throw new NullReferenceException("Result is not set."),
             Ingredients = new ReadOnlyCollection<Ingredient>(new List<Ingredient>(this.ingredients)),
             Category = this.category
         };

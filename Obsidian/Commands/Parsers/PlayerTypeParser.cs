@@ -10,8 +10,7 @@ public class PlayerTypeParser : BaseArgumentParser<IPlayer>
 
     public override bool TryParseArgument(string input, CommandContext context, out IPlayer result)
     {
-        var ctx = context;
-        var server = (Server)ctx.Server;
+        var server = (Server)context.Server;
 
         Player player = null;
 

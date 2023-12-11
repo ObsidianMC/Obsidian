@@ -18,7 +18,6 @@
       "item": "minecraft:acacia_boat",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "acacia_button": {
@@ -74,7 +73,6 @@
       "item": "minecraft:acacia_door",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "acacia_fence": {
@@ -101,7 +99,6 @@
       "item": "minecraft:acacia_fence",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "acacia_fence_gate": {
@@ -128,7 +125,6 @@
       "item": "minecraft:acacia_fence_gate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "acacia_hanging_sign": {
@@ -156,7 +152,6 @@
       "item": "minecraft:acacia_hanging_sign",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "acacia_planks": {
@@ -192,7 +187,6 @@
       "item": "minecraft:acacia_pressure_plate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "acacia_sign": {
@@ -220,7 +214,6 @@
       "item": "minecraft:acacia_sign",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "acacia_slab": {
@@ -241,7 +234,6 @@
       "item": "minecraft:acacia_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "acacia_stairs": {
@@ -264,7 +256,6 @@
       "item": "minecraft:acacia_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "acacia_trapdoor": {
@@ -286,7 +277,6 @@
       "item": "minecraft:acacia_trapdoor",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "acacia_wood": {
@@ -308,7 +298,6 @@
       "item": "minecraft:acacia_wood",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "activator_rail": {
@@ -340,7 +329,6 @@
       "item": "minecraft:activator_rail",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "amethyst_block": {
@@ -361,7 +349,6 @@
       "item": "minecraft:amethyst_block",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "andesite": {
@@ -398,7 +385,6 @@
       "item": "minecraft:andesite_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "andesite_slab_from_andesite_stonecutting": {
@@ -430,7 +416,6 @@
       "item": "minecraft:andesite_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "andesite_stairs_from_andesite_stonecutting": {
@@ -461,7 +446,6 @@
       "item": "minecraft:andesite_wall",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "andesite_wall_from_andesite_stonecutting": {
@@ -498,7 +482,6 @@
       "item": "minecraft:anvil",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "armor_dye": {
@@ -529,7 +512,6 @@
       "item": "minecraft:armor_stand",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "arrow": {
@@ -561,7 +543,6 @@
       "item": "minecraft:arrow",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "baked_potato": {
@@ -691,12 +672,11 @@
       "item": "minecraft:bamboo_door",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "bamboo_fence": {
     "category": "misc",
-    "group": "wooden_custom_fence",
+    "group": "wooden_fence",
     "key": {
       "#": {
         "count": 1,
@@ -718,12 +698,11 @@
       "item": "minecraft:bamboo_fence",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "bamboo_fence_gate": {
     "category": "redstone",
-    "group": "wooden_custom_fence_gate",
+    "group": "wooden_fence_gate",
     "key": {
       "#": {
         "count": 1,
@@ -745,7 +724,6 @@
       "item": "minecraft:bamboo_fence_gate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "bamboo_hanging_sign": {
@@ -773,7 +751,6 @@
       "item": "minecraft:bamboo_hanging_sign",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "bamboo_mosaic": {
@@ -794,7 +771,6 @@
       "item": "minecraft:bamboo_mosaic",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "bamboo_mosaic_slab": {
@@ -814,7 +790,6 @@
       "item": "minecraft:bamboo_mosaic_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "bamboo_mosaic_stairs": {
@@ -836,7 +811,6 @@
       "item": "minecraft:bamboo_mosaic_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "bamboo_planks": {
@@ -872,7 +846,6 @@
       "item": "minecraft:bamboo_pressure_plate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "bamboo_raft": {
@@ -894,7 +867,6 @@
       "item": "minecraft:bamboo_raft",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "bamboo_sign": {
@@ -922,7 +894,6 @@
       "item": "minecraft:bamboo_sign",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "bamboo_slab": {
@@ -943,7 +914,6 @@
       "item": "minecraft:bamboo_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "bamboo_stairs": {
@@ -966,7 +936,6 @@
       "item": "minecraft:bamboo_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "bamboo_trapdoor": {
@@ -988,7 +957,6 @@
       "item": "minecraft:bamboo_trapdoor",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "banner_duplicate": {
@@ -1017,7 +985,6 @@
       "item": "minecraft:barrel",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "beacon": {
@@ -1049,7 +1016,6 @@
       "item": "minecraft:beacon",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "beehive": {
@@ -1075,7 +1041,6 @@
       "item": "minecraft:beehive",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "beetroot_soup": {
@@ -1129,7 +1094,6 @@
       "item": "minecraft:birch_boat",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "birch_button": {
@@ -1185,7 +1149,6 @@
       "item": "minecraft:birch_door",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "birch_fence": {
@@ -1212,7 +1175,6 @@
       "item": "minecraft:birch_fence",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "birch_fence_gate": {
@@ -1239,7 +1201,6 @@
       "item": "minecraft:birch_fence_gate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "birch_hanging_sign": {
@@ -1267,7 +1228,6 @@
       "item": "minecraft:birch_hanging_sign",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "birch_planks": {
@@ -1303,7 +1263,6 @@
       "item": "minecraft:birch_pressure_plate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "birch_sign": {
@@ -1331,7 +1290,6 @@
       "item": "minecraft:birch_sign",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "birch_slab": {
@@ -1352,7 +1310,6 @@
       "item": "minecraft:birch_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "birch_stairs": {
@@ -1375,7 +1332,6 @@
       "item": "minecraft:birch_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "birch_trapdoor": {
@@ -1397,7 +1353,6 @@
       "item": "minecraft:birch_trapdoor",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "birch_wood": {
@@ -1419,7 +1374,6 @@
       "item": "minecraft:birch_wood",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "black_banner": {
@@ -1447,7 +1401,6 @@
       "item": "minecraft:black_banner",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "black_bed": {
@@ -1473,7 +1426,6 @@
       "item": "minecraft:black_bed",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "black_candle": {
@@ -1512,7 +1464,6 @@
       "item": "minecraft:black_carpet",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "black_concrete_powder": {
@@ -1621,7 +1572,6 @@
       "item": "minecraft:black_stained_glass",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "black_stained_glass_pane": {
@@ -1643,7 +1593,6 @@
       "item": "minecraft:black_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "black_stained_glass_pane_from_glass_pane": {
@@ -1671,7 +1620,6 @@
       "item": "minecraft:black_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "black_terracotta": {
@@ -1699,7 +1647,6 @@
       "item": "minecraft:black_terracotta",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "blackstone_slab": {
@@ -1719,7 +1666,6 @@
       "item": "minecraft:blackstone_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "blackstone_slab_from_blackstone_stonecutting": {
@@ -1751,7 +1697,6 @@
       "item": "minecraft:blackstone_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "blackstone_stairs_from_blackstone_stonecutting": {
@@ -1782,7 +1727,6 @@
       "item": "minecraft:blackstone_wall",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "blackstone_wall_from_blackstone_stonecutting": {
@@ -1824,7 +1768,6 @@
       "item": "minecraft:blast_furnace",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "blaze_powder": {
@@ -1866,7 +1809,6 @@
       "item": "minecraft:blue_banner",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "blue_bed": {
@@ -1892,7 +1834,6 @@
       "item": "minecraft:blue_bed",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "blue_candle": {
@@ -1931,7 +1872,6 @@
       "item": "minecraft:blue_carpet",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "blue_concrete_powder": {
@@ -2078,7 +2018,6 @@
       "item": "minecraft:blue_stained_glass",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "blue_stained_glass_pane": {
@@ -2100,7 +2039,6 @@
       "item": "minecraft:blue_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "blue_stained_glass_pane_from_glass_pane": {
@@ -2128,7 +2066,6 @@
       "item": "minecraft:blue_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "blue_terracotta": {
@@ -2156,7 +2093,6 @@
       "item": "minecraft:blue_terracotta",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "bone_block": {
@@ -2178,7 +2114,6 @@
       "item": "minecraft:bone_block",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "bone_meal": {
@@ -2261,7 +2196,6 @@
       "item": "minecraft:bookshelf",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "bow": {
@@ -2288,7 +2222,6 @@
       "item": "minecraft:bow",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "bowl": {
@@ -2308,7 +2241,6 @@
       "item": "minecraft:bowl",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "bread": {
@@ -2328,7 +2260,6 @@
       "item": "minecraft:bread",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "brewing_stand": {
@@ -2353,7 +2284,6 @@
       "item": "minecraft:brewing_stand",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "brick": {
@@ -2385,7 +2315,6 @@
       "item": "minecraft:brick_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "brick_slab_from_bricks_stonecutting": {
@@ -2417,7 +2346,6 @@
       "item": "minecraft:brick_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "brick_stairs_from_bricks_stonecutting": {
@@ -2448,7 +2376,6 @@
       "item": "minecraft:brick_wall",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "brick_wall_from_bricks_stonecutting": {
@@ -2479,7 +2406,6 @@
       "item": "minecraft:bricks",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "brown_banner": {
@@ -2507,7 +2433,6 @@
       "item": "minecraft:brown_banner",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "brown_bed": {
@@ -2533,7 +2458,6 @@
       "item": "minecraft:brown_bed",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "brown_candle": {
@@ -2572,7 +2496,6 @@
       "item": "minecraft:brown_carpet",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "brown_concrete_powder": {
@@ -2666,7 +2589,6 @@
       "item": "minecraft:brown_stained_glass",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "brown_stained_glass_pane": {
@@ -2688,7 +2610,6 @@
       "item": "minecraft:brown_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "brown_stained_glass_pane_from_glass_pane": {
@@ -2716,7 +2637,6 @@
       "item": "minecraft:brown_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "brown_terracotta": {
@@ -2744,7 +2664,6 @@
       "item": "minecraft:brown_terracotta",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "brush": {
@@ -2776,7 +2695,6 @@
       "item": "minecraft:brush",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "bucket": {
@@ -2797,7 +2715,6 @@
       "item": "minecraft:bucket",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cake": {
@@ -2834,7 +2751,6 @@
       "item": "minecraft:cake",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "calibrated_sculk_sensor": {
@@ -2860,7 +2776,6 @@
       "item": "minecraft:calibrated_sculk_sensor",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "campfire": {
@@ -2890,7 +2805,6 @@
       "item": "minecraft:campfire",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "candle": {
@@ -2916,7 +2830,6 @@
       "item": "minecraft:candle",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "carrot_on_a_stick": {
@@ -2942,7 +2855,6 @@
       "item": "minecraft:carrot_on_a_stick",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cartography_table": {
@@ -2968,7 +2880,6 @@
       "item": "minecraft:cartography_table",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cauldron": {
@@ -2990,7 +2901,6 @@
       "item": "minecraft:cauldron",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "chain": {
@@ -3017,7 +2927,6 @@
       "item": "minecraft:chain",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "charcoal": {
@@ -3050,7 +2959,6 @@
       "item": "minecraft:cherry_boat",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cherry_button": {
@@ -3106,7 +3014,6 @@
       "item": "minecraft:cherry_door",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cherry_fence": {
@@ -3133,7 +3040,6 @@
       "item": "minecraft:cherry_fence",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cherry_fence_gate": {
@@ -3160,7 +3066,6 @@
       "item": "minecraft:cherry_fence_gate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cherry_hanging_sign": {
@@ -3188,7 +3093,6 @@
       "item": "minecraft:cherry_hanging_sign",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cherry_planks": {
@@ -3224,7 +3128,6 @@
       "item": "minecraft:cherry_pressure_plate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cherry_sign": {
@@ -3252,7 +3155,6 @@
       "item": "minecraft:cherry_sign",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cherry_slab": {
@@ -3273,7 +3175,6 @@
       "item": "minecraft:cherry_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cherry_stairs": {
@@ -3296,7 +3197,6 @@
       "item": "minecraft:cherry_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cherry_trapdoor": {
@@ -3318,7 +3218,6 @@
       "item": "minecraft:cherry_trapdoor",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cherry_wood": {
@@ -3340,7 +3239,6 @@
       "item": "minecraft:cherry_wood",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "chest": {
@@ -3361,7 +3259,6 @@
       "item": "minecraft:chest",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "chest_minecart": {
@@ -3403,7 +3300,6 @@
       "item": "minecraft:chiseled_bookshelf",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "chiseled_deepslate": {
@@ -3424,7 +3320,6 @@
       "item": "minecraft:chiseled_deepslate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "chiseled_deepslate_from_cobbled_deepslate_stonecutting": {
@@ -3455,7 +3350,6 @@
       "item": "minecraft:chiseled_nether_bricks",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "chiseled_nether_bricks_from_nether_bricks_stonecutting": {
@@ -3486,7 +3380,6 @@
       "item": "minecraft:chiseled_polished_blackstone",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "chiseled_polished_blackstone_from_blackstone_stonecutting": {
@@ -3527,7 +3420,6 @@
       "item": "minecraft:chiseled_quartz_block",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "chiseled_quartz_block_from_quartz_block_stonecutting": {
@@ -3558,7 +3450,6 @@
       "item": "minecraft:chiseled_red_sandstone",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "chiseled_red_sandstone_from_red_sandstone_stonecutting": {
@@ -3589,7 +3480,6 @@
       "item": "minecraft:chiseled_sandstone",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "chiseled_sandstone_from_sandstone_stonecutting": {
@@ -3620,7 +3510,6 @@
       "item": "minecraft:chiseled_stone_bricks",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "chiseled_stone_bricks_from_stone_bricks_stonecutting": {
@@ -3661,7 +3550,6 @@
       "item": "minecraft:clay",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "clock": {
@@ -3688,7 +3576,6 @@
       "item": "minecraft:clock",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "coal": {
@@ -3724,7 +3611,6 @@
       "item": "minecraft:coal_block",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "coal_from_blasting_coal_ore": {
@@ -3802,7 +3688,6 @@
       "item": "minecraft:coarse_dirt",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "coast_armor_trim_smithing_template": {
@@ -3834,7 +3719,6 @@
       "item": "minecraft:coast_armor_trim_smithing_template",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "coast_armor_trim_smithing_template_smithing_trim": {
@@ -3866,7 +3750,6 @@
       "item": "minecraft:cobbled_deepslate_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cobbled_deepslate_slab_from_cobbled_deepslate_stonecutting": {
@@ -3898,7 +3781,6 @@
       "item": "minecraft:cobbled_deepslate_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cobbled_deepslate_stairs_from_cobbled_deepslate_stonecutting": {
@@ -3929,7 +3811,6 @@
       "item": "minecraft:cobbled_deepslate_wall",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cobbled_deepslate_wall_from_cobbled_deepslate_stonecutting": {
@@ -3959,7 +3840,6 @@
       "item": "minecraft:cobblestone_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cobblestone_slab_from_cobblestone_stonecutting": {
@@ -3991,7 +3871,6 @@
       "item": "minecraft:cobblestone_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cobblestone_stairs_from_cobblestone_stonecutting": {
@@ -4022,7 +3901,6 @@
       "item": "minecraft:cobblestone_wall",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cobblestone_wall_from_cobblestone_stonecutting": {
@@ -4064,7 +3942,6 @@
       "item": "minecraft:comparator",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "compass": {
@@ -4091,7 +3968,6 @@
       "item": "minecraft:compass",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "composter": {
@@ -4112,7 +3988,6 @@
       "item": "minecraft:composter",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "conduit": {
@@ -4139,7 +4014,6 @@
       "item": "minecraft:conduit",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cooked_beef": {
@@ -4416,7 +4290,6 @@
       "item": "minecraft:cookie",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "copper_block": {
@@ -4438,7 +4311,6 @@
       "item": "minecraft:copper_block",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "copper_ingot": {
@@ -4681,7 +4553,6 @@
       "item": "minecraft:crimson_door",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "crimson_fence": {
@@ -4708,7 +4579,6 @@
       "item": "minecraft:crimson_fence",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "crimson_fence_gate": {
@@ -4735,7 +4605,6 @@
       "item": "minecraft:crimson_fence_gate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "crimson_hanging_sign": {
@@ -4763,7 +4632,6 @@
       "item": "minecraft:crimson_hanging_sign",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "crimson_hyphae": {
@@ -4785,7 +4653,6 @@
       "item": "minecraft:crimson_hyphae",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "crimson_planks": {
@@ -4821,7 +4688,6 @@
       "item": "minecraft:crimson_pressure_plate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "crimson_sign": {
@@ -4849,7 +4715,6 @@
       "item": "minecraft:crimson_sign",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "crimson_slab": {
@@ -4870,7 +4735,6 @@
       "item": "minecraft:crimson_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "crimson_stairs": {
@@ -4893,7 +4757,6 @@
       "item": "minecraft:crimson_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "crimson_trapdoor": {
@@ -4915,7 +4778,6 @@
       "item": "minecraft:crimson_trapdoor",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "crossbow": {
@@ -4952,7 +4814,6 @@
       "item": "minecraft:crossbow",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cut_copper": {
@@ -4973,7 +4834,6 @@
       "item": "minecraft:cut_copper",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cut_copper_from_copper_block_stonecutting": {
@@ -5003,7 +4863,6 @@
       "item": "minecraft:cut_copper_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cut_copper_slab_from_copper_block_stonecutting": {
@@ -5045,7 +4904,6 @@
       "item": "minecraft:cut_copper_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cut_copper_stairs_from_copper_block_stonecutting": {
@@ -5086,7 +4944,6 @@
       "item": "minecraft:cut_red_sandstone",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cut_red_sandstone_from_red_sandstone_stonecutting": {
@@ -5116,7 +4973,6 @@
       "item": "minecraft:cut_red_sandstone_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cut_red_sandstone_slab_from_cut_red_sandstone_stonecutting": {
@@ -5157,7 +5013,6 @@
       "item": "minecraft:cut_sandstone",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cut_sandstone_from_sandstone_stonecutting": {
@@ -5187,7 +5042,6 @@
       "item": "minecraft:cut_sandstone_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cut_sandstone_slab_from_cut_sandstone_stonecutting": {
@@ -5235,7 +5089,6 @@
       "item": "minecraft:cyan_banner",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cyan_bed": {
@@ -5261,7 +5114,6 @@
       "item": "minecraft:cyan_bed",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cyan_candle": {
@@ -5300,7 +5152,6 @@
       "item": "minecraft:cyan_carpet",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cyan_concrete_powder": {
@@ -5412,7 +5263,6 @@
       "item": "minecraft:cyan_stained_glass",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cyan_stained_glass_pane": {
@@ -5434,7 +5284,6 @@
       "item": "minecraft:cyan_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cyan_stained_glass_pane_from_glass_pane": {
@@ -5462,7 +5311,6 @@
       "item": "minecraft:cyan_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "cyan_terracotta": {
@@ -5490,7 +5338,6 @@
       "item": "minecraft:cyan_terracotta",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "dark_oak_boat": {
@@ -5512,7 +5359,6 @@
       "item": "minecraft:dark_oak_boat",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "dark_oak_button": {
@@ -5568,7 +5414,6 @@
       "item": "minecraft:dark_oak_door",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "dark_oak_fence": {
@@ -5595,7 +5440,6 @@
       "item": "minecraft:dark_oak_fence",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "dark_oak_fence_gate": {
@@ -5622,7 +5466,6 @@
       "item": "minecraft:dark_oak_fence_gate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "dark_oak_hanging_sign": {
@@ -5650,7 +5493,6 @@
       "item": "minecraft:dark_oak_hanging_sign",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "dark_oak_planks": {
@@ -5686,7 +5528,6 @@
       "item": "minecraft:dark_oak_pressure_plate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "dark_oak_sign": {
@@ -5714,7 +5555,6 @@
       "item": "minecraft:dark_oak_sign",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "dark_oak_slab": {
@@ -5735,7 +5575,6 @@
       "item": "minecraft:dark_oak_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "dark_oak_stairs": {
@@ -5758,7 +5597,6 @@
       "item": "minecraft:dark_oak_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "dark_oak_trapdoor": {
@@ -5780,7 +5618,6 @@
       "item": "minecraft:dark_oak_trapdoor",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "dark_oak_wood": {
@@ -5802,7 +5639,6 @@
       "item": "minecraft:dark_oak_wood",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "dark_prismarine": {
@@ -5829,7 +5665,6 @@
       "item": "minecraft:dark_prismarine",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "dark_prismarine_slab": {
@@ -5849,7 +5684,6 @@
       "item": "minecraft:dark_prismarine_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "dark_prismarine_slab_from_dark_prismarine_stonecutting": {
@@ -5881,7 +5715,6 @@
       "item": "minecraft:dark_prismarine_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "dark_prismarine_stairs_from_dark_prismarine_stonecutting": {
@@ -5922,7 +5755,6 @@
       "item": "minecraft:daylight_detector",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "decorated_pot": {
@@ -5948,7 +5780,6 @@
       "item": "minecraft:decorated_pot",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "deepslate": {
@@ -5980,7 +5811,6 @@
       "item": "minecraft:deepslate_brick_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "deepslate_brick_slab_from_cobbled_deepslate_stonecutting": {
@@ -6032,7 +5862,6 @@
       "item": "minecraft:deepslate_brick_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "deepslate_brick_stairs_from_cobbled_deepslate_stonecutting": {
@@ -6083,7 +5912,6 @@
       "item": "minecraft:deepslate_brick_wall",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "deepslate_brick_wall_from_cobbled_deepslate_stonecutting": {
@@ -6134,7 +5962,6 @@
       "item": "minecraft:deepslate_bricks",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "deepslate_bricks_from_cobbled_deepslate_stonecutting": {
@@ -6174,7 +6001,6 @@
       "item": "minecraft:deepslate_tile_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "deepslate_tile_slab_from_cobbled_deepslate_stonecutting": {
@@ -6236,7 +6062,6 @@
       "item": "minecraft:deepslate_tile_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "deepslate_tile_stairs_from_cobbled_deepslate_stonecutting": {
@@ -6297,7 +6122,6 @@
       "item": "minecraft:deepslate_tile_wall",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "deepslate_tile_wall_from_cobbled_deepslate_stonecutting": {
@@ -6358,7 +6182,6 @@
       "item": "minecraft:deepslate_tiles",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "deepslate_tiles_from_cobbled_deepslate_stonecutting": {
@@ -6420,7 +6243,6 @@
       "item": "minecraft:detector_rail",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "diamond": {
@@ -6461,7 +6283,6 @@
       "item": "minecraft:diamond_axe",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "diamond_block": {
@@ -6483,7 +6304,6 @@
       "item": "minecraft:diamond_block",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "diamond_boots": {
@@ -6504,7 +6324,6 @@
       "item": "minecraft:diamond_boots",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "diamond_chestplate": {
@@ -6526,7 +6345,6 @@
       "item": "minecraft:diamond_chestplate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "diamond_from_blasting_deepslate_diamond_ore": {
@@ -6599,7 +6417,6 @@
       "item": "minecraft:diamond_helmet",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "diamond_hoe": {
@@ -6626,7 +6443,6 @@
       "item": "minecraft:diamond_hoe",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "diamond_leggings": {
@@ -6648,7 +6464,6 @@
       "item": "minecraft:diamond_leggings",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "diamond_pickaxe": {
@@ -6675,7 +6490,6 @@
       "item": "minecraft:diamond_pickaxe",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "diamond_shovel": {
@@ -6702,7 +6516,6 @@
       "item": "minecraft:diamond_shovel",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "diamond_sword": {
@@ -6729,7 +6542,6 @@
       "item": "minecraft:diamond_sword",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "diorite": {
@@ -6755,7 +6567,6 @@
       "item": "minecraft:diorite",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "diorite_slab": {
@@ -6775,7 +6586,6 @@
       "item": "minecraft:diorite_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "diorite_slab_from_diorite_stonecutting": {
@@ -6807,7 +6617,6 @@
       "item": "minecraft:diorite_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "diorite_stairs_from_diorite_stonecutting": {
@@ -6838,7 +6647,6 @@
       "item": "minecraft:diorite_wall",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "diorite_wall_from_diorite_stonecutting": {
@@ -6880,7 +6688,6 @@
       "item": "minecraft:dispenser",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "dried_kelp": {
@@ -6916,7 +6723,6 @@
       "item": "minecraft:dried_kelp_block",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "dried_kelp_from_campfire_cooking": {
@@ -6973,7 +6779,6 @@
       "item": "minecraft:dripstone_block",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "dropper": {
@@ -7000,7 +6805,6 @@
       "item": "minecraft:dropper",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "dune_armor_trim_smithing_template": {
@@ -7032,7 +6836,6 @@
       "item": "minecraft:dune_armor_trim_smithing_template",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "dune_armor_trim_smithing_template_smithing_trim": {
@@ -10056,7 +9859,6 @@
       "item": "minecraft:emerald_block",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "emerald_from_blasting_deepslate_emerald_ore": {
@@ -10140,7 +9942,6 @@
       "item": "minecraft:enchanting_table",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "end_crystal": {
@@ -10172,7 +9973,6 @@
       "item": "minecraft:end_crystal",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "end_rod": {
@@ -10198,7 +9998,6 @@
       "item": "minecraft:end_rod",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "end_stone_brick_slab": {
@@ -10218,7 +10017,6 @@
       "item": "minecraft:end_stone_brick_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "end_stone_brick_slab_from_end_stone_brick_stonecutting": {
@@ -10260,7 +10058,6 @@
       "item": "minecraft:end_stone_brick_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "end_stone_brick_stairs_from_end_stone_brick_stonecutting": {
@@ -10301,7 +10098,6 @@
       "item": "minecraft:end_stone_brick_wall",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "end_stone_brick_wall_from_end_stone_brick_stonecutting": {
@@ -10342,7 +10138,6 @@
       "item": "minecraft:end_stone_bricks",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "end_stone_bricks_from_end_stone_stonecutting": {
@@ -10379,7 +10174,6 @@
       "item": "minecraft:ender_chest",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "ender_eye": {
@@ -10417,7 +10211,6 @@
       "item": "minecraft:exposed_cut_copper",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "exposed_cut_copper_from_exposed_copper_stonecutting": {
@@ -10447,7 +10240,6 @@
       "item": "minecraft:exposed_cut_copper_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "exposed_cut_copper_slab_from_exposed_copper_stonecutting": {
@@ -10489,7 +10281,6 @@
       "item": "minecraft:exposed_cut_copper_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "exposed_cut_copper_stairs_from_exposed_copper_stonecutting": {
@@ -10541,7 +10332,6 @@
       "item": "minecraft:eye_armor_trim_smithing_template",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "eye_armor_trim_smithing_template_smithing_trim": {
@@ -10654,7 +10444,6 @@
       "item": "minecraft:fishing_rod",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "fletching_table": {
@@ -10680,7 +10469,6 @@
       "item": "minecraft:fletching_table",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "flint_and_steel": {
@@ -10735,7 +10523,6 @@
       "item": "minecraft:flower_pot",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "furnace": {
@@ -10756,7 +10543,6 @@
       "item": "minecraft:furnace",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "furnace_minecart": {
@@ -10805,7 +10591,6 @@
       "item": "minecraft:glass_bottle",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "glass_pane": {
@@ -10826,7 +10611,6 @@
       "item": "minecraft:glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "glistering_melon_slice": {
@@ -10853,7 +10637,6 @@
       "item": "minecraft:glistering_melon_slice",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "glow_item_frame": {
@@ -10891,7 +10674,6 @@
       "item": "minecraft:glowstone",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "gold_block": {
@@ -10913,7 +10695,6 @@
       "item": "minecraft:gold_block",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "gold_ingot_from_blasting_deepslate_gold_ore": {
@@ -11003,7 +10784,6 @@
       "item": "minecraft:gold_ingot",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "gold_ingot_from_smelting_deepslate_gold_ore": {
@@ -11214,7 +10994,6 @@
       "item": "minecraft:golden_apple",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "golden_axe": {
@@ -11241,7 +11020,6 @@
       "item": "minecraft:golden_axe",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "golden_boots": {
@@ -11262,7 +11040,6 @@
       "item": "minecraft:golden_boots",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "golden_carrot": {
@@ -11289,7 +11066,6 @@
       "item": "minecraft:golden_carrot",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "golden_chestplate": {
@@ -11311,7 +11087,6 @@
       "item": "minecraft:golden_chestplate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "golden_helmet": {
@@ -11332,7 +11107,6 @@
       "item": "minecraft:golden_helmet",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "golden_hoe": {
@@ -11359,7 +11133,6 @@
       "item": "minecraft:golden_hoe",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "golden_leggings": {
@@ -11381,7 +11154,6 @@
       "item": "minecraft:golden_leggings",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "golden_pickaxe": {
@@ -11408,7 +11180,6 @@
       "item": "minecraft:golden_pickaxe",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "golden_shovel": {
@@ -11435,7 +11206,6 @@
       "item": "minecraft:golden_shovel",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "golden_sword": {
@@ -11462,7 +11232,6 @@
       "item": "minecraft:golden_sword",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "granite": {
@@ -11499,7 +11268,6 @@
       "item": "minecraft:granite_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "granite_slab_from_granite_stonecutting": {
@@ -11531,7 +11299,6 @@
       "item": "minecraft:granite_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "granite_stairs_from_granite_stonecutting": {
@@ -11562,7 +11329,6 @@
       "item": "minecraft:granite_wall",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "granite_wall_from_granite_stonecutting": {
@@ -11600,7 +11366,6 @@
       "item": "minecraft:gray_banner",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "gray_bed": {
@@ -11626,7 +11391,6 @@
       "item": "minecraft:gray_bed",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "gray_candle": {
@@ -11665,7 +11429,6 @@
       "item": "minecraft:gray_carpet",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "gray_concrete_powder": {
@@ -11761,7 +11524,6 @@
       "item": "minecraft:gray_stained_glass",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "gray_stained_glass_pane": {
@@ -11783,7 +11545,6 @@
       "item": "minecraft:gray_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "gray_stained_glass_pane_from_glass_pane": {
@@ -11811,7 +11572,6 @@
       "item": "minecraft:gray_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "gray_terracotta": {
@@ -11839,7 +11599,6 @@
       "item": "minecraft:gray_terracotta",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "green_banner": {
@@ -11867,7 +11626,6 @@
       "item": "minecraft:green_banner",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "green_bed": {
@@ -11893,7 +11651,6 @@
       "item": "minecraft:green_bed",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "green_candle": {
@@ -11932,7 +11689,6 @@
       "item": "minecraft:green_carpet",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "green_concrete_powder": {
@@ -12023,7 +11779,6 @@
       "item": "minecraft:green_stained_glass",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "green_stained_glass_pane": {
@@ -12045,7 +11800,6 @@
       "item": "minecraft:green_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "green_stained_glass_pane_from_glass_pane": {
@@ -12073,7 +11827,6 @@
       "item": "minecraft:green_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "green_terracotta": {
@@ -12101,7 +11854,6 @@
       "item": "minecraft:green_terracotta",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "grindstone": {
@@ -12131,7 +11883,6 @@
       "item": "minecraft:grindstone",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "hay_block": {
@@ -12189,7 +11940,6 @@
       "item": "minecraft:heavy_weighted_pressure_plate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "honey_block": {
@@ -12210,7 +11960,6 @@
       "item": "minecraft:honey_block",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "honey_bottle": {
@@ -12257,7 +12006,6 @@
       "item": "minecraft:honeycomb_block",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "hopper": {
@@ -12284,7 +12032,6 @@
       "item": "minecraft:hopper",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "hopper_minecart": {
@@ -12333,7 +12080,6 @@
       "item": "minecraft:host_armor_trim_smithing_template",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "host_armor_trim_smithing_template_smithing_trim": {
@@ -12372,7 +12118,6 @@
       "item": "minecraft:iron_axe",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "iron_bars": {
@@ -12393,7 +12138,6 @@
       "item": "minecraft:iron_bars",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "iron_block": {
@@ -12415,7 +12159,6 @@
       "item": "minecraft:iron_block",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "iron_boots": {
@@ -12436,7 +12179,6 @@
       "item": "minecraft:iron_boots",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "iron_chestplate": {
@@ -12458,7 +12200,6 @@
       "item": "minecraft:iron_chestplate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "iron_door": {
@@ -12480,7 +12221,6 @@
       "item": "minecraft:iron_door",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "iron_helmet": {
@@ -12501,7 +12241,6 @@
       "item": "minecraft:iron_helmet",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "iron_hoe": {
@@ -12528,7 +12267,6 @@
       "item": "minecraft:iron_hoe",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "iron_ingot_from_blasting_deepslate_iron_ore": {
@@ -12605,7 +12343,6 @@
       "item": "minecraft:iron_ingot",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "iron_ingot_from_smelting_deepslate_iron_ore": {
@@ -12666,7 +12403,6 @@
       "item": "minecraft:iron_leggings",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "iron_nugget": {
@@ -12865,7 +12601,6 @@
       "item": "minecraft:iron_pickaxe",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "iron_shovel": {
@@ -12892,7 +12627,6 @@
       "item": "minecraft:iron_shovel",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "iron_sword": {
@@ -12919,7 +12653,6 @@
       "item": "minecraft:iron_sword",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "iron_trapdoor": {
@@ -12940,7 +12673,6 @@
       "item": "minecraft:iron_trapdoor",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "item_frame": {
@@ -12967,7 +12699,6 @@
       "item": "minecraft:item_frame",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "jack_o_lantern": {
@@ -12993,7 +12724,6 @@
       "item": "minecraft:jack_o_lantern",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "jukebox": {
@@ -13019,7 +12749,6 @@
       "item": "minecraft:jukebox",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "jungle_boat": {
@@ -13041,7 +12770,6 @@
       "item": "minecraft:jungle_boat",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "jungle_button": {
@@ -13097,7 +12825,6 @@
       "item": "minecraft:jungle_door",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "jungle_fence": {
@@ -13124,7 +12851,6 @@
       "item": "minecraft:jungle_fence",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "jungle_fence_gate": {
@@ -13151,7 +12877,6 @@
       "item": "minecraft:jungle_fence_gate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "jungle_hanging_sign": {
@@ -13179,7 +12904,6 @@
       "item": "minecraft:jungle_hanging_sign",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "jungle_planks": {
@@ -13215,7 +12939,6 @@
       "item": "minecraft:jungle_pressure_plate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "jungle_sign": {
@@ -13243,7 +12966,6 @@
       "item": "minecraft:jungle_sign",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "jungle_slab": {
@@ -13264,7 +12986,6 @@
       "item": "minecraft:jungle_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "jungle_stairs": {
@@ -13287,7 +13008,6 @@
       "item": "minecraft:jungle_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "jungle_trapdoor": {
@@ -13309,7 +13029,6 @@
       "item": "minecraft:jungle_trapdoor",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "jungle_wood": {
@@ -13331,7 +13050,6 @@
       "item": "minecraft:jungle_wood",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "ladder": {
@@ -13353,7 +13071,6 @@
       "item": "minecraft:ladder",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "lantern": {
@@ -13380,7 +13097,6 @@
       "item": "minecraft:lantern",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "lapis_block": {
@@ -13402,7 +13118,6 @@
       "item": "minecraft:lapis_block",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "lapis_lazuli": {
@@ -13495,7 +13210,6 @@
       "item": "minecraft:lead",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "leather": {
@@ -13516,7 +13230,6 @@
       "item": "minecraft:leather",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "leather_boots": {
@@ -13537,7 +13250,6 @@
       "item": "minecraft:leather_boots",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "leather_chestplate": {
@@ -13559,7 +13271,6 @@
       "item": "minecraft:leather_chestplate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "leather_helmet": {
@@ -13580,7 +13291,6 @@
       "item": "minecraft:leather_helmet",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "leather_horse_armor": {
@@ -13602,7 +13312,6 @@
       "item": "minecraft:leather_horse_armor",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "leather_leggings": {
@@ -13624,7 +13333,6 @@
       "item": "minecraft:leather_leggings",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "lectern": {
@@ -13650,7 +13358,6 @@
       "item": "minecraft:lectern",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "lever": {
@@ -13676,7 +13383,6 @@
       "item": "minecraft:lever",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "light_blue_banner": {
@@ -13704,7 +13410,6 @@
       "item": "minecraft:light_blue_banner",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "light_blue_bed": {
@@ -13730,7 +13435,6 @@
       "item": "minecraft:light_blue_bed",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "light_blue_candle": {
@@ -13769,7 +13473,6 @@
       "item": "minecraft:light_blue_carpet",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "light_blue_concrete_powder": {
@@ -13881,7 +13584,6 @@
       "item": "minecraft:light_blue_stained_glass",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "light_blue_stained_glass_pane": {
@@ -13903,7 +13605,6 @@
       "item": "minecraft:light_blue_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "light_blue_stained_glass_pane_from_glass_pane": {
@@ -13931,7 +13632,6 @@
       "item": "minecraft:light_blue_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "light_blue_terracotta": {
@@ -13959,7 +13659,6 @@
       "item": "minecraft:light_blue_terracotta",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "light_gray_banner": {
@@ -13987,7 +13686,6 @@
       "item": "minecraft:light_gray_banner",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "light_gray_bed": {
@@ -14013,7 +13711,6 @@
       "item": "minecraft:light_gray_bed",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "light_gray_candle": {
@@ -14052,7 +13749,6 @@
       "item": "minecraft:light_gray_carpet",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "light_gray_concrete_powder": {
@@ -14215,7 +13911,6 @@
       "item": "minecraft:light_gray_stained_glass",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "light_gray_stained_glass_pane": {
@@ -14237,7 +13932,6 @@
       "item": "minecraft:light_gray_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "light_gray_stained_glass_pane_from_glass_pane": {
@@ -14265,7 +13959,6 @@
       "item": "minecraft:light_gray_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "light_gray_terracotta": {
@@ -14293,7 +13986,6 @@
       "item": "minecraft:light_gray_terracotta",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "light_weighted_pressure_plate": {
@@ -14313,7 +14005,6 @@
       "item": "minecraft:light_weighted_pressure_plate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "lightning_rod": {
@@ -14335,7 +14026,6 @@
       "item": "minecraft:lightning_rod",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "lime_banner": {
@@ -14363,7 +14053,6 @@
       "item": "minecraft:lime_banner",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "lime_bed": {
@@ -14389,7 +14078,6 @@
       "item": "minecraft:lime_bed",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "lime_candle": {
@@ -14428,7 +14116,6 @@
       "item": "minecraft:lime_carpet",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "lime_concrete_powder": {
@@ -14536,7 +14223,6 @@
       "item": "minecraft:lime_stained_glass",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "lime_stained_glass_pane": {
@@ -14558,7 +14244,6 @@
       "item": "minecraft:lime_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "lime_stained_glass_pane_from_glass_pane": {
@@ -14586,7 +14271,6 @@
       "item": "minecraft:lime_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "lime_terracotta": {
@@ -14614,7 +14298,6 @@
       "item": "minecraft:lime_terracotta",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "lodestone": {
@@ -14641,7 +14324,6 @@
       "item": "minecraft:lodestone",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "loom": {
@@ -14666,7 +14348,6 @@
       "item": "minecraft:loom",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "magenta_banner": {
@@ -14694,7 +14375,6 @@
       "item": "minecraft:magenta_banner",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "magenta_bed": {
@@ -14720,7 +14400,6 @@
       "item": "minecraft:magenta_bed",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "magenta_candle": {
@@ -14759,7 +14438,6 @@
       "item": "minecraft:magenta_carpet",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "magenta_concrete_powder": {
@@ -14931,7 +14609,6 @@
       "item": "minecraft:magenta_stained_glass",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "magenta_stained_glass_pane": {
@@ -14953,7 +14630,6 @@
       "item": "minecraft:magenta_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "magenta_stained_glass_pane_from_glass_pane": {
@@ -14981,7 +14657,6 @@
       "item": "minecraft:magenta_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "magenta_terracotta": {
@@ -15009,7 +14684,6 @@
       "item": "minecraft:magenta_terracotta",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "magma_block": {
@@ -15030,7 +14704,6 @@
       "item": "minecraft:magma_block",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "magma_cream": {
@@ -15069,7 +14742,6 @@
       "item": "minecraft:mangrove_boat",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "mangrove_button": {
@@ -15125,7 +14797,6 @@
       "item": "minecraft:mangrove_door",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "mangrove_fence": {
@@ -15152,7 +14823,6 @@
       "item": "minecraft:mangrove_fence",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "mangrove_fence_gate": {
@@ -15179,7 +14849,6 @@
       "item": "minecraft:mangrove_fence_gate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "mangrove_hanging_sign": {
@@ -15207,7 +14876,6 @@
       "item": "minecraft:mangrove_hanging_sign",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "mangrove_planks": {
@@ -15243,7 +14911,6 @@
       "item": "minecraft:mangrove_pressure_plate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "mangrove_sign": {
@@ -15271,7 +14938,6 @@
       "item": "minecraft:mangrove_sign",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "mangrove_slab": {
@@ -15292,7 +14958,6 @@
       "item": "minecraft:mangrove_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "mangrove_stairs": {
@@ -15315,7 +14980,6 @@
       "item": "minecraft:mangrove_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "mangrove_trapdoor": {
@@ -15337,7 +15001,6 @@
       "item": "minecraft:mangrove_trapdoor",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "mangrove_wood": {
@@ -15359,7 +15022,6 @@
       "item": "minecraft:mangrove_wood",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "map": {
@@ -15386,7 +15048,6 @@
       "item": "minecraft:map",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "map_cloning": {
@@ -15467,7 +15128,6 @@
       "item": "minecraft:minecart",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "mojang_banner_pattern": {
@@ -15505,7 +15165,6 @@
       "item": "minecraft:moss_carpet",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "mossy_cobblestone_from_moss_block": {
@@ -15561,7 +15220,6 @@
       "item": "minecraft:mossy_cobblestone_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "mossy_cobblestone_slab_from_mossy_cobblestone_stonecutting": {
@@ -15593,7 +15251,6 @@
       "item": "minecraft:mossy_cobblestone_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "mossy_cobblestone_stairs_from_mossy_cobblestone_stonecutting": {
@@ -15624,7 +15281,6 @@
       "item": "minecraft:mossy_cobblestone_wall",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "mossy_cobblestone_wall_from_mossy_cobblestone_stonecutting": {
@@ -15654,7 +15310,6 @@
       "item": "minecraft:mossy_stone_brick_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "mossy_stone_brick_slab_from_mossy_stone_brick_stonecutting": {
@@ -15686,7 +15341,6 @@
       "item": "minecraft:mossy_stone_brick_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "mossy_stone_brick_stairs_from_mossy_stone_brick_stonecutting": {
@@ -15717,7 +15371,6 @@
       "item": "minecraft:mossy_stone_brick_wall",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "mossy_stone_brick_wall_from_mossy_stone_brick_stonecutting": {
@@ -15783,7 +15436,6 @@
       "item": "minecraft:mud_brick_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "mud_brick_slab_from_mud_bricks_stonecutting": {
@@ -15815,7 +15467,6 @@
       "item": "minecraft:mud_brick_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "mud_brick_stairs_from_mud_bricks_stonecutting": {
@@ -15846,7 +15497,6 @@
       "item": "minecraft:mud_brick_wall",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "mud_brick_wall_from_mud_bricks_stonecutting": {
@@ -15877,7 +15527,6 @@
       "item": "minecraft:mud_bricks",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "muddy_mangrove_roots": {
@@ -15990,7 +15639,6 @@
       "item": "minecraft:nether_brick_fence",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "nether_brick_slab": {
@@ -16010,7 +15658,6 @@
       "item": "minecraft:nether_brick_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "nether_brick_slab_from_nether_bricks_stonecutting": {
@@ -16042,7 +15689,6 @@
       "item": "minecraft:nether_brick_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "nether_brick_stairs_from_nether_bricks_stonecutting": {
@@ -16073,7 +15719,6 @@
       "item": "minecraft:nether_brick_wall",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "nether_brick_wall_from_nether_bricks_stonecutting": {
@@ -16104,7 +15749,6 @@
       "item": "minecraft:nether_bricks",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "nether_wart_block": {
@@ -16181,7 +15825,6 @@
       "item": "minecraft:netherite_block",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "netherite_boots_smithing": {
@@ -16424,7 +16067,6 @@
       "item": "minecraft:netherite_upgrade_smithing_template",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "note_block": {
@@ -16450,7 +16092,6 @@
       "item": "minecraft:note_block",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "oak_boat": {
@@ -16472,7 +16113,6 @@
       "item": "minecraft:oak_boat",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "oak_button": {
@@ -16528,7 +16168,6 @@
       "item": "minecraft:oak_door",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "oak_fence": {
@@ -16555,7 +16194,6 @@
       "item": "minecraft:oak_fence",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "oak_fence_gate": {
@@ -16582,7 +16220,6 @@
       "item": "minecraft:oak_fence_gate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "oak_hanging_sign": {
@@ -16610,7 +16247,6 @@
       "item": "minecraft:oak_hanging_sign",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "oak_planks": {
@@ -16646,7 +16282,6 @@
       "item": "minecraft:oak_pressure_plate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "oak_sign": {
@@ -16674,7 +16309,6 @@
       "item": "minecraft:oak_sign",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "oak_slab": {
@@ -16695,7 +16329,6 @@
       "item": "minecraft:oak_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "oak_stairs": {
@@ -16718,7 +16351,6 @@
       "item": "minecraft:oak_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "oak_trapdoor": {
@@ -16740,7 +16372,6 @@
       "item": "minecraft:oak_trapdoor",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "oak_wood": {
@@ -16762,7 +16393,6 @@
       "item": "minecraft:oak_wood",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "observer": {
@@ -16794,7 +16424,6 @@
       "item": "minecraft:observer",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "orange_banner": {
@@ -16822,7 +16451,6 @@
       "item": "minecraft:orange_banner",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "orange_bed": {
@@ -16848,7 +16476,6 @@
       "item": "minecraft:orange_bed",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "orange_candle": {
@@ -16887,7 +16514,6 @@
       "item": "minecraft:orange_carpet",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "orange_concrete_powder": {
@@ -17014,7 +16640,6 @@
       "item": "minecraft:orange_stained_glass",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "orange_stained_glass_pane": {
@@ -17036,7 +16661,6 @@
       "item": "minecraft:orange_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "orange_stained_glass_pane_from_glass_pane": {
@@ -17064,7 +16688,6 @@
       "item": "minecraft:orange_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "orange_terracotta": {
@@ -17092,7 +16715,6 @@
       "item": "minecraft:orange_terracotta",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "oxidized_cut_copper": {
@@ -17113,7 +16735,6 @@
       "item": "minecraft:oxidized_cut_copper",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "oxidized_cut_copper_from_oxidized_copper_stonecutting": {
@@ -17143,7 +16764,6 @@
       "item": "minecraft:oxidized_cut_copper_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "oxidized_cut_copper_slab_from_oxidized_copper_stonecutting": {
@@ -17185,7 +16805,6 @@
       "item": "minecraft:oxidized_cut_copper_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "oxidized_cut_copper_stairs_from_oxidized_copper_stonecutting": {
@@ -17286,7 +16905,6 @@
       "item": "minecraft:painting",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "paper": {
@@ -17306,7 +16924,6 @@
       "item": "minecraft:paper",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "pink_banner": {
@@ -17334,7 +16951,6 @@
       "item": "minecraft:pink_banner",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "pink_bed": {
@@ -17360,7 +16976,6 @@
       "item": "minecraft:pink_bed",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "pink_candle": {
@@ -17399,7 +17014,6 @@
       "item": "minecraft:pink_carpet",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "pink_concrete_powder": {
@@ -17541,7 +17155,6 @@
       "item": "minecraft:pink_stained_glass",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "pink_stained_glass_pane": {
@@ -17563,7 +17176,6 @@
       "item": "minecraft:pink_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "pink_stained_glass_pane_from_glass_pane": {
@@ -17591,7 +17203,6 @@
       "item": "minecraft:pink_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "pink_terracotta": {
@@ -17619,7 +17230,6 @@
       "item": "minecraft:pink_terracotta",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "piston": {
@@ -17655,7 +17265,6 @@
       "item": "minecraft:piston",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "polished_andesite": {
@@ -17676,7 +17285,6 @@
       "item": "minecraft:polished_andesite",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "polished_andesite_from_andesite_stonecutting": {
@@ -17706,7 +17314,6 @@
       "item": "minecraft:polished_andesite_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "polished_andesite_slab_from_andesite_stonecutting": {
@@ -17748,7 +17355,6 @@
       "item": "minecraft:polished_andesite_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "polished_andesite_stairs_from_andesite_stonecutting": {
@@ -17789,7 +17395,6 @@
       "item": "minecraft:polished_basalt",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "polished_basalt_from_basalt_stonecutting": {
@@ -17820,7 +17425,6 @@
       "item": "minecraft:polished_blackstone",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "polished_blackstone_brick_slab": {
@@ -17840,7 +17444,6 @@
       "item": "minecraft:polished_blackstone_brick_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "polished_blackstone_brick_slab_from_blackstone_stonecutting": {
@@ -17892,7 +17495,6 @@
       "item": "minecraft:polished_blackstone_brick_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "polished_blackstone_brick_stairs_from_blackstone_stonecutting": {
@@ -17943,7 +17545,6 @@
       "item": "minecraft:polished_blackstone_brick_wall",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "polished_blackstone_brick_wall_from_blackstone_stonecutting": {
@@ -17994,7 +17595,6 @@
       "item": "minecraft:polished_blackstone_bricks",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "polished_blackstone_bricks_from_blackstone_stonecutting": {
@@ -18058,7 +17658,6 @@
       "item": "minecraft:polished_blackstone_pressure_plate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "polished_blackstone_slab": {
@@ -18078,7 +17677,6 @@
       "item": "minecraft:polished_blackstone_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "polished_blackstone_slab_from_blackstone_stonecutting": {
@@ -18120,7 +17718,6 @@
       "item": "minecraft:polished_blackstone_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "polished_blackstone_stairs_from_blackstone_stonecutting": {
@@ -18161,7 +17758,6 @@
       "item": "minecraft:polished_blackstone_wall",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "polished_blackstone_wall_from_blackstone_stonecutting": {
@@ -18202,7 +17798,6 @@
       "item": "minecraft:polished_deepslate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "polished_deepslate_from_cobbled_deepslate_stonecutting": {
@@ -18232,7 +17827,6 @@
       "item": "minecraft:polished_deepslate_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "polished_deepslate_slab_from_cobbled_deepslate_stonecutting": {
@@ -18274,7 +17868,6 @@
       "item": "minecraft:polished_deepslate_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "polished_deepslate_stairs_from_cobbled_deepslate_stonecutting": {
@@ -18315,7 +17908,6 @@
       "item": "minecraft:polished_deepslate_wall",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "polished_deepslate_wall_from_cobbled_deepslate_stonecutting": {
@@ -18356,7 +17948,6 @@
       "item": "minecraft:polished_diorite",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "polished_diorite_from_diorite_stonecutting": {
@@ -18386,7 +17977,6 @@
       "item": "minecraft:polished_diorite_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "polished_diorite_slab_from_diorite_stonecutting": {
@@ -18428,7 +18018,6 @@
       "item": "minecraft:polished_diorite_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "polished_diorite_stairs_from_diorite_stonecutting": {
@@ -18469,7 +18058,6 @@
       "item": "minecraft:polished_granite",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "polished_granite_from_granite_stonecutting": {
@@ -18499,7 +18087,6 @@
       "item": "minecraft:polished_granite_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "polished_granite_slab_from_granite_stonecutting": {
@@ -18541,7 +18128,6 @@
       "item": "minecraft:polished_granite_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "polished_granite_stairs_from_granite_stonecutting": {
@@ -18605,7 +18191,6 @@
       "item": "minecraft:powered_rail",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "prismarine": {
@@ -18626,7 +18211,6 @@
       "item": "minecraft:prismarine",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "prismarine_brick_slab": {
@@ -18646,7 +18230,6 @@
       "item": "minecraft:prismarine_brick_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "prismarine_brick_slab_from_prismarine_stonecutting": {
@@ -18678,7 +18261,6 @@
       "item": "minecraft:prismarine_brick_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "prismarine_brick_stairs_from_prismarine_stonecutting": {
@@ -18746,7 +18328,6 @@
       "item": "minecraft:prismarine_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "prismarine_slab_from_prismarine_stonecutting": {
@@ -18778,7 +18359,6 @@
       "item": "minecraft:prismarine_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "prismarine_stairs_from_prismarine_stonecutting": {
@@ -18809,7 +18389,6 @@
       "item": "minecraft:prismarine_wall",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "prismarine_wall_from_prismarine_stonecutting": {
@@ -18881,7 +18460,6 @@
       "item": "minecraft:purple_banner",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "purple_bed": {
@@ -18907,7 +18485,6 @@
       "item": "minecraft:purple_bed",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "purple_candle": {
@@ -18946,7 +18523,6 @@
       "item": "minecraft:purple_carpet",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "purple_concrete_powder": {
@@ -19042,7 +18618,6 @@
       "item": "minecraft:purple_stained_glass",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "purple_stained_glass_pane": {
@@ -19064,7 +18639,6 @@
       "item": "minecraft:purple_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "purple_stained_glass_pane_from_glass_pane": {
@@ -19092,7 +18666,6 @@
       "item": "minecraft:purple_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "purple_terracotta": {
@@ -19120,7 +18693,6 @@
       "item": "minecraft:purple_terracotta",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "purpur_block": {
@@ -19141,7 +18713,6 @@
       "item": "minecraft:purpur_block",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "purpur_pillar": {
@@ -19162,7 +18733,6 @@
       "item": "minecraft:purpur_pillar",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "purpur_pillar_from_purpur_block_stonecutting": {
@@ -19199,7 +18769,6 @@
       "item": "minecraft:purpur_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "purpur_slab_from_purpur_block_stonecutting": {
@@ -19238,7 +18807,6 @@
       "item": "minecraft:purpur_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "purpur_stairs_from_purpur_block_stonecutting": {
@@ -19281,7 +18849,6 @@
       "item": "minecraft:quartz_block",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "quartz_bricks": {
@@ -19302,7 +18869,6 @@
       "item": "minecraft:quartz_bricks",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "quartz_bricks_from_quartz_block_stonecutting": {
@@ -19345,7 +18911,6 @@
       "item": "minecraft:quartz_pillar",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "quartz_pillar_from_quartz_block_stonecutting": {
@@ -19387,7 +18952,6 @@
       "item": "minecraft:quartz_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "quartz_slab_from_stonecutting": {
@@ -19431,7 +18995,6 @@
       "item": "minecraft:quartz_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "quartz_stairs_from_quartz_block_stonecutting": {
@@ -19522,7 +19085,6 @@
       "item": "minecraft:rail",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "raiser_armor_trim_smithing_template": {
@@ -19554,7 +19116,6 @@
       "item": "minecraft:raiser_armor_trim_smithing_template",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "raiser_armor_trim_smithing_template_smithing_trim": {
@@ -19602,7 +19163,6 @@
       "item": "minecraft:raw_copper_block",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "raw_gold": {
@@ -19638,7 +19198,6 @@
       "item": "minecraft:raw_gold_block",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "raw_iron": {
@@ -19674,7 +19233,6 @@
       "item": "minecraft:raw_iron_block",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "recovery_compass": {
@@ -19701,7 +19259,6 @@
       "item": "minecraft:recovery_compass",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "red_banner": {
@@ -19729,7 +19286,6 @@
       "item": "minecraft:red_banner",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "red_bed": {
@@ -19755,7 +19311,6 @@
       "item": "minecraft:red_bed",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "red_candle": {
@@ -19794,7 +19349,6 @@
       "item": "minecraft:red_carpet",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "red_concrete_powder": {
@@ -19925,7 +19479,6 @@
       "item": "minecraft:red_nether_brick_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "red_nether_brick_slab_from_red_nether_bricks_stonecutting": {
@@ -19957,7 +19510,6 @@
       "item": "minecraft:red_nether_brick_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "red_nether_brick_stairs_from_red_nether_bricks_stonecutting": {
@@ -19988,7 +19540,6 @@
       "item": "minecraft:red_nether_brick_wall",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "red_nether_brick_wall_from_red_nether_bricks_stonecutting": {
@@ -20024,7 +19575,6 @@
       "item": "minecraft:red_nether_bricks",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "red_sandstone": {
@@ -20045,7 +19595,6 @@
       "item": "minecraft:red_sandstone",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "red_sandstone_slab": {
@@ -20072,7 +19621,6 @@
       "item": "minecraft:red_sandstone_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "red_sandstone_slab_from_red_sandstone_stonecutting": {
@@ -20116,7 +19664,6 @@
       "item": "minecraft:red_sandstone_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "red_sandstone_stairs_from_red_sandstone_stonecutting": {
@@ -20147,7 +19694,6 @@
       "item": "minecraft:red_sandstone_wall",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "red_sandstone_wall_from_red_sandstone_stonecutting": {
@@ -20185,7 +19731,6 @@
       "item": "minecraft:red_stained_glass",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "red_stained_glass_pane": {
@@ -20207,7 +19752,6 @@
       "item": "minecraft:red_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "red_stained_glass_pane_from_glass_pane": {
@@ -20235,7 +19779,6 @@
       "item": "minecraft:red_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "red_terracotta": {
@@ -20263,7 +19806,6 @@
       "item": "minecraft:red_terracotta",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "redstone": {
@@ -20299,7 +19841,6 @@
       "item": "minecraft:redstone_block",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "redstone_from_blasting_deepslate_redstone_ore": {
@@ -20378,7 +19919,6 @@
       "item": "minecraft:redstone_lamp",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "redstone_torch": {
@@ -20404,7 +19944,6 @@
       "item": "minecraft:redstone_torch",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "repair_item": {
@@ -20439,7 +19978,6 @@
       "item": "minecraft:repeater",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "respawn_anchor": {
@@ -20466,7 +20004,6 @@
       "item": "minecraft:respawn_anchor",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "rib_armor_trim_smithing_template": {
@@ -20498,7 +20035,6 @@
       "item": "minecraft:rib_armor_trim_smithing_template",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "rib_armor_trim_smithing_template_smithing_trim": {
@@ -20531,7 +20067,6 @@
       "item": "minecraft:sandstone",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "sandstone_slab": {
@@ -20558,7 +20093,6 @@
       "item": "minecraft:sandstone_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "sandstone_slab_from_sandstone_stonecutting": {
@@ -20602,7 +20136,6 @@
       "item": "minecraft:sandstone_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "sandstone_stairs_from_sandstone_stonecutting": {
@@ -20633,7 +20166,6 @@
       "item": "minecraft:sandstone_wall",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "sandstone_wall_from_sandstone_stonecutting": {
@@ -20670,7 +20202,6 @@
       "item": "minecraft:scaffolding",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "sea_lantern": {
@@ -20697,7 +20228,6 @@
       "item": "minecraft:sea_lantern",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "sentry_armor_trim_smithing_template": {
@@ -20729,7 +20259,6 @@
       "item": "minecraft:sentry_armor_trim_smithing_template",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "sentry_armor_trim_smithing_template_smithing_trim": {
@@ -20773,7 +20302,6 @@
       "item": "minecraft:shaper_armor_trim_smithing_template",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "shaper_armor_trim_smithing_template_smithing_trim": {
@@ -20806,7 +20334,6 @@
       "item": "minecraft:shears",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "shield": {
@@ -20832,7 +20359,6 @@
       "item": "minecraft:shield",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "shield_decoration": {
@@ -20863,7 +20389,6 @@
       "item": "minecraft:shulker_box",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "shulker_box_coloring": {
@@ -20899,7 +20424,6 @@
       "item": "minecraft:silence_armor_trim_smithing_template",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "silence_armor_trim_smithing_template_smithing_trim": {
@@ -20964,7 +20488,6 @@
       "item": "minecraft:slime_block",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "smithing_table": {
@@ -20990,7 +20513,6 @@
       "item": "minecraft:smithing_table",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "smoker": {
@@ -21016,7 +20538,6 @@
       "item": "minecraft:smoker",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "smooth_basalt": {
@@ -21060,7 +20581,6 @@
       "item": "minecraft:smooth_quartz_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "smooth_quartz_slab_from_smooth_quartz_stonecutting": {
@@ -21092,7 +20612,6 @@
       "item": "minecraft:smooth_quartz_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "smooth_quartz_stairs_from_smooth_quartz_stonecutting": {
@@ -21134,7 +20653,6 @@
       "item": "minecraft:smooth_red_sandstone_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "smooth_red_sandstone_slab_from_smooth_red_sandstone_stonecutting": {
@@ -21166,7 +20684,6 @@
       "item": "minecraft:smooth_red_sandstone_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "smooth_red_sandstone_stairs_from_smooth_red_sandstone_stonecutting": {
@@ -21208,7 +20725,6 @@
       "item": "minecraft:smooth_sandstone_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "smooth_sandstone_slab_from_smooth_sandstone_stonecutting": {
@@ -21240,7 +20756,6 @@
       "item": "minecraft:smooth_sandstone_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "smooth_sandstone_stairs_from_smooth_sandstone_stonecutting": {
@@ -21282,7 +20797,6 @@
       "item": "minecraft:smooth_stone_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "smooth_stone_slab_from_smooth_stone_stonecutting": {
@@ -21324,7 +20838,6 @@
       "item": "minecraft:snout_armor_trim_smithing_template",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "snout_armor_trim_smithing_template_smithing_trim": {
@@ -21356,7 +20869,6 @@
       "item": "minecraft:snow",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "snow_block": {
@@ -21377,7 +20889,6 @@
       "item": "minecraft:snow_block",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "soul_campfire": {
@@ -21407,7 +20918,6 @@
       "item": "minecraft:soul_campfire",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "soul_lantern": {
@@ -21434,7 +20944,6 @@
       "item": "minecraft:soul_lantern",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "soul_torch": {
@@ -21472,7 +20981,6 @@
       "item": "minecraft:soul_torch",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "spectral_arrow": {
@@ -21499,7 +21007,6 @@
       "item": "minecraft:spectral_arrow",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "spire_armor_trim_smithing_template": {
@@ -21531,7 +21038,6 @@
       "item": "minecraft:spire_armor_trim_smithing_template",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "spire_armor_trim_smithing_template_smithing_trim": {
@@ -21577,7 +21083,6 @@
       "item": "minecraft:spruce_boat",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "spruce_button": {
@@ -21633,7 +21138,6 @@
       "item": "minecraft:spruce_door",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "spruce_fence": {
@@ -21660,7 +21164,6 @@
       "item": "minecraft:spruce_fence",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "spruce_fence_gate": {
@@ -21687,7 +21190,6 @@
       "item": "minecraft:spruce_fence_gate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "spruce_hanging_sign": {
@@ -21715,7 +21217,6 @@
       "item": "minecraft:spruce_hanging_sign",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "spruce_planks": {
@@ -21751,7 +21252,6 @@
       "item": "minecraft:spruce_pressure_plate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "spruce_sign": {
@@ -21779,7 +21279,6 @@
       "item": "minecraft:spruce_sign",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "spruce_slab": {
@@ -21800,7 +21299,6 @@
       "item": "minecraft:spruce_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "spruce_stairs": {
@@ -21823,7 +21321,6 @@
       "item": "minecraft:spruce_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "spruce_trapdoor": {
@@ -21845,7 +21342,6 @@
       "item": "minecraft:spruce_trapdoor",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "spruce_wood": {
@@ -21867,7 +21363,6 @@
       "item": "minecraft:spruce_wood",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "spyglass": {
@@ -21894,7 +21389,6 @@
       "item": "minecraft:spyglass",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "stick": {
@@ -21915,7 +21409,6 @@
       "item": "minecraft:stick",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "stick_from_bamboo_item": {
@@ -21937,7 +21430,6 @@
       "item": "minecraft:stick",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "sticky_piston": {
@@ -21963,7 +21455,6 @@
       "item": "minecraft:sticky_piston",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "stone": {
@@ -22001,7 +21492,6 @@
       "item": "minecraft:stone_axe",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "stone_brick_slab": {
@@ -22021,7 +21511,6 @@
       "item": "minecraft:stone_brick_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "stone_brick_slab_from_stone_bricks_stonecutting": {
@@ -22063,7 +21552,6 @@
       "item": "minecraft:stone_brick_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "stone_brick_stairs_from_stone_bricks_stonecutting": {
@@ -22104,7 +21592,6 @@
       "item": "minecraft:stone_brick_wall",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "stone_brick_wall_from_stone_bricks_stonecutting": {
@@ -22145,7 +21632,6 @@
       "item": "minecraft:stone_bricks",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "stone_bricks_from_stone_stonecutting": {
@@ -22195,7 +21681,6 @@
       "item": "minecraft:stone_hoe",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "stone_pickaxe": {
@@ -22221,7 +21706,6 @@
       "item": "minecraft:stone_pickaxe",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "stone_pressure_plate": {
@@ -22241,7 +21725,6 @@
       "item": "minecraft:stone_pressure_plate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "stone_shovel": {
@@ -22267,7 +21750,6 @@
       "item": "minecraft:stone_shovel",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "stone_slab": {
@@ -22287,7 +21769,6 @@
       "item": "minecraft:stone_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "stone_slab_from_stone_stonecutting": {
@@ -22319,7 +21800,6 @@
       "item": "minecraft:stone_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "stone_stairs_from_stone_stonecutting": {
@@ -22355,7 +21835,6 @@
       "item": "minecraft:stone_sword",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "stonecutter": {
@@ -22381,7 +21860,6 @@
       "item": "minecraft:stonecutter",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "stripped_acacia_wood": {
@@ -22403,7 +21881,6 @@
       "item": "minecraft:stripped_acacia_wood",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "stripped_birch_wood": {
@@ -22425,7 +21902,6 @@
       "item": "minecraft:stripped_birch_wood",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "stripped_cherry_wood": {
@@ -22447,7 +21923,6 @@
       "item": "minecraft:stripped_cherry_wood",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "stripped_crimson_hyphae": {
@@ -22469,7 +21944,6 @@
       "item": "minecraft:stripped_crimson_hyphae",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "stripped_dark_oak_wood": {
@@ -22491,7 +21965,6 @@
       "item": "minecraft:stripped_dark_oak_wood",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "stripped_jungle_wood": {
@@ -22513,7 +21986,6 @@
       "item": "minecraft:stripped_jungle_wood",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "stripped_mangrove_wood": {
@@ -22535,7 +22007,6 @@
       "item": "minecraft:stripped_mangrove_wood",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "stripped_oak_wood": {
@@ -22557,7 +22028,6 @@
       "item": "minecraft:stripped_oak_wood",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "stripped_spruce_wood": {
@@ -22579,7 +22049,6 @@
       "item": "minecraft:stripped_spruce_wood",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "stripped_warped_hyphae": {
@@ -22601,7 +22070,6 @@
       "item": "minecraft:stripped_warped_hyphae",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "sugar_from_honey_bottle": {
@@ -22662,7 +22130,6 @@
       "item": "minecraft:target",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "terracotta": {
@@ -22706,7 +22173,6 @@
       "item": "minecraft:tide_armor_trim_smithing_template",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "tide_armor_trim_smithing_template_smithing_trim": {
@@ -22745,7 +22211,6 @@
       "item": "minecraft:tinted_glass",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "tipped_arrow": {
@@ -22783,7 +22248,6 @@
       "item": "minecraft:tnt",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "tnt_minecart": {
@@ -22833,7 +22297,6 @@
       "item": "minecraft:torch",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "trapped_chest": {
@@ -22881,7 +22344,6 @@
       "item": "minecraft:tripwire_hook",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "turtle_helmet": {
@@ -22902,7 +22364,6 @@
       "item": "minecraft:turtle_helmet",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "vex_armor_trim_smithing_template": {
@@ -22934,7 +22395,6 @@
       "item": "minecraft:vex_armor_trim_smithing_template",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "vex_armor_trim_smithing_template_smithing_trim": {
@@ -22978,7 +22438,6 @@
       "item": "minecraft:ward_armor_trim_smithing_template",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "ward_armor_trim_smithing_template_smithing_trim": {
@@ -23028,7 +22487,6 @@
       "item": "minecraft:warped_door",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "warped_fence": {
@@ -23055,7 +22513,6 @@
       "item": "minecraft:warped_fence",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "warped_fence_gate": {
@@ -23082,7 +22539,6 @@
       "item": "minecraft:warped_fence_gate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "warped_fungus_on_a_stick": {
@@ -23108,7 +22564,6 @@
       "item": "minecraft:warped_fungus_on_a_stick",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "warped_hanging_sign": {
@@ -23136,7 +22591,6 @@
       "item": "minecraft:warped_hanging_sign",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "warped_hyphae": {
@@ -23158,7 +22612,6 @@
       "item": "minecraft:warped_hyphae",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "warped_planks": {
@@ -23194,7 +22647,6 @@
       "item": "minecraft:warped_pressure_plate",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "warped_sign": {
@@ -23222,7 +22674,6 @@
       "item": "minecraft:warped_sign",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "warped_slab": {
@@ -23243,7 +22694,6 @@
       "item": "minecraft:warped_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "warped_stairs": {
@@ -23266,7 +22716,6 @@
       "item": "minecraft:warped_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "warped_trapdoor": {
@@ -23288,7 +22737,6 @@
       "item": "minecraft:warped_trapdoor",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "waxed_copper_block_from_honeycomb": {
@@ -23328,7 +22776,6 @@
       "item": "minecraft:waxed_cut_copper",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "waxed_cut_copper_from_honeycomb": {
@@ -23377,7 +22824,6 @@
       "item": "minecraft:waxed_cut_copper_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "waxed_cut_copper_slab_from_honeycomb": {
@@ -23438,7 +22884,6 @@
       "item": "minecraft:waxed_cut_copper_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "waxed_cut_copper_stairs_from_honeycomb": {
@@ -23516,7 +22961,6 @@
       "item": "minecraft:waxed_exposed_cut_copper",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "waxed_exposed_cut_copper_from_honeycomb": {
@@ -23565,7 +23009,6 @@
       "item": "minecraft:waxed_exposed_cut_copper_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "waxed_exposed_cut_copper_slab_from_honeycomb": {
@@ -23626,7 +23069,6 @@
       "item": "minecraft:waxed_exposed_cut_copper_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "waxed_exposed_cut_copper_stairs_from_honeycomb": {
@@ -23704,7 +23146,6 @@
       "item": "minecraft:waxed_oxidized_cut_copper",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "waxed_oxidized_cut_copper_from_honeycomb": {
@@ -23753,7 +23194,6 @@
       "item": "minecraft:waxed_oxidized_cut_copper_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "waxed_oxidized_cut_copper_slab_from_honeycomb": {
@@ -23814,7 +23254,6 @@
       "item": "minecraft:waxed_oxidized_cut_copper_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "waxed_oxidized_cut_copper_stairs_from_honeycomb": {
@@ -23892,7 +23331,6 @@
       "item": "minecraft:waxed_weathered_cut_copper",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "waxed_weathered_cut_copper_from_honeycomb": {
@@ -23941,7 +23379,6 @@
       "item": "minecraft:waxed_weathered_cut_copper_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "waxed_weathered_cut_copper_slab_from_honeycomb": {
@@ -24002,7 +23439,6 @@
       "item": "minecraft:waxed_weathered_cut_copper_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "waxed_weathered_cut_copper_stairs_from_honeycomb": {
@@ -24072,7 +23508,6 @@
       "item": "minecraft:wayfinder_armor_trim_smithing_template",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "wayfinder_armor_trim_smithing_template_smithing_trim": {
@@ -24105,7 +23540,6 @@
       "item": "minecraft:weathered_cut_copper",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "weathered_cut_copper_from_weathered_copper_stonecutting": {
@@ -24135,7 +23569,6 @@
       "item": "minecraft:weathered_cut_copper_slab",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "weathered_cut_copper_slab_from_weathered_copper_stonecutting": {
@@ -24177,7 +23610,6 @@
       "item": "minecraft:weathered_cut_copper_stairs",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "weathered_cut_copper_stairs_from_weathered_copper_stonecutting": {
@@ -24239,7 +23671,6 @@
       "item": "minecraft:white_banner",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "white_bed": {
@@ -24265,7 +23696,6 @@
       "item": "minecraft:white_bed",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "white_candle": {
@@ -24304,7 +23734,6 @@
       "item": "minecraft:white_carpet",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "white_concrete_powder": {
@@ -24413,7 +23842,6 @@
       "item": "minecraft:white_stained_glass",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "white_stained_glass_pane": {
@@ -24435,7 +23863,6 @@
       "item": "minecraft:white_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "white_stained_glass_pane_from_glass_pane": {
@@ -24463,7 +23890,6 @@
       "item": "minecraft:white_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "white_terracotta": {
@@ -24491,7 +23917,6 @@
       "item": "minecraft:white_terracotta",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "white_wool_from_string": {
@@ -24512,7 +23937,6 @@
       "item": "minecraft:white_wool",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "wild_armor_trim_smithing_template": {
@@ -24544,7 +23968,6 @@
       "item": "minecraft:wild_armor_trim_smithing_template",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "wild_armor_trim_smithing_template_smithing_trim": {
@@ -24582,7 +24005,6 @@
       "item": "minecraft:wooden_axe",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "wooden_hoe": {
@@ -24608,7 +24030,6 @@
       "item": "minecraft:wooden_hoe",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "wooden_pickaxe": {
@@ -24634,7 +24055,6 @@
       "item": "minecraft:wooden_pickaxe",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "wooden_shovel": {
@@ -24660,7 +24080,6 @@
       "item": "minecraft:wooden_shovel",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "wooden_sword": {
@@ -24686,7 +24105,6 @@
       "item": "minecraft:wooden_sword",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "writable_book": {
@@ -24734,7 +24152,6 @@
       "item": "minecraft:yellow_banner",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "yellow_bed": {
@@ -24760,7 +24177,6 @@
       "item": "minecraft:yellow_bed",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "yellow_candle": {
@@ -24799,7 +24215,6 @@
       "item": "minecraft:yellow_carpet",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "yellow_concrete_powder": {
@@ -24908,7 +24323,6 @@
       "item": "minecraft:yellow_stained_glass",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "yellow_stained_glass_pane": {
@@ -24930,7 +24344,6 @@
       "item": "minecraft:yellow_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "yellow_stained_glass_pane_from_glass_pane": {
@@ -24958,7 +24371,6 @@
       "item": "minecraft:yellow_stained_glass_pane",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   },
   "yellow_terracotta": {
@@ -24986,7 +24398,6 @@
       "item": "minecraft:yellow_terracotta",
       "tag": null
     },
-    "show_notification": true,
     "type": "minecraft:crafting_shaped"
   }
 }

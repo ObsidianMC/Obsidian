@@ -5,7 +5,7 @@ namespace Obsidian.WorldData.Decorators;
 
 public static class DecoratorFactory
 {
-    private static readonly Type[] argumentCache = new[] { typeof(Biome), typeof(Chunk), typeof(Vector), typeof(GenHelper) };
+    private static readonly Type[] argumentCache = [typeof(Biome), typeof(Chunk), typeof(Vector), typeof(GenHelper)];
     public static readonly ParameterExpression[] expressionParameters = argumentCache.Select((t, i) => Expression.Parameter(t, $"param{i}")).ToArray();
 
     private static readonly ConcurrentDictionary<Biome, Func<Biome, Chunk, Vector, GenHelper, BaseDecorator>> decoratorFactory = new();

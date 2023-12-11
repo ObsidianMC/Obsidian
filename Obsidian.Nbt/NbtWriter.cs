@@ -16,6 +16,8 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
 
     public Stream BaseStream { get; }
 
+    public bool Networked { get; }
+
     public NbtWriter(Stream outstream, NbtCompression compressionMode = NbtCompression.None)
     {
         this.BaseStream = compressionMode switch
@@ -32,6 +34,16 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
 
         this.Write(NbtTagType.Compound);
         this.WriteStringInternal(name);
+
+        this.AddRootTag(new Node { Type = NbtTagType.Compound });
+    }
+
+    public NbtWriter(Stream outstream, bool networked)
+    {
+        this.Networked = networked;
+        this.BaseStream = outstream;
+
+        this.Write(NbtTagType.Compound);
 
         this.AddRootTag(new Node { Type = NbtTagType.Compound });
     }

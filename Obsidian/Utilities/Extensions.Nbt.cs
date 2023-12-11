@@ -1,16 +1,82 @@
-﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
+﻿using Obsidian.API.Registry.Codecs.ArmorTrims.TrimMaterial;
+using Obsidian.API.Registry.Codecs.ArmorTrims.TrimPattern;
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.Registry.Codecs.Chat;
 using Obsidian.API.Registry.Codecs.DamageTypes;
 using Obsidian.API.Registry.Codecs.Dimensions;
+using Obsidian.API.Utilities;
 using Obsidian.Nbt;
 using Obsidian.Registries;
+using System.Text.Json;
 
 namespace Obsidian.Utilities;
 
 //TODO MAKE NBT DE/SERIALIZERS PLEASE
 public partial class Extensions
 {
+    public static NbtCompound ToNbt(this ChatMessage chatMessage, string name = "")
+    {
+        var compound = new NbtCompound(name)
+        {
+            new NbtTag<bool>("bold", chatMessage.Bold),
+            new NbtTag<bool>("italic", chatMessage.Italic),
+            new NbtTag<bool>("underlined", chatMessage.Underlined),
+            new NbtTag<bool>("strikethrough", chatMessage.Strikethrough),
+            new NbtTag<bool>("obfuscated", chatMessage.Obfuscated)
+        };
+
+        if (!chatMessage.Text.IsNullOrEmpty())
+            compound.Add(new NbtTag<string>("text", chatMessage.Text!));
+        if (!chatMessage.Translate.IsNullOrEmpty())
+            compound.Add(new NbtTag<string>("translate", chatMessage.Translate!));
+        if (chatMessage.Color.HasValue)
+            compound.Add(new NbtTag<string>("color", chatMessage.Color.Value.ToString()));
+        if (!chatMessage.Insertion.IsNullOrEmpty())
+            compound.Add(new NbtTag<string>("insertion", chatMessage.Insertion!));
+
+        if (chatMessage.ClickEvent != null)
+            compound.Add(chatMessage.ClickEvent.ToNbt());
+        if (chatMessage.HoverEvent != null)
+            compound.Add(chatMessage.HoverEvent.ToNbt());
+
+        return compound;
+    }
+
+    public static NbtCompound ToNbt(this HoverComponent hoverComponent)
+    {
+        var compound = new NbtCompound("hoverEvent")
+        {
+            new NbtTag<string>("action", JsonNamingPolicy.SnakeCaseLower.ConvertName(hoverComponent.Action.ToString())),
+        };
+
+
+        if (hoverComponent.Contents is HoverChatContent chatContent)
+            compound.Add(chatContent.ChatMessage.ToNbt("contents"));
+        else if (hoverComponent.Contents is HoverItemContent)
+            throw new NotImplementedException("Missing properties from ItemStack can't implement.");
+        else if (hoverComponent.Contents is HoverEntityComponent entityComponent)
+        {
+            var entityCompound = new NbtCompound("contents")
+            {
+                new NbtTag<string>("id", entityComponent.Entity.Uuid.ToString()),
+            };
+
+            if (entityComponent.Entity.CustomName is ChatMessage name)
+                entityCompound.Add(name.ToNbt("name"));
+            else
+                entityCompound.Add(new NbtTag<string>("name", entityComponent.Entity.Type.ToString()));
+        }
+
+        return compound;
+    }
+
+    public static NbtCompound ToNbt(this ClickComponent clickComponent) => new("clickEvent")
+    {
+         new NbtTag<string>("action", JsonNamingPolicy.SnakeCaseLower.ConvertName(clickComponent.Action.ToString())),
+         new NbtTag<string>("value", clickComponent.Value)
+    };
+
+
     public static NbtCompound ToNbt(this ItemStack? value)
     {
         value ??= new ItemStack(0, 0) { Present = true };
@@ -504,6 +570,89 @@ public partial class Extensions
         }
 
         compound.Add(particle);
+    }
+    #endregion
+
+    #region Trim Pattern Writing 
+    public static void Write(this TrimPatternCodec value, NbtList list)
+    {
+        var compound = new NbtCompound
+        {
+            new NbtTag<int>("id", value.Id),
+
+            new NbtTag<string>("name", value.Name),
+
+            value.WriteElement()
+        };
+
+        list.Add(compound);
+    }
+
+    public static NbtCompound WriteElement(this TrimPatternCodec value)
+    {
+        var patternElement = value.Element;
+
+        var description = new NbtList(NbtTagType.String, "description")
+        {
+            new NbtTag<string>("translate", patternElement.Description.Translate)
+        };
+
+        var element = new NbtCompound("element")
+        {
+            new NbtTag<string>("template_item", patternElement.TemplateItem),
+            description,
+            new NbtTag<string>("asset_id", patternElement.AssetId),
+            new NbtTag<bool>("decal", patternElement.Decal)
+        };
+
+        return element;
+    }
+    #endregion
+
+    #region Trim Material Writing
+    public static void Write(this TrimMaterialCodec value, NbtList list)
+    {
+        var compound = new NbtCompound
+        {
+            new NbtTag<int>("id", value.Id),
+
+            new NbtTag<string>("name", value.Name),
+
+            value.WriteElement()
+        };
+
+        list.Add(compound);
+    }
+
+    public static NbtCompound WriteElement(this TrimMaterialCodec value)
+    {
+        var materialElement = value.Element;
+
+        var description = new NbtList(NbtTagType.String, "description")
+        {
+            new NbtTag<string>("translate", materialElement.Description.Translate),
+            new NbtTag<string>("color", materialElement.Description.Color!)
+        };
+
+        var element = new NbtCompound("element")
+        {
+            new NbtTag<string>("ingredient", materialElement.Ingredient),
+            description,
+            new NbtTag<string>("asset_name", materialElement.AssetName),
+            new NbtTag<double>("item_model_index", materialElement.ItemModelIndex)
+        };
+
+        if (materialElement.OverrideArmorMaterials is Dictionary<string, string> overrideArmorMats)
+        {
+            var overrideArmorMaterialsCompound = new NbtCompound("override_armor_materials");
+
+            foreach (var (type, replacement) in overrideArmorMats)
+                overrideArmorMaterialsCompound.Add(new NbtTag<string>(type, replacement));
+
+            element.Add(overrideArmorMaterialsCompound);
+        }
+
+        return element;
     }
     #endregion
 }

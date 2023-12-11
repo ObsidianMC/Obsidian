@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Boss;
 using Obsidian.API.Builders;
 using Obsidian.API.Crafting;
 using Obsidian.API.Events;
+using Obsidian.API.Utilities;
 using Obsidian.Commands;
 using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Entities;
@@ -12,14 +14,15 @@ using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Events;
 using Obsidian.Hosting;
+using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Net.Rcon;
 using Obsidian.Plugins;
 using Obsidian.Registries;
+using Obsidian.Services;
 using Obsidian.WorldData;
-using Obsidian.WorldData.Generators;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
@@ -30,7 +33,7 @@ using System.Threading;
 
 namespace Obsidian;
 
-public partial class Server : IServer
+public sealed partial class Server : IServer
 {
 #if RELEASE
     public const string VERSION = "0.1";
@@ -47,19 +50,24 @@ public partial class Server : IServer
         }
     }
 #endif
-    public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_20;
+    public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_20_4;
+
+    public const string PersistentDataPath = "persistentdata";
+    public const string PermissionPath = "permissions";
 
     internal static readonly ConcurrentDictionary<string, DateTimeOffset> throttler = new();
 
     internal readonly CancellationTokenSource _cancelTokenSource;
-    internal string PermissionPath => Path.Combine(ServerFolderPath, "permissions");
 
     private readonly ConcurrentQueue<IClientboundPacket> _chatMessagesQueue = new();
     private readonly ConcurrentHashSet<Client> _clients = new();
-    private readonly TcpListener _tcpListener;
+    private readonly ILoggerFactory loggerFactory;
     private readonly RconServer _rconServer;
+    private readonly IUserCache userCache;
     private readonly ILogger _logger;
     private readonly IServiceProvider provider;
+
+    private IConnectionListener? _tcpListener;
 
     public ProtocolVersion Protocol => DefaultProtocol;
 
@@ -71,26 +79,19 @@ public partial class Server : IServer
 
     public IOperatorList Operators { get; }
     public IScoreboardManager ScoreboardManager { get; private set; }
+    public IWorldManager WorldManager { get; }
 
     public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new();
-    public Dictionary<string, Type> WorldGenerators { get; } = new();
 
     public HashSet<string> RegisteredChannels { get; } = new();
     public CommandHandler CommandsHandler { get; }
-
-    public ServerConfiguration Config { get; }
-    public IServerConfiguration Configuration => Config;
+    public IServerConfiguration Configuration { get; }
     public string Version => VERSION;
-    public string ServerFolderPath { get; }
-    public string PersistentDataPath { get; }
+
     public string Brand { get; } = "obsidian";
     public int Port { get; }
-    public WorldManager WorldManager { get; private set; }
     public IWorld DefaultWorld => WorldManager.DefaultWorld;
     public IEnumerable<IPlayer> Players => GetPlayers();
-
-    // TODO: This should be removed. Services should get their own logger.
-    public ILogger Logger => _logger;
 
     /// <summary>
     /// Creates a new instance of <see cref="Server"/>.
@@ -99,23 +100,23 @@ public partial class Server : IServer
         IServiceProvider provider,
         IHostApplicationLifetime lifetime,
         IServerEnvironment environment,
-        ILogger<Server> logger,
-        RconServer rconServer)
+        ILoggerFactory loggerFactory,
+        IWorldManager worldManager,
+        RconServer rconServer,
+        IUserCache playerCache)
     {
-        _logger = logger;
-        _logger.LogInformation("SHA / Version: {version}", VERSION);
+        Configuration = environment.Configuration;
+        _logger = loggerFactory.CreateLogger<Server>();
+        _logger.LogInformation("SHA / Version: {VERSION}", VERSION);
         _cancelTokenSource = CancellationTokenSource.CreateLinkedTokenSource(lifetime.ApplicationStopping);
         _cancelTokenSource.Token.Register(() => _logger.LogWarning("Obsidian is shutting down..."));
         _rconServer = rconServer;
         this.provider = provider;
 
-        Config = environment.Configuration;
-        Port = Config.Port;
-        ServerFolderPath = Directory.GetCurrentDirectory();
+        Port = Configuration.Port;
 
-        _tcpListener = new TcpListener(IPAddress.Any, Port);
-
-        Operators = new OperatorList(this);
+        Operators = new OperatorList(this, loggerFactory);
+        ScoreboardManager = new ScoreboardManager(this, loggerFactory);
 
         _logger.LogDebug(message: "Initializing command handler...");
         CommandsHandler = new CommandHandler();
@@ -133,7 +134,9 @@ public partial class Server : IServer
         _logger.LogDebug("Registering command context type...");
         _logger.LogDebug("Done registering commands.");
 
-        WorldManager = new WorldManager(this, _logger, environment.ServerWorlds);
+        this.userCache = playerCache;
+        this.loggerFactory = loggerFactory;
+        this.WorldManager = worldManager;
 
         Events.PlayerLeave += OnPlayerLeave;
         Events.PlayerJoin += OnPlayerJoin;
@@ -141,25 +144,23 @@ public partial class Server : IServer
         Events.PlayerInteract += OnPlayerInteract;
         Events.ContainerClosed += OnContainerClosed;
 
-        PersistentDataPath = Path.Combine(ServerFolderPath, "persistentdata");
-
         Directory.CreateDirectory(PermissionPath);
         Directory.CreateDirectory(PersistentDataPath);
 
-        if (Config.UDPBroadcast)
+        if (Configuration.AllowLan)
         {
             _ = Task.Run(async () =>
             {
                 var udpClient = new UdpClient("224.0.2.60", 4445);
                 var timer = new PeriodicTimer(TimeSpan.FromSeconds(1.5));
                 string? lastMotd = null;
-                byte[] bytes = Array.Empty<byte>(); // Cached motd as utf-8 bytes
+                byte[] bytes = []; // Cached motd as utf-8 bytes
                 while (await timer.WaitForNextTickAsync(_cancelTokenSource.Token))
                 {
-                    if (Config.Motd != lastMotd)
+                    if (Configuration.Motd != lastMotd)
                     {
-                        lastMotd = Config.Motd;
-                        bytes = Encoding.UTF8.GetBytes($"[MOTD]{Config.Motd.Replace('[', '(').Replace(']', ')')}[/MOTD][AD]{Config.Port}[/AD]");
+                        lastMotd = Configuration.Motd;
+                        bytes = Encoding.UTF8.GetBytes($"[MOTD]{Configuration.Motd.Replace('[', '(').Replace(']', ')')}[/MOTD][AD]{Configuration.Port}[/AD]");
                     }
                     await udpClient.SendAsync(bytes, bytes.Length);
                 }
@@ -234,63 +235,41 @@ public partial class Server : IServer
     }
 
     /// <summary>
-    /// Registers new world generator(s) to the server.
-    /// </summary>
-    /// <param name="entries">A compatible list of entries.</param>
-    public void RegisterWorldGenerator<T>() where T : IWorldGenerator, new()
-    {
-        var gen = new T();
-        if (string.IsNullOrWhiteSpace(gen.Id))
-            throw new InvalidOperationException($"Failed to get id for generator: {gen.Id}");
-
-        if (this.WorldGenerators.TryAdd(gen.Id, typeof(T)))
-            this._logger.LogDebug($"Registered {gen.Id}...");
-    }
-
-    /// <summary>
     /// Starts this server asynchronously.
     /// </summary>
     public async Task RunAsync()
     {
         StartTime = DateTimeOffset.Now;
 
-        _logger.LogInformation($"Launching Obsidian Server v{Version}");
+        _logger.LogInformation("Launching Obsidian Server v{Version}", this.Version);
         var loadTimeStopwatch = Stopwatch.StartNew();
 
         // Check if MPDM and OM are enabled, if so, we can't handle connections
-        if (Config.MulitplayerDebugMode && Config.OnlineMode)
+        if (Configuration.MulitplayerDebugMode && Configuration.OnlineMode)
         {
             _logger.LogError("Incompatible Config: Multiplayer debug mode can't be enabled at the same time as online mode since usernames will be overwritten");
-            Stop();
+            await StopAsync();
             return;
         }
 
         await RecipesRegistry.InitializeAsync();
 
-        await UserCache.LoadAsync(this._cancelTokenSource.Token);
+        await this.userCache.LoadAsync(this._cancelTokenSource.Token);
 
         _logger.LogInformation($"Loading properties...");
 
         await (Operators as OperatorList).InitializeAsync();
-        RegisterDefaults();
 
-        ScoreboardManager = new ScoreboardManager(this);
         _logger.LogInformation("Loading plugins...");
 
-        var pluginPath = Path.Join(ServerFolderPath, "plugins");
-        Directory.CreateDirectory(pluginPath);
+        Directory.CreateDirectory("plugins");
 
         PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
-        PluginManager.DirectoryWatcher.Watch(pluginPath);
+        PluginManager.DirectoryWatcher.Watch("plugins");
 
-        await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
+        await Task.WhenAll(Configuration.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
-        // TODO: This should defenitly accept a cancellation token.
-        // If Cancel is called, this method should stop within the configured timeout, otherwise code execution will simply stop here,
-        // and server shutdown will not be handled correctly.
-        await WorldManager.LoadWorldsAsync();
-
-        if (!Config.OnlineMode)
+        if (!Configuration.OnlineMode)
             _logger.LogInformation($"Starting in offline mode...");
 
         CommandsRegistry.Register(this);
@@ -309,6 +288,11 @@ public partial class Server : IServer
 
         loadTimeStopwatch.Stop();
         _logger.LogInformation("Server loaded in {time}", loadTimeStopwatch.Elapsed);
+
+        //Wait for worlds to load
+        while (!this.WorldManager.ReadyToJoin && !this._cancelTokenSource.IsCancellationRequested)
+            continue;
+
         _logger.LogInformation("Listening for new clients...");
 
         try
@@ -334,19 +318,26 @@ public partial class Server : IServer
         await WorldManager.FlushLoadedWorldsAsync();
         await WorldManager.DisposeAsync();
 
-        await UserCache.SaveAsync();
+        await this.userCache.SaveAsync();
     }
 
     private async Task AcceptClientsAsync()
     {
-        _tcpListener.Start();
+        _tcpListener = await SocketFactory.CreateListenerAsync(new IPEndPoint(IPAddress.Any, Port), token: _cancelTokenSource.Token);
 
         while (!_cancelTokenSource.Token.IsCancellationRequested)
         {
-            Socket socket;
+            ConnectionContext connection;
             try
             {
-                socket = await _tcpListener.AcceptSocketAsync(_cancelTokenSource.Token);
+                var acceptedConnection = await _tcpListener.AcceptAsync(_cancelTokenSource.Token);
+                if (acceptedConnection is null)
+                {
+                    // No longer accepting clients.
+                    break;
+                }
+
+                connection = acceptedConnection;
             }
             catch (OperationCanceledException)
             {
@@ -359,28 +350,28 @@ public partial class Server : IServer
                 break;
             }
 
-            _logger.LogDebug("New connection from client with IP {ip}", socket.RemoteEndPoint);
+            _logger.LogDebug("New connection from client with IP {ip}", connection.RemoteEndPoint);
 
-            string ip = ((IPEndPoint)socket.RemoteEndPoint!).Address.ToString();
+            string ip = ((IPEndPoint)connection.RemoteEndPoint!).Address.ToString();
 
-            if (Config.IpWhitelistEnabled && !Config.WhitelistedIPs.Contains(ip))
+            if (Configuration.IpWhitelistEnabled && !Configuration.WhitelistedIPs.Contains(ip))
             {
                 _logger.LogInformation("{ip} is not whitelisted. Closing connection", ip);
-                socket.Disconnect(false);
+                connection.Abort();
                 return;
             }
 
-            if (this.Config.CanThrottle)
+            if (this.Configuration.CanThrottle)
             {
                 if (throttler.TryGetValue(ip, out var time) && time <= DateTimeOffset.UtcNow)
                 {
                     throttler.Remove(ip, out _);
-                    this.Logger.LogDebug("Removed {ip} from throttler", ip);
+                    _logger.LogDebug("Removed {ip} from throttler", ip);
                 }
             }
 
             // TODO Entity ids need to be unique on the entire server, not per world
-            var client = new Client(socket, Config, Math.Max(0, _clients.Count + WorldManager.DefaultWorld.GetTotalLoadedEntities()), this);
+            var client = new Client(connection, Math.Max(0, _clients.Count + this.DefaultWorld.GetTotalLoadedEntities()), this.loggerFactory, this.userCache, this);
 
             _clients.Add(client);
 
@@ -396,7 +387,7 @@ public partial class Server : IServer
         }
 
         _logger.LogInformation("No longer accepting new clients");
-        _tcpListener.Stop();
+        await _tcpListener.UnbindAsync();
     }
 
     public IBossBar CreateBossBar(ChatMessage title, float health, BossBarColor color, BossBarDivisionType divisionType, BossBarFlags flags) => new BossBar(this)
@@ -449,7 +440,7 @@ public partial class Server : IServer
         var format = "<{0}> {1}";
         var message = packet.Message;
 
-        var chat = await Events.IncomingChatMessage.InvokeAsync(new IncomingChatMessageEventArgs(source.Player, message, format));
+        var chat = await Events.IncomingChatMessage.InvokeAsync(new IncomingChatMessageEventArgs(source.Player, this, message, format));
         if (chat.IsCancelled)
             return;
 
@@ -464,33 +455,6 @@ public partial class Server : IServer
             await player.client.QueuePacketAsync(packet);
     }
 
-    internal async Task QueueBroadcastPacketAsync(IClientboundPacket packet, params int[] excluded)
-    {
-        foreach (Player player in Players.Where(x => !excluded.Contains(x.EntityId)))
-            await player.client.QueuePacketAsync(packet);
-    }
-
-    internal void BroadcastPacket(IClientboundPacket packet)
-    {
-        foreach (Player player in Players)
-        {
-            player.client.SendPacket(packet);
-        }
-    }
-
-    internal void BroadcastPacket(IClientboundPacket packet, params int[] excluded)
-    {
-        foreach (Player player in Players.Where(x => !excluded.Contains(x.EntityId)))
-            player.client.SendPacket(packet);
-    }
-
-    internal async Task BroadcastNewCommandsAsync()
-    {
-        CommandsRegistry.Register(this);
-        foreach (Player player in Players)
-            await player.client.SendCommandsAsync();
-    }
-
     internal async Task DisconnectIfConnectedAsync(string username, ChatMessage? reason = null)
     {
         var player = Players.FirstOrDefault(x => x.Username == username);
@@ -502,144 +466,15 @@ public partial class Server : IServer
         }
     }
 
-    private bool TryAddEntity(World world, Entity entity) => world.TryAddEntity(entity);
-
-    private void DropItem(Player player, sbyte amountToRemove)
-    {
-        var droppedItem = player.GetHeldItem();
-
-        if (droppedItem is null or { Type: Material.Air })
-            return;
-
-        var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
-
-        var item = new ItemEntity
-        {
-            EntityId = player + player.world.GetTotalLoadedEntities() + 1,
-            Count = amountToRemove,
-            Id = droppedItem.AsItem().Id,
-            Glowing = true,
-            World = player.world,
-            Server = player.Server,
-            Position = loc
-        };
-
-        TryAddEntity(player.world, item);
-
-        var lookDir = player.GetLookDirection();
-
-        var vel = Velocity.FromDirection(loc, lookDir);//TODO properly shoot the item towards the direction the players looking at
-
-        BroadcastPacket(new SpawnEntityPacket
-        {
-            EntityId = item.EntityId,
-            Uuid = item.Uuid,
-            Type = EntityType.Item,
-            Position = item.Position,
-            Pitch = 0,
-            Yaw = 0,
-            Data = 1,
-            Velocity = vel
-        });
-        BroadcastPacket(new SetEntityMetadataPacket
-        {
-            EntityId = item.EntityId,
-            Entity = item
-        });
-
-        player.Inventory.RemoveItem(player.inventorySlot, amountToRemove);
-
-        player.client.SendPacket(new SetContainerSlotPacket
-        {
-            Slot = player.inventorySlot,
-
-            WindowId = 0,
-
-            SlotData = player.GetHeldItem(),
-
-            StateId = player.Inventory.StateId++
-        });
-
-    }
-
-    internal void BroadcastPlayerAction(PlayerActionStore store, IBlock block)
-    {
-        var action = store.Packet;
-
-        if (!OnlinePlayers.TryGetValue(store.Player, out var player))//This should NEVER return false but who knows :)))
-            return;
-
-        switch (action.Status)
-        {
-            case PlayerActionStatus.DropItem:
-            {
-                DropItem(player, 1);
-                break;
-            }
-            case PlayerActionStatus.DropItemStack:
-            {
-                DropItem(player, 64);
-                break;
-            }
-            case PlayerActionStatus.StartedDigging:
-            case PlayerActionStatus.CancelledDigging:
-                break;
-            case PlayerActionStatus.FinishedDigging:
-            {
-                BroadcastPacket(new SetBlockDestroyStagePacket
-                {
-                    EntityId = player,
-                    Position = action.Position,
-                    DestroyStage = -1
-                });
-
-                var droppedItem = ItemsRegistry.Get(block.Material);
-
-                if (droppedItem.Id == 0) { break; }
-
-                var item = new ItemEntity
-                {
-                    EntityId = player + player.world.GetTotalLoadedEntities() + 1,
-                    Count = 1,
-                    Id = droppedItem.Id,
-                    Glowing = true,
-                    World = player.world,
-                    Position = action.Position,
-                    Server = this
-                };
-
-                TryAddEntity(player.world, item);
-
-                BroadcastPacket(new SpawnEntityPacket
-                {
-                    EntityId = item.EntityId,
-                    Uuid = item.Uuid,
-                    Type = EntityType.Item,
-                    Position = item.Position,
-                    Pitch = 0,
-                    Yaw = 0,
-                    Data = 1,
-                    Velocity = Velocity.FromVector(new VectorF(
-                        Globals.Random.NextFloat() * 0.5f, 
-                        Globals.Random.NextFloat() * 0.5f,
-                        Globals.Random.NextFloat() * 0.5f))
-                });
-
-                BroadcastPacket(new SetEntityMetadataPacket
-                {
-                    EntityId = item.EntityId,
-                    Entity = item
-                });
-                break;
-            }
-        }
-    }
-
-    public void Stop()
+    public async Task StopAsync()
     {
         _cancelTokenSource.Cancel();
-        _tcpListener.Stop();
-        WorldGenerators.Clear();
+
+        if (_tcpListener is not null)
+        {
+            await _tcpListener.UnbindAsync();
+        }
+
         foreach (var client in _clients)
         {
             client.Disconnect();
@@ -657,7 +492,7 @@ public partial class Server : IServer
             {
                 _logger.LogInformation("Saving world...");
                 await WorldManager.FlushLoadedWorldsAsync();
-                await UserCache.SaveAsync();
+                await this.userCache.SaveAsync();
             }
         }
         catch { }
@@ -678,17 +513,17 @@ public partial class Server : IServer
                 await Events.ServerTick.InvokeAsync();
 
                 keepAliveTicks++;
-                if (keepAliveTicks > (Config.KeepAliveInterval / 50)) // to clarify: one tick is 50 milliseconds. 50 * 200 = 10000 millis means 10 seconds
+                if (keepAliveTicks > (Configuration.KeepAliveInterval / 50)) // to clarify: one tick is 50 milliseconds. 50 * 200 = 10000 millis means 10 seconds
                 {
                     var keepAliveTime = DateTimeOffset.Now;
 
-                    foreach (var client in _clients.Where(x => x.State == ClientState.Play))
+                    foreach (var client in _clients.Where(x => x.State == ClientState.Play || x.State == ClientState.Configuration))
                         client.SendKeepAlive(keepAliveTime);
 
                     keepAliveTicks = 0;
                 }
 
-                if (Config.Baah.HasValue)
+                if (Configuration.Baah.HasValue)
                 {
                     foreach (Player player in Players)
                     {
@@ -724,18 +559,6 @@ public partial class Server : IServer
 
         _logger.LogInformation("The game loop has been stopped");
         await WorldManager.FlushLoadedWorldsAsync();
-    }
-
-    /// <summary>
-    /// Registers the "obsidian-vanilla" entities and objects.
-    /// </summary>
-    /// Might be used for more stuff later so I'll leave this here - tides
-    private void RegisterDefaults()
-    {
-        RegisterWorldGenerator<SuperflatGenerator>();
-        RegisterWorldGenerator<OverworldGenerator>();
-        RegisterWorldGenerator<IslandGenerator>();
-        RegisterWorldGenerator<EmptyWorldGenerator>();
     }
 
     internal void UpdateStatusConsole()

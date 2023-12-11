@@ -1,15 +1,14 @@
 ﻿using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace Obsidian.API;
 
-public class ChatMessage
+public sealed class ChatMessage
 {
-    public string Text { get; set; }
+    public string? Text { get; set; }
 
-    public string Translate { get; set; }
+    public string? Translate { get; set; }
 
-    public HexColor Color { get; set; }
+    public HexColor? Color { get; set; }
 
     public bool Bold { get; set; }
 
@@ -21,15 +20,15 @@ public class ChatMessage
 
     public bool Obfuscated { get; set; }
 
-    public string Insertion { get; set; }
+    public string? Insertion { get; set; }
 
-    public ClickComponent ClickEvent { get; set; }
+    public ClickComponent? ClickEvent { get; set; }
 
-    public HoverComponent HoverEvent { get; set; }
+    public HoverComponent? HoverEvent { get; set; }
 
-    public List<ChatMessage> Extra { get; private set; }
+    public List<ChatMessage>? Extra { get; private set; }
 
-    public List<ChatMessage> With { get; private set; }
+    public List<ChatMessage>? With { get; private set; }
 
     public IEnumerable<ChatMessage> GetExtraChatComponents() => With ?? Enumerable.Empty<ChatMessage>();
 
@@ -123,9 +122,9 @@ public class ChatMessage
     /// <param name="value">The value which will be executed with the action.</param>
     /// <param name="translate">The translate value.</param>
     /// <returns>The given <see cref="ChatMessage"/>.</returns>
-    public static ChatMessage Click(ChatMessage message, EClickAction action, string value, string translate = "")
+    public static ChatMessage Click(ChatMessage message, ClickAction action, string value)
     {
-        message.ClickEvent = new ClickComponent(action, value, translate);
+        message.ClickEvent = new ClickComponent { Action = action, Value = value };
         return message;
     }
 
@@ -137,9 +136,9 @@ public class ChatMessage
     /// <param name="contents">The contents which will be executed with the action.</param>
     /// <param name="translate">The translate value.</param>
     /// <returns>The given <see cref="ChatMessage"/>.</returns>
-    public static ChatMessage Hover(ChatMessage message, EHoverAction action, object contents, string translate = "")
+    public static ChatMessage Hover(ChatMessage message, HoverAction action, IHoverContent contents)
     {
-        message.HoverEvent = new HoverComponent(action, contents, translate);
+        message.HoverEvent = new HoverComponent { Action = action, Contents = contents };
         return message;
     }
 
@@ -171,7 +170,7 @@ public class ChatMessage
 
     public ChatMessage AddChatComponent(ChatMessage message)
     {
-        this.With ??= new();
+        this.With ??= [];
         this.With.Add(message);
 
         return this;
@@ -179,7 +178,7 @@ public class ChatMessage
 
     public ChatMessage AddChatComponent(IEnumerable<ChatMessage> message)
     {
-        this.With ??= new();
+        this.With ??= [];
         this.With.AddRange(message);
 
         return this;
@@ -188,7 +187,7 @@ public class ChatMessage
 
     public ChatMessage AddExtra(ChatMessage message)
     {
-        Extra ??= new List<ChatMessage>();
+        Extra ??= [];
         Extra.Add(message);
 
         return this;

@@ -1,0 +1,147 @@
+{
+  "type": "minecraft:trim_material",
+  "value": [
+    {
+      "name": "minecraft:amethyst",
+      "id": 0,
+      "element": {
+        "ingredient": "minecraft:amethyst_shard",
+        "asset_name": "amethyst",
+        "item_model_index": 1.0,
+        "description": {
+          "color": "#9A5CC6",
+          "translate": "trim_material.minecraft.amethyst"
+        }
+      }
+    },
+    {
+      "name": "minecraft:copper",
+      "id": 1,
+      "element": {
+        "ingredient": "minecraft:copper_ingot",
+        "asset_name": "copper",
+        "item_model_index": 0.5,
+        "description": {
+          "color": "#B4684",
+          "translate": "trim_material.minecraft.copper"
+        }
+      }
+    },
+    {
+      "name": "minecraft:diamond",
+      "id": 2,
+      "element": {
+        "override_armor_materials": {
+          "diamond": "diamond_darker"
+        },
+        "ingredient": "minecraft:diamond",
+        "asset_name": "diamond",
+        "item_model_index": 0.8,
+        "description": {
+          "color": "#6EECD2",
+          "translate": "trim_material.minecraft.diamond"
+        }
+      }
+    },
+    {
+      "name": "minecraft:emerald",
+      "id": 3,
+      "element": {
+        "ingredient": "minecraft:emerald",
+        "asset_name": "emerald",
+        "item_model_index": 0.7,
+        "description": {
+          "color": "#11A036",
+          "translate": "trim_material.minecraft.emerald"
+        }
+      }
+    },
+    {
+      "name": "minecraft:gold",
+      "id": 4,
+      "element": {
+        "override_armor_materials": {
+          "gold": "gold_darker"
+        },
+        "ingredient": "minecraft:gold_ingot",
+        "asset_name": "gold",
+        "item_model_index": 0.6,
+        "description": {
+          "color": "#DEB12",
+          "translate": "trim_material.minecraft.gold"
+        }
+      }
+    },
+    {
+      "name": "minecraft:iron",
+      "id": 5,
+      "element": {
+        "override_armor_materials": {
+          "iron": "iron_darker"
+        },
+        "ingredient": "minecraft:iron_ingot",
+        "asset_name": "iron",
+        "item_model_index": 0.2,
+        "description": {
+          "color": "#ECECEC",
+          "translate": "trim_material.minecraft.iron"
+        }
+      }
+    },
+    {
+      "name": "minecraft:lapis",
+      "id": 6,
+      "element": {
+        "ingredient": "minecraft:lapis_lazuli",
+        "asset_name": "lapis",
+        "item_model_index": 0.9,
+        "description": {
+          "color": "#416E97",
+          "translate": "trim_material.minecraft.lapis"
+        }
+      }
+    },
+    {
+      "name": "minecraft:netherite",
+      "id": 7,
+      "element": {
+        "override_armor_materials": {
+          "netherite": "netherite_darker"
+        },
+        "ingredient": "minecraft:netherite_ingot",
+        "asset_name": "netherite",
+        "item_model_index": 0.3,
+        "description": {
+          "color": "#625859",
+          "translate": "trim_material.minecraft.netherite"
+        }
+      }
+    },
+    {
+      "name": "minecraft:quartz",
+      "id": 8,
+      "element": {
+        "ingredient": "minecraft:quartz",
+        "asset_name": "quartz",
+        "item_model_index": 0.1,
+        "description": {
+          "color": "#E34C4",
+          "translate": "trim_material.minecraft.quartz"
+        }
+      }
+    },
+    {
+      "name": "minecraft:redstone",
+      "id": 9,
+      "element": {
+        "ingredient": "minecraft:redstone",
+        "asset_name": "redstone",
+        "item_model_index": 0.4,
+        "description": {
+          "color": "#971607",
+          "translate": "trim_material.minecraft.redstone"
+        }
+      }
+    }
+  ]
+}

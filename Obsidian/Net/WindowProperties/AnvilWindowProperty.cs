@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.Net.WindowProperties;
 
-public class AnvilWindowProperty : IWindowProperty
+public sealed class AnvilWindowProperty : IWindowProperty
 {
     public short Property { get; }
 

@@ -40,17 +40,17 @@ public sealed class BiomeContainer : DataContainer<Biome>
         return this.Palette.GetValueFromIndex(storageId);
     }
 
-    public override async Task WriteToAsync(MinecraftStream stream)
+    public async override Task WriteToAsync(MinecraftStream stream)
     {
-        stream.WriteUnsignedByte(this.BitsPerEntry);
+        await stream.WriteUnsignedByteAsync(this.BitsPerEntry);
 
         await this.Palette.WriteToAsync(stream);
 
-        stream.WriteVarInt(this.DataArray.storage.Length);
+        await stream.WriteVarIntAsync(this.DataArray.storage.Length);
 
         long[] storage = this.DataArray.storage;
         for (int i = 0; i < storage.Length; i++)
-            stream.WriteLong(storage[i]);
+            await stream.WriteLongAsync(storage[i]);
     }
 
     public override void WriteTo(MinecraftStream stream)

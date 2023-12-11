@@ -4,8 +4,6 @@ namespace Obsidian.API;
 
 public interface IEntity
 {
-    public IServer Server { get; }
-
     public IWorld World { get; }
     public INavigator? Navigator { get; set; }
 
@@ -60,6 +58,9 @@ public interface IEntity
     public IEnumerable<IEntity> GetEntitiesNear(float distance);
 
     public VectorF GetLookDirection();
+
+    public void SetHeadRotation(Angle headYaw);
+    public void SetRotation(Angle yaw, Angle pitch, bool onGround = true);
 
     public bool HasAttribute(string attributeResourceName);
     public bool TryAddAttribute(string attributeResourceName, float value);

@@ -1,7 +1,7 @@
 {
   "blocks/players_can_interact": {
     "name": "players_can_interact",
-    "type": "block",
+    "type": "blocks",
     "values": [
       "minecraft:chest",
       "minecraft:ender_chest",
@@ -98,14 +98,15 @@
       "minecraft:red_concrete_powder",
       "minecraft:black_concrete_powder",
       "minecraft:scaffolding",
-      "minecraft:dragon_egg"
+      "minecraft:dragon_egg",
+      "minecraft:gravel",
+      "minecraft:suspicious_gravel"
     ]
   },
   "blocks/replaceable_by_liquid": {
     "name": "replaceable_by_liquid",
     "type": "blocks",
     "values": [
-      "#minecraft:replaceable_by_trees",
       "#minecraft:saplings",
       "#minecraft:crops",
       "#minecraft:flowers",
@@ -113,7 +114,11 @@
       "minecraft:sweet_berry_bush",
       "minecraft:tall_grass",
       "minecraft:air",
-      "minecraft:cave_air"
+      "minecraft:cave_air",
+      "minecraft:snow",
+      "minecraft:nether_sprouts",
+      "minecraft:twisting_vines",
+      "minecraft:weeping_vines"
     ]
   },
   "banner_pattern/no_item_required": {
@@ -448,6 +453,14 @@
       "#minecraft:stone_buttons"
     ]
   },
+  "blocks/camel_sand_step_sound_blocks": {
+    "name": "camel_sand_step_sound_blocks",
+    "type": "blocks",
+    "values": [
+      "#minecraft:sand",
+      "#minecraft:concrete_powder"
+    ]
+  },
   "blocks/campfires": {
     "name": "campfires",
     "type": "blocks",
@@ -589,6 +602,28 @@
       "#minecraft:logs",
       "#minecraft:leaves",
       "#minecraft:wart_blocks"
+    ]
+  },
+  "blocks/concrete_powder": {
+    "name": "concrete_powder",
+    "type": "blocks",
+    "values": [
+      "minecraft:white_concrete_powder",
+      "minecraft:orange_concrete_powder",
+      "minecraft:magenta_concrete_powder",
+      "minecraft:light_blue_concrete_powder",
+      "minecraft:yellow_concrete_powder",
+      "minecraft:lime_concrete_powder",
+      "minecraft:pink_concrete_powder",
+      "minecraft:gray_concrete_powder",
+      "minecraft:light_gray_concrete_powder",
+      "minecraft:cyan_concrete_powder",
+      "minecraft:purple_concrete_powder",
+      "minecraft:blue_concrete_powder",
+      "minecraft:brown_concrete_powder",
+      "minecraft:green_concrete_powder",
+      "minecraft:red_concrete_powder",
+      "minecraft:black_concrete_powder"
     ]
   },
   "blocks/convertable_to_mud": {
@@ -929,7 +964,9 @@
       "minecraft:flowering_azalea",
       "minecraft:mangrove_propagule",
       "minecraft:cherry_leaves",
-      "minecraft:pink_petals"
+      "minecraft:pink_petals",
+      "minecraft:chorus_flower",
+      "minecraft:spore_blossom"
     ]
   },
   "blocks/foxes_spawnable_on": {
@@ -1270,7 +1307,7 @@
       "minecraft:fern",
       "minecraft:fletching_table",
       "minecraft:glow_lichen",
-      "minecraft:grass",
+      "minecraft:short_grass",
       "minecraft:hanging_roots",
       "minecraft:jack_o_lantern",
       "minecraft:jukebox",
@@ -1712,28 +1749,13 @@
       "minecraft:snow",
       "minecraft:soul_sand",
       "minecraft:dirt_path",
-      "minecraft:white_concrete_powder",
-      "minecraft:orange_concrete_powder",
-      "minecraft:magenta_concrete_powder",
-      "minecraft:light_blue_concrete_powder",
-      "minecraft:yellow_concrete_powder",
-      "minecraft:lime_concrete_powder",
-      "minecraft:pink_concrete_powder",
-      "minecraft:gray_concrete_powder",
-      "minecraft:light_gray_concrete_powder",
-      "minecraft:cyan_concrete_powder",
-      "minecraft:purple_concrete_powder",
-      "minecraft:blue_concrete_powder",
-      "minecraft:brown_concrete_powder",
-      "minecraft:green_concrete_powder",
-      "minecraft:red_concrete_powder",
-      "minecraft:black_concrete_powder",
       "minecraft:soul_soil",
       "minecraft:rooted_dirt",
       "minecraft:muddy_mangrove_roots",
       "minecraft:mud",
       "minecraft:suspicious_sand",
-      "minecraft:suspicious_gravel"
+      "minecraft:suspicious_gravel",
+      "#minecraft:concrete_powder"
     ]
   },
   "blocks/mooshrooms_spawnable_on": {
@@ -2020,7 +2042,7 @@
       "minecraft:air",
       "minecraft:water",
       "minecraft:lava",
-      "minecraft:grass",
+      "minecraft:short_grass",
       "minecraft:fern",
       "minecraft:dead_bush",
       "minecraft:seagrass",
@@ -2048,7 +2070,7 @@
     "type": "blocks",
     "values": [
       "#minecraft:leaves",
-      "minecraft:grass",
+      "minecraft:short_grass",
       "minecraft:fern",
       "minecraft:dead_bush",
       "minecraft:vine",
@@ -2455,7 +2477,7 @@
       "#minecraft:saplings",
       "#minecraft:small_flowers",
       "#minecraft:crops",
-      "minecraft:grass",
+      "minecraft:short_grass",
       "minecraft:fern",
       "minecraft:dead_bush",
       "minecraft:vine",
@@ -2917,6 +2939,17 @@
       "#minecraft:is_explosion"
     ]
   },
+  "damage_type/always_kills_armor_stands": {
+    "name": "always_kills_armor_stands",
+    "type": "damage_type",
+    "values": [
+      "minecraft:arrow",
+      "minecraft:trident",
+      "minecraft:mob_projectile",
+      "minecraft:fireball",
+      "minecraft:wither_skull"
+    ]
+  },
   "damage_type/always_most_significant_fall": {
     "name": "always_most_significant_fall",
     "type": "damage_type",
@@ -3008,6 +3041,14 @@
       "#minecraft:bypasses_armor",
       "minecraft:falling_anvil",
       "minecraft:falling_stalactite"
+    ]
+  },
+  "damage_type/can_break_armor_stand": {
+    "name": "can_break_armor_stand",
+    "type": "damage_type",
+    "values": [
+      "minecraft:player_attack",
+      "minecraft:player_explosion"
     ]
   },
   "damage_type/damages_helmet": {
@@ -3104,6 +3145,15 @@
       "minecraft:drown"
     ]
   },
+  "damage_type/no_knockback": {
+    "name": "no_knockback",
+    "type": "damage_type",
+    "values": [
+      "minecraft:explosion",
+      "minecraft:player_explosion",
+      "minecraft:bad_respawn_point"
+    ]
+  },
   "damage_type/witch_resistant_to": {
     "name": "witch_resistant_to",
     "type": "damage_type",
@@ -3156,6 +3206,26 @@
     "type": "entity_types",
     "values": [
       "minecraft:bee"
+    ]
+  },
+  "entity_types/can_breathe_under_water": {
+    "name": "can_breathe_under_water",
+    "type": "entity_types",
+    "values": [
+      "#minecraft:undead",
+      "minecraft:axolotl",
+      "minecraft:frog",
+      "minecraft:guardian",
+      "minecraft:elder_guardian",
+      "minecraft:turtle",
+      "minecraft:glow_squid",
+      "minecraft:cod",
+      "minecraft:pufferfish",
+      "minecraft:salmon",
+      "minecraft:squid",
+      "minecraft:tropical_fish",
+      "minecraft:tadpole",
+      "minecraft:armor_stand"
     ]
   },
   "entity_types/dismounts_underwater": {
@@ -3229,6 +3299,7 @@
     "type": "entity_types",
     "values": [
       "#minecraft:arrows",
+      "minecraft:firework_rocket",
       "minecraft:snowball",
       "minecraft:fireball",
       "minecraft:small_fireball",
@@ -3236,6 +3307,14 @@
       "minecraft:trident",
       "minecraft:dragon_fireball",
       "minecraft:wither_skull"
+    ]
+  },
+  "entity_types/non_controlling_rider": {
+    "name": "non_controlling_rider",
+    "type": "entity_types",
+    "values": [
+      "minecraft:slime",
+      "minecraft:magma_cube"
     ]
   },
   "entity_types/powder_snow_walkable_mobs": {
@@ -3266,7 +3345,31 @@
     "values": [
       "minecraft:skeleton",
       "minecraft:stray",
-      "minecraft:wither_skeleton"
+      "minecraft:wither_skeleton",
+      "minecraft:skeleton_horse"
+    ]
+  },
+  "entity_types/undead": {
+    "name": "undead",
+    "type": "entity_types",
+    "values": [
+      "#minecraft:skeletons",
+      "#minecraft:zombies",
+      "minecraft:wither",
+      "minecraft:phantom"
+    ]
+  },
+  "entity_types/zombies": {
+    "name": "zombies",
+    "type": "entity_types",
+    "values": [
+      "minecraft:zombie_horse",
+      "minecraft:zombie",
+      "minecraft:zombie_villager",
+      "minecraft:zombified_piglin",
+      "minecraft:zoglin",
+      "minecraft:drowned",
+      "minecraft:husk"
     ]
   },
   "fluids/lava": {
@@ -3335,8 +3438,7 @@
       "minecraft:entity_interact",
       "minecraft:entity_mount",
       "minecraft:entity_place",
-      "minecraft:entity_roar",
-      "minecraft:entity_shake",
+      "minecraft:entity_action",
       "minecraft:equip",
       "minecraft:explode",
       "minecraft:fluid_pickup",
@@ -3354,6 +3456,7 @@
       "minecraft:step",
       "minecraft:swim",
       "minecraft:teleport",
+      "minecraft:unequip",
       "minecraft:resonate_1",
       "minecraft:resonate_2",
       "minecraft:resonate_3",
@@ -3396,8 +3499,7 @@
       "minecraft:entity_interact",
       "minecraft:entity_mount",
       "minecraft:entity_place",
-      "minecraft:entity_roar",
-      "minecraft:entity_shake",
+      "minecraft:entity_action",
       "minecraft:equip",
       "minecraft:explode",
       "minecraft:fluid_pickup",
@@ -3415,6 +3517,7 @@
       "minecraft:step",
       "minecraft:swim",
       "minecraft:teleport",
+      "minecraft:unequip",
       "minecraft:resonate_1",
       "minecraft:resonate_2",
       "minecraft:resonate_3",
@@ -3899,7 +4002,9 @@
       "minecraft:flowering_azalea",
       "minecraft:mangrove_propagule",
       "minecraft:cherry_leaves",
-      "minecraft:pink_petals"
+      "minecraft:pink_petals",
+      "minecraft:chorus_flower",
+      "minecraft:spore_blossom"
     ]
   },
   "items/fox_food": {

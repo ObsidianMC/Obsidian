@@ -41,7 +41,7 @@ public sealed partial class RegistryAssetsGenerator : IIncrementalGenerator
         }
     }
 
-    private static void ParseProperty(CodeBuilder builder, JsonElement element, SourceProductionContext ctx)
+    private static void ParseProperty(CodeBuilder builder, JsonElement element, SourceProductionContext ctx, bool isDictionary = false)
     {
         builder.Append("new() { ");
 
@@ -53,11 +53,11 @@ public sealed partial class RegistryAssetsGenerator : IIncrementalGenerator
             {
                 if (value.ValueKind is JsonValueKind.Object or JsonValueKind.Array)
                 {
-                    ParseProperty(builder, value, ctx);
+                    ParseProperty(builder, value, ctx, isDictionary);
                     continue;
                 }
 
-                AppendValueType(builder, value, ctx);
+                AppendValueType(builder, value, ctx, isDictionary);
             }
         }
         else
@@ -68,25 +68,65 @@ public sealed partial class RegistryAssetsGenerator : IIncrementalGenerator
 
                 if (!isArray)
                 {
-                    var name = property.Name.ToPascalCase();
-                    builder.Append($"{name} = ");
+                    if (isDictionary)
+                    {
+                        builder.Append($"{{ \"{property.Name}\", ");
+                    }
+                    else
+                    {
+                        var name = property.Name.ToPascalCase();
+                        builder.Append($"{name} = ");
+                    }
                 }
 
                 if (value.ValueKind is JsonValueKind.Object or JsonValueKind.Array)
                 {
-                    ParseProperty(builder, value, ctx);
+                    ParseProperty(builder, value, ctx, isDictionary);
                     continue;
                 }
 
-                AppendValueType(builder, value, ctx);
+                AppendValueType(builder, value, ctx, isDictionary);
             }
         }
 
         builder.Append("}, ");
     }
 
-    private static void AppendValueType(CodeBuilder builder, JsonElement element, SourceProductionContext ctx)
+    private static void AppendValueType(CodeBuilder builder, JsonElement element, SourceProductionContext ctx, bool isDictionary = false)
     {
+        if (isDictionary)
+        {
+            switch (element.ValueKind)
+            {
+                case JsonValueKind.String:
+                    builder.Append($"\"{element.GetString()}\" }},");
+                    break;
+                case JsonValueKind.Number:
+                {
+                    if (element.TryGetInt32(out var intValue))
+                        builder.Append($"{intValue} }},");
+                    else if (element.TryGetInt64(out var longValue))
+                        builder.Append($"{longValue} }},");
+                    else if (element.TryGetSingle(out var floatValue))
+                        builder.Append($"{floatValue}f }},");
+                    else if (element.TryGetDouble(out var doubleValue))
+                        builder.Append($"{doubleValue}d }},");
+                    break;
+                }
+                case JsonValueKind.True:
+                case JsonValueKind.False:
+                    builder.Append($"{element.GetBoolean().ToString().ToLower()} }},");
+                    break;
+                case JsonValueKind.Null:
+                    break;
+                default:
+                    ctx.ReportDiagnostic(DiagnosticSeverity.Error, $"Found an invalid property type: {element.ValueKind} in json.");
+                    break;
+            }
+
+            return;
+        }
+
         switch (element.ValueKind)
         {
             case JsonValueKind.String:
