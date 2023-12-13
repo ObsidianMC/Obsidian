@@ -15,25 +15,40 @@ namespace SamplePlugin
         // Dependencies will be injected automatically, if dependency class and field/property names match
         // Plugins won't load until all their required dependencies are added
         // Optional dependencies may be injected at any time, if at all
-        [Inject] 
+        [Inject]
         public ILogger<SamplePlugin> Logger { get; set; }
 
-        //You can register services here if you'd like
-        public override void Configure(IServiceCollection services) { }
+        //You can register services, commands and events here if you'd like
+        public override void ConfigureServices(IServiceCollection services) { }
 
-        //Called when the world has loaded and the server is ready for connections
-        public override ValueTask OnLoadAsync(IServer server)
+
+        //YOu can register commands, events and soon to be items, blocks entities
+        public override void ConfigureRegistry(IPluginConfigurationManager pluginConfiguration)
         {
-            //Will scan for classes that inherit from MinecraftEventHandler
-            server.MapEvents();
+            //Will scan for command classes and register them for you
+            pluginConfiguration.MapCommands();
 
-            //Event doesn't need its own class? Here you go
-            server.MapEvent((IncomingChatMessageEventArgs chat) =>
+            //Will scan for classes that inherit from MinecraftEventHandler
+            pluginConfiguration.MapEvents();
+
+            //Want to make a simple command?? Here you go
+            pluginConfiguration.MapCommand((CommandContext ctx) =>
             {
 
                 return ValueTask.CompletedTask;
             });
 
+            //Event doesn't need its own class? Here you go
+            pluginConfiguration.MapEvent((IncomingChatMessageEventArgs chat) =>
+            {
+
+                return ValueTask.CompletedTask;
+            });
+        }
+
+        //Called when the world has loaded and the server is ready for connections
+        public override ValueTask OnLoadAsync(IServer server)
+        {
             Logger.LogInformation("§a{pluginName} §floaded! Hello §aEveryone§f!", Info.Name);
             return ValueTask.CompletedTask;
         }

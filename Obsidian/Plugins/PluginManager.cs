@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Logging;
+using Obsidian.API.Plugins;
 using Obsidian.Commands.Framework;
 using Obsidian.Events;
 using Obsidian.Hosting;
@@ -26,8 +27,9 @@ public sealed class PluginManager
     private readonly IServer server;
 
     private readonly CommandHandler commands;
-    
-    private IServiceCollection serviceCollection = new ServiceCollection();
+
+    private readonly PluginConfigurationManager pluginConfigurationManager;
+    private readonly IServiceCollection pluginServiceDescriptors = new ServiceCollection();
 
     /// <summary>
     /// List of all loaded plugins.
@@ -58,6 +60,7 @@ public sealed class PluginManager
         this.eventSource = eventSource;
         this.commands = commands;
         this.loggerProvider = new LoggerProvider(env.Configuration.LogLevel);
+        this.pluginConfigurationManager = new(this);
 
         ConfigureInitialServices(env);
 
@@ -80,13 +83,13 @@ public sealed class PluginManager
 
     private void ConfigureInitialServices(IServerEnvironment env)
     {
-        this.serviceCollection.AddLogging((builder) =>
+        this.pluginServiceDescriptors.AddLogging((builder) =>
         {
             builder.ClearProviders();
             builder.AddProvider(this.loggerProvider);
             builder.SetMinimumLevel(env.Configuration.LogLevel);
         });
-        this.serviceCollection.AddSingleton<IServerConfiguration>(x => env.Configuration);
+        this.pluginServiceDescriptors.AddSingleton<IServerConfiguration>(x => env.Configuration);
     }
 
     /// <summary>
@@ -149,10 +152,10 @@ public sealed class PluginManager
                 plugins.Add(pluginContainer);
             }
 
-            pluginContainer.Plugin.Configure(serviceCollection);
+            pluginContainer.Plugin.ConfigureServices(this.pluginServiceDescriptors);
 
             //TODO move this so this is called by the plugin and not the manager.
-            this.commands.RegisterCommands(pluginContainer);
+            //this.commands.RegisterCommands(pluginContainer);
 
             pluginContainer.Loaded = true;
             ExposePluginAsDependency(pluginContainer);
@@ -220,7 +223,7 @@ public sealed class PluginManager
 
     public void ServerReady()
     {
-        PluginServiceProvider ??= this.serviceCollection.BuildServiceProvider(true);
+        PluginServiceProvider ??= this.pluginServiceDescriptors.BuildServiceProvider(true);
         foreach(var pluginContainer in this.plugins)
         {
             if (!pluginContainer.Loaded)
@@ -255,11 +258,11 @@ public sealed class PluginManager
             renamedPlugin.Source = newSource;
     }
 
-    private void OnPluginSourceDeleted(string path)
+    private async void OnPluginSourceDeleted(string path)
     {
         var deletedPlugin = plugins.FirstOrDefault(plugin => plugin.Source == path) ?? stagedPlugins.FirstOrDefault(plugin => plugin.Source == path);
         if (deletedPlugin != null)
-            UnloadPluginAsync(deletedPlugin);
+            await UnloadPluginAsync(deletedPlugin);
     }
 
     private void StageRunning(PluginContainer plugin)

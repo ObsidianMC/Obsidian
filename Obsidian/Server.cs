@@ -169,9 +169,6 @@ public sealed partial class Server : IServer
         }
     }
 
-    public void RegisterCommandClass<T>(PluginContainer plugin, T instance) =>
-        CommandsHandler.RegisterCommandClass<T>(plugin, instance);
-
     public void RegisterArgumentHandler<T>(T parser) where T : BaseArgumentParser =>
         CommandsHandler.AddArgumentParser(parser);
 
