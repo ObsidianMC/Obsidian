@@ -141,8 +141,6 @@ public sealed class PluginManager
         //Inject first wave of services (services initialized by obsidian e.x IServerConfiguration)
         PluginServiceHandler.InjectServices(this.serverProvider, pluginContainer, this.logger, this.loggerProvider);
 
-        pluginContainer.RegisterDependencies(this, logger);
-
         pluginContainer.Plugin.unload = async () => await UnloadPluginAsync(pluginContainer);
 
         if (pluginContainer.IsReady)
@@ -158,7 +156,6 @@ public sealed class PluginManager
             //this.commands.RegisterCommands(pluginContainer);
 
             pluginContainer.Loaded = true;
-            ExposePluginAsDependency(pluginContainer);
         }
         else
         {
@@ -204,8 +201,6 @@ public sealed class PluginManager
 
         commands.UnregisterPluginCommands(pluginContainer);
 
-        UnregisterEvents(pluginContainer);
-
         try
         {
             await pluginContainer.Plugin.DisposeAsync();
@@ -228,8 +223,6 @@ public sealed class PluginManager
         {
             if (!pluginContainer.Loaded)
                 continue;
-
-            RegisterEvents(pluginContainer);
 
             PluginServiceHandler.InjectServices(PluginServiceProvider, pluginContainer, logger, loggerProvider);
            
@@ -277,8 +270,6 @@ public sealed class PluginManager
         {
             stagedPlugins.Add(plugin);
         }
-
-        UnregisterEvents(plugin);
     }
 
     private void RunStaged(PluginContainer plugin)
@@ -299,9 +290,6 @@ public sealed class PluginManager
             InvokeOnLoad(plugin);
             plugin.Loaded = true;
         }
-
-        RegisterEvents(plugin);
-        ExposePluginAsDependency(plugin);
     }
 
     private void GetEvents(object eventSource)
@@ -313,59 +301,6 @@ public sealed class PluginManager
             if (field is not null && field.Name is not null)
             {
                 events.Add(new EventContainer($"On{field.Name}", field));
-            }
-        }
-    }
-
-    private void RegisterEvents(PluginContainer plugin)
-    {
-        var pluginType = plugin.Plugin.GetType();
-        foreach (var @event in events)
-        {
-            var handler = pluginType.GetMethod(@event.Name);
-            if (handler is not null && @event.EventRegistry.TryRegisterEvent(handler, plugin.Plugin, out var @delegate))
-            {
-                plugin.EventHandlers.Add(@event, @delegate);
-            }
-        }
-    }
-
-    private void UnregisterEvents(PluginContainer plugin)
-    {
-        foreach (var @event in events)
-        {
-            if (plugin.EventHandlers.TryGetValue(@event, out var handler))
-            {
-                @event.EventRegistry.UnregisterEvent(handler);
-                plugin.EventHandlers.Remove(@event);
-            }
-        }
-    }
-
-    private void ExposePluginAsDependency(PluginContainer plugin)
-    {
-        lock (plugins)
-        {
-            foreach (var other in plugins)
-            {
-                other.TryAddDependency(plugin, logger);
-            }
-        }
-
-        lock (stagedPlugins)
-        {
-            for (int i = 0; i < stagedPlugins.Count; i++)
-            {
-                var other = stagedPlugins[i];
-                if (other.TryAddDependency(plugin, logger!))
-                {
-                    OnPluginStateChanged(other);
-                    if (other.Loaded)
-                    {
-                        i--;
-                        logger?.LogDebug("Plugin {pluginName} unstaged. Required dependencies were supplied.", other.Info.Name);
-                    }
-                }
             }
         }
     }

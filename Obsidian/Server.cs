@@ -126,7 +126,7 @@ public sealed partial class Server : IServer
         CommandsHandler.LinkPluginManager(PluginManager);
 
         _logger.LogDebug("Registering commands...");
-        CommandsHandler.RegisterCommandClass(null, new MainCommandModule());
+        CommandsHandler.RegisterCommandClass<MainCommandModule>(null);
 
         _logger.LogDebug("Registering custom argument parsers...");
         CommandsHandler.AddArgumentParser(new LocationTypeParser());
