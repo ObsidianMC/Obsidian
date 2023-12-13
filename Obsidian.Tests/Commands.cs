@@ -30,7 +30,7 @@ public class Commands
 
         ICommandSender sender = new CommandSender(CommandIssuers.Console, player: null, logger: null);
 
-        cmd.RegisterCommandClass<Command>(null, new Command());
+        cmd.RegisterCommandClass<Command>(null);
 
         await cmd.ProcessCommand(new CommandContext("/ping 69 hello", sender, null, null));
         Assert.Equal(69, Command.arg1out);
