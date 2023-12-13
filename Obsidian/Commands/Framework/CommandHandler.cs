@@ -90,15 +90,27 @@ public class CommandHandler
         _commands.RemoveAll(x => x.Plugin == plugin);
     }
 
-    public void RegisterCommandClass<T>(PluginContainer plugin, T instance) => RegisterCommandClass(plugin, typeof(T), instance);
+    public void RegisterCommandClass<T>(PluginContainer plugin) => RegisterCommandClass(plugin, typeof(T));
 
-#pragma warning disable IDE0060 // TODO Remove unused parameter
-    public void RegisterCommandClass(PluginContainer plugin, Type type, object? instance = null)
+    public void RegisterCommandClass(PluginContainer plugin, Type type)
     {
         RegisterSubgroups(type, plugin);
         RegisterSubcommands(type, plugin);
     }
-#pragma warning restore IDE0060 // Remove unused parameter
+
+    //TODO rework.
+    public void RegisterCommands(PluginContainer pluginContainer)
+    {
+        // Registering commands from within the plugin
+        this.RegisterCommandClass(pluginContainer, pluginContainer.Plugin.GetType());
+
+        // Registering commands found in the plugin assembly
+        var commandRoots = pluginContainer.Plugin.GetType().Assembly.GetTypes().Where(x => x.GetCustomAttributes(false).Any(y => y.GetType() == typeof(CommandRootAttribute)));
+        foreach (var root in commandRoots)
+        {
+            this.RegisterCommandClass(pluginContainer, root);
+        }
+    }
 
     public object? CreateCommandRootInstance(Type type, PluginContainer plugin)
     {
