@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Obsidian.API.Events;
+﻿using Obsidian.API.Events;
 using Obsidian.Plugins;
 
 namespace Obsidian.API.Plugins;

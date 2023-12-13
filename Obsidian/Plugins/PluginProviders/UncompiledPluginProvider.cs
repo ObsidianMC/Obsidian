@@ -7,7 +7,7 @@ using System.IO;
 
 namespace Obsidian.Plugins.PluginProviders;
 
-public class UncompiledPluginProvider : IPluginProvider
+public class UncompiledPluginProvider(ILogger logger) : IPluginProvider
 {
     private static WeakReference<PortableExecutableReference[]> _metadataReferences = new WeakReference<PortableExecutableReference[]>(null);
     internal static PortableExecutableReference[] MetadataReferences
@@ -33,11 +33,7 @@ public class UncompiledPluginProvider : IPluginProvider
 #endif
     }
 
-    public UncompiledPluginProvider()
-    {
-    }
-
-    public PluginContainer GetPlugin(string path, ILogger logger)
+    public async Task<PluginContainer> GetPluginAsync(string path)
     {
         string name = Path.GetFileNameWithoutExtension(path);
 
@@ -48,7 +44,7 @@ public class UncompiledPluginProvider : IPluginProvider
         }
         catch
         {
-            logger.LogError($"Reloading '{Path.GetFileName(path)}' failed, file is not accessible.");
+            logger.LogError("Reloading '{filePath}' failed, file is not accessible.", Path.GetFileName(path));
             return new PluginContainer(new PluginInfo(name), name);
         }
         SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(SourceText.From(fileStream));
@@ -69,7 +65,7 @@ public class UncompiledPluginProvider : IPluginProvider
                     if (diagnostic.Severity != DiagnosticSeverity.Error || diagnostic.IsWarningAsError)
                         continue;
 
-                    logger.LogError($"Compilation failed: {diagnostic.Location} {diagnostic.GetMessage()}");
+                    logger.LogError("Compilation failed: {diagnosticLocation} {diagnosticMessage}", diagnostic.Location, diagnostic.GetMessage());
                 }
             }
 
@@ -81,7 +77,7 @@ public class UncompiledPluginProvider : IPluginProvider
 
             var loadContext = new PluginLoadContext(name + "LoadContext", path);
             var assembly = loadContext.LoadFromStream(memoryStream);
-            return PluginProviderSelector.CompiledPluginProvider.HandlePlugin(loadContext, assembly, path, logger);
+            return await PluginProviderSelector.CompiledPluginProvider.HandlePluginAsync(loadContext, assembly, path);
         }
     }
 

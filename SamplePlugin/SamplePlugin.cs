@@ -7,9 +7,6 @@ using System.Threading.Tasks;
 
 namespace SamplePlugin
 {
-    [Plugin(name: "Sample Plugin", Version = "1.0",
-            Authors = "Obsidian Team", Description = "My sample plugin.",
-            ProjectUrl = "https://github.com/Naamloos/Obsidian")]
     public class SamplePlugin : PluginBase
     {
         // Dependencies will be injected automatically, if dependency class and field/property names match

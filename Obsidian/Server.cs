@@ -122,7 +122,7 @@ public sealed partial class Server : IServer
         _logger.LogDebug(message: "Initializing command handler...");
         CommandsHandler = new CommandHandler();
 
-        PluginManager = new PluginManager(this.serviceProvider, this.Events, this, _logger, CommandsHandler);
+        PluginManager = new PluginManager(this.serviceProvider, this, _logger, CommandsHandler);
         CommandsHandler.LinkPluginManager(PluginManager);
 
         _logger.LogDebug("Registering commands...");
