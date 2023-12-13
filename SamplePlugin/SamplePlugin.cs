@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Obsidian.API;
+using Obsidian.API.Events;
 using Obsidian.API.Plugins;
 using System.Threading.Tasks;
 
@@ -18,11 +19,21 @@ namespace SamplePlugin
         public ILogger<SamplePlugin> Logger { get; set; }
 
         //You can register services here if you'd like
-        public override void ConfigureServices(IServiceCollection services) { }
+        public override void Configure(IServiceCollection services) { }
 
         //Called when the world has loaded and the server is ready for connections
         public override ValueTask OnLoadAsync(IServer server)
         {
+            //Will scan for classes that inherit from MinecraftEventHandler
+            server.MapEvents();
+
+            //Event doesn't need its own class? Here you go
+            server.MapEvent((IncomingChatMessageEventArgs chat) =>
+            {
+
+                return ValueTask.CompletedTask;
+            });
+
             Logger.LogInformation("§a{pluginName} §floaded! Hello §aEveryone§f!", Info.Name);
             return ValueTask.CompletedTask;
         }
