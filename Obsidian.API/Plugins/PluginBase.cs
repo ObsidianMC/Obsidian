@@ -39,7 +39,7 @@ public abstract class PluginBase : IDisposable, IAsyncDisposable
     /// Services from the Server will be injected when this method is called. e.x (ILogger, IServerConfiguration).
     /// Services registered through this method will be availiable/injected when <seealso cref="OnLoadAsync(IServer)"/> is called.
     /// </remarks>
-    public virtual void ConfigureRegistry(IPluginConfigurationManager pluginConfiguration)
+    public virtual void ConfigureRegistry(IPluginRegistry pluginConfiguration)
     {
         //Will scan for command classes and register them for you
         pluginConfiguration.MapCommands();

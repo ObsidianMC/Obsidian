@@ -20,23 +20,23 @@ namespace SamplePlugin
 
 
         //YOu can register commands, events and soon to be items, blocks entities
-        public override void ConfigureRegistry(IPluginConfigurationManager pluginConfiguration)
+        public override void ConfigureRegistry(IPluginRegistry registry)
         {
             //Will scan for command classes and register them for you
-            pluginConfiguration.MapCommands();
+            registry.MapCommands();
 
             //Will scan for classes that inherit from MinecraftEventHandler
-            pluginConfiguration.MapEvents();
+            registry.MapEvents();
 
             //Want to make a simple command?? Here you go
-            pluginConfiguration.MapCommand((CommandContext ctx) =>
+            registry.MapCommand((CommandContext ctx) =>
             {
 
                 return ValueTask.CompletedTask;
             });
 
             //Event doesn't need its own class? Here you go
-            pluginConfiguration.MapEvent((IncomingChatMessageEventArgs chat) =>
+            registry.MapEvent((IncomingChatMessageEventArgs chat) =>
             {
 
                 return ValueTask.CompletedTask;

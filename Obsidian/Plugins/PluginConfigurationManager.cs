@@ -2,30 +2,30 @@
 using Obsidian.Plugins;
 
 namespace Obsidian.API.Plugins;
-public sealed class PluginConfigurationManager(PluginManager pluginManager) :  IPluginConfigurationManager
+public sealed class PluginConfigurationManager(PluginManager pluginManager) :  IPluginRegistry
 {
     private readonly PluginManager pluginManager = pluginManager;
 
-    public IPluginConfigurationManager MapCommands()
+    public IPluginRegistry MapCommands()
     {
         
         return this;
     }
 
-    public IPluginConfigurationManager MapEvent<TEventArgs>(ContextDelegate<TEventArgs> contextDelegate, Priority priority = Priority.Low) where TEventArgs : BaseMinecraftEventArgs
+    public IPluginRegistry MapEvent<TEventArgs>(ContextDelegate<TEventArgs> contextDelegate, Priority priority = Priority.Low) where TEventArgs : BaseMinecraftEventArgs
     {
 
         return this;
     }
 
-    public IPluginConfigurationManager MapCommand(ContextDelegate<CommandContext> contextDelegate)
+    public IPluginRegistry MapCommand(ContextDelegate<CommandContext> contextDelegate)
     {
 
 
         return this;
     }
 
-    public IPluginConfigurationManager MapEvents()
+    public IPluginRegistry MapEvents()
     {
 
         return this;
