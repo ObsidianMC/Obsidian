@@ -34,28 +34,28 @@ public abstract class PluginBase : IDisposable, IAsyncDisposable
     /// <summary>
     /// Used for registering commands, events, blocks, items and entities.
     /// </summary>
-    /// <param name="pluginConfiguration"></param>
+    /// <param name="pluginRegistry"></param>
     /// <remarks>
     /// Services from the Server will be injected when this method is called. e.x (ILogger, IServerConfiguration).
     /// Services registered through this method will be availiable/injected when <seealso cref="OnLoadAsync(IServer)"/> is called.
     /// </remarks>
-    public virtual void ConfigureRegistry(IPluginRegistry pluginConfiguration)
+    public virtual void ConfigureRegistry(IPluginRegistry pluginRegistry)
     {
         //Will scan for command classes and register them for you
-        pluginConfiguration.MapCommands();
+        pluginRegistry.MapCommands();
 
         //Will scan for classes that inherit from MinecraftEventHandler
-        pluginConfiguration.MapEvents();
+        pluginRegistry.MapEvents();
 
         //Want to make a simple command?? Here you go
-        pluginConfiguration.MapCommand((CommandContext ctx) =>
+        pluginRegistry.MapCommand((CommandContext ctx) =>
         {
 
             return ValueTask.CompletedTask;
         });
 
         //Event doesn't need its own class? Here you go
-        pluginConfiguration.MapEvent((IncomingChatMessageEventArgs chat) =>
+        pluginRegistry.MapEvent((IncomingChatMessageEventArgs chat) =>
         {
 
             return ValueTask.CompletedTask;

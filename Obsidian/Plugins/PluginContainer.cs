@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Plugins;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.Loader;
 
@@ -9,8 +10,10 @@ public sealed class PluginContainer : IDisposable
     private Type? pluginType;
 
     public PluginBase Plugin { get; private set; }
+
     public PluginInfo Info { get; }
     public string Source { get; internal set; } = default!;
+
     public AssemblyLoadContext LoadContext { get; private set; }
 
     public Assembly PluginAssembly { get; } = default!;

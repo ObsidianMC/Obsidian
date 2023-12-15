@@ -22,9 +22,9 @@ public sealed class PluginManager
     private readonly IServiceProvider serverProvider;
     private readonly IServer server;
 
-    private readonly CommandHandler commands;
+    private readonly CommandHandler commandHandler;
 
-    private readonly PluginConfigurationManager pluginConfigurationManager;
+    private readonly IPluginRegistry pluginRegistry;
     private readonly IServiceCollection pluginServiceDescriptors = new ServiceCollection();
 
     /// <summary>
@@ -46,16 +46,16 @@ public sealed class PluginManager
 
     public IServiceProvider PluginServiceProvider { get; private set; } = default!;
 
-    public PluginManager(IServiceProvider serverProvider, IServer server, ILogger logger, CommandHandler commands)
+    public PluginManager(IServiceProvider serverProvider, IServer server, ILogger logger, CommandHandler commandHandler)
     {
         var env = serverProvider.GetRequiredService<IServerEnvironment>();
 
         this.server = server;
         this.logger = logger;
         this.serverProvider = serverProvider;
-        this.commands = commands;
+        this.commandHandler = commandHandler;
         this.loggerProvider = new LoggerProvider(env.Configuration.LogLevel);
-        this.pluginConfigurationManager = new(this);
+        this.pluginRegistry = new PluginRegistry();
 
         PluginProviderSelector.RemotePluginProvider = new RemotePluginProvider(logger);
         PluginProviderSelector.UncompiledPluginProvider = new UncompiledPluginProvider(logger);
@@ -127,9 +127,7 @@ public sealed class PluginManager
             }
 
             pluginContainer.Plugin.ConfigureServices(this.pluginServiceDescriptors);
-
-            //TODO move this so this is called by the plugin and not the manager.
-            //this.commands.RegisterCommands(pluginContainer);
+            pluginContainer.Plugin.ConfigureRegistry(this.pluginRegistry);
 
             pluginContainer.Loaded = true;
         }
@@ -175,7 +173,7 @@ public sealed class PluginManager
             }
         }
 
-        commands.UnregisterPluginCommands(pluginContainer);
+        commandHandler.UnregisterPluginCommands(pluginContainer);
 
         try
         {
@@ -202,10 +200,11 @@ public sealed class PluginManager
 
             PluginServiceHandler.InjectServices(PluginServiceProvider, pluginContainer, logger, loggerProvider);
 
-            CommandsRegistry.Register((Server)server);
-
             InvokeOnLoad(pluginContainer);
         }
+
+        //THis only needs to be called once 😭😭
+        CommandsRegistry.Register((Server)server);
     }
 
     private void OnPluginStateChanged(PluginContainer plugin)
