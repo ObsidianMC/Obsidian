@@ -18,7 +18,7 @@ public partial class SetPlayerPositionAndRotationPacket : IServerboundPacket
     [Field(3)]
     public bool OnGround { get; private set; }
 
-    public int Id => 0x17;
+    public int Id => 0x18;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
@@ -29,7 +29,7 @@ public partial class SetPlayerPositionAndRotationPacket : IServerboundPacket
         if (player.Position.ToChunkCoord() != player.LastPosition.ToChunkCoord())
         {
             (int cx, int cz) = player.Position.ToChunkCoord();
-            player.client.SendPacket(new SetCenterChunkPacket(cx, cz));
+            await player.client.QueuePacketAsync(new SetCenterChunkPacket(cx, cz));
         }
 
         player.LastPosition = player.Position;

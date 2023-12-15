@@ -1,7 +1,7 @@
 {
   "blocks/players_can_interact": {
     "name": "players_can_interact",
-    "type": "block",
+    "type": "blocks",
     "values": [
       "minecraft:chest",
       "minecraft:ender_chest",
@@ -1307,7 +1307,7 @@
       "minecraft:fern",
       "minecraft:fletching_table",
       "minecraft:glow_lichen",
-      "minecraft:grass",
+      "minecraft:short_grass",
       "minecraft:hanging_roots",
       "minecraft:jack_o_lantern",
       "minecraft:jukebox",
@@ -2042,7 +2042,7 @@
       "minecraft:air",
       "minecraft:water",
       "minecraft:lava",
-      "minecraft:grass",
+      "minecraft:short_grass",
       "minecraft:fern",
       "minecraft:dead_bush",
       "minecraft:seagrass",
@@ -2070,7 +2070,7 @@
     "type": "blocks",
     "values": [
       "#minecraft:leaves",
-      "minecraft:grass",
+      "minecraft:short_grass",
       "minecraft:fern",
       "minecraft:dead_bush",
       "minecraft:vine",
@@ -2477,7 +2477,7 @@
       "#minecraft:saplings",
       "#minecraft:small_flowers",
       "#minecraft:crops",
-      "minecraft:grass",
+      "minecraft:short_grass",
       "minecraft:fern",
       "minecraft:dead_bush",
       "minecraft:vine",
@@ -3043,6 +3043,14 @@
       "minecraft:falling_stalactite"
     ]
   },
+  "damage_type/can_break_armor_stand": {
+    "name": "can_break_armor_stand",
+    "type": "damage_type",
+    "values": [
+      "minecraft:player_attack",
+      "minecraft:player_explosion"
+    ]
+  },
   "damage_type/damages_helmet": {
     "name": "damages_helmet",
     "type": "damage_type",
@@ -3200,6 +3208,26 @@
       "minecraft:bee"
     ]
   },
+  "entity_types/can_breathe_under_water": {
+    "name": "can_breathe_under_water",
+    "type": "entity_types",
+    "values": [
+      "#minecraft:undead",
+      "minecraft:axolotl",
+      "minecraft:frog",
+      "minecraft:guardian",
+      "minecraft:elder_guardian",
+      "minecraft:turtle",
+      "minecraft:glow_squid",
+      "minecraft:cod",
+      "minecraft:pufferfish",
+      "minecraft:salmon",
+      "minecraft:squid",
+      "minecraft:tropical_fish",
+      "minecraft:tadpole",
+      "minecraft:armor_stand"
+    ]
+  },
   "entity_types/dismounts_underwater": {
     "name": "dismounts_underwater",
     "type": "entity_types",
@@ -3271,6 +3299,7 @@
     "type": "entity_types",
     "values": [
       "#minecraft:arrows",
+      "minecraft:firework_rocket",
       "minecraft:snowball",
       "minecraft:fireball",
       "minecraft:small_fireball",
@@ -3316,7 +3345,31 @@
     "values": [
       "minecraft:skeleton",
       "minecraft:stray",
-      "minecraft:wither_skeleton"
+      "minecraft:wither_skeleton",
+      "minecraft:skeleton_horse"
+    ]
+  },
+  "entity_types/undead": {
+    "name": "undead",
+    "type": "entity_types",
+    "values": [
+      "#minecraft:skeletons",
+      "#minecraft:zombies",
+      "minecraft:wither",
+      "minecraft:phantom"
+    ]
+  },
+  "entity_types/zombies": {
+    "name": "zombies",
+    "type": "entity_types",
+    "values": [
+      "minecraft:zombie_horse",
+      "minecraft:zombie",
+      "minecraft:zombie_villager",
+      "minecraft:zombified_piglin",
+      "minecraft:zoglin",
+      "minecraft:drowned",
+      "minecraft:husk"
     ]
   },
   "fluids/lava": {

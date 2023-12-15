@@ -53,9 +53,6 @@ public interface IServerConfiguration
     /// </summary>
     public int MaxPlayers { get; set; }
     public int PregenerateChunkRange { get; set; }
-    public int TimeTickSpeedMultiplier { get; set; }
-
-    public int PregenerateChunkRange { get; set; }
 
     /// <summary>
     /// The speed at which world time & rain time go by.

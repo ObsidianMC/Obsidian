@@ -8,7 +8,7 @@ public sealed partial class LoginStart : IServerboundPacket
     [Field(0)]
     public string Username { get; set; }
 
-    [Field(1)]
+    [Field(1), ActualType(typeof(Guid))]
     public Guid? PlayerUuid { get; set; }
 
     public int Id => 0x00;

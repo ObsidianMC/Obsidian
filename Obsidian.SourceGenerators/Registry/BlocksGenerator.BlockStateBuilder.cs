@@ -104,6 +104,10 @@ public partial class BlocksGenerator
 
             var blockName = block.Name;
 
+            //TODO THIS NEEDS TO BE MOVED SOMEWHERE
+            if (blockName == "TrialSpawner")
+                blockName = "TrialSpawnerBlock";
+
             var fullName = $"{blockName}StateBuilder";
 
             var stateBuilder = new CodeBuilder()

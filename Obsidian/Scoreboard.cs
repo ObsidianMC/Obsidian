@@ -1,4 +1,5 @@
 ﻿using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Net.Scoreboard;
 
 namespace Obsidian;
 
@@ -20,7 +21,7 @@ public class Scoreboard : IScoreboard
         this.server = server;
     }
 
-    public async Task CreateOrUpdateObjectiveAsync(ChatMessage title, DisplayType displayType = DisplayType.Integer)
+    public async Task CreateOrUpdateObjectiveAsync(ChatMessage title, DisplayType displayType = DisplayType.Integer)//TODO impl new scoreboard stuff
     {
         var packet = new UpdateObjectivesPacket
         {
@@ -55,8 +56,9 @@ public class Scoreboard : IScoreboard
                         {
                             EntityName = score.DisplayText,
                             ObjectiveName = this.name,
-                            Action = 0,
-                            Value = score.Value
+                            Value = score.Value,
+                            HasDisplayName = false,
+                            HasNumberFormat = false
                         });
                     }
                 }
@@ -64,6 +66,7 @@ public class Scoreboard : IScoreboard
         }
     }
 
+    //TODO impl new scoreboard stuff
     public async Task CreateOrUpdateScoreAsync(string scoreName, string displayText, int? value = null)
     {
         var score = new Score(displayText, value ?? 0);
@@ -84,7 +87,8 @@ public class Scoreboard : IScoreboard
                 {
                     EntityName = score.DisplayText,
                     ObjectiveName = this.name,
-                    Action = 1,
+                    HasDisplayName = false,
+                    HasNumberFormat = false,
                 });
             }
 
@@ -114,14 +118,16 @@ public class Scoreboard : IScoreboard
                 {
                     EntityName = s.DisplayText,
                     ObjectiveName = this.name,
-                    Action = 0,
-                    Value = s.Value
+                    Value = s.Value,
+                    HasDisplayName = false,
+                    HasNumberFormat = false,
                 });
             }
         }
 
     }
 
+    //TODO impl new scoreboard stuff
     public async Task<bool> RemoveScoreAsync(string scoreName)
     {
         if (this.scores.Remove(scoreName, out var score))
@@ -135,7 +141,8 @@ public class Scoreboard : IScoreboard
                 {
                     EntityName = score.DisplayText,
                     ObjectiveName = this.name,
-                    Action = 1,
+                    HasDisplayName = false,
+                    HasNumberFormat = false,
                 });
             }
 
@@ -162,6 +169,7 @@ public class Scoreboard : IScoreboard
         }
     }
 
+    //TODO impl new scoreboard stuff
     private async Task UpdateObjectiveAsync(UpdateObjectivesPacket packet)
     {
         foreach (var (_, player) in this.server.OnlinePlayers)
@@ -176,8 +184,9 @@ public class Scoreboard : IScoreboard
                     {
                         EntityName = score.DisplayText,
                         ObjectiveName = this.name,
-                        Action = 0,
-                        Value = score.Value
+                        Value = score.Value,
+                        HasDisplayName = false,
+                        HasNumberFormat = false
                     });
                 }
             }

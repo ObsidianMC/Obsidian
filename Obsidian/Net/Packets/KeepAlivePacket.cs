@@ -19,9 +19,8 @@ public partial class KeepAlivePacket : IClientboundPacket, IServerboundPacket
         KeepAliveId = id;
     }
 
-    public ValueTask HandleAsync(Server server, Player player)
+    public async ValueTask HandleAsync(Server server, Player player)
     {
-        player.client.HandleKeepAlive(this);
-        return ValueTask.CompletedTask;
+        await player.client.HandleKeepAliveAsync(this);
     }
 }

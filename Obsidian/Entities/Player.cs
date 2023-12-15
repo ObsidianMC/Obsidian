@@ -8,6 +8,7 @@ using Obsidian.Net;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Net.Scoreboard;
 using Obsidian.Registries;
 using Obsidian.WorldData;
 using System.Diagnostics;
@@ -168,7 +169,7 @@ public sealed partial class Player : Living, IPlayer
         await PlayerPermissions.ToJsonAsync(fs);
     }
 
-    public async Task DisplayScoreboardAsync(IScoreboard scoreboard, ScoreboardPosition position)
+    public async Task DisplayScoreboardAsync(IScoreboard scoreboard, ScoreboardPosition position)//TODO implement new features
     {
         var actualBoard = (Scoreboard)scoreboard;
 
@@ -191,8 +192,9 @@ public sealed partial class Player : Living, IPlayer
             {
                 EntityName = score.DisplayText,
                 ObjectiveName = actualBoard.name,
-                Action = 0,
-                Value = score.Value
+                Value = score.Value,
+                HasDisplayName = false,
+                HasNumberFormat = false
             });
         }
 

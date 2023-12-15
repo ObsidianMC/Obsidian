@@ -96,7 +96,7 @@ public sealed class Client : IDisposable
     /// <summary>
     /// The mojang user that the client and player is associated with.
     /// </summary>
-    private CachedUser? cachedUser;
+    private CachedProfile? cachedUser;
 
     /// <summary>
     /// Which packets are in queue to be sent to the client.
@@ -169,7 +169,7 @@ public sealed class Client : IDisposable
     /// </summary>
     public string? Brand { get; set; }
 
-    public Client(ConnectionContext connectionContext, int playerId, 
+    public Client(ConnectionContext connectionContext, int playerId,
         ILoggerFactory loggerFactory, IUserCache playerCache,
         Server server)
     {
@@ -281,7 +281,7 @@ public sealed class Client : IDisposable
                                     {
                                         this.Logger.LogDebug("{ip} has been throttled for reconnecting too fast.", ip);
                                         await this.DisconnectAsync("Connection Throttled! Please wait before reconnecting.");
-                                        this.Disconnect();
+                                        break;
                                     }
                                 }
                                 else
@@ -417,25 +417,25 @@ public sealed class Client : IDisposable
         var username = this.server.Configuration.MulitplayerDebugMode ? $"Player{Globals.Random.Next(1, 999)}" : loginStart.Username;
         var world = (World)this.server.DefaultWorld;
 
-        Logger.LogDebug("Received login request from user {Username}", loginStart.Username);
+        Logger.LogDebug("Received login request from user {Username}", username);
         await this.server.DisconnectIfConnectedAsync(username);
 
         if (this.server.Configuration.OnlineMode)
         {
-            cachedUser = await this.userCache.GetCachedUserFromNameAsync(loginStart.Username ?? throw new NullReferenceException(nameof(loginStart.PlayerUuid)));
+            cachedUser = await this.userCache.GetCachedUserFromNameAsync(loginStart.Username ?? throw new NullReferenceException(nameof(loginStart.Username)));
 
             if (cachedUser is null)
             {
                 await DisconnectAsync("Account not found in the Mojang database");
                 return;
             }
-            else if (this.server.Configuration.WhitelistEnabled && !this.server.Configuration.Whitelisted.Any(x => x.Id == cachedUser.Id))
+            else if (this.server.Configuration.WhitelistEnabled && !this.server.Configuration.Whitelisted.Any(x => x.Id == cachedUser.Uuid))
             {
                 await DisconnectAsync("You are not whitelisted on this server\nContact server administrator");
                 return;
             }
 
-            Player = new Player(this.cachedUser.Id, loginStart.Username, this, world);
+            Player = new Player(this.cachedUser.Uuid, loginStart.Username, this, world);
             packetCryptography.GenerateKeyPair();
 
             var (publicKey, randomToken) = packetCryptography.GeneratePublicKeyAndToken();
@@ -488,7 +488,7 @@ public sealed class Client : IDisposable
         }
 
         var serverId = sharedKey.Concat(packetCryptography.PublicKey).MinecraftShaDigest();
-        if (await this.userCache.HasJoinedAsync(Player.Username, serverId) is not MojangUser user)
+        if (await this.userCache.HasJoinedAsync(Player.Username, serverId) is not MojangProfile user)
         {
             Logger.LogWarning("Failed to auth {Username}", Player.Username);
             await DisconnectAsync("Unable to authenticate...");
@@ -556,7 +556,19 @@ public sealed class Client : IDisposable
 
         await SendPlayerListDecoration();
         await SendPlayerInfoAsync();
-        while (!await Player.UpdateChunksAsync(distance: 9))
+        await this.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
+
+        Player.TeleportId = Globals.Random.Next(0, 999);
+        await QueuePacketAsync(new SynchronizePlayerPositionPacket
+        {
+            Position = Player.Position,
+            Yaw = 0,
+            Pitch = 0,
+            Flags = PositionFlags.None,
+            TeleportId = Player.TeleportId
+        });
+
+        while (!await Player.UpdateChunksAsync(distance: 7))
         {
             Logger.LogError("Failed to send {Username} their logon chunks! Retrying...", Player.Username);
         }
@@ -570,17 +582,8 @@ public sealed class Client : IDisposable
     {
         if (Player is null)
             throw new UnreachableException("Player is null, which means the client has not yet logged in.");
-
-        Player.TeleportId = Globals.Random.Next(0, 999);
+        
         await QueuePacketAsync(new SetDefaultSpawnPositionPacket(Player.world.LevelData.SpawnPosition));
-        await QueuePacketAsync(new SynchronizePlayerPositionPacket
-        {
-            Position = Player.Position,
-            Yaw = 0,
-            Pitch = 0,
-            Flags = PositionFlags.None,
-            TeleportId = Player.TeleportId
-        });
 
         await SendTimeUpdateAsync();
         await SendWeatherUpdateAsync();
@@ -597,16 +600,16 @@ public sealed class Client : IDisposable
         });
     }
 
-    internal Task DisconnectAsync(ChatMessage reason) => Task.Run(() => SendPacket(new DisconnectPacket(reason, State)));
+    internal async Task DisconnectAsync(ChatMessage reason) => await this.QueuePacketAsync(new DisconnectPacket(reason, State));
     internal Task SendTimeUpdateAsync() => QueuePacketAsync(new UpdateTimePacket(Player!.world.LevelData.Time, Player.world.LevelData.DayTime));
     internal Task SendWeatherUpdateAsync() => QueuePacketAsync(new GameEventPacket(Player!.world.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
 
-    internal void HandleKeepAlive(KeepAlivePacket keepAlive)
+    internal async Task HandleKeepAliveAsync(KeepAlivePacket keepAlive)
     {
         if (!missedKeepAlives.Contains(keepAlive.KeepAliveId))
         {
             Logger.LogWarning($"Received invalid KeepAlive from {Player.Username}?? Naughty???? ({Player.Uuid})");
-            DisconnectAsync(ChatMessage.Simple("Kicked for invalid KeepAlive."));
+            await DisconnectAsync(ChatMessage.Simple("Kicked for invalid KeepAlive."));
             return;
         }
 
