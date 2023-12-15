@@ -3,6 +3,8 @@
 namespace Obsidian.API.Plugins;
 public interface IPluginRegistry
 {
+    public IPluginRegistry RegisterArgumentHandler<T>(T parser) where T : BaseArgumentParser;
+
     public IPluginRegistry MapCommands();
     public IPluginRegistry MapCommand(ContextDelegate<CommandContext> contextDelegate);
 

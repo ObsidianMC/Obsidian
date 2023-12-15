@@ -1,45 +1,43 @@
-﻿using Obsidian.API.Plugins;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Plugins;
+using Obsidian.API.Utilities;
+using Obsidian.Commands.Builders;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Commands.Framework.Exceptions;
+using Obsidian.Commands.Parsers;
 using Obsidian.Plugins;
 using Obsidian.Plugins.ServiceProviders;
 using System.Reflection;
 
 namespace Obsidian.Commands.Framework;
 
-public class CommandHandler
+public sealed class CommandHandler
 {
-    public static readonly string DefaultPrefix = "/";
-    private static readonly CommandIssuers DefaultIssuerScope = CommandIssuers.Any;
+    private readonly PluginManager? pluginManager;
+    private readonly ILogger? logger;
+    private readonly List<Command> _commands;
+    private readonly CommandParser _commandParser;
+    private readonly List<BaseArgumentParser> _argumentParsers;
 
-    internal List<Command> _commands;
-    internal CommandParser _commandParser;
-    internal List<BaseArgumentParser> _argumentParsers;
-    internal string _prefix;
-    internal PluginManager? pluginManager;
-
-    public CommandHandler()
+    public CommandHandler(PluginManager? pluginManager = null, ILogger<CommandHandler>? logger = null)
     {
-        _commandParser = new CommandParser(DefaultPrefix);
+        _commandParser = new CommandParser(CommandHelpers.DefaultPrefix);
         _commands = [];
-        _argumentParsers = [];
-        _prefix = DefaultPrefix;
+        _argumentParsers = [new LocationTypeParser(), new PlayerTypeParser()];
 
         // Find all predefined argument parsers
         var parsers = typeof(StringArgumentParser).Assembly.GetTypes().Where(type => typeof(BaseArgumentParser).IsAssignableFrom(type) && !type.IsAbstract);
 
         foreach (var parser in parsers)
         {
-            if (Activator.CreateInstance(parser) is BaseArgumentParser parserInstance)
+            if (Activator.CreateInstance(parser) is BaseArgumentParser<object> parserInstance)
             {
                 _argumentParsers.Add(parserInstance);
             }
         }
-    }
 
-    public void LinkPluginManager(PluginManager pluginManager)
-    {
         this.pluginManager = pluginManager;
+        this.logger = logger;
     }
 
     public (int id, string mctype) FindMinecraftType(Type type)
@@ -52,43 +50,17 @@ public class CommandHandler
         return (parserInstance.Id, parserInstance.ParserIdentifier);
     }
 
-    public Command[] GetAllCommands()
-    {
-        return _commands.ToArray();
-    }
+    public bool IsValidArgumentType(Type argumentType) =>
+        this._argumentParsers.Any(x => x.GetType().BaseType?.GetGenericArguments().First() == argumentType);
 
-    public void AddArgumentParser(BaseArgumentParser parser)
-    {
-        _argumentParsers.Add(parser);
-    }
+    public BaseArgumentParser GetArgumentParser(Type argumentType) =>
+        this._argumentParsers.First(x => x.GetType().BaseType?.GetGenericArguments().First() == argumentType);
 
-    public void RegisterSingleCommand(Action method, PluginContainer plugin, Type t)
-    {
-        var m = method.Method;
+    public Command[] GetAllCommands() => _commands.ToArray();
 
-        // Get command name from first constructor argument for command attribute.
-        var cmd = m.GetCustomAttribute<CommandAttribute>();
-        if (cmd is null)
-            return; // TODO Log warning (?)
+    public void AddArgumentParser(BaseArgumentParser parser) => _argumentParsers.Add(parser);
 
-        var name = cmd.CommandName;
-        // Get aliases
-        var aliases = cmd.Aliases;
-        var checks = m.GetCustomAttributes<BaseExecutionCheckAttribute>();
-
-        var info = m.GetCustomAttribute<CommandInfoAttribute>();
-        var issuers = m.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? DefaultIssuerScope;
-
-        var command = new Command(name, aliases, info?.Description ?? string.Empty, info?.Usage ?? string.Empty, null, checks.ToArray(), this, plugin, null, t, issuers);
-        command.Overloads.Add(m);
-
-        _commands.Add(command);
-    }
-
-    public void UnregisterPluginCommands(PluginContainer plugin)
-    {
-        _commands.RemoveAll(x => x.Plugin == plugin);
-    }
+    public void UnregisterPluginCommands(PluginContainer plugin) => _commands.RemoveAll(x => x.PluginContainer == plugin);
 
     public void RegisterCommandClass<T>(PluginContainer plugin) => RegisterCommandClass(plugin, typeof(T));
 
@@ -112,8 +84,11 @@ public class CommandHandler
         }
     }
 
-    public object? CreateCommandRootInstance(Type type, PluginContainer plugin)
+    public object? CreateCommandRootInstance(Type? type, PluginContainer plugin)
     {
+        if (type is null)
+            return null;
+
         object? instance = Activator.CreateInstance(type);
         if (instance is null)
             return null;
@@ -121,20 +96,22 @@ public class CommandHandler
         var injectables = type.GetProperties().Where(x => x.GetCustomAttribute<InjectAttribute>() != null);
         foreach (var injectable in injectables)
         {
-            if (injectable.PropertyType == typeof(PluginBase) || injectable.PropertyType == plugin.Plugin.GetType())
-            {
-                injectable.SetValue(instance, plugin.Plugin);
-            }
-            else
-            {
-                PluginServiceHandler.InjectServices(this.pluginManager!.PluginServiceProvider, instance, plugin, pluginManager.logger, pluginManager.loggerProvider);
-            }
+            //Plugins should stick to services and not be able to have access to other plugin base class.
+            //if (injectable.PropertyType == typeof(PluginBase) || injectable.PropertyType == plugin.Plugin.GetType())
+            //{
+            //    injectable.SetValue(instance, plugin.Plugin);
+            //}
+            //else
+            //{
+            //}
+
+            PluginServiceHandler.InjectServices(pluginManager!.PluginServiceProvider, instance, plugin, pluginManager.logger, pluginManager.loggerProvider);
         }
 
         return instance;
     }
 
-    private void RegisterSubgroups(Type type, PluginContainer plugin, Command? parent = null)
+    private void RegisterSubgroups(Type type, PluginContainer pluginContainer, Command? parent = null)
     {
         // find all command groups under this command
         var subtypes = type.GetNestedTypes().Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandGroupAttribute)));
@@ -150,18 +127,25 @@ public class CommandHandler
             var checks = st.GetCustomAttributes<BaseExecutionCheckAttribute>();
 
             var info = st.GetCustomAttribute<CommandInfoAttribute>();
-            var issuers = st.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? DefaultIssuerScope;
+            var issuers = st.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? CommandHelpers.DefaultIssuerScope;
 
-            var cmd = new Command(name, aliases.ToArray(), info?.Description ?? string.Empty, info?.Usage ?? string.Empty, parent, checks.ToArray(), this, plugin, null, st, issuers);
+            var command = CommandBuilder.Create(name)
+              .WithDescription(info?.Description)
+              .WithParent(parent)
+              .WithUsage(info?.Usage)
+              .AddAliases(aliases)
+              .AddExecutionChecks(checks.ToArray())
+              .CanIssueAs(issuers)
+              .Build(this, pluginContainer);
 
-            RegisterSubgroups(st, plugin, cmd);
-            RegisterSubcommands(st, plugin, cmd);
+            RegisterSubgroups(st, pluginContainer, command);
+            RegisterSubcommands(st, pluginContainer, command);
 
-            _commands.Add(cmd);
+            _commands.Add(command);
         }
     }
 
-    private void RegisterSubcommands(Type type, PluginContainer plugin, Command? parent = null)
+    private void RegisterSubcommands(Type type, PluginContainer pluginContainer, Command? parent = null)
     {
         // loop through methods and find valid commands
         var methods = type.GetMethods();
@@ -169,7 +153,7 @@ public class CommandHandler
         if (parent is not null)
         {
             // Adding all methods with GroupCommand attribute
-            parent.Overloads.AddRange(methods.Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(GroupCommandAttribute))));
+            parent.Overloads!.AddRange(methods.Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(GroupCommandAttribute))));
         }
 
         // Selecting all methods that have the CommandAttribute.
@@ -186,13 +170,18 @@ public class CommandHandler
             var checks = m.GetCustomAttributes<BaseExecutionCheckAttribute>();
 
             var info = m.GetCustomAttribute<CommandInfoAttribute>();
-            var issuers = m.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? DefaultIssuerScope;
+            var issuers = m.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? CommandHelpers.DefaultIssuerScope;
 
-            var command = new Command(name, aliases, info?.Description ?? string.Empty, info?.Usage ?? string.Empty, parent, checks.ToArray(), this, plugin, null, type, issuers);
-            command.Overloads.Add(m);
-
-            // Add overloads.
-            command.Overloads.AddRange(methods.Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandOverloadAttribute)) && x.Name == m.Name));
+            var command = CommandBuilder.Create(name)
+                .WithDescription(info?.Description)
+                .WithParent(parent)
+                .WithUsage(info?.Usage)
+                .AddAliases(aliases)
+                .AddOverload(m)
+                .AddOverloads(methods.Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandOverloadAttribute)) && x.Name == m.Name))
+                .AddExecutionChecks(checks)
+                .CanIssueAs(issuers)
+                .Build(this, pluginContainer);
 
             _commands.Add(command);
         }
@@ -228,7 +217,7 @@ public class CommandHandler
                 await ctx.Sender.SendMessageAsync(ChatMessage.Simple(ex.Message, ChatColor.Red));
                 break;
         }
-    } 
+    }
 
     private async Task ExecuteCommand(string[] command, CommandContext ctx)
     {
@@ -244,7 +233,7 @@ public class CommandHandler
 
         if (cmd is not null)
         {
-            ctx.Plugin = cmd.Plugin?.Plugin;
+            ctx.Plugin = cmd.PluginContainer?.Plugin;
             await cmd.ExecuteAsync(ctx, args);
         }
         else

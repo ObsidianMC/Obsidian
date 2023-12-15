@@ -2,14 +2,9 @@
 
 namespace Obsidian.Commands.Framework;
 
-public class CommandParser
+public sealed class CommandParser(string prefix)
 {
-    public string Prefix { get; }
-
-    public CommandParser(string prefix)
-    {
-        Prefix = prefix;
-    }
+    public string Prefix { get; } = prefix;
 
     public bool IsCommandQualified(string input, out ReadOnlyMemory<char> qualifiedCommand)
     {

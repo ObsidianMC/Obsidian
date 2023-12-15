@@ -1,42 +1,30 @@
-﻿using Obsidian.Commands.Framework.Exceptions;
+﻿using Obsidian.API.Utilities;
+using Obsidian.Commands.Framework.Exceptions;
 using Obsidian.Plugins;
 using System.Reflection;
 
 namespace Obsidian.Commands.Framework.Entities;
 
-public class Command
+public sealed class Command
 {
-    public string Name { get; private set; }
-    public string[] Aliases { get; private set; }
-    public string Description { get; private set; }
-    public string Usage { get; private set; }
-    internal CommandIssuers AllowedIssuers { get; set; }
+    internal CommandIssuers AllowedIssuers { get; init; }
 
-    internal CommandHandler Handler { get; set; }
-    public List<MethodInfo> Overloads { get; internal set; }
-    public BaseExecutionCheckAttribute[] ExecutionChecks { get; private set; }
-    internal PluginContainer Plugin { get; }
+    internal Type? ParentType { get; init; }
 
-    public Command? Parent { get; private set; }
-    internal object? ParentInstance { get; set; }
-    internal Type ParentType { get; set; }
+    public required CommandHandler CommandHandler { get; init; }
+    public required PluginContainer PluginContainer { get; init; }
+    public required string Name { get; init; }
 
-    public Command(string name, string[] aliases, string description, string usage, Command? parent, BaseExecutionCheckAttribute[] checks,
-        CommandHandler handler, PluginContainer plugin, object? parentInstance, Type parentType, CommandIssuers allowedIssuers)
-    {
-        Name = name;
-        Aliases = aliases;
-        Parent = parent;
-        ExecutionChecks = checks;
-        Handler = handler;
-        Description = description;
-        Usage = usage;
-        ParentInstance = parentInstance;
-        Plugin = plugin;
-        ParentType = parentType;
-        AllowedIssuers = allowedIssuers;
-        Overloads = new List<MethodInfo>();
-    }
+    public string[] Aliases { get; init; } = [];
+    public string? Description { get; init; }
+    public string? Usage { get; init; }
+
+    public List<MethodInfo> Overloads { get; init; } = [];
+    public BaseExecutionCheckAttribute[] ExecutionChecks { get; init; } = [];
+
+    public Command? Parent { get; init; }
+
+    internal Command() { }
 
     public bool CheckCommand(string[] input, Command? parent)
     {
@@ -90,9 +78,7 @@ public class Command
         || x.GetParameters().Last().GetCustomAttribute<RemainingAttribute>() != null);
 
         // Create instance of declaring type to execute.
-        var obj = ParentInstance;
-        if (obj == null && ParentType != null)
-            obj = Handler.CreateCommandRootInstance(ParentType, Plugin);
+        var obj = CommandHandler.CreateCommandRootInstance(ParentType, PluginContainer);
 
         // Get required params
         var methodparams = method.GetParameters().Skip(1).ToArray();
@@ -115,21 +101,18 @@ public class Command
             }
 
             // Checks if there is any valid registered command handler
-            if (Handler._argumentParsers.Any(x => x.GetType().BaseType?.GetGenericArguments()[0] == paraminfo.ParameterType))
+            if (CommandHandler.IsValidArgumentType(paraminfo.ParameterType))
             {
-                // Gets parser
-                // TODO premake instances of parsers in command handler
-                var parsertype = Handler._argumentParsers.First(x => x.GetType().BaseType?.GetGenericArguments()[0] == paraminfo.ParameterType).GetType();
-                var parser = Activator.CreateInstance(parsertype);
+                var parser = CommandHandler.GetArgumentParser(paraminfo.ParameterType);
 
                 // sets args for parser method
                 var parseargs = new object?[3] { arg, context, null };
 
                 // cast with reflection?
-                if (parsertype.GetMethod(nameof(BaseArgumentParser<object>.TryParseArgument))?.Invoke(parser, parseargs) is bool success && success)
+                if (parser.TryParseArgument(arg, context, out var parserResult))
                 {
                     // parse success!
-                    parsedargs[i + 1] = parseargs[2]!;
+                    parsedargs[i + 1] = parserResult;
                 }
                 else
                 {
@@ -172,8 +155,5 @@ public class Command
         }
     }
 
-    public override string ToString()
-    {
-        return $"{Handler._prefix}{GetQualifiedName()}";
-    }
+    public override string ToString() => $"{CommandHelpers.DefaultPrefix}{GetQualifiedName()}";
 }

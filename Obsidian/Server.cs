@@ -120,17 +120,13 @@ public sealed partial class Server : IServer
         ScoreboardManager = new ScoreboardManager(this, loggerFactory);
 
         _logger.LogDebug(message: "Initializing command handler...");
-        CommandsHandler = new CommandHandler();
 
-        PluginManager = new PluginManager(this.serviceProvider, this, _logger, CommandsHandler);
-        CommandsHandler.LinkPluginManager(PluginManager);
+        PluginManager = new PluginManager(this.serviceProvider, this, _logger);
+        CommandsHandler = new CommandHandler(PluginManager, loggerFactory.CreateLogger<CommandHandler>());
 
         _logger.LogDebug("Registering commands...");
         CommandsHandler.RegisterCommandClass<MainCommandModule>(null);
 
-        _logger.LogDebug("Registering custom argument parsers...");
-        CommandsHandler.AddArgumentParser(new LocationTypeParser());
-        CommandsHandler.AddArgumentParser(new PlayerTypeParser());
 
         _logger.LogDebug("Registering command context type...");
         _logger.LogDebug("Done registering commands.");
@@ -168,9 +164,6 @@ public sealed partial class Server : IServer
             });
         }
     }
-
-    public void RegisterArgumentHandler<T>(T parser) where T : BaseArgumentParser =>
-        CommandsHandler.AddArgumentParser(parser);
 
     // TODO make sure to re-send recipes
     public void RegisterRecipes(params IRecipe[] recipes)
@@ -399,7 +392,7 @@ public sealed partial class Server : IServer
 
     public async Task ExecuteCommand(string input)
     {
-        var context = new CommandContext(CommandsHandler._prefix + input, new CommandSender(CommandIssuers.Console, null, _logger), null, this);
+        var context = new CommandContext(CommandHelpers.DefaultPrefix + input, new CommandSender(CommandIssuers.Console, null, _logger), null, this);
         try
         {
             await CommandsHandler.ProcessCommand(context);

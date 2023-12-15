@@ -1,4 +1,6 @@
-﻿namespace Obsidian.API;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Obsidian.API;
 
 //TODO custom parsers needs to get assigned their own ids by the server. Out of scope for this pr so I will leave it like this for now
 public abstract class BaseArgumentParser
@@ -15,18 +17,24 @@ public abstract class BaseArgumentParser
         this.Id = id;
         this.minecraftType = minecraftType;
     }
+
+    internal abstract bool TryParseArgument(string input, CommandContext ctx, [NotNullWhen(true)] out object? result);
 }
 
-public abstract class BaseArgumentParser<T> : BaseArgumentParser
+public abstract class BaseArgumentParser<T>(int id, string minecraftType) : BaseArgumentParser(id, minecraftType)
 {
-    public BaseArgumentParser(int id, string minecraftType) : base(id, minecraftType)
-    {
-    }
-
     public abstract bool TryParseArgument(string input, CommandContext ctx, out T result);
 
-    public Type GetParserType()
+    internal override bool TryParseArgument(string input, CommandContext ctx, [NotNullWhen(true)] out object? result)
     {
-        return typeof(T);
+        if (this.TryParseArgument(input, ctx, out T tResult))
+        {
+            result = tResult!;
+            return true;
+        }
+
+        result = null;
+
+        return false;
     }
 }

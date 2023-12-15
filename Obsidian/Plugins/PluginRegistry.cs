@@ -2,8 +2,9 @@
 using Obsidian.API.Plugins;
 
 namespace Obsidian.Plugins;
-public sealed class PluginRegistry : IPluginRegistry
+public sealed class PluginRegistry(IServer server) : IPluginRegistry
 {
+    private readonly Server server = (Server)server;
 
     public IPluginRegistry MapCommand(ContextDelegate<CommandContext> contextDelegate)
     {
@@ -25,6 +26,13 @@ public sealed class PluginRegistry : IPluginRegistry
 
     public IPluginRegistry MapEvents()
     {
+
+        return this;
+    }
+
+    public IPluginRegistry RegisterArgumentHandler<T>(T parser) where T : BaseArgumentParser
+    {
+        this.server.CommandsHandler.AddArgumentParser(parser);
 
         return this;
     }

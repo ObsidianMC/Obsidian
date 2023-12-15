@@ -22,8 +22,6 @@ public sealed class PluginManager
     private readonly IServiceProvider serverProvider;
     private readonly IServer server;
 
-    private readonly CommandHandler commandHandler;
-
     private readonly IPluginRegistry pluginRegistry;
     private readonly IServiceCollection pluginServiceDescriptors = new ServiceCollection();
 
@@ -46,16 +44,15 @@ public sealed class PluginManager
 
     public IServiceProvider PluginServiceProvider { get; private set; } = default!;
 
-    public PluginManager(IServiceProvider serverProvider, IServer server, ILogger logger, CommandHandler commandHandler)
+    public PluginManager(IServiceProvider serverProvider, IServer server, ILogger logger)
     {
         var env = serverProvider.GetRequiredService<IServerEnvironment>();
 
         this.server = server;
         this.logger = logger;
         this.serverProvider = serverProvider;
-        this.commandHandler = commandHandler;
         this.loggerProvider = new LoggerProvider(env.Configuration.LogLevel);
-        this.pluginRegistry = new PluginRegistry();
+        this.pluginRegistry = new PluginRegistry(server);
 
         PluginProviderSelector.RemotePluginProvider = new RemotePluginProvider(logger);
         PluginProviderSelector.UncompiledPluginProvider = new UncompiledPluginProvider(logger);
@@ -173,7 +170,7 @@ public sealed class PluginManager
             }
         }
 
-        commandHandler.UnregisterPluginCommands(pluginContainer);
+        ((Server)this.server).CommandsHandler.UnregisterPluginCommands(pluginContainer);
 
         try
         {
