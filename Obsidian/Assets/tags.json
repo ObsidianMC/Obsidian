@@ -46,7 +46,8 @@
       "minecraft:peony",
       "minecraft:large_fern",
       "minecraft:hanging_roots",
-      "minecraft:grass"
+      "minecraft:grass",
+      "minecraft:short_grass"
     ]
   },
   "blocks/semitransparent": {
@@ -72,7 +73,9 @@
       "minecraft:red_stained_glass",
       "minecraft:black_stained_glass",
       "minecraft:tinted_glass",
-      "#minecraft:ice"
+      "#minecraft:ice",
+      "minecraft:kelp",
+      "minecraft:kelp_plant"
     ]
   },
   "blocks/gravity_affected": {
