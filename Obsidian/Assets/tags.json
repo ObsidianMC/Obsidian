@@ -46,7 +46,8 @@
       "minecraft:peony",
       "minecraft:large_fern",
       "minecraft:hanging_roots",
-      "minecraft:grass"
+      "minecraft:grass",
+      "minecraft:short_grass"
     ]
   },
   "blocks/semitransparent": {
