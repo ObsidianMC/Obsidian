@@ -1,36 +1,41 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <PreserveCompilationContext>false</PreserveCompilationContext>
-    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
-    <OutputType>Library</OutputType>
-    <EnablePreviewFeatures>true</EnablePreviewFeatures>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<PreserveCompilationContext>false</PreserveCompilationContext>
+		<ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+		<OutputType>Library</OutputType>
+		<EnablePreviewFeatures>true</EnablePreviewFeatures>
+		<EnableDynamicLoading>true</EnableDynamicLoading>
+		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+	</PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <OutputPath>..\Obsidian.ConsoleApp\bin\Debug\$(TargetFramework)\plugins\</OutputPath>
-    <DebugType>none</DebugType>
-    <DebugSymbols>false</DebugSymbols>
-    <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
-  </PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+		<OutputPath>..\Obsidian.ConsoleApp\bin\Debug\$(TargetFramework)\plugins\</OutputPath>
+		<DebugType>none</DebugType>
+		<DebugSymbols>false</DebugSymbols>
+		<GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="plugin.json" />
-  </ItemGroup>
+	<ItemGroup>
+		<None Remove="plugin.json" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Include="plugin.json" />
-  </ItemGroup>
+	<ItemGroup>
+		<EmbeddedResource Include="plugin.json" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0">
+			<ExcludeAssets>runtime</ExcludeAssets>
+		</PackageReference>
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Obsidian.API\Obsidian.API.csproj">
-      <Private>false</Private>
-    </ProjectReference>
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Obsidian.API\Obsidian.API.csproj">
+			<Private>false</Private>
+			<ExcludeAssets>runtime</ExcludeAssets>
+		</ProjectReference>
+	</ItemGroup>
 
 </Project>
