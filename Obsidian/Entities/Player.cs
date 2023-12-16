@@ -943,65 +943,56 @@ public sealed partial class Player : Living, IPlayer
     /// <returns>Whether all chunks have been sent.</returns>
     internal async Task<bool> UpdateChunksAsync(bool unloadAll = false, int distance = 0)
     {
-        try
+
+        bool sentAll = true;
+        if (unloadAll)
         {
-
-            bool sentAll = true;
-            if (unloadAll)
+            if (!Respawning)
             {
-                if (!Respawning)
-                {
-                    foreach (var (X, Z) in client.LoadedChunks)
-                        await client.UnloadChunkAsync(X, Z);
-                }
-
-                client.LoadedChunks.Clear();
+                foreach (var (X, Z) in client.LoadedChunks)
+                    await client.UnloadChunkAsync(X, Z);
             }
 
-            List<(int X, int Z)> clientNeededChunks = [];
-            List<(int X, int Z)> clientUnneededChunks = new(client.LoadedChunks);
+            client.LoadedChunks.Clear();
+        }
 
-            (int playerChunkX, int playerChunkZ) = Position.ToChunkCoord();
+        List<(int X, int Z)> clientNeededChunks = [];
+        List<(int X, int Z)> clientUnneededChunks = new(client.LoadedChunks);
 
-            int dist = distance < 1 ? ClientInformation.ViewDistance : distance;
-            for (int x = playerChunkX + dist; x > playerChunkX - dist; x--)
-                for (int z = playerChunkZ + dist; z > playerChunkZ - dist; z--)
-                    clientNeededChunks.Add((x, z));
+        (int playerChunkX, int playerChunkZ) = Position.ToChunkCoord();
 
-            clientUnneededChunks = clientUnneededChunks.Except(clientNeededChunks).ToList();
-            clientNeededChunks = clientNeededChunks.Except(client.LoadedChunks).ToList();
-            clientNeededChunks.Sort((chunk1, chunk2) =>
-            {
-                return Math.Abs(playerChunkX - chunk1.X) +
-                Math.Abs(playerChunkZ - chunk1.Z) <
-                Math.Abs(playerChunkX - chunk2.X) +
-                Math.Abs(playerChunkZ - chunk2.Z) ? -1 : 1;
-            });
+        int dist = distance < 1 ? ClientInformation.ViewDistance : distance;
+        for (int x = playerChunkX + dist; x > playerChunkX - dist; x--)
+            for (int z = playerChunkZ + dist; z > playerChunkZ - dist; z--)
+                clientNeededChunks.Add((x, z));
+
+        clientUnneededChunks = clientUnneededChunks.Except(clientNeededChunks).ToList();
+        clientNeededChunks = clientNeededChunks.Except(client.LoadedChunks).ToList();
+        clientNeededChunks.Sort((chunk1, chunk2) =>
+        {
+            return Math.Abs(playerChunkX - chunk1.X) +
+            Math.Abs(playerChunkZ - chunk1.Z) <
+            Math.Abs(playerChunkX - chunk2.X) +
+            Math.Abs(playerChunkZ - chunk2.Z) ? -1 : 1;
+        });
 
         clientUnneededChunks.ForEach(c => client.LoadedChunks.TryRemove(c));
 
-            foreach (var chunkLoc in clientNeededChunks)
-            {
-                var chunk = await world.GetChunkAsync(chunkLoc.X, chunkLoc.Z);
-                if (chunk is not null && chunk.IsGenerated)
-                {
-                    await client.SendChunkAsync(chunk);
-                    client.LoadedChunks.Add((chunk.X, chunk.Z));
-                }
-                else
-                {
-                    sentAll = false;
-                }
-            }
-
-            return sentAll;
-        }
-        catch(Exception e)
+        foreach (var (X, Z) in clientNeededChunks)
         {
-            Console.WriteLine(e.Message);
-            return false;
-             
+            var chunk = await world.GetChunkAsync(X, Z);
+            if (chunk is not null && chunk.IsGenerated)
+            {
+                await client.SendChunkAsync(chunk);
+                client.LoadedChunks.Add((chunk.X, chunk.Z));
+            }
+            else
+            {
+                sentAll = false;
+            }
         }
+
+        return sentAll;
     }
 
     private void WriteItems(NbtWriter writer, bool inventory = true)

@@ -73,19 +73,7 @@ public class Region : IRegion
         var chunk = loadedChunks[x, z];
         if (chunk is null)
         {
-            try
-            {
-                chunk = await GetChunkFromFileAsync(x, z); // Still might be null but that's okay.
-                if (chunk is null)
-                {
-                    //Debugger.Break();
-                }
-
-            } catch (Exception e)
-            {
-                Console.WriteLine(e.Message);
-                Debugger.Break();
-            }
+            chunk = await GetChunkFromFileAsync(x, z); // Still might be null but that's okay.
             loadedChunks[x, z] = chunk!;
         }
 
@@ -102,15 +90,7 @@ public class Region : IRegion
 
     private async Task<Chunk?> GetChunkFromFileAsync(int x, int z)
     {
-        Memory<byte>? chunkBuffer;
-        try
-        {
-            chunkBuffer = await regionFile.GetChunkBytesAsync(x, z);
-        }
-        catch (Exception e)
-        {
-            return null;
-        }
+        var chunkBuffer = await regionFile.GetChunkBytesAsync(x, z);
 
         if (chunkBuffer is not Memory<byte> chunkData)
             return null;

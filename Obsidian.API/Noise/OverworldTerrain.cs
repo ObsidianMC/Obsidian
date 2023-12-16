@@ -47,7 +47,6 @@ internal class OverworldTerrain : Module
         }
 
         // Beash/Ocean flat, everything else amplified
-        //squash = height < 0 ? squash * 0.3d : 40 * height * Math.Pow(squash, 2);
         squash = height < 0 ? squash * 0.3d : Math.Pow(-(3 * squash - 1.5), 4) + 1.0;
         if (height >= 0.6) // Add mountain peaks/valleys
         {

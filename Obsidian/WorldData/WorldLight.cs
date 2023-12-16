@@ -1,5 +1,4 @@
-﻿using Microsoft.CodeAnalysis.CSharp;
-using Obsidian.Registries;
+﻿using Obsidian.Registries;
 
 namespace Obsidian.WorldData;
 
@@ -37,7 +36,6 @@ internal class WorldLight
 
                     lightLevel = Math.Max(0, lightLevel - diffuse);
                     chunk.SetLightLevel(x, y, z, LightType.Sky, lightLevel);
-                    //chunk.SetLightLevel(x, y+1, z, LightType.Sky, lightLevel);
                     if (lightLevel == 0) { break; }
                 }
             }

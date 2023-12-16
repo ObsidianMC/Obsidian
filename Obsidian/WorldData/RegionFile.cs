@@ -219,6 +219,8 @@ public sealed class RegionFile : IAsyncDisposable
     {
         this.semaphore.Wait();
         this.Pad();
+        // Using Flush with true forces C# to dump to disk.
+        // It otherwise wouldn't
         this.regionFileStream.Flush(true);
         this.semaphore.Release();
     }
