@@ -1,5 +1,6 @@
 ﻿using Obsidian.ChunkData;
 using Obsidian.Registries;
+using System.Diagnostics;
 
 namespace Obsidian.WorldData.Generators.Overworld;
 
@@ -70,6 +71,7 @@ internal static class ChunkBuilder
 
     internal static void Biomes(GenHelper helper, Chunk chunk)
     {
+        
         for (int x = 0; x < 16; x++)
         {
             for (int z = 0; z < 16; z++)
@@ -81,6 +83,10 @@ internal static class ChunkBuilder
                 if (x % 4 == 0 && z % 4 == 0) // Biomes are in 4x4x4 blocks. Do a 2D array for now and just copy it vertically.
                 {
                     var biome = (Biome)helper.Noise.Biome.GetValue(worldX, 0, worldZ);
+                    if (chunk.X == 7 && chunk.Z == 7)
+                    {
+                        Debugger.Break();
+                    }
                     for (int y = -64; y < 320; y += 4)
                     {
                         chunk.SetBiome(x, y, z, biome);

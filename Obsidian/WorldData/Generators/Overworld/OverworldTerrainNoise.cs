@@ -65,15 +65,15 @@ public sealed class OverworldTerrainNoise
             {
                     Source0 = new Perlin()
                     {
-                        Frequency = 0.0001,
+                        Frequency = 0.0002,
                         Quality = SharpNoise.NoiseQuality.Standard,
                         Seed = seed + 2,
                         OctaveCount = 2,
                         // 1st octave smooth and low freq
                         // 2nd octave low powered by high freq multi
                         // to add ripples
-                        Lacunarity = 80,
-                        Persistence = 0.03
+                        Lacunarity = 120,
+                        Persistence = 0.01
                     }
                 
             }
@@ -85,15 +85,15 @@ public sealed class OverworldTerrainNoise
             {
                     Source0 = new Perlin()
                     {
-                        Frequency = 0.00013,
+                        Frequency = 0.00023,
                         Quality = SharpNoise.NoiseQuality.Standard,
                         Seed = seed + 3,
                         OctaveCount = 2,
                         // 1st octave smooth and low freq
                         // 2nd octave low powered by high freq multi
                         // to add ripples
-                        Lacunarity = 80,
-                        Persistence = 0.03
+                        Lacunarity = 120,
+                        Persistence = 0.01
                     }
                 
             }

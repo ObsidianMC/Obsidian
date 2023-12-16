@@ -568,7 +568,7 @@ public sealed class Client : IDisposable
             TeleportId = Player.TeleportId
         });
 
-        while (!await Player.UpdateChunksAsync(distance: 7))
+        while (!await Player.UpdateChunksAsync(distance: 9))
         {
             Logger.LogError("Failed to send {Username} their logon chunks! Retrying...", Player.Username);
         }
