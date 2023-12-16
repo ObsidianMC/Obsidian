@@ -520,7 +520,6 @@ public sealed class Client : IDisposable
         Logger.LogDebug("Sent Login success to user {Username} {UUID}", Player.Username, Player.Uuid);
 
         this.State = ClientState.Play;
-        await Player.LoadAsync();
         if (!this.server.OnlinePlayers.TryAdd(Player.Uuid, Player))
         {
             Logger.LogError("Failed to add player {Username} to online players. Undefined behavior ahead!", Player.Username);

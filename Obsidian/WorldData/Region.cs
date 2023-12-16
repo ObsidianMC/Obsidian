@@ -11,6 +11,7 @@ using Obsidian.Utilities.Collections;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Obsidian.WorldData;
 
@@ -198,7 +199,6 @@ public class Region : IRegion
                 foreach (NbtCompound entry in blockStatesPalette!)
                 {
                     var id = entry.GetInt("Id");
-
                     chunkSecPalette.GetOrAddId(BlocksRegistry.Get(id));//TODO PROCESS ADDED PROPERTIES TO GET CORRECT BLOCK STATE
                 }
 
@@ -209,7 +209,6 @@ public class Region : IRegion
             if (statesCompound.TryGetTag("data", out var dataArrayTag))
             {
                 var data = dataArrayTag as NbtArray<long>;
-
                 section.BlockStateContainer.DataArray.storage = data!.GetArray();
             }
 
@@ -221,6 +220,14 @@ public class Region : IRegion
             {
                 if (Enum.TryParse<Biome>(biome.Value.TrimResourceTag(), true, out var value))
                     biomePalette.GetOrAddId(value);
+            }
+            if (biomesPalette.Count > 1)
+            {
+                if (biomesCompound.TryGetTag("data", out var biomeDataArrayTag))
+                {
+                    var data = biomeDataArrayTag as NbtArray<long>;
+                    section.BiomeContainer.DataArray.storage = data!.GetArray();
+                }
             }
 
             if (sectionCompound.TryGetTag("SkyLight", out var skyLightTag))
@@ -265,11 +272,8 @@ public class Region : IRegion
             if (section.YBase is null)
                 throw new UnreachableException("Section Ybase should not be null");//THIS should never happen
 
-            var biomesCompound = new NbtCompound("biomes");
             var blockStatesCompound = new NbtCompound("block_states");
 
-            if (section.BlockStateContainer.DataArray.storage.Any(x => x > 0))
-                blockStatesCompound.Add(new NbtArray<long>("data", section.BlockStateContainer.DataArray.storage));
 
             if (section.BlockStateContainer.Palette is IndirectPalette indirect)
             {
@@ -289,8 +293,10 @@ public class Region : IRegion
                 }
 
                 blockStatesCompound.Add(palette);
+                blockStatesCompound.Add(new NbtArray<long>("data", section.BlockStateContainer.DataArray.storage));
             }
 
+            var biomesCompound = new NbtCompound("biomes");
             if (section.BiomeContainer.Palette is BaseIndirectPalette<Biome> indirectBiomePalette)
             {
                 var palette = new NbtList(NbtTagType.String, "palette");
@@ -298,12 +304,14 @@ public class Region : IRegion
                 foreach (var id in indirectBiomePalette.Values)
                 {
                     var biome = (Biome)id;
-
                     palette.Add(new NbtTag<string>(string.Empty, $"minecraft:{biome.ToString().ToLower()}"));
                 }
 
                 biomesCompound.Add(palette);
+                if (indirectBiomePalette.Values.Length > 1)
+                    biomesCompound.Add(new NbtArray<long>("data", section.BiomeContainer.DataArray.storage));
             }
+
 
             sectionsCompound.Add(new NbtCompound
             {

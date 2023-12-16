@@ -83,10 +83,6 @@ internal static class ChunkBuilder
                 if (x % 4 == 0 && z % 4 == 0) // Biomes are in 4x4x4 blocks. Do a 2D array for now and just copy it vertically.
                 {
                     var biome = (Biome)helper.Noise.Biome.GetValue(worldX, 0, worldZ);
-                    if (chunk.X == 7 && chunk.Z == 7)
-                    {
-                        Debugger.Break();
-                    }
                     for (int y = -64; y < 320; y += 4)
                     {
                         chunk.SetBiome(x, y, z, biome);
@@ -216,7 +212,7 @@ internal static class ChunkBuilder
                     }
 
                     if (y > terrainY - 5) { continue; }
-                    var orePlaced = false; //Thanks Jonpro03 for ore placing!
+                    var orePlaced = false;
                     foreach (OreType ore in OreTypes)
                     {
                         // Check if we should be placing a given ore at this Y level
