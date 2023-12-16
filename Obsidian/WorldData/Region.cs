@@ -1,8 +1,5 @@
-﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.Extensions.Logging;
-using Obsidian.API.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Utilities;
-using Obsidian.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Nbt;
@@ -11,7 +8,6 @@ using Obsidian.Utilities.Collections;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Obsidian.WorldData;
 
