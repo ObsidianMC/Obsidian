@@ -1,10 +1,14 @@
 ﻿using Obsidian.API.Events;
 using Obsidian.API.Plugins;
+using Obsidian.Commands.Framework;
+using System.Reflection;
 
 namespace Obsidian.Plugins;
 public sealed class PluginRegistry(IServer server) : IPluginRegistry
 {
     private readonly Server server = (Server)server;
+
+    private CommandHandler CommandHandler => this.server.CommandsHandler;
 
     public IPluginRegistry MapCommand(ContextDelegate<CommandContext> contextDelegate)
     {
@@ -14,6 +18,8 @@ public sealed class PluginRegistry(IServer server) : IPluginRegistry
 
     public IPluginRegistry MapCommands()
     {
+        var asm = Assembly.GetExecutingAssembly();
+
 
         return this;
     }
@@ -32,7 +38,7 @@ public sealed class PluginRegistry(IServer server) : IPluginRegistry
 
     public IPluginRegistry RegisterArgumentHandler<T>(T parser) where T : BaseArgumentParser
     {
-        this.server.CommandsHandler.AddArgumentParser(parser);
+        this.CommandHandler.AddArgumentParser(parser);
 
         return this;
     }

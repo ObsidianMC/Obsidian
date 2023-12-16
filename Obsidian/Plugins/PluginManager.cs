@@ -15,7 +15,6 @@ public sealed class PluginManager
     private const string loadEvent = "OnLoad";
 
     internal readonly ILogger logger;
-    internal readonly ILoggerProvider loggerProvider;
 
     private readonly List<PluginContainer> plugins = new();
     private readonly List<PluginContainer> stagedPlugins = new();
@@ -51,7 +50,6 @@ public sealed class PluginManager
         this.server = server;
         this.logger = logger;
         this.serverProvider = serverProvider;
-        this.loggerProvider = new LoggerProvider(env.Configuration.LogLevel);
         this.pluginRegistry = new PluginRegistry(server);
 
         PluginProviderSelector.RemotePluginProvider = new RemotePluginProvider(logger);
@@ -79,7 +77,7 @@ public sealed class PluginManager
         this.pluginServiceDescriptors.AddLogging((builder) =>
         {
             builder.ClearProviders();
-            builder.AddProvider(this.loggerProvider);
+            builder.AddProvider(new LoggerProvider(env.Configuration.LogLevel));
             builder.SetMinimumLevel(env.Configuration.LogLevel);
         });
         this.pluginServiceDescriptors.AddSingleton<IServerConfiguration>(x => env.Configuration);
@@ -112,7 +110,7 @@ public sealed class PluginManager
         }
 
         //Inject first wave of services (services initialized by obsidian e.x IServerConfiguration)
-        PluginServiceHandler.InjectServices(this.serverProvider, pluginContainer, this.logger, this.loggerProvider);
+        PluginServiceHandler.InjectServices(this.serverProvider, pluginContainer, this.logger);
 
         pluginContainer.Plugin.unload = async () => await UnloadPluginAsync(pluginContainer);
 
@@ -195,7 +193,9 @@ public sealed class PluginManager
             if (!pluginContainer.Loaded)
                 continue;
 
-            PluginServiceHandler.InjectServices(PluginServiceProvider, pluginContainer, logger, loggerProvider);
+            pluginContainer.ServiceScope = this.PluginServiceProvider.CreateScope();
+
+            pluginContainer.InjectServices(this.logger);
 
             InvokeOnLoad(pluginContainer);
         }

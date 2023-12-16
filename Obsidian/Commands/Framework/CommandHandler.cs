@@ -6,20 +6,18 @@ using Obsidian.Commands.Framework.Entities;
 using Obsidian.Commands.Framework.Exceptions;
 using Obsidian.Commands.Parsers;
 using Obsidian.Plugins;
-using Obsidian.Plugins.ServiceProviders;
 using System.Reflection;
 
 namespace Obsidian.Commands.Framework;
 
 public sealed class CommandHandler
 {
-    private readonly PluginManager? pluginManager;
     private readonly ILogger? logger;
     private readonly List<Command> _commands;
     private readonly CommandParser _commandParser;
     private readonly List<BaseArgumentParser> _argumentParsers;
 
-    public CommandHandler(PluginManager? pluginManager = null, ILogger<CommandHandler>? logger = null)
+    public CommandHandler(ILogger<CommandHandler>? logger = null)
     {
         _commandParser = new CommandParser(CommandHelpers.DefaultPrefix);
         _commands = [];
@@ -36,7 +34,6 @@ public sealed class CommandHandler
             }
         }
 
-        this.pluginManager = pluginManager;
         this.logger = logger;
     }
 
@@ -84,7 +81,7 @@ public sealed class CommandHandler
         }
     }
 
-    public object? CreateCommandRootInstance(Type? type, PluginContainer plugin)
+    public object? CreateCommandRootInstance(Type? type, PluginContainer pluginContainer)
     {
         if (type is null)
             return null;
@@ -105,7 +102,7 @@ public sealed class CommandHandler
             //{
             //}
 
-            PluginServiceHandler.InjectServices(pluginManager!.PluginServiceProvider, instance, plugin, pluginManager.logger, pluginManager.loggerProvider);
+            pluginContainer.InjectServices(this.logger!, instance);
         }
 
         return instance;

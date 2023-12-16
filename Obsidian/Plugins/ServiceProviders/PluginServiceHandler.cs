@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Plugins;
 using System.Reflection;
-using System.Xml.Schema;
 
 namespace Obsidian.Plugins.ServiceProviders;
 
@@ -10,20 +9,20 @@ public static class PluginServiceHandler
 {
     private static readonly Type pluginBaseType = typeof(PluginBase);
 
-    public static void InjectServices(IServiceProvider provider, PluginContainer container, ILogger logger, ILoggerProvider loggerProvider) =>
-        InjectServices(provider, container.Plugin, container, logger, loggerProvider);
+    public static void InjectServices(IServiceProvider provider, PluginContainer container, ILogger logger) =>
+        InjectServices(provider, container.Plugin, container, logger);
 
-    public static void InjectServices(IServiceProvider provider, object target, PluginContainer container, ILogger logger, ILoggerProvider loggerProvider)
+    public static void InjectServices(IServiceProvider provider, object target, PluginContainer container, ILogger logger)
     {
         var properties = target.GetType()
             .GetProperties()
             .Where(x => x.GetCustomAttribute<InjectAttribute>() != null && !x.PropertyType.IsAssignableTo(pluginBaseType));
 
         foreach (var property in properties)
-            InjectService(provider, new() { Property = property, Target = target }, container.Info.Name, logger, loggerProvider);
+            InjectService(provider, new() { Property = property, Target = target }, container.Info.Name, logger);
     }
 
-    private static void InjectService(IServiceProvider provider, Injectable injectable, string pluginName, ILogger logger, ILoggerProvider loggerProvider)
+    private static void InjectService(IServiceProvider provider, Injectable injectable, string pluginName, ILogger logger)
     {
         var property = injectable.Property;
         var target = injectable.Target;
@@ -33,18 +32,13 @@ public static class PluginServiceHandler
 
         try
         {
-            object service = default!;
-
-            if (property.PropertyType == typeof(ILogger))
-                service = loggerProvider.CreateLogger(pluginName);
-            else
-                service = provider.GetRequiredService(property.PropertyType);
+            object service = provider.GetRequiredService(property.PropertyType);
 
             property.SetValue(target, service);
         }
         catch(Exception ex)
         {
-            logger?.LogError(ex, "Failed to inject service.");
+            logger.LogError(ex, "Failed to inject service.");
         }
     }
 }
