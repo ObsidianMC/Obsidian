@@ -66,7 +66,7 @@ public class MainCommandModule
 
         foreach (var cmd in commandSection.Where(x => x.Parent is null))
         {
-            string usage = cmd.Usage.IsEmpty() ? $"/{cmd.Name}" : cmd.Usage;
+            string usage = cmd.Usage.IsNullOrEmpty() ? $"/{cmd.Name}" : cmd.Usage;
             var commandName = new ChatMessage
             {
                 Text = $"\n{ChatColor.Gold}{usage}",

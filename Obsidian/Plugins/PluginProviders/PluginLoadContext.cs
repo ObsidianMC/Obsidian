@@ -16,7 +16,7 @@ internal sealed class PluginLoadContext : AssemblyLoadContext
         resolver = new AssemblyDependencyResolver(path);
     }
 
-    protected override Assembly Load(AssemblyName assemblyName)
+    protected override Assembly? Load(AssemblyName assemblyName)
     {
         string assemblyPath = resolver?.ResolveAssemblyToPath(assemblyName);
         if (assemblyPath != null)

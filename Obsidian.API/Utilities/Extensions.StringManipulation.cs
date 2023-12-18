@@ -68,20 +68,18 @@ public static partial class Extensions
 
     public static EnchantmentType ToEnchantType(this string source) => Enum.Parse<EnchantmentType>(source.Split(":")[1].Replace("_", ""), true);
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsEmpty(this string value) => value.Length == 0;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsNullOrEmpty([AllowNull]this string value) => string.IsNullOrEmpty(value);
+    public static bool IsNullOrEmpty([NotNullWhen(false)] this string? value) => string.IsNullOrEmpty(value);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsNullOrWhitespace([AllowNull]this string value) => string.IsNullOrWhiteSpace(value);
+    public static bool IsNullOrWhitespace([NotNullWhen(false)] this string? value) => string.IsNullOrWhiteSpace(value);
 
-    public static string Capitalize(this string value)
+    public static string Capitalize(this string? value)
     {
         ArgumentNullException.ThrowIfNull(value);
 
-        if (value.IsEmpty() || char.IsUpper(value[0]))
+        if (value.IsNullOrEmpty() || char.IsUpper(value[0]))
             return value;
 
         return string.Create(value.Length, value, (span, source) =>

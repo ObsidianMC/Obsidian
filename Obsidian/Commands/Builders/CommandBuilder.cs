@@ -1,4 +1,5 @@
-﻿using Obsidian.Commands.Framework;
+﻿using Obsidian.API.BlockStates;
+using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Plugins;
 using System.Reflection;
@@ -12,6 +13,8 @@ public sealed class CommandBuilder
 
     public string Name { get; }
 
+    public Type ModuleType { get; }
+
     public string? Description { get; private set; } = default!;
 
     public string? Usage { get; private set; } = default!;
@@ -24,12 +27,13 @@ public sealed class CommandBuilder
     public IReadOnlyCollection<string> Aliases => this.aliases.AsReadOnly();
     public IReadOnlyCollection<BaseExecutionCheckAttribute> Checks => this.checks.AsReadOnly();
 
-    private CommandBuilder(string name)
+    private CommandBuilder(string name, Type moduleType)
     {
         this.Name = name;
+        this.ModuleType = moduleType;
     }
 
-    public static CommandBuilder Create(string name) => new(name);
+    public static CommandBuilder Create(string name, Type moduleType) => new(name, moduleType);
 
     public CommandBuilder WithDescription(string? description)
     {
@@ -135,7 +139,7 @@ public sealed class CommandBuilder
         AllowedIssuers = this.Issuers,
         Parent = this.Parent,
         ExecutionChecks = this.checks.ToArray(),
-        ParentType = this.Parent?.GetType(),
+        ModuleType = this.ModuleType,
         CommandHandler = commandHandler,
         PluginContainer = pluginContainer,
     };

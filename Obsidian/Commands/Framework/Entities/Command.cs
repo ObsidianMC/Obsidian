@@ -9,7 +9,7 @@ public sealed class Command
 {
     internal CommandIssuers AllowedIssuers { get; init; }
 
-    internal Type? ParentType { get; init; }
+    public required Type ModuleType { get; init; }
 
     public required CommandHandler CommandHandler { get; init; }
     public required PluginContainer PluginContainer { get; init; }
@@ -78,7 +78,7 @@ public sealed class Command
         || x.GetParameters().Last().GetCustomAttribute<RemainingAttribute>() != null);
 
         // Create instance of declaring type to execute.
-        var obj = CommandHandler.CreateCommandRootInstance(ParentType, PluginContainer);
+        var obj = CommandHandler.CreateCommandRootInstance(ModuleType, PluginContainer);
 
         // Get required params
         var methodparams = method.GetParameters().Skip(1).ToArray();

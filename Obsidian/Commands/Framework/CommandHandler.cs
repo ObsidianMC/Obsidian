@@ -28,7 +28,7 @@ public sealed class CommandHandler
 
         foreach (var parser in parsers)
         {
-            if (Activator.CreateInstance(parser) is BaseArgumentParser<object> parserInstance)
+            if (Activator.CreateInstance(parser) is BaseArgumentParser parserInstance)
             {
                 _argumentParsers.Add(parserInstance);
             }
@@ -61,10 +61,10 @@ public sealed class CommandHandler
 
     public void RegisterCommandClass<T>(PluginContainer plugin) => RegisterCommandClass(plugin, typeof(T));
 
-    public void RegisterCommandClass(PluginContainer plugin, Type type)
+    public void RegisterCommandClass(PluginContainer plugin, Type moduleType)
     {
-        RegisterSubgroups(type, plugin);
-        RegisterSubcommands(type, plugin);
+        RegisterSubgroups(moduleType, plugin);
+        RegisterSubcommands(moduleType, plugin);
     }
 
     //TODO rework.
@@ -81,16 +81,15 @@ public sealed class CommandHandler
         }
     }
 
-    public object? CreateCommandRootInstance(Type? type, PluginContainer pluginContainer)
+    public object? CreateCommandRootInstance(Type moduleType, PluginContainer pluginContainer)
     {
-        if (type is null)
-            return null;
+        ArgumentNullException.ThrowIfNull(moduleType);
 
-        object? instance = Activator.CreateInstance(type);
+        object? instance = Activator.CreateInstance(moduleType);
         if (instance is null)
             return null;
 
-        var injectables = type.GetProperties().Where(x => x.GetCustomAttribute<InjectAttribute>() != null);
+        var injectables = moduleType.GetProperties().Where(x => x.GetCustomAttribute<InjectAttribute>() != null);
         foreach (var injectable in injectables)
         {
             //Plugins should stick to services and not be able to have access to other plugin base class.
@@ -108,25 +107,25 @@ public sealed class CommandHandler
         return instance;
     }
 
-    private void RegisterSubgroups(Type type, PluginContainer pluginContainer, Command? parent = null)
+    private void RegisterSubgroups(Type moduleType, PluginContainer pluginContainer, Command? parent = null)
     {
         // find all command groups under this command
-        var subtypes = type.GetNestedTypes().Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandGroupAttribute)));
+        var subModules = moduleType.GetNestedTypes().Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandGroupAttribute)));
 
-        foreach (var st in subtypes)
+        foreach (var subModule in subModules)
         {
-            var group = st.GetCustomAttribute<CommandGroupAttribute>()!;
+            var group = subModule.GetCustomAttribute<CommandGroupAttribute>()!;
             // Get command name from first constructor argument for command attribute.
             var name = group.GroupName;
             // Get aliases
             var aliases = group.Aliases;
 
-            var checks = st.GetCustomAttributes<BaseExecutionCheckAttribute>();
+            var checks = subModule.GetCustomAttributes<BaseExecutionCheckAttribute>();
 
-            var info = st.GetCustomAttribute<CommandInfoAttribute>();
-            var issuers = st.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? CommandHelpers.DefaultIssuerScope;
+            var info = subModule.GetCustomAttribute<CommandInfoAttribute>();
+            var issuers = subModule.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? CommandHelpers.DefaultIssuerScope;
 
-            var command = CommandBuilder.Create(name)
+            var command = CommandBuilder.Create(name, subModule)
               .WithDescription(info?.Description)
               .WithParent(parent)
               .WithUsage(info?.Usage)
@@ -135,17 +134,17 @@ public sealed class CommandHandler
               .CanIssueAs(issuers)
               .Build(this, pluginContainer);
 
-            RegisterSubgroups(st, pluginContainer, command);
-            RegisterSubcommands(st, pluginContainer, command);
+            RegisterSubgroups(subModule, pluginContainer, command);
+            RegisterSubcommands(subModule, pluginContainer, command);
 
             _commands.Add(command);
         }
     }
 
-    private void RegisterSubcommands(Type type, PluginContainer pluginContainer, Command? parent = null)
+    private void RegisterSubcommands(Type moduleType, PluginContainer pluginContainer, Command? parent = null)
     {
         // loop through methods and find valid commands
-        var methods = type.GetMethods();
+        var methods = moduleType.GetMethods();
 
         if (parent is not null)
         {
@@ -154,28 +153,28 @@ public sealed class CommandHandler
         }
 
         // Selecting all methods that have the CommandAttribute.
-        foreach (var m in methods.Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandAttribute))))
+        foreach (var method in methods.Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandAttribute))))
         {
             // Get command name from first constructor argument for command attribute.
-            var cmd = m.GetCustomAttribute<CommandAttribute>();
+            var cmd = method.GetCustomAttribute<CommandAttribute>();
             if (cmd is null)
                 continue; // TODO Log warning (?)
 
             var name = cmd.CommandName;
             // Get aliases
             var aliases = cmd.Aliases;
-            var checks = m.GetCustomAttributes<BaseExecutionCheckAttribute>();
+            var checks = method.GetCustomAttributes<BaseExecutionCheckAttribute>();
 
-            var info = m.GetCustomAttribute<CommandInfoAttribute>();
-            var issuers = m.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? CommandHelpers.DefaultIssuerScope;
+            var info = method.GetCustomAttribute<CommandInfoAttribute>();
+            var issuers = method.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? CommandHelpers.DefaultIssuerScope;
 
-            var command = CommandBuilder.Create(name)
+            var command = CommandBuilder.Create(name, moduleType)
                 .WithDescription(info?.Description)
                 .WithParent(parent)
                 .WithUsage(info?.Usage)
                 .AddAliases(aliases)
-                .AddOverload(m)
-                .AddOverloads(methods.Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandOverloadAttribute)) && x.Name == m.Name))
+                .AddOverload(method)
+                .AddOverloads(methods.Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandOverloadAttribute)) && x.Name == method.Name))
                 .AddExecutionChecks(checks)
                 .CanIssueAs(issuers)
                 .Build(this, pluginContainer);
