@@ -10,18 +10,17 @@ internal class BlockStateBuilderFactory
     public static IBlockState Builder(NbtCompound comp)
     {
         Type builderType;
-        object inst;
         try
         {
             var name = comp.GetString("Name").Split(":")[1].ToPascalCase();
             var assm = Assembly.Load("Obsidian.API");
             builderType = assm.GetType($"Obsidian.API.BlockStates.Builders.{name}StateBuilder");
-            inst = Activator.CreateInstance(builderType);
         }
         catch 
         {
             return null;
         }
+        var inst = Activator.CreateInstance(builderType);
 
         if (comp.TryGetTag("Properties", out var props))
         {
@@ -46,7 +45,7 @@ internal class BlockStateBuilderFactory
             }
         }
 
-        var thing = (IStateBuilder<IBlockState>)inst;
-        return thing.Build();
+        MethodInfo buildMeth = builderType.GetMethod("Build");
+        return (IBlockState)buildMeth.Invoke(inst, null);
     }
 }
