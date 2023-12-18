@@ -251,7 +251,7 @@ public sealed partial class Server : IServer
 
         await RecipesRegistry.InitializeAsync();
 
-        await StructureRegistry.InitializeAsync();
+        StructureRegistry.Initialize();
 
         await this.userCache.LoadAsync(this._cancelTokenSource.Token);
 
