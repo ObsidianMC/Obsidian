@@ -43,6 +43,10 @@ public sealed class OverworldGenerator : IWorldGenerator
         if (ChunkStatus.features <= stage && chunk.chunkStatus < ChunkStatus.features)
         {
             await OverworldDecorator.DecorateAsync(chunk, helper);
+            if (await ChunkBuilder.AddStructures(helper, chunk))
+            {
+                Console.WriteLine($"Added structure at {chunk.X << 4} {chunk.Z << 4}");
+            }
             chunk.chunkStatus = ChunkStatus.features;
         }
 

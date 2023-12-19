@@ -1,31 +1,31 @@
 ﻿using Obsidian.Nbt;
-using Obsidian.Nbt.Mappers;
 using System.Diagnostics;
 using System.IO;
-using System.Numerics;
 
 namespace Obsidian.Registries;
 internal static class StructureRegistry
 {
-    public static readonly ConcurrentDictionary<string, Dictionary<Vector3, IBlockState>> storage = new();
+    public static readonly ConcurrentDictionary<string, Dictionary<Vector, IBlock>> storage = new();
     public static void Initialize()
     {
-        var structDir = "Assets\\Structures\\";
+        var structDir = "Assets/Structures/";
         var files = Directory.GetFiles(structDir, "*.nbt");
         foreach (var file in files)
         {
+            var structureName = Path.GetFileNameWithoutExtension(file);
+            storage[structureName] = new();
             byte[] nbtData = File.ReadAllBytes(file);
             using var byteStream = new ReadOnlyStream(nbtData);
             var nbtReader = new NbtReader(byteStream, NbtCompression.GZip);
             var baseCompound = nbtReader.ReadNextTag() as NbtCompound;
 
             // Get palette
-            List<IBlockState> paletteBuffer = new();
+            List<IBlock> paletteBuffer = new();
             if (baseCompound!.TryGetTag("palette", out var palette))
             {
                 foreach (NbtCompound entry in (palette as NbtList).Cast<NbtCompound>())
                 {
-                    paletteBuffer.Add(BlockStateBuilderMapper.GetFromNbt(entry) ?? BlocksRegistry.Air.State);
+                    paletteBuffer.Add(entry.ToBlock());
                 }
             }
 
@@ -33,15 +33,25 @@ internal static class StructureRegistry
             {
                 foreach (NbtCompound b in (blocks as NbtList).Cast<NbtCompound>())
                 {
-                    var state = b!.GetInt("state");
-                    IBlockState bs = paletteBuffer[state];
-                    if (b!.TryGetTag("pos", out var coords))
+                    try
                     {
-                        var c = (NbtList)coords;
-                        var x = c[0];
-                        var y = c[1];
-                        var z = c[2];
+                        IBlock block = paletteBuffer[b!.GetInt("state")];
+                        if (b!.TryGetTag("pos", out var coords))
+                        {
+                            var c = (NbtList)coords;
+                            var offset = new Vector(
+                                ((NbtTag<int>)c[0]).Value,
+                                ((NbtTag<int>)c[1]).Value,
+                                ((NbtTag<int>)c[2]).Value);
+
+                            storage[structureName][offset] = block;
+                        }
                     }
+                    catch (Exception e)
+                    {
+                        Debugger.Break();
+                    }
+                    
                 }
             }
         }
