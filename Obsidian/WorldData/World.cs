@@ -876,6 +876,9 @@ public sealed class World : IWorld
             var cps = completedChunks / (stopwatch.ElapsedMilliseconds / 1000.0);
             int remain = ChunksToGenCount / (int)cps;
             Console.Write("\r{0} chunks/second - {1}% complete - {2} seconds remaining   ", cps.ToString("###.00"), pctComplete, remain);
+            if (completedChunks % 1024 == 0) { // For Jon when he's doing large world gens
+                await FlushRegionsAsync();
+            }
         }
         Console.WriteLine();
         await FlushRegionsAsync();
@@ -897,46 +900,44 @@ public sealed class World : IWorld
         if (LevelData.SpawnPosition.Y != 0) { return; }
 
         var pregenRange = this.Configuration.PregenerateChunkRange;
-        foreach (var region in Regions.Values)
+        var region = GetRegionForLocation(VectorF.Zero)!;
+        foreach (var chunk in region.GeneratedChunks())
         {
-            foreach (var chunk in region.GeneratedChunks())
+            for (int bx = 0; bx < 16; bx++)
             {
-                for (int bx = 0; bx < 16; bx++)
+                for (int bz = 0; bz < 16; bz++)
                 {
-                    for (int bz = 0; bz < 16; bz++)
+                    // Get topmost block
+                    var by = chunk.Heightmaps[ChunkData.HeightmapType.MotionBlocking].GetHeight(bx, bz);
+                    IBlock block = chunk.GetBlock(bx, by, bz);
+
+                    // Block must be high enough and either grass or sand
+                    if (by < 64 || !block.Is(Material.GrassBlock) && !block.Is(Material.Sand))
                     {
-                        // Get topmost block
-                        var by = chunk.Heightmaps[ChunkData.HeightmapType.MotionBlocking].GetHeight(bx, bz);
-                        IBlock block = chunk.GetBlock(bx, by, bz);
-
-                        // Block must be high enough and either grass or sand
-                        if (by < 64 || !block.Is(Material.GrassBlock) && !block.Is(Material.Sand))
-                        {
-                            continue;
-                        }
-
-                        // Block must have enough empty space above for player to spawn in
-                        if (!chunk.GetBlock(bx, by + 1, bz).IsAir || !chunk.GetBlock(bx, by + 2, bz).IsAir)
-                        {
-                            continue;
-                        }
-
-                        var worldPos = new VectorF(bx + 0.5f + (chunk.X * 16), by + 1, bz + 0.5f + (chunk.Z * 16));
-                        LevelData.SpawnPosition = worldPos;
-                        Logger.LogInformation("World Spawn set to {worldPos}", worldPos);
-
-                        // Should spawn be far from (0,0), queue up chunks in generation range.
-                        // Just feign a request for a chunk and if it doesn't exist, it'll get queued for gen.
-                        for (int x = chunk.X - pregenRange; x < chunk.X + pregenRange; x++)
-                        {
-                            for (int z = chunk.Z - pregenRange; z < chunk.Z + pregenRange; z++)
-                            {
-                                await GetChunkAsync(x, z);
-                            }
-                        }
-
-                        return;
+                        continue;
                     }
+
+                    // Block must have enough empty space above for player to spawn in
+                    if (!chunk.GetBlock(bx, by + 1, bz).IsAir || !chunk.GetBlock(bx, by + 2, bz).IsAir)
+                    {
+                        continue;
+                    }
+
+                    var worldPos = new VectorF(bx + 0.5f + (chunk.X * 16), by + 1, bz + 0.5f + (chunk.Z * 16));
+                    LevelData.SpawnPosition = worldPos;
+                    Logger.LogInformation("World Spawn set to {worldPos}", worldPos);
+
+                    // Should spawn be far from (0,0), queue up chunks in generation range.
+                    // Just feign a request for a chunk and if it doesn't exist, it'll get queued for gen.
+                    for (int x = chunk.X - pregenRange; x < chunk.X + pregenRange; x++)
+                    {
+                        for (int z = chunk.Z - pregenRange; z < chunk.Z + pregenRange; z++)
+                        {
+                            await GetChunkAsync(x, z);
+                        }
+                    }
+
+                    return;
                 }
             }
         }
