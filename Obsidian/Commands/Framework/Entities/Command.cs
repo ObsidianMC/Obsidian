@@ -78,7 +78,7 @@ public sealed class Command
         || x.GetParameters().Last().GetCustomAttribute<RemainingAttribute>() != null);
 
         // Create instance of declaring type to execute.
-        var obj = CommandHandler.CreateCommandRootInstance(ModuleType, PluginContainer);
+        var module = CommandHandler.CreateCommandRootInstance(ModuleType, PluginContainer);
 
         // Get required params
         var methodparams = method.GetParameters().Skip(1).ToArray();
@@ -144,7 +144,7 @@ public sealed class Command
         }
 
         // await the command with it's args
-        object? result = method.Invoke(obj, parsedargs);
+        object? result = method.Invoke(module, parsedargs);
         if (result is Task task)
         {
             await task;

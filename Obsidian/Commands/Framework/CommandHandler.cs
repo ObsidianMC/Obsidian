@@ -130,7 +130,7 @@ public sealed class CommandHandler
               .WithParent(parent)
               .WithUsage(info?.Usage)
               .AddAliases(aliases)
-              .AddExecutionChecks(checks.ToArray())
+              .AddExecutionChecks(checks)
               .CanIssueAs(issuers)
               .Build(this, pluginContainer);
 
