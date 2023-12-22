@@ -33,6 +33,11 @@ builder.Services.AddLogging(loggingBuilder =>
     loggingBuilder.SetMinimumLevel(env.Configuration.LogLevel);
 });
 
+builder.Logging.AddFilter((provider, category, logLevel) =>
+{
+    return !category.Contains("Microsoft") || logLevel != LogLevel.Debug;
+});
+
 builder.Services.AddObsidian(env);
 
 // Give the server some time to shut down after CTRL-C or SIGTERM.

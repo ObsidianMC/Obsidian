@@ -64,13 +64,24 @@ internal class WorldLight
             chunk.SetLightLevel(pos, lt, level);
         }
 
+        var highY = 320;
+        for (int csy = 22; csy >= 0; csy--)
+        {
+            if (!chunk.Sections[csy].IsEmpty)
+            {
+                // Light needs to go in the first empty section
+                // too so neighbor chunks can place tree leaves
+                // that are lit. Would subtract 4 here for negative
+                // sections but 3 instead (also why 22 above instead 23).
+                highY = ((csy - 3) << 4) + 15;
+                break;
+            }
+        }
+
         // Can spread up with no loss of level
         // as long as there is a neighbor that's non-transparent.
-        for (int spreadY = 1; spreadY < 320 - pos.Y; spreadY++)
+        for (int spreadY = 1; spreadY < highY - pos.Y; spreadY++)
         {
-            var secIndex = ((pos.Y + spreadY) >> 4) + 4;
-            if (chunk.Sections[secIndex].IsEmpty) { break; }
-
             foreach (Vector dir in Vector.CardinalDirs)
             {
                 if (chunk.GetBlock(pos + (0, spreadY, 0) + dir) is IBlock b && !(b.IsLiquid || b.IsAir))
@@ -99,8 +110,6 @@ internal class WorldLight
                 continue;
             }
 
-            var highY = chunk.Heightmaps[ChunkData.HeightmapType.MotionBlocking].GetHeight(pos.X, pos.Z) + 1;
-
             // Spread up
             for (int spreadY = 1; spreadY < (highY - pos.Y); spreadY++)
             {
@@ -111,10 +120,13 @@ internal class WorldLight
                 var scanPos = pos + dir + (0, spreadY, 0);
                 if (TagsRegistry.Blocks.Transparent.Entries.Contains(chunk.GetBlock(scanPos).RegistryId))
                 {
-                    chunk.SetLightLevel(scanPos, lt, level);
                     if (!TagsRegistry.Blocks.Transparent.Entries.Contains(chunk.GetBlock(scanPos + Vector.Down).RegistryId))
                     {
-                        SetLightAndSpread(scanPos + Vector.Down, lt, level, chunk);
+                        SetLightAndSpread(scanPos, lt, level, chunk);
+                    } 
+                    else
+                    {
+                        chunk.SetLightLevel(scanPos, lt, level);
                     }
                 }
             }
@@ -129,12 +141,12 @@ internal class WorldLight
                 var scanPos = pos + dir + (0, spreadY, 0);
                 if (!TagsRegistry.Blocks.Transparent.Entries.Contains(chunk.GetBlock(scanPos).RegistryId))
                 {
-                    SetLightAndSpread(scanPos, lt, level, chunk);
+                    SetLightAndSpread(scanPos + Vector.Up, lt, level, chunk);
                     break;
                 }
                 else
                 {
-                    chunk.SetLightLevel(scanPos, lt, level);
+                    chunk.SetLightLevel(scanPos + Vector.Up, lt, level);
                 }
             }
         }

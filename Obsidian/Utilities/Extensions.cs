@@ -9,6 +9,8 @@ using System.Globalization;
 using System.IO;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading;
@@ -133,4 +135,41 @@ public static partial class Extensions
         JsonSerializer.DeserializeAsync<TValue>(stream, options ?? Globals.JsonOptions, cancellationToken);
     public static Task ToJsonAsync(this object? value, Stream stream, CancellationToken cancellationToken = default) =>
         JsonSerializer.SerializeAsync(stream, value, Globals.JsonOptions, cancellationToken);
+
+    public static bool Contains<T>(this ReadOnlySpan<T> span, T value) where T : unmanaged
+    {
+        for (int i = 0; i < span.Length; i++)
+        {
+            if (span[i].Equals<T>(value))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool Equals<T>(this T a, T b) where T : unmanaged
+    {
+        if (Unsafe.SizeOf<T>() == sizeof(byte))
+        {
+            return Unsafe.As<T, byte>(ref a) == Unsafe.As<T, byte>(ref b);
+        }
+        else if (Unsafe.SizeOf<T>() == sizeof(ushort))
+        {
+            return Unsafe.As<T, ushort>(ref a) == Unsafe.As<T, ushort>(ref b);
+        }
+        else if (Unsafe.SizeOf<T>() == sizeof(uint))
+        {
+            return Unsafe.As<T, uint>(ref a) == Unsafe.As<T, uint>(ref b);
+        }
+        else if (Unsafe.SizeOf<T>() == sizeof(ulong))
+        {
+            return Unsafe.As<T, ulong>(ref a) == Unsafe.As<T, ulong>(ref b);
+        }
+        else
+        {
+            return EqualityComparer<T>.Default.Equals(a, b);
+        }
+    }
 }
