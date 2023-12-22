@@ -75,7 +75,7 @@ public sealed partial class Server : IServer
     public DateTimeOffset StartTime { get; private set; }
 
     public PluginManager PluginManager { get; }
-    public MinecraftEventHandler Events { get; } = new();
+    public MinecraftEvents Events { get; } = new();
 
     public IOperatorList Operators { get; }
     public IScoreboardManager ScoreboardManager { get; private set; }
