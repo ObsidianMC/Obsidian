@@ -5,9 +5,9 @@ using System.Threading;
 
 namespace Obsidian.Events;
 
-public sealed class AsyncEvent : IEventRegistry
+public sealed class AsyncEvent
 {
-    public string? Name { get; } // Name must be set in order to be visible to plugins
+    public string? Name { get; }
 
     private readonly SemaphoreSlim semaphore = new(1);
     private readonly List<Hook> hooks = new();
