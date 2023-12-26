@@ -1,8 +1,11 @@
-﻿using Obsidian.API.Builders;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Builders;
 using Obsidian.API.Containers;
 using Obsidian.API.Events;
 using Obsidian.API.Utilities;
 using Obsidian.Entities;
+using Obsidian.Events;
+using Obsidian.Events.EventArgs;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 
@@ -10,6 +13,47 @@ namespace Obsidian;
 
 public partial class Server
 {
+    private AsyncEvent<PacketReceivedEventArgs> packetReceived = default!;
+    private AsyncEvent<QueuePacketEventArgs> queuePacket = default!;
+    private AsyncEvent<PlayerJoinEventArgs> playerJoin = default!;
+    private AsyncEvent<PlayerLeaveEventArgs> playerLeave = default!;
+    private AsyncEvent<PlayerTeleportEventArgs> playerTeleported = default!;
+    private AsyncEvent<PermissionGrantedEventArgs> permissionGranted = default!;
+    private AsyncEvent<PermissionRevokedEventArgs> permissionRevoked = default!;
+    private AsyncEvent<ContainerClickEventArgs> containerClick = default!;
+    private AsyncEvent<BlockBreakEventArgs> blockBreak = default!;
+    private AsyncEvent<IncomingChatMessageEventArgs> incomingChatMessage = default!;
+    private AsyncEvent<ServerStatusRequestEventArgs> serverStatusRequest = default!;
+    private AsyncEvent<EntityInteractEventArgs> entityInteract = default!;
+    private AsyncEvent<PlayerAttackEntityEventArgs> playerAttackEntity = default!;
+    private AsyncEvent<PlayerInteractEventArgs> playerInteract = default!;
+    private AsyncEvent<ContainerClosedEventArgs> containerClosed = default!;
+
+    private void InitializeEvents()
+    {
+        this.packetReceived = new("PacketReceived", this.HandleException);
+        this.queuePacket = new("QueuePacket", this.HandleException);
+        this.playerJoin = new("PlayerJoin", this.HandleException);
+        this.playerLeave = new("PlayerLeave", this.HandleException);
+        this.playerTeleported = new("PlayerTeleported", this.HandleException);
+        this.permissionGranted = new("PermissionGranted", this.HandleException);
+        this.permissionRevoked = new("PermissionRevoked", this.HandleException);
+        this.containerClick = new("ContainerClick", this.HandleException);
+        this.blockBreak = new("BlockBreak", this.HandleException);
+        this.incomingChatMessage = new("IncomingChatMessage", this.HandleException);
+        this.serverStatusRequest = new("ServerStatusRequest", this.HandleException);
+        this.entityInteract = new("EntityInteract", this.HandleException);
+        this.playerAttackEntity = new("PlayerAttackEntity", this.HandleException);
+        this.playerInteract = new("PlayerInteract", this.HandleException);
+        this.containerClosed = new("ContainerClosed", this.HandleException);
+
+        this.playerLeave += OnPlayerLeave;
+        this.playerJoin += OnPlayerJoin;
+        this.playerAttackEntity += PlayerAttack;
+        this.playerInteract += OnPlayerInteract;
+        this.containerClosed += OnContainerClosed;
+    }
+
     private async Task PlayerAttack(PlayerAttackEntityEventArgs e)
     {
         var entity = e.Entity;
@@ -334,5 +378,10 @@ public partial class Server
         {
             await other.client.AddPlayerToListAsync(joined);
         }
+    }
+
+    private void HandleException<T>(AsyncEvent<T> e, Exception exception)
+    {
+        this._logger.LogCritical(exception, "Failed to execute event.");
     }
 }

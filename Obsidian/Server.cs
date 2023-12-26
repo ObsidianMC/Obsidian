@@ -9,10 +9,8 @@ using Obsidian.API.Utilities;
 using Obsidian.Commands;
 using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Entities;
-using Obsidian.Commands.Parsers;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
-using Obsidian.Events;
 using Obsidian.Hosting;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
@@ -64,6 +62,7 @@ public sealed partial class Server : IServer
     private readonly ILoggerFactory loggerFactory;
     private readonly RconServer _rconServer;
     private readonly IUserCache userCache;
+    private readonly EventDispatcher eventDispatcher;
     private readonly ILogger _logger;
     private readonly IServiceProvider serviceProvider;
 
@@ -75,7 +74,6 @@ public sealed partial class Server : IServer
     public DateTimeOffset StartTime { get; private set; }
 
     public PluginManager PluginManager { get; }
-    public MinecraftEvents Events { get; } = new();
 
     public IOperatorList Operators { get; }
     public IScoreboardManager ScoreboardManager { get; private set; }
@@ -103,6 +101,7 @@ public sealed partial class Server : IServer
         IWorldManager worldManager,
         RconServer rconServer,
         IUserCache playerCache,
+        EventDispatcher eventDispatcher,
         IServiceProvider serviceProvider)
     {
         Configuration = environment.Configuration;
@@ -132,14 +131,11 @@ public sealed partial class Server : IServer
         _logger.LogDebug("Done registering commands.");
 
         this.userCache = playerCache;
+        this.eventDispatcher = eventDispatcher;
         this.loggerFactory = loggerFactory;
         this.WorldManager = worldManager;
 
-        Events.PlayerLeave += OnPlayerLeave;
-        Events.PlayerJoin += OnPlayerJoin;
-        Events.PlayerAttackEntity += PlayerAttack;
-        Events.PlayerInteract += OnPlayerInteract;
-        Events.ContainerClosed += OnContainerClosed;
+        this.InitializeEvents();
 
         Directory.CreateDirectory(PermissionPath);
         Directory.CreateDirectory(PersistentDataPath);
@@ -431,7 +427,7 @@ public sealed partial class Server : IServer
         var format = "<{0}> {1}";
         var message = packet.Message;
 
-        var chat = await Events.IncomingChatMessage.InvokeAsync(new IncomingChatMessageEventArgs(source.Player, this, message, format));
+        var chat = await this.incomingChatMessage.InvokeAsync(new IncomingChatMessageEventArgs(source.Player, this, message, format));
         if (chat.IsCancelled)
             return;
 
@@ -501,8 +497,6 @@ public sealed partial class Server : IServer
         {
             while (await timer.WaitForNextTickAsync())
             {
-                await Events.ServerTick.InvokeAsync();
-
                 keepAliveTicks++;
                 if (keepAliveTicks > (Configuration.KeepAliveInterval / 50)) // to clarify: one tick is 50 milliseconds. 50 * 200 = 10000 millis means 10 seconds
                 {
