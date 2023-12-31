@@ -7,6 +7,8 @@
 /// </summary>
 public sealed class PlayerInteractEventArgs : PlayerEventArgs, ICancellable
 {
+    public static new string Name => "PlayerInteract";
+
     /// <summary>
     /// The item that was being held when interacting.
     /// </summary>

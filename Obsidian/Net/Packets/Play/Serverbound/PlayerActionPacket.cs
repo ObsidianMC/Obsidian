@@ -35,7 +35,7 @@ public partial class PlayerActionPacket : IServerboundPacket
                 SequenceID = Sequence
             });
 
-            var blockBreakEvent = await server.Events.BlockBreak.InvokeAsync(new BlockBreakEventArgs(server, player, block, Position));
+            var blockBreakEvent = await server.blockBreak.InvokeAsync(new BlockBreakEventArgs(server, player, block, Position));
             if (blockBreakEvent.Handled)
                 return;
         }

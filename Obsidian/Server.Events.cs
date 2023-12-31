@@ -13,39 +13,39 @@ namespace Obsidian;
 
 public partial class Server
 {
-    private AsyncEvent<PacketReceivedEventArgs> packetReceived = default!;
-    private AsyncEvent<QueuePacketEventArgs> queuePacket = default!;
-    private AsyncEvent<PlayerJoinEventArgs> playerJoin = default!;
-    private AsyncEvent<PlayerLeaveEventArgs> playerLeave = default!;
-    private AsyncEvent<PlayerTeleportEventArgs> playerTeleported = default!;
-    private AsyncEvent<PermissionGrantedEventArgs> permissionGranted = default!;
-    private AsyncEvent<PermissionRevokedEventArgs> permissionRevoked = default!;
-    private AsyncEvent<ContainerClickEventArgs> containerClick = default!;
-    private AsyncEvent<BlockBreakEventArgs> blockBreak = default!;
-    private AsyncEvent<IncomingChatMessageEventArgs> incomingChatMessage = default!;
-    private AsyncEvent<ServerStatusRequestEventArgs> serverStatusRequest = default!;
-    private AsyncEvent<EntityInteractEventArgs> entityInteract = default!;
-    private AsyncEvent<PlayerAttackEntityEventArgs> playerAttackEntity = default!;
-    private AsyncEvent<PlayerInteractEventArgs> playerInteract = default!;
-    private AsyncEvent<ContainerClosedEventArgs> containerClosed = default!;
+    internal AsyncEvent<PacketReceivedEventArgs> packetReceived = default!;
+    internal AsyncEvent<QueuePacketEventArgs> queuePacket = default!;
+    internal AsyncEvent<PlayerJoinEventArgs> playerJoin = default!;
+    internal AsyncEvent<PlayerLeaveEventArgs> playerLeave = default!;
+    internal AsyncEvent<PlayerTeleportEventArgs> playerTeleported = default!;
+    internal AsyncEvent<PermissionGrantedEventArgs> permissionGranted = default!;
+    internal AsyncEvent<PermissionRevokedEventArgs> permissionRevoked = default!;
+    internal AsyncEvent<ContainerClickEventArgs> containerClick = default!;
+    internal AsyncEvent<BlockBreakEventArgs> blockBreak = default!;
+    internal AsyncEvent<IncomingChatMessageEventArgs> incomingChatMessage = default!;
+    internal AsyncEvent<ServerStatusRequestEventArgs> serverStatusRequest = default!;
+    internal AsyncEvent<EntityInteractEventArgs> entityInteract = default!;
+    internal AsyncEvent<PlayerAttackEntityEventArgs> playerAttackEntity = default!;
+    internal AsyncEvent<PlayerInteractEventArgs> playerInteract = default!;
+    internal AsyncEvent<ContainerClosedEventArgs> containerClosed = default!;
 
     private void InitializeEvents()
     {
-        this.packetReceived = new("PacketReceived", this.HandleException);
-        this.queuePacket = new("QueuePacket", this.HandleException);
-        this.playerJoin = new("PlayerJoin", this.HandleException);
-        this.playerLeave = new("PlayerLeave", this.HandleException);
-        this.playerTeleported = new("PlayerTeleported", this.HandleException);
-        this.permissionGranted = new("PermissionGranted", this.HandleException);
-        this.permissionRevoked = new("PermissionRevoked", this.HandleException);
-        this.containerClick = new("ContainerClick", this.HandleException);
-        this.blockBreak = new("BlockBreak", this.HandleException);
-        this.incomingChatMessage = new("IncomingChatMessage", this.HandleException);
-        this.serverStatusRequest = new("ServerStatusRequest", this.HandleException);
-        this.entityInteract = new("EntityInteract", this.HandleException);
-        this.playerAttackEntity = new("PlayerAttackEntity", this.HandleException);
-        this.playerInteract = new("PlayerInteract", this.HandleException);
-        this.containerClosed = new("ContainerClosed", this.HandleException);
+        this.packetReceived = new(this.HandleException);
+        this.queuePacket = new(this.HandleException);
+        this.playerJoin = new(this.HandleException);
+        this.playerLeave = new(this.HandleException);
+        this.playerTeleported = new(this.HandleException);
+        this.permissionGranted = new(this.HandleException);
+        this.permissionRevoked = new(this.HandleException);
+        this.containerClick = new(this.HandleException);
+        this.blockBreak = new(this.HandleException);
+        this.incomingChatMessage = new(this.HandleException);
+        this.serverStatusRequest = new(this.HandleException);
+        this.entityInteract = new(this.HandleException);
+        this.playerAttackEntity = new(this.HandleException);
+        this.playerInteract = new(this.HandleException);
+        this.containerClosed = new(this.HandleException);
 
         this.playerLeave += OnPlayerLeave;
         this.playerJoin += OnPlayerJoin;
@@ -380,8 +380,8 @@ public partial class Server
         }
     }
 
-    private void HandleException<T>(AsyncEvent<T> e, Exception exception)
+    private void HandleException<T>(AsyncEvent<T> e, Exception exception) where T : BaseMinecraftEventArgs, INamedEvent
     {
-        this._logger.LogCritical(exception, "Failed to execute event.");
+        this._logger.LogCritical(exception, "Failed to execute event {eventName}.", T.Name);
     }
 }

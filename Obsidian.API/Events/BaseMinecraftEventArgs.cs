@@ -3,12 +3,16 @@
 /// <summary>
 /// Represents the base class for classes that contain minecraft event data.
 /// </summary>
-public class BaseMinecraftEventArgs : AsyncEventArgs
+public abstract class BaseMinecraftEventArgs : AsyncEventArgs, INamedEvent
 {
+    public static string Name => string.Empty;
+
     /// <summary>
     /// Server this event took place in.
     /// </summary>
     public IServer Server { get; }
+
+    public static EventType EventType { get; }
 
     /// <summary>
     /// Constructs a new instance of the <see cref="BaseMinecraftEventArgs"/> class.

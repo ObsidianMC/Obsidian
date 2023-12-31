@@ -7,6 +7,8 @@ using Obsidian.Hosting;
 using Obsidian.Plugins.PluginProviders;
 using Obsidian.Plugins.ServiceProviders;
 using Obsidian.Registries;
+using Obsidian.Services;
+using System.Collections.Frozen;
 
 namespace Obsidian.Plugins;
 
@@ -43,14 +45,15 @@ public sealed class PluginManager
 
     public IServiceProvider PluginServiceProvider { get; private set; } = default!;
 
-    public PluginManager(IServiceProvider serverProvider, IServer server, ILogger logger)
+    public PluginManager(IServiceProvider serverProvider, IServer server, 
+        EventDispatcher eventDispatcher, CommandHandler commandHandler, ILogger logger)
     {
         var env = serverProvider.GetRequiredService<IServerEnvironment>();
 
         this.server = server;
         this.logger = logger;
         this.serverProvider = serverProvider;
-        this.pluginRegistry = new PluginRegistry(server);
+        this.pluginRegistry = new PluginRegistry(this, eventDispatcher, commandHandler, logger);
 
         PluginProviderSelector.RemotePluginProvider = new RemotePluginProvider(logger);
         PluginProviderSelector.UncompiledPluginProvider = new UncompiledPluginProvider(logger);
@@ -113,7 +116,6 @@ public sealed class PluginManager
         PluginServiceHandler.InjectServices(this.serverProvider, pluginContainer, this.logger);
 
         pluginContainer.Plugin.unload = async () => await UnloadPluginAsync(pluginContainer);
-
         if (pluginContainer.IsReady)
         {
             lock (plugins)

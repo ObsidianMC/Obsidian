@@ -7,13 +7,15 @@ internal readonly struct MinecraftEvent
 {
     public required Type EventType { get; init; }
 
-    public required Type ModuleType { get; init; }
+    public Type? ModuleType { get; init; }
 
     public required PluginContainer PluginContainer { get; init; }
 
     public required Priority Priority { get; init; }
 
-    public required ObjectFactory ModuleFactory { get; init; }
+    public ObjectFactory? ModuleFactory { get; init; }
 
-    public required ObjectMethodExecutor MethodExecutor { get; init; }
+    public ObjectMethodExecutor? MethodExecutor { get; init; }
+
+    public Delegate? MethodDelegate { get; init; }
 }

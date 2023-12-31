@@ -1,12 +1,13 @@
-﻿using System.Reflection;
+﻿using Obsidian.API.Events;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace Obsidian.Events;
 
-public sealed class AsyncEvent<T> : IEventRegistry
+public sealed class AsyncEvent<T> where T : BaseMinecraftEventArgs, INamedEvent
 {
-    public string? Name { get; } // Name must be set in order to be visible to plugins
+    public string Name { get; } // Name must be set in order to be visible to plugins
 
     private readonly SemaphoreSlim semaphore = new(1);
     private readonly List<Hook<T>> hooks = [];
@@ -14,9 +15,16 @@ public sealed class AsyncEvent<T> : IEventRegistry
 
     public AsyncEvent()
     {
+        this.Name = T.Name;
     }
 
-    public AsyncEvent(string? name, Action<AsyncEvent<T>, Exception>? exceptionHandler)
+    public AsyncEvent(Action<AsyncEvent<T>, Exception>? exceptionHandler)
+    {
+        Name = T.Name;
+        this.exceptionHandler = exceptionHandler;
+    }
+
+    public AsyncEvent(string name, Action<AsyncEvent<T>, Exception>? exceptionHandler)
     {
         Name = name;
         this.exceptionHandler = exceptionHandler;

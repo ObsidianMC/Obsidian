@@ -2,6 +2,8 @@
 
 public class EntityInteractEventArgs : EntityEventArgs
 {
+    public static new string Name => "EntityInteract";
+
     /// <summary>
     /// The player who interacted with the entity.
     /// </summary>

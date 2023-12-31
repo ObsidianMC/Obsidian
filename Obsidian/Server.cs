@@ -62,7 +62,6 @@ public sealed partial class Server : IServer
     private readonly ILoggerFactory loggerFactory;
     private readonly RconServer _rconServer;
     private readonly IUserCache userCache;
-    private readonly EventDispatcher eventDispatcher;
     private readonly ILogger _logger;
     private readonly IServiceProvider serviceProvider;
 
@@ -74,6 +73,7 @@ public sealed partial class Server : IServer
     public DateTimeOffset StartTime { get; private set; }
 
     public PluginManager PluginManager { get; }
+    public EventDispatcher EventDispatcher { get; }
 
     public IOperatorList Operators { get; }
     public IScoreboardManager ScoreboardManager { get; private set; }
@@ -120,8 +120,9 @@ public sealed partial class Server : IServer
 
         _logger.LogDebug(message: "Initializing command handler...");
 
-        PluginManager = new PluginManager(this.serviceProvider, this, _logger);
         CommandsHandler = new CommandHandler(loggerFactory.CreateLogger<CommandHandler>());
+
+        PluginManager = new PluginManager(this.serviceProvider, this, eventDispatcher, CommandsHandler, _logger);
 
         _logger.LogDebug("Registering commands...");
         CommandsHandler.RegisterCommandClass<MainCommandModule>(null);
@@ -131,7 +132,7 @@ public sealed partial class Server : IServer
         _logger.LogDebug("Done registering commands.");
 
         this.userCache = playerCache;
-        this.eventDispatcher = eventDispatcher;
+        this.EventDispatcher = eventDispatcher;
         this.loggerFactory = loggerFactory;
         this.WorldManager = worldManager;
 
