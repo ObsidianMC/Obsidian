@@ -24,7 +24,7 @@ internal readonly struct MinecraftEvent
 
     public Delegate? MethodDelegate { get; init; }
 
-    //Maybe have method param service injection??
+    //TODO PARAM INJECTION
     public async ValueTask Execute(params object[]? methodParams)
     {
         if (this.MethodExecutor != null)
@@ -53,7 +53,17 @@ internal readonly struct MinecraftEvent
         if (this.MethodDelegate == null)
             throw new UnreachableException();
 
-        //registered delegates will always return a ValueTask
-        await (ValueTask)this.MethodDelegate.DynamicInvoke(methodParams)!;
+        if (this.MethodDelegate.Method.ReturnType == typeof(ValueTask))
+        {
+            await (ValueTask)this.MethodDelegate.DynamicInvoke(methodParams)!;
+            return;
+        }
+        else if (this.MethodDelegate.Method.ReturnType == typeof(Task))
+        {
+            await ((Task)this.MethodDelegate.DynamicInvoke(methodParams)!).ConfigureAwait(false);
+            return;
+        }
+
+        this.MethodDelegate.DynamicInvoke(methodParams);
     }
 }

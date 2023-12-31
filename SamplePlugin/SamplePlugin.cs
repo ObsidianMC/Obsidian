@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.API.Plugins;
+using System;
 using System.Threading.Tasks;
 
 namespace SamplePlugin
@@ -29,17 +30,17 @@ namespace SamplePlugin
             registry.MapEvents();
 
             //Want to make a simple command?? Here you go
-            registry.MapCommand((CommandContext ctx) =>
+            registry.MapCommand("test", async (CommandContext ctx) =>
             {
 
-                return ValueTask.CompletedTask;
+                await ctx.Player.SendMessageAsync("Test");
             });
 
             //Event doesn't need its own class? Here you go
             registry.MapEvent((IncomingChatMessageEventArgs chat) =>
             {
 
-                return ValueTask.CompletedTask;
+               
             });
         }
 

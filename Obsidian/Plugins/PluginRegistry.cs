@@ -13,7 +13,13 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
     private readonly CommandHandler commandHandler = commandHandler;
     private readonly ILogger logger = logger;
 
-    public IPluginRegistry MapCommand(ContextDelegate<CommandContext> contextDelegate)
+    public IPluginRegistry MapCommand(string name, Delegate handler)
+    {
+
+        return this;
+    }
+
+    public IPluginRegistry MapCommand(string name, ValueTaskContextDelegate<CommandContext> contextDelegate)
     {
 
         return this;
@@ -27,13 +33,23 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
         return this;
     }
 
-    public IPluginRegistry MapEvent<TEventArgs>(ContextDelegate<TEventArgs> contextDelegate, Priority priority = Priority.Low) where TEventArgs : BaseMinecraftEventArgs
+    public IPluginRegistry MapEvent<TEventArgs>(ValueTaskContextDelegate<TEventArgs> contextDelegate, Priority priority = Priority.Low) where TEventArgs : BaseMinecraftEventArgs
     {
         var executingAssembly = Assembly.GetExecutingAssembly();
 
         var pluginContainer = this.pluginManager.Plugins.First(x => x.PluginAssembly == executingAssembly);
 
         this.eventDispatcher.RegisterEvent(pluginContainer, contextDelegate, priority);
+        return this;
+    }
+
+    public IPluginRegistry MapEvent(Delegate handler, Priority priority = Priority.Low) 
+    {
+        var executingAssembly = Assembly.GetExecutingAssembly();
+
+        var pluginContainer = this.pluginManager.Plugins.First(x => x.PluginAssembly == executingAssembly);
+
+        this.eventDispatcher.RegisterEvent(pluginContainer, handler, priority);
         return this;
     }
 

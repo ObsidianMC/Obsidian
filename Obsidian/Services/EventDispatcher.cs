@@ -68,7 +68,8 @@ public sealed class EventDispatcher : IDisposable
         }
     }
 
-    public void RegisterEvent<TEventArgs>(PluginContainer pluginContainer, ContextDelegate<TEventArgs> contextDelegate, Priority priority = Priority.Low) where TEventArgs : BaseMinecraftEventArgs, INamedEvent
+    public void RegisterEvent<TEventArgs>(PluginContainer pluginContainer, ValueTaskContextDelegate<TEventArgs> contextDelegate, Priority priority = Priority.Low)
+        where TEventArgs : BaseMinecraftEventArgs, INamedEvent
     {
         if (!this.registeredEvents.TryGetValue(TEventArgs.Name, out var values))
             return;
@@ -81,7 +82,24 @@ public sealed class EventDispatcher : IDisposable
             MethodDelegate = contextDelegate,
             Logger = this.logger
         });
+    }
 
+    public void RegisterEvent(PluginContainer pluginContainer, Delegate handler, Priority priority = Priority.Low)
+    {
+        var eventType = handler.Method.GetParameters().FirstOrDefault()?.ParameterType ?? throw new InvalidOperationException("Missing parameter for event.");
+        var eventName = eventType.GetProperty("Name")?.GetValue(null)?.ToString() ?? throw new NullReferenceException();
+
+        if (!this.registeredEvents.TryGetValue(eventName, out var values))
+            return;
+
+        values.Add(new()
+        {
+            EventType = eventType,
+            PluginContainer = pluginContainer,
+            Priority = priority,
+            MethodDelegate = handler,
+            Logger = this.logger
+        });
     }
 
     public void RegisterEvents(PluginContainer pluginContainer)
