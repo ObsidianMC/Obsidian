@@ -1,6 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Obsidian.API.Events;
-using System.IO;
 
 namespace Obsidian.API.Plugins;
 
@@ -39,28 +37,7 @@ public abstract class PluginBase : IDisposable, IAsyncDisposable
     /// Services from the Server will be injected when this method is called. e.x (ILogger, IServerConfiguration).
     /// Services registered through this method will be availiable/injected when <seealso cref="OnLoadAsync(IServer)"/> is called.
     /// </remarks>
-    public virtual void ConfigureRegistry(IPluginRegistry pluginRegistry)
-    {
-        //Will scan for command classes and register them for you
-        pluginRegistry.MapCommands();
-
-        //Will scan for classes that inherit from MinecraftEventHandler
-        pluginRegistry.MapEvents();
-
-        //Want to make a simple command?? Here you go
-        pluginRegistry.MapCommand((CommandContext ctx) =>
-        {
-
-            return ValueTask.CompletedTask;
-        });
-
-        //Event doesn't need its own class? Here you go
-        pluginRegistry.MapEvent((IncomingChatMessageEventArgs chat) =>
-        {
-
-            return ValueTask.CompletedTask;
-        });
-    }
+    public virtual void ConfigureRegistry(IPluginRegistry pluginRegistry) { }
 
 
     /// <summary>
