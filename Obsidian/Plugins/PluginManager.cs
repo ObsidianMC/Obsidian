@@ -9,6 +9,7 @@ using Obsidian.Plugins.ServiceProviders;
 using Obsidian.Registries;
 using Obsidian.Services;
 using System.Collections.Frozen;
+using System.Reflection;
 
 namespace Obsidian.Plugins;
 
@@ -205,6 +206,13 @@ public sealed class PluginManager
         //THis only needs to be called once 😭😭
         CommandsRegistry.Register((Server)server);
     }
+
+    /// <summary>
+    /// Gets the PluginContainer either by specified assembly or by current executing assembly.
+    /// </summary>
+    /// <param name="assembly">The assembly you want to use to find the plugin container.</param>
+    public PluginContainer GetPluginContainerByAssembly(Assembly? assembly = null) => 
+        this.Plugins.First(x => x.PluginAssembly == (assembly ?? Assembly.GetExecutingAssembly()));
 
     private void OnPluginStateChanged(PluginContainer plugin)
     {
