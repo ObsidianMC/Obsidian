@@ -8,6 +8,7 @@ using Obsidian.Events;
 using Obsidian.Events.EventArgs;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Services;
 
 namespace Obsidian;
 
@@ -56,6 +57,11 @@ public partial class Server
 
     private async Task PlayerAttack(PlayerAttackEntityEventArgs e)
     {
+        var result = await this.EventDispatcher.ExecuteEventAsync(e);
+
+        if (result == EventResult.Cancelled)
+            return;
+
         var entity = e.Entity;
         var attacker = e.Attacker;
 
@@ -67,7 +73,9 @@ public partial class Server
 
     private async Task OnContainerClosed(ContainerClosedEventArgs e)
     {
-        if (e.IsCancelled)
+        var result = await this.EventDispatcher.ExecuteEventAsync(e);
+
+        if (result == EventResult.Cancelled)
             return;
 
         var player = (e.Player as Player)!;
@@ -146,6 +154,11 @@ public partial class Server
 
     private async Task OnPlayerInteract(PlayerInteractEventArgs e)
     {
+        var result = await this.EventDispatcher.ExecuteEventAsync(e);
+
+        if (result == EventResult.Cancelled)
+            return;
+
         var item = e.Item;
 
         var block = e.Block;
@@ -341,6 +354,11 @@ public partial class Server
 
     private async Task OnPlayerLeave(PlayerLeaveEventArgs e)
     {
+        var result = await this.EventDispatcher.ExecuteEventAsync(e);
+
+        if (result == EventResult.Cancelled)
+            return;
+
         var player = e.Player as Player;
 
         await player.SaveAsync();
@@ -364,6 +382,11 @@ public partial class Server
 
     private async Task OnPlayerJoin(PlayerJoinEventArgs e)
     {
+        var result = await this.EventDispatcher.ExecuteEventAsync(e);
+
+        if (result == EventResult.Cancelled)
+            return;
+
         var joined = e.Player as Player;
 
         joined.world.TryAddPlayer(joined);

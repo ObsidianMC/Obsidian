@@ -315,24 +315,28 @@ public sealed class Client : IDisposable
                 case ClientState.Configuration:
                     Debug.Assert(Player is not null);
 
-                    var configurationPacketReceived = new PacketReceivedEventArgs(Player, this.server, id, data);
+                    //await this.server.packetReceived.InvokeAsync(configurationPacketReceived);
 
-                    await this.server.packetReceived.InvokeAsync(configurationPacketReceived);
+                    var result = await this.server.EventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.server, id, data));
 
-                    if (!configurationPacketReceived.IsCancelled)
-                        await this.handler.HandleConfigurationPackets(id, data, this);
+                    if (result == EventResult.Cancelled)
+                        return;
 
+                    await this.handler.HandleConfigurationPackets(id, data, this);
                     break;
                 case ClientState.Play:
                     Debug.Assert(Player is not null);
 
-                    var playPacketReceived = new PacketReceivedEventArgs(Player, this.server, id, data);
+                    //var playPacketReceived = new PacketReceivedEventArgs(Player, this.server, id, data);
 
-                    await this.server.packetReceived.InvokeAsync(playPacketReceived);
+                    //await this.server.packetReceived.InvokeAsync(playPacketReceived);
 
-                    if (!playPacketReceived.IsCancelled)
-                        await handler.HandlePlayPackets(id, data, this);
+                    result = await this.server.EventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.server, id, data));
 
+                    if (result == EventResult.Cancelled)
+                        return;
+
+                    await handler.HandlePlayPackets(id, data, this);
                     break;
                 case ClientState.Closed:
                 default:
@@ -577,7 +581,7 @@ public sealed class Client : IDisposable
     {
         if (Player is null)
             throw new UnreachableException("Player is null, which means the client has not yet logged in.");
-        
+
         await QueuePacketAsync(new SetDefaultSpawnPositionPacket(Player.world.LevelData.SpawnPosition));
 
         await SendTimeUpdateAsync();

@@ -4,10 +4,8 @@ using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
 using Obsidian.API.Plugins;
 using Obsidian.Events;
-using Obsidian.Events.EventArgs;
 using Obsidian.Plugins;
 using System.Collections.Frozen;
-using System.Diagnostics;
 using System.Reflection;
 
 namespace Obsidian.Services;
@@ -42,7 +40,7 @@ public sealed class EventDispatcher : IDisposable
     public void RegisterEvents<TEventModule>(PluginContainer pluginContainer) where TEventModule : MinecraftEventHandler
     {
         var eventModule = typeof(TEventModule);
-
+        var eventModuleTypeInfo = eventModule.GetTypeInfo();
         var methods = eventModule.GetMethods().Where(x => x.CustomAttributes.Any(x => x.AttributeType == eventPriorityAttributeType));
 
         foreach (var method in methods)
@@ -63,8 +61,9 @@ public sealed class EventDispatcher : IDisposable
                 ModuleFactory = ActivatorUtilities.CreateFactory(eventModule, []),
                 PluginContainer = pluginContainer,
                 Priority = eventPriorityAttribute.Priority,
-                MethodExecutor = ObjectMethodExecutor.Create(method, eventModule.GetTypeInfo()),
-                ModuleType = eventModule
+                MethodExecutor = ObjectMethodExecutor.Create(method, eventModuleTypeInfo),
+                ModuleType = eventModule,
+                Logger = this.logger
             });
         }
     }
@@ -79,7 +78,8 @@ public sealed class EventDispatcher : IDisposable
             EventType = typeof(TEventArgs),
             PluginContainer = pluginContainer,
             Priority = priority,
-            MethodDelegate = contextDelegate
+            MethodDelegate = contextDelegate,
+            Logger = this.logger
         });
 
     }
@@ -90,6 +90,7 @@ public sealed class EventDispatcher : IDisposable
 
         foreach (var eventModule in modules)
         {
+            var eventModuleTypeInfo = eventModule.GetTypeInfo();
             var methods = eventModule.GetMethods().Where(x => x.CustomAttributes.Any(x => x.AttributeType == eventPriorityAttributeType));
 
             foreach (var method in methods)
@@ -110,8 +111,9 @@ public sealed class EventDispatcher : IDisposable
                     ModuleFactory = ActivatorUtilities.CreateFactory(eventModule, []),
                     PluginContainer = pluginContainer,
                     Priority = eventPriorityAttribute.Priority,
-                    MethodExecutor = ObjectMethodExecutor.Create(method, eventModule.GetTypeInfo()),
-                    ModuleType = eventModule
+                    MethodExecutor = ObjectMethodExecutor.Create(method, eventModuleTypeInfo),
+                    ModuleType = eventModule,
+                    Logger = this.logger
                 });
             }
         }
@@ -130,55 +132,19 @@ public sealed class EventDispatcher : IDisposable
 
         foreach (var @event in foundEvents)
         {
-            if (@event.ModuleType is not null)
+            try
             {
-                var module = @event.ModuleFactory!.Invoke(@event.PluginContainer.ServiceScope.ServiceProvider, null)//Will inject services through constructor
-                    ?? throw new InvalidOperationException("Failed to initialize module from factory.");
+                await @event.Execute(new[] { eventArgs });
 
-                //inject through attribute
-                @event.PluginContainer.InjectServices(this.logger, module);
-
-                try
-                {
-                    var returnResult = @event.MethodExecutor!.Execute(module, new[] { eventArgs });//Maybe have method param service injection??
-
-                    if (returnResult is ValueTask valueTask)
-                        await valueTask;
-                    else if (returnResult is Task task)
-                        await task.ConfigureAwait(false);
-
-                    if (eventArgs is ICancellable cancellable && cancellable.IsCancelled)
-                        eventResult = EventResult.Cancelled;
-                }
-                catch (OperationCanceledException) { }//IGNORE this exception 
-                catch (Exception ex)
-                {
-                    this.logger.LogCritical(ex, "failed to execute event.");
-
-                    return EventResult.Failed;
-                }
+                if (eventArgs is ICancellable cancellable && cancellable.IsCancelled)
+                    eventResult = EventResult.Cancelled;
             }
-            else
+            catch (OperationCanceledException) { }//IGNORE this exception 
+            catch (Exception ex)
             {
-                try
-                {
-                    var returnResult = @event.MethodDelegate!.DynamicInvoke(eventArgs);//Maybe have method param service injection??
+                this.logger.LogCritical(ex, "failed to execute event.");
 
-                    if (returnResult is ValueTask valueTask)
-                        await valueTask;
-                    else if (returnResult is Task task)
-                        await task.ConfigureAwait(false);
-
-                    if (eventArgs is ICancellable cancellable && cancellable.IsCancelled)
-                        eventResult = EventResult.Cancelled;
-                }
-                catch (OperationCanceledException) { }//IGNORE this exception 
-                catch (Exception ex)
-                {
-                    this.logger.LogCritical(ex, "failed to execute event.");
-
-                    return EventResult.Failed;
-                }
+                return EventResult.Failed;
             }
         }
 
