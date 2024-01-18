@@ -1,4 +1,5 @@
 ﻿using Obsidian.SourceGenerators.Registry.Models;
+using System.Reflection;
 
 namespace Obsidian.SourceGenerators.Registry;
 public partial class BlocksGenerator
@@ -20,17 +21,19 @@ public partial class BlocksGenerator
 
     private static void GeneratePossibleStates(CodeBuilder stateBuilder, Dictionary<int, List<string>> stateValues, BlockProperty[] properties)
     {
-        stateBuilder.Statement("private Dictionary<string, int> possibleStates = new()");
+        stateBuilder.Indent().Append("private static ReadOnlySpan<int> StateIds => [");
+        foreach (var key in stateValues.Keys)
+            stateBuilder.Append($"{key},");
 
-        var list = new List<string>();
-        foreach (var kv in stateValues)
+        stateBuilder.Append("];").Line();
+
+        stateBuilder.Indent().Append("private static int[][] StatePropertyIndexes => [");
+
+        foreach (var values in stateValues.Values)
         {
-            var key = kv.Key;
-            var values = kv.Value;
-
-            list.Clear();
-
             var count = 0;
+
+            stateBuilder.Append("[");
             foreach (var value in values)
             {
                 var property = properties[count++];
@@ -42,16 +45,15 @@ public partial class BlocksGenerator
 
                 var index = GetPropertyIndex(property.Values, value);
 
-                list.Add(index);
+                stateBuilder.Append($"{index},");
             }
-
-            stateBuilder.Indent().Append("{ ").Append($"\"{string.Join("-", list)}\", {key}").Append(" },").Line();
+            stateBuilder.Append("],");
         }
 
-        stateBuilder.EndScope(true);
+        stateBuilder.Append("];").Line();
     }
 
-    private static string GetPropertyIndex(string[] array, string value)
+    private static int GetPropertyIndex(string[] array, string value)
     {
         var propertyValue = bool.TryParse(value, out _) ? value.ToLower() : value;
 
@@ -61,7 +63,7 @@ public partial class BlocksGenerator
         for (int i = 0; i < array.Length; i++)
         {
             if (array[i] == propertyValue)
-                return $"{i}";
+                return i;
         }
 
         throw new InvalidOperationException();
@@ -71,9 +73,10 @@ public partial class BlocksGenerator
     {
         stateBuilder.Line().Line().Method($"public {fullName}(int currentStateId)");
 
-        stateBuilder.Line("var (key, _) = this.possibleStates.First(x => x.Value == currentStateId);");
+        stateBuilder.Line("var arrayIndex = StateIds.IndexOf(currentStateId);");
+        stateBuilder.Line("var stateIndexesResult = StatePropertyIndexes[arrayIndex];");
 
-        stateBuilder.Line("var values = key.GetStateValues(this.valueStore);");
+        stateBuilder.Line("var values = stateIndexesResult.GetStateValues(this.valueStore);");
 
         var count = 0;
         foreach (var property in properties)
@@ -199,7 +202,7 @@ public partial class BlocksGenerator
             }
         }
 
-        stateBuilder.Statement("var list = new List<string>()");
+        stateBuilder.Line().Line("int[] rawValue = [");
 
         foreach (var property in properties)
         {
@@ -209,8 +212,10 @@ public partial class BlocksGenerator
             stateBuilder.Line($"this.valueStore[\"{name}\"].GetIndexFromArray(this.{sanitizedName}.ToString()),");
         }
 
-        stateBuilder.EndScope(true).Line();
+        stateBuilder.Line("];");
 
-        stateBuilder.Line().Line($"var stateId = this.possibleStates[string.Join(\"-\", list)];");
+        stateBuilder.Line().Line($"var stateIndex = StatePropertyIndexes.GetIndexFromJaggedArray(rawValue);");
+
+        stateBuilder.Line().Line($"var stateId = StateIds[stateIndex];");
     }
 }
