@@ -21,13 +21,13 @@ public partial class BlocksGenerator
 
     private static void GeneratePossibleStates(CodeBuilder stateBuilder, Dictionary<int, List<string>> stateValues, BlockProperty[] properties)
     {
-        stateBuilder.Indent().Append("private int[] stateIds = [");
+        stateBuilder.Indent().Append("private static ReadOnlySpan<int> StateIds => [");
         foreach (var key in stateValues.Keys)
             stateBuilder.Append($"{key},");
 
         stateBuilder.Append("];").Line();
 
-        stateBuilder.Indent().Append("private int[][] stateIndexes = [");
+        stateBuilder.Indent().Append("private static int[][] StatePropertyIndexes => [");
 
         foreach (var values in stateValues.Values)
         {
@@ -73,10 +73,10 @@ public partial class BlocksGenerator
     {
         stateBuilder.Line().Line().Method($"public {fullName}(int currentStateId)");
 
-        stateBuilder.Line("var arrayIndex = Array.IndexOf(stateIds, currentStateId);");
-        stateBuilder.Line("var stateIndexes = this.stateIndexes[arrayIndex];");
+        stateBuilder.Line("var arrayIndex = StateIds.IndexOf(currentStateId);");
+        stateBuilder.Line("var stateIndexesResult = StatePropertyIndexes[arrayIndex];");
 
-        stateBuilder.Line("var values = stateIndexes.GetStateValues(this.valueStore);");
+        stateBuilder.Line("var values = stateIndexesResult.GetStateValues(this.valueStore);");
 
         var count = 0;
         foreach (var property in properties)
@@ -214,8 +214,8 @@ public partial class BlocksGenerator
 
         stateBuilder.Line("];");
 
-        stateBuilder.Line().Line($"var stateIndex = this.stateIndexes.GetIndexFromJaggedArray(rawValue);");
+        stateBuilder.Line().Line($"var stateIndex = StatePropertyIndexes.GetIndexFromJaggedArray(rawValue);");
 
-        stateBuilder.Line().Line($"var stateId = this.stateIds[stateIndex];");
+        stateBuilder.Line().Line($"var stateId = StateIds[stateIndex];");
     }
 }
