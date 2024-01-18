@@ -1,7 +1,7 @@
 ﻿using Obsidian.API.Plugins;
 using System.Diagnostics;
 
-namespace Obsidian.Commands.Framework;
+namespace Obsidian.API.Commands;
 public abstract class CommandModuleBase
 {
     private CommandContext? commandContext;

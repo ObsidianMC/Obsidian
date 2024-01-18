@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Obsidian.Commands.Framework;
 using Obsidian.Plugins;
 using System.Reflection;
 

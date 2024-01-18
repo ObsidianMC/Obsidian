@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Obsidian.API;
+using Obsidian.API.Commands;
 using Obsidian.API.Events;
 using Obsidian.API.Plugins;
 using System;
@@ -30,11 +31,12 @@ namespace SamplePlugin
             registry.MapEvents();
 
             //Want to make a simple command?? Here you go
-            registry.MapCommand("test", async (CommandContext ctx) =>
-            {
-
-                await ctx.Player.SendMessageAsync("Test");
-            });
+            registry.MapCommand("test", 
+                [CommandInfo("test command")]
+                async (CommandContext ctx) =>
+                {
+                    await ctx.Player.SendMessageAsync("Test");
+                });
 
             //Event doesn't need its own class? Here you go
             registry.MapEvent((IncomingChatMessageEventArgs chat) =>
@@ -59,22 +61,17 @@ namespace SamplePlugin
         }
     }
 
-    [CommandRoot]
-    public class MyCommands
+    public class MyCommands : CommandModuleBase
     {
-        [Inject]
-        public SamplePlugin Plugin { get; set; }
-
         [Inject]
         public ILogger Logger { get; set; }
 
         [Command("mycommand")]
         [CommandInfo("woop dee doo this command is from a plugin")]
-        public async Task MyCommandAsync(CommandContext ctx)
+        public async Task MyCommandAsync()
         {
-            Plugin.Logger.LogInformation("Testing Plugin as injected dependency");
             Logger.LogInformation("Testing Services as injected dependency");
-            await ctx.Player.SendMessageAsync("Hello from plugin command!");
+            await this.Player.SendMessageAsync("Hello from plugin command!");
         }
     }
 }
