@@ -51,7 +51,7 @@ public sealed class PluginContainer : IDisposable
     /// <summary>
     /// Inject the scoped services into 
     /// </summary>
-    public void InjectServices(ILogger logger, object? target = null)
+    public void InjectServices(ILogger? logger, object? target = null)
     {
         var properties = target is null ? this.pluginType!.WithInjectAttribute() : target.GetType().WithInjectAttribute();
 
@@ -67,7 +67,7 @@ public sealed class PluginContainer : IDisposable
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to inject service.");
+                logger?.LogError(ex, "Failed to inject service.");
             }
         }
 

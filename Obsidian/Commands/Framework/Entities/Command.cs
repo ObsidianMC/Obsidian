@@ -1,6 +1,8 @@
-﻿using Obsidian.API.Utilities;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Obsidian.API.Utilities;
 using Obsidian.Commands.Framework.Exceptions;
 using Obsidian.Plugins;
+using System;
 using System.Reflection;
 
 namespace Obsidian.Commands.Framework.Entities;
@@ -9,7 +11,7 @@ public sealed class Command
 {
     internal CommandIssuers AllowedIssuers { get; init; }
 
-    public required Type ModuleType { get; init; }
+    public required Type? ModuleType { get; init; }
 
     public required CommandHandler CommandHandler { get; init; }
     public required PluginContainer PluginContainer { get; init; }
@@ -23,6 +25,8 @@ public sealed class Command
     public BaseExecutionCheckAttribute[] ExecutionChecks { get; init; } = [];
 
     public Command? Parent { get; init; }
+
+    public ObjectFactory? ModuleFactory { get; init; }
 
     internal Command() { }
 
@@ -78,14 +82,24 @@ public sealed class Command
         || x.GetParameters().Last().GetCustomAttribute<RemainingAttribute>() != null);
 
         // Create instance of declaring type to execute.
-        var module = CommandHandler.CreateCommandRootInstance(ModuleType, PluginContainer);
+
+        if(this.ModuleType != null)
+        {
+            await this.ExecuteFromModuleAsync(method, context, args);
+            return;
+        }
+        
+    }
+
+    private async Task ExecuteFromModuleAsync(MethodInfo method, CommandContext context, string[] args)
+    {
+        var module = CommandModuleFactory.CreateModule(this.ModuleFactory!, context, this.PluginContainer);
 
         // Get required params
         var methodparams = method.GetParameters().Skip(1).ToArray();
 
         // Set first parameter to be the context.
         var parsedargs = new object[methodparams.Length + 1];
-        parsedargs[0] = context;
 
         // TODO comments
         for (int i = 0; i < methodparams.Length; i++)
@@ -105,14 +119,11 @@ public sealed class Command
             {
                 var parser = CommandHandler.GetArgumentParser(paraminfo.ParameterType);
 
-                // sets args for parser method
-                var parseargs = new object?[3] { arg, context, null };
-
                 // cast with reflection?
                 if (parser.TryParseArgument(arg, context, out var parserResult))
                 {
                     // parse success!
-                    parsedargs[i + 1] = parserResult;
+                    parsedargs[i] = parserResult;
                 }
                 else
                 {

@@ -1,4 +1,5 @@
-﻿using Obsidian.API.BlockStates;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Obsidian.API.BlockStates;
 using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Plugins;
@@ -13,7 +14,7 @@ public sealed class CommandBuilder
 
     public string Name { get; }
 
-    public Type ModuleType { get; }
+    public Type? ModuleType { get; }
 
     public string? Description { get; private set; } = default!;
 
@@ -33,7 +34,14 @@ public sealed class CommandBuilder
         this.ModuleType = moduleType;
     }
 
+    private CommandBuilder(string name)
+    {
+        this.Name = name;
+    }
+
     public static CommandBuilder Create(string name, Type moduleType) => new(name, moduleType);
+
+    public static CommandBuilder Create(string name) => new(name);
 
     public CommandBuilder WithDescription(string? description)
     {
@@ -128,7 +136,6 @@ public sealed class CommandBuilder
         return this;
     }
 
-
     public Command Build(CommandHandler commandHandler, PluginContainer pluginContainer) => new()
     {
         Name = this.Name,
@@ -142,5 +149,6 @@ public sealed class CommandBuilder
         ModuleType = this.ModuleType,
         CommandHandler = commandHandler,
         PluginContainer = pluginContainer,
+        ModuleFactory = this.ModuleType != null ? ActivatorUtilities.CreateFactory(this.ModuleType, []) : null
     };
 }

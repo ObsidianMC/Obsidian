@@ -12,7 +12,7 @@ namespace Obsidian.Commands.Framework;
 
 public sealed class CommandHandler
 {
-    private readonly ILogger? logger;
+    internal readonly ILogger? logger;
     private readonly List<Command> _commands;
     private readonly CommandParser _commandParser;
     private readonly List<BaseArgumentParser> _argumentParsers;
@@ -55,6 +55,25 @@ public sealed class CommandHandler
 
     public Command[] GetAllCommands() => _commands.ToArray();
 
+    public void RegisterCommand(PluginContainer pluginContainer, string name, Delegate commandDelegate)
+    {
+        var method = commandDelegate.Method;
+
+        var commandInfo = method.GetCustomAttribute<CommandInfoAttribute>();
+        var checks = method.GetCustomAttributes<BaseExecutionCheckAttribute>();
+        var issuers = method.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? CommandHelpers.DefaultIssuerScope;
+
+        var command = CommandBuilder.Create(name)
+             .WithDescription(commandInfo?.Description)
+             .WithUsage(commandInfo?.Usage)
+             .AddExecutionChecks(checks)
+             .CanIssueAs(issuers)
+             .AddOverload(method)
+             .Build(this, pluginContainer);
+
+        _commands.Add(command);
+    }
+
     public void AddArgumentParser(BaseArgumentParser parser) => _argumentParsers.Add(parser);
 
     public void UnregisterPluginCommands(PluginContainer plugin) => _commands.RemoveAll(x => x.PluginContainer == plugin);
@@ -79,32 +98,6 @@ public sealed class CommandHandler
         {
             this.RegisterCommandClass(pluginContainer, root);
         }
-    }
-
-    public object? CreateCommandRootInstance(Type moduleType, PluginContainer pluginContainer)
-    {
-        ArgumentNullException.ThrowIfNull(moduleType);
-
-        object? instance = Activator.CreateInstance(moduleType);
-        if (instance is null)
-            return null;
-
-        var injectables = moduleType.GetProperties().Where(x => x.GetCustomAttribute<InjectAttribute>() != null);
-        foreach (var injectable in injectables)
-        {
-            //Plugins should stick to services and not be able to have access to other plugin base class.
-            //if (injectable.PropertyType == typeof(PluginBase) || injectable.PropertyType == plugin.Plugin.GetType())
-            //{
-            //    injectable.SetValue(instance, plugin.Plugin);
-            //}
-            //else
-            //{
-            //}
-
-            pluginContainer.InjectServices(this.logger!, instance);
-        }
-
-        return instance;
     }
 
     private void RegisterSubgroups(Type moduleType, PluginContainer pluginContainer, Command? parent = null)

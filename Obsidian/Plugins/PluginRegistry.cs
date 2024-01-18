@@ -12,50 +12,44 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
     private readonly CommandHandler commandHandler = commandHandler;
     private readonly ILogger logger = logger;
 
-    //TODO REGISTER DELEGATES
+    public PluginContainer PluginContainer => this.pluginManager.GetPluginContainerByAssembly();
+
     public IPluginRegistry MapCommand(string name, Delegate handler)
     {
-
+        this.commandHandler.RegisterCommand(this.PluginContainer, name, handler);
         return this;
     }
 
-    //TODO REGISTER DELEGATES
     public IPluginRegistry MapCommand(string name, ValueTaskContextDelegate<CommandContext> contextDelegate)
     {
-
+        this.commandHandler.RegisterCommand(this.PluginContainer, name, contextDelegate);
         return this;
     }
     
     public IPluginRegistry MapCommands()
     {
-        this.commandHandler.RegisterCommands(this.pluginManager.GetPluginContainerByAssembly());
+        this.commandHandler.RegisterCommands(this.PluginContainer);
 
         return this;
     }
 
     public IPluginRegistry MapEvent<TEventArgs>(ValueTaskContextDelegate<TEventArgs> contextDelegate, Priority priority = Priority.Low) where TEventArgs : BaseMinecraftEventArgs
     {
-        var pluginContainer = this.pluginManager.GetPluginContainerByAssembly();
-
-        this.eventDispatcher.RegisterEvent(pluginContainer, contextDelegate, priority);
+        this.eventDispatcher.RegisterEvent(this.PluginContainer, contextDelegate, priority);
 
         return this;
     }
 
     public IPluginRegistry MapEvent(Delegate handler, Priority priority = Priority.Low) 
     {
-        var pluginContainer = this.pluginManager.GetPluginContainerByAssembly();
-
-        this.eventDispatcher.RegisterEvent(pluginContainer, handler, priority);
+        this.eventDispatcher.RegisterEvent(this.PluginContainer, handler, priority);
 
         return this;
     }
 
     public IPluginRegistry MapEvents()
     {
-        var pluginContainer = this.pluginManager.GetPluginContainerByAssembly();
-
-        this.eventDispatcher.RegisterEvents(pluginContainer);
+        this.eventDispatcher.RegisterEvents(this.PluginContainer);
 
         return this;
     }
