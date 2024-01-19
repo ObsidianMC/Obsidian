@@ -46,7 +46,7 @@ public sealed class PluginManager
 
     public IServiceProvider PluginServiceProvider { get; private set; } = default!;
 
-    public PluginManager(IServiceProvider serverProvider, IServer server, 
+    public PluginManager(IServiceProvider serverProvider, IServer server,
         EventDispatcher eventDispatcher, CommandHandler commandHandler, ILogger logger)
     {
         var env = serverProvider.GetRequiredService<IServerEnvironment>();
@@ -62,7 +62,7 @@ public sealed class PluginManager
 
         ConfigureInitialServices(env);
 
-        DirectoryWatcher.FileChanged += (path) => Task.Run(async () =>
+        DirectoryWatcher.FileChanged += async (path) =>
         {
             var old = plugins.FirstOrDefault(plugin => plugin.Source == path) ??
                 stagedPlugins.FirstOrDefault(plugin => plugin.Source == path);
@@ -71,7 +71,7 @@ public sealed class PluginManager
                 await this.UnloadPluginAsync(old);
 
             await this.LoadPluginAsync(path);
-        });
+        };
         DirectoryWatcher.FileRenamed += OnPluginSourceRenamed;
         DirectoryWatcher.FileDeleted += OnPluginSourceDeleted;
     }
@@ -97,13 +97,22 @@ public sealed class PluginManager
         var provider = PluginProviderSelector.GetPluginProvider(path);
         if (provider is null)
         {
-            logger?.LogError("Couldn't load plugin from path '{path}'", path);
+            logger.LogError("Couldn't load plugin from path '{path}'", path);
             return null;
         }
 
-        PluginContainer plugin = await provider.GetPluginAsync(path).ConfigureAwait(false);
+        try
+        {
+            PluginContainer plugin = await provider.GetPluginAsync(path).ConfigureAwait(false);
 
-        return HandlePlugin(plugin);
+            return HandlePlugin(plugin);
+        }
+        catch (Exception ex)
+        {
+            this.logger.LogError(ex, "Failed to load plugin.");//TODO DEFAULT LOGGER DOES NOT SUPPORT EXCEPTIONS
+
+            throw;
+        }
     }
 
     private PluginContainer? HandlePlugin(PluginContainer pluginContainer)
@@ -211,7 +220,7 @@ public sealed class PluginManager
     /// Gets the PluginContainer either by specified assembly or by current executing assembly.
     /// </summary>
     /// <param name="assembly">The assembly you want to use to find the plugin container.</param>
-    public PluginContainer GetPluginContainerByAssembly(Assembly? assembly = null) => 
+    public PluginContainer GetPluginContainerByAssembly(Assembly? assembly = null) =>
         this.Plugins.First(x => x.PluginAssembly == (assembly ?? Assembly.GetCallingAssembly()));
 
     private void OnPluginStateChanged(PluginContainer plugin)

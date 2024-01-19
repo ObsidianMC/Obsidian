@@ -1,5 +1,6 @@
 ﻿using Obsidian.API.Plugins;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 namespace Obsidian.Plugins;
 
@@ -13,6 +14,9 @@ public sealed class PluginInfo : IPluginInfo
     public string Description { get; init; } = string.Empty;
     public string[] Authors { get; init; } = [];
     public Uri ProjectUrl { get; init; } = default!;
+
+    [JsonConstructor]
+    internal PluginInfo() { }
 
     [SetsRequiredMembers]
     internal PluginInfo(string name)

@@ -3,6 +3,7 @@ using Obsidian.API.Events;
 using Obsidian.API.Plugins;
 using Obsidian.Commands.Framework;
 using Obsidian.Services;
+using System.Reflection;
 
 namespace Obsidian.Plugins;
 public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher eventDispatcher, CommandHandler commandHandler, ILogger logger) : IPluginRegistry
@@ -12,45 +13,66 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
     private readonly CommandHandler commandHandler = commandHandler;
     private readonly ILogger logger = logger;
 
-    public PluginContainer PluginContainer => this.pluginManager.GetPluginContainerByAssembly();
-
     public IPluginRegistry MapCommand(string name, Delegate handler)
     {
-        
-        this.commandHandler.RegisterCommand(this.PluginContainer, name, handler);
+        var asm = Assembly.GetCallingAssembly();
+
+        var container = this.pluginManager.GetPluginContainerByAssembly(asm);
+
+        this.commandHandler.RegisterCommand(container, name, handler);
         return this;
     }
 
     public IPluginRegistry MapCommand(string name, ValueTaskContextDelegate<CommandContext> contextDelegate)
     {
-        this.commandHandler.RegisterCommand(this.PluginContainer, name, contextDelegate);
+        var asm = Assembly.GetCallingAssembly();
+
+        var container = this.pluginManager.GetPluginContainerByAssembly(asm);
+
+        this.commandHandler.RegisterCommand(container, name, contextDelegate);
         return this;
     }
     
     public IPluginRegistry MapCommands()
     {
-        this.commandHandler.RegisterCommands(this.PluginContainer);
+        var asm = Assembly.GetCallingAssembly();
+
+        var container = this.pluginManager.GetPluginContainerByAssembly(asm);
+
+        this.commandHandler.RegisterCommands(container);
 
         return this;
     }
 
     public IPluginRegistry MapEvent<TEventArgs>(ValueTaskContextDelegate<TEventArgs> contextDelegate, Priority priority = Priority.Low) where TEventArgs : BaseMinecraftEventArgs
     {
-        this.eventDispatcher.RegisterEvent(this.PluginContainer, contextDelegate, priority);
+        var asm = Assembly.GetCallingAssembly();
+
+        var container = this.pluginManager.GetPluginContainerByAssembly(asm);
+
+        this.eventDispatcher.RegisterEvent(container, contextDelegate, priority);
 
         return this;
     }
 
     public IPluginRegistry MapEvent(Delegate handler, Priority priority = Priority.Low) 
     {
-        this.eventDispatcher.RegisterEvent(this.PluginContainer, handler, priority);
+        var asm = Assembly.GetCallingAssembly();
+
+        var container = this.pluginManager.GetPluginContainerByAssembly(asm);
+
+        this.eventDispatcher.RegisterEvent(container, handler, priority);
 
         return this;
     }
 
     public IPluginRegistry MapEvents()
     {
-        this.eventDispatcher.RegisterEvents(this.PluginContainer);
+        var asm = Assembly.GetCallingAssembly();
+
+        var container = this.pluginManager.GetPluginContainerByAssembly(asm);
+
+        this.eventDispatcher.RegisterEvents(container);
 
         return this;
     }
