@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Internal;
+using Microsoft.Extensions.Logging;
 using Obsidian.API.Utilities;
 using Obsidian.Commands.Builders;
 using Obsidian.Commands.Framework.Entities;
@@ -66,12 +68,19 @@ public sealed class CommandHandler
         var checks = method.GetCustomAttributes<BaseExecutionCheckAttribute>();
         var issuers = method.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? CommandHelpers.DefaultIssuerScope;
 
+        var executor = new CommandExecutor
+        {
+            Logger = this.logger,
+            PluginContainer = pluginContainer,
+            MethodDelegate = commandDelegate,
+        };
+
         var command = CommandBuilder.Create(name)
              .WithDescription(commandInfo?.Description)
              .WithUsage(commandInfo?.Usage)
              .AddExecutionChecks(checks)
              .CanIssueAs(issuers)
-             .AddOverload(method)
+             .AddOverload(executor)
              .Build(this, pluginContainer);
 
         _commands.Add(command);
@@ -121,7 +130,7 @@ public sealed class CommandHandler
             var info = subModule.GetCustomAttribute<CommandInfoAttribute>();
             var issuers = subModule.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? CommandHelpers.DefaultIssuerScope;
 
-            var command = CommandBuilder.Create(name, subModule)
+            var command = CommandBuilder.Create(name)
               .WithDescription(info?.Description)
               .WithParent(parent)
               .WithUsage(info?.Usage)
@@ -145,7 +154,18 @@ public sealed class CommandHandler
         if (parent is not null)
         {
             // Adding all methods with GroupCommand attribute
-            parent.Overloads!.AddRange(methods.Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(GroupCommandAttribute))));
+            var overloads = methods.Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(GroupCommandAttribute)))
+                .Select(x => ObjectMethodExecutor.Create(x, moduleType.GetTypeInfo()))
+                .Select(x => new CommandExecutor
+                {
+                    Logger = this.logger,
+                    PluginContainer = pluginContainer,
+                    MethodExecutor = x,
+                    ModuleType = moduleType,
+                    ModuleFactory = ActivatorUtilities.CreateFactory(moduleType, Type.EmptyTypes)
+                });
+
+            parent.Overloads!.AddRange(overloads);
         }
 
         // Selecting all methods that have the CommandAttribute.
@@ -164,13 +184,33 @@ public sealed class CommandHandler
             var info = method.GetCustomAttribute<CommandInfoAttribute>();
             var issuers = method.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? CommandHelpers.DefaultIssuerScope;
 
-            var command = CommandBuilder.Create(name, moduleType)
+            var executor = new CommandExecutor
+            {
+                Logger = this.logger,
+                PluginContainer = pluginContainer,
+                MethodExecutor = ObjectMethodExecutor.Create(method, moduleType.GetTypeInfo()),
+                ModuleType = moduleType,
+                ModuleFactory = ActivatorUtilities.CreateFactory(moduleType, Type.EmptyTypes)
+            };
+
+            var overloads = methods.Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandOverloadAttribute)) && x.Name == method.Name)
+                .Select(x => ObjectMethodExecutor.Create(x, moduleType.GetTypeInfo()))
+                .Select(x => new CommandExecutor
+                {
+                    Logger = this.logger,
+                    PluginContainer = pluginContainer,
+                    MethodExecutor = x,
+                    ModuleType = moduleType,
+                    ModuleFactory = ActivatorUtilities.CreateFactory(moduleType, Type.EmptyTypes)
+                });
+
+            var command = CommandBuilder.Create(name)
                 .WithDescription(info?.Description)
                 .WithParent(parent)
                 .WithUsage(info?.Usage)
                 .AddAliases(aliases)
-                .AddOverload(method)
-                .AddOverloads(methods.Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandOverloadAttribute)) && x.Name == method.Name))
+                .AddOverload(executor)
+                .AddOverloads(overloads)
                 .AddExecutionChecks(checks)
                 .CanIssueAs(issuers)
                 .Build(this, pluginContainer);

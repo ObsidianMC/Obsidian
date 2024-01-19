@@ -38,7 +38,8 @@ public sealed class CompiledPluginProvider(ILogger logger) : IPluginProvider
         }
 
         string name = assembly.GetName().Name!;
-        using var pluginInfoStream = assembly.GetManifestResourceStream("plugin.json") ?? throw new InvalidOperationException($"Failed to find embedded plugin.json file for {name}");
+        using var pluginInfoStream = assembly.GetManifestResourceStream($"{name}.plugin.json") 
+            ?? throw new InvalidOperationException($"Failed to find embedded plugin.json file for {name}");
 
         var info = await pluginInfoStream.FromJsonAsync<PluginInfo>() ?? throw new JsonException($"Couldn't deserialize plugin.json from {name}");
 

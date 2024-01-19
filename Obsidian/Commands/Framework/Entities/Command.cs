@@ -1,9 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Obsidian.API.BlockStates;
 using Obsidian.API.Utilities;
 using Obsidian.Commands.Framework.Exceptions;
 using Obsidian.Plugins;
-using System;
 using System.Reflection;
 
 namespace Obsidian.Commands.Framework.Entities;
@@ -11,10 +9,6 @@ namespace Obsidian.Commands.Framework.Entities;
 public sealed class Command
 {
     internal CommandIssuers AllowedIssuers { get; init; }
-
-    private bool HasModule => this.ModuleType != null;
-
-    public required Type? ModuleType { get; init; }
 
     public required CommandHandler CommandHandler { get; init; }
     public required PluginContainer? PluginContainer { get; init; }
@@ -24,12 +18,10 @@ public sealed class Command
     public string? Description { get; init; }
     public string? Usage { get; init; }
 
-    public List<MethodInfo> Overloads { get; init; } = [];
+    public List<CommandExecutor> Overloads { get; init; } = [];
     public BaseExecutionCheckAttribute[] ExecutionChecks { get; init; } = [];
 
     public Command? Parent { get; init; }
-
-    public ObjectFactory? ModuleFactory { get; init; }
 
     internal Command() { }
 
@@ -71,7 +63,7 @@ public sealed class Command
                 $"Command {GetQualifiedName()} cannot be executed as {context.Sender.Issuer}", AllowedIssuers);
         }
 
-        var method = Overloads.FirstOrDefault(x => this.MatchParams(x, args)
+        var method = Overloads.FirstOrDefault(x => x.MatchParams(args)
             || x.GetParameters().Last().GetCustomAttribute<RemainingAttribute>() != null);
 
         // Find matching overload
@@ -86,25 +78,18 @@ public sealed class Command
         await this.ExecuteAsync(method, context, args);
     }
 
-    private bool MatchParams(MethodInfo method, string[] args) =>
-        this.HasModule ? method.GetParameters().Length == args.Length : method.GetParameters().Length - 1 == args.Length;
-
-    private async Task ExecuteAsync(MethodInfo method, CommandContext context, string[] args)
+    private async Task ExecuteAsync(CommandExecutor commandExecutor, CommandContext context, string[] args)
     {
         using var serviceScope = this.CommandHandler.ServiceProvider.CreateScope();
 
-        object? module = this.PluginContainer != null
-            ? this.HasModule ? CommandModuleFactory.CreateModule(this.ModuleFactory!, context, this.PluginContainer) : null
-            : this.HasModule ? CommandModuleFactory.CreateModule(this.ModuleFactory!, context, serviceScope.ServiceProvider) : null;
-
-        var methodparams = method.GetParameters().ToArray();
+        var methodparams = commandExecutor.GetParameters().ToArray();
         var parsedargs = new object[methodparams.Length];
 
         // Set first parameter to be the context if there isn't a module.
-        if (!this.HasModule)
+        if (!commandExecutor.HasModule)
             parsedargs[0] = context;
 
-        for (int i = this.HasModule ? 0 : 1; i < methodparams.Length; i++)
+        for (int i = commandExecutor.HasModule ? 0 : 1; i < methodparams.Length; i++)
         {
             // Current param and arg
             var paraminfo = methodparams[i];
@@ -141,7 +126,7 @@ public sealed class Command
         }
 
         // do execution checks
-        var checks = method.GetCustomAttributes<BaseExecutionCheckAttribute>();
+        var checks = commandExecutor.GetCustomAttributes<BaseExecutionCheckAttribute>();
 
         foreach (var c in checks)
         {
@@ -158,15 +143,7 @@ public sealed class Command
         }
 
         // await the command with it's args
-        object? result = method.Invoke(module, parsedargs);
-        if (result is Task task)
-        {
-            await task.ConfigureAwait(false);
-        }
-        else if (result is ValueTask valueTask)
-        {
-            await valueTask;
-        }
+        await commandExecutor.Execute(serviceScope.ServiceProvider, context, parsedargs);
     }
 
     public override string ToString() => $"{CommandHelpers.DefaultPrefix}{GetQualifiedName()}";

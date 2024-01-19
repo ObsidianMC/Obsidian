@@ -1,20 +1,15 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Obsidian.API.BlockStates;
-using Obsidian.Commands.Framework;
+﻿using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Plugins;
-using System.Reflection;
 
 namespace Obsidian.Commands.Builders;
 public sealed class CommandBuilder
 {
     private readonly List<string> aliases = [];
-    private readonly List<MethodInfo> overloads = [];
+    private readonly List<CommandExecutor> overloads = [];
     private readonly List<BaseExecutionCheckAttribute> checks = [];
 
     public string Name { get; }
-
-    public Type? ModuleType { get; }
 
     public string? Description { get; private set; } = default!;
 
@@ -24,22 +19,14 @@ public sealed class CommandBuilder
 
     public CommandIssuers Issuers { get; private set; }
 
-    public IReadOnlyCollection<MethodInfo> Overloads => this.overloads.AsReadOnly();
+    public IReadOnlyCollection<CommandExecutor> Overloads => this.overloads.AsReadOnly();
     public IReadOnlyCollection<string> Aliases => this.aliases.AsReadOnly();
     public IReadOnlyCollection<BaseExecutionCheckAttribute> Checks => this.checks.AsReadOnly();
-
-    private CommandBuilder(string name, Type moduleType)
-    {
-        this.Name = name;
-        this.ModuleType = moduleType;
-    }
 
     private CommandBuilder(string name)
     {
         this.Name = name;
     }
-
-    public static CommandBuilder Create(string name, Type moduleType) => new(name, moduleType);
 
     public static CommandBuilder Create(string name) => new(name);
 
@@ -56,23 +43,23 @@ public sealed class CommandBuilder
         return this;
     }
 
-    public CommandBuilder AddOverload(MethodInfo methodInfo)
+    public CommandBuilder AddOverload(CommandExecutor commandExecutor)
     {
-        this.overloads.Add(methodInfo);
+        this.overloads.Add(commandExecutor);
 
         return this;
     }
 
-    public CommandBuilder AddOverloads(params MethodInfo[] methods)
+    public CommandBuilder AddOverloads(params CommandExecutor[] executors)
     {
-        this.overloads.AddRange(methods);
+        this.overloads.AddRange(executors);
 
         return this;
     }
 
-    public CommandBuilder AddOverloads(IEnumerable<MethodInfo> methods)
+    public CommandBuilder AddOverloads(IEnumerable<CommandExecutor> executors)
     {
-        this.overloads.AddRange(methods);
+        this.overloads.AddRange(executors);
 
         return this;
     }
@@ -146,9 +133,7 @@ public sealed class CommandBuilder
         AllowedIssuers = this.Issuers,
         Parent = this.Parent,
         ExecutionChecks = this.checks.ToArray(),
-        ModuleType = this.ModuleType,
         CommandHandler = commandHandler,
         PluginContainer = pluginContainer,
-        ModuleFactory = this.ModuleType != null ? ActivatorUtilities.CreateFactory(this.ModuleType, []) : null
     };
 }
