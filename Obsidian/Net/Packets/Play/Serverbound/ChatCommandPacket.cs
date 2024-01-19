@@ -28,16 +28,14 @@ public partial class ChatCommandPacket : IServerboundPacket
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
-        var loggerProvider = new LoggerProvider(LogLevel.Error);
-        var logger = loggerProvider.CreateLogger("ChatCommandPacket");
-        var context = new CommandContext($"/{this.Command}", new CommandSender(CommandIssuers.Client, player, logger), player, server);
+        var context = new CommandContext($"/{this.Command}", new CommandSender(CommandIssuers.Client, player, server._logger), player, server);
         try
         {
             await server.CommandsHandler.ProcessCommand(context);
         }
         catch (Exception e)
         {
-            logger.LogError(e, e.Message);
+            server._logger.LogError(e, e.Message);
         }
     }
 }

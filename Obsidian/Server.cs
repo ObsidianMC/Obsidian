@@ -62,7 +62,7 @@ public sealed partial class Server : IServer
     private readonly ILoggerFactory loggerFactory;
     private readonly RconServer _rconServer;
     private readonly IUserCache userCache;
-    private readonly ILogger _logger;
+    internal readonly ILogger _logger;
     private readonly IServiceProvider serviceProvider;
 
     private IConnectionListener? _tcpListener;

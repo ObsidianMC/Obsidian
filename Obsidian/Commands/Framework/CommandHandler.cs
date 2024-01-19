@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
+using Obsidian.API.Commands;
 using Obsidian.API.Utilities;
 using Obsidian.Commands.Builders;
 using Obsidian.Commands.Framework.Entities;
@@ -47,7 +48,7 @@ public sealed class CommandHandler
         var parserType = _argumentParsers.FirstOrDefault(x => x.GetType().BaseType?.GetGenericArguments()[0] == type)?.GetType();
 
         if (parserType is null || Activator.CreateInstance(parserType) is not BaseArgumentParser parserInstance)
-            throw new Exception("No such parser registered!");
+            throw new Exception($"No such parser registered! {type}");
 
         return (parserInstance.Id, parserInstance.ParserIdentifier);
     }
@@ -105,7 +106,7 @@ public sealed class CommandHandler
         this.RegisterCommandClass(pluginContainer, pluginContainer.Plugin.GetType());
 
         // Registering commands found in the plugin assembly
-        var commandRoots = pluginContainer.Plugin.GetType().Assembly.GetTypes().Where(x => x.GetCustomAttributes(false).Any(y => y.GetType() == typeof(CommandRootAttribute)));
+        var commandRoots = pluginContainer.Plugin.GetType().Assembly.GetTypes().Where(x => x.IsSubclassOf(typeof(CommandModuleBase)));
         foreach (var root in commandRoots)
         {
             this.RegisterCommandClass(pluginContainer, root);

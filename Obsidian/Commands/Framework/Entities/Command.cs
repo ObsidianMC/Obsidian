@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Obsidian.API.Utilities;
 using Obsidian.Commands.Framework.Exceptions;
 using Obsidian.Plugins;
@@ -64,7 +65,7 @@ public sealed class Command
         }
 
         var method = Overloads.FirstOrDefault(x => x.MatchParams(args)
-            || x.GetParameters().Last().GetCustomAttribute<RemainingAttribute>() != null);
+            || x.GetParameters().LastOrDefault()?.GetCustomAttribute<RemainingAttribute>() != null);
 
         // Find matching overload
         if (method == null)

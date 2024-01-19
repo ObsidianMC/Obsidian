@@ -312,9 +312,9 @@ public class MainCommandModule : CommandModuleBase
     [Command("spawnentity")]
     [CommandInfo("Spawns an entity", "/spawnentity [entityType]")]
     [IssuerScope(CommandIssuers.Client)]
-    public async Task SpawnEntityAsync(CommandContext context, string entityType)
+    public async Task SpawnEntityAsync(string entityType)
     {
-        if (context.Player is not IPlayer player)
+        if (this.Player is not IPlayer player)
             return;
 
         if (!Enum.TryParse<EntityType>(entityType, true, out var type))
@@ -433,9 +433,9 @@ public class MainCommandModule : CommandModuleBase
     [Command("breakpoint")]
     [CommandInfo("Creats a breakpoint to help debug", "/breakpoint")]
     [RequirePermission(op: true)]
-    public async Task BreakpointAsync(CommandContext Context)
+    public async Task BreakpointAsync()
     {
-        Context.Server.BroadcastMessage("You might get kicked due to timeout, a breakpoint will hit in 3 seconds!");
+        this.Server.BroadcastMessage("You might get kicked due to timeout, a breakpoint will hit in 3 seconds!");
         await Task.Delay(3000);
         Debugger.Break();
     }

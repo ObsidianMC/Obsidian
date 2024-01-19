@@ -27,9 +27,9 @@ public static class CommandsRegistry
                 Type = CommandNodeType.Literal
             };
 
-            foreach (var overload in cmd.Overloads.Take(1))
+            foreach (var overload in cmd.Overloads)
             {
-                var args = overload.GetParameters().Skip(1); // skipping obsidian context
+                var args = overload.HasModule ? overload.GetParameters() : overload.GetParameters().Skip(1); // skipping obsidian context
                 if (!args.Any())
                     cmdNode.Type |= CommandNodeType.IsExecutable;
 
