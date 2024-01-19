@@ -1,4 +1,5 @@
-﻿using Obsidian.API;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Obsidian.API;
 using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Entities;
 using System;
@@ -26,7 +27,7 @@ public class Commands
     [Fact]
     public async Task TestCommandExec()
     {
-        var cmd = new CommandHandler();
+        var cmd = new CommandHandler(new ServiceCollection().BuildServiceProvider());
 
         ICommandSender sender = new CommandSender(CommandIssuers.Console, player: null, logger: null);
 
