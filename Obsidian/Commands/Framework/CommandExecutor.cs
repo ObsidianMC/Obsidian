@@ -48,12 +48,8 @@ public sealed class CommandExecutor
     {
         if (this.MethodExecutor != null)
         {
-            object? module = this.PluginContainer != null
-                ? this.HasModule ? CommandModuleFactory.CreateModule(this.ModuleFactory!, context, this.PluginContainer) : null
-                : this.HasModule ? CommandModuleFactory.CreateModule(this.ModuleFactory!, context, serviceProvider) : null;
-
-            if (module == null)
-                throw new InvalidOperationException("Failed to create module class.");
+            object? module = CommandModuleFactory.CreateModule(this.ModuleFactory!, context, 
+                this.PluginContainer?.ServiceScope.ServiceProvider ?? serviceProvider);
 
             this.PluginContainer?.InjectServices(this.Logger, module); //inject through attribute
 

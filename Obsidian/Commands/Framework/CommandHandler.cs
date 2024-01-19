@@ -99,14 +99,10 @@ public sealed class CommandHandler
         RegisterSubcommands(moduleType, plugin);
     }
 
-    //TODO rework.
     public void RegisterCommands(PluginContainer pluginContainer)
     {
-        // Registering commands from within the plugin
-        this.RegisterCommandClass(pluginContainer, pluginContainer.Plugin.GetType());
-
         // Registering commands found in the plugin assembly
-        var commandRoots = pluginContainer.Plugin.GetType().Assembly.GetTypes().Where(x => x.IsSubclassOf(typeof(CommandModuleBase)));
+        var commandRoots = pluginContainer.PluginAssembly.GetTypes().Where(x => x.IsSubclassOf(typeof(CommandModuleBase)));
         foreach (var root in commandRoots)
         {
             this.RegisterCommandClass(pluginContainer, root);
@@ -252,16 +248,15 @@ public sealed class CommandHandler
         }
     }
 
-    private async Task ExecuteCommand(string[] command, CommandContext ctx)
+    private async Task ExecuteCommand(string[] args, CommandContext ctx)
     {
         Command? cmd = default;
-        var args = command;
 
         // Search for correct Command class in this._commands.
         while (_commands.Any(x => x.CheckCommand(args, cmd)))
         {
             cmd = _commands.First(x => x.CheckCommand(args, cmd));
-            args = args.Skip(1).ToArray();
+            args = Enumerable.Skip(args, 1).ToArray();
         }
 
         if (cmd is not null)

@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Obsidian.API.Utilities;
 using Obsidian.Commands.Framework.Exceptions;
 using Obsidian.Plugins;
