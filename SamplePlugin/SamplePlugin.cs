@@ -58,7 +58,7 @@ namespace SamplePlugin
     public class MyCommands : CommandModuleBase
     {
         [Inject]
-        public ILogger Logger { get; set; }
+        public ILogger<MyCommands> Logger { get; set; }
 
         [Command("mycommand")]
         [CommandInfo("woop dee doo this command is from a plugin")]
