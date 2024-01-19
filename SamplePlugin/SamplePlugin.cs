@@ -32,9 +32,9 @@ namespace SamplePlugin
             //Want to make a simple command?? Here you go
             registry.MapCommand("test", 
                 [CommandInfo("test command")]
-                async (CommandContext ctx) =>
+                async (CommandContext ctx, int number, int otherNumber) =>
                 {
-                    await ctx.Player.SendMessageAsync("Test");
+                    await ctx.Player.SendMessageAsync($"Test #{number} and #{otherNumber}");
                 });
 
             //Event doesn't need its own class? Here you go
