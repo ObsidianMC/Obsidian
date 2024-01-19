@@ -1,5 +1,5 @@
+using Obsidian.API.Commands;
 using Obsidian.API.Utilities;
-using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Entities;
 using Obsidian.Registries;

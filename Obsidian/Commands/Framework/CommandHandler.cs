@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.API.Plugins;
 using Obsidian.API.Utilities;
 using Obsidian.Commands.Builders;
 using Obsidian.Commands.Framework.Entities;
@@ -13,11 +12,14 @@ namespace Obsidian.Commands.Framework;
 public sealed class CommandHandler
 {
     internal readonly ILogger? logger;
+
     private readonly List<Command> _commands;
     private readonly CommandParser _commandParser;
     private readonly List<BaseArgumentParser> _argumentParsers;
 
-    public CommandHandler(ILogger<CommandHandler>? logger = null)
+    public IServiceProvider ServiceProvider { get; }
+
+    public CommandHandler(IServiceProvider serviceProvider, ILogger<CommandHandler>? logger = null)
     {
         _commandParser = new CommandParser(CommandHelpers.DefaultPrefix);
         _commands = [];
@@ -34,6 +36,7 @@ public sealed class CommandHandler
             }
         }
 
+        this.ServiceProvider = serviceProvider;
         this.logger = logger;
     }
 
@@ -76,11 +79,11 @@ public sealed class CommandHandler
 
     public void AddArgumentParser(BaseArgumentParser parser) => _argumentParsers.Add(parser);
 
-    public void UnregisterPluginCommands(PluginContainer plugin) => _commands.RemoveAll(x => x.PluginContainer == plugin);
+    public void UnregisterPluginCommands(PluginContainer? plugin) => _commands.RemoveAll(x => x.PluginContainer == plugin);
 
-    public void RegisterCommandClass<T>(PluginContainer plugin) => RegisterCommandClass(plugin, typeof(T));
+    public void RegisterCommandClass<T>(PluginContainer? plugin) => RegisterCommandClass(plugin, typeof(T));
 
-    public void RegisterCommandClass(PluginContainer plugin, Type moduleType)
+    public void RegisterCommandClass(PluginContainer? plugin, Type moduleType)
     {
         RegisterSubgroups(moduleType, plugin);
         RegisterSubcommands(moduleType, plugin);
@@ -100,7 +103,7 @@ public sealed class CommandHandler
         }
     }
 
-    private void RegisterSubgroups(Type moduleType, PluginContainer pluginContainer, Command? parent = null)
+    private void RegisterSubgroups(Type moduleType, PluginContainer? pluginContainer, Command? parent = null)
     {
         // find all command groups under this command
         var subModules = moduleType.GetNestedTypes().Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandGroupAttribute)));
@@ -134,7 +137,7 @@ public sealed class CommandHandler
         }
     }
 
-    private void RegisterSubcommands(Type moduleType, PluginContainer pluginContainer, Command? parent = null)
+    private void RegisterSubcommands(Type moduleType, PluginContainer? pluginContainer, Command? parent = null)
     {
         // loop through methods and find valid commands
         var methods = moduleType.GetMethods();

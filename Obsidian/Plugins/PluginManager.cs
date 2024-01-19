@@ -212,7 +212,7 @@ public sealed class PluginManager
     /// </summary>
     /// <param name="assembly">The assembly you want to use to find the plugin container.</param>
     public PluginContainer GetPluginContainerByAssembly(Assembly? assembly = null) => 
-        this.Plugins.First(x => x.PluginAssembly == (assembly ?? Assembly.GetExecutingAssembly()));
+        this.Plugins.First(x => x.PluginAssembly == (assembly ?? Assembly.GetCallingAssembly()));
 
     private void OnPluginStateChanged(PluginContainer plugin)
     {

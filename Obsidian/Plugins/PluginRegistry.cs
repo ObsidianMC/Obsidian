@@ -16,6 +16,7 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
 
     public IPluginRegistry MapCommand(string name, Delegate handler)
     {
+        
         this.commandHandler.RegisterCommand(this.PluginContainer, name, handler);
         return this;
     }

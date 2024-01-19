@@ -17,7 +17,7 @@ public sealed class Command
     public required Type? ModuleType { get; init; }
 
     public required CommandHandler CommandHandler { get; init; }
-    public required PluginContainer PluginContainer { get; init; }
+    public required PluginContainer? PluginContainer { get; init; }
     public required string Name { get; init; }
 
     public string[] Aliases { get; init; } = [];
@@ -91,7 +91,11 @@ public sealed class Command
 
     private async Task ExecuteAsync(MethodInfo method, CommandContext context, string[] args)
     {
-        var module = this.HasModule ? CommandModuleFactory.CreateModule(this.ModuleFactory!, context, this.PluginContainer) : null;
+        using var serviceScope = this.CommandHandler.ServiceProvider.CreateScope();
+
+        object? module = this.PluginContainer != null
+            ? this.HasModule ? CommandModuleFactory.CreateModule(this.ModuleFactory!, context, this.PluginContainer) : null
+            : this.HasModule ? CommandModuleFactory.CreateModule(this.ModuleFactory!, context, serviceScope.ServiceProvider) : null;
 
         var methodparams = method.GetParameters().ToArray();
         var parsedargs = new object[methodparams.Length];

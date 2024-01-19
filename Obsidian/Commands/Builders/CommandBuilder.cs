@@ -136,7 +136,7 @@ public sealed class CommandBuilder
         return this;
     }
 
-    public Command Build(CommandHandler commandHandler, PluginContainer pluginContainer) => new()
+    public Command Build(CommandHandler commandHandler, PluginContainer? pluginContainer) => new()
     {
         Name = this.Name,
         Aliases = this.aliases.ToArray(),

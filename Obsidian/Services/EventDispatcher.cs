@@ -25,7 +25,8 @@ public sealed class EventDispatcher : IDisposable
     {
         this.logger = logger;
 
-        var events = typeof(INamedEvent).Assembly.GetTypes().Where(x => x.IsAssignableFrom(baseMinecraftEventArgsType));
+        var events = typeof(INamedEvent).Assembly.GetTypes().Where(x => x.IsSubclassOf(baseMinecraftEventArgsType))
+            .ToList();
         var dict = new Dictionary<string, List<MinecraftEvent>>();
         foreach (var eventType in events)
         {
