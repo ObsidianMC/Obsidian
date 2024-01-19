@@ -6,10 +6,5 @@
     "Obsidian Team"
   ],
   "description": "My sample plugin.",
-  "projectUrl": "https://github.com/ObsidianMC/Obsidian",
-  "dependencies": [
-    {
-
-    }
-  ]
+  "projectUrl": "https://github.com/ObsidianMC/Obsidian"
 }

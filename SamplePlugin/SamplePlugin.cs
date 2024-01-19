@@ -4,7 +4,6 @@ using Obsidian.API;
 using Obsidian.API.Commands;
 using Obsidian.API.Events;
 using Obsidian.API.Plugins;
-using System;
 using System.Threading.Tasks;
 
 namespace SamplePlugin
@@ -53,12 +52,7 @@ namespace SamplePlugin
             return ValueTask.CompletedTask;
         }
 
-        [Command(commandName: "plugincommand")]
-        [CommandInfo(description: "woop dee doo this command is from within a plugin class!!")]
-        public async Task PluginCommandAsync(CommandContext ctx)
-        {
-            await ctx.Sender.SendMessageAsync(message: "Hello from plugin command implemented in Plugin class!");
-        }
+        
     }
 
     public class MyCommands : CommandModuleBase
