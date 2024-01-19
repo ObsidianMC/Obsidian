@@ -83,14 +83,13 @@ public sealed class Command
     {
         using var serviceScope = this.CommandHandler.ServiceProvider.CreateScope();
 
-        var methodparams = commandExecutor.GetParameters().ToArray();
-        var parsedargs = new object[methodparams.Length];
+        var methodparams = commandExecutor.HasModule ?
+            commandExecutor.GetParameters().ToArray() :
+            commandExecutor.GetParameters().Skip(1).ToArray();
 
-        // Set first parameter to be the context if there isn't a module.
-        if (!commandExecutor.HasModule)
-            parsedargs[0] = context;
+        var parsedargs = new object[args.Length];
 
-        for (int i = commandExecutor.HasModule ? 0 : 1; i < methodparams.Length; i++)
+        for (int i = 0; i < args.Length; i++)
         {
             // Current param and arg
             var paraminfo = methodparams[i];

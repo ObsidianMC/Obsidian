@@ -76,18 +76,20 @@ public sealed class CommandExecutor
         if (this.MethodDelegate == null)
             throw new UnreachableException();
 
+        object[] args = [context, .. methodParams];
+
         if (this.MethodDelegate.Method.ReturnType == typeof(ValueTask))
         {
-            await (ValueTask)this.MethodDelegate.DynamicInvoke(methodParams)!;
+            await (ValueTask)this.MethodDelegate.DynamicInvoke(args)!;
             return;
         }
         else if (this.MethodDelegate.Method.ReturnType == typeof(Task))
         {
-            await ((Task)this.MethodDelegate.DynamicInvoke(methodParams)!).ConfigureAwait(false);
+            await ((Task)this.MethodDelegate.DynamicInvoke(args)!).ConfigureAwait(false);
             return;
         }
 
-        this.MethodDelegate.DynamicInvoke(methodParams);
+        this.MethodDelegate.DynamicInvoke(args);
     }
 
     public bool MatchParams(string[] args) =>
