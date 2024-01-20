@@ -5,7 +5,9 @@ using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.API.Plugins;
 using Obsidian.Events;
+using Obsidian.Events.EventArgs;
 using Obsidian.Plugins;
+using System;
 using System.Collections.Frozen;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -33,8 +35,16 @@ public sealed class EventDispatcher : IDisposable
             .Where(x => x.IsSubclassOf(baseMinecraftEventArgsType) && !x.IsAbstract)
             .ToList();
 
-        var dict = new Dictionary<string, List<MinecraftEvent>>();
-        var names = new Dictionary<Type, string>();
+        //Temp workaround until we decide to expose this event
+        var dict = new Dictionary<string, List<MinecraftEvent>>()
+        {
+            { "QueuePacket", [] }
+        };
+
+        var names = new Dictionary<Type, string>()
+        {
+            {typeof(QueuePacketEventArgs), "QueuePacket" }
+        };
 
         foreach (var eventType in events)
         {
@@ -79,7 +89,7 @@ public sealed class EventDispatcher : IDisposable
         }
     }
 
-    public void RegisterEvent<TEventArgs>(PluginContainer pluginContainer, ValueTaskContextDelegate<TEventArgs> contextDelegate, 
+    public void RegisterEvent<TEventArgs>(PluginContainer pluginContainer, ValueTaskContextDelegate<TEventArgs> contextDelegate,
         Priority priority = Priority.Low)
         where TEventArgs : BaseMinecraftEventArgs
     {
@@ -98,7 +108,7 @@ public sealed class EventDispatcher : IDisposable
 
     public void RegisterEvent(PluginContainer? pluginContainer, Delegate handler, Priority priority = Priority.Low)
     {
-        var eventType = handler.Method.GetParameters().FirstOrDefault()?.ParameterType ?? 
+        var eventType = handler.Method.GetParameters().FirstOrDefault()?.ParameterType ??
             throw new InvalidOperationException("Missing parameter for event.");
 
         if (!this.registeredEvents.TryGetValue(this.eventNames[eventType], out var values))
@@ -154,6 +164,7 @@ public sealed class EventDispatcher : IDisposable
     {
         var eventType = eventArgs.GetType();
         using var serviceScope = this.serviceProvider.CreateScope();
+
         if (!this.registeredEvents.TryGetValue(this.eventNames[typeof(TEventArgs)], out var events))
             return EventResult.Completed;
 
