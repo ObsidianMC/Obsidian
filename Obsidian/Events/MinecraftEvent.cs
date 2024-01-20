@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
-using Obsidian.API.Events;
 using Obsidian.Plugins;
 using System.Diagnostics;
 
@@ -14,7 +13,7 @@ internal readonly struct MinecraftEvent
 
     public Type? ModuleType { get; init; }
 
-    public required PluginContainer PluginContainer { get; init; }
+    public required PluginContainer? PluginContainer { get; init; }
 
     public required Priority Priority { get; init; }
 
@@ -25,14 +24,15 @@ internal readonly struct MinecraftEvent
     public Delegate? MethodDelegate { get; init; }
 
     //TODO PARAM INJECTION
-    public async ValueTask Execute(params object[]? methodParams)
+    public async ValueTask Execute(IServiceProvider serviceProvider, params object[]? methodParams)
     {
         if (this.MethodExecutor != null)
         {
-            var module = this.ModuleFactory!.Invoke(this.PluginContainer.ServiceScope.ServiceProvider, null)//Will inject services through constructor
+            var module = this.ModuleFactory!.Invoke(this.PluginContainer?.ServiceScope.ServiceProvider 
+                ?? serviceProvider, null)//Will inject services through constructor
             ?? throw new InvalidOperationException("Failed to initialize module from factory.");
 
-            this.PluginContainer.InjectServices(this.Logger, module); //inject through attribute
+            this.PluginContainer?.InjectServices(this.Logger, module); //inject through attribute
 
             if (this.MethodExecutor.MethodReturnType == typeof(ValueTask))
             {

@@ -60,6 +60,11 @@ public static partial class Extensions
 
     public static IEnumerable<PropertyInfo> WithInjectAttribute(this Type type) => type.GetProperties().Where(x => x.GetCustomAttribute<InjectAttribute>() != null && !x.PropertyType.IsAssignableTo(pluginBaseType));
 
+    private const string EventArgs = "EventArgs";
+
+    public static string TrimEventArgs(this string value) =>
+        value.Replace(EventArgs, string.Empty);
+
     public static void WritePacketId(this IPacket packet, MinecraftStream stream)
     {
         stream.Lock.Wait();

@@ -21,14 +21,14 @@ public sealed class EventDispatcher : IDisposable
     private static readonly Type minecraftEventHandlerType = typeof(MinecraftEventHandler);
 
     private readonly ILogger<EventDispatcher> logger;
-
+    private readonly IServiceProvider serviceProvider;
     private readonly FrozenDictionary<string, List<MinecraftEvent>> registeredEvents;
     private readonly FrozenDictionary<Type, string> eventNames;
 
-    public EventDispatcher(ILogger<EventDispatcher> logger)
+    public EventDispatcher(ILogger<EventDispatcher> logger, IServiceProvider serviceProvider)
     {
         this.logger = logger;
-
+        this.serviceProvider = serviceProvider;
         var events = baseMinecraftEventArgsType.Assembly.GetTypes()
             .Where(x => x.IsSubclassOf(baseMinecraftEventArgsType) && !x.IsAbstract)
             .ToList();
@@ -39,16 +39,17 @@ public sealed class EventDispatcher : IDisposable
         foreach (var eventType in events)
         {
             var @eventArgs = (BaseMinecraftEventArgs)RuntimeHelpers.GetUninitializedObject(eventType);
+            var name = eventType.Name.TrimEventArgs();
 
-            dict.Add(@eventArgs.Name, []);
-            names.Add(eventType, @eventArgs.Name);
+            dict.Add(name, []);
+            names.Add(eventType, name);
         }
 
         this.registeredEvents = dict.ToFrozenDictionary();
         this.eventNames = names.ToFrozenDictionary();
     }
 
-    public void RegisterEvents<TEventModule>(PluginContainer pluginContainer) where TEventModule : MinecraftEventHandler
+    public void RegisterEvents<TEventModule>(PluginContainer? pluginContainer) where TEventModule : MinecraftEventHandler
     {
         var eventModule = typeof(TEventModule);
         var eventModuleTypeInfo = eventModule.GetTypeInfo();
@@ -95,7 +96,7 @@ public sealed class EventDispatcher : IDisposable
         });
     }
 
-    public void RegisterEvent(PluginContainer pluginContainer, Delegate handler, Priority priority = Priority.Low)
+    public void RegisterEvent(PluginContainer? pluginContainer, Delegate handler, Priority priority = Priority.Low)
     {
         var eventType = handler.Method.GetParameters().FirstOrDefault()?.ParameterType ?? 
             throw new InvalidOperationException("Missing parameter for event.");
@@ -115,6 +116,8 @@ public sealed class EventDispatcher : IDisposable
 
     public void RegisterEvents(PluginContainer pluginContainer)
     {
+        ArgumentNullException.ThrowIfNull(pluginContainer);
+
         var modules = pluginContainer.PluginAssembly.GetTypes().Where(x => x.IsAssignableFrom(minecraftEventHandlerType));
 
         foreach (var eventModule in modules)
@@ -150,6 +153,7 @@ public sealed class EventDispatcher : IDisposable
     public async ValueTask<EventResult> ExecuteEventAsync<TEventArgs>(TEventArgs eventArgs) where TEventArgs : BaseMinecraftEventArgs
     {
         var eventType = eventArgs.GetType();
+        using var serviceScope = this.serviceProvider.CreateScope();
 
         if (!this.registeredEvents.TryGetValue(eventArgs.Name, out var events))
             return EventResult.Completed;
@@ -162,7 +166,7 @@ public sealed class EventDispatcher : IDisposable
         {
             try
             {
-                await @event.Execute(new[] { eventArgs });
+                await @event.Execute(serviceScope.ServiceProvider, new[] { eventArgs });
 
                 if (eventArgs is ICancellable cancellable && cancellable.IsCancelled)
                     eventResult = EventResult.Cancelled;
