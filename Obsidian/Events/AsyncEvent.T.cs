@@ -5,7 +5,7 @@ using System.Threading;
 
 namespace Obsidian.Events;
 
-public sealed class AsyncEvent<T> where T : BaseMinecraftEventArgs, INamedEvent
+public sealed class AsyncEvent<T> where T : BaseMinecraftEventArgs
 {
     public string Name { get; } // Name must be set in order to be visible to plugins
 
@@ -15,12 +15,12 @@ public sealed class AsyncEvent<T> where T : BaseMinecraftEventArgs, INamedEvent
 
     public AsyncEvent()
     {
-        this.Name = T.Name;
+        this.Name = nameof(T);
     }
 
     public AsyncEvent(Action<AsyncEvent<T>, Exception>? exceptionHandler)
     {
-        Name = T.Name;
+        Name = nameof(T);
         this.exceptionHandler = exceptionHandler;
     }
 

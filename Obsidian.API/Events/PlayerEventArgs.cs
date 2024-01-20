@@ -2,7 +2,7 @@
 
 public class PlayerEventArgs : BaseMinecraftEventArgs
 {
-    public static new string Name => "PlayerEvent";
+    public override string Name => "PlayerEvent";
 
     /// <summary>
     /// The player involved in this event.

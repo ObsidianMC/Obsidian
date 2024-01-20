@@ -2,7 +2,7 @@
 
 public class EntityEventArgs : BaseMinecraftEventArgs, ICancellable
 {
-    public static new string Name => "EntityEvent";
+    public override string Name => "EntityEvent";
 
     /// <summary>
     /// The entity involved in this event.

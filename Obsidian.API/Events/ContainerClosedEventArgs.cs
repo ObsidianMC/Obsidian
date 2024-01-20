@@ -1,7 +1,7 @@
 ﻿namespace Obsidian.API.Events;
 public sealed class ContainerClosedEventArgs : ContainerEventArgs, ICancellable
 {
-    public static new string Name => "ContainerClosed";
+    public override string Name => "ContainerClosed";
 
     public bool IsCancelled { get; private set; }
 

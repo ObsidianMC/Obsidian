@@ -2,7 +2,7 @@
 
 public class ContainerEventArgs : PlayerEventArgs
 {
-    public static new string Name => "ContainerEvent";
+    public override string Name => "ContainerEvent";
 
     public required BaseContainer Container { get; init; }
 

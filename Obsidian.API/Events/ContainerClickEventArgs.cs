@@ -1,11 +1,10 @@
-﻿using Obsidian.API.BlockStates;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API.Events;
 
 public sealed class ContainerClickEventArgs : ContainerEventArgs, ICancellable
 {
-    public static new string Name => "ContainerClick";
+    public override string Name => "ContainerClick";
 
     /// <summary>
     /// Gets the current item that was clicked

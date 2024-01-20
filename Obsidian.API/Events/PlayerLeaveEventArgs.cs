@@ -2,7 +2,7 @@
 
 public class PlayerLeaveEventArgs : PlayerEventArgs
 {
-    public static new string Name => "PlayerLeave";
+    public override string Name => "PlayerLeave";
 
     /// <summary>
     /// The date the player left.

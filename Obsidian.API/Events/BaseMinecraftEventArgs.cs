@@ -3,9 +3,9 @@
 /// <summary>
 /// Represents the base class for classes that contain minecraft event data.
 /// </summary>
-public abstract class BaseMinecraftEventArgs : AsyncEventArgs, INamedEvent
+public abstract class BaseMinecraftEventArgs : AsyncEventArgs
 {
-    public static string Name => string.Empty;
+    public virtual string Name => string.Empty;
 
     /// <summary>
     /// Server this event took place in.

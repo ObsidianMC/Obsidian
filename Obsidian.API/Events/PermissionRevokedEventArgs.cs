@@ -2,7 +2,7 @@
 
 public class PermissionRevokedEventArgs : PlayerEventArgs
 {
-    public static new string Name => "PermissionRevoked";
+    public override string Name => "PermissionRevoked";
 
     public string Permission { get; }
 

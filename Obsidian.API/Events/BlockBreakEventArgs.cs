@@ -2,7 +2,7 @@
 
 public class BlockBreakEventArgs : BlockEventArgs, ICancellable
 {
-    public static new string Name => "BlockBreak";
+    public override string Name => "BlockBreak";
 
     /// <summary>
     /// Player that has broken the block.

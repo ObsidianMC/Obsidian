@@ -2,7 +2,7 @@
 
 public class ServerStatusRequestEventArgs : BaseMinecraftEventArgs
 {
-    public static new string Name => "ServerStatusRequest";
+    public override string Name => "ServerStatusRequest";
 
     public IServerStatus Status { get; }
 

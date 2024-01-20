@@ -2,7 +2,7 @@
 
 public abstract class BlockEventArgs : BaseMinecraftEventArgs
 {
-    public static new string Name => "BlockEvent";
+    public override string Name => "BlockEvent";
 
     /// <summary>
     /// The impacted block.

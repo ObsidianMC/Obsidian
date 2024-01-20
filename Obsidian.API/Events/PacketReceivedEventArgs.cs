@@ -2,7 +2,7 @@
 
 public sealed class PacketReceivedEventArgs : PlayerEventArgs, ICancellable
 {
-    public static new string Name => "PacketReceived";
+    public override string Name => "PacketReceived";
 
     /// <summary>
     /// Id of the received packet.

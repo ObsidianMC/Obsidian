@@ -1,12 +1,15 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
+using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.API.Plugins;
 using Obsidian.Events;
 using Obsidian.Plugins;
 using System.Collections.Frozen;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 
 namespace Obsidian.Services;
 
@@ -20,22 +23,29 @@ public sealed class EventDispatcher : IDisposable
     private readonly ILogger<EventDispatcher> logger;
 
     private readonly FrozenDictionary<string, List<MinecraftEvent>> registeredEvents;
+    private readonly FrozenDictionary<Type, string> eventNames;
 
     public EventDispatcher(ILogger<EventDispatcher> logger)
     {
         this.logger = logger;
 
-        var events = typeof(INamedEvent).Assembly.GetTypes().Where(x => x.IsSubclassOf(baseMinecraftEventArgsType))
+        var events = baseMinecraftEventArgsType.Assembly.GetTypes()
+            .Where(x => x.IsSubclassOf(baseMinecraftEventArgsType) && !x.IsAbstract)
             .ToList();
+
         var dict = new Dictionary<string, List<MinecraftEvent>>();
+        var names = new Dictionary<Type, string>();
+
         foreach (var eventType in events)
         {
-            var eventName = eventType.GetProperty("Name")?.GetValue(null)?.ToString() ?? throw new NullReferenceException();
+            var @eventArgs = (BaseMinecraftEventArgs)RuntimeHelpers.GetUninitializedObject(eventType);
 
-            dict.Add(eventName, []);
+            dict.Add(@eventArgs.Name, []);
+            names.Add(eventType, @eventArgs.Name);
         }
 
         this.registeredEvents = dict.ToFrozenDictionary();
+        this.eventNames = names.ToFrozenDictionary();
     }
 
     public void RegisterEvents<TEventModule>(PluginContainer pluginContainer) where TEventModule : MinecraftEventHandler
@@ -48,12 +58,11 @@ public sealed class EventDispatcher : IDisposable
         {
             var eventPriorityAttribute = method.GetCustomAttribute<EventPriorityAttribute>()!;
             var eventType = method.GetParameters().FirstOrDefault()?.ParameterType ?? throw new InvalidOperationException("Method must contain a BaseMinecraftEventArgs type as the first parameter.");
-            var eventName = eventType.GetProperty("Name")?.GetValue(null)?.ToString() ?? throw new NullReferenceException();
 
             if (!eventType.IsAssignableFrom(baseMinecraftEventArgsType))
                 throw new InvalidOperationException("Method must contain a BaseMinecraftEventArgs type as the first parameter.");
 
-            if (!this.registeredEvents.TryGetValue(eventName, out var values))
+            if (!this.registeredEvents.TryGetValue(this.eventNames[eventType], out var values))
                 continue;
 
             values.Add(new()
@@ -69,10 +78,11 @@ public sealed class EventDispatcher : IDisposable
         }
     }
 
-    public void RegisterEvent<TEventArgs>(PluginContainer pluginContainer, ValueTaskContextDelegate<TEventArgs> contextDelegate, Priority priority = Priority.Low)
-        where TEventArgs : BaseMinecraftEventArgs, INamedEvent
+    public void RegisterEvent<TEventArgs>(PluginContainer pluginContainer, ValueTaskContextDelegate<TEventArgs> contextDelegate, 
+        Priority priority = Priority.Low)
+        where TEventArgs : BaseMinecraftEventArgs
     {
-        if (!this.registeredEvents.TryGetValue(TEventArgs.Name, out var values))
+        if (!this.registeredEvents.TryGetValue(this.eventNames[typeof(TEventArgs)], out var values))
             return;
 
         values.Add(new()
@@ -87,10 +97,10 @@ public sealed class EventDispatcher : IDisposable
 
     public void RegisterEvent(PluginContainer pluginContainer, Delegate handler, Priority priority = Priority.Low)
     {
-        var eventType = handler.Method.GetParameters().FirstOrDefault()?.ParameterType ?? throw new InvalidOperationException("Missing parameter for event.");
-        var eventName = eventType.GetProperty("Name")?.GetValue(null)?.ToString() ?? throw new NullReferenceException();
+        var eventType = handler.Method.GetParameters().FirstOrDefault()?.ParameterType ?? 
+            throw new InvalidOperationException("Missing parameter for event.");
 
-        if (!this.registeredEvents.TryGetValue(eventName, out var values))
+        if (!this.registeredEvents.TryGetValue(this.eventNames[eventType], out var values))
             return;
 
         values.Add(new()
@@ -116,12 +126,11 @@ public sealed class EventDispatcher : IDisposable
             {
                 var eventPriorityAttribute = method.GetCustomAttribute<EventPriorityAttribute>()!;
                 var eventType = method.GetParameters().FirstOrDefault()?.ParameterType ?? throw new InvalidOperationException("Method must contain a BaseMinecraftEventArgs type as the first parameter.");
-                var eventName = eventType.GetProperty("Name")?.GetValue(null)?.ToString() ?? throw new NullReferenceException();
 
                 if (!eventType.IsAssignableFrom(baseMinecraftEventArgsType))
                     throw new InvalidOperationException("Method must contain a BaseMinecraftEventArgs type as the first parameter.");
 
-                if (!this.registeredEvents.TryGetValue(eventName, out var values))
+                if (!this.registeredEvents.TryGetValue(this.eventNames[eventType], out var values))
                     continue;
 
                 values.Add(new()
@@ -138,11 +147,11 @@ public sealed class EventDispatcher : IDisposable
         }
     }
 
-    public async ValueTask<EventResult> ExecuteEventAsync<TEventArgs>(TEventArgs eventArgs) where TEventArgs : BaseMinecraftEventArgs, INamedEvent
+    public async ValueTask<EventResult> ExecuteEventAsync<TEventArgs>(TEventArgs eventArgs) where TEventArgs : BaseMinecraftEventArgs
     {
         var eventType = eventArgs.GetType();
 
-        if (!this.registeredEvents.TryGetValue(TEventArgs.Name, out var events))
+        if (!this.registeredEvents.TryGetValue(eventArgs.Name, out var events))
             return EventResult.Completed;
 
         var foundEvents = events.OrderBy(x => x.Priority);//Plugins with the lowest priority must be called first 

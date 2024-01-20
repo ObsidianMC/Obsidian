@@ -2,7 +2,7 @@
 
 public class PlayerTeleportEventArgs : PlayerEventArgs
 {
-    public static new string Name => "PlayerTeleport";
+    public override string Name => "PlayerTeleport";
 
     public VectorF OldPosition { get; }
     public VectorF NewPosition { get; }

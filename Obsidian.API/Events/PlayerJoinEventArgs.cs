@@ -2,7 +2,7 @@
 
 public class PlayerJoinEventArgs : PlayerEventArgs
 {
-    public static new string Name => "PlayerJoin";
+    public override string Name => "PlayerJoin";
 
     /// <summary>
     /// The date the player joined.

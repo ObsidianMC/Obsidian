@@ -41,7 +41,7 @@ namespace SamplePlugin
             registry.MapEvent((IncomingChatMessageEventArgs chat) =>
             {
 
-               
+                this.Logger.LogDebug("GOt a chat message! From MinimalAPI event.");
             });
         }
 
