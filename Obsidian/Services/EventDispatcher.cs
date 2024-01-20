@@ -154,8 +154,7 @@ public sealed class EventDispatcher : IDisposable
     {
         var eventType = eventArgs.GetType();
         using var serviceScope = this.serviceProvider.CreateScope();
-
-        if (!this.registeredEvents.TryGetValue(eventArgs.Name, out var events))
+        if (!this.registeredEvents.TryGetValue(this.eventNames[typeof(TEventArgs)], out var events))
             return EventResult.Completed;
 
         var foundEvents = events.OrderBy(x => x.Priority);//Plugins with the lowest priority must be called first 
