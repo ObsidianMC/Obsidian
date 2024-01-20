@@ -53,6 +53,19 @@ public partial class Server
         this.playerAttackEntity += PlayerAttack;
         this.playerInteract += OnPlayerInteract;
         this.containerClosed += OnContainerClosed;
+        this.incomingChatMessage += OnIncomingChatMessage;
+    }
+
+    private async Task OnIncomingChatMessage(IncomingChatMessageEventArgs e)
+    {
+        var result = await this.EventDispatcher.ExecuteEventAsync(e);
+
+        if (result == EventResult.Cancelled)
+            return;
+
+        //TODO add bool for sending secure chat messages
+        ChatColor nameColor = e.Player.IsOperator ? ChatColor.BrightGreen : ChatColor.Gray;
+        BroadcastMessage(ChatMessage.Simple(e.Player.Username, nameColor).AppendText($": {e.Message}", ChatColor.White));
     }
 
     private async Task PlayerAttack(PlayerAttackEntityEventArgs e)
@@ -403,8 +416,8 @@ public partial class Server
         }
     }
 
-    private void HandleException<T>(AsyncEvent<T> e, Exception exception) where T : BaseMinecraftEventArgs, INamedEvent
+    private void HandleException<T>(AsyncEvent<T> e, Exception exception) where T : BaseMinecraftEventArgs
     {
-        this._logger.LogCritical(exception, "Failed to execute event {eventName}.", T.Name);
+        this._logger.LogCritical(exception, "Failed to execute event {eventName}.", e.Name);
     }
 }

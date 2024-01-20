@@ -425,16 +425,15 @@ public sealed partial class Server : IServer
 
     internal async Task HandleIncomingMessageAsync(ChatMessagePacket packet, Client source, MessageType type = MessageType.Chat)
     {
-        var format = "<{0}> {1}";
+        const string format = "<{0}> {1}";//TODO use this????
         var message = packet.Message;
 
-        var chat = await this.incomingChatMessage.InvokeAsync(new IncomingChatMessageEventArgs(source.Player, this, message, format));
-        if (chat.IsCancelled)
-            return;
-
-        //TODO add bool for sending secure chat messages
-        ChatColor nameColor = source.Player.IsOperator ? ChatColor.BrightGreen : ChatColor.Gray;
-        BroadcastMessage(ChatMessage.Simple(source.Player.Username, nameColor).AppendText($": {message}", ChatColor.White));
+        if(type is MessageType.Chat or MessageType.System)
+        {
+            var chat = await this.incomingChatMessage.InvokeAsync(new IncomingChatMessageEventArgs(source.Player, this, message, format));
+            if (chat.IsCancelled)
+                return;
+        }
     }
 
     internal async Task QueueBroadcastPacketAsync(IClientboundPacket packet)
