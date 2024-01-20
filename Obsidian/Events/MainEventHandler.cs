@@ -1,78 +1,33 @@
-﻿using Microsoft.Extensions.Logging;
-using Obsidian.API.Builders;
+﻿using Obsidian.API.Builders;
 using Obsidian.API.Containers;
 using Obsidian.API.Events;
 using Obsidian.API.Utilities;
 using Obsidian.Entities;
-using Obsidian.Events;
-using Obsidian.Events.EventArgs;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Services;
 
-namespace Obsidian;
-
-public partial class Server
+namespace Obsidian.Events;
+public sealed class MainEventHandler : MinecraftEventHandler
 {
-    internal AsyncEvent<PacketReceivedEventArgs> packetReceived = default!;
-    internal AsyncEvent<QueuePacketEventArgs> queuePacket = default!;
-    internal AsyncEvent<PlayerJoinEventArgs> playerJoin = default!;
-    internal AsyncEvent<PlayerLeaveEventArgs> playerLeave = default!;
-    internal AsyncEvent<PlayerTeleportEventArgs> playerTeleported = default!;
-    internal AsyncEvent<PermissionGrantedEventArgs> permissionGranted = default!;
-    internal AsyncEvent<PermissionRevokedEventArgs> permissionRevoked = default!;
-    internal AsyncEvent<ContainerClickEventArgs> containerClick = default!;
-    internal AsyncEvent<BlockBreakEventArgs> blockBreak = default!;
-    internal AsyncEvent<IncomingChatMessageEventArgs> incomingChatMessage = default!;
-    internal AsyncEvent<ServerStatusRequestEventArgs> serverStatusRequest = default!;
-    internal AsyncEvent<EntityInteractEventArgs> entityInteract = default!;
-    internal AsyncEvent<PlayerAttackEntityEventArgs> playerAttackEntity = default!;
-    internal AsyncEvent<PlayerInteractEventArgs> playerInteract = default!;
-    internal AsyncEvent<ContainerClosedEventArgs> containerClosed = default!;
-
-    private void InitializeEvents()
+    [EventPriority(Priority = Priority.Internal)]
+    public Task OnIncomingChatMessage(IncomingChatMessageEventArgs e)
     {
-        this.packetReceived = new(this.HandleException);
-        this.queuePacket = new(this.HandleException);
-        this.playerJoin = new(this.HandleException);
-        this.playerLeave = new(this.HandleException);
-        this.playerTeleported = new(this.HandleException);
-        this.permissionGranted = new(this.HandleException);
-        this.permissionRevoked = new(this.HandleException);
-        this.containerClick = new(this.HandleException);
-        this.blockBreak = new(this.HandleException);
-        this.incomingChatMessage = new(this.HandleException);
-        this.serverStatusRequest = new(this.HandleException);
-        this.entityInteract = new(this.HandleException);
-        this.playerAttackEntity = new(this.HandleException);
-        this.playerInteract = new(this.HandleException);
-        this.containerClosed = new(this.HandleException);
+        if (e.IsCancelled)
+            return Task.CompletedTask;
 
-        this.playerLeave += OnPlayerLeave;
-        this.playerJoin += OnPlayerJoin;
-        this.playerAttackEntity += PlayerAttack;
-        this.playerInteract += OnPlayerInteract;
-        this.containerClosed += OnContainerClosed;
-        this.incomingChatMessage += OnIncomingChatMessage;
-    }
-
-    private async Task OnIncomingChatMessage(IncomingChatMessageEventArgs e)
-    {
-        var result = await this.EventDispatcher.ExecuteEventAsync(e);
-
-        if (result == EventResult.Cancelled)
-            return;
+        var server = e.Server;
 
         //TODO add bool for sending secure chat messages
         ChatColor nameColor = e.Player.IsOperator ? ChatColor.BrightGreen : ChatColor.Gray;
-        BroadcastMessage(ChatMessage.Simple(e.Player.Username, nameColor).AppendText($": {e.Message}", ChatColor.White));
+        server.BroadcastMessage(ChatMessage.Simple(e.Player.Username, nameColor).AppendText($": {e.Message}", ChatColor.White));
+
+        return Task.CompletedTask;
     }
 
-    private async Task PlayerAttack(PlayerAttackEntityEventArgs e)
+    [EventPriority(Priority = Priority.Internal)]
+    public async Task PlayerAttack(PlayerAttackEntityEventArgs e)
     {
-        var result = await this.EventDispatcher.ExecuteEventAsync(e);
-
-        if (result == EventResult.Cancelled)
+        if (e.IsCancelled)
             return;
 
         var entity = e.Entity;
@@ -84,11 +39,10 @@ public partial class Server
         }
     }
 
-    private async Task OnContainerClosed(ContainerClosedEventArgs e)
+    [EventPriority(Priority = Priority.Internal)]
+    public async Task OnContainerClosed(ContainerClosedEventArgs e)
     {
-        var result = await this.EventDispatcher.ExecuteEventAsync(e);
-
-        if (result == EventResult.Cancelled)
+        if (e.IsCancelled)
             return;
 
         var player = (e.Player as Player)!;
@@ -165,11 +119,10 @@ public partial class Server
         }
     }
 
-    private async Task OnPlayerInteract(PlayerInteractEventArgs e)
+    [EventPriority(Priority = Priority.Internal)]
+    public async Task OnPlayerInteract(PlayerInteractEventArgs e)
     {
-        var result = await this.EventDispatcher.ExecuteEventAsync(e);
-
-        if (result == EventResult.Cancelled)
+        if (e.IsCancelled)
             return;
 
         var item = e.Item;
@@ -365,14 +318,11 @@ public partial class Server
         }
     }
 
-    private async Task OnPlayerLeave(PlayerLeaveEventArgs e)
+    [EventPriority(Priority = Priority.Internal)]
+    public async Task OnPlayerLeave(PlayerLeaveEventArgs e)
     {
-        var result = await this.EventDispatcher.ExecuteEventAsync(e);
-
-        if (result == EventResult.Cancelled)
-            return;
-
         var player = e.Player as Player;
+        var server = e.Server as Server;
 
         await player.SaveAsync();
 
@@ -380,7 +330,7 @@ public partial class Server
 
         var destroy = new RemoveEntitiesPacket(player.EntityId);
 
-        foreach (Player other in Players)
+        foreach (Player other in server.Players)
         {
             if (other == player)
                 continue;
@@ -390,34 +340,26 @@ public partial class Server
                 await other.client.QueuePacketAsync(destroy);
         }
 
-        BroadcastMessage(string.Format(Configuration.LeaveMessage, e.Player.Username));
+        server.BroadcastMessage(string.Format(server.Configuration.LeaveMessage, e.Player.Username));
     }
 
-    private async Task OnPlayerJoin(PlayerJoinEventArgs e)
+    [EventPriority(Priority = Priority.Internal)]
+    public async Task OnPlayerJoin(PlayerJoinEventArgs e)
     {
-        var result = await this.EventDispatcher.ExecuteEventAsync(e);
-
-        if (result == EventResult.Cancelled)
-            return;
-
         var joined = e.Player as Player;
+        var server = e.Server as Server;
 
         joined.world.TryAddPlayer(joined);
 
-        BroadcastMessage(new ChatMessage
+        server.BroadcastMessage(new ChatMessage
         {
-            Text = string.Format(Configuration.JoinMessage, e.Player.Username),
+            Text = string.Format(server.Configuration.JoinMessage, e.Player.Username),
             Color = HexColor.Yellow
         });
 
-        foreach (Player other in Players)
+        foreach (Player other in server.Players)
         {
             await other.client.AddPlayerToListAsync(joined);
         }
-    }
-
-    private void HandleException<T>(AsyncEvent<T> e, Exception exception) where T : BaseMinecraftEventArgs
-    {
-        this._logger.LogCritical(exception, "Failed to execute event {eventName}.", e.Name);
     }
 }

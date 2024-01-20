@@ -1,4 +1,6 @@
-﻿namespace Obsidian.API;
+﻿using System.ComponentModel;
+
+namespace Obsidian.API;
 
 //TODO add more
 public enum Priority
@@ -9,5 +11,12 @@ public enum Priority
 
     High,
 
-    Critical
+    Critical,
+
+    /// <summary>
+    /// Only used for internal vanilla events and specifies the event should always be called last.
+    /// </summary>
+    [Browsable(false)]
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    Internal
 }

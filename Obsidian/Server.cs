@@ -11,6 +11,7 @@ using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
+using Obsidian.Events;
 using Obsidian.Hosting;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
@@ -126,7 +127,7 @@ public sealed partial class Server : IServer
 
         _logger.LogDebug("Registering commands...");
         CommandsHandler.RegisterCommandClass<MainCommandModule>(null);
-
+        eventDispatcher.RegisterEvents<MainEventHandler>(null);
 
         _logger.LogDebug("Registering command context type...");
         _logger.LogDebug("Done registering commands.");
@@ -135,8 +136,6 @@ public sealed partial class Server : IServer
         this.EventDispatcher = eventDispatcher;
         this.loggerFactory = loggerFactory;
         this.WorldManager = worldManager;
-
-        this.InitializeEvents();
 
         Directory.CreateDirectory(PermissionPath);
         Directory.CreateDirectory(PersistentDataPath);
@@ -430,9 +429,7 @@ public sealed partial class Server : IServer
 
         if(type is MessageType.Chat or MessageType.System)
         {
-            var chat = await this.incomingChatMessage.InvokeAsync(new IncomingChatMessageEventArgs(source.Player, this, message, format));
-            if (chat.IsCancelled)
-                return;
+            await this.EventDispatcher.ExecuteEventAsync(new IncomingChatMessageEventArgs(source.Player, this, message, format));
         }
     }
 
