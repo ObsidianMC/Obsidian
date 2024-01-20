@@ -2,8 +2,6 @@
 
 public class IncomingChatMessageEventArgs : PlayerEventArgs, ICancellable
 {
-    public override string Name => "IncomingChatMessage";
-
     /// <summary>
     /// The message that was sent.
     /// </summary>

@@ -1,8 +1,6 @@
 ﻿namespace Obsidian.API.Events;
 public sealed class ContainerClosedEventArgs : ContainerEventArgs, ICancellable
 {
-    public override string Name => "ContainerClosed";
-
     public bool IsCancelled { get; private set; }
 
     internal ContainerClosedEventArgs(IPlayer player, IServer server) : base(player, server)

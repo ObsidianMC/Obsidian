@@ -2,8 +2,6 @@
 
 public class EntityInteractEventArgs : EntityEventArgs
 {
-    public override string Name => "EntityInteract";
-
     /// <summary>
     /// The player who interacted with the entity.
     /// </summary>

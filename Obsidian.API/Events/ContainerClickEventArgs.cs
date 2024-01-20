@@ -4,8 +4,6 @@ namespace Obsidian.API.Events;
 
 public sealed class ContainerClickEventArgs : ContainerEventArgs, ICancellable
 {
-    public override string Name => "ContainerClick";
-
     /// <summary>
     /// Gets the current item that was clicked
     /// </summary>

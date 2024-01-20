@@ -5,8 +5,6 @@
 /// </summary>
 public abstract class BaseMinecraftEventArgs : AsyncEventArgs
 {
-    public virtual string Name => string.Empty;
-
     /// <summary>
     /// Server this event took place in.
     /// </summary>

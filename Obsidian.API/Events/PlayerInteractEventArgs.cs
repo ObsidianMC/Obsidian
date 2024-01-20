@@ -7,8 +7,6 @@
 /// </summary>
 public sealed class PlayerInteractEventArgs : PlayerEventArgs, ICancellable
 {
-    public override string Name => "PlayerInteract";
-
     /// <summary>
     /// The item that was being held when interacting.
     /// </summary>

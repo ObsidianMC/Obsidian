@@ -3,8 +3,6 @@
 //TODO check if player crits and calculate damage
 public class PlayerAttackEntityEventArgs : EntityEventArgs
 {
-    public override string Name => "PlayerAttackEntity";
-
     /// <summary>
     /// The player who interacted with the entity.
     /// </summary>
