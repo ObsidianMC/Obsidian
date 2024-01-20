@@ -225,7 +225,7 @@ public sealed partial class Player : Living, IPlayer
 
         var tid = Globals.Random.Next(0, 999);
 
-        await client.server.playerTeleported.InvokeAsync(
+        await client.server.EventDispatcher.ExecuteEventAsync(
             new PlayerTeleportEventArgs
             (
                 this,
@@ -786,7 +786,7 @@ public sealed partial class Player : Living, IPlayer
         await SavePermsAsync();
 
         if (result)
-            await this.client.server.permissionGranted.InvokeAsync(new PermissionGrantedEventArgs(this, this.client.server, permissionNode));
+            await this.client.server.EventDispatcher.ExecuteEventAsync(new PermissionGrantedEventArgs(this, this.client.server, permissionNode));
 
         return result;
     }
@@ -808,7 +808,7 @@ public sealed partial class Player : Living, IPlayer
                 parent.Children.Remove(childToRemove);
 
                 await this.SavePermsAsync();
-                await this.client.server.permissionRevoked.InvokeAsync(new PermissionRevokedEventArgs(this, this.client.server, permissionNode));
+                await this.client.server.EventDispatcher.ExecuteEventAsync(new PermissionRevokedEventArgs(this, this.client.server, permissionNode));
 
                 return true;
             }

@@ -349,7 +349,7 @@ public sealed class Client : IDisposable
         if (State == ClientState.Play)
         {
             Debug.Assert(Player is not null);
-            await this.server.playerLeave.InvokeAsync(new PlayerLeaveEventArgs(Player, this.server, DateTimeOffset.Now));
+            await this.server.EventDispatcher.ExecuteEventAsync(new PlayerLeaveEventArgs(Player, this.server, DateTimeOffset.Now));
         }
 
         Disconnected?.Invoke(this);
@@ -369,7 +369,7 @@ public sealed class Client : IDisposable
     {
         var status = new ServerStatus(this.server);
 
-        _ = await this.server.serverStatusRequest.InvokeAsync(new ServerStatusRequestEventArgs(this.server, status));
+        _ = await this.server.EventDispatcher.ExecuteEventAsync(new ServerStatusRequestEventArgs(this.server, status));
 
         SendPacket(new RequestResponse(status));
     }
@@ -573,7 +573,7 @@ public sealed class Client : IDisposable
 
         await Player.UpdateChunksAsync(distance: 7);
         await SendInfoAsync();
-        await this.server.playerJoin.InvokeAsync(new PlayerJoinEventArgs(Player, this.server, DateTimeOffset.Now));
+        await this.server.EventDispatcher.ExecuteEventAsync(new PlayerJoinEventArgs(Player, this.server, DateTimeOffset.Now));
     }
 
     #region Packet sending
@@ -745,8 +745,10 @@ public sealed class Client : IDisposable
 
     internal async Task QueuePacketAsync(IClientboundPacket packet)
     {
-        var args = await this.server.queuePacket.InvokeAsync(new QueuePacketEventArgs(this.server, this, packet));
-        if (args.IsCancelled)
+        var args = new QueuePacketEventArgs(this.server, this, packet);
+
+        var result = await this.server.EventDispatcher.ExecuteEventAsync(args);
+        if (result == EventResult.Cancelled)
         {
             Logger.LogDebug("Packet {PacketId} was sent to the queue, however an event handler has cancelled it.", args.Packet.Id);
         }

@@ -60,7 +60,7 @@ public sealed class EventDispatcher : IDisposable
             var eventPriorityAttribute = method.GetCustomAttribute<EventPriorityAttribute>()!;
             var eventType = method.GetParameters().FirstOrDefault()?.ParameterType ?? throw new InvalidOperationException("Method must contain a BaseMinecraftEventArgs type as the first parameter.");
 
-            if (!eventType.IsAssignableFrom(baseMinecraftEventArgsType))
+            if (!eventType.IsSubclassOf(baseMinecraftEventArgsType))
                 throw new InvalidOperationException("Method must contain a BaseMinecraftEventArgs type as the first parameter.");
 
             if (!this.registeredEvents.TryGetValue(this.eventNames[eventType], out var values))
