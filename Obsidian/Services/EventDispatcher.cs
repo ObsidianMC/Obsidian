@@ -1,17 +1,14 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
-using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.API.Plugins;
 using Obsidian.Events;
 using Obsidian.Events.EventArgs;
 using Obsidian.Plugins;
-using System;
 using System.Collections.Frozen;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
 
 namespace Obsidian.Services;
 
