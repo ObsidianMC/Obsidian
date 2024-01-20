@@ -10,8 +10,6 @@ public abstract class BaseMinecraftEventArgs : AsyncEventArgs
     /// </summary>
     public IServer Server { get; }
 
-    public static EventType EventType { get; }
-
     /// <summary>
     /// Constructs a new instance of the <see cref="BaseMinecraftEventArgs"/> class.
     /// </summary>

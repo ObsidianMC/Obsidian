@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Obsidian.Entities;
+using Obsidian.Hosting;
 using Obsidian.Net.Packets;
 using Obsidian.WorldData;
 using System.Threading;
@@ -9,12 +10,14 @@ namespace Obsidian.Services;
 public sealed class PacketBroadcaster : BackgroundService, IPacketBroadcaster
 {
     private readonly IServer server;
+    private readonly IServerEnvironment environment;
     private readonly PriorityQueue<QueuedPacket, int> priorityQueue = new();
     private readonly ILogger logger;
 
-    public PacketBroadcaster(IServer server, ILoggerFactory loggerFactory)
+    public PacketBroadcaster(IServer server, ILoggerFactory loggerFactory, IServerEnvironment environment)
     {
         this.server = server;
+        this.environment = environment;
         this.logger = loggerFactory.CreateLogger<PacketBroadcaster>();
     }
 
@@ -49,21 +52,28 @@ public sealed class PacketBroadcaster : BackgroundService, IPacketBroadcaster
     {
         using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(20));
 
-        while (await timer.WaitForNextTickAsync(stoppingToken))
+        try
         {
-            if (!this.priorityQueue.TryDequeue(out var queuedPacket, out _))
-                continue;
-
-            if (queuedPacket.ToWorld is World toWorld)
+            while (await timer.WaitForNextTickAsync(stoppingToken))
             {
-                foreach (var player in toWorld.Players.Values.Where(player => queuedPacket.ExcludedIds != null && !queuedPacket.ExcludedIds.Contains(player.EntityId)))
+                if (!this.priorityQueue.TryDequeue(out var queuedPacket, out _))
+                    continue;
+
+                if (queuedPacket.ToWorld is World toWorld)
+                {
+                    foreach (var player in toWorld.Players.Values.Where(player => queuedPacket.ExcludedIds != null && !queuedPacket.ExcludedIds.Contains(player.EntityId)))
+                        await player.client.QueuePacketAsync(queuedPacket.Packet);
+
+                    continue;
+                }
+
+                foreach (var player in this.server.Players.Cast<Player>().Where(player => queuedPacket.ExcludedIds != null && !queuedPacket.ExcludedIds.Contains(player.EntityId)))
                     await player.client.QueuePacketAsync(queuedPacket.Packet);
-
-                continue;
             }
-
-            foreach (var player in this.server.Players.Cast<Player>().Where(player => queuedPacket.ExcludedIds != null && !queuedPacket.ExcludedIds.Contains(player.EntityId)))
-                await player.client.QueuePacketAsync(queuedPacket.Packet);
+        }
+        catch (Exception e)
+        {
+            await this.environment.OnServerCrashAsync(this.logger, e);
         }
     }
 
