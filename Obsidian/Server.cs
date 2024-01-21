@@ -67,6 +67,7 @@ public sealed partial class Server : IServer
     private readonly ILogger _logger;
 
     private IConnectionListener? _tcpListener;
+    private bool _isFullyInitialized;
 
     public ProtocolVersion Protocol => DefaultProtocol;
 
@@ -289,6 +290,7 @@ public sealed partial class Server : IServer
             continue;
 
         _logger.LogInformation("Listening for new clients...");
+        _isFullyInitialized = true;
 
         try
         {
@@ -331,8 +333,17 @@ public sealed partial class Server : IServer
                     // No longer accepting clients.
                     break;
                 }
-
                 connection = acceptedConnection;
+
+                if (!_isFullyInitialized)
+                {
+                    connection.Abort();
+                    await connection.DisposeAsync();
+
+                    _logger.LogDebug("Server has not been fully initialized. Aborted the connection");
+                    continue;
+                }
+
             }
             catch (OperationCanceledException)
             {
