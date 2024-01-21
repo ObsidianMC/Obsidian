@@ -622,7 +622,7 @@ public partial class MinecraftStream
                                 {
                                     var enchantments = (NbtList)child;
 
-                                    //Globals.PacketLogger.LogDebug($"List Type: {enchantments.ListType}");
+                                    //Globals.PacketLogger.LogDebug("List Type: {ListType}", enchantments.ListType);
 
                                     foreach (var enchantment in enchantments)
                                     {
@@ -651,7 +651,7 @@ public partial class MinecraftStream
                                     var intTag = (NbtTag<int>)child;
 
                                     itemMetaBuilder.WithDurability(intTag.Value);
-                                    //Globals.PacketLogger.LogDebug($"Setting damage: {tag.IntValue}");
+                                    //Globals.PacketLogger.LogDebug("Setting damage: {IntValue}", tag.IntValue);
                                     break;
                                 }
 
@@ -733,7 +733,7 @@ public partial class MinecraftStream
                                 {
                                     var enchantments = (NbtList)child;
 
-                                    //Globals.PacketLogger.LogDebug($"List Type: {enchantments.ListType}");
+                                    //Globals.PacketLogger.LogDebug("List Type: {ListType}", enchantments.ListType);
 
                                     foreach (var enchantment in enchantments)
                                     {
@@ -761,7 +761,7 @@ public partial class MinecraftStream
                                     var intTag = (NbtTag<int>)child;
 
                                     itemMetaBuilder.WithDurability(intTag.Value);
-                                    //Globals.PacketLogger.LogDebug($"Setting damage: {tag.IntValue}");
+                                    //Globals.PacketLogger.LogDebug("Setting damage: {IntValue}", tag.IntValue);
                                     break;
                                 }
                             case "display":
