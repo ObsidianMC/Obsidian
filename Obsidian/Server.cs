@@ -67,7 +67,6 @@ public sealed partial class Server : IServer
     private readonly ILogger _logger;
 
     private IConnectionListener? _tcpListener;
-    private bool _isFullyInitialized;
 
     public ProtocolVersion Protocol => DefaultProtocol;
 
@@ -290,7 +289,6 @@ public sealed partial class Server : IServer
             continue;
 
         _logger.LogInformation("Listening for new clients...");
-        _isFullyInitialized = true;
 
         try
         {
@@ -335,7 +333,7 @@ public sealed partial class Server : IServer
                 }
                 connection = acceptedConnection;
 
-                if (!_isFullyInitialized)
+                if (!WorldManager.ReadyToJoin)
                 {
                     connection.Abort();
                     await connection.DisposeAsync();
