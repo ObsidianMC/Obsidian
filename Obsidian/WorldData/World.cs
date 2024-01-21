@@ -457,7 +457,7 @@ public sealed class World : IWorld
         if (levelCompound.TryGetTag("Version", out var tag))
             LevelData.VersionData = tag as NbtCompound;
 
-        Logger.LogInformation($"Loading spawn chunks into memory...");
+        Logger.LogInformation("Loading spawn chunks into memory...");
         for (int rx = -1; rx < 1; rx++)
             for (int rz = -1; rz < 1; rz++)
                 LoadRegion(rx, rz);

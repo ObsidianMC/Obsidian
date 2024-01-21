@@ -65,7 +65,7 @@ public partial class MinecraftStream : Stream
         if (clear)
             await ClearDebug();
 
-        //Globals.PacketLogger.LogDebug($"Dumped stream to {filePath}");
+        //Globals.PacketLogger.LogDebug("Dumped stream to {FilePath}", filePath);
     }
 
     // unused
@@ -83,7 +83,7 @@ public partial class MinecraftStream : Stream
         if (clear)
             await ClearDebug();
 
-        //Globals.PacketLogger.LogDebug($"Dumped stream to {filePath}");
+        //Globals.PacketLogger.LogDebug("Dumped stream to {FilePath}", filePath);
     }
 
     public Task ClearDebug()

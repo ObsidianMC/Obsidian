@@ -48,7 +48,7 @@ public class UncompiledPluginProvider : IPluginProvider
         }
         catch
         {
-            logger.LogError($"Reloading '{Path.GetFileName(path)}' failed, file is not accessible.");
+            logger.LogError("Reloading '{Path}' failed, file is not accessible.", Path.GetFileName(path));
             return new PluginContainer(new PluginInfo(name), name);
         }
         SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(SourceText.From(fileStream));
@@ -69,7 +69,7 @@ public class UncompiledPluginProvider : IPluginProvider
                     if (diagnostic.Severity != DiagnosticSeverity.Error || diagnostic.IsWarningAsError)
                         continue;
 
-                    logger.LogError($"Compilation failed: {diagnostic.Location} {diagnostic.GetMessage()}");
+                    logger.LogError("Compilation failed: {Location} {Message}", diagnostic.Location, diagnostic.GetMessage());
                 }
             }
 

@@ -253,7 +253,7 @@ public sealed partial class Server : IServer
 
         await this.userCache.LoadAsync(this._cancelTokenSource.Token);
 
-        _logger.LogInformation($"Loading properties...");
+        _logger.LogInformation("Loading properties...");
 
         await (Operators as OperatorList).InitializeAsync();
 
@@ -267,7 +267,7 @@ public sealed partial class Server : IServer
         await Task.WhenAll(Configuration.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
         if (!Configuration.OnlineMode)
-            _logger.LogInformation($"Starting in offline mode...");
+            _logger.LogInformation("Starting in offline mode...");
 
         CommandsRegistry.Register(this);
 
