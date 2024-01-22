@@ -331,8 +331,17 @@ public sealed partial class Server : IServer
                     // No longer accepting clients.
                     break;
                 }
-
                 connection = acceptedConnection;
+
+                if (!WorldManager.ReadyToJoin)
+                {
+                    connection.Abort();
+                    await connection.DisposeAsync();
+
+                    _logger.LogDebug("Server has not been fully initialized. Aborted the connection");
+                    continue;
+                }
+
             }
             catch (OperationCanceledException)
             {
