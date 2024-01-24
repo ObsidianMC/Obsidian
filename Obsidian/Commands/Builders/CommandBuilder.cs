@@ -1,12 +1,13 @@
 ﻿using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Plugins;
+using Obsidian.Utilities.Interfaces;
 
 namespace Obsidian.Commands.Builders;
 public sealed class CommandBuilder
 {
     private readonly List<string> aliases = [];
-    private readonly List<CommandExecutor> overloads = [];
+    private readonly List<IExecutor<CommandContext>> overloads = [];
     private readonly List<BaseExecutionCheckAttribute> checks = [];
 
     public string Name { get; }
@@ -19,7 +20,7 @@ public sealed class CommandBuilder
 
     public CommandIssuers Issuers { get; private set; }
 
-    public IReadOnlyCollection<CommandExecutor> Overloads => this.overloads.AsReadOnly();
+    public IReadOnlyCollection<IExecutor<CommandContext>> Overloads => this.overloads.AsReadOnly();
     public IReadOnlyCollection<string> Aliases => this.aliases.AsReadOnly();
     public IReadOnlyCollection<BaseExecutionCheckAttribute> Checks => this.checks.AsReadOnly();
 
@@ -43,7 +44,7 @@ public sealed class CommandBuilder
         return this;
     }
 
-    public CommandBuilder AddOverload(CommandExecutor commandExecutor)
+    public CommandBuilder AddOverload(IExecutor<CommandContext> commandExecutor)
     {
         this.overloads.Add(commandExecutor);
 

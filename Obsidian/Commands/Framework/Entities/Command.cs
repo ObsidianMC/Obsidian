@@ -2,6 +2,7 @@
 using Obsidian.API.Utilities;
 using Obsidian.Commands.Framework.Exceptions;
 using Obsidian.Plugins;
+using Obsidian.Utilities.Interfaces;
 using System.Reflection;
 
 namespace Obsidian.Commands.Framework.Entities;
@@ -18,7 +19,7 @@ public sealed class Command
     public string? Description { get; init; }
     public string? Usage { get; init; }
 
-    public List<CommandExecutor> Overloads { get; init; } = [];
+    public List<IExecutor<CommandContext>> Overloads { get; init; } = [];
     public BaseExecutionCheckAttribute[] ExecutionChecks { get; init; } = [];
 
     public Command? Parent { get; init; }
@@ -63,11 +64,11 @@ public sealed class Command
                 $"Command {GetQualifiedName()} cannot be executed as {context.Sender.Issuer}", AllowedIssuers);
         }
 
-        var method = Overloads.FirstOrDefault(x => x.MatchParams(args)
+        var executor = Overloads.FirstOrDefault(x => x.MatchParams(args)
             || x.GetParameters().LastOrDefault()?.GetCustomAttribute<RemainingAttribute>() != null);
 
         // Find matching overload
-        if (method == null)
+        if (executor == null)
         {
             //throw new InvalidCommandOverloadException($"No such overload for command {this.GetQualifiedName()}");
             await context.Sender.SendMessageAsync($"&4Correct usage: {Usage}");
@@ -75,16 +76,15 @@ public sealed class Command
             return;
         }
 
-        await this.ExecuteAsync(method, context, args);
+        await this.ExecuteAsync(executor, context, args);
     }
 
-    private async Task ExecuteAsync(CommandExecutor commandExecutor, CommandContext context, string[] args)
+    private async Task ExecuteAsync(IExecutor<CommandContext> commandExecutor, CommandContext context, string[] args)
     {
         using var serviceScope = this.CommandHandler.ServiceProvider.CreateScope();
 
-        var methodparams = commandExecutor.HasModule ?
-            commandExecutor.GetParameters().ToArray() :
-            commandExecutor.GetParameters().Skip(1).ToArray();
+        var methodparams = commandExecutor.GetParameters().ToArray();
+        //commandExecutor.GetParameters().Skip(1).ToArray();
 
         var parsedargs = new object[args.Length];
 
@@ -94,7 +94,7 @@ public sealed class Command
             var paraminfo = methodparams[i];
 
             var arg = args[i];
-            
+
             // This can only be true if we get a [Remaining] arg. Sets arg to remaining text.
             if (args.Length > methodparams.Length && i == methodparams.Length - 1)
             {

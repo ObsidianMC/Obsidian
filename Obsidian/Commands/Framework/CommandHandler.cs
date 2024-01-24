@@ -69,7 +69,7 @@ public sealed class CommandHandler
         var checks = method.GetCustomAttributes<BaseExecutionCheckAttribute>();
         var issuers = method.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? CommandHelpers.DefaultIssuerScope;
 
-        var executor = new CommandExecutor
+        var executor = new CommandDelegateExecutor
         {
             Logger = this.logger,
             PluginContainer = pluginContainer,

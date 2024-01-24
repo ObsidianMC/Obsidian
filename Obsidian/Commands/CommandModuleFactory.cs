@@ -6,7 +6,7 @@ using System.Reflection;
 namespace Obsidian.Commands;
 public static class CommandModuleFactory
 {
-    public static object? CreateModule(ObjectFactory factory, CommandContext context, PluginContainer pluginContainer)
+    public static object CreateModule(ObjectFactory factory, CommandContext context, PluginContainer pluginContainer)
     {
         var module = factory.Invoke(pluginContainer.ServiceScope.ServiceProvider, null);
         var moduleType = module.GetType();
@@ -15,7 +15,6 @@ public static class CommandModuleFactory
             ?? throw new InvalidOperationException("Failed to find CommandContext property.");
 
         commandContextProperty.SetValue(module, context);
-
 
         pluginContainer.InjectServices(null, module);
 
