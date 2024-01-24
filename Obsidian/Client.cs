@@ -344,7 +344,7 @@ public sealed class Client : IDisposable
             }
         }
 
-        Logger.LogInformation($"Disconnected client");
+        Logger.LogInformation("Disconnected client");
 
         if (State == ClientState.Play)
         {
@@ -607,7 +607,7 @@ public sealed class Client : IDisposable
     {
         if (!missedKeepAlives.Contains(keepAlive.KeepAliveId))
         {
-            Logger.LogWarning($"Received invalid KeepAlive from {Player.Username}?? Naughty???? ({Player.Uuid})");
+            Logger.LogWarning("Received invalid KeepAlive from {Username}?? Naughty???? ({Uuid})", Player?.Username, Player?.Uuid);
             await DisconnectAsync(ChatMessage.Simple("Kicked for invalid KeepAlive."));
             return;
         }
@@ -618,7 +618,7 @@ public sealed class Client : IDisposable
         ping = Math.Max(0, ping); // negative ping is impossible.
 
         this.ping = (int)ping;
-        Logger.LogDebug($"Valid KeepAlive ({keepAlive.KeepAliveId}) handled from {Player.Username} ({Player.Uuid})");
+        Logger.LogDebug("Valid KeepAlive ({KeepAliveId}) handled from {Username} ({Uuid})", keepAlive.KeepAliveId, Player?.Username, Player?.Uuid);
         // KeepAlive is handled.
         missedKeepAlives.Remove(keepAlive.KeepAliveId);
     }

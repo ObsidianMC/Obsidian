@@ -94,7 +94,7 @@ public sealed class Command
             var paraminfo = methodparams[i];
 
             var arg = args[i];
-
+            
             // This can only be true if we get a [Remaining] arg. Sets arg to remaining text.
             if (args.Length > methodparams.Length && i == methodparams.Length - 1)
             {

@@ -117,7 +117,7 @@ public class RemotePluginProvider(ILogger logger) : IPluginProvider
                     if (diagnostic.Severity != DiagnosticSeverity.Error || diagnostic.IsWarningAsError)
                         continue;
 
-                    logger.LogError($"Compilation failed: {diagnostic.Location} {diagnostic.GetMessage()}");
+                    logger.LogError("Compilation failed: {Location} {Message}", diagnostic.Location, diagnostic.GetMessage());
                 }
             }
 
