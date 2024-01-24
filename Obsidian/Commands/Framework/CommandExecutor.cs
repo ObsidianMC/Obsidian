@@ -8,8 +8,6 @@ using System.Reflection;
 namespace Obsidian.Commands.Framework;
 internal sealed class CommandExecutor : IExecutor<CommandContext>
 {
-    public bool HasModule => this.ModuleType != null;
-
     public required ILogger? Logger { get; init; }
 
     public PluginContainer? PluginContainer { get; init; }
@@ -46,6 +44,5 @@ internal sealed class CommandExecutor : IExecutor<CommandContext>
         this.MethodExecutor.Execute(module, methodParams);
     }
 
-    public bool MatchParams(object[] args) =>
-        this.HasModule ? this.GetParameters().Length == args.Length : this.GetParameters().Length - 1 == args.Length;
+    public bool MatchParams(object[] args) => this.GetParameters().Length == args.Length;
 }
