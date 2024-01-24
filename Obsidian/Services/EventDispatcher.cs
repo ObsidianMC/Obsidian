@@ -6,6 +6,7 @@ using Obsidian.API.Plugins;
 using Obsidian.Events;
 using Obsidian.Events.EventArgs;
 using Obsidian.Plugins;
+using Obsidian.Utilities.Interfaces;
 using System.Collections.Frozen;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -21,7 +22,7 @@ public sealed class EventDispatcher : IDisposable
 
     private readonly ILogger<EventDispatcher> logger;
     private readonly IServiceProvider serviceProvider;
-    private readonly FrozenDictionary<string, List<MinecraftEvent>> registeredEvents;
+    private readonly FrozenDictionary<string, List<IEventExecutor>> registeredEvents;
     private readonly FrozenDictionary<Type, string> eventNames;
 
     public EventDispatcher(ILogger<EventDispatcher> logger, IServiceProvider serviceProvider)
@@ -33,7 +34,7 @@ public sealed class EventDispatcher : IDisposable
             .ToList();
 
         //Temp workaround until we decide to expose this event
-        var dict = new Dictionary<string, List<MinecraftEvent>>()
+        var dict = new Dictionary<string, List<IEventExecutor>>()
         {
             { "QueuePacket", [] }
         };
@@ -73,7 +74,7 @@ public sealed class EventDispatcher : IDisposable
             if (!this.registeredEvents.TryGetValue(this.eventNames[eventType], out var values))
                 continue;
 
-            values.Add(new()
+            values.Add(new MinecraftEventExecutor
             {
                 EventType = eventType,
                 ModuleFactory = ActivatorUtilities.CreateFactory(eventModule, []),
@@ -93,7 +94,7 @@ public sealed class EventDispatcher : IDisposable
         if (!this.registeredEvents.TryGetValue(this.eventNames[typeof(TEventArgs)], out var values))
             return;
 
-        values.Add(new()
+        values.Add(new MinecraftEventDelegateExecutor
         {
             EventType = typeof(TEventArgs),
             PluginContainer = pluginContainer,
@@ -111,7 +112,7 @@ public sealed class EventDispatcher : IDisposable
         if (!this.registeredEvents.TryGetValue(this.eventNames[eventType], out var values))
             return;
 
-        values.Add(new()
+        values.Add(new MinecraftEventDelegateExecutor
         {
             EventType = eventType,
             PluginContainer = pluginContainer,
@@ -143,7 +144,7 @@ public sealed class EventDispatcher : IDisposable
                 if (!this.registeredEvents.TryGetValue(this.eventNames[eventType], out var values))
                     continue;
 
-                values.Add(new()
+                values.Add(new MinecraftEventExecutor
                 {
                     EventType = eventType,
                     ModuleFactory = ActivatorUtilities.CreateFactory(eventModule, []),

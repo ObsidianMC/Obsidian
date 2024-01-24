@@ -21,3 +21,10 @@ public interface IExecutor<TArg>
 
     public ValueTask Execute(IServiceProvider serviceProvider, TArg arg, params object[]? methodParams);
 }
+
+public interface IEventExecutor : IExecutor
+{
+    public Type EventType { get; init; }
+
+    public Priority Priority { get; init; }
+}
