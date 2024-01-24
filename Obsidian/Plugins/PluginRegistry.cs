@@ -6,7 +6,8 @@ using Obsidian.Services;
 using System.Reflection;
 
 namespace Obsidian.Plugins;
-public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher eventDispatcher, CommandHandler commandHandler, ILogger logger) : IPluginRegistry
+public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher eventDispatcher, 
+    CommandHandler commandHandler, ILogger logger) : IPluginRegistry
 {
     private readonly PluginManager pluginManager = pluginManager;
     private readonly EventDispatcher eventDispatcher = eventDispatcher;

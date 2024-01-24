@@ -126,7 +126,7 @@ public sealed class EventDispatcher : IDisposable
     {
         ArgumentNullException.ThrowIfNull(pluginContainer);
 
-        var modules = pluginContainer.PluginAssembly.GetTypes().Where(x => x.IsAssignableFrom(minecraftEventHandlerType));
+        var modules = pluginContainer.PluginAssembly.GetTypes().Where(x => x.IsSubclassOf(minecraftEventHandlerType));
 
         foreach (var eventModule in modules)
         {
@@ -138,7 +138,7 @@ public sealed class EventDispatcher : IDisposable
                 var eventPriorityAttribute = method.GetCustomAttribute<EventPriorityAttribute>()!;
                 var eventType = method.GetParameters().FirstOrDefault()?.ParameterType ?? throw new InvalidOperationException("Method must contain a BaseMinecraftEventArgs type as the first parameter.");
 
-                if (!eventType.IsAssignableFrom(baseMinecraftEventArgsType))
+                if (!eventType.IsSubclassOf(baseMinecraftEventArgsType))
                     throw new InvalidOperationException("Method must contain a BaseMinecraftEventArgs type as the first parameter.");
 
                 if (!this.registeredEvents.TryGetValue(this.eventNames[eventType], out var values))
