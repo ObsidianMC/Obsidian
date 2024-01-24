@@ -50,8 +50,6 @@ namespace SamplePlugin
             Logger.LogInformation("§a{pluginName} §floaded! Hello §aEveryone§f!", Info.Name);
             return ValueTask.CompletedTask;
         }
-
-        
     }
 
     //All event handlers are created with a scoped lifetime

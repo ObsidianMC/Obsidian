@@ -35,5 +35,5 @@ internal sealed class CommandDelegateExecutor : IExecutor<CommandContext>
         this.MethodDelegate.DynamicInvoke(args);
     }
 
-    public bool MatchParams(object[] args) => this.GetParameters().Length - 1 == args.Length;
+    public bool MatchParams(object[] args) => this.GetParameters().Length == args.Length;
 }
