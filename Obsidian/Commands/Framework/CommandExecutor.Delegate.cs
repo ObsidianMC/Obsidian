@@ -12,7 +12,7 @@ internal sealed class CommandDelegateExecutor : IExecutor<CommandContext>
 
     public required Delegate MethodDelegate { get; init; }
 
-    public ParameterInfo[] GetParameters() => this.MethodDelegate.Method.GetParameters();
+    public ParameterInfo[] GetParameters() => this.MethodDelegate.Method.GetParameters()[..1];
 
     public IEnumerable<TAttribute> GetCustomAttributes<TAttribute>() where TAttribute : Attribute =>
          this.MethodDelegate.Method.GetCustomAttributes<TAttribute>();

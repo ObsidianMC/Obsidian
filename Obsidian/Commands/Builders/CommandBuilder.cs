@@ -51,14 +51,14 @@ public sealed class CommandBuilder
         return this;
     }
 
-    public CommandBuilder AddOverloads(params CommandExecutor[] executors)
+    public CommandBuilder AddOverloads(params IExecutor<CommandContext>[] executors)
     {
         this.overloads.AddRange(executors);
 
         return this;
     }
 
-    public CommandBuilder AddOverloads(IEnumerable<CommandExecutor> executors)
+    public CommandBuilder AddOverloads(IEnumerable<IExecutor<CommandContext>> executors)
     {
         this.overloads.AddRange(executors);
 

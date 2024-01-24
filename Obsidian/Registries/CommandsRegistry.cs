@@ -29,7 +29,7 @@ public static class CommandsRegistry
 
             foreach (var overload in cmd.Overloads)
             {
-                var args = overload.HasModule ? overload.GetParameters() : overload.GetParameters().Skip(1); // skipping obsidian context
+                var args = overload.GetParameters();
                 if (!args.Any())
                     cmdNode.Type |= CommandNodeType.IsExecutable;
 
