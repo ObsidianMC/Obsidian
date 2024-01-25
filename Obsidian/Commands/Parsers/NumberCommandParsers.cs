@@ -2,7 +2,7 @@
 
 namespace Obsidian.Commands.Parsers;
 
-public class DoubleCommandParser : CommandParser
+public sealed class DoubleCommandParser : CommandParser
 {
     public NumberFlags Flags { get; private set; }
 
@@ -45,7 +45,7 @@ public class DoubleCommandParser : CommandParser
     }
 }
 
-public class FloatCommandParser : CommandParser
+public sealed class FloatCommandParser : CommandParser
 {
     public NumberFlags Flags { get; set; }
 
@@ -88,7 +88,7 @@ public class FloatCommandParser : CommandParser
     }
 }
 
-public class IntCommandParser : CommandParser
+public sealed class IntCommandParser : CommandParser
 {
     public NumberFlags Flags { get; set; }
 
@@ -131,7 +131,7 @@ public class IntCommandParser : CommandParser
     }
 }
 
-public class LongCommandParser : CommandParser
+public sealed class LongCommandParser : CommandParser
 {
     public NumberFlags Flags { get; set; }
 

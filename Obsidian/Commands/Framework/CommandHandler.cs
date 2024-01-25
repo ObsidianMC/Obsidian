@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Commands;
+using Obsidian.API.Commands.ArgumentParsers;
 using Obsidian.API.Utilities;
 using Obsidian.Commands.Builders;
 using Obsidian.Commands.Framework.Entities;
@@ -26,18 +27,13 @@ public sealed class CommandHandler
     {
         _commandParser = new CommandParser(CommandHelpers.DefaultPrefix);
         _commands = [];
-        _argumentParsers = [new LocationTypeParser(), new PlayerTypeParser()];
 
         // Find all predefined argument parsers
-        var parsers = typeof(StringArgumentParser).Assembly.GetTypes().Where(type => typeof(BaseArgumentParser).IsAssignableFrom(type) && !type.IsAbstract);
+        var parsers = typeof(StringArgumentParser).Assembly.GetTypes()
+            .Where(type => typeof(BaseArgumentParser).IsAssignableFrom(type) && !type.IsAbstract)
+            .Select(x => (Activator.CreateInstance(x) as BaseArgumentParser)!);
 
-        foreach (var parser in parsers)
-        {
-            if (Activator.CreateInstance(parser) is BaseArgumentParser parserInstance)
-            {
-                _argumentParsers.Add(parserInstance);
-            }
-        }
+        _argumentParsers = parsers.OrderBy(x => x.Id).ToList();
 
         this.ServiceProvider = serviceProvider;
         this.logger = logger;
@@ -112,7 +108,8 @@ public sealed class CommandHandler
     private void RegisterSubgroups(Type moduleType, PluginContainer? pluginContainer, Command? parent = null)
     {
         // find all command groups under this command
-        var subModules = moduleType.GetNestedTypes().Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandGroupAttribute)));
+        var subModules = moduleType.GetNestedTypes()
+            .Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandGroupAttribute)));
 
         foreach (var subModule in subModules)
         {

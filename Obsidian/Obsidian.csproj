@@ -122,6 +122,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Folder Include="Commands\Framework\ArgumentParsers\" />
 		<Folder Include="Net\Packets\Configuration\Serverbound\" />
 	</ItemGroup>
 </Project>

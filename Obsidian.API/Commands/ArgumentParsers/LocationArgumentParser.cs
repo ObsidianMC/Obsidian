@@ -1,10 +1,8 @@
-﻿using Obsidian.Entities;
+﻿namespace Obsidian.API.Commands.ArgumentParsers;
 
-namespace Obsidian.Commands.Parsers;
-
-public class LocationTypeParser : BaseArgumentParser<VectorF>
+public sealed class LocationArgumentParser : BaseArgumentParser<VectorF>
 {
-    public LocationTypeParser() : base(10, "minecraft:vec3")
+    public LocationArgumentParser() : base(10, "minecraft:vec3")
     {
     }
 
@@ -12,8 +10,15 @@ public class LocationTypeParser : BaseArgumentParser<VectorF>
     {
         var splitted = input.Split(' ');
         var location = new VectorF();
+        var player = context.Player;
 
-        for (int i = 0; i < splitted.Length; i++)
+        if(player is null)
+        {
+            result = default;
+            return false;
+        }
+
+        for (var i = 0; i < splitted.Length; i++)
         {
             var text = splitted[i];
             if (float.TryParse(text, out var floatResult))
@@ -31,25 +36,18 @@ public class LocationTypeParser : BaseArgumentParser<VectorF>
                     default:
                         throw new IndexOutOfRangeException("Count went out of range");
                 }
-            else if (text.StartsWith("~"))
+            else if (text.StartsWith('~'))
             {
-                if (context.Player is not Player player)
-                {
-                    result = default;
-                    return false;
-                }
-
-                float.TryParse(text.Replace("~", ""), out float relative);
                 switch (i)
                 {
                     case 0:
-                        location.X = player.Position.X + relative;
+                        location.X = player.Position.X;
                         break;
                     case 1:
-                        location.Y = player.Position.Y + relative;
+                        location.Y = player.Position.Y;
                         break;
                     case 2:
-                        location.Z = player.Position.Z + relative;
+                        location.Z = player.Position.Z;
                         break;
                     default:
                         throw new IndexOutOfRangeException("Count went out of range");

@@ -5,7 +5,7 @@ namespace Obsidian.API;
 //TODO custom parsers needs to get assigned their own ids by the server. Out of scope for this pr so I will leave it like this for now
 public abstract class BaseArgumentParser
 {
-    public int Id { get; }
+    public int Id { get; internal set; }
     public string ParserIdentifier => minecraftType;
     private readonly string minecraftType;
 
