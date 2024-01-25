@@ -14,7 +14,7 @@ public class PlayerArgumentParser : BaseArgumentParser<IPlayer>
 
         if (Guid.TryParse(input, out var guid))
             // is valid GUID, try find with guid
-            server.GetPlayer(guid);
+            player = server.GetPlayer(guid);
         else
             // is not valid GUID, try find with name
             player = server.GetPlayer(input);
