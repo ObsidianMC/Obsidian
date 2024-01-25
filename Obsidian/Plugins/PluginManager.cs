@@ -8,7 +8,6 @@ using Obsidian.Plugins.PluginProviders;
 using Obsidian.Plugins.ServiceProviders;
 using Obsidian.Registries;
 using Obsidian.Services;
-using System.Collections.Frozen;
 using System.Reflection;
 
 namespace Obsidian.Plugins;
@@ -23,7 +22,7 @@ public sealed class PluginManager
     private readonly List<PluginContainer> stagedPlugins = new();
     private readonly IServiceProvider serverProvider;
     private readonly IServer server;
-
+    private readonly CommandHandler commandHandler;
     private readonly IPluginRegistry pluginRegistry;
     private readonly IServiceCollection pluginServiceDescriptors = new ServiceCollection();
 
@@ -52,6 +51,7 @@ public sealed class PluginManager
         var env = serverProvider.GetRequiredService<IServerEnvironment>();
 
         this.server = server;
+        this.commandHandler = commandHandler;
         this.logger = logger;
         this.serverProvider = serverProvider;
         this.pluginRegistry = new PluginRegistry(this, eventDispatcher, commandHandler, logger);
@@ -180,7 +180,7 @@ public sealed class PluginManager
             }
         }
 
-        ((Server)this.server).CommandsHandler.UnregisterPluginCommands(pluginContainer);
+        this.commandHandler.UnregisterPluginCommands(pluginContainer);
 
         try
         {

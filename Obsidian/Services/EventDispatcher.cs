@@ -9,11 +9,9 @@ using Obsidian.Plugins;
 using Obsidian.Utilities.Interfaces;
 using System.Collections.Frozen;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 
 namespace Obsidian.Services;
 
-//TODO BETTER NAME MAYBE??
 public sealed class EventDispatcher : IDisposable
 {
     private static readonly Type eventPriorityAttributeType = typeof(EventPriorityAttribute);
