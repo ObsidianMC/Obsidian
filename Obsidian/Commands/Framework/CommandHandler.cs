@@ -7,7 +7,6 @@ using Obsidian.API.Utilities;
 using Obsidian.Commands.Builders;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Commands.Framework.Exceptions;
-using Obsidian.Commands.Parsers;
 using Obsidian.Plugins;
 using System.Reflection;
 

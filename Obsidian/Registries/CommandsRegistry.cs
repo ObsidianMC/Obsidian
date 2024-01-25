@@ -48,10 +48,10 @@ public static class CommandsRegistry
 
                     var (id, mctype) = server.CommandsHandler.FindMinecraftType(type);
 
+                    //TODO make this better 
                     argNode.Parser = mctype switch
                     {
                         "brigadier:string" => new StringCommandParser(arg.CustomAttributes.Any(x => x.AttributeType == typeof(RemainingAttribute)) ? StringType.GreedyPhrase : StringType.QuotablePhrase),
-                        "obsidian:player" => new EntityCommandParser(EntityCommadBitMask.OnlyPlayers),// this is a custom type used by obsidian meaning "only player entities".
                         "brigadier:double" => new DoubleCommandParser(),
                         "brigadier:float" => new FloatCommandParser(),
                         "brigadier:integer" => new IntCommandParser(),

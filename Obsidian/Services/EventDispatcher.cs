@@ -46,7 +46,7 @@ public sealed class EventDispatcher : IDisposable
 
         foreach (var eventType in events)
         {
-            var @eventArgs = (BaseMinecraftEventArgs)RuntimeHelpers.GetUninitializedObject(eventType);
+
             var name = eventType.Name.TrimEventArgs();
 
             dict.Add(name, []);
