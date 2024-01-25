@@ -315,8 +315,6 @@ public sealed class Client : IDisposable
                 case ClientState.Configuration:
                     Debug.Assert(Player is not null);
 
-                    //await this.server.packetReceived.InvokeAsync(configurationPacketReceived);
-
                     var result = await this.server.EventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.server, id, data));
 
                     if (result == EventResult.Cancelled)
@@ -326,10 +324,6 @@ public sealed class Client : IDisposable
                     break;
                 case ClientState.Play:
                     Debug.Assert(Player is not null);
-
-                    //var playPacketReceived = new PacketReceivedEventArgs(Player, this.server, id, data);
-
-                    //await this.server.packetReceived.InvokeAsync(playPacketReceived);
 
                     result = await this.server.EventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.server, id, data));
 
