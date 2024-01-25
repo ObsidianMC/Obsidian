@@ -12,12 +12,6 @@ public sealed class LocationArgumentParser : BaseArgumentParser<VectorF>
         var location = new VectorF();
         var player = context.Player;
 
-        if(player is null)
-        {
-            result = default;
-            return false;
-        }
-
         for (var i = 0; i < splitted.Length; i++)
         {
             var text = splitted[i];
@@ -38,6 +32,12 @@ public sealed class LocationArgumentParser : BaseArgumentParser<VectorF>
                 }
             else if (text.StartsWith('~'))
             {
+                if (player is null)
+                {
+                    result = default;
+                    return false;
+                }
+
                 switch (i)
                 {
                     case 0:
