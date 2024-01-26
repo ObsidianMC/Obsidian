@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Connections;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Boss;
@@ -103,6 +104,7 @@ public sealed partial class Server : IServer
         RconServer rconServer,
         IUserCache playerCache,
         EventDispatcher eventDispatcher,
+        CommandHandler commandHandler,
         IServiceProvider serviceProvider)
     {
         Configuration = environment.Configuration;
@@ -121,7 +123,7 @@ public sealed partial class Server : IServer
 
         _logger.LogDebug(message: "Initializing command handler...");
 
-        CommandsHandler = new CommandHandler(serviceProvider, loggerFactory.CreateLogger<CommandHandler>());
+        CommandsHandler = commandHandler;
 
         PluginManager = new PluginManager(this.serviceProvider, this, eventDispatcher, CommandsHandler, _logger);
 

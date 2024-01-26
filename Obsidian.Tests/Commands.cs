@@ -34,15 +34,15 @@ public class Commands
         Assert.Equal(split, expected);
     }
 
-    // TODO overload support is not here yet, there has to be a loop through qualified commands in CommandHandler.cs:executeCommand
     [Fact]
     public async Task TestCommandExec()
     {
         var services = new ServiceCollection()
             .AddLogging((builder) => builder.AddXUnit(this.output))
+            .AddSingleton<CommandHandler>()
             .BuildServiceProvider();
 
-        var cmd = new CommandHandler(services, services.GetRequiredService<ILogger<CommandHandler>>());
+        var cmd = services.GetRequiredService<CommandHandler>();
 
         ICommandSender sender = new CommandSender(CommandIssuers.Console, player: null, logger: null);
 

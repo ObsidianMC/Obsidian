@@ -14,7 +14,7 @@ namespace Obsidian.Commands.Framework;
 
 public sealed class CommandHandler
 {
-    internal readonly ILogger? logger;
+    internal readonly ILogger logger;
 
     private readonly List<Command> _commands;
     private readonly CommandParser _commandParser;
@@ -22,7 +22,7 @@ public sealed class CommandHandler
 
     public IServiceProvider ServiceProvider { get; }
 
-    public CommandHandler(IServiceProvider serviceProvider, ILogger<CommandHandler>? logger = null)
+    public CommandHandler(IServiceProvider serviceProvider, ILogger<CommandHandler> logger)
     {
         _commandParser = new CommandParser(CommandHelpers.DefaultPrefix);
         _commands = [];
