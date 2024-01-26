@@ -1,15 +1,26 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.VisualStudio.TestPlatform.ObjectModel.Engine.ClientProtocol;
 using Obsidian.API;
+using Obsidian.API.Commands;
 using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Entities;
 using System;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Obsidian.Tests;
 
 public class Commands
 {
+    private readonly ITestOutputHelper output;
+
+    public Commands(ITestOutputHelper output)
+    {
+        this.output = output;
+    }
+
     [Fact]
     public void TestTokenizing()
     {
@@ -27,7 +38,11 @@ public class Commands
     [Fact]
     public async Task TestCommandExec()
     {
-        var cmd = new CommandHandler(new ServiceCollection().BuildServiceProvider());
+        var services = new ServiceCollection()
+            .AddLogging((builder) => builder.AddXUnit(this.output))
+            .BuildServiceProvider();
+
+        var cmd = new CommandHandler(services, services.GetRequiredService<ILogger<CommandHandler>>());
 
         ICommandSender sender = new CommandSender(CommandIssuers.Console, player: null, logger: null);
 
@@ -42,7 +57,7 @@ public class Commands
         Assert.Equal("bye", Command.arg2out);
 
         await cmd.ProcessCommand(new CommandContext("/ping 12 12", sender, null, null));
-        Assert.Equal(69, Command.arg1out);
+        Assert.Equal(12, Command.arg1out);
         Assert.Equal("bye", Command.arg2out);
 
         await cmd.ProcessCommand(new CommandContext("/ping 69 hey bye", sender, null, null));
@@ -50,7 +65,7 @@ public class Commands
         Assert.Equal("bye", Command.arg2out);
     }
 
-    public class Command
+    public class Command : CommandModuleBase
     {
         public static int arg1out = 0;
         public static string arg2out = "";
@@ -58,38 +73,36 @@ public class Commands
         [Command("ping")]
         [CommandInfo(description: "ping")]
         [IssuerScope(CommandIssuers.Any)]
-        public async Task ping(CommandContext ctx, int arg1, int arg2)
+        public async Task ping(int arg1, int arg2)
         {
             await Task.Yield();
+            arg1out = arg1;
         }
 
-        [Command("ping")]
-        [CommandInfo(description: "ping")]
-        [IssuerScope(CommandIssuers.Any)]
-        public async Task ping(CommandContext ctx, int arg1, string arg2)
+        [CommandOverload]
+        public async Task ping(int arg1, string arg2)
         {
             await Task.Yield();
             arg1out = arg1;
             arg2out = arg2;
         }
 
-        [Command("ping")]
-        [CommandInfo(description: "ping")]
-        [IssuerScope(CommandIssuers.Any)]
-        public async Task ping(CommandContext ctx, int arg1, string arg2, string arg3)
+        [CommandOverload]
+        public async Task ping(int arg1, string arg2, string arg3)
         {
             await Task.Yield();
+            arg1out = arg1;
         }
 
         [CommandGroup("pong")]
         [CommandInfo(description: "pong")]
         [IssuerScope(CommandIssuers.Any)]
-        public class Pong
+        public class Pong : CommandModuleBase
         {
             [Command("ping")]
             [CommandInfo(description: "ping")]
             [IssuerScope(CommandIssuers.Any)]
-            public async Task ping(CommandContext ctx, int arg1, string arg2)
+            public async Task ping(int arg1, string arg2)
             {
                 await Task.Yield();
                 arg1out = arg1;

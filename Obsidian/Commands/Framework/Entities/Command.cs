@@ -1,8 +1,10 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Obsidian.API.Utilities;
 using Obsidian.Commands.Framework.Exceptions;
 using Obsidian.Plugins;
 using Obsidian.Utilities.Interfaces;
+using System.Diagnostics;
 using System.Reflection;
 
 namespace Obsidian.Commands.Framework.Entities;
@@ -10,6 +12,8 @@ namespace Obsidian.Commands.Framework.Entities;
 public sealed class Command
 {
     internal CommandIssuers AllowedIssuers { get; init; }
+
+    private ILogger? Logger => this.CommandHandler.logger;
 
     public required CommandHandler CommandHandler { get; init; }
     public required PluginContainer? PluginContainer { get; init; }
@@ -64,16 +68,50 @@ public sealed class Command
                 $"Command {GetQualifiedName()} cannot be executed as {context.Sender.Issuer}", AllowedIssuers);
         }
 
-        var executor = Overloads.FirstOrDefault(x => x.MatchParams(args)
+        var executors = Overloads.Where(x => x.MatchParams(args)
             || x.GetParameters().LastOrDefault()?.GetCustomAttribute<RemainingAttribute>() != null);
 
         // Find matching overload
-        if (executor == null)
+        if (executors == null)
         {
-            //throw new InvalidCommandOverloadException($"No such overload for command {this.GetQualifiedName()}");
+            //TODO since commands can have multiple usages, if this is empty we should print out all of the args for usage
             await context.Sender.SendMessageAsync($"&4Correct usage: {Usage}");
 
             return;
+        }
+
+        IExecutor<CommandContext> executor = default!;
+
+        var success = false;
+        foreach (var exec in executors)
+        {
+            executor = exec;
+
+            var methodParams = exec.GetParameters();
+            for (int i = 0; i < args.Length; i++)
+            {
+                var param = methodParams[i];
+                var arg = args[i];
+
+                if (!CommandHandler.IsValidArgumentType(param.ParameterType))
+                {
+                    success = false;
+                    break;
+                }
+
+                var parser = CommandHandler.GetArgumentParser(param.ParameterType);
+                if (parser.TryParseArgument(arg, context, out _))
+                {
+                    success = true;
+                    continue;
+                }
+
+                success = false;
+                break;
+            }
+
+            if (success)
+                break;
         }
 
         await this.ExecuteAsync(executor, context, args);
