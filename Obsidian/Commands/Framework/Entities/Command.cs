@@ -114,6 +114,9 @@ public sealed class Command
                 break;
         }
 
+        if (!success)
+            throw new InvalidOperationException($"Failed to find valid executor for /{this.Name}");
+
         await this.ExecuteAsync(executor, context, args);
     }
 
