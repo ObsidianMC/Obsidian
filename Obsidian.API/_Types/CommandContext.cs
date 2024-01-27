@@ -2,7 +2,7 @@
 
 namespace Obsidian.API;
 
-public sealed class CommandContext(string message, ICommandSender commandSender, IPlayer player, IServer server)
+public sealed class CommandContext(string message, ICommandSender commandSender, IPlayer? player, IServer server)
 {
     public IPlayer? Player { get; } = player;
     public IServer Server { get; } = server;

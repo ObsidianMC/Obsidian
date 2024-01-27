@@ -399,14 +399,16 @@ public sealed partial class Server : IServer
 
     public async Task ExecuteCommand(string input)
     {
-        var context = new CommandContext(CommandHelpers.DefaultPrefix + input, new CommandSender(CommandIssuers.Console, null, _logger), null, this);
+        var context = new CommandContext(CommandHelpers.DefaultPrefix + input, 
+            new CommandSender(CommandIssuers.Console, null, _logger), null, this);
+
         try
         {
             await CommandsHandler.ProcessCommand(context);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, e.Message);
+            _logger.LogError(e, "{exceptionMessage}", e.Message);
         }
     }
 

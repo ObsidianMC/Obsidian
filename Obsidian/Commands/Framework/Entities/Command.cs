@@ -4,7 +4,6 @@ using Obsidian.API.Utilities;
 using Obsidian.Commands.Framework.Exceptions;
 using Obsidian.Plugins;
 using Obsidian.Utilities.Interfaces;
-using System.Diagnostics;
 using System.Reflection;
 
 namespace Obsidian.Commands.Framework.Entities;
@@ -79,7 +78,7 @@ public sealed class Command
 
             return;
         }
-
+        
         IExecutor<CommandContext> executor = default!;
 
         var success = false;
