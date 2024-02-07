@@ -561,6 +561,11 @@ public sealed partial class Server : IServer
             // Just stop looping.
         }
 
+        foreach (var client in _clients)
+        {
+            client.SendPacket(new DisconnectPacket(ChatMessage.Simple("Server closed"), client.State));
+        }
+
         _logger.LogInformation("The game loop has been stopped");
         await WorldManager.FlushLoadedWorldsAsync();
     }
