@@ -81,7 +81,7 @@ public class Command
          || x.GetParameters().Last().GetCustomAttribute<RemainingAttribute>() != null))
         {
             //throw new InvalidCommandOverloadException($"No such overload for command {this.GetQualifiedName()}");
-            await context.Sender.SendMessageAsync($"&4Correct usage: {Usage}");
+            await context.Sender.SendMessageAsync(ChatMessage.Simple($"Correct usage: {Usage}", ChatColor.Red));
 
             return;
         }
