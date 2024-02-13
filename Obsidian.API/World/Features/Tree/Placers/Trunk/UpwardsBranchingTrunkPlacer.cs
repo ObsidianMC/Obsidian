@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Obsidian.API.World.Features.Tree.Placers;
+namespace Obsidian.API.World.Features.Tree.Placers.Trunk;
 public sealed class UpwardsBranchingTrunkPlacer : TrunkPlacer
 {
     public override string Type => "upwards_branching_trunk_placer";

@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Obsidian.API.World.Features.Tree.Placers;
+namespace Obsidian.API.World.Features.Tree.Placers.Trunk;
 public abstract class TrunkPlacer
 {
     public abstract string Type { get; }
