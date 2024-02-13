@@ -7,7 +7,6 @@ using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.API.Utilities;
 using Obsidian.Nbt;
 using Obsidian.Registries;
-using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json;
 
@@ -265,27 +264,16 @@ public partial class Extensions
                 {
                     if (prop.Value is NbtTag<string> enumVal && Enum.TryParse(propType, enumVal.Value.ToPascalCase(), out var val))
                         instProp.SetValue(inst, val);
-                    else
-                        Debugger.Break();
                 }
                 else if (propType.Name == "Boolean")
                 {
                     if (prop.Value is NbtTag<string> boolVal && bool.TryParse(boolVal.Value, out var val))
                         instProp.SetValue(inst, val);
-                    else
-                        Debugger.Break();
                 }
                 else if (propType.Name == "Int32")
                 {
                     if (prop.Value is NbtTag<string> numVal && int.TryParse(numVal.Value, out var val))
                         instProp.SetValue(inst, val);
-                    else
-                        Debugger.Break();
-                }
-                else
-                {
-                    // Prop type unfamiliar with
-                    Debugger.Break();
                 }
             }
         }

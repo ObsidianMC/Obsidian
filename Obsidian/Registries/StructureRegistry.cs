@@ -33,25 +33,17 @@ internal static class StructureRegistry
             {
                 foreach (NbtCompound b in (blocks as NbtList).Cast<NbtCompound>())
                 {
-                    try
+                    IBlock block = paletteBuffer[b!.GetInt("state")];
+                    if (b!.TryGetTag("pos", out var coords))
                     {
-                        IBlock block = paletteBuffer[b!.GetInt("state")];
-                        if (b!.TryGetTag("pos", out var coords))
-                        {
-                            var c = (NbtList)coords;
-                            var offset = new Vector(
-                                ((NbtTag<int>)c[0]).Value,
-                                ((NbtTag<int>)c[1]).Value,
-                                ((NbtTag<int>)c[2]).Value);
+                        var c = (NbtList)coords;
+                        var offset = new Vector(
+                            ((NbtTag<int>)c[0]).Value,
+                            ((NbtTag<int>)c[1]).Value,
+                            ((NbtTag<int>)c[2]).Value);
 
-                            storage[structureName][offset] = block;
-                        }
+                        storage[structureName][offset] = block;
                     }
-                    catch (Exception e)
-                    {
-                        Debugger.Break();
-                    }
-                    
                 }
             }
         }

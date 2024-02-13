@@ -256,51 +256,6 @@ internal static class ChunkBuilder
         }
     }
 
-    async internal static Task<bool> AddStructures(GenHelper helper, Chunk chunk)
-    {
-        if (Random.Shared.Next(16) != 3) { return false; }
-        var heights = new int[16 * 16];
-        var hm = chunk.Heightmaps[HeightmapType.WorldSurfaceWG];
-        for (int x = 0; x < 16; x++)
-            for (int z = 0; z < 16; z++)
-            {
-                int i = (x << 4) + z;
-                heights[i] = hm.GetHeight(x, z);
-            }
-        var avg = heights.Average();
-        //if (avg < 64) { return false; }
-        double sumSqDiff = heights.Select(val => (val - avg) * (val - avg)).Sum();
-        double stdDev = Math.Sqrt(sumSqDiff / heights.Length);
-
-        if (stdDev > 1.5) { return false; }
-
-        Dictionary<Vector, IBlock> placeables;
-        if (avg > 64)
-        {
-            placeables = StructureRegistry.storage["giant_portal_2"];
-        }
-        else
-        {
-            placeables = StructureRegistry.storage["spine_2"];
-        }
-        var origin = new Vector(chunk.X << 4, (int)avg, chunk.Z << 4);
-        foreach (var placeable in placeables)
-        {
-            var loc = placeable.Key;
-            var worldLoc = loc + origin;
-            var block = placeable.Value;
-            if (loc.X > 15 || loc.Z > 15)
-            {
-                await helper.SetBlockAsync(worldLoc, block);
-            }
-            else
-            {
-                chunk.SetBlock(loc + (0, (int)avg, 0), block);
-            }
-        }
-        return true;
-    }
-
     internal static void UpdateWGHeightmap(Chunk chunk)
     {
         for (int x = 0; x < 16; x++)

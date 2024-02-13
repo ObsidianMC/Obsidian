@@ -63,6 +63,5 @@
 
 	<ItemGroup>
 		<Folder Include="Assets\" />
-		<Folder Include="Lambda\" />
 	</ItemGroup>
 </Project>
