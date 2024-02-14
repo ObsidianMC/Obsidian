@@ -126,5 +126,6 @@
 	<ItemGroup>
 		<Folder Include="Net\Packets\Configuration\Serverbound\" />
 		<Folder Include="Plugins\Services\" />
+		<Folder Include="WorldGen\Noise\" />
 	</ItemGroup>
 </Project>
