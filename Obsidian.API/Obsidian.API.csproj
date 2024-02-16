@@ -42,7 +42,6 @@
 	<ItemGroup>
 		<Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
 		<Folder Include="Assets\" />
-		<Folder Include="World\Features\PlacementModifiers\" />
 	</ItemGroup>
 
 	<ItemGroup>
