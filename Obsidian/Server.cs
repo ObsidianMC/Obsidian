@@ -243,6 +243,9 @@ public sealed partial class Server : IServer
 
         await RecipesRegistry.InitializeAsync();
 
+        _logger.LogInformation("Loading structures...");
+        StructureRegistry.Initialize();
+
         await this.userCache.LoadAsync(this._cancelTokenSource.Token);
 
         _logger.LogInformation("Loading properties...");
@@ -550,6 +553,11 @@ public sealed partial class Server : IServer
         catch (OperationCanceledException)
         {
             // Just stop looping.
+        }
+
+        foreach (var client in _clients)
+        {
+            client.SendPacket(new DisconnectPacket(ChatMessage.Simple("Server closed"), client.State));
         }
 
         _logger.LogInformation("The game loop has been stopped");

@@ -7,6 +7,7 @@ using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.API.Utilities;
 using Obsidian.Nbt;
 using Obsidian.Registries;
+using System.Reflection;
 using System.Text.Json;
 
 namespace Obsidian.Utilities;
@@ -239,6 +240,48 @@ public partial class Extensions
         itemStack.ItemMeta = itemMetaBuilder.Build();
 
         return itemStack;
+    }
+
+    public static IBlock ToBlock(this NbtCompound comp)
+    {
+        var name = comp.GetString("Name").Split(":")[1].ToPascalCase();
+        var assm = Assembly.Load("Obsidian.API");
+        Type builderType = assm.GetType($"Obsidian.API.BlockStates.Builders.{name}StateBuilder");
+
+        if (builderType == null)
+        {
+            return BlocksRegistry.Get(comp.GetString("Name"));
+        }
+        var inst = Activator.CreateInstance(builderType);
+
+        if (comp.TryGetTag("Properties", out var props))
+        {
+            foreach (var prop in props as NbtCompound)
+            {
+                var instProp = builderType.GetProperty(prop.Key.ToPascalCase());
+                Type propType = instProp.PropertyType;
+                if (propType.IsSubclassOf(typeof(Enum)))
+                {
+                    if (prop.Value is NbtTag<string> enumVal && Enum.TryParse(propType, enumVal.Value.ToPascalCase(), out var val))
+                        instProp.SetValue(inst, val);
+                }
+                else if (propType.Name == "Boolean")
+                {
+                    if (prop.Value is NbtTag<string> boolVal && bool.TryParse(boolVal.Value, out var val))
+                        instProp.SetValue(inst, val);
+                }
+                else if (propType.Name == "Int32")
+                {
+                    if (prop.Value is NbtTag<string> numVal && int.TryParse(numVal.Value, out var val))
+                        instProp.SetValue(inst, val);
+                }
+            }
+        }
+
+        MethodInfo buildMeth = builderType.GetMethod("Build");
+        var bs = (IBlockState)buildMeth.Invoke(inst, null);
+        var n = comp.GetString("Name");
+        return BlocksRegistry.Get(n, bs);
     }
 
     #region Dimension Codec Writing

@@ -64,6 +64,7 @@
 
 	<ItemGroup>
 		<EmbeddedResource Include="Assets/*.*" CopyToOutputDirectory="PreserveNewest" />
+		<EmbeddedResource Include="Assets/Structures/*.*" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
 	<ItemGroup>

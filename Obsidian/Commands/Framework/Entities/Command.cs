@@ -74,7 +74,8 @@ public sealed class Command
         if (executors == null)
         {
             //TODO since commands can have multiple usages, if this is empty we should print out all of the args for usage
-            await context.Sender.SendMessageAsync($"&4Correct usage: {Usage}");
+            //throw new InvalidCommandOverloadException($"No such overload for command {this.GetQualifiedName()}");
+            await context.Sender.SendMessageAsync(ChatMessage.Simple($"Correct usage: {Usage}", ChatColor.Red));
 
             return;
         }
