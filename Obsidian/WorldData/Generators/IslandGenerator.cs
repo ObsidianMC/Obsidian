@@ -1,6 +1,5 @@
 ﻿using Obsidian.Registries;
 using Obsidian.WorldData.Decorators;
-using Obsidian.WorldData.Generators.Overworld;
 using SharpNoise.Modules;
 
 namespace Obsidian.WorldData.Generators;
