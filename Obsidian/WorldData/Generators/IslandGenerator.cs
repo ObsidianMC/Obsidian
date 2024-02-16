@@ -1,5 +1,6 @@
 ﻿using Obsidian.Registries;
 using Obsidian.WorldData.Decorators;
+using Obsidian.WorldData.Generators.Overworld;
 using SharpNoise.Modules;
 
 namespace Obsidian.WorldData.Generators;
@@ -83,6 +84,7 @@ public sealed class IslandGenerator : IWorldGenerator
                         }
                         chunk.SetBlock(bx, y, bz, BlocksRegistry.Stone);
                         chunk.Heightmaps[ChunkData.HeightmapType.MotionBlocking].Set(bx, bz, y);
+                        chunk.Heightmaps[ChunkData.HeightmapType.WorldSurfaceWG].Set(bx, bz, y);
                     }
                     else
                     {
@@ -133,6 +135,7 @@ public sealed class IslandGenerator : IWorldGenerator
             }
         }
 
+        WorldLight.InitialFillSkyLight(chunk);
         chunk.chunkStatus = ChunkStatus.full;
         return chunk;
     }
