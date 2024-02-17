@@ -1,6 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
 namespace Obsidian.API.World.Features.Tree.Placers.Trunk;
+
+[TreeProperty("minecraft:bending_trunk_placer")]
 public sealed class BendingTrunkPlacer : TrunkPlacer
 {
     public override string Type => "bending_trunk_placer";

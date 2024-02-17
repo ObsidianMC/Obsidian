@@ -1,9 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
 namespace Obsidian.API.World.Features.Tree.Placers.Trunk;
+
+[TreeProperty("minecraft:cherry_trunk_placer")]
 public sealed class CherryTrunkPlacer : TrunkPlacer
 {
-    public override string Type => "cherry_trunk_placer";
+    public override string Type => "minecraft:cherry_trunk_placer";
 
     [Range(1, 3)]
     public required IIntProvider BranchCount { get; init; }
