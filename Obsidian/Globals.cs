@@ -11,6 +11,15 @@ public static class Globals
     public static HttpClient HttpClient { get; } = new();
     public static XorshiftRandom Random { get; } = new();
 
+    public static readonly JsonSerializerOptions RegistryJsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+        NumberHandling = JsonNumberHandling.AllowReadingFromString,
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
+
     public static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,
@@ -30,6 +39,7 @@ public static class Globals
                 new HexColorConverter(),
                 new GuidJsonConverter()
             },
+
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 }
