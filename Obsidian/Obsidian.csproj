@@ -93,6 +93,7 @@
 	  <None Remove="assets\blocks.json" />
 	  <None Remove="Assets\damage_type.json" />
 	  <None Remove="Assets\entities.json" />
+	  <None Remove="Assets\trees.json" />
 	  <None Remove="assets\trim_material.json" />
 	  <None Remove="assets\trim_pattern.json" />
 	</ItemGroup>
@@ -126,5 +127,7 @@
 	<ItemGroup>
 		<Folder Include="Net\Packets\Configuration\Serverbound\" />
 		<Folder Include="Plugins\Services\" />
+		<Folder Include="Registries\ConfiguredFeatures\" />
+		<Folder Include="Utilities\Json\TypeResolvers\" />
 	</ItemGroup>
 </Project>
