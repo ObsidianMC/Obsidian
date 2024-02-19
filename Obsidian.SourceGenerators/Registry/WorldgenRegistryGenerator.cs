@@ -41,7 +41,8 @@ public sealed class WorldgenRegistryGenerator : IIncrementalGenerator
     {
         var asm = compilation.AssemblyName;
 
-        if (asm != "Obsidian.API")
+        //Want this to work for any assembly so use anything that't not from the Obsidian assembly.
+        if (asm == "Obsidian")
             return;
 
         var classes = new List<EntityClass>();
@@ -80,7 +81,7 @@ public sealed class WorldgenRegistryGenerator : IIncrementalGenerator
             .Using("System.Collections.Frozen")
             .Namespace("Obsidian.API.Registries.ConfiguredFeatures")
             .Line()
-            .Type("public static class TreesRegistry");
+            .Type("public static class TreeFeatureRegistry");
 
         builder.Type("public static class TrunkPlacers");
 
@@ -103,7 +104,7 @@ public sealed class WorldgenRegistryGenerator : IIncrementalGenerator
             added.Add(trunkPlacer.Name);
         }
 
-        builder.Type("public static FrozenDictionary<string, Type> Values = new Dictionary<string, Type>()");
+        builder.Line().Type("public static FrozenDictionary<string, Type> Values = new Dictionary<string, Type>()");
         foreach (var kv in treePlacerTypes)
         {
             builder.Line($"{{ \"{kv.Key}\", {kv.Value} }},");

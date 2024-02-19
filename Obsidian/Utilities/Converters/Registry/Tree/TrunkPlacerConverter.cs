@@ -12,7 +12,7 @@ public sealed class TrunkPlacerConverter : JsonConverter<TrunkPlacer>
 
         var type = element.GetProperty("type").GetString()!;
 
-        if (!TreesRegistry.TrunkPlacers.Values.TryGetValue(type, out var trunkPlacerType))
+        if (!TreeFeatureRegistry.TrunkPlacers.Values.TryGetValue(type, out var trunkPlacerType))
             return null;
 
         foreach(var property in trunkPlacerType.GetProperties())
