@@ -26,6 +26,23 @@ public partial class RegistryAssetsGenerator
             .Append("internal static ConcurrentDictionary<string, TrimMaterialCodec> All { get; } = new();")
             .Line();
 
+        builder.Method("internal static async Task InitalizeAsync()");
+
+        builder.Line("var asm = Assembly.GetExecutingAssembly();");
+        builder.Line("await using var stream = asm.GetManifestResourceStream($\"{CodecRegistry.AssetsNamespace}.trim_material.json\");");
+        builder.Line("var element = await JsonSerializer.DeserializeAsync<JsonElement>(stream, Globals.RegistryJsonOptions);");
+
+        builder.Line("var values = element.GetProperty(\"value\").EnumerateArray().Select(x => x.Deserialize<TrimMaterialCodec>(Globals.RegistryJsonOptions));");
+
+        builder.Statement("foreach(var value in values)");
+
+        builder.Line("All.TryAdd(value.Name, value);");
+
+        builder.EndScope();
+
+        builder.EndScope()
+            .Line();
+
         builder.EndScope();
     }
 
@@ -44,6 +61,23 @@ public partial class RegistryAssetsGenerator
         }
 
         builder.Line().Indent().Append("internal static ConcurrentDictionary<string, TrimPatternCodec> All { get; } = new();");
+
+        builder.Method("internal static async Task InitalizeAsync()");
+
+        builder.Line("var asm = Assembly.GetExecutingAssembly();");
+        builder.Line("await using var stream = asm.GetManifestResourceStream($\"{CodecRegistry.AssetsNamespace}.trim_pattern.json\");");
+        builder.Line("var element = await JsonSerializer.DeserializeAsync<JsonElement>(stream, Globals.RegistryJsonOptions);");
+
+        builder.Line("var values = element.GetProperty(\"value\").EnumerateArray().Select(x => x.Deserialize<TrimPatternCodec>(Globals.RegistryJsonOptions));");
+
+        builder.Statement("foreach(var value in values)");
+
+        builder.Line("All.TryAdd(value.Name, value);");
+
+        builder.EndScope();
+
+        builder.EndScope()
+            .Line();
 
         builder.EndScope();
     }

@@ -14,6 +14,8 @@ public partial class RegistryAssetsGenerator
             .Using("Obsidian.API.Registry.Codecs.ArmorTrims")
             .Using("Obsidian.API.Registry.Codecs.ArmorTrims.TrimPattern")
             .Using("Obsidian.API.Registry.Codecs.ArmorTrims.TrimMaterial")
+            .Using("System.Reflection")
+            .Using("System.Text.Json")
             .Line()
             .Namespace("Obsidian.Registries")
             .Line()

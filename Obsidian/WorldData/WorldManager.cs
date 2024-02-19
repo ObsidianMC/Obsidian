@@ -72,6 +72,10 @@ public sealed class WorldManager : BackgroundService, IWorldManager
 
     public async Task LoadWorldsAsync()
     {
+        //We use dimension and biome registry for worldgen so wait
+        while (!CodecRegistry.Initialized)
+            await Task.Delay(500);
+
         foreach (var serverWorld in this.serverWorlds)
         {
             //var server = (Server)this.server;

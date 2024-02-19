@@ -26,6 +26,23 @@ public partial class RegistryAssetsGenerator
             .Append("internal static ConcurrentDictionary<string, BiomeCodec> All { get; } = new();")
             .Line();
 
+        builder.Method("internal static async Task InitalizeAsync()");
+
+        builder.Line("var asm = Assembly.GetExecutingAssembly();");
+        builder.Line("await using var stream = asm.GetManifestResourceStream($\"{CodecRegistry.AssetsNamespace}.biomes.json\");");
+        builder.Line("var element = await JsonSerializer.DeserializeAsync<JsonElement>(stream, Globals.RegistryJsonOptions);");
+
+        builder.Line("var values = element.GetProperty(\"value\").EnumerateArray().Select(x => x.Deserialize<BiomeCodec>(Globals.RegistryJsonOptions));");
+
+        builder.Statement("foreach(var value in values)");
+
+        builder.Line("All.TryAdd(value.Name, value);");
+
+        builder.EndScope();
+
+        builder.EndScope()
+            .Line();
+
         builder.EndScope();
     }
 

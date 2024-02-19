@@ -250,6 +250,7 @@ public sealed partial class Server : IServer
         }
 
         await RecipesRegistry.InitializeAsync();
+        await CodecRegistry.InitializeAsync(_logger);
 
         await this.userCache.LoadAsync(this._cancelTokenSource.Token);
 
