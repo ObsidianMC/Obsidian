@@ -2,9 +2,9 @@
 
 public sealed record class BiomeCodec : ICodec
 {
-    public string Name { get; set; }
+    public required string Name { get; init; }
 
-    public int Id { get; set; }
+    public required int Id { get; init; }
 
-    public BiomeElement Element { get; set; }
+    public required BiomeElement Element { get; init; }
 }

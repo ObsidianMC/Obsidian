@@ -21,12 +21,12 @@ public partial class RegistryAssetsGenerator
 
         var codecs = assets.Codecs;
 
-        GenerateDimensions(codecs["dimensions"].ToArray(), builder, ctx);
-        GenerateBiomes(codecs["biomes"].ToArray(), builder, ctx);
-        GenerateChatType(codecs["chat_type"].ToArray(), builder, ctx);
-        GenerateDamageTypes(codecs["damage_type"].ToArray(), builder, ctx);
-        GenerateTrimMaterial(codecs["trim_material"].ToArray(), builder, ctx);
-        GenerateTrimPattern(codecs["trim_pattern"].ToArray(), builder, ctx);
+        GenerateDimensions(codecs["dimensions"].ToArray(), builder);
+        GenerateBiomes(codecs["biomes"].ToArray(), builder);
+        GenerateChatType(codecs["chat_type"].ToArray(), builder);
+        GenerateDamageTypes(codecs["damage_type"].ToArray(), builder);
+        GenerateTrimMaterial(codecs["trim_material"].ToArray(), builder);
+        GenerateTrimPattern(codecs["trim_pattern"].ToArray(), builder);
 
         builder.EndScope();
 

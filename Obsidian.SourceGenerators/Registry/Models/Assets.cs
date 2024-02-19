@@ -49,29 +49,12 @@ internal sealed class Assets
 
         using var document = JsonDocument.Parse(json);
 
-        var dimensions = new List<Codec>();
-
         var codecElements = document.RootElement.GetProperty("value").EnumerateArray();
 
-        foreach (var codec in codecElements)
-        {
-            var obj = new Codec(codec.GetProperty("name").GetString()!, codec.GetProperty("id").GetInt32());
+        var codecs = codecElements
+            .Select(codec => new Codec(codec.GetProperty("name").GetString()!, codec.GetProperty("id").GetInt32()));
 
-            foreach (var property in codec.EnumerateObject())
-            {
-                if (property.Name is "name" or "id")
-                    continue;
-
-                foreach (var elementProperty in property.Value.EnumerateObject())
-                {
-                    obj.Properties.Add(elementProperty.Name.ToPascalCase(), elementProperty.Value.Clone());
-                }
-            }
-
-            dimensions.Add(obj);
-        }
-
-        return dimensions.ToArray();
+        return codecs.ToArray();
     }
 
     public static Fluid[] GetFluids(string? json)

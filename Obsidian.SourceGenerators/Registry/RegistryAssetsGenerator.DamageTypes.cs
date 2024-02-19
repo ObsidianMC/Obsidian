@@ -1,58 +1,31 @@
 ﻿using Obsidian.SourceGenerators.Registry.Models;
-using System.Text.Json;
 
 namespace Obsidian.SourceGenerators.Registry;
 public partial class RegistryAssetsGenerator
 {
-    private static void GenerateDamageTypes(Codec[] damageTypes, CodeBuilder builder, SourceProductionContext ctx)
+    private static void GenerateDamageTypes(Codec[] damageTypes, CodeBuilder builder)
     {
-        builder.Type($"public static class DamageTypes");
+        builder.Type($"public static partial class DamageTypes");
 
-        builder.Indent().Append("public const string CodecKey = \"minecraft:damage_type\";").Line().Line();
+        builder.Indent()
+            .Append("public const string CodecKey = \"minecraft:damage_type\";").Line().Line();
 
-        foreach (var damageType in damageTypes)
+        builder.Indent()
+            .Append($"public const int GlobalBitsPerEntry = {(int)Math.Ceiling(Math.Log(damageTypes.Length, 2))};").Line().Line();
+
+        foreach (var codec in damageTypes)
         {
-            var propertyName = damageType.Name.RemoveNamespace().ToPascalCase();
-            builder.Indent().Append($"public static DamageTypeCodec {propertyName} {{ get; }} = new() {{ Id = {damageType.RegistryId}, Name = \"{damageType.Name}\", Element = new() {{ ");
+            var propertyName = codec.Name.RemoveNamespace().ToPascalCase();
 
-            foreach (var property in damageType.Properties)
-            {
-                var name = property.Key;
-                var value = property.Value;
-
-                builder.Append($"{name} = ");
-
-                if (value.ValueKind == JsonValueKind.String && name != "MessageId")
-                {
-                    name = name switch
-                    {
-                        "Scaling" => "DamageScaling",
-                        "Effects" => "DamageEffects",
-                        _ => name
-                    };
-
-                    builder.Append($"{name}.{value.GetString()!.ToPascalCase()}, ");
-                }
-                else
-                {
-                    AppendValueType(builder, value, ctx);
-                }
-
-                
-            }
-
-            builder.Append("} };").Line();
+            builder.Indent()
+                .Append($"public static DamageTypeCodec {propertyName} => All[\"{codec.Name}\"];")
+                .Line();
         }
 
-        builder.Line().Statement("public static IReadOnlyDictionary<string, DamageTypeCodec> All { get; } = new Dictionary<string, DamageTypeCodec>");
-
-        foreach (var name in damageTypes.Select(x => x.Name))
-        {
-            var propertyName = name.RemoveNamespace().ToPascalCase();
-            builder.Line($"{{ \"{name}\", {propertyName} }},");
-        }
-
-        builder.EndScope(".AsReadOnly()", true).Line();
+        builder.Line()
+            .Indent()
+            .Append("internal static ConcurrentDictionary<string, DamageTypeCodec> All { get; } = new();")
+            .Line();
 
         builder.EndScope();
     }

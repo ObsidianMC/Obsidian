@@ -15,10 +15,6 @@ internal static class NameHelper
         // var textInfo = System.Globalization.CultureInfo.CurrentCulture.TextInfo;
         // return string.Join("", snakeCase.Split('_').Select(s => textInfo.ToTitleCase(s)));
 
-        //Assume its camelCase
-        if (!value.Contains("_"))
-            return new string([char.ToUpper(value[0]), .. value.Substring(1)]);
-
         int spaceCount = 0;
         for (int i = 0; i < value.Length; i++)
         {
