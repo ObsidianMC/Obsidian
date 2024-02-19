@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using Obsidian.API.Utilities.Json.Converters;
+using System.Text.Json.Serialization;
 
 namespace Obsidian.API.Registry.Codecs.Dimensions;
 
@@ -6,7 +7,8 @@ public sealed record class DimensionElement
 {
     public int MonsterSpawnBlockLightLimit { get; set; }
 
-    public MonsterSpawnLightLevel MonsterSpawnLightLevel { get; set; }
+    [JsonConverter(typeof(MonsterSpawnLightLevelConverter))]
+    public IMonsterSpawnLightLevel MonsterSpawnLightLevel { get; set; }
 
     /// <summary>
     /// Whether piglins shake and transform to zombified piglins.
@@ -124,24 +126,25 @@ public sealed record class DimensionElement
     /// Whether the dimension has a bedrock ceiling or not.
     /// </summary>
     public bool HasCeiling { get; set; }
-
-    internal DimensionElement() { }
 }
 
-
-public sealed record class MonsterSpawnLightLevel
+public interface IMonsterSpawnLightLevel 
 {
-    public MonsterSpawnLightLevelValue? Value { get; set; }
-
-    [JsonIgnore]
-    public int? IntValue { get; set; }
+    public string Type { get; }
 }
 
-public record struct MonsterSpawnLightLevelValue
+public sealed record class MonsterSpawnLightLevelIntValue : IMonsterSpawnLightLevel
 {
-    public int MaxInclusive { get; set; }
+    public required int Value { get; set; }
 
-    public int MinInclusive { get; set; }
+    public string Type => "integer";
+}
 
-    public string? Type { get; set; }
+public sealed class MonsterLightLevelUniformValue : IMonsterSpawnLightLevel
+{
+    public required int MaxInclusive { get; set; }
+
+    public required int MinInclusive { get; set; }
+
+    public string Type => "minecraft:uniform";
 }

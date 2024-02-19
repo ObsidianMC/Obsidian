@@ -5,7 +5,6 @@ public sealed class DamageTypeCodec : ICodec
 
     public required int Id { get; init; }
 
-    public DamageTypeElement Element { get; internal set; } = new();
-
-    internal DamageTypeCodec() { }
+    public required DamageTypeElement Element { get; init; }
 }
+

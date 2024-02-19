@@ -244,9 +244,9 @@ public partial class Extensions
     #region Dimension Codec Writing
     public static NbtCompound WriteElement(this DimensionCodec value)
     {
-        INbtTag monsterSpawnLightLevel;
+        INbtTag monsterSpawnLightLevel = default!;
 
-        if (value.Element.MonsterSpawnLightLevel.Value.HasValue)
+        if (value.Element.MonsterSpawnLightLevel is MonsterLightLevelUniformValue uniformValue)
         {
             //monsterSpawnLightLevel = new NbtCompound("monster_spawn_light_level")
             //{
@@ -254,10 +254,10 @@ public partial class Extensions
             //    new NbtTag<int>("max_inclusive", value.Element.MonsterSpawnLightLevel.Value?.MaxInclusive ?? 0),
             //    new NbtTag<string>("type", value.Element.MonsterSpawnLightLevel.Value?.Type ?? string.Empty)
             //};
-            monsterSpawnLightLevel = new NbtTag<int>("monster_spawn_light_level", value.Element.MonsterSpawnLightLevel.Value?.MaxInclusive ?? 0);
+            monsterSpawnLightLevel = new NbtTag<int>("monster_spawn_light_level", uniformValue.MaxInclusive);
         }
-        else
-            monsterSpawnLightLevel = new NbtTag<int>("monster_spawn_light_level", value.Element.MonsterSpawnLightLevel.IntValue ?? 0);
+        else if(value.Element.MonsterSpawnLightLevel is MonsterSpawnLightLevelIntValue intValue)
+            monsterSpawnLightLevel = new NbtTag<int>("monster_spawn_light_level", intValue.Value);
 
         var compound = new NbtCompound("element")
         {

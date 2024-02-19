@@ -18,6 +18,12 @@ public static class Globals
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
         NumberHandling = JsonNumberHandling.AllowReadingFromString,
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        Converters =
+        {
+            new JsonStringEnumConverter<DamageScaling>(JsonNamingPolicy.SnakeCaseLower),
+            new JsonStringEnumConverter<DamageEffects>(JsonNamingPolicy.SnakeCaseLower),
+            new JsonStringEnumConverter<DeathMessageType>(JsonNamingPolicy.SnakeCaseLower),
+        }
     };
 
     public static readonly JsonSerializerOptions JsonOptions = new()
