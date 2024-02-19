@@ -14,7 +14,7 @@ public sealed record class BiomeElement
     [JsonConverter(typeof(SpecialDictionaryConverter))]
     public Dictionary<string, string[]> Carvers { get; set; } = default!;
     public Dictionary<string, SpawnerMob[]> Spawners { get; set; } = default!;
-    public Dictionary<string, object> SpawnCosts { get; set; } = default!;
+    public Dictionary<string, SpawnCost> SpawnCosts { get; set; } = default!;
 
     public float Depth { get; set; }
     public float Temperature { get; set; }
@@ -25,6 +25,12 @@ public sealed record class BiomeElement
     public string? TemperatureModifier { get; set; }
 
     public bool PlayerSpawnFriendly { get; set; }
+}
+
+public sealed class SpawnCost
+{
+    public required float Charge { get; init; }
+    public required float EnergyBudget { get; init; }
 }
 
 public sealed class SpawnerMob
