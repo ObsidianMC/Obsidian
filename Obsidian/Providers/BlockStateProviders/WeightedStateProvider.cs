@@ -1,4 +1,6 @@
-﻿namespace Obsidian.Providers.BlockStateProviders;
+﻿using Obsidian.Registries;
+
+namespace Obsidian.Providers.BlockStateProviders;
 public sealed class WeightedStateProvider : IBlockStateProvider
 {
     public string Identifier => "minecraft:weighted_state_provider";
@@ -7,14 +9,19 @@ public sealed class WeightedStateProvider : IBlockStateProvider
 
     public void AddEntry(IBlock block, int weight) => Entries.Add(new()
     {
-        Data = block,
+        Data = new() { Name = block.UnlocalizedName },
         Weight = weight
     });
 
     public readonly struct WeightedStateEntry
     {
-        public required IBlock Data { get; init; }
+        public required SimpleBlockState Data { get; init; }
 
         public required int Weight { get; init; }
     }
+
+    public IBlock Get() =>
+        BlocksRegistry.GetFromSimpleState(this.Entries.OrderBy(x => x.Weight).First().Data);
+    public SimpleBlockState GetSimple() =>
+         this.Entries.OrderBy(x => x.Weight).First().Data;
 }

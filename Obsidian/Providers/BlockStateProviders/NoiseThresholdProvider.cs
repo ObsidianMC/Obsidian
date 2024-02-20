@@ -1,12 +1,13 @@
-﻿namespace Obsidian.Providers.BlockStateProviders;
+﻿using Obsidian.Registries;
+
+namespace Obsidian.Providers.BlockStateProviders;
 public sealed class NoiseThresholdProvider : IBlockStateProvider
 {
     public string Identifier => "minecraft:noise_threshold_provider";
 
     public required long Seed { get; set; }
 
-    //??? WHAT IS THIS FOR
-    public object? Noise { get; set; }
+    public SimpleNoise? Noise { get; set; }
 
     public required float Scale { get; set; }
 
@@ -14,9 +15,19 @@ public sealed class NoiseThresholdProvider : IBlockStateProvider
 
     public required float HighChance { get; set; }
 
-    public required IBlock DefaultState { get; set; }
+    public required SimpleBlockState DefaultState { get; set; }
 
-    public List<IBlock> LowStates { get; } = [];
+    public List<SimpleBlockState> LowStates { get; } = [];
 
-    public List<IBlock> HighStates { get; } = [];
+    public List<SimpleBlockState> HighStates { get; } = [];
+
+    public IBlock Get()
+    {
+        return BlocksRegistry.Air;
+    }
+
+    public SimpleBlockState GetSimple()
+    {
+        return new() { Name = BlocksRegistry.Air.UnlocalizedName };
+    }
 }

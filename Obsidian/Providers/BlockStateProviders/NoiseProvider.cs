@@ -7,10 +7,20 @@ public sealed class NoiseProvider : IBlockStateProvider
 
     public required long Seed { get; set; }
 
-    //??? WHAT IS THIS FOR
-    public object? Noise { get; set; }
+    public SimpleNoise? Noise { get; set; }
 
     public required float Scale { get; set; }
 
-    public List<IBlock> States { get; } = [];
+    public List<SimpleBlockState> States { get; } = [];
+
+    //TODO
+    public IBlock Get()
+    {
+        return BlocksRegistry.Air;
+    }
+
+    public SimpleBlockState GetSimple()
+    {
+        return new() { Name = BlocksRegistry.Air.UnlocalizedName };
+    }
 }
