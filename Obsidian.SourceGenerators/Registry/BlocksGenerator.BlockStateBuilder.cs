@@ -1,5 +1,6 @@
 ﻿using Obsidian.SourceGenerators.Registry.Models;
 using System.Reflection;
+using System.Text.Json;
 
 namespace Obsidian.SourceGenerators.Registry;
 public partial class BlocksGenerator
@@ -98,6 +99,32 @@ public partial class BlocksGenerator
         stateBuilder.EndScope();
     }
 
+    private static void SetStateFromDictionaryMethod(string fullName, CodeBuilder stateBuilder, BlockProperty[] properties)
+    {
+        stateBuilder.Line().Line().Method($"public {fullName}(Dictionary<string, string> properties)");
+
+        var count = 0;
+        foreach (var property in properties)
+        {
+            var propertyName = property.Name.Replace("Is", string.Empty);
+
+            var mojangPropertyName = JsonNamingPolicy.SnakeCaseLower.ConvertName(propertyName);
+
+            var method = property.Type switch
+            {
+                "bool" => $"bool.Parse(properties[\"{mojangPropertyName}\"]);",
+                "int" => $"int.Parse(properties[\"{mojangPropertyName}\"]);",
+                _ => $"Enum.Parse<{property.Type}>(properties[\"{mojangPropertyName}\"]);"
+            };
+
+            stateBuilder.Line($"this.{propertyName} = {method}");
+
+            count++;
+        }
+
+        stateBuilder.EndScope();
+    }
+
     private static void CreateStateBuilders(Block[] blocks, SourceProductionContext ctx)
     {
         foreach (var block in blocks)
@@ -135,6 +162,7 @@ public partial class BlocksGenerator
             stateBuilder.Line().Line().Method($"public {fullName}()").EndScope();
 
             SetStateFromIdMethod(fullName, stateBuilder, block.Properties);
+            SetStateFromDictionaryMethod(fullName, stateBuilder, block.Properties);
 
             stateBuilder.Line().Line().Method($"public {fullName}(IBlockState oldState)");
 
