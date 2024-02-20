@@ -315,24 +315,22 @@ public sealed class Client : IDisposable
                 case ClientState.Configuration:
                     Debug.Assert(Player is not null);
 
-                    var configurationPacketReceived = new PacketReceivedEventArgs(Player, this.server, id, data);
+                    var result = await this.server.EventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.server, id, data));
 
-                    await this.server.Events.PacketReceived.InvokeAsync(configurationPacketReceived);
+                    if (result == EventResult.Cancelled)
+                        return;
 
-                    if (!configurationPacketReceived.IsCancelled)
-                        await this.handler.HandleConfigurationPackets(id, data, this);
-
+                    await this.handler.HandleConfigurationPackets(id, data, this);
                     break;
                 case ClientState.Play:
                     Debug.Assert(Player is not null);
 
-                    var playPacketReceived = new PacketReceivedEventArgs(Player, this.server, id, data);
+                    result = await this.server.EventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.server, id, data));
 
-                    await this.server.Events.PacketReceived.InvokeAsync(playPacketReceived);
+                    if (result == EventResult.Cancelled)
+                        return;
 
-                    if (!playPacketReceived.IsCancelled)
-                        await handler.HandlePlayPackets(id, data, this);
-
+                    await handler.HandlePlayPackets(id, data, this);
                     break;
                 case ClientState.Closed:
                 default:
@@ -345,7 +343,7 @@ public sealed class Client : IDisposable
         if (State == ClientState.Play)
         {
             Debug.Assert(Player is not null);
-            await this.server.Events.PlayerLeave.InvokeAsync(new PlayerLeaveEventArgs(Player, this.server, DateTimeOffset.Now));
+            await this.server.EventDispatcher.ExecuteEventAsync(new PlayerLeaveEventArgs(Player, this.server, DateTimeOffset.Now));
         }
 
         Disconnected?.Invoke(this);
@@ -365,7 +363,7 @@ public sealed class Client : IDisposable
     {
         var status = new ServerStatus(this.server);
 
-        _ = await this.server.Events.ServerStatusRequest.InvokeAsync(new ServerStatusRequestEventArgs(this.server, status));
+        _ = await this.server.EventDispatcher.ExecuteEventAsync(new ServerStatusRequestEventArgs(this.server, status));
 
         SendPacket(new RequestResponse(status));
     }
@@ -569,7 +567,7 @@ public sealed class Client : IDisposable
 
         await Player.UpdateChunksAsync(distance: 7);
         await SendInfoAsync();
-        await this.server.Events.PlayerJoin.InvokeAsync(new PlayerJoinEventArgs(Player, this.server, DateTimeOffset.Now));
+        await this.server.EventDispatcher.ExecuteEventAsync(new PlayerJoinEventArgs(Player, this.server, DateTimeOffset.Now));
     }
 
     #region Packet sending
@@ -577,7 +575,7 @@ public sealed class Client : IDisposable
     {
         if (Player is null)
             throw new UnreachableException("Player is null, which means the client has not yet logged in.");
-        
+
         await QueuePacketAsync(new SetDefaultSpawnPositionPacket(Player.world.LevelData.SpawnPosition));
 
         await SendTimeUpdateAsync();
@@ -741,10 +739,12 @@ public sealed class Client : IDisposable
 
     internal async Task QueuePacketAsync(IClientboundPacket packet)
     {
-        var args = await this.server.Events.QueuePacket.InvokeAsync(new QueuePacketEventArgs(this, packet));
-        if (args.IsCancelled)
+        var args = new QueuePacketEventArgs(this.server, this, packet);
+
+        var result = await this.server.EventDispatcher.ExecuteEventAsync(args);
+        if (result == EventResult.Cancelled)
         {
-            Logger.LogDebug("Packet {PacketId} was sent to the queue, however an event handler registered in {Name} has cancelled it.", args.Packet.Id, nameof(Server.Events));
+            Logger.LogDebug("Packet {PacketId} was sent to the queue, however an event handler has cancelled it.", args.Packet.Id);
         }
         else
         {

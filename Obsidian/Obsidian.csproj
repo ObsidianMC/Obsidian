@@ -54,20 +54,25 @@
 
 	<ItemGroup>
 		<PackageReference Include="BouncyCastle.NetCoreSdk" Version="1.9.7" />
-		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.4.0" />
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="7.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
 		<PackageReference Include="SharpNoise" Version="0.12.1.1" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<EmbeddedResource Include="Assets/*.*" CopyToOutputDirectory="PreserveNewest" />
 		<AdditionalFiles Include="Assets/*.*"/>
+		<EmbeddedResource Include="Assets/Structures/*.*" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
+		<Compile Remove="Plugins\Services\**" />
+		<EmbeddedResource Remove="Plugins\Services\**" />
+		<None Remove="Plugins\Services\**" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -77,6 +82,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Folder Include="Commands\Framework\ArgumentParsers\" />
 		<Folder Include="Net\Packets\Configuration\Serverbound\" />
 		<Folder Include="Plugins\Services\" />
 		<Folder Include="Registries\ConfiguredFeatures\" />

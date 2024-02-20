@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Connections;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Boss;
@@ -9,7 +10,6 @@ using Obsidian.API.Utilities;
 using Obsidian.Commands;
 using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Entities;
-using Obsidian.Commands.Parsers;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Events;
@@ -64,7 +64,8 @@ public sealed partial class Server : IServer
     private readonly ILoggerFactory loggerFactory;
     private readonly RconServer _rconServer;
     private readonly IUserCache userCache;
-    private readonly ILogger _logger;
+    internal readonly ILogger _logger;
+    private readonly IServiceProvider serviceProvider;
 
     private IConnectionListener? _tcpListener;
 
@@ -74,7 +75,7 @@ public sealed partial class Server : IServer
     public DateTimeOffset StartTime { get; private set; }
 
     public PluginManager PluginManager { get; }
-    public MinecraftEventHandler Events { get; } = new();
+    public EventDispatcher EventDispatcher { get; }
 
     public IOperatorList Operators { get; }
     public IScoreboardManager ScoreboardManager { get; private set; }
@@ -101,7 +102,10 @@ public sealed partial class Server : IServer
         ILoggerFactory loggerFactory,
         IWorldManager worldManager,
         RconServer rconServer,
-        IUserCache playerCache)
+        IUserCache playerCache,
+        EventDispatcher eventDispatcher,
+        CommandHandler commandHandler,
+        IServiceProvider serviceProvider)
     {
         Configuration = environment.Configuration;
         _logger = loggerFactory.CreateLogger<Server>();
@@ -110,36 +114,30 @@ public sealed partial class Server : IServer
         _cancelTokenSource.Token.Register(() => _logger.LogWarning("Obsidian is shutting down..."));
         _rconServer = rconServer;
 
+        this.serviceProvider = serviceProvider;
+
         Port = Configuration.Port;
 
         Operators = new OperatorList(this, loggerFactory);
         ScoreboardManager = new ScoreboardManager(this, loggerFactory);
 
         _logger.LogDebug(message: "Initializing command handler...");
-        CommandsHandler = new CommandHandler();
 
-        PluginManager = new PluginManager(Events, this, _logger, CommandsHandler);
-        CommandsHandler.LinkPluginManager(PluginManager);
+        CommandsHandler = commandHandler;
+
+        PluginManager = new PluginManager(this.serviceProvider, this, eventDispatcher, CommandsHandler, _logger);
 
         _logger.LogDebug("Registering commands...");
-        CommandsHandler.RegisterCommandClass(null, new MainCommandModule());
-
-        _logger.LogDebug("Registering custom argument parsers...");
-        CommandsHandler.AddArgumentParser(new LocationTypeParser());
-        CommandsHandler.AddArgumentParser(new PlayerTypeParser());
+        CommandsHandler.RegisterCommandClass<MainCommandModule>(null);
+        eventDispatcher.RegisterEvents<MainEventHandler>(null);
 
         _logger.LogDebug("Registering command context type...");
         _logger.LogDebug("Done registering commands.");
 
         this.userCache = playerCache;
+        this.EventDispatcher = eventDispatcher;
         this.loggerFactory = loggerFactory;
         this.WorldManager = worldManager;
-
-        Events.PlayerLeave += OnPlayerLeave;
-        Events.PlayerJoin += OnPlayerJoin;
-        Events.PlayerAttackEntity += PlayerAttack;
-        Events.PlayerInteract += OnPlayerInteract;
-        Events.ContainerClosed += OnContainerClosed;
 
         Directory.CreateDirectory(PermissionPath);
         Directory.CreateDirectory(PersistentDataPath);
@@ -164,12 +162,6 @@ public sealed partial class Server : IServer
             });
         }
     }
-
-    public void RegisterCommandClass<T>(PluginContainer plugin, T instance) =>
-        CommandsHandler.RegisterCommandClass<T>(plugin, instance);
-
-    public void RegisterArgumentHandler<T>(T parser) where T : BaseArgumentParser =>
-        CommandsHandler.AddArgumentParser(parser);
 
     // TODO make sure to re-send recipes
     public void RegisterRecipes(params IRecipe[] recipes)
@@ -252,6 +244,9 @@ public sealed partial class Server : IServer
         await RecipesRegistry.InitializeAsync();
         await CodecRegistry.InitializeAsync(_logger);
 
+        _logger.LogInformation("Loading structures...");
+        StructureRegistry.Initialize();
+
         await this.userCache.LoadAsync(this._cancelTokenSource.Token);
 
         _logger.LogInformation("Loading properties...");
@@ -288,6 +283,8 @@ public sealed partial class Server : IServer
         //Wait for worlds to load
         while (!this.WorldManager.ReadyToJoin && !this._cancelTokenSource.IsCancellationRequested)
             continue;
+
+        this.PluginManager.ServerReady();
 
         _logger.LogInformation("Listening for new clients...");
 
@@ -406,14 +403,16 @@ public sealed partial class Server : IServer
 
     public async Task ExecuteCommand(string input)
     {
-        var context = new CommandContext(CommandsHandler._prefix + input, new CommandSender(CommandIssuers.Console, null, _logger), null, this);
+        var context = new CommandContext(CommandHelpers.DefaultPrefix + input, 
+            new CommandSender(CommandIssuers.Console, null, _logger), null, this);
+
         try
         {
             await CommandsHandler.ProcessCommand(context);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, e.Message);
+            _logger.LogError(e, "{exceptionMessage}", e.Message);
         }
     }
 
@@ -442,16 +441,13 @@ public sealed partial class Server : IServer
 
     internal async Task HandleIncomingMessageAsync(ChatMessagePacket packet, Client source, MessageType type = MessageType.Chat)
     {
-        var format = "<{0}> {1}";
+        const string format = "<{0}> {1}";//TODO use this????
         var message = packet.Message;
 
-        var chat = await Events.IncomingChatMessage.InvokeAsync(new IncomingChatMessageEventArgs(source.Player, this, message, format));
-        if (chat.IsCancelled)
-            return;
-
-        //TODO add bool for sending secure chat messages
-        ChatColor nameColor = source.Player.IsOperator ? ChatColor.BrightGreen : ChatColor.Gray;
-        BroadcastMessage(ChatMessage.Simple(source.Player.Username, nameColor).AppendText($": {message}", ChatColor.White));
+        if(type is MessageType.Chat or MessageType.System)
+        {
+            await this.EventDispatcher.ExecuteEventAsync(new IncomingChatMessageEventArgs(source.Player, this, message, format));
+        }
     }
 
     internal async Task QueueBroadcastPacketAsync(IClientboundPacket packet)
@@ -515,8 +511,6 @@ public sealed partial class Server : IServer
         {
             while (await timer.WaitForNextTickAsync())
             {
-                await Events.ServerTick.InvokeAsync();
-
                 keepAliveTicks++;
                 if (keepAliveTicks > (Configuration.KeepAliveInterval / 50)) // to clarify: one tick is 50 milliseconds. 50 * 200 = 10000 millis means 10 seconds
                 {

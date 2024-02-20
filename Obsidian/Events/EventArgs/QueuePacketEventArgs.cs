@@ -5,10 +5,12 @@ namespace Obsidian.Events.EventArgs;
 
 public class QueuePacketEventArgs : BasePacketEventArgs, ICancellable
 {
+    public static new string Name => "QueuePacket";
+
     /// <inheritdoc />
     public bool IsCancelled { get; private set; }
 
-    internal QueuePacketEventArgs(Client client, IPacket packet) : base(client, packet)
+    internal QueuePacketEventArgs(Server server, Client client, IPacket packet) : base(server, client, packet)
     {
     }
 

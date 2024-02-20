@@ -2,42 +2,46 @@
 using Obsidian.API.Plugins;
 using System.IO;
 using System.Reflection;
+using System.Text.Json;
 
 namespace Obsidian.Plugins.PluginProviders;
 
-public class CompiledPluginProvider : IPluginProvider
+public sealed class CompiledPluginProvider(ILogger logger) : IPluginProvider
 {
-    public PluginContainer GetPlugin(string path, ILogger logger)
+    private readonly ILogger logger = logger;
+
+    public async Task<PluginContainer> GetPluginAsync(string path)
     {
         var loadContext = new PluginLoadContext(Path.GetFileNameWithoutExtension(path) + "LoadContext", path);
-        var assembly = loadContext.LoadFromAssemblyPath(Path.Combine(Directory.GetCurrentDirectory(), path));
+        using var pluginStream = new FileStream(path, FileMode.Open);
 
-        return HandlePlugin(loadContext, assembly, path, logger);
+        var assembly = loadContext.LoadFromStream(pluginStream);
+
+        return await HandlePluginAsync(loadContext, assembly, path);
     }
 
-    internal PluginContainer HandlePlugin(PluginLoadContext loadContext, Assembly assembly, string path, ILogger logger)
+    internal async Task<PluginContainer> HandlePluginAsync(PluginLoadContext loadContext, Assembly assembly, string path)
     {
-        Type pluginType = assembly.GetTypes().FirstOrDefault(type => type.IsSubclassOf(typeof(PluginBase)));
+        Type? pluginType = assembly.GetTypes().FirstOrDefault(type => type.IsSubclassOf(typeof(PluginBase)));
 
-        PluginBase plugin;
+        PluginBase? plugin;
         if (pluginType == null || pluginType.GetConstructor([]) == null)
         {
             plugin = default;
-            logger?.LogError("Loaded assembly contains no type implementing PluginBase with public parameterless constructor.");
+            logger.LogError("Loaded assembly contains no type implementing PluginBase with public parameterless constructor.");
             return new PluginContainer(new PluginInfo(Path.GetFileNameWithoutExtension(path)), path);
         }
         else
         {
-            logger?.LogInformation("Creating plugin instance...");
-            plugin = (PluginBase)Activator.CreateInstance(pluginType);
+            logger.LogInformation("Creating plugin instance...");
+            plugin = (PluginBase)Activator.CreateInstance(pluginType)!;
         }
 
-        string name = assembly.GetName().Name;
-        var attribute = pluginType.GetCustomAttribute<PluginAttribute>();
-        var info = attribute != null ? new PluginInfo(name, attribute) : new PluginInfo(name);
+        string name = assembly.GetName().Name!;
+        using var pluginInfoStream = assembly.GetManifestResourceStream($"{name}.plugin.json") 
+            ?? throw new InvalidOperationException($"Failed to find embedded plugin.json file for {name}");
 
-        if (attribute == null)
-            logger?.LogWarning($"Plugin is missing {nameof(PluginAttribute)}. Name defaults to '{info.Name}', version defaults to {info.Version}.");
+        var info = await pluginInfoStream.FromJsonAsync<PluginInfo>() ?? throw new JsonException($"Couldn't deserialize plugin.json from {name}");
 
         return new PluginContainer(plugin, info, assembly, loadContext, path);
     }

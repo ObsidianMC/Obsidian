@@ -43,17 +43,25 @@ public sealed class WorldManager : BackgroundService, IWorldManager
     {
         var timer = new BalancingTimer(20, stoppingToken);
 
-        this.RegisterDefaults();
-        // TODO: This should defenitly accept a cancellation token.
-        // If Cancel is called, this method should stop within the configured timeout, otherwise code execution will simply stop here,
-        // and server shutdown will not be handled correctly.
-        // Load worlds on startup.
-        await this.LoadWorldsAsync();
-
-        while (await timer.WaitForNextTickAsync())
+        try
         {
-            await Task.WhenAll(this.worlds.Values.Cast<World>().Select(x => x.ManageChunksAsync()));
+            this.RegisterDefaults();
+            // TODO: This should defenitly accept a cancellation token.
+            // If Cancel is called, this method should stop within the configured timeout, otherwise code execution will simply stop here,
+            // and server shutdown will not be handled correctly.
+            // Load worlds on startup.
+            await this.LoadWorldsAsync();
+
+            while (await timer.WaitForNextTickAsync())
+            {
+                await Task.WhenAll(this.worlds.Values.Cast<World>().Select(x => x.ManageChunksAsync()));
+            }
         }
+        catch (Exception ex)
+        {
+            await this.serverEnvironment.OnServerCrashAsync(this.logger, ex);
+        }
+
     }
 
     /// <summary>

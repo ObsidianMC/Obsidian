@@ -2,6 +2,7 @@
 //     Copyright (C) 2022
 
 using Microsoft.Extensions.Logging;
+using Obsidian.API.Utilities;
 using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Exceptions;
 using Org.BouncyCastle.Crypto;
@@ -249,16 +250,16 @@ public sealed class RconConnection
                         // await response.WriteAsync(networkStream, cancellationToken);
 
                         var sender = new RconCommandSender();
-                        var context = new CommandContext(CommandHandler.DefaultPrefix + packet.PayloadText, sender,
+                        var context = new CommandContext(CommandHelpers.DefaultPrefix + packet.PayloadText, sender,
                             null, server);
 
                         try
                         {
-                            logger.LogInformation("Executing '{Prefix}{Command}'", CommandHandler.DefaultPrefix, packet.PayloadText);
+                            logger.LogInformation("Executing '{Prefix}{Command}'", CommandHelpers.DefaultPrefix, packet.PayloadText);
 
                             server.Operators.GetOnlineOperators().ForEach(op =>
                             {
-                                op.SendMessageAsync($"[RCON: {CommandHandler.DefaultPrefix}{packet.PayloadText}]");
+                                op.SendMessageAsync($"[RCON: {CommandHelpers.DefaultPrefix}{packet.PayloadText}]");
                             });
 
                             await commandHandler.ProcessCommand(context);

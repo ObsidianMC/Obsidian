@@ -1,3 +1,4 @@
+using Obsidian.API.Commands;
 using Obsidian.API.Utilities;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Entities;
@@ -8,19 +9,19 @@ using System.Diagnostics;
 
 namespace Obsidian.Commands;
 
-public class MainCommandModule
+public class MainCommandModule : CommandModuleBase
 {
     private const int CommandsPerPage = 15;
 
     [Command("help", "commands")]
     [CommandInfo("Lists available commands.", "/help [<page>]")]
-    public Task HelpAsync(CommandContext ctx) => HelpAsync(ctx, 1);
+    public Task HelpAsync() => HelpAsync(1);
 
     [CommandOverload]
-    public async Task HelpAsync(CommandContext ctx, int page)
+    public async Task HelpAsync(int page)
     {
-        var sender = ctx.Sender;
-        var server = (Server)ctx.Server;
+        var sender = this.Sender;
+        var server = (Server)this.Server;
         var commandHandler = server.CommandsHandler;
         var allCommands = commandHandler.GetAllCommands();
         var availableCommands = new List<Command>();
@@ -33,7 +34,7 @@ public class MainCommandModule
             // only list commands the user may execute.
             foreach (var check in command.ExecutionChecks)
             {
-                if (!await check.RunChecksAsync(ctx))
+                if (!await check.RunChecksAsync(this.CommandContext))
                 {
                     success = false;
                 }
@@ -66,7 +67,7 @@ public class MainCommandModule
 
         foreach (var cmd in commandSection.Where(x => x.Parent is null))
         {
-            string usage = cmd.Usage.IsEmpty() ? $"/{cmd.Name}" : cmd.Usage;
+            string usage = cmd.Usage.IsNullOrEmpty() ? $"/{cmd.Name}" : cmd.Usage;
             var commandName = new ChatMessage
             {
                 Text = $"\n{ChatColor.Gold}{usage}",
@@ -94,26 +95,26 @@ public class MainCommandModule
 
     [Command("tps")]
     [CommandInfo("Gets server TPS", "/tps")]
-    public async Task TPSAsync(CommandContext ctx)
+    public async Task TPSAsync()
     {
-        var sender = ctx.Sender;
+        var sender = this.Sender;
 
-        ChatColor color = ctx.Server.Tps switch
+        ChatColor color = this.Server.Tps switch
         {
             > 15 => ChatColor.BrightGreen,
             > 10 => ChatColor.Yellow,
             _ => ChatColor.Red
         };
 
-        await sender.SendMessageAsync($"{ChatColor.Gold}Current server TPS: {color}{ctx.Server.Tps}");
+        await sender.SendMessageAsync($"{ChatColor.Gold}Current server TPS: {color}{this.Server.Tps}");
     }
 
     [Command("plugins", "pl")]
     [CommandInfo("Gets all plugins", "/plugins")]
-    public async Task PluginsAsync(CommandContext ctx)
+    public async Task PluginsAsync()
     {
-        var srv = (Server)ctx.Server;
-        var sender = ctx.Sender;
+        var srv = (Server)this.Server;
+        var sender = this.Sender;
         var pluginCount = srv.PluginManager.Plugins.Count;
         var message = new ChatMessage
         {
@@ -158,9 +159,9 @@ public class MainCommandModule
 
     [Command("save")]
     [CommandInfo("Save World", "/save")]
-    public async Task SaveAsync(CommandContext ctx)
+    public async Task SaveAsync()
     {
-        if (ctx.Player?.World is World world)
+        if (this.Player?.World is World world)
         {
             await world.FlushRegionsAsync();
         }
@@ -169,9 +170,9 @@ public class MainCommandModule
     [Command("forcechunkreload")]
     [CommandInfo("Force chunk reload", "/forcechunkreload")]
     [IssuerScope(CommandIssuers.Client)]
-    public async Task ForceChunkReloadAsync(CommandContext ctx)
+    public async Task ForceChunkReloadAsync()
     {
-        if (ctx.Player is Player player)
+        if (this.Player is Player player)
         {
             await player.UpdateChunksAsync(true);
         }
@@ -179,24 +180,24 @@ public class MainCommandModule
 
     [Command("echo")]
     [CommandInfo("Echoes given text.", "/echo <message>")]
-    public void Echo(CommandContext ctx, [Remaining] string text) => ctx.Server.BroadcastMessage($"[{ctx.Player?.Username ?? ctx.Sender.ToString()}] {text}");
+    public void Echo([Remaining] string text) => this.Server.BroadcastMessage($"[{this.Player?.Username ?? this.Sender.ToString()}] {text}");
 
     [Command("announce")]
     [CommandInfo("Makes an announcement", "/announce <message>")]
     [RequirePermission(op: true, permissions: "obsidian.announce")]
-    public void Announce(CommandContext ctx, [Remaining] string text) => ctx.Server.BroadcastMessage(text);
+    public void Announce([Remaining] string text) => this.Server.BroadcastMessage(text);
 
     [Command("uptime", "up")]
     [CommandInfo("Gets current uptime", "/uptime")]
-    public Task UptimeAsync(CommandContext ctx)
-        => ctx.Sender.SendMessageAsync($"Uptime: {DateTimeOffset.Now.Subtract(ctx.Server.StartTime)}");
+    public Task UptimeAsync()
+        => this.Sender.SendMessageAsync($"Uptime: {DateTimeOffset.Now.Subtract(this.Server.StartTime)}");
 
     [Command("declarecmds", "declarecommands")]
     [CommandInfo("Debug command for testing the Declare Commands packet", "/declarecmds")]
     [IssuerScope(CommandIssuers.Client)]
-    public async Task DeclareCommandsTestAsync(CommandContext ctx)
+    public async Task DeclareCommandsTestAsync()
     {
-        if (ctx.Player is Player player)
+        if (this.Player is Player player)
         {
             await player.client.QueuePacketAsync(CommandsRegistry.Packet);
         }
@@ -206,9 +207,9 @@ public class MainCommandModule
     [CommandInfo("Change your gamemode.", "/gamemode <survival/creative/adventure/spectator>")]
     [IssuerScope(CommandIssuers.Client)]
     [RequirePermission(op: true, permissions: "obsidian.gamemode")]
-    public async Task GamemodeAsync(CommandContext ctx, string gamemode)
+    public async Task GamemodeAsync(string gamemode)
     {
-        if (ctx.Player is not Player player)
+        if (this.Player is not Player player)
             return;
 
         if (!Enum.TryParse<Gamemode>(gamemode, true, out var result))
@@ -230,9 +231,9 @@ public class MainCommandModule
     [Command("tp")]
     [CommandInfo("teleports you to a location", "/tp <x> <y> <z>")]
     [IssuerScope(CommandIssuers.Client)]
-    public async Task TeleportAsync(CommandContext ctx, [Remaining] VectorF location)
+    public async Task TeleportAsync([Remaining] VectorF location)
     {
-        if (ctx.Player is not IPlayer player)
+        if (this.Player is not IPlayer player)
             return;
 
         await player.SendMessageAsync($"Teleporting to {location.X} {location.Y} {location.Z}");
@@ -242,38 +243,38 @@ public class MainCommandModule
     [Command("op")]
     [CommandInfo("Give operator rights to a specific player.", "/op <player>")]
     [RequirePermission]
-    public async Task GiveOpAsync(CommandContext ctx, IPlayer player)
+    public async Task GiveOpAsync(IPlayer player)
     {
         if (player == null)
             return;
 
-        ctx.Server.Operators.AddOperator(player);
+        this.Server.Operators.AddOperator(player);
 
-        await ctx.Sender.SendMessageAsync($"Made {player} a server operator");
-        await player.SendMessageAsync($"{(ctx.IsPlayer ? ctx.Player!.Username : "Console")} made you a server operator");
+        await this.Sender.SendMessageAsync($"Made {player} a server operator");
+        await player.SendMessageAsync($"{(this.IsPlayer ? this.Player!.Username : "Console")} made you a server operator");
     }
 
     [Command("deop")]
     [CommandInfo("Remove specific player's operator rights.", "/deop <player>")]
     [RequirePermission]
-    public async Task UnclaimOpAsync(CommandContext ctx, IPlayer player)
+    public async Task UnclaimOpAsync(IPlayer player)
     {
         if (player == null)
             return;
 
-        ctx.Server.Operators.RemoveOperator(player);
+        this.Server.Operators.RemoveOperator(player);
 
-        await ctx.Sender.SendMessageAsync($"Made {player} no longer a server operator");
-        await player.SendMessageAsync($"{(ctx.IsPlayer ? ctx.Player!.Username : "Console")} made you no longer a server operator");
+        await this.Sender.SendMessageAsync($"Made {player} no longer a server operator");
+        await player.SendMessageAsync($"{(this.IsPlayer ? this.Player!.Username : "Console")} made you no longer a server operator");
 
     }
 
     [Command("oprequest", "opreq")]
     [CommandInfo("Request operator rights.", "/oprequest [<code>]")]
     [IssuerScope(CommandIssuers.Client)]
-    public async Task RequestOpAsync(CommandContext ctx, string? code = null)
+    public async Task RequestOpAsync(string? code = null)
     {
-        if (ctx.Server is not Server server || ctx.Player is not IPlayer player)
+        if (this.Server is not Server server || this.Player is not IPlayer player)
             return;
 
         if (!server.Configuration.AllowOperatorRequests)
@@ -300,9 +301,9 @@ public class MainCommandModule
     [Command("title")]
     [CommandInfo("Sends a title", "/title")]
     [IssuerScope(CommandIssuers.Client)]
-    public async Task SendTitleAsync(CommandContext ctx)
+    public async Task SendTitleAsync()
     {
-        if (ctx.Player is IPlayer player)
+        if (this.Player is IPlayer player)
         {
             await player.SendTitleAsync("Test Title", "Test subtitle", 20, 40, 20);
         }
@@ -311,9 +312,9 @@ public class MainCommandModule
     [Command("spawnentity")]
     [CommandInfo("Spawns an entity", "/spawnentity [entityType]")]
     [IssuerScope(CommandIssuers.Client)]
-    public async Task SpawnEntityAsync(CommandContext context, string entityType)
+    public async Task SpawnEntityAsync(string entityType)
     {
-        if (context.Player is not IPlayer player)
+        if (this.Player is not IPlayer player)
             return;
 
         if (!Enum.TryParse<EntityType>(entityType, true, out var type))
@@ -329,10 +330,10 @@ public class MainCommandModule
     [Command("derp")]
     [CommandInfo("derpy derp", "/derp")]
     [IssuerScope(CommandIssuers.Client)]
-    public async Task DerpAsync(CommandContext ctx, string entityType)
+    public async Task DerpAsync(string entityType)
     {
         // I was bored
-        if (ctx.Player is not IPlayer player)
+        if (this.Player is not IPlayer player)
             return;
 
         if (!Enum.TryParse<EntityType>(entityType, true, out var type))
@@ -342,7 +343,7 @@ public class MainCommandModule
         }
 
         var frogge = await player.World.SpawnEntityAsync(player.Position, type);
-        var server = (ctx.Server as Server)!;
+        var server = (this.Server as Server)!;
 
         _ = Task.Run(async () =>
         {
@@ -361,9 +362,9 @@ public class MainCommandModule
     [Command("stop")]
     [CommandInfo("Stops the server.", "/stop")]
     [RequirePermission(permissions: "obsidian.stop")]
-    public async Task StopAsync(CommandContext ctx)
+    public async Task StopAsync()
     {
-        var server = (Server)ctx.Server;
+        var server = (Server)this.Server;
         server.BroadcastMessage($"Stopping server...");
 
         await server.StopAsync();
@@ -371,33 +372,33 @@ public class MainCommandModule
 
     [Command("time")]
     [CommandInfo("Sets declared time", "/time <timeOfDay>")]
-    public Task TimeAsync(CommandContext ctx) => TimeAsync(ctx, 1337);
+    public Task TimeAsync() => TimeAsync(1337);
 
     [CommandOverload]
-    public async Task TimeAsync(CommandContext ctx, int time)
+    public async Task TimeAsync(int time)
     {
-        if (ctx.Player is Player player)
+        if (this.Player is Player player)
         {
             player.world.LevelData.DayTime = time;
-            await ctx.Player.SendMessageAsync($"Time set to {time}");
+            await this.Player.SendMessageAsync($"Time set to {time}");
         }
     }
 
     [Command("toggleweather", "weather")]
     [RequirePermission(permissions: "obsidian.weather")]
-    public async Task WeatherAsync(CommandContext ctx)
+    public async Task WeatherAsync()
     {
-        if (ctx.Player is Player player)
+        if (this.Player is Player player)
         {
             player.world.LevelData.RainTime = 0;
-            await ctx.Sender.SendMessageAsync("Toggled weather for this world.");
+            await this.Sender.SendMessageAsync("Toggled weather for this world.");
         }
     }
 
     [Command("world")]
-    public async Task WorldAsync(CommandContext ctx, string worldname)
+    public async Task WorldAsync(string worldname)
     {
-        if (ctx.Server is not Server server || ctx.Player is not IPlayer player)
+        if (this.Server is not Server server || this.Player is not IPlayer player)
             return;
 
         if (server.WorldManager.TryGetWorld(worldname, out World? world))
@@ -419,22 +420,22 @@ public class MainCommandModule
     }
 
     [Command("listworlds")]
-    public async Task ListAsync(CommandContext ctx)
+    public async Task ListAsync()
     {
-        if (ctx.Server is not Server server)
+        if (this.Server is not Server server)
             return;
 
         string available = string.Join("§r, §a", server.WorldManager.GetAvailableWorlds().Select(x => x.Name));
-        await ctx.Sender.SendMessageAsync($"Available worlds: §a{available}§r");
+        await this.Sender.SendMessageAsync($"Available worlds: §a{available}§r");
     }
 
 #if DEBUG
     [Command("breakpoint")]
     [CommandInfo("Creats a breakpoint to help debug", "/breakpoint")]
     [RequirePermission(op: true)]
-    public async Task BreakpointAsync(CommandContext Context)
+    public async Task BreakpointAsync()
     {
-        Context.Server.BroadcastMessage("You might get kicked due to timeout, a breakpoint will hit in 3 seconds!");
+        this.Server.BroadcastMessage("You might get kicked due to timeout, a breakpoint will hit in 3 seconds!");
         await Task.Delay(3000);
         Debugger.Break();
     }

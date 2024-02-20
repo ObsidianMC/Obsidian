@@ -3,7 +3,7 @@
 /// <summary>
 /// Represents the base class for classes that contain minecraft event data.
 /// </summary>
-public class BaseMinecraftEventArgs : AsyncEventArgs
+public abstract class BaseMinecraftEventArgs : AsyncEventArgs
 {
     /// <summary>
     /// Server this event took place in.

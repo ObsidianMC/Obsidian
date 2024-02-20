@@ -6,12 +6,30 @@ using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 
-namespace Obsidian;
-
-public partial class Server
+namespace Obsidian.Events;
+public sealed class MainEventHandler : MinecraftEventHandler
 {
-    private async Task PlayerAttack(PlayerAttackEntityEventArgs e)
+    [EventPriority(Priority = Priority.Internal)]
+    public Task OnIncomingChatMessage(IncomingChatMessageEventArgs e)
     {
+        if (e.IsCancelled)
+            return Task.CompletedTask;
+
+        var server = e.Server;
+
+        //TODO add bool for sending secure chat messages
+        ChatColor nameColor = e.Player.IsOperator ? ChatColor.BrightGreen : ChatColor.Gray;
+        server.BroadcastMessage(ChatMessage.Simple(e.Player.Username, nameColor).AppendText($": {e.Message}", ChatColor.White));
+
+        return Task.CompletedTask;
+    }
+
+    [EventPriority(Priority = Priority.Internal)]
+    public async Task PlayerAttack(PlayerAttackEntityEventArgs e)
+    {
+        if (e.IsCancelled)
+            return;
+
         var entity = e.Entity;
         var attacker = e.Attacker;
 
@@ -21,7 +39,8 @@ public partial class Server
         }
     }
 
-    private async Task OnContainerClosed(ContainerClosedEventArgs e)
+    [EventPriority(Priority = Priority.Internal)]
+    public async Task OnContainerClosed(ContainerClosedEventArgs e)
     {
         if (e.IsCancelled)
             return;
@@ -100,8 +119,12 @@ public partial class Server
         }
     }
 
-    private async Task OnPlayerInteract(PlayerInteractEventArgs e)
+    [EventPriority(Priority = Priority.Internal)]
+    public async Task OnPlayerInteract(PlayerInteractEventArgs e)
     {
+        if (e.IsCancelled)
+            return;
+
         var item = e.Item;
 
         var block = e.Block;
@@ -295,9 +318,11 @@ public partial class Server
         }
     }
 
-    private async Task OnPlayerLeave(PlayerLeaveEventArgs e)
+    [EventPriority(Priority = Priority.Internal)]
+    public async Task OnPlayerLeave(PlayerLeaveEventArgs e)
     {
         var player = e.Player as Player;
+        var server = e.Server as Server;
 
         await player.SaveAsync();
 
@@ -305,7 +330,7 @@ public partial class Server
 
         var destroy = new RemoveEntitiesPacket(player.EntityId);
 
-        foreach (Player other in Players)
+        foreach (Player other in server.Players)
         {
             if (other == player)
                 continue;
@@ -315,22 +340,24 @@ public partial class Server
                 await other.client.QueuePacketAsync(destroy);
         }
 
-        BroadcastMessage(string.Format(Configuration.LeaveMessage, e.Player.Username));
+        server.BroadcastMessage(string.Format(server.Configuration.LeaveMessage, e.Player.Username));
     }
 
-    private async Task OnPlayerJoin(PlayerJoinEventArgs e)
+    [EventPriority(Priority = Priority.Internal)]
+    public async Task OnPlayerJoin(PlayerJoinEventArgs e)
     {
         var joined = e.Player as Player;
+        var server = e.Server as Server;
 
         joined.world.TryAddPlayer(joined);
 
-        BroadcastMessage(new ChatMessage
+        server.BroadcastMessage(new ChatMessage
         {
-            Text = string.Format(Configuration.JoinMessage, e.Player.Username),
+            Text = string.Format(server.Configuration.JoinMessage, e.Player.Username),
             Color = HexColor.Yellow
         });
 
-        foreach (Player other in Players)
+        foreach (Player other in server.Players)
         {
             await other.client.AddPlayerToListAsync(joined);
         }

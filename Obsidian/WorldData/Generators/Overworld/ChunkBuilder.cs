@@ -1,6 +1,5 @@
 ﻿using Obsidian.ChunkData;
 using Obsidian.Registries;
-using System.Diagnostics;
 
 namespace Obsidian.WorldData.Generators.Overworld;
 

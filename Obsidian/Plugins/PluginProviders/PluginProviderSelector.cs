@@ -4,18 +4,14 @@ namespace Obsidian.Plugins.PluginProviders;
 
 public static class PluginProviderSelector
 {
-    public static RemotePluginProvider RemotePluginProvider => remotePluginProvider ??= new RemotePluginProvider();
-    public static UncompiledPluginProvider UncompiledPluginProvider => uncompiledPluginProvider ??= new UncompiledPluginProvider();
-    public static CompiledPluginProvider CompiledPluginProvider => compiledPluginProvider ??= new CompiledPluginProvider();
+    public static RemotePluginProvider RemotePluginProvider { get; internal set; } = default!;
+    public static UncompiledPluginProvider UncompiledPluginProvider { get; internal set; } = default!;
+    public static CompiledPluginProvider CompiledPluginProvider { get; internal set; } = default!;
 
-    private static RemotePluginProvider remotePluginProvider;
-    private static UncompiledPluginProvider uncompiledPluginProvider;
-    private static CompiledPluginProvider compiledPluginProvider;
 
-    public static IPluginProvider GetPluginProvider(string path)
+    public static IPluginProvider? GetPluginProvider(string path)
     {
-        if (string.IsNullOrWhiteSpace(path))
-            throw new ArgumentException();
+        ArgumentException.ThrowIfNullOrEmpty(path);
 
         if (IsUrl(path))
         {
@@ -33,8 +29,6 @@ public static class PluginProviderSelector
         }
     }
 
-    private static bool IsUrl(string path)
-    {
-        return Uri.TryCreate(path, UriKind.Absolute, out var url) && (url.Scheme == Uri.UriSchemeHttp || url.Scheme == Uri.UriSchemeHttps);
-    }
+    private static bool IsUrl(string path) =>
+        Uri.TryCreate(path, UriKind.Absolute, out var url) && (url.Scheme == Uri.UriSchemeHttp || url.Scheme == Uri.UriSchemeHttps);
 }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Connections;
+using Obsidian.API.Plugins;
 using Obsidian.Entities;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
@@ -7,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
@@ -18,6 +20,8 @@ namespace Obsidian.Utilities;
 
 public static partial class Extensions
 {
+    private static readonly Type pluginBaseType = typeof(PluginBase);
+
     internal readonly static EntityType[] nonLiving = [ EntityType.Arrow,
                 EntityType.SpectralArrow,
                 EntityType.Boat,
@@ -53,6 +57,13 @@ public static partial class Extensions
                 EntityType.Trident,
                 EntityType.FishingBobber,
                 EntityType.EyeOfEnder];
+
+    public static IEnumerable<PropertyInfo> WithInjectAttribute(this Type type) => type.GetProperties().Where(x => x.GetCustomAttribute<InjectAttribute>() != null && !x.PropertyType.IsAssignableTo(pluginBaseType));
+
+    private const string EventArgs = "EventArgs";
+
+    public static string TrimEventArgs(this string value) =>
+        value.Replace(EventArgs, string.Empty);
 
     public static void WritePacketId(this IPacket packet, MinecraftStream stream)
     {

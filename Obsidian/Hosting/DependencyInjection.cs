@@ -19,6 +19,7 @@ public static class DependencyInjection
         services.AddSingleton<PacketBroadcaster>();
         services.AddSingleton<IServer, Server>();
         services.AddSingleton<IUserCache, UserCache>();
+        services.AddSingleton<EventDispatcher>();
 
         services.AddHttpClient();
 
@@ -28,7 +29,7 @@ public static class DependencyInjection
 
         services.AddSingleton<IWorldManager>(sp => sp.GetRequiredService<WorldManager>());
         services.AddSingleton<IPacketBroadcaster>(sp => sp.GetRequiredService<PacketBroadcaster>());
-
+        
         return services;
     }
 

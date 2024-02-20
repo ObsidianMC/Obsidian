@@ -3,7 +3,7 @@ using Obsidian.Net.Packets;
 
 namespace Obsidian.Events.EventArgs;
 
-public class BasePacketEventArgs : AsyncEventArgs
+public class BasePacketEventArgs : BaseMinecraftEventArgs
 {
     /// <summary>
     /// The client that invoked the event.
@@ -15,7 +15,7 @@ public class BasePacketEventArgs : AsyncEventArgs
     /// </summary>
     public IPacket Packet { get; private set; }
 
-    internal BasePacketEventArgs(Client client, IPacket packet)
+    internal BasePacketEventArgs(Server server, Client client, IPacket packet) : base(server)
     {
         Client = client;
         Packet = packet;
