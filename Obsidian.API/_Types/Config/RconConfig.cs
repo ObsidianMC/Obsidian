@@ -1,6 +1,6 @@
 namespace Obsidian.API.Config;
 
-public class RconConfig
+public sealed class RconConfig
 {
     /// <summary>
     /// Password to access the RCON.

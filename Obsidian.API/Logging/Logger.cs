@@ -18,7 +18,7 @@ public class Logger : ILogger
         Prefix = prefix;
     }
 
-    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
     {
         if (!IsEnabled(logLevel))
             return;
@@ -64,7 +64,7 @@ public class Logger : ILogger
         var lines = message.Split('\n');
 
         if (message.IsNullOrEmpty())
-        { 
+        {
             this.LogTrace($"Empty log message sent. Dumping stacktrace:\n{new StackTrace().ToString().Replace("\n", "            ")}");
             return;
         }

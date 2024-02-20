@@ -16,7 +16,7 @@ public partial class UseItemPacket : IServerboundPacket
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
-        await server.Events.PlayerInteract.InvokeAsync(new PlayerInteractEventArgs(player, server)
+        await server.EventDispatcher.ExecuteEventAsync(new PlayerInteractEventArgs(player, server)
         {
             Item = this.Hand == Hand.MainHand ? player.GetHeldItem() : player.GetOffHandItem(),
             Hand = this.Hand,

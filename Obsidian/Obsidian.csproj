@@ -33,12 +33,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<Compile Remove="PluginMessages\**" />
-		<Compile Remove="Sounds\**" />
-		<EmbeddedResource Remove="PluginMessages\**" />
-		<EmbeddedResource Remove="Sounds\**" />
-		<None Remove="PluginMessages\**" />
-		<None Remove="Sounds\**" />
 		<None Include="..\.editorconfig" Link=".editorconfig" />
 		<None Include="..\LICENSE">
 			<Pack>True</Pack>
@@ -60,10 +54,11 @@
 
 	<ItemGroup>
 		<PackageReference Include="BouncyCastle.NetCoreSdk" Version="1.9.7" />
-		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.4.0" />
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="7.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
 		<PackageReference Include="SharpNoise" Version="0.12.1.1" />
 	</ItemGroup>
 
@@ -74,6 +69,9 @@
 
 	<ItemGroup>
 		<Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
+		<Compile Remove="Plugins\Services\**" />
+		<EmbeddedResource Remove="Plugins\Services\**" />
+		<None Remove="Plugins\Services\**" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -91,17 +89,17 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Remove="assets\blocks.json" />
-	  <None Remove="Assets\damage_type.json" />
-	  <None Remove="Assets\entities.json" />
-	  <None Remove="assets\trim_material.json" />
-	  <None Remove="assets\trim_pattern.json" />
+		<None Remove="assets\blocks.json" />
+		<None Remove="Assets\damage_type.json" />
+		<None Remove="Assets\entities.json" />
+		<None Remove="assets\trim_material.json" />
+		<None Remove="assets\trim_pattern.json" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<AdditionalFiles Include="Assets\biomes.json" CopyToOutputDirectory="Never" />
 		<AdditionalFiles Include="Assets\blocks.json">
-		  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</AdditionalFiles>
 		<AdditionalFiles Include="Assets\chat_type.json" CopyToOutputDirectory="Never" />
 		<AdditionalFiles Include="Assets\damage_type.json" />
@@ -115,7 +113,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ApplicationDefinition Include="Assets\entities.json" />
+		<ApplicationDefinition Include="Assets\entities.json" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -125,7 +123,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Folder Include="Commands\Framework\ArgumentParsers\" />
 		<Folder Include="Net\Packets\Configuration\Serverbound\" />
-		<Folder Include="Plugins\Services\" />
 	</ItemGroup>
 </Project>

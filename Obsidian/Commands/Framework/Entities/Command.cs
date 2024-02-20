@@ -1,42 +1,33 @@
-﻿using Obsidian.Commands.Framework.Exceptions;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Obsidian.API.Utilities;
+using Obsidian.Commands.Framework.Exceptions;
 using Obsidian.Plugins;
+using Obsidian.Utilities.Interfaces;
 using System.Reflection;
 
 namespace Obsidian.Commands.Framework.Entities;
 
-public class Command
+public sealed class Command
 {
-    public string Name { get; private set; }
-    public string[] Aliases { get; private set; }
-    public string Description { get; private set; }
-    public string Usage { get; private set; }
-    internal CommandIssuers AllowedIssuers { get; set; }
+    internal CommandIssuers AllowedIssuers { get; init; }
 
-    internal CommandHandler Handler { get; set; }
-    public List<MethodInfo> Overloads { get; internal set; }
-    public BaseExecutionCheckAttribute[] ExecutionChecks { get; private set; }
-    internal PluginContainer Plugin { get; }
+    private ILogger? Logger => this.CommandHandler.logger;
 
-    public Command? Parent { get; private set; }
-    internal object? ParentInstance { get; set; }
-    internal Type ParentType { get; set; }
+    public required CommandHandler CommandHandler { get; init; }
+    public required PluginContainer? PluginContainer { get; init; }
+    public required string Name { get; init; }
 
-    public Command(string name, string[] aliases, string description, string usage, Command? parent, BaseExecutionCheckAttribute[] checks,
-        CommandHandler handler, PluginContainer plugin, object? parentInstance, Type parentType, CommandIssuers allowedIssuers)
-    {
-        Name = name;
-        Aliases = aliases;
-        Parent = parent;
-        ExecutionChecks = checks;
-        Handler = handler;
-        Description = description;
-        Usage = usage;
-        ParentInstance = parentInstance;
-        Plugin = plugin;
-        ParentType = parentType;
-        AllowedIssuers = allowedIssuers;
-        Overloads = new List<MethodInfo>();
-    }
+    public string[] Aliases { get; init; } = [];
+    public string? Description { get; init; }
+    public string? Usage { get; init; }
+
+    public List<IExecutor<CommandContext>> Overloads { get; init; } = [];
+    public BaseExecutionCheckAttribute[] ExecutionChecks { get; init; } = [];
+
+    public Command? Parent { get; init; }
+
+    internal Command() { }
 
     public bool CheckCommand(string[] input, Command? parent)
     {
@@ -76,39 +67,75 @@ public class Command
                 $"Command {GetQualifiedName()} cannot be executed as {context.Sender.Issuer}", AllowedIssuers);
         }
 
+        var executors = Overloads.Where(x => x.MatchParams(args)
+            || x.GetParameters().LastOrDefault()?.GetCustomAttribute<RemainingAttribute>() != null);
+
         // Find matching overload
-        if (!Overloads.Any(x => x.GetParameters().Length - 1 == args.Length
-         || x.GetParameters().Last().GetCustomAttribute<RemainingAttribute>() != null))
+        if (executors == null)
         {
+            //TODO since commands can have multiple usages, if this is empty we should print out all of the args for usage
             //throw new InvalidCommandOverloadException($"No such overload for command {this.GetQualifiedName()}");
             await context.Sender.SendMessageAsync(ChatMessage.Simple($"Correct usage: {Usage}", ChatColor.Red));
 
             return;
         }
+        
+        IExecutor<CommandContext> executor = default!;
 
-        var method = Overloads.First(x => x.GetParameters().Length - 1 == args.Length
-        || x.GetParameters().Last().GetCustomAttribute<RemainingAttribute>() != null);
+        var success = false;
+        foreach (var exec in executors)
+        {
+            executor = exec;
 
-        // Create instance of declaring type to execute.
-        var obj = ParentInstance;
-        if (obj == null && ParentType != null)
-            obj = Handler.CreateCommandRootInstance(ParentType, Plugin);
+            var methodParams = exec.GetParameters();
+            for (int i = 0; i < args.Length; i++)
+            {
+                var param = methodParams[i];
+                var arg = args[i];
 
-        // Get required params
-        var methodparams = method.GetParameters().Skip(1).ToArray();
+                if (!CommandHandler.IsValidArgumentType(param.ParameterType))
+                {
+                    success = false;
+                    break;
+                }
 
-        // Set first parameter to be the context.
-        var parsedargs = new object[methodparams.Length + 1];
-        parsedargs[0] = context;
+                var parser = CommandHandler.GetArgumentParser(param.ParameterType);
+                if (parser.TryParseArgument(arg, context, out _))
+                {
+                    success = true;
+                    continue;
+                }
 
-        // TODO comments
-        for (int i = 0; i < methodparams.Length; i++)
+                success = false;
+                break;
+            }
+
+            if (success)
+                break;
+        }
+
+        if (!success)
+            throw new InvalidOperationException($"Failed to find valid executor for /{this.Name}");
+
+        await this.ExecuteAsync(executor, context, args);
+    }
+
+    private async Task ExecuteAsync(IExecutor<CommandContext> commandExecutor, CommandContext context, string[] args)
+    {
+        using var serviceScope = this.CommandHandler.ServiceProvider.CreateScope();
+
+        var methodparams = commandExecutor.GetParameters().ToArray();
+        //commandExecutor.GetParameters().Skip(1).ToArray();
+
+        var parsedargs = new object[args.Length];
+
+        for (int i = 0; i < args.Length; i++)
         {
             // Current param and arg
             var paraminfo = methodparams[i];
 
-            var arg = args.Length > 0 ? args[i] : string.Empty; 
-            
+            var arg = args[i];
+
             // This can only be true if we get a [Remaining] arg. Sets arg to remaining text.
             if (args.Length > methodparams.Length && i == methodparams.Length - 1)
             {
@@ -116,21 +143,15 @@ public class Command
             }
 
             // Checks if there is any valid registered command handler
-            if (Handler._argumentParsers.Any(x => x.GetType().BaseType?.GetGenericArguments()[0] == paraminfo.ParameterType))
+            if (CommandHandler.IsValidArgumentType(paraminfo.ParameterType))
             {
-                // Gets parser
-                // TODO premake instances of parsers in command handler
-                var parsertype = Handler._argumentParsers.First(x => x.GetType().BaseType?.GetGenericArguments()[0] == paraminfo.ParameterType).GetType();
-                var parser = Activator.CreateInstance(parsertype);
-
-                // sets args for parser method
-                var parseargs = new object?[3] { arg, context, null };
+                var parser = CommandHandler.GetArgumentParser(paraminfo.ParameterType);
 
                 // cast with reflection?
-                if (parsertype.GetMethod(nameof(BaseArgumentParser<object>.TryParseArgument))?.Invoke(parser, parseargs) is bool success && success)
+                if (parser.TryParseArgument(arg, context, out var parserResult))
                 {
                     // parse success!
-                    parsedargs[i + 1] = parseargs[2]!;
+                    parsedargs[i] = parserResult;
                 }
                 else
                 {
@@ -145,7 +166,7 @@ public class Command
         }
 
         // do execution checks
-        var checks = method.GetCustomAttributes<BaseExecutionCheckAttribute>();
+        var checks = commandExecutor.GetCustomAttributes<BaseExecutionCheckAttribute>();
 
         foreach (var c in checks)
         {
@@ -162,19 +183,8 @@ public class Command
         }
 
         // await the command with it's args
-        object? result = method.Invoke(obj, parsedargs);
-        if (result is Task task)
-        {
-            await task;
-        }
-        else if (result is ValueTask valueTask)
-        {
-            await valueTask;
-        }
+        await commandExecutor.Execute(serviceScope.ServiceProvider, context, parsedargs);
     }
 
-    public override string ToString()
-    {
-        return $"{Handler._prefix}{GetQualifiedName()}";
-    }
+    public override string ToString() => $"{CommandHelpers.DefaultPrefix}{GetQualifiedName()}";
 }

@@ -10,7 +10,7 @@ using System.Xml;
 
 namespace Obsidian.Plugins.PluginProviders;
 
-public class RemotePluginProvider : IPluginProvider
+public class RemotePluginProvider(ILogger logger) : IPluginProvider
 {
     private static HttpClient client;
 
@@ -20,12 +20,7 @@ public class RemotePluginProvider : IPluginProvider
         client.DefaultRequestHeaders.Add("User-Agent", "ObsidianServer");
     }
 
-    public PluginContainer GetPlugin(string path, ILogger logger)
-    {
-        return GetPluginAsync(path, logger).GetAwaiter().GetResult();
-    }
-
-    public async Task<PluginContainer> GetPluginAsync(string path, ILogger logger)
+    public async Task<PluginContainer> GetPluginAsync(string path)
     {
         if (!Uri.TryCreate(path, UriKind.Absolute, out Uri url))
             return Failed("'unknown'", path, logger, "Provided path is not a valid url");
@@ -34,13 +29,13 @@ public class RemotePluginProvider : IPluginProvider
 
         return url.Host switch
         {
-            "www.github.com" => await LoadGithubPluginAsync(path, logger, repository),
-            "gist.github.com" => await LoadGistPluginAsync(path, logger, repository),
+            "www.github.com" => await LoadGithubPluginAsync(path, repository),
+            "gist.github.com" => await LoadGistPluginAsync(path, repository),
             _ => Failed("'unknown'", path, logger, $"Remote source {url.Host} is not supported")
         };
     }
 
-    private async Task<PluginContainer> LoadGithubPluginAsync(string path, ILogger logger, (string owner, string name) repository)
+    private async Task<PluginContainer> LoadGithubPluginAsync(string path, (string owner, string name) repository)
     {
         string branch = "main";
         JsonDocument scan = await ScanDirectoryAsync(repository.owner, repository.name, branch);
@@ -95,16 +90,16 @@ public class RemotePluginProvider : IPluginProvider
         scan.Dispose();
         obsidianFile?.Dispose();
 
-        return CompilePluginFiles(repository, path, logger, fileStreams);
+        return await CompilePluginFilesAsync(repository, path, fileStreams);
     }
 
-    private async Task<PluginContainer> LoadGistPluginAsync(string path, ILogger logger, (string owner, string name) repository)
+    private async Task<PluginContainer> LoadGistPluginAsync(string path, (string owner, string name) repository)
     {
         Stream stream = await GetFileStreamAsync(repository.owner, repository.name);
-        return CompilePluginFiles(repository, path, logger, new[] { stream });
+        return await CompilePluginFilesAsync(repository, path, new[] { stream });
     }
 
-    private PluginContainer CompilePluginFiles((string owner, string name) repository, string path, ILogger logger, IEnumerable<Stream> fileStreams)
+    private async Task<PluginContainer> CompilePluginFilesAsync((string owner, string name) repository, string path, IEnumerable<Stream> fileStreams)
     {
         var syntaxTrees = fileStreams.Select(fileStream => CSharpSyntaxTree.ParseText(SourceText.From(fileStream)));
         var compilation = CSharpCompilation.Create(repository.name,
@@ -135,7 +130,7 @@ public class RemotePluginProvider : IPluginProvider
             var loadContext = new PluginLoadContext(repository.name + "LoadContext");
             var assembly = loadContext.LoadFromStream(memoryStream);
             memoryStream.Dispose();
-            return PluginProviderSelector.CompiledPluginProvider.HandlePlugin(loadContext, assembly, path, logger);
+            return await PluginProviderSelector.CompiledPluginProvider.HandlePluginAsync(loadContext, assembly, path);
         }
     }
 

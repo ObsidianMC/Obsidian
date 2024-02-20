@@ -6,8 +6,10 @@ public class EntityCommandParser : CommandParser
 {
     public EntityCommadBitMask Mask { get; set; } = EntityCommadBitMask.SingleEntityOrPlayer;
 
-    public EntityCommandParser(EntityCommadBitMask mask) : base(6, "minecraft:entity") =>
+    public EntityCommandParser(EntityCommadBitMask mask) : base(6, "minecraft:entity")
+    {
         this.Mask = mask;
+    }
 
     public override async Task WriteAsync(MinecraftStream stream)
     {

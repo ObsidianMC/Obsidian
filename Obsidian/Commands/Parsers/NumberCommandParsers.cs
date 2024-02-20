@@ -1,35 +1,36 @@
 ﻿using Obsidian.Net;
+using System.Numerics;
 
 namespace Obsidian.Commands.Parsers;
 
-public class DoubleCommandParser : CommandParser
+public abstract partial class NumberCommandParser<TNumber> : CommandParser where TNumber : struct,
+    IConvertible,
+    IMinMaxValue<TNumber>,
+    INumber<TNumber>
 {
+    private static Type NumberType => typeof(TNumber);
     public NumberFlags Flags { get; private set; }
 
-    public double Min { get; }
+    public TNumber Min { get; }
 
-    public double Max { get; }
+    public TNumber Max { get; }
 
-    public DoubleCommandParser() : base(2, "brigadier:double") { }
-
-    public DoubleCommandParser(double min, double max) : this()
+    protected NumberCommandParser(int id, string identifier,
+        TNumber min, TNumber max) : base(id, identifier)
     {
-        if (min != double.MinValue)
+        if (min != TNumber.MinValue)
             this.Flags |= NumberFlags.HasMinValue;
-        if (max != double.MaxValue)
+        if (max != TNumber.MaxValue)
             this.Flags |= NumberFlags.HasMaxValue;
     }
 
-    public override async Task WriteAsync(MinecraftStream stream)
+    public async override Task WriteAsync(MinecraftStream stream)
     {
         await base.WriteAsync(stream);
 
         await stream.WriteByteAsync((sbyte)this.Flags);
 
-        if (this.Flags.HasFlag(NumberFlags.HasMinValue))
-            await stream.WriteDoubleAsync(this.Min);
-        if (this.Flags.HasFlag(NumberFlags.HasMaxValue))
-            await stream.WriteDoubleAsync(this.Max);
+        this.WriteNumbers(stream);
     }
 
     public override void Write(MinecraftStream stream)
@@ -38,140 +39,50 @@ public class DoubleCommandParser : CommandParser
 
         stream.WriteByte((sbyte)this.Flags);
 
-        if (this.Flags.HasFlag(NumberFlags.HasMinValue))
-            stream.WriteDouble(this.Min);
-        if (this.Flags.HasFlag(NumberFlags.HasMaxValue))
-            stream.WriteDouble(this.Max);
+        this.WriteNumbers(stream);
+    }
+
+    private void WriteNumbers(MinecraftStream stream)
+    {
+        if (NumberType == typeof(int))
+            this.WriteAsInt(stream);
+        else if (NumberType == typeof(double))
+            this.WriteAsDouble(stream);
+        else if (NumberType == typeof(float))
+            this.WriteAsSingle(stream);
+        else if (NumberType == typeof(long))
+            this.WriteAsLong(stream);
     }
 }
 
-public class FloatCommandParser : CommandParser
+public sealed class DoubleCommandParser : NumberCommandParser<double>
 {
-    public NumberFlags Flags { get; set; }
+    public DoubleCommandParser() : base(2, "brigadier:double", double.MinValue, double.MaxValue) { }
 
-    public float Min { get; set; }
+    public DoubleCommandParser(double min, double max) : base(2, "brigadier:double", min, max) { }
+}
 
-    public float Max { get; set; }
+public sealed class FloatCommandParser : NumberCommandParser<float>
+{
+    public FloatCommandParser() : base(1, "brigadier:float", float.MinValue, float.MaxValue) { }
 
-    public FloatCommandParser() : base(1, "brigadier:float") { }
+    public FloatCommandParser(float min, float max) : base(1, "brigadier:float", min, max) { }
+}
 
-    public FloatCommandParser(float min, float max) : this()
+public sealed class IntCommandParser : NumberCommandParser<int>
+{
+    public IntCommandParser() : base(3, "brigadier:integer", int.MinValue, int.MaxValue) { }
+
+    public IntCommandParser(int min, int max) : base(3, "brigadier:integer", min, max)
     {
-        if (min != double.MinValue)
-            this.Flags |= NumberFlags.HasMinValue;
-        if (max != double.MaxValue)
-            this.Flags |= NumberFlags.HasMaxValue;
-    }
-
-    public override async Task WriteAsync(MinecraftStream stream)
-    {
-        await base.WriteAsync(stream);
-
-        await stream.WriteByteAsync((sbyte)this.Flags);
-
-        if (this.Flags.HasFlag(NumberFlags.HasMinValue))
-            await stream.WriteFloatAsync(this.Min);
-        if (this.Flags.HasFlag(NumberFlags.HasMaxValue))
-            await stream.WriteFloatAsync(this.Max);
-    }
-
-    public override void Write(MinecraftStream stream)
-    {
-        base.Write(stream);
-
-        stream.WriteByte((sbyte)this.Flags);
-
-        if (this.Flags.HasFlag(NumberFlags.HasMinValue))
-            stream.WriteFloat(this.Min);
-        if (this.Flags.HasFlag(NumberFlags.HasMaxValue))
-            stream.WriteFloat(this.Max);
     }
 }
 
-public class IntCommandParser : CommandParser
+public sealed class LongCommandParser : NumberCommandParser<long>
 {
-    public NumberFlags Flags { get; set; }
+    public LongCommandParser() : base(4, "brigadier:long", long.MinValue, long.MaxValue) { }
 
-    public int Min { get; set; }
-
-    public int Max { get; set; }
-
-    public IntCommandParser() : base(3, "brigadier:integer") { }
-
-    public IntCommandParser(int min, int max) : this()
-    {
-        if (min != double.MinValue)
-            this.Flags |= NumberFlags.HasMinValue;
-        if (max != double.MaxValue)
-            this.Flags |= NumberFlags.HasMaxValue;
-    }
-
-    public override async Task WriteAsync(MinecraftStream stream)
-    {
-        await base.WriteAsync(stream);
-
-        await stream.WriteByteAsync((sbyte)this.Flags);
-
-        if (this.Flags.HasFlag(NumberFlags.HasMinValue))
-            await stream.WriteIntAsync(this.Min);
-        if (this.Flags.HasFlag(NumberFlags.HasMaxValue))
-            await stream.WriteIntAsync(this.Max);
-    }
-
-    public override void Write(MinecraftStream stream)
-    {
-        base.Write(stream);
-
-        stream.WriteByte((sbyte)this.Flags);
-
-        if (this.Flags.HasFlag(NumberFlags.HasMinValue))
-            stream.WriteInt(this.Min);
-        if (this.Flags.HasFlag(NumberFlags.HasMaxValue))
-            stream.WriteInt(this.Max);
-    }
-}
-
-public class LongCommandParser : CommandParser
-{
-    public NumberFlags Flags { get; set; }
-
-    public long Min { get; set; }
-
-    public long Max { get; set; }
-
-    public LongCommandParser() : base(4, "brigadier:long") { }
-
-    public LongCommandParser(long min, long max) : this()
-    {
-        if (min != double.MinValue)
-            this.Flags |= NumberFlags.HasMinValue;
-        if (max != double.MaxValue)
-            this.Flags |= NumberFlags.HasMaxValue;
-    }
-
-    public override async Task WriteAsync(MinecraftStream stream)
-    {
-        await base.WriteAsync(stream);
-
-        await stream.WriteByteAsync((sbyte)this.Flags);
-
-        if (this.Flags.HasFlag(NumberFlags.HasMinValue))
-            await stream.WriteLongAsync(this.Min);
-        if (this.Flags.HasFlag(NumberFlags.HasMaxValue))
-            await stream.WriteLongAsync(this.Max);
-    }
-
-    public override void Write(MinecraftStream stream)
-    {
-        base.Write(stream);
-
-        stream.WriteByte((sbyte)this.Flags);
-
-        if (this.Flags.HasFlag(NumberFlags.HasMinValue))
-            stream.WriteLong(this.Min);
-        if (this.Flags.HasFlag(NumberFlags.HasMaxValue))
-            stream.WriteLong(this.Max);
-    }
+    public LongCommandParser(long min, long max) : base(4, "brigadier:long", min, max) { }
 }
 
 [Flags]
