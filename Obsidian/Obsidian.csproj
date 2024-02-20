@@ -66,13 +66,8 @@
 		<EmbeddedResource Include="Assets/*.*" CopyToOutputDirectory="PreserveNewest" />
 		<AdditionalFiles Include="Assets/*.*"/>
 		<EmbeddedResource Include="Assets/Structures/*.*" CopyToOutputDirectory="PreserveNewest" />
-	</ItemGroup>
 
-	<ItemGroup>
 		<Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
-		<Compile Remove="Plugins\Services\**" />
-		<EmbeddedResource Remove="Plugins\Services\**" />
-		<None Remove="Plugins\Services\**" />
 	</ItemGroup>
 
 	<ItemGroup>
