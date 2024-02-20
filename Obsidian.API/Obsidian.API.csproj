@@ -12,8 +12,8 @@
 		<Company>Obsidian Team</Company>
 		<Product>Obsidian</Product>
 		<Description>The plugin API for Obsidian, a Minecraft server.</Description>
-		<PackageProjectUrl>https://github.com/ObsidianServer/Obsidian</PackageProjectUrl>
-		<RepositoryUrl>https://github.com/ObsidianServer/Obsidian</RepositoryUrl>
+		<PackageProjectUrl>https://github.com/ObsidianMC/Obsidian</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/ObsidianMC/Obsidian</RepositoryUrl>
 		<PackageTags>minecraft obsidian api plugin plugins</PackageTags>
 		<PackageIconUrl>https://i.imgur.com/jU1lkP4.png</PackageIconUrl>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
@@ -23,6 +23,9 @@
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
 		<CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
+		<Title>Obsidian Plugin API</Title>
+		<PackageIcon>74374287.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -44,10 +47,18 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<None Include="..\..\..\Users\Ryan\Downloads\74374287.png">
+		  <Pack>True</Pack>
+		  <PackagePath>\</PackagePath>
+		</None>
 		<None Include="..\.editorconfig" Link=".editorconfig" />
 		<None Include="..\LICENSE">
 			<Pack>True</Pack>
 			<PackagePath></PackagePath>
+		</None>
+		<None Include="..\README.md">
+		  <Pack>True</Pack>
+		  <PackagePath>\</PackagePath>
 		</None>
 	</ItemGroup>
 
