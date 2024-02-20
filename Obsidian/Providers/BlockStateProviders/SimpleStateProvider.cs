@@ -5,7 +5,7 @@ namespace Obsidian.Providers.BlockStateProviders;
 [TreeProperty("minecraft:simple_state_provider")]
 public sealed class SimpleStateProvider : IBlockStateProvider
 {
-    public string Identifier { get; init; } = "minecraft:simple_state_provider";
+    public string Type { get; init; } = "minecraft:simple_state_provider";
 
     public required SimpleBlockState State { get; init; }
 

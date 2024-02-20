@@ -5,7 +5,7 @@ namespace Obsidian.Providers.BlockStateProviders;
 [TreeProperty("minecraft:noise_threshold_provider")]
 public sealed class NoiseThresholdProvider : IBlockStateProvider
 {
-    public string Identifier { get; init; } = "minecraft:noise_threshold_provider";
+    public string Type { get; init; } = "minecraft:noise_threshold_provider";
 
     public required long Seed { get; set; }
 

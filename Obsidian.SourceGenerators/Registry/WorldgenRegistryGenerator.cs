@@ -88,10 +88,15 @@ public sealed partial class WorldgenRegistryGenerator : IIncrementalGenerator
     private void GenerateClasses(List<TypeInformation> classes, SourceProductionContext context, Features features)
     {
         var builder = new CodeBuilder()
-            .Using("Obsidian.API.World.Features.Tree.Placers.Trunk")
-            .Using("Obsidian.API.World.Features.Tree.Placers.Foliage")
-            .Using("Obsidian.API.World.Features.Tree.Placers.Root")
+            .Using("Obsidian.API.World.Features")
             .Using("Obsidian.API.World.Features.Tree")
+            .Using("Obsidian.Providers.BlockStateProviders")
+            .Using("Obsidian.Providers.IntProviders")
+            .Using("Obsidian.WorldData.Features.Tree")
+            .Using("Obsidian.WorldData.Features.Tree.Placers.Trunk")
+            .Using("Obsidian.WorldData.Features.Tree.Placers.Foliage")
+            .Using("Obsidian.WorldData.Features.Tree.Placers.Root")
+            .Using("Obsidian.WorldData.BlockPredicates")
             .Namespace("Obsidian.API.Registries.ConfiguredFeatures")
             .Line()
             .Type("public static class TreeFeatureRegistry");

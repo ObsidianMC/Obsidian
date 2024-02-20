@@ -5,7 +5,7 @@ namespace Obsidian.Providers.BlockStateProviders;
 [TreeProperty("minecraft:weighted_state_provider")]
 public sealed class WeightedStateProvider : IBlockStateProvider
 {
-    public string Identifier { get; init; } = "minecraft:weighted_state_provider";
+    public string Type { get; init; } = "minecraft:weighted_state_provider";
 
     public List<WeightedStateEntry> Entries { get; } = [];
 

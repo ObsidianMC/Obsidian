@@ -1,7 +1,7 @@
 ﻿namespace Obsidian.API;
 public  interface IBlockStateProvider
 {
-    public string Identifier { get; }
+    public string Type { get; }
 
     public IBlock Get();
 
