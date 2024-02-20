@@ -37,7 +37,7 @@
 		<AdditionalFiles Include="..\Obsidian\Assets\blocks.json" Link="Assets\blocks.json" />
 		<AdditionalFiles Include="..\Obsidian\Assets\items.json" Link="Assets\items.json" />
 		<AdditionalFiles Include="..\Obsidian\Assets\fluids.json" Link="Assets\fluids.json" />
-		<AdditionalFiles Include="..\Obsidian\Assets\trees.json" Link="Assets\trees.json" />
+		<AdditionalFiles Include="..\Obsidian\Assets\features\trees.json" Link="Assets\features\trees.json" />
 	</ItemGroup>
 
 	<ItemGroup>
