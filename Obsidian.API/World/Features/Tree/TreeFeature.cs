@@ -1,12 +1,14 @@
-﻿using Obsidian.API.World.Features.Tree.Decorators;
-using Obsidian.API.World.Features.Tree.Placers;
-using Obsidian.API.World.Features.Tree.Placers.Foliage;
-using Obsidian.API.World.Features.Tree.Placers.Trunk;
+﻿using Obsidian.API.World.Features.Tree.Placers.Trunk;
+using System.Text.Json.Serialization;
 
 namespace Obsidian.API.World.Features.Tree;
 public sealed class TreeFeature : ConfiguredFeatureBase
 {
+    [JsonIgnore]
     public override string Type => "minecraft:tree";
+
+    public override required string Identifier { get; init; }
+
     public bool IgnoreVines { get; set; }
     public bool ForceDirt { get; set; }
 

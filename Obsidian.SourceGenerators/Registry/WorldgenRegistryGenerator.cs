@@ -1,27 +1,36 @@
 ﻿using Microsoft.CodeAnalysis.CSharp;
 using Obsidian.SourceGenerators.Registry.Models;
 using System.Collections.Immutable;
+using System.Diagnostics;
+using System.IO;
 
 namespace Obsidian.SourceGenerators.Registry;
 
 [Generator]
-public sealed class WorldgenRegistryGenerator : IIncrementalGenerator
+public sealed partial class WorldgenRegistryGenerator : IIncrementalGenerator
 {
     private const string AttributeName = "TreePropertyAttribute";
     private const string CleanedAttributeName = "TreeProperty";
 
     public void Initialize(IncrementalGeneratorInitializationContext ctx)
     {
+        //if (!Debugger.IsAttached)
+        //    Debugger.Launch();
+
+        var jsonFiles = ctx.AdditionalTextsProvider
+           .Where(file => file.Path.Contains("features") && file.Path.EndsWith(".json"))
+           .Select(static (file, ct) => (name: Path.GetFileNameWithoutExtension(file.Path), content: file.GetText(ct)!.ToString()));
+
         IncrementalValuesProvider<ClassDeclarationSyntax> classDeclarations = ctx.SyntaxProvider
             .CreateSyntaxProvider(
                 static (node, _) => node is ClassDeclarationSyntax syntax,
                 static (context, _) => TransformData(context.Node as ClassDeclarationSyntax, context))
             .Where(static m => m is not null)!;
 
-        var compilation = ctx.CompilationProvider.Combine(classDeclarations.Collect());
+        var compilation = ctx.CompilationProvider.Combine(classDeclarations.Collect()).Combine(jsonFiles.Collect());
 
         ctx.RegisterSourceOutput(compilation,
-            (spc, src) => this.Generate(spc, src.Left, src.Right));
+            (spc, src) => this.Generate(spc, src.Left.Left, src.Left.Right, src.Right));
     }
 
     private static ClassDeclarationSyntax? TransformData(ClassDeclarationSyntax? syntax, GeneratorSyntaxContext ctx)
@@ -37,15 +46,17 @@ public sealed class WorldgenRegistryGenerator : IIncrementalGenerator
         return symbol.GetAttributes().Any(x => x.AttributeClass?.Name == AttributeName) ? syntax : null;
     }
 
-    private void Generate(SourceProductionContext context, Compilation compilation, ImmutableArray<ClassDeclarationSyntax> typeList)
+    private void Generate(SourceProductionContext context, Compilation compilation, ImmutableArray<ClassDeclarationSyntax> typeList,
+        ImmutableArray<(string name, string json)> files)
     {
         var asm = compilation.AssemblyName;
 
-        //Want this to work for any assembly so use anything that't not from the Obsidian assembly.
-        if (asm == "Obsidian")
-            return;
+        var features = Features.Get(files);
 
-        var classes = new List<EntityClass>();
+        var classes = new List<TypeInformation>();
+
+        if (asm != "Obsidian")
+            return;
 
         foreach (var @class in typeList)
         {
@@ -66,51 +77,43 @@ public sealed class WorldgenRegistryGenerator : IIncrementalGenerator
                 var expression = arg.Expression;
                 var value = model.GetConstantValue(expression).ToString();
 
-                classes.Add(new EntityClass(symbol, value));
+                classes.Add(new TypeInformation(symbol, value));
             }
         }
 
-        this.GenerateClasses(classes, context);
+        this.GenerateClasses(classes, context, features);
 
     }
 
-    private void GenerateClasses(List<EntityClass> classes, SourceProductionContext context)
+    private void GenerateClasses(List<TypeInformation> classes, SourceProductionContext context, Features features)
     {
         var builder = new CodeBuilder()
             .Using("Obsidian.API.World.Features.Tree.Placers.Trunk")
-            .Using("System.Collections.Frozen")
+            .Using("Obsidian.API.World.Features.Tree.Placers.Foliage")
+            .Using("Obsidian.API.World.Features.Tree.Placers.Root")
+            .Using("Obsidian.API.World.Features.Tree")
             .Namespace("Obsidian.API.Registries.ConfiguredFeatures")
             .Line()
             .Type("public static class TreeFeatureRegistry");
 
-        builder.Type("public static class TrunkPlacers");
+        var treePlacerTypes = new Dictionary<string, TypeInformation>();
 
-        var treePlacerTypes = new Dictionary<string, string>();
-        var added = new List<string>();
-        foreach (var @class in classes.Where(x => x.Symbol.Name.EndsWith("TrunkPlacer")))
+        foreach (var @class in classes)
         {
-            var trunkPlacer = @class.Symbol;
-            if (added.Contains(trunkPlacer.Name))
-            {
-                treePlacerTypes.Add(@class.EntityResourceLocation, $"{trunkPlacer.Name}Type");
-                continue;
-            }
-
-            builder.Indent()
-            .Append($"public static Type {trunkPlacer.Name}Type {{ get; }} = typeof({@class.Symbol.Name});")
-            .Line();
-
-            treePlacerTypes.Add(@class.EntityResourceLocation, $"{trunkPlacer.Name}Type");
-            added.Add(trunkPlacer.Name);
+            treePlacerTypes.Add(@class.ResourceLocation, @class);
         }
 
-        builder.Line().Type("public static FrozenDictionary<string, Type> Values = new Dictionary<string, Type>()");
-        foreach (var kv in treePlacerTypes)
-        {
-            builder.Line($"{{ \"{kv.Key}\", {kv.Value} }},");
-        }
+        BuildTreeType(treePlacerTypes, features, builder);
 
-        builder.EndScope(".ToFrozenDictionary()", true);
+        //builder.Type("public static class TrunkPlacers");
+
+        //builder.Line().Type("public static FrozenDictionary<string, Type> Values = new Dictionary<string, Type>()");
+        //foreach (var kv in treePlacerTypes)
+        //{
+        //    builder.Line($"{{ \"{kv.Key}\", {kv.Value} }},");
+        //}
+
+        //builder.EndScope(".ToFrozenDictionary()", true);
 
         builder.EndScope().EndScope();
 

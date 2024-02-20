@@ -1,9 +1,11 @@
 ﻿using Obsidian.Registries;
 
 namespace Obsidian.Providers.BlockStateProviders;
+
+[TreeProperty("minecraft:simple_state_provider")]
 public sealed class SimpleStateProvider : IBlockStateProvider
 {
-    public string Identifier => "minecraft:simple_state_provider";
+    public string Identifier { get; init; } = "minecraft:simple_state_provider";
 
     public required SimpleBlockState State { get; init; }
 

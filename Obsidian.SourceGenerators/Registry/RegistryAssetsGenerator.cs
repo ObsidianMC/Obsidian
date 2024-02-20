@@ -1,8 +1,6 @@
 ﻿using Obsidian.SourceGenerators.Registry.Models;
 using System.Collections.Immutable;
-using System.Globalization;
 using System.IO;
-using System.Text.Json;
 
 namespace Obsidian.SourceGenerators.Registry;
 

@@ -2,9 +2,11 @@
 using Obsidian.Registries;
 
 namespace Obsidian.Providers.BlockStateProviders;
+
+[TreeProperty("minecraft:randomized_int_state_provider")]
 public sealed class RandomizedIntStateProvider : IBlockStateProvider
 {
-    public string Identifier => "minecraft:randomized_int_state_provider";
+    public string Identifier { get; init; } = "minecraft:randomized_int_state_provider";
 
     public string Property { get; set; } = default!;
 

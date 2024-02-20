@@ -63,9 +63,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<EmbeddedResource Include="Assets/*.*" CopyToOutputDirectory="PreserveNewest" />
-		<AdditionalFiles Include="Assets/*.*"/>
-		<EmbeddedResource Include="Assets/Structures/*.*" CopyToOutputDirectory="PreserveNewest" />
+		<EmbeddedResource Include="Assets/**/*.*" CopyToOutputDirectory="PreserveNewest" />
+		<AdditionalFiles Include="Assets/**/*.*" />
 
 		<Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
 	</ItemGroup>

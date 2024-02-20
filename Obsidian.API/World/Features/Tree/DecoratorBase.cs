@@ -1,10 +1,10 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
 namespace Obsidian.API.World.Features.Tree;
-public abstract class TreeSizeBase
+public abstract class DecoratorBase
 {
-    [Range(0, 80)]
-    public float MinClippedHeight { get; set; }
-
     public abstract string Type { get; init; }
+
+    [Range(0.0, 1.0)]
+    public virtual float Probability { get; set; }
 }

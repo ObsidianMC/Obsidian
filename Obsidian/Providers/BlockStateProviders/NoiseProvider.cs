@@ -1,9 +1,11 @@
 ﻿using Obsidian.Registries;
 
 namespace Obsidian.Providers.BlockStateProviders;
+
+[TreeProperty("minecraft:noise_provider")]
 public sealed class NoiseProvider : IBlockStateProvider
 {
-    public string Identifier => "minecraft:noise_provider";
+    public string Identifier { get; init; } = "minecraft:noise_provider";
 
     public required long Seed { get; set; }
 

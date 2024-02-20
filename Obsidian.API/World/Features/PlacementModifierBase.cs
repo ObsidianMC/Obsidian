@@ -1,7 +1,7 @@
 ﻿namespace Obsidian.API.World.Features;
 public abstract class PlacementModifierBase
 {
-    public abstract string Type { get; }
+    public abstract string Type { get; internal init; }
 
     public Vector[] GetPositions(PlacementContext context) => [];
 
