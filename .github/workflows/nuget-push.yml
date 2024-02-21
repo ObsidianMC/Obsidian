@@ -31,6 +31,6 @@ jobs:
       - name: Pack n Push
         run: |
           cd Obsidian.API
-          dotnet build -c Release -p:SourceRevisionId=${{ github.sha }} -p:Nightly=${{ github.run_number }}
-          dotnet pack -c Release -o build -p:SourceRevisionId=${{ github.sha }}
+          dotnet build -c Release -p:Version=1.0.0-${{ github.run_number }}-${{ github.sha }}
+          dotnet pack -c Release -o build -p:Version=1.0.0-${{ github.run_number }}-${{ github.sha }}
           dotnet nuget push "build/*" --skip-duplicate -k ${{ secrets.NUGET_ORG_API_KEY }} -s https://api.nuget.org/v3/index.json 
