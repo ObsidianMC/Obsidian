@@ -1,4 +1,4 @@
-﻿using Obsidian.API.World.Features.Tree.Placers.Trunk;
+﻿using Obsidian.API.World.Features.Tree;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 

@@ -45,6 +45,8 @@ public class Chunk
         {
             Sections[i] = new ChunkSection(4, yBase: i - 4);
         }
+
+
     }
 
     private Chunk(int x, int z, ChunkSection[] sections, Dictionary<HeightmapType, Heightmap> heightmaps)

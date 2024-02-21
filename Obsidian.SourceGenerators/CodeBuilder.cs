@@ -119,6 +119,8 @@ public sealed class CodeBuilder
         return this;
     }
 
+    public CodeBuilder AppendSimple(string code, bool newLine) => newLine ? this.Line(code) : this.Append(code);
+
     public CodeBuilder Line(string code)
     {
         return AppendLine(code);

@@ -21,7 +21,7 @@ public sealed class RandomizedIntStateProvider : IBlockStateProvider
         {
             var (min, max) = rangedIntProvider.Value;
 
-            simpleState.Properties[this.Property] = rangedIntProvider.ProviderType == IntProviderType.Uniform
+            simpleState.Properties[this.Property] = rangedIntProvider.Type == IntProviderTypes.Uniform
                 ? Globals.Random.Next(min, max).ToString()
                 : Math.Min(Globals.Random.Next(min, max), min).ToString();//Not sure if this is right
         }
@@ -36,7 +36,7 @@ public sealed class RandomizedIntStateProvider : IBlockStateProvider
         {
             var (min, max) = rangedIntProvider.Value;
 
-            simpleState.Properties[this.Property] = rangedIntProvider.ProviderType == IntProviderType.Uniform
+            simpleState.Properties[this.Property] = rangedIntProvider.Type == IntProviderTypes.Uniform
                 ? Globals.Random.Next(min, max).ToString()
                 : Math.Min(Globals.Random.Next(min, max), min).ToString();
         }

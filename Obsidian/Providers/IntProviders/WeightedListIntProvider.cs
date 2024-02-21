@@ -1,7 +1,9 @@
 ﻿namespace Obsidian.Providers.IntProviders;
+
+[TreeProperty(IntProviderTypes.WeightedList)]
 public sealed class WeightedListIntProvider : IIntProvider
 {
-    public IntProviderType ProviderType => IntProviderType.WeightedList;
+    public required string Type { get; init; } = IntProviderTypes.WeightedList;
 
     public List<WeightedListValue> Distribution { get; } = [];
 

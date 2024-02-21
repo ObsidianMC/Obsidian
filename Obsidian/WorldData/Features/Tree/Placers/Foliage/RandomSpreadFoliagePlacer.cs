@@ -12,5 +12,5 @@ public sealed class RandomSpreadFoliagePlacer : FoliagePlacer
     public required IIntProvider FoliageHeight { get; set; }
 
     [Range(0, 256)]
-    public required int LeafPlacementAttempt { get; set; }
+    public required int LeafPlacementAttempts { get; set; }
 }

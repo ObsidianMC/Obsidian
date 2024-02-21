@@ -1,7 +1,10 @@
 ﻿namespace Obsidian.Providers.IntProviders;
+
+[TreeProperty(IntProviderTypes.Uniform)]
+[TreeProperty(IntProviderTypes.BiasedToBottom)]
 public sealed class RangedIntProvider : IIntProvider
 {
-    public required IntProviderType ProviderType { get; init; }
+    public required string Type { get; init; }
 
     public IntProviderRangeValue Value { get; init; }
 }

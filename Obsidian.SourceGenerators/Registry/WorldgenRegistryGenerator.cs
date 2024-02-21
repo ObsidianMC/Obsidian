@@ -11,6 +11,8 @@ public sealed partial class WorldgenRegistryGenerator : IIncrementalGenerator
 {
     private const string AttributeName = "TreePropertyAttribute";
     private const string CleanedAttributeName = "TreeProperty";
+    private const string IntProviderName = "IIntProvider";
+    private const string HeightProviderName = "IHeightProvider";
 
     public void Initialize(IncrementalGeneratorInitializationContext ctx)
     {
@@ -43,7 +45,12 @@ public sealed partial class WorldgenRegistryGenerator : IIncrementalGenerator
         if (symbol == null)
             return null;
 
-        return symbol.GetAttributes().Any(x => x.AttributeClass?.Name == AttributeName) ? syntax : null;
+        if (symbol.GetAttributes().Any(x => x.AttributeClass?.Name == AttributeName))
+        {
+            return syntax;
+        }
+
+        return null;
     }
 
     private void Generate(SourceProductionContext context, Compilation compilation, ImmutableArray<ClassDeclarationSyntax> typeList,
@@ -101,14 +108,28 @@ public sealed partial class WorldgenRegistryGenerator : IIncrementalGenerator
             .Line()
             .Type("public static class TreeFeatureRegistry");
 
-        var treePlacerTypes = new Dictionary<string, TypeInformation>();
+        var treeFeatureTypes = new Dictionary<string, TypeInformation>();
 
+        var baseFeatures = new BaseFeatureDictionary();
         foreach (var @class in classes)
         {
-            treePlacerTypes.Add(@class.ResourceLocation, @class);
+            if (@class.Symbol.Interfaces.Any(x => x.Name == IntProviderName))
+            {
+                baseFeatures.AddIntProvider(@class.ResourceLocation, @class);
+
+                continue;
+            }
+            else if (@class.Symbol.Interfaces.Any(x => x.Name == HeightProviderName))
+            {
+                baseFeatures.AddHeightProvider(@class.ResourceLocation, @class);
+
+                continue;
+            }
+
+            treeFeatureTypes.Add(@class.ResourceLocation, @class);
         }
 
-        BuildTreeType(treePlacerTypes, features, builder);
+        BuildTreeType(treeFeatureTypes, baseFeatures, features, builder);
 
         //builder.Type("public static class TrunkPlacers");
 

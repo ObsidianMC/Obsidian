@@ -1,7 +1,9 @@
 ﻿namespace Obsidian.Providers.IntProviders;
+
+[TreeProperty(IntProviderTypes.ClampedNormal)]
 public sealed class ClampedNormalIntProvider : IIntProvider
 {
-    public IntProviderType ProviderType => IntProviderType.ClampedNormal;
+    public required string Type { get; init; } = IntProviderTypes.ClampedNormal;
 
     public IntProviderRangeValue Value { get; init; }
 }

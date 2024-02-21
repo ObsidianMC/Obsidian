@@ -1,5 +1,4 @@
-﻿using Obsidian.API.World.Features.Tree.Placers.Trunk;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace Obsidian.API.World.Features.Tree;
 public sealed class TreeFeature : ConfiguredFeatureBase

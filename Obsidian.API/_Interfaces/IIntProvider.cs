@@ -1,16 +1,21 @@
 ﻿namespace Obsidian.API;
 public interface IIntProvider
 {
-    public IntProviderType ProviderType { get; }
+    /// <summary>
+    /// Can be constant, uniform, biased_to_bottom, clamped, clamped_normal, or weighted_list
+    /// </summary>
+    /// <remarks>
+    /// See <see cref="IntProviderTypes"/> for the default types.
+    /// </remarks>
+    public string Type { get; }
 }
 
-//constant, uniform, biased_to_bottom, clamped, clamped_normal, or weighted_list
-public enum IntProviderType
+public static class IntProviderTypes
 {
-    Constant,
-    Uniform,
-    BiasedToBottom,
-    Clamped,
-    ClampedNormal,
-    WeightedList
+    public const string Constant = "minecraft:constant";
+    public const string Uniform = "minecraft:uniform";
+    public const string BiasedToBottom = "minecraft:biased_to_bottom";
+    public const string Clamped = "minecraft:clamped";
+    public const string ClampedNormal = "minecraft:clamped_normal";
+    public const string WeightedList = "minecraft:weighted_list";
 }

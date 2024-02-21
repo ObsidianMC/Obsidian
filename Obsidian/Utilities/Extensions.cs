@@ -14,6 +14,7 @@ using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading;
+using Obsidian.Providers.IntProviders;
 #nullable enable
 
 namespace Obsidian.Utilities;
@@ -109,7 +110,7 @@ public static partial class Extensions
     {
         return !context.ConnectionClosed.IsCancellationRequested;
     }
-    
+
     // Derived from https://gist.github.com/ammaraskar/7b4a3f73bee9dc4136539644a0f27e63
     [SuppressMessage("Roslyn", "CA5350", Justification = "SHA1 is required by the Minecraft protocol.")]
     public static string MinecraftShaDigest(this IEnumerable<byte> data)
