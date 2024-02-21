@@ -103,6 +103,7 @@ public sealed partial class WorldgenRegistryGenerator : IIncrementalGenerator
             .Using("Obsidian.WorldData.Features.Tree.Placers.Foliage")
             .Using("Obsidian.WorldData.Features.Tree.Placers.Root")
             .Using("Obsidian.WorldData.BlockPredicates")
+            .Using("System.Collections.Frozen")
             .Namespace("Obsidian.Registries.ConfiguredFeatures")
             .Line()
             .Type("public static class TreeFeatureRegistry");
