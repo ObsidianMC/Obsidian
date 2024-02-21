@@ -89,7 +89,6 @@ public sealed partial class WorldgenRegistryGenerator : IIncrementalGenerator
         }
 
         this.GenerateClasses(classes, context, features);
-
     }
 
     private void GenerateClasses(List<TypeInformation> classes, SourceProductionContext context, Features features)
@@ -131,17 +130,7 @@ public sealed partial class WorldgenRegistryGenerator : IIncrementalGenerator
 
         BuildTreeType(treeFeatureTypes, baseFeatures, features, builder);
 
-        //builder.Type("public static class TrunkPlacers");
-
-        //builder.Line().Type("public static FrozenDictionary<string, Type> Values = new Dictionary<string, Type>()");
-        //foreach (var kv in treePlacerTypes)
-        //{
-        //    builder.Line($"{{ \"{kv.Key}\", {kv.Value} }},");
-        //}
-
-        //builder.EndScope(".ToFrozenDictionary()", true);
-
-        builder.EndScope().EndScope();
+        builder.EndScope();
 
         context.AddSource("TreesRegistry.g.cs", builder.ToString());
     }

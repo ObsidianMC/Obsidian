@@ -9,7 +9,7 @@ public sealed class CherryFoliagePlacer : FoliagePlacer
     public override required string Type { get; init; } = "minecraft:cherry_foliage_placer";
 
     [Range(4, 16)]
-    public override required IIntProvider Height { get; set; }
+    public required IIntProvider Height { get; set; }
 
     [Range(0.0, 1.0)]
     public required float WideBottomLayerHoleChance { get; set; }

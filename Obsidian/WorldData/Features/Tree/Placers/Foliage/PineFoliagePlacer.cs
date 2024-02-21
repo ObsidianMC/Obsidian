@@ -9,5 +9,5 @@ public sealed class PineFoliagePlacer : FoliagePlacer
     public override required string Type { get; init; } = "minecraft:pine_foliage_placer";
 
     [Range(0, 24)]
-    public override IIntProvider Height { get; set; } = default!;
+    public IIntProvider Height { get; set; } = default!;
 }

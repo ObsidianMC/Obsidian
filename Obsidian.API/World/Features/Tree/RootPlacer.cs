@@ -8,13 +8,13 @@ public abstract class RootPlacer
     public virtual required IBlockStateProvider RootProvider { get; set; }
     public virtual required IIntProvider TrunkOffsetY { get; set; }
 
-    public virtual RootPlacement? AboveRootPlacement { get; }
+    public virtual RootPlacement? AboveRootPlacement { get; set; }
 
     public sealed class RootPlacement
     {
         public required IBlockStateProvider AboveRootProvider { get; init; }
 
         [Range(0.0, 1.0)]
-        public required float PlacementChance { get; init; }
+        public required float AboveRootPlacementChance { get; init; }
     }
 }
