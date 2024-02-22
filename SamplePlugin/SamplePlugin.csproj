@@ -8,18 +8,11 @@
 		<EnablePreviewFeatures>true</EnablePreviewFeatures>
 		<EnableDynamicLoading>true</EnableDynamicLoading>
 		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-		<OutputPath>..\Obsidian.ConsoleApp\bin\Debug\$(TargetFramework)\plugins\</OutputPath>
-		<DebugType>none</DebugType>
-		<DebugSymbols>false</DebugSymbols>
-		<GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
+		<PluginName>SamplePlugin</PluginName>
+		<PluginVersion>1.0.0.0</PluginVersion>
+		<ApiVersion>1.0.0</ApiVersion>
 	</PropertyGroup>
-
-	<ItemGroup>
-		<None Remove="plugin.json" />
-	</ItemGroup>
 
 	<ItemGroup>
 		<EmbeddedResource Include="plugin.json" />
@@ -29,6 +22,7 @@
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0">
 			<ExcludeAssets>runtime</ExcludeAssets>
 		</PackageReference>
+		<PackageReference Include="Obsidian.MSBuild" Version="1.0.0-nightly-6" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -37,5 +31,9 @@
 			<ExcludeAssets>runtime</ExcludeAssets>
 		</ProjectReference>
 	</ItemGroup>
+
+	<Target Name="MovePlugin" AfterTargets="PackPluginOnBuild">
+		<Move SourceFiles="./bin/publish/$(PluginName).obby" DestinationFolder="..\Obsidian.ConsoleApp\bin\Debug\$(TargetFramework)\plugins\" />
+	</Target>
 
 </Project>
