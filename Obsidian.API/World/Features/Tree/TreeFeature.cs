@@ -21,7 +21,7 @@ public sealed class TreeFeature : ConfiguredFeatureBase
 
     public RootPlacer? RootPlacer { get; init; }
 
-    public List<DecoratorBase> Decorators { get; } = [];    
+    public List<DecoratorBase> Decorators { get; set; } = [];    
 
     public override ValueTask Place(FeatureContext context) => ValueTask.CompletedTask;
 }

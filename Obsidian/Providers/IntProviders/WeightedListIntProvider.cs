@@ -5,7 +5,7 @@ public sealed class WeightedListIntProvider : IIntProvider
 {
     public required string Type { get; init; } = IntProviderTypes.WeightedList;
 
-    public List<WeightedListValue> Distribution { get; } = [];
+    public List<WeightedListValue> Distribution { get; set; } = [];
 
     public readonly struct WeightedListValue
     {

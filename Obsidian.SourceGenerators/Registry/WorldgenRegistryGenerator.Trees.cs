@@ -6,7 +6,6 @@ public partial class WorldgenRegistryGenerator
 {
     private static readonly string[] numbers = ["Int32", "Single", "Double", "Int64"];
 
-   
     private static void BuildTreeType(Dictionary<string, TypeInformation> featureTypes, BaseFeatureDictionary baseFeatureTypes,
         Features features, CodeBuilder builder)
     {
@@ -24,43 +23,8 @@ public partial class WorldgenRegistryGenerator
                 var elementName = property.Name;
                 var element = property.Value;
 
-                switch (element.ValueKind)
-                {
-                    case JsonValueKind.String:
-                        builder.Line($"{elementName.ToPascalCase()} = \"{element.GetString()}\",");
-                        break;
-                    case JsonValueKind.Number:
-                        AppendNumber(builder, elementName, element);
-                        break;
-                    case JsonValueKind.Array:
-                        builder.Line($"{elementName.ToPascalCase()} = {{}},");
-                        break;
-                    case JsonValueKind.True:
-                    case JsonValueKind.False:
-                        builder.Line($"{elementName.ToPascalCase()} = {element.GetBoolean().ToString().ToLower()},");
-                        break;
-                    default:
-                        {
-                            if (TryAppendTypeProperty(featureTypes, baseFeatureTypes, elementName, element, builder, true))
-                                break;
-                            if (TryAppendStateProperty(elementName, element, builder))
-                                break;
-
-                            builder.Append($"{elementName.ToPascalCase()} = new() {{ ");
-
-                            foreach (var childProperty in element.EnumerateObject())
-                            {
-                                var childName = childProperty.Name;
-                                var childValue = childProperty.Value;
-
-                                AppendChildProperty(featureTypes, baseFeatureTypes, default, childName, childValue, builder);
-                            }
-
-                            builder.Append("},");
-
-                            break;
-                        }
-                }
+                //TODO ARRAY OBJECTS
+                AppendChildProperty(featureTypes, baseFeatureTypes, default, elementName, element, builder, true);
             }
 
             builder.EndScope(true);
@@ -79,7 +43,7 @@ public partial class WorldgenRegistryGenerator
     }
 
     private static void AppendChildProperty(Dictionary<string, TypeInformation> featureTypes, BaseFeatureDictionary baseFeatureTypes,
-        TypeInformation featureType, string elementName, JsonElement element, CodeBuilder builder)
+        TypeInformation featureType, string elementName, JsonElement element, CodeBuilder builder, bool newLine = false)
     {
         //Temp workaround :weary:
         if (elementName == "can_grow_through" && element.ValueKind != JsonValueKind.Array)
@@ -91,20 +55,10 @@ public partial class WorldgenRegistryGenerator
         switch (element.ValueKind)
         {
             case JsonValueKind.String:
-                builder.Append($"{elementName.ToPascalCase()} = \"{element.GetString()}\", ");
+                builder.AppendSimple($"{elementName.ToPascalCase()} = \"{element.GetString()}\", ", newLine);
                 break;
             case JsonValueKind.Number:
-                var members = featureType.Symbol.GetMembers().Where(x => x.Kind == SymbolKind.Property).ToList();
-
-                if (featureType.Symbol.BaseType != null)
-                    members.AddRange(featureType.Symbol.BaseType.GetMembers().Where(x => x.Kind == SymbolKind.Property));
-
-                foreach (var mem in members.ToList())
-                {
-                    var memProp = (IPropertySymbol)mem;
-                    if (memProp.Type.Kind == SymbolKind.NamedType)
-                        members.AddRange(memProp.Type.GetMembers().Where(x => x.Kind == SymbolKind.Property));
-                }
+                var members = featureType.GetProperties();
 
                 var member = members.FirstOrDefault(x => x.Name == elementName.ToPascalCase());
 
@@ -114,32 +68,32 @@ public partial class WorldgenRegistryGenerator
 
                     if (numbers.Contains(property.Type.Name))
                     {
-                        AppendNumber(builder, elementName, element, property.Type.Name, false);
+                        AppendNumber(builder, elementName, element, property.Type.Name, newLine);
                         break;
                     }
                 }
 
-                builder.Append($"{elementName.ToPascalCase()} = new ConstantIntProvider {{ Type = \"minecraft:constant\", Value = ");
+                builder.AppendSimple($"{elementName.ToPascalCase()} = new ConstantIntProvider {{ Type = \"minecraft:constant\", Value = ", newLine);
 
                 AppendNumber(builder, element, newLine: false);
                 builder.Append("}, ");
                 break;
             case JsonValueKind.Array:
-                builder.Append($"{elementName.ToPascalCase()} = {{}}, ");
+                builder.AppendSimple($"{elementName.ToPascalCase()} = [], ", newLine);
                 break;
             case JsonValueKind.True:
             case JsonValueKind.False:
-                builder.Append($"{elementName.ToPascalCase()} = {element.GetBoolean().ToString().ToLower()}, ");
+                builder.AppendSimple($"{elementName.ToPascalCase()} = {element.GetBoolean().ToString().ToLower()}, ", newLine);
                 break;
             default:
                 {
-                    if (TryAppendTypeProperty(featureTypes, baseFeatureTypes, elementName, element, builder))
+                    if (TryAppendTypeProperty(featureTypes, baseFeatureTypes, elementName, element, builder, newLine))
                         break;
 
                     if (TryAppendStateProperty(elementName, element, builder))
                         break;
 
-                    builder.Append($"{elementName.ToPascalCase()} = new() {{ ");
+                    builder.AppendSimple($"{elementName.ToPascalCase()} = new() {{ ", newLine);
 
                     foreach (var childProperty in element.EnumerateObject())
                     {
@@ -156,9 +110,12 @@ public partial class WorldgenRegistryGenerator
         }
     }
 
-    private static bool TryAppendTypeProperty(Dictionary<string, TypeInformation> featureTypes, BaseFeatureDictionary baseFeatureTypes, string elementName,
+    private static bool TryAppendTypeProperty(Dictionary<string, TypeInformation> featureTypes, BaseFeatureDictionary baseFeatureTypes, string? elementName,
         JsonElement element, CodeBuilder builder, bool newLine = false)
     {
+        if (element.ValueKind != JsonValueKind.Object)
+            return false;
+
         if (element.TryGetProperty("type", out var typeElement))
         {
             var typeName = typeElement.GetString()!;
@@ -167,7 +124,10 @@ public partial class WorldgenRegistryGenerator
             if (value is not TypeInformation featureType)
                 return false;
 
-            builder.Indent().Append($"{elementName.ToPascalCase()} = new {featureType.Symbol.Name}() {{ Type = \"{featureType.ResourceLocation}\", ");
+            var name = elementName != null ? $"{elementName.ToPascalCase()} = new {featureType.Symbol.Name}() {{ Type = \"{featureType.ResourceLocation}\"," :
+                string.Empty;
+
+            builder.Indent().Append(name);
 
             foreach (var childProperty in element.EnumerateObject().Where(x => x.Name != "type"))
             {
@@ -245,6 +205,20 @@ public partial class WorldgenRegistryGenerator
             builder.AppendSimple($"{element.GetSingle()}f,", newLine);
         else if (numberType == "Double")
             builder.AppendSimple($"{element.GetDouble()}d,", newLine);
+    }
+
+    private static void AppendUnknownNumber(CodeBuilder builder, JsonElement element, bool newLine = true)
+    {
+        if (element.TryGetInt16(out var shortValue))
+            builder.AppendSimple($"{shortValue},", newLine);
+        else if (element.TryGetInt32(out var intValue))
+            builder.AppendSimple($"{intValue},", newLine);
+        else if (element.TryGetInt64(out var longValue))
+            builder.AppendSimple($"{longValue},", newLine);
+        else if (element.TryGetSingle(out var floatValue))
+            builder.AppendSimple($"{floatValue}f,", newLine);
+        else if (element.TryGetDouble(out var doubleValue))
+            builder.AppendSimple($"{doubleValue}d,", newLine);
     }
 
 }

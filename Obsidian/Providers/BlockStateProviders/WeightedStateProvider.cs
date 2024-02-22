@@ -7,7 +7,7 @@ public sealed class WeightedStateProvider : IBlockStateProvider
 {
     public string Type { get; init; } = "minecraft:weighted_state_provider";
 
-    public List<WeightedStateEntry> Entries { get; } = [];
+    public List<WeightedStateEntry> Entries { get; set; } = [];
 
     public void AddEntry(IBlock block, int weight) => Entries.Add(new()
     {
