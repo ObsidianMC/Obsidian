@@ -565,7 +565,7 @@ public sealed class Client : IDisposable
             TeleportId = Player.TeleportId
         });
 
-        await Player.UpdateChunksAsync(distance: server.Configuration.ViewDistance);
+        await Player.UpdateChunksAsync(distance: 7);
         await SendInfoAsync();
         await this.server.EventDispatcher.ExecuteEventAsync(new PlayerJoinEventArgs(Player, this.server, DateTimeOffset.Now));
     }
