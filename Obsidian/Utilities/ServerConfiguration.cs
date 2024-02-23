@@ -48,6 +48,12 @@ public sealed class ServerConfiguration : IServerConfiguration
 
     public bool AllowLan { get; set; } = true; // Enabled because it's super useful for debugging tbh
 
+    public byte ViewDistance
+    {
+        get => viewDistance;
+        set => viewDistance = value >= MinimumViewDistance ? value : MinimumViewDistance;
+    }
+
     public int PregenerateChunkRange { get; set; } = 15; // by default, pregenerate range from -15 to 15
 
     [JsonConverter(typeof(JsonStringEnumConverter))]
@@ -64,6 +70,11 @@ public sealed class ServerConfiguration : IServerConfiguration
     public ServerListQuery ServerListQuery { get; set; } = ServerListQuery.Full;
 
     public int TimeTickSpeedMultiplier { get; set; } = 1;
+
+    private byte viewDistance = 10;
+    
+    // Anything lower than 3 will cause weird artifacts on the client.
+    private const byte MinimumViewDistance = 3;
 }
 
 public sealed class ServerWorld

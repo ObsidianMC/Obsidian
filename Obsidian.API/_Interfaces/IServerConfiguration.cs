@@ -109,6 +109,14 @@ public interface IServerConfiguration
     /// </summary>
     public RconConfig? Rcon { get; set; }
 
+    /// <summary>
+    /// The view distance of the server.
+    /// </summary>
+    /// <remarks>
+    /// Players with higher view distance will use the server's view distance.
+    /// </remarks>
+    public byte ViewDistance { get; set; }
+
     public List<string> WhitelistedIPs { get; set; }
     public List<WhitelistedPlayer> Whitelisted { get; set; }
 }

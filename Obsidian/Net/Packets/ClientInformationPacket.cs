@@ -36,7 +36,7 @@ public sealed partial class ClientInformationPacket : IServerboundPacket
         player.ClientInformation = new()
         {
             Locale = this.Locale,
-            ViewDistance = this.ViewDistance,
+            ViewDistance = sbyte.Min(ViewDistance, (sbyte) server.Configuration.ViewDistance),
             ChatMode = this.ChatMode,
             ChatColors = this.ChatColors,
             DisplayedSkinParts = this.DisplayedSkinParts,
