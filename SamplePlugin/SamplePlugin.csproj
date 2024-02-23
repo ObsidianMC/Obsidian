@@ -11,7 +11,7 @@
 
 		<PluginName>SamplePlugin</PluginName>
 		<PluginVersion>1.0.0.0</PluginVersion>
-		<ApiVersion>1.0.0</ApiVersion>
+		<PluginApiVersion>1.0.0</PluginApiVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -22,7 +22,7 @@
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0">
 			<ExcludeAssets>runtime</ExcludeAssets>
 		</PackageReference>
-		<PackageReference Include="Obsidian.MSBuild" Version="1.0.0-nightly-6" />
+		<PackageReference Include="Obsidian.MSBuild" Version="1.0.0-nightly-7" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -32,8 +32,7 @@
 		</ProjectReference>
 	</ItemGroup>
 
-	<Target Name="MovePlugin" AfterTargets="PackPluginOnBuild">
-		<Move SourceFiles="./bin/publish/$(PluginName).obby" DestinationFolder="..\Obsidian.ConsoleApp\bin\Debug\$(TargetFramework)\plugins\" />
+	<Target Name="MovePlugin" AfterTargets="PackPlugin" Condition="'$(Configuration)' == 'Release'">
+		<Move SourceFiles="$(PluginPublishDir)/$(PluginName).obby" DestinationFolder="..\Obsidian.ConsoleApp\bin\Debug\$(TargetFramework)\plugins\" />
 	</Target>
-
 </Project>
