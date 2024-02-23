@@ -51,7 +51,7 @@ public sealed class ServerConfiguration : IServerConfiguration
     public byte ViewDistance
     {
         get => viewDistance;
-        set => viewDistance = value >= 3 ? value : (byte) 3;
+        set => viewDistance = value >= MinimumViewDistance ? value : MinimumViewDistance;
     }
 
     public int PregenerateChunkRange { get; set; } = 15; // by default, pregenerate range from -15 to 15
@@ -72,6 +72,9 @@ public sealed class ServerConfiguration : IServerConfiguration
     public int TimeTickSpeedMultiplier { get; set; } = 1;
 
     private byte viewDistance = 10;
+    
+    // Anything lower than 3 will cause weird artifacts on the client.
+    private const byte MinimumViewDistance = 3;
 }
 
 public sealed class ServerWorld
