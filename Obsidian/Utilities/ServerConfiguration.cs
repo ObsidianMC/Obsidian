@@ -51,7 +51,7 @@ public sealed class ServerConfiguration : IServerConfiguration
     public byte ViewDistance
     {
         get => viewDistance;
-        set => viewDistance = value >= 3 ? value : viewDistance;
+        set => viewDistance = value >= 3 ? value : (byte) 3;
     }
 
     public int PregenerateChunkRange { get; set; } = 15; // by default, pregenerate range from -15 to 15
