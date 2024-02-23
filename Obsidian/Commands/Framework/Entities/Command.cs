@@ -87,6 +87,9 @@ public sealed class Command
         {
             executor = exec;
 
+            if(args.Length == 0)
+                success = true;//First executor will work
+
             var methodParams = exec.GetParameters();
             for (int i = 0; i < args.Length; i++)
             {
