@@ -4,6 +4,7 @@ using Obsidian.API.Utilities;
 using Obsidian.Commands.Framework.Exceptions;
 using Obsidian.Plugins;
 using Obsidian.Utilities.Interfaces;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace Obsidian.Commands.Framework.Entities;
@@ -79,16 +80,29 @@ public sealed class Command
 
             return;
         }
-        
-        IExecutor<CommandContext> executor = default!;
 
-        var success = false;
+        if (!this.TryFindExecutor(executors, args, context, out var executor))
+            throw new InvalidOperationException($"Failed to find valid executor for /{this.Name}");
+
+        await this.ExecuteAsync(executor, context, args);
+    }
+
+    private bool TryFindExecutor(IEnumerable<IExecutor<CommandContext>> executors, string[] args, CommandContext context,
+        [NotNullWhen(true)]out IExecutor<CommandContext>? executor)
+    {
+        executor = null;
+
+        var success = args.Length == 0;
+
+        if (success)
+        {
+            executor = executors.First();
+            return true;
+        }
+
         foreach (var exec in executors)
         {
             executor = exec;
-
-            if(args.Length == 0)
-                success = true;//First executor will work
 
             var methodParams = exec.GetParameters();
             for (int i = 0; i < args.Length; i++)
@@ -99,7 +113,8 @@ public sealed class Command
                 if (!CommandHandler.IsValidArgumentType(param.ParameterType))
                 {
                     success = false;
-                    break;
+                    executor = null;
+                    return false;
                 }
 
                 var parser = CommandHandler.GetArgumentParser(param.ParameterType);
@@ -110,17 +125,14 @@ public sealed class Command
                 }
 
                 success = false;
-                break;
+                return false;
             }
 
             if (success)
-                break;
+                return true;
         }
 
-        if (!success)
-            throw new InvalidOperationException($"Failed to find valid executor for /{this.Name}");
-
-        await this.ExecuteAsync(executor, context, args);
+        return false;
     }
 
     private async Task ExecuteAsync(IExecutor<CommandContext> commandExecutor, CommandContext context, string[] args)
