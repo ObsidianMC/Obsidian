@@ -88,7 +88,7 @@ public sealed class Command
     }
 
     private bool TryFindExecutor(IEnumerable<IExecutor<CommandContext>> executors, string[] args, CommandContext context,
-        [NotNullWhen(true)]out IExecutor<CommandContext>? executor)
+        [NotNullWhen(true)] out IExecutor<CommandContext>? executor)
     {
         executor = null;
 
@@ -102,8 +102,6 @@ public sealed class Command
 
         foreach (var exec in executors)
         {
-            executor = exec;
-
             var methodParams = exec.GetParameters();
             for (int i = 0; i < args.Length; i++)
             {
@@ -111,11 +109,7 @@ public sealed class Command
                 var arg = args[i];
 
                 if (!CommandHandler.IsValidArgumentType(param.ParameterType))
-                {
-                    success = false;
-                    executor = null;
                     return false;
-                }
 
                 var parser = CommandHandler.GetArgumentParser(param.ParameterType);
                 if (parser.TryParseArgument(arg, context, out _))
@@ -124,12 +118,14 @@ public sealed class Command
                     continue;
                 }
 
-                success = false;
                 return false;
             }
 
             if (success)
+            {
+                executor = exec;
                 return true;
+            }
         }
 
         return false;
