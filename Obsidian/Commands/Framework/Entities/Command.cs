@@ -109,7 +109,10 @@ public sealed class Command
                 var arg = args[i];
 
                 if (!CommandHandler.IsValidArgumentType(param.ParameterType))
-                    return false;
+                {
+                    success = false;
+                    continue;
+                }
 
                 var parser = CommandHandler.GetArgumentParser(param.ParameterType);
                 if (parser.TryParseArgument(arg, context, out _))
@@ -118,7 +121,7 @@ public sealed class Command
                     continue;
                 }
 
-                return false;
+                success = false;
             }
 
             if (success)
