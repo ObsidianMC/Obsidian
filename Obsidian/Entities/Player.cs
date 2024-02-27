@@ -1,6 +1,7 @@
 // This would be saved in a file called [playeruuid].dat which holds a bunch of NBT data.
 // https://wiki.vg/Map_Format
 using Microsoft.Extensions.Logging;
+using Obsidian.API._Types;
 using Obsidian.API.Events;
 using Obsidian.API.Utilities;
 using Obsidian.Nbt;
@@ -132,7 +133,7 @@ public sealed partial class Player : Living, IPlayer
 
     public IPAddress? ClientIP => (client.RemoteEndPoint as IPEndPoint)?.Address;
 
-    private Gamemode gamemode = Gamemode.Creative;
+    private Gamemode gamemode;
 
     [SetsRequiredMembers]
     internal Player(Guid uuid, string username, Client client, World world)
