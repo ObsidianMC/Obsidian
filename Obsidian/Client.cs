@@ -708,10 +708,6 @@ public sealed class Client : IDisposable
         }
 
         await QueuePacketAsync(new PlayerInfoUpdatePacket(dict));
-        await QueuePacketAsync(new PlayerAbilitiesPacket(true)
-        {
-            Abilities = Player.Abilities
-        });
     }
 
     internal void SendPacket(IClientboundPacket packet)
