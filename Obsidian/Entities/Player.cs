@@ -62,7 +62,24 @@ public sealed partial class Player : Living, IPlayer
 
     public IBlock? LastClickedBlock { get; internal set; }
 
-    public Gamemode Gamemode { get; set; }
+    public Gamemode Gamemode
+    {
+        get => gamemode;
+        set
+        {
+            gamemode = value;
+
+            Abilities = Gamemode switch
+            {
+                Gamemode.Creative => PlayerAbility.CreativeMode | PlayerAbility.AllowFlying | PlayerAbility.Invulnerable,
+                Gamemode.Spectator => PlayerAbility.AllowFlying | PlayerAbility.Invulnerable,
+                Gamemode.Survival or Gamemode.Adventure or Gamemode.Hardcore => PlayerAbility.None,
+                _ => throw new ArgumentOutOfRangeException(nameof(Gamemode), Gamemode, "Unknown gamemode.")
+            };
+        }
+    }
+
+    public PlayerAbility Abilities { get; internal set; }
 
     public IScoreboard? CurrentScoreboard { get; set; }
 
@@ -114,6 +131,8 @@ public sealed partial class Player : Living, IPlayer
     public string PersistentDataBackupFile { get; }
 
     public IPAddress? ClientIP => (client.RemoteEndPoint as IPEndPoint)?.Address;
+
+    private Gamemode gamemode = Gamemode.Creative;
 
     [SetsRequiredMembers]
     internal Player(Guid uuid, string username, Client client, World world)
