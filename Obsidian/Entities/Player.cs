@@ -1,6 +1,7 @@
 // This would be saved in a file called [playeruuid].dat which holds a bunch of NBT data.
 // https://wiki.vg/Map_Format
 using Microsoft.Extensions.Logging;
+using Obsidian.API._Types;
 using Obsidian.API.Events;
 using Obsidian.API.Utilities;
 using Obsidian.Nbt;

@@ -1,16 +1,7 @@
-﻿using Obsidian.Entities;
+﻿using Obsidian.API._Types;
+using Obsidian.Entities;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
-
-[Flags]
-public enum PlayerAbility
-{
-    None = 0x00,
-    Invulnerable = 0x01,
-    Flying = 0x02,
-    AllowFlying = 0x04,
-    CreativeMode = 0x08
-}
 
 public class PlayerAbilitiesPacket : IClientboundPacket, IServerboundPacket
 {
