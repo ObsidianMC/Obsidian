@@ -71,7 +71,7 @@ public sealed class PacketBroadcaster : BackgroundService, IPacketBroadcaster
                     await player.client.QueuePacketAsync(queuedPacket.Packet);
             }
         }
-        catch (Exception e)
+        catch (Exception e) when (e is not OperationCanceledException)
         {
             await this.environment.OnServerCrashAsync(this.logger, e);
         }
