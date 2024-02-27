@@ -56,7 +56,7 @@ public class PlayerAbilitiesPacket : IClientboundPacket, IServerboundPacket
     public async ValueTask HandleAsync(Server server, Player player)
     {
         if (Abilities.HasFlag(PlayerAbility.Flying)
-            && !Abilities.HasFlag(PlayerAbility.AllowFlying)
+            && !player.Abilities.HasFlag(PlayerAbility.AllowFlying)
             && player.Gamemode is not Gamemode.Creative or Gamemode.Spectator)
         {
             await player.KickAsync("Cheating is not allowed!");
