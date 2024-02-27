@@ -44,6 +44,7 @@ public sealed class ClientHandler
         Packets.TryAdd(0x17, new SetPlayerPositionPacket());
         Packets.TryAdd(0x18, new SetPlayerPositionAndRotationPacket());
         Packets.TryAdd(0x19, new SetPlayerRotationPacket());
+        Packets.TryAdd(0x20, new PlayerAbilitiesPacket(false));
         //Packets.TryAdd(0x15, PlayerMovement);
         //Packets.TryAdd(0x16, VehicleMove);
         //Packets.TryAdd(0x17, SteerBoat);
