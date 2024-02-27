@@ -132,7 +132,7 @@ public sealed partial class Player : Living, IPlayer
 
     public IPAddress? ClientIP => (client.RemoteEndPoint as IPEndPoint)?.Address;
 
-    private Gamemode gamemode = Gamemode.Creative;
+    private Gamemode gamemode;
 
     [SetsRequiredMembers]
     internal Player(Guid uuid, string username, Client client, World world)
