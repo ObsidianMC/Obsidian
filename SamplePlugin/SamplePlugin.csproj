@@ -24,7 +24,7 @@
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0">
 			<ExcludeAssets>runtime</ExcludeAssets>
 		</PackageReference>
-		<!--<PackageReference Include="Obsidian.MSBuild" Version="1.0.0-nightly-7-->
+		<PackageReference Include="Obsidian.MSBuild" Version="1.0.0-nightly-7" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -34,14 +34,14 @@
 		</ProjectReference>
 	</ItemGroup>
 
-	<UsingTask TaskName="Obsidian.MSBuild.Pack" AssemblyFile="C:\Users\LostT\source\repos\Obsidian.MSBuild\bin\Debug\netstandard2.0\Obsidian.MSBuild.dll" />
+	<!--<UsingTask TaskName="Obsidian.MSBuild.Pack" AssemblyFile="C:\Users\LostT\source\repos\Obsidian.MSBuild\bin\Debug\netstandard2.0\Obsidian.MSBuild.dll" />
 
 	<Target Name="PackPlugin" AfterTargets="AfterBuild;Publish">
 		<MakeDir Directories="$(PluginPublishDir)"/>
 
 		<Pack PluginAssembly="$(PluginAssembly)" PluginVersion="$(PluginVersion)"
 			  PluginPublishDir="$(PluginPublishDir)" PluginApiVersion="$(PluginApiVersion)" PluginSigningKey="$(PluginSigningKey)"/>
-	</Target>
+	</Target>-->
 	<!--<Target Name="MovePlugin" AfterTargets="PackPlugin" Condition="'$(Configuration)' == 'Release'">
 		<Move SourceFiles="$(PluginPublishDir)/$(PluginName).obby" DestinationFolder="..\Obsidian.ConsoleApp\bin\Debug\$(TargetFramework)\plugins\" />
 	</Target>-->
