@@ -1,7 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Plugins;
-using System.Diagnostics.CodeAnalysis;
+using System.Collections.Immutable;
+using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
 
@@ -13,39 +14,52 @@ public sealed class PluginContainer : IDisposable
 
     public IServiceScope ServiceScope { get; internal set; } = default!;
 
-    [AllowNull]
-    public PluginBase Plugin { get; private set; }
+    public PluginBase? Plugin { get; private set; }
     public PluginInfo Info { get; }
 
-    [AllowNull]
-    public AssemblyLoadContext LoadContext { get; private set; }
+    public AssemblyLoadContext? LoadContext { get; private set; }
     public Assembly PluginAssembly { get; } = default!;
 
     public string Source { get; internal set; } = default!;
-    public string ClassName { get; } = default!;
-
     public bool HasDependencies { get; private set; } = true;
     public bool IsReady => HasDependencies;
     public bool Loaded { get; internal set; }
 
-    public PluginContainer(PluginInfo info, string source)
-    {
-        Info = info;
-        Source = source;
-    }
+    public ImmutableArray<PluginFileEntry> FileEntries { get; }
 
-    public PluginContainer(PluginBase plugin, PluginInfo info, Assembly assembly, AssemblyLoadContext loadContext, string source)
+    public PluginContainer(PluginBase plugin, PluginInfo info, Assembly assembly, AssemblyLoadContext loadContext, 
+        string source, IEnumerable<PluginFileEntry> fileEntries)
     {
-
         Plugin = plugin;
         Info = info;
         LoadContext = loadContext;
         Source = source;
         PluginAssembly = assembly;
-
         pluginType = plugin.GetType();
-        ClassName = pluginType.Name;
         Plugin.Info = Info;
+        this.FileEntries = fileEntries.ToImmutableArray();
+    }
+
+    /// <summary>
+    /// Searches for the specified file.
+    /// </summary>
+    /// <param name="fileName">The name of the file you're searching for.</param>
+    /// <returns>Null if the file is not found or the byte array of the file.</returns>
+    public async Task<byte[]?> GetFileDataAsync(string fileName)
+    {
+        var fileEntry = this.FileEntries.FirstOrDefault(x => Path.GetFileName(x.FullName) == fileName);
+        if (fileEntry is null)
+            return null;
+
+        await using var fs = new FileStream(this.Source, FileMode.Open);
+
+        fs.Seek(fileEntry.Offset, SeekOrigin.Begin);
+
+        var data = new byte[fileEntry.CompressedLength];
+
+        await fs.ReadAsync(data);
+
+        return data;
     }
 
     /// <summary>

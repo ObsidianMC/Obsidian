@@ -8,6 +8,7 @@ using Obsidian.Plugins.PluginProviders;
 using Obsidian.Plugins.ServiceProviders;
 using Obsidian.Registries;
 using Obsidian.Services;
+using System.Collections.Immutable;
 using System.Reflection;
 
 namespace Obsidian.Plugins;
@@ -18,13 +19,19 @@ public sealed class PluginManager
 
     internal readonly ILogger logger;
 
-    private readonly List<PluginContainer> plugins = new();
-    private readonly List<PluginContainer> stagedPlugins = new();
+    private static PackedPluginProvider packedPluginProvider = default!;
+
+    private readonly List<PluginContainer> plugins = [];
+    private readonly List<PluginContainer> stagedPlugins = [];
+    private readonly List<string> acceptedKeys = [];
+
     private readonly IServiceProvider serverProvider;
     private readonly IServer server;
     private readonly CommandHandler commandHandler;
     private readonly IPluginRegistry pluginRegistry;
     private readonly IServiceCollection pluginServiceDescriptors = new ServiceCollection();
+    
+    public ImmutableArray<string> AcceptedKeys => acceptedKeys.ToImmutableArray();
 
     /// <summary>
     /// List of all loaded plugins.
@@ -56,9 +63,7 @@ public sealed class PluginManager
         this.serverProvider = serverProvider;
         this.pluginRegistry = new PluginRegistry(this, eventDispatcher, commandHandler, logger);
 
-        PluginProviderSelector.RemotePluginProvider = new RemotePluginProvider(logger);
-        PluginProviderSelector.UncompiledPluginProvider = new UncompiledPluginProvider(logger);
-        PluginProviderSelector.CompiledPluginProvider = new CompiledPluginProvider(logger);
+        packedPluginProvider = new(this, logger);
 
         ConfigureInitialServices(env);
 
@@ -94,16 +99,9 @@ public sealed class PluginManager
     /// <returns>Loaded plugin. If loading failed, <see cref="PluginContainer.Plugin"/> property will be null.</returns>
     public async Task<PluginContainer?> LoadPluginAsync(string path)
     {
-        var provider = PluginProviderSelector.GetPluginProvider(path);
-        if (provider is null)
-        {
-            logger.LogError("Couldn't load plugin from path '{path}'", path);
-            return null;
-        }
-
         try
         {
-            PluginContainer plugin = await provider.GetPluginAsync(path).ConfigureAwait(false);
+            PluginContainer plugin = await packedPluginProvider.GetPluginAsync(path).ConfigureAwait(false);
 
             return HandlePlugin(plugin);
         }

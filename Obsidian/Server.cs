@@ -256,7 +256,7 @@ public sealed partial class Server : IServer
 
         Directory.CreateDirectory("plugins");
 
-        PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
+        PluginManager.DirectoryWatcher.Filters = [".obby"];
         PluginManager.DirectoryWatcher.Watch("plugins");
 
         await Task.WhenAll(Configuration.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
