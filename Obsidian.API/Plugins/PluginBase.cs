@@ -7,18 +7,7 @@ namespace Obsidian.API.Plugins;
 /// </summary>
 public abstract class PluginBase : IDisposable, IAsyncDisposable
 {
-#nullable disable
-    public IPluginInfo Info { get; internal set; }
-
-    internal Action unload;
-#nullable restore
-
-    private Type typeCache;
-
-    public PluginBase()
-    {
-        typeCache ??= GetType();
-    }
+    public IPluginInfo Info { get; internal set; } = default!;
 
     /// <summary>
     /// Used for registering services.
@@ -43,16 +32,17 @@ public abstract class PluginBase : IDisposable, IAsyncDisposable
     /// <summary>
     /// Called when the world has loaded and the server is joinable.
     /// </summary>
-    public virtual ValueTask OnLoadAsync(IServer server) => ValueTask.CompletedTask;
-
+    public virtual ValueTask OnServerReadyAsync(IServer server) => ValueTask.CompletedTask;
 
     /// <summary>
-    /// Causes this plugin to be unloaded.
+    /// Called when the plugin has fully loaded.
     /// </summary>
-    protected void Unload()
-    {
-        unload();
-    }
+    public virtual ValueTask OnLoadedAsync(IServer server) => ValueTask.CompletedTask;
+
+    /// <summary>
+    /// Called when the plugin is being unloaded.
+    /// </summary>
+    public virtual ValueTask OnUnloadingAsync() => ValueTask.CompletedTask;
 
     public override sealed bool Equals(object? obj) => base.Equals(obj);
     public override sealed int GetHashCode() => base.GetHashCode();

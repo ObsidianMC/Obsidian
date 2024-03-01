@@ -44,10 +44,25 @@ namespace SamplePlugin
             });
         }
 
-        //Called when the world has loaded and the server is ready for connections
-        public override ValueTask OnLoadAsync(IServer server)
+        //Called when the plugin has fully loaded
+        public override ValueTask OnLoadedAsync(IServer server)
         {
             Logger.LogInformation("§a{pluginName} §floaded! Hello §aEveryone§f!", Info.Name);
+
+            return ValueTask.CompletedTask;
+        }
+
+        //Called when the world has loaded and the server is ready for connections
+        public override ValueTask OnServerReadyAsync(IServer server)
+        {
+            Logger.LogInformation("Wow you can join the server!!");
+            return ValueTask.CompletedTask;
+        }
+
+        //This is self explanatory (called when the plugin is being unloaded)
+        public override ValueTask OnUnloadingAsync()
+        {
+            Logger.LogInformation("I'm unloading now :(");
             return ValueTask.CompletedTask;
         }
     }

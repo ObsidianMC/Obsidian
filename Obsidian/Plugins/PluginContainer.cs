@@ -97,8 +97,7 @@ public sealed class PluginContainer : IDisposable
 
     private void Dispose(bool disposing)
     {
-        if(this.ServiceScope != null)
-            this.ServiceScope.Dispose();
+        this.ServiceScope?.Dispose();
 
         if (disposing)
         {

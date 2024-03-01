@@ -15,8 +15,6 @@ namespace Obsidian.Plugins;
 
 public sealed class PluginManager
 {
-    private const string loadEvent = "OnLoad";
-
     internal readonly ILogger logger;
 
     private static PackedPluginProvider packedPluginProvider = default!;
@@ -123,7 +121,6 @@ public sealed class PluginManager
         //Inject first wave of services (services initialized by obsidian e.x IServerConfiguration)
         PluginServiceHandler.InjectServices(this.serverProvider, pluginContainer, this.logger);
 
-        pluginContainer.Plugin.unload = async () => await UnloadPluginAsync(pluginContainer);
         if (pluginContainer.IsReady)
         {
             lock (plugins)
@@ -135,6 +132,8 @@ public sealed class PluginManager
             pluginContainer.Plugin.ConfigureRegistry(this.pluginRegistry);
 
             pluginContainer.Loaded = true;
+
+            InvokeOnLoad(pluginContainer);
         }
         else
         {
@@ -182,6 +181,8 @@ public sealed class PluginManager
 
         this.commandHandler.UnregisterPluginCommands(pluginContainer);
 
+        InvokeOnUnloading(pluginContainer);
+
         try
         {
             await pluginContainer.Plugin.DisposeAsync();
@@ -193,6 +194,7 @@ public sealed class PluginManager
 
         var loadContext = pluginContainer.LoadContext;
 
+        //Dispose has to be called before the LoadContext can unload.
         pluginContainer.Dispose();
 
         loadContext.Unloading += _ => logger.LogInformation("Finished unloading {pluginName} plugin", pluginContainer.Info.Name);
@@ -211,7 +213,7 @@ public sealed class PluginManager
 
             pluginContainer.InjectServices(this.logger);
 
-            InvokeOnLoad(pluginContainer);
+            InvokeOnServerReady(pluginContainer);
         }
 
         //THis only needs to be called once 😭😭
@@ -224,18 +226,6 @@ public sealed class PluginManager
     /// <param name="assembly">The assembly you want to use to find the plugin container.</param>
     public PluginContainer GetPluginContainerByAssembly(Assembly? assembly = null) =>
         this.Plugins.First(x => x.PluginAssembly == (assembly ?? Assembly.GetCallingAssembly()));
-
-    private void OnPluginStateChanged(PluginContainer plugin)
-    {
-        if (plugin.IsReady)
-        {
-            RunStaged(plugin);
-        }
-        else
-        {
-            StageRunning(plugin);
-        }
-    }
 
     private void OnPluginSourceRenamed(string oldSource, string newSource)
     {
@@ -251,51 +241,35 @@ public sealed class PluginManager
             await UnloadPluginAsync(deletedPlugin);
     }
 
-    private void StageRunning(PluginContainer plugin)
-    {
-        lock (plugins)
-        {
-            if (!plugins.Remove(plugin))
-                return;
-        }
-
-        lock (stagedPlugins)
-        {
-            stagedPlugins.Add(plugin);
-        }
-    }
-
-    private void RunStaged(PluginContainer plugin)
-    {
-        lock (stagedPlugins)
-        {
-            if (!stagedPlugins.Remove(plugin))
-                return;
-        }
-
-        lock (plugins)
-        {
-            plugins.Add(plugin);
-        }
-
-        if (!plugin.Loaded)
-        {
-            InvokeOnLoad(plugin);
-            plugin.Loaded = true;
-        }
-    }
-
     private void InvokeOnLoad(PluginContainer plugin)
     {
-        var task = plugin.Plugin.OnLoadAsync(this.server).AsTask();
+        var task = plugin.Plugin.OnLoadedAsync(this.server).AsTask();
         if (task.Status == TaskStatus.Created)
-        {
             task.RunSynchronously();
-        }
+
         if (task.Status == TaskStatus.Faulted)
-        {
-            logger?.LogError(task.Exception?.InnerException, "Invoking {pluginName}.{loadEvent} faulted.", plugin.Info.Name, loadEvent);
-        }
+            logger?.LogError(task.Exception?.InnerException, "Invoking {pluginName}.OnLoadedAsync faulted.", plugin.Info.Name);
+        
+    }
+
+    private void InvokeOnUnloading(PluginContainer plugin)
+    {
+        var task = plugin.Plugin.OnUnloadingAsync().AsTask();
+        if (task.Status == TaskStatus.Created)
+            task.RunSynchronously();
+
+        if (task.Status == TaskStatus.Faulted)
+            logger?.LogError(task.Exception?.InnerException, "Invoking {pluginName}.OnUnloadingAsync faulted.", plugin.Info.Name);
+    }
+
+    private void InvokeOnServerReady(PluginContainer plugin)
+    {
+        var task = plugin.Plugin.OnServerReadyAsync(this.server).AsTask();
+        if (task.Status == TaskStatus.Created)
+            task.RunSynchronously();
+        
+        if (task.Status == TaskStatus.Faulted)
+            logger?.LogError(task.Exception?.InnerException, "Invoking {pluginName}.OnServerReadyAsync faulted.", plugin.Info.Name);
     }
 }
 
