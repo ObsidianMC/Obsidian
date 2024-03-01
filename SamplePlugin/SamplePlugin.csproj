@@ -16,15 +16,11 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<EmbeddedResource Include="plugin.json" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0">
 			<ExcludeAssets>runtime</ExcludeAssets>
 		</PackageReference>
-		<PackageReference Include="Obsidian.MSBuild" Version="1.0.0-nightly-7" />
+		<PackageReference Include="Obsidian.MSBuild" Version="1.0.0-nightly-10" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -32,6 +28,12 @@
 			<Private>false</Private>
 			<ExcludeAssets>runtime</ExcludeAssets>
 		</ProjectReference>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="plugin.json">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
 	</ItemGroup>
 
 	<!--<UsingTask TaskName="Obsidian.MSBuild.Pack" AssemblyFile="C:\Users\LostT\source\repos\Obsidian.MSBuild\bin\Debug\netstandard2.0\Obsidian.MSBuild.dll" />

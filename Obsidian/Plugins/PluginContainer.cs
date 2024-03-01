@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Plugins;
+using System.Collections.Frozen;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
@@ -10,34 +12,39 @@ namespace Obsidian.Plugins;
 
 public sealed class PluginContainer : IDisposable
 {
-    private Type? pluginType;
-
+    private Type PluginType => this.Plugin.GetType();
     public IServiceScope ServiceScope { get; internal set; } = default!;
+    public PluginInfo Info { get; private set; } = default!;
 
-    public PluginBase? Plugin { get; private set; }
-    public PluginInfo Info { get; }
+    [AllowNull]
+    public PluginBase Plugin { get; internal set; } = default!;
 
-    public AssemblyLoadContext? LoadContext { get; private set; }
-    public Assembly PluginAssembly { get; } = default!;
+    [AllowNull]
+    public AssemblyLoadContext LoadContext { get; internal set; } = default!;
 
-    public string Source { get; internal set; } = default!;
+    [AllowNull]
+    public Assembly PluginAssembly { get; internal set; } = default!;
+
+    [AllowNull]
+    public FrozenDictionary<string, PluginFileEntry> FileEntries { get; internal set; } = default!;
+    public required string Source { get; set; }
+ 
     public bool HasDependencies { get; private set; } = true;
     public bool IsReady => HasDependencies;
     public bool Loaded { get; internal set; }
 
-    public ImmutableArray<PluginFileEntry> FileEntries { get; }
-
-    public PluginContainer(PluginBase plugin, PluginInfo info, Assembly assembly, AssemblyLoadContext loadContext, 
-        string source, IEnumerable<PluginFileEntry> fileEntries)
+    ~PluginContainer()
     {
-        Plugin = plugin;
-        Info = info;
-        LoadContext = loadContext;
-        Source = source;
-        PluginAssembly = assembly;
-        pluginType = plugin.GetType();
-        Plugin.Info = Info;
-        this.FileEntries = fileEntries.ToImmutableArray();
+        this.Dispose(false);
+    }
+
+    internal async Task InitializeAsync()
+    {
+        var pluginJsonData = await this.GetFileDataAsync("plugin.json") ?? throw new InvalidOperationException("Failed to find plugin.json");
+
+        await using var pluginInfoStream = new MemoryStream(pluginJsonData, false);
+        this.Info = await pluginInfoStream.FromJsonAsync<PluginInfo>() ?? throw new NullReferenceException("Failed to deserialize plugin.json");
+        this.Plugin.Info = this.Info;
     }
 
     /// <summary>
@@ -47,19 +54,13 @@ public sealed class PluginContainer : IDisposable
     /// <returns>Null if the file is not found or the byte array of the file.</returns>
     public async Task<byte[]?> GetFileDataAsync(string fileName)
     {
-        var fileEntry = this.FileEntries.FirstOrDefault(x => Path.GetFileName(x.FullName) == fileName);
+        var fileEntry = this.FileEntries.GetValueOrDefault(fileName);
         if (fileEntry is null)
             return null;
 
-        await using var fs = new FileStream(this.Source, FileMode.Open);
+        await using var fs = new FileStream(this.Source, FileMode.Open, FileAccess.Read, FileShare.Read);
 
-        fs.Seek(fileEntry.Offset, SeekOrigin.Begin);
-
-        var data = new byte[fileEntry.CompressedLength];
-
-        await fs.ReadAsync(data);
-
-        return data;
+        return await fileEntry.GetDataAsync(fs);
     }
 
     /// <summary>
@@ -67,7 +68,7 @@ public sealed class PluginContainer : IDisposable
     /// </summary>
     public void InjectServices(ILogger? logger, object? target = null)
     {
-        var properties = target is null ? this.pluginType!.WithInjectAttribute() : target.GetType().WithInjectAttribute();
+        var properties = target is null ? this.PluginType!.WithInjectAttribute() : target.GetType().WithInjectAttribute();
 
         target ??= this.Plugin;
 
@@ -89,10 +90,22 @@ public sealed class PluginContainer : IDisposable
 
     public void Dispose()
     {
-        Plugin = null;
-        LoadContext = null;
-        pluginType = null;
+        this.Dispose(true);
 
-        this.ServiceScope.Dispose();
+        GC.SuppressFinalize(this);
+    }
+
+    private void Dispose(bool disposing)
+    {
+        if(this.ServiceScope != null)
+            this.ServiceScope.Dispose();
+
+        if (disposing)
+        {
+            this.PluginAssembly = null;
+            this.LoadContext = null;
+            this.Plugin = null;
+            this.FileEntries = null;
+        }
     }
 }

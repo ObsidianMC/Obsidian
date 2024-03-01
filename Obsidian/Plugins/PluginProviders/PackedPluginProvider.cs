@@ -2,6 +2,7 @@
 using Obsidian.API.Plugins;
 using Org.BouncyCastle.Crypto;
 using System.Buffers;
+using System.Collections.Frozen;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
@@ -49,29 +50,31 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
 
         var loadContext = new PluginLoadContext(pluginAssembly);
 
-        var entries = new PluginFileEntry[reader.ReadInt32()];
+        var entryCount = reader.ReadInt32();
+        var entries = new Dictionary<string, PluginFileEntry>(entryCount);
 
         var offset = 0;
-        for (int i = 0; i < entries.Length; i++)
+        for (int i = 0; i < entryCount; i++)
         {
             var entry = new PluginFileEntry()
             {
-                FullName = reader.ReadString(),
+                Name = reader.ReadString(),
                 Length = reader.ReadInt32(),
                 CompressedLength = reader.ReadInt32(),
                 Offset = offset,
             };
 
-            entries[i] = entry;
+            entries.Add(entry.Name, entry);
 
             offset += entry.CompressedLength;
         }
 
         var startPos = (int)fs.Position;
-        foreach (var entry in entries)
+        foreach (var (_, entry) in entries)
             entry.Offset += startPos;
 
-        foreach (var entry in entries)
+        var libsWithSymbols = new List<string>();
+        foreach (var (_, entry) in entries)
         {
             byte[] actualBytes;
             if (entry.Length != entry.CompressedLength)
@@ -101,29 +104,48 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
                 await fs.ReadAsync(actualBytes);
             }
 
-            var name = Path.GetFileNameWithoutExtension(entry.FullName);
+            var name = Path.GetFileNameWithoutExtension(entry.Name);
             //Don't load this assembly wait
             if (name == pluginAssembly)
                 continue;
 
             //TODO LOAD OTHER FILES SOMEWHERE
-            if (entry.FullName.EndsWith(".dll"))
+            if (entry.Name.EndsWith(".dll"))
+            {
+                if(entries.ContainsKey(entry.Name.Replace(".dll", ".pdb")))
+                {
+                    //Library has debug symbols load in last
+                    libsWithSymbols.Add(entry.Name.Replace(".dll", ".pdb"));
+                    continue;
+                }
+
                 loadContext.LoadAssembly(actualBytes);
+            }
         }
 
-        var mainPluginEntry = entries.First(x => x.FullName.EndsWith($"{pluginAssembly}.dll"));
-        var mainPluginPbdEntry = entries.First(x => x.FullName.EndsWith($"{pluginAssembly}.pdb"));
+        foreach(var lib in libsWithSymbols)
+        {
+            var mainLib = await entries[$"{lib}.dll"].GetDataAsync(fs);
+            var libSymbols = await entries[$"{lib}.pdb"].GetDataAsync(fs);
+
+            loadContext.LoadAssembly(mainLib, libSymbols);
+        }
+
+        var mainPluginEntry = entries[$"{pluginAssembly}.dll"];
+        var mainPluginPbdEntry = entries[$"{pluginAssembly}.pdb"];
 
         var mainAssembly = loadContext.LoadAssembly(await mainPluginEntry.GetDataAsync(fs), await mainPluginPbdEntry.GetDataAsync(fs));
 
         if (mainAssembly is null)
             throw new InvalidOperationException("Failed to find main assembly");
 
+        await fs.DisposeAsync();
+
         return await HandlePluginAsync(loadContext, mainAssembly, path, entries);
     }
 
     internal async Task<PluginContainer> HandlePluginAsync(PluginLoadContext loadContext, Assembly assembly,
-        string path, IEnumerable<PluginFileEntry> entries)
+        string path, Dictionary<string, PluginFileEntry> entries)
     {
         Type? pluginType = assembly.GetTypes().FirstOrDefault(type => type.IsSubclassOf(typeof(PluginBase)));
 
@@ -139,13 +161,17 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
         logger.LogInformation("Creating plugin instance...");
         plugin = (PluginBase)Activator.CreateInstance(pluginType)!;
 
-        string name = assembly.GetName().Name!;
-        using var pluginInfoStream = assembly.GetManifestResourceStream($"{name}.plugin.json")
-            ?? throw new InvalidOperationException($"Failed to find embedded plugin.json file for {name}");
+        var pluginContainer = new PluginContainer
+        {
+            Plugin = plugin,
+            FileEntries = entries.ToFrozenDictionary(),
+            LoadContext = loadContext,
+            PluginAssembly = assembly,
+            Source = path
+        };
 
-        var info = await pluginInfoStream.FromJsonAsync<PluginInfo>() ??
-            throw new JsonException($"Couldn't deserialize plugin.json from {name}");
+        await pluginContainer.InitializeAsync();
 
-        return new PluginContainer(plugin, info, assembly, loadContext, path, entries);
+        return pluginContainer;
     }
 }

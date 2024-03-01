@@ -6,7 +6,7 @@ using System.IO.Compression;
 namespace Obsidian.Plugins;
 public sealed class PluginFileEntry
 {
-    public required string FullName { get; init; }
+    public required string Name { get; init; }
 
     public required int Length { get; init; }
 
@@ -16,7 +16,7 @@ public sealed class PluginFileEntry
 
     public bool IsCompressed => CompressedLength < Length;
 
-    public async Task<byte[]> GetDataAsync(FileStream packedPluginFile)
+    internal async Task<byte[]> GetDataAsync(FileStream packedPluginFile)
     {
         packedPluginFile.Seek(this.Offset, SeekOrigin.Begin);
 
@@ -32,7 +32,7 @@ public sealed class PluginFileEntry
         if (await packedPluginFile.ReadAsync(compressedData.AsMemory(0, this.CompressedLength)) != this.CompressedLength)
             throw new DataLengthException();
 
-        await using var ms = new MemoryStream(compressedData);
+        await using var ms = new MemoryStream(compressedData, false);
         await using var ds = new DeflateStream(ms, CompressionMode.Decompress);
         await using var outStream = new MemoryStream();
 

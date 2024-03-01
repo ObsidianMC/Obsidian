@@ -164,6 +164,8 @@ public sealed class PluginManager
     /// </summary>
     public async Task UnloadPluginAsync(PluginContainer pluginContainer)
     {
+        this.logger.LogInformation("Unloading plugin...");
+
         bool removed = false;
         lock (plugins)
         {
@@ -189,10 +191,12 @@ public sealed class PluginManager
             logger.LogError(ex, "Unhandled exception occured when disposing {pluginName}", pluginContainer.Info.Name);
         }
 
-        pluginContainer.LoadContext.Unload();
-        pluginContainer.LoadContext.Unloading += _ => logger.LogInformation("Finished unloading {pluginName} plugin", pluginContainer.Info.Name);
+        var loadContext = pluginContainer.LoadContext;
 
         pluginContainer.Dispose();
+
+        loadContext.Unloading += _ => logger.LogInformation("Finished unloading {pluginName} plugin", pluginContainer.Info.Name);
+        loadContext.Unload();
     }
 
     public void ServerReady()
