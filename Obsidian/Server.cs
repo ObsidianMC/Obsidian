@@ -315,7 +315,6 @@ public sealed partial class Server : IServer
 
     private async Task AcceptClientsAsync()
     {
-
         _tcpListener = await SocketFactory.CreateListenerAsync(new IPEndPoint(IPAddress.Any, Port), token: _cancelTokenSource.Token);
 
         while (!_cancelTokenSource.Token.IsCancellationRequested)
