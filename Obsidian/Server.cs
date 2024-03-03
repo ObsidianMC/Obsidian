@@ -315,6 +315,7 @@ public sealed partial class Server : IServer
 
     private async Task AcceptClientsAsync()
     {
+
         _tcpListener = await SocketFactory.CreateListenerAsync(new IPEndPoint(IPAddress.Any, Port), token: _cancelTokenSource.Token);
 
         while (!_cancelTokenSource.Token.IsCancellationRequested)
@@ -375,20 +376,33 @@ public sealed partial class Server : IServer
             var client = new Client(connection, Math.Max(0, _clients.Count + this.DefaultWorld.GetTotalLoadedEntities()), this.loggerFactory, this.userCache, this);
 
             _clients.Add(client);
-
-            client.Disconnected += client =>
-            {
-                _clients.TryRemove(client);
-
-                if (client.Player is not null)
-                    _ = OnlinePlayers.TryRemove(client.Player.Uuid, out _);
-            };
-
-            _ = Task.Run(client.StartConnectionAsync);
+            _ = ExecuteAsync(client);
         }
 
         _logger.LogInformation("No longer accepting new clients");
         await _tcpListener.UnbindAsync();
+        return;
+
+        async Task ExecuteAsync(Client client)
+        {
+            await Task.Yield();
+
+            try
+            {
+                await client.StartConnectionAsync();
+            }
+            catch (OperationCanceledException)
+            {
+                // Ignore.
+            }
+
+            _clients.TryRemove(client);
+
+            if (client.Player is not null)
+                _ = OnlinePlayers.TryRemove(client.Player.Uuid, out _);
+
+            client.Dispose();
+        }
     }
 
     public IBossBar CreateBossBar(ChatMessage title, float health, BossBarColor color, BossBarDivisionType divisionType, BossBarFlags flags) => new BossBar(this)
