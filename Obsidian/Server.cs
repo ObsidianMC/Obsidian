@@ -394,13 +394,19 @@ public sealed partial class Server : IServer
             {
                 // Ignore.
             }
+            catch (Exception exception)
+            {
+                _logger.LogError("Unexpected exception from client {Identifier}: {Message}", client.id, exception.Message);
+            }
+            finally
+            {
+                _clients.TryRemove(client);
 
-            _clients.TryRemove(client);
+                if (client.Player is not null)
+                    _ = OnlinePlayers.TryRemove(client.Player.Uuid, out _);
 
-            if (client.Player is not null)
-                _ = OnlinePlayers.TryRemove(client.Player.Uuid, out _);
-
-            client.Dispose();
+                client.Dispose();
+            }
         }
     }
 
