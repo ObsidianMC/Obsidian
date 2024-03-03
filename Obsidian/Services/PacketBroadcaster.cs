@@ -71,7 +71,7 @@ public sealed class PacketBroadcaster : BackgroundService, IPacketBroadcaster
                     await player.client.QueuePacketAsync(queuedPacket.Packet);
             }
         }
-        catch (Exception e)
+        catch (Exception e) when (e is not OperationCanceledException)
         {
             await this.environment.OnServerCrashAsync(this.logger, e);
         }
@@ -95,7 +95,6 @@ public interface IPacketBroadcaster
     /// <param name="packet">The packet to send.</param>
     /// <param name="excludedIds">The list of entity ids to exlude from the broadcast.</param>
     public void Broadcast(IClientboundPacket packet, params int[] excludedIds);
-
 
     /// <summary>
     /// Sends the packets directly to connected clients without processing in a queue.

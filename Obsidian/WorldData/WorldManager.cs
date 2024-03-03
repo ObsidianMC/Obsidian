@@ -57,7 +57,7 @@ public sealed class WorldManager : BackgroundService, IWorldManager
                 await Task.WhenAll(this.worlds.Values.Cast<World>().Select(x => x.ManageChunksAsync()));
             }
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             await this.serverEnvironment.OnServerCrashAsync(this.logger, ex);
         }
