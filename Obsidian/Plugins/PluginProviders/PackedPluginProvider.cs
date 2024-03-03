@@ -52,8 +52,13 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
         var partialContainer = BuildPartialContainer(loadContext, path, entries);
 
         //Can't load until those plugins are loaded
-        if (partialContainer.Info.Dependencies.Any(x => x.Priority == DependencyPriority.Hard))
+        if (partialContainer.Info.Dependencies.Any(x => x.Required))
+        {
+            var str = partialContainer.Info.Dependencies.Length > 1 ? "has multiple hard dependencies." : 
+                $"has a hard dependecy on {partialContainer.Info.Dependencies.First().Id}.";
+            this.logger.LogWarning("{name} {message}. Will Attempt to load after.", partialContainer.Info.Name, str);
             return partialContainer;
+        }
 
         var mainAssembly = this.InitializePlugin(partialContainer);
 
@@ -67,16 +72,16 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
         var libsWithSymbols = this.ProcessEntries(pluginContainer);
         foreach (var lib in libsWithSymbols)
         {
-            var mainLib = pluginContainer.GetFileData($"{lib}.dll");
-            var libSymbols = pluginContainer.GetFileData($"{lib}.pdb");
+            var mainLib = pluginContainer.GetFileData($"{lib}.dll")!;
+            var libSymbols = pluginContainer.GetFileData($"{lib}.pdb")!;
 
             pluginContainer.LoadContext.LoadAssembly(mainLib, libSymbols);
         }
 
-        var mainPluginEntry = pluginContainer.GetFileData($"{pluginAssembly}.dll");
-        var mainPluginPbdEntry = pluginContainer.GetFileData($"{pluginAssembly}.pdb");
+        var mainPluginEntry = pluginContainer.GetFileData($"{pluginAssembly}.dll")!;
+        var mainPluginPbdEntry = pluginContainer.GetFileData($"{pluginAssembly}.pdb")!;
 
-        var mainAssembly = pluginContainer.LoadContext.LoadAssembly(mainPluginEntry!, mainPluginPbdEntry!)
+        var mainAssembly = pluginContainer.LoadContext.LoadAssembly(mainPluginEntry, mainPluginPbdEntry!)
             ?? throw new InvalidOperationException("Failed to find main assembly");
 
         pluginContainer.PluginAssembly = mainAssembly;

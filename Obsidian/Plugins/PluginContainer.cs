@@ -68,8 +68,8 @@ public sealed class PluginContainer : IDisposable
     }
 
     //TODO PLUGINS SHOULD USE VERSION CLASS TO SPECIFY VERSION
-    public bool IsDependency(string pluginName) =>
-        this.Info.Dependencies.Any(x => x.Name == pluginName);
+    public bool IsDependency(string pluginId) =>
+        this.Info.Dependencies.Any(x => x.Id == pluginId);
 
     /// <summary>
     /// Inject the scoped services into 

@@ -11,6 +11,7 @@ using Obsidian.Services;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 
 namespace Obsidian.Plugins;
@@ -92,14 +93,16 @@ public sealed class PluginManager
         {
             var pluginContainer = await this.LoadPluginAsync(file);
 
+            foreach (var canLoad in waitingForDepend.Where(x => x.IsDependency(pluginContainer.Info.Id)).ToList())
+            {
+                packedPluginProvider.InitializePlugin(canLoad);
+                this.HandlePlugin(canLoad);
+
+                waitingForDepend.Remove(canLoad);
+            }
+
             if (pluginContainer.Plugin is null)
                 waitingForDepend.Add(pluginContainer);
-        }
-
-        foreach (var pluginToLoad in waitingForDepend)
-        {
-            packedPluginProvider.InitializePlugin(pluginToLoad);
-            this.HandlePlugin(pluginToLoad);
         }
 
         DirectoryWatcher.Watch("plugins");

@@ -13,15 +13,9 @@ public interface IPluginInfo
 
 public readonly struct PluginDependency
 {
-    public required string Name { get; init; }
+    public required string Id { get; init; }
 
     public required string Version { get; init; }
 
-    public DependencyPriority Priority { get; init; }
-}
-
-public enum DependencyPriority
-{
-    Soft,
-    Hard
+    public bool Required { get; init; }
 }
