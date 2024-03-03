@@ -256,10 +256,9 @@ public sealed partial class Server : IServer
 
         Directory.CreateDirectory("plugins");
 
-        PluginManager.DirectoryWatcher.Filters = [".obby"];
-        PluginManager.DirectoryWatcher.Watch("plugins");
+        await PluginManager.LoadPluginsAsync();
 
-        await Task.WhenAll(Configuration.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
+        //await Task.WhenAll(Configuration.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
         if (!Configuration.OnlineMode)
             _logger.LogInformation("Starting in offline mode...");

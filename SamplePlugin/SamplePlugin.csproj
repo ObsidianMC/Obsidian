@@ -36,7 +36,8 @@
 	  </None>
 	</ItemGroup>
 
-	<!--<Target Name="MovePlugin" AfterTargets="PackPlugin" Condition="'$(Configuration)' == 'Release'">
-		<Move SourceFiles="$(PluginPublishDir)/$(PluginName).obby" DestinationFolder="..\Obsidian.ConsoleApp\bin\Debug\$(TargetFramework)\plugins\" />
+	<!--Can be used to move the plugin after its been packed useful when debugging ^ ^ -->
+	<!--<Target Name="MovePlugin" AfterTargets="PackPlugin">
+		<Move SourceFiles="$(PluginPublishDir)/$(PluginName).obby" DestinationFolder="{YOUR DESTINATION HERE}" />
 	</Target>-->
 </Project>

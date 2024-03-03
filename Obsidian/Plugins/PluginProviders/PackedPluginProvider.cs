@@ -1,15 +1,12 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Plugins;
 using Org.BouncyCastle.Crypto;
-using System.Buffers;
 using System.Collections.Frozen;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
-using System.Runtime.Loader;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
 
 namespace Obsidian.Plugins.PluginProviders;
 public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger logger)
@@ -19,7 +16,7 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
 
     public async Task<PluginContainer> GetPluginAsync(string path)
     {
-        await using var fs = new FileStream(path, FileMode.Open);
+        await using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
         using var reader = new BinaryReader(fs);
 
         var header = Encoding.ASCII.GetString(reader.ReadBytes(4));
@@ -50,6 +47,73 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
 
         var loadContext = new PluginLoadContext(pluginAssembly);
 
+        var entries = await this.InitializeEntriesAsync(reader, fs);
+
+        var partialContainer = BuildPartialContainer(loadContext, path, entries);
+
+        //Can't load until those plugins are loaded
+        if (partialContainer.Info.Dependencies.Any(x => x.Priority == DependencyPriority.Hard))
+            return partialContainer;
+
+        var mainAssembly = this.InitializePlugin(partialContainer);
+
+        return HandlePlugin(partialContainer, mainAssembly);
+    }
+
+    internal Assembly InitializePlugin(PluginContainer pluginContainer)
+    {
+        var pluginAssembly = pluginContainer.LoadContext.Name;
+
+        var libsWithSymbols = this.ProcessEntries(pluginContainer);
+        foreach (var lib in libsWithSymbols)
+        {
+            var mainLib = pluginContainer.GetFileData($"{lib}.dll");
+            var libSymbols = pluginContainer.GetFileData($"{lib}.pdb");
+
+            pluginContainer.LoadContext.LoadAssembly(mainLib, libSymbols);
+        }
+
+        var mainPluginEntry = pluginContainer.GetFileData($"{pluginAssembly}.dll");
+        var mainPluginPbdEntry = pluginContainer.GetFileData($"{pluginAssembly}.pdb");
+
+        var mainAssembly = pluginContainer.LoadContext.LoadAssembly(mainPluginEntry!, mainPluginPbdEntry!)
+            ?? throw new InvalidOperationException("Failed to find main assembly");
+
+        pluginContainer.PluginAssembly = mainAssembly;
+
+        return mainAssembly;
+    }
+
+    internal PluginContainer HandlePlugin(PluginContainer pluginContainer, Assembly assembly)
+    {
+        Type? pluginType = assembly.GetTypes().FirstOrDefault(type => type.IsSubclassOf(typeof(PluginBase)));
+
+        PluginBase? plugin;
+        if (pluginType == null || pluginType.GetConstructor([]) == null)
+        {
+            plugin = default;
+            logger.LogError("Loaded assembly contains no type implementing PluginBase with public parameterless constructor.");
+
+            throw new InvalidOperationException("Loaded assembly contains no type implementing PluginBase with public parameterless constructor.");
+        }
+
+        logger.LogDebug("Creating plugin instance...");
+        plugin = (PluginBase)Activator.CreateInstance(pluginType)!;
+
+        pluginContainer.PluginAssembly = assembly;
+        pluginContainer.Plugin = plugin;
+
+        pluginContainer.Initialize();
+
+        return pluginContainer;
+    }
+
+    /// <summary>
+    /// Steps through the plugin file stream and initializes each file entry found.
+    /// </summary>
+    /// <returns>A dictionary that contains file entries with the key as the FileName and value as <see cref="PluginFileEntry"/>.</returns>
+    private async Task<Dictionary<string, PluginFileEntry>> InitializeEntriesAsync(BinaryReader reader, FileStream fs)
+    {
         var entryCount = reader.ReadInt32();
         var entries = new Dictionary<string, PluginFileEntry>(entryCount);
 
@@ -71,38 +135,49 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
 
         var startPos = (int)fs.Position;
         foreach (var (_, entry) in entries)
+        {
             entry.Offset += startPos;
 
-        var libsWithSymbols = new List<string>();
-        foreach (var (_, entry) in entries)
+            var data = new byte[entry.CompressedLength];
+
+            var bytesRead = await fs.ReadAsync(data);
+
+            if (bytesRead != entry.CompressedLength)
+                throw new DataLengthException();
+
+            entry.rawData = data;
+        }
+
+        return entries;
+    }
+
+    private PluginContainer BuildPartialContainer(PluginLoadContext loadContext, string path,
+        Dictionary<string, PluginFileEntry> entries)
+    {
+        var pluginContainer = new PluginContainer
         {
-            byte[] actualBytes;
-            if (entry.Length != entry.CompressedLength)
-            {
-                var mem = new byte[entry.CompressedLength];
+            LoadContext = loadContext,
+            Source = path,
+            FileEntries = entries.ToFrozenDictionary(),
+        };
 
-                var compressedBytesRead = await fs.ReadAsync(mem);
+        pluginContainer.Initialize();
 
-                if (compressedBytesRead != entry.CompressedLength)
-                    throw new DataLengthException();
+        return pluginContainer;
+    }
 
-                await using var ms = new MemoryStream(mem);
-                await using var ds = new DeflateStream(ms, CompressionMode.Decompress);
 
-                await using var deflatedData = new MemoryStream();
+    /// <summary>
+    ///  Goes and loads any assemblies found into the <see cref="PluginContainer.LoadContext"/>.
+    /// </summary>
+    private List<string> ProcessEntries(PluginContainer pluginContainer)
+    {
+        var pluginAssembly = pluginContainer.LoadContext.Name;
 
-                await ds.CopyToAsync(deflatedData);
-
-                if (deflatedData.Length != entry.Length)
-                    throw new DataLengthException();
-
-                actualBytes = deflatedData.ToArray();
-            }
-            else
-            {
-                actualBytes = new byte[entry.Length];
-                await fs.ReadAsync(actualBytes);
-            }
+        var libsWithSymbols = new List<string>();
+        foreach (var (_, entry) in pluginContainer.FileEntries)
+        {
+            var actualBytes = entry.GetData();
 
             var name = Path.GetFileNameWithoutExtension(entry.Name);
             //Don't load this assembly wait
@@ -112,66 +187,17 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
             //TODO LOAD OTHER FILES SOMEWHERE
             if (entry.Name.EndsWith(".dll"))
             {
-                if(entries.ContainsKey(entry.Name.Replace(".dll", ".pdb")))
+                if (pluginContainer.FileEntries.ContainsKey(entry.Name.Replace(".dll", ".pdb")))
                 {
                     //Library has debug symbols load in last
                     libsWithSymbols.Add(entry.Name.Replace(".dll", ".pdb"));
                     continue;
                 }
 
-                loadContext.LoadAssembly(actualBytes);
+                pluginContainer.LoadContext.LoadAssembly(actualBytes);
             }
         }
 
-        foreach(var lib in libsWithSymbols)
-        {
-            var mainLib = await entries[$"{lib}.dll"].GetDataAsync(fs);
-            var libSymbols = await entries[$"{lib}.pdb"].GetDataAsync(fs);
-
-            loadContext.LoadAssembly(mainLib, libSymbols);
-        }
-
-        var mainPluginEntry = entries[$"{pluginAssembly}.dll"];
-        var mainPluginPbdEntry = entries[$"{pluginAssembly}.pdb"];
-
-        var mainAssembly = loadContext.LoadAssembly(await mainPluginEntry.GetDataAsync(fs), await mainPluginPbdEntry.GetDataAsync(fs));
-
-        if (mainAssembly is null)
-            throw new InvalidOperationException("Failed to find main assembly");
-
-        await fs.DisposeAsync();
-
-        return await HandlePluginAsync(loadContext, mainAssembly, path, entries);
-    }
-
-    internal async Task<PluginContainer> HandlePluginAsync(PluginLoadContext loadContext, Assembly assembly,
-        string path, Dictionary<string, PluginFileEntry> entries)
-    {
-        Type? pluginType = assembly.GetTypes().FirstOrDefault(type => type.IsSubclassOf(typeof(PluginBase)));
-
-        PluginBase? plugin;
-        if (pluginType == null || pluginType.GetConstructor([]) == null)
-        {
-            plugin = default;
-            logger.LogError("Loaded assembly contains no type implementing PluginBase with public parameterless constructor.");
-
-            throw new InvalidOperationException("Loaded assembly contains no type implementing PluginBase with public parameterless constructor.");
-        }
-
-        logger.LogInformation("Creating plugin instance...");
-        plugin = (PluginBase)Activator.CreateInstance(pluginType)!;
-
-        var pluginContainer = new PluginContainer
-        {
-            Plugin = plugin,
-            FileEntries = entries.ToFrozenDictionary(),
-            LoadContext = loadContext,
-            PluginAssembly = assembly,
-            Source = path
-        };
-
-        await pluginContainer.InitializeAsync();
-
-        return pluginContainer;
+        return libsWithSymbols;
     }
 }

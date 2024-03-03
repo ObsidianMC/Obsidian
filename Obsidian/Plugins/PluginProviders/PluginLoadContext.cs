@@ -4,7 +4,7 @@ using System.Runtime.Loader;
 
 namespace Obsidian.Plugins.PluginProviders;
 
-internal sealed class PluginLoadContext(string name) : AssemblyLoadContext(name: name, isCollectible: true)
+public sealed class PluginLoadContext(string name) : AssemblyLoadContext(name: name, isCollectible: true)
 {
     public List<PluginLoadContext> Dependencies { get; } = [];
 
@@ -14,7 +14,7 @@ internal sealed class PluginLoadContext(string name) : AssemblyLoadContext(name:
         using var pbdStream = pbdBytes != null ? new MemoryStream(pbdBytes, false) : null;
 
         var asm = this.LoadFromStream(mainStream, pbdStream);
-
+        
         return asm;
     }
 

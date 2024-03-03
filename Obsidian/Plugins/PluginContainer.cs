@@ -1,17 +1,18 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Plugins;
+using Obsidian.Plugins.PluginProviders;
 using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Reflection;
-using System.Runtime.Loader;
 
 namespace Obsidian.Plugins;
 
 public sealed class PluginContainer : IDisposable
 {
+    private bool initialized;
+
     private Type PluginType => this.Plugin.GetType();
     public IServiceScope ServiceScope { get; internal set; } = default!;
     public PluginInfo Info { get; private set; } = default!;
@@ -20,7 +21,7 @@ public sealed class PluginContainer : IDisposable
     public PluginBase Plugin { get; internal set; } = default!;
 
     [AllowNull]
-    public AssemblyLoadContext LoadContext { get; internal set; } = default!;
+    public PluginLoadContext LoadContext { get; internal set; } = default!;
 
     [AllowNull]
     public Assembly PluginAssembly { get; internal set; } = default!;
@@ -28,7 +29,7 @@ public sealed class PluginContainer : IDisposable
     [AllowNull]
     public FrozenDictionary<string, PluginFileEntry> FileEntries { get; internal set; } = default!;
     public required string Source { get; set; }
- 
+
     public bool HasDependencies { get; private set; } = true;
     public bool IsReady => HasDependencies;
     public bool Loaded { get; internal set; }
@@ -38,12 +39,19 @@ public sealed class PluginContainer : IDisposable
         this.Dispose(false);
     }
 
-    internal async Task InitializeAsync()
+    internal void Initialize()
     {
-        var pluginJsonData = await this.GetFileDataAsync("plugin.json") ?? throw new InvalidOperationException("Failed to find plugin.json");
+        if (!this.initialized)
+        {
+            var pluginJsonData = this.GetFileData("plugin.json") ?? throw new InvalidOperationException("Failed to find plugin.json");
 
-        await using var pluginInfoStream = new MemoryStream(pluginJsonData, false);
-        this.Info = await pluginInfoStream.FromJsonAsync<PluginInfo>() ?? throw new NullReferenceException("Failed to deserialize plugin.json");
+            this.Info = pluginJsonData.FromJson<PluginInfo>() ?? throw new NullReferenceException("Failed to deserialize plugin.json");
+
+            this.initialized = true;
+
+            return;
+        }
+
         this.Plugin.Info = this.Info;
     }
 
@@ -52,16 +60,16 @@ public sealed class PluginContainer : IDisposable
     /// </summary>
     /// <param name="fileName">The name of the file you're searching for.</param>
     /// <returns>Null if the file is not found or the byte array of the file.</returns>
-    public async Task<byte[]?> GetFileDataAsync(string fileName)
+    public byte[]? GetFileData(string fileName)
     {
         var fileEntry = this.FileEntries.GetValueOrDefault(fileName);
-        if (fileEntry is null)
-            return null;
 
-        await using var fs = new FileStream(this.Source, FileMode.Open, FileAccess.Read, FileShare.Read);
-
-        return await fileEntry.GetDataAsync(fs);
+        return fileEntry?.GetData();
     }
+
+    //TODO PLUGINS SHOULD USE VERSION CLASS TO SPECIFY VERSION
+    public bool IsDependency(string pluginName) =>
+        this.Info.Dependencies.Any(x => x.Name == pluginName);
 
     /// <summary>
     /// Inject the scoped services into 
