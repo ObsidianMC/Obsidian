@@ -1,9 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Plugins;
 using Org.BouncyCastle.Crypto;
-using Org.BouncyCastle.Crypto.Utilities;
-using Org.BouncyCastle.Pqc.Crypto.SphincsPlus;
-using Org.BouncyCastle.Security;
 using System.Collections.Frozen;
 using System.IO;
 using System.Reflection;
@@ -13,9 +10,6 @@ using System.Text;
 namespace Obsidian.Plugins.PluginProviders;
 public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger logger)
 {
-    private const int SignatureLength = 384;
-    private const int HashLength = 20;
-
     private readonly PluginManager pluginManager = pluginManager;
     private readonly ILogger logger = logger;
 
@@ -31,8 +25,8 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
         //TODO save api version somewhere
         var apiVersion = reader.ReadString();
 
-        var hash = reader.ReadBytes(HashLength);
-        var signature = reader.ReadBytes(SignatureLength);
+        var hash = reader.ReadBytes(SHA384.HashSizeInBytes);
+        var signature = reader.ReadBytes(SHA384.HashSizeInBits);
         var dataLength = reader.ReadInt32();
 
         var curPos = fs.Position;

@@ -21,7 +21,7 @@
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0">
 			<ExcludeAssets>runtime</ExcludeAssets>
 		</PackageReference>
-		<PackageReference Include="Obsidian.MSBuild" Version="1.0.0-nightly-11" />
+		<PackageReference Include="Obsidian.MSBuild" Version="1.0.0-nightly-14" />
 	</ItemGroup>
 
 	<ItemGroup>
