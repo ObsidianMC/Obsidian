@@ -8,9 +8,6 @@ using Obsidian.Plugins.PluginProviders;
 using Obsidian.Plugins.ServiceProviders;
 using Obsidian.Registries;
 using Obsidian.Services;
-using Org.BouncyCastle.Crypto.Parameters;
-using Org.BouncyCastle.Crypto.Utilities;
-using Org.BouncyCastle.Security;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
@@ -85,42 +82,24 @@ public sealed class PluginManager
         DirectoryWatcher.FileRenamed += OnPluginSourceRenamed;
         DirectoryWatcher.FileDeleted += OnPluginSourceDeleted;
     }
-    
+
     public async Task LoadPluginsAsync()
     {
         //TODO talk about what format we should support
-        await using var acceptedKeysFileStream = new FileStream("accepted_keys", FileMode.OpenOrCreate);
+        var acceptedKeyFiles = Directory.GetFiles("accepted_keys");
 
-        if(acceptedKeysFileStream.Length > 0)
+        using var rsa = RSA.Create();
+        foreach (var certFile in acceptedKeyFiles)
         {
-            using var sr = new StreamReader(acceptedKeysFileStream);
-            var line = "";
-            while((line = await sr.ReadLineAsync()) != null)
-            {
-                //ssh-rsa AAAAB3....
-                //Try to get the base 64 encoded section. Only RSA keys are supported.
-                var key = line.Split()[1];
-                var keyParams = OpenSshPublicKeyUtilities.ParsePublicKey(Convert.FromBase64String(key));
+            var xml = await File.ReadAllTextAsync(certFile);
+            rsa.FromXmlString(xml);
 
-                try
-                {
-                    var rsaKeyParams = DotNetUtilities.ToRSAParameters((RsaKeyParameters)keyParams);
-
-                    acceptedKeys.Add(rsaKeyParams);
-                }
-                catch(Exception ex)
-                {
-                    this.logger.LogWarning(ex, "Failed to parse public key.");
-                }
-                
-
-                this.logger.LogDebug("Added key {key}", line);
-            }
+            this.acceptedKeys.Add(rsa.ExportParameters(false));
         }
 
         var files = Directory.GetFiles("plugins", "*.obby", SearchOption.AllDirectories);
 
-        var waitingForDepend = new List<PluginContainer>();  
+        var waitingForDepend = new List<PluginContainer>();
         foreach (var file in files)
         {
             var pluginContainer = await this.LoadPluginAsync(file);
@@ -135,7 +114,7 @@ public sealed class PluginManager
 
                 waitingForDepend.Remove(canLoad);
             }
-            
+
 
             if (pluginContainer.Plugin is null)
                 waitingForDepend.Add(pluginContainer);

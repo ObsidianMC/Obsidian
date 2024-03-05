@@ -19,8 +19,6 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
     private readonly PluginManager pluginManager = pluginManager;
     private readonly ILogger logger = logger;
 
-    
-
     public async Task<PluginContainer?> GetPluginAsync(string path)
     {
         await using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -123,9 +121,9 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
     /// <returns></returns>
     private async Task<bool> TryValidatePluginAsync(FileStream fs, byte[] hash, byte[] signature, string path)
     {
-        using (var sha1 = SHA1.Create())
+        using (var sha384 = SHA384.Create())
         {
-            var verifyHash = await sha1.ComputeHashAsync(fs);
+            var verifyHash = await sha384.ComputeHashAsync(fs);
 
             if (!verifyHash.SequenceEqual(hash))
             {
@@ -135,18 +133,21 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
         }
 
         var deformatter = new RSAPKCS1SignatureDeformatter();
-        deformatter.SetHashAlgorithm("SHA1");
+        deformatter.SetHashAlgorithm("SHA384");
 
         var isSigValid = true;
         if (!this.pluginManager.server.Configuration.AllowUntrustedPlugins)
         {
             using var rsa = RSA.Create();
-            foreach (var key in this.pluginManager.AcceptedKeys)
+            foreach (var rsaParameter in this.pluginManager.AcceptedKeys)
             {
-                rsa.ImportParameters(key);
+                rsa.ImportParameters(rsaParameter);
                 deformatter.SetKey(rsa);
 
                 isSigValid = deformatter.VerifySignature(hash, signature);
+
+                if (isSigValid)
+                    break;
             }
         }
 
