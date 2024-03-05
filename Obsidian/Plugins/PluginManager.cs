@@ -22,6 +22,7 @@ namespace Obsidian.Plugins;
 public sealed class PluginManager
 {
     internal readonly ILogger logger;
+    internal readonly IServer server;
 
     private static PackedPluginProvider packedPluginProvider = default!;
 
@@ -30,7 +31,6 @@ public sealed class PluginManager
     private readonly List<RSAParameters> acceptedKeys = [];
 
     private readonly IServiceProvider serverProvider;
-    private readonly IServer server;
     private readonly CommandHandler commandHandler;
     private readonly IPluginRegistry pluginRegistry;
     private readonly IServiceCollection pluginServiceDescriptors = new ServiceCollection();
@@ -98,7 +98,8 @@ public sealed class PluginManager
             while((line = await sr.ReadLineAsync()) != null)
             {
                 //ssh-rsa AAAAB3....
-                var key = line.Split()[1];//Try to get the base 64 encoded only RSA keys are supported.
+                //Try to get the base 64 encoded section. Only RSA keys are supported.
+                var key = line.Split()[1];
                 var keyParams = OpenSshPublicKeyUtilities.ParsePublicKey(Convert.FromBase64String(key));
 
                 try
@@ -124,6 +125,9 @@ public sealed class PluginManager
         {
             var pluginContainer = await this.LoadPluginAsync(file);
 
+            if (pluginContainer is null)
+                continue;
+
             foreach (var canLoad in waitingForDepend.Where(x => x.IsDependency(pluginContainer.Info.Id)).ToList())
             {
                 packedPluginProvider.InitializePlugin(canLoad);
@@ -145,13 +149,13 @@ public sealed class PluginManager
     /// </summary>
     /// <param name="path">Path to load the plugin from. Can point either to local <b>OBBY</b> or <b>DLL</b>.</param>
     /// <returns>Loaded plugin. If loading failed, <see cref="PluginContainer.Plugin"/> property will be null.</returns>
-    public async Task<PluginContainer> LoadPluginAsync(string path)
+    public async Task<PluginContainer?> LoadPluginAsync(string path)
     {
         try
         {
-            PluginContainer plugin = await packedPluginProvider.GetPluginAsync(path).ConfigureAwait(false);
+            var plugin = await packedPluginProvider.GetPluginAsync(path).ConfigureAwait(false);
 
-            return HandlePlugin(plugin);
+            return plugin is null ? null : HandlePlugin(plugin);
         }
         catch (Exception ex)
         {
