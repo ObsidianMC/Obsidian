@@ -8,11 +8,14 @@ using Obsidian.Plugins.PluginProviders;
 using Obsidian.Plugins.ServiceProviders;
 using Obsidian.Registries;
 using Obsidian.Services;
+using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Crypto.Utilities;
+using Org.BouncyCastle.Security;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 
 namespace Obsidian.Plugins;
 
@@ -24,7 +27,7 @@ public sealed class PluginManager
 
     private readonly List<PluginContainer> plugins = [];
     private readonly List<PluginContainer> stagedPlugins = [];
-    private readonly List<string> acceptedKeys = [];
+    private readonly List<RSAParameters> acceptedKeys = [];
 
     private readonly IServiceProvider serverProvider;
     private readonly IServer server;
@@ -32,7 +35,7 @@ public sealed class PluginManager
     private readonly IPluginRegistry pluginRegistry;
     private readonly IServiceCollection pluginServiceDescriptors = new ServiceCollection();
 
-    public ImmutableArray<string> AcceptedKeys => acceptedKeys.ToImmutableArray();
+    public ImmutableArray<RSAParameters> AcceptedKeys => acceptedKeys.ToImmutableArray();
 
     /// <summary>
     /// List of all loaded plugins.
@@ -82,10 +85,38 @@ public sealed class PluginManager
         DirectoryWatcher.FileRenamed += OnPluginSourceRenamed;
         DirectoryWatcher.FileDeleted += OnPluginSourceDeleted;
     }
-
     
     public async Task LoadPluginsAsync()
     {
+        //TODO talk about what format we should support
+        await using var acceptedKeysFileStream = new FileStream("accepted_keys", FileMode.OpenOrCreate);
+
+        if(acceptedKeysFileStream.Length > 0)
+        {
+            using var sr = new StreamReader(acceptedKeysFileStream);
+            var line = "";
+            while((line = await sr.ReadLineAsync()) != null)
+            {
+                //ssh-rsa AAAAB3....
+                var key = line.Split()[1];//Try to get the base 64 encoded only RSA keys are supported.
+                var keyParams = OpenSshPublicKeyUtilities.ParsePublicKey(Convert.FromBase64String(key));
+
+                try
+                {
+                    var rsaKeyParams = DotNetUtilities.ToRSAParameters((RsaKeyParameters)keyParams);
+
+                    acceptedKeys.Add(rsaKeyParams);
+                }
+                catch(Exception ex)
+                {
+                    this.logger.LogWarning(ex, "Failed to parse public key.");
+                }
+                
+
+                this.logger.LogDebug("Added key {key}", line);
+            }
+        }
+
         var files = Directory.GetFiles("plugins", "*.obby", SearchOption.AllDirectories);
 
         var waitingForDepend = new List<PluginContainer>();  
@@ -100,6 +131,7 @@ public sealed class PluginManager
 
                 waitingForDepend.Remove(canLoad);
             }
+            
 
             if (pluginContainer.Plugin is null)
                 waitingForDepend.Add(pluginContainer);

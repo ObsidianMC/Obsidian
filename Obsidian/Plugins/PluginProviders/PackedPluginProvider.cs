@@ -1,9 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Plugins;
 using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Utilities;
+using Org.BouncyCastle.Security;
 using System.Collections.Frozen;
 using System.IO;
-using System.IO.Compression;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
@@ -11,6 +12,9 @@ using System.Text;
 namespace Obsidian.Plugins.PluginProviders;
 public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger logger)
 {
+    private const int SignatureLength = 384;
+    private const int HashLength = 20;
+
     private readonly PluginManager pluginManager = pluginManager;
     private readonly ILogger logger = logger;
 
@@ -26,12 +30,11 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
         //TODO save api version somewhere
         var apiVersion = reader.ReadString();
 
-        var hash = reader.ReadBytes(20);
-        var signature = reader.ReadBytes(256);
+        var hash = reader.ReadBytes(HashLength);
+        var signature = reader.ReadBytes(SignatureLength);
         var dataLength = reader.ReadInt32();
 
         var curPos = fs.Position;
-
         using (var sha1 = SHA1.Create())
         {
             var verifyHash = await sha1.ComputeHashAsync(fs);
@@ -40,6 +43,19 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
                 throw new InvalidDataException("File integrity does not match specified hash.");
         }
 
+        var f = new RSAPKCS1SignatureDeformatter();
+        f.SetHashAlgorithm("SHA1");
+
+        using var v = RSA.Create();
+        var isSigValid = false;
+        foreach (var key in this.pluginManager.AcceptedKeys)
+        {
+            v.ImportParameters(key);
+            f.SetKey(v);
+
+            isSigValid = f.VerifySignature(hash, signature);
+        }
+      
         fs.Position = curPos;
 
         var pluginAssembly = reader.ReadString();
@@ -49,13 +65,13 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
 
         var entries = await this.InitializeEntriesAsync(reader, fs);
 
-        var partialContainer = BuildPartialContainer(loadContext, path, entries);
+        var partialContainer = BuildPartialContainer(loadContext, path, entries, isSigValid);
 
         //Can't load until those plugins are loaded
-        if (partialContainer.Info.Dependencies.Any(x => x.Required))
+        if (partialContainer.Info.Dependencies.Any(x => x.Required && !this.pluginManager.Plugins.Any(d => d.Info.Id == x.Id)))
         {
             var str = partialContainer.Info.Dependencies.Length > 1 ? "has multiple hard dependencies." : 
-                $"has a hard dependecy on {partialContainer.Info.Dependencies.First().Id}.";
+                $"has a hard dependency on {partialContainer.Info.Dependencies.First().Id}.";
             this.logger.LogWarning("{name} {message}. Will Attempt to load after.", partialContainer.Info.Name, str);
             return partialContainer;
         }
@@ -157,13 +173,14 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
     }
 
     private PluginContainer BuildPartialContainer(PluginLoadContext loadContext, string path,
-        Dictionary<string, PluginFileEntry> entries)
+        Dictionary<string, PluginFileEntry> entries, bool validSignature)
     {
         var pluginContainer = new PluginContainer
         {
             LoadContext = loadContext,
             Source = path,
             FileEntries = entries.ToFrozenDictionary(),
+            ValidSignature = validSignature
         };
 
         pluginContainer.Initialize();

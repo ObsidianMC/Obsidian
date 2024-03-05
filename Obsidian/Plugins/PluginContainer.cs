@@ -30,6 +30,8 @@ public sealed class PluginContainer : IDisposable
     public FrozenDictionary<string, PluginFileEntry> FileEntries { get; internal set; } = default!;
     public required string Source { get; set; }
 
+    public required bool ValidSignature { get; init; }
+
     public bool HasDependencies { get; private set; } = true;
     public bool IsReady => HasDependencies;
     public bool Loaded { get; internal set; }

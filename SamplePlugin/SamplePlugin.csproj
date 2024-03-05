@@ -13,6 +13,7 @@
 		<PluginVersion>1.0.0.0</PluginVersion>
 		<PluginApiVersion>1.0.0</PluginApiVersion>
 		<PluginPublishDir>bin/$(Configuration)/</PluginPublishDir>
+		<PluginSigningKey>signing_key.xml</PluginSigningKey>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -20,7 +21,7 @@
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0">
 			<ExcludeAssets>runtime</ExcludeAssets>
 		</PackageReference>
-		<PackageReference Include="Obsidian.MSBuild" Version="1.0.0-nightly-10" />
+		<PackageReference Include="Obsidian.MSBuild" Version="1.0.0-nightly-11" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -31,9 +32,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Update="plugin.json">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
+		<None Update="plugin.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 	</ItemGroup>
 
 	<!--Can be used to move the plugin after its been packed useful when debugging ^ ^ -->
