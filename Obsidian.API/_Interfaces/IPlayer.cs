@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using Obsidian.API._Types;
+using System.Net;
 
 namespace Obsidian.API;
 
@@ -20,6 +21,8 @@ public interface IPlayer : ILiving
 
     public IPAddress? ClientIP { get; }
     public Gamemode Gamemode { get; set; }
+
+    public PlayerAbility Abilities { get; }
 
     public bool Sleeping { get; set; }
     public bool InHorseInventory { get; set; }
