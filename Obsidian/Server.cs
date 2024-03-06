@@ -375,20 +375,39 @@ public sealed partial class Server : IServer
             var client = new Client(connection, Math.Max(0, _clients.Count + this.DefaultWorld.GetTotalLoadedEntities()), this.loggerFactory, this.userCache, this);
 
             _clients.Add(client);
+            _ = ExecuteAsync(client);
+        }
 
-            client.Disconnected += client =>
+        _logger.LogInformation("No longer accepting new clients");
+        await _tcpListener.UnbindAsync();
+        return;
+
+        async Task ExecuteAsync(Client client)
+        {
+            await Task.Yield();
+
+            try
+            {
+                await client.StartConnectionAsync();
+            }
+            catch (OperationCanceledException)
+            {
+                // Ignore.
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError("Unexpected exception from client {Identifier}: {Message}", client.id, exception.Message);
+            }
+            finally
             {
                 _clients.TryRemove(client);
 
                 if (client.Player is not null)
                     _ = OnlinePlayers.TryRemove(client.Player.Uuid, out _);
-            };
 
-            _ = Task.Run(client.StartConnectionAsync);
+                client.Dispose();
+            }
         }
-
-        _logger.LogInformation("No longer accepting new clients");
-        await _tcpListener.UnbindAsync();
     }
 
     public IBossBar CreateBossBar(ChatMessage title, float health, BossBarColor color, BossBarDivisionType divisionType, BossBarFlags flags) => new BossBar(this)
