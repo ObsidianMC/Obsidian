@@ -26,13 +26,16 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
         var apiVersion = reader.ReadString();
 
         var hash = reader.ReadBytes(SHA384.HashSizeInBytes);
-        var signature = reader.ReadBytes(SHA384.HashSizeInBits);
+        var isSigned = reader.ReadBoolean();
+
+        byte[]? signature = isSigned ? reader.ReadBytes(SHA384.HashSizeInBits) : null;
+
         var dataLength = reader.ReadInt32();
 
         var curPos = fs.Position;
 
         //Don't load untrusted plugins
-        var isSigValid = await this.TryValidatePluginAsync(fs, hash, signature, path);
+        var isSigValid = await this.TryValidatePluginAsync(fs, hash, path, isSigned, signature);
         if (!isSigValid)
             return null;
 
@@ -113,7 +116,7 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
     /// Verifies the file hash and tries to validate the signature
     /// </summary>
     /// <returns></returns>
-    private async Task<bool> TryValidatePluginAsync(FileStream fs, byte[] hash, byte[] signature, string path)
+    private async Task<bool> TryValidatePluginAsync(FileStream fs, byte[] hash, string path, bool isSigned, byte[]? signature = null)
     {
         using (var sha384 = SHA384.Create())
         {
@@ -126,19 +129,22 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
             }
         }
 
-        var deformatter = new RSAPKCS1SignatureDeformatter();
-        deformatter.SetHashAlgorithm("SHA384");
-
         var isSigValid = true;
         if (!this.pluginManager.server.Configuration.AllowUntrustedPlugins)
         {
+            if (!isSigned)
+                return false;
+
+            var deformatter = new RSAPKCS1SignatureDeformatter();
+            deformatter.SetHashAlgorithm("SHA384");
+
             using var rsa = RSA.Create();
             foreach (var rsaParameter in this.pluginManager.AcceptedKeys)
             {
                 rsa.ImportParameters(rsaParameter);
                 deformatter.SetKey(rsa);
 
-                isSigValid = deformatter.VerifySignature(hash, signature);
+                isSigValid = deformatter.VerifySignature(hash, signature!);
 
                 if (isSigValid)
                     break;

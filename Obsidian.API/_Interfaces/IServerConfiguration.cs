@@ -14,7 +14,7 @@ public interface IServerConfiguration
     /// <summary>
     /// Determines where or not the server should load plugins that don't have a valid signature.
     /// </summary>
-    public bool AllowUntrustedPlugins { get; set; }
+    public bool AllowUntrustedPlugins { get; set; } = true;
 
     /// <summary>
     /// Allows the server to advertise itself as a LAN server to devices on your network.

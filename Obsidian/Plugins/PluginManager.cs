@@ -115,7 +115,6 @@ public sealed class PluginManager
                 waitingForDepend.Remove(canLoad);
             }
 
-
             if (pluginContainer.Plugin is null)
                 waitingForDepend.Add(pluginContainer);
         }
