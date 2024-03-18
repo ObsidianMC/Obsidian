@@ -5,7 +5,6 @@ using System.Collections.Frozen;
 using System.IO;
 using System.Reflection;
 using System.Security.Cryptography;
-using System.Text;
 
 namespace Obsidian.Plugins.PluginProviders;
 public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger logger)
@@ -18,8 +17,8 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
         await using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
         using var reader = new BinaryReader(fs);
 
-        var header = Encoding.ASCII.GetString(reader.ReadBytes(4));
-        if (header != "OBBY")
+        var header = reader.ReadBytes(4);
+        if (!"OBBY"u8.SequenceEqual(header))
             throw new InvalidOperationException("Plugin file does not begin with the proper header.");
 
         //TODO save api version somewhere
