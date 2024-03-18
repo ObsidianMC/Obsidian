@@ -282,7 +282,7 @@ public sealed partial class Server : IServer
         while (!this.WorldManager.ReadyToJoin && !this._cancelTokenSource.IsCancellationRequested)
             continue;
 
-        this.PluginManager.ServerReady();
+        await this.PluginManager.OnServerReadyAsync();
 
         _logger.LogInformation("Listening for new clients...");
 

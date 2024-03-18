@@ -114,7 +114,7 @@ public sealed class PluginManager
                 //Add dependency to plugin
                 canLoad.LoadContext.AddDependency(pluginContainer.LoadContext);
 
-                this.HandlePlugin(canLoad);
+                await this.HandlePluginAsync(canLoad);
 
                 waitingForDepend.Remove(canLoad);
             }
@@ -137,7 +137,7 @@ public sealed class PluginManager
         {
             var plugin = await packedPluginProvider.GetPluginAsync(path).ConfigureAwait(false);
 
-            return plugin is null ? null : HandlePlugin(plugin);
+            return plugin is null ? null : await HandlePluginAsync(plugin);
         }
         catch (Exception ex)
         {
@@ -194,7 +194,7 @@ public sealed class PluginManager
         loadContext.Unload();
     }
 
-    public void ServerReady()
+    public async ValueTask OnServerReadyAsync()
     {
         PluginServiceProvider ??= this.pluginServiceDescriptors.BuildServiceProvider(true);
         foreach (var pluginContainer in this.plugins)
@@ -206,7 +206,7 @@ public sealed class PluginManager
 
             pluginContainer.InjectServices(this.logger);
 
-            InvokeOnServerReady(pluginContainer);
+            await pluginContainer.Plugin.OnServerReadyAsync(this.server);
         }
 
         //THis only needs to be called once 😭😭
@@ -231,7 +231,7 @@ public sealed class PluginManager
         this.pluginServiceDescriptors.AddSingleton<IServerConfiguration>(x => env.Configuration);
     }
 
-    private PluginContainer HandlePlugin(PluginContainer pluginContainer)
+    private async ValueTask<PluginContainer> HandlePluginAsync(PluginContainer pluginContainer)
     {
         //The plugin still hasn't fully loaded. Probably due to it having a hard dependency
         if (pluginContainer.Plugin is null)
@@ -252,7 +252,7 @@ public sealed class PluginManager
 
             pluginContainer.Loaded = true;
 
-            InvokeOnLoad(pluginContainer);
+            await pluginContainer.Plugin.OnLoadedAsync(this.server);
         }
         else
         {
@@ -289,27 +289,6 @@ public sealed class PluginManager
         var deletedPlugin = plugins.FirstOrDefault(plugin => plugin.Source == path) ?? stagedPlugins.FirstOrDefault(plugin => plugin.Source == path);
         if (deletedPlugin != null)
             await UnloadPluginAsync(deletedPlugin);
-    }
-
-    private void InvokeOnLoad(PluginContainer plugin)
-    {
-        var task = plugin.Plugin.OnLoadedAsync(this.server).AsTask();
-        if (task.Status == TaskStatus.Created)
-            task.RunSynchronously();
-
-        if (task.Status == TaskStatus.Faulted)
-            logger?.LogError(task.Exception?.InnerException, "Invoking {pluginName}.OnLoadedAsync faulted.", plugin.Info.Name);
-
-    }
-
-    private void InvokeOnServerReady(PluginContainer plugin)
-    {
-        var task = plugin.Plugin.OnServerReadyAsync(this.server).AsTask();
-        if (task.Status == TaskStatus.Created)
-            task.RunSynchronously();
-
-        if (task.Status == TaskStatus.Faulted)
-            logger?.LogError(task.Exception?.InnerException, "Invoking {pluginName}.OnServerReadyAsync faulted.", plugin.Info.Name);
     }
 }
 
