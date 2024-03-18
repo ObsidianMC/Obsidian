@@ -19,7 +19,7 @@ public sealed class ServerConfiguration : IServerConfiguration
 
     public bool AllowOperatorRequests { get; set; } = true;
 
-    public bool AllowUntrustedPlugins { get; set; }
+    public bool AllowUntrustedPlugins { get; set; } = true;
 
     /// <summary>
     /// If true, each login/client gets a random username where multiple connections from the same host will be allowed.
