@@ -110,6 +110,10 @@ public sealed class PluginManager
             foreach (var canLoad in waitingForDepend.Where(x => x.IsDependency(pluginContainer.Info.Id)).ToList())
             {
                 packedPluginProvider.InitializePlugin(canLoad);
+
+                //Add dependency to plugin
+                canLoad.LoadContext.AddDependency(pluginContainer.LoadContext);
+
                 this.HandlePlugin(canLoad);
 
                 waitingForDepend.Remove(canLoad);

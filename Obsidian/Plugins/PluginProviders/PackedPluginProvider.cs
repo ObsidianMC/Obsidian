@@ -48,7 +48,7 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
 
         var entries = await this.InitializeEntriesAsync(reader, fs);
 
-        var partialContainer = BuildPartialContainer(loadContext, path, entries, isSigValid);
+        var partialContainer = this.BuildPartialContainer(loadContext, path, entries, isSigValid);
 
         //Can't load until those plugins are loaded
         if (partialContainer.Info.Dependencies.Any(x => x.Required && !this.pluginManager.Plugins.Any(d => d.Info.Id == x.Id)))

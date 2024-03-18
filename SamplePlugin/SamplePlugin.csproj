@@ -36,7 +36,6 @@
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>
-
 	<!--Can be used to move the plugin after its been packed useful when debugging ^ ^ -->
 	<!--<Target Name="MovePlugin" AfterTargets="PackPlugin">
 		<Move SourceFiles="$(PluginPublishDir)/$(PluginName).obby" DestinationFolder="{YOUR DESTINATION HERE}" />
