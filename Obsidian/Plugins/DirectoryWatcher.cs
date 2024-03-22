@@ -7,9 +7,9 @@ public sealed class DirectoryWatcher : IDisposable
     private string[] _filters = [];
     public string[] Filters { get => _filters; set => _filters = value ?? []; }
 
-    public event Action<string> FileChanged;
-    public event Action<string, string> FileRenamed;
-    public event Action<string> FileDeleted;
+    public event Action<string> FileChanged = default!;
+    public event Action<string, string> FileRenamed = default!;
+    public event Action<string> FileDeleted = default!;
 
     private readonly Dictionary<string, FileSystemWatcher> watchers = new();
     private readonly Dictionary<string, DateTime> updateTimestamps = new();
@@ -20,12 +20,6 @@ public sealed class DirectoryWatcher : IDisposable
     {
         if (!Directory.Exists(path))
             throw new DirectoryNotFoundException(path);
-
-        foreach (var file in Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories))
-        {
-            if (TestFilter(file))
-                FileChanged?.Invoke(file);
-        }
 
         lock (watchers)
         {
@@ -56,7 +50,7 @@ public sealed class DirectoryWatcher : IDisposable
     {
         lock (watchers)
         {
-            if (!watchers.TryGetValue(path, out FileSystemWatcher watcher))
+            if (!watchers.TryGetValue(path, out FileSystemWatcher? watcher))
                 throw new KeyNotFoundException();
 
             watcher.Created -= OnFileUpdated;

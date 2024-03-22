@@ -12,6 +12,11 @@ public interface IServerConfiguration
     public bool CanThrottle => this.ConnectionThrottle > 0;
 
     /// <summary>
+    /// Determines where or not the server should load plugins that don't have a valid signature.
+    /// </summary>
+    public bool AllowUntrustedPlugins { get; set; }
+
+    /// <summary>
     /// Allows the server to advertise itself as a LAN server to devices on your network.
     /// </summary>
     public bool AllowLan { get; set; }

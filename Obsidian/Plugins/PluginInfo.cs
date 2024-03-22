@@ -26,10 +26,3 @@ public sealed class PluginInfo : IPluginInfo
         Authors = ["Unknown"];
     }
 }
-
-public readonly struct PluginDependency
-{
-    public required string Id { get; init; }
-
-    public required Version Version { get; init; }
-}

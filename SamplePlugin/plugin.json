@@ -6,5 +6,12 @@
     "Obsidian Team"
   ],
   "description": "My sample plugin.",
-  "projectUrl": "https://github.com/ObsidianMC/Obsidian"
+  "projectUrl": "https://github.com/ObsidianMC/Obsidian",
+  "dependencies": [
+    {
+      "id": "test_plugin",
+      "version": "1.0.0-beta",
+      "required":  true
+    }
+  ]
 }

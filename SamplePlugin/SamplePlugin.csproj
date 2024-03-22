@@ -8,27 +8,20 @@
 		<EnablePreviewFeatures>true</EnablePreviewFeatures>
 		<EnableDynamicLoading>true</EnableDynamicLoading>
 		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+
+		<PluginAssembly>SamplePlugin</PluginAssembly>
+		<PluginVersion>1.0.0.0</PluginVersion>
+		<PluginApiVersion>1.0.0</PluginApiVersion>
+		<PluginPublishDir>bin/$(Configuration)/</PluginPublishDir>
+		<PluginSigningKey>signing_key.xml</PluginSigningKey>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-		<OutputPath>..\Obsidian.ConsoleApp\bin\Debug\$(TargetFramework)\plugins\</OutputPath>
-		<DebugType>none</DebugType>
-		<DebugSymbols>false</DebugSymbols>
-		<GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
-	</PropertyGroup>
-
 	<ItemGroup>
-		<None Remove="plugin.json" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<EmbeddedResource Include="plugin.json" />
-	</ItemGroup>
-
-	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0">
 			<ExcludeAssets>runtime</ExcludeAssets>
 		</PackageReference>
+		<PackageReference Include="Obsidian.MSBuild" Version="1.0.3-nightly.g4737df362d" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -38,4 +31,13 @@
 		</ProjectReference>
 	</ItemGroup>
 
+	<ItemGroup>
+		<None Update="plugin.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+	<!--Can be used to move the plugin after its been packed useful when debugging ^ ^ -->
+	<!--<Target Name="MovePlugin" AfterTargets="PackPlugin">
+		<Move SourceFiles="$(PluginPublishDir)/$(PluginName).obby" DestinationFolder="{YOUR DESTINATION HERE}" />
+	</Target>-->
 </Project>

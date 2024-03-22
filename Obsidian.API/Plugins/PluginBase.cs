@@ -7,25 +7,16 @@ namespace Obsidian.API.Plugins;
 /// </summary>
 public abstract class PluginBase : IDisposable, IAsyncDisposable
 {
-#nullable disable
-    public IPluginInfo Info { get; internal set; }
+    public IPluginInfo Info { get; internal set; } = default!;
 
-    internal Action unload;
-#nullable restore
-
-    private Type typeCache;
-
-    public PluginBase()
-    {
-        typeCache ??= GetType();
-    }
+    public IPluginContainer Container { get; internal set; } = default!;
 
     /// <summary>
     /// Used for registering services.
     /// </summary>
     /// <remarks>
     /// Only services from the Server will be injected when this method is called. e.x (ILogger, IServerConfiguration).
-    /// Services registered through this method will be availiable/injected when <seealso cref="OnLoadAsync(IServer)"/> is called.
+    /// Services registered through this method will be availiable/injected when <seealso cref="OnServerReadyAsync(IServer)"/> is called.
     /// </remarks>
     public virtual void ConfigureServices(IServiceCollection services) { }
 
@@ -35,7 +26,7 @@ public abstract class PluginBase : IDisposable, IAsyncDisposable
     /// <param name="pluginRegistry"></param>
     /// <remarks>
     /// Services from the Server will be injected when this method is called. e.x (ILogger, IServerConfiguration).
-    /// Services registered through this method will be availiable/injected when <seealso cref="OnLoadAsync(IServer)"/> is called.
+    /// Services registered through this method will be availiable/injected when <seealso cref="OnServerReadyAsync(IServer)"/> is called.
     /// </remarks>
     public virtual void ConfigureRegistry(IPluginRegistry pluginRegistry) { }
 
@@ -43,16 +34,17 @@ public abstract class PluginBase : IDisposable, IAsyncDisposable
     /// <summary>
     /// Called when the world has loaded and the server is joinable.
     /// </summary>
-    public virtual ValueTask OnLoadAsync(IServer server) => ValueTask.CompletedTask;
-
+    public virtual ValueTask OnServerReadyAsync(IServer server) => ValueTask.CompletedTask;
 
     /// <summary>
-    /// Causes this plugin to be unloaded.
+    /// Called when the plugin has fully loaded.
     /// </summary>
-    protected void Unload()
-    {
-        unload();
-    }
+    public virtual ValueTask OnLoadedAsync(IServer server) => ValueTask.CompletedTask;
+
+    /// <summary>
+    /// Called when the plugin is being unloaded.
+    /// </summary>
+    public virtual ValueTask OnUnloadingAsync() => ValueTask.CompletedTask;
 
     public override sealed bool Equals(object? obj) => base.Equals(obj);
     public override sealed int GetHashCode() => base.GetHashCode();

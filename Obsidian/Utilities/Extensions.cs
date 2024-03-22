@@ -109,7 +109,7 @@ public static partial class Extensions
     {
         return !context.ConnectionClosed.IsCancellationRequested;
     }
-    
+
     // Derived from https://gist.github.com/ammaraskar/7b4a3f73bee9dc4136539644a0f27e63
     [SuppressMessage("Roslyn", "CA5350", Justification = "SHA1 is required by the Minecraft protocol.")]
     public static string MinecraftShaDigest(this IEnumerable<byte> data)
@@ -134,13 +134,14 @@ public static partial class Extensions
     }
 
     public static string ToJson(this object? value, JsonSerializerOptions? options = null) => JsonSerializer.Serialize(value, options ?? Globals.JsonOptions);
-    public static T? FromJson<T>(this string value) => JsonSerializer.Deserialize<T>(value, Globals.JsonOptions);
+    public static T? FromJson<T>(this string value, JsonSerializerOptions? options = null) => JsonSerializer.Deserialize<T>(value, options ?? Globals.JsonOptions);
+    public static TValue? FromJson<TValue>(this byte[] jsonData, JsonSerializerOptions? options = null) =>
+        JsonSerializer.Deserialize<TValue>(jsonData, options ?? Globals.JsonOptions);
 
     public static ValueTask<TValue?> FromJsonAsync<TValue>(this Stream stream, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default) =>
         JsonSerializer.DeserializeAsync<TValue>(stream, options ?? Globals.JsonOptions, cancellationToken);
     public static Task ToJsonAsync(this object? value, Stream stream, CancellationToken cancellationToken = default) =>
         JsonSerializer.SerializeAsync(stream, value, Globals.JsonOptions, cancellationToken);
-
     public static bool Contains<T>(this ReadOnlySpan<T> span, T value) where T : unmanaged
     {
         for (int i = 0; i < span.Length; i++)
