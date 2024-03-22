@@ -112,7 +112,7 @@ public sealed class PluginManager
                 packedPluginProvider.InitializePlugin(canLoad);
 
                 //Add dependency to plugin
-                canLoad.LoadContext.AddDependency(pluginContainer.LoadContext);
+                canLoad.AddDependency(pluginContainer.LoadContext);
 
                 await this.HandlePluginAsync(canLoad);
 

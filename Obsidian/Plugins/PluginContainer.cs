@@ -9,16 +9,16 @@ using System.Reflection;
 
 namespace Obsidian.Plugins;
 
-public sealed class PluginContainer : IDisposable
+public sealed class PluginContainer : IDisposable, IPluginContainer
 {
     private bool initialized;
 
-    private Type PluginType => this.Plugin.GetType();
+    private Type? PluginType => this.Plugin?.GetType();
+
     public IServiceScope ServiceScope { get; internal set; } = default!;
     public PluginInfo Info { get; private set; } = default!;
 
-    [AllowNull]
-    public PluginBase Plugin { get; internal set; } = default!;
+    public PluginBase? Plugin { get; internal set; }
 
     [AllowNull]
     public PluginLoadContext LoadContext { get; internal set; } = default!;
@@ -28,8 +28,8 @@ public sealed class PluginContainer : IDisposable
 
     [AllowNull]
     public FrozenDictionary<string, PluginFileEntry> FileEntries { get; internal set; } = default!;
-    public required string Source { get; set; }
 
+    public required string Source { get; set; }
     public required bool ValidSignature { get; init; }
 
     public bool HasDependencies { get; private set; } = true;
@@ -54,29 +54,29 @@ public sealed class PluginContainer : IDisposable
             return;
         }
 
-        this.Plugin.Info = this.Info;
-    }
-
-    /// <summary>
-    /// Searches for the specified file.
-    /// </summary>
-    /// <param name="fileName">The name of the file you're searching for.</param>
-    /// <returns>Null if the file is not found or the byte array of the file.</returns>
-    public byte[]? GetFileData(string fileName)
-    {
-        var fileEntry = this.FileEntries.GetValueOrDefault(fileName);
-
-        return fileEntry?.GetData();
+        this.Plugin!.Container = this;
+        this.Plugin!.Info = this.Info;
     }
 
     //TODO PLUGINS SHOULD USE VERSION CLASS TO SPECIFY VERSION
-    public bool IsDependency(string pluginId) =>
+    internal bool IsDependency(string pluginId) =>
         this.Info.Dependencies.Any(x => x.Id == pluginId);
+
+    internal bool AddDependency(PluginLoadContext pluginLoadContext)
+    {
+        ArgumentNullException.ThrowIfNull(pluginLoadContext);
+
+        if (this.LoadContext == null)
+            return false;
+
+        this.LoadContext.AddDependency(pluginLoadContext);
+        return true;
+    }
 
     /// <summary>
     /// Inject the scoped services into 
     /// </summary>
-    public void InjectServices(ILogger? logger, object? target = null)
+    internal void InjectServices(ILogger? logger, object? target = null)
     {
         var properties = target is null ? this.PluginType!.WithInjectAttribute() : target.GetType().WithInjectAttribute();
 
@@ -95,7 +95,14 @@ public sealed class PluginContainer : IDisposable
                 logger?.LogError(ex, "Failed to inject service.");
             }
         }
+    }
 
+    ///<inheritdoc/>
+    public byte[]? GetFileData(string fileName)
+    {
+        var fileEntry = this.FileEntries?.GetValueOrDefault(fileName);
+
+        return fileEntry?.GetData();
     }
 
     public void Dispose()

@@ -9,12 +9,14 @@ public abstract class PluginBase : IDisposable, IAsyncDisposable
 {
     public IPluginInfo Info { get; internal set; } = default!;
 
+    public IPluginContainer Container { get; internal set; } = default!;
+
     /// <summary>
     /// Used for registering services.
     /// </summary>
     /// <remarks>
     /// Only services from the Server will be injected when this method is called. e.x (ILogger, IServerConfiguration).
-    /// Services registered through this method will be availiable/injected when <seealso cref="OnLoadAsync(IServer)"/> is called.
+    /// Services registered through this method will be availiable/injected when <seealso cref="OnServerReadyAsync(IServer)"/> is called.
     /// </remarks>
     public virtual void ConfigureServices(IServiceCollection services) { }
 
@@ -24,7 +26,7 @@ public abstract class PluginBase : IDisposable, IAsyncDisposable
     /// <param name="pluginRegistry"></param>
     /// <remarks>
     /// Services from the Server will be injected when this method is called. e.x (ILogger, IServerConfiguration).
-    /// Services registered through this method will be availiable/injected when <seealso cref="OnLoadAsync(IServer)"/> is called.
+    /// Services registered through this method will be availiable/injected when <seealso cref="OnServerReadyAsync(IServer)"/> is called.
     /// </remarks>
     public virtual void ConfigureRegistry(IPluginRegistry pluginRegistry) { }
 
