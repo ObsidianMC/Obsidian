@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Boss;
 using Obsidian.API.Builders;
+using Obsidian.API.Configuration;
 using Obsidian.API.Crafting;
 using Obsidian.API.Events;
 using Obsidian.API.Utilities;
@@ -362,7 +363,7 @@ public sealed partial class Server : IServer
                 return;
             }
 
-            if (this.Configuration.CanThrottle)
+            if (this.Configuration.ShouldThrottle)
             {
                 if (throttler.TryGetValue(ip, out var time) && time <= DateTimeOffset.UtcNow)
                 {

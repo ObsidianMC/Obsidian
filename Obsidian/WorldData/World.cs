@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Configuration;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.API.Utilities;
 using Obsidian.Blocks;

@@ -1,11 +1,11 @@
-namespace Obsidian.API.Config;
+namespace Obsidian.API.Configuration;
 
-public sealed class RconConfig
+public sealed record class RconConfiguration
 {
     /// <summary>
     /// Password to access the RCON.
     /// </summary>
-    public string Password { get; set; }
+    public string? Password { get; set; }
 
     /// <summary>
     /// Port on which RCON server listens.

@@ -270,7 +270,7 @@ public sealed class Client : IDisposable
                     {
                         case 0x00:
                         {
-                            if (this.server.Configuration.CanThrottle)
+                            if (this.server.Configuration.ShouldThrottle)
                             {
                                 string ip = ((IPEndPoint)connectionContext.RemoteEndPoint!).Address.ToString();
 

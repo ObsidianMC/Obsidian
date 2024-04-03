@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Obsidian.API.Configuration;
 using Obsidian.Commands.Framework;
 using Obsidian.Net.Rcon;
 using Obsidian.Services;

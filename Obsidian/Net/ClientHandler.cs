@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Configuration;
 using Obsidian.API.Logging;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Configuration;

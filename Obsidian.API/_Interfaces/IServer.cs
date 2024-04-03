@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Boss;
+using Obsidian.API.Configuration;
 using Obsidian.API.Crafting;
 
 namespace Obsidian.API;

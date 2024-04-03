@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Configuration;
 using Obsidian.Commands.Framework;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Generators;
