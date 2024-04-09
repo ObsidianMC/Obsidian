@@ -340,7 +340,7 @@ public sealed class MainEventHandler : MinecraftEventHandler
                 await other.client.QueuePacketAsync(destroy);
         }
 
-        server.BroadcastMessage(string.Format(server.Configuration.LeaveMessage, e.Player.Username));
+        server.BroadcastMessage(string.Format(server.Configuration.Messages.Leave, e.Player.Username));
     }
 
     [EventPriority(Priority = Priority.Internal)]
@@ -353,7 +353,7 @@ public sealed class MainEventHandler : MinecraftEventHandler
 
         server.BroadcastMessage(new ChatMessage
         {
-            Text = string.Format(server.Configuration.JoinMessage, e.Player.Username),
+            Text = string.Format(server.Configuration.Messages.Join, e.Player.Username),
             Color = HexColor.Yellow
         });
 

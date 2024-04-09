@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Connections;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -61,7 +63,6 @@ public sealed partial class Server : IServer
 
     private readonly ConcurrentQueue<IClientboundPacket> _chatMessagesQueue = new();
     private readonly ConcurrentHashSet<Client> _clients = new();
-    private readonly IOptionsMonitor<WhitelistConfiguration> whitelistConfiguration;
     private readonly ILoggerFactory loggerFactory;
     private readonly RconServer _rconServer;
     private readonly IUserCache userCache;
@@ -70,6 +71,8 @@ public sealed partial class Server : IServer
 
     private IDisposable? configWatcher;
     private IConnectionListener? _tcpListener;
+
+    public IOptionsMonitor<WhitelistConfiguration> WhitelistConfiguration { get; }
 
     public ProtocolVersion Protocol => DefaultProtocol;
 
@@ -133,7 +136,7 @@ public sealed partial class Server : IServer
 
         CommandsHandler = commandHandler;
 
-        PluginManager = new PluginManager(this.serviceProvider, this, eventDispatcher, CommandsHandler, _logger);
+        PluginManager = new PluginManager(this.serviceProvider, this, eventDispatcher, CommandsHandler, _logger, serviceProvider.GetRequiredService<IConfiguration>());
 
         _logger.LogDebug("Registering commands...");
         CommandsHandler.RegisterCommandClass<MainCommandModule>(null);
@@ -144,7 +147,7 @@ public sealed partial class Server : IServer
 
         this.userCache = playerCache;
         this.EventDispatcher = eventDispatcher;
-        this.whitelistConfiguration = whitelistConfiguration;
+        this.WhitelistConfiguration = whitelistConfiguration;
         this.loggerFactory = loggerFactory;
         this.WorldManager = worldManager;
 
@@ -365,7 +368,7 @@ public sealed partial class Server : IServer
 
             string ip = ((IPEndPoint)connection.RemoteEndPoint!).Address.ToString();
 
-            if (Configuration.Whitelist && !whitelistConfiguration.CurrentValue.WhitelistedIps.Contains(ip))
+            if (Configuration.Whitelist && !WhitelistConfiguration.CurrentValue.WhitelistedIps.Contains(ip))
             {
                 _logger.LogInformation("{ip} is not whitelisted. Closing connection", ip);
                 connection.Abort();

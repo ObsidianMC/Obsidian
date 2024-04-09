@@ -1,5 +1,7 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Obsidian.API.Configuration;
 using Obsidian.API.Logging;
 using Obsidian.API.Plugins;
@@ -18,7 +20,7 @@ public sealed class PluginManager
     private const string loadEvent = "OnLoad";
 
     internal readonly ILogger logger;
-
+    private readonly IConfiguration configuration;
     private readonly List<PluginContainer> plugins = new();
     private readonly List<PluginContainer> stagedPlugins = new();
     private readonly IServiceProvider serverProvider;
@@ -47,13 +49,14 @@ public sealed class PluginManager
     public IServiceProvider PluginServiceProvider { get; private set; } = default!;
 
     public PluginManager(IServiceProvider serverProvider, IServer server,
-        EventDispatcher eventDispatcher, CommandHandler commandHandler, ILogger logger)
+        EventDispatcher eventDispatcher, CommandHandler commandHandler, ILogger logger, IConfiguration configuration)
     {
         var env = serverProvider.GetRequiredService<IServerEnvironment>();
 
         this.server = server;
         this.commandHandler = commandHandler;
         this.logger = logger;
+        this.configuration = configuration;
         this.serverProvider = serverProvider;
         this.pluginRegistry = new PluginRegistry(this, eventDispatcher, commandHandler, logger);
 
@@ -61,7 +64,7 @@ public sealed class PluginManager
         PluginProviderSelector.UncompiledPluginProvider = new UncompiledPluginProvider(logger);
         PluginProviderSelector.CompiledPluginProvider = new CompiledPluginProvider(logger);
 
-        ConfigureInitialServices(env);
+        ConfigureInitialServices();
 
         DirectoryWatcher.FileChanged += async (path) =>
         {
@@ -77,15 +80,14 @@ public sealed class PluginManager
         DirectoryWatcher.FileDeleted += OnPluginSourceDeleted;
     }
 
-    private void ConfigureInitialServices(IServerEnvironment env)
+    private void ConfigureInitialServices()
     {
         this.pluginServiceDescriptors.AddLogging((builder) =>
         {
             builder.ClearProviders();
-            builder.AddProvider(new LoggerProvider(env.Configuration.LogLevel));
-            builder.SetMinimumLevel(env.Configuration.LogLevel);
+            builder.AddConfiguration(this.configuration);
         });
-        this.pluginServiceDescriptors.AddSingleton<IServerConfiguration>(x => env.Configuration);
+        this.pluginServiceDescriptors.AddSingleton(serverProvider.GetRequiredService<IOptionsMonitor<IServerConfiguration>>());
     }
 
     /// <summary>
