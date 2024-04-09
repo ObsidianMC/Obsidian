@@ -1,8 +1,9 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Console;
 using Obsidian;
-using Obsidian.API.Logging;
 using Obsidian.Hosting;
 
 // Cool startup console logo because that's cool
@@ -22,23 +23,17 @@ Console.CursorVisible = false;
 Console.WriteLine(asciilogo);
 Console.ResetColor();
 
-var env = await IServerEnvironment.CreateDefaultAsync();
-
 var builder = Host.CreateApplicationBuilder();
+
+builder.ConfigureObsidian();
 
 builder.Services.AddLogging(loggingBuilder =>
 {
     loggingBuilder.ClearProviders();
-    loggingBuilder.AddProvider(new LoggerProvider(env.Configuration.LogLevel));
-    loggingBuilder.SetMinimumLevel(env.Configuration.LogLevel);
+    loggingBuilder.AddSimpleConsole(x => x.ColorBehavior = LoggerColorBehavior.Enabled);
 });
 
-builder.Logging.AddFilter((provider, category, logLevel) =>
-{
-    return !category.Contains("Microsoft") || logLevel != LogLevel.Debug;
-});
-
-builder.Services.AddObsidian(env);
+builder.AddObsidian();
 
 // Give the server some time to shut down after CTRL-C or SIGTERM.
 builder.Services.Configure<HostOptions>(opts =>

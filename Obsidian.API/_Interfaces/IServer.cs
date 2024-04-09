@@ -4,7 +4,7 @@ using Obsidian.API.Crafting;
 
 namespace Obsidian.API;
 
-public interface IServer
+public interface IServer : IDisposable
 {
     public string Version { get; }
     public int Port { get; }

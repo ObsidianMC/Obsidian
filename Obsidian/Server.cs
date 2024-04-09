@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Connections;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Obsidian.API.Boss;
 using Obsidian.API.Builders;
 using Obsidian.API.Configuration;
@@ -14,7 +14,6 @@ using Obsidian.Commands.Framework.Entities;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Events;
-using Obsidian.Hosting;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -62,12 +61,14 @@ public sealed partial class Server : IServer
 
     private readonly ConcurrentQueue<IClientboundPacket> _chatMessagesQueue = new();
     private readonly ConcurrentHashSet<Client> _clients = new();
+    private readonly IOptionsMonitor<WhitelistConfiguration> whitelistConfiguration;
     private readonly ILoggerFactory loggerFactory;
     private readonly RconServer _rconServer;
     private readonly IUserCache userCache;
     internal readonly ILogger _logger;
     private readonly IServiceProvider serviceProvider;
 
+    private IDisposable? configWatcher;
     private IConnectionListener? _tcpListener;
 
     public ProtocolVersion Protocol => DefaultProtocol;
@@ -86,7 +87,7 @@ public sealed partial class Server : IServer
 
     public HashSet<string> RegisteredChannels { get; } = new();
     public CommandHandler CommandsHandler { get; }
-    public IServerConfiguration Configuration { get; }
+    public IServerConfiguration Configuration { get; set; }
     public string Version => VERSION;
 
     public string Brand { get; } = "obsidian";
@@ -94,12 +95,15 @@ public sealed partial class Server : IServer
     public IWorld DefaultWorld => WorldManager.DefaultWorld;
     public IEnumerable<IPlayer> Players => GetPlayers();
 
+    
+
     /// <summary>
     /// Creates a new instance of <see cref="Server"/>.
     /// </summary>
     public Server(
         IHostApplicationLifetime lifetime,
-        IServerEnvironment environment,
+        IOptionsMonitor<IServerConfiguration> configuration,
+        IOptionsMonitor<WhitelistConfiguration> whitelistConfiguration,
         ILoggerFactory loggerFactory,
         IWorldManager worldManager,
         RconServer rconServer,
@@ -108,7 +112,6 @@ public sealed partial class Server : IServer
         CommandHandler commandHandler,
         IServiceProvider serviceProvider)
     {
-        Configuration = environment.Configuration;
         _logger = loggerFactory.CreateLogger<Server>();
         _logger.LogInformation("SHA / Version: {VERSION}", VERSION);
         _cancelTokenSource = CancellationTokenSource.CreateLinkedTokenSource(lifetime.ApplicationStopping);
@@ -116,8 +119,12 @@ public sealed partial class Server : IServer
         _rconServer = rconServer;
 
         this.serviceProvider = serviceProvider;
+        this.configWatcher = configuration.OnChange(this.ConfigChanged);
 
-        Port = Configuration.Port;
+        var config = configuration.CurrentValue;
+
+        Configuration = config;
+        Port = config.Port;
 
         Operators = new OperatorList(this, loggerFactory);
         ScoreboardManager = new ScoreboardManager(this, loggerFactory);
@@ -137,13 +144,15 @@ public sealed partial class Server : IServer
 
         this.userCache = playerCache;
         this.EventDispatcher = eventDispatcher;
+        this.whitelistConfiguration = whitelistConfiguration;
         this.loggerFactory = loggerFactory;
         this.WorldManager = worldManager;
 
         Directory.CreateDirectory(PermissionPath);
         Directory.CreateDirectory(PersistentDataPath);
 
-        if (Configuration.AllowLan)
+        //TODO turn this into a hosted service
+        if (config.AllowLan)
         {
             _ = Task.Run(async () =>
             {
@@ -153,16 +162,18 @@ public sealed partial class Server : IServer
                 byte[] bytes = []; // Cached motd as utf-8 bytes
                 while (await timer.WaitForNextTickAsync(_cancelTokenSource.Token))
                 {
-                    if (Configuration.Motd != lastMotd)
+                    if (config.Motd != lastMotd)
                     {
-                        lastMotd = Configuration.Motd;
-                        bytes = Encoding.UTF8.GetBytes($"[MOTD]{Configuration.Motd.Replace('[', '(').Replace(']', ')')}[/MOTD][AD]{Configuration.Port}[/AD]");
+                        lastMotd = config.Motd;
+                        bytes = Encoding.UTF8.GetBytes($"[MOTD]{config.Motd.Replace('[', '(').Replace(']', ')')}[/MOTD][AD]{config.Port}[/AD]");
                     }
                     await udpClient.SendAsync(bytes, bytes.Length);
                 }
             });
         }
     }
+
+    private void ConfigChanged(IServerConfiguration configuration) => this.Configuration = configuration;
 
     // TODO make sure to re-send recipes
     public void RegisterRecipes(params IRecipe[] recipes)
@@ -235,7 +246,7 @@ public sealed partial class Server : IServer
         var loadTimeStopwatch = Stopwatch.StartNew();
 
         // Check if MPDM and OM are enabled, if so, we can't handle connections
-        if (Configuration.MulitplayerDebugMode && Configuration.OnlineMode)
+        if (Configuration.Network.MulitplayerDebugMode && Configuration.OnlineMode)
         {
             _logger.LogError("Incompatible Config: Multiplayer debug mode can't be enabled at the same time as online mode since usernames will be overwritten");
             await StopAsync();
@@ -259,8 +270,6 @@ public sealed partial class Server : IServer
 
         PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
         PluginManager.DirectoryWatcher.Watch("plugins");
-
-        await Task.WhenAll(Configuration.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
         if (!Configuration.OnlineMode)
             _logger.LogInformation("Starting in offline mode...");
@@ -356,14 +365,14 @@ public sealed partial class Server : IServer
 
             string ip = ((IPEndPoint)connection.RemoteEndPoint!).Address.ToString();
 
-            if (Configuration.IpWhitelistEnabled && !Configuration.WhitelistedIPs.Contains(ip))
+            if (Configuration.Whitelist && !whitelistConfiguration.CurrentValue.WhitelistedIps.Contains(ip))
             {
                 _logger.LogInformation("{ip} is not whitelisted. Closing connection", ip);
                 connection.Abort();
                 return;
             }
 
-            if (this.Configuration.ShouldThrottle)
+            if (this.Configuration.Network.ShouldThrottle)
             {
                 if (throttler.TryGetValue(ip, out var time) && time <= DateTimeOffset.UtcNow)
                 {
@@ -531,7 +540,7 @@ public sealed partial class Server : IServer
             while (await timer.WaitForNextTickAsync())
             {
                 keepAliveTicks++;
-                if (keepAliveTicks > (Configuration.KeepAliveInterval / 50)) // to clarify: one tick is 50 milliseconds. 50 * 200 = 10000 millis means 10 seconds
+                if (keepAliveTicks > (Configuration.Network.KeepAliveInterval / 50)) // to clarify: one tick is 50 milliseconds. 50 * 200 = 10000 millis means 10 seconds
                 {
                     var keepAliveTime = DateTimeOffset.Now;
 
@@ -588,5 +597,12 @@ public sealed partial class Server : IServer
     {
         var status = $"    tps:{Tps} c:{WorldManager.GeneratingChunkCount}/{WorldManager.LoadedChunkCount} r:{WorldManager.RegionCount}";
         ConsoleIO.UpdateStatusLine(status);
+    }
+
+    public void Dispose()
+    {
+        GC.SuppressFinalize(this);
+
+        this.configWatcher?.Dispose();
     }
 }

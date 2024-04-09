@@ -19,6 +19,8 @@ public sealed class ServerConfiguration : IServerConfiguration
 
     public bool AllowOperatorRequests { get; set; } = true;
 
+    public bool ServerShutdownStopsProgram { get; set; } = true;
+
     public bool? Baah { get; set; }
 
     public bool Whitelist { get; set; }
@@ -26,6 +28,8 @@ public sealed class ServerConfiguration : IServerConfiguration
     public NetworkConfiguration Network { get; set; } = new();
 
     public RconConfiguration? Rcon { get; set; }
+
+    public MessagesConfiguration Messages { get; set; } = new();
 
     public bool AllowLan { get; set; } = true; // Enabled because it's super useful for debugging tbh
 

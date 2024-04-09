@@ -10,11 +10,6 @@ namespace Obsidian.Hosting;
 /// </summary>
 public interface IServerEnvironment
 {
-    /// <summary>
-    /// If set to true, after the server shuts down, the application will stop running as well.
-    /// </summary>
-    public bool ServerShutdownStopsProgram { get; }
-    public ServerConfiguration Configuration { get; }
     public List<ServerWorld> ServerWorlds { get; }
 
     /// <summary>
@@ -38,11 +33,5 @@ public interface IServerEnvironment
     /// <param name="e"></param>
     /// <returns></returns>
     public Task OnServerCrashAsync(ILogger logger, Exception e);
-
-    /// <summary>
-    /// Create a <see cref="DefaultServerEnvironment"/> asynchronously, which is aimed for use in Console Applications.
-    /// </summary>
-    /// <returns></returns>
-    public static Task<DefaultServerEnvironment> CreateDefaultAsync() => DefaultServerEnvironment.CreateAsync();
 
 }

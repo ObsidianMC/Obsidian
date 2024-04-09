@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
-using System.Diagnostics;
+using Microsoft.Extensions.Options;
+using Obsidian.API.Configuration;
 using System.IO;
 using System.Threading;
 
@@ -12,17 +13,14 @@ namespace Obsidian.Hosting;
 /// 
 /// Use the <see cref="CreateAsync"/> method to create an instance.
 /// </summary>
-public sealed class DefaultServerEnvironment : IServerEnvironment
+public sealed class DefaultServerEnvironment : IServerEnvironment, IDisposable
 {
-    public bool ServerShutdownStopsProgram { get; } = true;
-    public ServerConfiguration Configuration { get; }
-    public List<ServerWorld> ServerWorlds { get; }
+    public IOptionsMonitor<IServerConfiguration> ServerConfig { get; }
+    public List<ServerWorld> ServerWorlds { get; } = default!;
 
-    private DefaultServerEnvironment(bool serverShutdownStopsProgram, ServerConfiguration configuration, List<ServerWorld> serverWorlds)
+    internal DefaultServerEnvironment(IOptionsMonitor<IServerConfiguration> serverConfig)
     {
-        ServerShutdownStopsProgram = serverShutdownStopsProgram;
-        Configuration = configuration;
-        ServerWorlds = serverWorlds;
+        ServerConfig = serverConfig;
     }
 
     /// <summary>
@@ -68,51 +66,8 @@ public sealed class DefaultServerEnvironment : IServerEnvironment
         return Task.CompletedTask;
     }
 
-    /// <summary>
-    /// Create a <see cref="DefaultServerEnvironment"/> asynchronously.
-    /// </summary>
-    /// <returns></returns>
-    public static async Task<DefaultServerEnvironment> CreateAsync()
-    {
-        var config = await LoadServerConfigurationAsync();
-        var worlds = await LoadServerWorldsAsync();
-        return new DefaultServerEnvironment(true, config, worlds);
-    }
-    private static async Task<ServerConfiguration> LoadServerConfigurationAsync()
-    {
-        if (!Directory.Exists("config"))
-            Directory.CreateDirectory("config");
-
-        var configFile = new FileInfo(Path.Combine("config", "main.json"));
-
-        if (configFile.Exists)
-        {
-            await using var configFileStream = configFile.OpenRead();
-            return await configFileStream.FromJsonAsync<ServerConfiguration>()
-                ?? throw new Exception("Server config file exists, but is invalid. Is it corrupt?");
-        }
-
-        var config = new ServerConfiguration();
-
-        await using var fileStream = configFile.Create();
-
-        await config.ToJsonAsync(fileStream);
-        await fileStream.FlushAsync();
-
-        Console.WriteLine($"Created new configuration file for Server");
-        Console.WriteLine($"Please fill in your config with the values you wish to use for your server.");
-        Console.WriteLine(configFile.FullName);
-
-        Console.ReadKey();
-        Environment.Exit(0);
-
-        throw new UnreachableException();
-    }
     private static async Task<List<ServerWorld>> LoadServerWorldsAsync()
     {
-        if (!Directory.Exists("config"))
-            Directory.CreateDirectory("config");
-
         var worldsFile = new FileInfo(Path.Combine("config", "worlds.json"));
 
         if (worldsFile.Exists)
@@ -140,6 +95,10 @@ public sealed class DefaultServerEnvironment : IServerEnvironment
         return worlds;
     }
 
-
+    public void Dispose()
+    {
+        GC.SuppressFinalize(this);
+        
+    }
 }
 

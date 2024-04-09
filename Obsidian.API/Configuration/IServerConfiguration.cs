@@ -2,6 +2,8 @@
 
 public interface IServerConfiguration
 {
+    public bool ServerShutdownStopsProgram { get; set; }
+
     public bool? Baah { get; set; }
 
     /// <summary>
@@ -57,6 +59,8 @@ public interface IServerConfiguration
     /// Remote Console configuration
     /// </summary>
     public RconConfiguration? Rcon { get; set; }
+
+    public MessagesConfiguration Messages { get; set; }
 
     /// <summary>
     /// The view distance of the server.
