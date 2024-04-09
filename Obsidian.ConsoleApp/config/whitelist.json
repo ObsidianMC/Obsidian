@@ -1,0 +1,5 @@
+{
+  "$schema": "https://api.tides.cc/files/obsidian-schemas/whitelist.json",
+  "whitelistedPlayers": [],
+  "whitelistedIps": []
+}
