@@ -77,12 +77,7 @@ public sealed class WorldManager(ILoggerFactory loggerFactory, IServiceProvider 
 
     public async Task LoadWorldsAsync()
     {
-        var worlds = new List<ServerWorld>();
-
-        await using (var fs = new FileStream(Path.Combine("config", "worlds.json"), FileMode.Open))
-        {
-            worlds = await JsonSerializer.DeserializeAsync<List<ServerWorld>>(fs, Globals.JsonOptions) ?? [];
-        }
+        var worlds = await LoadServerWorldsAsync();
 
         foreach (var serverWorld in worlds)
         {
@@ -184,5 +179,34 @@ public sealed class WorldManager(ILoggerFactory loggerFactory, IServiceProvider 
         this.RegisterGenerator<OverworldGenerator>();
         this.RegisterGenerator<IslandGenerator>();
         this.RegisterGenerator<EmptyWorldGenerator>();
+    }
+
+    private static async Task<List<ServerWorld>> LoadServerWorldsAsync()
+    {
+        var worldsFile = new FileInfo(Path.Combine("config", "worlds.json"));
+
+        if (worldsFile.Exists)
+        {
+            await using var worldsFileStream = worldsFile.OpenRead();
+            return await worldsFileStream.FromJsonAsync<List<ServerWorld>>()
+                ?? throw new Exception("A worlds file does exist, but is invalid. Is it corrupt?");
+        }
+
+        var worlds = new List<ServerWorld>()
+            {
+                new()
+                {
+                    ChildDimensions =
+                    {
+                        "minecraft:the_nether",
+                        "minecraft:the_end"
+                    }
+                }
+            };
+
+        await using var fileStream = worldsFile.Create();
+        await worlds.ToJsonAsync(fileStream);
+
+        return worlds;
     }
 }

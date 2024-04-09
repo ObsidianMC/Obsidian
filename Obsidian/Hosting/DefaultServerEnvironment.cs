@@ -69,35 +69,6 @@ public sealed class DefaultServerEnvironment : IServerEnvironment, IDisposable
         return Task.CompletedTask;
     }
 
-    private static async Task<List<ServerWorld>> LoadServerWorldsAsync()
-    {
-        var worldsFile = new FileInfo(Path.Combine("config", "worlds.json"));
-
-        if (worldsFile.Exists)
-        {
-            await using var worldsFileStream = worldsFile.OpenRead();
-            return await worldsFileStream.FromJsonAsync<List<ServerWorld>>()
-                ?? throw new Exception("A worlds file does exist, but is invalid. Is it corrupt?");
-        }
-
-        var worlds = new List<ServerWorld>()
-            {
-                new()
-                {
-                    ChildDimensions =
-                    {
-                        "minecraft:the_nether",
-                        "minecraft:the_end"
-                    }
-                }
-            };
-
-        await using var fileStream = worldsFile.Create();
-        await worlds.ToJsonAsync(fileStream);
-
-        return worlds;
-    }
-
     public void Dispose()
     {
         GC.SuppressFinalize(this);
