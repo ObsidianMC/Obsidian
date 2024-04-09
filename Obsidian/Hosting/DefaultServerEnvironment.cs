@@ -15,12 +15,15 @@ namespace Obsidian.Hosting;
 /// </summary>
 public sealed class DefaultServerEnvironment : IServerEnvironment, IDisposable
 {
+    private readonly ILogger<DefaultServerEnvironment> logger;
+
     public IOptionsMonitor<IServerConfiguration> ServerConfig { get; }
     public List<ServerWorld> ServerWorlds { get; } = default!;
 
-    internal DefaultServerEnvironment(IOptionsMonitor<IServerConfiguration> serverConfig)
+    internal DefaultServerEnvironment(IOptionsMonitor<IServerConfiguration> serverConfig, ILogger<DefaultServerEnvironment> logger)
     {
         ServerConfig = serverConfig;
+        this.logger = logger;
     }
 
     /// <summary>
@@ -39,12 +42,12 @@ public sealed class DefaultServerEnvironment : IServerEnvironment, IDisposable
         }
     }
 
-    Task IServerEnvironment.OnServerStoppedGracefullyAsync(ILogger logger)
+    Task IServerEnvironment.OnServerStoppedGracefullyAsync()
     {
         logger.LogInformation("Goodbye!");
         return Task.CompletedTask;
     }
-    Task IServerEnvironment.OnServerCrashAsync(ILogger logger, Exception e)
+    Task IServerEnvironment.OnServerCrashAsync(Exception e)
     {
         // Write crash log somewhere?
         var byeMessages = new[]

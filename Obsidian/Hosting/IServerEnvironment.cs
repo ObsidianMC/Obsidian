@@ -24,7 +24,7 @@ public interface IServerEnvironment
     /// </summary>
     /// <param name="logger"></param>
     /// <returns></returns>
-    public Task OnServerStoppedGracefullyAsync(ILogger logger);
+    public Task OnServerStoppedGracefullyAsync();
 
     /// <summary>
     /// Called when the server stopped due to a crash.
@@ -32,6 +32,6 @@ public interface IServerEnvironment
     /// <param name="logger"></param>
     /// <param name="e"></param>
     /// <returns></returns>
-    public Task OnServerCrashAsync(ILogger logger, Exception e);
+    public Task OnServerCrashAsync(Exception e);
 
 }
