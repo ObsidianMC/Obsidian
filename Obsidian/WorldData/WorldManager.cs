@@ -199,7 +199,8 @@ public sealed class WorldManager(ILoggerFactory loggerFactory, IServiceProvider 
                     {
                         "minecraft:the_nether",
                         "minecraft:the_end"
-                    }
+                    },
+                    Seed = Globals.Random.Next().ToString()
                 }
             };
 
