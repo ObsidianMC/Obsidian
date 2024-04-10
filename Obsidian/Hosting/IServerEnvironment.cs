@@ -10,8 +10,6 @@ namespace Obsidian.Hosting;
 /// </summary>
 public interface IServerEnvironment
 {
-    public List<ServerWorld> ServerWorlds { get; }
-
     /// <summary>
     /// Execute commands on the server. This task will run for the lifetime of the server.
     /// </summary>

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Obsidian.API.Configuration;
 using Obsidian.Commands.Framework;
 using Org.BouncyCastle.Crypto;
@@ -16,11 +17,11 @@ public sealed class RconServer
     private const int CERTAINTY = 5;
 
     private readonly ILogger _logger;
-    private readonly IServerConfiguration _config;
+    private readonly IOptions<IServerConfiguration> _config;
     private readonly CommandHandler _cmdHandler;
     private readonly List<RconConnection> _connections;
 
-    public RconServer(ILogger<RconServer> logger, IServerConfiguration config, CommandHandler commandHandler)
+    public RconServer(ILogger<RconServer> logger, IOptions<IServerConfiguration> config, CommandHandler commandHandler)
     {
         _logger = logger;
         _config = config;
@@ -34,7 +35,7 @@ public sealed class RconServer
         var data = GenerateKeys(server);
         _logger.LogInformation("Done generating keys for RCON");
 
-        var tcpListener = TcpListener.Create(_config.Rcon?.Port ?? 25575);
+        var tcpListener = TcpListener.Create(_config.Value.Rcon?.Port ?? 25575);
 
         _ = Task.Run(async () =>
         {
@@ -72,7 +73,7 @@ public sealed class RconServer
 
     private InitData GenerateKeys(Server server)
     {
-        string password = _config.Rcon?.Password ??
+        string password = _config.Value.Rcon?.Password ??
             throw new InvalidOperationException("You can't start a RconServer without setting a password in the configuration.");
 
 
@@ -88,7 +89,7 @@ public sealed class RconServer
         return new InitData(server, 
             _cmdHandler, 
             password,
-            _config.Rcon.RequireEncryption,
+            _config.Value.Rcon.RequireEncryption,
             dhParameters,
             keyPair);
     }

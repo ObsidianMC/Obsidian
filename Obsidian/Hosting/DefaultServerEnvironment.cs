@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Obsidian.API.Configuration;
-using System.IO;
 using System.Threading;
 
 namespace Obsidian.Hosting;
@@ -13,18 +12,11 @@ namespace Obsidian.Hosting;
 /// 
 /// Use the <see cref="CreateAsync"/> method to create an instance.
 /// </summary>
-public sealed class DefaultServerEnvironment : IServerEnvironment, IDisposable
+internal sealed class DefaultServerEnvironment(IOptionsMonitor<IServerConfiguration> serverConfig, ILogger<DefaultServerEnvironment> logger) : IServerEnvironment, IDisposable
 {
-    private readonly ILogger<DefaultServerEnvironment> logger;
+    private readonly ILogger<DefaultServerEnvironment> logger = logger;
 
-    public IOptionsMonitor<IServerConfiguration> ServerConfig { get; }
-    public List<ServerWorld> ServerWorlds { get; } = default!;
-
-    internal DefaultServerEnvironment(IOptionsMonitor<IServerConfiguration> serverConfig, ILogger<DefaultServerEnvironment> logger)
-    {
-        ServerConfig = serverConfig;
-        this.logger = logger;
-    }
+    public IOptionsMonitor<IServerConfiguration> ServerConfig { get; } = serverConfig;
 
     /// <summary>
     /// Provide server commands using the Console.
