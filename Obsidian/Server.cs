@@ -90,7 +90,7 @@ public sealed partial class Server : IServer
 
     public HashSet<string> RegisteredChannels { get; } = new();
     public CommandHandler CommandsHandler { get; }
-    public IServerConfiguration Configuration { get; set; }
+    public ServerConfiguration Configuration { get; set; }
     public string Version => VERSION;
 
     public string Brand { get; } = "obsidian";
@@ -105,7 +105,7 @@ public sealed partial class Server : IServer
     /// </summary>
     public Server(
         IHostApplicationLifetime lifetime,
-        IOptionsMonitor<IServerConfiguration> configuration,
+        IOptionsMonitor<ServerConfiguration> configuration,
         IOptionsMonitor<WhitelistConfiguration> whitelistConfiguration,
         ILoggerFactory loggerFactory,
         IWorldManager worldManager,
@@ -176,7 +176,7 @@ public sealed partial class Server : IServer
         }
     }
 
-    private void ConfigChanged(IServerConfiguration configuration) => this.Configuration = configuration;
+    private void ConfigChanged(ServerConfiguration configuration) => this.Configuration = configuration;
 
     // TODO make sure to re-send recipes
     public void RegisterRecipes(params IRecipe[] recipes)

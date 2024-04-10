@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Obsidian.API.Configuration;
-using Obsidian.API.Logging;
 using Obsidian.API.Plugins;
 using Obsidian.Commands.Framework;
 using Obsidian.Hosting;
@@ -87,7 +86,7 @@ public sealed class PluginManager
             builder.ClearProviders();
             builder.AddConfiguration(this.configuration);
         });
-        this.pluginServiceDescriptors.AddSingleton(serverProvider.GetRequiredService<IOptionsMonitor<IServerConfiguration>>());
+        this.pluginServiceDescriptors.AddSingleton(serverProvider.GetRequiredService<IOptionsMonitor<ServerConfiguration>>());
     }
 
     /// <summary>

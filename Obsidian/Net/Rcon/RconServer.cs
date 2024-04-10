@@ -11,23 +11,15 @@ using System.Net.Sockets;
 using System.Threading;
 
 namespace Obsidian.Net.Rcon;
-public sealed class RconServer
+public sealed class RconServer(ILogger<RconServer> logger, IOptions<ServerConfiguration> config, CommandHandler commandHandler)
 {
     private const int KEY_SIZE = 256;
     private const int CERTAINTY = 5;
 
-    private readonly ILogger _logger;
-    private readonly IOptions<IServerConfiguration> _config;
-    private readonly CommandHandler _cmdHandler;
-    private readonly List<RconConnection> _connections;
-
-    public RconServer(ILogger<RconServer> logger, IOptions<IServerConfiguration> config, CommandHandler commandHandler)
-    {
-        _logger = logger;
-        _config = config;
-        _cmdHandler = commandHandler;
-        _connections = new();
-    }
+    private readonly ILogger _logger = logger;
+    private readonly IOptions<ServerConfiguration> _config = config;
+    private readonly CommandHandler _cmdHandler = commandHandler;
+    private readonly List<RconConnection> _connections = new();
 
     public async Task RunAsync(Server server, CancellationToken cToken)
     {

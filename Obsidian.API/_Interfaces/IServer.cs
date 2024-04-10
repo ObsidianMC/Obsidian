@@ -14,7 +14,7 @@ public interface IServer : IDisposable
     public IEnumerable<IPlayer> Players { get; }
     public IOperatorList Operators { get; }
     public IWorld DefaultWorld { get; }
-    public IServerConfiguration Configuration { get; }
+    public ServerConfiguration Configuration { get; }
 
     public IScoreboardManager ScoreboardManager { get; }
 

@@ -56,7 +56,7 @@ public sealed class World : IWorld
     public int LoadedChunkCount => this.Regions.Values.Sum(x => x.LoadedChunkCount);
 
     public required IPacketBroadcaster PacketBroadcaster { get; init; }
-    public required IServerConfiguration Configuration { get; init; }
+    public required ServerConfiguration Configuration { get; init; }
 
     public Gamemode DefaultGamemode => LevelData.DefaultGamemode;
 

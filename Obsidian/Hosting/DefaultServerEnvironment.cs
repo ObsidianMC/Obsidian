@@ -12,11 +12,11 @@ namespace Obsidian.Hosting;
 /// 
 /// Use the <see cref="CreateAsync"/> method to create an instance.
 /// </summary>
-internal sealed class DefaultServerEnvironment(IOptionsMonitor<IServerConfiguration> serverConfig, ILogger<DefaultServerEnvironment> logger) : IServerEnvironment, IDisposable
+internal sealed class DefaultServerEnvironment(IOptionsMonitor<ServerConfiguration> serverConfig, ILogger<DefaultServerEnvironment> logger) : IServerEnvironment, IDisposable
 {
     private readonly ILogger<DefaultServerEnvironment> logger = logger;
 
-    public IOptionsMonitor<IServerConfiguration> ServerConfig { get; } = serverConfig;
+    public IOptionsMonitor<ServerConfiguration> ServerConfig { get; } = serverConfig;
 
     /// <summary>
     /// Provide server commands using the Console.

@@ -22,7 +22,7 @@ public static class DependencyInjection
 
     public static IHostApplicationBuilder AddObsidian(this IHostApplicationBuilder builder)
     {
-        builder.Services.Configure<IServerConfiguration>(builder.Configuration);
+        builder.Services.Configure<ServerConfiguration>(builder.Configuration);
         builder.Services.Configure<WhitelistConfiguration>(builder.Configuration);
 
         builder.Services.AddSingleton<IServerEnvironment, DefaultServerEnvironment>();

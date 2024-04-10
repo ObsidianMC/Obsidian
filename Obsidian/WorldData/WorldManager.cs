@@ -14,14 +14,14 @@ using System.Threading;
 
 namespace Obsidian.WorldData;
 
-public sealed class WorldManager(ILoggerFactory loggerFactory, IServiceProvider serviceProvider, IOptionsMonitor<IServerConfiguration> configuration,
+public sealed class WorldManager(ILoggerFactory loggerFactory, IServiceProvider serviceProvider, IOptionsMonitor<ServerConfiguration> configuration,
     IServerEnvironment serverEnvironment) : BackgroundService, IWorldManager
 {
     private readonly ILogger logger = loggerFactory.CreateLogger<WorldManager>();
     private readonly Dictionary<string, IWorld> worlds = new();
     private readonly ILoggerFactory loggerFactory = loggerFactory;
     private readonly IServiceProvider serviceProvider = serviceProvider;
-    private readonly IOptionsMonitor<IServerConfiguration> configuration = configuration;
+    private readonly IOptionsMonitor<ServerConfiguration> configuration = configuration;
     private readonly IServerEnvironment serverEnvironment = serverEnvironment;
     private readonly IServiceScope serviceScope = serviceProvider.CreateScope();
 
