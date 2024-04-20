@@ -15,7 +15,7 @@ public sealed class PluginFileEntry
 
     public required int Offset { get; set; }
 
-    public bool IsCompressed => CompressedLength < Length;
+    public bool IsCompressed => Length != CompressedLength;
 
     internal byte[] GetData()
     {

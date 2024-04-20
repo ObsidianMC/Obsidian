@@ -114,7 +114,7 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
     /// <summary>
     /// Verifies the file hash and tries to validate the signature
     /// </summary>
-    /// <returns></returns>
+    /// <returns>True if the provided plugin was successfully validated. Otherwise false.</returns>
     private async Task<bool> TryValidatePluginAsync(FileStream fs, byte[] hash, string path, bool isSigned, byte[]? signature = null)
     {
         using (var sha384 = SHA384.Create())
