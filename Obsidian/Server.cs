@@ -136,7 +136,7 @@ public sealed partial class Server : IServer
 
         CommandsHandler = commandHandler;
 
-        PluginManager = new PluginManager(this.serviceProvider, this, eventDispatcher, CommandsHandler, _logger, serviceProvider.GetRequiredService<IConfiguration>());
+        PluginManager = new PluginManager(this.serviceProvider, this, eventDispatcher, CommandsHandler, loggerFactory.CreateLogger<PluginManager>());
 
         _logger.LogDebug("Registering commands...");
         CommandsHandler.RegisterCommandClass<MainCommandModule>(null);
@@ -271,8 +271,9 @@ public sealed partial class Server : IServer
 
         Directory.CreateDirectory("plugins");
 
-        PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
-        PluginManager.DirectoryWatcher.Watch("plugins");
+        await PluginManager.LoadPluginsAsync();
+
+        //await Task.WhenAll(Configuration.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
         if (!Configuration.OnlineMode)
             _logger.LogInformation("Starting in offline mode...");
@@ -296,7 +297,7 @@ public sealed partial class Server : IServer
         while (!this.WorldManager.ReadyToJoin && !this._cancelTokenSource.IsCancellationRequested)
             continue;
 
-        this.PluginManager.ServerReady();
+        await this.PluginManager.OnServerReadyAsync();
 
         _logger.LogInformation("Listening for new clients...");
 
