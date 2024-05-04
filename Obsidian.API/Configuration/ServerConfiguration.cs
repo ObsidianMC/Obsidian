@@ -43,6 +43,11 @@ public sealed class ServerConfiguration
 
     public bool ServerShutdownStopsProgram { get; set; } = true;
 
+    /// <summary>
+    /// Whether to allow the server to load untrusted(unsigned) plugins
+    /// </summary>
+    public bool AllowUntrustedPlugins { get; set; } = true;
+
     public bool? Baah { get; set; }
 
     public bool Whitelist { get; set; }

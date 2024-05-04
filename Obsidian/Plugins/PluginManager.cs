@@ -22,8 +22,6 @@ public sealed class PluginManager
 {
     internal readonly ILogger logger;
     private readonly IConfiguration configuration;
-    private readonly List<PluginContainer> plugins = new();
-    private readonly List<PluginContainer> stagedPlugins = new();
     internal readonly IServer server;
 
     private static PackedPluginProvider packedPluginProvider = default!;
@@ -226,7 +224,7 @@ public sealed class PluginManager
     public PluginContainer GetPluginContainerByAssembly(Assembly? assembly = null) =>
         this.Plugins.First(x => x.PluginAssembly == (assembly ?? Assembly.GetCallingAssembly()));
 
-    private void ConfigureInitialServices(IServerEnvironment env)
+    private void ConfigureInitialServices()
     {
         this.pluginServiceDescriptors.AddLogging((builder) =>
         {

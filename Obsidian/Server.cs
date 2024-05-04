@@ -136,7 +136,8 @@ public sealed partial class Server : IServer
 
         CommandsHandler = commandHandler;
 
-        PluginManager = new PluginManager(this.serviceProvider, this, eventDispatcher, CommandsHandler, loggerFactory.CreateLogger<PluginManager>());
+        PluginManager = new PluginManager(this.serviceProvider, this, eventDispatcher, CommandsHandler, loggerFactory.CreateLogger<PluginManager>(), 
+            serviceProvider.GetRequiredService<IConfiguration>());
 
         _logger.LogDebug("Registering commands...");
         CommandsHandler.RegisterCommandClass<MainCommandModule>(null);
