@@ -250,15 +250,13 @@ public sealed partial class Server : IServer
 
         _logger.LogInformation("Loading properties...");
 
-        await (Operators as OperatorList).InitializeAsync();
+        await (Operators as OperatorList)!.InitializeAsync();
 
         _logger.LogInformation("Loading plugins...");
 
         Directory.CreateDirectory("plugins");
 
         await PluginManager.LoadPluginsAsync();
-
-        //await Task.WhenAll(Configuration.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
         if (!Configuration.OnlineMode)
             _logger.LogInformation("Starting in offline mode...");
@@ -463,7 +461,7 @@ public sealed partial class Server : IServer
 
         if(type is MessageType.Chat or MessageType.System)
         {
-            await this.EventDispatcher.ExecuteEventAsync(new IncomingChatMessageEventArgs(source.Player, this, message, format));
+            await this.EventDispatcher.ExecuteEventAsync(new IncomingChatMessageEventArgs(source.Player!, this, message, format));
         }
     }
 
@@ -550,9 +548,12 @@ public sealed partial class Server : IServer
                     }
                 }
 
-                while (_chatMessagesQueue.TryDequeue(out IClientboundPacket packet))
+                while (_chatMessagesQueue.TryDequeue(out IClientboundPacket? packet))
                 {
-                    foreach (Player player in Players)
+                    if (packet == null)
+                        continue;
+
+                    foreach (var player in Players.Cast<Player>())
                     {
                         player.client.SendPacket(packet);
                     }

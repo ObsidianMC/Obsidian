@@ -2,15 +2,8 @@
 
 namespace Obsidian.WorldData;
 
-internal class WorldLight
+internal static class WorldLight
 {
-    private readonly World world;
-
-    public WorldLight(World world)
-    {
-        this.world = world;
-    }
-
     public static void InitialFillSkyLight(Chunk chunk)
     {
         // Start by directly lighting the entire chunk

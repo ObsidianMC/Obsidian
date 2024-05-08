@@ -27,9 +27,9 @@ public class Region : IRegion
 
     public ConcurrentDictionary<int, Entity> Entities { get; } = new();
 
-    public int LoadedChunkCount => loadedChunks.Count(c => c.IsGenerated);
+    public int LoadedChunkCount => LoadedChunks.Count(chunk => chunk != null && chunk.IsGenerated);
 
-    private DenseCollection<Chunk> loadedChunks { get; } = new(CubicRegionSize, CubicRegionSize);
+    private DenseCollection<Chunk?> LoadedChunks { get; } = new(CubicRegionSize, CubicRegionSize);
 
     private readonly RegionFile regionFile;
 
@@ -59,19 +59,24 @@ public class Region : IRegion
 
     internal async Task FlushAsync()
     {
-        foreach (Chunk c in loadedChunks)
-            await SerializeChunkAsync(c);
+        foreach (var chunk in LoadedChunks)
+        {
+            if (chunk == null)
+                continue;
+
+            await SerializeChunkAsync(chunk);
+        }
 
         regionFile.Flush();
     }
 
     internal async ValueTask<Chunk> GetChunkAsync(int x, int z)
     {
-        var chunk = loadedChunks[x, z];
+        var chunk = LoadedChunks[x, z];
         if (chunk is null)
         {
             chunk = await GetChunkFromFileAsync(x, z); // Still might be null but that's okay.
-            loadedChunks[x, z] = chunk!;
+            LoadedChunks[x, z] = chunk!;
         }
 
         return chunk!;
@@ -79,10 +84,10 @@ public class Region : IRegion
 
     internal async Task UnloadChunk(int x, int z)
     {
-        var chunk = loadedChunks[x, z];
+        var chunk = LoadedChunks[x, z];
         if (chunk is null) { return; }
         await SerializeChunkAsync(chunk);
-        loadedChunks[x, z] = null;
+        LoadedChunks[x, z] = null;
     }
 
     private async Task<Chunk?> GetChunkFromFileAsync(int x, int z)
@@ -95,12 +100,15 @@ public class Region : IRegion
         await using var bytesStream = new ReadOnlyStream(chunkData);
         var nbtReader = new NbtReader(bytesStream);
 
-        return DeserializeChunk(nbtReader.ReadNextTag() as NbtCompound);
+        if (nbtReader.ReadNextTag() is not NbtCompound chunkCompound)
+            return null;
+
+        return DeserializeChunk(chunkCompound);
     }
 
     internal IEnumerable<Chunk> GeneratedChunks()
     {
-        foreach (var c in loadedChunks)
+        foreach (var c in LoadedChunks)
         {
             if (c is not null && c.IsGenerated)
             {
@@ -113,7 +121,7 @@ public class Region : IRegion
     {
         if (chunk is null) { return; } // I dunno... maybe we'll need to null out a chunk someday?
         var (x, z) = (NumericsHelper.Modulo(chunk.X, CubicRegionSize), NumericsHelper.Modulo(chunk.Z, CubicRegionSize));
-        loadedChunks[x, z] = chunk;
+        LoadedChunks[x, z] = chunk;
     }
 
     internal async Task SerializeChunkAsync(Chunk chunk)
@@ -132,14 +140,9 @@ public class Region : IRegion
         await regionFile.SetChunkAsync(x, z, strm.ToArray());
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "<Pending>")]
     internal async Task BeginTickAsync(CancellationToken cts = default)
     {
-        //var timer = new BalancingTimer(50, cts);
-        //while (await timer.WaitForNextTickAsync())
-        //{
-           
-        //}
-
         await Task.WhenAll(Entities.Select(entityEntry => entityEntry.Value.TickAsync()));
 
         List<BlockUpdate> neighborUpdates = [];
@@ -208,15 +211,19 @@ public class Region : IRegion
                 section.BlockStateContainer.DataArray.storage = data!.GetArray();
             }
 
-            var biomesCompound = sectionCompound["biomes"] as NbtCompound;
-            var biomesPalette = biomesCompound!["palette"] as NbtList;
+            if (sectionCompound["biomes"] is not NbtCompound biomesCompound)
+                throw new InvalidOperationException();
+
+            if (biomesCompound["palette"] is not NbtList biomesPalette)
+                throw new InvalidOperationException();
 
             var biomePalette = section.BiomeContainer.Palette;
-            foreach (NbtTag<string> biome in biomesPalette!)
+            foreach (var biome in biomesPalette!.Cast<NbtTag<string>>())
             {
-                if (Enum.TryParse<Biome>(biome.Value.TrimResourceTag(), true, out var value))
+                if (Enum.TryParse<Biome>(biome.Value?.TrimResourceTag(), true, out var value))
                     biomePalette.GetOrAddId(value);
             }
+
             if (biomesPalette.Count > 1)
             {
                 if (biomesCompound.TryGetTag("data", out var biomeDataArrayTag))
@@ -249,7 +256,8 @@ public class Region : IRegion
 
         foreach (var tileEntityNbt in (NbtList)chunkCompound["block_entities"])
         {
-            var tileEntityCompound = tileEntityNbt as NbtCompound;
+            if (tileEntityNbt is not NbtCompound tileEntityCompound)
+                continue;
 
             chunk.SetBlockEntity(tileEntityCompound.GetInt("x"), tileEntityCompound.GetInt("y"), tileEntityCompound.GetInt("z"), tileEntityCompound);
         }
@@ -324,7 +332,7 @@ public class Region : IRegion
             blockEntities.Add(blockEntity);
 
 #pragma warning disable IDE0028 // Use collection initializers - Will not compile with this suggestion applied
-    return new NbtCompound
+        return new NbtCompound
         {
             new NbtTag<int>("xPos", chunk.X),
             new NbtTag<int>("zPos", chunk.Z),
@@ -341,7 +349,7 @@ public class Region : IRegion
             new NbtTag<int>("DataVersion", 3337)// Hardcoded version try to get data version through minecraft data and use data correctly
         };
 #pragma warning restore IDE0028 // Use collection initializers
-  }
+    }
     #endregion NBT Ops
 
     public async ValueTask DisposeAsync() => await regionFile.DisposeAsync();

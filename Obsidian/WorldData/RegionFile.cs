@@ -218,10 +218,10 @@ public sealed class RegionFile : IAsyncDisposable
     public void Flush()
     {
         this.semaphore.Wait();
+
         this.Pad();
-        // Using Flush with true forces C# to dump to disk.
-        // It otherwise wouldn't
         this.regionFileStream.Flush(true);
+
         this.semaphore.Release();
     }
 
@@ -385,22 +385,12 @@ public sealed class RegionFile : IAsyncDisposable
                 this.semaphore.Dispose();
             }
 
-            // TODO: free unmanaged resources (unmanaged objects) and override finalizer
-            // TODO: set large fields to null
             this.disposed = true;
         }
     }
 
-    // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
-    // ~RegionFile()
-    // {
-    //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-    //     Dispose(disposing: false);
-    // }
-
     public async ValueTask DisposeAsync()
     {
-        // Do not change this code. Put cleanup code in 'DisposeAsync(bool disposing)' method
         await DisposeAsync(true);
         GC.SuppressFinalize(this);
     }

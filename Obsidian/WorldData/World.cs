@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.Extensions.Logging;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.API.Utilities;
 using Obsidian.Blocks;
@@ -16,17 +17,18 @@ namespace Obsidian.WorldData;
 
 public sealed class World : IWorld
 {
-    public IWorldManager WorldManager { get; }
+    private readonly ILogger logger;
+
+    private static readonly Semaphore regionLock = new(1, 1);
 
     private float rainLevel = 0f;
     private bool initialized = false;
 
-    private ConcurrentDictionary<(int x, int z), (int x, int z)> moduloCache = new();
+    private Dictionary<string, World> dimensions = [];
 
+    public IWorldManager WorldManager { get; }
 
-    internal Dictionary<string, World> dimensions = new();
-
-    public Level LevelData { get; internal set; }
+    public Level LevelData { get; internal set; } = default!;
 
     public ConcurrentDictionary<Guid, Player> Players { get; private set; } = new();
 
@@ -36,15 +38,19 @@ public sealed class World : IWorld
 
     public ConcurrentQueue<(int X, int Z)> ChunksToGen { get; private set; } = new();
 
-    public ConcurrentHashSet<(int X, int Z)> SpawnChunks { get; private set; } = new();
+    public ConcurrentHashSet<(int X, int Z)> SpawnChunks { get; private set; } = [];
 
-    public ConcurrentHashSet<(int X, int Z)> LoadedChunks { get; private set; } = new();
+    public ConcurrentHashSet<(int X, int Z)> LoadedChunks { get; private set; } = [];
 
     public required string Name { get; init; }
     public required string Seed { get; init; }
-    public string FolderPath { get; private set; }
-    public string PlayerDataPath { get; private set; }
-    public string LevelDataFilePath { get; private set; }
+
+    public required IPacketBroadcaster PacketBroadcaster { get; init; }
+    public required IServerConfiguration Configuration { get; init; }
+
+    public string FolderPath { get; private set; } = default!;
+    public string PlayerDataPath { get; private set; } = default!;
+    public string LevelDataFilePath { get; private set; } = default!;
 
     public bool Loaded { get; private set; }
 
@@ -54,30 +60,16 @@ public sealed class World : IWorld
     public int ChunksToGenCount => this.ChunksToGen.Count;
     public int LoadedChunkCount => this.Regions.Values.Sum(x => x.LoadedChunkCount);
 
-    public required IPacketBroadcaster PacketBroadcaster { get; init; }
-    public required IServerConfiguration Configuration { get; init; }
-
     public Gamemode DefaultGamemode => LevelData.DefaultGamemode;
 
-    public string DimensionName { get; private set; }
+    public string DimensionName { get; private set; } = default!;
 
     public string? ParentWorldName { get; private set; }
-    private WorldLight worldLight;
-
-    private static Semaphore _regionLock;
-
-
-    /// <summary>
-    /// Used to log actions caused by the client.
-    /// </summary>
-    protected ILogger Logger { get; }
-
+    
     internal World(ILogger logger, Type generatorType, IWorldManager worldManager)
     {
-        Logger = logger;
+        this.logger = logger;
         Generator = Activator.CreateInstance(generatorType) as IWorldGenerator ?? throw new ArgumentException("Invalid generator type.", nameof(generatorType));
-        worldLight = new(this);
-        _regionLock = new(1, 1);
 
         this.WorldManager = worldManager;
     }
@@ -382,7 +374,7 @@ public sealed class World : IWorld
             }
             LevelData.RainTime = rainTime;
 
-            Logger.LogInformation("Toggled rain: {raining} for {rainTime} ticks.", LevelData.Raining, LevelData.RainTime);
+            logger.LogInformation("Toggled rain: {raining} for {rainTime} ticks.", LevelData.Raining, LevelData.RainTime);
         }
 
         // Gradually increase and decrease rain levels based on
@@ -442,7 +434,6 @@ public sealed class World : IWorld
             Raining = levelCompound.GetBool("raining"),
             Thundering = levelCompound.GetBool("thundering"),
             DefaultGamemode = (Gamemode)levelCompound.GetInt("GameType"),
-            GeneratorVersion = levelCompound.GetInt("generatorVersion"),
             RainTime = levelCompound.GetInt("rainTime"),
             SpawnPosition = new VectorF(levelCompound.GetInt("SpawnX"), levelCompound.GetInt("SpawnY"), levelCompound.GetInt("SpawnZ")),
             ThunderTime = levelCompound.GetInt("thunderTime"),
@@ -450,14 +441,13 @@ public sealed class World : IWorld
             LastPlayed = levelCompound.GetLong("LastPlayed"),
             RandomSeed = levelCompound.GetLong("RandomSeed"),
             Time = levelCompound.GetLong("Time"),
-            GeneratorName = levelCompound.GetString("generatorName"),
             LevelName = levelCompound.GetString("LevelName")
         };
 
         if (levelCompound.TryGetTag("Version", out var tag))
             LevelData.VersionData = tag as NbtCompound;
 
-        Logger.LogInformation("Loading spawn chunks into memory...");
+        logger.LogInformation("Loading spawn chunks into memory...");
         for (int rx = -1; rx < 1; rx++)
             for (int rz = -1; rz < 1; rz++)
                 LoadRegion(rx, rz);
@@ -502,7 +492,6 @@ public sealed class World : IWorld
         writer.WriteBool("thundering", LevelData.Thundering);
 
         writer.WriteInt("GameType", (int)LevelData.DefaultGamemode);
-        writer.WriteInt("generatorVersion", LevelData.GeneratorVersion);
         writer.WriteInt("rainTime", LevelData.RainTime);
         writer.WriteInt("SpawnX", (int)LevelData.SpawnPosition.X);
         writer.WriteInt("SpawnY", (int)LevelData.SpawnPosition.Y);
@@ -526,7 +515,8 @@ public sealed class World : IWorld
 
     public async Task UnloadPlayerAsync(Guid uuid)
     {
-        Players.TryRemove(uuid, out var player);
+        if (!Players.TryRemove(uuid, out var player))
+            return;
 
         await player.SaveAsync();
     }
@@ -540,26 +530,26 @@ public sealed class World : IWorld
 
     public Region LoadRegion(int regionX, int regionZ)
     {
-        _regionLock.WaitOne();
+        regionLock.WaitOne();
         long value = NumericsHelper.IntsToLong(regionX, regionZ);
 
         if (Regions.TryGetValue(value, out var region))
         {
-            _regionLock.Release();
+            regionLock.Release();
             return region;
         }
 
-        this.Logger.LogDebug("Trying to add {x}:{z}", regionX, regionZ);
+        this.logger.LogDebug("Trying to add {x}:{z}", regionX, regionZ);
 
         region = new Region(regionX, regionZ, FolderPath);
 
         if (Regions.TryAdd(value, region))
-            this.Logger.LogDebug("Added region {x}:{z}", regionX, regionZ);
+            this.logger.LogDebug("Added region {x}:{z}", regionX, regionZ);
 
         //DOesn't need to be blocking
         _ = region.InitAsync();
 
-        _regionLock.Release();
+        regionLock.Release();
         return region;
     }
 
@@ -595,6 +585,9 @@ public sealed class World : IWorld
                 if (LoadedChunks.TryRemove(c))
                 {
                     var r = GetRegionForChunk(c.X, c.Z);
+                    if (r == null)
+                        return;
+
                     await r.UnloadChunk(c.X, c.Z);
                 }
             });
@@ -666,7 +659,7 @@ public sealed class World : IWorld
         return entity;
     }
 
-    public async Task<IEntity> SpawnEntityAsync(VectorF position, EntityType type)
+    public Task<IEntity> SpawnEntityAsync(VectorF position, EntityType type)
     {
         // Arrow, Boat, DragonFireball, AreaEffectCloud, EndCrystal, EvokerFangs, ExperienceOrb, 
         // FireworkRocket, FallingBlock, Item, ItemFrame, Fireball, LeashKnot, LightningBolt,
@@ -676,7 +669,7 @@ public sealed class World : IWorld
 
         if (type == EntityType.FallingBlock)
         {
-            return SpawnFallingBlock(position + (0, 20, 0), Material.Sand);
+            return Task.FromResult(SpawnFallingBlock(position + (0, 20, 0), Material.Sand));
         }
 
         Entity entity;
@@ -736,7 +729,7 @@ public sealed class World : IWorld
 
         TryAddEntity(entity);
 
-        return entity;
+        return Task.FromResult<IEntity>(entity);
     }
 
     public void RegisterDimension(DimensionCodec codec, string? worldGeneratorId = null)
@@ -748,7 +741,7 @@ public sealed class World : IWorld
             throw new ArgumentException($"Failed to find generator with id: {worldGeneratorId}.");
 
         //TODO CREATE NEW TYPE CALLED DIMENSION AND IDIMENSION
-        var dimensionWorld = new World(this.Logger, generatorType, this.WorldManager)
+        var dimensionWorld = new World(this.logger, generatorType, this.WorldManager)
         {
             PacketBroadcaster = this.PacketBroadcaster,
             Configuration = this.Configuration,
@@ -828,8 +821,7 @@ public sealed class World : IWorld
         LevelData = new Level
         {
             Time = codec.Element.FixedTime ?? 0,
-            DefaultGamemode = Gamemode.Survival,
-            GeneratorName = Generator.Id
+            DefaultGamemode = Gamemode.Survival
         };
 
         Directory.CreateDirectory(FolderPath);
@@ -843,7 +835,7 @@ public sealed class World : IWorld
         if (!initialized)
             throw new InvalidOperationException("World hasn't been initialized please call World.Init() before trying to generate the world.");
 
-        Logger.LogInformation("Generating world... (Config pregeneration size is {pregenRange})", this.Configuration.PregenerateChunkRange);
+        logger.LogInformation("Generating world... (Config pregeneration size is {pregenRange})", this.Configuration.PregenerateChunkRange);
         int pregenerationRange = this.Configuration.PregenerateChunkRange;
 
         int regionPregenRange = (pregenerationRange >> Region.CubicRegionSizeShift) + 1;
@@ -867,7 +859,7 @@ public sealed class World : IWorld
         float startChunks = ChunksToGenCount;
         var stopwatch = new Stopwatch();
         stopwatch.Start();
-        Logger.LogInformation("{startChunks} chunks to generate...", startChunks);
+        logger.LogInformation("{startChunks} chunks to generate...", startChunks);
         while (!ChunksToGen.IsEmpty)
         {
             await ManageChunksAsync();
@@ -925,7 +917,7 @@ public sealed class World : IWorld
 
                     var worldPos = new VectorF(bx + 0.5f + (chunk.X * 16), by + 1, bz + 0.5f + (chunk.Z * 16));
                     LevelData.SpawnPosition = worldPos;
-                    Logger.LogInformation("World Spawn set to {worldPos}", worldPos);
+                    logger.LogInformation("World Spawn set to {worldPos}", worldPos);
 
                     // Should spawn be far from (0,0), queue up chunks in generation range.
                     // Just feign a request for a chunk and if it doesn't exist, it'll get queued for gen.
@@ -941,7 +933,7 @@ public sealed class World : IWorld
                 }
             }
         }
-        Logger.LogWarning("Failed to set World Spawn.");
+        logger.LogWarning("Failed to set World Spawn.");
     }
 
     internal bool TryAddEntity(Entity entity)
@@ -962,7 +954,8 @@ public sealed class World : IWorld
         if (!levelCompound.TryGetTag("WorldGenSettings", out var genTag))
             return;
 
-        var worldGenSettings = genTag as NbtCompound;
+        if (genTag is not NbtCompound worldGenSettings)
+            return;
 
         // bonus_chest
         // seed
@@ -970,7 +963,8 @@ public sealed class World : IWorld
 
         if (worldGenSettings.TryGetTag("dimensions", out var dimensionsTag))
         {
-            var dimensions = dimensionsTag as NbtCompound;
+            if (dimensionsTag is not NbtCompound dimensions)
+                return;
 
             foreach (var (_, childDimensionTag) in dimensions)
             {
@@ -996,7 +990,11 @@ public sealed class World : IWorld
 
         foreach (var (id, _) in dimensions)
         {
-            CodecRegistry.TryGetDimension(id, out var childDimensionCodec);
+            if (!CodecRegistry.TryGetDimension(id, out var childDimensionCodec))
+            {
+                this.logger.LogWarning("Failed to find dimension with id ({dimension}) is registry.", id);
+                continue;
+            }
 
             dimensionsCompound.Add(new NbtCompound(childDimensionCodec.Name)
             {

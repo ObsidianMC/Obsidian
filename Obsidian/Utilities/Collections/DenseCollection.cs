@@ -2,24 +2,17 @@
 
 namespace Obsidian.Utilities.Collections;
 
-public sealed class DenseCollection<T> : IEnumerable<T> where T : class
+public sealed class DenseCollection<T>(int width, int height) : IEnumerable<T?>
 {
-    private readonly object lockObject = new object();
+    private readonly object lockObject = new();
 
-    private readonly T[] source;
+    private readonly T[] source = new T[width * height];
 
     public int Count { get; private set; } = 0;
 
-    public int Width { get; }
+    public int Width { get; } = width;
 
-    public int Height { get; }
-
-    public DenseCollection(int width, int height)
-    {
-        Width = width;
-        Height = height;
-        source = new T[width * height];
-    }
+    public int Height { get; } = height;
 
     public T this[int x, int z]
     {

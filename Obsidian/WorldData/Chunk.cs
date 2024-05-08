@@ -95,9 +95,9 @@ public class Chunk
         Sections[i].SetBiome(x, y, z, biome);
     }
 
-    public NbtCompound GetBlockEntity(Vector position) => this.GetBlockEntity(position.X, position.Y, position.Z);
+    public NbtCompound? GetBlockEntity(Vector position) => this.GetBlockEntity(position.X, position.Y, position.Z);
 
-    public NbtCompound GetBlockEntity(int x, int y, int z)
+    public NbtCompound? GetBlockEntity(int x, int y, int z)
     {
         x = NumericsHelper.Modulo(x, 16);
         z = NumericsHelper.Modulo(z, 16);

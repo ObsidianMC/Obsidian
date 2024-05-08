@@ -67,22 +67,21 @@ public sealed class Level
     /// <summary>
     ///  A collection of bossbars.
     /// </summary>
-    public List<NbtCompound> CustomBossEvents { get; set; } = new();
+    /// /// TODO: THIS ALSO SHOULDN'T BE RAW
+    public List<NbtCompound> CustomBossEvents { get; set; } = [];
 
     /// <summary>
     /// Options for datapacks.
     /// </summary>
-    public List<NbtCompound> DataPacks { get; set; } = new();
+    /// TODO: THIS ALSO SHOULDN'T BE RAW
+    public List<NbtCompound> DataPacks { get; set; } = [];
 
     /// <summary>
     /// The time of day. 0 is sunrise, 6000 is mid day, 12000 is sunset, 18000 is mid night, 24000 is the next day's 0.
     /// </summary>
     public int DayTime
     {
-        get
-        {
-            return (int)(this.Time % 24000); // day time is based on server time
-        }
+        get => (int)(this.Time % 24000); // day time is based on server time
         set
         {
             var startOfDay = this.Time - (this.Time % 24000);
@@ -103,32 +102,19 @@ public sealed class Level
     /// <summary>
     /// This contains level data specific to certain dimensions.
     /// </summary>
-    public NbtCompound DimensionData { get; set; }
+    /// TODO: WHY IS THIS A COMPOUND
+    public NbtCompound? DimensionData { get; set; }
 
     /// <summary>
     /// The gamerules used in the world.
     /// </summary>
-    public List<NbtCompound> GameRules { get; set; }
+    /// TODO: WHY IS THIS A LIST OF COMPOUNDS???
+    public List<NbtCompound>? GameRules { get; set; }
 
     /// <summary>
     /// The default game mode for the singleplayer player when they initially spawn.
     /// </summary>
     public Gamemode DefaultGamemode { get; set; }
-
-    /// <summary>
-    /// Used in 1.15 and below. The name of the world generator.
-    /// </summary>
-    public string GeneratorName { get; set; }
-
-    /// <summary>
-    /// Used in 1.15 and below. Used in buffet, superflat and old customized worlds.
-    /// </summary>
-    public object GeneratorOptions { get; set; }
-
-    /// <summary>
-    /// Used in 1.15 and below. The version of the level generator.
-    /// </summary>
-    public int GeneratorVersion { get; set; }
 
     /// <summary>
     /// true if the player will respawn in Spectator on death in singleplayer. Affects all three game modes.
@@ -146,7 +132,7 @@ public sealed class Level
     /// </summary>
     public long LastPlayed { get; set; }
 
-    public string LevelName { get; set; }
+    public string LevelName { get; set; } = default!;
 
     /// <summary>
     /// true if the map generator should place structures such as villages, strongholds, and mineshafts. 
@@ -194,7 +180,8 @@ public sealed class Level
     /// <summary>
     /// Information about the Minecraft version the world was saved in.
     /// </summary>
-    public NbtCompound VersionData { get; set; }
+    /// TODO: SHOULDNT BE A COMPOUND
+    public NbtCompound? VersionData { get; set; }
 
     /// <summary>
     /// The UUID of the current wandering trader in the world saved as four ints.
