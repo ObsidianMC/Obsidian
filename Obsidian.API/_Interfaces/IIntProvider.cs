@@ -8,6 +8,8 @@ public interface IIntProvider
     /// See <see cref="IntProviderTypes"/> for the default types.
     /// </remarks>
     public string Type { get; }
+
+    public int Get();
 }
 
 public static class IntProviderTypes

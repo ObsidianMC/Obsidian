@@ -10,6 +10,9 @@ public abstract class RootPlacer
 
     public virtual RootPlacement? AboveRootPlacement { get; set; }
 
+    public Vector GetTrunkOrigin(Vector pos) =>
+        pos.Relative(Vector.Up, this.TrunkOffsetY.Get());
+
     public sealed class RootPlacement
     {
         public required IBlockStateProvider AboveRootProvider { get; init; }
