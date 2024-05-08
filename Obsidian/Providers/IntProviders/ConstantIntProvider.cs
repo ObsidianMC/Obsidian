@@ -7,4 +7,7 @@ public sealed class ConstantIntProvider : IIntProvider
 
     public int Value { get; set; }
 
+    //TODO
+    public int Get() => 0;
+
 }

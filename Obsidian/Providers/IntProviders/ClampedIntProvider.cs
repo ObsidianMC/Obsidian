@@ -8,4 +8,7 @@ public sealed class ClampedIntProvider : IIntProvider
     public IntProviderRangeValue Value { get; init; }
 
     public IIntProvider Source { get; init; } = default!;
+
+    //TODO
+    public int Get() => 0;
 }
