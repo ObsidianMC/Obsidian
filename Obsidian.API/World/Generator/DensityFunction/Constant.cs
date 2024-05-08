@@ -1,11 +1,9 @@
-﻿using Obsidian.API._Interfaces;
-
-namespace Obsidian.API.World.Generator.DensityFunction;
-internal class Constant : IDensityFunction
+﻿namespace Obsidian.API.World.Generator.DensityFunction;
+public sealed class Constant : IDensityFunction
 {
-    public new string Type => "minecraft:constant";
+    public string Type => "minecraft:constant";
 
-    public required double argument;
+    public required double Argument { get; init; }
 
-    public double GetValue(double x, double y, double z) => argument;
+    public double GetValue(double x, double y, double z) => Argument;
 }

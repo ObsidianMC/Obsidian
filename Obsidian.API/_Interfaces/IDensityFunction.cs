@@ -1,7 +1,7 @@
-﻿namespace Obsidian.API._Interfaces;
+﻿namespace Obsidian.API;
 public interface IDensityFunction
 {
     public string Type { get; }
 
-    double GetValue(double x, double y, double z);
+    public double GetValue(double x, double y, double z);
 }

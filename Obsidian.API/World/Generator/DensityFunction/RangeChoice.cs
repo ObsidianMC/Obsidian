@@ -1,27 +1,24 @@
-﻿using Obsidian.API._Interfaces;
-
-namespace Obsidian.API.World.Generator.DensityFunction;
-internal class RangeChoice : IDensityFunction
+﻿namespace Obsidian.API.World.Generator.DensityFunction;
+public sealed class RangeChoice : IDensityFunction
 {
     public string Type => "minecraft:range_choice";
 
-    public required IDensityFunction input;
+    public required IDensityFunction Input { get; init; }
 
-    public required IDensityFunction when_in_range;
+    public required IDensityFunction WhenInRange { get; init; }
 
-    public required IDensityFunction when_out_of_range;
+    public required IDensityFunction WhenOutOfRange { get; init; }
 
-    public required double min_inclusive;
+    public required double MinInclusive { get; init; }
 
-    public required double max_exclusive;
+    public required double MaxExclusive { get; init; }
 
     public double GetValue(double x, double y, double z)
     {
-        var control = input.GetValue(x, y, z);
-        if (control >= min_inclusive && control < max_exclusive)
-        {
-            return when_in_range.GetValue(x, y, z);
-        }
-        return when_out_of_range.GetValue(x, y, z);
+        var control = Input.GetValue(x, y, z);
+        if (control >= MinInclusive && control < MaxExclusive)
+            return WhenInRange.GetValue(x, y, z);
+
+        return WhenOutOfRange.GetValue(x, y, z);
     }
 }

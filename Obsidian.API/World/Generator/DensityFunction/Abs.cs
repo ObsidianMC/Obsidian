@@ -1,11 +1,9 @@
-﻿using Obsidian.API._Interfaces;
-
-namespace Obsidian.API.World.Generator.DensityFunction;
-internal class Abs : IDensityFunction
+﻿namespace Obsidian.API.World.Generator.DensityFunction;
+public sealed class Abs : IDensityFunction
 {
     public string Type => "minecraft:abs";
 
-    public required IDensityFunction argument;
+    public required IDensityFunction Argument { get; init; }
 
-    public double GetValue(double x, double y, double z) => Math.Abs(argument.GetValue(x, y, z));
+    public double GetValue(double x, double y, double z) => Math.Abs(Argument.GetValue(x, y, z));
 }

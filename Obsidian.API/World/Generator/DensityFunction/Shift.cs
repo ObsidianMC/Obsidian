@@ -1,11 +1,9 @@
-﻿using Obsidian.API._Interfaces;
-
-namespace Obsidian.API.World.Generator.DensityFunction;
-internal class Shift : IDensityFunction
+﻿namespace Obsidian.API.World.Generator.DensityFunction;
+public sealed class Shift : IDensityFunction
 {
     public string Type => "minecraft:shift";
 
-    public required INoise argument;
+    public required INoise Argument { get; init; }
 
-    public double GetValue(double x, double y, double z) => argument.GetValue(x/4D, y/4D, z/4D) * 4;
+    public double GetValue(double x, double y, double z) => Argument.GetValue(x/4D, y/4D, z/4D) * 4;
 }

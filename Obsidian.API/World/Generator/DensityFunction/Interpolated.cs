@@ -1,26 +1,23 @@
-﻿using Obsidian.API._Interfaces;
-
-namespace Obsidian.API.World.Generator.DensityFunction;
-internal class Interpolated : IDensityFunction
+﻿namespace Obsidian.API.World.Generator.DensityFunction;
+public sealed class Interpolated : IDensityFunction
 {
+    private const int sizeHorizontal = 1;
+    private const int sizeVertical = 1;
+
     public string Type => "minecraft:interpolated";
 
-    public required IDensityFunction argument;
-
-    public int size_horizontal = 1;
-
-    public int size_vertical = 1;
+    public required IDensityFunction Argument { get; init; }
 
     public double GetValue(double x, double y, double z)
     {
-        int hscale = size_horizontal * 2;
-        int vscale = size_vertical * 2;
+        int hscale = sizeHorizontal * 2;
+        int vscale = sizeVertical * 2;
         double result = 0;
         for (int h = -hscale; h < hscale; h++)
             for (int v = -vscale; v < vscale; v++)
             {
-                result += argument.GetValue(x + h, y, z + v);
+                result += Argument.GetValue(x + h, y, z + v);
             }
-        return result / ((size_horizontal * 4) * (size_vertical * 4));
+        return result / ((sizeHorizontal * 4) * (sizeVertical * 4));
     }
 }

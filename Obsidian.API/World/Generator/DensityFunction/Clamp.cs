@@ -1,14 +1,12 @@
-﻿using Obsidian.API._Interfaces;
-
-namespace Obsidian.API.World.Generator.DensityFunction;
-internal class Clamp : IDensityFunction
+﻿namespace Obsidian.API.World.Generator.DensityFunction;
+public sealed class Clamp : IDensityFunction
 {
     public string Type => "minecraft:clamp";
 
-    public required IDensityFunction input;
+    public required IDensityFunction Input { get; init; }
 
-    public required double min;
-    public required double max;
+    public required double Min { get; init; }
+    public required double Max { get; init; }
 
-    public double GetValue(double x, double y, double z) => Math.Clamp(input.GetValue(x, y, z), min, max);
+    public double GetValue(double x, double y, double z) => Math.Clamp(Input.GetValue(x, y, z), Min, Max);
 }

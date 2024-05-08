@@ -1,15 +1,13 @@
-﻿using Obsidian.API._Interfaces;
-
-namespace Obsidian.API.World.Generator.DensityFunction;
-internal class Noise : IDensityFunction
+﻿namespace Obsidian.API.World.Generator.DensityFunction;
+public class Noise : IDensityFunction
 {
-    public string Type => "minecraft:noise";
+    public virtual string Type => "minecraft:noise";
 
-    public required INoise noise;
+    public required INoise Value { get; init; }
 
     public double xz_scale = 1.0f;
 
     public double y_scale = 1.0f;
 
-    public double GetValue(double x, double y, double z) => noise.GetValue(x * xz_scale, y * y_scale, z * xz_scale);
+    public virtual double GetValue(double x, double y, double z) => Value.GetValue(x * xz_scale, y * y_scale, z * xz_scale);
 }

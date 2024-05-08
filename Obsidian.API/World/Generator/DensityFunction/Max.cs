@@ -1,12 +1,10 @@
-﻿using Obsidian.API._Interfaces;
-
-namespace Obsidian.API.World.Generator.DensityFunction;
-internal class Max : IDensityFunction
+﻿namespace Obsidian.API.World.Generator.DensityFunction;
+public sealed class Max : IDensityFunction
 {
     public string Type => "minecraft:max";
 
-    public required IDensityFunction argument1;
-    public required IDensityFunction argument2;
+    public required IDensityFunction Argument1 { get; init; }
+    public required IDensityFunction Argument2 { get; init; }
 
-    public double GetValue(double x, double y, double z) => Math.Max(argument1.GetValue(x, y, z), argument2.GetValue(x, y, z));
+    public double GetValue(double x, double y, double z) => Math.Max(Argument1.GetValue(x, y, z), Argument2.GetValue(x, y, z));
 }

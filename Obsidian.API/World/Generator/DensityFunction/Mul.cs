@@ -1,12 +1,10 @@
-﻿using Obsidian.API._Interfaces;
-
-namespace Obsidian.API.World.Generator.DensityFunction;
-internal class Mul : IDensityFunction
+﻿namespace Obsidian.API.World.Generator.DensityFunction;
+public sealed class Mul : IDensityFunction
 {
     public string Type => "minecraft:mul";
 
-    public required IDensityFunction argument1;
-    public required IDensityFunction argument2;
+    public required IDensityFunction Argument1 { get; init; }
+    public required IDensityFunction Argument2 { get; init; }
 
-    public double GetValue(double x, double y, double z) => argument1.GetValue(x, y, z) * argument2.GetValue(x, y, z);
+    public double GetValue(double x, double y, double z) => Argument1.GetValue(x, y, z) * Argument2.GetValue(x, y, z);
 }

@@ -1,11 +1,9 @@
-﻿using Obsidian.API._Interfaces;
-
-namespace Obsidian.API.World.Generator.DensityFunction;
-internal class Square : IDensityFunction
+﻿namespace Obsidian.API.World.Generator.DensityFunction;
+public sealed class Square : IDensityFunction
 {
     public string Type => "minecraft:square";
 
-    public required IDensityFunction argument;
+    public required IDensityFunction Argument { get; init; }
 
-    public double GetValue(double x, double y, double z) => (float)Math.Pow(argument.GetValue(x, y, z), 2);
+    public double GetValue(double x, double y, double z) => (float)Math.Pow(Argument.GetValue(x, y, z), 2);
 }

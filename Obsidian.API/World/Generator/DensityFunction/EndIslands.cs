@@ -1,7 +1,5 @@
-﻿using Obsidian.API._Interfaces;
-
-namespace Obsidian.API.World.Generator.DensityFunction;
-internal class EndIslands : IDensityFunction
+﻿namespace Obsidian.API.World.Generator.DensityFunction;
+public sealed class EndIslands : IDensityFunction
 {
     public string Type => "minecraft:end_islands";
 
