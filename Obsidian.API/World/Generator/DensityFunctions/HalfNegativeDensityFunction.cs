@@ -1,4 +1,4 @@
-﻿namespace Obsidian.API.World.Generator.DensityFunction;
+﻿namespace Obsidian.API.World.Generator.DensityFunctions;
 
 [DensityFunction("minecraft:half_negative")]
 public sealed class HalfNegativeDensityFunction : IDensityFunction

@@ -1,4 +1,4 @@
-﻿namespace Obsidian.API.World.Generator.DensityFunction;
+﻿namespace Obsidian.API.World.Generator.DensityFunctions;
 
 [DensityFunction("minecraft:square")]
 public sealed class SquareDensityFunction : IDensityFunction

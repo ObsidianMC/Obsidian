@@ -2,7 +2,7 @@
 using System.Text.Json;
 
 namespace Obsidian.SourceGenerators.Registry;
-public partial class WorldgenRegistryGenerator
+public partial class WorldgenFeatureRegistryGenerator
 {
     private static readonly string[] numbers = ["Int32", "Single", "Double", "Int64"];
 
