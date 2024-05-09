@@ -1,8 +1,6 @@
 ﻿namespace Obsidian.API;
-public  interface IBlockStateProvider
+public  interface IBlockStateProvider : IRegistryResource
 {
-    public string Type { get; }
-
     public IBlock Get();
 
     public SimpleBlockState GetSimple();

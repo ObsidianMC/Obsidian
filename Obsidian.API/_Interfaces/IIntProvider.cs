@@ -1,5 +1,5 @@
 ﻿namespace Obsidian.API;
-public interface IIntProvider
+public interface IIntProvider : IRegistryResource
 {
     /// <summary>
     /// Can be constant, uniform, biased_to_bottom, clamped, clamped_normal, or weighted_list
@@ -7,7 +7,7 @@ public interface IIntProvider
     /// <remarks>
     /// See <see cref="IntProviderTypes"/> for the default types.
     /// </remarks>
-    public string Type { get; }
+    public new string Type { get; }
 
     public int Get();
 }

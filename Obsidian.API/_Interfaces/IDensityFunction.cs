@@ -1,7 +1,5 @@
 ﻿namespace Obsidian.API;
-public interface IDensityFunction
+public interface IDensityFunction : IRegistryResource
 {
-    public string Type { get; }
-
     public double GetValue(double x, double y, double z);
 }
