@@ -1,4 +1,6 @@
 ﻿namespace Obsidian.API.World.Generator.DensityFunction;
+
+[DensityFunction("minecraft:abs")]
 public sealed class Abs : IDensityFunction
 {
     public string Type => "minecraft:abs";

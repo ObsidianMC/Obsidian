@@ -1,4 +1,6 @@
 ﻿namespace Obsidian.API.World.Generator.DensityFunction;
+
+[DensityFunction("minecraft:min")]
 public sealed class Min : IDensityFunction
 {
     public string Type => "minecraft:min";

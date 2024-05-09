@@ -1,4 +1,6 @@
 ﻿namespace Obsidian.API.World.Generator.DensityFunction;
+
+[DensityFunction("minecraft:max")]
 public sealed class Max : IDensityFunction
 {
     public string Type => "minecraft:max";

@@ -1,4 +1,6 @@
 ﻿namespace Obsidian.API.World.Generator.DensityFunction;
+
+[DensityFunction("minecraft:blend_density")]
 public sealed class BlendDensity : IDensityFunction
 {
     public string Type => "minecraft:blend_density";

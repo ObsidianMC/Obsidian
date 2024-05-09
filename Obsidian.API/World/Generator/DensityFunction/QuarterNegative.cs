@@ -1,4 +1,6 @@
 ﻿namespace Obsidian.API.World.Generator.DensityFunction;
+
+[DensityFunction("minecraft:quarter_negative")]
 public sealed class QuarterNegative : IDensityFunction
 {
     public string Type => "minecraft:quarter_negative";

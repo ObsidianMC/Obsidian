@@ -1,7 +1,6 @@
 ﻿using Microsoft.CodeAnalysis.CSharp;
 using Obsidian.SourceGenerators.Registry.Models;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.IO;
 
 namespace Obsidian.SourceGenerators.Registry;

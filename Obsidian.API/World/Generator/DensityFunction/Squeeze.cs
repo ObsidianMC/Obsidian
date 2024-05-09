@@ -1,4 +1,6 @@
 ﻿namespace Obsidian.API.World.Generator.DensityFunction;
+
+[DensityFunction("minecraft:squeeze")]
 public sealed class Squeeze : IDensityFunction
 {
     public string Type => "minecraft:squeeze";

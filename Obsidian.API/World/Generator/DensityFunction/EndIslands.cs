@@ -1,4 +1,6 @@
 ﻿namespace Obsidian.API.World.Generator.DensityFunction;
+
+[DensityFunction("minecraft:end_islands")]
 public sealed class EndIslands : IDensityFunction
 {
     public string Type => "minecraft:end_islands";

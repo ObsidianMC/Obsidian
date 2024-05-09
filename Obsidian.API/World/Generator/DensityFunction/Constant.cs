@@ -1,4 +1,6 @@
 ﻿namespace Obsidian.API.World.Generator.DensityFunction;
+
+[DensityFunction("minecraft:constant")]
 public sealed class Constant : IDensityFunction
 {
     public string Type => "minecraft:constant";

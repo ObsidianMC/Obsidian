@@ -1,4 +1,6 @@
 ﻿namespace Obsidian.API.World.Generator.DensityFunction;
+
+[DensityFunction("minecraft:interpolated")]
 public sealed class Interpolated : IDensityFunction
 {
     private const int sizeHorizontal = 1;

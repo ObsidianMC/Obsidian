@@ -1,4 +1,6 @@
 ﻿namespace Obsidian.API.World.Generator.DensityFunction;
+
+[DensityFunction("minecraft:noise")]
 public class Noise : IDensityFunction
 {
     public virtual string Type => "minecraft:noise";
