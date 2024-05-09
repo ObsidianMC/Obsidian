@@ -13,13 +13,13 @@ public sealed class NoiseSetting
 
     public NoiseConfiguration Noise { get; set; }
 
-    public object NoiseRouter { get; set; }
+    public NoiseRouter NoiseRouter { get; set; }
 
     public bool OreVeinsEnabled { get; set; }
 
     public int SeaLevel { get; set; }
 
-    public object[] SpawnTarget { get; set; }
+    public ClimateParameter[] SpawnTarget { get; set; }
 
-    public object SurfaceRule { get; set; }
+    public ISurfaceRule SurfaceRule { get; set; }
 }
