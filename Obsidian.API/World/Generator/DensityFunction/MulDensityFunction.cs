@@ -1,7 +1,7 @@
 ﻿namespace Obsidian.API.World.Generator.DensityFunction;
 
 [DensityFunction("minecraft:mul")]
-public sealed class Mul : IDensityFunction
+public sealed class MulDensityFunction : IDensityFunction
 {
     public string Type => "minecraft:mul";
 

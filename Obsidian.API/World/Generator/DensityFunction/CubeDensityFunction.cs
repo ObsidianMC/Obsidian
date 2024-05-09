@@ -1,7 +1,7 @@
 ﻿namespace Obsidian.API.World.Generator.DensityFunction;
 
 [DensityFunction("minecraft:cube")]
-public sealed class Cube : IDensityFunction
+public sealed class CubeDensityFunction : IDensityFunction
 {
     public string Type => "minecraft:cube";
 

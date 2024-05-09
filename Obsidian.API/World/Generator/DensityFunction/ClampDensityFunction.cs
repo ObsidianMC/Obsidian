@@ -1,7 +1,7 @@
 ﻿namespace Obsidian.API.World.Generator.DensityFunction;
 
 [DensityFunction("minecraft:clamp")]
-public sealed class Clamp : IDensityFunction
+public sealed class ClampDensityFunction : IDensityFunction
 {
     public string Type => "minecraft:clamp";
 

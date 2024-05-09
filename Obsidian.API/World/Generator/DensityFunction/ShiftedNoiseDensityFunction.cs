@@ -1,7 +1,7 @@
 ﻿namespace Obsidian.API.World.Generator.DensityFunction;
 
 [DensityFunction("minecraft:shifted_noise")]
-public sealed class ShiftedNoise : Noise
+public sealed class ShiftedNoiseDensityFunction : NoiseDensityFunction
 {
     public override string Type => "minecraft:shifted_noise";
 

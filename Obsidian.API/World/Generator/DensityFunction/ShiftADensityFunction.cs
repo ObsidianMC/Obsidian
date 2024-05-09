@@ -1,7 +1,7 @@
 ﻿namespace Obsidian.API.World.Generator.DensityFunction;
 
 [DensityFunction("minecraft:shift_a")]
-public sealed class ShiftA : IDensityFunction
+public sealed class ShiftADensityFunction : IDensityFunction
 {
     public string Type => "minecraft:shift_a";
 

@@ -1,7 +1,7 @@
 ﻿namespace Obsidian.API.World.Generator.DensityFunction;
 
 [DensityFunction("minecraft:range_choice")]
-public sealed class RangeChoice : IDensityFunction
+public sealed class RangeChoiceDensityFunction : IDensityFunction
 {
     public string Type => "minecraft:range_choice";
 
