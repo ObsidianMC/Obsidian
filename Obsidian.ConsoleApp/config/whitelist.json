@@ -1,5 +1,5 @@
 {
-  "$schema": "https://api.tides.cc/files/obsidian-schemas/whitelist.json",
+  "$schema": "https://raw.githubusercontent.com/ObsidianMC/Obsidian/master/.schema/whitelist.json",
   "whitelistedPlayers": [],
   "whitelistedIps": []
 }
