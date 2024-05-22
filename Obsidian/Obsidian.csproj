@@ -70,6 +70,26 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <EmbeddedResource Remove="Assets\noise_settings\amplified.json" />
+	  <EmbeddedResource Remove="Assets\noise_settings\caves.json" />
+	  <EmbeddedResource Remove="Assets\noise_settings\end.json" />
+	  <EmbeddedResource Remove="Assets\noise_settings\floating_islands.json" />
+	  <EmbeddedResource Remove="Assets\noise_settings\large_biomes.json" />
+	  <EmbeddedResource Remove="Assets\noise_settings\nether.json" />
+	  <EmbeddedResource Remove="Assets\noise_settings\overworld.json" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="Assets\noise_settings\amplified.json" />
+	  <None Remove="Assets\noise_settings\caves.json" />
+	  <None Remove="Assets\noise_settings\end.json" />
+	  <None Remove="Assets\noise_settings\floating_islands.json" />
+	  <None Remove="Assets\noise_settings\large_biomes.json" />
+	  <None Remove="Assets\noise_settings\nether.json" />
+	  <None Remove="Assets\noise_settings\overworld.json" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<ProjectReference Include="..\Obsidian.API\Obsidian.API.csproj" />
 		<ProjectReference Include="..\Obsidian.SourceGenerators\Obsidian.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 		<ProjectReference Include="..\Obsidian.Nbt\Obsidian.Nbt.csproj" />

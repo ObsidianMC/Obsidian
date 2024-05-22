@@ -4,6 +4,8 @@ using System.Collections.Immutable;
 using System.IO;
 
 namespace Obsidian.SourceGenerators.Registry;
+
+[Generator]
 public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerator
 {
     private const string AttributeName = "DensityFunctionAttribute";
@@ -41,12 +43,7 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
         if (symbol == null)
             return null;
 
-        if (symbol.GetAttributes().Any(x => x.AttributeClass?.Name == AttributeName))
-        {
-            return syntax;
-        }
-
-        return null;
+        return symbol.GetAttributes().Any(x => x.AttributeClass?.Name == AttributeName) ? syntax : null;
     }
 
     private void Generate(SourceProductionContext context, Compilation compilation, ImmutableArray<ClassDeclarationSyntax> typeList,
