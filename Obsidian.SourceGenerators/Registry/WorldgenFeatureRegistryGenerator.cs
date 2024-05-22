@@ -6,7 +6,7 @@ using System.IO;
 namespace Obsidian.SourceGenerators.Registry;
 
 [Generator]
-public sealed partial class WorldgenRegistryGenerator : IIncrementalGenerator
+public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGenerator
 {
     private const string AttributeName = "TreePropertyAttribute";
     private const string CleanedAttributeName = "TreeProperty";

@@ -1,4 +1,5 @@
-﻿using Obsidian.SourceGenerators.Registry.Models;
+﻿using Microsoft.CodeAnalysis.CSharp;
+using Obsidian.SourceGenerators.Registry.Models;
 using System.Collections.Immutable;
 using System.IO;
 
@@ -108,7 +109,7 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
             densityFunctionTypes.Add(@class.ResourceLocation, @class);
         }
 
-        //BuildTreeType(densityFunctionTypes, baseFeatures, features, builder);
+        BuildNoiseSettings(densityFunctionTypes, features, builder);
 
         builder.EndScope();
 
