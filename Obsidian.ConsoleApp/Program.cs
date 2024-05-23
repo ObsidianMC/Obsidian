@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
@@ -22,6 +21,8 @@ Console.ForegroundColor = ConsoleColor.Black;
 Console.CursorVisible = false;
 Console.WriteLine(asciilogo);
 Console.ResetColor();
+
+await GenerateConfigFiles();
 
 var builder = Host.CreateApplicationBuilder();
 
