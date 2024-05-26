@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Configuration;
 using Obsidian.API.Logging;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Configuration;
@@ -12,10 +13,10 @@ namespace Obsidian.Net;
 public sealed class ClientHandler
 {
     private ConcurrentDictionary<int, IServerboundPacket> Packets { get; } = new ConcurrentDictionary<int, IServerboundPacket>();
-    private IServerConfiguration config;
+    private ServerConfiguration config;
     private readonly ILogger _logger;
 
-    public ClientHandler(IServerConfiguration config)
+    public ClientHandler(ServerConfiguration config)
     {
         this.config = config;
         var loggerProvider = new LoggerProvider(LogLevel.Error);
@@ -97,23 +98,22 @@ public sealed class ClientHandler
                 await HandleFromPoolAsync<ResourcePackResponse>(data, client);
                 break;
             default:
-            {
-                if (!Packets.TryGetValue(id, out var packet))
-                    return;
-
-                try
                 {
-                    packet.Populate(data);
-                    await packet.HandleAsync(client.server, client.Player);
-                }
-                catch (Exception e)
-                {
-                    if (config.VerboseExceptionLogging)
-                        _logger.LogError(e, e.Message);
-                }
+                    if (!Packets.TryGetValue(id, out var packet))
+                        return;
 
-                break;
-            }
+                    try
+                    {
+                        packet.Populate(data);
+                        await packet.HandleAsync(client.server, client.Player);
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.LogCritical(e, "{exceptionMessage}", e.Message);
+                    }
+
+                    break;
+                }
         }
     }
 
@@ -214,8 +214,7 @@ public sealed class ClientHandler
                 }
                 catch (Exception e)
                 {
-                    if (config.VerboseExceptionLogging)
-                        _logger.LogError(e, e.Message);
+                    _logger.LogCritical(e, "{exceptionMessage}", e.Message);
                 }
                 break;
         }
@@ -231,8 +230,7 @@ public sealed class ClientHandler
         }
         catch (Exception e)
         {
-            if (client.server.Configuration.VerboseExceptionLogging)
-                _logger.LogError(e, "{message}", e.Message);
+            _logger.LogCritical(e, "{exceptionMessage}", e.Message);
         }
         ObjectPool<T>.Shared.Return(packet);
     }

@@ -270,7 +270,7 @@ public sealed class Client : IDisposable
                     {
                         case 0x00:
                         {
-                            if (this.server.Configuration.CanThrottle)
+                            if (this.server.Configuration.Network.ShouldThrottle)
                             {
                                 string ip = ((IPEndPoint)connectionContext.RemoteEndPoint!).Address.ToString();
 
@@ -285,7 +285,7 @@ public sealed class Client : IDisposable
                                 }
                                 else
                                 {
-                                    Server.throttler.TryAdd(ip, DateTimeOffset.UtcNow.AddMilliseconds(this.server.Configuration.ConnectionThrottle));
+                                    Server.throttler.TryAdd(ip, DateTimeOffset.UtcNow.AddMilliseconds(this.server.Configuration.Network.ConnectionThrottle));
                                 }
                             }
 
@@ -411,7 +411,7 @@ public sealed class Client : IDisposable
     private async Task HandleLoginStartAsync(byte[] data)
     {
         var loginStart = LoginStart.Deserialize(data);
-        var username = this.server.Configuration.MulitplayerDebugMode ? $"Player{Globals.Random.Next(1, 999)}" : loginStart.Username;
+        var username = this.server.Configuration.Network.MulitplayerDebugMode ? $"Player{Globals.Random.Next(1, 999)}" : loginStart.Username;
         var world = (World)this.server.DefaultWorld;
 
         Logger.LogDebug("Received login request from user {Username}", username);
@@ -426,7 +426,7 @@ public sealed class Client : IDisposable
                 await DisconnectAsync("Account not found in the Mojang database");
                 return;
             }
-            else if (this.server.Configuration.WhitelistEnabled && !this.server.Configuration.Whitelisted.Any(x => x.Id == cachedUser.Uuid))
+            else if (this.server.Configuration.Whitelist && !this.server.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => x.Id == cachedUser.Uuid))
             {
                 await DisconnectAsync("You are not whitelisted on this server\nContact server administrator");
                 return;
@@ -445,7 +445,7 @@ public sealed class Client : IDisposable
                 VerifyToken = randomToken
             });
         }
-        else if (this.server.Configuration.WhitelistEnabled && !this.server.Configuration.Whitelisted.Any(x => x.Name == username))
+        else if (this.server.Configuration.Whitelist && !this.server.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => x.Name == username))
         {
             await DisconnectAsync("You are not whitelisted on this server\nContact server administrator");
         }
@@ -551,7 +551,6 @@ public sealed class Client : IDisposable
             SecondRecipeIds = RecipesRegistry.Recipes.Keys.ToList()
         });
 
-        await SendPlayerListDecoration();
         await SendPlayerInfoAsync();
         await this.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
 
@@ -621,7 +620,7 @@ public sealed class Client : IDisposable
     {
         long keepAliveId = time.ToUnixTimeMilliseconds();
         // first, check if there's any KeepAlives that are older than 30 seconds
-        if (missedKeepAlives.Any(x => keepAliveId - x > this.server.Configuration.KeepAliveTimeoutInterval))
+        if (missedKeepAlives.Any(x => keepAliveId - x > this.server.Configuration.Network.KeepAliveTimeoutInterval))
         {
             // kick player, failed to respond within 30s
             cancellationSource.Cancel();
@@ -772,14 +771,6 @@ public sealed class Client : IDisposable
         Logger.LogDebug("Sent server brand.");
     }
 
-    private async Task SendPlayerListDecoration()
-    {
-        var header = string.IsNullOrWhiteSpace(this.server.Configuration.Header) ? null : ChatMessage.Simple(this.server.Configuration.Header);
-        var footer = string.IsNullOrWhiteSpace(this.server.Configuration.Footer) ? null : ChatMessage.Simple(this.server.Configuration.Footer);
-
-        await QueuePacketAsync(new SetTabListHeaderAndFooterPacket(header, footer));
-        Logger.LogDebug("Sent player list decoration");
-    }
     #endregion Packet sending
 
     internal void Disconnect()

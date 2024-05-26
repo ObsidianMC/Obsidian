@@ -1,0 +1,279 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "IServerConfiguration",
+  "type": "object",
+  "x-abstract": true,
+  "additionalProperties": false,
+  "properties": {
+	"Logging": {
+      "$ref": "#/definitions/logging"
+    },
+    "baah": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "allowLan": {
+      "type": "boolean"
+    },
+    "motd": {
+      "type": "string"
+    },
+    "port": {
+      "type": "integer",
+      "format": "int32"
+    },
+    "address": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "onlineMode": {
+      "type": "boolean"
+    },
+    "maxPlayers": {
+      "type": "integer",
+      "format": "int32"
+    },
+    "pregenerateChunkRange": {
+      "type": "integer",
+      "format": "int32"
+    },
+    "serverListQuery": {
+      "$ref": "#/definitions/ServerListQuery"
+    },
+    "timeTickSpeedMultiplier": {
+      "type": "integer",
+      "format": "int32"
+    },
+    "allowOperatorRequests": {
+      "type": "boolean"
+    },
+    "enableRcon": {
+      "type": "boolean"
+    },
+    "whitelist": {
+      "type": "boolean"
+    },
+    "network": {
+      "$ref": "#/definitions/NetworkConfiguration"
+    },
+    "messages": {
+      "$ref": "#/definitions/MessagesConfiguration"
+    },
+    "rcon": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/definitions/RconConfiguration"
+        }
+      ]
+    },
+    "viewDistance": {
+      "type": "integer",
+      "format": "byte"
+    }
+  },
+  "definitions": {
+	"logLevelThreshold": {
+      "description": "Log level threshold.",
+      "type": "string",
+      "enum": [
+        "Trace",
+        "Debug",
+        "Information",
+        "Warning",
+        "Error",
+        "Critical",
+        "None"
+      ]
+    },
+    "logLevel": {
+      "title": "logging level options",
+      "description": "Log level configurations used when creating logs. Only logs that exceeds its matching log level will be enabled. Each log level configuration has a category specified by its JSON property name. For more information about configuring log levels, see https://docs.microsoft.com/aspnet/core/fundamentals/logging/#configure-logging.",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/logLevelThreshold"
+      }
+    },
+    "logging": {
+      "title": "logging options",
+      "type": "object",
+      "description": "Configuration for Microsoft.Extensions.Logging.",
+      "properties": {
+        "LogLevel": {
+          "$ref": "#/definitions/logLevel"
+        },
+        "Console": {
+          "properties": {
+            "LogLevel": {
+              "$ref": "#/definitions/logLevel"
+            },
+            "FormatterName": {
+              "description": "Name of the log message formatter to use. Defaults to 'simple'.",
+              "type": "string",
+              "default": "simple"
+            },
+            "FormatterOptions": {
+              "title": "formatter options",
+              "description": "Log message formatter options. Additional properties are available on the options depending on the configured formatter. The formatter is specified by FormatterName.",
+              "type": "object",
+              "properties": {
+                "IncludeScopes": {
+                  "description": "Include scopes when true. Defaults to false.",
+                  "type": "boolean",
+                  "default": false
+                },
+                "TimestampFormat": {
+                  "description": "Format string used to format timestamp in logging messages. Defaults to null.",
+                  "type": "string"
+                },
+                "UseUtcTimestamp": {
+                  "description": "Indication whether or not UTC timezone should be used to for timestamps in logging messages. Defaults to false.",
+                  "type": "boolean",
+                  "default": false
+                }
+              }
+            },
+            "LogToStandardErrorThreshold": {
+              "$ref": "#/definitions/logLevelThreshold",
+              "description": "The minimum level of messages are written to Console.Error."
+            }
+          }
+        },
+        "EventSource": {
+          "properties": {
+            "LogLevel": {
+              "$ref": "#/definitions/logLevel"
+            }
+          }
+        },
+        "Debug": {
+          "properties": {
+            "LogLevel": {
+              "$ref": "#/definitions/logLevel"
+            }
+          }
+        },
+        "EventLog": {
+          "properties": {
+            "LogLevel": {
+              "$ref": "#/definitions/logLevel"
+            }
+          }
+        },
+        "ElmahIo": {
+          "properties": {
+            "LogLevel": {
+              "$ref": "#/definitions/logLevel"
+            }
+          }
+        },
+        "ElmahIoBreadcrumbs": {
+          "properties": {
+            "LogLevel": {
+              "$ref": "#/definitions/logLevel"
+            }
+          }
+        }
+      },
+      "additionalProperties": {
+        "title": "provider logging settings",
+        "type": "object",
+        "description": "Logging configuration for a provider. The provider name must match the configuration's JSON property property name.",
+        "properties": {
+          "LogLevel": {
+            "$ref": "#/definitions/logLevel"
+          }
+        }
+      }
+    },
+    "ServerListQuery": {
+      "type": "string",
+      "description": "",
+      "x-enumNames": [
+        "Full",
+        "Anonymized",
+        "Disabled"
+      ],
+      "enum": [
+        "Full",
+        "Anonymized",
+        "Disabled"
+      ]
+    },
+    "NetworkConfiguration": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "shouldThrottle": {
+          "type": "boolean"
+        },
+        "keepAliveInterval": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "keepAliveTimeoutInterval": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "connectionThrottle": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "mulitplayerDebugMode": {
+          "type": "boolean"
+        }
+      }
+    },
+    "MessagesConfiguration": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "join": {
+          "type": "string"
+        },
+        "leave": {
+          "type": "string"
+        },
+        "notWhitelisted": {
+          "type": "string"
+        },
+        "serverFull": {
+          "type": "string"
+        },
+        "outdatedClient": {
+          "type": "string"
+        },
+        "outdatedServer": {
+          "type": "string"
+        }
+      }
+    },
+    "RconConfiguration": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "password": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "port": {
+          "type": "integer"
+        },
+        "broadcastToOps": {
+          "type": "boolean"
+        },
+        "requireEncryption": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

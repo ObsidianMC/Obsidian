@@ -1,9 +1,10 @@
 ﻿using Obsidian.API.Boss;
+using Obsidian.API.Configuration;
 using Obsidian.API.Crafting;
 
 namespace Obsidian.API;
 
-public interface IServer
+public interface IServer : IDisposable
 {
     public string Version { get; }
     public int Port { get; }
@@ -13,7 +14,7 @@ public interface IServer
     public IEnumerable<IPlayer> Players { get; }
     public IOperatorList Operators { get; }
     public IWorld DefaultWorld { get; }
-    public IServerConfiguration Configuration { get; }
+    public ServerConfiguration Configuration { get; }
 
     public IScoreboardManager ScoreboardManager { get; }
 
