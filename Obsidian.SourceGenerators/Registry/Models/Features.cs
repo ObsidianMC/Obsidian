@@ -4,7 +4,7 @@ using System.Text.Json;
 namespace Obsidian.SourceGenerators.Registry.Models;
 internal sealed class Features
 {
-    public TreeFeature[] TreeFeatures { get; private set; } = [];
+    public BaseFeature[] TreeFeatures { get; private set; } = [];
 
     public static Features Get(ImmutableArray<(string name, string json)> files)
     {
@@ -15,11 +15,11 @@ internal sealed class Features
         };
     }
 
-    private static TreeFeature[] ParseTreeFeatures(string json)
+    private static BaseFeature[] ParseTreeFeatures(string json)
     {
          var dictionary = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json)!;
 
-        var features = new List<TreeFeature>();
+        var features = new List<BaseFeature>();
 
         foreach(var kv in dictionary)
         {

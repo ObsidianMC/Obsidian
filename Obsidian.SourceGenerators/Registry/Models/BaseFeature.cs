@@ -1,7 +1,7 @@
 ﻿using System.Text.Json;
 
 namespace Obsidian.SourceGenerators.Registry.Models;
-internal sealed class TreeFeature
+internal sealed class BaseFeature
 {
     public string Name { get; set; } = default!;
 

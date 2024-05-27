@@ -5,9 +5,12 @@ public sealed class ShiftedNoiseDensityFunction : NoiseDensityFunction
 {
     public override string Type => "minecraft:shifted_noise";
 
-    public required double ShiftX { get; init; }
-    public required double ShiftY { get; init; }
-    public required double ShiftZ { get; init; }
+    public required IDensityFunction ShiftX { get; init; }
+    public required IDensityFunction ShiftY { get; init; }
+    public required IDensityFunction ShiftZ { get; init; }
 
-    public override double GetValue(double x, double y, double z) => base.GetValue(x + ShiftX, y + ShiftY, z + ShiftZ);
+    public override double GetValue(double x, double y, double z) => base.GetValue(
+        x + ShiftX.GetValue(x, y, z),
+        y + ShiftY.GetValue(x, y, z),
+        z + ShiftZ.GetValue(x, y, z));
 }

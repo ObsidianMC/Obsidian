@@ -38,7 +38,5 @@ public sealed class TreeFeature : ConfiguredFeatureBase
 
         var min = Math.Min(blockPos.Y, context.PlacementLocation.Y);
         var max = Math.Max(blockPos.Y, context.PlacementLocation.Y) + treeHeight + 1;
-
-        if(min >= context.)
     }
 }

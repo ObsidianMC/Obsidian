@@ -1,7 +1,9 @@
 ﻿using Microsoft.CodeAnalysis.CSharp;
 using Obsidian.SourceGenerators.Registry.Models;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.IO;
+using System.Text.Json;
 
 namespace Obsidian.SourceGenerators.Registry;
 
@@ -51,7 +53,7 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
     {
         var asm = compilation.AssemblyName;
 
-        var features = Features.Get(files);
+        var noises = Noises.Get(files);
 
         var classes = new List<TypeInformation>();
 
@@ -81,10 +83,10 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
             }
         }
 
-        this.GenerateClasses(classes, context, features);
+        this.GenerateClasses(classes, context, noises);
     }
 
-    private void GenerateClasses(List<TypeInformation> classes, SourceProductionContext context, Features features)
+    private void GenerateClasses(List<TypeInformation> classes, SourceProductionContext context, Noises noises)
     {
         var builder = new CodeBuilder()
             .Using("Obsidian.API.World.Generator")
@@ -106,11 +108,10 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
             densityFunctionTypes.Add(@class.ResourceLocation, @class);
         }
 
-        BuildNoiseSettings(densityFunctionTypes, features, builder);
+        BuildNoiseSettings(densityFunctionTypes, noises, builder);
 
         builder.EndScope();
 
         context.AddSource("NoiseRegistry.g.cs", builder.ToString());
     }
-
 }
