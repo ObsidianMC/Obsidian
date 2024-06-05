@@ -1,0 +1,11 @@
+﻿namespace Obsidian.API.World.Generator.DensityFunctions;
+
+//TODO
+public sealed class Cache2DDensityFunction : IDensityFunction
+{
+    public string Type => "minecraft:cache_2d";
+
+    public required IDensityFunction Argument { get; init; }
+
+    public double GetValue(double x, double y, double z) => this.Argument.GetValue(x, y, z);
+}

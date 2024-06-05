@@ -1,7 +1,8 @@
 ﻿namespace Obsidian.API.World.Generator.DensityFunctions;
 
 [DensityFunction("minecraft:add")]
-public sealed class Add : IDensityFunction
+[DensityFunction("minecraft:overworld_large_biomes/sloped_cheese")]
+public sealed class AddDensityFunction : IDensityFunction
 {
     public string Type => "minecraft:add";
 
