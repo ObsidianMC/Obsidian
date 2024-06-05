@@ -21,8 +21,6 @@ public partial class WorldgenNoiseRegistryGenerator
             var sanitizedName = setting.Name.ToPascalCase();
             builder.Type($"public static readonly NoiseSetting {sanitizedName} = new()");
 
-            builder.Line($"Identifier = \"{setting.Name}\", ");
-
             foreach (var property in setting.Properties)
             {
                 var elementName = property.Name;
@@ -50,21 +48,46 @@ public partial class WorldgenNoiseRegistryGenerator
     }
 
     private static void AppendChildProperty(Dictionary<string, TypeInformation> densityFunctionTypes, string elementName,
-        JsonElement element, CodeBuilder builder, bool newLine = false, bool isDensityFunction = false)
+        JsonElement element, CodeBuilder builder, bool newLine = false, bool isDensityFunction = false, TypeInformation? densityFunction = null)
     {
         switch (element.ValueKind)
         {
             case JsonValueKind.String:
+                if (TryAppendTypeProperty(densityFunctionTypes, elementName, element, builder, newLine))
+                    break;
+
                 builder.AppendSimple($"{elementName.ToPascalCase()} = \"{element.GetString()}\", ", newLine);
                 break;
             case JsonValueKind.Number:
-                if (isDensityFunction)
-                    builder.AppendSimple($"{elementName.ToPascalCase()} = new ConstantDensityFunction {{ Argument = ", newLine);
-                else
-                    builder.AppendSimple($"{elementName.ToPascalCase()} = ", newLine);
+                if (isDensityFunction && densityFunction is TypeInformation featureType)
+                {
+                    var members = featureType.GetProperties();
 
-                AppendUnknownNumber(builder, element, newLine: false);
-                builder.Append("}, ");
+                    var member = members.FirstOrDefault(x => x.Name == elementName.ToPascalCase());
+
+                    if (member != null)
+                    {
+                        var property = (IPropertySymbol)member;
+
+                        if (numbers.Contains(property.Type.Name))
+                        {
+                            AppendNumber(builder, elementName, element, property.Type.Name, newLine);
+                            break;
+                        }
+                    }
+
+                    builder.Indent().Append($"{elementName.ToPascalCase()} = new ConstantDensityFunction {{ Argument = ");
+                    AppendUnknownNumber(builder, element, false);
+                    builder.Append("}, ").Line();
+
+                    break;
+                }
+
+                builder.Indent().Append($"{elementName.ToPascalCase()} = ");
+
+                AppendUnknownNumber(builder, element, false);
+
+                builder.Line();
                 break;
             case JsonValueKind.Array:
                 builder.AppendSimple($"{elementName.ToPascalCase()} = [], ", newLine);
@@ -81,17 +104,17 @@ public partial class WorldgenNoiseRegistryGenerator
                     if (TryAppendStateProperty(elementName, element, builder))
                         break;
 
-                    builder.AppendSimple($"{elementName.ToPascalCase()} = new() {{ ", newLine);
+                    builder.Type($"{elementName.ToPascalCase()} = new()");
 
                     foreach (var childProperty in element.EnumerateObject())
                     {
                         var childName = childProperty.Name;
                         var childValue = childProperty.Value;
 
-                        AppendChildProperty(densityFunctionTypes, childName, childValue, builder);
+                        AppendChildProperty(densityFunctionTypes, childName, childValue, builder, newLine);
                     }
 
-                    builder.Append("}, ");
+                    builder.EndScope(", ", false);
 
                     break;
                 }
@@ -112,20 +135,20 @@ public partial class WorldgenNoiseRegistryGenerator
             if (value is not TypeInformation featureType)
                 return false;
 
-            var name = elementName != null ? $"{elementName.ToPascalCase()} = new {featureType.Symbol.Name}() {{" :
+            var name = elementName != null ? $"{elementName.ToPascalCase()} = new {featureType.Symbol.Name}()" :
                 string.Empty;
 
-            builder.Indent().Append(name);
+            builder.Type(name);
 
             foreach (var childProperty in element.EnumerateObject().Where(x => x.Name != "type"))
             {
                 var childName = childProperty.Name;
                 var childValue = childProperty.Value;
 
-                AppendChildProperty(densityFunctionTypes, childName, childValue, builder, true);
+                AppendChildProperty(densityFunctionTypes, childName, childValue, builder, true, true, featureType);
             }
 
-            builder.Append("}, ");
+            builder.EndScope(",", false);
 
             if (newLine)
                 builder.Line();
@@ -142,7 +165,7 @@ public partial class WorldgenNoiseRegistryGenerator
 
         if (isState)
         {
-            builder.Append($"{elementName.ToPascalCase()} = new() {{ ");
+            builder.Indent().Append($"{elementName.ToPascalCase()} = new() {{ ");
 
             builder.Append($"Name = \"{element.GetProperty("Name")}\", ");
 
@@ -161,7 +184,7 @@ public partial class WorldgenNoiseRegistryGenerator
                 builder.Append("}");
             }
 
-            builder.Append("}, ");
+            builder.Append("}, ").Line();
         }
 
         return isState;

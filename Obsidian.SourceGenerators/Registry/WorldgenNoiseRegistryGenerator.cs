@@ -57,7 +57,7 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
 
         var classes = new List<TypeInformation>();
 
-        if (asm != "Obsidian")
+        if (asm != "Obsidian.API")
             return;
 
         foreach (var @class in typeList)
@@ -97,7 +97,7 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
             .Using("Obsidian.Providers.BlockStateProviders")
             .Using("Obsidian.WorldData.BlockPredicates")
             .Using("System.Collections.Frozen")
-            .Namespace("Obsidian.Registries.Noise")
+            .Namespace("Obsidian.API.Registries.Noise")
             .Line()
             .Type("public static class NoiseRegistry");
 
