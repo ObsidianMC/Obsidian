@@ -37,15 +37,10 @@
 		<AdditionalFiles Include="..\Obsidian\Assets\blocks.json" Link="Assets\blocks.json" />
 		<AdditionalFiles Include="..\Obsidian\Assets\items.json" Link="Assets\items.json" />
 		<AdditionalFiles Include="..\Obsidian\Assets\fluids.json" Link="Assets\fluids.json" />
-		<AdditionalFiles Include="..\Obsidian\Assets\features\trees.json" Link="Assets\features\trees.json" />
 		
-		<AdditionalFiles Include="..\Obsidian\Assets\noise_settings\end.json" Link="Assets\noise_settings\end.json" />
-		<AdditionalFiles Include="..\Obsidian\Assets\noise_settings\amplified.json" Link="Assets\noise_settings\amplified.json" />
-		<AdditionalFiles Include="..\Obsidian\Assets\noise_settings\caves.json" Link="Assets\noise_settings\caves.json" />
-		<AdditionalFiles Include="..\Obsidian\Assets\noise_settings\floating_islands.json" Link="Assets\noise_settings\floating_islands.json" />
-		<AdditionalFiles Include="..\Obsidian\Assets\noise_settings\large_biomes.json" Link="Assets\noise_settings\large_biomes.json" />
-		<AdditionalFiles Include="..\Obsidian\Assets\noise_settings\nether.json" Link="Assets\noise_settings\nether.json" />
-		<AdditionalFiles Include="..\Obsidian\Assets\noise_settings\overworld.json" Link="Assets\noise_settings\overworld.json" />
+		<AdditionalFiles Include="..\Obsidian\Assets\worldgen\**\*.*">
+			<Link>Assets\worldgen\%(RecursiveDir)/%(FileName)%(Extension)</Link>
+		</AdditionalFiles>
 	</ItemGroup>
 
 	<ItemGroup>
