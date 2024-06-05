@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API.World.Generator.DensityFunctions;
 
-//TODO
+[DensityFunction("minecraft:cache_2d")]
 public sealed class Cache2DDensityFunction : IDensityFunction
 {
     public string Type => "minecraft:cache_2d";

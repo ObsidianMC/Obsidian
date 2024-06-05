@@ -1,4 +1,5 @@
 ﻿namespace Obsidian.API.World.Generator.DensityFunctions;
+
 [DensityFunction("minecraft:old_blended_noise")]
 public class OldBlendedNoiseDensityFunction : IDensityFunction
 {

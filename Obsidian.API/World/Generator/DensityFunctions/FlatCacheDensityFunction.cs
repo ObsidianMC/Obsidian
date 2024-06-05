@@ -1,7 +1,5 @@
 ﻿namespace Obsidian.API.World.Generator.DensityFunctions;
 
-[DensityFunction("minecraft:shift_x")]
-[DensityFunction("minecraft:shift_z")]
 [DensityFunction("minecraft:flat_cache")]
 public sealed class FlatCacheDensityFunction : IDensityFunction
 {
