@@ -1,11 +1,13 @@
 ﻿namespace Obsidian.API.World.Generator.SurfaceConditions;
+
+[SurfaceCondition("minecraft:surface_gradient")]
 public sealed record class VerticalGradient : ISurfaceCondition
 {
     public string Type => "minecraft:surface_gradient";
 
-    public string RandomName { get; set; }
+    public required string RandomName { get; init; }
 
-    public VerticalAnchor TrueAtAndBelow { get; set; }
+    public required VerticalAnchor TrueAtAndBelow { get; init; }
 
-    public VerticalAnchor FalseAtAndBelow { get; set; }
+    public required VerticalAnchor FalseAtAndBelow { get; init; }
 }

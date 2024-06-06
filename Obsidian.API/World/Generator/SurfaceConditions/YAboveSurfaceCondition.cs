@@ -1,11 +1,13 @@
 ﻿namespace Obsidian.API.World.Generator.SurfaceConditions;
+
+[SurfaceCondition("minecraft:y_above")]
 public sealed record class YAboveSurfaceCondition : ISurfaceCondition
 {
     public string Type => "minecraft:y_above";
 
-    public VerticalAnchor Anchor { get; set; }
+    public required VerticalAnchor Anchor { get; init; }
 
-    public int SurfaceDepthMultiplier { get; set; }
+    public required int SurfaceDepthMultiplier { get; init; }
 
-    public bool AddStoneDepth { get; set; }
+    public required bool AddStoneDepth { get; init; }
 }

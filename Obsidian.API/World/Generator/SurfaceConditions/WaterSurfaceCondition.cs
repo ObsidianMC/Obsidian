@@ -1,11 +1,13 @@
 ﻿namespace Obsidian.API.World.Generator.SurfaceConditions;
+
+[SurfaceCondition("minecraft:water")]
 public sealed record class WaterSurfaceCondition : ISurfaceCondition
 {
     public string Type => "minecraft:water";
 
-    public int Offset { get; set; }
+    public required int Offset { get; init; }
 
-    public int SurfaceDepthMultiplier { get; set; }
+    public required int SurfaceDepthMultiplier { get; init; }
 
-    public bool AddStoneDepth { get; set; }
+    public required bool AddStoneDepth { get; init; }
 }

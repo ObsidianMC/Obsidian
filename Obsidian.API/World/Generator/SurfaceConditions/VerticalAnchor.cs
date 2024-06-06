@@ -1,4 +1,5 @@
 ﻿namespace Obsidian.API.World.Generator.SurfaceConditions;
+
 public readonly struct VerticalAnchor
 {
     public int? Absolute { get; init; }

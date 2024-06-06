@@ -1,11 +1,13 @@
 ﻿namespace Obsidian.API.World.Generator.SurfaceConditions;
+
+[SurfaceCondition("minecraft:noise_threshold")]
 public sealed record class NoiseThresholdSurfaceCondition : ISurfaceCondition
 {
     public string Type => "minecraft:noise_threshold";
 
-    public string Noise { get; set; }
+    public required INoise Noise { get; init; }
 
-    public double MinThreshold { get; set; }
+    public required double MinThreshold { get; init; }
 
-    public double MaxThreshold { get; set; }
+    public required double MaxThreshold { get; init; }
 }
