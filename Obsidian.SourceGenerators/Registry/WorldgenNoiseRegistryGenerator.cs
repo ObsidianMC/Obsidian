@@ -8,8 +8,14 @@ namespace Obsidian.SourceGenerators.Registry;
 [Generator]
 public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerator
 {
-    private const string AttributeName = "DensityFunctionAttribute";
-    private const string CleanedAttributeName = "DensityFunction";
+    private const string DensityFunctionAttributeName = "DensityFunctionAttribute";
+    private const string DensityFunctionCleanedAttributeName = "DensityFunction";
+
+    private const string SurfaceRuleAttributeName = "SurfaceRuleAttribute";
+    private const string SurfaceRuleCleanedAttributeName = "SurfaceRule";
+
+    private const string SurfaceConditionAttributeName = "SurfaceConditionAttribute";
+    private const string SurfaceConditionCleanedAttributeName = "SurfaceCondition";
 
     private static readonly int WorldGenLength = "worldgen".Length;
 
@@ -30,10 +36,10 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
                return (name, content);
            });
 
-        IncrementalValuesProvider<ClassDeclarationSyntax> classDeclarations = ctx.SyntaxProvider
+        IncrementalValuesProvider<TypeDeclarationSyntax> classDeclarations = ctx.SyntaxProvider
             .CreateSyntaxProvider(
-                static (node, _) => node is ClassDeclarationSyntax syntax,
-                static (context, _) => TransformData(context.Node as ClassDeclarationSyntax, context))
+                static (node, _) => node is TypeDeclarationSyntax,
+                static (context, _) => TransformData(context.Node as TypeDeclarationSyntax, context))
             .Where(static m => m is not null)!;
 
         var compilation = ctx.CompilationProvider.Combine(classDeclarations.Collect()).Combine(jsonFiles.Collect());
@@ -42,7 +48,7 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
             (spc, src) => this.Generate(spc, src.Left.Left, src.Left.Right, src.Right));
     }
 
-    private static ClassDeclarationSyntax? TransformData(ClassDeclarationSyntax? syntax, GeneratorSyntaxContext ctx)
+    private static TypeDeclarationSyntax? TransformData(TypeDeclarationSyntax? syntax, GeneratorSyntaxContext ctx)
     {
         if (syntax is null)
             return null;
@@ -52,10 +58,11 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
         if (symbol == null)
             return null;
 
-        return symbol.GetAttributes().Any(x => x.AttributeClass?.Name == AttributeName) ? syntax : null;
+        return symbol.GetAttributes().Any(x => IsAttribute(x.AttributeClass?.Name)) 
+            ? syntax : null;
     }
 
-    private void Generate(SourceProductionContext context, Compilation compilation, ImmutableArray<ClassDeclarationSyntax> typeList,
+    private void Generate(SourceProductionContext context, Compilation compilation, ImmutableArray<TypeDeclarationSyntax> typeList,
         ImmutableArray<(string name, string json)> files)
     {
         var asm = compilation.AssemblyName;
@@ -75,7 +82,8 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
             if (symbol is null)
                 continue;
 
-            var attributes = @class.AttributeLists.SelectMany(x => x.Attributes).Where(x => x.Name.ToString() == CleanedAttributeName);
+            var attributes = @class.AttributeLists.SelectMany(x => x.Attributes)
+                .Where(x => IsCleanedAttribute(x.Name.ToString()));
 
             if (attributes is null)
                 continue;
@@ -155,4 +163,10 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
 
         context.AddSource($"NoiseRegistry.{sectionName}.g.cs", builder.ToString());
     }
+
+    private static bool IsAttribute(string? value) =>
+        value is DensityFunctionAttributeName or SurfaceRuleAttributeName or SurfaceConditionAttributeName;
+
+    private static bool IsCleanedAttribute(string? value) =>
+        value is DensityFunctionCleanedAttributeName or SurfaceRuleCleanedAttributeName or SurfaceConditionCleanedAttributeName;
 }
