@@ -35,7 +35,7 @@ public partial class WorldgenNoiseRegistryGenerator
             
         }
 
-        foreach (var group in groups)
+        foreach (var group in groups.OrderBy(x => x.Key))
         {
             var hasGroup = group.Key != Default;
 

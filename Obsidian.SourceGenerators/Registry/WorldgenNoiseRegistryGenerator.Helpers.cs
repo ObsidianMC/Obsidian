@@ -20,7 +20,7 @@ public partial class WorldgenNoiseRegistryGenerator
             case JsonValueKind.Number:
                 if (isDensityFunction)
                 {
-                    if(densityFunction is TypeInformation featureType)
+                    if (densityFunction is TypeInformation featureType)
                     {
                         var members = featureType.GetProperties();
 
@@ -52,12 +52,21 @@ public partial class WorldgenNoiseRegistryGenerator
                 builder.Line();
                 break;
             case JsonValueKind.Array:
-                builder.Indent().Append($"{elementName.ToPascalCase()} = [");
+                var hasObjects = element.EnumerateArray().FirstOrDefault().ValueKind == JsonValueKind.Object;
 
-                foreach(var arrayItem in element.EnumerateArray())
-                    AppendArrayItem(cleanedNoises, arrayItem, builder);
+                if (hasObjects)
+                    builder.Indent().Append($"{elementName.ToPascalCase()} =").Line().Indent().Append("[");
+                else
+                    builder.Indent().Append($"{elementName.ToPascalCase()} = [");
 
-                builder.Append("],").Line();
+                foreach (var arrayItem in element.EnumerateArray())
+                    AppendArrayItem(cleanedNoises, arrayItem, builder, hasObjects);
+
+                if (hasObjects)
+                    builder.Line("],");
+                else
+                    builder.Append("],").Line();
+
                 break;
             case JsonValueKind.True:
             case JsonValueKind.False:
@@ -82,13 +91,12 @@ public partial class WorldgenNoiseRegistryGenerator
                     }
 
                     builder.EndScope(", ", false);
-
                     break;
                 }
         }
     }
 
-    private static void AppendArrayItem(CleanedNoises cleanedNoises, JsonElement element, CodeBuilder builder)
+    private static void AppendArrayItem(CleanedNoises cleanedNoises, JsonElement element, CodeBuilder builder, bool hasObjects = false)
     {
         switch (element.ValueKind)
         {
@@ -103,7 +111,7 @@ public partial class WorldgenNoiseRegistryGenerator
 
                 //foreach (var arrayItem in element.EnumerateArray())
                 //    AppendArrayItem(cleanedNoises, arrayItem, builder);
-                
+
                 break;
             case JsonValueKind.True:
             case JsonValueKind.False:
@@ -111,17 +119,20 @@ public partial class WorldgenNoiseRegistryGenerator
                 break;
             default:
                 {
-                    //builder.Type("new()");
+                    if (TryAppendTypeProperty(cleanedNoises, null, element, builder, hasObjects))
+                        break;
 
-                    //foreach (var childProperty in element.EnumerateObject())
-                    //{
-                    //    var childName = childProperty.Name;
-                    //    var childValue = childProperty.Value;
+                    builder.Line().Type("new()");
 
-                    //    AppendChildProperty(cleanedNoises, childName, childValue, builder);
-                    //}
+                    foreach (var childProperty in element.EnumerateObject())
+                    {
+                        var childName = childProperty.Name;
+                        var childValue = childProperty.Value;
 
-                    //builder.EndScope(", ", false);
+                        AppendChildProperty(cleanedNoises, childName, childValue, builder, hasObjects);
+                    }
+
+                    builder.EndScope(", ", false);
 
                     break;
                 }
@@ -154,7 +165,7 @@ public partial class WorldgenNoiseRegistryGenerator
         else if (element.ValueKind == JsonValueKind.Object && cleanedNoises.WorldgenProperties.TryGetValue(typeName, out var featureType))
         {
             var name = elementName != null ? $"{elementName.ToPascalCase()} = new {featureType.Symbol.Name}()" :
-                string.Empty;
+                $"new {featureType.Symbol.Name}()";
 
             builder.Type(name);
 

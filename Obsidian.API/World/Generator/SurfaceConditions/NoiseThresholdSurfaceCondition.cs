@@ -7,7 +7,7 @@ public sealed record class NoiseThresholdSurfaceCondition : ISurfaceCondition
 
     public required INoise Noise { get; init; }
 
-    public required double MinThreshold { get; init; }
+    public required float MinThreshold { get; init; }
 
-    public required double MaxThreshold { get; init; }
+    public required float MaxThreshold { get; init; }
 }
