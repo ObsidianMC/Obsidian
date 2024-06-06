@@ -103,14 +103,14 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
 
     private void GenerateClasses(List<TypeInformation> classes, SourceProductionContext context, Noises noises)
     {
-        var densityFunctionTypes = new Dictionary<string, TypeInformation>();
+        var worldgenProperties = new Dictionary<string, TypeInformation>();
         var staticDensityFunctions = new Dictionary<string, string>();
         var noiseTypes = new Dictionary<string, string>();
         
 
         foreach (var @class in classes)
         {
-            densityFunctionTypes.Add(@class.ResourceLocation, @class);
+            worldgenProperties.Add(@class.ResourceLocation, @class);
         }
 
         foreach (var func in noises.DensityFunctions)
@@ -137,7 +137,7 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
             noiseTypes.Add(identifier, callableName);
         }
 
-        var cleanedNoises = new CleanedNoises(densityFunctionTypes, staticDensityFunctions, noiseTypes);
+        var cleanedNoises = new CleanedNoises(worldgenProperties, staticDensityFunctions, noiseTypes);
 
         InitSection("Noises", context, (CodeBuilder builder) => BuildNoise(cleanedNoises, noises, builder));
         InitSection("DensityFunctions", context, (CodeBuilder builder) => BuildDensityFunctions(cleanedNoises, noises, builder));

@@ -52,7 +52,15 @@ public partial class WorldgenNoiseRegistryGenerator
                 foreach (var function in secondGroup.Value)
                 {
                     if (function.Properties.Count == 0)
+                    {
+                        builder.Type("public static readonly IDensityFunction Zero = new ConstantDensityFunction()");
+
+                        builder.Line("Argument = 0.0d");
+
+                        builder.EndScope(true);
+
                         continue;
+                    }
 
                     var typeName = function.Name.Replace(DensityFunction, string.Empty);
                     var split = typeName.Split('\\');
@@ -61,7 +69,7 @@ public partial class WorldgenNoiseRegistryGenerator
                     var sanitizedName = string.Join(string.Empty, split.Skip(skipAmount)).ToPascalCase();
 
                     var functionTypeName = function.Properties.First(x => x.Name == "type").Value.GetString()!;
-                    if (!cleanedNoises.DensityFunctionTypes.TryGetValue(functionTypeName, out var typeInformation))
+                    if (!cleanedNoises.WorldgenProperties.TryGetValue(functionTypeName, out var typeInformation))
                         continue;
 
                     builder.Type($"public static readonly IDensityFunction {sanitizedName} = new {typeInformation.Symbol.Name}()");

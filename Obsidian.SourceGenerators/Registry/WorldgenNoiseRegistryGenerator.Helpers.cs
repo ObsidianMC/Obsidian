@@ -151,7 +151,7 @@ public partial class WorldgenNoiseRegistryGenerator
 
             builder.Line(name);
         }
-        else if (element.ValueKind == JsonValueKind.Object && cleanedNoises.DensityFunctionTypes.TryGetValue(typeName, out var featureType))
+        else if (element.ValueKind == JsonValueKind.Object && cleanedNoises.WorldgenProperties.TryGetValue(typeName, out var featureType))
         {
             var name = elementName != null ? $"{elementName.ToPascalCase()} = new {featureType.Symbol.Name}()" :
                 string.Empty;

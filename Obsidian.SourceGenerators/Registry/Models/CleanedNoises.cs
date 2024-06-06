@@ -1,15 +1,8 @@
 ﻿namespace Obsidian.SourceGenerators.Registry.Models;
-public readonly struct CleanedNoises
+public readonly struct CleanedNoises(Dictionary<string, TypeInformation> worldgenProperties, Dictionary<string, string> staticDensityFunctions,
+    Dictionary<string, string> noiseTypes)
 {
-    public Dictionary<string, TypeInformation> DensityFunctionTypes { get; }
-    public Dictionary<string, string> StaticDensityFunctions { get; }
-    public Dictionary<string, string> NoiseTypes { get; }
-
-    public CleanedNoises(Dictionary<string, TypeInformation> densityFunctionTypes, Dictionary<string, string> staticDensityFunctions,
-        Dictionary<string, string> noiseTypes)
-    {
-        this.DensityFunctionTypes = densityFunctionTypes;
-        this.StaticDensityFunctions = staticDensityFunctions;
-        this.NoiseTypes = noiseTypes;
-    }
+    public Dictionary<string, TypeInformation> WorldgenProperties { get; } = worldgenProperties;
+    public Dictionary<string, string> StaticDensityFunctions { get; } = staticDensityFunctions;
+    public Dictionary<string, string> NoiseTypes { get; } = noiseTypes;
 }
