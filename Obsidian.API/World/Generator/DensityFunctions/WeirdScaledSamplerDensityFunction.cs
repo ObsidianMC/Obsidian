@@ -7,5 +7,9 @@ public sealed class WeirdScaledSamplerDensityFunction : IDensityFunction
 
     public required IDensityFunction Input { get; init; }
 
+    public required string RarityValueMapper { get; init; }
+
+    public required INoise Noise { get; init; }
+
     public double GetValue(double x, double y, double z) => throw new NotImplementedException();
 }

@@ -5,9 +5,9 @@ public class OldBlendedNoiseDensityFunction : IDensityFunction
 {
     public virtual required double SmearScaleMultiplier { get; init; }
 
-    public virtual required double XZFactor { get; init; }
+    public virtual required double XzFactor { get; init; }
 
-    public virtual required double XZScale { get; init; }
+    public virtual required double XzScale { get; init; }
 
     public virtual required double YFactor { get; init; }
 
