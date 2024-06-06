@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Linq;
+using System.Text.Json;
 
 namespace Obsidian.SourceGenerators.Registry;
 
@@ -11,15 +12,15 @@ internal static class NameHelper
 
     public static string ToPascalCase(this string value)
     {
-        // Alternative implementation:
-        // var textInfo = System.Globalization.CultureInfo.CurrentCulture.TextInfo;
-        // return string.Join("", snakeCase.Split('_').Select(s => textInfo.ToTitleCase(s)));
-
         int spaceCount = 0;
         for (int i = 0; i < value.Length; i++)
         {
             if (!char.IsLetterOrDigit(value[i]))
                 spaceCount++;
+
+            //Checks if any of the chars is upper as if they are its assumed the string is in camelCase format.
+            if (char.IsUpper(value[i]))
+                return char.ToUpper(value[0]) + value.Substring(1);
         }
 
         var result = new char[value.Length - spaceCount];
@@ -45,10 +46,6 @@ internal static class NameHelper
 
     public static string ToTitleCase(this string snakeCase)
     {
-        // Alternative implementation:
-        // var textInfo = System.Globalization.CultureInfo.CurrentCulture.TextInfo;
-        // return string.Join(" ", snakeCase.Split('_').Select(s => textInfo.ToTitleCase(s)));
-
         var result = new char[snakeCase.Length];
 
         bool wordStart = true;

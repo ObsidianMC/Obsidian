@@ -13,7 +13,7 @@ public sealed class NoiseRouter
 
     public IDensityFunction FluidLevelFloodedness { get; set; }
 
-    public IDensityFunction FLuidLevelSpread { get; set; }
+    public IDensityFunction FluidLevelSpread { get; set; }
 
     public IDensityFunction InitialDensityWithoutJaggedness { get; set; }
 
