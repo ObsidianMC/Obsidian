@@ -9,7 +9,7 @@ public partial class BaseNoise : INoise
 
     public required double FirstOctave { get; init; }
 
-    public required int Seed { get; init; }
+    public int Seed { get; init; }
 
     public double GetValue(double x, double y, double z)
     {

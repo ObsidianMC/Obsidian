@@ -40,6 +40,9 @@ public sealed class CodeBuilder
         return AppendLine($"using {library};");
     }
 
+    public CodeBuilder StaticUsing(string library) =>
+        AppendLine($"using static {library};");
+
     public CodeBuilder Namespace(string name)
     {
         return AppendLine($"namespace {name};");

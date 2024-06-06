@@ -2,8 +2,6 @@
 using Obsidian.SourceGenerators.Registry.Models;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.IO;
-using System.Text.Json;
 
 namespace Obsidian.SourceGenerators.Registry;
 
@@ -12,7 +10,8 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
 {
     private const string AttributeName = "DensityFunctionAttribute";
     private const string CleanedAttributeName = "DensityFunction";
-    private const string DensityFunctionName = "IDensityFunction";
+
+    private static readonly int WorldGenLength = "worldgen".Length;
 
     public void Initialize(IncrementalGeneratorInitializationContext ctx)
     {
@@ -20,8 +19,16 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
         //    Debugger.Launch();
 
         var jsonFiles = ctx.AdditionalTextsProvider
-           .Where(file => file.Path.Contains("noise_settings") && file.Path.EndsWith(".json"))
-           .Select(static (file, ct) => (name: Path.GetFileNameWithoutExtension(file.Path), content: file.GetText(ct)!.ToString()));
+           .Where(file => file.Path.Contains("worldgen") && file.Path.EndsWith(".json"))
+           .Select(static (file, ct) =>
+           {
+               var index = file.Path.IndexOf("worldgen");
+
+               var name = file.Path.Substring(index + WorldGenLength + 1).Replace(".json", "");
+               var content = file.GetText(ct)!.ToString();
+
+               return (name, content);
+           });
 
         IncrementalValuesProvider<ClassDeclarationSyntax> classDeclarations = ctx.SyntaxProvider
             .CreateSyntaxProvider(
@@ -88,30 +95,81 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
 
     private void GenerateClasses(List<TypeInformation> classes, SourceProductionContext context, Noises noises)
     {
-        var builder = new CodeBuilder()
-            .Using("Obsidian.API.World.Generator")
-            .Using("Obsidian.API.World.Generator.DensityFunctions")
-            .Using("Obsidian.API.World.Generator.SurfaceConditions")
-            .Using("Obsidian.API.World.Generator.Noise")
-            .Using("Obsidian.API.World.Generator.SurfaceRules")
-            .Using("Obsidian.Providers.BlockStateProviders")
-            .Using("Obsidian.WorldData.BlockPredicates")
-            .Using("System.Collections.Frozen")
-            .Namespace("Obsidian.API.Registries.Noise")
-            .Line()
-            .Type("public static class NoiseRegistry");
-
         var densityFunctionTypes = new Dictionary<string, TypeInformation>();
+        var staticDensityFunctions = new Dictionary<string, string>();
+        var noiseTypes = new Dictionary<string, string>();
+        
 
         foreach (var @class in classes)
         {
             densityFunctionTypes.Add(@class.ResourceLocation, @class);
         }
 
-        BuildNoiseSettings(densityFunctionTypes, noises, builder);
+        foreach (var func in noises.DensityFunctions)
+        {
+            var identifier = $"minecraft:{func.Name.Replace(DensityFunction, string.Empty).Replace("\\", "/")}";
+            var split = func.Name.Split('\\');
+            var list = new List<string>();
+
+            foreach (var item in split)
+                list.Add(item.ToPascalCase());
+
+            var callableName = string.Join(".", list);
+
+            staticDensityFunctions.Add(identifier, callableName);
+        }
+
+        foreach (var noise in noises.Noise)
+        {
+            var cleanedName = noise.Name.Replace(Noise, string.Empty).ToPascalCase();
+            var identifier = $"minecraft:{noise.Name.Replace(Noise, string.Empty)}";
+
+            var callableName = $"Noises.{cleanedName}";
+
+            noiseTypes.Add(identifier, callableName);
+        }
+
+        var cleanedNoises = new CleanedNoises(densityFunctionTypes, staticDensityFunctions, noiseTypes);
+
+        var builder = new CodeBuilder()
+            .Using("Obsidian.API.World.Generator")
+            .Using("Obsidian.API.World.Generator.DensityFunctions")
+            .Using("Obsidian.API.World.Generator.SurfaceConditions")
+            .Using("Obsidian.API.World.Generator.Noise")
+            .Using("Obsidian.API.World.Generator.SurfaceRules")
+            .Using("System.Collections.Frozen")
+            .Namespace("Obsidian.API.Registries.Noise")
+            .Line()
+            .Type("public static partial class NoiseRegistry");
+
+        BuildNoiseSettings(cleanedNoises, noises, builder);
 
         builder.EndScope();
 
         context.AddSource("NoiseRegistry.g.cs", builder.ToString());
+
+        InitSection("DensityFunctions", context, (CodeBuilder builder) => BuildDensityFunctions(cleanedNoises, noises, builder));
+        InitSection("Noises", context, (CodeBuilder builder) => BuildNoise(cleanedNoises, noises, builder));
+    }
+
+    private static void InitSection(string sectionName, SourceProductionContext context, Action<CodeBuilder> method)
+    {
+        var builder = new CodeBuilder()
+           .Using("Obsidian.API.World.Generator")
+           .Using("Obsidian.API.World.Generator.DensityFunctions")
+           .Using("Obsidian.API.World.Generator.SurfaceConditions")
+           .Using("Obsidian.API.World.Generator.Noise")
+           .Using("Obsidian.API.World.Generator.SurfaceRules")
+           .Using("System.Collections.Frozen")
+           .Namespace("Obsidian.API.Registries.Noise")
+           .Line()
+           .Type("public partial class NoiseRegistry");
+
+
+        method(builder);
+
+        builder.EndScope();
+
+        context.AddSource($"NoiseRegistry.{sectionName}.g.cs", builder.ToString());
     }
 }
