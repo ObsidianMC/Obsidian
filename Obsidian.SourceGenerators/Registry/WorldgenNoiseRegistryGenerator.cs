@@ -131,25 +131,9 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
 
         var cleanedNoises = new CleanedNoises(densityFunctionTypes, staticDensityFunctions, noiseTypes);
 
-        var builder = new CodeBuilder()
-            .Using("Obsidian.API.World.Generator")
-            .Using("Obsidian.API.World.Generator.DensityFunctions")
-            .Using("Obsidian.API.World.Generator.SurfaceConditions")
-            .Using("Obsidian.API.World.Generator.Noise")
-            .Using("Obsidian.API.World.Generator.SurfaceRules")
-            .Using("System.Collections.Frozen")
-            .Namespace("Obsidian.API.Registries.Noise")
-            .Line()
-            .Type("public static partial class NoiseRegistry");
-
-        BuildNoiseSettings(cleanedNoises, noises, builder);
-
-        builder.EndScope();
-
-        context.AddSource("NoiseRegistry.g.cs", builder.ToString());
-
-        InitSection("DensityFunctions", context, (CodeBuilder builder) => BuildDensityFunctions(cleanedNoises, noises, builder));
         InitSection("Noises", context, (CodeBuilder builder) => BuildNoise(cleanedNoises, noises, builder));
+        InitSection("DensityFunctions", context, (CodeBuilder builder) => BuildDensityFunctions(cleanedNoises, noises, builder));
+        InitSection("Base", context, (CodeBuilder builder) => BuildNoiseSettings(cleanedNoises, noises, builder));
     }
 
     private static void InitSection(string sectionName, SourceProductionContext context, Action<CodeBuilder> method)
@@ -163,8 +147,7 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
            .Using("System.Collections.Frozen")
            .Namespace("Obsidian.API.Registries.Noise")
            .Line()
-           .Type("public partial class NoiseRegistry");
-
+           .Type("public static partial class NoiseRegistry");
 
         method(builder);
 

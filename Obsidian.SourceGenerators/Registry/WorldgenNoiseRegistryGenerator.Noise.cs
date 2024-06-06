@@ -32,9 +32,10 @@ public partial class WorldgenNoiseRegistryGenerator
 
         foreach (var value in noise)
         {
-            var sanitizedName = value.Name.ToPascalCase();
+            var cleanedName = value.Name.Replace(Noise, string.Empty);
+            var sanitizedName = cleanedName.ToPascalCase();
 
-            builder.Line($"{{ \"{value.Name}\", {sanitizedName}}}, ");
+            builder.Line($"{{ \"minecraft:{cleanedName}\", {sanitizedName}}}, ");
         }
 
         builder.EndScope(".ToFrozenDictionary()", true);

@@ -72,7 +72,7 @@ public partial class WorldgenNoiseRegistryGenerator
                         var element = property.Value;
 
                         //TODO ARRAY OBJECTS
-                        AppendChildProperty(cleanedNoises, elementName, element, builder, true);
+                        AppendChildProperty(cleanedNoises, elementName, element, builder, true, true, typeInformation);
                     }
 
                     builder.EndScope(true);
@@ -90,9 +90,18 @@ public partial class WorldgenNoiseRegistryGenerator
 
         foreach (var function in densityFunctions)
         {
-            var sanitizedName = function.Name.ToPascalCase();
+            var cleanedName = function.Name.Replace(DensityFunction, string.Empty).Replace("\\", "/");
 
-            builder.Line($"{{ \"{function.Name}\", {sanitizedName}}}, ");
+            var split = cleanedName.Split('/');
+
+            var list = new List<string>();
+
+            foreach (var element in split)
+                list.Add(element.ToPascalCase());
+
+            var callableName = string.Join(".", list);
+
+            builder.Line($"{{ \"minecraft:{cleanedName}\", {callableName}}}, ");
         }
 
         builder.EndScope(".ToFrozenDictionary()", true);
