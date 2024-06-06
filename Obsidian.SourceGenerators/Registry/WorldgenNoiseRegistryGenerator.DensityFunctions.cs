@@ -1,11 +1,9 @@
 ﻿using Obsidian.SourceGenerators.Registry.Models;
+using static Obsidian.SourceGenerators.Constants;
 
 namespace Obsidian.SourceGenerators.Registry;
 public partial class WorldgenNoiseRegistryGenerator
 {
-    private const string DensityFunction = "density_functions\\";
-    private const string Default = "default";
-
     private static void BuildDensityFunctions(CleanedNoises cleanedNoises, Noises noises, CodeBuilder builder)
     {
         var densityFunctions = noises.DensityFunctions;
@@ -79,7 +77,6 @@ public partial class WorldgenNoiseRegistryGenerator
                         var elementName = property.Name;
                         var element = property.Value;
 
-                        //TODO ARRAY OBJECTS
                         AppendChildProperty(cleanedNoises, elementName, element, builder, true, true, typeInformation);
                     }
 

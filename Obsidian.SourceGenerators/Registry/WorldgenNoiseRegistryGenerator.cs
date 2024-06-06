@@ -2,21 +2,13 @@
 using Obsidian.SourceGenerators.Registry.Models;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using static Obsidian.SourceGenerators.Constants;
 
 namespace Obsidian.SourceGenerators.Registry;
 
 [Generator]
 public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerator
 {
-    private const string DensityFunctionAttributeName = "DensityFunctionAttribute";
-    private const string DensityFunctionCleanedAttributeName = "DensityFunction";
-
-    private const string SurfaceRuleAttributeName = "SurfaceRuleAttribute";
-    private const string SurfaceRuleCleanedAttributeName = "SurfaceRule";
-
-    private const string SurfaceConditionAttributeName = "SurfaceConditionAttribute";
-    private const string SurfaceConditionCleanedAttributeName = "SurfaceCondition";
-
     private static readonly int WorldGenLength = "worldgen".Length;
 
     public void Initialize(IncrementalGeneratorInitializationContext ctx)

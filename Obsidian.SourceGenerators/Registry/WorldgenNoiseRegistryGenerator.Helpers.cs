@@ -4,6 +4,8 @@ using System.Text.Json;
 namespace Obsidian.SourceGenerators.Registry;
 public partial class WorldgenNoiseRegistryGenerator
 {
+    private static readonly string[] numbers = ["Int32", "Single", "Double", "Int64"];
+
     private static void AppendChildProperty(CleanedNoises cleanedNoises, string elementName,
         JsonElement element, CodeBuilder builder, bool newLine = false, bool isDensityFunction = false, TypeInformation? densityFunction = null)
     {
@@ -32,14 +34,14 @@ public partial class WorldgenNoiseRegistryGenerator
 
                             if (numbers.Contains(property.Type.Name))
                             {
-                                AppendNumber(builder, elementName, element, property.Type.Name, newLine);
+                                builder.AppendNumber(elementName, element, property.Type.Name, newLine);
                                 break;
                             }
                         }
                     }
 
                     builder.Indent().Append($"{elementName.ToPascalCase()} = new ConstantDensityFunction {{ Argument = ");
-                    AppendUnknownNumber(builder, element, false);
+                    builder.AppendUnknownNumber(element, false);
                     builder.Append("}, ").Line();
 
                     break;
@@ -47,7 +49,7 @@ public partial class WorldgenNoiseRegistryGenerator
 
                 builder.Indent().Append($"{elementName.ToPascalCase()} = ");
 
-                AppendUnknownNumber(builder, element, false);
+                builder.AppendUnknownNumber(element, false);
 
                 builder.Line();
                 break;
@@ -104,7 +106,7 @@ public partial class WorldgenNoiseRegistryGenerator
                 builder.Append($"\"{element.GetString()}\", ");
                 break;
             case JsonValueKind.Number:
-                AppendUnknownNumber(builder, element, false);
+                builder.AppendUnknownNumber(element, false);
                 break;
             case JsonValueKind.Array:
                 //builder.Append($"[, ");
@@ -148,17 +150,10 @@ public partial class WorldgenNoiseRegistryGenerator
         if (element.ValueKind == JsonValueKind.String)
             typeName = element.GetString()!;
 
-        if (cleanedNoises.StaticDensityFunctions.TryGetValue(typeName, out var staticDensityFunction))
+        if (TryGetCallableName(cleanedNoises, typeName, out var callableName))
         {
-            var name = elementName != null ? $"{elementName.ToPascalCase()} = {staticDensityFunction}," :
+            var name = elementName != null ? $"{elementName.ToPascalCase()} = {callableName}," :
                 string.Empty;
-
-            builder.Line(name);
-        }
-        else if (cleanedNoises.NoiseTypes.TryGetValue(typeName, out var noiseType))
-        {
-            var name = elementName != null ? $"{elementName.ToPascalCase()} = {noiseType}," :
-               string.Empty;
 
             builder.Line(name);
         }
@@ -218,31 +213,7 @@ public partial class WorldgenNoiseRegistryGenerator
         return isState;
     }
 
-    private static void AppendNumber(CodeBuilder builder, string elementName, JsonElement element, string numberType = "Int32", bool newLine = true)
-    {
-        if (numberType == "Int16")
-            builder.AppendSimple($"{elementName.ToPascalCase()} = {element.GetInt16()},", newLine);
-        else if (numberType == "Int32")
-            builder.AppendSimple($"{elementName.ToPascalCase()} = {element.GetInt32()},", newLine);
-        else if (numberType == "Int64")
-            builder.AppendSimple($"{elementName.ToPascalCase()} = {element.GetInt64()},", newLine);
-        else if (numberType == "Single")
-            builder.AppendSimple($"{elementName.ToPascalCase()} = {element.GetSingle()}f,", newLine);
-        else if (numberType == "Double")
-            builder.AppendSimple($"{elementName.ToPascalCase()} = {element.GetDouble()}d,", newLine);
-    }
-
-    private static void AppendUnknownNumber(CodeBuilder builder, JsonElement element, bool newLine = true)
-    {
-        if (element.TryGetInt16(out var shortValue))
-            builder.AppendSimple($"{shortValue},", newLine);
-        else if (element.TryGetInt32(out var intValue))
-            builder.AppendSimple($"{intValue},", newLine);
-        else if (element.TryGetInt64(out var longValue))
-            builder.AppendSimple($"{longValue},", newLine);
-        else if (element.TryGetDouble(out var doubleValue))
-            builder.AppendSimple($"{doubleValue}d,", newLine);
-        else if (element.TryGetSingle(out var floatValue))
-            builder.AppendSimple($"{floatValue}f,", newLine);
-    }
+    private static bool TryGetCallableName(CleanedNoises cleanedNoises, string typeName, out string callableName) =>
+        cleanedNoises.StaticDensityFunctions.TryGetValue(typeName, out callableName) ||
+        cleanedNoises.NoiseTypes.TryGetValue(typeName, out callableName);
 }

@@ -1,15 +1,9 @@
 ﻿using Obsidian.SourceGenerators.Registry.Models;
-using System.Text.Json;
+using static Obsidian.SourceGenerators.Constants;
 
 namespace Obsidian.SourceGenerators.Registry;
 public partial class WorldgenNoiseRegistryGenerator
 {
-    private static readonly string[] numbers = ["Int32", "Single", "Double", "Int64"];
-
-    private const string NoiseSettings = "noise_settings\\";
-    private const string defaultBlock = "default_block";
-    private const string defaultFluid = "default_fluid";
-
     private static void BuildNoiseSettings(CleanedNoises cleanedNoises,
         Noises noises, CodeBuilder builder)
     {
@@ -27,7 +21,6 @@ public partial class WorldgenNoiseRegistryGenerator
                 var elementName = property.Name;
                 var element = property.Value;
 
-                //TODO ARRAY OBJECTS
                 AppendChildProperty(cleanedNoises, elementName, element, builder, true, elementName == "noise_router");
             }
 

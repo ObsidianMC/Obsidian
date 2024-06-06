@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using Obsidian.SourceGenerators.Registry;
+using System.Text;
+using System.Text.Json;
 
 namespace Obsidian.SourceGenerators;
 
@@ -177,6 +179,38 @@ public sealed class CodeBuilder
     public CodeBuilder XmlReturns(string description)
     {
         return Xml("returns", description, inline: true);
+    }
+
+    public CodeBuilder AppendNumber( string elementName, JsonElement element, string numberType = "Int32", bool newLine = true)
+    {
+        if (numberType == "Int16")
+            this.AppendSimple($"{elementName.ToPascalCase()} = {element.GetInt16()},", newLine);
+        else if (numberType == "Int32")
+            this.AppendSimple($"{elementName.ToPascalCase()} = {element.GetInt32()},", newLine);
+        else if (numberType == "Int64")
+            this.AppendSimple($"{elementName.ToPascalCase()} = {element.GetInt64()},", newLine);
+        else if (numberType == "Single")
+            this.AppendSimple($"{elementName.ToPascalCase()} = {element.GetSingle()}f,", newLine);
+        else if (numberType == "Double")
+            this.AppendSimple($"{elementName.ToPascalCase()} = {element.GetDouble()}d,", newLine);
+
+        return this;
+    }
+
+    public CodeBuilder AppendUnknownNumber(JsonElement element, bool newLine = true)
+    {
+        if (element.TryGetInt16(out var shortValue))
+            this.AppendSimple($"{shortValue},", newLine);
+        else if (element.TryGetInt32(out var intValue))
+            this.AppendSimple($"{intValue},", newLine);
+        else if (element.TryGetInt64(out var longValue))
+            this.AppendSimple($"{longValue},", newLine);
+        else if (element.TryGetDouble(out var doubleValue))
+            this.AppendSimple($"{doubleValue}d,", newLine);
+        else if (element.TryGetSingle(out var floatValue))
+            this.AppendSimple($"{floatValue}f,", newLine);
+
+        return this;
     }
 
     public CodeBuilder Clear()

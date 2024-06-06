@@ -1,9 +1,9 @@
 ﻿using Obsidian.SourceGenerators.Registry.Models;
+using static Obsidian.SourceGenerators.Constants;
 
 namespace Obsidian.SourceGenerators.Registry;
 public partial class WorldgenNoiseRegistryGenerator
 {
-    private const string Noise = "noise\\";
     private static void BuildNoise(CleanedNoises cleanedNoises,
        Noises noises, CodeBuilder builder)
     {
@@ -21,7 +21,6 @@ public partial class WorldgenNoiseRegistryGenerator
                 var elementName = property.Name;
                 var element = property.Value;
 
-                //TODO ARRAY OBJECTS
                 AppendChildProperty(cleanedNoises, elementName, element, builder, true);
             }
 
