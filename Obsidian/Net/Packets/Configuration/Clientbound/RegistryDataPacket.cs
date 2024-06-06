@@ -8,5 +8,5 @@ public sealed partial class RegistryDataPacket : IClientboundPacket
     [Field(0)]
     public MixedCodec Codecs { get; init; } = new();
 
-    public int Id => 0x05;
+    public int Id => 0x07;
 }

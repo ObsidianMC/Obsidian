@@ -83,18 +83,20 @@ public sealed class ClientHandler
             case 0x00:
                 await HandleFromPoolAsync<ClientInformationPacket>(data, client);
                 break;
-            case 0x01:
-                await HandleFromPoolAsync<PluginMessagePacket>(data, client);
+            case 0x01://Cookies
                 break;
             case 0x02:
-                await HandleFromPoolAsync<FinishConfigurationPacket>(data, client);
+                await HandleFromPoolAsync<PluginMessagePacket>(data, client);
                 break;
             case 0x03:
+                await HandleFromPoolAsync<FinishConfigurationPacket>(data, client);
+                break;
+            case 0x04:
                 await HandleFromPoolAsync<KeepAlivePacket>(data, client);
                 break;
-            case 0x04://pong useless
+            case 0x05://pong useless
                 break;
-            case 0x05:
+            case 0x06:
                 await HandleFromPoolAsync<ResourcePackResponse>(data, client);
                 break;
             default:
