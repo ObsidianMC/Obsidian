@@ -14,6 +14,8 @@ public partial class RegistryAssetsGenerator
             .Using("Obsidian.API.Registry.Codecs.ArmorTrims")
             .Using("Obsidian.API.Registry.Codecs.ArmorTrims.TrimPattern")
             .Using("Obsidian.API.Registry.Codecs.ArmorTrims.TrimMaterial")
+            .Using("Obsidian.API.Registry.Codecs.WolfVariant")
+            .Using("System.Collections.Frozen")
             .Line()
             .Namespace("Obsidian.Registries")
             .Line()
@@ -27,6 +29,7 @@ public partial class RegistryAssetsGenerator
         GenerateDamageTypes(codecs["damage_type"].ToArray(), builder, ctx);
         GenerateTrimMaterial(codecs["trim_material"].ToArray(), builder, ctx);
         GenerateTrimPattern(codecs["trim_pattern"].ToArray(), builder, ctx);
+        GenerateWolfVariants(codecs["wolf_variant"].ToArray(), builder, ctx);
 
         builder.EndScope();
 

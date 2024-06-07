@@ -24,7 +24,7 @@ public partial class RegistryAssetsGenerator
 
                 if (name == "MonsterSpawnLightLevel")// monster_spawn_light_level is an object and not int
                 {
-                    ParseMonsterLightValue(builder, value);
+                    ParseMonsterLightValue(builder, value, ctx);
                     continue;
                 }
 
@@ -47,7 +47,7 @@ public partial class RegistryAssetsGenerator
         builder.EndScope();
     }
 
-    private static void ParseMonsterLightValue(CodeBuilder builder, JsonElement element)
+    private static void ParseMonsterLightValue(CodeBuilder builder, JsonElement element, SourceProductionContext ctx)
     {
         builder.Append("new() { ");
 
@@ -68,7 +68,8 @@ public partial class RegistryAssetsGenerator
                     continue;
                 }
 
-                builder.Append($"{name} = \"{property.Value.GetString()}\",");
+                builder.Append($"{name} = ");
+                AppendValueType(builder, property.Value, ctx);
             }
             builder.Append("} ");
         }

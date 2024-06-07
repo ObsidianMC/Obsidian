@@ -69,51 +69,10 @@
 
 	<ItemGroup>
 		<Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
-		<Compile Remove="Plugins\Services\**" />
-		<EmbeddedResource Remove="Plugins\Services\**" />
-		<None Remove="Plugins\Services\**" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<EmbeddedResource Remove="Assets\biomes.json" />
-		<EmbeddedResource Remove="Assets\blocks.json" />
-		<EmbeddedResource Remove="Assets\chat_type.json" />
-		<EmbeddedResource Remove="Assets\damage_type.json" />
-		<EmbeddedResource Remove="Assets\dimensions.json" />
-		<EmbeddedResource Remove="Assets\entities.json" />
-		<EmbeddedResource Remove="Assets\items.json" />
-		<EmbeddedResource Remove="Assets\tags.json" />
-		<EmbeddedResource Remove="Assets\fluids.json" />
-		<EmbeddedResource Remove="Assets\trim_material.json" />
-		<EmbeddedResource Remove="Assets\trim_pattern.json" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<None Remove="assets\blocks.json" />
-		<None Remove="Assets\damage_type.json" />
-		<None Remove="Assets\entities.json" />
-		<None Remove="assets\trim_material.json" />
-		<None Remove="assets\trim_pattern.json" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<AdditionalFiles Include="Assets\biomes.json" CopyToOutputDirectory="Never" />
-		<AdditionalFiles Include="Assets\blocks.json">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</AdditionalFiles>
-		<AdditionalFiles Include="Assets\chat_type.json" CopyToOutputDirectory="Never" />
-		<AdditionalFiles Include="Assets\damage_type.json" />
-		<AdditionalFiles Include="Assets\dimensions.json" CopyToOutputDirectory="Never" />
-		<AdditionalFiles Include="Assets\entities.json" />
-		<AdditionalFiles Include="Assets\items.json" CopyToOutputDirectory="Never" />
-		<AdditionalFiles Include="Assets\tags.json" CopyToOutputDirectory="Never" />
-		<AdditionalFiles Include="Assets\fluids.json" CopyToOutputDirectory="Never" />
-		<AdditionalFiles Include="Assets\trim_material.json" />
-		<AdditionalFiles Include="Assets\trim_pattern.json" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<ApplicationDefinition Include="Assets\entities.json" />
+		<AdditionalFiles Include="Assets\**\*.json"/>
 	</ItemGroup>
 
 	<ItemGroup>
