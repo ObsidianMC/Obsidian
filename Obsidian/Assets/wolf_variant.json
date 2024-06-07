@@ -1,0 +1,95 @@
+{
+  "type": "minecraft:wolf_variant",
+  "value": [
+    {
+      "name": "minecraft:ashen",
+      "id": 0,
+      "element": {
+        "angry_texture": "minecraft:entity/wolf/wolf_ashen_angry",
+        "biomes": "minecraft:snowy_taiga",
+        "tame_texture": "minecraft:entity/wolf/wolf_ashen_tame",
+        "wild_texture": "minecraft:entity/wolf/wolf_ashen"
+      }
+    },
+    {
+      "name": "minecraft:black",
+      "id": 1,
+      "element": {
+        "angry_texture": "minecraft:entity/wolf/wolf_black_angry",
+        "biomes": "minecraft:old_growth_pine_taiga",
+        "tame_texture": "minecraft:entity/wolf/wolf_black_tame",
+        "wild_texture": "minecraft:entity/wolf/wolf_black"
+      }
+    },
+    {
+      "name": "minecraft:chestnut",
+      "id": 2,
+      "element": {
+        "angry_texture": "minecraft:entity/wolf/wolf_chestnut_angry",
+        "biomes": "minecraft:old_growth_spruce_taiga",
+        "tame_texture": "minecraft:entity/wolf/wolf_chestnut_tame",
+        "wild_texture": "minecraft:entity/wolf/wolf_chestnut"
+      }
+    },
+    {
+      "name": "minecraft:pale",
+      "id": 3,
+      "element": {
+        "angry_texture": "minecraft:entity/wolf/wolf_angry",
+        "biomes": "minecraft:taiga",
+        "tame_texture": "minecraft:entity/wolf/wolf_tame",
+        "wild_texture": "minecraft:entity/wolf/wolf"
+      }
+    },
+    {
+      "name": "minecraft:rusty",
+      "id": 4,
+      "element": {
+        "angry_texture": "minecraft:entity/wolf/wolf_rusty_angry",
+        "biomes": "#minecraft:is_jungle",
+        "tame_texture": "minecraft:entity/wolf/wolf_rusty_tame",
+        "wild_texture": "minecraft:entity/wolf/wolf_rusty"
+      }
+    },
+    {
+      "name": "minecraft:snowy",
+      "id": 5,
+      "element": {
+        "angry_texture": "minecraft:entity/wolf/wolf_snowy_angry",
+        "biomes": "minecraft:grove",
+        "tame_texture": "minecraft:entity/wolf/wolf_snowy_tame",
+        "wild_texture": "minecraft:entity/wolf/wolf_snowy"
+      }
+    },
+    {
+      "name": "minecraft:spotted",
+      "id": 6,
+      "element": {
+        "angry_texture": "minecraft:entity/wolf/wolf_spotted_angry",
+        "biomes": "#minecraft:is_savanna",
+        "tame_texture": "minecraft:entity/wolf/wolf_spotted_tame",
+        "wild_texture": "minecraft:entity/wolf/wolf_spotted"
+      }
+    },
+    {
+      "name": "minecraft:striped",
+      "id": 7,
+      "element": {
+        "angry_texture": "minecraft:entity/wolf/wolf_striped_angry",
+        "biomes": "#minecraft:is_badlands",
+        "tame_texture": "minecraft:entity/wolf/wolf_striped_tame",
+        "wild_texture": "minecraft:entity/wolf/wolf_striped"
+      }
+    },
+    {
+      "name": "minecraft:woods",
+      "id": 8,
+      "element": {
+        "angry_texture": "minecraft:entity/wolf/wolf_woods_angry",
+        "biomes": "minecraft:forest",
+        "tame_texture": "minecraft:entity/wolf/wolf_woods_tame",
+        "wild_texture": "minecraft:entity/wolf/wolf_woods"
+      }
+    }
+  ]
+}

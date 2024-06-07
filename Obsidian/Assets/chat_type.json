@@ -6,18 +6,18 @@
       "id": 0,
       "element": {
         "chat": {
-          "translation_key": "chat.type.text",
           "parameters": [
             "sender",
             "content"
-          ]
+          ],
+          "translation_key": "chat.type.text"
         },
         "narration": {
-          "translation_key": "chat.type.text.narrate",
           "parameters": [
             "sender",
             "content"
-          ]
+          ],
+          "translation_key": "chat.type.text.narrate"
         }
       }
     },
@@ -26,18 +26,18 @@
       "id": 1,
       "element": {
         "chat": {
-          "translation_key": "chat.type.emote",
           "parameters": [
             "sender",
             "content"
-          ]
+          ],
+          "translation_key": "chat.type.emote"
         },
         "narration": {
-          "translation_key": "chat.type.emote",
           "parameters": [
             "sender",
             "content"
-          ]
+          ],
+          "translation_key": "chat.type.emote"
         }
       }
     },
@@ -46,22 +46,22 @@
       "id": 2,
       "element": {
         "chat": {
-          "translation_key": "commands.message.display.incoming",
+          "parameters": [
+            "sender",
+            "content"
+          ],
           "style": {
             "color": "gray",
             "italic": true
           },
-          "parameters": [
-            "sender",
-            "content"
-          ]
+          "translation_key": "commands.message.display.incoming"
         },
         "narration": {
-          "translation_key": "chat.type.text.narrate",
           "parameters": [
             "sender",
             "content"
-          ]
+          ],
+          "translation_key": "chat.type.text.narrate"
         }
       }
     },
@@ -70,22 +70,22 @@
       "id": 3,
       "element": {
         "chat": {
-          "translation_key": "commands.message.display.outgoing",
+          "parameters": [
+            "target",
+            "content"
+          ],
           "style": {
             "color": "gray",
             "italic": true
           },
-          "parameters": [
-            "target",
-            "content"
-          ]
+          "translation_key": "commands.message.display.outgoing"
         },
         "narration": {
-          "translation_key": "chat.type.text.narrate",
           "parameters": [
             "sender",
             "content"
-          ]
+          ],
+          "translation_key": "chat.type.text.narrate"
         }
       }
     },
@@ -94,18 +94,18 @@
       "id": 4,
       "element": {
         "chat": {
-          "translation_key": "chat.type.announcement",
           "parameters": [
             "sender",
             "content"
-          ]
+          ],
+          "translation_key": "chat.type.announcement"
         },
         "narration": {
-          "translation_key": "chat.type.text.narrate",
           "parameters": [
             "sender",
             "content"
-          ]
+          ],
+          "translation_key": "chat.type.text.narrate"
         }
       }
     },
@@ -114,19 +114,19 @@
       "id": 5,
       "element": {
         "chat": {
-          "translation_key": "chat.type.team.text",
           "parameters": [
             "target",
             "sender",
             "content"
-          ]
+          ],
+          "translation_key": "chat.type.team.text"
         },
         "narration": {
-          "translation_key": "chat.type.text.narrate",
           "parameters": [
             "sender",
             "content"
-          ]
+          ],
+          "translation_key": "chat.type.text.narrate"
         }
       }
     },
@@ -135,19 +135,19 @@
       "id": 6,
       "element": {
         "chat": {
-          "translation_key": "chat.type.team.sent",
           "parameters": [
             "target",
             "sender",
             "content"
-          ]
+          ],
+          "translation_key": "chat.type.team.sent"
         },
         "narration": {
-          "translation_key": "chat.type.text.narrate",
           "parameters": [
             "sender",
             "content"
-          ]
+          ],
+          "translation_key": "chat.type.text.narrate"
         }
       }
     }
