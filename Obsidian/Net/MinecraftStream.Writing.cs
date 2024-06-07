@@ -691,12 +691,12 @@ public partial class MinecraftStream
     public void WriteItemStack(ItemStack value)
     {
         value ??= new ItemStack(0, 0) { Present = true };
-        WriteBoolean(value.Present);
-        if (value.Present)
-        {
-            var item = value.AsItem();
 
-            WriteVarInt(item.Id);
+        var item = value.AsItem();
+        WriteVarInt(item.Id);
+
+        if (item.Id != 0)
+        {
             WriteByte((sbyte)value.Count);
 
             NbtWriter writer = new(this, true);
