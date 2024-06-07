@@ -31,8 +31,8 @@ public partial class LoginPacket : IClientboundPacket
     [Field(8)]
     public bool DoLimitedCrafting { get; init; } = false;
 
-    [Field(9)]
-    public string DimensionType { get; init; }
+    [Field(9), VarLength]
+    public int DimensionType { get; init; }
 
     [Field(10)]
     public string DimensionName { get; init; }

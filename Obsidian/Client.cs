@@ -541,7 +541,7 @@ public sealed class Client : IDisposable
             EntityId = id,
             Gamemode = Player.Gamemode,
             DimensionNames = CodecRegistry.Dimensions.All.Keys.ToList(),
-            DimensionType = codec.Name,
+            DimensionType = codec.Id,
             DimensionName = codec.Name,
             HashedSeed = 0,
             ReducedDebugInfo = false,
@@ -588,11 +588,11 @@ public sealed class Client : IDisposable
 
         await SendTimeUpdateAsync();
         await SendWeatherUpdateAsync();
-        await QueuePacketAsync(new SetContainerContentPacket(0, Player.Inventory.ToList())
-        {
-            StateId = Player.Inventory.StateId++,
-            CarriedItem = Player.GetHeldItem(),
-        });
+        //await QueuePacketAsync(new SetContainerContentPacket(0, Player.Inventory.ToList())
+        //{
+        //    StateId = Player.Inventory.StateId++,
+        //    CarriedItem = Player.GetHeldItem(),
+        //});
 
         await QueuePacketAsync(new SetEntityMetadataPacket
         {
