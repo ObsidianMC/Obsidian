@@ -4,6 +4,7 @@ using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.Registry.Codecs.Chat;
 using Obsidian.API.Registry.Codecs.DamageTypes;
 using Obsidian.API.Registry.Codecs.Dimensions;
+using Obsidian.API.Registry.Codecs.WolfVariant;
 using Obsidian.API.Utilities;
 using Obsidian.Nbt;
 using Obsidian.Registries;
@@ -167,73 +168,73 @@ public partial class Extensions
             switch (name.ToUpperInvariant())
             {
                 case "ENCHANTMENTS":
-                {
-                    var enchantments = (NbtList)child;
-
-                    foreach (var enchant in enchantments)
                     {
-                        if (enchant is NbtCompound compound)
-                        {
-                            itemMetaBuilder.AddEnchantment(compound.GetString("id").ToEnchantType(), compound.GetShort("lvl"));
-                        }
-                    }
+                        var enchantments = (NbtList)child;
 
-                    break;
-                }
+                        foreach (var enchant in enchantments)
+                        {
+                            if (enchant is NbtCompound compound)
+                            {
+                                itemMetaBuilder.AddEnchantment(compound.GetString("id").ToEnchantType(), compound.GetShort("lvl"));
+                            }
+                        }
+
+                        break;
+                    }
 
                 case "STOREDENCHANTMENTS":
-                {
-                    var enchantments = (NbtList)child;
-
-                    foreach (var enchantment in enchantments)
                     {
-                        if (enchantment is NbtCompound compound)
-                        {
-                            compound.TryGetTag("id", out var id);
-                            compound.TryGetTag("lvl", out var lvl);
+                        var enchantments = (NbtList)child;
 
-                            itemMetaBuilder.AddStoredEnchantment(compound.GetString("id").ToEnchantType(), compound.GetShort("lvl"));
+                        foreach (var enchantment in enchantments)
+                        {
+                            if (enchantment is NbtCompound compound)
+                            {
+                                compound.TryGetTag("id", out var id);
+                                compound.TryGetTag("lvl", out var lvl);
+
+                                itemMetaBuilder.AddStoredEnchantment(compound.GetString("id").ToEnchantType(), compound.GetShort("lvl"));
+                            }
                         }
+                        break;
                     }
-                    break;
-                }
 
                 case "SLOT":
-                {
-                    var byteTag = (NbtTag<byte>)child;
+                    {
+                        var byteTag = (NbtTag<byte>)child;
 
-                    itemStack.Slot = byteTag.Value;
-                    break;
-                }
+                        itemStack.Slot = byteTag.Value;
+                        break;
+                    }
 
                 case "DAMAGE":
-                {
-                    var intTag = (NbtTag<int>)child;
+                    {
+                        var intTag = (NbtTag<int>)child;
 
-                    itemMetaBuilder.WithDurability(intTag.Value);
-                    break;
-                }
+                        itemMetaBuilder.WithDurability(intTag.Value);
+                        break;
+                    }
 
                 case "DISPLAY":
-                {
-                    var display = (NbtCompound)child;
-
-                    foreach (var (displayTagName, displayTag) in display)
                     {
-                        if (displayTagName.EqualsIgnoreCase("name") && displayTag is NbtTag<string> stringTag)
-                        {
-                            itemMetaBuilder.WithName(stringTag.Value);
-                        }
-                        else if (displayTag.Name.EqualsIgnoreCase("lore"))
-                        {
-                            var loreTag = (NbtList)displayTag;
+                        var display = (NbtCompound)child;
 
-                            foreach (NbtTag<string> lore in loreTag)
-                                itemMetaBuilder.AddLore(lore.Value.FromJson<ChatMessage>());
+                        foreach (var (displayTagName, displayTag) in display)
+                        {
+                            if (displayTagName.EqualsIgnoreCase("name") && displayTag is NbtTag<string> stringTag)
+                            {
+                                itemMetaBuilder.WithName(stringTag.Value);
+                            }
+                            else if (displayTag.Name.EqualsIgnoreCase("lore"))
+                            {
+                                var loreTag = (NbtList)displayTag;
+
+                                foreach (NbtTag<string> lore in loreTag)
+                                    itemMetaBuilder.AddLore(lore.Value.FromJson<ChatMessage>());
+                            }
                         }
+                        break;
                     }
-                    break;
-                }
             }
         }
 
@@ -694,6 +695,38 @@ public partial class Extensions
 
             element.Add(overrideArmorMaterialsCompound);
         }
+
+        return element;
+    }
+    #endregion
+
+    #region Wolf Variant Writing
+    public static void Write(this WolfVariantCodec value, NbtList list)
+    {
+        var compound = new NbtCompound
+        {
+            new NbtTag<int>("id", value.Id),
+
+            new NbtTag<string>("name", value.Name),
+
+            value.WriteElement()
+        };
+
+        list.Add(compound);
+    }
+
+    public static NbtCompound WriteElement(this WolfVariantCodec value)
+    {
+        var materialElement = value.Element;
+
+
+        var element = new NbtCompound("element")
+        {
+            new NbtTag<string>("tame_texture", materialElement.TameTexture),
+            new NbtTag<string>("angry_texture", materialElement.AngryTexture),
+            new NbtTag<string>("wild_texture", materialElement.WildTexture),
+            new NbtTag<string>("biomes", materialElement.Biomes)
+        };
 
         return element;
     }

@@ -802,9 +802,27 @@ public partial class MinecraftStream
         this.WriteDamageTypeCodec(writer);
         this.WriteTrimPatternCodec(writer);
         this.WriteTrimMaterialCodec(writer);
+        this.WriteWolfVariant(writer);
 
         writer.EndCompound();
         writer.TryFinish();
+    }
+
+    private void WriteWolfVariant(NbtWriter writer)
+    {
+        var wolfVariants = new NbtList(NbtTagType.Compound, "value");
+
+        foreach (var (_, wolfVariant) in CodecRegistry.WolfVariant.All)
+            wolfVariant.Write(wolfVariants);
+
+        var wolfVariantsCompound = new NbtCompound(CodecRegistry.WolfVariant.CodecKey)
+        {
+            new NbtTag<string>("type", CodecRegistry.WolfVariant.CodecKey),
+
+            wolfVariants
+        };
+
+        writer.WriteTag(wolfVariantsCompound);
     }
 
     private void WriteTrimPatternCodec(NbtWriter writer)
