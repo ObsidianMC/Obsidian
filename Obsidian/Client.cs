@@ -269,29 +269,29 @@ public sealed class Client : IDisposable
                     switch (id)
                     {
                         case 0x00:
-                        {
-                            if (this.server.Configuration.Network.ShouldThrottle)
                             {
-                                string ip = ((IPEndPoint)connectionContext.RemoteEndPoint!).Address.ToString();
-
-                                if (Server.throttler.TryGetValue(ip, out var timeLeft))
+                                if (this.server.Configuration.Network.ShouldThrottle)
                                 {
-                                    if (DateTimeOffset.UtcNow < timeLeft)
+                                    string ip = ((IPEndPoint)connectionContext.RemoteEndPoint!).Address.ToString();
+
+                                    if (Server.throttler.TryGetValue(ip, out var timeLeft))
                                     {
-                                        this.Logger.LogDebug("{ip} has been throttled for reconnecting too fast.", ip);
-                                        await this.DisconnectAsync("Connection Throttled! Please wait before reconnecting.");
-                                        break;
+                                        if (DateTimeOffset.UtcNow < timeLeft)
+                                        {
+                                            this.Logger.LogDebug("{ip} has been throttled for reconnecting too fast.", ip);
+                                            await this.DisconnectAsync("Connection Throttled! Please wait before reconnecting.");
+                                            break;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        Server.throttler.TryAdd(ip, DateTimeOffset.UtcNow.AddMilliseconds(this.server.Configuration.Network.ConnectionThrottle));
                                     }
                                 }
-                                else
-                                {
-                                    Server.throttler.TryAdd(ip, DateTimeOffset.UtcNow.AddMilliseconds(this.server.Configuration.Network.ConnectionThrottle));
-                                }
-                            }
 
-                            await HandleLoginStartAsync(data);
-                            break;
-                        }
+                                await HandleLoginStartAsync(data);
+                                break;
+                            }
                         case 0x01:
                             await HandleEncryptionResponseAsync(data);
                             break;
@@ -352,7 +352,15 @@ public sealed class Client : IDisposable
 
     private void Configure()
     {
-        this.SendPacket(RegistryDataPacket.Default);
+        //This is very inconvenient
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.Biomes.CodecKey, CodecRegistry.Biomes.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.Dimensions.CodecKey, CodecRegistry.Dimensions.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.ChatType.CodecKey, CodecRegistry.ChatType.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.DamageTypes.CodecKey, CodecRegistry.DamageTypes.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimPatterns.CodecKey, CodecRegistry.TrimPatterns.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimMaterials.CodecKey, CodecRegistry.TrimMaterials.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.WolfVariant.CodecKey, CodecRegistry.WolfVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+
         this.SendPacket(UpdateTagsPacket.FromRegistry);
 
         this.SendPacket(FinishConfigurationPacket.Default);

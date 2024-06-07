@@ -375,6 +375,21 @@ public partial class Extensions
 
         writer.WriteBool("has_raids", value.Element.HasRaids);
 
+        writer.WriteInt("monster_spawn_block_light_limit", value.Element.MonsterSpawnBlockLightLimit);
+
+        if (value.Element.MonsterSpawnLightLevel.IntValue.HasValue)
+            writer.WriteInt("monster_spawn_light_level", value.Element.MonsterSpawnLightLevel.IntValue.Value);
+        else
+        {
+            var monsterLight = value.Element.MonsterSpawnLightLevel.Value!.Value;
+            writer.WriteTag(new NbtCompound("monster_spawn_light_level")
+            {
+                new NbtTag<string>("type", monsterLight.Type),
+                new NbtTag<int>("max_inclusive", monsterLight.MaxInclusive),
+                new NbtTag<int>("min_inclusive", monsterLight.MinInclusive)
+            });
+        }
+
         writer.WriteInt("min_y", value.Element.MinY);
 
         writer.WriteInt("height", value.Element.Height);
@@ -390,56 +405,24 @@ public partial class Extensions
 
 
     #region Damage Type Codec Writing
-    public static void Write(this DamageTypeCodec value, NbtList list)
-    {
-        var compound = new NbtCompound
-        {
-            new NbtTag<int>("id", value.Id),
 
-            new NbtTag<string>("name", value.Name),
-
-            value.WriteElement()
-        };
-
-        list.Add(compound);
-    }
-
-    public static NbtCompound WriteElement(this DamageTypeCodec value)
+    public static void WriteElement(this DamageTypeCodec value, NbtWriter writer)
     {
         var damageTypeElement = value.Element;
 
-        var element = new NbtCompound("element")
-        {
-            new NbtTag<float>("exhaustion", damageTypeElement.Exhaustion),
-            new NbtTag<string>("message_id", damageTypeElement.MessageId),
-            new NbtTag<string>("scaling", damageTypeElement.Scaling.ToString().ToSnakeCase())
-        };
-
         if (damageTypeElement.DeathMessageType is DeathMessageType deathMessageType)
-            element.Add(new NbtTag<string>("death_message_type", deathMessageType.ToString().ToSnakeCase()));
+            writer.WriteString("death_message_type", deathMessageType.ToString().ToSnakeCase());
         if (damageTypeElement.Effects is DamageEffects damageEffects)
-            element.Add(new NbtTag<string>("effects", damageEffects.ToString().ToSnakeCase()));
+            writer.WriteString("effects", damageEffects.ToString().ToSnakeCase());
 
-        return element;
+        writer.WriteFloat("exhaustion", damageTypeElement.Exhaustion);
+        writer.WriteString("message_id", damageTypeElement.MessageId);
+        writer.WriteString("scaling", damageTypeElement.Scaling.ToString().ToSnakeCase());
     }
     #endregion
 
     #region Chat Codec Writing
-    public static void Write(this ChatCodec value, NbtList list)
-    {
-        var compound = new NbtCompound
-        {
-            new NbtTag<int>("id", value.Id),
-
-            new NbtTag<string>("name", value.Name),
-
-            value.WriteElement()
-        };
-
-        list.Add(compound);
-    }
-
-    public static NbtCompound WriteElement(this ChatCodec value)
+    public static void WriteElement(this ChatCodec value, NbtWriter writer)
     {
         var chatElement = value.Element;
         var chat = chatElement.Chat;
@@ -474,53 +457,30 @@ public partial class Extensions
             new NbtTag<string>("translation_key", narration.TranslationKey)
         };
 
-        var element = new NbtCompound("element")
-        {
-            chatCompound,
-            narrationCompound,
-        };
-
-        return element;
+        writer.WriteTag(chatCompound);
+        writer.WriteTag(narrationCompound);
     }
     #endregion
 
     #region Biome Codec Writing
-    public static void Write(this BiomeCodec value, NbtList list)
+    public static void WriteElement(this BiomeCodec value, NbtWriter writer)
     {
-        var compound = new NbtCompound
-        {
-            new NbtTag<string>("name", value.Name),
-            new NbtTag<int>("id", value.Id),
-
-            value.WriteElement()
-        };
-
-        list.Add(compound);
-    }
-
-    public static NbtCompound WriteElement(this BiomeCodec value)
-    {
-        var elements = new NbtCompound("element")
-        {
-            new NbtTag<bool>("has_precipitation", value.Element.HasPrecipitation),
-            new NbtTag<float>("depth", value.Element.Depth),
-            new NbtTag<float>("temperature", value.Element.Temperature),
-            new NbtTag<float>("scale", value.Element.Scale),
-            new NbtTag<float>("downfall", value.Element.Downfall)
-        };
+        writer.WriteBool("has_precipitation", value.Element.HasPrecipitation);
+        writer.WriteFloat("depth", value.Element.Depth);
+        writer.WriteFloat("temperature", value.Element.Temperature);
+        writer.WriteFloat("scale", value.Element.Scale);
+        writer.WriteFloat("downfall", value.Element.Downfall);
 
         if (!value.Element.Category.IsNullOrEmpty())
-            elements.Add(new NbtTag<string>("category", value.Element.Category!));
+            writer.WriteString("category", value.Element.Category!);
 
-        value.Element.Effects.WriteEffect(elements);
+        value.Element.Effects.WriteEffect(writer);
 
         if (!value.Element.TemperatureModifier.IsNullOrEmpty())
-            elements.Add(new NbtTag<string>("temperature_modifier", value.Element.TemperatureModifier));
-
-        return elements;
+            writer.WriteString("temperature_modifier", value.Element.TemperatureModifier);
     }
 
-    public static void WriteEffect(this BiomeEffect value, NbtCompound compound)
+    public static void WriteEffect(this BiomeEffect value, NbtWriter writer)
     {
         var effects = new NbtCompound("effects")
         {
@@ -552,9 +512,9 @@ public partial class Extensions
             effects.Add(new NbtTag<string>("ambient_sound", value.AmbientSound));
 
         if (value.Particle != null)
-            value.Particle.WriteParticle(compound);
+            value.Particle.WriteParticle(writer);
 
-        compound.Add(effects);
+        writer.WriteTag(effects);
     }
 
     public static void WriteMusic(this BiomeMusicEffect musicEffect, NbtCompound compound)
@@ -596,7 +556,7 @@ public partial class Extensions
         compound.Add(mood);
     }
 
-    public static void WriteParticle(this BiomeParticle value, NbtCompound compound)
+    public static void WriteParticle(this BiomeParticle value, NbtWriter writer)
     {
         var particle = new NbtCompound("particle")
         {
@@ -613,26 +573,13 @@ public partial class Extensions
             particle.Add(options);
         }
 
-        compound.Add(particle);
+        writer.WriteTag(particle);
     }
     #endregion
 
     #region Trim Pattern Writing 
-    public static void Write(this TrimPatternCodec value, NbtList list)
-    {
-        var compound = new NbtCompound
-        {
-            new NbtTag<int>("id", value.Id),
 
-            new NbtTag<string>("name", value.Name),
-
-            value.WriteElement()
-        };
-
-        list.Add(compound);
-    }
-
-    public static NbtCompound WriteElement(this TrimPatternCodec value)
+    public static void WriteElement(this TrimPatternCodec value, NbtWriter writer)
     {
         var patternElement = value.Element;
 
@@ -641,34 +588,16 @@ public partial class Extensions
             new NbtTag<string>("translate", patternElement.Description.Translate)
         };
 
-        var element = new NbtCompound("element")
-        {
-            new NbtTag<string>("template_item", patternElement.TemplateItem),
-            description,
-            new NbtTag<string>("asset_id", patternElement.AssetId),
-            new NbtTag<bool>("decal", patternElement.Decal)
-        };
+        writer.WriteString("template_item", patternElement.TemplateItem);
+        writer.WriteString("asset_id", patternElement.AssetId);
+        writer.WriteBool("decal", patternElement.Decal);
+        writer.WriteTag(description);
 
-        return element;
     }
     #endregion
 
     #region Trim Material Writing
-    public static void Write(this TrimMaterialCodec value, NbtList list)
-    {
-        var compound = new NbtCompound
-        {
-            new NbtTag<int>("id", value.Id),
-
-            new NbtTag<string>("name", value.Name),
-
-            value.WriteElement()
-        };
-
-        list.Add(compound);
-    }
-
-    public static NbtCompound WriteElement(this TrimMaterialCodec value)
+    public static void WriteElement(this TrimMaterialCodec value, NbtWriter writer)
     {
         var materialElement = value.Element;
 
@@ -678,14 +607,6 @@ public partial class Extensions
             new NbtTag<string>("color", materialElement.Description.Color!)
         };
 
-        var element = new NbtCompound("element")
-        {
-            new NbtTag<string>("ingredient", materialElement.Ingredient),
-            description,
-            new NbtTag<string>("asset_name", materialElement.AssetName),
-            new NbtTag<double>("item_model_index", materialElement.ItemModelIndex)
-        };
-
         if (materialElement.OverrideArmorMaterials is Dictionary<string, string> overrideArmorMats)
         {
             var overrideArmorMaterialsCompound = new NbtCompound("override_armor_materials");
@@ -693,42 +614,26 @@ public partial class Extensions
             foreach (var (type, replacement) in overrideArmorMats)
                 overrideArmorMaterialsCompound.Add(new NbtTag<string>(type, replacement));
 
-            element.Add(overrideArmorMaterialsCompound);
+            writer.WriteTag(overrideArmorMaterialsCompound);
         }
 
-        return element;
+        writer.WriteString("ingredient", materialElement.Ingredient);
+        writer.WriteString("asset_name", materialElement.AssetName);
+        writer.WriteDouble("item_model_index", materialElement.ItemModelIndex);
+        writer.WriteTag(description);
     }
     #endregion
 
     #region Wolf Variant Writing
-    public static void Write(this WolfVariantCodec value, NbtList list)
-    {
-        var compound = new NbtCompound
-        {
-            new NbtTag<int>("id", value.Id),
 
-            new NbtTag<string>("name", value.Name),
-
-            value.WriteElement()
-        };
-
-        list.Add(compound);
-    }
-
-    public static NbtCompound WriteElement(this WolfVariantCodec value)
+    public static void WriteElement(this WolfVariantCodec value, NbtWriter writer)
     {
         var materialElement = value.Element;
 
-
-        var element = new NbtCompound("element")
-        {
-            new NbtTag<string>("tame_texture", materialElement.TameTexture),
-            new NbtTag<string>("angry_texture", materialElement.AngryTexture),
-            new NbtTag<string>("wild_texture", materialElement.WildTexture),
-            new NbtTag<string>("biomes", materialElement.Biomes)
-        };
-
-        return element;
+        writer.WriteString("tame_texture", materialElement.TameTexture);
+        writer.WriteString("angry_texture", materialElement.AngryTexture);
+        writer.WriteString("wild_texture", materialElement.WildTexture);
+        writer.WriteString("biomes", materialElement.Biomes);
     }
     #endregion
 }

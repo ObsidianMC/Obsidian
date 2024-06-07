@@ -2,7 +2,13 @@
 using Obsidian.API.Advancements;
 using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
+using Obsidian.API.Registry.Codecs.ArmorTrims.TrimMaterial;
+using Obsidian.API.Registry.Codecs.ArmorTrims.TrimPattern;
+using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.API.Registry.Codecs.Chat;
+using Obsidian.API.Registry.Codecs.DamageTypes;
 using Obsidian.API.Registry.Codecs.Dimensions;
+using Obsidian.API.Registry.Codecs.WolfVariant;
 using Obsidian.API.Utilities;
 using Obsidian.Commands;
 using Obsidian.Entities;
@@ -779,144 +785,24 @@ public partial class MinecraftStream
     }
 
     [WriteMethod]
-    public void WriteMixedCodec(MixedCodec _)
+    public void WriteCodec(ICodec codec)
     {
         var writer = new NbtWriter(this, true);
 
-        var list = new NbtList(NbtTagType.Compound, "value");
-
-        foreach (var (_, codec) in CodecRegistry.Dimensions.All)
-            codec.Write(list);
-
-        var dimensions = new NbtCompound(CodecRegistry.Dimensions.CodecKey)
-        {
-            new NbtTag<string>("type", CodecRegistry.Dimensions.CodecKey),
-
-            list
-        };
-
-        writer.WriteTag(dimensions);
-
-        this.WriteBiomeCodec(writer);
-        this.WriteChatCodec(writer);
-        this.WriteDamageTypeCodec(writer);
-        this.WriteTrimPatternCodec(writer);
-        this.WriteTrimMaterialCodec(writer);
-        this.WriteWolfVariant(writer);
-
-        writer.EndCompound();
-        writer.TryFinish();
-    }
-
-    private void WriteWolfVariant(NbtWriter writer)
-    {
-        var wolfVariants = new NbtList(NbtTagType.Compound, "value");
-
-        foreach (var (_, wolfVariant) in CodecRegistry.WolfVariant.All)
-            wolfVariant.Write(wolfVariants);
-
-        var wolfVariantsCompound = new NbtCompound(CodecRegistry.WolfVariant.CodecKey)
-        {
-            new NbtTag<string>("type", CodecRegistry.WolfVariant.CodecKey),
-
-            wolfVariants
-        };
-
-        writer.WriteTag(wolfVariantsCompound);
-    }
-
-    private void WriteTrimPatternCodec(NbtWriter writer)
-    {
-        var trimPatterns = new NbtList(NbtTagType.Compound, "value");
-
-        foreach (var (_, trimPattern) in CodecRegistry.TrimPatterns.All)
-            trimPattern.Write(trimPatterns);
-
-        var trimPatternsCompound = new NbtCompound(CodecRegistry.TrimPatterns.CodecKey)
-        {
-            new NbtTag<string>("type", CodecRegistry.TrimPatterns.CodecKey),
-
-            trimPatterns
-        };
-
-        writer.WriteTag(trimPatternsCompound);
-    }
-
-    private void WriteTrimMaterialCodec(NbtWriter writer)
-    {
-        var trimMaterials = new NbtList(NbtTagType.Compound, "value");
-
-        foreach (var (_, trimMaterial) in CodecRegistry.TrimMaterials.All)
-            trimMaterial.Write(trimMaterials);
-
-        var trimMaterialsCompound = new NbtCompound(CodecRegistry.TrimMaterials.CodecKey)
-        {
-            new NbtTag<string>("type", CodecRegistry.TrimMaterials.CodecKey),
-
-            trimMaterials
-        };
-
-        writer.WriteTag(trimMaterialsCompound);
-    }
-
-
-    private void WriteDamageTypeCodec(NbtWriter writer)
-    {
-        var damageTypes = new NbtList(NbtTagType.Compound, "value");
-
-        foreach (var (_, damageType) in CodecRegistry.DamageTypes.All)
-            damageType.Write(damageTypes);
-
-        var damageTypesCompound = new NbtCompound(CodecRegistry.DamageTypes.CodecKey)
-        {
-            new NbtTag<string>("type", CodecRegistry.DamageTypes.CodecKey),
-
-            damageTypes
-        };
-
-        writer.WriteTag(damageTypesCompound);
-    }
-
-    private void WriteChatCodec(NbtWriter writer)
-    {
-        var chatTypes = new NbtList(NbtTagType.Compound, "value");
-
-        foreach (var (_, chatType) in CodecRegistry.ChatType.All)
-            chatType.Write(chatTypes);
-
-        var chatTypesCompound = new NbtCompound(CodecRegistry.ChatType.CodecKey)
-        {
-            new NbtTag<string>("type", CodecRegistry.ChatType.CodecKey),
-
-            chatTypes
-        };
-
-        writer.WriteTag(chatTypesCompound);
-    }
-
-    private void WriteBiomeCodec(NbtWriter writer)
-    {
-        var biomes = new NbtList(NbtTagType.Compound, "value");
-
-        foreach (var (_, biome) in CodecRegistry.Biomes.All)
-            biome.Write(biomes);
-
-        var biomeCompound = new NbtCompound(CodecRegistry.Biomes.CodecKey)
-        {
-            new NbtTag<string>("type", CodecRegistry.Biomes.CodecKey),
-
-            biomes
-        };
-
-        writer.WriteTag(biomeCompound);
-    }
-
-    [WriteMethod]
-    public void WriteDimensionCodec(DimensionCodec value)
-    {
-        var writer = new NbtWriter(this, true);
-
-        value.WriteElement(writer);
+        if (codec is DimensionCodec dim)
+            dim.WriteElement(writer);
+        else if (codec is BiomeCodec biome)
+            biome.WriteElement(writer);
+        else if (codec is ChatCodec chat)
+            chat.WriteElement(writer);
+        else if (codec is TrimPatternCodec trimPattern)
+            trimPattern.WriteElement(writer);
+        else if (codec is TrimMaterialCodec trimMaterial)
+            trimMaterial.WriteElement(writer);
+        else if (codec is DamageTypeCodec damageType)
+            damageType.WriteElement(writer);
+        else if (codec is WolfVariantCodec wolfVariant)
+            wolfVariant.WriteElement(writer);
 
         writer.EndCompound();
         writer.TryFinish();
