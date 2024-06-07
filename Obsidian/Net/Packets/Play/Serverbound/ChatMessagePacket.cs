@@ -30,7 +30,7 @@ public partial class ChatMessagePacket : IServerboundPacket
     public SignedMessage LastMessage { get; private set; }
 
 
-    public int Id => 0x05;
+    public int Id => 0x06;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
