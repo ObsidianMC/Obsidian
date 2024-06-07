@@ -6,49 +6,44 @@ namespace Obsidian.Net.Packets.Play.Clientbound;
 public partial class PlayerInfoUpdatePacket : IClientboundPacket
 {
     [Field(0)]
-    public BitSet UsedActions { get; } = new();
+    public PlayerInfoAction Actions { get; private set; }
 
     /// <remarks>
     /// All action lists must set the same types of InfoAction set
     /// </remarks>
     [Field(1)]
-    public Dictionary<Guid, List<InfoAction>> Actions { get; set; } = new();
+    public Dictionary<Guid, List<InfoAction>> Players { get; set; } = [];
 
-    public int Id => 0x3C;
+    public int Id => 0x3E;
 
     public PlayerInfoUpdatePacket(Dictionary<Guid, List<InfoAction>> infoActions)
     {
-        this.Actions = new(infoActions);
+        this.Players = new(infoActions);
 
-        this.InitializeBitSet();
+        this.InitActions();
     }
 
     public PlayerInfoUpdatePacket(Guid uuid, InfoAction infoAction)
     {
-        Actions.Add(uuid, new() { infoAction });
+        Players.Add(uuid, [infoAction]);
 
-        this.InitializeBitSet();
+        this.InitActions();
     }
 
-    private void InitializeBitSet()
+    private void InitActions()
     {
-        var enumValues = Enum.GetValues<PlayerInfoAction>();
-        var usedEnums = this.Actions.Values.First().Select(x => x.Type).Distinct();
-
-        for (int i = 0; i < enumValues.Length; i++)
-        {
-            var usingBit = usedEnums.Contains(enumValues[i]);
-            this.UsedActions.SetBit(i, usingBit);
-        }
+        var usedEnums = this.Players.Values.First().Select(x => x.Type).Distinct();
+        foreach(var usedEnum in usedEnums)
+            this.Actions |= usedEnum;
     }
 
     public void Serialize(MinecraftStream stream)
     {
         using var packetStream = new MinecraftStream();
 
-        packetStream.WriteBitSet(this.UsedActions, true);
-        packetStream.WriteVarInt(Actions.Count);
-        foreach (var (uuid, actions) in this.Actions)
+        packetStream.WriteByte((sbyte)this.Actions);
+        packetStream.WriteVarInt(Players.Count);
+        foreach (var (uuid, actions) in this.Players)
         {
             var orderedActions = actions.OrderBy(x => (int)x.Type).ToList();
 
@@ -68,4 +63,6 @@ public partial class PlayerInfoUpdatePacket : IClientboundPacket
         stream.Lock.Release();
     }
 }
+
+
 

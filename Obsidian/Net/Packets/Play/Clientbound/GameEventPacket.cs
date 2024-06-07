@@ -10,7 +10,7 @@ public partial class GameEventPacket : IClientboundPacket
     [Field(1)]
     public float Value { get; }
 
-    public int Id => 0x20;
+    public int Id => 0x22;
 
     public GameEventPacket(ChangeGameStateReason reason)
     {

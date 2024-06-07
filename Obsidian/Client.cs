@@ -631,7 +631,7 @@ public sealed class Client : IDisposable
         // now that all is fine and dandy, we'd be fine to enqueue the new keepalive
         SendPacket(new KeepAlivePacket(keepAliveId)
         {
-            Id = this.State == ClientState.Configuration ? 0x03 : 0x24
+            Id = this.State == ClientState.Configuration ? 0x03 : 0x26
         });
         missedKeepAlives.Add(keepAliveId);
 

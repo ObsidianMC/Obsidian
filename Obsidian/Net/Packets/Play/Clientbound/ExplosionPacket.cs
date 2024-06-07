@@ -36,7 +36,7 @@ public partial class ExplosionPacket : IClientboundPacket
     [Field(9)]
     public required SoundEffect ExplosionSound { get; init; }
 
-    public int Id => 0x1E;
+    public int Id => 0x20;
 }
 
 public readonly struct ExplosionRecord

@@ -11,7 +11,7 @@ public partial class SetTitleTextPacket : IClientboundPacket
 
     public SetTitleTextPacket(TitleMode mode)
     {
-        this.Id = mode == TitleMode.SetTitle ? 0x63 : 0x61;
+        this.Id = mode == TitleMode.SetTitle ? 0x65 : 0x63;
     }
 }
 
@@ -26,7 +26,7 @@ public partial class SetTitleAnimationTimesPacket : IClientboundPacket
     [Field(2)]
     public int FadeOut { get; set; }
 
-    public int Id => 0X64;
+    public int Id => 0X66;
 }
 
 public enum TitleMode

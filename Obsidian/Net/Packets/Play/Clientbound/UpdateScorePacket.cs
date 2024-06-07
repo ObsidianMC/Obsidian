@@ -42,5 +42,5 @@ public partial class UpdateScorePacket : IClientboundPacket
     [Field(7), Condition("NumberFormat == NumberFormat.Fixed"), ActualType(typeof(ChatMessage))]
     public ChatMessage? Content { get; init; }
 
-    public int Id => 0x5F;
+    public int Id => 0x61;
 }

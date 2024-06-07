@@ -31,5 +31,5 @@ public partial class EntitySoundEffectPacket : IClientboundPacket
     [Field(8)]
     public long Seed { get; init; } = Globals.Random.Next();
 
-    public int Id => 0x65;
+    public int Id => 0x67;
 }

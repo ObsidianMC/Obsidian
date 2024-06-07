@@ -30,5 +30,5 @@ public partial class SynchronizePlayerPositionPacket : IClientboundPacket
     [Field(4), VarLength]
     public int TeleportId { get; init; }
 
-    public int Id => 0x3E;
+    public int Id => 0x40;
 }

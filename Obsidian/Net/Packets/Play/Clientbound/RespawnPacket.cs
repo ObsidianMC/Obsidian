@@ -47,5 +47,5 @@ public partial class RespawnPacket : IClientboundPacket
     [Field(11), ActualType(typeof(sbyte))]
     public DataKept DataKept { get; init; }
 
-    public int Id => 0x45;
+    public int Id => 0x47;
 }
