@@ -23,11 +23,3 @@ public partial class EntityEffectPacket(int entityId, int effectId, int duration
     public int Id => 0x76;
 }
 
-[Flags]
-public enum EntityEffect : sbyte
-{
-    IsAmbient = 0x01,
-    ShowParticles = 0x02,
-    ShowIcon = 0x04,
-    Blend = 0x08
-}

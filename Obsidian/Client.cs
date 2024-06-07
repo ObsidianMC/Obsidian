@@ -442,7 +442,8 @@ public sealed class Client : IDisposable
             SendPacket(new EncryptionRequest
             {
                 PublicKey = publicKey,
-                VerifyToken = randomToken
+                VerifyToken = randomToken,
+                ShouldAuthenticate = true//I don't know how we're supposed to use this
             });
         }
         else if (this.server.Configuration.Whitelist && !this.server.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => x.Name == username))
