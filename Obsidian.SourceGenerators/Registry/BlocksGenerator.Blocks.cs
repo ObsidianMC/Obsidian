@@ -21,6 +21,8 @@ public partial class BlocksGenerator
                 blockName = "ObsidianBlock";
             if (blockName == "TrialSpawner")
                 blockName = "TrialSpawnerBlock";
+            if (blockName == "Vault")
+                blockName = "VaultBlock";
 
             var builder = new CodeBuilder()
                 .Using("Obsidian.API")
