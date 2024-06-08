@@ -143,6 +143,8 @@ internal static partial class BlocksRegistry
             sanitizedBlockName = "ObsidianBlock";
         if (sanitizedBlockName == "TrialSpawner")
             sanitizedBlockName = "TrialSpawnerBlock";
+        if (sanitizedBlockName == "Vault")
+            sanitizedBlockName = "VaultBlock";
 
         return sanitizedBlockName;
     }

@@ -243,11 +243,11 @@ public partial class Extensions
         return itemStack;
     }
 
+    //TODO this can be made A LOT FASTER
     public static IBlock ToBlock(this NbtCompound comp)
     {
         var name = comp.GetString("Name").Split(":")[1].ToPascalCase();
-        var assm = Assembly.Load("Obsidian.API");
-        Type builderType = assm.GetType($"Obsidian.API.BlockStates.Builders.{name}StateBuilder");
+        Type builderType = typeof(IBlockState).Assembly.GetType($"Obsidian.API.BlockStates.Builders.{name}StateBuilder");
 
         if (builderType == null)
         {
