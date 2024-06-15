@@ -1,30 +1,33 @@
 ﻿using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace Obsidian.SourceGenerators.Registry.Models;
 
 internal sealed class Tag
 {
     public string Name { get; }
+    public string Parent { get; }
     public string MinecraftName { get; }
     public string Type { get; }
     public List<ITaggable> Values { get; }
 
-    private Tag(string name, string minecraftName, string type, List<ITaggable> values)
+    private Tag(string name, string minecraftName, string type, List<ITaggable> values, string parent)
     {
         Name = name;
         MinecraftName = minecraftName;
         Type = type;
         Values = values;
+        Parent = parent;
     }
 
     public static Tag Get(JsonProperty property, Dictionary<string, ITaggable> taggables, Dictionary<string, Tag> knownTags, Dictionary<string, List<string>> missedTags)
     {
         JsonElement propertyValues = property.Value;
+        var tagTypes = property.Name.Split('/');
+        var parent = tagTypes[0];
 
         string minecraftName = propertyValues.GetProperty("name").GetString()!;
         string name = minecraftName.ToPascalCase();
-        string type = property.Name.Substring(0, property.Name.IndexOf('/'));
+        string type = tagTypes.Length > 2 ? tagTypes.ElementAtOrDefault(1) : parent;
 
         var values = new List<ITaggable>();
 
@@ -57,7 +60,7 @@ internal sealed class Tag
             }
         }
 
-        var tag = new Tag(name, minecraftName, type, values);
+        var tag = new Tag(name, minecraftName, type, values, parent);
         knownTags[property.Name] = tag;
         return tag;
     }
