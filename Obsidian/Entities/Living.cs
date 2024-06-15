@@ -59,24 +59,15 @@ public class Living : Entity, ILiving
         }
     }
 
-    public void AddPotionEffect(PotionEffect potion, int duration, byte amplifier = 0, bool showParticles = true,
-        bool showIcon = true, bool isAmbient = false)
+    public void AddPotionEffect(PotionEffect potion, int duration, byte amplifier = 0, EntityEffect effect = EntityEffect.None)
     {
-        byte flags = 0;
-        if (isAmbient)
-            flags |= 0x01;
-        if (showParticles)
-            flags |= 0x02;
-        if (showIcon)
-            flags |= 0x04;
-
         this.PacketBroadcaster.QueuePacketToWorld(this.World, new EntityEffectPacket(EntityId, (int)potion, duration)
         {
             Amplifier = amplifier,
-            Flags = flags
+            Flags = effect
         });
 
-        var data = new PotionEffectData(duration, amplifier, flags);
+        var data = new PotionEffectData(duration, amplifier, (byte)effect);
         activePotionEffects.AddOrUpdate(potion, _ => data, (_, _) => data);
     }
 

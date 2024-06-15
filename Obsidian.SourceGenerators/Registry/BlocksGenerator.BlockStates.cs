@@ -15,6 +15,8 @@ public partial class BlocksGenerator
             //TODO THIS NEEDS TO BE MOVED SOMEWHERE
             if (blockName == "TrialSpawner")
                 blockName = "TrialSpawnerBlock";
+            if (blockName == "Vault")
+                blockName = "VaultBlock";
 
             var builder = new CodeBuilder()
                 .Namespace("Obsidian.API.BlockStates")

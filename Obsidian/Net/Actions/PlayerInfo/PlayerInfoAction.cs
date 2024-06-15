@@ -1,12 +1,11 @@
 ﻿namespace Obsidian.Net.Actions.PlayerInfo;
-public enum PlayerInfoAction : int
+[Flags]
+public enum PlayerInfoAction : sbyte
 {
-    AddPlayer,
-
-    InitializeChat,
-
-    UpdateGamemode,
-    UpdateListed,
-    UpdateLatency,
-    UpdateDisplayName
+    AddPlayer = 0x01,
+    InitChat = 0x02,
+    UpdateGamemode = 0x04,
+    UpdateListed = 0x08,
+    UpdateLatency = 0x10,
+    UpdateDisplayName = 0x20
 }

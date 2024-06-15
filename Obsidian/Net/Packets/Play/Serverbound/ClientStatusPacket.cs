@@ -8,7 +8,7 @@ public partial class ClientStatusPacket : IServerboundPacket
     [Field(0), ActualType(typeof(int)), VarLength]
     public ClientAction Action { get; private set; }
 
-    public int Id => 0x08;
+    public int Id => 0x09;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {

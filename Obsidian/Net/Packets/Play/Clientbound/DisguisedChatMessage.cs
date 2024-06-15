@@ -10,13 +10,11 @@ public sealed partial class DisguisedChatMessage : IClientboundPacket
     public int ChatType { get; init; }
 
     [Field(2)]
-    public ChatMessage ChatTypeName { get; init; }
-
-    [Field(3)]
     public bool HasTargetName { get; init; }
 
-    [Field(4)]
+    [Field(3)]
+    [Condition("HasTargetName")]
     public ChatMessage TargetName { get; init; }
 
-    public int Id => 0x1C;
+    public int Id => 0x1E;
 }

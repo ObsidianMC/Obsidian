@@ -53,7 +53,7 @@ public partial class ClickContainerPacket : IServerboundPacket
 
     private bool IsPlayerInventory => this.WindowId == 0;
 
-    public int Id => 0x0D;
+    public int Id => 0x0E;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {

@@ -28,5 +28,5 @@ public partial class ParticlePacket : IClientboundPacket
     [Field(8)]
     public ParticleData Data { get; init; }
 
-    public int Id => 0x27;
+    public int Id => 0x29;
 }

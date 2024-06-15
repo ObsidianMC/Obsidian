@@ -28,7 +28,7 @@ public sealed partial class ClientInformationPacket : IServerboundPacket
     [Field(7)]
     public bool AllowServerListings { get; private set; }
 
-    //0x09 for play state
+    //0x0A for play state
     public int Id { get; init; } = 0x00;
 
     public async ValueTask HandleAsync(Server server, Player player)

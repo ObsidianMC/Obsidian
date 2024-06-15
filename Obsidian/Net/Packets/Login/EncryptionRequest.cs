@@ -19,5 +19,8 @@ public partial class EncryptionRequest : IClientboundPacket
     [Field(4)]
     public required byte[] VerifyToken { get; init; }
 
+    [Field(5)]
+    public required bool ShouldAuthenticate { get; init; }
+
     public int Id => 0x01;
 }

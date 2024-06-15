@@ -19,5 +19,5 @@ public partial class TeleportEntityPacket : IClientboundPacket
     [Field(4)]
     public bool OnGround { get; init; }
 
-    public int Id => 0x6D;
+    public int Id => 0x70;
 }

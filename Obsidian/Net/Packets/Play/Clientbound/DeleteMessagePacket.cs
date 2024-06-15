@@ -9,5 +9,5 @@ public sealed partial class DeleteMessagePacket : IClientboundPacket
     [Field(1)]
     public byte[] Signature { get; init; }
 
-    public int Id => 0x1A;
+    public int Id => 0x1C;
 }

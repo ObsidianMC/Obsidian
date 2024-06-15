@@ -1,9 +1,8 @@
-﻿using Obsidian.API._Types;
-using Obsidian.Entities;
+﻿using Obsidian.Entities;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public class PlayerAbilitiesPacket : IClientboundPacket, IServerboundPacket
+public class PlayerAbilitiesPacket(bool toClient) : IClientboundPacket, IServerboundPacket
 {
     public PlayerAbility Abilities { get; set; } = PlayerAbility.None;
 
@@ -11,12 +10,7 @@ public class PlayerAbilitiesPacket : IClientboundPacket, IServerboundPacket
 
     public float FieldOfViewModifier { get; set; } = 0.1F;
 
-    public int Id { get; }
-
-    public PlayerAbilitiesPacket(bool toClient)
-    {
-        Id = toClient ? 0x36 : 0x20;
-    }
+    public int Id { get; } = toClient ? 0x38 : 0x20;
 
     public void Serialize(MinecraftStream stream)
     {

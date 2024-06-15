@@ -266,6 +266,16 @@
       "minecraft:damaged_anvil"
     ]
   },
+  "blocks/armadillo_spawnable_on": {
+    "name": "armadillo_spawnable_on",
+    "type": "blocks",
+    "values": [
+      "#minecraft:animals_spawnable_on",
+      "#minecraft:badlands_terracotta",
+      "minecraft:red_sand",
+      "minecraft:coarse_dirt"
+    ]
+  },
   "blocks/axolotls_spawnable_on": {
     "name": "axolotls_spawnable_on",
     "type": "blocks",
@@ -297,6 +307,19 @@
       "minecraft:sand",
       "minecraft:snow_block",
       "minecraft:powder_snow"
+    ]
+  },
+  "blocks/badlands_terracotta": {
+    "name": "badlands_terracotta",
+    "type": "blocks",
+    "values": [
+      "minecraft:terracotta",
+      "minecraft:white_terracotta",
+      "minecraft:yellow_terracotta",
+      "minecraft:orange_terracotta",
+      "minecraft:red_terracotta",
+      "minecraft:brown_terracotta",
+      "minecraft:light_gray_terracotta"
     ]
   },
   "blocks/bamboo_blocks": {
@@ -770,6 +793,13 @@
       "minecraft:muddy_mangrove_roots"
     ]
   },
+  "blocks/does_not_block_hoppers": {
+    "name": "does_not_block_hoppers",
+    "type": "blocks",
+    "values": [
+      "#minecraft:beehives"
+    ]
+  },
   "blocks/doors": {
     "name": "doors",
     "type": "blocks",
@@ -1091,6 +1121,49 @@
       "minecraft:red_stained_glass",
       "minecraft:black_stained_glass",
       "minecraft:tinted_glass"
+    ]
+  },
+  "blocks/incorrect_for_diamond_tool": {
+    "name": "incorrect_for_diamond_tool",
+    "type": "blocks",
+    "values": []
+  },
+  "blocks/incorrect_for_gold_tool": {
+    "name": "incorrect_for_gold_tool",
+    "type": "blocks",
+    "values": [
+      "#minecraft:needs_diamond_tool",
+      "#minecraft:needs_iron_tool",
+      "#minecraft:needs_stone_tool"
+    ]
+  },
+  "blocks/incorrect_for_iron_tool": {
+    "name": "incorrect_for_iron_tool",
+    "type": "blocks",
+    "values": [
+      "#minecraft:needs_diamond_tool"
+    ]
+  },
+  "blocks/incorrect_for_netherite_tool": {
+    "name": "incorrect_for_netherite_tool",
+    "type": "blocks",
+    "values": []
+  },
+  "blocks/incorrect_for_stone_tool": {
+    "name": "incorrect_for_stone_tool",
+    "type": "blocks",
+    "values": [
+      "#minecraft:needs_diamond_tool",
+      "#minecraft:needs_iron_tool"
+    ]
+  },
+  "blocks/incorrect_for_wooden_tool": {
+    "name": "incorrect_for_wooden_tool",
+    "type": "blocks",
+    "values": [
+      "#minecraft:needs_diamond_tool",
+      "#minecraft:needs_iron_tool",
+      "#minecraft:needs_stone_tool"
     ]
   },
   "blocks/infiniburn_end": {
@@ -2745,7 +2818,9 @@
     "values": [
       "minecraft:grass_block",
       "minecraft:snow",
-      "minecraft:snow_block"
+      "minecraft:snow_block",
+      "minecraft:coarse_dirt",
+      "minecraft:podzol"
     ]
   },
   "blocks/wooden_buttons": {
@@ -2948,7 +3023,6 @@
     "values": [
       "minecraft:arrow",
       "minecraft:trident",
-      "minecraft:mob_projectile",
       "minecraft:fireball",
       "minecraft:wither_skull"
     ]
@@ -3046,6 +3120,24 @@
       "minecraft:falling_stalactite"
     ]
   },
+  "damage_type/bypasses_wolf_armor": {
+    "name": "bypasses_wolf_armor",
+    "type": "damage_type",
+    "values": [
+      "#minecraft:bypasses_invulnerability",
+      "minecraft:cramming",
+      "minecraft:drown",
+      "minecraft:dry_out",
+      "minecraft:freeze",
+      "minecraft:in_wall",
+      "minecraft:indirect_magic",
+      "minecraft:magic",
+      "minecraft:outside_border",
+      "minecraft:starve",
+      "minecraft:thorns",
+      "minecraft:wither"
+    ]
+  },
   "damage_type/can_break_armor_stand": {
     "name": "can_break_armor_stand",
     "type": "damage_type",
@@ -3121,6 +3213,13 @@
       "minecraft:lightning_bolt"
     ]
   },
+  "damage_type/is_player_attack": {
+    "name": "is_player_attack",
+    "type": "damage_type",
+    "values": [
+      "minecraft:player_attack"
+    ]
+  },
   "damage_type/is_projectile": {
     "name": "is_projectile",
     "type": "damage_type",
@@ -3174,12 +3273,86 @@
       "minecraft:drown"
     ]
   },
+  "enchantment/tooltip_order": {
+    "name": "tooltip_order",
+    "type": "enchantment",
+    "values": [
+      "minecraft:binding_curse",
+      "minecraft:vanishing_curse",
+      "minecraft:riptide",
+      "minecraft:channeling",
+      "minecraft:frost_walker",
+      "minecraft:sharpness",
+      "minecraft:smite",
+      "minecraft:bane_of_arthropods",
+      "minecraft:impaling",
+      "minecraft:power",
+      "minecraft:piercing",
+      "minecraft:sweeping_edge",
+      "minecraft:multishot",
+      "minecraft:fire_aspect",
+      "minecraft:flame",
+      "minecraft:knockback",
+      "minecraft:punch",
+      "minecraft:protection",
+      "minecraft:blast_protection",
+      "minecraft:fire_protection",
+      "minecraft:projectile_protection",
+      "minecraft:feather_falling",
+      "minecraft:fortune",
+      "minecraft:looting",
+      "minecraft:silk_touch",
+      "minecraft:luck_of_the_sea",
+      "minecraft:efficiency",
+      "minecraft:quick_charge",
+      "minecraft:lure",
+      "minecraft:respiration",
+      "minecraft:aqua_affinity",
+      "minecraft:soul_speed",
+      "minecraft:swift_sneak",
+      "minecraft:depth_strider",
+      "minecraft:thorns",
+      "minecraft:loyalty",
+      "minecraft:unbreaking",
+      "minecraft:infinity",
+      "minecraft:mending"
+    ]
+  },
+  "entity_types/aquatic": {
+    "name": "aquatic",
+    "type": "entity_types",
+    "values": [
+      "minecraft:turtle",
+      "minecraft:axolotl",
+      "minecraft:guardian",
+      "minecraft:elder_guardian",
+      "minecraft:cod",
+      "minecraft:pufferfish",
+      "minecraft:salmon",
+      "minecraft:tropical_fish",
+      "minecraft:dolphin",
+      "minecraft:squid",
+      "minecraft:glow_squid",
+      "minecraft:tadpole"
+    ]
+  },
   "entity_types/arrows": {
     "name": "arrows",
     "type": "entity_types",
     "values": [
       "minecraft:arrow",
       "minecraft:spectral_arrow"
+    ]
+  },
+  "entity_types/arthropod": {
+    "name": "arthropod",
+    "type": "entity_types",
+    "values": [
+      "minecraft:bee",
+      "minecraft:endermite",
+      "minecraft:silverfish",
+      "minecraft:spider",
+      "minecraft:cave_spider"
     ]
   },
   "entity_types/axolotl_always_hostiles": {
@@ -3297,6 +3470,30 @@
       "minecraft:magma_cube"
     ]
   },
+  "entity_types/ignores_poison_and_regen": {
+    "name": "ignores_poison_and_regen",
+    "type": "entity_types",
+    "values": [
+      "#minecraft:undead"
+    ]
+  },
+  "entity_types/illager": {
+    "name": "illager",
+    "type": "entity_types",
+    "values": [
+      "minecraft:evoker",
+      "minecraft:illusioner",
+      "minecraft:pillager",
+      "minecraft:vindicator"
+    ]
+  },
+  "entity_types/illager_friends": {
+    "name": "illager_friends",
+    "type": "entity_types",
+    "values": [
+      "#minecraft:illager"
+    ]
+  },
   "entity_types/impact_projectiles": {
     "name": "impact_projectiles",
     "type": "entity_types",
@@ -3312,12 +3509,36 @@
       "minecraft:wither_skull"
     ]
   },
+  "entity_types/inverted_healing_and_harm": {
+    "name": "inverted_healing_and_harm",
+    "type": "entity_types",
+    "values": [
+      "#minecraft:undead"
+    ]
+  },
   "entity_types/non_controlling_rider": {
     "name": "non_controlling_rider",
     "type": "entity_types",
     "values": [
       "minecraft:slime",
       "minecraft:magma_cube"
+    ]
+  },
+  "entity_types/not_scary_for_pufferfish": {
+    "name": "not_scary_for_pufferfish",
+    "type": "entity_types",
+    "values": [
+      "minecraft:turtle",
+      "minecraft:guardian",
+      "minecraft:elder_guardian",
+      "minecraft:cod",
+      "minecraft:pufferfish",
+      "minecraft:salmon",
+      "minecraft:tropical_fish",
+      "minecraft:dolphin",
+      "minecraft:squid",
+      "minecraft:glow_squid",
+      "minecraft:tadpole"
     ]
   },
   "entity_types/powder_snow_walkable_mobs": {
@@ -3342,6 +3563,34 @@
       "minecraft:witch"
     ]
   },
+  "entity_types/redirectable_projectile": {
+    "name": "redirectable_projectile",
+    "type": "entity_types",
+    "values": [
+      "minecraft:fireball"
+    ]
+  },
+  "entity_types/sensitive_to_bane_of_arthropods": {
+    "name": "sensitive_to_bane_of_arthropods",
+    "type": "entity_types",
+    "values": [
+      "#minecraft:arthropod"
+    ]
+  },
+  "entity_types/sensitive_to_impaling": {
+    "name": "sensitive_to_impaling",
+    "type": "entity_types",
+    "values": [
+      "#minecraft:aquatic"
+    ]
+  },
+  "entity_types/sensitive_to_smite": {
+    "name": "sensitive_to_smite",
+    "type": "entity_types",
+    "values": [
+      "#minecraft:undead"
+    ]
+  },
   "entity_types/skeletons": {
     "name": "skeletons",
     "type": "entity_types",
@@ -3360,6 +3609,13 @@
       "#minecraft:zombies",
       "minecraft:wither",
       "minecraft:phantom"
+    ]
+  },
+  "entity_types/wither_friends": {
+    "name": "wither_friends",
+    "type": "entity_types",
+    "values": [
+      "#minecraft:undead"
     ]
   },
   "entity_types/zombies": {
@@ -3587,6 +3843,13 @@
       "minecraft:damaged_anvil"
     ]
   },
+  "items/armadillo_food": {
+    "name": "armadillo_food",
+    "type": "items",
+    "values": [
+      "minecraft:spider_eye"
+    ]
+  },
   "items/arrows": {
     "name": "arrows",
     "type": "items",
@@ -3608,8 +3871,8 @@
       "minecraft:iron_axe"
     ]
   },
-  "items/axolotl_tempt_items": {
-    "name": "axolotl_tempt_items",
+  "items/axolotl_food": {
+    "name": "axolotl_food",
     "type": "items",
     "values": [
       "minecraft:tropical_fish_bucket"
@@ -3678,6 +3941,13 @@
       "minecraft:yellow_bed"
     ]
   },
+  "items/bee_food": {
+    "name": "bee_food",
+    "type": "items",
+    "values": [
+      "#minecraft:flowers"
+    ]
+  },
   "items/birch_logs": {
     "name": "birch_logs",
     "type": "items",
@@ -3719,7 +3989,12 @@
     "name": "breaks_decorated_pots",
     "type": "items",
     "values": [
-      "#minecraft:tools"
+      "#minecraft:swords",
+      "#minecraft:axes",
+      "#minecraft:pickaxes",
+      "#minecraft:shovels",
+      "#minecraft:hoes",
+      "minecraft:trident"
     ]
   },
   "items/buttons": {
@@ -3728,6 +4003,13 @@
     "values": [
       "#minecraft:wooden_buttons",
       "#minecraft:stone_buttons"
+    ]
+  },
+  "items/camel_food": {
+    "name": "camel_food",
+    "type": "items",
+    "values": [
+      "minecraft:cactus"
     ]
   },
   "items/candles": {
@@ -3753,6 +4035,14 @@
       "minecraft:black_candle"
     ]
   },
+  "items/cat_food": {
+    "name": "cat_food",
+    "type": "items",
+    "values": [
+      "minecraft:cod",
+      "minecraft:salmon"
+    ]
+  },
   "items/cherry_logs": {
     "name": "cherry_logs",
     "type": "items",
@@ -3761,6 +4051,18 @@
       "minecraft:cherry_wood",
       "minecraft:stripped_cherry_log",
       "minecraft:stripped_cherry_wood"
+    ]
+  },
+  "items/chest_armor": {
+    "name": "chest_armor",
+    "type": "items",
+    "values": [
+      "minecraft:leather_chestplate",
+      "minecraft:chainmail_chestplate",
+      "minecraft:golden_chestplate",
+      "minecraft:iron_chestplate",
+      "minecraft:diamond_chestplate",
+      "minecraft:netherite_chestplate"
     ]
   },
   "items/chest_boats": {
@@ -3776,6 +4078,18 @@
       "minecraft:mangrove_chest_boat",
       "minecraft:bamboo_chest_raft",
       "minecraft:cherry_chest_boat"
+    ]
+  },
+  "items/chicken_food": {
+    "name": "chicken_food",
+    "type": "items",
+    "values": [
+      "minecraft:wheat_seeds",
+      "minecraft:melon_seeds",
+      "minecraft:pumpkin_seeds",
+      "minecraft:beetroot_seeds",
+      "minecraft:torchflower_seeds",
+      "minecraft:pitcher_pod"
     ]
   },
   "items/cluster_max_harvestables": {
@@ -3829,6 +4143,13 @@
     "values": [
       "minecraft:copper_ore",
       "minecraft:deepslate_copper_ore"
+    ]
+  },
+  "items/cow_food": {
+    "name": "cow_food",
+    "type": "items",
+    "values": [
+      "minecraft:wheat"
     ]
   },
   "items/creeper_drop_music_discs": {
@@ -3950,12 +4271,189 @@
       "minecraft:iron_door"
     ]
   },
+  "items/dyeable": {
+    "name": "dyeable",
+    "type": "items",
+    "values": [
+      "minecraft:leather_helmet",
+      "minecraft:leather_chestplate",
+      "minecraft:leather_leggings",
+      "minecraft:leather_boots",
+      "minecraft:leather_horse_armor",
+      "minecraft:wolf_armor"
+    ]
+  },
   "items/emerald_ores": {
     "name": "emerald_ores",
     "type": "items",
     "values": [
       "minecraft:emerald_ore",
       "minecraft:deepslate_emerald_ore"
+    ]
+  },
+  "items/enchantable/armor": {
+    "name": "enchantable/armor",
+    "type": "items",
+    "values": [
+      "#minecraft:enchantable/foot_armor",
+      "#minecraft:enchantable/leg_armor",
+      "#minecraft:enchantable/chest_armor",
+      "#minecraft:enchantable/head_armor"
+    ]
+  },
+  "items/enchantable/bow": {
+    "name": "enchantable/bow",
+    "type": "items",
+    "values": [
+      "minecraft:bow"
+    ]
+  },
+  "items/enchantable/chest_armor": {
+    "name": "enchantable/chest_armor",
+    "type": "items",
+    "values": [
+      "#minecraft:chest_armor"
+    ]
+  },
+  "items/enchantable/crossbow": {
+    "name": "enchantable/crossbow",
+    "type": "items",
+    "values": [
+      "minecraft:crossbow"
+    ]
+  },
+  "items/enchantable/durability": {
+    "name": "enchantable/durability",
+    "type": "items",
+    "values": [
+      "#minecraft:foot_armor",
+      "#minecraft:leg_armor",
+      "#minecraft:chest_armor",
+      "#minecraft:head_armor",
+      "minecraft:elytra",
+      "minecraft:shield",
+      "#minecraft:swords",
+      "#minecraft:axes",
+      "#minecraft:pickaxes",
+      "#minecraft:shovels",
+      "#minecraft:hoes",
+      "minecraft:bow",
+      "minecraft:crossbow",
+      "minecraft:trident",
+      "minecraft:flint_and_steel",
+      "minecraft:shears",
+      "minecraft:brush",
+      "minecraft:fishing_rod",
+      "minecraft:carrot_on_a_stick",
+      "minecraft:warped_fungus_on_a_stick"
+    ]
+  },
+  "items/enchantable/equippable": {
+    "name": "enchantable/equippable",
+    "type": "items",
+    "values": [
+      "#minecraft:foot_armor",
+      "#minecraft:leg_armor",
+      "#minecraft:chest_armor",
+      "#minecraft:head_armor",
+      "minecraft:elytra",
+      "#minecraft:skulls",
+      "minecraft:carved_pumpkin"
+    ]
+  },
+  "items/enchantable/fire_aspect": {
+    "name": "enchantable/fire_aspect",
+    "type": "items",
+    "values": [
+      "#minecraft:enchantable/sword"
+    ]
+  },
+  "items/enchantable/fishing": {
+    "name": "enchantable/fishing",
+    "type": "items",
+    "values": [
+      "minecraft:fishing_rod"
+    ]
+  },
+  "items/enchantable/foot_armor": {
+    "name": "enchantable/foot_armor",
+    "type": "items",
+    "values": [
+      "#minecraft:foot_armor"
+    ]
+  },
+  "items/enchantable/head_armor": {
+    "name": "enchantable/head_armor",
+    "type": "items",
+    "values": [
+      "#minecraft:head_armor"
+    ]
+  },
+  "items/enchantable/leg_armor": {
+    "name": "enchantable/leg_armor",
+    "type": "items",
+    "values": [
+      "#minecraft:leg_armor"
+    ]
+  },
+  "items/enchantable/mining": {
+    "name": "enchantable/mining",
+    "type": "items",
+    "values": [
+      "#minecraft:axes",
+      "#minecraft:pickaxes",
+      "#minecraft:shovels",
+      "#minecraft:hoes",
+      "minecraft:shears"
+    ]
+  },
+  "items/enchantable/mining_loot": {
+    "name": "enchantable/mining_loot",
+    "type": "items",
+    "values": [
+      "#minecraft:axes",
+      "#minecraft:pickaxes",
+      "#minecraft:shovels",
+      "#minecraft:hoes"
+    ]
+  },
+  "items/enchantable/sharp_weapon": {
+    "name": "enchantable/sharp_weapon",
+    "type": "items",
+    "values": [
+      "#minecraft:swords",
+      "#minecraft:axes"
+    ]
+  },
+  "items/enchantable/sword": {
+    "name": "enchantable/sword",
+    "type": "items",
+    "values": [
+      "#minecraft:swords"
+    ]
+  },
+  "items/enchantable/trident": {
+    "name": "enchantable/trident",
+    "type": "items",
+    "values": [
+      "minecraft:trident"
+    ]
+  },
+  "items/enchantable/vanishing": {
+    "name": "enchantable/vanishing",
+    "type": "items",
+    "values": [
+      "#minecraft:enchantable/durability",
+      "minecraft:compass",
+      "minecraft:carved_pumpkin",
+      "#minecraft:skulls"
+    ]
+  },
+  "items/enchantable/weapon": {
+    "name": "enchantable/weapon",
+    "type": "items",
+    "values": [
+      "#minecraft:enchantable/sharp_weapon"
     ]
   },
   "items/fence_gates": {
@@ -4010,6 +4508,18 @@
       "minecraft:spore_blossom"
     ]
   },
+  "items/foot_armor": {
+    "name": "foot_armor",
+    "type": "items",
+    "values": [
+      "minecraft:leather_boots",
+      "minecraft:chainmail_boots",
+      "minecraft:golden_boots",
+      "minecraft:iron_boots",
+      "minecraft:diamond_boots",
+      "minecraft:netherite_boots"
+    ]
+  },
   "items/fox_food": {
     "name": "fox_food",
     "type": "items",
@@ -4027,6 +4537,20 @@
       "minecraft:leather_chestplate",
       "minecraft:leather_helmet",
       "minecraft:leather_horse_armor"
+    ]
+  },
+  "items/frog_food": {
+    "name": "frog_food",
+    "type": "items",
+    "values": [
+      "minecraft:slime_ball"
+    ]
+  },
+  "items/goat_food": {
+    "name": "goat_food",
+    "type": "items",
+    "values": [
+      "minecraft:wheat"
     ]
   },
   "items/gold_ores": {
@@ -4055,6 +4579,19 @@
       "minecraft:bamboo_hanging_sign"
     ]
   },
+  "items/head_armor": {
+    "name": "head_armor",
+    "type": "items",
+    "values": [
+      "minecraft:leather_helmet",
+      "minecraft:chainmail_helmet",
+      "minecraft:golden_helmet",
+      "minecraft:iron_helmet",
+      "minecraft:diamond_helmet",
+      "minecraft:netherite_helmet",
+      "minecraft:turtle_helmet"
+    ]
+  },
   "items/hoes": {
     "name": "hoes",
     "type": "items",
@@ -4065,6 +4602,35 @@
       "minecraft:netherite_hoe",
       "minecraft:wooden_hoe",
       "minecraft:iron_hoe"
+    ]
+  },
+  "items/hoglin_food": {
+    "name": "hoglin_food",
+    "type": "items",
+    "values": [
+      "minecraft:crimson_fungus"
+    ]
+  },
+  "items/horse_food": {
+    "name": "horse_food",
+    "type": "items",
+    "values": [
+      "minecraft:wheat",
+      "minecraft:sugar",
+      "minecraft:hay_block",
+      "minecraft:apple",
+      "minecraft:golden_carrot",
+      "minecraft:golden_apple",
+      "minecraft:enchanted_golden_apple"
+    ]
+  },
+  "items/horse_tempt_items": {
+    "name": "horse_tempt_items",
+    "type": "items",
+    "values": [
+      "minecraft:golden_carrot",
+      "minecraft:golden_apple",
+      "minecraft:enchanted_golden_apple"
     ]
   },
   "items/ignored_by_piglin_babies": {
@@ -4124,6 +4690,33 @@
       "minecraft:writable_book"
     ]
   },
+  "items/leg_armor": {
+    "name": "leg_armor",
+    "type": "items",
+    "values": [
+      "minecraft:leather_leggings",
+      "minecraft:chainmail_leggings",
+      "minecraft:golden_leggings",
+      "minecraft:iron_leggings",
+      "minecraft:diamond_leggings",
+      "minecraft:netherite_leggings"
+    ]
+  },
+  "items/llama_food": {
+    "name": "llama_food",
+    "type": "items",
+    "values": [
+      "minecraft:wheat",
+      "minecraft:hay_block"
+    ]
+  },
+  "items/llama_tempt_items": {
+    "name": "llama_tempt_items",
+    "type": "items",
+    "values": [
+      "minecraft:hay_block"
+    ]
+  },
   "items/logs": {
     "name": "logs",
     "type": "items",
@@ -4155,6 +4748,23 @@
       "minecraft:mangrove_wood",
       "minecraft:stripped_mangrove_log",
       "minecraft:stripped_mangrove_wood"
+    ]
+  },
+  "items/meat": {
+    "name": "meat",
+    "type": "items",
+    "values": [
+      "minecraft:beef",
+      "minecraft:chicken",
+      "minecraft:cooked_beef",
+      "minecraft:cooked_chicken",
+      "minecraft:cooked_mutton",
+      "minecraft:cooked_porkchop",
+      "minecraft:cooked_rabbit",
+      "minecraft:mutton",
+      "minecraft:porkchop",
+      "minecraft:rabbit",
+      "minecraft:rotten_flesh"
     ]
   },
   "items/music_discs": {
@@ -4227,6 +4837,40 @@
       "minecraft:stripped_oak_wood"
     ]
   },
+  "items/ocelot_food": {
+    "name": "ocelot_food",
+    "type": "items",
+    "values": [
+      "minecraft:cod",
+      "minecraft:salmon"
+    ]
+  },
+  "items/panda_food": {
+    "name": "panda_food",
+    "type": "items",
+    "values": [
+      "minecraft:bamboo"
+    ]
+  },
+  "items/parrot_food": {
+    "name": "parrot_food",
+    "type": "items",
+    "values": [
+      "minecraft:wheat_seeds",
+      "minecraft:melon_seeds",
+      "minecraft:pumpkin_seeds",
+      "minecraft:beetroot_seeds",
+      "minecraft:torchflower_seeds",
+      "minecraft:pitcher_pod"
+    ]
+  },
+  "items/parrot_poisonous_food": {
+    "name": "parrot_poisonous_food",
+    "type": "items",
+    "values": [
+      "minecraft:cookie"
+    ]
+  },
   "items/pickaxes": {
     "name": "pickaxes",
     "type": "items",
@@ -4237,6 +4881,15 @@
       "minecraft:netherite_pickaxe",
       "minecraft:wooden_pickaxe",
       "minecraft:iron_pickaxe"
+    ]
+  },
+  "items/pig_food": {
+    "name": "pig_food",
+    "type": "items",
+    "values": [
+      "minecraft:carrot",
+      "minecraft:potato",
+      "minecraft:beetroot"
     ]
   },
   "items/piglin_food": {
@@ -4302,6 +4955,15 @@
       "minecraft:cherry_planks"
     ]
   },
+  "items/rabbit_food": {
+    "name": "rabbit_food",
+    "type": "items",
+    "values": [
+      "minecraft:carrot",
+      "minecraft:golden_carrot",
+      "minecraft:dandelion"
+    ]
+  },
   "items/rails": {
     "name": "rails",
     "type": "items",
@@ -4346,6 +5008,13 @@
       "minecraft:cherry_sapling"
     ]
   },
+  "items/sheep_food": {
+    "name": "sheep_food",
+    "type": "items",
+    "values": [
+      "minecraft:wheat"
+    ]
+  },
   "items/shovels": {
     "name": "shovels",
     "type": "items",
@@ -4373,6 +5042,19 @@
       "minecraft:mangrove_sign",
       "minecraft:bamboo_sign",
       "minecraft:cherry_sign"
+    ]
+  },
+  "items/skulls": {
+    "name": "skulls",
+    "type": "items",
+    "values": [
+      "minecraft:player_head",
+      "minecraft:creeper_head",
+      "minecraft:zombie_head",
+      "minecraft:skeleton_skull",
+      "minecraft:wither_skeleton_skull",
+      "minecraft:dragon_head",
+      "minecraft:piglin_head"
     ]
   },
   "items/slabs": {
@@ -4566,6 +5248,21 @@
       "minecraft:cobbled_deepslate"
     ]
   },
+  "items/strider_food": {
+    "name": "strider_food",
+    "type": "items",
+    "values": [
+      "minecraft:warped_fungus"
+    ]
+  },
+  "items/strider_tempt_items": {
+    "name": "strider_tempt_items",
+    "type": "items",
+    "values": [
+      "#minecraft:strider_food",
+      "minecraft:warped_fungus_on_a_stick"
+    ]
+  },
   "items/swords": {
     "name": "swords",
     "type": "items",
@@ -4610,18 +5307,6 @@
       "minecraft:green_terracotta",
       "minecraft:red_terracotta",
       "minecraft:black_terracotta"
-    ]
-  },
-  "items/tools": {
-    "name": "tools",
-    "type": "items",
-    "values": [
-      "#minecraft:swords",
-      "#minecraft:axes",
-      "#minecraft:pickaxes",
-      "#minecraft:shovels",
-      "#minecraft:hoes",
-      "minecraft:trident"
     ]
   },
   "items/trapdoors": {
@@ -4674,31 +5359,17 @@
     "name": "trimmable_armor",
     "type": "items",
     "values": [
-      "minecraft:netherite_helmet",
-      "minecraft:netherite_chestplate",
-      "minecraft:netherite_leggings",
-      "minecraft:netherite_boots",
-      "minecraft:diamond_helmet",
-      "minecraft:diamond_chestplate",
-      "minecraft:diamond_leggings",
-      "minecraft:diamond_boots",
-      "minecraft:golden_helmet",
-      "minecraft:golden_chestplate",
-      "minecraft:golden_leggings",
-      "minecraft:golden_boots",
-      "minecraft:iron_helmet",
-      "minecraft:iron_chestplate",
-      "minecraft:iron_leggings",
-      "minecraft:iron_boots",
-      "minecraft:chainmail_helmet",
-      "minecraft:chainmail_chestplate",
-      "minecraft:chainmail_leggings",
-      "minecraft:chainmail_boots",
-      "minecraft:leather_helmet",
-      "minecraft:leather_chestplate",
-      "minecraft:leather_leggings",
-      "minecraft:leather_boots",
-      "minecraft:turtle_helmet"
+      "#minecraft:foot_armor",
+      "#minecraft:leg_armor",
+      "#minecraft:chest_armor",
+      "#minecraft:head_armor"
+    ]
+  },
+  "items/turtle_food": {
+    "name": "turtle_food",
+    "type": "items",
+    "values": [
+      "minecraft:seagrass"
     ]
   },
   "items/villager_plantable_seeds": {
@@ -4757,6 +5428,13 @@
     "values": [
       "minecraft:nether_wart_block",
       "minecraft:warped_wart_block"
+    ]
+  },
+  "items/wolf_food": {
+    "name": "wolf_food",
+    "type": "items",
+    "values": [
+      "#minecraft:meat"
     ]
   },
   "items/wooden_buttons": {

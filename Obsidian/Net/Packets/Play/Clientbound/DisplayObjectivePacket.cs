@@ -10,5 +10,5 @@ public partial class DisplayObjectivePacket : IClientboundPacket
     [Field(1), FixedLength(16)]
     public string ScoreName { get; init; }
 
-    public int Id => 0x55;
+    public int Id => 0x57;
 }

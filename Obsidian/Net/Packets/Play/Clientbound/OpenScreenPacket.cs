@@ -13,7 +13,7 @@ public partial class OpenScreenPacket : IClientboundPacket
     [Field(2)]
     public ChatMessage Title { get; }
 
-    public int Id => 0x31;
+    public int Id => 0x33;
 
     public OpenScreenPacket(BaseContainer inventory, int windowId)
     {

@@ -4,6 +4,10 @@ using System.Text.Json;
 namespace Obsidian.SourceGenerators.Registry;
 public partial class RegistryAssetsGenerator
 {
+    //This will have to saved as a seperate PR as it would require me to re-work this entire gen to make it work
+    //TODO COME BACK TO THIS
+    private static string[] BlacklistedProperties = ["Features", "Carvers", "Spawners", "SpawnCosts"];
+
     private static void GenerateBiomes(Codec[] biomes, CodeBuilder builder, SourceProductionContext ctx)
     {
         builder.Type($"public static class Biomes");
@@ -21,6 +25,12 @@ public partial class RegistryAssetsGenerator
             {
                 var name = property.Key;
                 var value = property.Value;
+
+                if (BlacklistedProperties.Contains(name))
+                {
+                    builder.Append($"{name} = [],");
+                    continue;
+                }
 
                 builder.Append($"{name} = ");
 

@@ -1,5 +1,6 @@
 ﻿using Obsidian.SourceGenerators.Registry.Models;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text.Json;
@@ -11,6 +12,9 @@ public sealed partial class RegistryAssetsGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
+        //if (!Debugger.IsAttached)
+        //    Debugger.Launch();
+
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
         var jsonFiles = context.AdditionalTextsProvider

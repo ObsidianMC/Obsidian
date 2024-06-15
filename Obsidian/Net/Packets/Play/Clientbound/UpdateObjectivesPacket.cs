@@ -30,7 +30,7 @@ public partial class UpdateObjectivesPacket : IClientboundPacket
     [Field(6), Condition("NumberFormat == NumberFormat.Fixed"), ActualType(typeof(ChatMessage))]
     public ChatMessage? Content { get; init; }
 
-    public int Id => 0x5C;
+    public int Id => 0x5E;
 
     private bool ShouldWriteValue => Mode is ScoreboardMode.Create or ScoreboardMode.Update;
 }

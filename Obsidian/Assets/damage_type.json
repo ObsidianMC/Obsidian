@@ -318,6 +318,15 @@
     },
     {
       "id": 34,
+      "name": "minecraft:spit",
+      "element": {
+        "exhaustion": 0.1,
+        "message_id": "mob",
+        "scaling": "when_caused_by_living_non_player"
+      }
+    },
+    {
+      "id": 35,
       "name": "minecraft:stalagmite",
       "element": {
         "exhaustion": 0,
@@ -326,7 +335,7 @@
       }
     },
     {
-      "id": 35,
+      "id": 36,
       "name": "minecraft:starve",
       "element": {
         "exhaustion": 0,
@@ -335,7 +344,7 @@
       }
     },
     {
-      "id": 36,
+      "id": 37,
       "name": "minecraft:sting",
       "element": {
         "exhaustion": 0.1,
@@ -344,7 +353,7 @@
       }
     },
     {
-      "id": 37,
+      "id": 38,
       "name": "minecraft:sweet_berry_bush",
       "element": {
         "exhaustion": 0.1,
@@ -354,7 +363,7 @@
       }
     },
     {
-      "id": 38,
+      "id": 39,
       "name": "minecraft:thorns",
       "element": {
         "exhaustion": 0.1,
@@ -364,7 +373,7 @@
       }
     },
     {
-      "id": 39,
+      "id": 40,
       "name": "minecraft:thrown",
       "element": {
         "exhaustion": 0.1,
@@ -373,7 +382,7 @@
       }
     },
     {
-      "id": 40,
+      "id": 41,
       "name": "minecraft:trident",
       "element": {
         "exhaustion": 0.1,
@@ -382,7 +391,7 @@
       }
     },
     {
-      "id": 41,
+      "id": 42,
       "name": "minecraft:unattributed_fireball",
       "element": {
         "exhaustion": 0.1,
@@ -392,7 +401,7 @@
       }
     },
     {
-      "id": 42,
+      "id": 43,
       "name": "minecraft:wither",
       "element": {
         "exhaustion": 0,
@@ -401,7 +410,7 @@
       }
     },
     {
-      "id": 43,
+      "id": 44,
       "name": "minecraft:wither_skull",
       "element": {
         "exhaustion": 0.1,

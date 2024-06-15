@@ -269,29 +269,29 @@ public sealed class Client : IDisposable
                     switch (id)
                     {
                         case 0x00:
-                        {
-                            if (this.server.Configuration.Network.ShouldThrottle)
                             {
-                                string ip = ((IPEndPoint)connectionContext.RemoteEndPoint!).Address.ToString();
-
-                                if (Server.throttler.TryGetValue(ip, out var timeLeft))
+                                if (this.server.Configuration.Network.ShouldThrottle)
                                 {
-                                    if (DateTimeOffset.UtcNow < timeLeft)
+                                    string ip = ((IPEndPoint)connectionContext.RemoteEndPoint!).Address.ToString();
+
+                                    if (Server.throttler.TryGetValue(ip, out var timeLeft))
                                     {
-                                        this.Logger.LogDebug("{ip} has been throttled for reconnecting too fast.", ip);
-                                        await this.DisconnectAsync("Connection Throttled! Please wait before reconnecting.");
-                                        break;
+                                        if (DateTimeOffset.UtcNow < timeLeft)
+                                        {
+                                            this.Logger.LogDebug("{ip} has been throttled for reconnecting too fast.", ip);
+                                            await this.DisconnectAsync("Connection Throttled! Please wait before reconnecting.");
+                                            break;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        Server.throttler.TryAdd(ip, DateTimeOffset.UtcNow.AddMilliseconds(this.server.Configuration.Network.ConnectionThrottle));
                                     }
                                 }
-                                else
-                                {
-                                    Server.throttler.TryAdd(ip, DateTimeOffset.UtcNow.AddMilliseconds(this.server.Configuration.Network.ConnectionThrottle));
-                                }
-                            }
 
-                            await HandleLoginStartAsync(data);
-                            break;
-                        }
+                                await HandleLoginStartAsync(data);
+                                break;
+                            }
                         case 0x01:
                             await HandleEncryptionResponseAsync(data);
                             break;
@@ -352,7 +352,15 @@ public sealed class Client : IDisposable
 
     private void Configure()
     {
-        this.SendPacket(RegistryDataPacket.Default);
+        //This is very inconvenient
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.Biomes.CodecKey, CodecRegistry.Biomes.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.Dimensions.CodecKey, CodecRegistry.Dimensions.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.ChatType.CodecKey, CodecRegistry.ChatType.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.DamageTypes.CodecKey, CodecRegistry.DamageTypes.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimPatterns.CodecKey, CodecRegistry.TrimPatterns.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimMaterials.CodecKey, CodecRegistry.TrimMaterials.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.WolfVariant.CodecKey, CodecRegistry.WolfVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+
         this.SendPacket(UpdateTagsPacket.FromRegistry);
 
         this.SendPacket(FinishConfigurationPacket.Default);
@@ -442,7 +450,8 @@ public sealed class Client : IDisposable
             SendPacket(new EncryptionRequest
             {
                 PublicKey = publicKey,
-                VerifyToken = randomToken
+                VerifyToken = randomToken,
+                ShouldAuthenticate = true//I don't know how we're supposed to use this
             });
         }
         else if (this.server.Configuration.Whitelist && !this.server.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => x.Name == username))
@@ -532,7 +541,7 @@ public sealed class Client : IDisposable
             EntityId = id,
             Gamemode = Player.Gamemode,
             DimensionNames = CodecRegistry.Dimensions.All.Keys.ToList(),
-            DimensionType = codec.Name,
+            DimensionType = codec.Id,
             DimensionName = codec.Name,
             HashedSeed = 0,
             ReducedDebugInfo = false,
@@ -631,7 +640,7 @@ public sealed class Client : IDisposable
         // now that all is fine and dandy, we'd be fine to enqueue the new keepalive
         SendPacket(new KeepAlivePacket(keepAliveId)
         {
-            Id = this.State == ClientState.Configuration ? 0x03 : 0x24
+            Id = this.State == ClientState.Configuration ? 0x03 : 0x26
         });
         missedKeepAlives.Add(keepAliveId);
 

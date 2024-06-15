@@ -10,7 +10,7 @@ public partial class PlaceGhostRecipePacket : IClientboundPacket
     [Field(1)]
     public string RecipeId { get; }
 
-    public int Id => 0x35;
+    public int Id => 0x37;
 
     public PlaceGhostRecipePacket(sbyte windowId, string recipeId)
     {

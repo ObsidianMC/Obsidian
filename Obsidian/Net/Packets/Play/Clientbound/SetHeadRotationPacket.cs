@@ -10,5 +10,5 @@ public partial class SetHeadRotationPacket : IClientboundPacket
     [Field(1)]
     public Angle HeadYaw { get; init; }
 
-    public int Id => 0x46;
+    public int Id => 0x48;
 }

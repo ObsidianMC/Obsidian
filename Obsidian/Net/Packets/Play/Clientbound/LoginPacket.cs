@@ -31,8 +31,8 @@ public partial class LoginPacket : IClientboundPacket
     [Field(8)]
     public bool DoLimitedCrafting { get; init; } = false;
 
-    [Field(9)]
-    public string DimensionType { get; init; }
+    [Field(9), VarLength]
+    public int DimensionType { get; init; }
 
     [Field(10)]
     public string DimensionName { get; init; }
@@ -64,5 +64,8 @@ public partial class LoginPacket : IClientboundPacket
     [Field(19), VarLength]
     public int PortalCooldown { get; init; }
 
-    public int Id => 0x29;
+    [Field(20)]
+    public bool EnforcesSecureChat { get; init; }
+
+    public int Id => 0x2B;
 }
