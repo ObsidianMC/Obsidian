@@ -1,7 +1,7 @@
 {
-  "blocks/players_can_interact": {
+  "block/players_can_interact": {
     "name": "players_can_interact",
-    "type": "blocks",
+    "type": "block",
     "values": [
       "minecraft:chest",
       "minecraft:ender_chest",
@@ -17,9 +17,9 @@
       "minecraft:brewing_stand"
     ]
   },
-  "blocks/transparent": {
+  "block/transparent": {
     "name": "transparent",
-    "type": "blocks",
+    "type": "block",
     "values": [
       "minecraft:air",
       "minecraft:cave_air",
@@ -50,9 +50,9 @@
       "minecraft:short_grass"
     ]
   },
-  "blocks/semitransparent": {
+  "block/semitransparent": {
     "name": "semitransparent",
-    "type": "blocks",
+    "type": "block",
     "values": [
       "#minecraft:leaves",
       "#minecraft:water",
@@ -78,9 +78,9 @@
       "minecraft:kelp_plant"
     ]
   },
-  "blocks/gravity_affected": {
+  "block/gravity_affected": {
     "name": "gravity_affected",
-    "type": "blocks",
+    "type": "block",
     "values": [
       "#minecraft:anvil",
       "#minecraft:sand",
@@ -106,9 +106,9 @@
       "minecraft:suspicious_gravel"
     ]
   },
-  "blocks/replaceable_by_liquid": {
+  "block/replaceable_by_liquid": {
     "name": "replaceable_by_liquid",
-    "type": "blocks",
+    "type": "block",
     "values": [
       "#minecraft:saplings",
       "#minecraft:crops",
