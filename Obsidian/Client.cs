@@ -356,10 +356,12 @@ public sealed class Client : IDisposable
         this.SendPacket(new RegistryDataPacket(CodecRegistry.Biomes.CodecKey, CodecRegistry.Biomes.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.Dimensions.CodecKey, CodecRegistry.Dimensions.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.ChatType.CodecKey, CodecRegistry.ChatType.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.DamageTypes.CodecKey, CodecRegistry.DamageTypes.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimPatterns.CodecKey, CodecRegistry.TrimPatterns.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimMaterials.CodecKey, CodecRegistry.TrimMaterials.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.DamageType.CodecKey, CodecRegistry.DamageType.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimPattern.CodecKey, CodecRegistry.TrimPattern.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimMaterial.CodecKey, CodecRegistry.TrimMaterial.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.WolfVariant.CodecKey, CodecRegistry.WolfVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.PaintingVariant.CodecKey, CodecRegistry.PaintingVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+
 
         this.SendPacket(UpdateTagsPacket.FromRegistry);
 

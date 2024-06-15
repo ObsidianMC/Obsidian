@@ -422,7 +422,7 @@ public partial class Extensions
     #endregion
 
     #region Chat Codec Writing
-    public static void WriteElement(this ChatCodec value, NbtWriter writer)
+    public static void WriteElement(this ChatTypeCodec value, NbtWriter writer)
     {
         var chatElement = value.Element;
         var chat = chatElement.Chat;
