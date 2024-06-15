@@ -31,8 +31,8 @@ internal class WorldLight
                     }
 
                     IBlock b = chunk.GetBlock(x, y, z);
-                    if (TagsRegistry.Blocks.Semitransparent.Entries.Contains(b.RegistryId) || b.Is(BlocksRegistry.Water.Material)) { diffuse = 1; }
-                    else if (!TagsRegistry.Blocks.Transparent.Entries.Contains(b.RegistryId)) { lightLevel = 0; }
+                    if (TagsRegistry.Block.Semitransparent.Entries.Contains(b.RegistryId) || b.Is(BlocksRegistry.Water.Material)) { diffuse = 1; }
+                    else if (!TagsRegistry.Block.Transparent.Entries.Contains(b.RegistryId)) { lightLevel = 0; }
 
                     lightLevel = Math.Max(0, lightLevel - diffuse);
                     chunk.SetLightLevel(x, y, z, LightType.Sky, lightLevel);
@@ -115,12 +115,12 @@ internal class WorldLight
             {
                 // To spread up, there must only be transparent blocks above the source
                 var upBlock = chunk.GetBlock(pos + (0, spreadY, 0));
-                if (!TagsRegistry.Blocks.Transparent.Entries.Contains(upBlock.RegistryId)) { break; }
+                if (!TagsRegistry.Block.Transparent.Entries.Contains(upBlock.RegistryId)) { break; }
 
                 var scanPos = pos + dir + (0, spreadY, 0);
-                if (TagsRegistry.Blocks.Transparent.Entries.Contains(chunk.GetBlock(scanPos).RegistryId))
+                if (TagsRegistry.Block.Transparent.Entries.Contains(chunk.GetBlock(scanPos).RegistryId))
                 {
-                    if (!TagsRegistry.Blocks.Transparent.Entries.Contains(chunk.GetBlock(scanPos + Vector.Down).RegistryId))
+                    if (!TagsRegistry.Block.Transparent.Entries.Contains(chunk.GetBlock(scanPos + Vector.Down).RegistryId))
                     {
                         SetLightAndSpread(scanPos, lt, level, chunk);
                     } 
@@ -133,13 +133,13 @@ internal class WorldLight
 
             // Spread down
             // To spread down, the block above the adjacent must be transparent
-            if (!TagsRegistry.Blocks.Transparent.Entries.Contains(chunk.GetBlock(pos + dir + Vector.Up).RegistryId)) { continue; }
+            if (!TagsRegistry.Block.Transparent.Entries.Contains(chunk.GetBlock(pos + dir + Vector.Up).RegistryId)) { continue; }
 
             // Find the first non-transparent block and set level
             for (int spreadY = 0; spreadY > (-64 - pos.Y); spreadY--)
             {
                 var scanPos = pos + dir + (0, spreadY, 0);
-                if (!TagsRegistry.Blocks.Transparent.Entries.Contains(chunk.GetBlock(scanPos).RegistryId))
+                if (!TagsRegistry.Block.Transparent.Entries.Contains(chunk.GetBlock(scanPos).RegistryId))
                 {
                     SetLightAndSpread(scanPos + Vector.Up, lt, level, chunk);
                     break;

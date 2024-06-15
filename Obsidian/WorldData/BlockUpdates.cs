@@ -19,7 +19,7 @@ internal static class BlockUpdates
         var position = blockUpdate.position;
         var material = blockUpdate.Block.Material;
         if (await world.GetBlockAsync(position + Vector.Down) is IBlock below &&
-            (TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(below.RegistryId) || below.IsLiquid))
+            (TagsRegistry.Block.ReplaceableByLiquid.Entries.Contains(below.RegistryId) || below.IsLiquid))
         {
             await world.SetBlockAsync(position, BlocksRegistry.Air);
             world.SpawnFallingBlock(position, material);
@@ -79,11 +79,11 @@ internal static class BlockUpdates
             foreach (var pathLoc in paths)
             {
                 if (await world.GetBlockAsync(pathLoc) is IBlock pathSide &&
-                    (TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(pathSide.RegistryId) || pathSide.IsLiquid))
+                    (TagsRegistry.Block.ReplaceableByLiquid.Entries.Contains(pathSide.RegistryId) || pathSide.IsLiquid))
                 {
                     var pathBelow = await world.GetBlockAsync(pathLoc + Vector.Down);
                     if (pathBelow is IBlock &&
-                        (TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(pathBelow.RegistryId) || pathBelow.IsLiquid))
+                        (TagsRegistry.Block.ReplaceableByLiquid.Entries.Contains(pathBelow.RegistryId) || pathBelow.IsLiquid))
                     {
                         validPaths.Add(pathLoc);
                     }
@@ -113,7 +113,7 @@ internal static class BlockUpdates
             }
 
             // Keep falling
-            if (await world.GetBlockAsync(belowPos) is IBlock below && TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(below.RegistryId))
+            if (await world.GetBlockAsync(belowPos) is IBlock below && TagsRegistry.Block.ReplaceableByLiquid.Entries.Contains(below.RegistryId))
             {
                 var newBlock = BlocksRegistry.Get(block.Material, DetermineBlockState(block.Material, liquidLevel));
                 await world.SetBlockAsync(belowPos, newBlock);
@@ -195,7 +195,7 @@ internal static class BlockUpdates
                     return false;
                 }
 
-                if (TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(below.RegistryId))
+                if (TagsRegistry.Block.ReplaceableByLiquid.Entries.Contains(below.RegistryId))
                 {
                     var newBlock = BlocksRegistry.Get(block.Material, DetermineBlockState(block.Material, liquidLevel + 8));
                     await world.SetBlockAsync(belowPos, newBlock);
@@ -215,7 +215,7 @@ internal static class BlockUpdates
 
                 var neighborState = neighborBlock.State is WaterState neighborWater ? neighborWater.Level : 0;
 
-                if (TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(neighborBlock.RegistryId) ||
+                if (TagsRegistry.Block.ReplaceableByLiquid.Entries.Contains(neighborBlock.RegistryId) ||
                     (neighborBlock.IsLiquid && neighborState > liquidLevel + 1))
                 {
                     var newBlock = BlocksRegistry.Get(block.Material, DetermineBlockState(block.Material, liquidLevel + 1));

@@ -303,11 +303,11 @@ internal static class ChunkBuilder
                     }
 
                     if (!motionBlockingSet &&
-                        !TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(b.RegistryId) &&
-                        !TagsRegistry.Blocks.Saplings.Entries.Contains(b.RegistryId) &&
-                        !TagsRegistry.Blocks.Crops.Entries.Contains(b.RegistryId) &&
-                        !TagsRegistry.Blocks.Flowers.Entries.Contains(b.RegistryId) &&
-                        !TagsRegistry.Fluids.Water.Entries.Contains(b.RegistryId)
+                        !TagsRegistry.Block.ReplaceableByLiquid.Entries.Contains(b.RegistryId) &&
+                        !TagsRegistry.Block.Saplings.Entries.Contains(b.RegistryId) &&
+                        !TagsRegistry.Block.Crops.Entries.Contains(b.RegistryId) &&
+                        !TagsRegistry.Block.Flowers.Entries.Contains(b.RegistryId) &&
+                        !TagsRegistry.Fluid.Water.Entries.Contains(b.RegistryId)
                         )
                     {
                         chunk.Heightmaps[HeightmapType.MotionBlocking].Set(x, z, y);
@@ -315,12 +315,12 @@ internal static class ChunkBuilder
                     }
 
                     if (!motionBlockingLeavesSet &&
-                        !TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(b.RegistryId) &&
-                        !TagsRegistry.Blocks.Saplings.Entries.Contains(b.RegistryId) &&
-                        !TagsRegistry.Blocks.Crops.Entries.Contains(b.RegistryId) &&
-                        !TagsRegistry.Blocks.Flowers.Entries.Contains(b.RegistryId) &&
-                        !TagsRegistry.Fluids.Water.Entries.Contains(b.RegistryId) &&
-                        !TagsRegistry.Blocks.Leaves.Entries.Contains(b.RegistryId)
+                        !TagsRegistry.Block.ReplaceableByLiquid.Entries.Contains(b.RegistryId) &&
+                        !TagsRegistry.Block.Saplings.Entries.Contains(b.RegistryId) &&
+                        !TagsRegistry.Block.Crops.Entries.Contains(b.RegistryId) &&
+                        !TagsRegistry.Block.Flowers.Entries.Contains(b.RegistryId) &&
+                        !TagsRegistry.Fluid.Water.Entries.Contains(b.RegistryId) &&
+                        !TagsRegistry.Block.Leaves.Entries.Contains(b.RegistryId)
                         )
                     {
                         chunk.Heightmaps[HeightmapType.MotionBlockingNoLeaves].Set(x, z, y);
