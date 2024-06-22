@@ -6,7 +6,7 @@ public sealed partial class FinishConfigurationPacket : IServerboundPacket, ICli
 {
     public static FinishConfigurationPacket Default { get; } = new();
 
-    public int Id => 0x02;
+    public int Id => 0x03;
 
     //TODO move connect logic into here
     public async ValueTask HandleAsync(Server server, Player player)

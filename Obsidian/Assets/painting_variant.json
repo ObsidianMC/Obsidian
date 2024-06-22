@@ -1,0 +1,455 @@
+{
+  "type": "minecraft:painting_variant",
+  "value": [
+    {
+      "name": "minecraft:alban",
+      "id": 0,
+      "element": {
+        "asset_id": "minecraft:alban",
+        "height": 1,
+        "width": 1
+      }
+    },
+    {
+      "name": "minecraft:aztec",
+      "id": 1,
+      "element": {
+        "asset_id": "minecraft:aztec",
+        "height": 1,
+        "width": 1
+      }
+    },
+    {
+      "name": "minecraft:aztec2",
+      "id": 2,
+      "element": {
+        "asset_id": "minecraft:aztec2",
+        "height": 1,
+        "width": 1
+      }
+    },
+    {
+      "name": "minecraft:backyard",
+      "id": 3,
+      "element": {
+        "asset_id": "minecraft:backyard",
+        "height": 4,
+        "width": 3
+      }
+    },
+    {
+      "name": "minecraft:baroque",
+      "id": 4,
+      "element": {
+        "asset_id": "minecraft:baroque",
+        "height": 2,
+        "width": 2
+      }
+    },
+    {
+      "name": "minecraft:bomb",
+      "id": 5,
+      "element": {
+        "asset_id": "minecraft:bomb",
+        "height": 1,
+        "width": 1
+      }
+    },
+    {
+      "name": "minecraft:bouquet",
+      "id": 6,
+      "element": {
+        "asset_id": "minecraft:bouquet",
+        "height": 3,
+        "width": 3
+      }
+    },
+    {
+      "name": "minecraft:burning_skull",
+      "id": 7,
+      "element": {
+        "asset_id": "minecraft:burning_skull",
+        "height": 4,
+        "width": 4
+      }
+    },
+    {
+      "name": "minecraft:bust",
+      "id": 8,
+      "element": {
+        "asset_id": "minecraft:bust",
+        "height": 2,
+        "width": 2
+      }
+    },
+    {
+      "name": "minecraft:cavebird",
+      "id": 9,
+      "element": {
+        "asset_id": "minecraft:cavebird",
+        "height": 3,
+        "width": 3
+      }
+    },
+    {
+      "name": "minecraft:changing",
+      "id": 10,
+      "element": {
+        "asset_id": "minecraft:changing",
+        "height": 2,
+        "width": 4
+      }
+    },
+    {
+      "name": "minecraft:cotan",
+      "id": 11,
+      "element": {
+        "asset_id": "minecraft:cotan",
+        "height": 3,
+        "width": 3
+      }
+    },
+    {
+      "name": "minecraft:courbet",
+      "id": 12,
+      "element": {
+        "asset_id": "minecraft:courbet",
+        "height": 1,
+        "width": 2
+      }
+    },
+    {
+      "name": "minecraft:creebet",
+      "id": 13,
+      "element": {
+        "asset_id": "minecraft:creebet",
+        "height": 1,
+        "width": 2
+      }
+    },
+    {
+      "name": "minecraft:donkey_kong",
+      "id": 14,
+      "element": {
+        "asset_id": "minecraft:donkey_kong",
+        "height": 3,
+        "width": 4
+      }
+    },
+    {
+      "name": "minecraft:earth",
+      "id": 15,
+      "element": {
+        "asset_id": "minecraft:earth",
+        "height": 2,
+        "width": 2
+      }
+    },
+    {
+      "name": "minecraft:endboss",
+      "id": 16,
+      "element": {
+        "asset_id": "minecraft:endboss",
+        "height": 3,
+        "width": 3
+      }
+    },
+    {
+      "name": "minecraft:fern",
+      "id": 17,
+      "element": {
+        "asset_id": "minecraft:fern",
+        "height": 3,
+        "width": 3
+      }
+    },
+    {
+      "name": "minecraft:fighters",
+      "id": 18,
+      "element": {
+        "asset_id": "minecraft:fighters",
+        "height": 2,
+        "width": 4
+      }
+    },
+    {
+      "name": "minecraft:finding",
+      "id": 19,
+      "element": {
+        "asset_id": "minecraft:finding",
+        "height": 2,
+        "width": 4
+      }
+    },
+    {
+      "name": "minecraft:fire",
+      "id": 20,
+      "element": {
+        "asset_id": "minecraft:fire",
+        "height": 2,
+        "width": 2
+      }
+    },
+    {
+      "name": "minecraft:graham",
+      "id": 21,
+      "element": {
+        "asset_id": "minecraft:graham",
+        "height": 2,
+        "width": 1
+      }
+    },
+    {
+      "name": "minecraft:humble",
+      "id": 22,
+      "element": {
+        "asset_id": "minecraft:humble",
+        "height": 2,
+        "width": 2
+      }
+    },
+    {
+      "name": "minecraft:kebab",
+      "id": 23,
+      "element": {
+        "asset_id": "minecraft:kebab",
+        "height": 1,
+        "width": 1
+      }
+    },
+    {
+      "name": "minecraft:lowmist",
+      "id": 24,
+      "element": {
+        "asset_id": "minecraft:lowmist",
+        "height": 2,
+        "width": 4
+      }
+    },
+    {
+      "name": "minecraft:match",
+      "id": 25,
+      "element": {
+        "asset_id": "minecraft:match",
+        "height": 2,
+        "width": 2
+      }
+    },
+    {
+      "name": "minecraft:meditative",
+      "id": 26,
+      "element": {
+        "asset_id": "minecraft:meditative",
+        "height": 1,
+        "width": 1
+      }
+    },
+    {
+      "name": "minecraft:orb",
+      "id": 27,
+      "element": {
+        "asset_id": "minecraft:orb",
+        "height": 4,
+        "width": 4
+      }
+    },
+    {
+      "name": "minecraft:owlemons",
+      "id": 28,
+      "element": {
+        "asset_id": "minecraft:owlemons",
+        "height": 3,
+        "width": 3
+      }
+    },
+    {
+      "name": "minecraft:passage",
+      "id": 29,
+      "element": {
+        "asset_id": "minecraft:passage",
+        "height": 2,
+        "width": 4
+      }
+    },
+    {
+      "name": "minecraft:pigscene",
+      "id": 30,
+      "element": {
+        "asset_id": "minecraft:pigscene",
+        "height": 4,
+        "width": 4
+      }
+    },
+    {
+      "name": "minecraft:plant",
+      "id": 31,
+      "element": {
+        "asset_id": "minecraft:plant",
+        "height": 1,
+        "width": 1
+      }
+    },
+    {
+      "name": "minecraft:pointer",
+      "id": 32,
+      "element": {
+        "asset_id": "minecraft:pointer",
+        "height": 4,
+        "width": 4
+      }
+    },
+    {
+      "name": "minecraft:pond",
+      "id": 33,
+      "element": {
+        "asset_id": "minecraft:pond",
+        "height": 4,
+        "width": 3
+      }
+    },
+    {
+      "name": "minecraft:pool",
+      "id": 34,
+      "element": {
+        "asset_id": "minecraft:pool",
+        "height": 1,
+        "width": 2
+      }
+    },
+    {
+      "name": "minecraft:prairie_ride",
+      "id": 35,
+      "element": {
+        "asset_id": "minecraft:prairie_ride",
+        "height": 2,
+        "width": 1
+      }
+    },
+    {
+      "name": "minecraft:sea",
+      "id": 36,
+      "element": {
+        "asset_id": "minecraft:sea",
+        "height": 1,
+        "width": 2
+      }
+    },
+    {
+      "name": "minecraft:skeleton",
+      "id": 37,
+      "element": {
+        "asset_id": "minecraft:skeleton",
+        "height": 3,
+        "width": 4
+      }
+    },
+    {
+      "name": "minecraft:skull_and_roses",
+      "id": 38,
+      "element": {
+        "asset_id": "minecraft:skull_and_roses",
+        "height": 2,
+        "width": 2
+      }
+    },
+    {
+      "name": "minecraft:stage",
+      "id": 39,
+      "element": {
+        "asset_id": "minecraft:stage",
+        "height": 2,
+        "width": 2
+      }
+    },
+    {
+      "name": "minecraft:sunflowers",
+      "id": 40,
+      "element": {
+        "asset_id": "minecraft:sunflowers",
+        "height": 3,
+        "width": 3
+      }
+    },
+    {
+      "name": "minecraft:sunset",
+      "id": 41,
+      "element": {
+        "asset_id": "minecraft:sunset",
+        "height": 1,
+        "width": 2
+      }
+    },
+    {
+      "name": "minecraft:tides",
+      "id": 42,
+      "element": {
+        "asset_id": "minecraft:tides",
+        "height": 3,
+        "width": 3
+      }
+    },
+    {
+      "name": "minecraft:unpacked",
+      "id": 43,
+      "element": {
+        "asset_id": "minecraft:unpacked",
+        "height": 4,
+        "width": 4
+      }
+    },
+    {
+      "name": "minecraft:void",
+      "id": 44,
+      "element": {
+        "asset_id": "minecraft:void",
+        "height": 2,
+        "width": 2
+      }
+    },
+    {
+      "name": "minecraft:wanderer",
+      "id": 45,
+      "element": {
+        "asset_id": "minecraft:wanderer",
+        "height": 2,
+        "width": 1
+      }
+    },
+    {
+      "name": "minecraft:wasteland",
+      "id": 46,
+      "element": {
+        "asset_id": "minecraft:wasteland",
+        "height": 1,
+        "width": 1
+      }
+    },
+    {
+      "name": "minecraft:water",
+      "id": 47,
+      "element": {
+        "asset_id": "minecraft:water",
+        "height": 2,
+        "width": 2
+      }
+    },
+    {
+      "name": "minecraft:wind",
+      "id": 48,
+      "element": {
+        "asset_id": "minecraft:wind",
+        "height": 2,
+        "width": 2
+      }
+    },
+    {
+      "name": "minecraft:wither",
+      "id": 49,
+      "element": {
+        "asset_id": "minecraft:wither",
+        "height": 2,
+        "width": 2
+      }
+    }
+  ]
+}

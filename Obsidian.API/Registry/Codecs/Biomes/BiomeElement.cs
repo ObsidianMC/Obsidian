@@ -1,4 +1,3 @@
-﻿using Obsidian.API.Utilities.Json.Converters;
 using System.Text.Json.Serialization;
 
 namespace Obsidian.API.Registry.Codecs.Biomes;
@@ -9,13 +8,6 @@ public sealed record class BiomeElement
 
     public required bool HasPrecipitation { get; set; }
 
-    public string[][] Features { get; set; } = [];
-
-    [JsonConverter(typeof(SpecialDictionaryConverter))]
-    public Dictionary<string, string[]> Carvers { get; set; } = default!;
-    public Dictionary<string, SpawnerMob[]> Spawners { get; set; } = default!;
-    public Dictionary<string, SpawnCost> SpawnCosts { get; set; } = default!;
-
     public float Depth { get; set; }
     public float Temperature { get; set; }
     public float Scale { get; set; }
@@ -23,6 +15,11 @@ public sealed record class BiomeElement
 
     public string? Category { get; set; }
     public string? TemperatureModifier { get; set; }
+
+    public string[][] Features { get; set; } = [];
+    public Dictionary<string, string[]> Carvers { get; set; } = default!;
+    public Dictionary<string, SpawnerMob[]> Spawners { get; set; } = default!;
+    public Dictionary<string, SpawnCost> SpawnCosts { get; set; } = default!;
 
     public bool PlayerSpawnFriendly { get; set; }
 }

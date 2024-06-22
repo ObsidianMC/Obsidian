@@ -21,7 +21,7 @@ public sealed class IngredientConverter : JsonConverter<Ingredient>
             {
                 if (rawRecipe.Item == null && rawRecipe.Tag != null)
                 {
-                    var tag = TagsRegistry.Items.All.FirstOrDefault(x => x.Name.EqualsIgnoreCase(rawRecipe.Tag.Replace("minecraft:", "")));
+                    var tag = TagsRegistry.Item.All.FirstOrDefault(x => x.Name.EqualsIgnoreCase(rawRecipe.Tag.Replace("minecraft:", "")));
                     foreach (var id in tag!.Entries)
                     {
                         var item = ItemsRegistry.Get(id);

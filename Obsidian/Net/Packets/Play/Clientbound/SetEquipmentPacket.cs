@@ -11,7 +11,7 @@ public partial class SetEquipmentPacket : IClientboundPacket
     [Field(1)]
     public List<Equipment> Equipment { get; init; }
 
-    public int Id => 0x59;
+    public int Id => 0x5B;
 
     public void Serialize(MinecraftStream stream)
     {

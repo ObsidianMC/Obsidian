@@ -14,7 +14,7 @@ public partial class SetHeldItemPacket : IServerboundPacket, IClientboundPacket
 
     public SetHeldItemPacket(bool toClient)
     {
-        this.Id = toClient ? 0x51 : 0x2C;
+        this.Id = toClient ? 0x53 : 0x2F;
     }
 
     public void Serialize(MinecraftStream stream)

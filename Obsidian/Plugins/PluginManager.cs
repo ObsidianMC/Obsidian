@@ -1,6 +1,8 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Obsidian.API.Logging;
+using Microsoft.Extensions.Options;
+using Obsidian.API.Configuration;
 using Obsidian.API.Plugins;
 using Obsidian.Commands.Framework;
 using Obsidian.Hosting;
@@ -8,23 +10,32 @@ using Obsidian.Plugins.PluginProviders;
 using Obsidian.Plugins.ServiceProviders;
 using Obsidian.Registries;
 using Obsidian.Services;
+using System.Collections.Immutable;
+using System.Diagnostics;
+using System.IO;
 using System.Reflection;
+using System.Security.Cryptography;
 
 namespace Obsidian.Plugins;
 
 public sealed class PluginManager
 {
-    private const string loadEvent = "OnLoad";
-
     internal readonly ILogger logger;
+    private readonly IConfiguration configuration;
+    internal readonly IServer server;
 
-    private readonly List<PluginContainer> plugins = new();
-    private readonly List<PluginContainer> stagedPlugins = new();
+    private static PackedPluginProvider packedPluginProvider = default!;
+
+    private readonly List<PluginContainer> plugins = [];
+    private readonly List<PluginContainer> stagedPlugins = [];
+    private readonly List<RSAParameters> acceptedKeys = [];
+
     private readonly IServiceProvider serverProvider;
-    private readonly IServer server;
     private readonly CommandHandler commandHandler;
     private readonly IPluginRegistry pluginRegistry;
     private readonly IServiceCollection pluginServiceDescriptors = new ServiceCollection();
+
+    public ImmutableArray<RSAParameters> AcceptedKeys => acceptedKeys.ToImmutableArray();
 
     /// <summary>
     /// List of all loaded plugins.
@@ -46,22 +57,22 @@ public sealed class PluginManager
     public IServiceProvider PluginServiceProvider { get; private set; } = default!;
 
     public PluginManager(IServiceProvider serverProvider, IServer server,
-        EventDispatcher eventDispatcher, CommandHandler commandHandler, ILogger logger)
+        EventDispatcher eventDispatcher, CommandHandler commandHandler, ILogger logger, IConfiguration configuration)
     {
         var env = serverProvider.GetRequiredService<IServerEnvironment>();
 
         this.server = server;
         this.commandHandler = commandHandler;
         this.logger = logger;
+        this.configuration = configuration;
         this.serverProvider = serverProvider;
         this.pluginRegistry = new PluginRegistry(this, eventDispatcher, commandHandler, logger);
 
-        PluginProviderSelector.RemotePluginProvider = new RemotePluginProvider(logger);
-        PluginProviderSelector.UncompiledPluginProvider = new UncompiledPluginProvider(logger);
-        PluginProviderSelector.CompiledPluginProvider = new CompiledPluginProvider(logger);
+        packedPluginProvider = new(this, logger);
 
-        ConfigureInitialServices(env);
+        ConfigureInitialServices();
 
+        DirectoryWatcher.Filters = [".obby"];
         DirectoryWatcher.FileChanged += async (path) =>
         {
             var old = plugins.FirstOrDefault(plugin => plugin.Source == path) ??
@@ -76,36 +87,61 @@ public sealed class PluginManager
         DirectoryWatcher.FileDeleted += OnPluginSourceDeleted;
     }
 
-    private void ConfigureInitialServices(IServerEnvironment env)
+    public async Task LoadPluginsAsync()
     {
-        this.pluginServiceDescriptors.AddLogging((builder) =>
+        //TODO talk about what format we should support
+        var acceptedKeyFiles = Directory.GetFiles("accepted_keys");
+
+        using var rsa = RSA.Create();
+        foreach (var certFile in acceptedKeyFiles)
         {
-            builder.ClearProviders();
-            builder.AddProvider(new LoggerProvider(env.Configuration.LogLevel));
-            builder.SetMinimumLevel(env.Configuration.LogLevel);
-        });
-        this.pluginServiceDescriptors.AddSingleton<IServerConfiguration>(x => env.Configuration);
+            var xml = await File.ReadAllTextAsync(certFile);
+            rsa.FromXmlString(xml);
+
+            this.acceptedKeys.Add(rsa.ExportParameters(false));
+        }
+
+        var files = Directory.GetFiles("plugins", "*.obby", SearchOption.AllDirectories);
+
+        var waitingForDepend = new List<PluginContainer>();
+        foreach (var file in files)
+        {
+            var pluginContainer = await this.LoadPluginAsync(file);
+
+            if (pluginContainer is null)
+                continue;
+
+            foreach (var canLoad in waitingForDepend.Where(x => x.IsDependency(pluginContainer.Info.Id)).ToList())
+            {
+                packedPluginProvider.InitializePlugin(canLoad);
+
+                //Add dependency to plugin
+                canLoad.AddDependency(pluginContainer.LoadContext);
+
+                await this.HandlePluginAsync(canLoad);
+
+                waitingForDepend.Remove(canLoad);
+            }
+
+            if (pluginContainer.Plugin is null)
+                waitingForDepend.Add(pluginContainer);
+        }
+
+        DirectoryWatcher.Watch("plugins");
     }
 
     /// <summary>
     /// Loads a plugin from selected path asynchronously.
     /// </summary>
-    /// <param name="path">Path to load the plugin from. Can point either to local <b>DLL</b>, <b>C# code file</b> or a <b>GitHub project url</b>.</param>
+    /// <param name="path">Path to load the plugin from. Can point either to local <b>OBBY</b> or <b>DLL</b>.</param>
     /// <returns>Loaded plugin. If loading failed, <see cref="PluginContainer.Plugin"/> property will be null.</returns>
     public async Task<PluginContainer?> LoadPluginAsync(string path)
     {
-        var provider = PluginProviderSelector.GetPluginProvider(path);
-        if (provider is null)
-        {
-            logger.LogError("Couldn't load plugin from path '{path}'", path);
-            return null;
-        }
-
         try
         {
-            PluginContainer plugin = await provider.GetPluginAsync(path).ConfigureAwait(false);
+            var plugin = await packedPluginProvider.GetPluginAsync(path).ConfigureAwait(false);
 
-            return HandlePlugin(plugin);
+            return plugin is null ? null : await HandlePluginAsync(plugin);
         }
         catch (Exception ex)
         {
@@ -115,17 +151,98 @@ public sealed class PluginManager
         }
     }
 
-    private PluginContainer? HandlePlugin(PluginContainer pluginContainer)
+    /// <summary>
+    /// Will cause selected plugin to be unloaded asynchronously.
+    /// </summary>
+    public async Task UnloadPluginAsync(PluginContainer pluginContainer)
     {
-        if (pluginContainer?.Plugin is null)
+        this.logger.LogInformation("Unloading plugin...");
+
+        bool removed = false;
+        lock (plugins)
         {
-            return pluginContainer;
+            removed = plugins.Remove(pluginContainer);
         }
+
+        if (!removed)
+        {
+            lock (stagedPlugins)
+            {
+                stagedPlugins.Remove(pluginContainer);
+            }
+        }
+
+        this.commandHandler.UnregisterPluginCommands(pluginContainer);
+
+        var stopwatch = Stopwatch.StartNew();
+
+        await pluginContainer.Plugin.OnUnloadingAsync();
+
+        try
+        {
+            await pluginContainer.Plugin.DisposeAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Unhandled exception occured when disposing {pluginName}", pluginContainer.Info.Name);
+        }
+
+        var loadContext = pluginContainer.LoadContext;
+
+        //Dispose has to be called before the LoadContext can unload.
+        pluginContainer.Dispose();
+
+        stopwatch.Stop();
+
+        loadContext.Unloading += _ => logger.LogInformation("Finished unloading {pluginName} plugin in  {timer}ms", pluginContainer.Info.Name, stopwatch.ElapsedMilliseconds);
+        loadContext.Unload();
+    }
+
+    public async ValueTask OnServerReadyAsync()
+    {
+        PluginServiceProvider ??= this.pluginServiceDescriptors.BuildServiceProvider(true);
+        foreach (var pluginContainer in this.plugins)
+        {
+            if (!pluginContainer.Loaded)
+                continue;
+
+            pluginContainer.ServiceScope = this.PluginServiceProvider.CreateScope();
+
+            pluginContainer.InjectServices(this.logger);
+
+            await pluginContainer.Plugin.OnServerReadyAsync(this.server);
+        }
+
+        //THis only needs to be called once 😭😭
+        CommandsRegistry.Register((Server)server);
+    }
+
+    /// <summary>
+    /// Gets the PluginContainer either by specified assembly or by current executing assembly.
+    /// </summary>
+    /// <param name="assembly">The assembly you want to use to find the plugin container.</param>
+    public PluginContainer GetPluginContainerByAssembly(Assembly? assembly = null) =>
+        this.Plugins.First(x => x.PluginAssembly == (assembly ?? Assembly.GetCallingAssembly()));
+
+    private void ConfigureInitialServices()
+    {
+        this.pluginServiceDescriptors.AddLogging((builder) =>
+        {
+            builder.ClearProviders();
+            builder.AddConfiguration(this.configuration);
+        });
+        this.pluginServiceDescriptors.AddSingleton(serverProvider.GetRequiredService<IOptionsMonitor<ServerConfiguration>>());
+    }
+
+    private async ValueTask<PluginContainer> HandlePluginAsync(PluginContainer pluginContainer)
+    {
+        //The plugin still hasn't fully loaded. Probably due to it having a hard dependency
+        if (pluginContainer.Plugin is null)
+            return pluginContainer;
 
         //Inject first wave of services (services initialized by obsidian e.x IServerConfiguration)
         PluginServiceHandler.InjectServices(this.serverProvider, pluginContainer, this.logger);
 
-        pluginContainer.Plugin.unload = async () => await UnloadPluginAsync(pluginContainer);
         if (pluginContainer.IsReady)
         {
             lock (plugins)
@@ -137,6 +254,8 @@ public sealed class PluginManager
             pluginContainer.Plugin.ConfigureRegistry(this.pluginRegistry);
 
             pluginContainer.Loaded = true;
+
+            await pluginContainer.Plugin.OnLoadedAsync(this.server);
         }
         else
         {
@@ -161,80 +280,6 @@ public sealed class PluginManager
         return pluginContainer;
     }
 
-    /// <summary>
-    /// Will cause selected plugin to be unloaded asynchronously.
-    /// </summary>
-    public async Task UnloadPluginAsync(PluginContainer pluginContainer)
-    {
-        bool removed = false;
-        lock (plugins)
-        {
-            removed = plugins.Remove(pluginContainer);
-        }
-
-        if (!removed)
-        {
-            lock (stagedPlugins)
-            {
-                stagedPlugins.Remove(pluginContainer);
-            }
-        }
-
-        this.commandHandler.UnregisterPluginCommands(pluginContainer);
-
-        try
-        {
-            await pluginContainer.Plugin.DisposeAsync();
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Unhandled exception occured when disposing {pluginName}", pluginContainer.Info.Name);
-        }
-
-        pluginContainer.LoadContext.Unload();
-        pluginContainer.LoadContext.Unloading += _ => logger.LogInformation("Finished unloading {pluginName} plugin", pluginContainer.Info.Name);
-
-        pluginContainer.Dispose();
-    }
-
-    public void ServerReady()
-    {
-        PluginServiceProvider ??= this.pluginServiceDescriptors.BuildServiceProvider(true);
-        foreach (var pluginContainer in this.plugins)
-        {
-            if (!pluginContainer.Loaded)
-                continue;
-
-            pluginContainer.ServiceScope = this.PluginServiceProvider.CreateScope();
-
-            pluginContainer.InjectServices(this.logger);
-
-            InvokeOnLoad(pluginContainer);
-        }
-
-        //THis only needs to be called once 😭😭
-        CommandsRegistry.Register((Server)server);
-    }
-
-    /// <summary>
-    /// Gets the PluginContainer either by specified assembly or by current executing assembly.
-    /// </summary>
-    /// <param name="assembly">The assembly you want to use to find the plugin container.</param>
-    public PluginContainer GetPluginContainerByAssembly(Assembly? assembly = null) =>
-        this.Plugins.First(x => x.PluginAssembly == (assembly ?? Assembly.GetCallingAssembly()));
-
-    private void OnPluginStateChanged(PluginContainer plugin)
-    {
-        if (plugin.IsReady)
-        {
-            RunStaged(plugin);
-        }
-        else
-        {
-            StageRunning(plugin);
-        }
-    }
-
     private void OnPluginSourceRenamed(string oldSource, string newSource)
     {
         var renamedPlugin = plugins.FirstOrDefault(plugin => plugin.Source == oldSource) ?? stagedPlugins.FirstOrDefault(plugin => plugin.Source == oldSource);
@@ -247,53 +292,6 @@ public sealed class PluginManager
         var deletedPlugin = plugins.FirstOrDefault(plugin => plugin.Source == path) ?? stagedPlugins.FirstOrDefault(plugin => plugin.Source == path);
         if (deletedPlugin != null)
             await UnloadPluginAsync(deletedPlugin);
-    }
-
-    private void StageRunning(PluginContainer plugin)
-    {
-        lock (plugins)
-        {
-            if (!plugins.Remove(plugin))
-                return;
-        }
-
-        lock (stagedPlugins)
-        {
-            stagedPlugins.Add(plugin);
-        }
-    }
-
-    private void RunStaged(PluginContainer plugin)
-    {
-        lock (stagedPlugins)
-        {
-            if (!stagedPlugins.Remove(plugin))
-                return;
-        }
-
-        lock (plugins)
-        {
-            plugins.Add(plugin);
-        }
-
-        if (!plugin.Loaded)
-        {
-            InvokeOnLoad(plugin);
-            plugin.Loaded = true;
-        }
-    }
-
-    private void InvokeOnLoad(PluginContainer plugin)
-    {
-        var task = plugin.Plugin.OnLoadAsync(this.server).AsTask();
-        if (task.Status == TaskStatus.Created)
-        {
-            task.RunSynchronously();
-        }
-        if (task.Status == TaskStatus.Faulted)
-        {
-            logger?.LogError(task.Exception?.InnerException, "Invoking {pluginName}.{loadEvent} faulted.", plugin.Info.Name, loadEvent);
-        }
     }
 }
 

@@ -2,22 +2,20 @@
 
 namespace Obsidian.Net.Packets.Login;
 
-public partial class LoginSuccess : IClientboundPacket
+public partial class LoginSuccess(Guid uuid, string username) : IClientboundPacket
 {
     [Field(0)]
-    public Guid UUID { get; }
+    public Guid UUID { get; } = uuid;
 
     [Field(1)]
-    public string Username { get; }
+    public string Username { get; } = username;
 
     [Field(3)]
     public List<SkinProperty> SkinProperties { get; init; } = new();
 
-    public int Id => 0x02;
+    [Field(4)]
+    [Obsolete("This is a temporary field for modded servers. Will be removed soon.")]
+    public bool StrictErrorHandling { get; init; }
 
-    public LoginSuccess(Guid uuid, string username)
-    {
-        UUID = uuid;
-        Username = username;
-    }
+    public int Id => 0x02;
 }

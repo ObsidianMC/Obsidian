@@ -9,7 +9,7 @@ public partial class SwingArmPacket : IServerboundPacket
     [Field(0), ActualType(typeof(int)), VarLength]
     public Hand Hand { get; private set; }
 
-    public int Id => 0x33;
+    public int Id => 0x36;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {

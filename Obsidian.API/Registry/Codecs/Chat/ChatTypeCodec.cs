@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API.Registry.Codecs.Chat;
 
-public sealed record class ChatCodec
+public sealed record class ChatTypeCodec : ICodec
 {
     public required string Name { get; init; }
 

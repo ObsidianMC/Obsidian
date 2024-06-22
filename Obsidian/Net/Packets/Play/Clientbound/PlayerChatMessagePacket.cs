@@ -16,9 +16,12 @@ public partial class PlayerChatMessagePacket : IClientboundPacket
     public required List<PreviousMessage> PreviousMessages { get; init; }
 
     [Field(3)]
-    public required PlayerChatMessageNetworkTarget NetworkTarget { get; init; }
+    public required object Other { get; init; }
 
-    public int Id => 0x37;
+    [Field(4)]
+    public required PlayerChatMessageFormatting ChatFormatting { get; init; }
+
+    public int Id => 0x39;
 
     public void Serialize(MinecraftStream stream)
     {
@@ -42,14 +45,14 @@ public partial class PlayerChatMessagePacket : IClientboundPacket
 
     private void WriteNetworkTarget(MinecraftStream stream)
     {
-        stream.WriteVarInt(this.NetworkTarget.ChatType);
+        stream.WriteVarInt(this.ChatFormatting.ChatType);
 
-        stream.WriteChat(this.NetworkTarget.NetworkName);
+        stream.WriteChat(this.ChatFormatting.SenderName);
 
-        stream.WriteBoolean(this.NetworkTarget.TargetNamePresent);
+        stream.WriteBoolean(this.ChatFormatting.TargetNamePresent);
 
-        if (this.NetworkTarget.TargetNamePresent)
-            stream.WriteChat(this.NetworkTarget.TargetName);
+        if (this.ChatFormatting.TargetNamePresent)
+            stream.WriteChat(this.ChatFormatting.TargetName);
     }
 
     private void WriteBody(MinecraftStream stream)

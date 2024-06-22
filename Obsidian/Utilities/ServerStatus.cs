@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Configuration;
 using Obsidian.API.Logging;
 using Obsidian.API.Utilities;
 using Obsidian.Entities;
@@ -109,15 +110,13 @@ public sealed class ServerPlayers : IServerPlayers
     });
 }
 
-public sealed class ServerDescription : IServerDescription
+public sealed class ServerDescription(ServerConfiguration configuration) : IServerDescription
 {
     [JsonIgnore]
     public string Text { get => text; set => text = FormatText(value); }
 
     [JsonInclude]
-    private string text;
-
-    public ServerDescription(IServerConfiguration configuration) => this.text = FormatText(configuration.Motd);
+    private string text = FormatText(configuration.Motd);
 
     private static string FormatText(string text) => text.Replace('&', '§');
 }

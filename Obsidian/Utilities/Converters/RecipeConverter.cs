@@ -86,13 +86,14 @@ public sealed class RecipesConverter : JsonConverter<IRecipe[]>
                     });
                     break;
                 case CraftingType.Stonecutting:
+                    var ingredient = value.GetProperty("ingredient");
                     recipes.Add(new CuttingRecipe
                     {
                         Identifier = recipeName,
                         Type = craftingType,
                         Group = group,
-                        Count = value.GetProperty("count").GetInt32(),
-                        Ingredient = value.GetProperty("ingredient").Deserialize<Ingredient>(options)!,
+                        Ingredient = ingredient.Deserialize<Ingredient>(options)!,
+                        Count = ingredient.TryGetProperty("count", out var countElement) ? countElement.GetInt32() : 1,//TODO the recipe format more or less changed look into this.
                         Result = result
                     });
                     break;

@@ -26,7 +26,7 @@ public partial class UseItemOnPacket : IServerboundPacket
     [Field(7), VarLength]
     public int Sequence { get; private set; }
 
-    public int Id => 0x35;
+    public int Id => 0x38;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
@@ -36,10 +36,10 @@ public partial class UseItemOnPacket : IServerboundPacket
 
         var b = await player.world.GetBlockAsync(position);
 
-        if (b is not IBlock)
+        if (b is null)
             return;
 
-        if (TagsRegistry.Blocks.PlayersCanInteract.Entries.Contains(b.RegistryId) && !player.Sneaking)
+        if (TagsRegistry.Block.PlayersCanInteract.Entries.Contains(b.RegistryId) && !player.Sneaking)
         {
             await server.EventDispatcher.ExecuteEventAsync(new PlayerInteractEventArgs(player, server)
             {
@@ -110,10 +110,10 @@ public partial class UseItemOnPacket : IServerboundPacket
                 break;
         }
 
-        if (TagsRegistry.Blocks.GravityAffected.Entries.Contains(block.RegistryId))
+        if (TagsRegistry.Block.GravityAffected.Entries.Contains(block.RegistryId))
         {
             if (await player.World.GetBlockAsync(position + Vector.Down) is IBlock below &&
-                (TagsRegistry.Blocks.ReplaceableByLiquid.Entries.Contains(below.RegistryId) || below.IsLiquid))
+                (TagsRegistry.Block.ReplaceableByLiquid.Entries.Contains(below.RegistryId) || below.IsLiquid))
             {
                 await player.world.SetBlockAsync(position, BlocksRegistry.Air, true);
                 player.client.SendPacket(new AcknowledgeBlockChangePacket

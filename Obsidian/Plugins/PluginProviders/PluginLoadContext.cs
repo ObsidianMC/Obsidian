@@ -1,34 +1,29 @@
-﻿using System.Reflection;
+﻿using System.IO;
+using System.Reflection;
 using System.Runtime.Loader;
 
 namespace Obsidian.Plugins.PluginProviders;
 
-internal sealed class PluginLoadContext : AssemblyLoadContext
+public sealed class PluginLoadContext(string name) : AssemblyLoadContext(name: name, isCollectible: true)
 {
-    private readonly AssemblyDependencyResolver resolver;
+    public List<PluginLoadContext> Dependencies { get; } = [];
 
-    public PluginLoadContext(string name) : base(name: name, isCollectible: true)
+    public Assembly? LoadAssembly(byte[] mainBytes, byte[]? pbdBytes = null)
     {
+        using var mainStream = new MemoryStream(mainBytes, false);
+        using var pbdStream = pbdBytes != null ? new MemoryStream(pbdBytes, false) : null;
+
+        var asm = this.LoadFromStream(mainStream, pbdStream);
+        
+        return asm;
     }
 
-    public PluginLoadContext(string name, string path) : base(name: name, isCollectible: true)
-    {
-        resolver = new AssemblyDependencyResolver(path);
-    }
+    public void AddDependency(PluginLoadContext context) => this.Dependencies.Add(context);
 
     protected override Assembly? Load(AssemblyName assemblyName)
     {
-        string assemblyPath = resolver?.ResolveAssemblyToPath(assemblyName);
-        if (assemblyPath != null)
-        {
-            return LoadFromAssemblyPath(assemblyPath);
-        }
+        var assembly = this.Assemblies.FirstOrDefault(x => x.GetName() == assemblyName);
 
-        return null;
-    }
-
-    protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
-    {
-        return IntPtr.Zero;
+        return assembly ?? this.Dependencies.Select(x => x.Load(assemblyName)).FirstOrDefault(x => x != null);
     }
 }

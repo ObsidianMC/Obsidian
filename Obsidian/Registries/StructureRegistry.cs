@@ -1,5 +1,4 @@
 ﻿using Obsidian.Nbt;
-using System.Diagnostics;
 using System.IO;
 
 namespace Obsidian.Registries;

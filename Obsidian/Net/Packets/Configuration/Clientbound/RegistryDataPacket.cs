@@ -1,12 +1,33 @@
-﻿using Obsidian.Serialization.Attributes;
-
-namespace Obsidian.Net.Packets.Configuration.Clientbound;
-public sealed partial class RegistryDataPacket : IClientboundPacket
+﻿namespace Obsidian.Net.Packets.Configuration.Clientbound;
+public sealed partial class RegistryDataPacket(string registryId, IDictionary<string, ICodec> codecs) : IClientboundPacket
 {
-    public static RegistryDataPacket Default { get; } = new();
+    public int Id => 0x07;
 
-    [Field(0)]
-    public MixedCodec Codecs { get; init; } = new();
+    public string RegistryId { get; } = registryId;
+    public IDictionary<string, ICodec> Codecs { get; } = codecs;
 
-    public int Id => 0x05;
+    public void Serialize(MinecraftStream stream)
+    {
+        using var packetStream = new MinecraftStream();
+
+        packetStream.WriteString(this.RegistryId);
+
+        packetStream.WriteVarInt(this.Codecs.Count);
+
+        foreach(var (key, codec) in this.Codecs)
+        {
+            packetStream.WriteString(key);
+
+            packetStream.WriteBoolean(true);
+
+            packetStream.WriteCodec(codec);
+        }
+        
+        stream.Lock.Wait();
+        stream.WriteVarInt(Id.GetVarIntLength() + (int)packetStream.Length);
+        stream.WriteVarInt(Id);
+        packetStream.Position = 0;
+        packetStream.CopyTo(stream);
+        stream.Lock.Release();
+    }
 }

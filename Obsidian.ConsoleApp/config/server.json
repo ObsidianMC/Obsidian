@@ -1,0 +1,30 @@
+{
+  "$schema": "https://raw.githubusercontent.com/ObsidianMC/Obsidian/master/.schema/server.json",
+
+  "allowLan": true,
+  "allowOperatorRequests": true,
+
+  "maxPlayers": 25,
+  "motd": "�k||||�r �5Obsidian �cPre�r-�cRelease �r�k||||�r \n�r�lRunning on .NET �l�c8 �r�l<3",
+
+  "onlineMode": true,
+  "port": 25565,
+  "pregenerateChunkRange": 15,
+  "serverListQuery": "Full",
+  "timeTickSpeedMultiplier": 1,
+  "whitelist": false,
+
+  "network": {
+    "connectionThrottle": 15000,
+    "keepAliveInterval": 10000,
+    "keepAliveTimeoutInterval": 30000,
+    "mulitplayerDebugMode": false
+  },
+
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft": "Warning"
+    }
+  }
+}

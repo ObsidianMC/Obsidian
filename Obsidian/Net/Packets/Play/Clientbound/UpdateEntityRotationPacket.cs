@@ -16,5 +16,5 @@ public partial class UpdateEntityRotationPacket : IClientboundPacket
     [Field(3)]
     public bool OnGround { get; init; }
 
-    public int Id => 0x2E;
+    public int Id => 0x30;
 }

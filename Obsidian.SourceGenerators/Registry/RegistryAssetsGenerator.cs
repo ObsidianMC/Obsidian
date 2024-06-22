@@ -1,5 +1,7 @@
 ﻿using Obsidian.SourceGenerators.Registry.Models;
 using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 
 namespace Obsidian.SourceGenerators.Registry;
@@ -9,6 +11,9 @@ public sealed partial class RegistryAssetsGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
+        //if (!Debugger.IsAttached)
+        //    Debugger.Launch();
+
         var jsonFiles = context.AdditionalTextsProvider
             .Where(file => file.Path.EndsWith(".json"))
             .Select(static (file, ct) => (name: Path.GetFileNameWithoutExtension(file.Path), content: file.GetText(ct)!.ToString()));

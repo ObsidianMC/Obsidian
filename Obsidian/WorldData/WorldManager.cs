@@ -1,24 +1,29 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Obsidian.API.Configuration;
 using Obsidian.Hosting;
 using Obsidian.Registries;
 using Obsidian.Services;
 using Obsidian.WorldData.Generators;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Threading;
 
 namespace Obsidian.WorldData;
 
-public sealed class WorldManager : BackgroundService, IWorldManager
+public sealed class WorldManager(ILoggerFactory loggerFactory, IServiceProvider serviceProvider, IOptionsMonitor<ServerConfiguration> configuration,
+    IServerEnvironment serverEnvironment) : BackgroundService, IWorldManager
 {
-    private readonly ILogger logger;
+    private readonly ILogger logger = loggerFactory.CreateLogger<WorldManager>();
     private readonly Dictionary<string, IWorld> worlds = new();
-    private readonly List<ServerWorld> serverWorlds;
-    private readonly ILoggerFactory loggerFactory;
-    private readonly IServerEnvironment serverEnvironment;
-    private readonly IServiceScope serviceScope;
+    private readonly ILoggerFactory loggerFactory = loggerFactory;
+    private readonly IServiceProvider serviceProvider = serviceProvider;
+    private readonly IOptionsMonitor<ServerConfiguration> configuration = configuration;
+    private readonly IServerEnvironment serverEnvironment = serverEnvironment;
+    private readonly IServiceScope serviceScope = serviceProvider.CreateScope();
 
     public bool ReadyToJoin { get; private set; }
 
@@ -29,15 +34,6 @@ public sealed class WorldManager : BackgroundService, IWorldManager
     public IWorld DefaultWorld { get; private set; } = default!;
 
     public Dictionary<string, Type> WorldGenerators { get; } = new();
-
-    public WorldManager(ILoggerFactory loggerFactory, IServiceProvider serviceProvider, IServerEnvironment serverEnvironment)
-    {
-        this.logger = loggerFactory.CreateLogger<WorldManager>();
-        this.serverWorlds = serverEnvironment.ServerWorlds;
-        this.loggerFactory = loggerFactory;
-        this.serverEnvironment = serverEnvironment;
-        this.serviceScope = serviceProvider.CreateScope();
-    }
 
     protected async override Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -57,9 +53,9 @@ public sealed class WorldManager : BackgroundService, IWorldManager
                 await Task.WhenAll(this.worlds.Values.Cast<World>().Select(x => x.ManageChunksAsync()));
             }
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            await this.serverEnvironment.OnServerCrashAsync(this.logger, ex);
+            await this.serverEnvironment.OnServerCrashAsync(ex);
         }
 
     }
@@ -80,11 +76,8 @@ public sealed class WorldManager : BackgroundService, IWorldManager
 
     public async Task LoadWorldsAsync()
     {
-        //We use dimension and biome registry for worldgen so wait
-        while (!CodecRegistry.Initialized)
-            await Task.Delay(500);
-
-        foreach (var serverWorld in this.serverWorlds)
+        var worlds = await LoadServerWorldsAsync();
+        foreach (var serverWorld in worlds)
         {
             //var server = (Server)this.server;
             if (!this.WorldGenerators.TryGetValue(serverWorld.Generator, out var generatorType))
@@ -96,7 +89,7 @@ public sealed class WorldManager : BackgroundService, IWorldManager
             //TODO fix
             var world = new World(this.loggerFactory.CreateLogger($"World [{serverWorld.Name}]"), generatorType, this)
             {
-                Configuration = this.serverEnvironment.Configuration,
+                Configuration = this.configuration.CurrentValue,
                 PacketBroadcaster = this.serviceScope.ServiceProvider.GetRequiredService<IPacketBroadcaster>(),
                 Name = serverWorld.Name,
                 Seed = serverWorld.Seed
@@ -184,5 +177,35 @@ public sealed class WorldManager : BackgroundService, IWorldManager
         this.RegisterGenerator<OverworldGenerator>();
         this.RegisterGenerator<IslandGenerator>();
         this.RegisterGenerator<EmptyWorldGenerator>();
+    }
+
+    private static async Task<List<ServerWorld>> LoadServerWorldsAsync()
+    {
+        var worldsFile = new FileInfo(Path.Combine("config", "worlds.json"));
+
+        if (worldsFile.Exists)
+        {
+            await using var worldsFileStream = worldsFile.OpenRead();
+            return await worldsFileStream.FromJsonAsync<List<ServerWorld>>()
+                ?? throw new Exception("A worlds file does exist, but is invalid. Is it corrupt?");
+        }
+
+        var worlds = new List<ServerWorld>()
+            {
+                new()
+                {
+                    ChildDimensions =
+                    {
+                        "minecraft:the_nether",
+                        "minecraft:the_end"
+                    },
+                    Seed = Globals.Random.Next().ToString()
+                }
+            };
+
+        await using var fileStream = worldsFile.Create();
+        await worlds.ToJsonAsync(fileStream);
+
+        return worlds;
     }
 }

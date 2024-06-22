@@ -10,7 +10,7 @@ public sealed partial class PlayerSessionPacket : IServerboundPacket
     [Field(1)]
     public SignatureData SignatureData { get; set; }
 
-    public int Id => 0x06;
+    public int Id => 0x07;
 
     public ValueTask HandleAsync(Server server, Player player)
     {

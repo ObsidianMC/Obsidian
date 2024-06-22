@@ -3,6 +3,7 @@ using System.Text.Json;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
+//TODO clean this class up
 public partial class UpdateTeamsPacket : IClientboundPacket
 {
     [Field(0), FixedLength(16)]
@@ -35,7 +36,7 @@ public partial class UpdateTeamsPacket : IClientboundPacket
     [Field(9), Condition("Mode != TeamModeOption.RemoveTeam || Mode != TeamModeOption.UpdateTeam")]
     public HashSet<string> Entities { get; set; } = new();
 
-    public int Id => 0x5E;
+    public int Id => 0x60;
 
     public void Serialize(MinecraftStream stream)
     {

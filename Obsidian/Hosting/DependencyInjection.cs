@@ -1,36 +1,49 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Obsidian.API.Configuration;
 using Obsidian.Commands.Framework;
 using Obsidian.Net.Rcon;
 using Obsidian.Services;
 using Obsidian.WorldData;
+using System.IO;
 
 namespace Obsidian.Hosting;
 public static class DependencyInjection
 {
-    public static IServiceCollection AddObsidian(this IServiceCollection services, IServerEnvironment env)
+    public static IHostApplicationBuilder ConfigureObsidian(this IHostApplicationBuilder builder)
     {
-        services.AddSingleton(env);
-        services.AddSingleton(env.Configuration);
-        services.AddSingleton<IServerConfiguration>(f => f.GetRequiredService<ServerConfiguration>());
+        builder.Configuration.AddJsonFile(Path.Combine("config", "server.json"), optional: false, reloadOnChange: true);
+        builder.Configuration.AddJsonFile(Path.Combine("config", "whitelist.json"), optional: false, reloadOnChange: true);
+        builder.Configuration.AddEnvironmentVariables();
 
-        services.AddSingleton<CommandHandler>();
-        services.AddSingleton<RconServer>();
-        services.AddSingleton<WorldManager>();
-        services.AddSingleton<PacketBroadcaster>();
-        services.AddSingleton<IServer, Server>();
-        services.AddSingleton<IUserCache, UserCache>();
-        services.AddSingleton<EventDispatcher>();
+        return builder;
+    }
 
-        services.AddHttpClient();
+    public static IHostApplicationBuilder AddObsidian(this IHostApplicationBuilder builder)
+    {
+        builder.Services.Configure<ServerConfiguration>(builder.Configuration);
+        builder.Services.Configure<WhitelistConfiguration>(builder.Configuration);
 
-        services.AddHostedService(sp => sp.GetRequiredService<PacketBroadcaster>());
-        services.AddHostedService<ObsidianHostingService>();
-        services.AddHostedService(sp => sp.GetRequiredService<WorldManager>());
+        builder.Services.AddSingleton<IServerEnvironment, DefaultServerEnvironment>();
+        builder.Services.AddSingleton<CommandHandler>();
+        builder.Services.AddSingleton<RconServer>();
+        builder.Services.AddSingleton<WorldManager>();
+        builder.Services.AddSingleton<PacketBroadcaster>();
+        builder.Services.AddSingleton<IServer, Server>();
+        builder.Services.AddSingleton<IUserCache, UserCache>();
+        builder.Services.AddSingleton<EventDispatcher>();
 
-        services.AddSingleton<IWorldManager>(sp => sp.GetRequiredService<WorldManager>());
-        services.AddSingleton<IPacketBroadcaster>(sp => sp.GetRequiredService<PacketBroadcaster>());
+        builder.Services.AddHttpClient();
+
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<PacketBroadcaster>());
+        builder.Services.AddHostedService<ObsidianHostingService>();
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<WorldManager>());
+
+        builder.Services.AddSingleton<IWorldManager>(sp => sp.GetRequiredService<WorldManager>());
+        builder.Services.AddSingleton<IPacketBroadcaster>(sp => sp.GetRequiredService<PacketBroadcaster>());
         
-        return services;
+        return builder;
     }
 
 }

@@ -19,7 +19,7 @@ public static partial class ItemsRegistry
     {
         var ingredient = new Ingredient();
 
-        var tagType = TagsRegistry.Items.All.FirstOrDefault(x => x.Name.EqualsIgnoreCase(tag.Replace("minecraft:", "")));
+        var tagType = TagsRegistry.Item.All.FirstOrDefault(x => x.Name.EqualsIgnoreCase(tag.Replace("minecraft:", "")));
         foreach (var id in tagType!.Entries)
         {
             var item = Get(id);

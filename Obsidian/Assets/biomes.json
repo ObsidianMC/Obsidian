@@ -114,7 +114,14 @@
             }
           ],
           "axolotls": [],
-          "creature": [],
+          "creature": [
+            {
+              "type": "minecraft:armadillo",
+              "maxCount": 2,
+              "minCount": 1,
+              "weight": 6
+            }
+          ],
           "misc": [],
           "monster": [
             {
@@ -3200,7 +3207,14 @@
             }
           ],
           "axolotls": [],
-          "creature": [],
+          "creature": [
+            {
+              "type": "minecraft:armadillo",
+              "maxCount": 2,
+              "minCount": 1,
+              "weight": 6
+            }
+          ],
           "misc": [],
           "monster": [
             {
@@ -4378,46 +4392,22 @@
           "axolotls": [],
           "creature": [
             {
-              "type": "minecraft:sheep",
-              "maxCount": 4,
-              "minCount": 4,
-              "weight": 12
-            },
-            {
-              "type": "minecraft:pig",
-              "maxCount": 4,
-              "minCount": 4,
-              "weight": 10
-            },
-            {
-              "type": "minecraft:chicken",
-              "maxCount": 4,
-              "minCount": 4,
-              "weight": 10
-            },
-            {
-              "type": "minecraft:cow",
-              "maxCount": 4,
-              "minCount": 4,
-              "weight": 8
-            },
-            {
               "type": "minecraft:wolf",
-              "maxCount": 4,
-              "minCount": 4,
-              "weight": 8
+              "maxCount": 1,
+              "minCount": 1,
+              "weight": 1
             },
             {
               "type": "minecraft:rabbit",
               "maxCount": 3,
               "minCount": 2,
-              "weight": 4
+              "weight": 8
             },
             {
               "type": "minecraft:fox",
               "maxCount": 4,
               "minCount": 2,
-              "weight": 8
+              "weight": 4
             }
           ],
           "misc": [],
@@ -5641,7 +5631,7 @@
               "type": "minecraft:skeleton",
               "maxCount": 4,
               "minCount": 4,
-              "weight": 100
+              "weight": 70
             },
             {
               "type": "minecraft:creeper",
@@ -5672,6 +5662,12 @@
               "maxCount": 1,
               "minCount": 1,
               "weight": 1
+            },
+            {
+              "type": "minecraft:bogged",
+              "maxCount": 4,
+              "minCount": 4,
+              "weight": 30
             }
           ],
           "underground_water_creature": [
@@ -7546,6 +7542,12 @@
               "maxCount": 1,
               "minCount": 1,
               "weight": 1
+            },
+            {
+              "type": "minecraft:armadillo",
+              "maxCount": 3,
+              "minCount": 2,
+              "weight": 10
             }
           ],
           "misc": [],
@@ -7758,8 +7760,20 @@
               "weight": 1
             },
             {
+              "type": "minecraft:armadillo",
+              "maxCount": 3,
+              "minCount": 2,
+              "weight": 10
+            },
+            {
               "type": "minecraft:llama",
               "maxCount": 4,
+              "minCount": 4,
+              "weight": 8
+            },
+            {
+              "type": "minecraft:wolf",
+              "maxCount": 8,
               "minCount": 4,
               "weight": 8
             }
@@ -8924,6 +8938,12 @@
               "maxCount": 4,
               "minCount": 4,
               "weight": 10
+            },
+            {
+              "type": "minecraft:wolf",
+              "maxCount": 4,
+              "minCount": 2,
+              "weight": 8
             }
           ],
           "misc": [],
@@ -9721,7 +9741,7 @@
               "type": "minecraft:skeleton",
               "maxCount": 4,
               "minCount": 4,
-              "weight": 100
+              "weight": 70
             },
             {
               "type": "minecraft:creeper",
@@ -9752,6 +9772,12 @@
               "maxCount": 1,
               "minCount": 1,
               "weight": 1
+            },
+            {
+              "type": "minecraft:bogged",
+              "maxCount": 4,
+              "minCount": 4,
+              "weight": 30
             }
           ],
           "underground_water_creature": [
@@ -10016,6 +10042,14 @@
           [],
           [
             "minecraft:end_spike"
+          ],
+          [],
+          [],
+          [],
+          [],
+          [],
+          [
+            "minecraft:end_platform"
           ]
         ],
         "carvers": null,
@@ -11169,6 +11203,12 @@
               "maxCount": 1,
               "minCount": 1,
               "weight": 1
+            },
+            {
+              "type": "minecraft:armadillo",
+              "maxCount": 3,
+              "minCount": 2,
+              "weight": 10
             }
           ],
           "misc": [],
@@ -11350,7 +11390,20 @@
             }
           ],
           "axolotls": [],
-          "creature": [],
+          "creature": [
+            {
+              "type": "minecraft:armadillo",
+              "maxCount": 2,
+              "minCount": 1,
+              "weight": 6
+            },
+            {
+              "type": "minecraft:wolf",
+              "maxCount": 8,
+              "minCount": 4,
+              "weight": 2
+            }
+          ],
           "misc": [],
           "monster": [
             {
