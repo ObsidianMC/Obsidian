@@ -4,6 +4,7 @@ using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.Registry.Codecs.Chat;
 using Obsidian.API.Registry.Codecs.DamageTypes;
 using Obsidian.API.Registry.Codecs.Dimensions;
+using Obsidian.API.Registry.Codecs.PaintingVariant;
 using Obsidian.API.Registry.Codecs.WolfVariant;
 using Obsidian.API.Utilities;
 using Obsidian.Nbt;
@@ -422,7 +423,7 @@ public partial class Extensions
     #endregion
 
     #region Chat Codec Writing
-    public static void WriteElement(this ChatCodec value, NbtWriter writer)
+    public static void WriteElement(this ChatTypeCodec value, NbtWriter writer)
     {
         var chatElement = value.Element;
         var chat = chatElement.Chat;
@@ -634,6 +635,17 @@ public partial class Extensions
         writer.WriteString("angry_texture", materialElement.AngryTexture);
         writer.WriteString("wild_texture", materialElement.WildTexture);
         writer.WriteString("biomes", materialElement.Biomes);
+    }
+    #endregion
+
+    #region Painting Variant Writing
+    public static void WriteElement(this PaintingVariantCodec value, NbtWriter writer)
+    {
+        var materialElement = value.Element;
+
+        writer.WriteString("asset_id", materialElement.AssetId);
+        writer.WriteInt("height", materialElement.Height);
+        writer.WriteInt("width", materialElement.Width);
     }
     #endregion
 }

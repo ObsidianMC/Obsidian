@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace Obsidian.Registries;
 public static partial class CodecRegistry
 {
-    public static bool TryGetChatType(string resourceId, [MaybeNullWhen(false)] out ChatCodec codec) =>
+    public static bool TryGetChatType(string resourceId, [MaybeNullWhen(false)] out ChatTypeCodec codec) =>
         ChatType.All.TryGetValue(resourceId, out codec);
 
     public static bool TryGetBiome(string resourceId, [MaybeNullWhen(false)] out BiomeCodec codec) =>

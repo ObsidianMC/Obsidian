@@ -10,9 +10,12 @@ public sealed partial class DisguisedChatMessage : IClientboundPacket
     public int ChatType { get; init; }
 
     [Field(2)]
-    public bool HasTargetName { get; init; }
+    public ChatMessage SenderName { get; init; }
 
     [Field(3)]
+    public bool HasTargetName { get; init; }
+
+    [Field(4)]
     [Condition("HasTargetName")]
     public ChatMessage TargetName { get; init; }
 

@@ -775,7 +775,7 @@ public sealed class World : IWorld
             return false;
 
         // Todo: this better
-        if (TagsRegistry.Blocks.GravityAffected.Entries.Contains(block.RegistryId))
+        if (TagsRegistry.Block.GravityAffected.Entries.Contains(block.RegistryId))
             return await BlockUpdates.HandleFallingBlock(update);
 
         if (block.IsLiquid)

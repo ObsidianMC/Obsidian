@@ -8,6 +8,7 @@ using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.Registry.Codecs.Chat;
 using Obsidian.API.Registry.Codecs.DamageTypes;
 using Obsidian.API.Registry.Codecs.Dimensions;
+using Obsidian.API.Registry.Codecs.PaintingVariant;
 using Obsidian.API.Registry.Codecs.WolfVariant;
 using Obsidian.API.Utilities;
 using Obsidian.Commands;
@@ -793,7 +794,7 @@ public partial class MinecraftStream
             dim.WriteElement(writer);
         else if (codec is BiomeCodec biome)
             biome.WriteElement(writer);
-        else if (codec is ChatCodec chat)
+        else if (codec is ChatTypeCodec chat)
             chat.WriteElement(writer);
         else if (codec is TrimPatternCodec trimPattern)
             trimPattern.WriteElement(writer);
@@ -803,6 +804,8 @@ public partial class MinecraftStream
             damageType.WriteElement(writer);
         else if (codec is WolfVariantCodec wolfVariant)
             wolfVariant.WriteElement(writer);
+        else if (codec is PaintingVariantCodec paintingVariant)
+            paintingVariant.WriteElement(writer);
 
         writer.EndCompound();
         writer.TryFinish();

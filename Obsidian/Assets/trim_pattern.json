@@ -2,8 +2,20 @@
   "type": "minecraft:trim_pattern",
   "value": [
     {
-      "name": "minecraft:coast",
+      "name": "minecraft:bolt",
       "id": 0,
+      "element": {
+        "asset_id": "minecraft:bolt",
+        "decal": false,
+        "description": {
+          "translate": "trim_pattern.minecraft.bolt"
+        },
+        "template_item": "minecraft:bolt_armor_trim_smithing_template"
+      }
+    },
+    {
+      "name": "minecraft:coast",
+      "id": 1,
       "element": {
         "asset_id": "minecraft:coast",
         "decal": false,
@@ -15,7 +27,7 @@
     },
     {
       "name": "minecraft:dune",
-      "id": 1,
+      "id": 2,
       "element": {
         "asset_id": "minecraft:dune",
         "decal": false,
@@ -27,7 +39,7 @@
     },
     {
       "name": "minecraft:eye",
-      "id": 2,
+      "id": 3,
       "element": {
         "asset_id": "minecraft:eye",
         "decal": false,
@@ -38,8 +50,20 @@
       }
     },
     {
+      "name": "minecraft:flow",
+      "id": 4,
+      "element": {
+        "asset_id": "minecraft:flow",
+        "decal": false,
+        "description": {
+          "translate": "trim_pattern.minecraft.flow"
+        },
+        "template_item": "minecraft:flow_armor_trim_smithing_template"
+      }
+    },
+    {
       "name": "minecraft:host",
-      "id": 3,
+      "id": 5,
       "element": {
         "asset_id": "minecraft:host",
         "decal": false,
@@ -51,7 +75,7 @@
     },
     {
       "name": "minecraft:raiser",
-      "id": 4,
+      "id": 6,
       "element": {
         "asset_id": "minecraft:raiser",
         "decal": false,
@@ -63,7 +87,7 @@
     },
     {
       "name": "minecraft:rib",
-      "id": 5,
+      "id": 7,
       "element": {
         "asset_id": "minecraft:rib",
         "decal": false,
@@ -75,7 +99,7 @@
     },
     {
       "name": "minecraft:sentry",
-      "id": 6,
+      "id": 8,
       "element": {
         "asset_id": "minecraft:sentry",
         "decal": false,
@@ -87,7 +111,7 @@
     },
     {
       "name": "minecraft:shaper",
-      "id": 7,
+      "id": 9,
       "element": {
         "asset_id": "minecraft:shaper",
         "decal": false,
@@ -99,7 +123,7 @@
     },
     {
       "name": "minecraft:silence",
-      "id": 8,
+      "id": 10,
       "element": {
         "asset_id": "minecraft:silence",
         "decal": false,
@@ -111,7 +135,7 @@
     },
     {
       "name": "minecraft:snout",
-      "id": 9,
+      "id": 11,
       "element": {
         "asset_id": "minecraft:snout",
         "decal": false,
@@ -123,7 +147,7 @@
     },
     {
       "name": "minecraft:spire",
-      "id": 10,
+      "id": 12,
       "element": {
         "asset_id": "minecraft:spire",
         "decal": false,
@@ -135,7 +159,7 @@
     },
     {
       "name": "minecraft:tide",
-      "id": 11,
+      "id": 13,
       "element": {
         "asset_id": "minecraft:tide",
         "decal": false,
@@ -147,7 +171,7 @@
     },
     {
       "name": "minecraft:vex",
-      "id": 12,
+      "id": 14,
       "element": {
         "asset_id": "minecraft:vex",
         "decal": false,
@@ -159,7 +183,7 @@
     },
     {
       "name": "minecraft:ward",
-      "id": 13,
+      "id": 15,
       "element": {
         "asset_id": "minecraft:ward",
         "decal": false,
@@ -171,7 +195,7 @@
     },
     {
       "name": "minecraft:wayfinder",
-      "id": 14,
+      "id": 16,
       "element": {
         "asset_id": "minecraft:wayfinder",
         "decal": false,
@@ -183,7 +207,7 @@
     },
     {
       "name": "minecraft:wild",
-      "id": 15,
+      "id": 17,
       "element": {
         "asset_id": "minecraft:wild",
         "decal": false,
