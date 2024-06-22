@@ -291,7 +291,7 @@ public partial class Extensions
     {
         INbtTag monsterSpawnLightLevel = default!;
 
-        if (value.Element.MonsterSpawnLightLevel is MonsterLightLevelUniformValue uniformValue)
+        if (value.Element.MonsterSpawnLightLevel.Value is MonsterSpawnLightLevelValue lightLevelValue)
         {
             //monsterSpawnLightLevel = new NbtCompound("monster_spawn_light_level")
             //{
@@ -299,10 +299,10 @@ public partial class Extensions
             //    new NbtTag<int>("max_inclusive", value.Element.MonsterSpawnLightLevel.Value?.MaxInclusive ?? 0),
             //    new NbtTag<string>("type", value.Element.MonsterSpawnLightLevel.Value?.Type ?? string.Empty)
             //};
-            monsterSpawnLightLevel = new NbtTag<int>("monster_spawn_light_level", uniformValue.MaxInclusive);
+            monsterSpawnLightLevel = new NbtTag<int>("monster_spawn_light_level", lightLevelValue.MaxInclusive);
         }
-        else if(value.Element.MonsterSpawnLightLevel is MonsterSpawnLightLevelIntValue intValue)
-            monsterSpawnLightLevel = new NbtTag<int>("monster_spawn_light_level", intValue.Value);
+        else if(value.Element.MonsterSpawnLightLevel.IntValue is int intValue)
+            monsterSpawnLightLevel = new NbtTag<int>("monster_spawn_light_level", intValue);
 
         var compound = new NbtCompound("element")
         {

@@ -258,7 +258,6 @@ public sealed partial class Server : IServer
         }
 
         await RecipesRegistry.InitializeAsync();
-        await CodecRegistry.InitializeAsync(_logger);
 
         _logger.LogInformation("Loading structures...");
         StructureRegistry.Initialize();

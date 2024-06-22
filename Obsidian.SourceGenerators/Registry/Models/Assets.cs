@@ -51,10 +51,27 @@ internal sealed class Assets
 
         using var document = JsonDocument.Parse(json);
 
+        var codecs = new List<Codec>();
+
         var codecElements = document.RootElement.GetProperty("value").EnumerateArray();
 
-        var codecs = codecElements
-            .Select(codec => new Codec(codec.GetProperty("name").GetString()!, codec.GetProperty("id").GetInt32()));
+        foreach (var codec in codecElements)
+        {
+            var obj = new Codec(codec.GetProperty("name").GetString()!, codec.GetProperty("id").GetInt32());
+
+            foreach (var property in codec.EnumerateObject())
+            {
+                if (property.Name is "name" or "id")
+                    continue;
+
+                foreach (var elementProperty in property.Value.EnumerateObject())
+                {
+                    obj.Properties.Add(elementProperty.Name.ToPascalCase(), elementProperty.Value.Clone());
+                }
+            }
+
+            codecs.Add(obj);
+        }
 
         return codecs.ToArray();
     }

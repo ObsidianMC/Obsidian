@@ -1,5 +1,6 @@
 ﻿using Obsidian.SourceGenerators.Registry.Models;
 using System.Text.Json;
+using static Obsidian.SourceGenerators.Constants;
 
 namespace Obsidian.SourceGenerators.Registry;
 public partial class WorldgenNoiseRegistryGenerator
