@@ -29,7 +29,7 @@ public interface INetSteamReader : INetStream
     public SoundPosition ReadSoundPosition();
 
     public Angle ReadAngle();
-    public Angle ReadFloatAngle() => ReadFloat();
+    public Angle ReadFloatAngle();
     public ChatMessage ReadChat();
     public byte[] ReadByteArray();
     public Guid ReadGuid();
