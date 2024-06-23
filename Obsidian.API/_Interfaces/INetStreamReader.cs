@@ -1,5 +1,5 @@
 ﻿namespace Obsidian.API;
-public interface INetSteamReader : INetStream
+public interface INetStreamReader : INetStream
 {
     public bool CanRead { get; }
 
