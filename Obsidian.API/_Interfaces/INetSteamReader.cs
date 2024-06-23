@@ -1,6 +1,8 @@
 ﻿namespace Obsidian.API;
-public interface INetSteamReader
+public interface INetSteamReader : INetStream
 {
+    public bool CanRead { get; }
+
     public sbyte ReadSignedByte();
     public byte ReadUnsignedByte();
     public bool ReadBoolean();

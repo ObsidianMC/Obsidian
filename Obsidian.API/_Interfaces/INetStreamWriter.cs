@@ -1,6 +1,7 @@
 ﻿namespace Obsidian.API;
-public interface INetStreamWriter
+public interface INetStreamWriter : INetStream
 {
+    public bool CanWrite { get; }
     public void WriteByte(sbyte value);
     public void WriteUnsignedByte(byte value);
     public void WriteBoolean(bool value);
@@ -29,4 +30,6 @@ public interface INetStreamWriter
     public void WriteSoundEffect(SoundEffect sound);
     public void WriteByteArray(byte[] values);
     public void WriteUuid(Guid value);
+
+    public byte[] ToArray();
 }
