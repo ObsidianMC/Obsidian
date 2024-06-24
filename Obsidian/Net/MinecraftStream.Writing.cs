@@ -1,5 +1,4 @@
-﻿using Obsidian.API;
-using Obsidian.API.Advancements;
+﻿using Obsidian.API.Advancements;
 using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registry.Codecs.ArmorTrims.TrimMaterial;
@@ -26,7 +25,7 @@ using System.Text.Json;
 
 namespace Obsidian.Net;
 
-public partial class MinecraftStream
+public partial class MinecraftStream : INetStreamWriter
 {
     [WriteMethod]
     public void WriteByte(sbyte value)
