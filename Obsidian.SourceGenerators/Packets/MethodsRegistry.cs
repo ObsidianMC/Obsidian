@@ -32,7 +32,7 @@ internal sealed class MethodsRegistry
 
     private bool TryGetMethod(IEnumerable<Method> source, Property property, bool collection, out Method outMethod)
     {
-        string propertyType = collection ? property.CollectionType : property.Type;
+        string? propertyType = collection ? property.CollectionType : property.Type;
         foreach (Method method in source)
         {
             if (method.Type != propertyType)
@@ -48,7 +48,7 @@ internal sealed class MethodsRegistry
             return true;
         }
 
-        outMethod = null;
+        outMethod = null!;
         return false;
     }
 
@@ -90,7 +90,7 @@ internal sealed class MethodsRegistry
 
     private bool TryGetWriteMethodType(GeneratorExecutionContext context, MethodDeclarationSyntax method, out string type)
     {
-        type = null;
+        type = null!;
 
         var parameters = method.ParameterList.Parameters;
         if (parameters.Count == 0)
@@ -111,7 +111,7 @@ internal sealed class MethodsRegistry
             return false;
         }
 
-        type = parameter.Type.ToString();
+        type = parameter.Type!.ToString();
         return true;
     }
 

@@ -15,4 +15,10 @@ public static partial class Extensions
 
         return tag.Parent == tag.Type ? tag.Name : $"{tag.Type.ToPascalCase()}.{tag.Name}";
     }
+
+    public static void Deconstruct<TKey, TValue>(this IGrouping<TKey, TValue> grouping, out TKey key, out List<TValue> values)
+    {
+        key = grouping.Key;
+        values = grouping.ToList();
+    }
 }

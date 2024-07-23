@@ -3,19 +3,13 @@ using System.Text;
 
 namespace Obsidian.SourceGenerators.Packets.Attributes;
 
-internal abstract class AttributeBehaviorBase
+internal abstract class AttributeBehaviorBase(AttributeSyntax attributeSyntax)
 {
     public abstract string Name { get; }
     public abstract AttributeFlags Flag { get; }
 
-    protected readonly AttributeSyntax syntax;
-    private readonly AttributeArgumentSyntax[] arguments;
-
-    public AttributeBehaviorBase(AttributeSyntax attributeSyntax)
-    {
-        syntax = attributeSyntax;
-        arguments = attributeSyntax?.ArgumentList?.Arguments.Select(arg => arg).ToArray() ?? [];
-    }
+    protected readonly AttributeSyntax syntax = attributeSyntax;
+    private readonly AttributeArgumentSyntax[] arguments = attributeSyntax?.ArgumentList?.Arguments.Select(arg => arg).ToArray() ?? [];
 
     public virtual bool Matches(AttributeOwner other)
     {
@@ -60,7 +54,7 @@ internal abstract class AttributeBehaviorBase
             }
         }
 
-        syntax = null;
+        syntax = null!;
         return false;
     }
 
@@ -79,10 +73,11 @@ internal abstract class AttributeBehaviorBase
 
     protected bool TryEvaluateTypeArgument(out string argument)
     {
-        argument = null;
-
         if (!TryGetArgument(out TypeSyntax expression))
+        {
+            argument = null!;
             return false;
+        }
 
         argument = expression.GetText().ToString();
         return true;
@@ -90,10 +85,11 @@ internal abstract class AttributeBehaviorBase
 
     protected bool TryEvaluateStringArgument(out string argument)
     {
-        argument = null;
-
         if (!TryGetArgument(out ExpressionSyntax expression))
+        {
+            argument = null!;
             return false;
+        }
 
         return TryEvaluateString(expression, out argument);
     }
@@ -112,13 +108,13 @@ internal abstract class AttributeBehaviorBase
 
             // "A" + "B"
             BinaryExpressionSyntax binaryAdd when binaryAdd.Kind() == SyntaxKind.AddExpression
-                => TryEvaluateString(binaryAdd.Left, out var left) && TryEvaluateString(binaryAdd.Right, out var right) ? left + right : null,
+                => TryEvaluateString(binaryAdd.Left, out var left) && TryEvaluateString(binaryAdd.Right, out var right) ? left + right : null!,
 
             // $"A {B} C"
             InterpolatedStringExpressionSyntax interpolation
-                => TryEvaluateInterpolatedString(interpolation, out var interpolatedText) ? interpolatedText : null,
+                => TryEvaluateInterpolatedString(interpolation, out var interpolatedText) ? interpolatedText : null!,
 
-            _ => null
+            _ => null!
         };
 
         return result is not null;
@@ -142,7 +138,7 @@ internal abstract class AttributeBehaviorBase
             }
             else
             {
-                result = null;
+                result = null!;
                 return false;
             }
         }
