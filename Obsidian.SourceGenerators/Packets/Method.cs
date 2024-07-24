@@ -2,28 +2,11 @@
 
 namespace Obsidian.SourceGenerators.Packets;
 
-internal sealed class Method : AttributeOwner
+internal sealed class Method(string name, string type, AttributeBehaviorBase[] attributes)
+    : AttributeOwner(AggregateFlags(attributes) | AttributeFlags.Field, attributes)
 {
-    public string Name { get; }
-    public string Type { get; }
-
-    public Method(string name, string type, AttributeBehaviorBase[] attributes)
-    {
-        Name = name;
-        Type = type;
-        Attributes = attributes;
-
-        if (Type.Contains('.'))
-        {
-            Type = Type.Substring(Type.LastIndexOf('.') + 1);
-        }
-
-        Flags = AttributeFlags.Field;
-        for (int i = 0; i < attributes.Length; i++)
-        {
-            Flags |= attributes[i].Flag;
-        }
-    }
+    public string Name { get; } = name;
+    public string Type { get; } = GetRelativeTypeName(type);
 
     public override string ToString()
     {

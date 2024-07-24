@@ -56,8 +56,13 @@ internal sealed class Block : ITaggable, IHasName, IRegistryItem
             if (state.TryGetProperty("properties", out var jsonElement))
             {
                 var values = new List<string>();
-                foreach (var properties in jsonElement.EnumerateObject())
-                    values.Add(properties.Value.GetString().ToPascalCase());
+                foreach (JsonProperty jsonProperty in jsonElement.EnumerateObject())
+                {
+                    if (jsonProperty.Value.GetString() is string propertyValue)
+                    {
+                        values.Add(propertyValue.ToPascalCase());
+                    }
+                }
 
                 props.Add(id, values);
             }
