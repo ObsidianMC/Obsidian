@@ -49,7 +49,8 @@ public sealed class World : IWorld
 
     public bool Loaded { get; private set; }
 
-    public long Time => LevelData.Time;
+    public long Time { get => LevelData.Time; set => LevelData.Time = value; }
+    public int DayTime { get => LevelData.DayTime; set => LevelData.DayTime = value; }
 
     public int RegionCount => this.Regions.Count;
     public int ChunksToGenCount => this.ChunksToGen.Count;

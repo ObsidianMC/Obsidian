@@ -4,8 +4,10 @@ using Obsidian.Commands.Framework.Entities;
 using Obsidian.Entities;
 using Obsidian.Registries;
 using Obsidian.WorldData;
+using System.Collections.Frozen;
 using System.Data;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace Obsidian.Commands;
 
@@ -370,17 +372,75 @@ public class MainCommandModule : CommandModuleBase
         await server.StopAsync();
     }
 
-    [Command("time")]
-    [CommandInfo("Sets declared time", "/time <timeOfDay>")]
-    public Task TimeAsync() => TimeAsync(1337);
-
-    [CommandOverload]
-    public async Task TimeAsync(int time)
+    [CommandGroup("time")]
+    [CommandInfo("Sets declared time", "/time <set|add> (value)")]
+    [RequirePermission(permissions: "time")]
+    public sealed class TimeCommand : CommandModuleBase
     {
-        if (this.Player is Player player)
+        private const int Mod = 24_000;
+        private static readonly FrozenDictionary<string, int> TimeDictionary = new Dictionary<string, int>()
         {
-            player.world.LevelData.DayTime = time;
-            await this.Player.SendMessageAsync($"Time set to {time}");
+            { "day", 1000 },
+            { "night", 13_000 },
+            { "noon", 6000  },
+            { "midnight", 18_000 }
+        }.ToFrozenDictionary();
+
+        [Command("query")]
+        [CommandInfo("Queries the time", "/time set <day|daytime|gametime>")]
+        public async Task Query(string value)
+        {
+            switch (value)
+            {
+                case "daytime":
+                    await this.Sender.SendMessageAsync($"The time is {this.Server.DefaultWorld.DayTime}");
+                    break;
+                case "day":
+                    await this.Sender.SendMessageAsync($"The time is {(int)(this.Server.DefaultWorld.Time / Mod)}");
+                    break;
+                case "gametime":
+                    await this.Sender.SendMessageAsync($"The time is {this.Server.DefaultWorld.Time}");
+                    break;
+                default:
+                    await this.Sender.SendMessageAsync("Invalid value.");
+                    break;
+            }
+        }
+
+        [Command("set")]
+        [CommandInfo("Sets declared time", "/time set <number(d|t|s)>")]
+        public async Task SetTime(MinecraftTime time)
+        {
+            if (time.ConvertServerTime(this.Server))
+                await this.Sender.SendMessageAsync($"Set the time to {this.Server.DefaultWorld.Time}");
+            else
+                await this.Sender.SendMessageAsync("Failed to set the time.");
+        }
+
+        //TODO: Command Suggestions
+        [Command("set")]
+        [CommandOverload]
+        [CommandInfo("Sets declared time", "/time set <day|night|noon|midnight>")]
+        public async Task SetTime(string value)
+        {
+            if (TimeDictionary.TryGetValue(value, out int time))
+            {
+                this.Server.DefaultWorld.DayTime = time;
+
+                await this.Sender.SendMessageAsync($"Set the time to {value}");
+
+                return;
+            }
+
+            await this.Sender.SendMessageAsync($"{value} is an invalid argument value.");
+        }
+
+        [Command("add")]
+        public async Task AddTime(int timeToAdd)
+        {
+            this.Server.DefaultWorld.DayTime += timeToAdd;
+
+            await this.Sender.SendMessageAsync($"Set the time to {this.Server.DefaultWorld.Time}");
         }
     }
 

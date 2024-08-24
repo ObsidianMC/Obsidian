@@ -1,5 +1,3 @@
-using System.Collections.Concurrent;
-
 namespace Obsidian.API;
 
 public interface IWorld : IAsyncDisposable
@@ -10,8 +8,8 @@ public interface IWorld : IAsyncDisposable
 
     public string DimensionName { get; }
 
-    public long Time { get; }
-
+    public long Time { get; set; }
+    public int DayTime { get; set; }
     public string Seed { get; }
 
     public Gamemode DefaultGamemode { get; }
