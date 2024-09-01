@@ -1,23 +1,13 @@
-﻿using Obsidian.API;
-using Obsidian.Nbt;
-using Obsidian.Net;
+﻿using Obsidian.Nbt;
+using System.IO;
 using System.Reflection;
-using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Obsidian.Tests;
 
-public class Nbt
+public class Nbt(ITestOutputHelper output)
 {
-    private bool isSetup;
-    private readonly ITestOutputHelper output;
-
-    public Nbt(ITestOutputHelper output)
-    {
-        this.output = output;
-    }
-
     [Fact]
     public void BigTest()
     {
@@ -59,11 +49,11 @@ public class Nbt
         var doubleTest = main.GetDouble("doubleTest");
         Assert.Equal(0.49312871321823148, doubleTest);
 
-        //var byteArrayTest = main.GetArr("byteArrayTest (the first 1000 values of (n*n*255+n*7)%100, starting with n=0 (0, 62, 34, 16, 8, ...))");//TODO add getting an array from a compound
-        /*Assert.Equal(1000, byteArrayTest.Value.Length);
+        main.TryGetTag<NbtArray<byte>>("byteArrayTest (the first 1000 values of (n*n*255+n*7)%100, starting with n=0 (0, 62, 34, 16, 8, ...))", out var byteArrayTest);
+        Assert.Equal(1000, byteArrayTest.Count);
 
         for (int n = 0; n < 1000; n++)
-            Assert.Equal((n * n * 255 + n * 7) % 100, byteArrayTest.Value[n]);*/
+            Assert.Equal((n * n * 255 + n * 7) % 100, byteArrayTest[n]);
 
         #region nested compounds
         main.TryGetTag("nested compound test", out INbtTag compound);
@@ -118,42 +108,43 @@ public class Nbt
     }
 
     [Fact]
-    public async Task ReadSlot()
+    public void TestWrite()
     {
-        await SetupAsync();
+        using var stream = new MemoryStream();
+        using var writer = new NbtWriter(stream, "Test Compound");
 
-        await using var stream = new MinecraftStream();
+        writer.WriteString("egg", "cheese");
 
-        var itemMeta = new ItemMetaBuilder()
-            .WithName("test")
-            .WithDurability(1)
-            .Build();
+        writer.WriteListStart("List Test", NbtTagType.Int, 3);
 
-        var material = Material.Bedrock;
-
-        var dataSlot = new ItemStack(material, 0, itemMeta)
+        for (int i = 0; i < 3; i++)
         {
-            Present = true
-        };
+            writer.WriteInt(i);
+        }
 
-        await stream.WriteSlotAsync(dataSlot);
+        writer.EndList();
+
+        writer.EndCompound();
 
         stream.Position = 0;
 
-        var slot = await stream.ReadSlotAsync();
+        var reader = new NbtReader(stream);
 
-        Assert.True(slot.Present);
-        Assert.Equal(0, slot.Count);
-        Assert.Equal(material, slot.Type);
+        var root = reader.ReadNextTag() as NbtCompound;
 
-        Assert.Equal("test", slot.ItemMeta.Name.Text);
-        Assert.Equal(1, slot.ItemMeta.Durability);
-    }
+        Assert.Equal("Test Compound", root.Name);
 
-    private async Task SetupAsync()
-    {
-        if (isSetup)
-            return;
-        isSetup = true;
+        Assert.Equal("cheese", root.GetString("egg"));
+
+        Assert.True(root.TryGetTag<NbtList>("List Test", out var list));
+
+        Assert.Equal(3, list.Count);
+
+        for (int i = 0; i < 3; i++)
+        {
+            var tag = list[i] as NbtTag<int>;
+
+            Assert.Equal(i, tag.Value);
+        }
     }
 }
