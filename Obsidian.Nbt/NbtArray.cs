@@ -2,17 +2,14 @@
 
 namespace Obsidian.Nbt;
 
-public class NbtArray<T> : INbtTag, IEnumerable, ICollection
+public sealed class NbtArray<T> : INbtTag, IEnumerable, ICollection where T : struct
 {
     private readonly T[] array;
-
-    private NbtTagType type;
-
     public int Count => this.array.Length;
 
     public bool IsReadOnly => false;
 
-    public NbtTagType Type => this.type;
+    public NbtTagType Type { get; private set; }
 
     public string Name { get; set; }
 
@@ -55,7 +52,7 @@ public class NbtArray<T> : INbtTag, IEnumerable, ICollection
 
     public override string ToString()
     {
-        switch (this.type)
+        switch (this.Type)
         {
             case NbtTagType.ByteArray:
             case NbtTagType.IntArray:
@@ -68,7 +65,7 @@ public class NbtArray<T> : INbtTag, IEnumerable, ICollection
 
     public string PrettyString(int depth = 2, int addBraceDepth = 1)
     {
-        switch (this.type)
+        switch (this.Type)
         {
             case NbtTagType.ByteArray:
             case NbtTagType.IntArray:
@@ -86,15 +83,15 @@ public class NbtArray<T> : INbtTag, IEnumerable, ICollection
     {
         if (typeof(T) == typeof(int))
         {
-            this.type = NbtTagType.IntArray;
+            this.Type = NbtTagType.IntArray;
         }
         else if (typeof(T) == typeof(long))
         {
-            this.type = NbtTagType.LongArray;
+            this.Type = NbtTagType.LongArray;
         }
         else if (typeof(T) == typeof(byte))
         {
-            this.type = NbtTagType.ByteArray;
+            this.Type = NbtTagType.ByteArray;
         }
     }
 }

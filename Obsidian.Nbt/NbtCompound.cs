@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Obsidian.Nbt;
@@ -11,9 +12,9 @@ public class NbtCompound : INbtTag, IEnumerable<KeyValuePair<string, INbtTag>>
 
     public NbtTagType Type => NbtTagType.Compound;
 
-    public string Name { get; set; }
+    public string? Name { get; set; }
 
-    public INbtTag Parent { get; set; }
+    public INbtTag? Parent { get; set; }
 
     public INbtTag this[string name] { get => this.children[name]; set => this.Add(name, value); }
 
@@ -41,7 +42,19 @@ public class NbtCompound : INbtTag, IEnumerable<KeyValuePair<string, INbtTag>>
 
     public bool HasTag(string name) => this.children.ContainsKey(name);
 
-    public bool TryGetTag(string name, out INbtTag tag) => this.children.TryGetValue(name, out tag);
+    public bool TryGetTag(string name, [MaybeNullWhen(false)]out INbtTag? tag) => this.children.TryGetValue(name, out tag);
+    public bool TryGetTag<T>(string name, [MaybeNullWhen(false)] out T? tag) where T : INbtTag
+    {
+        if(this.children.TryGetValue(name, out var childTag))
+        {
+            tag = (T)childTag;
+            return true;
+        }
+
+        tag = default;
+        return false;
+    }
+
 
     private T GetTagValue<T>(string name)
     {

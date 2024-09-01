@@ -6,13 +6,15 @@ namespace Obsidian.Nbt;
 public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
 {
     private NbtTagType? expectedListType;
-
-    private Stack<Node> rootNodes = new();
+    private NbtTagType? previousRootType;
 
     private int listSize;
     private int listIndex;
+    private int rootDepth;
 
-    public NbtTagType RootType => this.rootNodes.Count > 0 ? this.rootNodes.Peek().Type : NbtTagType.Unknown;
+
+
+    public NbtTagType RootType { get; private set; }
 
     public Stream BaseStream { get; }
 
@@ -35,7 +37,7 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
         this.Write(NbtTagType.Compound);
         this.WriteStringInternal(name);
 
-        this.AddRootTag(new Node { Type = NbtTagType.Compound });
+        this.SetRootTag(NbtTagType.Compound);
     }
 
     public NbtWriter(Stream outstream, bool networked)
@@ -45,7 +47,7 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
 
         this.Write(NbtTagType.Compound);
 
-        this.AddRootTag(new Node { Type = NbtTagType.Compound });
+        this.SetRootTag(NbtTagType.Compound);
     }
 
     public NbtWriter(Stream outstream, NbtCompression compressionMode, string name)
@@ -60,32 +62,41 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
         this.Write(NbtTagType.Compound);
         this.WriteStringInternal(name);
 
-        this.AddRootTag(new Node { Type = NbtTagType.Compound });
+        this.SetRootTag(NbtTagType.Compound);
     }
 
-    private void AddRootTag(Node node)
+    private void SetRootTag(NbtTagType type)
     {
-        if (this.RootType == NbtTagType.List)
-        {
-            this.rootNodes.Peek().ListIndex = this.listIndex;
-            this.listIndex = 0;
-        }
+        this.rootDepth++;
 
-        this.rootNodes.Push(node);
+        this.previousRootType = this.RootType;
+        this.RootType = type;
+    }
+
+    private void SetRootTag(NbtTagType type, int listSize, NbtTagType listType)
+    {
+        this.rootDepth++;
+
+        this.listIndex = 0;
+        this.listSize = listSize;
+        this.expectedListType = listType;
+
+        this.previousRootType = this.RootType;
+        this.RootType = type;
     }
 
     public void WriteCompoundStart(string name = "")
     {
-        if (this.rootNodes.Count > 0)
-            this.Validate(name, NbtTagType.Compound);
+        this.Validate(name, NbtTagType.Compound);
 
+        //Lists don't write tag type or tag name for its children
         if (this.RootType == NbtTagType.List)
         {
-            this.AddRootTag(new Node { Type = NbtTagType.Compound });
+            this.SetRootTag(NbtTagType.Compound);
             return;
         }
 
-        this.AddRootTag(new Node { Type = NbtTagType.Compound });
+        this.SetRootTag(NbtTagType.Compound);
 
         this.Write(NbtTagType.Compound);
         this.WriteStringInternal(name);
@@ -95,10 +106,7 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
     {
         this.Validate(name, NbtTagType.List);
 
-        this.AddRootTag(new Node { Type = NbtTagType.List, ListSize = length, ExpectedListType = listType });
-
-        this.listSize = length;
-        this.expectedListType = listType;
+        this.SetRootTag(NbtTagType.List, length, listType);
 
         this.Write(NbtTagType.List);
 
@@ -114,46 +122,38 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
         if (this.listIndex < this.listSize)
             throw new InvalidOperationException("List cannot end because its size is smaller than the pre-defined size.");
 
-        var tag = this.rootNodes.Pop();
-        if (tag.Type != NbtTagType.List)
+        if (this.RootType != NbtTagType.List)
             throw new InvalidOperationException();
 
-        if (this.CheckIfList())
-            return;
-
-        this.listSize = 0;
-        this.listIndex = 0;
+        this.listSize = -1;
+        this.listIndex = -1;
         this.expectedListType = null;
+        this.rootDepth--;
+
+        this.RootType = this.previousRootType ?? NbtTagType.End;
+
+        if (this.previousRootType != null)
+            this.previousRootType = null;
     }
 
     public void EndCompound()
     {
-        var tag = this.rootNodes.Pop();
-        if (tag.Type != NbtTagType.Compound)
+        if (this.RootType != NbtTagType.Compound)
             throw new InvalidOperationException();
 
-        this.CheckIfList();
-
-        this.Write(NbtTagType.End);
-    }
-
-    private bool CheckIfList()
-    {
-        if (this.rootNodes.Count <= 0)
-            return false;
-
-        var newRoot = this.rootNodes.Peek();
-
-        if (newRoot.Type == NbtTagType.List)
+        this.rootDepth--;
+        if (this.expectedListType != null)
         {
-            this.listSize = newRoot.ListSize.Value;
-            this.listIndex = newRoot.ListIndex.Value;
-            this.expectedListType = newRoot.ExpectedListType.Value;
+            this.SetRootTag(NbtTagType.List);
 
-            return true;
+            return;
         }
 
-        return false;
+        this.Write(NbtTagType.End);
+        this.RootType = this.previousRootType ?? NbtTagType.End;
+
+        if (this.previousRootType != null)
+            this.previousRootType = null;
     }
 
     public void WriteTag(INbtTag tag)
@@ -460,31 +460,20 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
 
     public void TryFinish()
     {
-        if (this.rootNodes.Count > 0)
-            throw new InvalidOperationException("Unable to close writer. Some tags have yet to be closed.");//TODO maybe more info here??
+        if (this.rootDepth > 0)
+            throw new InvalidOperationException("Unable to close writer. Root tag has yet to be closed.");//TODO maybe more info here??
 
         this.BaseStream.Flush();
     }
 
     public async Task TryFinishAsync()
     {
-        if (this.rootNodes.Count > 0)
-            throw new InvalidOperationException("Unable to close writer. Some tags have yet to be closed.");//TODO maybe more info here??
+        if (this.rootDepth > 0)
+            throw new InvalidOperationException("Unable to close writer. Root tag has yet to be closed.");//TODO maybe more info here??
 
         await this.BaseStream.FlushAsync();
     }
 
     public ValueTask DisposeAsync() => this.BaseStream.DisposeAsync();
     public void Dispose() => this.BaseStream.Dispose();
-
-    private class Node
-    {
-        public NbtTagType Type { get; set; }
-
-        public int? ListSize { get; set; }
-
-        public int? ListIndex { get; set; }
-
-        public NbtTagType? ExpectedListType { get; set; }
-    }
 }
