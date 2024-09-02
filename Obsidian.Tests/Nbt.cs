@@ -56,21 +56,18 @@ public class Nbt(ITestOutputHelper output)
             Assert.Equal((n * n * 255 + n * 7) % 100, byteArrayTest[n]);
 
         #region nested compounds
-        main.TryGetTag("nested compound test", out INbtTag compound);
-        var nestedCompound = (NbtCompound)compound;
+        main.TryGetTag<NbtCompound>("nested compound test", out var nestedCompound);
 
         Assert.Equal(2, nestedCompound.Count);
 
-        nestedCompound.TryGetTag("ham", out INbtTag hamCompound);
-        var ham = (NbtCompound)hamCompound;
+        nestedCompound.TryGetTag<NbtCompound>("ham", out var ham);
 
         Assert.Equal(2, ham.Count);
 
         Assert.Equal("Hampus", ham.GetString("name"));
         Assert.Equal(0.75, ham.GetFloat("value"));
 
-        nestedCompound.TryGetTag("egg", out INbtTag eggCompound);
-        var egg = (NbtCompound)eggCompound;
+        nestedCompound.TryGetTag<NbtCompound>("egg", out var egg);
 
         Assert.Equal(2, egg.Count);
         Assert.Equal("Eggbert", egg.GetString("name"));
@@ -78,8 +75,7 @@ public class Nbt(ITestOutputHelper output)
         #endregion nested compounds
 
         #region lists
-        main.TryGetTag("listTest (long)", out var longList);
-        var listLongTest = (NbtList)longList;
+        main.TryGetTag<NbtList>("listTest (long)", out var listLongTest);
 
         Assert.Equal(5, listLongTest.Count);
 
@@ -91,8 +87,7 @@ public class Nbt(ITestOutputHelper output)
                 Assert.Equal(count++, item.Value);
         }
 
-        main.TryGetTag("listTest (compound)", out var compoundList);
-        var listCompoundTest = (NbtList)compoundList;
+        main.TryGetTag<NbtList>("listTest (compound)", out var listCompoundTest);
 
         Assert.Equal(2, listCompoundTest.Count);
 

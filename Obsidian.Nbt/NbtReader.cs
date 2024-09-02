@@ -59,13 +59,37 @@ public readonly partial struct NbtReader(Stream input, NbtCompression compressio
         return false;
     }
 
-    public bool TryReadNextTag([MaybeNullWhen(false)]out INbtTag? tag)
+    public bool TryReadNextTag<T>(bool readName, [MaybeNullWhen(false)] out T? tag) where T : INbtTag
+    {
+        if (this.TryReadNextTag(readName, out INbtTag? newTag))
+        {
+            tag = (T)newTag;
+            return true;
+        }
+
+        tag = default;
+        return false;
+    }
+
+    public bool TryReadNextTag([MaybeNullWhen(false)] out INbtTag? tag)
     {
         var nextTag = this.ReadNextTag();
 
         if (nextTag != null)
         {
             tag = nextTag;
+            return true;
+        }
+
+        tag = default;
+        return false;
+    }
+
+    public bool TryReadNextTag<T>([MaybeNullWhen(false)] out T? tag) where T : INbtTag
+    {
+        if (this.TryReadNextTag(out INbtTag? newTag))
+        {
+            tag = (T)newTag;
             return true;
         }
 

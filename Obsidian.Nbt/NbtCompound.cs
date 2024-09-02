@@ -45,7 +45,7 @@ public class NbtCompound : INbtTag, IEnumerable<KeyValuePair<string, INbtTag>>
     public bool TryGetTag(string name, [MaybeNullWhen(false)]out INbtTag? tag) => this.children.TryGetValue(name, out tag);
     public bool TryGetTag<T>(string name, [MaybeNullWhen(false)] out T? tag) where T : INbtTag
     {
-        if(this.children.TryGetValue(name, out var childTag))
+        if(this.children.TryGetValue(name, out INbtTag childTag))
         {
             tag = (T)childTag;
             return true;
@@ -54,7 +54,6 @@ public class NbtCompound : INbtTag, IEnumerable<KeyValuePair<string, INbtTag>>
         tag = default;
         return false;
     }
-
 
     private T GetTagValue<T>(string name)
     {
