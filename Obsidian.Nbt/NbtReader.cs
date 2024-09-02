@@ -1,15 +1,12 @@
-﻿using System.Buffers.Binary;
-using System.Diagnostics;
+﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Compression;
-using System.Text;
 
 namespace Obsidian.Nbt;
 
-public sealed class NbtReader(Stream input, NbtCompression compressionMode = NbtCompression.None)
+public readonly partial struct NbtReader(Stream input, NbtCompression compressionMode = NbtCompression.None)
 {
-    public NbtTagType? CurrentTag { get; set; }
-
     public Stream BaseStream { get; } = compressionMode switch
     {
         NbtCompression.GZip => new GZipStream(input, CompressionMode.Decompress),
@@ -30,11 +27,57 @@ public sealed class NbtReader(Stream input, NbtCompression compressionMode = Nbt
         };
     }
 
-    private INbtTag GetCurrentTag(NbtTagType type, bool readName = true)
+    public INbtTag? ReadNextTag(bool readName = true)
+    {
+        var firstType = this.ReadTagType();
+
+        string tagName = readName ? this.ReadString() : string.Empty;
+
+        return firstType switch
+        {
+            NbtTagType.End => null,
+            NbtTagType.List => ReadListTag(tagName),
+            NbtTagType.Compound => ReadCompoundTag(tagName),
+            NbtTagType.ByteArray => ReadArray(tagName, ReadByte),
+            NbtTagType.IntArray => ReadArray(tagName, ReadInt32),
+            NbtTagType.LongArray => ReadArray(tagName, ReadInt64),
+            _ => GetCurrentTag(firstType, tagName, !readName)
+        };
+    }
+
+    public bool TryReadNextTag(bool readName, [MaybeNullWhen(false)] out INbtTag? tag)
+    {
+        var nextTag = this.ReadNextTag(readName);
+
+        if (nextTag != null)
+        {
+            tag = nextTag;
+            return true;
+        }
+
+        tag = default;
+        return false;
+    }
+
+    public bool TryReadNextTag([MaybeNullWhen(false)]out INbtTag? tag)
+    {
+        var nextTag = this.ReadNextTag();
+
+        if (nextTag != null)
+        {
+            tag = nextTag;
+            return true;
+        }
+
+        tag = default;
+        return false;
+    }
+
+    private INbtTag? GetCurrentTag(NbtTagType type, bool readName = true)
     {
         string name = readName ? this.ReadString() : string.Empty;
 
-        INbtTag tag = type switch
+        INbtTag? tag = type switch
         {
             NbtTagType.Byte => new NbtTag<byte>(name, this.ReadByte()),
             NbtTagType.Short => new NbtTag<short>(name, this.ReadInt16()),
@@ -54,11 +97,11 @@ public sealed class NbtReader(Stream input, NbtCompression compressionMode = Nbt
         return tag;
     }
 
-    private INbtTag GetCurrentTag(NbtTagType type, string name, bool readName = true)
+    private INbtTag? GetCurrentTag(NbtTagType type, string name, bool readName = true)
     {
         name = readName ? this.ReadString() : name;
 
-        INbtTag tag = type switch
+        INbtTag? tag = type switch
         {
             NbtTagType.Byte => new NbtTag<byte>(name, this.ReadByte()),
             NbtTagType.Short => new NbtTag<short>(name, this.ReadInt16()),
@@ -123,81 +166,4 @@ public sealed class NbtReader(Stream input, NbtCompression compressionMode = Nbt
 
         return compound;
     }
-
-    public INbtTag? ReadNextTag(bool readName = true)
-    {
-        var firstType = this.ReadTagType();
-
-        string tagName = readName ? this.ReadString() : string.Empty;
-
-        return firstType switch
-        {
-            NbtTagType.End => null,
-            NbtTagType.List => ReadListTag(tagName),
-            NbtTagType.Compound => ReadCompoundTag(tagName),
-            NbtTagType.ByteArray => ReadArray(tagName, ReadByte),
-            NbtTagType.IntArray => ReadArray(tagName, ReadInt32),
-            NbtTagType.LongArray => ReadArray(tagName, ReadInt64),
-            _ => GetCurrentTag(firstType, tagName, !readName)
-        };
-    }
-
-    #region Methods
-
-    public byte ReadByte() => (byte)this.BaseStream.ReadByte();
-
-    public string ReadString()
-    {
-        var length = this.ReadInt16();
-
-        if (length <= 0)
-            return string.Empty;
-
-        Span<byte> buffer = stackalloc byte[length];
-
-        this.BaseStream.Read(buffer);
-
-        return Encoding.UTF8.GetString(buffer);
-    }
-
-    public short ReadInt16()
-    {
-        Span<byte> buffer = stackalloc byte[2];
-        this.BaseStream.Read(buffer);
-
-        return BinaryPrimitives.ReadInt16BigEndian(buffer);
-    }
-
-    public int ReadInt32()
-    {
-        Span<byte> buffer = stackalloc byte[4];
-        this.BaseStream.Read(buffer);
-
-        return BinaryPrimitives.ReadInt32BigEndian(buffer);
-    }
-
-    public long ReadInt64()
-    {
-        Span<byte> buffer = stackalloc byte[8];
-        this.BaseStream.Read(buffer);
-
-        return BinaryPrimitives.ReadInt64BigEndian(buffer);
-    }
-
-    public float ReadSingle()
-    {
-        Span<byte> buffer = stackalloc byte[4];
-        this.BaseStream.Read(buffer);
-
-        return BinaryPrimitives.ReadSingleBigEndian(buffer);
-    }
-
-    public double ReadDouble()
-    {
-        Span<byte> buffer = stackalloc byte[8];
-        this.BaseStream.Read(buffer);
-
-        return BinaryPrimitives.ReadDoubleBigEndian(buffer);
-    }
-    #endregion
 }
