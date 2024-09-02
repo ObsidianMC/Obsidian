@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Obsidian.Nbt;
 
-public class NbtCompound : INbtTag, IEnumerable<KeyValuePair<string, INbtTag>>
+public sealed class NbtCompound : INbtTag, IEnumerable<KeyValuePair<string, INbtTag>>
 {
     private readonly Dictionary<string, INbtTag> children = [];
 
@@ -55,18 +55,6 @@ public class NbtCompound : INbtTag, IEnumerable<KeyValuePair<string, INbtTag>>
         return false;
     }
 
-    private T GetTagValue<T>(string name)
-    {
-        if (this.TryGetTag(name, out var tag))
-        {
-            var actualTag = (NbtTag<T>)tag;
-
-            return actualTag.Value;
-        }
-
-        return default;
-    }
-
     public byte GetByte(string name) => this.GetTagValue<byte>(name);
 
     public short GetShort(string name) => this.GetTagValue<short>(name);
@@ -81,15 +69,8 @@ public class NbtCompound : INbtTag, IEnumerable<KeyValuePair<string, INbtTag>>
 
     public string GetString(string name) => this.GetTagValue<string>(name);
 
-    public bool GetBool(string name)
-    {
-        if (!this.TryGetTag(name, out var tag))
-            return false;
-
-        var actualTag = (NbtTag<byte>)tag;
-
-        return actualTag.Value == 1;
-    }
+    public bool GetBool(string name) =>
+        this.TryGetTag<NbtTag<byte>>(name, out var tag) && tag.Value == 1;
 
     public void Clear() => this.children.Clear();
 
@@ -153,4 +134,16 @@ public class NbtCompound : INbtTag, IEnumerable<KeyValuePair<string, INbtTag>>
     public IEnumerator<KeyValuePair<string, INbtTag>> GetEnumerator() => this.children.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
+
+    private T GetTagValue<T>(string name)
+    {
+        if (this.TryGetTag(name, out var tag))
+        {
+            var actualTag = (NbtTag<T>)tag;
+
+            return actualTag.Value;
+        }
+
+        return default;
+    }
 }

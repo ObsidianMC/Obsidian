@@ -3,7 +3,7 @@ using System.IO.Compression;
 
 namespace Obsidian.Nbt;
 
-public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
+public partial struct NbtWriter : IDisposable, IAsyncDisposable
 {
     private NbtTagType? expectedListType;
     private NbtTagType? previousRootType;
@@ -11,8 +11,6 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
     private int listSize;
     private int listIndex;
     private int rootDepth;
-
-
 
     public NbtTagType RootType { get; private set; }
 
@@ -28,22 +26,26 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
             NbtCompression.ZLib => new ZLibStream(outstream, CompressionMode.Compress),
             _ => outstream
         };
+
+        this.expectedListType = null;
+        this.previousRootType = null;
+
+        this.listSize = -1;
+        this.listIndex = -1;
+        this.rootDepth = 0;
     }
 
-    public NbtWriter(Stream outstream, string name)
+    public NbtWriter(Stream outstream, string name) : this(outstream)
     {
-        this.BaseStream = outstream;
-
         this.Write(NbtTagType.Compound);
         this.WriteStringInternal(name);
 
         this.SetRootTag(NbtTagType.Compound);
     }
 
-    public NbtWriter(Stream outstream, bool networked)
+    public NbtWriter(Stream outstream, bool networked) : this(outstream)
     {
         this.Networked = networked;
-        this.BaseStream = outstream;
 
         this.Write(NbtTagType.Compound);
 
@@ -315,127 +317,6 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
             this.WriteIntInternal(byteArray.Count);
             this.BaseStream.Write(byteArray.GetArray());
         }
-    }
-
-    public void WriteString(string value)
-    {
-        this.Validate(null, NbtTagType.String);
-        this.WriteStringInternal(value);
-    }
-
-    public void WriteString(string name, string value)
-    {
-        this.Validate(name, NbtTagType.String);
-
-        this.Write(NbtTagType.String);
-        this.WriteStringInternal(name);
-        this.WriteStringInternal(value);
-    }
-
-    public void WriteByte(byte value)
-    {
-        this.Validate(null, NbtTagType.Byte);
-        this.WriteByteInternal(value);
-    }
-
-    public void WriteByte(string name, byte value)
-    {
-        this.Validate(name, NbtTagType.Byte);
-
-        this.Write(NbtTagType.Byte);
-        this.WriteStringInternal(name);
-        this.WriteByteInternal(value);
-    }
-
-    public void WriteBool(bool value)
-    {
-        this.Validate(null, NbtTagType.Byte);
-        this.WriteByteInternal((byte)(value ? 1 : 0));
-    }
-
-    public void WriteBool(string name, bool value)
-    {
-        this.Validate(name, NbtTagType.Byte);
-
-        this.Write(NbtTagType.Byte);
-        this.WriteStringInternal(name);
-        this.WriteByteInternal((byte)(value ? 1 : 0));
-    }
-
-    public void WriteShort(short value)
-    {
-        this.Validate(null, NbtTagType.Short);
-        this.WriteShortInternal(value);
-    }
-
-    public void WriteShort(string name, short value)
-    {
-        this.Validate(name, NbtTagType.Short);
-
-        this.Write(NbtTagType.Short);
-        this.WriteStringInternal(name);
-        this.WriteShortInternal(value);
-    }
-
-    public void WriteInt(int value)
-    {
-        this.Validate(null, NbtTagType.Int);
-        this.WriteIntInternal(value);
-    }
-
-    public void WriteInt(string name, int value)
-    {
-        this.Validate(name, NbtTagType.Int);
-
-        this.Write(NbtTagType.Int);
-        this.WriteStringInternal(name);
-        this.WriteIntInternal(value);
-    }
-
-    public void WriteLong(long value)
-    {
-        this.Validate(null, NbtTagType.Long);
-        this.WriteLongInternal(value);
-    }
-
-    public void WriteLong(string name, long value)
-    {
-        this.Validate(name, NbtTagType.Long);
-
-        this.Write(NbtTagType.Long);
-        this.WriteStringInternal(name);
-        this.WriteLongInternal(value);
-    }
-
-    public void WriteFloat(float value)
-    {
-        this.Validate(null, NbtTagType.Float);
-        this.WriteFloatInternal(value);
-    }
-
-    public void WriteFloat(string name, float value)
-    {
-        this.Validate(name, NbtTagType.Float);
-
-        this.Write(NbtTagType.Float);
-        this.WriteStringInternal(name);
-        this.WriteFloatInternal(value);
-    }
-
-    public void WriteDouble(double value)
-    {
-        this.Validate(null, NbtTagType.Double);
-        this.WriteDoubleInternal(value);
-    }
-
-    public void WriteDouble(string name, double value)
-    {
-        this.Validate(name, NbtTagType.Double);
-
-        this.Write(NbtTagType.Double);
-        this.WriteStringInternal(name);
-
-        this.WriteDoubleInternal(value);
     }
 
     public void Validate(string name, NbtTagType type)
