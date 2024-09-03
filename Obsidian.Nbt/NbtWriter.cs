@@ -52,15 +52,8 @@ public partial struct NbtWriter : IDisposable, IAsyncDisposable
         this.SetRootTag(NbtTagType.Compound);
     }
 
-    public NbtWriter(Stream outstream, NbtCompression compressionMode, string name)
+    public NbtWriter(Stream outstream, NbtCompression compressionMode, string name) : this(outstream, compressionMode)
     {
-        this.BaseStream = compressionMode switch
-        {
-            NbtCompression.GZip => new GZipStream(outstream, CompressionMode.Compress),
-            NbtCompression.ZLib => new ZLibStream(outstream, CompressionMode.Compress),
-            _ => outstream
-        };
-
         this.Write(NbtTagType.Compound);
         this.WriteStringInternal(name);
 
