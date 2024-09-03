@@ -166,7 +166,7 @@ public readonly partial struct NbtReader(Stream input, NbtCompression compressio
 
     private NbtCompound ReadCompoundTag(string name)
     {
-        var compound = new NbtCompound(this, name);
+        var compound = new NbtCompound(name);
 
         NbtTagType type;
         while ((type = this.ReadTagType()) != NbtTagType.End)
