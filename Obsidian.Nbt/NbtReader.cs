@@ -14,19 +14,7 @@ public readonly partial struct NbtReader(Stream input, NbtCompression compressio
         _ => input
     };
 
-    public NbtTagType ReadTagType()
-    {
-        var type = this.BaseStream.ReadByte();
-
-        return type switch
-        {
-            <= 0 => NbtTagType.End,
-            > (byte)NbtTagType.LongArray => throw new ArgumentOutOfRangeException(
-                $"Tag is out of range: {(NbtTagType)type}"),
-            _ => (NbtTagType)type
-        };
-    }
-
+   
     public INbtTag? ReadNextTag(bool readName = true)
     {
         var firstType = this.ReadTagType();
@@ -61,9 +49,9 @@ public readonly partial struct NbtReader(Stream input, NbtCompression compressio
 
     public bool TryReadNextTag<T>(bool readName, [MaybeNullWhen(false)] out T? tag) where T : INbtTag
     {
-        if (this.TryReadNextTag(readName, out INbtTag? newTag))
+        if (this.TryReadNextTag(readName, out INbtTag? newTag) && newTag is T matchedTag)
         {
-            tag = (T)newTag;
+            tag = matchedTag;
             return true;
         }
 
@@ -87,9 +75,9 @@ public readonly partial struct NbtReader(Stream input, NbtCompression compressio
 
     public bool TryReadNextTag<T>([MaybeNullWhen(false)] out T? tag) where T : INbtTag
     {
-        if (this.TryReadNextTag(out INbtTag? newTag))
+        if (this.TryReadNextTag(out INbtTag? newTag) && newTag is T matchedTag)
         {
-            tag = (T)newTag;
+            tag = matchedTag;
             return true;
         }
 
@@ -178,7 +166,7 @@ public readonly partial struct NbtReader(Stream input, NbtCompression compressio
 
     private NbtCompound ReadCompoundTag(string name)
     {
-        var compound = new NbtCompound(name);
+        var compound = new NbtCompound(this, name);
 
         NbtTagType type;
         while ((type = this.ReadTagType()) != NbtTagType.End)
@@ -190,4 +178,18 @@ public readonly partial struct NbtReader(Stream input, NbtCompression compressio
 
         return compound;
     }
+
+    private NbtTagType ReadTagType()
+    {
+        var type = this.BaseStream.ReadByte();
+
+        return type switch
+        {
+            <= 0 => NbtTagType.End,
+            > (byte)NbtTagType.LongArray => throw new ArgumentOutOfRangeException(
+                $"Tag is out of range: {(NbtTagType)type}"),
+            _ => (NbtTagType)type
+        };
+    }
+
 }
