@@ -6,6 +6,4 @@ public sealed class TagNotFoundException : Exception
     }
 
     public TagNotFoundException(string? message, Exception? innerException) : base(message, innerException) { }
-    { 
-    }
 }
