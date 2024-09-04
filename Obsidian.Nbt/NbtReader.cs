@@ -33,7 +33,7 @@ public readonly partial struct NbtReader(Stream input, NbtCompression compressio
         };
     }
 
-    public bool TryReadNextTag(bool readName, [MaybeNullWhen(false)] out INbtTag? tag)
+    public bool TryReadNextTag(bool readName, [MaybeNullWhen(false)] out INbtTag tag)
     {
         var nextTag = this.ReadNextTag(readName);
 
@@ -47,9 +47,9 @@ public readonly partial struct NbtReader(Stream input, NbtCompression compressio
         return false;
     }
 
-    public bool TryReadNextTag<T>(bool readName, [MaybeNullWhen(false)] out T? tag) where T : INbtTag
+    public bool TryReadNextTag<T>(bool readName, [MaybeNullWhen(false)] out T tag) where T : INbtTag
     {
-        if (this.TryReadNextTag(readName, out INbtTag? newTag) && newTag is T matchedTag)
+        if (this.TryReadNextTag(readName, out INbtTag newTag) && newTag is T matchedTag)
         {
             tag = matchedTag;
             return true;
@@ -59,7 +59,7 @@ public readonly partial struct NbtReader(Stream input, NbtCompression compressio
         return false;
     }
 
-    public bool TryReadNextTag([MaybeNullWhen(false)] out INbtTag? tag)
+    public bool TryReadNextTag([MaybeNullWhen(false)] out INbtTag tag)
     {
         var nextTag = this.ReadNextTag();
 
@@ -73,7 +73,7 @@ public readonly partial struct NbtReader(Stream input, NbtCompression compressio
         return false;
     }
 
-    public bool TryReadNextTag<T>([MaybeNullWhen(false)] out T? tag) where T : INbtTag
+    public bool TryReadNextTag<T>([MaybeNullWhen(false)] out T tag) where T : INbtTag
     {
         if (this.TryReadNextTag(out INbtTag? newTag) && newTag is T matchedTag)
         {
