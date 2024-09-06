@@ -7,111 +7,120 @@ internal delegate void PostactionCallback(MethodBuildingContext context);
 
 internal sealed class Property : AttributeOwner
 {
-    public PreactionCallback Writing;
-    public PostactionCallback Written;
-    public PreactionCallback Reading;
-    public PostactionCallback Read;
+    public PreactionCallback? Writing;
+    public PostactionCallback? Written;
+    public PreactionCallback? Reading;
+    public PostactionCallback? Read;
 
-    public string Name { get; private set; }
-    public string Type { get; set; }
-    public INamedTypeSymbol ContainingType { get; set; }
-    public MemberDeclarationSyntax DeclarationSyntax { get; set; }
-    public bool IsGeneric { get; private set; }
-    public bool IsCollection { get; set; }
-    public string CollectionType { get; set; }
-    public string Length { get; set; }
-    public int Order { get; set; }
+    public string Name { get; }
+    public string Type { get; private set; }
+    public INamedTypeSymbol ContainingType { get; }
+    public MemberDeclarationSyntax DeclarationSyntax { get; }
+    public bool IsGeneric { get; }
+    public bool IsCollection => CollectionType is not null;
+    public string? CollectionType { get; }
+    public string? Length { get; }
+    public int Order { get; }
 
-    public Property()
+    private Property(Property property) : base(property.Flags, property.Attributes)
     {
+        Type = property.Type;
+        DeclarationSyntax = property.DeclarationSyntax;
+        CollectionType = property.CollectionType;
+        ContainingType = property.ContainingType;
+        IsGeneric = property.IsGeneric;
+        Length = property.Length;
+        Order = property.Order;
+        Name = property.Name;
+        Writing = property.Writing;
+        Written = property.Written;
+        Reading = property.Reading;
+        Read = property.Read;
+    }
+
+    private Property(string name, MemberDeclarationSyntax declaration, INamedTypeSymbol containingType, TypeSyntax type, AttributeBehaviorBase[] attributes)
+        : base(AggregateFlags(attributes), attributes)
+    {
+        Name = name;
+        DeclarationSyntax = declaration;
+        ContainingType = containingType;
+        (Type, CollectionType, Length) = DetermineType(type);
+        Order = DetermineOrder(attributes);
+        IsGeneric = containingType.TypeParameters.Any(genericType => genericType.Name == Type);
     }
 
     public Property(FieldDeclarationSyntax field, ISymbol symbol)
+        : this(field.Declaration.Variables.First().Identifier.Text, field, symbol.ContainingType, field.Declaration.Type, CollectAttributes(field))
     {
-        Name = field.Declaration.Variables.First().Identifier.Text;
-        DeclarationSyntax = field;
-        ContainingType = symbol.ContainingType;
-        SetType(field.Declaration.Type);
-        IsGeneric = ContainingType.TypeParameters.Any(genericType => genericType.Name == Type);
-        SetAttributes(field.AttributeLists.SelectMany(list => list.Attributes));
     }
 
     public Property(PropertyDeclarationSyntax property, ISymbol symbol)
+        : this(property.Identifier.Text, property, symbol.ContainingType, property.Type, CollectAttributes(property))
     {
-        Name = property.Identifier.Text;
-        DeclarationSyntax = property;
-        ContainingType = symbol.ContainingType;
-        SetType(property.Type);
-        IsGeneric = ContainingType.TypeParameters.Any(genericType => genericType.Name == Type);
-        SetAttributes(property.AttributeLists.SelectMany(list => list.Attributes));
     }
 
-    private void SetType(TypeSyntax typeSyntax)
+    internal Property(string name, string type, AttributeFlags flags, AttributeBehaviorBase[] attributes)
+        : base(flags, attributes)
     {
-        Type = typeSyntax.ToString();
-        if (Type.Contains('.'))
-        {
-            Type = Type.Substring(Type.IndexOf('.') + 1);
-        }
-        if (Type.EndsWith("[]"))
-        {
-            CollectionType = Type;
-            Type = Type.Substring(0, Type.Length - 2);
-            IsCollection = true;
-            Length = "Length";
-        }
-        else if (Type.EndsWith(">"))
-        {
-            CollectionType = Type;
-            int typeStart = Type.IndexOf('<') + 1;
-            Type = Type.Substring(typeStart, Type.Length - typeStart - 1);
-            IsCollection = true;
-            Length = "Count";
-        }
+        Name = name;
+        Type = type;
+        ContainingType = null!;
+        DeclarationSyntax = null!;
     }
 
-    private void SetAttributes(IEnumerable<AttributeSyntax> attributes)
+    private static (string Type, string? CollectionType, string? Length) DetermineType(TypeSyntax typeSyntax)
     {
-        Attributes = AttributeFactory.ParseValidAttributesSorted(attributes);
+        string type = GetRelativeTypeName(typeSyntax.ToString());
 
-        Flags = AttributeFlags.None;
-        for (int i = 0; i < Attributes.Length; i++)
+        if (type.EndsWith("[]"))
         {
-            Flags |= Attributes[i].Flag;
+            return (type.Substring(0, type.Length - 2), type, "Length");
+        }
 
-            if (Attributes[i] is FieldBehavior field)
+        if (type.EndsWith(">"))
+        {
+            int genericArgumentIndex = type.IndexOf('<') + 1;
+            string genericArgument = type.Substring(genericArgumentIndex, type.Length - genericArgumentIndex - 1);
+            return (genericArgument, type, "Count");
+        }
+
+        return (type, null, null);
+    }
+
+    private static AttributeBehaviorBase[] CollectAttributes(MemberDeclarationSyntax declaration)
+    {
+        IEnumerable<AttributeSyntax> attributes = declaration.AttributeLists.SelectMany(list => list.Attributes);
+        return AttributeFactory.ParseValidAttributesSorted(attributes);
+    }
+
+    private static int DetermineOrder(AttributeBehaviorBase[] attributes)
+    {
+        for (int i = 0; i < attributes.Length; i++)
+        {
+            if (attributes[i] is FieldBehavior field)
             {
-                Order = field.Order;
+                return field.Order;
             }
         }
+
+        return default;
     }
 
-    public string NewCollection(string length)
+    public string GetNewCollectionExpression(string length)
     {
         if (!IsCollection)
+        {
             throw new InvalidOperationException();
+        }
 
-        return CollectionType.EndsWith("[]") ?
+        return CollectionType!.EndsWith("[]") ?
             $"new {Type}[{length}]" :
             $"new {CollectionType}({length})";
     }
 
     public Property Clone()
     {
-        return new Property
-        {
-            Type = Type,
-            DeclarationSyntax = DeclarationSyntax,
-            CollectionType = CollectionType,
-            ContainingType = ContainingType,
-            IsCollection = IsCollection,
-            IsGeneric = IsGeneric,
-            Length = Length,
-            Order = Order,
-            Attributes = Attributes,
-            Flags = Flags,
-            Name = Name
-        };
+        return new Property(this);
     }
 
     public Property CloneWithType(string type)

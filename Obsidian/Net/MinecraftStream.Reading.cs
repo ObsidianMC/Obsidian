@@ -9,7 +9,7 @@ using System.Text;
 
 namespace Obsidian.Net;
 
-public partial class MinecraftStream
+public partial class MinecraftStream : INetStreamReader
 {
 
     [ReadMethod]

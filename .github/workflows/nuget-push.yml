@@ -2,7 +2,7 @@ name: Nuget
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "1.*" ]
     # Publish semver tags as releases.
     tags: [ 'v*.*.*' ]
     

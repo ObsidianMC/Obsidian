@@ -15,7 +15,7 @@ internal static class AttributeFactory
         if (attributeName.EndsWith("Attribute"))
             attributeName = attributeName.Substring(0, attributeName.Length - 9);
 
-        attributeBehaviorBase = methods.TryGetValue(attributeName, out FactoryMethod factoryMethod) ? factoryMethod(attribute) : null;
+        attributeBehaviorBase = methods.TryGetValue(attributeName, out FactoryMethod factoryMethod) ? factoryMethod(attribute) : null!;
 
         return attributeBehaviorBase is not null;
     }

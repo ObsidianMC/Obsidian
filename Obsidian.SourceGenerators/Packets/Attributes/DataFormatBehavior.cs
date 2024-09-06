@@ -17,7 +17,7 @@ internal sealed class DataFormatBehavior : AttributeBehaviorBase
     public override bool Matches(AttributeOwner other)
     {
         return other.Flags.HasFlag(Flag) &&
-            other.TryGetAttribute(out DataFormatBehavior format) &&
-            format.Type == Type;
+            other.TryGetAttribute(out DataFormatBehavior? format) &&
+            format!.Type == Type;
     }
 }

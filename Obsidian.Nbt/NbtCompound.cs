@@ -1,9 +1,11 @@
-﻿using System.Collections;
+﻿using Obsidian.Nbt.Exceptions;
+using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Obsidian.Nbt;
 
-public class NbtCompound : INbtTag, IEnumerable<KeyValuePair<string, INbtTag>>
+public sealed class NbtCompound : INbtTag, IEnumerable<KeyValuePair<string, INbtTag>>
 {
     private readonly Dictionary<string, INbtTag> children = [];
 
@@ -11,16 +13,16 @@ public class NbtCompound : INbtTag, IEnumerable<KeyValuePair<string, INbtTag>>
 
     public NbtTagType Type => NbtTagType.Compound;
 
-    public string Name { get; set; }
+    public string? Name { get; set; }
 
-    public INbtTag Parent { get; set; }
+    public INbtTag? Parent { get; set; }
 
     public INbtTag this[string name] { get => this.children[name]; set => this.Add(name, value); }
 
     public NbtCompound(string name = "")
     {
         if (this.Parent?.Type == NbtTagType.Compound && string.IsNullOrEmpty(name))
-            throw new InvalidOperationException("Tags within a compound must be named.");
+            throw new ArgumentNullException(nameof(name), "Tags within a compound must be named.");
 
         this.Name = name;
     }
@@ -41,19 +43,30 @@ public class NbtCompound : INbtTag, IEnumerable<KeyValuePair<string, INbtTag>>
 
     public bool HasTag(string name) => this.children.ContainsKey(name);
 
-    public bool TryGetTag(string name, out INbtTag tag) => this.children.TryGetValue(name, out tag);
-
-    private T GetTagValue<T>(string name)
+    public bool TryGetTag(string name, [MaybeNullWhen(false)] out INbtTag tag) => this.children.TryGetValue(name, out tag);
+    public bool TryGetTag<T>(string name, [MaybeNullWhen(false)] out T tag) where T : INbtTag
     {
-        if (this.TryGetTag(name, out var tag))
+        if (this.children.TryGetValue(name, out var childTag) && childTag is T matchedTag)
         {
-            var actualTag = (NbtTag<T>)tag;
-
-            return actualTag.Value;
+            tag = matchedTag;
+            return true;
         }
 
-        return default;
+        tag = default;
+        return false;
     }
+    public bool TryGetTagValue<TValue>(string name, [MaybeNullWhen(false)]out TValue value)
+    {
+        if(this.GetTagValue<TValue>(name) is TValue tagValue)
+        {
+            value = tagValue;
+            return true;
+        }
+
+        value = default;
+        return false;
+    }
+
 
     public byte GetByte(string name) => this.GetTagValue<byte>(name);
 
@@ -67,17 +80,10 @@ public class NbtCompound : INbtTag, IEnumerable<KeyValuePair<string, INbtTag>>
 
     public double GetDouble(string name) => this.GetTagValue<double>(name);
 
-    public string GetString(string name) => this.GetTagValue<string>(name);
+    public string? GetString(string name) => this.GetTagValue<string>(name);
 
-    public bool GetBool(string name)
-    {
-        if (!this.TryGetTag(name, out var tag))
-            return false;
-
-        var actualTag = (NbtTag<byte>)tag;
-
-        return actualTag.Value == 1;
-    }
+    public bool GetBool(string name) =>
+        this.TryGetTag<NbtTag<byte>>(name, out var tag) && tag.Value == 1;
 
     public void Clear() => this.children.Clear();
 
@@ -121,7 +127,7 @@ public class NbtCompound : INbtTag, IEnumerable<KeyValuePair<string, INbtTag>>
     public void Add(string name, INbtTag tag)
     {
         if (string.IsNullOrEmpty(name))
-            throw new InvalidOperationException("Tags inside a compound must be named.");
+            throw new ArgumentNullException(nameof(name), "Tags inside a compound must be named.");
 
         tag.Parent = this;
 
@@ -138,7 +144,16 @@ public class NbtCompound : INbtTag, IEnumerable<KeyValuePair<string, INbtTag>>
         this.children.Add(tag.Name, tag);
     }
 
-    public IEnumerator<KeyValuePair<string, INbtTag>> GetEnumerator() => this.children.GetEnumerator();
+    public IEnumerator<KeyValuePair<string, INbtTag>> GetEnumerator() =>
+        this.children.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
+
+    private T? GetTagValue<T>(string name)
+    {
+        if (this.TryGetTag(name, out var tag) && tag is NbtTag<T> actualTag)
+            return actualTag.Value;
+
+        throw new TagNotFoundException(name);
+    }
 }

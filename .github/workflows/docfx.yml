@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - master
+      - 1.*
     paths:
       - 'Obsidian.Docs/**'
 env:

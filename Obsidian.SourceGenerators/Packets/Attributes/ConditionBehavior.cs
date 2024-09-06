@@ -69,12 +69,12 @@ internal sealed class ConditionBehavior : AttributeBehaviorBase
     {
         var sharedCondition = context.AllProperties
             .SkipWhile(prop => prop != context.Property)
-            .Select(prop => new { Property = prop, Attribute = prop.TryGetAttribute(out ConditionBehavior condition) ? condition : null })
+            .Select(prop => new { Property = prop, Attribute = prop.TryGetAttribute(out ConditionBehavior? condition) ? condition : null })
             .TakeWhile(entry => entry.Attribute?.Condition == Condition);
 
         foreach (var shared in sharedCondition.Skip(1))
         {
-            shared.Attribute.Skip = true;
+            shared.Attribute!.Skip = true;
         }
 
         return sharedCondition.Last().Property;

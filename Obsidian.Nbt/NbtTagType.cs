@@ -18,8 +18,3 @@ public enum NbtTagType : byte
 
     Unknown = 255
 }
-
-internal static class TypeExtensions
-{
-    public static bool IsArray(this NbtTagType type) => type == NbtTagType.ByteArray || type == NbtTagType.IntArray || type == NbtTagType.LongArray;
-}
