@@ -7,6 +7,7 @@ public partial struct NbtWriter(Stream outstream, NbtCompression compressionMode
 {
     private ListData? currentListData;
     private NbtTagType? previousRootType;
+    private List<string> compoundChildren = [];
 
     internal int rootIndex = 0;
 
@@ -129,6 +130,7 @@ public partial struct NbtWriter(Stream outstream, NbtCompression compressionMode
         if (this.RootType != NbtTagType.Compound)
             throw new InvalidOperationException();
 
+        this.compoundChildren.Clear();
         this.rootIndex--;
         if (this.currentListData != null)
         {
@@ -276,7 +278,7 @@ public partial struct NbtWriter(Stream outstream, NbtCompression compressionMode
         }
     }
 
-    public void WriteArray(string? name, Span<int> values)
+    public void WriteArray(string? name, ReadOnlySpan<int> values)
     {
         this.Write(NbtTagType.IntArray);
         this.WriteStringInternal(name);
@@ -286,9 +288,9 @@ public partial struct NbtWriter(Stream outstream, NbtCompression compressionMode
             this.WriteIntInternal(values[i]);
     }
 
-    public void WriteArray(string? name, Span<long> values)
+    public void WriteArray(string? name, ReadOnlySpan<long> values)
     {
-        this.Write(NbtTagType.Long);
+        this.Write(NbtTagType.LongArray);
         this.WriteStringInternal(name);
         this.WriteIntInternal(values.Length);
 
@@ -296,7 +298,7 @@ public partial struct NbtWriter(Stream outstream, NbtCompression compressionMode
             this.WriteLongInternal(values[i]);
     }
 
-    public void WriteArray(string? name, Span<byte> values)
+    public void WriteArray(string? name, ReadOnlySpan<byte> values)
     {
         this.Write(NbtTagType.ByteArray);
         this.WriteStringInternal(name);
@@ -307,22 +309,33 @@ public partial struct NbtWriter(Stream outstream, NbtCompression compressionMode
 
     public void Validate(string name, NbtTagType type)
     {
-        if (this.RootType == NbtTagType.List)
-        {
-            if (!string.IsNullOrWhiteSpace(name))
-                throw new InvalidOperationException("Tags inside lists cannot be named.");
+        this.TryValidateList(name, type);
 
-            if (this.currentListData!.ExpectedListType != type)
-                throw new InvalidOperationException($"Expected list type: {this.currentListData!.ExpectedListType}. Got: {type}");
-            else if (!string.IsNullOrEmpty(name))
-                throw new InvalidOperationException("Tags inside lists must be nameless.");
-            else if (this.currentListData!.ListIndex > this.currentListData!.ListSize)
-                throw new IndexOutOfRangeException("Exceeded pre-defined list size");
-
-            this.currentListData!.ListIndex++;
-        }
-        else if (string.IsNullOrWhiteSpace(name))
+        if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException($"Tags inside a compound tag must have a name. Tag({type})");
+
+        if (this.compoundChildren.Contains(name))
+            throw new ArgumentException($"Tag with name {name} already exists.");
+
+        this.compoundChildren.Add(name);
+    }
+
+    private void TryValidateList(string name, NbtTagType type)
+    {
+        if (this.RootType != NbtTagType.List)
+            return;
+
+        if (!string.IsNullOrWhiteSpace(name))
+            throw new InvalidOperationException("Tags inside lists cannot be named.");
+
+        if (this.currentListData!.ExpectedListType != type)
+            throw new InvalidOperationException($"Expected list type: {this.currentListData!.ExpectedListType}. Got: {type}");
+        else if (!string.IsNullOrEmpty(name))
+            throw new InvalidOperationException("Tags inside lists must be nameless.");
+        else if (this.currentListData!.ListIndex > this.currentListData!.ListSize)
+            throw new IndexOutOfRangeException("Exceeded pre-defined list size");
+
+        this.currentListData!.ListIndex++;
     }
 
     public void TryFinish()

@@ -332,8 +332,8 @@ public class Region : IRegion
         writer.EndList();
 
         writer.WriteInt("xPos", chunk.X);
-        writer.WriteInt("xPos", chunk.Z);
-        writer.WriteInt("xPos", -4);
+        writer.WriteInt("zPos", chunk.Z);
+        writer.WriteInt("yPos", -4);
         writer.WriteInt("DataVersion", 3337);
         writer.WriteString("Status", chunk.chunkStatus.ToString());
 
