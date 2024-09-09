@@ -309,7 +309,8 @@ public partial struct NbtWriter(Stream outstream, NbtCompression compressionMode
 
     public void Validate(string name, NbtTagType type)
     {
-        this.TryValidateList(name, type);
+        if (this.TryValidateList(name, type))
+            return;
 
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException($"Tags inside a compound tag must have a name. Tag({type})");
@@ -320,10 +321,10 @@ public partial struct NbtWriter(Stream outstream, NbtCompression compressionMode
         this.compoundChildren.Add(name);
     }
 
-    private void TryValidateList(string name, NbtTagType type)
+    private bool TryValidateList(string name, NbtTagType type)
     {
         if (this.RootType != NbtTagType.List)
-            return;
+            return false;
 
         if (!string.IsNullOrWhiteSpace(name))
             throw new InvalidOperationException("Tags inside lists cannot be named.");
@@ -336,6 +337,8 @@ public partial struct NbtWriter(Stream outstream, NbtCompression compressionMode
             throw new IndexOutOfRangeException("Exceeded pre-defined list size");
 
         this.currentListData!.ListIndex++;
+
+        return true;
     }
 
     public void TryFinish()
