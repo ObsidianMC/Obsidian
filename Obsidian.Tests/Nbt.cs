@@ -8,10 +8,12 @@ namespace Obsidian.Tests;
 
 public class Nbt(ITestOutputHelper output)
 {
+    private Stream? stream;
+
     [Fact]
-    public void BigTest()
+    public void ReadBigTest()
     {
-        var fs = Assembly.GetExecutingAssembly().GetManifestResourceStream("Obsidian.Tests.Assets.bigtest.nbt");
+        var fs = stream ?? Assembly.GetExecutingAssembly().GetManifestResourceStream("Obsidian.Tests.Assets.bigtest.nbt");
 
         var reader = new NbtReader(fs, NbtCompression.GZip);
 
@@ -100,6 +102,99 @@ public class Nbt(ITestOutputHelper output)
         Assert.Equal("Compound tag #1", compound2.GetString("name"));
         Assert.Equal(1264099775885, compound2.GetLong("created-on"));
         #endregion lists
+    }
+
+
+    [Fact]
+    public void WriteBigTest()
+    {
+        this.stream = new MemoryStream();
+        using var writer = new NbtWriter(stream, NbtCompression.GZip, "Level");
+
+        Assert.Equal(1, writer.rootIndex);
+        {
+            writer.WriteCompoundStart("nested compound test");
+            Assert.Equal(2, writer.rootIndex);
+            {
+                writer.WriteCompoundStart("egg");
+                Assert.Equal(3, writer.rootIndex);
+                {
+                    writer.WriteString("name", "Eggbert");
+                    writer.WriteFloat("value", 0.5f);
+                }
+                writer.EndCompound();
+                Assert.Equal(2, writer.rootIndex);
+
+                writer.WriteCompoundStart("ham");
+                Assert.Equal(3, writer.rootIndex);
+                {
+                    writer.WriteString("name", "Hampus");
+                    writer.WriteFloat("value", 0.75f);
+                }
+                writer.EndCompound();
+                Assert.Equal(2, writer.rootIndex);
+            }
+            writer.EndCompound();
+            Assert.Equal(1, writer.rootIndex);
+
+            writer.WriteInt("intTest", int.MaxValue);
+            writer.WriteByte("byteTest", (byte)sbyte.MaxValue);
+            writer.WriteString("stringTest", "HELLO WORLD THIS IS A TEST STRING \xc5\xc4\xd6!");
+
+            writer.WriteListStart("listTest (long)", NbtTagType.Long, 5);
+            Assert.Equal(2, writer.rootIndex);
+            {
+                for (int i = 0; i < 5; i++)
+                    writer.WriteLong(11 + i);
+            }
+            writer.EndList();
+            Assert.Equal(1, writer.rootIndex);
+
+            writer.WriteDouble("doubleTest", 0.49312871321823148);
+            writer.WriteFloat("floatTest", 0.49823147058486938f);
+            writer.WriteLong("longTest", long.MaxValue);
+            writer.WriteShort("shortTest", short.MaxValue);
+
+            writer.WriteListStart("listTest (compound)", NbtTagType.Compound, 2);
+            Assert.Equal(2, writer.rootIndex);
+            {
+                writer.WriteCompoundStart();
+                Assert.Equal(3, writer.rootIndex);
+                {
+                    writer.WriteLong("created-on", 1264099775885L);
+                    writer.WriteString("name", "Compound tag #0");
+                }
+                writer.EndCompound();
+                Assert.Equal(2, writer.rootIndex);
+
+                writer.WriteCompoundStart();
+                Assert.Equal(3, writer.rootIndex);
+                {
+                    writer.WriteLong("created-on", 1264099775885L);
+                    writer.WriteString("name", "Compound tag #1");
+                }
+                writer.EndCompound();
+                Assert.Equal(2, writer.rootIndex);
+            }
+            writer.EndList();
+
+            Assert.Equal(1, writer.rootIndex);
+            Assert.Equal(NbtTagType.Compound, writer.RootType);
+
+            var array = new byte[1000];
+            for (int n = 0; n < 1000; n++)
+                array[n] = (byte)((n * n * 255 + n * 7) % 100);
+
+            writer.WriteArray("byteArrayTest (the first 1000 values of (n*n*255+n*7)%100, starting with n=0 (0, 62, 34, 16, 8, ...))", array);
+        }
+        writer.EndCompound();
+        Assert.Equal(0, writer.rootIndex);
+
+        writer.TryFinish();
+
+        this.stream.Position = 0;
+
+        this.ReadBigTest();
     }
 
     [Fact]
