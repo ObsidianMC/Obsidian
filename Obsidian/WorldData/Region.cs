@@ -118,14 +118,14 @@ public class Region : IRegion
 
     internal async Task SerializeChunkAsync(Chunk chunk)
     {
-        NbtCompound chunkNbt = SerializeChunk(chunk);
-
         var (x, z) = (NumericsHelper.Modulo(chunk.X, CubicRegionSize), NumericsHelper.Modulo(chunk.Z, CubicRegionSize));
 
         await using MemoryStream strm = new();
-        await using NbtWriter writer = new(strm, ChunkCompression);
+        await using NbtWriter writer = new(strm, ChunkCompression, "");
 
-        writer.WriteTag(chunkNbt);
+        SerializeChunk(writer, chunk);
+
+        writer.EndCompound();
 
         await writer.TryFinishAsync();
 
@@ -259,88 +259,89 @@ public class Region : IRegion
         return chunk;
     }
 
-    private static NbtCompound SerializeChunk(Chunk chunk)
+    private static void SerializeChunk(NbtWriter writer, Chunk chunk)
     {
-        var sectionsCompound = new NbtList(NbtTagType.Compound, "sections");
+        writer.WriteListStart("sections", NbtTagType.Compound, chunk.Sections.Length);
 
         foreach (var section in chunk.Sections)
         {
             if (section.YBase is null)
                 throw new UnreachableException("Section Ybase should not be null");//THIS should never happen
 
-            var blockStatesCompound = new NbtCompound("block_states");
+            writer.WriteCompoundStart();
 
+            writer.WriteCompoundStart("block_states");
 
             if (section.BlockStateContainer.Palette is IndirectPalette indirect)
             {
-                var palette = new NbtList(NbtTagType.Compound, "palette");
+                writer.WriteListStart("palette", NbtTagType.Compound, indirect.Count);
 
                 Span<int> span = indirect.Values;
                 for (int i = 0; i < indirect.Count; i++)
-                {
+                { 
                     var id = span[i];
                     var block = BlocksRegistry.Get(id);
 
-                    palette.Add(new NbtCompound
-                    {
-                        new NbtTag<string>("Name", block.UnlocalizedName),
-                        new NbtTag<int>("Id", id)
-                    });//TODO INCLUDE PROPERTIES
+                    writer.WriteCompoundStart();
+
+                    writer.WriteString("Name", block.UnlocalizedName);
+                    writer.WriteInt("Id", id);
+
+                    writer.EndCompound();//TODO INCLUDE PROPERTIES
                 }
 
-                blockStatesCompound.Add(palette);
-                blockStatesCompound.Add(new NbtArray<long>("data", section.BlockStateContainer.DataArray.storage));
+                writer.EndList();
+
+                writer.WriteArray("data", section.BlockStateContainer.DataArray.storage);
             }
 
-            var biomesCompound = new NbtCompound("biomes");
+            writer.EndCompound();
+
+            writer.WriteCompoundStart("biomes");
+
             if (section.BiomeContainer.Palette is BaseIndirectPalette<Biome> indirectBiomePalette)
             {
-                var palette = new NbtList(NbtTagType.String, "palette");
+                writer.WriteListStart("palette", NbtTagType.String, indirectBiomePalette.Count);
 
-                foreach (var id in indirectBiomePalette.Values)
+                Span<int> span = indirectBiomePalette.Values;
+                for (int i = 0; i < indirectBiomePalette.Count; i++)
                 {
-                    var biome = (Biome)id;
-                    palette.Add(new NbtTag<string>(string.Empty, $"minecraft:{biome.ToString().ToLower()}"));
+                    var biome = (Biome)span[i];
+                    writer.WriteString($"minecraft:{biome.ToString().ToLower()}");
                 }
 
-                biomesCompound.Add(palette);
+                writer.EndList();
+
                 if (indirectBiomePalette.Values.Length > 1)
-                    biomesCompound.Add(new NbtArray<long>("data", section.BiomeContainer.DataArray.storage));
+                    writer.WriteArray("data", section.BiomeContainer.DataArray.storage);
             }
 
+            writer.EndCompound();
 
-            sectionsCompound.Add(new NbtCompound
-            {
-                new NbtTag<byte>("Y", (byte)section.YBase),
-                blockStatesCompound,
-                biomesCompound,
-                new NbtArray<byte>("SkyLight", section.SkyLightArray.ToArray()),
-                new NbtArray<byte>("BlockLight", section.BlockLightArray.ToArray())
-            });
+            writer.WriteByte("Y", (byte)section.YBase);
+            writer.WriteArray("SkyLight", section.SkyLightArray.ToArray());
+            writer.WriteArray("BlockLight", section.BlockLightArray.ToArray());
+
+            writer.EndCompound();
         }
+        writer.EndList();
 
-        var blockEntities = new NbtList(NbtTagType.Compound, "block_entities");
+        writer.WriteListStart("block_entities", NbtTagType.Compound, chunk.BlockEntities.Count);
         foreach (var (_, blockEntity) in chunk.BlockEntities)
-            blockEntities.Add(blockEntity);
+            writer.WriteTag(blockEntity);
+        writer.EndList();
 
-#pragma warning disable IDE0028 // Use collection initializers - Will not compile with this suggestion applied
-    return new NbtCompound
-        {
-            new NbtTag<int>("xPos", chunk.X),
-            new NbtTag<int>("zPos", chunk.Z),
-            new NbtTag<int>("yPos", -4),
-            new NbtTag<string>("Status", chunk.chunkStatus.ToString()),
-            new NbtCompound("Heightmaps")
-            {
-                new NbtArray<long>("MOTION_BLOCKING", chunk.Heightmaps[HeightmapType.MotionBlocking].data.storage),
-                //new NbtArray<long>("OCEAN_FLOOR", chunk.Heightmaps[HeightmapType.OceanFloor].data.Storage),
-                //new NbtArray<long>("WORLD_SURFACE", chunk.Heightmaps[HeightmapType.WorldSurface].data.Storage),
-            },
-            blockEntities,
-            sectionsCompound,
-            new NbtTag<int>("DataVersion", 3337)// Hardcoded version try to get data version through minecraft data and use data correctly
-        };
-#pragma warning restore IDE0028 // Use collection initializers
+        writer.WriteInt("xPos", chunk.X);
+        writer.WriteInt("xPos", chunk.Z);
+        writer.WriteInt("xPos", -4);
+        writer.WriteInt("DataVersion", 3337);
+        writer.WriteString("Status", chunk.chunkStatus.ToString());
+
+        writer.WriteCompoundStart("Heightmaps");
+        writer.WriteArray("MOTION_BLOCKING", chunk.Heightmaps[HeightmapType.MotionBlocking].data.storage);
+        //new NbtArray<long>("OCEAN_FLOOR", chunk.Heightmaps[HeightmapType.OceanFloor].data.Storage),
+        //new NbtArray<long>("WORLD_SURFACE", chunk.Heightmaps[HeightmapType.WorldSurface].data.Storage),
+        writer.EndCompound();
   }
     #endregion NBT Ops
 
