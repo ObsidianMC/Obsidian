@@ -5,13 +5,8 @@ namespace Obsidian.Nbt;
 
 public partial struct NbtWriter(Stream outstream, NbtCompression compressionMode = NbtCompression.None) : IDisposable, IAsyncDisposable
 {
-    private ListData? currentListData;
-    private NbtTagType? previousRootType;
-    private List<string> compoundChildren = [];
-
-    internal int rootIndex = 0;
-
-    public NbtTagType RootType { get; private set; }
+    private State? currentState;
+    public NbtTagType? RootType { get; private set; }
 
     public Stream BaseStream { get; } = compressionMode switch
     {
@@ -50,29 +45,33 @@ public partial struct NbtWriter(Stream outstream, NbtCompression compressionMode
     private void SetRootTag(NbtTagType type, bool addRoot = true)
     {
         if (addRoot)
-            this.rootIndex++;
+        {
+            this.currentState = new()
+            {
+                PreviousState = this.currentState,
+                ExpectedListType = null,
+                ParentTagType = this.RootType ?? type,
+                ChildrenAdded = []
+            };
+        }
 
-        this.previousRootType = this.RootType;
         this.RootType = type;
     }
 
     private void SetRootTag(NbtTagType type, int listSize, NbtTagType listType, bool addRoot = true)
     {
         if (addRoot)
-            this.rootIndex++;
-
-        var previousListData = this.currentListData;
-        this.currentListData = new()
         {
-            RootIndex = this.rootIndex,
-            ExpectedListType = listType,
-            ListSize = listSize,
-            ListIndex = 0,
-            PreviousListData = previousListData,
-            ParentTagType = this.RootType
-        };
+            this.currentState = new()
+            {
+                ExpectedListType = listType,
+                ListSize = listSize,
+                ListIndex = 0,
+                PreviousState = this.currentState,
+                ParentTagType = this.RootType ?? type
+            };
+        }
 
-        this.previousRootType = this.RootType;
         this.RootType = type;
     }
 
@@ -110,19 +109,15 @@ public partial struct NbtWriter(Stream outstream, NbtCompression compressionMode
 
     public void EndList()
     {
-        if (this.currentListData!.ListIndex < this.currentListData?.ListSize)
+        if (this.currentState!.ListIndex < this.currentState?.ListSize)
             throw new InvalidOperationException("List cannot end because its size is smaller than the pre-defined size.");
 
         if (this.RootType != NbtTagType.List)
             throw new InvalidOperationException();
 
-        this.currentListData = this.currentListData.PreviousListData;
-        this.rootIndex--;
+        this.RootType = this.currentState?.ParentTagType ?? NbtTagType.End;
 
-        this.RootType = this.currentListData?.ParentTagType ?? this.previousRootType ?? NbtTagType.End;
-
-        if (this.previousRootType != null)
-            this.previousRootType = null;
+        this.currentState = this.currentState.PreviousState;
     }
 
     public void EndCompound()
@@ -130,22 +125,18 @@ public partial struct NbtWriter(Stream outstream, NbtCompression compressionMode
         if (this.RootType != NbtTagType.Compound)
             throw new InvalidOperationException();
 
-        this.compoundChildren.Clear();
-        this.rootIndex--;
-        if (this.currentListData != null)
+        this.RootType = this.currentState?.ParentTagType ?? NbtTagType.End;
+        this.currentState = this.currentState.PreviousState;
+
+        if (this.currentState != null && this.currentState.ExpectedListType != null)
         {
-            var tagType = this.currentListData.RootIndex == this.rootIndex ? NbtTagType.List : this.currentListData.ParentTagType ?? NbtTagType.End;
-            this.SetRootTag(tagType, false);
+            this.SetRootTag(NbtTagType.List, false);
             this.Write(NbtTagType.End);
 
             return;
         }
 
         this.Write(NbtTagType.End);
-        this.RootType = this.previousRootType ?? NbtTagType.End;
-
-        if (this.previousRootType != null)
-            this.previousRootType = null;
     }
 
     public void WriteTag(INbtTag tag)
@@ -315,10 +306,10 @@ public partial struct NbtWriter(Stream outstream, NbtCompression compressionMode
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException($"Tags inside a compound tag must have a name. Tag({type})");
 
-        if (this.compoundChildren.Contains(name))
+        if (this.currentState.ChildrenAdded.Contains(name))
             throw new ArgumentException($"Tag with name {name} already exists.");
 
-        this.compoundChildren.Add(name);
+        this.currentState.ChildrenAdded.Add(name);
     }
 
     private bool TryValidateList(string name, NbtTagType type)
@@ -329,29 +320,29 @@ public partial struct NbtWriter(Stream outstream, NbtCompression compressionMode
         if (!string.IsNullOrWhiteSpace(name))
             throw new InvalidOperationException("Tags inside lists cannot be named.");
 
-        if (this.currentListData!.ExpectedListType != type)
-            throw new InvalidOperationException($"Expected list type: {this.currentListData!.ExpectedListType}. Got: {type}");
+        if (!this.currentState!.HasExpectedListType(type))
+            throw new InvalidOperationException($"Expected list type: {this.currentState!.ExpectedListType}. Got: {type}");
         else if (!string.IsNullOrEmpty(name))
             throw new InvalidOperationException("Tags inside lists must be nameless.");
-        else if (this.currentListData!.ListIndex > this.currentListData!.ListSize)
+        else if (this.currentState!.ListIndex > this.currentState!.ListSize)
             throw new IndexOutOfRangeException("Exceeded pre-defined list size");
 
-        this.currentListData!.ListIndex++;
+        this.currentState!.ListIndex++;
 
         return true;
     }
 
     public void TryFinish()
     {
-        if (this.rootIndex > 0)
-            throw new InvalidOperationException($"Unable to close writer. Root tag has yet to be closed. rootDept == {this.rootIndex}");//TODO maybe more info here??
+        if (this.currentState != null)
+            throw new InvalidOperationException($"Unable to close writer. Root tag has yet to be closed.");//TODO maybe more info here??
 
         this.BaseStream.Flush();
     }
 
     public async Task TryFinishAsync()
     {
-        if (this.rootIndex > 0)
+        if (this.currentState != null)
             throw new InvalidOperationException("Unable to close writer. Root tag has yet to be closed.");//TODO maybe more info here??
 
         await this.BaseStream.FlushAsync();
@@ -378,18 +369,26 @@ public partial struct NbtWriter(Stream outstream, NbtCompression compressionMode
         }
     }
 
-    private sealed class ListData
+    private sealed class State
     {
-        public required int RootIndex { get; init; }
+        public int ListSize { get; init; }
 
-        public required int ListSize { get; init; }
+        public int ListIndex { get; set; }
 
-        public required int ListIndex { get; set; }
+        public NbtTagType? ExpectedListType { get; init; }
 
-        public required NbtTagType ExpectedListType { get; init; }
-
-        public required ListData? PreviousListData { get; init; }
+        public required State? PreviousState { get; init; }
 
         public required NbtTagType? ParentTagType { get; init; }
+
+        public List<string> ChildrenAdded { get; init; }
+
+        public bool HasExpectedListType(NbtTagType type)
+        {
+            if (this.ExpectedListType == type)
+                return true;
+
+            return this.PreviousState?.HasExpectedListType(type) ?? false;
+        }
     }
 }
