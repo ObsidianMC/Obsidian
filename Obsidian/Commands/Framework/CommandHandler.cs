@@ -261,6 +261,9 @@ public sealed class CommandHandler
             await cmd.ExecuteAsync(ctx, args);
         }
         else
-            throw new CommandNotFoundException("No such command was found!");
+        {
+            await ctx.Sender.SendMessageAsync("No such command was found!");
+            this.logger.LogError(new CommandNotFoundException("No such command was found!"), "An error has occured while trying to execute command: {args}", args);
+        }
     }
 }

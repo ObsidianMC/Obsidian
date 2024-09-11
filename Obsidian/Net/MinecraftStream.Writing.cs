@@ -418,53 +418,10 @@ public partial class MinecraftStream : INetStreamWriter
 
         var writer = new NbtWriter(this, true);
 
-        this.WriteChatNbt(writer, chatMessage);
+        writer.WriteChatMessage(chatMessage);
 
         writer.EndCompound();
         writer.TryFinish();
-    }
-
-    private void WriteChatNbt(NbtWriter writer, ChatMessage chatMessage)
-    {
-        if (!chatMessage.Text.IsNullOrEmpty())
-            writer.WriteString("text", chatMessage.Text);
-        if (!chatMessage.Translate.IsNullOrEmpty())
-            writer.WriteString("translate", chatMessage.Translate);
-        if (chatMessage.Color.HasValue)
-            writer.WriteString("color", chatMessage.Color.Value.ToString());
-        if (!chatMessage.Insertion.IsNullOrEmpty())
-            writer.WriteString("insertion", chatMessage.Insertion);
-
-        writer.WriteBool("bold", chatMessage.Bold);
-        writer.WriteBool("italic", chatMessage.Italic);
-        writer.WriteBool("underlined", chatMessage.Underlined);
-        writer.WriteBool("strikethrough", chatMessage.Strikethrough);
-        writer.WriteBool("obfuscated", chatMessage.Obfuscated);
-
-        if (chatMessage.ClickEvent != null)
-            writer.WriteTag(chatMessage.ClickEvent.ToNbt());
-        if (chatMessage.HoverEvent != null)
-            writer.WriteTag(chatMessage.HoverEvent.ToNbt());
-
-        if (chatMessage.Extra is List<ChatMessage> extras)
-        {
-            var list = new NbtList(NbtTagType.Compound, "extra");
-
-            foreach (var item in extras)
-                list.Add(item.ToNbt());
-
-            writer.WriteTag(list);
-        }
-
-        if (chatMessage.With is List<ChatMessage> extraChatComponents)
-        {
-            var list = new NbtList(NbtTagType.Compound, "with");
-
-            foreach (var item in extraChatComponents)
-                list.Add(item.ToNbt());
-
-            writer.WriteTag(list);
-        }
     }
 
     [WriteMethod]
