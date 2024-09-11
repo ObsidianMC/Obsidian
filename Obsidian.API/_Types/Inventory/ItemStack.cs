@@ -2,7 +2,7 @@
 
 public class ItemStack : IEquatable<ItemStack>
 {
-    public readonly static ItemStack Air = new(Material.Air, 0);
+    public static readonly ItemStack Air = new(Material.Air, 0);
 
     internal int Slot { get; set; }
 

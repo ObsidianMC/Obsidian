@@ -1,6 +1,9 @@
-﻿namespace Obsidian.API;
+﻿using Obsidian.API.ItemComponents;
+using System.Collections;
 
-public struct ItemMeta : IEquatable<ItemMeta>
+namespace Obsidian.API;
+
+public struct ItemMeta : IEquatable<ItemMeta>, IEnumerable<IItemComponent>
 {
     internal int CustomModelData { get; set; }
 
@@ -33,4 +36,6 @@ public struct ItemMeta : IEquatable<ItemMeta>
 
     public override int GetHashCode() =>
         (this.CustomModelData, this.Name, this.RepairAmount, this.Durability, this.Unbreakable, this.Enchantments, this.StoredEnchantments, this.CanDestroy, this.Lore).GetHashCode();
+    public IEnumerator<IItemComponent> GetEnumerator() => throw new NotImplementedException();
+    IEnumerator IEnumerable.GetEnumerator() => throw new NotImplementedException();
 }

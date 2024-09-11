@@ -93,6 +93,8 @@ public static partial class Extensions
 
     public static string ToSnakeCase(this string str) => JsonNamingPolicy.SnakeCaseLower.ConvertName(str);
 
+    public static string ToNamespace(this string str, string ns) => $"{ns}:{str.ToSnakeCase()}";
+
     /// <summary>
     /// Trims resource tag from the start and removes '_' characters.
     /// </summary>
