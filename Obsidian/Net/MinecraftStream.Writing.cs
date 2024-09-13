@@ -1,4 +1,5 @@
-﻿using Obsidian.API.Advancements;
+﻿using Obsidian.API;
+using Obsidian.API.Advancements;
 using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registry.Codecs.ArmorTrims.TrimMaterial;
@@ -20,6 +21,7 @@ using Obsidian.Net.WindowProperties;
 using Obsidian.Registries;
 using Obsidian.Serialization.Attributes;
 using System.Buffers.Binary;
+using System.IO;
 using System.Text;
 using System.Text.Json;
 
@@ -650,74 +652,20 @@ public partial class MinecraftStream : INetStreamWriter
         value ??= new ItemStack(0, 0) { Present = true };
 
         var item = value.AsItem();
+        var meta = value.ItemMeta;
+
+        WriteVarInt(value.Count);
+
+        //Stop serializing if item is invalid
+        if (value.Count <= 0)
+            return;
+
         WriteVarInt(item.Id);
+        WriteVarInt(0);
+        WriteVarInt(0);
 
-        if (item.Id != 0)
-        {
-            WriteByte((sbyte)value.Count);
-
-            NbtWriter writer = new(this, true);
-
-            ItemMeta meta = value.ItemMeta;
-
-            if (meta.HasTags())
-            {
-                writer.WriteByte("Unbreakable", (byte)(meta.Unbreakable ? 1 : 0));
-
-                if (meta.Durability > 0)
-                    writer.WriteInt("Damage", meta.Durability);
-
-                if (meta.CustomModelData > 0)
-                    writer.WriteInt("CustomModelData", meta.CustomModelData);
-
-                if (meta.CanDestroy is not null)
-                {
-                    writer.WriteListStart("CanDestroy", NbtTagType.String, meta.CanDestroy.Count);
-
-                    foreach (var block in meta.CanDestroy)
-                        writer.WriteString(block);
-
-                    writer.EndList();
-                }
-
-                if (meta.Name is not null)
-                {
-                    writer.WriteCompoundStart("display");
-
-                    writer.WriteString("Name", new List<ChatMessage> { meta.Name }.ToJson());
-
-                    if (meta.Lore is not null)
-                    {
-                        writer.WriteListStart("Lore", NbtTagType.String, meta.Lore.Count);
-
-                        foreach (var lore in meta.Lore)
-                            writer.WriteString(new List<ChatMessage> { lore }.ToJson());
-
-                        writer.EndList();
-                    }
-
-                    writer.EndCompound();
-                }
-                else if (meta.Lore is not null)
-                {
-                    writer.WriteCompoundStart("display");
-
-                    writer.WriteListStart("Lore", NbtTagType.String, meta.Lore.Count);
-
-                    foreach (var lore in meta.Lore)
-                        writer.WriteString(new List<ChatMessage> { lore }.ToJson());
-
-                    writer.EndList();
-
-                    writer.EndCompound();
-                }
-            }
-            writer.WriteString("id", item.UnlocalizedName);
-            writer.WriteByte("Count", (byte)value.Count);
-
-            writer.EndCompound();
-            writer.TryFinish();
-        }
+        if (!meta.HasTags())
+            return;
     }
 
     [WriteMethod]
@@ -811,11 +759,11 @@ public partial class MinecraftStream : INetStreamWriter
                 await WriteStringAsync((string)value);
                 break;
 
-            case EntityMetadataType.Chat:
+            case EntityMetadataType.TextComponent:
                 await WriteChatAsync((ChatMessage)value);
                 break;
 
-            case EntityMetadataType.OptChat:
+            case EntityMetadataType.OptionalTextComponent:
                 await WriteBooleanAsync(optional);
 
                 if (optional)
@@ -830,14 +778,14 @@ public partial class MinecraftStream : INetStreamWriter
                 await WriteBooleanAsync((bool)value);
                 break;
 
-            case EntityMetadataType.Rotation:
+            case EntityMetadataType.Rotations:
                 break;
 
-            case EntityMetadataType.Position:
+            case EntityMetadataType.BlockPos:
                 await WritePositionFAsync((VectorF)value);
                 break;
 
-            case EntityMetadataType.OptPosition:
+            case EntityMetadataType.OptionalBlockPos:
                 await WriteBooleanAsync(optional);
 
                 if (optional)
@@ -848,21 +796,21 @@ public partial class MinecraftStream : INetStreamWriter
             case EntityMetadataType.Direction:
                 break;
 
-            case EntityMetadataType.OptUuid:
+            case EntityMetadataType.OptionalUUID:
                 await WriteBooleanAsync(optional);
 
                 if (optional)
                     await WriteUuidAsync((Guid)value);
                 break;
 
-            case EntityMetadataType.OptBlockId:
+            case EntityMetadataType.OptionalBlockState:
                 await WriteVarIntAsync((int)value);
                 break;
 
             case EntityMetadataType.Nbt:
             case EntityMetadataType.Particle:
             case EntityMetadataType.VillagerData:
-            case EntityMetadataType.OptVarInt:
+            case EntityMetadataType.OptionalUnsignedInt:
                 if (optional)
                 {
                     await WriteVarIntAsync(0);
