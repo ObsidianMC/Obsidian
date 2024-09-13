@@ -1,8 +1,10 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Obsidian.API;
 using Obsidian.Entities;
 using Obsidian.Hosting;
 using Obsidian.Net.Packets;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
 using System.Threading;
 
@@ -24,8 +26,10 @@ public sealed class PacketBroadcaster : BackgroundService, IPacketBroadcaster
     public void QueuePacket(IClientboundPacket packet, params int[] excludedIds) =>
          this.priorityQueue.Enqueue(new() { Packet = packet, ExcludedIds = excludedIds }, 1);
 
-    public void QueuePacketToWorld(IWorld world, IClientboundPacket packet, params int[] excludedIds) =>
-        this.priorityQueue.Enqueue(new() { Packet = packet, ExcludedIds = excludedIds }, 1);
+    public void QueuePacketToWorld(IWorld world, IClientboundPacket packet, params int[] excludedIds)
+    {
+        this.priorityQueue.Enqueue(new() { Packet = packet, ToWorld = world, ExcludedIds = excludedIds }, 1);
+    }
 
     public void QueuePacketToWorld(IWorld world, int priority, IClientboundPacket packet, params int[] excludedIds) =>
         this.priorityQueue.Enqueue(new() { Packet = packet, ExcludedIds = excludedIds, ToWorld = world }, priority);
@@ -35,7 +39,7 @@ public sealed class PacketBroadcaster : BackgroundService, IPacketBroadcaster
 
     public void Broadcast(IClientboundPacket packet, params int[] excludedIds)
     {
-        foreach (var player in this.server.Players.Cast<Player>().Where(player => excludedIds.Contains(player.EntityId)))
+        foreach (var player in this.server.Players.Cast<Player>().Where(player => !excludedIds.Contains(player.EntityId)))
             player.client.SendPacket(packet);
     }
 
@@ -44,7 +48,7 @@ public sealed class PacketBroadcaster : BackgroundService, IPacketBroadcaster
         if (toWorld is not World world)
             return;
 
-        foreach (var player in world.Players.Values.Where(player => excludedIds.Contains(player.EntityId)))
+        foreach (var player in world.Players.Values.Where(player => !excludedIds.Contains(player.EntityId)))
             player.client.SendPacket(packet);
     }
 
@@ -56,7 +60,7 @@ public sealed class PacketBroadcaster : BackgroundService, IPacketBroadcaster
         {
             while (await timer.WaitForNextTickAsync(stoppingToken))
             {
-                if (!this.priorityQueue.TryDequeue(out var queuedPacket, out _))
+                if (!this.priorityQueue.TryDequeue(out var queuedPacket, out var priority))
                     continue;
 
                 if (queuedPacket.ToWorld is World toWorld)
@@ -69,6 +73,7 @@ public sealed class PacketBroadcaster : BackgroundService, IPacketBroadcaster
 
                 foreach (var player in this.server.Players.Cast<Player>().Where(player => queuedPacket.ExcludedIds != null && !queuedPacket.ExcludedIds.Contains(player.EntityId)))
                     await player.client.QueuePacketAsync(queuedPacket.Packet);
+
             }
         }
         catch (Exception e) when (e is not OperationCanceledException)

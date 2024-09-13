@@ -44,75 +44,64 @@ public partial class PlayerActionPacket : IServerboundPacket
         this.BroadcastPlayerAction(player, block);
     }
 
-    private void BroadcastPlayerAction(Player player, IBlock block)
+    private async void BroadcastPlayerAction(Player player, IBlock block)
     {
         switch (this.Status)
         {
             case PlayerActionStatus.DropItem:
-            {
-                DropItem(player, 1);
-                break;
-            }
+                {
+                    DropItem(player, 1);
+                    break;
+                }
             case PlayerActionStatus.DropItemStack:
-            {
-                DropItem(player, 64);
-                break;
-            }
+                {
+                    DropItem(player, 64);
+                    break;
+                }
             case PlayerActionStatus.StartedDigging:
             case PlayerActionStatus.CancelledDigging:
                 break;
             case PlayerActionStatus.FinishedDigging:
-            {
-                player.PacketBroadcaster.QueuePacketToWorld(player.World, new SetBlockDestroyStagePacket
                 {
-                    EntityId = player,
-                    Position = this.Position,
-                    DestroyStage = -1
-                });
+                    player.PacketBroadcaster.QueuePacketToWorld(player.world, 0, new SetBlockDestroyStagePacket
+                    {
+                        EntityId = player,
+                        Position = this.Position,
+                        DestroyStage = -1
+                    }, player.EntityId);
 
-                var droppedItem = ItemsRegistry.Get(block.Material);
+                    var droppedItem = ItemsRegistry.Get(block.Material);
 
-                if (droppedItem.Id == 0) { break; }
+                    if (droppedItem.Id == 0) { break; }
 
-                var item = new ItemEntity
-                {
-                    EntityId = player + player.world.GetTotalLoadedEntities() + 1,
-                    Count = 1,
-                    Id = droppedItem.Id,
-                    Glowing = true,
-                    World = player.world,
-                    Position = this.Position,
-                    PacketBroadcaster = player.PacketBroadcaster,
-                };
+                    var item = new ItemEntity
+                    {
+                        EntityId = Server.GetNextEntityId(),
+                        Count = 1,
+                        Id = droppedItem.Id,
+                        Glowing = true,
+                        World = player.world,
+                        Position = (VectorF)this.Position + 0.5f,
+                        PacketBroadcaster = player.PacketBroadcaster,
+                    };
 
-                player.world.TryAddEntity(item);
+                    player.world.TryAddEntity(item);
 
-                player.PacketBroadcaster.QueuePacketToWorld(player.World, new SpawnEntityPacket
-                {
-                    EntityId = item.EntityId,
-                    Uuid = item.Uuid,
-                    Type = EntityType.Item,
-                    Position = item.Position,
-                    Pitch = 0,
-                    Yaw = 0,
-                    Data = 1,
-                    Velocity = Velocity.FromVector(new VectorF(
-                        Globals.Random.NextFloat() * 0.5f,
-                        Globals.Random.NextFloat() * 0.5f,
-                        Globals.Random.NextFloat() * 0.5f))
-                });
+                    await item.SpawnEntityAsync(Velocity.FromBlockPerTick(GetRandDropVelocity(), GetRandDropVelocity(), GetRandDropVelocity()));
 
-                player.PacketBroadcaster.QueuePacketToWorld(player.World, new SetEntityMetadataPacket
-                {
-                    EntityId = item.EntityId,
-                    Entity = item
-                });
-                break;
-            }
+                    break;
+                }
         }
     }
 
-    private void DropItem(Player player, sbyte amountToRemove)
+    private float GetRandDropVelocity()
+    {
+        var f = Globals.Random.NextFloat();
+
+        return f * 0.5f;
+    }
+
+    private async void DropItem(Player player, sbyte amountToRemove)
     {
         var droppedItem = player.GetHeldItem();
 
@@ -123,7 +112,7 @@ public partial class PlayerActionPacket : IServerboundPacket
 
         var item = new ItemEntity
         {
-            EntityId = player + player.world.GetTotalLoadedEntities() + 1,
+            EntityId = Server.GetNextEntityId(),
             Count = amountToRemove,
             Id = droppedItem.AsItem().Id,
             Glowing = true,
@@ -138,22 +127,7 @@ public partial class PlayerActionPacket : IServerboundPacket
 
         var vel = Velocity.FromDirection(loc, lookDir);//TODO properly shoot the item towards the direction the players looking at
 
-        player.PacketBroadcaster.QueuePacketToWorld(player.World, new SpawnEntityPacket
-        {
-            EntityId = item.EntityId,
-            Uuid = item.Uuid,
-            Type = EntityType.Item,
-            Position = item.Position,
-            Pitch = 0,
-            Yaw = 0,
-            Data = 1,
-            Velocity = vel
-        });
-        player.PacketBroadcaster.QueuePacketToWorld(player.World, new SetEntityMetadataPacket
-        {
-            EntityId = item.EntityId,
-            Entity = item
-        });
+        await item.SpawnEntityAsync(vel);
 
         player.Inventory.RemoveItem(player.inventorySlot, amountToRemove);
 

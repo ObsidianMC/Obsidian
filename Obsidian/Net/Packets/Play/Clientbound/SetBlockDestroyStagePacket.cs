@@ -8,7 +8,7 @@ public partial class SetBlockDestroyStagePacket : IClientboundPacket
     public int EntityId { get; init; }
 
     [Field(1)]
-    public VectorF Position { get; init; }
+    public Vector Position { get; init; }
 
     /// <summary>
     /// 0-9 to set it, any other value to remove it.
