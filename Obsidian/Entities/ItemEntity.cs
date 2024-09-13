@@ -35,24 +35,32 @@ public partial class ItemEntity : Entity
         stream.WriteItemStack(new ItemStack(this.Material, this.Count, this.ItemMeta));
     }
 
+    private readonly static TimeSpan DropWaitTime = TimeSpan.FromSeconds(3);
     public override async Task TickAsync()
     {
         await base.TickAsync();
 
-        if (!CanPickup && this.TimeDropped.Subtract(DateTimeOffset.UtcNow).TotalSeconds > 5)
+        if (!CanPickup && DateTimeOffset.UtcNow - this.TimeDropped > DropWaitTime)
             this.CanPickup = true;
 
-        foreach (var ent in this.world.GetNonPlayerEntitiesInRange(this.Position, 1.5f))
+        foreach (var ent in this.world.GetNonPlayerEntitiesInRange(this.Position, 0.5f))
         {
-            if (ent is ItemEntity item)
-            {
-                if (item == this)
-                    continue;
+            if (ent is not ItemEntity item)
+                continue;
 
-                this.Count += item.Count;
+            if (item == this)
+                continue;
 
-                await item.RemoveAsync();//TODO find a better way to removed item entities that merged
-            }
+            this.Count += item.Count;
+
+            await item.RemoveAsync();//TODO find a better way to removed item entities that merged
         }
+    }
+
+    public override async Task RemoveAsync()
+    {
+        await base.RemoveAsync();
+
+        this.world.Players.First().Value.client.server.BroadcastMessage($"Item entity removed id: {this.EntityId}");
     }
 }

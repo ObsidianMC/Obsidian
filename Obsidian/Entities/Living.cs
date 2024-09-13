@@ -86,7 +86,7 @@ public class Living : Entity, ILiving
 
         await stream.WriteEntityMetdata(9, EntityMetadataType.Float, this.Health);
 
-        await stream.WriteEntityMetdata(10, EntityMetadataType.VarInt, (int)this.ActiveEffectColor);
+        await stream.WriteEntityMetdata(10, EntityMetadataType.Particles, (int)this.ActiveEffectColor);
 
         await stream.WriteEntityMetdata(11, EntityMetadataType.Boolean, this.AmbientPotionEffect);
 
@@ -94,7 +94,7 @@ public class Living : Entity, ILiving
 
         await stream.WriteEntityMetdata(13, EntityMetadataType.VarInt, this.AbsorbedStingers);
 
-        await stream.WriteEntityMetdata(14, EntityMetadataType.OptPosition, this.BedBlockPosition, this.BedBlockPosition != Vector.Zero);
+        await stream.WriteEntityMetdata(14, EntityMetadataType.OptionalBlockPos, this.BedBlockPosition, this.BedBlockPosition != Vector.Zero);
     }
 
     public override void Write(MinecraftStream stream)
@@ -107,8 +107,8 @@ public class Living : Entity, ILiving
         stream.WriteEntityMetadataType(9, EntityMetadataType.Float);
         stream.WriteFloat(Health);
 
-        stream.WriteEntityMetadataType(10, EntityMetadataType.VarInt);
-        stream.WriteVarInt((int)ActiveEffectColor);
+        stream.WriteEntityMetadataType(10, EntityMetadataType.Particles);//This is a list of integers?
+        stream.WriteVarInt(0);
 
         stream.WriteEntityMetadataType(11, EntityMetadataType.Boolean);
         stream.WriteBoolean(AmbientPotionEffect);
@@ -119,7 +119,7 @@ public class Living : Entity, ILiving
         stream.WriteEntityMetadataType(13, EntityMetadataType.VarInt);
         stream.WriteVarInt(AbsorbedStingers);
 
-        stream.WriteEntityMetadataType(14, EntityMetadataType.OptPosition);
+        stream.WriteEntityMetadataType(14, EntityMetadataType.OptionalBlockPos);
         stream.WriteBoolean(BedBlockPosition != default);
         if (BedBlockPosition != default)
             stream.WritePositionF(BedBlockPosition);

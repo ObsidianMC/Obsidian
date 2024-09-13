@@ -55,6 +55,8 @@ public interface IEntity
     public Task TeleportAsync(IEntity to);
     public Task TeleportAsync(VectorF pos);
 
+    public Task SpawnEntityAsync(Velocity? velocity = null);
+
     public IEnumerable<IEntity> GetEntitiesNear(float distance);
 
     public VectorF GetLookDirection();

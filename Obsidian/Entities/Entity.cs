@@ -1,4 +1,6 @@
-﻿using Obsidian.API.AI;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+using Obsidian.API;
+using Obsidian.API.AI;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Services;
@@ -214,9 +216,9 @@ public class Entity : IEquatable<Entity>, IEntity
         return new(-cosPitch * sinYaw, -sinPitch, cosPitch * cosYaw);
     }
 
-    public async Task RemoveAsync() => await this.world.DestroyEntityAsync(this);
+    public virtual async Task RemoveAsync() => await this.world.DestroyEntityAsync(this);
 
-    private EntityBitMask GenerateBitmask()
+    protected EntityBitMask GenerateBitmask()
     {
         var mask = EntityBitMask.None;
 
@@ -252,7 +254,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
         await stream.WriteEntityMetdata(1, EntityMetadataType.VarInt, Air);
 
-        await stream.WriteEntityMetdata(2, EntityMetadataType.OptChat, CustomName!, CustomName != null);
+        await stream.WriteEntityMetdata(2, EntityMetadataType.OptionalTextComponent, CustomName!, CustomName != null);
 
         await stream.WriteEntityMetdata(3, EntityMetadataType.Boolean, CustomNameVisible);
         await stream.WriteEntityMetdata(4, EntityMetadataType.Boolean, Silent);
@@ -270,7 +272,7 @@ public class Entity : IEquatable<Entity>, IEntity
         stream.WriteEntityMetadataType(1, EntityMetadataType.VarInt);
         stream.WriteVarInt(Air);
 
-        stream.WriteEntityMetadataType(2, EntityMetadataType.OptChat);
+        stream.WriteEntityMetadataType(2, EntityMetadataType.OptionalTextComponent);
         stream.WriteBoolean(CustomName is not null);
         if (CustomName is not null)
             stream.WriteChat(CustomName);
@@ -285,7 +287,7 @@ public class Entity : IEquatable<Entity>, IEntity
         stream.WriteBoolean(NoGravity);
 
         stream.WriteEntityMetadataType(6, EntityMetadataType.Pose);
-        stream.WriteVarInt((int)Pose);
+        stream.WriteInt((int)this.Pose);
 
         stream.WriteEntityMetadataType(7, EntityMetadataType.VarInt);
         stream.WriteVarInt(PowderedSnowTicks);
@@ -293,6 +295,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public IEnumerable<IEntity> GetEntitiesNear(float distance) => world.GetEntitiesInRange(Position, distance).Where(x => x != this);
 
+    //TODO GRAVITY
     public virtual Task TickAsync() => Task.CompletedTask;
 
     //TODO check for other entities and handle accordingly 
@@ -305,7 +308,7 @@ public class Entity : IEquatable<Entity>, IEntity
             this.PacketBroadcaster.QueuePacketToWorld(this.World, new EntityAnimationPacket
             {
                 EntityId = EntityId,
-                Animation = EntityAnimationType.TakeDamage
+                Animation = EntityAnimationType.CriticalEffect
             });
 
             if (living is Player player)
@@ -367,7 +370,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
         if (VectorF.Distance(Position, to.Position) > 8)
         {
-            this.PacketBroadcaster.QueuePacketToWorld(this.World, new TeleportEntityPacket
+            this.PacketBroadcaster.QueuePacketToWorld(this.World, 0, new TeleportEntityPacket
             {
                 EntityId = EntityId,
                 OnGround = OnGround,
@@ -381,7 +384,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
         var delta = (Vector)(to.Position * 32 - Position * 32) * 128;
 
-        this.PacketBroadcaster.QueuePacketToWorld(this.World, new UpdateEntityPositionAndRotationPacket
+        this.PacketBroadcaster.QueuePacketToWorld(this.World, 0, new UpdateEntityPositionAndRotationPacket
         {
             EntityId = EntityId,
             Delta = delta,
@@ -395,7 +398,7 @@ public class Entity : IEquatable<Entity>, IEntity
     {
         if (VectorF.Distance(Position, pos) > 8)
         {
-            this.PacketBroadcaster.QueuePacketToWorld(this.World, new TeleportEntityPacket
+            this.PacketBroadcaster.QueuePacketToWorld(this.World, 0, new TeleportEntityPacket
             {
                 EntityId = EntityId,
                 OnGround = OnGround,
@@ -409,7 +412,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
         var delta = (Vector)(pos * 32 - Position * 32) * 128;
 
-        this.PacketBroadcaster.QueuePacketToWorld(this.World, new UpdateEntityPositionAndRotationPacket
+        this.PacketBroadcaster.QueuePacketToWorld(this.World, 0, new UpdateEntityPositionAndRotationPacket
         {
             EntityId = EntityId,
             Delta = delta,
@@ -417,6 +420,34 @@ public class Entity : IEquatable<Entity>, IEntity
             Pitch = Pitch,
             Yaw = Yaw
         });
+    }
+
+    public async virtual Task SpawnEntityAsync(Velocity? velocity = null)
+    {
+        foreach (var nearby in this.world.GetPlayersInRange(this.Position, this.world.Configuration.ViewDistance))
+        {
+            await nearby.client.QueuePacketAsync(new BundledPacket
+            {
+                Packets = [
+                        new SpawnEntityPacket
+                        {
+                            EntityId = this.EntityId,
+                            Uuid = this.Uuid,
+                            Type = this.Type,
+                            Position = this.Position,
+                            Pitch = 0,
+                            Yaw = 0,
+                            Data = 1,
+                            Velocity = velocity ?? new Velocity(0, 0, 0)
+                        },
+                        new SetEntityMetadataPacket
+                        {
+                            EntityId = this.EntityId,
+                            Entity = this
+                        }
+                    ]
+            });
+        }
     }
 
     public bool TryAddAttribute(string attributeResourceName, float value) =>

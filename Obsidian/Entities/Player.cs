@@ -453,13 +453,13 @@ public sealed partial class Player : Living, IPlayer
         if (LeftShoulder is not null)
         {
             stream.WriteEntityMetadataType(19, EntityMetadataType.Nbt);
-            stream.WriteVarInt(LeftShoulder);
+            stream.WriteNbtCompound(new NbtCompound());
         }
 
         if (RightShoulder is not null)
         {
             stream.WriteEntityMetadataType(20, EntityMetadataType.Nbt);
-            stream.WriteVarInt(RightShoulder);
+            stream.WriteNbtCompound(new NbtCompound());
         }
     }
 
@@ -909,14 +909,7 @@ public sealed partial class Player : Living, IPlayer
             {
                 visiblePlayers.Add(player.EntityId);
 
-                await client.QueuePacketAsync(new SpawnPlayerPacket
-                {
-                    EntityId = player.EntityId,
-                    Uuid = player.Uuid,
-                    Position = player.Position,
-                    Yaw = player.Yaw,
-                    Pitch = player.Pitch
-                });
+                await player.SpawnEntityAsync();
             }
         }
 
@@ -927,11 +920,14 @@ public sealed partial class Player : Living, IPlayer
             await client.QueuePacketAsync(new RemoveEntitiesPacket(removed));
     }
 
-    private async Task PickupNearbyItemsAsync(float distance = 0.5f)
+    private async Task PickupNearbyItemsAsync(float distance = 1.5f)
     {
         foreach (var entity in world.GetNonPlayerEntitiesInRange(Position, distance))
         {
             if (entity is not ItemEntity item)
+                continue;
+
+            if (!item.CanPickup)
                 continue;
 
             this.PacketBroadcaster.QueuePacketToWorld(this.World, new PickupItemPacket
