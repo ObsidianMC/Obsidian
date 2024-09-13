@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Connections;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -30,6 +31,7 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 
@@ -37,6 +39,8 @@ namespace Obsidian;
 
 public sealed partial class Server : IServer
 {
+    private static int EntityCounter = 0;
+
 #if RELEASE
     public const string VERSION = "0.1";
 #else
@@ -232,12 +236,13 @@ public sealed partial class Server : IServer
     /// </summary>
     public void BroadcastMessage(string message)
     {
-        var chatMessage = ChatMessage.Simple(string.Empty)
-            .AddExtra(message);
+        var chatMessage = ChatMessage.Simple(message);
 
         _chatMessagesQueue.Enqueue(new SystemChatMessagePacket(chatMessage, false));
         _logger.LogInformation(message);
     }
+
+    public static int GetNextEntityId() => Interlocked.Increment(ref EntityCounter);
 
     /// <summary>
     /// Starts this server asynchronously.
@@ -387,7 +392,9 @@ public sealed partial class Server : IServer
             }
 
             // TODO Entity ids need to be unique on the entire server, not per world
-            var client = new Client(connection, Math.Max(0, _clients.Count + this.DefaultWorld.GetTotalLoadedEntities()), this.loggerFactory, this.userCache, this);
+            var client = new Client(connection, this.loggerFactory, this.userCache, this);
+
+            Console.WriteLine(EntityCounter);
 
             _clients.Add(client);
             _ = ExecuteAsync(client);

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.CodeAnalysis;
+using Microsoft.Extensions.Logging;
 using Obsidian.API.Configuration;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.API.Utilities;
@@ -82,8 +83,6 @@ public sealed class World : IWorld
 
         this.WorldManager = worldManager;
     }
-
-    public int GetTotalLoadedEntities() => Regions.Values.Sum(e => e == null ? 0 : e.Entities.Count);
 
     public void InitGenerator() => this.Generator.Init(this);
 
@@ -295,19 +294,17 @@ public sealed class World : IWorld
         // Iterate over chunks, taking one from each region, then getting the region itself
         for (int x = left; x <= right; x += Region.CubicRegionSize)
         {
-            for (int y = top; y >= bottom; y -= Region.CubicRegionSize)
+            for (int z = top; z >= bottom; z -= Region.CubicRegionSize)
             {
-                if (GetRegionForChunk(x, y) is not Region region)
+                if (GetRegionForChunk(x, z) is not Region region)
                     continue;
 
                 // Return entities in range
                 foreach ((_, Entity entity) in region.Entities)
                 {
-                    VectorF entityLocation = entity.Position;
-                    float differenceX = entityLocation.X - location.X;
-                    float differenceY = entityLocation.Y - location.Y;
+                    var locationDifference = this.GetLocationDifference(entity.Position, location);
 
-                    if (differenceX * differenceX + differenceY * differenceY <= distance)
+                    if (locationDifference.CaluclatedDifference <= distance)
                     {
                         yield return entity;
                     }
@@ -339,11 +336,9 @@ public sealed class World : IWorld
 
         foreach ((_, Player player) in Players)
         {
-            VectorF playerLocation = player.Position;
-            float differenceX = playerLocation.X - location.X;
-            float differenceY = playerLocation.Y - location.Y;
+            var locationDifference = this.GetLocationDifference(player.Position, location);
 
-            if (differenceX * differenceX + differenceY * differenceY <= distance)
+            if (locationDifference.CaluclatedDifference <= distance)
             {
                 yield return player;
             }
@@ -410,6 +405,7 @@ public sealed class World : IWorld
 
         //Tick regions within the world manager
         await Task.WhenAll(this.Regions.Values.Select(r => r.BeginTickAsync()));
+        await Task.WhenAll(this.Players.Values.Select(x => x.TickAsync()));
 
         //// Check for chunks to load every second
         //if (LevelData.Time % 20 == 0)
@@ -645,7 +641,7 @@ public sealed class World : IWorld
         FallingBlock entity = new(position)
         {
             Type = EntityType.FallingBlock,
-            EntityId = GetTotalLoadedEntities() + 1,
+            EntityId = Server.GetNextEntityId(),
             World = this,
             PacketBroadcaster = this.PacketBroadcaster,
             Block = BlocksRegistry.Get(mat)
@@ -687,7 +683,7 @@ public sealed class World : IWorld
             {
                 Type = type,
                 Position = position,
-                EntityId = GetTotalLoadedEntities() + 1,
+                EntityId = Server.GetNextEntityId(),
                 World = this,
                 PacketBroadcaster = this.PacketBroadcaster
             };
@@ -716,7 +712,7 @@ public sealed class World : IWorld
             entity = new Living
             {
                 Position = position,
-                EntityId = GetTotalLoadedEntities() + 1,
+                EntityId = Server.GetNextEntityId(),
                 Type = type,
                 World = this,
                 PacketBroadcaster = this.PacketBroadcaster
@@ -877,7 +873,8 @@ public sealed class World : IWorld
             var cps = completedChunks / (stopwatch.ElapsedMilliseconds / 1000.0);
             int remain = ChunksToGenCount / (int)cps;
             Console.Write("\r{0} chunks/second - {1}% complete - {2} seconds remaining   ", cps.ToString("###.00"), pctComplete, remain);
-            if (completedChunks % 1024 == 0) { // For Jon when he's doing large world gens
+            if (completedChunks % 1024 == 0)
+            { // For Jon when he's doing large world gens
                 await FlushRegionsAsync();
             }
         }
@@ -1022,5 +1019,23 @@ public sealed class World : IWorld
         {
             await region.DisposeAsync();
         }
+    }
+
+    private LocationDiff GetLocationDifference(VectorF entityLocation, VectorF location) => new()
+    {
+        DifferenceX = entityLocation.X - location.X,
+        DifferenceY = entityLocation.Y - location.Y,
+        DifferenceZ = entityLocation.Z - location.Z,
+    };
+
+    private readonly struct LocationDiff
+    {
+        public required float DifferenceX { get; init; }
+
+        public required float DifferenceY { get; init; }
+
+        public required float DifferenceZ { get; init; }
+
+        public float CaluclatedDifference => this.DifferenceX * this.DifferenceX + this.DifferenceY * this.DifferenceY + this.DifferenceZ * this.DifferenceZ;
     }
 }

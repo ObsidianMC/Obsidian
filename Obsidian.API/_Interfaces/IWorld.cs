@@ -20,8 +20,6 @@ public interface IWorld : IAsyncDisposable
     public int LoadedChunkCount { get; }
     public int ChunksToGenCount { get; }
 
-    public int GetTotalLoadedEntities();
-
     public Task<IBlock?> GetBlockAsync(Vector location);
     public Task<IBlock?> GetBlockAsync(int x, int y, int z);
     public Task SetBlockAsync(Vector location, IBlock block);
