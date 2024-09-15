@@ -56,11 +56,4 @@ public partial class ItemEntity : Entity
             await item.RemoveAsync();//TODO find a better way to removed item entities that merged
         }
     }
-
-    public override async Task RemoveAsync()
-    {
-        await base.RemoveAsync();
-
-        this.world.Players.First().Value.client.server.BroadcastMessage($"Item entity removed id: {this.EntityId}");
-    }
 }

@@ -394,8 +394,6 @@ public sealed partial class Server : IServer
             // TODO Entity ids need to be unique on the entire server, not per world
             var client = new Client(connection, this.loggerFactory, this.userCache, this);
 
-            Console.WriteLine(EntityCounter);
-
             _clients.Add(client);
             _ = ExecuteAsync(client);
         }
