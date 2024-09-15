@@ -304,7 +304,7 @@ public sealed class World : IWorld
                 {
                     var locationDifference = this.GetLocationDifference(entity.Position, location);
 
-                    if (locationDifference.CaluclatedDifference <= distance)
+                    if (locationDifference.CalculatedDifference <= distance)
                     {
                         yield return entity;
                     }
@@ -338,7 +338,7 @@ public sealed class World : IWorld
         {
             var locationDifference = this.GetLocationDifference(player.Position, location);
 
-            if (locationDifference.CaluclatedDifference <= distance)
+            if (locationDifference.CalculatedDifference <= distance)
             {
                 yield return player;
             }
@@ -1036,6 +1036,6 @@ public sealed class World : IWorld
 
         public required float DifferenceZ { get; init; }
 
-        public float CaluclatedDifference => this.DifferenceX * this.DifferenceX + this.DifferenceY * this.DifferenceY + this.DifferenceZ * this.DifferenceZ;
+        public float CalculatedDifference => this.DifferenceX * this.DifferenceX + this.DifferenceY * this.DifferenceY + this.DifferenceZ * this.DifferenceZ;
     }
 }
