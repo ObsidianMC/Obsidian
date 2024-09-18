@@ -44,7 +44,7 @@ public partial class PlayerActionPacket : IServerboundPacket
         this.BroadcastPlayerAction(player, block);
     }
 
-    private async void BroadcastPlayerAction(Player player, IBlock block)
+    private void BroadcastPlayerAction(Player player, IBlock block)
     {
         switch (this.Status)
         {
@@ -79,7 +79,6 @@ public partial class PlayerActionPacket : IServerboundPacket
                         EntityId = Server.GetNextEntityId(),
                         Count = 1,
                         Id = droppedItem.Id,
-                        Glowing = true,
                         World = player.world,
                         Position = (VectorF)this.Position + 0.5f,
                         PacketBroadcaster = player.PacketBroadcaster,
@@ -87,21 +86,21 @@ public partial class PlayerActionPacket : IServerboundPacket
 
                     player.world.TryAddEntity(item);
 
-                    await item.SpawnEntityAsync(Velocity.FromBlockPerTick(GetRandDropVelocity(), GetRandDropVelocity(), GetRandDropVelocity()));
+                    item.SpawnEntity(Velocity.FromBlockPerTick(GetRandDropVelocity(), GetRandDropVelocity(), GetRandDropVelocity()));
 
                     break;
                 }
         }
     }
 
-    private float GetRandDropVelocity()
+    private static float GetRandDropVelocity()
     {
         var f = Globals.Random.NextFloat();
 
         return f * 0.5f;
     }
 
-    private async void DropItem(Player player, sbyte amountToRemove)
+    private static void DropItem(Player player, sbyte amountToRemove)
     {
         var droppedItem = player.GetHeldItem();
 
@@ -115,7 +114,6 @@ public partial class PlayerActionPacket : IServerboundPacket
             EntityId = Server.GetNextEntityId(),
             Count = amountToRemove,
             Id = droppedItem.AsItem().Id,
-            Glowing = true,
             World = player.world,
             PacketBroadcaster = player.PacketBroadcaster,
             Position = loc
@@ -127,7 +125,7 @@ public partial class PlayerActionPacket : IServerboundPacket
 
         var vel = Velocity.FromDirection(loc, lookDir);//TODO properly shoot the item towards the direction the players looking at
 
-        await item.SpawnEntityAsync(vel);
+        item.SpawnEntity(vel);
 
         player.Inventory.RemoveItem(player.inventorySlot, amountToRemove);
 

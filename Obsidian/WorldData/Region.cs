@@ -134,13 +134,7 @@ public class Region : IRegion
 
     internal async Task BeginTickAsync(CancellationToken cts = default)
     {
-        //var timer = new BalancingTimer(50, cts);
-        //while (await timer.WaitForNextTickAsync())
-        //{
-           
-        //}
-
-        await Task.WhenAll(Entities.Select(entityEntry => entityEntry.Value.TickAsync()));
+        await Parallel.ForEachAsync(Entities.Values, cts, async (entity, cts) => await entity.TickAsync());
 
         List<BlockUpdate> neighborUpdates = [];
         List<BlockUpdate> delayed = [];
@@ -159,7 +153,7 @@ public class Region : IRegion
                 if (updateNeighbor) { neighborUpdates.Add(bu); }
             }
         }
-        delayed.ForEach(i => AddBlockUpdate(i));
+        delayed.ForEach(AddBlockUpdate);
         neighborUpdates.ForEach(async u => await u.world.BlockUpdateNeighborsAsync(u));
     }
 

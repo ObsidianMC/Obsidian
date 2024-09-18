@@ -35,11 +35,11 @@ public class GenHelper
 
     public ValueTask SetBlockAsync(int x, int y, int z, IBlock block, Chunk? chunk) => SetBlockAsync(new Vector(x, y, z), block, chunk);
 
-    public Task SetBlockAsync(int x, int y, int z, IBlock block) => world.SetBlockUntrackedAsync(x, y, z, block, false);
+    public ValueTask SetBlockAsync(int x, int y, int z, IBlock block) => world.SetBlockUntrackedAsync(x, y, z, block, false);
 
-    public Task SetBlockAsync(Vector position, IBlock block) => world.SetBlockUntrackedAsync(position, block, false);
+    public ValueTask SetBlockAsync(Vector position, IBlock block) => world.SetBlockUntrackedAsync(position, block, false);
 
-    public async Task<IBlock?> GetBlockAsync(Vector position, Chunk? chunk)
+    public async ValueTask<IBlock?> GetBlockAsync(Vector position, Chunk? chunk)
     {
         if (chunk is Chunk c && position.X >> 4 == c.X && position.Z >> 4 == c.Z)
         {
@@ -48,11 +48,11 @@ public class GenHelper
         return await world.GetBlockAsync(position);
     }
 
-    public Task<IBlock?> GetBlockAsync(int x, int y, int z, Chunk? chunk) => GetBlockAsync(new Vector(x, y, z), chunk);
+    public ValueTask<IBlock?> GetBlockAsync(int x, int y, int z, Chunk? chunk) => GetBlockAsync(new Vector(x, y, z), chunk);
 
-    public Task<IBlock?> GetBlockAsync(int x, int y, int z) => world.GetBlockAsync(x, y, z);
+    public ValueTask<IBlock?> GetBlockAsync(int x, int y, int z) => world.GetBlockAsync(x, y, z);
 
-    public Task<IBlock?> GetBlockAsync(Vector position) => world.GetBlockAsync(position);
+    public ValueTask<IBlock?> GetBlockAsync(Vector position) => world.GetBlockAsync(position);
 
     public async ValueTask<int?> GetWorldHeightAsync(int x, int z, Chunk? chunk)
     {

@@ -1,5 +1,6 @@
 // This would be saved in a file called [playeruuid].dat which holds a bunch of NBT data.
 // https://wiki.vg/Map_Format
+using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Obsidian.API._Types;
 using Obsidian.API.Events;
@@ -12,9 +13,11 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Scoreboard;
 using Obsidian.Registries;
 using Obsidian.WorldData;
+using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
 using System.Net;
 
 namespace Obsidian.Entities;
@@ -31,7 +34,7 @@ public sealed partial class Player : Living, IPlayer
     /// </summary>
     protected ILogger Logger { get; private set; }
 
-    internal HashSet<int> visiblePlayers = [];
+    internal HashSet<IPlayer> visiblePlayers = [];
 
     //TODO: better name??
     internal short inventorySlot = 36;
@@ -237,7 +240,7 @@ public sealed partial class Player : Living, IPlayer
             await client.QueuePacketAsync(new SetContainerContentPacket(nextId, container.ToList()));
     }
 
-    public async override Task TeleportAsync(VectorF pos)
+    public async override ValueTask TeleportAsync(VectorF pos)
     {
         LastPosition = Position;
         Position = pos;
@@ -263,7 +266,7 @@ public sealed partial class Player : Living, IPlayer
         TeleportId = tid;
     }
 
-    public async override Task TeleportAsync(IEntity to)
+    public async override ValueTask TeleportAsync(IEntity to)
     {
         LastPosition = Position;
         Position = to.Position;
@@ -280,7 +283,7 @@ public sealed partial class Player : Living, IPlayer
         });
     }
 
-    public async override Task TeleportAsync(IWorld world)
+    public async override ValueTask TeleportAsync(IWorld world)
     {
         if (world is not World w)
         {
@@ -398,7 +401,7 @@ public sealed partial class Player : Living, IPlayer
     }
 
     //TODO make IDamageSource 
-    public async override Task KillAsync(IEntity source, ChatMessage deathMessage)
+    public async override ValueTask KillAsync(IEntity source, ChatMessage deathMessage)
     {
         //await this.client.QueuePacketAsync(new PlayerDied
         //{
@@ -412,7 +415,7 @@ public sealed partial class Player : Living, IPlayer
         await RemoveAsync();
 
         if (source is Player attacker)
-            attacker.visiblePlayers.Remove(EntityId);
+            attacker.visiblePlayers.Remove(this);
     }
 
     public async override Task WriteAsync(MinecraftStream stream)
@@ -680,7 +683,7 @@ public sealed partial class Player : Living, IPlayer
             //TODO use inventory if has using global data set to true
             if (persistentDataReader.ReadNextTag() is NbtCompound persistentDataCompound)
             {
-                var worldName = persistentDataCompound.GetString("worldName");
+                var worldName = persistentDataCompound.GetString("worldName")!;
 
                 Logger?.LogInformation("persistent world: {worldName}", worldName);
 
@@ -869,7 +872,7 @@ public sealed partial class Player : Living, IPlayer
 
     public override string ToString() => Username;
 
-    internal async override Task UpdateAsync(VectorF position, bool onGround)
+    internal async override ValueTask UpdateAsync(VectorF position, bool onGround)
     {
         await base.UpdateAsync(position, onGround);
 
@@ -880,7 +883,7 @@ public sealed partial class Player : Living, IPlayer
         await PickupNearbyItemsAsync();
     }
 
-    internal async override Task UpdateAsync(VectorF position, Angle yaw, Angle pitch, bool onGround)
+    internal async override ValueTask UpdateAsync(VectorF position, Angle yaw, Angle pitch, bool onGround)
     {
         await base.UpdateAsync(position, yaw, pitch, onGround);
 
@@ -891,33 +894,51 @@ public sealed partial class Player : Living, IPlayer
         await PickupNearbyItemsAsync();
     }
 
-    internal async override Task UpdateAsync(Angle yaw, Angle pitch, bool onGround)
+    internal async override ValueTask UpdateAsync(Angle yaw, Angle pitch, bool onGround)
     {
         await base.UpdateAsync(yaw, pitch, onGround);
 
         await PickupNearbyItemsAsync();
     }
 
-    private async Task TrySpawnPlayerAsync(VectorF position)
+    private async ValueTask TrySpawnPlayerAsync(VectorF position)
     {
-        foreach (var player in world.GetPlayersInRange(position, ClientInformation.ViewDistance))
+        //TODO PROPER DISTANCE CALCULATION
+        var entityBroadcastDistance = this.world.Configuration.EntityBroadcastRangePercentage;
+
+        foreach (var player in world.GetPlayersInRange(position, entityBroadcastDistance))
         {
             if (player == this)
                 continue;
 
-            if (player.Alive && !visiblePlayers.Contains(player.EntityId))
+            if (player.Alive && !visiblePlayers.Contains(player))
             {
-                visiblePlayers.Add(player.EntityId);
+                visiblePlayers.Add(player);
 
-                await player.SpawnEntityAsync();
+                player.SpawnEntity();
             }
         }
 
-        var removed = visiblePlayers.Where(x => !world.Players.Any(p => p.Value == x)).ToArray();
-        visiblePlayers.RemoveWhere(x => !world.Players.Any(p => p.Value == x));
+        if (visiblePlayers.Count == 0)
+            return;
 
-        if (removed.Length > 0)
-            await client.QueuePacketAsync(new RemoveEntitiesPacket(removed));
+        var removed = ArrayPool<int>.Shared.Rent(visiblePlayers.Count);
+
+        var index = 0;
+        visiblePlayers.RemoveWhere(visiblePlayer =>
+        {
+            if (!visiblePlayer.IsInRange(this, entityBroadcastDistance))
+            {
+                removed[index++] = visiblePlayer.EntityId;
+                return true;
+            }
+            return false;
+        });
+
+        if (index > 0)
+            await client.QueuePacketAsync(new RemoveEntitiesPacket(removed.ToArray()));
+
+        ArrayPool<int>.Shared.Return(removed);
     }
 
     private async Task PickupNearbyItemsAsync(float distance = 1.5f)

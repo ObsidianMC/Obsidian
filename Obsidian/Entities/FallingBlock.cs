@@ -29,7 +29,7 @@ public sealed partial class FallingBlock : Entity
         DeltaPosition = VectorF.Zero;
     }
 
-    public async override Task TickAsync()
+    public async override ValueTask TickAsync()
     {
         AliveTime++;
         LastPosition = Position;

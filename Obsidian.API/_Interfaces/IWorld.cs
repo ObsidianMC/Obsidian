@@ -1,5 +1,3 @@
-using System.Collections.Concurrent;
-
 namespace Obsidian.API;
 
 public interface IWorld : IAsyncDisposable
@@ -20,18 +18,18 @@ public interface IWorld : IAsyncDisposable
     public int LoadedChunkCount { get; }
     public int ChunksToGenCount { get; }
 
-    public Task<IBlock?> GetBlockAsync(Vector location);
-    public Task<IBlock?> GetBlockAsync(int x, int y, int z);
-    public Task SetBlockAsync(Vector location, IBlock block);
-    public Task SetBlockAsync(int x, int y, int z, IBlock block);
+    public ValueTask<IBlock?> GetBlockAsync(Vector location);
+    public ValueTask<IBlock?> GetBlockAsync(int x, int y, int z);
+    public ValueTask SetBlockAsync(Vector location, IBlock block);
+    public ValueTask SetBlockAsync(int x, int y, int z, IBlock block);
 
-    public Task SetBlockUntrackedAsync(int x, int y, int z, IBlock block, bool doBlockUpdate);
+    public ValueTask SetBlockUntrackedAsync(int x, int y, int z, IBlock block, bool doBlockUpdate);
 
-    public Task SetBlockUntrackedAsync(Vector location, IBlock block, bool doBlockUpdate);
+    public ValueTask SetBlockUntrackedAsync(Vector location, IBlock block, bool doBlockUpdate);
 
-    public Task<int?> GetWorldSurfaceHeightAsync(int x, int z);
+    public ValueTask<int?> GetWorldSurfaceHeightAsync(int x, int z);
 
-    public Task<IEntity> SpawnEntityAsync(VectorF position, EntityType type);
+    public IEntity SpawnEntity(VectorF position, EntityType type);
     public void SpawnExperienceOrbs(VectorF position, short count);
 
     public Task DoWorldTickAsync();

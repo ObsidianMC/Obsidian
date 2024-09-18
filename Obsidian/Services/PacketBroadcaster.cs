@@ -1,10 +1,8 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Obsidian.API;
 using Obsidian.Entities;
 using Obsidian.Hosting;
 using Obsidian.Net.Packets;
-using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
 using System.Threading;
 
@@ -43,6 +41,38 @@ public sealed class PacketBroadcaster : BackgroundService, IPacketBroadcaster
             player.client.SendPacket(packet);
     }
 
+    public void BroadcastToWorldInRange(IWorld toWorld, VectorF location, IClientboundPacket packet, params int[] excludedIds)
+    {
+        if (toWorld is not World world)
+            return;
+
+        foreach (var player in world.GetPlayersInRange(location, world.Configuration.EntityBroadcastRangePercentage))
+            player.client.SendPacket(packet);
+    }
+
+    public void QueuePacketToWorldInRange(IWorld toWorld, VectorF location, IClientboundPacket packet, params int[] excludedIds)
+    {
+        if (toWorld is not World world)
+            return;
+
+        var includedIDs = world.GetPlayersInRange(location, world.Configuration.EntityBroadcastRangePercentage)
+            .Select(x => x.EntityId)
+            .ToHashSet();
+
+        excludedIds = excludedIds.Concat(world.Players.Values
+            .Select(x => x.EntityId)
+            .Where(x => !includedIDs.Contains(x)))
+            .ToArray();
+
+        this.priorityQueue.Enqueue(new()
+        {
+            Packet =packet,
+            ToWorld = world,
+            ExcludedIds = excludedIds,
+        }, 1);
+    }
+
+
     public void BroadcastToWorld(IWorld toWorld, IClientboundPacket packet, params int[] excludedIds)
     {
         if (toWorld is not World world)
@@ -52,7 +82,7 @@ public sealed class PacketBroadcaster : BackgroundService, IPacketBroadcaster
             player.client.SendPacket(packet);
     }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected async override Task ExecuteAsync(CancellationToken stoppingToken)
     {
         using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(20));
 
@@ -109,6 +139,8 @@ public interface IPacketBroadcaster
     /// <param name="excludedIds">The list of entity ids to exlude from the broadcast.</param>
     public void BroadcastToWorld(IWorld toWorld, IClientboundPacket packet, params int[] excludedIds);
 
+    public void BroadcastToWorldInRange(IWorld world, VectorF location, IClientboundPacket packet, params int[] excludedIds);
+
     /// <summary>
     /// Puts the packet in a priority queue for processing then broadcasting when dequeued.
     /// </summary>
@@ -117,6 +149,8 @@ public interface IPacketBroadcaster
     /// <param name="excludedIds">The list of entity ids to exlude from the broadcast.</param>
     /// /// <remarks>Packets queued without a priority set will be queued up with a priority of 1.</remarks>
     public void QueuePacketToWorld(IWorld toWorld, IClientboundPacket packet, params int[] excludedIds);
+
+    public void QueuePacketToWorldInRange(IWorld world, VectorF location, IClientboundPacket packet, params int[] excludedIds);
 
     /// <summary>
     /// Puts the packet in a priority queue for processing then broadcasting when dequeued.

@@ -6,6 +6,8 @@ namespace Obsidian.Entities;
 [MinecraftEntity("minecraft:item")]
 public partial class ItemEntity : Entity
 {
+    private static readonly TimeSpan DropWaitTime = TimeSpan.FromSeconds(3);
+
     public int Id { get; set; }
 
     public Material Material => ItemsRegistry.Get(this.Id).Type;
@@ -20,7 +22,7 @@ public partial class ItemEntity : Entity
 
     public ItemEntity() => this.Type = EntityType.Item;
 
-    public override async Task WriteAsync(MinecraftStream stream)
+    public async override Task WriteAsync(MinecraftStream stream)
     {
         await base.WriteAsync(stream);
 
@@ -35,8 +37,7 @@ public partial class ItemEntity : Entity
         stream.WriteItemStack(new ItemStack(this.Material, this.Count, this.ItemMeta));
     }
 
-    private readonly static TimeSpan DropWaitTime = TimeSpan.FromSeconds(3);
-    public override async Task TickAsync()
+    public async override ValueTask TickAsync()
     {
         await base.TickAsync();
 

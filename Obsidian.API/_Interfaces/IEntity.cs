@@ -44,18 +44,25 @@ public interface IEntity
     public bool Summonable { get; }
     public bool IsFireImmune { get; }
 
-    public Task RemoveAsync();
-    public Task TickAsync();
-    public Task DamageAsync(IEntity source, float amount = 1.0f);
+    public ValueTask RemoveAsync();
+    public ValueTask TickAsync();
+    public ValueTask DamageAsync(IEntity source, float amount = 1.0f);
 
-    public Task KillAsync(IEntity source);
-    public Task KillAsync(IEntity source, ChatMessage message);
+    public ValueTask KillAsync(IEntity source);
+    public ValueTask KillAsync(IEntity source, ChatMessage message);
 
-    public Task TeleportAsync(IWorld world);
-    public Task TeleportAsync(IEntity to);
-    public Task TeleportAsync(VectorF pos);
+    public ValueTask TeleportAsync(IWorld world);
+    public ValueTask TeleportAsync(IEntity to);
+    public ValueTask TeleportAsync(VectorF pos);
 
-    public Task SpawnEntityAsync(Velocity? velocity = null);
+    public bool IsInRange(IEntity entity, float distance);
+
+    /// <summary>
+    /// Spawns the specified entity to player nearby in the world.
+    /// </summary>
+    /// <param name="velocity">The velocity the entity should spawn with</param>
+    /// <param name="additionalData">Additional data for the entity. More info here: <see href="https://wiki.vg/Object_Data"/></param>
+    public void SpawnEntity(Velocity? velocity = null, int additionalData = 0);
 
     public IEnumerable<IEntity> GetEntitiesNear(float distance);
 

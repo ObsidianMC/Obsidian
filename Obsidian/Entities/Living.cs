@@ -31,7 +31,7 @@ public class Living : Entity, ILiving
         activePotionEffects = new ConcurrentDictionary<PotionEffect, PotionEffectData>();
     }
 
-    public override Task TickAsync()
+    public override ValueTask TickAsync()
     {
         foreach (var (potion, data) in activePotionEffects)
         {
@@ -43,7 +43,7 @@ public class Living : Entity, ILiving
             }
         }
 
-        return Task.CompletedTask;
+        return default;
     }
 
     public bool HasPotionEffect(PotionEffect potion)
