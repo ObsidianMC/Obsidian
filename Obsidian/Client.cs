@@ -126,6 +126,7 @@ public sealed class Client : IDisposable
     /// The connection context associated with the <see cref="networkStream"/>.
     /// </summary>
     private readonly ConnectionContext connectionContext;
+    private readonly ILoggerFactory loggerFactory;
 
     /// <summary>
     /// Whether the stream has encryption enabled. This can be set to false when the client is connecting through LAN or when the server is in offline mode.
@@ -155,7 +156,7 @@ public sealed class Client : IDisposable
     /// <summary>
     /// Used to log actions caused by the client.
     /// </summary>
-    public ILogger Logger { get; }
+    public ILogger Logger { get; private set; }
 
     /// <summary>
     /// The player that the client is logged in as.
@@ -168,13 +169,13 @@ public sealed class Client : IDisposable
     /// </summary>
     public string? Brand { get; set; }
 
-    public Client(ConnectionContext connectionContext, int playerId,
+    public Client(ConnectionContext connectionContext,
         ILoggerFactory loggerFactory, IUserCache playerCache,
         Server server)
     {
         this.connectionContext = connectionContext;
+        this.loggerFactory = loggerFactory;
 
-        id = playerId;
         LoadedChunks = [];
         packetCryptography = new();
         handler = new(server.Configuration);
@@ -183,7 +184,7 @@ public sealed class Client : IDisposable
 
         this.server = server;
         this.userCache = playerCache;
-        this.Logger = loggerFactory.CreateLogger($"Client{playerId}");
+        this.Logger = loggerFactory.CreateLogger("ConnectionHandler");
 
         missedKeepAlives = [];
         var linkOptions = new DataflowLinkOptions { PropagateCompletion = true };
@@ -330,7 +331,16 @@ public sealed class Client : IDisposable
                     if (result == EventResult.Cancelled)
                         return;
 
-                    await handler.HandlePlayPackets(id, data, this);
+                    try
+                    {
+                        await handler.HandlePlayPackets(id, data, this);
+                    }
+                    catch (Exception ex)
+                    {
+                        this.Logger.LogDebug(ex, "Exception thrown");
+                    }
+
+
                     break;
                 case ClientState.Closed:
                 default:
@@ -442,6 +452,8 @@ public sealed class Client : IDisposable
                 return;
             }
 
+            this.InitializeId();
+
             Player = new Player(this.cachedUser.Uuid, loginStart.Username, this, world);
             packetCryptography.GenerateKeyPair();
 
@@ -462,6 +474,8 @@ public sealed class Client : IDisposable
         }
         else
         {
+            this.InitializeId();
+
             Player = new Player(GuidHelper.FromStringHash($"OfflinePlayer:{username}"), username, this, world);
 
             this.SendPacket(new LoginSuccess(Player.Uuid, Player.Username)
@@ -469,6 +483,12 @@ public sealed class Client : IDisposable
                 SkinProperties = this.Player.SkinProperties,
             });
         }
+    }
+
+    private void InitializeId()
+    {
+        this.id = Server.GetNextEntityId();
+        this.Logger = this.loggerFactory.CreateLogger($"Client({this.id})");
     }
 
     private async Task HandleEncryptionResponseAsync(byte[] data)

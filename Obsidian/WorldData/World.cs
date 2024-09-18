@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.CodeAnalysis;
+using Microsoft.Extensions.Logging;
 using Obsidian.API.Configuration;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.API.Utilities;
@@ -83,8 +84,6 @@ public sealed class World : IWorld
         this.WorldManager = worldManager;
     }
 
-    public int GetTotalLoadedEntities() => Regions.Values.Sum(e => e == null ? 0 : e.Entities.Count);
-
     public void InitGenerator() => this.Generator.Init(this);
 
     public ValueTask<bool> DestroyEntityAsync(Entity entity)
@@ -128,7 +127,7 @@ public sealed class World : IWorld
     /// Whether to enqueue a job to generate the chunk if it doesn't exist and return null.
     /// When set to false, a partial Chunk is returned.</param>
     /// <returns>Null if the region or chunk doesn't exist yet. Otherwise the full chunk or a partial chunk.</returns>
-    public async Task<Chunk?> GetChunkAsync(int chunkX, int chunkZ, bool scheduleGeneration = true)
+    public async ValueTask<Chunk?> GetChunkAsync(int chunkX, int chunkZ, bool scheduleGeneration = true)
     {
         Region? region = GetRegionForChunk(chunkX, chunkZ) ?? LoadRegion(chunkX >> Region.CubicRegionSizeShift, chunkZ >> Region.CubicRegionSizeShift);
 
@@ -175,17 +174,17 @@ public sealed class World : IWorld
     /// </summary>
     /// <param name="scheduleGeneration">When set to false, a partial Chunk is returned.</param>
     /// <returns>Null if the region or chunk doesn't exist yet. Otherwise the full chunk or a partial chunk.</returns>
-    public Task<Chunk?> GetChunkAsync(Vector worldLocation, bool scheduleGeneration = true) => GetChunkAsync(worldLocation.X.ToChunkCoord(), worldLocation.Z.ToChunkCoord(), scheduleGeneration);
+    public ValueTask<Chunk?> GetChunkAsync(Vector worldLocation, bool scheduleGeneration = true) => GetChunkAsync(worldLocation.X.ToChunkCoord(), worldLocation.Z.ToChunkCoord(), scheduleGeneration);
 
-    public Task<IBlock?> GetBlockAsync(Vector location) => GetBlockAsync(location.X, location.Y, location.Z);
+    public ValueTask<IBlock?> GetBlockAsync(Vector location) => GetBlockAsync(location.X, location.Y, location.Z);
 
-    public async Task<IBlock?> GetBlockAsync(int x, int y, int z)
+    public async ValueTask<IBlock?> GetBlockAsync(int x, int y, int z)
     {
         var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
         return c?.GetBlock(x, y, z);
     }
 
-    public async Task<int?> GetWorldSurfaceHeightAsync(int x, int z)
+    public async ValueTask<int?> GetWorldSurfaceHeightAsync(int x, int z)
     {
         var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
         return c?.Heightmaps[ChunkData.HeightmapType.MotionBlocking]
@@ -200,25 +199,25 @@ public sealed class World : IWorld
         return c?.GetBlockEntity(x, y, z);
     }
 
-    public Task SetBlockEntity(Vector blockPosition, NbtCompound tileEntityData) => SetBlockEntity(blockPosition.X, blockPosition.Y, blockPosition.Z, tileEntityData);
-    public async Task SetBlockEntity(int x, int y, int z, NbtCompound tileEntityData)
+    public ValueTask SetBlockEntity(Vector blockPosition, NbtCompound tileEntityData) => SetBlockEntity(blockPosition.X, blockPosition.Y, blockPosition.Z, tileEntityData);
+    public async ValueTask SetBlockEntity(int x, int y, int z, NbtCompound tileEntityData)
     {
         var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
         c?.SetBlockEntity(x, y, z, tileEntityData);
     }
 
-    public Task SetBlockAsync(int x, int y, int z, IBlock block) => SetBlockAsync(new Vector(x, y, z), block);
+    public ValueTask SetBlockAsync(int x, int y, int z, IBlock block) => SetBlockAsync(new Vector(x, y, z), block);
 
-    public async Task SetBlockAsync(Vector location, IBlock block)
+    public async ValueTask SetBlockAsync(Vector location, IBlock block)
     {
         await SetBlockUntrackedAsync(location.X, location.Y, location.Z, block);
 
         this.BroadcastBlockChange(block, location);
     }
 
-    public Task SetBlockAsync(int x, int y, int z, IBlock block, bool doBlockUpdate) => SetBlockAsync(new Vector(x, y, z), block, doBlockUpdate);
+    public ValueTask SetBlockAsync(int x, int y, int z, IBlock block, bool doBlockUpdate) => SetBlockAsync(new Vector(x, y, z), block, doBlockUpdate);
 
-    public async Task SetBlockAsync(Vector location, IBlock block, bool doBlockUpdate)
+    public async ValueTask SetBlockAsync(Vector location, IBlock block, bool doBlockUpdate)
     {
         await SetBlockUntrackedAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
         this.BroadcastBlockChange(block, location);
@@ -237,9 +236,9 @@ public sealed class World : IWorld
     public IEnumerable<Player> PlayersInRange(Vector location) =>
         this.Players.Values.Where(player => player.client.LoadedChunks.Contains(location.ToChunkCoord()));
 
-    public Task SetBlockUntrackedAsync(Vector location, IBlock block, bool doBlockUpdate = false) => SetBlockUntrackedAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
+    public ValueTask SetBlockUntrackedAsync(Vector location, IBlock block, bool doBlockUpdate = false) => SetBlockUntrackedAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
 
-    public async Task SetBlockUntrackedAsync(int x, int y, int z, IBlock block, bool doBlockUpdate = false)
+    public async ValueTask SetBlockUntrackedAsync(int x, int y, int z, IBlock block, bool doBlockUpdate = false)
     {
         if (doBlockUpdate)
         {
@@ -295,19 +294,17 @@ public sealed class World : IWorld
         // Iterate over chunks, taking one from each region, then getting the region itself
         for (int x = left; x <= right; x += Region.CubicRegionSize)
         {
-            for (int y = top; y >= bottom; y -= Region.CubicRegionSize)
+            for (int z = top; z >= bottom; z -= Region.CubicRegionSize)
             {
-                if (GetRegionForChunk(x, y) is not Region region)
+                if (GetRegionForChunk(x, z) is not Region region)
                     continue;
 
                 // Return entities in range
                 foreach ((_, Entity entity) in region.Entities)
                 {
-                    VectorF entityLocation = entity.Position;
-                    float differenceX = entityLocation.X - location.X;
-                    float differenceY = entityLocation.Y - location.Y;
+                    var locationDifference = LocationDiff.GetDifference(entity.Position, location);
 
-                    if (differenceX * differenceX + differenceY * differenceY <= distance)
+                    if (locationDifference.CalculatedDifference <= distance)
                     {
                         yield return entity;
                     }
@@ -339,11 +336,9 @@ public sealed class World : IWorld
 
         foreach ((_, Player player) in Players)
         {
-            VectorF playerLocation = player.Position;
-            float differenceX = playerLocation.X - location.X;
-            float differenceY = playerLocation.Y - location.Y;
+            var locationDifference = LocationDiff.GetDifference(player.Position, location);
 
-            if (differenceX * differenceX + differenceY * differenceY <= distance)
+            if (locationDifference.CalculatedDifference <= distance)
             {
                 yield return player;
             }
@@ -410,12 +405,6 @@ public sealed class World : IWorld
 
         //Tick regions within the world manager
         await Task.WhenAll(this.Regions.Values.Select(r => r.BeginTickAsync()));
-
-        //// Check for chunks to load every second
-        //if (LevelData.Time % 20 == 0)
-        //{
-        //    await ManageChunksAsync();
-        //}
     }
 
     #region world loading/saving
@@ -571,7 +560,7 @@ public sealed class World : IWorld
             await r.FlushAsync();
     }
 
-    public async Task ScheduleBlockUpdateAsync(BlockUpdate blockUpdate)
+    public async ValueTask ScheduleBlockUpdateAsync(BlockUpdate blockUpdate)
     {
         blockUpdate.Block ??= await GetBlockAsync(blockUpdate.position);
         (int chunkX, int chunkZ) = blockUpdate.position.ToChunkCoord();
@@ -645,41 +634,29 @@ public sealed class World : IWorld
         FallingBlock entity = new(position)
         {
             Type = EntityType.FallingBlock,
-            EntityId = GetTotalLoadedEntities() + 1,
+            EntityId = Server.GetNextEntityId(),
             World = this,
             PacketBroadcaster = this.PacketBroadcaster,
             Block = BlocksRegistry.Get(mat)
         };
 
-        this.PacketBroadcaster.QueuePacketToWorld(this, new SpawnEntityPacket
-        {
-            EntityId = entity.EntityId,
-            Uuid = entity.Uuid,
-            Type = entity.Type,
-            Position = entity.Position,
-            Pitch = 0,
-            Yaw = 0,
-            Data = entity.Block.GetHashCode()
-        });
+
+        entity.SpawnEntity(null, entity.Block.GetHashCode());
 
         TryAddEntity(entity);
 
         return entity;
     }
 
-    public async Task<IEntity> SpawnEntityAsync(VectorF position, EntityType type)
+    public IEntity SpawnEntity(VectorF position, EntityType type)
     {
-        // Arrow, Boat, DragonFireball, AreaEffectCloud, EndCrystal, EvokerFangs, ExperienceOrb, 
-        // FireworkRocket, FallingBlock, Item, ItemFrame, Fireball, LeashKnot, LightningBolt,
-        // LlamaSpit, Minecart, ChestMinecart, CommandBlockMinecart, FurnaceMinecart, HopperMinecart
-        // SpawnerMinecart, TntMinecart, Painting, Tnt, ShulkerBullet, SpectralArrow, EnderPearl, Snowball, SmallFireball,
-        // Egg, ExperienceBottle, Potion, Trident, FishingBobber, EyeOfEnder
+        if (type == EntityType.ExperienceOrb)
+            throw new NotImplementedException($"EntityType {type} is not supported.");
 
         if (type == EntityType.FallingBlock)
-        {
             return SpawnFallingBlock(position + (0, 20, 0), Material.Sand);
-        }
 
+        //TODO improve this
         Entity entity;
         if (type.IsNonLiving())
         {
@@ -687,53 +664,24 @@ public sealed class World : IWorld
             {
                 Type = type,
                 Position = position,
-                EntityId = GetTotalLoadedEntities() + 1,
+                EntityId = Server.GetNextEntityId(),
                 World = this,
                 PacketBroadcaster = this.PacketBroadcaster
             };
-
-            if (type == EntityType.ExperienceOrb || type == EntityType.ExperienceBottle)
-            {
-                //TODO
-            }
-            else
-            {
-                this.PacketBroadcaster.QueuePacketToWorld(this, new SpawnEntityPacket
-                {
-                    EntityId = entity.EntityId,
-                    Uuid = entity.Uuid,
-                    Type = entity.Type,
-                    Position = position,
-                    Pitch = 0,
-                    Yaw = 0,
-                    Data = 0,
-                    Velocity = new Velocity(0, 0, 0)
-                });
-            }
         }
         else
         {
             entity = new Living
             {
                 Position = position,
-                EntityId = GetTotalLoadedEntities() + 1,
+                EntityId = Server.GetNextEntityId(),
                 Type = type,
                 World = this,
                 PacketBroadcaster = this.PacketBroadcaster
             };
-
-            this.PacketBroadcaster.QueuePacketToWorld(this, new SpawnEntityPacket
-            {
-                EntityId = entity.EntityId,
-                Uuid = entity.Uuid,
-                Type = type,
-                Position = position,
-                Pitch = 0,
-                Yaw = 0,
-                HeadYaw = 0,
-                Velocity = new Velocity(0, 0, 0)
-            });
         }
+
+        entity.SpawnEntity();
 
         TryAddEntity(entity);
 
@@ -877,7 +825,8 @@ public sealed class World : IWorld
             var cps = completedChunks / (stopwatch.ElapsedMilliseconds / 1000.0);
             int remain = ChunksToGenCount / (int)cps;
             Console.Write("\r{0} chunks/second - {1}% complete - {2} seconds remaining   ", cps.ToString("###.00"), pctComplete, remain);
-            if (completedChunks % 1024 == 0) { // For Jon when he's doing large world gens
+            if (completedChunks % 1024 == 0)
+            { // For Jon when he's doing large world gens
                 await FlushRegionsAsync();
             }
         }
