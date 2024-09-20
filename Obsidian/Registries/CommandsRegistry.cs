@@ -1,13 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
-using Obsidian.Commands;
+﻿using Obsidian.Commands;
+using Obsidian.Commands.Framework.Entities;
 using Obsidian.Commands.Parsers;
 using Obsidian.Net.Packets.Play.Clientbound;
-using System.Xml;
-using System;
 using Obsidian.Utilities.Interfaces;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Obsidian.Commands.Framework.Entities;
-using System.Reflection;
 
 namespace Obsidian.Registries;
 public static class CommandsRegistry
@@ -36,7 +31,9 @@ public static class CommandsRegistry
 
     private static void Register(Server server, Command cmd, IEnumerable<Command> commands, CommandNode node, ref int index)
     {
-        if (cmd.Parent != null)//Don't register commands alone that have parents 
+        //Don't register commands alone that have parents 
+        //This is very inconvenient and should be changed
+        if (cmd.Parent != null)
             return;
 
         var cmdNode = new CommandNode()
