@@ -56,7 +56,7 @@ public sealed class CommandHandler
 
     public Command[] GetAllCommands() => _commands.ToArray();
 
-    public void RegisterCommand(PluginContainer pluginContainer, string name, Delegate commandDelegate)
+    public void RegisterCommand(PluginContainer? pluginContainer, string name, Delegate commandDelegate)
     {
         var method = commandDelegate.Method;
 
@@ -94,10 +94,11 @@ public sealed class CommandHandler
         RegisterSubcommands(moduleType, plugin);
     }
 
-    public void RegisterCommands(PluginContainer pluginContainer)
+    public void RegisterCommands(PluginContainer? pluginContainer = null)
     {
-        // Registering commands found in the plugin assembly
-        var commandRoots = pluginContainer.PluginAssembly.GetTypes().Where(x => x.IsSubclassOf(typeof(CommandModuleBase)));
+        var assembly = pluginContainer?.PluginAssembly ?? Assembly.GetExecutingAssembly();
+
+        var commandRoots = assembly.GetTypes().Where(x => x.IsSubclassOf(typeof(CommandModuleBase)));
         foreach (var root in commandRoots)
         {
             this.RegisterCommandClass(pluginContainer, root);
