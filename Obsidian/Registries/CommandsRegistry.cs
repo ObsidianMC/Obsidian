@@ -3,6 +3,9 @@ using Obsidian.Commands.Framework.Entities;
 using Obsidian.Commands.Parsers;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Utilities.Interfaces;
+using System.Xml;
+using System;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Obsidian.Registries;
 public static class CommandsRegistry
@@ -23,52 +26,34 @@ public static class CommandsRegistry
 
         foreach (var cmd in commands)
         {
+            //Don't register commands alone that have parents 
+            //This is very inconvenient and should be changed
+            if (cmd.Parent != null)
+                continue;
+
             Register(server, cmd, commands, rootNode, ref index);
         }
 
         Packet.AddNode(rootNode);
     }
 
-    private static void Register(Server server, Command cmd, IEnumerable<Command> commands, CommandNode node, ref int index)
+    private static void Register(Server server, Command command, IEnumerable<Command> commands, CommandNode node, ref int index)
     {
-        //Don't register commands alone that have parents 
-        //This is very inconvenient and should be changed
-        if (cmd.Parent != null)
-            return;
-
-        var cmdNode = new CommandNode()
+        var nodeType = command.Overloads.Any(x => x.GetParameters().Length == 0) ? CommandNodeType.IsExecutable | CommandNodeType.Literal : CommandNodeType.Literal;
+        var parentNode = new CommandNode()
         {
             Index = ++index,
-            Name = cmd.Name,
-            Type = CommandNodeType.Literal
+            Name = command.Name,
+            Type = nodeType
         };
 
-        foreach (var overload in cmd.Overloads)
-        {
-            RegisterChildNodeOverload(server, overload, cmdNode, ref index);
-        }
+        foreach (var overload in command.Overloads)
+            RegisterChildNodeOverload(server, overload, parentNode, ref index);
 
-        //Register children commands for groups
-        foreach (var childrenCommand in commands.Where(x => x.Parent == cmd))
-        {
-            var nodeType = childrenCommand.Overloads.Any(x => x.GetParameters().Length == 0) ? CommandNodeType.IsExecutable | CommandNodeType.Literal : CommandNodeType.Literal;
-            var childCmdNode = new CommandNode()
-            {
-                Index = ++index,
-                Name = childrenCommand.Name,
-                Type = nodeType
-            };
+        foreach (var childrenCommand in commands.Where(x => x.Parent == command))
+            Register(server, childrenCommand, commands, parentNode, ref index);
 
-            foreach (var overload in childrenCommand.Overloads)
-            {
-                RegisterChildNodeOverload(server, overload, childCmdNode, ref index);
-            }
-
-            cmdNode.AddChild(childCmdNode);
-        }
-
-
-        node.AddChild(cmdNode);
+        node.AddChild(parentNode);
     }
 
     private static void RegisterChildNodeOverload(Server server, IExecutor<CommandContext> overload, CommandNode cmdNode, ref int index)
