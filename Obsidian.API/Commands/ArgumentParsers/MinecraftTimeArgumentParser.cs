@@ -2,7 +2,7 @@ namespace Obsidian.API.Commands.ArgumentParsers;
 
 public sealed class MinecraftTimeArgumentParser : BaseArgumentParser<MinecraftTime>
 {
-    public MinecraftTimeArgumentParser() : base(41, "minecraft:time")
+    public MinecraftTimeArgumentParser() : base(42, "minecraft:time")
     {
     }
 
