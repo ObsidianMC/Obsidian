@@ -82,7 +82,10 @@ public sealed class Command
         }
 
         if (!this.TryFindExecutor(executors, args, context, out var executor))
-            throw new InvalidOperationException($"Failed to find valid executor for /{this.Name}");
+        {
+            await context.Sender.SendMessageAsync(ChatMessage.Simple($"Correct usage: {Usage}", ChatColor.Red));
+            return;
+        }   
 
         await this.ExecuteAsync(executor, context, args);
     }
@@ -92,7 +95,7 @@ public sealed class Command
     {
         executor = null;
 
-        var success = args.Length == 0;
+        var success = args.Length == 0 && executors.Any(x => x.GetParameters().Length == 0);
 
         if (success)
         {
