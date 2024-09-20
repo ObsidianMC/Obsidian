@@ -50,8 +50,27 @@ public sealed class World : IWorld
 
     public bool Loaded { get; private set; }
 
-    public long Time { get => LevelData.Time; set => LevelData.Time = value; }
-    public int DayTime { get => LevelData.DayTime; set => LevelData.DayTime = value; }
+    public long Time
+    {
+        get => LevelData.Time;
+        set
+        {
+            LevelData.Time = value;
+
+            this.BroadcastTime();
+        }
+    }
+
+    public int DayTime
+    {
+        get => LevelData.DayTime;
+        set
+        {
+            LevelData.DayTime = value;
+
+            this.BroadcastTime();
+        }
+    }
 
     public int RegionCount => this.Regions.Count;
     public int ChunksToGenCount => this.ChunksToGen.Count;
@@ -401,7 +420,7 @@ public sealed class World : IWorld
         if (LevelData.Time % (20 * this.Configuration.TimeTickSpeedMultiplier) == 0)
         {
             // Update client time every second / 20 ticks
-            this.PacketBroadcaster.QueuePacketToWorld(this, new UpdateTimePacket(LevelData.Time, LevelData.Time % 24000));
+            this.BroadcastTime();
         }
 
         //Tick regions within the world manager
@@ -931,6 +950,8 @@ public sealed class World : IWorld
             var dimensionType = dimensions.GetString("type");
         }
     }
+
+    private void BroadcastTime() => this.PacketBroadcaster.QueuePacketToWorld(this, new UpdateTimePacket(LevelData.Time, LevelData.Time % 24000));
 
     private void WriteWorldGenSettings(NbtWriter writer)
     {

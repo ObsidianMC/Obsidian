@@ -1,4 +1,6 @@
 ﻿using Obsidian.API.Commands;
+using Obsidian.Entities;
+using Obsidian.Net.Packets.Play.Clientbound;
 using System.Collections.Frozen;
 
 namespace Obsidian.Commands.Modules;
