@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.API.Logging;
 using Obsidian.Commands;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Entities;
@@ -7,12 +6,25 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
-public partial class ChatCommandPacket : IServerboundPacket
+//TODO finish full impl
+public sealed partial class SignedChatCommandPacket : IServerboundPacket
 {
     [Field(0)]
     public string Command { get; private set; } = default!;
 
-    public int Id => 0x04;
+    [Field(1)]
+    public DateTimeOffset Timestamp { get; private set; }
+
+    [Field(2)]
+    public long Salt { get; private set; }
+
+    [Field(3)]
+    public List<ArgumentSignature> ArgumentSignatures { get; private set; } = default!;
+
+    [Field(4)]
+    public bool SignedPreview { get; private set; }
+
+    public int Id => 0x05;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {

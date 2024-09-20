@@ -325,7 +325,7 @@ public class MainCommandModule : CommandModuleBase
             return;
         }
 
-        await player.World.SpawnEntityAsync(player.Position, type);
+        player.World.SpawnEntity(player.Position, type);
         await player.SendMessageAsync($"Spawning: {type}");
     }
 
@@ -344,7 +344,7 @@ public class MainCommandModule : CommandModuleBase
             return;
         }
 
-        var frogge = await player.World.SpawnEntityAsync(player.Position, type);
+        var frogge = player.World.SpawnEntity(player.Position, type);
         var server = (this.Server as Server)!;
 
         _ = Task.Run(async () =>
