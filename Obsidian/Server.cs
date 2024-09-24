@@ -143,11 +143,11 @@ public sealed partial class Server : IServer
         PluginManager = new PluginManager(this.serviceProvider, this, eventDispatcher, CommandsHandler, loggerFactory.CreateLogger<PluginManager>(), 
             serviceProvider.GetRequiredService<IConfiguration>());
 
-        _logger.LogDebug("Registering commands...");
-        CommandsHandler.RegisterCommandClass<MainCommandModule>(null);
-        eventDispatcher.RegisterEvents<MainEventHandler>(null);
+        _logger.LogDebug("Registering events & commands...");
 
-        _logger.LogDebug("Registering command context type...");
+        CommandsHandler.RegisterCommands();
+        eventDispatcher.RegisterEvents();
+
         _logger.LogDebug("Done registering commands.");
 
         this.userCache = playerCache;

@@ -1,15 +1,16 @@
-using Obsidian.API.Commands;
+﻿using Obsidian.API.Commands;
 using Obsidian.API.Utilities;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Entities;
 using Obsidian.Registries;
 using Obsidian.WorldData;
-using System.Data;
+using System.Collections.Frozen;
 using System.Diagnostics;
 
-namespace Obsidian.Commands;
+namespace Obsidian.Commands.Modules;
 
-public class MainCommandModule : CommandModuleBase
+
+public sealed class MainCommandModule : CommandModuleBase
 {
     private const int CommandsPerPage = 15;
 
@@ -368,20 +369,6 @@ public class MainCommandModule : CommandModuleBase
         server.BroadcastMessage($"Stopping server...");
 
         await server.StopAsync();
-    }
-
-    [Command("time")]
-    [CommandInfo("Sets declared time", "/time <timeOfDay>")]
-    public Task TimeAsync() => TimeAsync(1337);
-
-    [CommandOverload]
-    public async Task TimeAsync(int time)
-    {
-        if (this.Player is Player player)
-        {
-            player.world.LevelData.DayTime = time;
-            await this.Player.SendMessageAsync($"Time set to {time}");
-        }
     }
 
     [Command("toggleweather", "weather")]
