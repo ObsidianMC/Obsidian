@@ -10,19 +10,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound;
 public partial class ChatCommandPacket : IServerboundPacket
 {
     [Field(0)]
-    public string Command { get; private set; }
-
-    [Field(1)]
-    public DateTimeOffset Timestamp { get; private set; }
-
-    [Field(2)]
-    public long Salt { get; private set; }
-
-    [Field(3)]
-    public List<ArgumentSignature> ArgumentSignatures { get; private set; }
-
-    [Field(4)]
-    public bool SignedPreview { get; private set; }
+    public string Command { get; private set; } = default!;
 
     public int Id => 0x04;
 

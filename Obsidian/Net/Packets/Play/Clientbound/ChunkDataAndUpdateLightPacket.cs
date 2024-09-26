@@ -27,7 +27,7 @@ public partial class ChunkDataAndUpdateLightPacket : IClientboundPacket
         var writer = new NbtWriter(stream, true);
         foreach (var (type, heightmap) in Chunk.Heightmaps)
             if (type == ChunkData.HeightmapType.MotionBlocking)
-                writer.WriteTag(new NbtArray<long>(type.ToString().ToSnakeCase().ToUpper(), heightmap.GetDataArray().Cast<long>()));
+                writer.WriteTag(new NbtArray<long>(type.ToString().ToSnakeCase().ToUpper(), heightmap.GetDataArray()));
 
         writer.EndCompound();
         writer.TryFinish();

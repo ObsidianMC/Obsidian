@@ -15,7 +15,7 @@ public class AbstractHorse : Animal
         await stream.WriteEntityMetdata(16, EntityMetadataType.Byte, this.HorseMask);
 
         if (this.Owner != default)
-            await stream.WriteEntityMetdata(17, EntityMetadataType.OptUuid, Owner, true);
+            await stream.WriteEntityMetdata(17, EntityMetadataType.OptionalUUID, Owner, true);
     }
 
     public override void Write(MinecraftStream stream)
@@ -25,7 +25,7 @@ public class AbstractHorse : Animal
         stream.WriteEntityMetadataType(16, EntityMetadataType.Byte);
         stream.WriteUnsignedByte((byte)HorseMask);
 
-        stream.WriteEntityMetadataType(17, EntityMetadataType.OptUuid);
+        stream.WriteEntityMetadataType(17, EntityMetadataType.OptionalUUID);
         stream.WriteBoolean(true);
         if (true)
             stream.WriteUuid(Owner);

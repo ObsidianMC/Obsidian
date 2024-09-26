@@ -34,7 +34,7 @@ internal sealed class FixedLengthBehavior : AttributeBehaviorBase
             return false;
         }
 
-        context.CodeBuilder.Line($"{context.DataName} = {context.Property.NewCollection(Length.ToString())}");
+        context.CodeBuilder.Line($"{context.DataName} = {context.Property.GetNewCollectionExpression(Length.ToString())}");
         return true;
     }
 }

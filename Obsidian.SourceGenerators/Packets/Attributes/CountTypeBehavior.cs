@@ -35,7 +35,7 @@ internal sealed class CountTypeBehavior : AttributeBehaviorBase
         }
 
         string getLength = $"{context.StreamName}.{readMethod}()";
-        context.CodeBuilder.Line($"{context.DataName} = {context.Property.NewCollection(getLength)};");
+        context.CodeBuilder.Line($"{context.DataName} = {context.Property.GetNewCollectionExpression(getLength)};");
         return true;
     }
 }

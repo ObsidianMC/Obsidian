@@ -1,5 +1,6 @@
 ﻿using Obsidian.SourceGenerators.Registry;
 using Obsidian.SourceGenerators.Registry.Models;
+using System.Globalization;
 using System.Text.Json;
 
 namespace Obsidian.SourceGenerators;
@@ -102,9 +103,9 @@ public partial class Extensions
                         else if (element.TryGetInt64(out var longValue))
                             builder.Append($"{longValue} }},");
                         else if (element.TryGetSingle(out var floatValue))
-                            builder.Append($"{floatValue}f }},");
+                            builder.Append($"{floatValue.ToString(CultureInfo.InvariantCulture)}f }},");
                         else if (element.TryGetDouble(out var doubleValue))
-                            builder.Append($"{doubleValue}d }},");
+                            builder.Append($"{doubleValue.ToString(CultureInfo.InvariantCulture)}d }},");
                         break;
                     }
                 case JsonValueKind.True:
@@ -133,9 +134,9 @@ public partial class Extensions
                     else if (element.TryGetInt64(out var longValue))
                         builder.Append($"{longValue}, ");
                     else if (element.TryGetSingle(out var floatValue))
-                        builder.Append($"{floatValue}f, ");
+                        builder.Append($"{floatValue.ToString(CultureInfo.InvariantCulture)}f, ");
                     else if (element.TryGetDouble(out var doubleValue))
-                        builder.Append($"{doubleValue}d, ");
+                        builder.Append($"{doubleValue.ToString(CultureInfo.InvariantCulture)}d, ");
                     break;
                 }
             case JsonValueKind.True:

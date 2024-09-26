@@ -336,7 +336,7 @@ public sealed class MainEventHandler : MinecraftEventHandler
                 continue;
 
             await other.client.RemovePlayerFromListAsync(player);
-            if (other.visiblePlayers.Contains(player.EntityId))
+            if (other.visiblePlayers.Contains(player))
                 await other.client.QueuePacketAsync(destroy);
         }
 
@@ -349,9 +349,10 @@ public sealed class MainEventHandler : MinecraftEventHandler
         var joined = e.Player as Player;
         var server = e.Server as Server;
 
-        joined.world.TryAddPlayer(joined);
+        joined!.world.TryAddPlayer(joined);
+        joined!.world.TryAddEntity(joined);
 
-        server.BroadcastMessage(new ChatMessage
+        server!.BroadcastMessage(new ChatMessage
         {
             Text = string.Format(server.Configuration.Messages.Join, e.Player.Username),
             Color = HexColor.Yellow

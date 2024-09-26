@@ -6,21 +6,13 @@ namespace Obsidian.SourceGenerators.Packets;
 [Generator]
 public partial class SerializationMethodsGenerator : ISourceGenerator
 {
-    private static Property varInt; // Used for default collection length prefix
+    private static Property varInt = null!; // Used for default collection length prefix
 
     public void Initialize(GeneratorInitializationContext context)
     {
         context.RegisterForSyntaxNotifications(() => new SyntaxProvider());
 
-        varInt = new Property
-        {
-            Type = "int",
-            Attributes =
-            [
-                    new VarLengthBehavior(null)
-            ],
-            Flags = AttributeFlags.Field | AttributeFlags.VarLength
-        };
+        varInt = new Property("VarInt", "int", AttributeFlags.Field | AttributeFlags.VarLength, [new VarLengthBehavior(null!)]);
     }
 
     public void Execute(GeneratorExecutionContext context)
@@ -54,21 +46,30 @@ public partial class SerializationMethodsGenerator : ISourceGenerator
             {
                 foreach (VariableDeclaratorSyntax variable in field.Declaration.Variables)
                 {
-                    ISymbol symbol = model.GetDeclaredSymbol(variable);
-                    properties.Add(new Property(field, symbol));
+                    if (model.GetDeclaredSymbol(variable) is ISymbol symbol)
+                    {
+                        properties.Add(new Property(field, symbol));
+                    }
                 }
             }
             else if (member is PropertyDeclarationSyntax property)
             {
-                ISymbol symbol = model.GetDeclaredSymbol(member);
-                properties.Add(new Property(property, symbol));
+                if (model.GetDeclaredSymbol(member) is ISymbol symbol)
+                {
+                    properties.Add(new Property(property, symbol));
+                }
             }
         }
 
         // Generate partial classes
-        foreach (var group in properties.GroupBy(field => field.ContainingType))
+        var typeToProperties = properties
+            .GroupBy(static field => field.ContainingType, SymbolEqualityComparer.Default);
+        foreach ((ISymbol? symbol, List<Property> fields) in typeToProperties)
         {
-            var @class = group.Key;
+            if (symbol is not INamedTypeSymbol @class)
+            {
+                continue;
+            }
 
             if (@class.IsStatic || @class.DeclaredAccessibility != Accessibility.Public)
             {
@@ -76,7 +77,6 @@ public partial class SerializationMethodsGenerator : ISourceGenerator
                 continue;
             }
 
-            var fields = group.ToList();
             string classSource = ProcessClass(@class, fields, syntaxProvider);
             context.AddSource($"{@class.Name}.Serialization.cs", SourceText.From(classSource, Encoding.UTF8));
         }
@@ -87,24 +87,27 @@ public partial class SerializationMethodsGenerator : ISourceGenerator
         fields.Sort((a, b) => a.Order.CompareTo(b.Order));
 
         string @namespace = classSymbol.ContainingNamespace.ToDisplayString();
-        string className = classSymbol.IsGenericType ? $"{classSymbol.Name}<{string.Join(", ", classSymbol.TypeParameters.Select(parameter => parameter.Name))}>" : classSymbol.Name;
+        string className = classSymbol.IsGenericType
+            ? $"{classSymbol.Name}<{string.Join(", ", classSymbol.TypeParameters.Select(parameter => parameter.Name))}>"
+            : classSymbol.Name;
 
         var interfaces = classSymbol.AllInterfaces;
         bool clientbound = interfaces.Any(@interface => @interface.Name == Vocabulary.ClientboundInterface);
         bool serverbound = interfaces.Any(@interface => @interface.Name == Vocabulary.ServerboundInterface);
 
         var methods = classSymbol.GetMembers().OfType<IMethodSymbol>();
-
         var source = new CodeBuilder();
 
         var usings = new HashSet<string>();
-
         foreach (SyntaxReference declaration in classSymbol.DeclaringSyntaxReferences)
         {
             SyntaxNode root = declaration.GetSyntax().GetRoot();
-            foreach (var usingDirective in root.DescendantNodes().OfType<UsingDirectiveSyntax>())
+            foreach (SyntaxNode child in root.DescendantNodes())
             {
-                usings.Add(usingDirective.Name.ToString());
+                if (child is UsingDirectiveSyntax { Name: NameSyntax name })
+                {
+                    usings.Add(name.ToString());
+                }
             }
         }
 
@@ -298,7 +301,7 @@ public partial class SerializationMethodsGenerator : ISourceGenerator
         return true;
     }
 
-    private bool TrySerializeProperty(string streamName, Property property, List<Property> properties, CodeBuilder builder, SyntaxProvider syntaxProvider, Method writeMethod = null)
+    private bool TrySerializeProperty(string streamName, Property property, List<Property> properties, CodeBuilder builder, SyntaxProvider syntaxProvider, Method? writeMethod = null)
     {
         if (writeMethod is null)
             syntaxProvider.Methods.TryGetWriteMethod(property, out writeMethod);
@@ -382,7 +385,7 @@ public partial class SerializationMethodsGenerator : ISourceGenerator
             return false;
         }
         string getLength = $"{streamName}.{readMethod}()";
-        builder.Line($"{dataName} = {property.NewCollection(getLength)};");
+        builder.Line($"{dataName} = {property.GetNewCollectionExpression(getLength)};");
 
     LOOP:
         builder.Statement($"for (int i = 0; i < {dataName}.{property.Length}; i++)");
@@ -411,7 +414,7 @@ public partial class SerializationMethodsGenerator : ISourceGenerator
         return true;
     }
 
-    private bool TryReadProperty(string streamName, string dataName, Property property, List<Property> properties, CodeBuilder builder, SyntaxProvider syntaxProvider, Method readMethod = null)
+    private bool TryReadProperty(string streamName, string dataName, Property property, List<Property> properties, CodeBuilder builder, SyntaxProvider syntaxProvider, Method? readMethod = null)
     {
         if (readMethod is null)
             syntaxProvider.Methods.TryGetReadMethod(property, out readMethod);
@@ -482,7 +485,7 @@ internal static class Extensions
         return syntaxNode;
     }
 
-    public static bool Execute(this PreactionCallback callback, MethodBuildingContext context)
+    public static bool Execute(this PreactionCallback? callback, MethodBuildingContext context)
     {
         if (callback is null)
             return false;
@@ -496,7 +499,7 @@ internal static class Extensions
         return false;
     }
 
-    public static void Execute(this PostactionCallback callback, MethodBuildingContext context)
+    public static void Execute(this PostactionCallback? callback, MethodBuildingContext context)
     {
         callback?.Invoke(context);
     }

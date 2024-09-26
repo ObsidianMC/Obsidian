@@ -2,9 +2,9 @@ name: .NET Build
 
 on:
   push:
-    branches: [ master ]
+    branches: [ 1.* ]
   pull_request:
-    branches: [ master ]
+    branches: [ 1.* ]
 
 jobs:
   build:
@@ -30,7 +30,7 @@ jobs:
         mv Obsidian.ConsoleApp.deps.json ObsidianApp.deps.json
         mv Obsidian.ConsoleApp.runtimeconfig.json ObsidianApp.runtimeconfig.json
     - name: Upload a Build Artifact
-      uses: actions/upload-artifact@v2.2.4
+      uses: actions/upload-artifact@v4
       with:
         name: Obsidian-Nightly-Build
         path: /home/runner/work/Obsidian/Obsidian/Obsidian.ConsoleApp/bin/Release/net8.0/

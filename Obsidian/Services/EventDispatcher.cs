@@ -120,11 +120,20 @@ public sealed class EventDispatcher : IDisposable
         });
     }
 
-    public void RegisterEvents(PluginContainer pluginContainer)
+    public void RegisterEvents(PluginContainer? pluginContainer = null)
     {
-        ArgumentNullException.ThrowIfNull(pluginContainer);
+        var assembly = pluginContainer?.PluginAssembly ?? Assembly.GetExecutingAssembly();
 
-        var modules = pluginContainer.PluginAssembly.GetTypes().Where(x => x.IsSubclassOf(minecraftEventHandlerType));
+
+        var modules = assembly.GetTypes().Where(x => x.IsSubclassOf(minecraftEventHandlerType));
+
+        this.RegisterEventsInternal(modules, pluginContainer);
+    }
+
+    private void RegisterEventsInternal(IEnumerable<Type>? modules, PluginContainer? pluginContainer = null)
+    {
+        if (modules == null)
+            return;
 
         foreach (var eventModule in modules)
         {

@@ -2,12 +2,12 @@
 
 namespace Obsidian.SourceGenerators.Packets;
 
-internal abstract class AttributeOwner
+internal abstract class AttributeOwner(AttributeFlags flags, AttributeBehaviorBase[] attributes)
 {
-    public AttributeFlags Flags { get; set; }
-    public AttributeBehaviorBase[] Attributes { get; set; }
+    public AttributeFlags Flags { get; } = flags;
+    public AttributeBehaviorBase[] Attributes { get; } = attributes;
 
-    public bool TryGetAttribute<TAttribute>(out TAttribute attribute) where TAttribute : AttributeBehaviorBase
+    public bool TryGetAttribute<TAttribute>(out TAttribute? attribute) where TAttribute : AttributeBehaviorBase
     {
         for (int i = 0; i < Attributes.Length; i++)
         {
@@ -20,5 +20,21 @@ internal abstract class AttributeOwner
 
         attribute = default;
         return false;
+    }
+
+    protected static AttributeFlags AggregateFlags(AttributeBehaviorBase[] attributes)
+    {
+        var flags = AttributeFlags.None;
+        foreach (AttributeBehaviorBase attribute in attributes)
+        {
+            flags |= attribute.Flag;
+        }
+        return flags;
+    }
+
+    protected static string GetRelativeTypeName(string typeName)
+    {
+        int dotIndex = typeName.LastIndexOf('.');
+        return dotIndex >= 0 ? typeName.Substring(dotIndex + 1) : typeName;
     }
 }

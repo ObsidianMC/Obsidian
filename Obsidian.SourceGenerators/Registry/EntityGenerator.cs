@@ -2,6 +2,7 @@
 using Obsidian.SourceGenerators.Registry.Models;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Text.Json;
 using System.Xml.Schema;
@@ -120,8 +121,8 @@ public sealed partial class EntityGenerator : IIncrementalGenerator
                 .Type($"public partial class {@class.Symbol.Name}");
 
             builder.Indent().Append("public override EntityDimension Dimension { get; protected set; } = new() { ")
-                .Append($"Width = {widthElement.GetSingle()}f, ")
-                .Append($"Height = {heightElement.GetSingle()}f }}; ")
+                .Append($"Width = {widthElement.GetSingle().ToString(CultureInfo.InvariantCulture)}f, ")
+                .Append($"Height = {heightElement.GetSingle().ToString(CultureInfo.InvariantCulture)}f }}; ")
                 .Line()
                 .Line();
 
@@ -153,7 +154,7 @@ public sealed partial class EntityGenerator : IIncrementalGenerator
                 foreach (var attrElement in attributesElement.EnumerateObject())
                 {
                     var name = attrElement.Name;
-                    var value = attrElement.Value.GetSingle();
+                    var value = attrElement.Value.GetSingle().ToString(CultureInfo.InvariantCulture);
 
                     builder.Line($"{{ \"{name}\", {value}f }}, ");
                 }

@@ -16,8 +16,7 @@ public partial class EntityAnimationPacket : IClientboundPacket
 public enum EntityAnimationType : byte
 {
     SwingMainArm,
-    TakeDamage,
-    LeaveBed,
+    LeaveBed = 2,
     SwingOffhand,
     CriticalEffect,
     MagicalCriticalEffect

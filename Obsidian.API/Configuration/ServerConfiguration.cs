@@ -1,15 +1,16 @@
-﻿using Obsidian.API.Configuration;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace Obsidian.API.Configuration;
 
 public sealed class ServerConfiguration
 {
     private byte viewDistance = 10;
+    private byte simulationDistance = 10;
+    private ushort entityBroadcastRangePercentage = 100;
 
     // Anything lower than 3 will cause weird artifacts on the client.
     private const byte MinimumViewDistance = 3;
-
+    private const byte MinimumSimulationDistance = 5;
     /// <summary>
     /// Enabled Remote Console operation.
     /// </summary>
@@ -82,6 +83,18 @@ public sealed class ServerConfiguration
     {
         get => viewDistance;
         set => viewDistance = value >= MinimumViewDistance ? value : MinimumViewDistance;
+    }
+
+    public byte SimulationDistance
+    {
+        get => simulationDistance;
+        set => simulationDistance = value > this.ViewDistance ? value >= MinimumSimulationDistance ? value : MinimumSimulationDistance : ViewDistance;
+    }
+
+    public ushort EntityBroadcastRangePercentage
+    {
+        get => entityBroadcastRangePercentage;
+        set => Math.Max((ushort)10, value);
     }
 
     public int PregenerateChunkRange { get; set; } = 15; // by default, pregenerate range from -15 to 15;

@@ -132,7 +132,7 @@ public partial class ClickContainerPacket : IServerboundPacket
 
                     var item = new ItemEntity
                     {
-                        EntityId = player + player.world.GetTotalLoadedEntities() + 1,
+                        EntityId = Server.GetNextEntityId(),
                         Count = 1,
                         Id = removedItem.AsItem().Id,
                         Glowing = true,
