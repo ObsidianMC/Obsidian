@@ -7,6 +7,13 @@ public sealed class MaxDamageItemComponent : IItemComponent
 
     public int MaxDamage { get; set; }
 
+    public MaxDamageItemComponent(int maxDamage)
+    {
+        this.MaxDamage = maxDamage;
+    }
+
+    public MaxDamageItemComponent() { }
+
     public void Write(INetStreamWriter writer)
     {
         writer.WriteVarInt(this.MaxDamage);

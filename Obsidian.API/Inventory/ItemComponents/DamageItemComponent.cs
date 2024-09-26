@@ -7,6 +7,13 @@ public sealed class DamageItemComponent : IItemComponent
 
     public int Damage { get; set; }
 
+    public DamageItemComponent(int damage)
+    {
+        this.Damage = damage;
+    }
+
+    public DamageItemComponent() { }
+
     public void Write(INetStreamWriter writer)
     {
         writer.WriteVarInt(this.Damage);

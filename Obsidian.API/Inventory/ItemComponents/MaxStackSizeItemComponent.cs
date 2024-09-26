@@ -7,6 +7,13 @@ public sealed class MaxStackSizeItemComponent : IItemComponent
 
     public int MaxStackSize { get; set; }
 
+    public MaxStackSizeItemComponent(int maxStackSize)
+    {
+        this.MaxStackSize = maxStackSize;
+    }
+
+    public MaxStackSizeItemComponent() { }
+
     public void Write(INetStreamWriter writer)
     {
         writer.WriteVarInt(this.MaxStackSize);

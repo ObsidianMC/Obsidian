@@ -24,6 +24,13 @@ public sealed class ItemNameItemComponent : NamedItemComponent
     public override ItemComponentType Type => ItemComponentType.ItemName;
 
     public override string Identifier => "minecraft:item_name";
+
+    public ItemNameItemComponent(ChatMessage itemName)
+    {
+        this.Name = itemName;
+    }
+
+    public ItemNameItemComponent() { }
 }
 
 public sealed class CustomNameItemComponent : NamedItemComponent
@@ -31,4 +38,11 @@ public sealed class CustomNameItemComponent : NamedItemComponent
     public override ItemComponentType Type => ItemComponentType.CustomName;
 
     public override string Identifier => "minecraft:custom_name";
+
+    public CustomNameItemComponent(ChatMessage customName)
+    {
+        this.Name = customName;
+    }
+
+    public CustomNameItemComponent() { }
 }
