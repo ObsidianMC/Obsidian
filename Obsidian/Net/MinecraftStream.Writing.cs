@@ -647,25 +647,24 @@ public partial class MinecraftStream : INetStreamWriter
     }
 
     [WriteMethod]
-    public void WriteItemStack(ItemStack value)
+    public void WriteItemStack(ItemStack itemStack)
     {
-        value ??= new ItemStack(0, 0) { Present = true };
+        itemStack ??= new ItemStack(0, 0);
 
-        var item = value.AsItem();
-        var meta = value.ItemMeta;
+        var item = itemStack.AsItem();
 
-        WriteVarInt(value.Count);
+        WriteVarInt(itemStack.Count);
 
         //Stop serializing if item is invalid
-        if (value.Count <= 0)
+        if (itemStack.Count <= 0)
             return;
 
         WriteVarInt(item.Id);
-        WriteVarInt(0);
+        WriteVarInt(itemStack.Count);
         WriteVarInt(0);
 
-        if (!meta.HasTags())
-            return;
+        foreach (var component in itemStack.Values)
+            component.Write(this);
     }
 
     [WriteMethod]

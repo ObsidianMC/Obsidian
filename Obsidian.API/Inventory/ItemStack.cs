@@ -32,7 +32,7 @@ public sealed class ItemStack : IEquatable<ItemStack>, IDictionary<ItemComponent
 
     public IItemComponent this[ItemComponentType key] { get => this.components[key]; set => this.components[key] = value; }
 
-    public ItemStack(Material type, short count = 1, IDictionary<ItemComponentType, IItemComponent>? components = null)
+    public ItemStack(Material type, int count = 1, IDictionary<ItemComponentType, IItemComponent>? components = null)
     {
         this.Type = type;
         this.Count = count;
