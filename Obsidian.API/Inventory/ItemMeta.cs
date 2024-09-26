@@ -3,7 +3,7 @@ using System.Collections;
 
 namespace Obsidian.API;
 
-public struct ItemMeta : IEquatable<ItemMeta>, IEnumerable<IItemComponent>
+public struct ItemMeta : IEquatable<ItemMeta>, IEnumerable<ItemComponent>
 {
     internal int CustomModelData { get; set; }
 
@@ -36,6 +36,6 @@ public struct ItemMeta : IEquatable<ItemMeta>, IEnumerable<IItemComponent>
 
     public override int GetHashCode() =>
         (this.CustomModelData, this.Name, this.RepairAmount, this.Durability, this.Unbreakable, this.Enchantments, this.StoredEnchantments, this.CanDestroy, this.Lore).GetHashCode();
-    public IEnumerator<IItemComponent> GetEnumerator() => throw new NotImplementedException();
+    public IEnumerator<ItemComponent> GetEnumerator() => throw new NotImplementedException();
     IEnumerator IEnumerable.GetEnumerator() => throw new NotImplementedException();
 }

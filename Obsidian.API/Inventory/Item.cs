@@ -1,12 +1,12 @@
 ﻿namespace Obsidian.API;
 
-public struct Item
+public readonly struct Item
 {
     public string UnlocalizedName { get; }
 
     public Material Type { get; }
 
-    public short Id { get; internal set; }
+    public short Id { get; }
 
     public Item(int id, string unlocalizedName, Material type)
     {
