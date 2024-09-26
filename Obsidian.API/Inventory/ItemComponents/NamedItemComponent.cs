@@ -2,7 +2,7 @@
 
 public abstract class NamedItemComponent : IItemComponent
 {
-    public required ChatMessage Name { get; set; }
+    public ChatMessage Name { get; set; } = default!;
 
     public abstract ItemComponentType Type { get; }
 

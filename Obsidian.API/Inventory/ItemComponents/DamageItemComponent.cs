@@ -5,7 +5,7 @@ public sealed class DamageItemComponent : IItemComponent
 
     public string Identifier => "minecraft:damage";
 
-    public required int Damage { get; set; }
+    public int Damage { get; set; }
 
     public void Write(INetStreamWriter writer)
     {

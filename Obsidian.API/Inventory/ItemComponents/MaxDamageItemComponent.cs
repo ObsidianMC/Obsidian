@@ -5,7 +5,7 @@ public sealed class MaxDamageItemComponent : IItemComponent
 
     public string Identifier => "minecraft:max_damage";
 
-    public required int MaxDamage { get; set; }
+    public int MaxDamage { get; set; }
 
     public void Write(INetStreamWriter writer)
     {

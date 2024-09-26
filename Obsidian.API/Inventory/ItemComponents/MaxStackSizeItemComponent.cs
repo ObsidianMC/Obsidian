@@ -5,7 +5,7 @@ public sealed class MaxStackSizeItemComponent : IItemComponent
 
     public string Identifier => "minecraft:max_stack_size";
 
-    public required int MaxStackSize { get; set; }
+    public int MaxStackSize { get; set; }
 
     public void Write(INetStreamWriter writer)
     {
