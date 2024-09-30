@@ -56,7 +56,7 @@ public sealed class CommandHandler
 
     public Command[] GetAllCommands() => _commands.ToArray();
 
-    public void RegisterCommand(PluginContainer pluginContainer, string name, Delegate commandDelegate)
+    public void RegisterCommand(PluginContainer? pluginContainer, string name, Delegate commandDelegate)
     {
         var method = commandDelegate.Method;
 
@@ -90,18 +90,54 @@ public sealed class CommandHandler
 
     public void RegisterCommandClass(PluginContainer? plugin, Type moduleType)
     {
+        if (moduleType.GetCustomAttribute<CommandGroupAttribute>() != null)
+        {
+            this.RegisterGroupCommand(moduleType, plugin, null);
+            return;
+        }
+
         RegisterSubgroups(moduleType, plugin);
         RegisterSubcommands(moduleType, plugin);
     }
 
-    public void RegisterCommands(PluginContainer pluginContainer)
+    public void RegisterCommands(PluginContainer? pluginContainer = null)
     {
-        // Registering commands found in the plugin assembly
-        var commandRoots = pluginContainer.PluginAssembly.GetTypes().Where(x => x.IsSubclassOf(typeof(CommandModuleBase)));
+        var assembly = pluginContainer?.PluginAssembly ?? Assembly.GetExecutingAssembly();
+
+        var commandRoots = assembly.GetTypes().Where(x => x.IsSubclassOf(typeof(CommandModuleBase)));
+
         foreach (var root in commandRoots)
         {
             this.RegisterCommandClass(pluginContainer, root);
         }
+    }
+
+    private void RegisterGroupCommand(Type moduleType, PluginContainer? pluginContainer, Command? parent = null)
+    {
+        var group = moduleType.GetCustomAttribute<CommandGroupAttribute>()!;
+        // Get command name from first constructor argument for command attribute.
+        var name = group.GroupName;
+        // Get aliases
+        var aliases = group.Aliases;
+
+        var checks = moduleType.GetCustomAttributes<BaseExecutionCheckAttribute>();
+
+        var info = moduleType.GetCustomAttribute<CommandInfoAttribute>();
+        var issuers = moduleType.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? CommandHelpers.DefaultIssuerScope;
+
+        var command = CommandBuilder.Create(name)
+          .WithDescription(info?.Description)
+          .WithParent(parent)
+          .WithUsage(info?.Usage)
+          .AddAliases(aliases)
+          .AddExecutionChecks(checks)
+          .CanIssueAs(issuers)
+          .Build(this, pluginContainer);
+
+        RegisterSubgroups(moduleType, pluginContainer, command);
+        RegisterSubcommands(moduleType, pluginContainer, command);
+
+        _commands.Add(command);
     }
 
     private void RegisterSubgroups(Type moduleType, PluginContainer? pluginContainer, Command? parent = null)
@@ -112,30 +148,7 @@ public sealed class CommandHandler
 
         foreach (var subModule in subModules)
         {
-            var group = subModule.GetCustomAttribute<CommandGroupAttribute>()!;
-            // Get command name from first constructor argument for command attribute.
-            var name = group.GroupName;
-            // Get aliases
-            var aliases = group.Aliases;
-
-            var checks = subModule.GetCustomAttributes<BaseExecutionCheckAttribute>();
-
-            var info = subModule.GetCustomAttribute<CommandInfoAttribute>();
-            var issuers = subModule.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? CommandHelpers.DefaultIssuerScope;
-
-            var command = CommandBuilder.Create(name)
-              .WithDescription(info?.Description)
-              .WithParent(parent)
-              .WithUsage(info?.Usage)
-              .AddAliases(aliases)
-              .AddExecutionChecks(checks)
-              .CanIssueAs(issuers)
-              .Build(this, pluginContainer);
-
-            RegisterSubgroups(subModule, pluginContainer, command);
-            RegisterSubcommands(subModule, pluginContainer, command);
-
-            _commands.Add(command);
+            this.RegisterGroupCommand(subModule, pluginContainer, parent);
         }
     }
 
@@ -261,6 +274,9 @@ public sealed class CommandHandler
             await cmd.ExecuteAsync(ctx, args);
         }
         else
-            throw new CommandNotFoundException("No such command was found!");
+        {
+            await ctx.Sender.SendMessageAsync("No such command was found!");
+            this.logger.LogError(new CommandNotFoundException("No such command was found!"), "An error has occured while trying to execute command: {args}", args);
+        }
     }
 }

@@ -68,7 +68,7 @@ public class Entity : IEquatable<Entity>, IEntity
     public IGoalController? GoalController { get; set; }
 
     #region Update methods
-    internal virtual async Task UpdateAsync(VectorF position, bool onGround)
+    internal virtual async ValueTask UpdateAsync(VectorF position, bool onGround)
     {
         var isNewLocation = position != Position;
 
@@ -76,7 +76,7 @@ public class Entity : IEquatable<Entity>, IEntity
         {
             var delta = (Vector)((position * 32 - Position * 32) * 128);
 
-            this.PacketBroadcaster.BroadcastToWorld(this.World, new UpdateEntityPositionPacket
+            this.PacketBroadcaster.BroadcastToWorldInRange(this.World, position, new UpdateEntityPositionPacket
             {
                 EntityId = EntityId,
 
@@ -89,7 +89,7 @@ public class Entity : IEquatable<Entity>, IEntity
         await UpdatePositionAsync(position, onGround);
     }
 
-    internal virtual async Task UpdateAsync(VectorF position, Angle yaw, Angle pitch, bool onGround)
+    internal virtual async ValueTask UpdateAsync(VectorF position, Angle yaw, Angle pitch, bool onGround)
     {
         var isNewLocation = position != Position;
         var isNewRotation = yaw != Yaw || pitch != Pitch;
@@ -100,7 +100,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
             if (isNewRotation)
             {
-                this.PacketBroadcaster.BroadcastToWorld(this.World, new UpdateEntityPositionAndRotationPacket
+                this.PacketBroadcaster.BroadcastToWorldInRange(this.World, position, new UpdateEntityPositionAndRotationPacket
                 {
                     EntityId = EntityId,
 
@@ -116,7 +116,7 @@ public class Entity : IEquatable<Entity>, IEntity
             }
             else
             {
-                this.PacketBroadcaster.BroadcastToWorld(this.World, new UpdateEntityPositionPacket
+                this.PacketBroadcaster.BroadcastToWorldInRange(this.World, position, new UpdateEntityPositionPacket
                 {
                     EntityId = EntityId,
 
@@ -130,7 +130,7 @@ public class Entity : IEquatable<Entity>, IEntity
         await UpdatePositionAsync(position, yaw, pitch, onGround);
     }
 
-    internal virtual Task UpdateAsync(Angle yaw, Angle pitch, bool onGround)
+    internal virtual ValueTask UpdateAsync(Angle yaw, Angle pitch, bool onGround)
     {
         var isNewRotation = yaw != Yaw || pitch != Pitch;
 
@@ -140,11 +140,24 @@ public class Entity : IEquatable<Entity>, IEntity
             this.SetHeadRotation(yaw);
         }
 
-        return Task.CompletedTask;
+        return default;
     }
 
+    public bool IsInRange(IEntity entity, float distance)
+    {
+        if (this.World != entity.World)
+            return false;
+
+        var locationDifference = LocationDiff.GetDifference(this.Position, entity.Position);
+
+        distance *= distance;
+
+        return locationDifference.CalculatedDifference <= distance;
+    }
+
+
     public void SetHeadRotation(Angle headYaw) =>
-        this.PacketBroadcaster.BroadcastToWorld(this.World, new SetHeadRotationPacket
+        this.PacketBroadcaster.BroadcastToWorldInRange(this.World, this.Position, new SetHeadRotationPacket
         {
             EntityId = EntityId,
             HeadYaw = headYaw
@@ -152,7 +165,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public void SetRotation(Angle yaw, Angle pitch, bool onGround = true)
     {
-        this.PacketBroadcaster.BroadcastToWorld(this.World, new UpdateEntityRotationPacket
+        this.PacketBroadcaster.BroadcastToWorldInRange(this.World, this.Position, new UpdateEntityRotationPacket
         {
             EntityId = EntityId,
             OnGround = onGround,
@@ -214,11 +227,11 @@ public class Entity : IEquatable<Entity>, IEntity
         return new(-cosPitch * sinYaw, -sinPitch, cosPitch * cosYaw);
     }
 
-    public async Task RemoveAsync() => await this.world.DestroyEntityAsync(this);
+    public virtual async ValueTask RemoveAsync() => await this.world.DestroyEntityAsync(this);
 
-    private EntityBitMask GenerateBitmask()
+    protected EntityBitMask GenerateBitmask()
     {
-        var mask = EntityBitMask.None;
+        EntityBitMask mask = EntityBitMask.None;
 
         if (Sneaking)
         {
@@ -252,7 +265,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
         await stream.WriteEntityMetdata(1, EntityMetadataType.VarInt, Air);
 
-        await stream.WriteEntityMetdata(2, EntityMetadataType.OptChat, CustomName!, CustomName != null);
+        await stream.WriteEntityMetdata(2, EntityMetadataType.OptionalTextComponent, CustomName!, CustomName != null);
 
         await stream.WriteEntityMetdata(3, EntityMetadataType.Boolean, CustomNameVisible);
         await stream.WriteEntityMetdata(4, EntityMetadataType.Boolean, Silent);
@@ -270,7 +283,7 @@ public class Entity : IEquatable<Entity>, IEntity
         stream.WriteEntityMetadataType(1, EntityMetadataType.VarInt);
         stream.WriteVarInt(Air);
 
-        stream.WriteEntityMetadataType(2, EntityMetadataType.OptChat);
+        stream.WriteEntityMetadataType(2, EntityMetadataType.OptionalTextComponent);
         stream.WriteBoolean(CustomName is not null);
         if (CustomName is not null)
             stream.WriteChat(CustomName);
@@ -285,7 +298,7 @@ public class Entity : IEquatable<Entity>, IEntity
         stream.WriteBoolean(NoGravity);
 
         stream.WriteEntityMetadataType(6, EntityMetadataType.Pose);
-        stream.WriteVarInt((int)Pose);
+        stream.WriteVarInt((int)this.Pose);
 
         stream.WriteEntityMetadataType(7, EntityMetadataType.VarInt);
         stream.WriteVarInt(PowderedSnowTicks);
@@ -293,10 +306,11 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public IEnumerable<IEntity> GetEntitiesNear(float distance) => world.GetEntitiesInRange(Position, distance).Where(x => x != this);
 
-    public virtual Task TickAsync() => Task.CompletedTask;
+    //TODO GRAVITY
+    public virtual ValueTask TickAsync() => default;
 
     //TODO check for other entities and handle accordingly 
-    public async Task DamageAsync(IEntity source, float amount = 1.0f)
+    public async ValueTask DamageAsync(IEntity source, float amount = 1.0f)
     {
         Health -= amount;
 
@@ -305,7 +319,7 @@ public class Entity : IEquatable<Entity>, IEntity
             this.PacketBroadcaster.QueuePacketToWorld(this.World, new EntityAnimationPacket
             {
                 EntityId = EntityId,
-                Animation = EntityAnimationType.TakeDamage
+                Animation = EntityAnimationType.CriticalEffect
             });
 
             if (living is Player player)
@@ -318,8 +332,8 @@ public class Entity : IEquatable<Entity>, IEntity
         }
     }
 
-    public virtual Task KillAsync(IEntity source) => Task.CompletedTask;
-    public virtual Task KillAsync(IEntity source, ChatMessage message) => Task.CompletedTask;
+    public virtual ValueTask KillAsync(IEntity source) => default;
+    public virtual ValueTask KillAsync(IEntity source, ChatMessage message) => default;
 
     public bool Equals([AllowNull] Entity other)
     {
@@ -348,9 +362,9 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public override int GetHashCode() => EntityId.GetHashCode();
 
-    public virtual Task TeleportAsync(IWorld world) => Task.CompletedTask;
+    public virtual ValueTask TeleportAsync(IWorld world) => default;
 
-    public async virtual Task TeleportAsync(IEntity to)
+    public async virtual ValueTask TeleportAsync(IEntity to)
     {
         if (to is not Entity target)
             return;
@@ -360,56 +374,33 @@ public class Entity : IEquatable<Entity>, IEntity
             await world.DestroyEntityAsync(this);
 
             world = target.world;
-            await world.SpawnEntityAsync(to.Position, Type);
+            world.SpawnEntity(to.Position, Type);
 
             return;
         }
 
-        if (VectorF.Distance(Position, to.Position) > 8)
-        {
-            this.PacketBroadcaster.QueuePacketToWorld(this.World, new TeleportEntityPacket
-            {
-                EntityId = EntityId,
-                OnGround = OnGround,
-                Position = to.Position,
-                Pitch = Pitch,
-                Yaw = Yaw,
-            });
-
-            return;
-        }
-
-        var delta = (Vector)(to.Position * 32 - Position * 32) * 128;
-
-        this.PacketBroadcaster.QueuePacketToWorld(this.World, new UpdateEntityPositionAndRotationPacket
-        {
-            EntityId = EntityId,
-            Delta = delta,
-            OnGround = OnGround,
-            Pitch = Pitch,
-            Yaw = Yaw
-        });
+        await this.TeleportAsync(to.Position);
     }
 
-    public async virtual Task TeleportAsync(VectorF pos)
+    public virtual ValueTask TeleportAsync(VectorF pos)
     {
         if (VectorF.Distance(Position, pos) > 8)
         {
-            this.PacketBroadcaster.QueuePacketToWorld(this.World, new TeleportEntityPacket
+            this.PacketBroadcaster.QueuePacketToWorld(this.World, 0, new TeleportEntityPacket
             {
                 EntityId = EntityId,
                 OnGround = OnGround,
                 Position = pos,
                 Pitch = Pitch,
-                Yaw = Yaw,
+                Yaw = Yaw
             });
 
-            return;
+            return default;
         }
 
         var delta = (Vector)(pos * 32 - Position * 32) * 128;
 
-        this.PacketBroadcaster.QueuePacketToWorld(this.World, new UpdateEntityPositionAndRotationPacket
+        this.PacketBroadcaster.QueuePacketToWorld(this.World, 0, new UpdateEntityPositionAndRotationPacket
         {
             EntityId = EntityId,
             Delta = delta,
@@ -417,6 +408,33 @@ public class Entity : IEquatable<Entity>, IEntity
             Pitch = Pitch,
             Yaw = Yaw
         });
+
+        return default;
+    }
+
+    public virtual void SpawnEntity(Velocity? velocity = null, int additionalData = 0)
+    {
+        this.PacketBroadcaster.QueuePacketToWorldInRange(this.World, this.Position, new BundledPacket
+        {
+            Packets = [
+                        new SpawnEntityPacket
+                        {
+                            EntityId = this.EntityId,
+                            Uuid = this.Uuid,
+                            Type = this.Type,
+                            Position = this.Position,
+                            Pitch = this.Pitch,
+                            Yaw = this.Yaw,
+                            Data = additionalData,
+                            Velocity = velocity ?? new Velocity(0, 0, 0)
+                        },
+                        new SetEntityMetadataPacket
+                        {
+                            EntityId = this.EntityId,
+                            Entity = this
+                        }
+                    ]
+        }, this.EntityId);
     }
 
     public bool TryAddAttribute(string attributeResourceName, float value) =>

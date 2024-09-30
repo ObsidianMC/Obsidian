@@ -1,4 +1,5 @@
-﻿using Obsidian.API.Utilities;
+﻿using Obsidian.API;
+using Obsidian.API.Utilities;
 using Obsidian.Commands;
 using Obsidian.Nbt;
 using Obsidian.Registries;
@@ -535,7 +536,13 @@ public partial class MinecraftStream : INetStreamReader
     public async Task<Angle> ReadAngleAsync() => new Angle(await this.ReadUnsignedByteAsync());
 
     [ReadMethod]
-    public ChatMessage ReadChat() => this.ReadString().FromJson<ChatMessage>();
+    public ChatMessage ReadChat()
+    {
+        var reader = new NbtReader(this);
+        var chatMessage = ChatMessage.Empty;
+
+        return !reader.TryReadNextTag<NbtCompound>(out var root) ? chatMessage : chatMessage.FromNbt(root);
+    }
 
     [ReadMethod]
     public byte[] ReadByteArray()

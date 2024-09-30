@@ -67,6 +67,11 @@
 		<AdditionalFiles Include="Assets/**/*.json" />
 
 		<Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
+		<Compile Remove="Commands\Framework\ArgumentParsers\**" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<AdditionalFiles Include="Assets\**\*.json" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -76,7 +81,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Folder Include="Commands\Framework\ArgumentParsers\" />
 		<Folder Include="Net\Packets\Configuration\Serverbound\" />
 		<Folder Include="Plugins\Services\" />
 		<Folder Include="Registries\ConfiguredFeatures\" />

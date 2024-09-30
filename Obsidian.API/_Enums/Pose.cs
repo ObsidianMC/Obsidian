@@ -14,5 +14,21 @@ public enum Pose : int
 
     Sneaking,
 
-    Dying
+    LongJumper,
+    
+    Dying,
+
+    Croaking,
+
+    UsingTongue,
+
+    Sitting,
+
+    Roaring,
+
+    Smiffing,
+
+    Emerging,
+
+    Digging
 }
