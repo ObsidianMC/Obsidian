@@ -62,6 +62,17 @@ public sealed partial class Server : IServer
     internal readonly CancellationTokenSource _cancelTokenSource;
     internal readonly ILogger _logger;
 
+    internal byte[] BrandData
+    {
+        get
+        {
+            using var ms = new MinecraftStream();
+            ms.WriteString(this.Brand);
+
+            return ms.ToArray();
+        }
+    }
+
     private readonly ConcurrentQueue<IClientboundPacket> _chatMessagesQueue = new();
     private readonly ConcurrentHashSet<Client> _clients = new();
     private readonly ILoggerFactory loggerFactory;
@@ -557,7 +568,7 @@ public sealed partial class Server : IServer
                     var keepAliveTime = DateTimeOffset.Now;
 
                     foreach (var client in _clients.Where(x => x.State == ClientState.Play || x.State == ClientState.Configuration))
-                        client.SendKeepAlive(keepAliveTime);
+                        await KeepAlivePacket.SendAsync(client, keepAliveTime);
 
                     keepAliveTicks = 0;
                 }
@@ -622,7 +633,7 @@ public sealed partial class Server : IServer
         if (!this.Configuration.Network.ShouldThrottle)
             return false;
 
-        if(!throttler.TryGetValue(client.Ip!, out var timeLeft))
+        if (!throttler.TryGetValue(client.Ip!, out var timeLeft))
         {
             throttler.TryAdd(client.Ip!, DateTimeOffset.UtcNow.AddMilliseconds(this.Configuration.Network.ConnectionThrottle));
             return false;

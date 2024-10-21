@@ -27,6 +27,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks.Dataflow;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Obsidian;
 
@@ -261,18 +262,24 @@ public sealed class Client : IDisposable
                 case ClientState.Status: // Server ping/list
                     if (packetData.Id == 0x00)
                     {
-                        await HandleServerStatusRequestAsync();
+                        var status = new ServerStatus(this.server);
+
+                        _ = await this.server.EventDispatcher.ExecuteEventAsync(new ServerStatusRequestEventArgs(this.server, status));
+
+                        this.SendPacket(new RequestResponse(status));
                     }
                     else if (packetData.Id == 0x01)
                     {
-                        await HandlePingPongAsync(packetData.Data);
+                        this.SendPacket(PingPong.Deserialize(packetData.Data));
+                        this.Disconnect();
                     }
                     break;
 
                 case ClientState.Handshaking:
                     if (packetData.Id == 0x00)
                     {
-                        await HandleHandshakeAsync(packetData.Data);
+                        var handshake = Handshake.Deserialize(packetData.Data);
+                        await handshake.HandleAsync(this);
                     }
                     else
                     {
@@ -332,55 +339,7 @@ public sealed class Client : IDisposable
     }
 
     private async ValueTask<bool> HandlePacketAsync(PacketData packetData) => await this.handlers[this.State].HandleAsync(packetData);
-  
-    private async Task HandleServerStatusRequestAsync()
-    {
-        var status = new ServerStatus(this.server);
 
-        _ = await this.server.EventDispatcher.ExecuteEventAsync(new ServerStatusRequestEventArgs(this.server, status));
-
-        SendPacket(new RequestResponse(status));
-    }
-
-    private Task HandlePingPongAsync(byte[] data)
-    {
-        var pong = PingPong.Deserialize(data);
-        SendPacket(pong); // TODO make sure that the packet is fully sent before disconnecting
-        Disconnect();
-        return Task.CompletedTask;
-    }
-
-    private async Task HandleHandshakeAsync(byte[] data)
-    {
-        var handshake = Handshake.Deserialize(data);
-        var nextState = handshake.NextState;
-
-        if (nextState == ClientState.Login)
-        {
-            if ((int)handshake.Version > (int)Server.DefaultProtocol)
-            {
-                await DisconnectAsync($"Outdated server! I'm still on {Server.DefaultProtocol.GetDescription()}.");
-            }
-            else if ((int)handshake.Version < (int)Server.DefaultProtocol)
-            {
-                await DisconnectAsync($"Outdated client! Please use {Server.DefaultProtocol.GetDescription()}.");
-            }
-        }
-        else if (nextState is not ClientState.Status or ClientState.Login or ClientState.Handshaking)
-        {
-            Logger.LogWarning("Client sent unexpected state ({RedText}{ClientState}{WhiteText}), forcing it to disconnect.", ChatColor.Red, nextState, ChatColor.White);
-            await DisconnectAsync($"Invalid client state! Expected Status or Login, received {nextState}.");
-        }
-
-        State = nextState == ClientState.Login && handshake.Version != Server.DefaultProtocol ? ClientState.Closed : nextState;
-
-
-        var versionDesc = handshake.Version.GetDescription();
-        if (versionDesc is null)
-            return;//No need to log if version description is null
-
-        Logger.LogInformation("Handshaking with client (protocol: {YellowText}{VersionDescription}{WhiteText} [{YellowText}{Version}{WhiteText}], server: {YellowText}{ServerAddress}:{ServerPort}{WhiteText})", ChatColor.Yellow, versionDesc, ChatColor.White, ChatColor.Yellow, handshake.Version, ChatColor.White, ChatColor.Yellow, handshake.ServerAddress, handshake.ServerPort, ChatColor.White);
-    }
 
     public async ValueTask<bool> TrySetCachedProfileAsync(string username)
     {
@@ -492,9 +451,8 @@ public sealed class Client : IDisposable
             throw new UnreachableException("Player is null, which means the client has not yet logged in.");
 
         await QueuePacketAsync(new SetDefaultSpawnPositionPacket(Player.world.LevelData.SpawnPosition));
-
-        await SendTimeUpdateAsync();
-        await SendWeatherUpdateAsync();
+        await QueuePacketAsync(new UpdateTimePacket(Player!.world.LevelData.Time, Player.world.LevelData.DayTime));
+        await QueuePacketAsync(new GameEventPacket(Player!.world.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
         await QueuePacketAsync(new SetContainerContentPacket(0, Player.Inventory.ToList())
         {
             StateId = Player.Inventory.StateId++,
@@ -509,30 +467,6 @@ public sealed class Client : IDisposable
     }
 
     internal async Task DisconnectAsync(ChatMessage reason) => await this.QueuePacketAsync(new DisconnectPacket(reason, State));
-    internal Task SendTimeUpdateAsync() => QueuePacketAsync(new UpdateTimePacket(Player!.world.LevelData.Time, Player.world.LevelData.DayTime));
-    internal Task SendWeatherUpdateAsync() => QueuePacketAsync(new GameEventPacket(Player!.world.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
-
-    internal void SendKeepAlive(DateTimeOffset time)
-    {
-        long keepAliveId = time.ToUnixTimeMilliseconds();
-        // first, check if there's any KeepAlives that are older than 30 seconds
-        if (missedKeepAlives.Any(x => keepAliveId - x > this.server.Configuration.Network.KeepAliveTimeoutInterval))
-        {
-            // kick player, failed to respond within 30s
-            cancellationSource.Cancel();
-            return;
-        }
-
-        Logger.LogDebug("Doing KeepAlive ({keepAliveId}) with {Username} ({Uuid})", keepAliveId, Player.Username, Player.Uuid);
-        // now that all is fine and dandy, we'd be fine to enqueue the new keepalive
-        SendPacket(new KeepAlivePacket(keepAliveId)
-        {
-            Id = this.State == ClientState.Configuration ? 0x03 : 0x26
-        });
-        missedKeepAlives.Add(keepAliveId);
-
-        // TODO: reimplement this? probably in KeepAlivePacket:HandleAsync ⬇️
-    }
 
     internal Task RemovePlayerFromListAsync(IPlayer player) => QueuePacketAsync(new PlayerInfoRemovePacket
     {
