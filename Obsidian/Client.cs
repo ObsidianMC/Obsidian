@@ -7,6 +7,7 @@ using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
 using Obsidian.Net;
 using Obsidian.Net.Actions.PlayerInfo;
+using Obsidian.Net.ClientHandlers;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Configuration;
 using Obsidian.Net.Packets.Configuration.Clientbound;
@@ -19,6 +20,8 @@ using Obsidian.Registries;
 using Obsidian.Services;
 using Obsidian.Utilities.Mojang;
 using Obsidian.WorldData;
+using System.Buffers;
+using System.Collections.Frozen;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -95,7 +98,7 @@ public sealed class Client : IDisposable
     /// <summary>
     /// The mojang user that the client and player is associated with.
     /// </summary>
-    private CachedProfile? cachedUser;
+    private CachedProfile? profile;
 
     /// <summary>
     /// Which packets are in queue to be sent to the client.
@@ -110,7 +113,7 @@ public sealed class Client : IDisposable
     /// <summary>
     /// Used to handle packets while the client is in a <see cref="ClientState.Play"/> state.
     /// </summary>
-    private readonly ClientHandler handler;
+    private readonly FrozenDictionary<ClientState, ClientHandler> handlers;
 
     /// <summary>
     /// The base network stream used by the <see cref="minecraftStream"/>.
@@ -146,7 +149,9 @@ public sealed class Client : IDisposable
     /// <summary>
     /// The client's ip and port used to establish this connection.
     /// </summary>
-    public EndPoint? RemoteEndPoint => connectionContext.RemoteEndPoint;
+    public IPEndPoint? RemoteEndPoint => connectionContext.RemoteEndPoint as IPEndPoint;
+
+    public string? Ip => this.RemoteEndPoint?.Address.ToString();
 
     /// <summary>
     /// Executed when the client disconnects.
@@ -175,16 +180,21 @@ public sealed class Client : IDisposable
     {
         this.connectionContext = connectionContext;
         this.loggerFactory = loggerFactory;
-
-        LoadedChunks = [];
-        packetCryptography = new();
-        handler = new(server.Configuration);
-        networkStream = new(connectionContext.Transport);
-        minecraftStream = new(networkStream);
-
         this.server = server;
         this.userCache = playerCache;
         this.Logger = loggerFactory.CreateLogger("ConnectionHandler");
+
+        LoadedChunks = [];
+        packetCryptography = new();
+        this.handlers = new Dictionary<ClientState, ClientHandler>()
+        {
+            { ClientState.Login, new LoginClientHandler { Client = this } },
+            { ClientState.Configuration, new ConfigurationClientHandler { Client = this } },
+            { ClientState.Play, new PlayClientHandler { Client = this } }
+        }.ToFrozenDictionary();
+
+        networkStream = new(connectionContext.Transport);
+        minecraftStream = new(networkStream);
 
         missedKeepAlives = [];
         var linkOptions = new DataflowLinkOptions { PropagateCompletion = true };
@@ -197,20 +207,20 @@ public sealed class Client : IDisposable
 
         packetQueue = new BufferBlock<IClientboundPacket>(blockOptions);
         _ = packetQueue.LinkTo(sendPacketBlock, linkOptions);
-
-        handler.RegisterHandlers();
     }
 
-    private async Task<(int id, byte[] data)> GetNextPacketAsync()
+    private async ValueTask<PacketData> GetNextPacketAsync()
     {
         var length = await minecraftStream.ReadVarIntAsync();
-        var receivedData = new byte[length];
+        var receivedData = ArrayPool<byte>.Shared.Rent(length);
 
         _ = await minecraftStream.ReadAsync(receivedData.AsMemory(0, length));
 
-        var packetId = 0;
-        var packetData = Array.Empty<byte>();
 
+        byte[] packetData = default!;
+        int packetId = default!;
+
+        var error = false;
         await using (var packetStream = new MinecraftStream(receivedData))
         {
             try
@@ -221,44 +231,48 @@ public sealed class Client : IDisposable
                 if (length - packetId.GetVarIntLength() > -1)
                     arlen = length - packetId.GetVarIntLength();
 
-                packetData = new byte[arlen];
+                packetData = ArrayPool<byte>.Shared.Rent(arlen);
                 _ = await packetStream.ReadAsync(packetData.AsMemory(0, packetData.Length));
             }
-            catch
+            catch (Exception ex)
             {
-                throw;
+                this.Logger.LogCritical(ex, "Failed to get next packet.");
+
+                error = true;
             }
         }
 
-        return (packetId, packetData);
+        ArrayPool<byte>.Shared.Return(receivedData);
+
+        return error ? PacketData.Default : new PacketData { Id = packetId, Data = packetData, IsDisposable = true };
     }
 
     public async Task StartConnectionAsync()
     {
         while (!cancellationSource.IsCancellationRequested && connectionContext.IsConnected())
         {
-            (var id, var data) = await GetNextPacketAsync();
+            using var packetData = await GetNextPacketAsync();
 
-            if (State == ClientState.Play && data.Length < 1)
+            if (State == ClientState.Play && packetData.Data.Length < 1)
                 Disconnect();
 
             switch (State)
             {
                 case ClientState.Status: // Server ping/list
-                    if (id == 0x00)
+                    if (packetData.Id == 0x00)
                     {
                         await HandleServerStatusRequestAsync();
                     }
-                    else if (id == 0x01)
+                    else if (packetData.Id == 0x01)
                     {
-                        await HandlePingPongAsync(data);
+                        await HandlePingPongAsync(packetData.Data);
                     }
                     break;
 
                 case ClientState.Handshaking:
-                    if (id == 0x00)
+                    if (packetData.Id == 0x00)
                     {
-                        await HandleHandshakeAsync(data);
+                        await HandleHandshakeAsync(packetData.Data);
                     }
                     else
                     {
@@ -267,79 +281,27 @@ public sealed class Client : IDisposable
                     break;
 
                 case ClientState.Login:
-                    switch (id)
-                    {
-                        case 0x00:
-                            {
-                                if (this.server.Configuration.Network.ShouldThrottle)
-                                {
-                                    string ip = ((IPEndPoint)connectionContext.RemoteEndPoint!).Address.ToString();
-
-                                    if (Server.throttler.TryGetValue(ip, out var timeLeft))
-                                    {
-                                        if (DateTimeOffset.UtcNow < timeLeft)
-                                        {
-                                            this.Logger.LogDebug("{ip} has been throttled for reconnecting too fast.", ip);
-                                            await this.DisconnectAsync("Connection Throttled! Please wait before reconnecting.");
-                                            break;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        Server.throttler.TryAdd(ip, DateTimeOffset.UtcNow.AddMilliseconds(this.server.Configuration.Network.ConnectionThrottle));
-                                    }
-                                }
-
-                                await HandleLoginStartAsync(data);
-                                break;
-                            }
-                        case 0x01:
-                            await HandleEncryptionResponseAsync(data);
-                            break;
-                        case 0x02:
-                            // Login Plugin Response
-                            break;
-                        case 0x03:
-                            //Login Acknowledged
-                            this.Logger.LogDebug("Login Acknowledged switching to configuration state.");
-
-                            this.State = ClientState.Configuration;
-
-                            this.Configure();
-                            break;
-                        default:
-                            Logger.LogError("Client in state Login tried to send an unimplemented packet. Forcing it to disconnect.");
-                            await DisconnectAsync("Unknown Packet Id.");
-                            break;
-                    }
+                    await this.HandlePacketAsync(packetData);
                     break;
                 case ClientState.Configuration:
                     Debug.Assert(Player is not null);
 
-                    var result = await this.server.EventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.server, id, data));
+                    var result = await this.server.EventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.server, packetData.Id, packetData.Data));
 
                     if (result == EventResult.Cancelled)
                         return;
 
-                    await this.handler.HandleConfigurationPackets(id, data, this);
+                    await this.HandlePacketAsync(packetData);
                     break;
                 case ClientState.Play:
                     Debug.Assert(Player is not null);
 
-                    result = await this.server.EventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.server, id, data));
+                    result = await this.server.EventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.server, packetData.Id, packetData.Data));
 
                     if (result == EventResult.Cancelled)
                         return;
 
-                    try
-                    {
-                        await handler.HandlePlayPackets(id, data, this);
-                    }
-                    catch (Exception ex)
-                    {
-                        this.Logger.LogDebug(ex, "Exception thrown");
-                    }
-
+                    await this.HandlePacketAsync(packetData);
 
                     break;
                 case ClientState.Closed:
@@ -360,25 +322,17 @@ public sealed class Client : IDisposable
         this.Dispose();//Dispose client after
     }
 
-    private void Configure()
+    internal void ThrowIfInvalidEncryptionRequest()
     {
-        //This is very inconvenient
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.Biomes.CodecKey, CodecRegistry.Biomes.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.Dimensions.CodecKey, CodecRegistry.Dimensions.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.ChatType.CodecKey, CodecRegistry.ChatType.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.DamageType.CodecKey, CodecRegistry.DamageType.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimPattern.CodecKey, CodecRegistry.TrimPattern.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimMaterial.CodecKey, CodecRegistry.TrimMaterial.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.WolfVariant.CodecKey, CodecRegistry.WolfVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.PaintingVariant.CodecKey, CodecRegistry.PaintingVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        if (this.Player is null)
+            throw new InvalidOperationException("Received Encryption Response before sending Login Start.");
 
-
-        this.SendPacket(UpdateTagsPacket.FromRegistry);
-
-        this.SendPacket(FinishConfigurationPacket.Default);
+        if (this.randomToken is null)
+            throw new InvalidOperationException("Received Encryption Response before sending Encryption Request.");
     }
 
-
+    private async ValueTask<bool> HandlePacketAsync(PacketData packetData) => await this.handlers[this.State].HandleAsync(packetData);
+  
     private async Task HandleServerStatusRequestAsync()
     {
         var status = new ServerStatus(this.server);
@@ -428,61 +382,93 @@ public sealed class Client : IDisposable
         Logger.LogInformation("Handshaking with client (protocol: {YellowText}{VersionDescription}{WhiteText} [{YellowText}{Version}{WhiteText}], server: {YellowText}{ServerAddress}:{ServerPort}{WhiteText})", ChatColor.Yellow, versionDesc, ChatColor.White, ChatColor.Yellow, handshake.Version, ChatColor.White, ChatColor.Yellow, handshake.ServerAddress, handshake.ServerPort, ChatColor.White);
     }
 
-    private async Task HandleLoginStartAsync(byte[] data)
+    public async ValueTask<bool> TrySetCachedProfileAsync(string username)
     {
-        var loginStart = LoginStart.Deserialize(data);
-        var username = this.server.Configuration.Network.MulitplayerDebugMode ? $"Player{Globals.Random.Next(1, 999)}" : loginStart.Username;
-        var world = (World)this.server.DefaultWorld;
+        ArgumentNullException.ThrowIfNull(username, nameof(username));
 
-        Logger.LogDebug("Received login request from user {Username}", username);
-        await this.server.DisconnectIfConnectedAsync(username);
+        this.profile = await this.userCache.GetCachedUserFromNameAsync(username);
 
-        if (this.server.Configuration.OnlineMode)
+        if (this.profile is null)
         {
-            cachedUser = await this.userCache.GetCachedUserFromNameAsync(loginStart.Username ?? throw new NullReferenceException(nameof(loginStart.Username)));
+            await DisconnectAsync("Account not found in the Mojang database");
 
-            if (cachedUser is null)
-            {
-                await DisconnectAsync("Account not found in the Mojang database");
-                return;
-            }
-            else if (this.server.Configuration.Whitelist && !this.server.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => x.Id == cachedUser.Uuid))
-            {
-                await DisconnectAsync("You are not whitelisted on this server\nContact server administrator");
-                return;
-            }
-
-            this.InitializeId();
-
-            Player = new Player(this.cachedUser.Uuid, loginStart.Username, this, world);
-            packetCryptography.GenerateKeyPair();
-
-            var (publicKey, randomToken) = packetCryptography.GeneratePublicKeyAndToken();
-
-            this.randomToken = randomToken;
-
-            SendPacket(new EncryptionRequest
-            {
-                PublicKey = publicKey,
-                VerifyToken = randomToken,
-                ShouldAuthenticate = true//I don't know how we're supposed to use this
-            });
+            return false;
         }
-        else if (this.server.Configuration.Whitelist && !this.server.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => x.Name == username))
+        else if (this.server.IsWhitedlisted(this.profile.Uuid))
         {
             await DisconnectAsync("You are not whitelisted on this server\nContact server administrator");
+
+            return false;
         }
-        else
+
+        this.InitializeId();
+
+        return true;
+    }
+
+    public async Task<bool> TryValidateEncryptionResponseAsync(byte[] sharedSecret, byte[] verifyToken)
+    {
+        this.sharedKey = packetCryptography.Decrypt(sharedSecret);
+
+        var decryptedToken = packetCryptography.Decrypt(verifyToken);
+
+        if (!decryptedToken.SequenceEqual(this.randomToken!))
         {
-            this.InitializeId();
-
-            Player = new Player(GuidHelper.FromStringHash($"OfflinePlayer:{username}"), username, this, world);
-
-            this.SendPacket(new LoginSuccess(Player.Uuid, Player.Username)
-            {
-                SkinProperties = this.Player.SkinProperties,
-            });
+            await this.DisconnectAsync("Invalid token...");
+            return false;
         }
+
+        var serverId = sharedKey.Concat(packetCryptography.PublicKey).MinecraftShaDigest();
+        if (await this.userCache.HasJoinedAsync(this.Player!.Username, serverId) is not MojangProfile user)
+        {
+            this.Logger.LogWarning("Failed to auth {Username}", this.Player.Username);
+            await this.DisconnectAsync("Unable to authenticate...");
+            return false;
+        }
+
+        this.Player.SkinProperties = user.Properties!;
+        this.EncryptionEnabled = true;
+        this.minecraftStream = new EncryptedMinecraftStream(networkStream, sharedKey);
+
+        this.SendPacket(new LoginSuccess(Player.Uuid, Player.Username)
+        {
+            SkinProperties = this.Player.SkinProperties,
+        });
+
+        return true;
+    }
+
+    public void Initialize(World world)
+    {
+        if (this.profile == null)
+            throw new UnreachableException("Profile was not set or is null.");
+
+        this.Player = new(this.profile.Uuid, this.profile.Name, this, world);
+
+        this.packetCryptography.GenerateKeyPair();
+
+        var (publicKey, randomToken) = this.packetCryptography.GeneratePublicKeyAndToken();
+
+        this.randomToken = randomToken;
+
+        this.SendPacket(new EncryptionRequest
+        {
+            PublicKey = publicKey,
+            VerifyToken = randomToken,
+            ShouldAuthenticate = true//I don't know how we're supposed to use this
+        });
+    }
+
+    public void InitializeOffline(string username, World world)
+    {
+        this.InitializeId();
+
+        this.Player = new Player(GuidHelper.FromStringHash($"OfflinePlayer:{username}"), username, this, world);
+
+        this.SendPacket(new LoginSuccess(Player.Uuid, Player.Username)
+        {
+            SkinProperties = this.Player.SkinProperties,
+        });
     }
 
     private void InitializeId()
@@ -491,113 +477,12 @@ public sealed class Client : IDisposable
         this.Logger = this.loggerFactory.CreateLogger($"Client({this.id})");
     }
 
-    private async Task HandleEncryptionResponseAsync(byte[] data)
-    {
-        if (Player is null)
-        {
-            throw new InvalidOperationException("Received Encryption Response before sending Login Start.");
-        }
-        else if (randomToken is null)
-        {
-            throw new InvalidOperationException("Received Encryption Response before sending Encryption Request.");
-        }
-
-        // Decrypt the shared secret and verify the token
-        var encryptionResponse = EncryptionResponse.Deserialize(data);
-
-        sharedKey = packetCryptography.Decrypt(encryptionResponse.SharedSecret);
-
-        var decryptedToken = packetCryptography.Decrypt(encryptionResponse.VerifyToken);
-
-        if (!decryptedToken.SequenceEqual(randomToken))
-        {
-            await DisconnectAsync("Invalid token...");
-            return;
-        }
-
-        var serverId = sharedKey.Concat(packetCryptography.PublicKey).MinecraftShaDigest();
-        if (await this.userCache.HasJoinedAsync(Player.Username, serverId) is not MojangProfile user)
-        {
-            Logger.LogWarning("Failed to auth {Username}", Player.Username);
-            await DisconnectAsync("Unable to authenticate...");
-            return;
-        }
-
-        this.Player.SkinProperties = user.Properties;
-        EncryptionEnabled = true;
-        minecraftStream = new EncryptedMinecraftStream(networkStream, sharedKey);
-
-        this.SendPacket(new LoginSuccess(Player.Uuid, Player.Username)
-        {
-            SkinProperties = this.Player.SkinProperties,
-        });
-    }
-
     // TODO fix compression now????
     private void SetCompression()
     {
         SendPacket(new SetCompression(CompressionThreshold));
         compressionEnabled = true;
         Logger.LogDebug("Compression has been enabled.");
-    }
-
-    internal async Task ConnectAsync()
-    {
-        if (Player is null)
-            throw new UnreachableException("Player is null, which means the client has not yet logged in.");
-
-        Logger.LogDebug("Sent Login success to user {Username} {UUID}", Player.Username, Player.Uuid);
-
-        this.State = ClientState.Play;
-        await Player.LoadAsync();
-        if (!this.server.OnlinePlayers.TryAdd(Player.Uuid, Player))
-        {
-            Logger.LogError("Failed to add player {Username} to online players. Undefined behavior ahead!", Player.Username);
-        }
-
-        if (!CodecRegistry.TryGetDimension(Player.world.DimensionName, out var codec) || !CodecRegistry.TryGetDimension("minecraft:overworld", out codec))
-            throw new UnreachableException("Failed to retrieve proper dimension for player.");
-
-        await QueuePacketAsync(new LoginPacket
-        {
-            EntityId = id,
-            Gamemode = Player.Gamemode,
-            DimensionNames = CodecRegistry.Dimensions.All.Keys.ToList(),
-            DimensionType = codec.Id,
-            DimensionName = codec.Name,
-            HashedSeed = 0,
-            ReducedDebugInfo = false,
-            EnableRespawnScreen = true,
-            Flat = false
-        });
-
-        await SendServerBrand();
-
-        await SendCommandsAsync();
-
-        await QueuePacketAsync(new UpdateRecipeBookPacket
-        {
-            Action = UnlockRecipeAction.Init,
-            FirstRecipeIds = RecipesRegistry.Recipes.Keys.ToList(),
-            SecondRecipeIds = RecipesRegistry.Recipes.Keys.ToList()
-        });
-
-        await SendPlayerInfoAsync();
-        await this.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
-
-        Player.TeleportId = Globals.Random.Next(0, 999);
-        await QueuePacketAsync(new SynchronizePlayerPositionPacket
-        {
-            Position = Player.Position,
-            Yaw = 0,
-            Pitch = 0,
-            Flags = PositionFlags.None,
-            TeleportId = Player.TeleportId
-        });
-
-        await Player.UpdateChunksAsync(distance: 7);
-        await SendInfoAsync();
-        await this.server.EventDispatcher.ExecuteEventAsync(new PlayerJoinEventArgs(Player, this.server, DateTimeOffset.Now));
     }
 
     #region Packet sending
@@ -627,26 +512,6 @@ public sealed class Client : IDisposable
     internal Task SendTimeUpdateAsync() => QueuePacketAsync(new UpdateTimePacket(Player!.world.LevelData.Time, Player.world.LevelData.DayTime));
     internal Task SendWeatherUpdateAsync() => QueuePacketAsync(new GameEventPacket(Player!.world.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
 
-    internal async Task HandleKeepAliveAsync(KeepAlivePacket keepAlive)
-    {
-        if (!missedKeepAlives.Contains(keepAlive.KeepAliveId))
-        {
-            Logger.LogWarning("Received invalid KeepAlive from {Username}?? Naughty???? ({Uuid})", Player?.Username, Player?.Uuid);
-            await DisconnectAsync(ChatMessage.Simple("Kicked for invalid KeepAlive."));
-            return;
-        }
-
-        // from now on we know this keepalive is VALID and WITHIN BOUNDS
-        decimal ping = DateTimeOffset.Now.ToUnixTimeMilliseconds() - keepAlive.KeepAliveId;
-        ping = Math.Min(int.MaxValue, ping); // convert within integer bounds
-        ping = Math.Max(0, ping); // negative ping is impossible.
-
-        this.ping = (int)ping;
-        Logger.LogDebug("Valid KeepAlive ({KeepAliveId}) handled from {Username} ({Uuid})", keepAlive.KeepAliveId, Player?.Username, Player?.Uuid);
-        // KeepAlive is handled.
-        missedKeepAlives.Remove(keepAlive.KeepAliveId);
-    }
-
     internal void SendKeepAlive(DateTimeOffset time)
     {
         long keepAliveId = time.ToUnixTimeMilliseconds();
@@ -668,8 +533,6 @@ public sealed class Client : IDisposable
 
         // TODO: reimplement this? probably in KeepAlivePacket:HandleAsync ⬇️
     }
-
-    internal Task SendCommandsAsync() => QueuePacketAsync(CommandsRegistry.Packet);
 
     internal Task RemovePlayerFromListAsync(IPlayer player) => QueuePacketAsync(new PlayerInfoRemovePacket
     {
@@ -794,14 +657,6 @@ public sealed class Client : IDisposable
     }
     internal Task UnloadChunkAsync(int x, int z) => LoadedChunks.Contains((x, z)) ? QueuePacketAsync(new UnloadChunkPacket(x, z)) : Task.CompletedTask;
 
-    private async Task SendServerBrand()
-    {
-        await using var stream = new MinecraftStream();
-        await stream.WriteStringAsync(this.server.Brand);
-        await QueuePacketAsync(new PluginMessagePacket("minecraft:brand", stream.ToArray()));
-        Logger.LogDebug("Sent server brand.");
-    }
-
     #endregion Packet sending
 
     internal void Disconnect()
@@ -811,6 +666,8 @@ public sealed class Client : IDisposable
 
         this.Dispose();
     }
+
+    internal void SetState(ClientState state) => this.State = state;
 
     public void Dispose()
     {
