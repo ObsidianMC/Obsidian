@@ -14,6 +14,7 @@ public partial class SetCreativeModeSlotPacket : IServerboundPacket
 
     public int Id => 0x2F;
 
+    public ValueTask HandleAsync(Client client) => default;
     public ValueTask HandleAsync(Server server, Player player)
     {
         var inventory = player.OpenedContainer ?? player.Inventory;

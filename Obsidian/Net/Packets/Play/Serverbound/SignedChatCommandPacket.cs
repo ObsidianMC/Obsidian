@@ -26,6 +26,7 @@ public sealed partial class SignedChatCommandPacket : IServerboundPacket
 
     public int Id => 0x05;
 
+    public ValueTask HandleAsync(Client client) => default;
     public async ValueTask HandleAsync(Server server, Player player)
     {
         var context = new CommandContext($"/{this.Command}", new CommandSender(CommandIssuers.Client, player, server._logger), player, server);

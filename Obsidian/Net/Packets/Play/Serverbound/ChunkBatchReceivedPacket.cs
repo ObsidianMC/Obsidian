@@ -10,5 +10,6 @@ public sealed partial class ChunkBatchReceivedPacket : IServerboundPacket
     public int Id => 0x08;
 
     //TODO impl
-    public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
+    public ValueTask HandleAsync(Server server, Player player) => default;
+    public ValueTask HandleAsync(Client client) => default;
 }

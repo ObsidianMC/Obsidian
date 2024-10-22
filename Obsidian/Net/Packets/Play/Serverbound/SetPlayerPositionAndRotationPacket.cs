@@ -20,6 +20,7 @@ public partial class SetPlayerPositionAndRotationPacket : IServerboundPacket
 
     public int Id => 0x18;
 
+    public ValueTask HandleAsync(Client client) => default;
     public async ValueTask HandleAsync(Server server, Player player)
     {
         // The first time we get this packet, it doesn't make sense so we should ignore it.

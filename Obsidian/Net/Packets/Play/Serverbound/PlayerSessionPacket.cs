@@ -12,6 +12,7 @@ public sealed partial class PlayerSessionPacket : IServerboundPacket
 
     public int Id => 0x07;
 
+    public ValueTask HandleAsync(Client client) => default;
     public ValueTask HandleAsync(Server server, Player player)
     {
         player.client.signatureData = this.SignatureData;

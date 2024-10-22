@@ -17,5 +17,6 @@ public sealed partial class PluginResponsePacket : IServerboundPacket
 
     public int Id => 0x02;
 
-    public ValueTask HandleAsync(Server server, Player player) => throw new NotImplementedException();
+    public ValueTask HandleAsync(Client client) => default;
+    public ValueTask HandleAsync(Server server, Player player) => default;
 }

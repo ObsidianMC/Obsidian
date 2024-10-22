@@ -17,6 +17,7 @@ public partial class PlayerCommandPacket : IServerboundPacket
 
     public int Id => 0x25;
 
+    public ValueTask HandleAsync(Client client) => default;
     public async ValueTask HandleAsync(Server server, Player player)
     {
         var block = await player.world.GetBlockAsync((int)player.Position.X, (int)player.HeadY, (int)player.Position.Z);

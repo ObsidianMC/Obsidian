@@ -10,5 +10,6 @@ public partial class PickItemPacket : IServerboundPacket
 
     public int Id => 0x20;
 
-    public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
+    public ValueTask HandleAsync(Client client) => default;
+    public ValueTask HandleAsync(Server server, Player player) => default;
 }

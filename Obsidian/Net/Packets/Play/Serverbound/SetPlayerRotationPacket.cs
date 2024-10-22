@@ -27,6 +27,7 @@ public partial class SetPlayerRotationPacket : IServerboundPacket
         OnGround = onGround;
     }
 
+    public ValueTask HandleAsync(Client client) => default;
     public async ValueTask HandleAsync(Server server, Player player)
     {
         await player.UpdateAsync(Yaw, Pitch, OnGround);

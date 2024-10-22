@@ -565,10 +565,10 @@ public sealed partial class Server : IServer
                 keepAliveTicks++;
                 if (keepAliveTicks > (Configuration.Network.KeepAliveInterval / 50)) // to clarify: one tick is 50 milliseconds. 50 * 200 = 10000 millis means 10 seconds
                 {
-                    var keepAliveTime = DateTimeOffset.Now;
-
                     foreach (var client in _clients.Where(x => x.State == ClientState.Play || x.State == ClientState.Configuration))
-                        await KeepAlivePacket.SendAsync(client, keepAliveTime);
+                    {
+                        await new KeepAlivePacket().HandleAsync(client);
+                    }
 
                     keepAliveTicks = 0;
                 }

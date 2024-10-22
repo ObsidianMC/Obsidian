@@ -11,6 +11,7 @@ public partial class CloseContainerPacket : IClientboundPacket, IServerboundPack
 
     public int Id => 0x12;
 
+    public ValueTask HandleAsync(Client client) => default;
     public async ValueTask HandleAsync(Server server, Player player)
     {
         if (WindowId == 0)

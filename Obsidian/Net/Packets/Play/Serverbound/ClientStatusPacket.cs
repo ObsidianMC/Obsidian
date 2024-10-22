@@ -10,6 +10,7 @@ public partial class ClientStatusPacket : IServerboundPacket
 
     public int Id => 0x09;
 
+    public ValueTask HandleAsync(Client client) => default;
     public async ValueTask HandleAsync(Server server, Player player)
     {
         if (Action == ClientAction.PerformRespawn)

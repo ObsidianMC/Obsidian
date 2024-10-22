@@ -38,6 +38,7 @@ public partial class SetHeldItemPacket : IServerboundPacket, IClientboundPacket
         return packet;
     }
 
+    public ValueTask HandleAsync(Client client) => default;
     public ValueTask HandleAsync(Server server, Player player)
     {
         player.CurrentSlot = Slot;

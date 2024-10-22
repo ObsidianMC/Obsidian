@@ -22,6 +22,7 @@ public partial class PlayerActionPacket : IServerboundPacket
 
     public int Id => 0x24;
 
+    public ValueTask HandleAsync(Client client) => default;
     public async ValueTask HandleAsync(Server server, Player player)
     {
         if (await player.world.GetBlockAsync(Position) is not IBlock block)

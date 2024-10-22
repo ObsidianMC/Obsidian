@@ -11,6 +11,7 @@ public partial class SwingArmPacket : IServerboundPacket
 
     public int Id => 0x36;
 
+    public ValueTask HandleAsync(Client client) => default;
     public async ValueTask HandleAsync(Server server, Player player)
     {
         var entities = player.GetEntitiesNear(player.ClientInformation.ViewDistance);

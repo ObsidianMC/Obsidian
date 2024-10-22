@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
-using Obsidian.API.Utilities;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
@@ -9,14 +8,10 @@ using Obsidian.Net;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.ClientHandlers;
 using Obsidian.Net.Packets;
-using Obsidian.Net.Packets.Configuration;
-using Obsidian.Net.Packets.Configuration.Clientbound;
 using Obsidian.Net.Packets.Handshaking;
 using Obsidian.Net.Packets.Login;
-using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Status;
-using Obsidian.Registries;
 using Obsidian.Services;
 using Obsidian.Utilities.Mojang;
 using Obsidian.WorldData;
@@ -27,7 +22,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks.Dataflow;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Obsidian;
 

@@ -37,6 +37,8 @@ public partial class ChatMessagePacket : IServerboundPacket
         await server.HandleIncomingMessageAsync(this, player.client);
     }
 
+    public ValueTask HandleAsync(Client client) => default;
+
     public void Populate(MinecraftStream stream)
     {
         this.Message = stream.ReadString();

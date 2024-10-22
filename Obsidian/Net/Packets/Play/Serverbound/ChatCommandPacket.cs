@@ -1,6 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.API.Logging;
-using Obsidian.Commands;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
@@ -14,6 +12,7 @@ public partial class ChatCommandPacket : IServerboundPacket
 
     public int Id => 0x04;
 
+    public ValueTask HandleAsync(Client client) => default;
     public async ValueTask HandleAsync(Server server, Player player)
     {
         var context = new CommandContext($"/{this.Command}", new CommandSender(CommandIssuers.Client, player, server._logger), player, server);

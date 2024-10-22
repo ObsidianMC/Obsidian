@@ -10,5 +10,6 @@ public partial class SetSeenRecipePacket : IServerboundPacket
 
     public int Id => 0x29;
 
-    public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
+    public ValueTask HandleAsync(Client client) => default;
+    public ValueTask HandleAsync(Server server, Player player) => default;
 }

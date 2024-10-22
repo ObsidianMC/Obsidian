@@ -18,14 +18,13 @@ public sealed partial class FinishConfigurationPacket : IServerboundPacket, ICli
 
     public void Serialize(MinecraftStream stream) => this.WritePacketId(stream);
 
-    //TODO move connect logic into here
+    public ValueTask HandleAsync(Client client) => default;
+
     public async ValueTask HandleAsync(Server server, Player player)
     {
         var client = player.client;
 
         client.Logger.LogDebug("Got finished configuration");
-
-        //await player.client.ConnectAsync();
 
         client.Logger.LogDebug("Sent Login success to user {Username} {UUID}", player.Username, player.Uuid);
 

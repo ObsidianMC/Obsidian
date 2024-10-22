@@ -24,6 +24,7 @@ public partial class SetPlayerPositionPacket : IServerboundPacket
         OnGround = onGround;
     }
 
+    public ValueTask HandleAsync(Client client) => default;
     public async ValueTask HandleAsync(Server server, Player player)
     {
         await player.UpdateAsync(Position, OnGround);

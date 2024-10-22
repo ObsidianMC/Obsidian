@@ -9,7 +9,8 @@ public sealed partial class ResourcePackResponse : IServerboundPacket, IClientbo
 
     public int Id { get; init; }
 
-    public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
+    public ValueTask HandleAsync(Client client) => default;
+    public ValueTask HandleAsync(Server server, Player player) => default;
 }
 
 public enum ResourcePackResponseResult

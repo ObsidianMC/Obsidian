@@ -57,6 +57,7 @@ public partial class PluginMessagePacket : IClientboundPacket, IServerboundPacke
         PluginData = stream.ReadUInt8Array((int)(stream.Length - stream.Position));
     }
 
+    public ValueTask HandleAsync(Client client) => default;
     public ValueTask HandleAsync(Server server, Player player)
     {
         var result = Handle();

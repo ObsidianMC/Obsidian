@@ -14,6 +14,7 @@ public partial class UseItemPacket : IServerboundPacket
 
     public int Id => 0x39;
 
+    public ValueTask HandleAsync(Client client) => default;
     public async ValueTask HandleAsync(Server server, Player player)
     {
         await server.EventDispatcher.ExecuteEventAsync(new PlayerInteractEventArgs(player, server)

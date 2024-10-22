@@ -13,5 +13,6 @@ public partial class ClickContainerButtonPacket : IServerboundPacket
 
     public int Id => 0x0D;
 
-    public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
+    public ValueTask HandleAsync(Server server, Player player) => default;
+    public ValueTask HandleAsync(Client client) => default;
 }

@@ -55,6 +55,7 @@ public partial class ClickContainerPacket : IServerboundPacket
 
     public int Id => 0x0E;
 
+    public ValueTask HandleAsync(Client client) => default;
     public async ValueTask HandleAsync(Server server, Player player)
     {
         var container = player.OpenedContainer ?? player.Inventory;

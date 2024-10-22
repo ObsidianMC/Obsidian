@@ -31,6 +31,7 @@ public sealed partial class ClientInformationPacket : IServerboundPacket
     //0x0A for play state
     public int Id { get; init; } = 0x00;
 
+    public ValueTask HandleAsync(Client client) => default;
     public async ValueTask HandleAsync(Server server, Player player)
     {
         player.ClientInformation = new()

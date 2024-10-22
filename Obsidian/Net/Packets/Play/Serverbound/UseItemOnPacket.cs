@@ -28,6 +28,7 @@ public partial class UseItemOnPacket : IServerboundPacket
 
     public int Id => 0x38;
 
+    public ValueTask HandleAsync(Client client) => default;
     public async ValueTask HandleAsync(Server server, Player player)
     {
         //Get main hand first return offhand if null

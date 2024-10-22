@@ -2,7 +2,7 @@
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public class PlayerAbilitiesPacket(bool toClient) : IClientboundPacket, IServerboundPacket
+public sealed partial class PlayerAbilitiesPacket(bool toClient) : IClientboundPacket, IServerboundPacket
 {
     public PlayerAbility Abilities { get; set; } = PlayerAbility.None;
 
@@ -30,6 +30,8 @@ public class PlayerAbilitiesPacket(bool toClient) : IClientboundPacket, IServerb
     public void Populate(MinecraftStream stream)
     {
         Abilities = (PlayerAbility) stream.ReadByte();
+        FlyingSpeed = stream.ReadFloat();
+        FieldOfViewModifier = stream.ReadFloat();
     }
 
     public void Populate(byte[] data)
@@ -37,6 +39,8 @@ public class PlayerAbilitiesPacket(bool toClient) : IClientboundPacket, IServerb
         using var stream = new MinecraftStream(data);
         Populate(stream);
     }
+
+    public ValueTask HandleAsync(Client client) => default;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
