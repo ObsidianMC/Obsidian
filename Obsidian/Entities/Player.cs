@@ -108,7 +108,7 @@ public sealed partial class Player : Living, IPlayer
         }
     }
 
-    public int Ping => client.ping;
+    public int Ping => client.Ping;
     public int FoodLevel { get; set; }
     public int FoodTickTimer { get; set; }
     public int XpLevel { get; set; }
@@ -1019,7 +1019,7 @@ public sealed partial class Player : Living, IPlayer
             var chunk = await world.GetChunkAsync(X, Z);
             if (chunk is not null && chunk.IsGenerated)
             {
-                await client.SendChunkAsync(chunk);
+                await client.QueuePacketAsync(new ChunkDataAndUpdateLightPacket(chunk));
                 client.LoadedChunks.Add((chunk.X, chunk.Z));
             }
             else

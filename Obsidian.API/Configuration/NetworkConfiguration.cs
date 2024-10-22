@@ -6,6 +6,11 @@ public sealed record class NetworkConfiguration
     /// </summary>
     public bool ShouldThrottle => this.ConnectionThrottle > 0;
 
+    /// <summary>
+    /// The max amount of bytes that can be sent to the client before compression is required.
+    /// </summary>
+    public int CompressionThreshold { get; set; } = 256;
+
     public long KeepAliveInterval { get; set; } = 10_000;
 
     public long KeepAliveTimeoutInterval { get; set; } = 30_000;

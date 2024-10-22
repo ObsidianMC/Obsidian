@@ -10,15 +10,15 @@ namespace Obsidian.Net;
 
 public sealed class PacketCryptography
 {
-    private RsaKeyPairGenerator provider;
+    private RsaKeyPairGenerator provider = default!;
 
-    private IAsymmetricBlockCipher encryptCipher;
-    private IAsymmetricBlockCipher decryptCipher;
+    private IAsymmetricBlockCipher encryptCipher = default!;
+    private IAsymmetricBlockCipher decryptCipher = default!;
 
-    internal byte[] VerifyToken { get; set; }
-    internal byte[] PublicKey { get; set; }
+    internal byte[] VerifyToken { get; set; } = default!;
+    internal byte[] PublicKey { get; set; } = default!;
 
-    internal AsymmetricCipherKeyPair KeyPair { get; set; }
+    internal AsymmetricCipherKeyPair KeyPair { get; set; } = default!;
 
     public AsymmetricCipherKeyPair GenerateKeyPair()
     {

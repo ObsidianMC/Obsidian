@@ -26,8 +26,6 @@ public sealed partial class FinishConfigurationPacket : IServerboundPacket, ICli
 
         client.Logger.LogDebug("Got finished configuration");
 
-        client.Logger.LogDebug("Sent Login success to user {Username} {UUID}", player.Username, player.Uuid);
-
         client.SetState(ClientState.Play);
         await player.LoadAsync();
         if (!server.OnlinePlayers.TryAdd(player.Uuid, player))

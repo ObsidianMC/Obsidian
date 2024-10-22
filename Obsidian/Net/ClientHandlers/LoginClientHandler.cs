@@ -93,7 +93,7 @@ internal sealed class LoginClientHandler : ClientHandler
             return;
         }
 
-        if (!this.Server.IsWhitedlisted(username))
+        if (this.Server.Configuration.Whitelist && !this.Server.IsWhitedlisted(username))
         {
             await this.Client.DisconnectAsync("You are not whitelisted on this server\nContact server administrator");
         }

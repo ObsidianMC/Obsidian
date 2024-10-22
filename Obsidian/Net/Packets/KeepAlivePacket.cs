@@ -24,8 +24,7 @@ public partial class KeepAlivePacket : IClientboundPacket, IServerboundPacket
         var server = client.server;
 
         long keepAliveId = time.ToUnixTimeMilliseconds();
-        // first, check if there's any KeepAlives that are older than 30 seconds
-        if (client.missedKeepAlives.Any(x => keepAliveId - x > server.Configuration.Network.KeepAliveTimeoutInterval))
+        if (keepAliveId - client.lastKeepAliveId > server.Configuration.Network.KeepAliveTimeoutInterval)
         {
             await client.DisconnectAsync("Timed out..");
             return;
@@ -38,14 +37,14 @@ public partial class KeepAlivePacket : IClientboundPacket, IServerboundPacket
 
         client.SendPacket(this);
 
-        client.missedKeepAlives.Add(keepAliveId);
+        client.lastKeepAliveId = keepAliveId;
     }
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
         var client = player.client;
 
-        if (!client.missedKeepAlives.Contains(this.KeepAliveId))
+        if (this.KeepAliveId != client.lastKeepAliveId)
         {
             client.Logger.LogWarning("Received invalid KeepAlive from {Username}?? Naughty???? ({Uuid})", player.Username, player.Uuid);
             await client.DisconnectAsync(ChatMessage.Simple("Kicked for invalid KeepAlive."));
@@ -57,9 +56,10 @@ public partial class KeepAlivePacket : IClientboundPacket, IServerboundPacket
         ping = Math.Min(int.MaxValue, ping); // convert within integer bounds
         ping = Math.Max(0, ping); // negative ping is impossible.
 
-        client.ping = (int)ping;
+        client.Ping = (int)ping;
         client.Logger.LogDebug("Valid KeepAlive ({KeepAliveId}) handled from {Username} ({Uuid})", this.KeepAliveId, player.Username, player.Uuid);
         // KeepAlive is handled.
-        client.missedKeepAlives.Remove(this.KeepAliveId);
+
+        client.lastKeepAliveId = null;
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.Entities;
 using Obsidian.Net.Packets;
 using Obsidian.Utilities.Collections;
 
@@ -7,6 +8,7 @@ internal abstract class ClientHandler
 {
     protected Server Server => this.Client.server;
     protected ILogger Logger => this.Client.Logger;
+    protected Player? Player => this.Client.Player;
 
     public required Client Client { get; init; }
 
@@ -19,7 +21,7 @@ internal abstract class ClientHandler
         try
         {
             packet.Populate(data);
-            await packet.HandleAsync(this.Server, this.Client.Player!);
+            await packet.HandleAsync(this.Server, this.Player!);
         }
         catch (Exception e)
         {

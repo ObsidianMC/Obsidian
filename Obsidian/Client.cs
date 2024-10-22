@@ -28,11 +28,6 @@ namespace Obsidian;
 public sealed class Client : IDisposable
 {
     /// <summary>
-    /// The max amount of bytes that can be sent to the client before compression is required.
-    /// </summary>
-    private const int CompressionThreshold = 256;
-
-    /// <summary>
     /// The player's entity id.
     /// </summary>
     internal int id;
@@ -40,12 +35,7 @@ public sealed class Client : IDisposable
     /// <summary>
     /// How many <see cref="KeepAlivePacket"/>s the client has missed.
     /// </summary>
-    internal List<long> missedKeepAlives;
-
-    /// <summary>
-    /// The client's ping in milliseconds.
-    /// </summary>
-    internal int ping;
+    internal long? lastKeepAliveId;
 
     /// <summary>
     /// The public key/signature data received from mojang.
@@ -61,7 +51,6 @@ public sealed class Client : IDisposable
     /// The server that the client is connected to.
     /// </summary>
     internal readonly Server server;
-
 
     private readonly IUserCache userCache;
 
@@ -127,6 +116,11 @@ public sealed class Client : IDisposable
     private readonly ILoggerFactory loggerFactory;
 
     /// <summary>
+    /// The client's ping in milliseconds.
+    /// </summary>
+    public int Ping { get; internal set; }
+
+    /// <summary>
     /// Whether the stream has encryption enabled. This can be set to false when the client is connecting through LAN or when the server is in offline mode.
     /// </summary>
     public bool EncryptionEnabled { get; private set; }
@@ -134,7 +128,7 @@ public sealed class Client : IDisposable
     /// <summary>
     /// Which state of the protocol the client is currently in.
     /// </summary>
-    public ClientState State { get; internal set; } = ClientState.Handshaking;
+    public ClientState State { get; private set; } = ClientState.Handshaking;
 
     /// <summary>
     /// Which chunks the player should have loaded around them.
@@ -163,11 +157,10 @@ public sealed class Client : IDisposable
     /// </summary>
     public Player? Player { get; private set; }
 
-
     /// <summary>
     /// The client brand. This is the name that the client used to identify itself (Fabric, Forge, Quilt, etc.)
     /// </summary>
-    public string? Brand { get; set; }
+    public string? Brand { get; internal set; }
 
     public Client(ConnectionContext connectionContext,
         ILoggerFactory loggerFactory, IUserCache playerCache,
@@ -191,7 +184,6 @@ public sealed class Client : IDisposable
         networkStream = new(connectionContext.Transport);
         minecraftStream = new(networkStream);
 
-        missedKeepAlives = [];
         var linkOptions = new DataflowLinkOptions { PropagateCompletion = true };
         var blockOptions = new ExecutionDataflowBlockOptions { CancellationToken = cancellationSource.Token, EnsureOrdered = true };
         var sendPacketBlock = new ActionBlock<IClientboundPacket>(packet =>
@@ -210,7 +202,6 @@ public sealed class Client : IDisposable
         var receivedData = ArrayPool<byte>.Shared.Rent(length);
 
         _ = await minecraftStream.ReadAsync(receivedData.AsMemory(0, length));
-
 
         byte[] packetData = default!;
         int packetId = default!;
@@ -347,7 +338,7 @@ public sealed class Client : IDisposable
 
             return false;
         }
-        else if (this.server.IsWhitedlisted(this.profile.Uuid))
+        else if (this.server.Configuration.Whitelist && !this.server.IsWhitedlisted(this.profile.Uuid))
         {
             await DisconnectAsync("You are not whitelisted on this server\nContact server administrator");
 
@@ -388,6 +379,8 @@ public sealed class Client : IDisposable
             SkinProperties = this.Player.SkinProperties,
         });
 
+        this.Logger.LogDebug("Sent Login success to user {Username} {UUID}", this.Player.Username, this.Player.Uuid);
+
         return true;
     }
 
@@ -422,6 +415,8 @@ public sealed class Client : IDisposable
         {
             SkinProperties = this.Player.SkinProperties,
         });
+
+        this.Logger.LogDebug("Sent Login success to user {Username} {UUID}", this.Player.Username, this.Player.Uuid);
     }
 
     private void InitializeId()
@@ -433,7 +428,7 @@ public sealed class Client : IDisposable
     // TODO fix compression now????
     private void SetCompression()
     {
-        SendPacket(new SetCompression(CompressionThreshold));
+        SendPacket(new SetCompression(this.server.Configuration.Network.CompressionThreshold));
         compressionEnabled = true;
         Logger.LogDebug("Compression has been enabled.");
     }
@@ -462,21 +457,9 @@ public sealed class Client : IDisposable
 
     internal async Task DisconnectAsync(ChatMessage reason) => await this.QueuePacketAsync(new DisconnectPacket(reason, State));
 
-    internal Task RemovePlayerFromListAsync(IPlayer player) => QueuePacketAsync(new PlayerInfoRemovePacket
-    {
-        UUIDs = [player.Uuid]
-    });
-
     internal async Task AddPlayerToListAsync(IPlayer player)
     {
-        if (player is null)
-        {
-            throw new ArgumentNullException(nameof(player));
-        }
-        else if (Player is null)
-        {
-            throw new InvalidOperationException("Player is null, which means the client has not yet logged in.");
-        }
+        ArgumentNullException.ThrowIfNull(player, nameof(player));
 
         var addAction = new AddPlayerInfoAction
         {
@@ -501,11 +484,6 @@ public sealed class Client : IDisposable
 
     internal async Task SendPlayerInfoAsync()
     {
-        if (Player is null)
-        {
-            throw new InvalidOperationException("Player is null, which means the client has not yet logged in.");
-        }
-
         var dict = new Dictionary<Guid, List<InfoAction>>();
         foreach (var player in this.server.OnlinePlayers.Values)
         {
@@ -531,7 +509,7 @@ public sealed class Client : IDisposable
         await QueuePacketAsync(new PlayerInfoUpdatePacket(dict));
         await QueuePacketAsync(new PlayerAbilitiesPacket(true)
         {
-            Abilities = Player.Abilities
+            Abilities = Player!.Abilities
         });
     }
 
@@ -562,7 +540,7 @@ public sealed class Client : IDisposable
         }
     }
 
-    internal async Task QueuePacketAsync(IClientboundPacket packet)
+    internal async ValueTask QueuePacketAsync(IClientboundPacket packet)
     {
         var args = new QueuePacketEventArgs(this.server, this, packet);
 
@@ -577,13 +555,7 @@ public sealed class Client : IDisposable
         }
     }
 
-    internal async Task SendChunkAsync(Chunk chunk)
-    {
-        ArgumentNullException.ThrowIfNull(chunk);
-
-        await QueuePacketAsync(new ChunkDataAndUpdateLightPacket(chunk));
-    }
-    internal Task UnloadChunkAsync(int x, int z) => LoadedChunks.Contains((x, z)) ? QueuePacketAsync(new UnloadChunkPacket(x, z)) : Task.CompletedTask;
+    internal ValueTask UnloadChunkAsync(int x, int z) => LoadedChunks.Contains((x, z)) ? QueuePacketAsync(new UnloadChunkPacket(x, z)) : default;
 
     #endregion Packet sending
 

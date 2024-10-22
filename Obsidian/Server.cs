@@ -622,11 +622,9 @@ public sealed partial class Server : IServer
         ConsoleIO.UpdateStatusLine(status);
     }
 
-    public bool IsWhitedlisted(string username) =>
-        this.Configuration.Whitelist && !this.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => x.Name == username);
+    public bool IsWhitedlisted(string username) => this.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => x.Name == username);
 
-    public bool IsWhitedlisted(Guid uuid) =>
-        this.Configuration.Whitelist && !this.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => x.Id == uuid);
+    public bool IsWhitedlisted(Guid uuid) => this.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => x.Id == uuid);
 
     public async ValueTask<bool> ShouldThrottleAsync(Client client)
     {

@@ -335,7 +335,11 @@ public sealed class MainEventHandler : MinecraftEventHandler
             if (other == player)
                 continue;
 
-            await other.client.RemovePlayerFromListAsync(player);
+            await other.client.QueuePacketAsync(new PlayerInfoRemovePacket
+            {
+                UUIDs = [player.Uuid]
+            });
+
             if (other.visiblePlayers.Contains(player))
                 await other.client.QueuePacketAsync(destroy);
         }
