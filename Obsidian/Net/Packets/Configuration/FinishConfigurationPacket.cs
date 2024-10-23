@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
 using Obsidian.Entities;
+using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
@@ -57,7 +58,7 @@ public sealed partial class FinishConfigurationPacket : IServerboundPacket, ICli
             SecondRecipeIds = RecipesRegistry.Recipes.Keys.ToList()
         });
 
-        await client.SendPlayerInfoAsync();
+        await player.UpdatePlayerInfoAsync();
         await client.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
 
         player.TeleportId = Globals.Random.Next(0, 999);
@@ -71,7 +72,7 @@ public sealed partial class FinishConfigurationPacket : IServerboundPacket, ICli
         });
 
         await player.UpdateChunksAsync(distance: 7);
-        await client.SendInfoAsync();
+        await player.SendInitialInfoAsync();
         await server.EventDispatcher.ExecuteEventAsync(new PlayerJoinEventArgs(player, server, DateTimeOffset.Now));
     }
 }

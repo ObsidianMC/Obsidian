@@ -21,7 +21,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-using System.Threading.Tasks.Dataflow;
+using System.Threading.Channels;
 
 namespace Obsidian;
 
@@ -83,11 +83,6 @@ public sealed class Client : IDisposable
     /// The mojang user that the client and player is associated with.
     /// </summary>
     private CachedProfile? profile;
-
-    /// <summary>
-    /// Which packets are in queue to be sent to the client.
-    /// </summary>
-    private readonly BufferBlock<IClientboundPacket> packetQueue;
 
     /// <summary>
     /// The cancellation token source used to cancel the packet queue loop and disconnect the client.
@@ -162,6 +157,8 @@ public sealed class Client : IDisposable
     /// </summary>
     public string? Brand { get; internal set; }
 
+    private Channel<IClientboundPacket> packetQueue;
+
     public Client(ConnectionContext connectionContext,
         ILoggerFactory loggerFactory, IUserCache playerCache,
         Server server)
@@ -184,16 +181,7 @@ public sealed class Client : IDisposable
         networkStream = new(connectionContext.Transport);
         minecraftStream = new(networkStream);
 
-        var linkOptions = new DataflowLinkOptions { PropagateCompletion = true };
-        var blockOptions = new ExecutionDataflowBlockOptions { CancellationToken = cancellationSource.Token, EnsureOrdered = true };
-        var sendPacketBlock = new ActionBlock<IClientboundPacket>(packet =>
-        {
-            if (connectionContext.IsConnected())
-                SendPacket(packet);
-        }, blockOptions);
-
-        packetQueue = new BufferBlock<IClientboundPacket>(blockOptions);
-        _ = packetQueue.LinkTo(sendPacketBlock, linkOptions);
+        packetQueue = Channel.CreateUnbounded<IClientboundPacket>(new() { SingleReader = true, SingleWriter = true });
     }
 
     private async ValueTask<PacketData> GetNextPacketAsync()
@@ -207,7 +195,7 @@ public sealed class Client : IDisposable
         int packetId = default!;
 
         var error = false;
-        await using (var packetStream = new MinecraftStream(receivedData))
+        using (var packetStream = new MinecraftStream(receivedData))
         {
             try
             {
@@ -233,8 +221,20 @@ public sealed class Client : IDisposable
         return error ? PacketData.Default : new PacketData { Id = packetId, Data = packetData, IsDisposable = true };
     }
 
+    private async Task StartPacketQueueAsync()
+    {
+        while (!cancellationSource.IsCancellationRequested && connectionContext.IsConnected())
+        {
+            var packet = await this.packetQueue.Reader.ReadAsync(this.cancellationSource.Token);
+
+            this.SendPacket(packet);
+        }
+    }
+
     public async Task StartConnectionAsync()
     {
+        _ = this.StartPacketQueueAsync();
+
         while (!cancellationSource.IsCancellationRequested && connectionContext.IsConnected())
         {
             using var packetData = await GetNextPacketAsync();
@@ -322,9 +322,6 @@ public sealed class Client : IDisposable
         if (this.randomToken is null)
             throw new InvalidOperationException("Received Encryption Response before sending Encryption Request.");
     }
-
-    private async ValueTask<bool> HandlePacketAsync(PacketData packetData) => await this.handlers[this.State].HandleAsync(packetData);
-
 
     public async ValueTask<bool> TrySetCachedProfileAsync(string username)
     {
@@ -425,92 +422,24 @@ public sealed class Client : IDisposable
         this.Logger = this.loggerFactory.CreateLogger($"Client({this.id})");
     }
 
-    // TODO fix compression now????
-    private void SetCompression()
-    {
-        SendPacket(new SetCompression(this.server.Configuration.Network.CompressionThreshold));
-        compressionEnabled = true;
-        Logger.LogDebug("Compression has been enabled.");
-    }
+    private async ValueTask<bool> HandlePacketAsync(PacketData packetData) => await this.handlers[this.State].HandleAsync(packetData);
 
     #region Packet sending
-    internal async Task SendInfoAsync()
+    public async Task DisconnectAsync(ChatMessage reason) => await this.QueuePacketAsync(new DisconnectPacket(reason, State));
+
+    public async ValueTask QueuePacketAsync(IClientboundPacket packet)
     {
-        if (Player is null)
-            throw new UnreachableException("Player is null, which means the client has not yet logged in.");
+        var args = new QueuePacketEventArgs(this.server, this, packet);
 
-        await QueuePacketAsync(new SetDefaultSpawnPositionPacket(Player.world.LevelData.SpawnPosition));
-        await QueuePacketAsync(new UpdateTimePacket(Player!.world.LevelData.Time, Player.world.LevelData.DayTime));
-        await QueuePacketAsync(new GameEventPacket(Player!.world.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
-        await QueuePacketAsync(new SetContainerContentPacket(0, Player.Inventory.ToList())
+        var result = await this.server.EventDispatcher.ExecuteEventAsync(args);
+        if (result == EventResult.Cancelled)
         {
-            StateId = Player.Inventory.StateId++,
-            CarriedItem = Player.GetHeldItem(),
-        });
-
-        await QueuePacketAsync(new SetEntityMetadataPacket
-        {
-            EntityId = this.Player.EntityId,
-            Entity = this.Player
-        });
-    }
-
-    internal async Task DisconnectAsync(ChatMessage reason) => await this.QueuePacketAsync(new DisconnectPacket(reason, State));
-
-    internal async Task AddPlayerToListAsync(IPlayer player)
-    {
-        ArgumentNullException.ThrowIfNull(player, nameof(player));
-
-        var addAction = new AddPlayerInfoAction
-        {
-            Name = player.Username,
-        };
-
-        if (this.server.Configuration.OnlineMode)
-            addAction.Properties.AddRange(player.SkinProperties);
-
-        var list = new List<InfoAction>()
-        {
-            addAction,
-            new UpdatePingInfoAction(player.Ping),
-            new UpdateListedInfoAction(player.ClientInformation.AllowServerListings),
-        };
-
-        await QueuePacketAsync(new PlayerInfoUpdatePacket(new Dictionary<Guid, List<InfoAction>>()
-        {
-            { player.Uuid, list }
-        }));
-    }
-
-    internal async Task SendPlayerInfoAsync()
-    {
-        var dict = new Dictionary<Guid, List<InfoAction>>();
-        foreach (var player in this.server.OnlinePlayers.Values)
-        {
-            var addPlayerInforAction = new AddPlayerInfoAction()
-            {
-                Name = player.Username,
-            };
-
-            if (this.server.Configuration.OnlineMode)
-                addPlayerInforAction.Properties.AddRange(player.SkinProperties);
-
-            var list = new List<InfoAction>
-            {
-                addPlayerInforAction,
-                new UpdateListedInfoAction(player.ClientInformation.AllowServerListings),
-                new UpdateDisplayNameInfoAction(player.Username),
-                new UpdatePingInfoAction(player.Ping)
-            };
-
-            dict.Add(player.Uuid, list);
+            Logger.LogDebug("Packet {PacketId} was sent to the queue, however an event handler has cancelled it.", args.Packet.Id);
         }
-
-        await QueuePacketAsync(new PlayerInfoUpdatePacket(dict));
-        await QueuePacketAsync(new PlayerAbilitiesPacket(true)
+        else
         {
-            Abilities = Player!.Abilities
-        });
+            await packetQueue.Writer.WriteAsync(packet, this.cancellationSource.Token);
+        }
     }
 
     internal void SendPacket(IClientboundPacket packet)
@@ -537,21 +466,6 @@ public sealed class Client : IDisposable
         catch (Exception e)
         {
             Logger.LogDebug(e, "Sending packet {PacketId} failed", packet.Id);
-        }
-    }
-
-    internal async ValueTask QueuePacketAsync(IClientboundPacket packet)
-    {
-        var args = new QueuePacketEventArgs(this.server, this, packet);
-
-        var result = await this.server.EventDispatcher.ExecuteEventAsync(args);
-        if (result == EventResult.Cancelled)
-        {
-            Logger.LogDebug("Packet {PacketId} was sent to the queue, however an event handler has cancelled it.", args.Packet.Id);
-        }
-        else
-        {
-            _ = await packetQueue.SendAsync(packet);
         }
     }
 

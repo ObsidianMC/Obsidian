@@ -62,6 +62,8 @@ public partial class PlayerInfoUpdatePacket : IClientboundPacket
         packetStream.CopyTo(stream);
         stream.Lock.Release();
     }
+
+
 }
 
 

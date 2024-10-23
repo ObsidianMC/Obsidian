@@ -467,7 +467,8 @@ public sealed partial class Server : IServer
         }
     }
 
-    internal IEnumerable<Player> PlayersInRange(World world, Vector worldPosition) => world.Players.Select(entry => entry.Value).Where(player => player.client.LoadedChunks.Contains(worldPosition.ToChunkCoord()));
+    internal IEnumerable<Player> PlayersInRange(World world, Vector worldPosition) => 
+        world.Players.Select(entry => entry.Value).Where(player => player.client.LoadedChunks.Contains(worldPosition.ToChunkCoord()));
 
     internal void BroadcastBlockChange(World world, IBlock block, Vector location)
     {

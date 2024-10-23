@@ -348,7 +348,7 @@ public sealed class MainEventHandler : MinecraftEventHandler
     }
 
     [EventPriority(Priority = Priority.Internal)]
-    public async Task OnPlayerJoin(PlayerJoinEventArgs e)
+    public async ValueTask OnPlayerJoin(PlayerJoinEventArgs e)
     {
         var joined = e.Player as Player;
         var server = e.Server as Server;
@@ -364,7 +364,7 @@ public sealed class MainEventHandler : MinecraftEventHandler
 
         foreach (Player other in server.Players)
         {
-            await other.client.AddPlayerToListAsync(joined);
+            await other.AddPlayerToListAsync(joined);
         }
     }
 }

@@ -22,7 +22,7 @@ public sealed class UserCache(HttpClient httpClient, ILogger<UserCache> logger) 
 
     private List<CachedProfile> cachedUsers = new();
 
-    public async Task<CachedProfile?> GetCachedUserFromNameAsync(string username)
+    public async ValueTask<CachedProfile?> GetCachedUserFromNameAsync(string username)
     {
         var escapedUsername = Sanitize(username);
 
@@ -47,7 +47,7 @@ public sealed class UserCache(HttpClient httpClient, ILogger<UserCache> logger) 
         return cachedUser;
     }
 
-    public async Task<CachedProfile> GetCachedUserFromUuidAsync(Guid uuid)
+    public async ValueTask<CachedProfile> GetCachedUserFromUuidAsync(Guid uuid)
     {
         var cachedUser = this.cachedUsers.FirstOrDefault(x => x.Uuid == uuid);
         if (cachedUser != null && !cachedUser.Expired)
@@ -105,9 +105,9 @@ public sealed class UserCache(HttpClient httpClient, ILogger<UserCache> logger) 
 
 public interface IUserCache
 {
-    public Task<CachedProfile?> GetCachedUserFromNameAsync(string username);
+    public ValueTask<CachedProfile?> GetCachedUserFromNameAsync(string username);
 
-    public Task<CachedProfile> GetCachedUserFromUuidAsync(Guid uuid);
+    public ValueTask<CachedProfile> GetCachedUserFromUuidAsync(Guid uuid);
 
     public Task<MojangProfile?> HasJoinedAsync(string username, string serverId);
 

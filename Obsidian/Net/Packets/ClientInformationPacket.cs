@@ -46,6 +46,6 @@ public sealed partial class ClientInformationPacket : IServerboundPacket
             AllowServerListings = this.AllowServerListings
         };
 
-        await player.client.SendInfoAsync();
+        await player.SendInitialInfoAsync();
     }
 }

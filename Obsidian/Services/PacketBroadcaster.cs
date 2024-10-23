@@ -106,7 +106,7 @@ public sealed class PacketBroadcaster : BackgroundService, IPacketBroadcaster
 
             }
         }
-        catch (Exception e) when (e is not OperationCanceledException)
+        catch (Exception e) when (e is not OperationCanceledException or ObjectDisposedException)
         {
             await this.environment.OnServerCrashAsync(e);
         }
