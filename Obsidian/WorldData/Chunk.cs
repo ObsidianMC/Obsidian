@@ -293,5 +293,19 @@ public class Chunk
         return chunk;
     }
 
+    //public static byte Encode(Chunk chunk)
+    //{
+    //    //packed_xz = ((blockX & 15) << 4) | (blockZ & 15) // encode
+    //    //x = packed_xz >> 4, z = packed_xz & 15 // decode
+
+    //    return ((chunk.X))
+    //}
+
+    //public static byte Decode(byte encodedChords)
+    //{
+
+    //}
+
+
     private static int SectionIndex(int y) => (y >> 4) + 4;
 }

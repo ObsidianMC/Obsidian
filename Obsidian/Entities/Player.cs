@@ -2,8 +2,10 @@
 // https://wiki.vg/Map_Format
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
+using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.API.Utilities;
+using Obsidian.Concurrency;
 using Obsidian.Nbt;
 using Obsidian.Net;
 using Obsidian.Net.Actions.PlayerInfo;
@@ -26,10 +28,8 @@ public sealed partial class Player : Living, IPlayer
 
     internal readonly Client client;
 
-    /// <summary>
-    /// Used to log actions caused by the client.
-    /// </summary>
     private ILogger Logger => this.client.Logger;
+
 
     internal HashSet<IPlayer> visiblePlayers = [];
 
@@ -39,6 +39,11 @@ public sealed partial class Player : Living, IPlayer
     internal bool isDragging;
 
     internal int TeleportId { get; set; }
+
+    // <summary>
+    /// Which chunks the player should have loaded around them.
+    /// </summary>
+    public ConcurrentHashSet<long> LoadedChunks { get; internal set; } = [];
 
     //TODO 
     public bool IsOperator { get; }
@@ -706,42 +711,51 @@ public sealed partial class Player : Living, IPlayer
         {
             if (!Respawning)
             {
-                foreach (var (X, Z) in client.LoadedChunks)
-                    await client.UnloadChunkAsync(X, Z);
+                foreach (var value in LoadedChunks)
+                {
+                    NumericsHelper.LongToInts(value, out var x, out var z);
+                    await UnloadChunkAsync(x, z);
+                }
             }
 
-            client.LoadedChunks.Clear();
+            LoadedChunks.Clear();
         }
 
-        List<(int X, int Z)> clientNeededChunks = [];
-        List<(int X, int Z)> clientUnneededChunks = new(client.LoadedChunks);
+        List<long> clientNeededChunks = [];
+        List<long> clientUnneededChunks = new(LoadedChunks);
 
         (int playerChunkX, int playerChunkZ) = Position.ToChunkCoord();
 
         int dist = distance < 1 ? ClientInformation.ViewDistance : distance;
         for (int x = playerChunkX + dist; x > playerChunkX - dist; x--)
             for (int z = playerChunkZ + dist; z > playerChunkZ - dist; z--)
-                clientNeededChunks.Add((x, z));
+                clientNeededChunks.Add(NumericsHelper.IntsToLong(x, z));
 
         clientUnneededChunks = clientUnneededChunks.Except(clientNeededChunks).ToList();
-        clientNeededChunks = clientNeededChunks.Except(client.LoadedChunks).ToList();
+        clientNeededChunks = clientNeededChunks.Except(LoadedChunks).ToList();
         clientNeededChunks.Sort((chunk1, chunk2) =>
         {
-            return Math.Abs(playerChunkX - chunk1.X) +
-            Math.Abs(playerChunkZ - chunk1.Z) <
-            Math.Abs(playerChunkX - chunk2.X) +
-            Math.Abs(playerChunkZ - chunk2.Z) ? -1 : 1;
+            NumericsHelper.LongToInts(chunk1, out var chunk1X, out var chunk1Z);
+            NumericsHelper.LongToInts(chunk2, out var chunk2X, out var chunk2Z);
+
+            return Math.Abs(playerChunkX - chunk1X) +
+            Math.Abs(playerChunkZ - chunk1Z) <
+            Math.Abs(playerChunkX - chunk2X) +
+            Math.Abs(playerChunkZ - chunk2Z) ? -1 : 1;
         });
 
-        clientUnneededChunks.ForEach(c => client.LoadedChunks.TryRemove(c));
+        clientUnneededChunks.ForEach(c => LoadedChunks.TryRemove(c));
 
-        foreach (var (X, Z) in clientNeededChunks)
+        foreach (var value in clientNeededChunks)
         {
-            var chunk = await world.GetChunkAsync(X, Z);
+            NumericsHelper.LongToInts(value, out var x, out var z);
+            var chunk = await world.GetChunkAsync(x, z);
             if (chunk is not null && chunk.IsGenerated)
             {
                 await client.QueuePacketAsync(new ChunkDataAndUpdateLightPacket(chunk));
-                client.LoadedChunks.Add((chunk.X, chunk.Z));
+
+                
+                LoadedChunks.Add(NumericsHelper.IntsToLong(chunk.X, chunk.Z));
             }
             else
             {

@@ -1,11 +1,9 @@
 ﻿using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
-using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
 using Obsidian.Net;
-using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.ClientHandlers;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Handshaking;
@@ -126,11 +124,6 @@ public sealed class Client : IDisposable
     public ClientState State { get; private set; } = ClientState.Handshaking;
 
     /// <summary>
-    /// Which chunks the player should have loaded around them.
-    /// </summary>
-    public ConcurrentHashSet<(int X, int Z)> LoadedChunks { get; internal set; }
-
-    /// <summary>
     /// The client's ip and port used to establish this connection.
     /// </summary>
     public IPEndPoint? RemoteEndPoint => connectionContext.RemoteEndPoint as IPEndPoint;
@@ -169,7 +162,6 @@ public sealed class Client : IDisposable
         this.userCache = playerCache;
         this.Logger = loggerFactory.CreateLogger("ConnectionHandler");
 
-        LoadedChunks = [];
         packetCryptography = new();
         this.handlers = new Dictionary<ClientState, ClientHandler>()
         {
@@ -424,7 +416,6 @@ public sealed class Client : IDisposable
 
     private async ValueTask<bool> HandlePacketAsync(PacketData packetData) => await this.handlers[this.State].HandleAsync(packetData);
 
-    #region Packet sending
     public async Task DisconnectAsync(ChatMessage reason) => await this.QueuePacketAsync(new DisconnectPacket(reason, State));
 
     public async ValueTask QueuePacketAsync(IClientboundPacket packet)
@@ -468,10 +459,6 @@ public sealed class Client : IDisposable
             Logger.LogDebug(e, "Sending packet {PacketId} failed", packet.Id);
         }
     }
-
-    internal ValueTask UnloadChunkAsync(int x, int z) => LoadedChunks.Contains((x, z)) ? QueuePacketAsync(new UnloadChunkPacket(x, z)) : default;
-
-    #endregion Packet sending
 
     internal void Disconnect()
     {

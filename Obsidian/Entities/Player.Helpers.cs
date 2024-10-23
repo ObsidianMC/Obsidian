@@ -127,13 +127,12 @@ public partial class Player
         catch (Exception ex)
         {
             this.Logger.LogWarning(ex, "Player has invalid saved data.");
+            Position = world.LevelData.SpawnPosition;//Set spawn here cause the data loaded was invalid
         }
 
         if (!Alive)
             Health = 20f;//Player should never load data that has health at 0         
     }
-
-   
 
     public async Task LoadPermsAsync()
     {
@@ -235,6 +234,8 @@ public partial class Player
             Entity = this
         });
     }
+
+    internal ValueTask UnloadChunkAsync(int x, int z) => LoadedChunks.Contains(NumericsHelper.IntsToLong(x, z)) ? this.client.QueuePacketAsync(new UnloadChunkPacket(x, z)) : default;
 
     private async ValueTask TrySpawnPlayerAsync(VectorF position)
     {
