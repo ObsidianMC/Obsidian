@@ -10,16 +10,16 @@ using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
 using Obsidian.Services;
-using System.Collections.Frozen;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Threading;
 
 namespace Obsidian.WorldData;
 
 public sealed class World : IWorld
 {
+    private const int SpawnChunkRadius = 12;
+
     public IWorldManager WorldManager { get; }
 
     private float rainLevel = 0f;
@@ -37,7 +37,7 @@ public sealed class World : IWorld
 
     public ConcurrentQueue<long> ChunksToGen { get; private set; } = [];
 
-    public FrozenSet<long> SpawnChunks { get; private set; }
+    public long[] SpawnChunks { get; } = new long[SpawnChunkRadius * 48];
 
     public ConcurrentHashSet<long> LoadedChunks { get; private set; } = [];
 
@@ -477,17 +477,14 @@ public sealed class World : IWorld
             for (int rz = -1; rz < 1; rz++)
                 LoadRegion(rx, rz);
 
-        // spawn chunks are radius 12 from spawn,
-        var radius = 12;
         var (x, z) = LevelData.SpawnPosition.ToChunkCoord();
         var spawnChunks = new List<long>();
-        for (var cx = x - radius; cx < x + radius; cx++)
-            for (var cz = z - radius; cz < z + radius; cz++)
+        var index = 0;
+        for (var cx = x - SpawnChunkRadius; cx < x + SpawnChunkRadius; cx++)
+            for (var cz = z - SpawnChunkRadius; cz < z + SpawnChunkRadius; cz++)
             {
-                spawnChunks.Add(NumericsHelper.IntsToLong(cx, cz));
+                SpawnChunks[index++] = NumericsHelper.IntsToLong(cx, cz);
             }
-
-        SpawnChunks = spawnChunks.ToFrozenSet();
 
         await Parallel.ForEachAsync(SpawnChunks, async (c, cts) =>
         {
@@ -869,15 +866,12 @@ public sealed class World : IWorld
         if (setWorldSpawn)
         {
             await SetWorldSpawnAsync();
-            // spawn chunks are radius 12 from spawn,
-            var radius = 12;
+            var index = 0;
             var (x, z) = LevelData.SpawnPosition.ToChunkCoord();
             var spawnChunks = new List<long>();
-            for (var cx = x - radius; cx < x + radius; cx++)
-                for (var cz = z - radius; cz < z + radius; cz++)
-                    spawnChunks.Add(NumericsHelper.IntsToLong(cx, cz));
-
-            SpawnChunks = spawnChunks.ToFrozenSet();
+            for (var cx = x - SpawnChunkRadius; cx < x + SpawnChunkRadius; cx++)
+                for (var cz = z - SpawnChunkRadius; cz < z + SpawnChunkRadius; cz++)
+                    SpawnChunks[index++] = NumericsHelper.IntsToLong(cx, cz);
         }
     }
 

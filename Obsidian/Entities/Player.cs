@@ -331,8 +331,8 @@ public sealed partial class Player : Living, IPlayer
         await client.QueuePacketAsync(packet);
     }
 
-    public Task KickAsync(string reason) => client.DisconnectAsync(ChatMessage.Simple(reason));
-    public Task KickAsync(ChatMessage reason) => client.DisconnectAsync(reason);
+    public async Task KickAsync(string reason) => await client.DisconnectAsync(ChatMessage.Simple(reason));
+    public async Task KickAsync(ChatMessage reason) => await client.DisconnectAsync(reason);
 
     public async Task RespawnAsync(DataKept dataKept = DataKept.Metadata)
     {

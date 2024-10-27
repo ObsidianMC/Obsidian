@@ -416,7 +416,7 @@ public sealed class Client : IDisposable
 
     private async ValueTask<bool> HandlePacketAsync(PacketData packetData) => await this.handlers[this.State].HandleAsync(packetData);
 
-    public async Task DisconnectAsync(ChatMessage reason) => await this.QueuePacketAsync(new DisconnectPacket(reason, State));
+    public async ValueTask DisconnectAsync(ChatMessage reason) => await this.QueuePacketAsync(new DisconnectPacket(reason, State));
 
     public async ValueTask QueuePacketAsync(IClientboundPacket packet)
     {
