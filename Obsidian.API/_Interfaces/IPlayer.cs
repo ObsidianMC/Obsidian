@@ -1,7 +1,4 @@
-﻿using Obsidian.API._Types;
-using System.Net;
-
-namespace Obsidian.API;
+﻿namespace Obsidian.API;
 
 public interface IPlayer : ILiving
 {
@@ -19,7 +16,7 @@ public interface IPlayer : ILiving
 
     public Vector? LastDeathLocation { get; set; }
 
-    public IPAddress? ClientIP { get; }
+    public string? ClientIP { get; }
     public Gamemode Gamemode { get; set; }
 
     public PlayerAbility Abilities { get; }

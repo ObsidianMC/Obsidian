@@ -2,7 +2,6 @@
 // https://wiki.vg/Map_Format
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
-using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.API.Utilities;
 using Obsidian.Concurrency;
@@ -17,7 +16,6 @@ using Obsidian.WorldData;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Net;
 
 namespace Obsidian.Entities;
 
@@ -46,7 +44,7 @@ public sealed partial class Player : Living, IPlayer
     public ConcurrentHashSet<long> LoadedChunks { get; internal set; } = [];
 
     //TODO 
-    public bool IsOperator { get; }
+    public bool IsOperator { get; private set; }
 
     public string Username { get; }
 
@@ -136,7 +134,7 @@ public sealed partial class Player : Living, IPlayer
     public string PersistentDataFile { get; }
     public string PersistentDataBackupFile { get; }
 
-    public IPAddress? ClientIP => (client.RemoteEndPoint as IPEndPoint)?.Address;
+    public string? ClientIP => client.Ip;
 
     private Gamemode gamemode;
 
