@@ -82,6 +82,8 @@ public sealed class Client : IDisposable
     /// </summary>
     private CachedProfile? profile;
 
+    private readonly Channel<IClientboundPacket> packetQueue;
+
     /// <summary>
     /// The cancellation token source used to cancel the packet queue loop and disconnect the client.
     /// </summary>
@@ -150,8 +152,6 @@ public sealed class Client : IDisposable
     /// </summary>
     public string? Brand { get; internal set; }
 
-    private Channel<IClientboundPacket> packetQueue;
-
     public Client(ConnectionContext connectionContext,
         ILoggerFactory loggerFactory, IUserCache playerCache,
         Server server)
@@ -213,9 +213,9 @@ public sealed class Client : IDisposable
         return error ? PacketData.Default : new PacketData { Id = packetId, Data = packetData, IsDisposable = true };
     }
 
-    private async Task StartPacketQueueAsync()
+    private async Task HandlePacketQueueAsync()
     {
-        while (!cancellationSource.IsCancellationRequested && connectionContext.IsConnected())
+        while (!cancellationSource.IsCancellationRequested && this.connectionContext.IsConnected())
         {
             var packet = await this.packetQueue.Reader.ReadAsync(this.cancellationSource.Token);
 
@@ -223,11 +223,9 @@ public sealed class Client : IDisposable
         }
     }
 
-    public async Task StartConnectionAsync()
+    private async Task HandlePacketsAsync()
     {
-        _ = this.StartPacketQueueAsync();
-
-        while (!cancellationSource.IsCancellationRequested && connectionContext.IsConnected())
+        while (!cancellationSource.IsCancellationRequested && this.connectionContext.IsConnected())
         {
             using var packetData = await GetNextPacketAsync();
 
@@ -293,6 +291,11 @@ public sealed class Client : IDisposable
                     break;
             }
         }
+    }
+
+    public async Task StartConnectionAsync()
+    {
+        await Task.WhenAll([this.HandlePacketsAsync(), this.HandlePacketQueueAsync()]);
 
         Logger.LogInformation("Disconnected client");
 
@@ -302,18 +305,10 @@ public sealed class Client : IDisposable
             await this.server.EventDispatcher.ExecuteEventAsync(new PlayerLeaveEventArgs(Player, this.server, DateTimeOffset.Now));
         }
 
-        Disconnected?.Invoke(this);
-        this.Dispose();//Dispose client after
+        this.Disconnect();
     }
 
-    internal void ThrowIfInvalidEncryptionRequest()
-    {
-        if (this.Player is null)
-            throw new InvalidOperationException("Received Encryption Response before sending Login Start.");
 
-        if (this.randomToken is null)
-            throw new InvalidOperationException("Received Encryption Response before sending Encryption Request.");
-    }
 
     public async ValueTask<bool> TrySetCachedProfileAsync(string username)
     {
@@ -414,12 +409,27 @@ public sealed class Client : IDisposable
         this.Logger = this.loggerFactory.CreateLogger($"Client({this.id})");
     }
 
-    private async ValueTask<bool> HandlePacketAsync(PacketData packetData) => await this.handlers[this.State].HandleAsync(packetData);
+    private async ValueTask<bool> HandlePacketAsync(PacketData packetData)
+    {
+        try
+        {
+            return await this.handlers[this.State].HandleAsync(packetData);
+        }
+        catch (Exception ex)
+        {
+            this.Logger.LogDebug(ex, "An error has occured handling packet");
+        }
+
+        return false;
+    }
 
     public async ValueTask DisconnectAsync(ChatMessage reason) => await this.QueuePacketAsync(new DisconnectPacket(reason, State));
 
     public async ValueTask QueuePacketAsync(IClientboundPacket packet)
     {
+        if (this.cancellationSource.IsCancellationRequested)
+            return;
+
         var args = new QueuePacketEventArgs(this.server, this, packet);
 
         var result = await this.server.EventDispatcher.ExecuteEventAsync(args);
@@ -466,6 +476,15 @@ public sealed class Client : IDisposable
         Disconnected?.Invoke(this);
 
         this.Dispose();
+    }
+
+    internal void ThrowIfInvalidEncryptionRequest()
+    {
+        if (this.Player is null)
+            throw new InvalidOperationException("Received Encryption Response before sending Login Start.");
+
+        if (this.randomToken is null)
+            throw new InvalidOperationException("Received Encryption Response before sending Encryption Request.");
     }
 
     internal void SetState(ClientState state) => this.State = state;
