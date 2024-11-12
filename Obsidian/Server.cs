@@ -56,7 +56,7 @@ public sealed partial class Server : IServer
         }
     }
 #endif
-    public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_21;
+    public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_21_1;
 
     public const string PersistentDataPath = "persistentdata";
     public const string PermissionPath = "permissions";
