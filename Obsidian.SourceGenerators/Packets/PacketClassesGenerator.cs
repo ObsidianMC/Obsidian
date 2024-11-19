@@ -1,11 +1,9 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
-using System.Security.Cryptography.X509Certificates;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace Obsidian.SourceGenerators.Packets;
 
@@ -72,7 +70,7 @@ public sealed class PacketClassesGenerator : IIncrementalGenerator
         }
     }
 
-    private void GeneratePacketClasses(SourceProductionContext context, Compilation compilation, string packetsJson)
+    private void GeneratePacketClasses(SourceProductionContext context, Compilation _compilation, string packetsJson)
     {
         var packets = GetPackets(packetsJson);
 

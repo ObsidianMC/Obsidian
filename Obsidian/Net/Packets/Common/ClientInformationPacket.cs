@@ -28,7 +28,7 @@ public partial record class ClientInformationPacket
     [Field(7)]
     public bool AllowServerListings { get; private set; }
 
-    public async ValueTask HandleAsync(Server server, Player player)
+    public async override ValueTask HandleAsync(Server server, Player player)
     {
         player.ClientInformation = new()
         {
