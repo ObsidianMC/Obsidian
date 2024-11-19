@@ -1,6 +1,6 @@
 using Obsidian.Serialization.Attributes;
 
-namespace Obsidian.Net.Packets.Handshaking.Serverbound;
+namespace Obsidian.Net.Packets.Handshake.Serverbound;
 
 public partial class IntentionPacket
 {
@@ -15,4 +15,13 @@ public partial class IntentionPacket
 
     [Field(3), ActualType(typeof(int)), VarLength]
     public ClientState NextState { get; private set; }
+
+    public static IntentionPacket Deserialize(byte[] data)
+    {
+        var packet = new IntentionPacket();
+
+        packet.Populate(data);
+
+        return packet;
+    }
 }

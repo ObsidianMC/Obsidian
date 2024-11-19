@@ -2,17 +2,17 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Status.Clientbound;
 
-public partial class StatusResponse
+public partial class StatusResponsePacket
 {
     [Field(0)]
     public string Json { get; }
 
-    public StatusResponse(string json)
+    public StatusResponsePacket(string json)
     {
         Json = json;
     }
 
-    public StatusResponse(ServerStatus status)
+    public StatusResponsePacket(ServerStatus status)
     {
         Json = status.ToJson();
     }

@@ -2,7 +2,7 @@
 
 namespace Obsidian.Net.Packets;
 
-public abstract class ServerboundPacket : IPacket
+public abstract class ServerboundPacket : IServerboundPacket
 {
     public abstract int Id { get; }
 

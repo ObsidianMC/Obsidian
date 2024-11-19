@@ -10,16 +10,16 @@ using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Configuration.Clientbound;
-using Obsidian.Net.Packets.Handshaking;
-using Obsidian.Net.Packets.Login;
+using Obsidian.Net.Packets.Handshake.Serverbound;
+using Obsidian.Net.Packets.Login.Clientbound;
 using Obsidian.Net.Packets.Login.Serverbound;
-using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Net.Packets.Status;
+using Obsidian.Net.Packets.Status.Clientbound;
 using Obsidian.Registries;
 using Obsidian.Services;
 using Obsidian.Utilities.Mojang;
 using Obsidian.WorldData;
+using Org.BouncyCastle.Utilities.IO.Pem;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -101,7 +101,7 @@ public sealed class Client : IDisposable
     /// <summary>
     /// Which packets are in queue to be sent to the client.
     /// </summary>
-    private readonly BufferBlock<ClientboundPacket> packetQueue;
+    private readonly BufferBlock<ISerializablePacket> packetQueue;
 
     /// <summary>
     /// The cancellation token source used to cancel the packet queue loop and disconnect the client.
@@ -190,13 +190,13 @@ public sealed class Client : IDisposable
         missedKeepAlives = [];
         var linkOptions = new DataflowLinkOptions { PropagateCompletion = true };
         var blockOptions = new ExecutionDataflowBlockOptions { CancellationToken = cancellationSource.Token, EnsureOrdered = true };
-        var sendPacketBlock = new ActionBlock<ClientboundPacket>(packet =>
+        var sendPacketBlock = new ActionBlock<ISerializablePacket>(packet =>
         {
             if (connectionContext.IsConnected())
                 SendPacket(packet);
         }, blockOptions);
 
-        packetQueue = new BufferBlock<ClientboundPacket>(blockOptions);
+        packetQueue = new BufferBlock<ISerializablePacket>(blockOptions);
         _ = packetQueue.LinkTo(sendPacketBlock, linkOptions);
 
         handler.RegisterHandlers();
@@ -252,7 +252,7 @@ public sealed class Client : IDisposable
                     }
                     else if (id == 0x01)
                     {
-                        await HandlePingPongAsync(data);
+                        HandlePong(data);
                     }
                     break;
 
@@ -373,7 +373,8 @@ public sealed class Client : IDisposable
         this.SendPacket(new RegistryDataPacket(CodecRegistry.WolfVariant.CodecKey, CodecRegistry.WolfVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.PaintingVariant.CodecKey, CodecRegistry.PaintingVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
 
-        this.SendPacket(UpdateTagsPacket.FromRegistry);
+
+        this.SendPacket(UpdateTagsPacket.ClientboundConfiguration with { Tags = TagsRegistry.Categories });
 
         this.SendPacket(FinishConfigurationPacket.Default);
     }
@@ -385,15 +386,14 @@ public sealed class Client : IDisposable
 
         _ = await this.server.EventDispatcher.ExecuteEventAsync(new ServerStatusRequestEventArgs(this.server, status));
 
-        SendPacket(new StatusResponse(status));
+        SendPacket(new StatusResponsePacket(status));
     }
 
-    private Task HandlePingPongAsync(byte[] data)
+    private void HandlePong(byte[] data)
     {
-        var pong = PingPongPacket.Deserialize(data);
-        SendPacket(pong); // TODO make sure that the packet is fully sent before disconnecting
+        var pong = PingPacket.Deserialize(data);
+        SendPacket(PongPacket.ServerboundPlay with { Payload = pong.Payload });
         Disconnect();
-        return Task.CompletedTask;
     }
 
     private async Task HandleHandshakeAsync(byte[] data)
@@ -430,7 +430,7 @@ public sealed class Client : IDisposable
 
     private async Task HandleLoginStartAsync(byte[] data)
     {
-        var loginStart = HelloPacket.Deserialize(data);
+        var loginStart = Net.Packets.Login.Serverbound.HelloPacket.Deserialize(data);
         var username = this.server.Configuration.Network.MulitplayerDebugMode ? $"Player{Globals.Random.Next(1, 999)}" : loginStart.Username;
         var world = (World)this.server.DefaultWorld;
 
@@ -461,7 +461,7 @@ public sealed class Client : IDisposable
 
             this.randomToken = randomToken;
 
-            SendPacket(new HelloPacket
+            SendPacket(new Net.Packets.Login.Clientbound.HelloPacket
             {
                 PublicKey = publicKey,
                 VerifyToken = randomToken,
@@ -478,7 +478,7 @@ public sealed class Client : IDisposable
 
             Player = new Player(GuidHelper.FromStringHash($"OfflinePlayer:{username}"), username, this, world);
 
-            this.SendPacket(new LoginFinishedPacket(Player.Uuid, Player.Username)
+            this.SendPacket(new Net.Packets.Login.Clientbound.LoginFinishedPacket(Player.Uuid, Player.Username)
             {
                 SkinProperties = this.Player.SkinProperties,
             });
@@ -670,7 +670,7 @@ public sealed class Client : IDisposable
 
         Logger.LogDebug("Doing KeepAlive ({keepAliveId}) with {Username} ({Uuid})", keepAliveId, Player.Username, Player.Uuid);
         // now that all is fine and dandy, we'd be fine to enqueue the new keepalive
-        
+
         SendPacket(new KeepAlivePacket(keepAliveId)
         {
             Id = this.State == ClientState.Configuration ? 0x03 : 0x26
@@ -749,13 +749,13 @@ public sealed class Client : IDisposable
         }
 
         await QueuePacketAsync(new PlayerInfoUpdatePacket(dict));
-        await QueuePacketAsync(new PlayerAbilitiesPacket(true)
+        await QueuePacketAsync(new PlayerAbilitiesPacket
         {
             Abilities = Player.Abilities
         });
     }
 
-    internal void SendPacket(ClientboundPacket packet)
+    internal void SendPacket(ISerializablePacket packet)
     {
         try
         {
@@ -782,7 +782,7 @@ public sealed class Client : IDisposable
         }
     }
 
-    internal async Task QueuePacketAsync(ClientboundPacket packet)
+    internal async Task QueuePacketAsync(ISerializablePacket packet)
     {
         var args = new QueuePacketEventArgs(this.server, this, packet);
 
@@ -809,7 +809,7 @@ public sealed class Client : IDisposable
     {
         await using var stream = new MinecraftStream();
         await stream.WriteStringAsync(this.server.Brand);
-        await QueuePacketAsync(new PluginMessagePacket("minecraft:brand", stream.ToArray()));
+        await QueuePacketAsync(new CustomPayloadPacket("minecraft:brand", stream.ToArray()));
         Logger.LogDebug("Sent server brand.");
     }
 

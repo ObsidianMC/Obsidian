@@ -23,7 +23,7 @@ public class Scoreboard : IScoreboard
 
     public async Task CreateOrUpdateObjectiveAsync(ChatMessage title, DisplayType displayType = DisplayType.Integer)//TODO impl new scoreboard stuff
     {
-        var packet = new SetDisplayObjectivePacket
+        var packet = new SetObjectivePacket
         {
             ObjectiveName = this.name,
             Mode = this.Objective != null ? ScoreboardMode.Update : ScoreboardMode.Create,
@@ -156,7 +156,7 @@ public class Scoreboard : IScoreboard
 
     public async Task RemoveObjectiveAsync()
     {
-        var obj = new SetDisplayObjectivePacket
+        var obj = new SetObjectivePacket
         {
             ObjectiveName = this.Objective.ObjectiveName,
             Mode = ScoreboardMode.Remove
@@ -170,7 +170,7 @@ public class Scoreboard : IScoreboard
     }
 
     //TODO impl new scoreboard stuff
-    private async Task UpdateObjectiveAsync(SetDisplayObjectivePacket packet)
+    private async Task UpdateObjectiveAsync(SetObjectivePacket packet)
     {
         foreach (var (_, player) in this.server.OnlinePlayers)
         {

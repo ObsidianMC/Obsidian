@@ -1,4 +1,5 @@
-﻿using Obsidian.Serialization.Attributes;
+﻿using Obsidian.Net.Packets.Login.Serverbound;
+using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Login.Clientbound;
 

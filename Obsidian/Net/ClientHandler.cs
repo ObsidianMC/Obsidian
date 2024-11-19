@@ -4,6 +4,7 @@ using Obsidian.API.Logging;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Configuration.Clientbound;
+using Obsidian.Net.Packets.Configuration.Serverbound;
 using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
@@ -46,7 +47,7 @@ public sealed class ClientHandler
         Packets.TryAdd(0x1A, new MovePlayerPosPacket());
         Packets.TryAdd(0x1B, new MovePlayerPosRotPacket());
         Packets.TryAdd(0x1C, new MovePlayerRotPacket());
-        Packets.TryAdd(0x20, new PlayerAbilitiesPacket(false));
+        Packets.TryAdd(0x20, new Packets.Play.Serverbound.PlayerAbilitiesPacket());
         //Packets.TryAdd(0x15, PlayerMovement);
         //Packets.TryAdd(0x16, VehicleMove);
         //Packets.TryAdd(0x17, SteerBoat);
@@ -63,7 +64,7 @@ public sealed class ClientHandler
         //Packets.TryAdd(0x22, AdvancementTab);
         //Packets.TryAdd(0x23, SelectTrade);
         //Packets.TryAdd(0x24, SetBeaconEffect);
-        Packets.TryAdd(0x2F, new SetCarriedItemPacket(false));
+        Packets.TryAdd(0x2F, new SetCarriedItemPacket());
         //Packets.TryAdd(0x26, UpdateCommandBlock);
         //Packets.TryAdd(0x27, UpdateCommandBlockMinecart);
         //Packets.TryAdd(0x28, new CreativeInventoryAction()); !
@@ -90,7 +91,7 @@ public sealed class ClientHandler
                 await HandleFromPoolAsync<CustomPayloadPacket>(data, client);
                 break;
             case 0x03:
-                await HandleFromPoolAsync<FinishConfigurationPacket>(data, client);
+                await HandleFromPoolAsync<Packets.Configuration.Serverbound.FinishConfigurationPacket>(data, client);
                 break;
             case 0x04:
                 await HandleFromPoolAsync<KeepAlivePacket>(data, client);
@@ -98,7 +99,7 @@ public sealed class ClientHandler
             case 0x05://pong useless
                 break;
             case 0x06:
-                await HandleFromPoolAsync<ResourcePackResponse>(data, client);
+                await HandleFromPoolAsync<ResourcePackPacket>(data, client);
                 break;
             default:
                 {
@@ -146,7 +147,7 @@ public sealed class ClientHandler
                 await HandleFromPoolAsync<ClientInformationPacket>(data, client);
                 break;
             case 0x0C:
-                await HandleFromPoolAsync<AcknowledgeConfigurationPacket>(data, client);
+                await HandleFromPoolAsync<ConfigurationAcknowledgedPacket>(data, client);
                 break;
             case 0x0D:
                 await HandleFromPoolAsync<ContainerButtonClickPacket>(data, client);
@@ -155,7 +156,7 @@ public sealed class ClientHandler
                 await HandleFromPoolAsync<ContainerClickPacket>(data, client);
                 break;
             case 0x0F:
-                await HandleFromPoolAsync<CloseContainerPacket>(data, client);
+                await HandleFromPoolAsync<Packets.Play.Serverbound.ContainerClosePacket>(data, client);
                 break;
             case 0x12:
                 await HandleFromPoolAsync<CustomPayloadPacket>(data, client);
@@ -223,7 +224,7 @@ public sealed class ClientHandler
         }
     }
 
-    private async Task HandleFromPoolAsync<T>(byte[] data, Client client) where T : ServerboundPacket, new()
+    private async Task HandleFromPoolAsync<T>(byte[] data, Client client) where T : IServerboundPacket, new()
     {
         var packet = ObjectPool<T>.Shared.Rent();
         try

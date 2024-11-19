@@ -201,7 +201,7 @@ public sealed partial class Player : Living, IPlayer
 
         CurrentScoreboard = actualBoard;
 
-        await client.QueuePacketAsync(new SetDisplayObjectivePacket
+        await client.QueuePacketAsync(new SetObjectivePacket
         {
             ObjectiveName = actualBoard.name,
             Mode = ScoreboardMode.Create,
@@ -486,7 +486,7 @@ public sealed partial class Player : Living, IPlayer
 
     public async Task SendTitleAsync(ChatMessage title, int fadeIn, int stay, int fadeOut)
     {
-        var titlePacket = new SetTitleTextPacket(TitleMode.SetTitle)
+        var titlePacket = new SetTitleTextPacket
         {
             Text = title
         };
@@ -504,7 +504,7 @@ public sealed partial class Player : Living, IPlayer
 
     public async Task SendTitleAsync(ChatMessage title, ChatMessage subtitle, int fadeIn, int stay, int fadeOut)
     {
-        var titlePacket = new SetTitleTextPacket(TitleMode.SetSubtitle)
+        var titlePacket = new SetSubtitleTextPacket
         {
             Text = subtitle
         };
@@ -516,7 +516,7 @@ public sealed partial class Player : Living, IPlayer
 
     public async Task SendSubtitleAsync(ChatMessage subtitle, int fadeIn, int stay, int fadeOut)
     {
-        var titlePacket = new SetTitleTextPacket(TitleMode.SetSubtitle)
+        var titlePacket = new SetSubtitleTextPacket
         {
             Text = subtitle
         };
@@ -951,7 +951,7 @@ public sealed partial class Player : Living, IPlayer
             if (!item.CanPickup)
                 continue;
 
-            this.PacketBroadcaster.QueuePacketToWorld(this.World, new PickupItemPacket
+            this.PacketBroadcaster.QueuePacketToWorld(this.World, new TakeItemEntityPacket
             {
                 CollectedEntityId = item.EntityId,
                 CollectorEntityId = EntityId,

@@ -6,11 +6,13 @@ public partial class SetTitleTextPacket
 {
     [Field(0)]
     public required ChatMessage Text { get; init; }
+}
 
-    public SetTitleTextPacket(TitleMode mode)
-    {
-        this.Id = mode == TitleMode.SetTitle ? 0x65 : 0x63;
-    }
+public partial class SetSubtitleTextPacket
+{
+    [Field(0)]
+    public required ChatMessage Text { get; init; }
+
 }
 
 public partial class SetTitlesAnimationPacket
@@ -23,11 +25,4 @@ public partial class SetTitlesAnimationPacket
 
     [Field(2)]
     public int FadeOut { get; set; }
-}
-
-public enum TitleMode
-{
-    SetTitle,
-
-    SetSubtitle
 }

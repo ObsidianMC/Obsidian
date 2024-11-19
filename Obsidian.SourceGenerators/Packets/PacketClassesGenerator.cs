@@ -46,9 +46,6 @@ public sealed class PacketClassesGenerator : IIncrementalGenerator
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        //if (!Debugger.IsAttached)
-        //    Debugger.Launch();
-
         var jsonFiles = context.AdditionalTextsProvider
           .Where(file => file.Path.EndsWith(".json"))
           .Select(static (file, ct) => (name: Path.GetFileNameWithoutExtension(file.Path), content: file.GetText(ct)!.ToString()));
@@ -134,15 +131,15 @@ public sealed class PacketClassesGenerator : IIncrementalGenerator
 
                     source.Line($"Id = {value.PacketId}");
 
-                    source.EndScope();
+                    source.EndScope(true);
 
                     source.Line();
                 }
             }
 
-            source.Line();
+            //source.Line();
 
-            AppendCommonMethods(source, packetClassName);
+            //AppendCommonMethods(source, packetClassName);
 
             source.EndScope();
 

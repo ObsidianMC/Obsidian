@@ -9,4 +9,13 @@ public partial class HelloPacket
 
     [Field(1), ActualType(typeof(Guid))]
     public Guid? PlayerUuid { get; set; }
+
+    public static HelloPacket Deserialize(byte[] data)
+    {
+        var packet = new HelloPacket();
+
+        packet.Populate(data);
+
+        return packet;
+    }
 }

@@ -4,7 +4,7 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class SetDisplayObjectivePacket
+public partial class SetObjectivePacket
 {
     [Field(0)]
     public required string ObjectiveName { get; init; }

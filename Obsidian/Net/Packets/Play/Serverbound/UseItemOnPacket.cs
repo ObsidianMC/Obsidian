@@ -1,5 +1,6 @@
 ﻿using Obsidian.API.Events;
 using Obsidian.Entities;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
 using Obsidian.Serialization.Attributes;
 
@@ -113,7 +114,7 @@ public partial class UseItemOnPacket
                 (TagsRegistry.Block.ReplaceableByLiquid.Entries.Contains(below.RegistryId) || below.IsLiquid))
             {
                 await player.world.SetBlockAsync(position, BlocksRegistry.Air, true);
-                player.client.SendPacket(new AcknowledgeBlockChangePacket
+                player.client.SendPacket(new BlockChangedAckPacket
                 {
                     SequenceID = Sequence
                 });
@@ -123,7 +124,7 @@ public partial class UseItemOnPacket
         }
 
         await player.world.SetBlockAsync(position, block, doBlockUpdate: true);
-        player.client.SendPacket(new AcknowledgeBlockChangePacket
+        player.client.SendPacket(new BlockChangedAckPacket
         {
             SequenceID = Sequence
         });
