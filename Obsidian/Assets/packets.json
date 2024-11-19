@@ -1,0 +1,1858 @@
+[
+  {
+    "name": "CookieRequest",
+    "resource_id": "cookie_request",
+    "namespace": "Clientbound",
+    "state": "Configuration",
+    "packet_id": 0,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "CustomPayload",
+    "resource_id": "custom_payload",
+    "namespace": "Clientbound",
+    "state": "Configuration",
+    "packet_id": 1,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "CustomReportDetails",
+    "resource_id": "custom_report_details",
+    "namespace": "Clientbound",
+    "state": "Configuration",
+    "packet_id": 15,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "Disconnect",
+    "resource_id": "disconnect",
+    "namespace": "Clientbound",
+    "state": "Configuration",
+    "packet_id": 2,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "FinishConfiguration",
+    "resource_id": "finish_configuration",
+    "namespace": "Clientbound",
+    "state": "Configuration",
+    "packet_id": 3,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "KeepAlive",
+    "resource_id": "keep_alive",
+    "namespace": "Clientbound",
+    "state": "Configuration",
+    "packet_id": 4,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "Ping",
+    "resource_id": "ping",
+    "namespace": "Clientbound",
+    "state": "Configuration",
+    "packet_id": 5,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "RegistryData",
+    "resource_id": "registry_data",
+    "namespace": "Clientbound",
+    "state": "Configuration",
+    "packet_id": 7,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "ResetChat",
+    "resource_id": "reset_chat",
+    "namespace": "Clientbound",
+    "state": "Configuration",
+    "packet_id": 6,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "ResourcePackPop",
+    "resource_id": "resource_pack_pop",
+    "namespace": "Clientbound",
+    "state": "Configuration",
+    "packet_id": 8,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "ResourcePackPush",
+    "resource_id": "resource_pack_push",
+    "namespace": "Clientbound",
+    "state": "Configuration",
+    "packet_id": 9,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SelectKnownPacks",
+    "resource_id": "select_known_packs",
+    "namespace": "Clientbound",
+    "state": "Configuration",
+    "packet_id": 14,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "ServerLinks",
+    "resource_id": "server_links",
+    "namespace": "Clientbound",
+    "state": "Configuration",
+    "packet_id": 16,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "StoreCookie",
+    "resource_id": "store_cookie",
+    "namespace": "Clientbound",
+    "state": "Configuration",
+    "packet_id": 10,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "Transfer",
+    "resource_id": "transfer",
+    "namespace": "Clientbound",
+    "state": "Configuration",
+    "packet_id": 11,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "UpdateEnabledFeatures",
+    "resource_id": "update_enabled_features",
+    "namespace": "Clientbound",
+    "state": "Configuration",
+    "packet_id": 12,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "UpdateTags",
+    "resource_id": "update_tags",
+    "namespace": "Clientbound",
+    "state": "Configuration",
+    "packet_id": 13,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "ClientInformation",
+    "resource_id": "client_information",
+    "namespace": "Serverbound",
+    "state": "Configuration",
+    "packet_id": 0,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "CookieResponse",
+    "resource_id": "cookie_response",
+    "namespace": "Serverbound",
+    "state": "Configuration",
+    "packet_id": 1,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "CustomPayload",
+    "resource_id": "custom_payload",
+    "namespace": "Serverbound",
+    "state": "Configuration",
+    "packet_id": 2,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "FinishConfiguration",
+    "resource_id": "finish_configuration",
+    "namespace": "Serverbound",
+    "state": "Configuration",
+    "packet_id": 3,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "KeepAlive",
+    "resource_id": "keep_alive",
+    "namespace": "Serverbound",
+    "state": "Configuration",
+    "packet_id": 4,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "Pong",
+    "resource_id": "pong",
+    "namespace": "Serverbound",
+    "state": "Configuration",
+    "packet_id": 5,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "ResourcePack",
+    "resource_id": "resource_pack",
+    "namespace": "Serverbound",
+    "state": "Configuration",
+    "packet_id": 6,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "SelectKnownPacks",
+    "resource_id": "select_known_packs",
+    "namespace": "Serverbound",
+    "state": "Configuration",
+    "packet_id": 7,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "Intention",
+    "resource_id": "intention",
+    "namespace": "Serverbound",
+    "state": "Handshake",
+    "packet_id": 0,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "CookieRequest",
+    "resource_id": "cookie_request",
+    "namespace": "Clientbound",
+    "state": "Login",
+    "packet_id": 5,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "CustomQuery",
+    "resource_id": "custom_query",
+    "namespace": "Clientbound",
+    "state": "Login",
+    "packet_id": 4,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "Hello",
+    "resource_id": "hello",
+    "namespace": "Clientbound",
+    "state": "Login",
+    "packet_id": 1,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "LoginCompression",
+    "resource_id": "login_compression",
+    "namespace": "Clientbound",
+    "state": "Login",
+    "packet_id": 3,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "LoginDisconnect",
+    "resource_id": "login_disconnect",
+    "namespace": "Clientbound",
+    "state": "Login",
+    "packet_id": 0,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "LoginFinished",
+    "resource_id": "login_finished",
+    "namespace": "Clientbound",
+    "state": "Login",
+    "packet_id": 2,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "CookieResponse",
+    "resource_id": "cookie_response",
+    "namespace": "Serverbound",
+    "state": "Login",
+    "packet_id": 4,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "CustomQueryAnswer",
+    "resource_id": "custom_query_answer",
+    "namespace": "Serverbound",
+    "state": "Login",
+    "packet_id": 2,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "Hello",
+    "resource_id": "hello",
+    "namespace": "Serverbound",
+    "state": "Login",
+    "packet_id": 0,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "Key",
+    "resource_id": "key",
+    "namespace": "Serverbound",
+    "state": "Login",
+    "packet_id": 1,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "LoginAcknowledged",
+    "resource_id": "login_acknowledged",
+    "namespace": "Serverbound",
+    "state": "Login",
+    "packet_id": 3,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "AddEntity",
+    "resource_id": "add_entity",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 1,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "AddExperienceOrb",
+    "resource_id": "add_experience_orb",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 2,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "Animate",
+    "resource_id": "animate",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 3,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "AwardStats",
+    "resource_id": "award_stats",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 4,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "BlockChangedAck",
+    "resource_id": "block_changed_ack",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 5,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "BlockDestruction",
+    "resource_id": "block_destruction",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 6,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "BlockEntityData",
+    "resource_id": "block_entity_data",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 7,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "BlockEvent",
+    "resource_id": "block_event",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 8,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "BlockUpdate",
+    "resource_id": "block_update",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 9,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "BossEvent",
+    "resource_id": "boss_event",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 10,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "BundleDelimiter",
+    "resource_id": "bundle_delimiter",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 0,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "ChangeDifficulty",
+    "resource_id": "change_difficulty",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 11,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "ChunkBatchFinished",
+    "resource_id": "chunk_batch_finished",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 12,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "ChunkBatchStart",
+    "resource_id": "chunk_batch_start",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 13,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "ChunksBiomes",
+    "resource_id": "chunks_biomes",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 14,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "ClearTitles",
+    "resource_id": "clear_titles",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 15,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "CommandSuggestions",
+    "resource_id": "command_suggestions",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 16,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "Commands",
+    "resource_id": "commands",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 17,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "ContainerClose",
+    "resource_id": "container_close",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 18,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "ContainerSetContent",
+    "resource_id": "container_set_content",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 19,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "ContainerSetData",
+    "resource_id": "container_set_data",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 20,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "ContainerSetSlot",
+    "resource_id": "container_set_slot",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 21,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "CookieRequest",
+    "resource_id": "cookie_request",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 22,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "Cooldown",
+    "resource_id": "cooldown",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 23,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "CustomChatCompletions",
+    "resource_id": "custom_chat_completions",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 24,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "CustomPayload",
+    "resource_id": "custom_payload",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 25,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "CustomReportDetails",
+    "resource_id": "custom_report_details",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 129,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "DamageEvent",
+    "resource_id": "damage_event",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 26,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "DebugSample",
+    "resource_id": "debug_sample",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 27,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "DeleteChat",
+    "resource_id": "delete_chat",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 28,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "Disconnect",
+    "resource_id": "disconnect",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 29,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "DisguisedChat",
+    "resource_id": "disguised_chat",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 30,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "EntityEvent",
+    "resource_id": "entity_event",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 31,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "EntityPositionSync",
+    "resource_id": "entity_position_sync",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 32,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "Explode",
+    "resource_id": "explode",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 33,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "ForgetLevelChunk",
+    "resource_id": "forget_level_chunk",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 34,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "GameEvent",
+    "resource_id": "game_event",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 35,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "HorseScreenOpen",
+    "resource_id": "horse_screen_open",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 36,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "HurtAnimation",
+    "resource_id": "hurt_animation",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 37,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "InitializeBorder",
+    "resource_id": "initialize_border",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 38,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "KeepAlive",
+    "resource_id": "keep_alive",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 39,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "LevelChunkWithLight",
+    "resource_id": "level_chunk_with_light",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 40,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "LevelEvent",
+    "resource_id": "level_event",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 41,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "LevelParticles",
+    "resource_id": "level_particles",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 42,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "LightUpdate",
+    "resource_id": "light_update",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 43,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "Login",
+    "resource_id": "login",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 44,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "MapItemData",
+    "resource_id": "map_item_data",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 45,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "MerchantOffers",
+    "resource_id": "merchant_offers",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 46,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "MoveEntityPos",
+    "resource_id": "move_entity_pos",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 47,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "MoveEntityPosRot",
+    "resource_id": "move_entity_pos_rot",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 48,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "MoveEntityRot",
+    "resource_id": "move_entity_rot",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 50,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "MoveMinecartAlongTrack",
+    "resource_id": "move_minecart_along_track",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 49,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "MoveVehicle",
+    "resource_id": "move_vehicle",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 51,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "OpenBook",
+    "resource_id": "open_book",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 52,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "OpenScreen",
+    "resource_id": "open_screen",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 53,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "OpenSignEditor",
+    "resource_id": "open_sign_editor",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 54,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "Ping",
+    "resource_id": "ping",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 55,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "PlaceGhostRecipe",
+    "resource_id": "place_ghost_recipe",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 57,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "PlayerAbilities",
+    "resource_id": "player_abilities",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 58,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "PlayerChat",
+    "resource_id": "player_chat",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 59,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "PlayerCombatEnd",
+    "resource_id": "player_combat_end",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 60,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "PlayerCombatEnter",
+    "resource_id": "player_combat_enter",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 61,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "PlayerCombatKill",
+    "resource_id": "player_combat_kill",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 62,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "PlayerInfoRemove",
+    "resource_id": "player_info_remove",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 63,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "PlayerInfoUpdate",
+    "resource_id": "player_info_update",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 64,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "PlayerLookAt",
+    "resource_id": "player_look_at",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 65,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "PlayerPosition",
+    "resource_id": "player_position",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 66,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "PlayerRotation",
+    "resource_id": "player_rotation",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 67,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "PongResponse",
+    "resource_id": "pong_response",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 56,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "ProjectilePower",
+    "resource_id": "projectile_power",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 128,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "RecipeBookAdd",
+    "resource_id": "recipe_book_add",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 68,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "RecipeBookRemove",
+    "resource_id": "recipe_book_remove",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 69,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "RecipeBookSettings",
+    "resource_id": "recipe_book_settings",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 70,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "RemoveEntities",
+    "resource_id": "remove_entities",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 71,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "RemoveMobEffect",
+    "resource_id": "remove_mob_effect",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 72,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "ResetScore",
+    "resource_id": "reset_score",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 73,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "ResourcePackPop",
+    "resource_id": "resource_pack_pop",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 74,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "ResourcePackPush",
+    "resource_id": "resource_pack_push",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 75,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "Respawn",
+    "resource_id": "respawn",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 76,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "RotateHead",
+    "resource_id": "rotate_head",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 77,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SectionBlocksUpdate",
+    "resource_id": "section_blocks_update",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 78,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SelectAdvancementsTab",
+    "resource_id": "select_advancements_tab",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 79,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "ServerData",
+    "resource_id": "server_data",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 80,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "ServerLinks",
+    "resource_id": "server_links",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 130,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SetActionBarText",
+    "resource_id": "set_action_bar_text",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 81,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SetBorderCenter",
+    "resource_id": "set_border_center",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 82,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SetBorderLerpSize",
+    "resource_id": "set_border_lerp_size",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 83,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SetBorderSize",
+    "resource_id": "set_border_size",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 84,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SetBorderWarningDelay",
+    "resource_id": "set_border_warning_delay",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 85,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SetBorderWarningDistance",
+    "resource_id": "set_border_warning_distance",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 86,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SetCamera",
+    "resource_id": "set_camera",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 87,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SetChunkCacheCenter",
+    "resource_id": "set_chunk_cache_center",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 88,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SetChunkCacheRadius",
+    "resource_id": "set_chunk_cache_radius",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 89,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SetCursorItem",
+    "resource_id": "set_cursor_item",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 90,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SetDefaultSpawnPosition",
+    "resource_id": "set_default_spawn_position",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 91,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SetDisplayObjective",
+    "resource_id": "set_display_objective",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 92,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SetEntityData",
+    "resource_id": "set_entity_data",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 93,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SetEntityLink",
+    "resource_id": "set_entity_link",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 94,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SetEntityMotion",
+    "resource_id": "set_entity_motion",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 95,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SetEquipment",
+    "resource_id": "set_equipment",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 96,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SetExperience",
+    "resource_id": "set_experience",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 97,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SetHealth",
+    "resource_id": "set_health",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 98,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SetHeldSlot",
+    "resource_id": "set_held_slot",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 99,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SetObjective",
+    "resource_id": "set_objective",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 100,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SetPassengers",
+    "resource_id": "set_passengers",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 101,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SetPlayerInventory",
+    "resource_id": "set_player_inventory",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 102,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SetPlayerTeam",
+    "resource_id": "set_player_team",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 103,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SetScore",
+    "resource_id": "set_score",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 104,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SetSimulationDistance",
+    "resource_id": "set_simulation_distance",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 105,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SetSubtitleText",
+    "resource_id": "set_subtitle_text",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 106,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SetTime",
+    "resource_id": "set_time",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 107,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SetTitleText",
+    "resource_id": "set_title_text",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 108,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SetTitlesAnimation",
+    "resource_id": "set_titles_animation",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 109,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "Sound",
+    "resource_id": "sound",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 111,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SoundEntity",
+    "resource_id": "sound_entity",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 110,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "StartConfiguration",
+    "resource_id": "start_configuration",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 112,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "StopSound",
+    "resource_id": "stop_sound",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 113,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "StoreCookie",
+    "resource_id": "store_cookie",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 114,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "SystemChat",
+    "resource_id": "system_chat",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 115,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "TabList",
+    "resource_id": "tab_list",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 116,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "TagQuery",
+    "resource_id": "tag_query",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 117,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "TakeItemEntity",
+    "resource_id": "take_item_entity",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 118,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "TeleportEntity",
+    "resource_id": "teleport_entity",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 119,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "TickingState",
+    "resource_id": "ticking_state",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 120,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "TickingStep",
+    "resource_id": "ticking_step",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 121,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "Transfer",
+    "resource_id": "transfer",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 122,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "UpdateAdvancements",
+    "resource_id": "update_advancements",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 123,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "UpdateAttributes",
+    "resource_id": "update_attributes",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 124,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "UpdateMobEffect",
+    "resource_id": "update_mob_effect",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 125,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "UpdateRecipes",
+    "resource_id": "update_recipes",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 126,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "UpdateTags",
+    "resource_id": "update_tags",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 127,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "AcceptTeleportation",
+    "resource_id": "accept_teleportation",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 0,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "BlockEntityTagQuery",
+    "resource_id": "block_entity_tag_query",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 1,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "BundleItemSelected",
+    "resource_id": "bundle_item_selected",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 2,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "ChangeDifficulty",
+    "resource_id": "change_difficulty",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 3,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "Chat",
+    "resource_id": "chat",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 7,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "ChatAck",
+    "resource_id": "chat_ack",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 4,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "ChatCommand",
+    "resource_id": "chat_command",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 5,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "ChatCommandSigned",
+    "resource_id": "chat_command_signed",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 6,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "ChatSessionUpdate",
+    "resource_id": "chat_session_update",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 8,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "ChunkBatchReceived",
+    "resource_id": "chunk_batch_received",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 9,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "ClientCommand",
+    "resource_id": "client_command",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 10,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "ClientInformation",
+    "resource_id": "client_information",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 12,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "ClientTickEnd",
+    "resource_id": "client_tick_end",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 11,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "CommandSuggestion",
+    "resource_id": "command_suggestion",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 13,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "ConfigurationAcknowledged",
+    "resource_id": "configuration_acknowledged",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 14,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "ContainerButtonClick",
+    "resource_id": "container_button_click",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 15,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "ContainerClick",
+    "resource_id": "container_click",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 16,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "ContainerClose",
+    "resource_id": "container_close",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 17,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "ContainerSlotStateChanged",
+    "resource_id": "container_slot_state_changed",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 18,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "CookieResponse",
+    "resource_id": "cookie_response",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 19,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "CustomPayload",
+    "resource_id": "custom_payload",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 20,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "DebugSampleSubscription",
+    "resource_id": "debug_sample_subscription",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 21,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "EditBook",
+    "resource_id": "edit_book",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 22,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "EntityTagQuery",
+    "resource_id": "entity_tag_query",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 23,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "Interact",
+    "resource_id": "interact",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 24,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "JigsawGenerate",
+    "resource_id": "jigsaw_generate",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 25,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "KeepAlive",
+    "resource_id": "keep_alive",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 26,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "LockDifficulty",
+    "resource_id": "lock_difficulty",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 27,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "MovePlayerPos",
+    "resource_id": "move_player_pos",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 28,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "MovePlayerPosRot",
+    "resource_id": "move_player_pos_rot",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 29,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "MovePlayerRot",
+    "resource_id": "move_player_rot",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 30,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "MovePlayerStatusOnly",
+    "resource_id": "move_player_status_only",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 31,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "MoveVehicle",
+    "resource_id": "move_vehicle",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 32,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "PaddleBoat",
+    "resource_id": "paddle_boat",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 33,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "PickItem",
+    "resource_id": "pick_item",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 34,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "PingRequest",
+    "resource_id": "ping_request",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 35,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "PlaceRecipe",
+    "resource_id": "place_recipe",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 36,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "PlayerAbilities",
+    "resource_id": "player_abilities",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 37,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "PlayerAction",
+    "resource_id": "player_action",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 38,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "PlayerCommand",
+    "resource_id": "player_command",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 39,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "PlayerInput",
+    "resource_id": "player_input",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 40,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "Pong",
+    "resource_id": "pong",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 41,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "RecipeBookChangeSettings",
+    "resource_id": "recipe_book_change_settings",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 42,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "RecipeBookSeenRecipe",
+    "resource_id": "recipe_book_seen_recipe",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 43,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "RenameItem",
+    "resource_id": "rename_item",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 44,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "ResourcePack",
+    "resource_id": "resource_pack",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 45,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "SeenAdvancements",
+    "resource_id": "seen_advancements",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 46,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "SelectTrade",
+    "resource_id": "select_trade",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 47,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "SetBeacon",
+    "resource_id": "set_beacon",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 48,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "SetCarriedItem",
+    "resource_id": "set_carried_item",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 49,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "SetCommandBlock",
+    "resource_id": "set_command_block",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 50,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "SetCommandMinecart",
+    "resource_id": "set_command_minecart",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 51,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "SetCreativeModeSlot",
+    "resource_id": "set_creative_mode_slot",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 52,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "SetJigsawBlock",
+    "resource_id": "set_jigsaw_block",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 53,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "SetStructureBlock",
+    "resource_id": "set_structure_block",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 54,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "SignUpdate",
+    "resource_id": "sign_update",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 55,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "Swing",
+    "resource_id": "swing",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 56,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "TeleportToEntity",
+    "resource_id": "teleport_to_entity",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 57,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "UseItem",
+    "resource_id": "use_item",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 59,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "UseItemOn",
+    "resource_id": "use_item_on",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 58,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "PongResponse",
+    "resource_id": "pong_response",
+    "namespace": "Clientbound",
+    "state": "Status",
+    "packet_id": 1,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "StatusResponse",
+    "resource_id": "status_response",
+    "namespace": "Clientbound",
+    "state": "Status",
+    "packet_id": 0,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "PingRequest",
+    "resource_id": "ping_request",
+    "namespace": "Serverbound",
+    "state": "Status",
+    "packet_id": 1,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "StatusRequest",
+    "resource_id": "status_request",
+    "namespace": "Serverbound",
+    "state": "Status",
+    "packet_id": 0,
+    "usable_interface": "IServerboundPacket"
+  }
+]

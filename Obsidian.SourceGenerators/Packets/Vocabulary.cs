@@ -14,6 +14,12 @@ internal static class Vocabulary
     public const string DataFormatAttribute = "DataFormat";
     public const string ConditionAttribute = "Condition";
 
+    public const string Clientbound = "Clientbound";
+    public const string Serverbound = "Serverbound";
+    public const string PacketId = "PacketId";
+
+    public const string ProtocolId = "protocol_id";
+
     public static bool AttributeNamesEqual(string attributeName1, string attributeName2)
     {
         ReadOnlySpan<char> name1 = attributeName1.EndsWith("Attribute") ? attributeName1.AsSpan(0, attributeName1.Length - 9) : attributeName1.AsSpan();
