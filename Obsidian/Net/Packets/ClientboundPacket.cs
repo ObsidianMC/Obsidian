@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.Net.Packets;
 
-public abstract class ClientboundPacket : ISerializablePacket
+public abstract class ClientboundPacket : IClientboundPacket
 {
     public abstract int Id { get; }
 

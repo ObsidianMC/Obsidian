@@ -1,7 +1,7 @@
 ﻿using Obsidian.Entities;
 
 namespace Obsidian.Net.Packets;
-public abstract record class CommonPacket : ISerializablePacket, IServerboundPacket
+public abstract record class CommonPacket : IClientboundPacket, IServerboundPacket
 {
     public virtual int Id { get; init; }
 

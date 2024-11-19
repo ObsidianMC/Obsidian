@@ -101,7 +101,7 @@ public sealed class Client : IDisposable
     /// <summary>
     /// Which packets are in queue to be sent to the client.
     /// </summary>
-    private readonly BufferBlock<ISerializablePacket> packetQueue;
+    private readonly BufferBlock<IClientboundPacket> packetQueue;
 
     /// <summary>
     /// The cancellation token source used to cancel the packet queue loop and disconnect the client.
@@ -190,13 +190,13 @@ public sealed class Client : IDisposable
         missedKeepAlives = [];
         var linkOptions = new DataflowLinkOptions { PropagateCompletion = true };
         var blockOptions = new ExecutionDataflowBlockOptions { CancellationToken = cancellationSource.Token, EnsureOrdered = true };
-        var sendPacketBlock = new ActionBlock<ISerializablePacket>(packet =>
+        var sendPacketBlock = new ActionBlock<IClientboundPacket>(packet =>
         {
             if (connectionContext.IsConnected())
                 SendPacket(packet);
         }, blockOptions);
 
-        packetQueue = new BufferBlock<ISerializablePacket>(blockOptions);
+        packetQueue = new BufferBlock<IClientboundPacket>(blockOptions);
         _ = packetQueue.LinkTo(sendPacketBlock, linkOptions);
 
         handler.RegisterHandlers();
@@ -755,7 +755,7 @@ public sealed class Client : IDisposable
         });
     }
 
-    internal void SendPacket(ISerializablePacket packet)
+    internal void SendPacket(IClientboundPacket packet)
     {
         try
         {
@@ -782,7 +782,7 @@ public sealed class Client : IDisposable
         }
     }
 
-    internal async Task QueuePacketAsync(ISerializablePacket packet)
+    internal async Task QueuePacketAsync(IClientboundPacket packet)
     {
         var args = new QueuePacketEventArgs(this.server, this, packet);
 

@@ -7,7 +7,7 @@ public interface IPacket
     public int Id { get; }
 }
 
-public interface ISerializablePacket : IPacket
+public interface IClientboundPacket : IPacket
 {
     public void Serialize(MinecraftStream stream);
 }
