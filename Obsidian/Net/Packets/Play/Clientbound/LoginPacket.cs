@@ -2,7 +2,7 @@
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class LoginPacket : IClientboundPacket
+public partial class LoginPacket
 {
     [Field(0)]
     public int EntityId { get; init; }
@@ -66,6 +66,4 @@ public partial class LoginPacket : IClientboundPacket
 
     [Field(20)]
     public bool EnforcesSecureChat { get; init; }
-
-    public int Id => 0x2B;
 }

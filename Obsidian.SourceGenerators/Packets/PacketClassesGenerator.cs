@@ -31,6 +31,21 @@ public sealed class PacketClassesGenerator : IIncrementalGenerator
         "resource_pack"
     ];
 
+    private static readonly JsonSerializerOptions options = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+        WriteIndented = true,
+        PropertyNameCaseInsensitive = true,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        NumberHandling = JsonNumberHandling.AllowReadingFromString,
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        Converters =
+            {
+                new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower, false)
+            }
+    };
+
+
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         //if (!Debugger.IsAttached)
@@ -53,15 +68,7 @@ public sealed class PacketClassesGenerator : IIncrementalGenerator
         {
             var packetsJson = output.files.GetJsonFromArray("packets");
 
-            try
-            {
-                GeneratePacketClasses(context, output.compilation, packetsJson);
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-
+            GeneratePacketClasses(context, output.compilation, packetsJson);
         }
     }
 
@@ -81,6 +88,8 @@ public sealed class PacketClassesGenerator : IIncrementalGenerator
             }
 
             source.Using("Obsidian.Net");
+            source.Using("Obsidian.Net.Packets");
+            source.Using("Obsidian.Entities");
             source.Using("Obsidian.Utilities");
             source.Using("System.Runtime.CompilerServices");
             source.Line();
@@ -90,39 +99,7 @@ public sealed class PacketClassesGenerator : IIncrementalGenerator
 
             source.Type($"public partial class {packet.Name}Packet : {packet.UsableInterface}");
 
-            source.Line($"public int Id => {packet.PacketId};");
-
-            if (packet.UsableInterface == Vocabulary.ClientboundInterface)
-            {
-                source.Method("public void Serialize(MinecraftStream stream)");
-                source.EndScope();
-
-                source.Line();
-            }
-            else if (packet.UsableInterface == Vocabulary.ServerboundInterface)
-            {
-                source.Method("public void Populate(byte[] data)");
-                source.EndScope();
-
-                source.Method("public void Populate(MinecraftStream stream)");
-                source.EndScope();
-
-                source.Method("public ValueTask HandleAsync(Server server, Player player)");
-                source.Line("return default;");
-                source.EndScope();
-
-                source.Line();
-
-                source.Method($"public static {packet.Name}Packet Deserialize(byte[] data)");
-                source.Line("throw new NotImplementedException();");
-                source.EndScope();
-
-                source.Line();
-
-                source.Method($"public static {packet.Name}Packet Deserialize(MinecraftStream stream)");
-                source.Line("throw new NotImplementedException();");
-                source.EndScope();
-            }
+            source.Line($"public override int Id => {packet.PacketId};");
 
             source.EndScope();
 
@@ -135,11 +112,11 @@ public sealed class PacketClassesGenerator : IIncrementalGenerator
         {
             var key = groupedPackets.Key;
             var defaultPacket = groupedPackets.First();
-            var dualStream = groupedPackets.Count(x => x.Namespace is Vocabulary.Clientbound or Vocabulary.Serverbound) > 1;
             var packetClassName = $"{defaultPacket.Name}Packet";
-            var @interface = dualStream ? $"{Vocabulary.ClientboundInterface}, {Vocabulary.ServerboundInterface}" : defaultPacket.UsableInterface;
 
             source.Using("Obsidian.Net");
+            source.Using("Obsidian.Net.Packets");
+            source.Using("Obsidian.Entities");
             source.Using("Obsidian.Utilities");
             source.Using("System.Runtime.CompilerServices");
             source.Line();
@@ -147,7 +124,7 @@ public sealed class PacketClassesGenerator : IIncrementalGenerator
             source.Namespace($"Obsidian.Net.Packets.Common");
             source.Line();
 
-            source.Type($"public partial record class {packetClassName} : {@interface}");
+            source.Type($"public partial record class {packetClassName} : CommonPacket");
 
             foreach (var packet in groupedPackets.GroupBy(x => x.State))
             {
@@ -165,77 +142,9 @@ public sealed class PacketClassesGenerator : IIncrementalGenerator
                 }
             }
 
-            source.Line("public int Id { get; init; }");
             source.Line();
 
-            if (dualStream)
-            {
-                source.Method("public void Serialize(MinecraftStream stream)");
-                source.EndScope();
-
-                source.Line();
-
-                source.Method("public void Populate(byte[] data)");
-                source.EndScope();
-
-                source.Line();
-
-                source.Method("public void Populate(MinecraftStream stream)");
-                source.EndScope();
-
-                source.Line();
-
-                source.Method("public ValueTask HandleAsync(Server server, Player player)");
-                source.Line("return default;");
-                source.EndScope();
-
-                source.Line();
-
-                source.Method($"public static {packetClassName} Deserialize(byte[] data)");
-                source.Line("throw new NotImplementedException();");
-                source.EndScope();
-
-                source.Line();
-
-                source.Method($"public static {packetClassName} Deserialize(MinecraftStream stream)");
-                source.Line("throw new NotImplementedException();");
-                source.EndScope();
-            }
-            else if (defaultPacket.UsableInterface == Vocabulary.ClientboundInterface)
-            {
-                source.Method("public void Serialize(MinecraftStream stream)");
-                source.EndScope();
-
-                source.Line();
-            }
-            else if (defaultPacket.UsableInterface == Vocabulary.ServerboundInterface)
-            {
-                source.Method("public void Populate(byte[] data)");
-                source.EndScope();
-
-                source.Line();
-
-                source.Method("public void Populate(MinecraftStream stream)");
-                source.EndScope();
-
-                source.Line();
-
-                source.Method("public ValueTask HandleAsync(Server server, Player player)");
-                source.Line("return default;");
-                source.EndScope();
-
-                source.Line();
-
-                source.Method($"public static {packetClassName} Deserialize(byte[] data)");
-                source.Line("throw new NotImplementedException();");
-                source.EndScope();
-
-                source.Line();
-
-                source.Method($"public static {packetClassName} Deserialize(MinecraftStream stream)");
-                source.Line("throw new NotImplementedException();");
-                source.EndScope();
-            }
+            AppendCommonMethods(source, packetClassName);
 
             source.EndScope();
 
@@ -245,19 +154,19 @@ public sealed class PacketClassesGenerator : IIncrementalGenerator
         }
     }
 
-    private static readonly JsonSerializerOptions options = new()
+    private void AppendCommonMethods(CodeBuilder source, string packetClassName)
     {
-        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-        WriteIndented = true,
-        PropertyNameCaseInsensitive = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        NumberHandling = JsonNumberHandling.AllowReadingFromString,
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-        Converters =
-            {
-                new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower, false)
-            }
-    };
+        source.Method($"public static {packetClassName} Deserialize(byte[] data)");
+        source.Line("throw new NotImplementedException();");
+        source.EndScope();
+
+        source.Line();
+
+        source.Method($"public static {packetClassName} Deserialize(MinecraftStream stream)");
+        source.Line("throw new NotImplementedException();");
+        source.EndScope();
+    }
+
 
     private static Packet[] GetPackets(string packetsJson) =>
         JsonSerializer.Deserialize<Packet[]>(packetsJson, options)!;
@@ -274,6 +183,6 @@ public sealed class PacketClassesGenerator : IIncrementalGenerator
 
         public int PacketId { get; set; } = default!;
 
-        public string UsableInterface => $"I{Namespace}Packet";
+        public string UsableInterface => $"{Namespace}Packet";
     }
 }

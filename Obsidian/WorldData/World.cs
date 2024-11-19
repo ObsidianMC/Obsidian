@@ -730,7 +730,7 @@ public sealed class World : IWorld
         dimensions.Add(codec.Name, dimensionWorld);
     }
 
-    public void SpawnExperienceOrbs(VectorF position, short count = 1) => this.PacketBroadcaster.QueuePacketToWorld(this, new SpawnExperienceOrbPacket(count, position));
+    public void SpawnExperienceOrbs(VectorF position, short count = 1) => this.PacketBroadcaster.QueuePacketToWorld(this, new AddExperienceOrbPacket(count, position));
 
     /// <summary>
     /// 
@@ -951,7 +951,7 @@ public sealed class World : IWorld
         }
     }
 
-    private void BroadcastTime() => this.PacketBroadcaster.QueuePacketToWorld(this, new UpdateTimePacket(LevelData.Time, LevelData.Time % 24000));
+    private void BroadcastTime() => this.PacketBroadcaster.QueuePacketToWorld(this, new SetTimePacket(LevelData.Time, LevelData.Time % 24000));
 
     private void WriteWorldGenSettings(NbtWriter writer)
     {

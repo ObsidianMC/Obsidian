@@ -2,7 +2,7 @@
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class RespawnPacket : IClientboundPacket
+public partial class RespawnPacket
 {
     [Field(0)]
     public string DimensionType { get; init; }
@@ -46,6 +46,4 @@ public partial class RespawnPacket : IClientboundPacket
     /// </summary>
     [Field(11), ActualType(typeof(sbyte))]
     public DataKept DataKept { get; init; }
-
-    public int Id => 0x47;
 }

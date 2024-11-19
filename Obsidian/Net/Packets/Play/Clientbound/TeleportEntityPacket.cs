@@ -2,7 +2,7 @@
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class TeleportEntityPacket : IClientboundPacket
+public partial class TeleportEntityPacket
 {
     [Field(0), VarLength]
     public int EntityId { get; init; }
@@ -18,6 +18,4 @@ public partial class TeleportEntityPacket : IClientboundPacket
 
     [Field(4)]
     public bool OnGround { get; init; }
-
-    public int Id => 0x70;
 }

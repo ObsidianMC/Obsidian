@@ -1,12 +1,10 @@
 ﻿namespace Obsidian.Net.Packets.Configuration.Clientbound;
-public sealed partial class RegistryDataPacket(string registryId, IDictionary<string, ICodec> codecs) : IClientboundPacket
+public partial class RegistryDataPacket(string registryId, IDictionary<string, ICodec> codecs)
 {
-    public int Id => 0x07;
-
     public string RegistryId { get; } = registryId;
     public IDictionary<string, ICodec> Codecs { get; } = codecs;
 
-    public void Serialize(MinecraftStream stream)
+    public override void Serialize(MinecraftStream stream)
     {
         using var packetStream = new MinecraftStream();
 

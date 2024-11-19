@@ -3,7 +3,7 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class PlayerInfoUpdatePacket : IClientboundPacket
+public partial class PlayerInfoUpdatePacket
 {
     [Field(0)]
     public PlayerInfoAction Actions { get; private set; }
@@ -13,8 +13,6 @@ public partial class PlayerInfoUpdatePacket : IClientboundPacket
     /// </remarks>
     [Field(1)]
     public Dictionary<Guid, List<InfoAction>> Players { get; set; } = [];
-
-    public int Id => 0x3E;
 
     public PlayerInfoUpdatePacket(Dictionary<Guid, List<InfoAction>> infoActions)
     {

@@ -1,12 +1,11 @@
 ﻿using Obsidian.API.Events;
 using Obsidian.Entities;
-using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
-public partial class UseItemOnPacket : IServerboundPacket
+public partial class UseItemOnPacket
 {
     [Field(0), ActualType(typeof(int)), VarLength]
     public Hand Hand { get; private set; } // Hand it was placed from. 0 = Main, 1 = Off
@@ -26,9 +25,7 @@ public partial class UseItemOnPacket : IServerboundPacket
     [Field(7), VarLength]
     public int Sequence { get; private set; }
 
-    public int Id => 0x38;
-
-    public async ValueTask HandleAsync(Server server, Player player)
+    public async override ValueTask HandleAsync(Server server, Player player)
     {
         //Get main hand first return offhand if null
         var currentItem = player.GetHeldItem() ?? player.GetOffHandItem();

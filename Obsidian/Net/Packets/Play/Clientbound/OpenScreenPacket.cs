@@ -2,7 +2,7 @@
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class OpenScreenPacket : IClientboundPacket
+public partial class OpenScreenPacket
 {
     [Field(0), VarLength]
     public int WindowId { get; }
@@ -12,8 +12,6 @@ public partial class OpenScreenPacket : IClientboundPacket
 
     [Field(2)]
     public ChatMessage Title { get; }
-
-    public int Id => 0x33;
 
     public OpenScreenPacket(BaseContainer inventory, int windowId)
     {

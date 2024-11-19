@@ -7,7 +7,7 @@ public sealed class Team : ITeam
     private readonly Scoreboard scoreboard;
     private readonly Server server;
 
-    private UpdateTeamsPacket packet;
+    private SetPlayerTeamPacket packet;
     public string Name { get; set; }
 
     public ChatMessage DisplayName { get; set; }

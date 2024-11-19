@@ -201,7 +201,7 @@ public sealed partial class Player : Living, IPlayer
 
         CurrentScoreboard = actualBoard;
 
-        await client.QueuePacketAsync(new UpdateObjectivesPacket
+        await client.QueuePacketAsync(new SetDisplayObjectivePacket
         {
             ObjectiveName = actualBoard.name,
             Mode = ScoreboardMode.Create,
@@ -211,7 +211,7 @@ public sealed partial class Player : Living, IPlayer
 
         foreach (var (_, score) in actualBoard.scores)
         {
-            await client.QueuePacketAsync(new UpdateScorePacket
+            await client.QueuePacketAsync(new SetScorePacket
             {
                 EntityName = score.DisplayText,
                 ObjectiveName = actualBoard.name,
@@ -221,7 +221,7 @@ public sealed partial class Player : Living, IPlayer
             });
         }
 
-        await client.QueuePacketAsync(new DisplayObjectivePacket
+        await client.QueuePacketAsync(new SetDisplayObjectivePacket
         {
             ScoreName = actualBoard.name,
             Position = position
@@ -237,7 +237,7 @@ public sealed partial class Player : Living, IPlayer
         await client.QueuePacketAsync(new OpenScreenPacket(container, nextId));
 
         if (container.HasItems())
-            await client.QueuePacketAsync(new SetContainerContentPacket(nextId, container.ToList()));
+            await client.QueuePacketAsync(new ContainerSetContentPacket(nextId, container.ToList()));
     }
 
     public async override ValueTask TeleportAsync(VectorF pos)
@@ -257,7 +257,7 @@ public sealed partial class Player : Living, IPlayer
                 pos
             ));
 
-        await client.QueuePacketAsync(new SynchronizePlayerPositionPacket
+        await client.QueuePacketAsync(new PlayerPositionPacket
         {
             Position = pos,
             Flags = PositionFlags.None,
@@ -275,7 +275,7 @@ public sealed partial class Player : Living, IPlayer
 
         TeleportId = Globals.Random.Next(0, 999);
 
-        await client.QueuePacketAsync(new SynchronizePlayerPositionPacket
+        await client.QueuePacketAsync(new PlayerPositionPacket
         {
             Position = to.Position,
             Flags = PositionFlags.None,
@@ -308,22 +308,22 @@ public sealed partial class Player : Living, IPlayer
         await client.SendInfoAsync();
 
         var (chunkX, chunkZ) = Position.ToChunkCoord();
-        await client.QueuePacketAsync(new SetCenterChunkPacket(chunkX, chunkZ));
+        await client.QueuePacketAsync(new SetChunkCacheCenterPacket(chunkX, chunkZ));
     }
 
     public Task SendMessageAsync(ChatMessage message, Guid sender, SecureMessageSignature messageSignature) =>
         throw new NotImplementedException();
 
     public Task SendMessageAsync(ChatMessage message) =>
-        client.QueuePacketAsync(new SystemChatMessagePacket(message, false));
+        client.QueuePacketAsync(new SystemChatPacket(message, false));
 
     public Task SetActionBarTextAsync(ChatMessage message) =>
-        client.QueuePacketAsync(new SystemChatMessagePacket(message, true));
+        client.QueuePacketAsync(new SystemChatPacket(message, true));
 
     public async Task SendSoundAsync(ISoundEffect soundEffect)
     {
-        IClientboundPacket packet = soundEffect.SoundPosition is SoundPosition soundPosition ?
-            new SoundEffectPacket
+        ClientboundPacket packet = soundEffect.SoundPosition is SoundPosition soundPosition ?
+            new SoundPacket
             {
                 SoundId = soundEffect.SoundId,
                 SoundPosition = soundPosition,
@@ -336,7 +336,7 @@ public sealed partial class Player : Living, IPlayer
                 Range = soundEffect.Range
             }
             :
-            new EntitySoundEffectPacket
+            new SoundEntityPacket
             {
                 SoundId = soundEffect.SoundId,
                 EntityId = soundEffect.EntityId!.Value,
@@ -388,7 +388,7 @@ public sealed partial class Player : Living, IPlayer
 
         await UpdateChunksAsync(true, 2);
 
-        await client.QueuePacketAsync(new SynchronizePlayerPositionPacket
+        await client.QueuePacketAsync(new PlayerPositionPacket
         {
             Position = Position,
             Yaw = 0,
@@ -491,7 +491,7 @@ public sealed partial class Player : Living, IPlayer
             Text = title
         };
 
-        var titleTimesPacket = new SetTitleAnimationTimesPacket
+        var titleTimesPacket = new SetTitlesAnimationPacket
         {
             FadeIn = fadeIn,
             FadeOut = fadeOut,
@@ -521,7 +521,7 @@ public sealed partial class Player : Living, IPlayer
             Text = subtitle
         };
 
-        var titleTimesPacket = new SetTitleAnimationTimesPacket
+        var titleTimesPacket = new SetTitlesAnimationPacket
         {
             FadeIn = fadeIn,
             FadeOut = fadeOut,
@@ -551,7 +551,7 @@ public sealed partial class Player : Living, IPlayer
 
 
     public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float extra = 0) =>
-        await client.QueuePacketAsync(new ParticlePacket
+        await client.QueuePacketAsync(new LevelParticlesPacket
         {
             Type = particle,
             Position = pos,
@@ -561,7 +561,7 @@ public sealed partial class Player : Living, IPlayer
 
     public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float offsetX, float offsetY,
         float offsetZ, float extra = 0) => await client.QueuePacketAsync(
-        new ParticlePacket
+        new LevelParticlesPacket
         {
             Type = particle,
             Position = pos,
@@ -579,7 +579,7 @@ public sealed partial class Player : Living, IPlayer
 
     public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, ParticleData data,
         float extra = 0) =>
-        await client.QueuePacketAsync(new ParticlePacket
+        await client.QueuePacketAsync(new LevelParticlesPacket
         {
             Type = particle,
             Position = pos,
@@ -590,7 +590,7 @@ public sealed partial class Player : Living, IPlayer
 
     public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float offsetX, float offsetY,
         float offsetZ, ParticleData data, float extra = 0) => await client.QueuePacketAsync(
-        new ParticlePacket
+        new LevelParticlesPacket
         {
             Type = particle,
             Position = pos,
@@ -960,7 +960,7 @@ public sealed partial class Player : Living, IPlayer
 
             var slot = Inventory.AddItem(new ItemStack(item.Material, item.Count, item.ItemMeta));
 
-            client.SendPacket(new SetContainerSlotPacket
+            client.SendPacket(new ContainerSetSlotPacket
             {
                 Slot = (short)slot,
                 WindowId = 0,

@@ -65,7 +65,7 @@ public sealed partial class Server : IServer
 
     internal readonly CancellationTokenSource _cancelTokenSource;
 
-    private readonly ConcurrentQueue<IClientboundPacket> _chatMessagesQueue = new();
+    private readonly ConcurrentQueue<ClientboundPacket> _chatMessagesQueue = new();
     private readonly ConcurrentHashSet<Client> _clients = new();
     private readonly ILoggerFactory loggerFactory;
     private readonly RconServer _rconServer;
@@ -218,14 +218,14 @@ public sealed partial class Server : IServer
     /// </summary>
     public void BroadcastMessage(ChatMessage message)
     {
-        _chatMessagesQueue.Enqueue(new SystemChatMessagePacket(message, false));
+        _chatMessagesQueue.Enqueue(new SystemChatPacket(message, false));
         _logger.LogInformation(message.Text);
     }
 
     /// <summary>
     /// Sends a message to all players on this server.
     /// </summary>
-    public void BroadcastMessage(PlayerChatMessagePacket message)
+    public void BroadcastMessage(PlayerChatPacket message)
     {
         _chatMessagesQueue.Enqueue(message);
         _logger.LogInformation("{}", message.Header.PlainMessage);
@@ -238,7 +238,7 @@ public sealed partial class Server : IServer
     {
         var chatMessage = ChatMessage.Simple(message);
 
-        _chatMessagesQueue.Enqueue(new SystemChatMessagePacket(chatMessage, false));
+        _chatMessagesQueue.Enqueue(new SystemChatPacket(chatMessage, false));
         _logger.LogInformation(message);
     }
 
@@ -477,7 +477,7 @@ public sealed partial class Server : IServer
         }
     }
 
-    internal async Task HandleIncomingMessageAsync(ChatMessagePacket packet, Client source, MessageType type = MessageType.Chat)
+    internal async Task HandleIncomingMessageAsync(ChatPacket packet, Client source, MessageType type = MessageType.Chat)
     {
         const string format = "<{0}> {1}";//TODO use this????
         var message = packet.Message;
@@ -488,7 +488,7 @@ public sealed partial class Server : IServer
         }
     }
 
-    internal async Task QueueBroadcastPacketAsync(IClientboundPacket packet)
+    internal async Task QueueBroadcastPacketAsync(ClientboundPacket packet)
     {
         foreach (Player player in Players)
             await player.client.QueuePacketAsync(packet);
@@ -571,7 +571,7 @@ public sealed partial class Server : IServer
                     }
                 }
 
-                while (_chatMessagesQueue.TryDequeue(out IClientboundPacket packet))
+                while (_chatMessagesQueue.TryDequeue(out ClientboundPacket packet))
                 {
                     foreach (Player player in Players)
                     {

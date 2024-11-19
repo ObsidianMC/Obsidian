@@ -1,21 +1,9 @@
-﻿using Obsidian.API.Events;
-using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
+﻿using Obsidian.Serialization.Attributes;
 
-namespace Obsidian.Net.Packets.Play;
+namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class CloseContainerPacket : IClientboundPacket, IServerboundPacket
+public partial class ContainerClosePacket
 {
     [Field(0)]
     public byte WindowId { get; private set; }
-
-    public int Id => 0x12;
-
-    public async ValueTask HandleAsync(Server server, Player player)
-    {
-        if (WindowId == 0)
-            return;
-
-        await server.EventDispatcher.ExecuteEventAsync(new ContainerClosedEventArgs(player, server) { Container = player.OpenedContainer! });
-    }
 }

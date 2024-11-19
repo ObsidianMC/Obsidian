@@ -2,7 +2,8 @@
 using Obsidian.API.Configuration;
 using Obsidian.API.Logging;
 using Obsidian.Net.Packets;
-using Obsidian.Net.Packets.Configuration;
+using Obsidian.Net.Packets.Common;
+using Obsidian.Net.Packets.Configuration.Clientbound;
 using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
@@ -12,7 +13,7 @@ namespace Obsidian.Net;
 
 public sealed class ClientHandler
 {
-    private ConcurrentDictionary<int, IServerboundPacket> Packets { get; } = new ConcurrentDictionary<int, IServerboundPacket>();
+    private ConcurrentDictionary<int, ServerboundPacket> Packets { get; } = new ConcurrentDictionary<int, ServerboundPacket>();
     private ServerConfiguration config;
     private readonly ILogger _logger;
 
@@ -42,9 +43,9 @@ public sealed class ClientHandler
         //Packets.TryAdd(0x0E, InteractEntity);
         //Packets.TryAdd(0x0F, GenerateStructure);
         //Packets.TryAdd(0x11, LockDifficulty);
-        Packets.TryAdd(0x1A, new SetPlayerPositionPacket());
-        Packets.TryAdd(0x1B, new SetPlayerPositionAndRotationPacket());
-        Packets.TryAdd(0x1C, new SetPlayerRotationPacket());
+        Packets.TryAdd(0x1A, new MovePlayerPosPacket());
+        Packets.TryAdd(0x1B, new MovePlayerPosRotPacket());
+        Packets.TryAdd(0x1C, new MovePlayerRotPacket());
         Packets.TryAdd(0x20, new PlayerAbilitiesPacket(false));
         //Packets.TryAdd(0x15, PlayerMovement);
         //Packets.TryAdd(0x16, VehicleMove);
@@ -62,7 +63,7 @@ public sealed class ClientHandler
         //Packets.TryAdd(0x22, AdvancementTab);
         //Packets.TryAdd(0x23, SelectTrade);
         //Packets.TryAdd(0x24, SetBeaconEffect);
-        Packets.TryAdd(0x2F, new SetHeldItemPacket(false));
+        Packets.TryAdd(0x2F, new SetCarriedItemPacket(false));
         //Packets.TryAdd(0x26, UpdateCommandBlock);
         //Packets.TryAdd(0x27, UpdateCommandBlockMinecart);
         //Packets.TryAdd(0x28, new CreativeInventoryAction()); !
@@ -86,7 +87,7 @@ public sealed class ClientHandler
             case 0x01://Cookies
                 break;
             case 0x02:
-                await HandleFromPoolAsync<PluginMessagePacket>(data, client);
+                await HandleFromPoolAsync<CustomPayloadPacket>(data, client);
                 break;
             case 0x03:
                 await HandleFromPoolAsync<FinishConfigurationPacket>(data, client);
@@ -124,40 +125,40 @@ public sealed class ClientHandler
         switch (id)
         {
             case 0x00:
-                await HandleFromPoolAsync<ConfirmTeleportationPacket>(data, client);
+                await HandleFromPoolAsync<AcceptTeleportationPacket>(data, client);
                 break;
             case 0x04:
                 await HandleFromPoolAsync<ChatCommandPacket>(data, client);
                 break;
             case 0x06:
-                await HandleFromPoolAsync<ChatMessagePacket>(data, client);
+                await HandleFromPoolAsync<ChatPacket>(data, client);
                 break;
             case 0x07:
-                await HandleFromPoolAsync<PlayerSessionPacket>(data, client);
+                await HandleFromPoolAsync<ChatSessionUpdatePacket>(data, client);
                 break;
             case 0x08:
                 await HandleFromPoolAsync<ChunkBatchReceivedPacket>(data, client);
                 break;
             case 0x09:
-                await HandleFromPoolAsync<ClientStatusPacket>(data, client);
+                await HandleFromPoolAsync<ClientCommandPacket>(data, client);
                 break;
             case 0x0A:
                 await HandleFromPoolAsync<ClientInformationPacket>(data, client);
                 break;
             case 0x0C:
-                await HandleFromPoolAsync<AcknowledgeConfiguration>(data, client);
+                await HandleFromPoolAsync<AcknowledgeConfigurationPacket>(data, client);
                 break;
             case 0x0D:
-                await HandleFromPoolAsync<ClickContainerButtonPacket>(data, client);
+                await HandleFromPoolAsync<ContainerButtonClickPacket>(data, client);
                 break;
             case 0x0E:
-                await HandleFromPoolAsync<ClickContainerPacket>(data, client);
+                await HandleFromPoolAsync<ContainerClickPacket>(data, client);
                 break;
             case 0x0F:
                 await HandleFromPoolAsync<CloseContainerPacket>(data, client);
                 break;
             case 0x12:
-                await HandleFromPoolAsync<PluginMessagePacket>(data, client);
+                await HandleFromPoolAsync<CustomPayloadPacket>(data, client);
                 break;
             case 0x16:
                 await HandleFromPoolAsync<InteractPacket>(data, client);
@@ -184,7 +185,7 @@ public sealed class ClientHandler
                 break;
 
             case 0x29:
-                await HandleFromPoolAsync<SetSeenRecipePacket>(data, client);
+                await HandleFromPoolAsync<RecipeBookSeenRecipePacket>(data, client);
                 break;
 
             case 0x2A:
@@ -196,7 +197,7 @@ public sealed class ClientHandler
                 break;
 
             case 0x36:
-                await HandleFromPoolAsync<SwingArmPacket>(data, client);
+                await HandleFromPoolAsync<SwingPacket>(data, client);
                 break;
 
             case 0x38:
@@ -222,7 +223,7 @@ public sealed class ClientHandler
         }
     }
 
-    private async Task HandleFromPoolAsync<T>(byte[] data, Client client) where T : IServerboundPacket, new()
+    private async Task HandleFromPoolAsync<T>(byte[] data, Client client) where T : ServerboundPacket, new()
     {
         var packet = ObjectPool<T>.Shared.Rent();
         try

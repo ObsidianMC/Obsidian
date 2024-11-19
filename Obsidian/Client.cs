@@ -8,10 +8,11 @@ using Obsidian.Events.EventArgs;
 using Obsidian.Net;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets;
-using Obsidian.Net.Packets.Configuration;
+using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Configuration.Clientbound;
 using Obsidian.Net.Packets.Handshaking;
 using Obsidian.Net.Packets.Login;
+using Obsidian.Net.Packets.Login.Serverbound;
 using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Status;
@@ -100,7 +101,7 @@ public sealed class Client : IDisposable
     /// <summary>
     /// Which packets are in queue to be sent to the client.
     /// </summary>
-    private readonly BufferBlock<IClientboundPacket> packetQueue;
+    private readonly BufferBlock<ClientboundPacket> packetQueue;
 
     /// <summary>
     /// The cancellation token source used to cancel the packet queue loop and disconnect the client.
@@ -189,13 +190,13 @@ public sealed class Client : IDisposable
         missedKeepAlives = [];
         var linkOptions = new DataflowLinkOptions { PropagateCompletion = true };
         var blockOptions = new ExecutionDataflowBlockOptions { CancellationToken = cancellationSource.Token, EnsureOrdered = true };
-        var sendPacketBlock = new ActionBlock<IClientboundPacket>(packet =>
+        var sendPacketBlock = new ActionBlock<ClientboundPacket>(packet =>
         {
             if (connectionContext.IsConnected())
                 SendPacket(packet);
         }, blockOptions);
 
-        packetQueue = new BufferBlock<IClientboundPacket>(blockOptions);
+        packetQueue = new BufferBlock<ClientboundPacket>(blockOptions);
         _ = packetQueue.LinkTo(sendPacketBlock, linkOptions);
 
         handler.RegisterHandlers();
@@ -372,7 +373,6 @@ public sealed class Client : IDisposable
         this.SendPacket(new RegistryDataPacket(CodecRegistry.WolfVariant.CodecKey, CodecRegistry.WolfVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.PaintingVariant.CodecKey, CodecRegistry.PaintingVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
 
-
         this.SendPacket(UpdateTagsPacket.FromRegistry);
 
         this.SendPacket(FinishConfigurationPacket.Default);
@@ -385,12 +385,12 @@ public sealed class Client : IDisposable
 
         _ = await this.server.EventDispatcher.ExecuteEventAsync(new ServerStatusRequestEventArgs(this.server, status));
 
-        SendPacket(new RequestResponse(status));
+        SendPacket(new StatusResponse(status));
     }
 
     private Task HandlePingPongAsync(byte[] data)
     {
-        var pong = PingPong.Deserialize(data);
+        var pong = PingPongPacket.Deserialize(data);
         SendPacket(pong); // TODO make sure that the packet is fully sent before disconnecting
         Disconnect();
         return Task.CompletedTask;
@@ -398,7 +398,7 @@ public sealed class Client : IDisposable
 
     private async Task HandleHandshakeAsync(byte[] data)
     {
-        var handshake = Handshake.Deserialize(data);
+        var handshake = IntentionPacket.Deserialize(data);
         var nextState = handshake.NextState;
 
         if (nextState == ClientState.Login)
@@ -430,7 +430,7 @@ public sealed class Client : IDisposable
 
     private async Task HandleLoginStartAsync(byte[] data)
     {
-        var loginStart = LoginStart.Deserialize(data);
+        var loginStart = HelloPacket.Deserialize(data);
         var username = this.server.Configuration.Network.MulitplayerDebugMode ? $"Player{Globals.Random.Next(1, 999)}" : loginStart.Username;
         var world = (World)this.server.DefaultWorld;
 
@@ -461,7 +461,7 @@ public sealed class Client : IDisposable
 
             this.randomToken = randomToken;
 
-            SendPacket(new EncryptionRequest
+            SendPacket(new HelloPacket
             {
                 PublicKey = publicKey,
                 VerifyToken = randomToken,
@@ -478,7 +478,7 @@ public sealed class Client : IDisposable
 
             Player = new Player(GuidHelper.FromStringHash($"OfflinePlayer:{username}"), username, this, world);
 
-            this.SendPacket(new LoginSuccess(Player.Uuid, Player.Username)
+            this.SendPacket(new LoginFinishedPacket(Player.Uuid, Player.Username)
             {
                 SkinProperties = this.Player.SkinProperties,
             });
@@ -503,7 +503,7 @@ public sealed class Client : IDisposable
         }
 
         // Decrypt the shared secret and verify the token
-        var encryptionResponse = EncryptionResponse.Deserialize(data);
+        var encryptionResponse = KeyPacket.Deserialize(data);
 
         sharedKey = packetCryptography.Decrypt(encryptionResponse.SharedSecret);
 
@@ -527,7 +527,7 @@ public sealed class Client : IDisposable
         EncryptionEnabled = true;
         minecraftStream = new EncryptedMinecraftStream(networkStream, sharedKey);
 
-        this.SendPacket(new LoginSuccess(Player.Uuid, Player.Username)
+        this.SendPacket(new LoginFinishedPacket(Player.Uuid, Player.Username)
         {
             SkinProperties = this.Player.SkinProperties,
         });
@@ -536,7 +536,7 @@ public sealed class Client : IDisposable
     // TODO fix compression now????
     private void SetCompression()
     {
-        SendPacket(new SetCompression(CompressionThreshold));
+        SendPacket(new LoginCompressionPacket(CompressionThreshold));
         compressionEnabled = true;
         Logger.LogDebug("Compression has been enabled.");
     }
@@ -575,7 +575,7 @@ public sealed class Client : IDisposable
 
         await SendCommandsAsync();
 
-        await QueuePacketAsync(new UpdateRecipeBookPacket
+        await QueuePacketAsync(new RecipeBookSettingsPacket
         {
             Action = UnlockRecipeAction.Init,
             FirstRecipeIds = RecipesRegistry.Recipes.Keys.ToList(),
@@ -586,7 +586,7 @@ public sealed class Client : IDisposable
         await this.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
 
         Player.TeleportId = Globals.Random.Next(0, 999);
-        await QueuePacketAsync(new SynchronizePlayerPositionPacket
+        await QueuePacketAsync(new PlayerPositionPacket
         {
             Position = Player.Position,
             Yaw = 0,
@@ -610,21 +610,31 @@ public sealed class Client : IDisposable
 
         await SendTimeUpdateAsync();
         await SendWeatherUpdateAsync();
-        await QueuePacketAsync(new SetContainerContentPacket(0, Player.Inventory.ToList())
+        await QueuePacketAsync(new ContainerSetContentPacket(0, Player.Inventory.ToList())
         {
             StateId = Player.Inventory.StateId++,
             CarriedItem = Player.GetHeldItem(),
         });
 
-        await QueuePacketAsync(new SetEntityMetadataPacket
+        await QueuePacketAsync(new SetEntityDataPacket
         {
             EntityId = this.Player.EntityId,
             Entity = this.Player
         });
     }
 
-    internal async Task DisconnectAsync(ChatMessage reason) => await this.QueuePacketAsync(new DisconnectPacket(reason, State));
-    internal Task SendTimeUpdateAsync() => QueuePacketAsync(new UpdateTimePacket(Player!.world.LevelData.Time, Player.world.LevelData.DayTime));
+    internal async Task DisconnectAsync(ChatMessage reason)
+    {
+        if (this.State == ClientState.Login)
+        {
+            await this.QueuePacketAsync(new LoginDisconnectPacket { ReasonJson = reason.ToString() });
+            return;
+        }
+
+        await this.QueuePacketAsync(new DisconnectPacket { Reason = reason });
+    }
+
+    internal Task SendTimeUpdateAsync() => QueuePacketAsync(new SetTimePacket(Player!.world.LevelData.Time, Player.world.LevelData.DayTime));
     internal Task SendWeatherUpdateAsync() => QueuePacketAsync(new GameEventPacket(Player!.world.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
 
     internal async Task HandleKeepAliveAsync(KeepAlivePacket keepAlive)
@@ -660,6 +670,7 @@ public sealed class Client : IDisposable
 
         Logger.LogDebug("Doing KeepAlive ({keepAliveId}) with {Username} ({Uuid})", keepAliveId, Player.Username, Player.Uuid);
         // now that all is fine and dandy, we'd be fine to enqueue the new keepalive
+        
         SendPacket(new KeepAlivePacket(keepAliveId)
         {
             Id = this.State == ClientState.Configuration ? 0x03 : 0x26
@@ -744,7 +755,7 @@ public sealed class Client : IDisposable
         });
     }
 
-    internal void SendPacket(IClientboundPacket packet)
+    internal void SendPacket(ClientboundPacket packet)
     {
         try
         {
@@ -771,7 +782,7 @@ public sealed class Client : IDisposable
         }
     }
 
-    internal async Task QueuePacketAsync(IClientboundPacket packet)
+    internal async Task QueuePacketAsync(ClientboundPacket packet)
     {
         var args = new QueuePacketEventArgs(this.server, this, packet);
 
@@ -790,9 +801,9 @@ public sealed class Client : IDisposable
     {
         ArgumentNullException.ThrowIfNull(chunk);
 
-        await QueuePacketAsync(new ChunkDataAndUpdateLightPacket(chunk));
+        await QueuePacketAsync(new LevelChunkWithLightPacket(chunk));
     }
-    internal Task UnloadChunkAsync(int x, int z) => LoadedChunks.Contains((x, z)) ? QueuePacketAsync(new UnloadChunkPacket(x, z)) : Task.CompletedTask;
+    internal Task UnloadChunkAsync(int x, int z) => LoadedChunks.Contains((x, z)) ? QueuePacketAsync(new ForgetLevelChunkPacket(x, z)) : Task.CompletedTask;
 
     private async Task SendServerBrand()
     {

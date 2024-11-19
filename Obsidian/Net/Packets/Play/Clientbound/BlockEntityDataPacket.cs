@@ -3,7 +3,7 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class BlockEntityDataPacket : IClientboundPacket
+public partial class BlockEntityDataPacket
 {
     [Field(0)]
     public Vector Position { get; init; }
@@ -13,8 +13,6 @@ public partial class BlockEntityDataPacket : IClientboundPacket
 
     [Field(2)]
     public INbtTag NBTData { get; init; }
-
-    public int Id => 0x07;
 }
 
 //// https://wiki.vg/Protocol#Block_Entity_Data

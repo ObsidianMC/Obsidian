@@ -2,12 +2,10 @@
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class RemoveEntitiesPacket : IClientboundPacket
+public partial class RemoveEntitiesPacket
 {
     [Field(0), VarLength]
     public List<int> Entities { get; private set; } = new();
-
-    public int Id => 0x42;
 
     public RemoveEntitiesPacket(params int[] entities)
     {

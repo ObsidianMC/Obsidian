@@ -2,15 +2,13 @@
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class GameEventPacket : IClientboundPacket
+public partial class GameEventPacket
 {
     [Field(0), ActualType(typeof(byte))]
     public ChangeGameStateReason Reason { get; }
 
     [Field(1)]
     public float Value { get; }
-
-    public int Id => 0x22;
 
     public GameEventPacket(ChangeGameStateReason reason)
     {

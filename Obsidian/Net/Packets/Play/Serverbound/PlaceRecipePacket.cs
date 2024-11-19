@@ -4,7 +4,7 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
-public partial class PlaceRecipePacket : IServerboundPacket
+public partial class PlaceRecipePacket
 {
     [Field(0)]
     public sbyte WindowId { get; private set; }
@@ -15,9 +15,7 @@ public partial class PlaceRecipePacket : IServerboundPacket
     [Field(2)]
     public bool MakeAll { get; private set; }
 
-    public int Id => 0x22;
-
-    public async ValueTask HandleAsync(Server server, Player player)
+    public async override ValueTask HandleAsync(Server server, Player player)
     {
         await player.client.QueuePacketAsync(new PlaceGhostRecipePacket(WindowId, RecipeId));
     }

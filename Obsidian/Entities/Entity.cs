@@ -76,7 +76,7 @@ public class Entity : IEquatable<Entity>, IEntity
         {
             var delta = (Vector)((position * 32 - Position * 32) * 128);
 
-            this.PacketBroadcaster.BroadcastToWorldInRange(this.World, position, new UpdateEntityPositionPacket
+            this.PacketBroadcaster.BroadcastToWorldInRange(this.World, position, new MoveEntityPosPacket
             {
                 EntityId = EntityId,
 
@@ -100,7 +100,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
             if (isNewRotation)
             {
-                this.PacketBroadcaster.BroadcastToWorldInRange(this.World, position, new UpdateEntityPositionAndRotationPacket
+                this.PacketBroadcaster.BroadcastToWorldInRange(this.World, position, new MoveEntityPosRotPacket
                 {
                     EntityId = EntityId,
 
@@ -116,7 +116,7 @@ public class Entity : IEquatable<Entity>, IEntity
             }
             else
             {
-                this.PacketBroadcaster.BroadcastToWorldInRange(this.World, position, new UpdateEntityPositionPacket
+                this.PacketBroadcaster.BroadcastToWorldInRange(this.World, position, new MoveEntityPosPacket
                 {
                     EntityId = EntityId,
 
@@ -157,7 +157,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
 
     public void SetHeadRotation(Angle headYaw) =>
-        this.PacketBroadcaster.BroadcastToWorldInRange(this.World, this.Position, new SetHeadRotationPacket
+        this.PacketBroadcaster.BroadcastToWorldInRange(this.World, this.Position, new RotateHeadPacket
         {
             EntityId = EntityId,
             HeadYaw = headYaw
@@ -165,7 +165,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public void SetRotation(Angle yaw, Angle pitch, bool onGround = true)
     {
-        this.PacketBroadcaster.BroadcastToWorldInRange(this.World, this.Position, new UpdateEntityRotationPacket
+        this.PacketBroadcaster.BroadcastToWorldInRange(this.World, this.Position, new MoveEntityRotPacket
         {
             EntityId = EntityId,
             OnGround = onGround,
@@ -316,7 +316,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
         if (this is ILiving living)
         {
-            this.PacketBroadcaster.QueuePacketToWorld(this.World, new EntityAnimationPacket
+            this.PacketBroadcaster.QueuePacketToWorld(this.World, new AnimatePacket
             {
                 EntityId = EntityId,
                 Animation = EntityAnimationType.CriticalEffect
@@ -400,7 +400,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
         var delta = (Vector)(pos * 32 - Position * 32) * 128;
 
-        this.PacketBroadcaster.QueuePacketToWorld(this.World, 0, new UpdateEntityPositionAndRotationPacket
+        this.PacketBroadcaster.QueuePacketToWorld(this.World, 0, new MoveEntityPosRotPacket
         {
             EntityId = EntityId,
             Delta = delta,
@@ -417,7 +417,7 @@ public class Entity : IEquatable<Entity>, IEntity
         this.PacketBroadcaster.QueuePacketToWorldInRange(this.World, this.Position, new BundledPacket
         {
             Packets = [
-                        new SpawnEntityPacket
+                        new AddEntityPacket
                         {
                             EntityId = this.EntityId,
                             Uuid = this.Uuid,
@@ -428,7 +428,7 @@ public class Entity : IEquatable<Entity>, IEntity
                             Data = additionalData,
                             Velocity = velocity ?? new Velocity(0, 0, 0)
                         },
-                        new SetEntityMetadataPacket
+                        new SetEntityDataPacket
                         {
                             EntityId = this.EntityId,
                             Entity = this

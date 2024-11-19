@@ -4,7 +4,7 @@ using Obsidian.Serialization.Attributes;
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
 //TODO finish this packet PLEASE
-public partial class UpdateAdvancementsPacket : IClientboundPacket
+public partial class UpdateAdvancementsPacket
 {
     [Field(0)]
     public bool Reset { get; set; }
@@ -15,9 +15,7 @@ public partial class UpdateAdvancementsPacket : IClientboundPacket
     [Field(2)]
     public List<string> RemovedAdvancements { get; set; }
 
-    public int Id => 0x74;
-
-    public void Serialize(MinecraftStream stream)
+    public override void Serialize(MinecraftStream stream)
     {
         using var packetStream = new MinecraftStream();
 

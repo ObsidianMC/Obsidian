@@ -6,7 +6,7 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
-public partial class PlayerActionPacket : IServerboundPacket
+public partial class PlayerActionPacket
 {
     [Field(0), ActualType(typeof(int)), VarLength]
     public PlayerActionStatus Status { get; private set; }
@@ -20,9 +20,7 @@ public partial class PlayerActionPacket : IServerboundPacket
     [Field(3), VarLength]
     public int Sequence { get; private set; }
 
-    public int Id => 0x24;
-
-    public async ValueTask HandleAsync(Server server, Player player)
+    public async override ValueTask HandleAsync(Server server, Player player)
     {
         if (await player.world.GetBlockAsync(Position) is not IBlock block)
             return;
@@ -30,7 +28,7 @@ public partial class PlayerActionPacket : IServerboundPacket
         if (Status == PlayerActionStatus.FinishedDigging || (Status == PlayerActionStatus.StartedDigging && player.Gamemode == Gamemode.Creative))
         {
             await player.world.SetBlockAsync(Position, BlocksRegistry.Air, true);
-            player.client.SendPacket(new AcknowledgeBlockChangePacket
+            player.client.SendPacket(new BlockChangedAckPacket
             {
                 SequenceID = Sequence
             });
@@ -63,7 +61,7 @@ public partial class PlayerActionPacket : IServerboundPacket
                 break;
             case PlayerActionStatus.FinishedDigging:
                 {
-                    player.PacketBroadcaster.QueuePacketToWorld(player.world, 0, new SetBlockDestroyStagePacket
+                    player.PacketBroadcaster.QueuePacketToWorld(player.world, 0, new BlockDestructionPacket
                     {
                         EntityId = player,
                         Position = this.Position,
@@ -129,7 +127,7 @@ public partial class PlayerActionPacket : IServerboundPacket
 
         player.Inventory.RemoveItem(player.inventorySlot, amountToRemove);
 
-        player.client.SendPacket(new SetContainerSlotPacket
+        player.client.SendPacket(new ContainerSetSlotPacket
         {
             Slot = player.inventorySlot,
 

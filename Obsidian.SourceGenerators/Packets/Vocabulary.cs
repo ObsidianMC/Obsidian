@@ -2,8 +2,8 @@
 
 internal static class Vocabulary
 {
-    public const string ClientboundInterface = "IClientboundPacket";
-    public const string ServerboundInterface = "IServerboundPacket";
+    public const string ClientboundInterface = "ClientboundPacket";
+    public const string ServerboundInterface = "ServerboundPacket";
     public const string WriteMethodAttribute = "WriteMethod";
     public const string ReadMethodAttribute = "ReadMethod";
     public const string FieldAttribute = "Field";

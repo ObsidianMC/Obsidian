@@ -63,7 +63,7 @@ public sealed class MainEventHandler : MinecraftEventHandler
         {
             case Material.Chest:
             {
-                await player.client.QueuePacketAsync(new BlockActionPacket
+                await player.client.QueuePacketAsync(new BlockEventPacket
                 {
                     Position = position,
                     ActionId = 1,
@@ -79,7 +79,7 @@ public sealed class MainEventHandler : MinecraftEventHandler
             }
             case Material.EnderChest:
             {
-                await player.client.QueuePacketAsync(new BlockActionPacket
+                await player.client.QueuePacketAsync(new BlockEventPacket
                 {
                     Position = position,
                     ActionId = 1,
@@ -102,7 +102,7 @@ public sealed class MainEventHandler : MinecraftEventHandler
             }
             case Material.ShulkerBox:
             {
-                await player.client.QueuePacketAsync(new BlockActionPacket
+                await player.client.QueuePacketAsync(new BlockEventPacket
                 {
                     Position = position,
                     ActionId = 1,
@@ -188,7 +188,7 @@ public sealed class MainEventHandler : MinecraftEventHandler
                 };
 
                 await player.OpenInventoryAsync(container);
-                await player.client.QueuePacketAsync(new BlockActionPacket
+                await player.client.QueuePacketAsync(new BlockEventPacket
                 {
                     Position = blockPosition,
                     ActionId = 1,
@@ -209,7 +209,7 @@ public sealed class MainEventHandler : MinecraftEventHandler
                 };
 
                 await player.OpenInventoryAsync(container);
-                await player.client.QueuePacketAsync(new BlockActionPacket
+                await player.client.QueuePacketAsync(new BlockEventPacket
                 {
                     Position = blockPosition,
                     ActionId = 1,
@@ -246,7 +246,7 @@ public sealed class MainEventHandler : MinecraftEventHandler
                     Id = "shulker_box"
                 };
 
-                await player.client.QueuePacketAsync(new BlockActionPacket
+                await player.client.QueuePacketAsync(new BlockEventPacket
                 {
                     Position = blockPosition,
                     ActionId = 1,

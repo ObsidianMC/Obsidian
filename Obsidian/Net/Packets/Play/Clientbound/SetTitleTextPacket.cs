@@ -2,12 +2,10 @@
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class SetTitleTextPacket : IClientboundPacket
+public partial class SetTitleTextPacket
 {
     [Field(0)]
     public required ChatMessage Text { get; init; }
-
-    public int Id { get; }
 
     public SetTitleTextPacket(TitleMode mode)
     {
@@ -15,7 +13,7 @@ public partial class SetTitleTextPacket : IClientboundPacket
     }
 }
 
-public partial class SetTitleAnimationTimesPacket : IClientboundPacket
+public partial class SetTitlesAnimationPacket
 {
     [Field(0)]
     public int FadeIn { get; set; }
@@ -25,8 +23,6 @@ public partial class SetTitleAnimationTimesPacket : IClientboundPacket
 
     [Field(2)]
     public int FadeOut { get; set; }
-
-    public int Id => 0X66;
 }
 
 public enum TitleMode

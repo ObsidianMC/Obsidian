@@ -3,7 +3,7 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class AwardStatisticsPacket : IClientboundPacket
+public partial record class AwardStatisticsPacket
 {
     [Field(0)]
     public List<Statistic> Stats { get; } = new();
@@ -17,8 +17,6 @@ public partial class AwardStatisticsPacket : IClientboundPacket
     {
         Stats.Clear();
     }
-
-    public int Id => 0x04;
 }
 
 public readonly struct Statistic
