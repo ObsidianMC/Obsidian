@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Connections;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -11,12 +10,10 @@ using Obsidian.API.Configuration;
 using Obsidian.API.Crafting;
 using Obsidian.API.Events;
 using Obsidian.API.Utilities;
-using Obsidian.Commands;
 using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
-using Obsidian.Events;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Common;
@@ -32,7 +29,6 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 
@@ -57,7 +53,7 @@ public sealed partial class Server : IServer
         }
     }
 #endif
-    public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_21_1;
+    public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_21_3;
 
     public const string PersistentDataPath = "persistentdata";
     public const string PermissionPath = "permissions";

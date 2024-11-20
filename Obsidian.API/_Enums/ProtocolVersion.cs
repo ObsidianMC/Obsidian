@@ -7,11 +7,13 @@ public enum ProtocolVersion
 {
     [Description("1.13")]
     v1_13 = 393,
+
     [Description("1.13.2")]
     v1_13_2 = 404,
 
     [Description("1.14")]
     v1_14 = 477,
+
     [Description("1.14.1")]
     v1_14_1 = 480,
 
@@ -62,5 +64,8 @@ public enum ProtocolVersion
 
     //1.21 same pvn
     [Description("1.21.1")]
-    v1_21_1 = 767
+    v1_21_1 = 767,
+
+    [Description("1.21.3")]
+    v1_21_3 = 768
 }
