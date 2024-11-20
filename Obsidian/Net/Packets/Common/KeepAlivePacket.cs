@@ -7,19 +7,24 @@ public partial record class KeepAlivePacket
     [Field(0)]
     public long KeepAliveId { get; private set; }
 
-    public int Id { get; init; }
-
-    public KeepAlivePacket()
-    {
-
-    }
+    public KeepAlivePacket() { }
 
     public KeepAlivePacket(long id)
     {
         KeepAliveId = id;
     }
 
-    public async ValueTask HandleAsync(Server server, Player player)
+    public override void Populate(INetStreamReader stream)
+    {
+        this.KeepAliveId = stream.ReadLong();
+    }
+
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteLong(KeepAliveId);
+    }
+
+    public async override ValueTask HandleAsync(Server server, Player player)
     {
         await player.client.HandleKeepAliveAsync(this);
     }

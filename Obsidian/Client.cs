@@ -21,6 +21,8 @@ using Obsidian.Utilities.Mojang;
 using Obsidian.WorldData;
 using Org.BouncyCastle.Utilities.IO.Pem;
 using System.Diagnostics;
+using System.IO;
+using System.Linq.Expressions;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -759,7 +761,7 @@ public sealed class Client : IDisposable
         {
             if (!compressionEnabled)
             {
-                packet.Serialize(minecraftStream);
+                this.minecraftStream.WritePacket(packet);
             }
             else
             {

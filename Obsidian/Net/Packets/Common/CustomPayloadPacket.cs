@@ -1,17 +1,16 @@
 ﻿using Obsidian.Entities;
+using System.IO;
 using System.Text;
 
 namespace Obsidian.Net.Packets.Common;
 
 public partial record class CustomPayloadPacket
 {
-    public string Channel { get; private set; }
+    public string Channel { get; set; } = default!;
 
-    public byte[] PluginData { get; private set; }
+    public byte[] PluginData { get; set; } = default!;
 
-    public CustomPayloadPacket()
-    {
-    }
+    public CustomPayloadPacket() { }
 
     public CustomPayloadPacket(string channel, byte[] data)
     {
@@ -19,7 +18,7 @@ public partial record class CustomPayloadPacket
         PluginData = data;
     }
 
-    public PluginMessageStore Handle()
+    public PluginMessageStore? Handle()
     {
         using var stream = new MinecraftStream(PluginData);
 
@@ -46,10 +45,10 @@ public partial record class CustomPayloadPacket
         return result;
     }
 
-    public override void Populate(MinecraftStream stream)
+    public override void Populate(INetStreamReader reader)
     {
-        Channel = stream.ReadString();
-        PluginData = stream.ReadUInt8Array((int)(stream.Length - stream.Position));
+        Channel = reader.ReadString();
+        PluginData = reader.ReadUInt8Array((int)(reader.Length - reader.Position));
     }
 
     public override ValueTask HandleAsync(Server server, Player player)
@@ -57,7 +56,7 @@ public partial record class CustomPayloadPacket
         var result = Handle();
 
         if (result == null)
-            return ValueTask.CompletedTask;
+            return default;
 
         switch (result.Type)
         {

@@ -9,12 +9,11 @@ public interface IPacket
 
 public interface IClientboundPacket : IPacket
 {
-    public void Serialize(MinecraftStream stream);
+    public void Serialize(INetStreamWriter writer);
 }
 
 public interface IServerboundPacket : IPacket
 {
-    public void Populate(byte[] data);
-    public void Populate(MinecraftStream stream);
+    public void Populate(INetStreamReader reader);
     public ValueTask HandleAsync(Server server, Player player);
 }

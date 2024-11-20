@@ -5,9 +5,8 @@ public abstract record class CommonPacket : IClientboundPacket, IServerboundPack
 {
     public virtual int Id { get; init; }
 
-    public virtual void Serialize(MinecraftStream stream) { }
+    public virtual void Serialize(INetStreamWriter writer) { }
 
-    public virtual void Populate(byte[] data) { }
-    public virtual void Populate(MinecraftStream stream) { }
+    public virtual void Populate(INetStreamReader reader) { }
     public virtual ValueTask HandleAsync(Server server, Player player) => default;
 }

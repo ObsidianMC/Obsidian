@@ -11,7 +11,8 @@ public partial record class PingPacket
     {
         var packet = new PingPacket();
 
-        packet.Populate(data);
+        using var mcStream = new MinecraftStream(data);
+        packet.Populate(mcStream);
 
         return packet;
     }
@@ -26,7 +27,8 @@ public partial record class PongPacket
     {
         var packet = new PongPacket();
 
-        packet.Populate(data);
+        using var mcStream = new MinecraftStream(data);
+        packet.Populate(mcStream);
 
         return packet;
     }

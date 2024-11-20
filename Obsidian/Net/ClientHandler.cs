@@ -229,7 +229,8 @@ public sealed class ClientHandler
         var packet = ObjectPool<T>.Shared.Rent();
         try
         {
-            packet.Populate(data);
+            using var mcStream = new MinecraftStream(data);
+            packet.Populate(mcStream);
             await packet.HandleAsync(client.server, client.Player!);
         }
         catch (Exception e)

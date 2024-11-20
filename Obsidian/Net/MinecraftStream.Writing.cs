@@ -1,5 +1,4 @@
-﻿using Obsidian.API;
-using Obsidian.API.Advancements;
+﻿using Obsidian.API.Advancements;
 using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registry.Codecs.ArmorTrims.TrimMaterial;
@@ -16,12 +15,12 @@ using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net.Actions.BossBar;
 using Obsidian.Net.Actions.PlayerInfo;
+using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.WindowProperties;
 using Obsidian.Registries;
 using Obsidian.Serialization.Attributes;
 using System.Buffers.Binary;
-using System.IO;
 using System.Text;
 using System.Text.Json;
 
@@ -33,6 +32,27 @@ public partial class MinecraftStream : INetStreamWriter
     public void WriteByte(sbyte value)
     {
         BaseStream.WriteByte((byte)value);
+    }
+
+    public void WritePacket(IClientboundPacket packet)
+    {
+        using var tempStream = new MinecraftStream();
+
+        packet.Serialize(tempStream);
+
+        this.Lock.Wait();
+        this.WriteVarInt(packet.Id.GetVarIntLength() + (int)tempStream.Length);
+        this.WriteVarInt(packet.Id);
+
+        tempStream.Position = 0;
+        tempStream.CopyTo(this);
+
+        this.Lock.Release();
+    }
+
+    public void WriteCompressedPacket(IClientboundPacket packet, int compressionThreshold)
+    {
+        throw new NotImplementedException();
     }
 
     public async Task WriteByteAsync(sbyte value)
