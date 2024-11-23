@@ -93,7 +93,7 @@ public sealed class RecipesConverter : JsonConverter<IRecipe[]>
                         Type = craftingType,
                         Group = group,
                         Ingredient = ingredient.Deserialize<Ingredient>(options)!,
-                        Count = ingredient.TryGetProperty("count", out var countElement) ? countElement.GetInt32() : 1,//TODO the recipe format more or less changed look into this.
+                        Count = result.Count,//TODO the recipe format more or less changed look into this.
                         Result = result
                     });
                     break;
