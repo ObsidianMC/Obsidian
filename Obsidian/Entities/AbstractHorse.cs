@@ -23,7 +23,7 @@ public class AbstractHorse : Animal
         base.Write(stream);
 
         stream.WriteEntityMetadataType(16, EntityMetadataType.Byte);
-        stream.WriteUnsignedByte((byte)HorseMask);
+        stream.WriteByte((byte)HorseMask);
 
         stream.WriteEntityMetadataType(17, EntityMetadataType.OptionalUUID);
         stream.WriteBoolean(true);

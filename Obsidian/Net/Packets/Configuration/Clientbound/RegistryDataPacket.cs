@@ -4,28 +4,19 @@ public partial class RegistryDataPacket(string registryId, IDictionary<string, I
     public string RegistryId { get; } = registryId;
     public IDictionary<string, ICodec> Codecs { get; } = codecs;
 
-    public override void Serialize(MinecraftStream stream)
+    public override void Serialize(INetStreamWriter writer)
     {
-        using var packetStream = new MinecraftStream();
+        writer.WriteString(this.RegistryId);
 
-        packetStream.WriteString(this.RegistryId);
-
-        packetStream.WriteVarInt(this.Codecs.Count);
+        writer.WriteVarInt(this.Codecs.Count);
 
         foreach(var (key, codec) in this.Codecs)
         {
-            packetStream.WriteString(key);
+            writer.WriteString(key);
 
-            packetStream.WriteBoolean(true);
+            writer.WriteBoolean(true);
 
-            packetStream.WriteCodec(codec);
+            writer.WriteCodec(codec);
         }
-        
-        stream.Lock.Wait();
-        stream.WriteVarInt(Id.GetVarIntLength() + (int)packetStream.Length);
-        stream.WriteVarInt(Id);
-        packetStream.Position = 0;
-        packetStream.CopyTo(stream);
-        stream.Lock.Release();
     }
 }

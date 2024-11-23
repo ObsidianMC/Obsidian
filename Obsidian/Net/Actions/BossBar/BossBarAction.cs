@@ -11,21 +11,12 @@ public abstract class BossBarAction
         this.Action = action;
     }
 
-    public virtual void WriteTo(MinecraftStream stream)
+    public virtual void WriteTo(INetStreamWriter writer)
     {
         if (this.Uuid == default)
             throw new InvalidOperationException("Uuid must be assigned a value.");
 
-        stream.WriteUuid(this.Uuid);
-        stream.WriteVarInt(this.Action);
-    }
-
-    public async virtual Task WriteToAsync(MinecraftStream stream)
-    {
-        if (this.Uuid == default)
-            throw new InvalidOperationException("Uuid must be assigned a value.");
-
-        await stream.WriteUuidAsync(this.Uuid);
-        await stream.WriteVarIntAsync(this.Action);
+        writer.WriteUuid(this.Uuid);
+        writer.WriteVarInt(this.Action);
     }
 }

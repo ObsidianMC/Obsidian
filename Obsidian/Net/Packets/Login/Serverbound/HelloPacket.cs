@@ -5,17 +5,14 @@ namespace Obsidian.Net.Packets.Login.Serverbound;
 public partial class HelloPacket
 {
     [Field(0)]
-    public string Username { get; set; }
+    public string Username { get; private set; } = default!;
 
     [Field(1), ActualType(typeof(Guid))]
-    public Guid? PlayerUuid { get; set; }
+    public Guid PlayerUuid { get; private set; }
 
-    public static HelloPacket Deserialize(byte[] data)
+    public override void Populate(INetStreamReader reader)
     {
-        var packet = new HelloPacket();
-
-        packet.Populate(data);
-
-        return packet;
+        this.Username = reader.ReadString(16);
+        this.PlayerUuid = reader.ReadGuid();
     }
 }

@@ -91,7 +91,7 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
 #endif
 
         stream.WriteShort(validBlocks);
-        stream.WriteUnsignedByte(BitsPerEntry);
+        stream.WriteByte(BitsPerEntry);
 
         Palette.WriteTo(stream);
 

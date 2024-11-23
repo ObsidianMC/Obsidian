@@ -1,5 +1,4 @@
-﻿namespace Obsidian.Entities;
-
+﻿namespace Obsidian.API;
 public enum EntityMetadataType : int
 {
     Byte = 0,

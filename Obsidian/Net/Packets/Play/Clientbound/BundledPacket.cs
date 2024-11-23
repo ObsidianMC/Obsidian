@@ -5,22 +5,12 @@ public partial class BundledPacket : ClientboundPacket
 
     public override int Id => 0;
 
-    public override void Serialize(MinecraftStream stream)
+    public override void Serialize(INetStreamWriter writer)
     {
-        using var packetStream = new MinecraftStream();
-
         foreach (var packet in this.Packets)
-            packet.Serialize(packetStream);
+            writer.WritePacket(packet);
 
-        stream.Lock.Wait();
-        stream.WriteVarInt(Id.GetVarIntLength());
-        stream.WriteVarInt(Id);
-
-        packetStream.Position = 0;
-        packetStream.CopyTo(stream);
-
-        stream.WriteVarInt(Id.GetVarIntLength());
-        stream.WriteVarInt(Id);
-        stream.Lock.Release();
+        writer.WriteVarInt(Id.GetVarIntLength());
+        writer.WriteVarInt(Id);
     }
 }

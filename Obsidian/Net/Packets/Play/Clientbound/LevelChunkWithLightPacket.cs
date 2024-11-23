@@ -4,16 +4,11 @@ using Obsidian.WorldData;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class LevelChunkWithLightPacket
+public partial class LevelChunkWithLightPacket(Chunk chunk)
 {
-    public Chunk Chunk { get; }
+    public Chunk Chunk { get; } = chunk;
 
-    public LevelChunkWithLightPacket(Chunk chunk)
-    {
-        Chunk = chunk;
-    }
-
-    public override void Serialize(MinecraftStream minecraftStream)
+    public override void Serialize(INetStreamWriter writer)
     {
         using var stream = new MinecraftStream();
         using var dataStream = new MinecraftStream();
@@ -22,13 +17,13 @@ public partial class LevelChunkWithLightPacket
         stream.WriteInt(Chunk.Z);
 
         //Chunk.CalculateHeightmap();
-        var writer = new NbtWriter(stream, true);
+        var nbtWriter = new NbtWriter(stream, true);
         foreach (var (type, heightmap) in Chunk.Heightmaps)
             if (type == ChunkData.HeightmapType.MotionBlocking)
-                writer.WriteTag(new NbtArray<long>(type.ToString().ToSnakeCase().ToUpper(), heightmap.GetDataArray()));
+                nbtWriter.WriteTag(new NbtArray<long>(type.ToString().ToSnakeCase().ToUpper(), heightmap.GetDataArray()));
 
-        writer.EndCompound();
-        writer.TryFinish();
+        nbtWriter.EndCompound();
+        nbtWriter.TryFinish();
 
         foreach (var section in Chunk.Sections)
         {
@@ -47,30 +42,16 @@ public partial class LevelChunkWithLightPacket
         stream.WriteVarInt(0);
 
         // Lighting
-
-        // Sky Light Mask
         Chunk.WriteLightMaskTo(stream, LightType.Sky);
-
-        // Block Light Mask
         Chunk.WriteLightMaskTo(stream, LightType.Block);
 
-        // Empty Sky Light Mask
         Chunk.WriteEmptyLightMaskTo(stream, LightType.Sky);
-
-        // Empty Block Light Mask
         Chunk.WriteEmptyLightMaskTo(stream, LightType.Block);
 
-        // sky light arrays
         Chunk.WriteLightTo(stream, LightType.Sky);
-
-        // block light arrays
         Chunk.WriteLightTo(stream, LightType.Block);
 
-        minecraftStream.Lock.Wait();
-        minecraftStream.WriteVarInt(Id.GetVarIntLength() + (int)stream.Length);
-        minecraftStream.WriteVarInt(Id);
-        stream.Position = 0;
-        stream.CopyTo(minecraftStream);
-        minecraftStream.Lock.Release();
+        //PRobably make something so we don't cast :sweat_smile:
+        stream.CopyTo((MinecraftStream)writer);
     }
 }

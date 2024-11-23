@@ -1,25 +1,16 @@
 ﻿namespace Obsidian.Net.Actions.PlayerInfo;
 
-public class UpdateDisplayNameInfoAction : InfoAction
+public class UpdateDisplayNameInfoAction(ChatMessage? displayName = null) : InfoAction
 {
     public override PlayerInfoAction Type => PlayerInfoAction.UpdateDisplayName;
 
-    public ChatMessage? DisplayName { get; init; }
+    public ChatMessage? DisplayName { get; init; } = displayName;
     public bool HasDisplayName => this.DisplayName != null;
 
-    public UpdateDisplayNameInfoAction(ChatMessage? displayName) => this.DisplayName = displayName;
-
-    public override async Task WriteAsync(MinecraftStream stream)
+    public override void Write(INetStreamWriter writer)
     {
-        await stream.WriteBooleanAsync(this.HasDisplayName);
-        if (this.HasDisplayName)
-            await stream.WriteChatAsync(this.DisplayName);
-    }
-
-    public override void Write(MinecraftStream stream)
-    {
-        stream.WriteBoolean(HasDisplayName);
+        writer.WriteBoolean(HasDisplayName);
         if (HasDisplayName)
-            stream.WriteChat(DisplayName);
+            writer.WriteChat(DisplayName!);
     }
 }

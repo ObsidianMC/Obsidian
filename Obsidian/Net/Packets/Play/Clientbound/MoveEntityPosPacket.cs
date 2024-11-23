@@ -12,4 +12,11 @@ public partial class MoveEntityPosPacket
 
     [Field(4)]
     public bool OnGround { get; init; }
+
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteVarInt(this.EntityId);
+        writer.WriteAbsoluteFloatPosition(this.Delta);
+        writer.WriteBoolean(this.OnGround);
+    }
 }

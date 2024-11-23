@@ -34,7 +34,7 @@ public sealed class SoundEffectBuilder : BaseSoundEffectBuilder
         Seed = this.Seed,
         SoundName = this.SoundName,
         HasFixedRange = this.HasFixedRange,
-        Range = this.Range,
+        FixedRange = this.Range,
         EntityId = this.EntityId
     };
 }

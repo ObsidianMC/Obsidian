@@ -2,15 +2,12 @@
 
 namespace Obsidian.Net.Packets.Login.Clientbound;
 
-public partial class LoginCompressionPacket
+public partial class LoginCompressionPacket(int threshold)
 {
-    [Field(0)]
-    public int Threshold { get; }
-
-    public bool Enabled => Threshold < 0;
-
-    public LoginCompressionPacket(int threshold)
+    [Field(0), VarLength]
+    public int Threshold { get; } = threshold;
+    public override void Serialize(INetStreamWriter writer)
     {
-        Threshold = threshold;
+        writer.WriteVarInt(Threshold);
     }
 }

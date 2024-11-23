@@ -6,6 +6,11 @@ public partial class SetTitleTextPacket
 {
     [Field(0)]
     public required ChatMessage Text { get; init; }
+
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteChat(this.Text);
+    }
 }
 
 public partial class SetSubtitleTextPacket
@@ -13,6 +18,10 @@ public partial class SetSubtitleTextPacket
     [Field(0)]
     public required ChatMessage Text { get; init; }
 
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteChat(this.Text);
+    }
 }
 
 public partial class SetTitlesAnimationPacket
@@ -25,4 +34,11 @@ public partial class SetTitlesAnimationPacket
 
     [Field(2)]
     public int FadeOut { get; set; }
+
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteInt(this.FadeIn);
+        writer.WriteInt(this.Stay);
+        writer.WriteInt(this.FadeOut);
+    }
 }

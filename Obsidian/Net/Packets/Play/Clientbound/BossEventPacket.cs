@@ -3,13 +3,13 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class BossEventPacket
+public partial class BossEventPacket(BossBarAction action)
 {
     [Field(0)]
-    public BossBarAction Action { get; }
+    public BossBarAction Action { get; } = action ?? throw new ArgumentNullException(nameof(action));
 
-    public BossEventPacket(BossBarAction action)
+    public override void Serialize(INetStreamWriter writer)
     {
-        Action = action ?? throw new ArgumentNullException(nameof(action));
+        this.Action.WriteTo(writer);
     }
 }

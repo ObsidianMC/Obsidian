@@ -9,13 +9,4 @@ public partial class KeyPacket
 
     [Field(1)]
     public byte[] VerifyToken { get; private set; }
-
-    public static KeyPacket Deserialize(byte[] data)
-    {
-        var keyPacket = new KeyPacket();
-
-        keyPacket.Populate(data);
-
-        return keyPacket;
-    }
 }

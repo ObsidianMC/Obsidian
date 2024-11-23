@@ -5,10 +5,10 @@ namespace Obsidian.Net.Packets.Play.Clientbound;
 public partial class RespawnPacket
 {
     [Field(0)]
-    public string DimensionType { get; init; }
+    public required string DimensionType { get; init; }
 
     [Field(1)]
-    public string DimensionName { get; init; }
+    public required string DimensionName { get; init; }
 
     [Field(2)]
     public long HashedSeed { get; init; }
@@ -25,25 +25,32 @@ public partial class RespawnPacket
     [Field(6)]
     public bool IsFlat { get; init; }
 
-    [Field(7)]
-    public bool HasDeathLocation { get; init; }
 
-    [Field(8), Condition(nameof(HasDeathLocation))]
-    public string DeathDimensionName { get; init; }
-
-    [Field(9), Condition(nameof(HasDeathLocation))]
-    public VectorF DeathLocation { get; init; }
+    [Field(9)]
+    public GlobalPosition? DeathPosition { get; init; }
 
     [Field(10), VarLength]
     public int PortalCooldown { get; init; }
 
-    /// <summary>
-    /// In the Notchian implementation, this is context dependent:<br/>
-    /// <br/>
-    /// normal respawns(after death) keep no data;<br/>
-    /// exiting the end poem/credits keeps the attributes;<br/>
-    /// other dimension changes(portals or teleports) keep all data.
-    /// </summary>
-    [Field(11), ActualType(typeof(sbyte))]
-    public DataKept DataKept { get; init; }
+    [Field(11), VarLength]
+    public int SeaLevel { get; init; }
+
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteString(this.DimensionType);
+        writer.WriteString(this.DimensionName);
+
+        writer.WriteLong(this.HashedSeed);
+
+        writer.WriteByte(this.Gamemode);
+        writer.WriteByte(this.PreviousGamemode);
+
+        writer.WriteBoolean(this.IsDebug);
+        writer.WriteBoolean(this.IsFlat);
+
+        writer.WriteOptional(this.DeathPosition);
+
+        writer.WriteVarInt(this.PortalCooldown);
+        writer.WriteVarInt(this.SeaLevel);
+    }
 }

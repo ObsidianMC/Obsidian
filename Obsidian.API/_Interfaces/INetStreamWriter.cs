@@ -1,4 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
+using Obsidian.API.Advancements;
+using Obsidian.API.Crafting;
 using System.ComponentModel;
 
 namespace Obsidian.API;
@@ -13,7 +15,7 @@ public interface INetStreamWriter : INetStream
     public void WriteShort(short value);
 
     public void WriteInt(int value);
-
+    public void WriteInt(Enum value);
     public void WriteLong(long value);
 
     public void WriteFloat(float value);
@@ -36,6 +38,7 @@ public interface INetStreamWriter : INetStream
     public void WriteByteArray(byte[] values);
     public void WriteUuid(Guid value);
     public void WritePosition(Vector value);
+    public void WritePosition(SoundPosition position);
     public void WriteAbsolutePosition(Vector value);
     public void WriteAbsoluteFloatPosition(Vector value);
     public void WriteAbsoluteShortPosition(Vector value);
@@ -44,6 +47,8 @@ public interface INetStreamWriter : INetStream
     public void WriteAbsolutePositionF(VectorF value);
     public void WriteAbsoluteFloatPositionF(VectorF value);
     public void WriteVelocity(Velocity value);
+    public void WriteRecipe(string name, IRecipe recipe);
+    public void WriteAdvancement(Advancement advancement);
 
     //This needs further implementing (ICodec.Serialize)
     [EditorBrowsable(EditorBrowsableState.Never)]
@@ -55,7 +60,13 @@ public interface INetStreamWriter : INetStream
     public void WriteSkinProperty(SkinProperty skinProperty);
 
     public void WriteOptional<TValue>(TValue? value) where TValue : struct, INetworkSerializable<TValue>;
-    public void WriteOptional<TValue>(TValue value) where TValue : INetworkSerializable<TValue>;
+    public void WriteOptional<TValue>(TValue? value) where TValue : INetworkSerializable<TValue>;
+    public void WriteOptional(Enum? value);
+    public void WriteOptional(int? value);
+    public void WriteOptional(double? value);
+    public void WriteOptional(short? value);
+    public void WriteOptional(float? value);
+    public void WriteOptional(byte? value);
 
     public byte[] ToArray();
 }

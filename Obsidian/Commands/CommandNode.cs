@@ -17,60 +17,25 @@ public class CommandNode
 
     public HashSet<CommandNode> Children = [];
 
-    public async Task CopyToAsync(MinecraftStream stream)
+    public void CopyTo(INetStreamWriter writer)
     {
-        await using var dataStream = new MinecraftStream();
-        await dataStream.WriteByteAsync((sbyte)Type);
-        await dataStream.WriteVarIntAsync(Children.Count);
-
-        foreach (var childNode in Children.Select(x => x.Index))
-        {
-            await dataStream.WriteVarIntAsync(childNode);
-        }
-
-        //if (this.Type.HasFlag(CommandNodeType.HasRedirect))
-        //{
-        //    //TODO: Add redirect functionality if needed
-        //    await dataStream.WriteVarIntAsync(0);
-        //}
-
-        if ((Type.HasFlag(CommandNodeType.Argument) || Type.HasFlag(CommandNodeType.Literal)))
-        {
-            await dataStream.WriteStringAsync(Name!);
-        }
-
-        if (Type.HasFlag(CommandNodeType.Argument))
-        {
-            await Parser!.WriteAsync(dataStream);
-        }
-
-        dataStream.Position = 0;
-        await dataStream.CopyToAsync(stream);
-    }
-
-    public void CopyTo(MinecraftStream stream)
-    {
-        using var dataStream = new MinecraftStream();
-        dataStream.WriteByte((sbyte)Type);
-        dataStream.WriteVarInt(Children.Count);
+        writer.WriteByte((sbyte)Type);
+        writer.WriteVarInt(Children.Count);
 
         foreach (var child in Children.Select(c => c.Index))
         {
-            dataStream.WriteVarInt(child);
+            writer.WriteVarInt(child);
         }
 
         if (Type.HasFlag(CommandNodeType.Literal) || Type.HasFlag(CommandNodeType.Argument))
         {
-            dataStream.WriteString(Name!);
+            writer.WriteString(Name!);
         }
 
         if (Type.HasFlag(CommandNodeType.Argument))
         {
-            Parser!.Write(dataStream);
+            Parser!.Write(writer);
         }
-
-        dataStream.Position = 0;
-        dataStream.CopyTo(stream);
     }
 
     public void AddChild(CommandNode child) => Children.Add(child);

@@ -8,7 +8,7 @@ public partial class IntentionPacket
     public ProtocolVersion Version { get; private set; }
 
     [Field(1)]
-    public string ServerAddress { get; private set; }
+    public string ServerAddress { get; private set; } = default!;
 
     [Field(2)]
     public ushort ServerPort { get; private set; }
@@ -16,12 +16,11 @@ public partial class IntentionPacket
     [Field(3), ActualType(typeof(int)), VarLength]
     public ClientState NextState { get; private set; }
 
-    public static IntentionPacket Deserialize(byte[] data)
+    public override void Populate(INetStreamReader reader)
     {
-        var packet = new IntentionPacket();
-
-        packet.Populate(data);
-
-        return packet;
+        this.Version = (ProtocolVersion)reader.ReadVarInt();
+        this.ServerAddress = reader.ReadString();
+        this.ServerPort = reader.ReadUnsignedShort();
+        this.NextState = (ClientState)reader.ReadVarInt();
     }
 }

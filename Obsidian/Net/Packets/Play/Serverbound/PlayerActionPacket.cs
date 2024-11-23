@@ -131,7 +131,7 @@ public partial class PlayerActionPacket
         {
             Slot = player.inventorySlot,
 
-            WindowId = 0,
+            ContainerId = 0,
 
             SlotData = player.GetHeldItem(),
 

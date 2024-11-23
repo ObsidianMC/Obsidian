@@ -15,4 +15,11 @@ public partial class BlockDestructionPacket
     /// </summary>
     [Field(2)]
     public sbyte DestroyStage { get; init; }
+
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteVarInt(EntityId);
+        writer.WritePosition(Position);
+        writer.WriteByte(DestroyStage);
+    }
 }

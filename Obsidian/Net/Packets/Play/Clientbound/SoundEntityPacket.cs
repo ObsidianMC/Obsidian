@@ -4,17 +4,11 @@ namespace Obsidian.Net.Packets.Play.Clientbound;
 
 public partial class SoundEntityPacket
 {
-    [Field(0), ActualType(typeof(int)), VarLength]
-    public required SoundId SoundId { get; init; }
+    [Field(0)]
+    public required string SoundLocation { get; init; }
 
-    [Field(1), Condition("SoundId == SoundId.None")]
-    public string? SoundName { get; init; }
-
-    [Field(2), Condition("SoundId == SoundId.None")]
-    public bool HasFixedRange { get; init; }
-
-    [Field(3), Condition("SoundId == SoundId.None && HasFixedRange")]
-    public float Range { get; init; }
+    [Field(1)]
+    public float? FixedRange { get; init; }
 
     [Field(4), ActualType(typeof(int)), VarLength]
     public required SoundCategory Category { get; init; }
@@ -30,4 +24,18 @@ public partial class SoundEntityPacket
 
     [Field(8)]
     public long Seed { get; init; } = Globals.Random.Next();
+
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteString(this.SoundLocation);
+
+        writer.WriteOptional(this.FixedRange);
+
+        writer.WriteVarInt(this.Category);
+        writer.WriteVarInt(this.EntityId);
+
+        writer.WriteFloat(this.Volume);
+        writer.WriteFloat(this.Pitch);
+        writer.WriteLong(this.Seed);
+    }
 }

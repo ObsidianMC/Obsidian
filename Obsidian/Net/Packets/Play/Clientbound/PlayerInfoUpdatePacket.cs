@@ -35,30 +35,21 @@ public partial class PlayerInfoUpdatePacket
             this.Actions |= usedEnum;
     }
 
-    public void Serialize(MinecraftStream stream)
+    public override void Serialize(INetStreamWriter writer)
     {
-        using var packetStream = new MinecraftStream();
-
-        packetStream.WriteByte((sbyte)this.Actions);
-        packetStream.WriteVarInt(Players.Count);
+        writer.WriteByte((sbyte)this.Actions);
+        writer.WriteVarInt(Players.Count);
         foreach (var (uuid, actions) in this.Players)
         {
             var orderedActions = actions.OrderBy(x => (int)x.Type).ToList();
 
-            packetStream.WriteUuid(uuid);
+            writer.WriteUuid(uuid);
 
             for (int i = 0; i < orderedActions.Count; i++)
             {
-                packetStream.WritePlayerInfoAction(orderedActions[i]);
+                orderedActions[i].Write(writer);
             }
         }
-
-        stream.Lock.Wait();
-        stream.WriteVarInt(Id.GetVarIntLength() + (int)packetStream.Length);
-        stream.WriteVarInt(Id);
-        packetStream.Position = 0;
-        packetStream.CopyTo(stream);
-        stream.Lock.Release();
     }
 }
 

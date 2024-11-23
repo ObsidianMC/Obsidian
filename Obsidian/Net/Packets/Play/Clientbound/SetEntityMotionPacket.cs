@@ -9,4 +9,10 @@ public partial class SetEntityMotionPacket
 
     [Field(1)]
     public Velocity Velocity { get; init; }
+
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteVarInt(this.EntityId);
+        writer.WriteVelocity(this.Velocity);
+    }
 }

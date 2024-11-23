@@ -30,4 +30,17 @@ public partial class AddEntityPacket
 
     [Field(8)]
     public Velocity Velocity { get; init; }
+
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteVarInt(EntityId);
+        writer.WriteUuid(Uuid);
+        writer.WriteVarInt(Type);
+        writer.WriteAbsolutePositionF(Position);
+        writer.WriteByte(Pitch.Value);
+        writer.WriteByte(Yaw.Value);
+        writer.WriteByte(HeadYaw.Value);
+        writer.WriteVarInt(Data);
+        writer.WriteVelocity(Velocity);
+    }
 }

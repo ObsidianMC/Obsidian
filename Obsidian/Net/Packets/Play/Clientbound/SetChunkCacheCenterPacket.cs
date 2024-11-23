@@ -3,17 +3,17 @@
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
 // Source: https://wiki.vg/Protocol#Set_Center_Chunk
-public partial class SetChunkCacheCenterPacket
+public partial class SetChunkCacheCenterPacket(int chunkX, int chunkZ)
 {
     [Field(0), VarLength]
-    public int ChunkX { get; }
+    public int ChunkX { get; } = chunkX;
 
     [Field(1), VarLength]
-    public int ChunkZ { get; }
+    public int ChunkZ { get; } = chunkZ;
 
-    public SetChunkCacheCenterPacket(int chunkX, int chunkZ)
+    public override void Serialize(INetStreamWriter writer)
     {
-        ChunkX = chunkX;
-        ChunkZ = chunkZ;
+        writer.WriteVarInt(this.ChunkX);
+        writer.WriteVarInt(this.ChunkZ);
     }
 }

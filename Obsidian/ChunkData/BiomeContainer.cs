@@ -55,7 +55,7 @@ public sealed class BiomeContainer : DataContainer<Biome>
 
     public override void WriteTo(MinecraftStream stream)
     {
-        stream.WriteUnsignedByte(this.BitsPerEntry);
+        stream.WriteByte(this.BitsPerEntry);
 
         this.Palette.WriteTo(stream);
 

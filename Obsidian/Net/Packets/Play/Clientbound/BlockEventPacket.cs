@@ -15,4 +15,12 @@ public partial class BlockEventPacket
 
     [Field(3), VarLength]
     public int BlockType { get; init; }
+
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WritePosition(this.Position);
+        writer.WriteByte(this.ActionId);
+        writer.WriteByte(this.ActionParam);
+        writer.WriteVarInt(this.BlockType);
+    }
 }

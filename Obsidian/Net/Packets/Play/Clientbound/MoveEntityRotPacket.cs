@@ -15,4 +15,14 @@ public partial class MoveEntityRotPacket
 
     [Field(3)]
     public bool OnGround { get; init; }
+
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteVarInt(this.EntityId);
+
+        writer.WriteByte(this.Yaw.Value);
+        writer.WriteByte(this.Pitch.Value);
+
+        writer.WriteBoolean(this.OnGround);
+    }
 }

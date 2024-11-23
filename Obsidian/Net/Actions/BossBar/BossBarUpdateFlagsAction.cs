@@ -12,7 +12,7 @@ public sealed class BossBarUpdateFlagsAction : BossBarAction
     {
         base.WriteTo(stream);
 
-        stream.WriteUnsignedByte((byte)Flags);
+        stream.WriteByte((byte)Flags);
     }
 
     public override async Task WriteToAsync(MinecraftStream stream)

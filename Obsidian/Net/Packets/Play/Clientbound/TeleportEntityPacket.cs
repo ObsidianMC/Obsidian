@@ -16,6 +16,23 @@ public partial class TeleportEntityPacket
     [Field(3)]
     public Angle Pitch { get; init; }
 
-    [Field(4)]
+    [Field(5)]
+    public PositionFlags Flags { get; init; } = PositionFlags.X | PositionFlags.Y | PositionFlags.Z;
+
+    [Field(6)]
     public bool OnGround { get; init; }
+
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteVarInt(this.EntityId);
+
+        writer.WriteAbsolutePositionF(this.Position);
+
+        writer.WriteFloat(this.Yaw);
+        writer.WriteFloat(this.Pitch);
+
+        writer.WriteInt(this.Flags);
+
+        writer.WriteBoolean(this.OnGround);
+    }
 }

@@ -192,7 +192,7 @@ public sealed partial class Player : Living, IPlayer
         await PlayerPermissions.ToJsonAsync(fs);
     }
 
-    public async Task DisplayScoreboardAsync(IScoreboard scoreboard, ScoreboardPosition position)//TODO implement new features
+    public async Task DisplayScoreboardAsync(IScoreboard scoreboard, DisplaySlot position)//TODO implement new features
     {
         var actualBoard = (Scoreboard)scoreboard;
 
@@ -223,8 +223,8 @@ public sealed partial class Player : Living, IPlayer
 
         await client.QueuePacketAsync(new SetDisplayObjectivePacket
         {
-            ScoreName = actualBoard.name,
-            Position = position
+            ObjectiveName = actualBoard.name,
+            DisplaySlot = position
         });
     }
 
@@ -325,7 +325,7 @@ public sealed partial class Player : Living, IPlayer
         ClientboundPacket packet = soundEffect.SoundPosition is SoundPosition soundPosition ?
             new SoundPacket
             {
-                SoundId = soundEffect.SoundId,
+                SoundLocation = soundEffect.SoundId,
                 SoundPosition = soundPosition,
                 Category = soundEffect.SoundCategory,
                 Volume = soundEffect.Volume,
@@ -333,12 +333,12 @@ public sealed partial class Player : Living, IPlayer
                 Seed = soundEffect.Seed,
                 SoundName = soundEffect.SoundName,
                 HasFixedRange = soundEffect.HasFixedRange,
-                Range = soundEffect.Range
+                FixedRange = soundEffect.FixedRange
             }
             :
             new SoundEntityPacket
             {
-                SoundId = soundEffect.SoundId,
+                SoundLocation = soundEffect.SoundId,
                 EntityId = soundEffect.EntityId!.Value,
                 Category = soundEffect.SoundCategory,
                 Volume = soundEffect.Volume,
@@ -346,7 +346,7 @@ public sealed partial class Player : Living, IPlayer
                 Seed = soundEffect.Seed,
                 SoundName = soundEffect.SoundName,
                 HasFixedRange = soundEffect.HasFixedRange,
-                Range = soundEffect.Range
+                Range = soundEffect.FixedRange
             };
 
         await client.QueuePacketAsync(packet);
@@ -963,7 +963,7 @@ public sealed partial class Player : Living, IPlayer
             client.SendPacket(new ContainerSetSlotPacket
             {
                 Slot = (short)slot,
-                WindowId = 0,
+                ContainerId = 0,
                 SlotData = Inventory.GetItem(slot)!,
                 StateId = Inventory.StateId++
             });

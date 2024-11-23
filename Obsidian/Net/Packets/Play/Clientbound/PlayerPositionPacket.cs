@@ -2,31 +2,36 @@
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-[Flags]
-public enum PositionFlags : sbyte
-{
-    X = 0x01,
-    Y = 0x02,
-    Z = 0x04,
-    RotationY = 0x08,
-    RotationX = 0x10,
-    None = 0x00
-}
 
 public partial class PlayerPositionPacket
 {
-    [Field(0), DataFormat(typeof(double))]
+    [Field(0), VarLength]
+    public int TeleportId { get; init; }
+
+    [Field(1), DataFormat(typeof(double))]
     public VectorF Position { get; init; }
 
-    [Field(1), DataFormat(typeof(float))]
-    public Angle Yaw { get; init; }
+    [Field(2)]
+    public VectorF Delta { get; init; }
 
     [Field(2), DataFormat(typeof(float))]
+    public Angle Yaw { get; init; }
+
+    [Field(3), DataFormat(typeof(float))]
     public Angle Pitch { get; init; }
 
-    [Field(3), ActualType(typeof(sbyte))]
+    [Field(4), ActualType(typeof(sbyte))]
     public PositionFlags Flags { get; init; } = PositionFlags.X | PositionFlags.Y | PositionFlags.Z;
 
-    [Field(4), VarLength]
-    public int TeleportId { get; init; }
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteVarInt(this.TeleportId);
+
+        writer.WriteAbsolutePositionF(this.Position);
+        writer.WriteAbsolutePositionF(this.Delta);
+        writer.WriteFloat(this.Yaw);
+        writer.WriteFloat(this.Pitch);
+
+        writer.WriteByte(this.Flags);
+    }
 }

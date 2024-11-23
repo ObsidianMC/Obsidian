@@ -1,5 +1,4 @@
 ﻿using Obsidian.Entities;
-using System.IO;
 using System.Text;
 
 namespace Obsidian.Net.Packets.Common;

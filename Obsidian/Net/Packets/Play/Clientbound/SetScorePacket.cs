@@ -24,21 +24,32 @@ public partial class SetScorePacket
     [Field(2), VarLength]
     public int Value { get; init; }
 
-    [Field(3)]
-    public required bool HasDisplayName { get; init; }
-
-    [Field(4), Condition(nameof(HasDisplayName)), ActualType(typeof(ChatMessage))]
+    [Field(4), ActualType(typeof(ChatMessage))]
     public ChatMessage? DisplayName { get; init; }
 
-    [Field(5)]
-    public required bool HasNumberFormat { get; init; }
-
-    [Field(6), ActualType(typeof(int)), VarLength, Condition("HasNumberFormat")]
-    public NumberFormat NumberFormat { get; init; }
+    [Field(6), ActualType(typeof(int)), VarLength]
+    public NumberFormat? NumberFormat { get; init; }
 
     [Field(7), Condition("NumberFormat == NumberFormat.Styled"), ActualType(typeof(NbtCompound))]
     public NbtCompound? StyledFormat { get; init; }
 
     [Field(7), Condition("NumberFormat == NumberFormat.Fixed"), ActualType(typeof(ChatMessage))]
     public ChatMessage? Content { get; init; }
+
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteString(this.EntityName);
+        writer.WriteString(this.ObjectiveName);
+        writer.WriteVarInt(this.Value);
+
+        writer.WriteOptional(this.DisplayName);
+
+        writer.WriteOptional(this.NumberFormat);
+
+        if (this.NumberFormat == Scoreboard.NumberFormat.Styled)
+            ((MinecraftStream)writer).WriteNbtCompound(this.StyledFormat!);
+
+        if (this.NumberFormat == Scoreboard.NumberFormat.Fixed)
+            writer.WriteChat(this.Content!);
+    }
 }

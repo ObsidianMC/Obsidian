@@ -274,34 +274,34 @@ public class Entity : IEquatable<Entity>, IEntity
         await stream.WriteEntityMetdata(7, EntityMetadataType.VarInt, PowderedSnowTicks);
     }
 
-    public virtual void Write(MinecraftStream stream)
+    public virtual void Write(INetStreamWriter writer)
     {
-        stream.WriteEntityMetadataType(0, EntityMetadataType.Byte);
+        writer.WriteEntityMetadataType(0, EntityMetadataType.Byte);
 
-        stream.WriteUnsignedByte((byte)GenerateBitmask());
+        writer.WriteByte((byte)GenerateBitmask());
 
-        stream.WriteEntityMetadataType(1, EntityMetadataType.VarInt);
-        stream.WriteVarInt(Air);
+        writer.WriteEntityMetadataType(1, EntityMetadataType.VarInt);
+        writer.WriteVarInt(Air);
 
-        stream.WriteEntityMetadataType(2, EntityMetadataType.OptionalTextComponent);
-        stream.WriteBoolean(CustomName is not null);
+        writer.WriteEntityMetadataType(2, EntityMetadataType.OptionalTextComponent);
+        writer.WriteBoolean(CustomName is not null);
         if (CustomName is not null)
-            stream.WriteChat(CustomName);
+            writer.WriteChat(CustomName);
 
-        stream.WriteEntityMetadataType(3, EntityMetadataType.Boolean);
-        stream.WriteBoolean(CustomNameVisible);
+        writer.WriteEntityMetadataType(3, EntityMetadataType.Boolean);
+        writer.WriteBoolean(CustomNameVisible);
 
-        stream.WriteEntityMetadataType(4, EntityMetadataType.Boolean);
-        stream.WriteBoolean(Silent);
+        writer.WriteEntityMetadataType(4, EntityMetadataType.Boolean);
+        writer.WriteBoolean(Silent);
 
-        stream.WriteEntityMetadataType(5, EntityMetadataType.Boolean);
-        stream.WriteBoolean(NoGravity);
+        writer.WriteEntityMetadataType(5, EntityMetadataType.Boolean);
+        writer.WriteBoolean(NoGravity);
 
-        stream.WriteEntityMetadataType(6, EntityMetadataType.Pose);
-        stream.WriteVarInt((int)this.Pose);
+        writer.WriteEntityMetadataType(6, EntityMetadataType.Pose);
+        writer.WriteVarInt((int)this.Pose);
 
-        stream.WriteEntityMetadataType(7, EntityMetadataType.VarInt);
-        stream.WriteVarInt(PowderedSnowTicks);
+        writer.WriteEntityMetadataType(7, EntityMetadataType.VarInt);
+        writer.WriteVarInt(PowderedSnowTicks);
     }
 
     public IEnumerable<IEntity> GetEntitiesNear(float distance) => world.GetEntitiesInRange(Position, distance).Where(x => x != this);

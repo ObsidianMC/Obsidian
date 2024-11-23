@@ -60,7 +60,7 @@ public sealed class Client : IDisposable
     /// <summary>
     /// Used for signing chat messages.
     /// </summary>
-    internal MessageSigningData? messageSigningData;
+    internal MessageSignature? messageSigningData;
 
     /// <summary>
     /// The server that the client is connected to.

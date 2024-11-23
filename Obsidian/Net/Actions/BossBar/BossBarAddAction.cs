@@ -24,7 +24,7 @@ public sealed class BossBarAddAction : BossBarAction
         stream.WriteFloat(Health);
         stream.WriteVarInt(Color);
         stream.WriteVarInt(Division);
-        stream.WriteUnsignedByte((byte)Flags);
+        stream.WriteByte((byte)Flags);
     }
     public override async Task WriteToAsync(MinecraftStream stream)
     {

@@ -3,10 +3,10 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial record class AwardStatisticsPacket
+public partial class AwardStatsPacket
 {
     [Field(0)]
-    public List<Statistic> Stats { get; } = new();
+    public List<Statistic> Stats { get; } = [];
 
     public void Add(Statistic stat)
     {
@@ -16,6 +16,17 @@ public partial record class AwardStatisticsPacket
     public void Clear()
     {
         Stats.Clear();
+    }
+
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteVarInt(Stats.Count);
+        foreach (var value in Stats)
+        {
+            writer.WriteVarInt(value.CategoryId);
+            writer.WriteVarInt(value.StatisticId);
+            writer.WriteVarInt(value.Value);
+        }
     }
 }
 

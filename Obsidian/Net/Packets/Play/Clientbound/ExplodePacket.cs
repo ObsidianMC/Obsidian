@@ -35,6 +35,9 @@ public partial class ExplodePacket
 
     [Field(9)]
     public required SoundEffect ExplosionSound { get; init; }
+
+    //TODO someone else can do this it seems like the structure hasn't change but I cba to look through it
+    public override void Serialize(INetStreamWriter writer) => throw new NotImplementedException();
 }
 
 public readonly struct ExplosionRecord

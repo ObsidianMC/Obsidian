@@ -108,7 +108,8 @@ public sealed class ClientHandler
 
                     try
                     {
-                        packet.Populate(data);
+                        using var mcStream = new MinecraftStream(data);
+                        packet.Populate(mcStream);
                         await packet.HandleAsync(client.server, client.Player);
                     }
                     catch (Exception e)

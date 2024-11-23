@@ -44,6 +44,12 @@ public partial class GameEventPacket
         Reason = ChangeGameStateReason.EnableRespawnScreen;
         Value = (float)respawnReason;
     }
+
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteByte((byte)this.Reason);
+        writer.WriteFloat(this.Value);
+    }
 }
 
 public enum WinStateReason

@@ -9,6 +9,12 @@ public partial class AnimatePacket
 
     [Field(1), ActualType(typeof(byte))]
     public EntityAnimationType Animation { get; init; }
+
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteVarInt(this.EntityId);
+        writer.WriteByte((byte)this.Animation);
+    }
 }
 
 public enum EntityAnimationType : byte

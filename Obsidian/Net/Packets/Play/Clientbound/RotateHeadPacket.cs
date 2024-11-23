@@ -9,4 +9,10 @@ public partial class RotateHeadPacket
 
     [Field(1)]
     public Angle HeadYaw { get; init; }
+
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteVarInt(this.EntityId);
+        writer.WriteByte(this.HeadYaw.Value);
+    }
 }

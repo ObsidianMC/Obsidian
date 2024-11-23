@@ -10,7 +10,7 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
 
     public InventoryType Type { get; }
 
-    public ChatMessage? Title { get; set; }
+    public ChatMessage Title { get; set; }
 
     public Guid Uuid { get; } = Guid.NewGuid();
 

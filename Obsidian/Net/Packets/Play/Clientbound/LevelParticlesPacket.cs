@@ -4,27 +4,33 @@ namespace Obsidian.Net.Packets.Play.Clientbound;
 
 public partial class LevelParticlesPacket
 {
-    [Field(0), ActualType(typeof(int)), VarLength]
-    public required ParticleType Type { get; init; }
+    [Field(0)]
+    public bool OverrideLimiter { get; set; }
 
-    /// <summary>
-    /// If true, particle distance increases from 256 to 65536.
-    /// </summary>
-    [Field(1)]
-    public bool LongDistance { get; init; }
-
-    [Field(2), DataFormat(typeof(double))]
+    [Field(1), DataFormat(typeof(double))]
     public required VectorF Position { get; init; }
 
-    [Field(3), DataFormat(typeof(float))]
+    [Field(2), DataFormat(typeof(float))]
     public VectorF Offset { get; init; }
 
-    [Field(6)]
+    [Field(3)]
     public float MaxSpeed { get; init; }
 
-    [Field(7)]
+    [Field(4)]
     public required int ParticleCount { get; init; }
 
-    [Field(8)]
-    public ParticleData Data { get; init; }
+    [Field(5)]
+    public ParticleData Data { get; init; } = default!;
+
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteBoolean(this.OverrideLimiter);
+        writer.WriteAbsolutePositionF(this.Position);
+        writer.WriteAbsoluteFloatPositionF(this.Offset);
+        writer.WriteFloat(this.MaxSpeed);
+        writer.WriteInt(this.ParticleCount);
+
+        writer.WriteVarInt((int)this.Data.ParticleType);
+        this.Data.Write(writer);
+    }
 }

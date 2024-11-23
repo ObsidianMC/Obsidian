@@ -18,5 +18,14 @@ public partial class UpdateMobEffectPacket(int entityId, int effectId, int durat
 
     [Field(4), ActualType(typeof(sbyte))]
     public EntityEffect Flags { get; init; }
+
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteVarInt(this.EntityId);
+        writer.WriteVarInt(this.EffectId);
+        writer.WriteVarInt(this.Amplifier);
+        writer.WriteVarInt(this.Duration);
+        writer.WriteByte(this.Flags);
+    }
 }
 

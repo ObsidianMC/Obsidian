@@ -56,14 +56,57 @@ public partial class LoginPacket
     public bool HasDeathLocation { get; init; }
 
     [Field(17), Condition("HasDeathLocation")]
-    public string DeathDimensionName { get; init; }
+    public string? DeathDimensionName { get; init; }
 
     [Field(18), Condition("HasDeathLocation")]
-    public Vector DeathLocation { get; init; }
+    public Vector? DeathLocation { get; init; }
 
     [Field(19), VarLength]
     public int PortalCooldown { get; init; }
 
-    [Field(20)]
+    [Field(20), VarLength]
+    public int SeaLevel { get; init; }
+
+    [Field(21)]
     public bool EnforcesSecureChat { get; init; }
+
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteInt(this.EntityId);
+        writer.WriteBoolean(this.Hardcore);
+
+        writer.WriteVarInt(this.DimensionNames.Count);
+        foreach(var dimName in this.DimensionNames)
+            writer.WriteString(dimName);
+
+        writer.WriteVarInt(MaxPlayers);
+        writer.WriteVarInt(this.ViewDistance);
+        writer.WriteVarInt(this.SimulationDistance);
+
+        writer.WriteBoolean(this.ReducedDebugInfo);
+        writer.WriteBoolean(this.EnableRespawnScreen);
+        writer.WriteBoolean(this.DoLimitedCrafting);
+
+        writer.WriteString(this.DimensionName);
+
+        writer.WriteLong(this.HashedSeed);
+
+        writer.WriteByte(this.Gamemode);
+        writer.WriteByte(this.PreviousGamemode);
+
+        writer.WriteBoolean(this.Debug);
+        writer.WriteBoolean(this.Flat);
+        writer.WriteBoolean(this.HasDeathLocation);
+
+        if (this.HasDeathLocation)
+        {
+            writer.WriteString(this.DeathDimensionName!);
+            writer.WritePosition(this.DeathLocation!.Value);
+        }
+
+        writer.WriteVarInt(this.PortalCooldown);
+        writer.WriteVarInt(this.SeaLevel);
+
+        writer.WriteBoolean(this.EnforcesSecureChat);
+    }
 }

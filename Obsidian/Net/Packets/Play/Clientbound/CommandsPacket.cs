@@ -19,4 +19,14 @@ public partial class CommandsPacket
         foreach (var child in node.Children)
             AddNode(child);
     }
+
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteVarInt(this.Nodes.Count);
+
+        foreach (var child in this.Nodes)
+            child.CopyTo(writer);
+
+        writer.WriteVarInt(this.RootIndex);
+    }
 }

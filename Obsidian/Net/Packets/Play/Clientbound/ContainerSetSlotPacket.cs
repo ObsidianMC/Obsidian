@@ -9,7 +9,7 @@ public partial class ContainerSetSlotPacket
     /// If the window ID is set to -2, then any slot in the inventory can be used but no add item animation will be played.
     /// </summary>
     [Field(0)]
-    public sbyte WindowId { get; init; } = 0;
+    public int ContainerId { get; init; } = 0;
 
     //TODO figure out how to handle this
 
@@ -23,5 +23,13 @@ public partial class ContainerSetSlotPacket
     public short Slot { get; init; }
 
     [Field(2)]
-    public ItemStack SlotData { get; init; }
+    public ItemStack? SlotData { get; init; }
+
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteVarInt(this.ContainerId);
+        writer.WriteVarInt(this.StateId);
+        writer.WriteShort(this.Slot);
+        writer.WriteItemStack(this.SlotData);
+    }
 }

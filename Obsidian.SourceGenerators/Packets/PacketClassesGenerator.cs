@@ -1,5 +1,4 @@
 ﻿using System.Collections.Immutable;
-using System.Diagnostics;
 using System.IO;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -96,6 +95,13 @@ public sealed class PacketClassesGenerator : IIncrementalGenerator
 
             source.Line($"public override int Id => {packet.PacketId};");
 
+            if(packet.UsableInterface == Vocabulary.ServerboundInterface)
+            {
+                source.Line();
+
+                AppendCommonMethods(source, $"{packet.Name}Packet");
+            }
+
             source.EndScope();
 
             context.AddSource($"{packet.State}.{packet.Namespace}{packet.Name}.g.cs", source.ToString());
@@ -137,9 +143,9 @@ public sealed class PacketClassesGenerator : IIncrementalGenerator
                 }
             }
 
-            //source.Line();
+            source.Line();
 
-            //AppendCommonMethods(source, packetClassName);
+            AppendCommonMethods(source, packetClassName);
 
             source.EndScope();
 
@@ -152,14 +158,13 @@ public sealed class PacketClassesGenerator : IIncrementalGenerator
     private void AppendCommonMethods(CodeBuilder source, string packetClassName)
     {
         source.Method($"public static {packetClassName} Deserialize(byte[] data)");
-        source.Line("throw new NotImplementedException();");
+        source.Line($"var packet = new {packetClassName}();");
+        source.Line("using var mcStream = new MinecraftStream(data);");
+        source.Line("packet.Populate(mcStream);");
+        source.Line().Line("return packet;");
         source.EndScope();
 
         source.Line();
-
-        source.Method($"public static {packetClassName} Deserialize(MinecraftStream stream)");
-        source.Line("throw new NotImplementedException();");
-        source.EndScope();
     }
 
 

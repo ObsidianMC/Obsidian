@@ -4,9 +4,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound;
 
 public partial class RecipeBookSettingsPacket
 {
-    [Field(0), ActualType(typeof(int)), VarLength]
-    public UnlockRecipeAction Action { get; init; }
-
     [Field(1)]
     public bool CraftingeBookOpen { get; init; }
 
@@ -31,16 +28,18 @@ public partial class RecipeBookSettingsPacket
     [Field(8)]
     public bool SmokerBookFilterActive { get; init; }
 
-    [Field(9)]
-    public List<string> FirstRecipeIds { get; init; }
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteBoolean(this.CraftingeBookOpen);
+        writer.WriteBoolean(this.CraftingBookFilterActive);
 
-    [Field(10), Condition("Action == UnlockRecipeAction.Init")]
-    public List<string> SecondRecipeIds { get; init; }
-}
+        writer.WriteBoolean(this.SmeltingBookOpen);
+        writer.WriteBoolean(this.SmeltingBookFilterActive);
 
-public enum UnlockRecipeAction : int
-{
-    Init,
-    Add,
-    Remove
+        writer.WriteBoolean(this.BlastFurnaceBookOpen);
+        writer.WriteBoolean(this.BlastFurnaceBookFilterActive);
+
+        writer.WriteBoolean(this.SmokerBookOpen);
+        writer.WriteBoolean(this.SmokerBookFilterActive);
+    }
 }

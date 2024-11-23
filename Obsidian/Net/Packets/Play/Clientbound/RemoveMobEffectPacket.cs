@@ -2,17 +2,19 @@
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class RemoveMobEffectPacket
+public partial class RemoveMobEffectPacket(int entityId, int effectId)
 {
     [Field(0), VarLength]
-    public int EntityId { get; init; }
+    public int EntityId { get; init; } = entityId;
 
     [Field(1), VarLength]
-    public int EffectId { get; init; }
+    public int EffectId { get; init; } = effectId;
 
-    public RemoveMobEffectPacket(int entityId, int effectId)
+    public override void Serialize(INetStreamWriter writer)
     {
-        EntityId = entityId;
-        EffectId = effectId;
+        writer.WriteVarInt(this.EntityId);
+
+        //This might've changed
+        writer.WriteVarInt(this.EffectId);
     }
 }

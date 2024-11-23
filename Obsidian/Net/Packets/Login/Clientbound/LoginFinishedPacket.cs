@@ -5,15 +5,29 @@ namespace Obsidian.Net.Packets.Login.Clientbound;
 public partial class LoginFinishedPacket(Guid uuid, string username)
 {
     [Field(0)]
-    public Guid UUID { get; } = uuid;
+    public Guid Uuid { get; } = uuid;
 
     [Field(1)]
     public string Username { get; } = username;
 
     [Field(3)]
-    public List<SkinProperty> SkinProperties { get; init; } = new();
+    public List<SkinProperty> SkinProperties { get; init; } = [];
 
-    [Field(4)]
-    [Obsolete("This is a temporary field for modded servers. Will be removed soon.")]
-    public bool StrictErrorHandling { get; init; }
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteUuid(Uuid);
+        writer.WriteString(Username);
+        
+        writer.WriteVarInt(SkinProperties.Count);
+        foreach(var skinProperty in SkinProperties)
+        {
+            writer.WriteString(skinProperty.Name);
+            writer.WriteString(skinProperty.Value);
+
+            writer.WriteBoolean(skinProperty.HasSignature);
+
+            if(skinProperty.HasSignature)
+                writer.WriteString(skinProperty.Signature!);
+        }
+    }
 }

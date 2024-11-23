@@ -12,24 +12,12 @@ public partial class BlockEntityDataPacket
     private int Type { get; init; }
 
     [Field(2)]
-    public INbtTag NBTData { get; init; }
-}
+    public INbtTag NBTData { get; init; } = default!;
 
-//// https://wiki.vg/Protocol#Block_Entity_Data
-//public enum BlockEntityActionType : int
-//{
-//    SetSpawnerData = 1,
-//    SetCommandBlockText = 2,
-//    SetBeaconData = 3,
-//    SetMobHeadRotationSkin = 4,
-//    DeclareConduit = 5,
-//    SetBannerPatterns = 6,
-//    SetStructureTileData = 7,
-//    SetEndGatewayDestination = 8,
-//    SetSignText = 9,
-//    Unused = 10,
-//    DeclareBed = 11,
-//    SetJigsawBlockData = 12,
-//    SetCampfireItems = 13,
-//    SetBeehiveInfo = 14
-//}
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WritePosition(Position);
+        writer.WriteVarInt(Type);
+        ((MinecraftStream)writer).WriteNbt(NBTData);
+    }
+}

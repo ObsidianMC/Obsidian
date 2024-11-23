@@ -11,7 +11,7 @@ public partial record class ClientInformationPacket
     public sbyte ViewDistance { get; private set; }
 
     [Field(2), ActualType(typeof(int)), VarLength]
-    public ChatMode ChatMode { get; private set; }
+    public ChatVisibility ChatVisibility { get; private set; }
 
     [Field(3)]
     public bool ChatColors { get; private set; }
@@ -28,18 +28,22 @@ public partial record class ClientInformationPacket
     [Field(7)]
     public bool AllowServerListings { get; private set; }
 
+    [Field(8), ActualType(typeof(int)), VarLength]
+    public ParticleStatus ParticleStatus { get; private set; }
+
     public async override ValueTask HandleAsync(Server server, Player player)
     {
         player.ClientInformation = new()
         {
             Locale = Locale,
             ViewDistance = sbyte.Min(ViewDistance, (sbyte)server.Configuration.ViewDistance),
-            ChatMode = ChatMode,
+            ChatMode = ChatVisibility,
             ChatColors = ChatColors,
             DisplayedSkinParts = DisplayedSkinParts,
             MainHand = MainHand,
             EnableTextFiltering = EnableTextFiltering,
-            AllowServerListings = AllowServerListings
+            AllowServerListings = AllowServerListings,
+            ParticleStatus = ParticleStatus
         };
 
         await player.client.SendInfoAsync();

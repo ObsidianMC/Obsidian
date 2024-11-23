@@ -1,5 +1,4 @@
-﻿using Obsidian.Net.Packets.Login.Serverbound;
-using Obsidian.Serialization.Attributes;
+﻿using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Login.Clientbound;
 
@@ -22,4 +21,17 @@ public partial class HelloPacket
 
     [Field(5)]
     public required bool ShouldAuthenticate { get; init; }
+
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteString(this.ServerId);
+
+        writer.WriteVarInt(this.PublicKeyLength);
+        writer.WriteByteArray(this.PublicKey);
+
+        writer.WriteVarInt(this.VerifyTokenLength);
+        writer.WriteByteArray(this.VerifyToken);
+
+        writer.WriteBoolean(this.ShouldAuthenticate);
+    }
 }

@@ -2,7 +2,7 @@
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class SetTabListHeaderAndFooterPacket
+public partial class TabListPacket
 {
     [Field(0)]
     public ChatMessage Header { get; }
@@ -10,12 +10,17 @@ public partial class SetTabListHeaderAndFooterPacket
     [Field(1)]
     public ChatMessage Footer { get; }
 
-    //TODO send empty text component when writing chat message for this e.x {"text":""}
-    public SetTabListHeaderAndFooterPacket(ChatMessage? header, ChatMessage? footer)
+    public TabListPacket(ChatMessage? header, ChatMessage? footer)
     {
-        ChatMessage? empty = null; // ChatMessage.Empty allocates a new ChatMessage (ChatMessage is mutable)
+        ChatMessage? empty = null;
 
         Header = header ?? (empty ??= ChatMessage.Empty);
         Footer = footer ?? (empty ?? ChatMessage.Empty);
+    }
+
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteChat(this.Header);
+        writer.WriteChat(this.Footer);
     }
 }

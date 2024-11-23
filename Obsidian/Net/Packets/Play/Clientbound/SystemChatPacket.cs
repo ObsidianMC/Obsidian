@@ -1,17 +1,17 @@
 ﻿using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
-public partial class SystemChatPacket
+public partial class SystemChatPacket(ChatMessage message, bool overlay)
 {
     [Field(0)]
-    public ChatMessage Message { get; }
+    public ChatMessage Message { get; } = message;
 
     [Field(1)]
-    public bool Overlay { get; }
+    public bool Overlay { get; } = overlay;
 
-    public SystemChatPacket(ChatMessage message, bool overlay)
+    public override void Serialize(INetStreamWriter writer)
     {
-        this.Message = message;
-        this.Overlay = overlay;
+        writer.WriteChat(this.Message);
+        writer.WriteBoolean(this.Overlay);
     }
 }
