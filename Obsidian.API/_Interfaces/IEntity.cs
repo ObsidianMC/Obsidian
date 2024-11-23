@@ -55,6 +55,8 @@ public interface IEntity
     public ValueTask TeleportAsync(IEntity to);
     public ValueTask TeleportAsync(VectorF pos);
 
+    public void Write(INetStreamWriter writer);
+
     public bool IsInRange(IEntity entity, float distance);
 
     /// <summary>

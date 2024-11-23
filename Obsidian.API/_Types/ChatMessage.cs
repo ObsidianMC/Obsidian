@@ -2,7 +2,7 @@
 
 namespace Obsidian.API;
 
-public sealed class ChatMessage
+public sealed class ChatMessage : INetworkSerializable<ChatMessage>
 {
     public string? Text { get; set; }
 
@@ -254,4 +254,5 @@ public sealed class ChatMessage
     public static ChatMessage Empty => Simple(string.Empty);
 
     public string ToString(JsonSerializerOptions options) => JsonSerializer.Serialize(this, options);
+    public static void Write(ChatMessage value, INetStreamWriter writer) => writer.WriteChat(value);
 }
