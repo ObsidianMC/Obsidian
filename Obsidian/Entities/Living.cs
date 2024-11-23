@@ -76,52 +76,31 @@ public class Living : Entity, ILiving
         this.PacketBroadcaster.QueuePacketToWorld(this.World, new RemoveMobEffectPacket(EntityId, (int)potion));
         activePotionEffects.TryRemove(potion, out _);
     }
-
-
-    public override async Task WriteAsync(MinecraftStream stream)
+    public override void Write(INetStreamWriter writer)
     {
-        await base.WriteAsync(stream);
+        base.Write(writer);
 
-        await stream.WriteEntityMetdata(8, EntityMetadataType.Byte, (byte)this.LivingBitMask);
+        writer.WriteEntityMetadataType(8, EntityMetadataType.Byte);
+        writer.WriteByte((byte)LivingBitMask);
 
-        await stream.WriteEntityMetdata(9, EntityMetadataType.Float, this.Health);
+        writer.WriteEntityMetadataType(9, EntityMetadataType.Float);
+        writer.WriteFloat(Health);
 
-        await stream.WriteEntityMetdata(10, EntityMetadataType.Particles, (int)this.ActiveEffectColor);
+        writer.WriteEntityMetadataType(10, EntityMetadataType.Particles);//This is a list of integers?
+        writer.WriteVarInt(0);
 
-        await stream.WriteEntityMetdata(11, EntityMetadataType.Boolean, this.AmbientPotionEffect);
+        writer.WriteEntityMetadataType(11, EntityMetadataType.Boolean);
+        writer.WriteBoolean(AmbientPotionEffect);
 
-        await stream.WriteEntityMetdata(12, EntityMetadataType.VarInt, this.AbsorbedArrows);
+        writer.WriteEntityMetadataType(12, EntityMetadataType.VarInt);
+        writer.WriteVarInt(AbsorbedArrows);
 
-        await stream.WriteEntityMetdata(13, EntityMetadataType.VarInt, this.AbsorbedStingers);
+        writer.WriteEntityMetadataType(13, EntityMetadataType.VarInt);
+        writer.WriteVarInt(AbsorbedStingers);
 
-        await stream.WriteEntityMetdata(14, EntityMetadataType.OptionalBlockPos, this.BedBlockPosition, this.BedBlockPosition != Vector.Zero);
-    }
-
-    public override void Write(MinecraftStream stream)
-    {
-        base.Write(stream);
-
-        stream.WriteEntityMetadataType(8, EntityMetadataType.Byte);
-        stream.WriteByte((byte)LivingBitMask);
-
-        stream.WriteEntityMetadataType(9, EntityMetadataType.Float);
-        stream.WriteFloat(Health);
-
-        stream.WriteEntityMetadataType(10, EntityMetadataType.Particles);//This is a list of integers?
-        stream.WriteVarInt(0);
-
-        stream.WriteEntityMetadataType(11, EntityMetadataType.Boolean);
-        stream.WriteBoolean(AmbientPotionEffect);
-
-        stream.WriteEntityMetadataType(12, EntityMetadataType.VarInt);
-        stream.WriteVarInt(AbsorbedArrows);
-
-        stream.WriteEntityMetadataType(13, EntityMetadataType.VarInt);
-        stream.WriteVarInt(AbsorbedStingers);
-
-        stream.WriteEntityMetadataType(14, EntityMetadataType.OptionalBlockPos);
-        stream.WriteBoolean(BedBlockPosition != default);
+        writer.WriteEntityMetadataType(14, EntityMetadataType.OptionalBlockPos);
+        writer.WriteBoolean(BedBlockPosition != default);
         if (BedBlockPosition != default)
-            stream.WritePositionF(BedBlockPosition);
+            writer.WritePositionF(BedBlockPosition);
     }
 }

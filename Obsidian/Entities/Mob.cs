@@ -1,24 +1,15 @@
-﻿using Obsidian.Net;
-
-namespace Obsidian.Entities;
+﻿namespace Obsidian.Entities;
 
 public class Mob : Living
 {
     public MobBitmask MobBitMask { get; set; } = MobBitmask.None;
 
-    public override async Task WriteAsync(MinecraftStream stream)
+    public override void Write(INetStreamWriter writer)
     {
-        await base.WriteAsync(stream);
+        base.Write(writer);
 
-        await stream.WriteEntityMetdata(14, EntityMetadataType.Byte, this.MobBitMask);
-    }
-
-    public override void Write(MinecraftStream stream)
-    {
-        base.Write(stream);
-
-        stream.WriteEntityMetadataType(14, EntityMetadataType.Byte);
-        stream.WriteByte((byte)MobBitMask);
+        writer.WriteEntityMetadataType(14, EntityMetadataType.Byte);
+        writer.WriteByte((byte)MobBitMask);
     }
 }
 

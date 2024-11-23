@@ -951,7 +951,7 @@ public sealed class World : IWorld
         }
     }
 
-    private void BroadcastTime() => this.PacketBroadcaster.QueuePacketToWorld(this, new SetTimePacket(LevelData.Time, LevelData.Time % 24000));
+    private void BroadcastTime() => this.PacketBroadcaster.QueuePacketToWorld(this, new SetTimePacket(LevelData.Time, LevelData.Time % 24000, true));
 
     private void WriteWorldGenSettings(NbtWriter writer)
     {

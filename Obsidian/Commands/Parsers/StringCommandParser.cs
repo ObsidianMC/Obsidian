@@ -1,6 +1,4 @@
-﻿using Obsidian.Net;
-
-namespace Obsidian.Commands.Parsers;
+﻿namespace Obsidian.Commands.Parsers;
 
 public sealed class StringCommandParser : CommandParser
 {
@@ -11,18 +9,11 @@ public sealed class StringCommandParser : CommandParser
         Type = type;
     }
 
-    public override async Task WriteAsync(MinecraftStream stream)
+    public override void Write(INetStreamWriter writer)
     {
-        await base.WriteAsync(stream);
+        base.Write(writer);
 
-        await stream.WriteVarIntAsync((int)Type);
-    }
-
-    public override void Write(MinecraftStream stream)
-    {
-        base.Write(stream);
-
-        stream.WriteVarInt((int)Type);
+        writer.WriteVarInt((int)Type);
     }
 }
 

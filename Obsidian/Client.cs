@@ -19,10 +19,7 @@ using Obsidian.Registries;
 using Obsidian.Services;
 using Obsidian.Utilities.Mojang;
 using Obsidian.WorldData;
-using Org.BouncyCastle.Utilities.IO.Pem;
 using System.Diagnostics;
-using System.IO;
-using System.Linq.Expressions;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -575,13 +572,6 @@ public sealed class Client : IDisposable
 
         await SendCommandsAsync();
 
-        await QueuePacketAsync(new RecipeBookSettingsPacket
-        {
-            Action = UnlockRecipeAction.Init,
-            FirstRecipeIds = RecipesRegistry.Recipes.Keys.ToList(),
-            SecondRecipeIds = RecipesRegistry.Recipes.Keys.ToList()
-        });
-
         await SendPlayerInfoAsync();
         await this.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
 
@@ -606,7 +596,7 @@ public sealed class Client : IDisposable
         if (Player is null)
             throw new UnreachableException("Player is null, which means the client has not yet logged in.");
 
-        await QueuePacketAsync(new SetDefaultSpawnPositionPacket(Player.world.LevelData.SpawnPosition));
+        await QueuePacketAsync(new SetDefaultSpawnPositionPacket(Player.world.LevelData.SpawnPosition, 0));
 
         await SendTimeUpdateAsync();
         await SendWeatherUpdateAsync();
@@ -634,7 +624,7 @@ public sealed class Client : IDisposable
         await this.QueuePacketAsync(new DisconnectPacket { Reason = reason });
     }
 
-    internal Task SendTimeUpdateAsync() => QueuePacketAsync(new SetTimePacket(Player!.world.LevelData.Time, Player.world.LevelData.DayTime));
+    internal Task SendTimeUpdateAsync() => QueuePacketAsync(new SetTimePacket(Player!.world.LevelData.Time, Player.world.LevelData.DayTime, true));
     internal Task SendWeatherUpdateAsync() => QueuePacketAsync(new GameEventPacket(Player!.world.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
 
     internal async Task HandleKeepAliveAsync(KeepAlivePacket keepAlive)

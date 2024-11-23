@@ -18,7 +18,6 @@ public partial class MovePlayerPosRotPacket
     [Field(3)]
     public MovementFlags MovementFlags { get; private set; }
 
-
     public override void Populate(INetStreamReader reader)
     {
         this.Position = reader.ReadAbsolutePositionF();

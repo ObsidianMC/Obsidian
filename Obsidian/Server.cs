@@ -225,7 +225,7 @@ public sealed partial class Server : IServer
     public void BroadcastMessage(PlayerChatPacket message)
     {
         _chatMessagesQueue.Enqueue(message);
-        _logger.LogInformation("{}", message.Header.PlainMessage);
+        _logger.LogInformation("{}", message.UnsignedContent);
     }
 
     /// <summary>
@@ -562,9 +562,9 @@ public sealed partial class Server : IServer
                     foreach (Player player in Players)
                     {
                         var soundPosition = new SoundPosition(player.Position.X, player.Position.Y, player.Position.Z);
-                        await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.EntitySheepAmbient)
-                            .WithSoundPosition(soundPosition)
-                            .Build());
+                        //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.EntitySheepAmbient)
+                        //    .WithSoundPosition(soundPosition)
+                        //    .Build());
                     }
                 }
 

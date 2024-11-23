@@ -3,6 +3,7 @@
 [Flags]
 public enum MovementFlags
 {
+    None,
     OnGround,
     HorizontalCollision
 }

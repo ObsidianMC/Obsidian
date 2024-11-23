@@ -19,16 +19,16 @@ public sealed partial class AreaEffectCloud : Entity
 
     public IParticle? Effect { get; private set; }
 
-    public override void Write(MinecraftStream stream)
+    public override void Write(INetStreamWriter writer)
     {
-        stream.WriteEntityMetadataType(8, EntityMetadataType.Float);
-        stream.WriteFloat(this.Radius);
+        writer.WriteEntityMetadataType(8, EntityMetadataType.Float);
+        writer.WriteFloat(this.Radius);
 
-        stream.WriteEntityMetadataType(9, EntityMetadataType.VarInt);
-        stream.WriteVarInt(this.Color);
+        writer.WriteEntityMetadataType(9, EntityMetadataType.VarInt);
+        writer.WriteVarInt(this.Color);
 
-        stream.WriteEntityMetadataType(10, EntityMetadataType.Boolean);
-        stream.WriteBoolean(this.SinglePoint);
+        writer.WriteEntityMetadataType(10, EntityMetadataType.Boolean);
+        writer.WriteBoolean(this.SinglePoint);
 
         //TODO write particle
         //this.Effect.Write(effect);

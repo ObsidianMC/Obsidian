@@ -8,8 +8,6 @@ public interface ISoundEffectBuilder
 
 public interface ISoundEffectBaseBuilder
 {
-    public IRangedSoundEffectBuilder WithFixedRange();
-
     public ISoundEffectBaseBuilder WithVolume(float volume);
 
     public ISoundEffectBaseBuilder WithPitch(float pitch);
@@ -21,5 +19,5 @@ public interface ISoundEffectBaseBuilder
 
 public interface IRangedSoundEffectBuilder
 {
-    public ISoundEffectBaseBuilder WithRange(float range);
+    public IRangedSoundEffectBuilder WithFixedRange(float range);
 }

@@ -1,5 +1,4 @@
-﻿using Obsidian.API.Builders;
-using Obsidian.API.Containers;
+﻿using Obsidian.API.Containers;
 using Obsidian.API.Events;
 using Obsidian.API.Utilities;
 using Obsidian.Entities;
@@ -39,6 +38,7 @@ public sealed class MainEventHandler : MinecraftEventHandler
         }
     }
 
+    //TODO fix sounds
     [EventPriority(Priority = Priority.Internal)]
     public async Task OnContainerClosed(ContainerClosedEventArgs e)
     {
@@ -71,9 +71,9 @@ public sealed class MainEventHandler : MinecraftEventHandler
                     BlockType = block.BaseId
                 });
 
-                await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockChestClose)
-                    .WithSoundPosition(position.SoundPosition)
-                    .Build());
+                //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockChestClose)
+                //    .WithSoundPosition(position.SoundPosition)
+                //    .Build());
 
                 break;
             }
@@ -87,16 +87,16 @@ public sealed class MainEventHandler : MinecraftEventHandler
                     BlockType = block.BaseId
                 });
 
-                await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockEnderChestClose)
-                    .WithSoundPosition(position.SoundPosition)
-                    .Build());
+                //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockEnderChestClose)
+                //    .WithSoundPosition(position.SoundPosition)
+                //    .Build());
                 break;
             }
             case Material.Barrel://Barrels don't have a block action
             {
-                await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockBarrelClose)
-                    .WithSoundPosition(position.SoundPosition)
-                    .Build());
+                //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockBarrelClose)
+                //    .WithSoundPosition(position.SoundPosition)
+                //    .Build());
 
                 break;
             }
@@ -110,9 +110,9 @@ public sealed class MainEventHandler : MinecraftEventHandler
                     BlockType = block.BaseId
                 });
 
-                await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockShulkerBoxClose)
-                    .WithSoundPosition(position.SoundPosition)
-                    .Build());
+                //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockShulkerBoxClose)
+                //    .WithSoundPosition(position.SoundPosition)
+                //    .Build());
 
                 break;
             }
@@ -195,9 +195,9 @@ public sealed class MainEventHandler : MinecraftEventHandler
                     ActionParam = 1,
                     BlockType = block.RegistryId
                 });
-                await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockChestOpen, SoundCategory.Blocks)
-                    .WithSoundPosition(blockPosition.SoundPosition)
-                    .Build());
+                //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockChestOpen, SoundCategory.Blocks)
+                //    .WithSoundPosition(blockPosition.SoundPosition)
+                //    .Build());
             }
             else if (type == Material.EnderChest)
             {
@@ -216,9 +216,9 @@ public sealed class MainEventHandler : MinecraftEventHandler
                     ActionParam = 1,
                     BlockType = block.RegistryId
                 });
-                await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockEnderChestOpen, SoundCategory.Blocks)
-                    .WithSoundPosition(blockPosition.SoundPosition)
-                    .Build());
+                //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockEnderChestOpen, SoundCategory.Blocks)
+                //    .WithSoundPosition(blockPosition.SoundPosition)
+                //    .Build());
             }
             else if (type is Material.Furnace or Material.BlastFurnace or Material.Smoker)
             {
@@ -253,9 +253,9 @@ public sealed class MainEventHandler : MinecraftEventHandler
                     ActionParam = 1,
                     BlockType = block.RegistryId
                 });
-                await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockShulkerBoxOpen, SoundCategory.Blocks)
-                    .WithSoundPosition(blockPosition.SoundPosition)
-                    .Build());
+                //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockShulkerBoxOpen, SoundCategory.Blocks)
+                //    .WithSoundPosition(blockPosition.SoundPosition)
+                //    .Build());
             }
             else if (type == Material.Barrel)
             {
@@ -266,9 +266,9 @@ public sealed class MainEventHandler : MinecraftEventHandler
                     BlockPosition = blockPosition,
                     Id = "Barrel"
                 };
-                await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockBarrelOpen, SoundCategory.Blocks)
-                    .WithSoundPosition(blockPosition.SoundPosition)
-                    .Build());
+                //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockBarrelOpen, SoundCategory.Blocks)
+                //    .WithSoundPosition(blockPosition.SoundPosition)
+                //    .Build());
             }
             else if (type == Material.Lectern)
             {

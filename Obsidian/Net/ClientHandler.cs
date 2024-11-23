@@ -3,10 +3,6 @@ using Obsidian.API.Configuration;
 using Obsidian.API.Logging;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Common;
-using Obsidian.Net.Packets.Configuration.Clientbound;
-using Obsidian.Net.Packets.Configuration.Serverbound;
-using Obsidian.Net.Packets.Play;
-using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Utilities.Collections;
 
@@ -214,7 +210,8 @@ public sealed class ClientHandler
 
                 try
                 {
-                    packet.Populate(data);
+                    using var mcStream = new MinecraftStream(data);
+                    packet.Populate(mcStream);
                     await packet.HandleAsync(client.server, client.Player!);
                 }
                 catch (Exception e)

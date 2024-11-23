@@ -56,9 +56,7 @@ public class Scoreboard : IScoreboard
                         {
                             EntityName = score.DisplayText,
                             ObjectiveName = this.name,
-                            Value = score.Value,
-                            HasDisplayName = false,
-                            HasNumberFormat = false
+                            Value = score.Value
                         });
                     }
                 }
@@ -87,8 +85,6 @@ public class Scoreboard : IScoreboard
                 {
                     EntityName = score.DisplayText,
                     ObjectiveName = this.name,
-                    HasDisplayName = false,
-                    HasNumberFormat = false,
                 });
             }
 
@@ -119,8 +115,6 @@ public class Scoreboard : IScoreboard
                     EntityName = s.DisplayText,
                     ObjectiveName = this.name,
                     Value = s.Value,
-                    HasDisplayName = false,
-                    HasNumberFormat = false,
                 });
             }
         }
@@ -141,8 +135,6 @@ public class Scoreboard : IScoreboard
                 {
                     EntityName = score.DisplayText,
                     ObjectiveName = this.name,
-                    HasDisplayName = false,
-                    HasNumberFormat = false,
                 });
             }
 
@@ -185,8 +177,6 @@ public class Scoreboard : IScoreboard
                         EntityName = score.DisplayText,
                         ObjectiveName = this.name,
                         Value = score.Value,
-                        HasDisplayName = false,
-                        HasNumberFormat = false
                     });
                 }
             }

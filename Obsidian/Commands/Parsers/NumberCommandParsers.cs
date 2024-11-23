@@ -1,5 +1,4 @@
-﻿using Obsidian.Net;
-using System.Numerics;
+﻿using System.Numerics;
 
 namespace Obsidian.Commands.Parsers;
 
@@ -24,34 +23,25 @@ public abstract partial class NumberCommandParser<TNumber> : CommandParser where
             this.Flags |= NumberFlags.HasMaxValue;
     }
 
-    public async override Task WriteAsync(MinecraftStream stream)
+    public override void Write(INetStreamWriter writer)
     {
-        await base.WriteAsync(stream);
+        base.Write(writer);
 
-        await stream.WriteByteAsync((sbyte)this.Flags);
+        writer.WriteByte((sbyte)this.Flags);
 
-        this.WriteNumbers(stream);
+        this.WriteNumbers(writer);
     }
 
-    public override void Write(MinecraftStream stream)
-    {
-        base.Write(stream);
-
-        stream.WriteByte((sbyte)this.Flags);
-
-        this.WriteNumbers(stream);
-    }
-
-    private void WriteNumbers(MinecraftStream stream)
+    private void WriteNumbers(INetStreamWriter writer)
     {
         if (NumberType == typeof(int))
-            this.WriteAsInt(stream);
+            this.WriteAsInt(writer);
         else if (NumberType == typeof(double))
-            this.WriteAsDouble(stream);
+            this.WriteAsDouble(writer);
         else if (NumberType == typeof(float))
-            this.WriteAsSingle(stream);
+            this.WriteAsSingle(writer);
         else if (NumberType == typeof(long))
-            this.WriteAsLong(stream);
+            this.WriteAsLong(writer);
     }
 }
 

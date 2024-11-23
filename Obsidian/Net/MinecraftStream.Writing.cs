@@ -372,8 +372,8 @@ public partial class MinecraftStream : INetStreamWriter
     {
         this.WriteString(JsonNamingPolicy.SnakeCaseLower.ConvertName(sound.SoundName ?? sound.SoundId.ToString()));
 
-        if (sound.HasFixedRange)
-            this.WriteFloat(sound.FixedRange);
+        if (sound.FixedRange.HasValue)
+            this.WriteFloat(sound.FixedRange.Value);
     }
 
     [WriteMethod]

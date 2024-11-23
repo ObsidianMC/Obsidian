@@ -410,51 +410,32 @@ public sealed partial class Player : Living, IPlayer
             attacker.visiblePlayers.Remove(this);
     }
 
-    public async override Task WriteAsync(MinecraftStream stream)
+    public override void Write(INetStreamWriter writer)
     {
-        await base.WriteAsync(stream);
+        base.Write(writer);
 
-        await stream.WriteEntityMetdata(15, EntityMetadataType.Float, AdditionalHearts);
+        writer.WriteEntityMetadataType(15, EntityMetadataType.Float);
+        writer.WriteFloat(AdditionalHearts);
 
-        await stream.WriteEntityMetdata(16, EntityMetadataType.VarInt, XpP);
+        writer.WriteEntityMetadataType(16, EntityMetadataType.VarInt);
+        writer.WriteVarInt(XpTotal);
 
-        await stream.WriteEntityMetdata(17, EntityMetadataType.Byte, (byte)ClientInformation.DisplayedSkinParts);
+        writer.WriteEntityMetadataType(17, EntityMetadataType.Byte);
+        writer.WriteByte((byte)ClientInformation.DisplayedSkinParts);
 
-        await stream.WriteEntityMetdata(18, EntityMetadataType.Byte, (byte)ClientInformation.MainHand);
-
-        if (LeftShoulder is not null)
-            await stream.WriteEntityMetdata(19, EntityMetadataType.Nbt, LeftShoulder);
-
-        if (RightShoulder is not null)
-            await stream.WriteEntityMetdata(20, EntityMetadataType.Nbt, RightShoulder);
-    }
-
-    public override void Write(MinecraftStream stream)
-    {
-        base.Write(stream);
-
-        stream.WriteEntityMetadataType(15, EntityMetadataType.Float);
-        stream.WriteFloat(AdditionalHearts);
-
-        stream.WriteEntityMetadataType(16, EntityMetadataType.VarInt);
-        stream.WriteVarInt(XpTotal);
-
-        stream.WriteEntityMetadataType(17, EntityMetadataType.Byte);
-        stream.WriteByte((byte)ClientInformation.DisplayedSkinParts);
-
-        stream.WriteEntityMetadataType(18, EntityMetadataType.Byte);
-        stream.WriteByte((byte)ClientInformation.MainHand);
+        writer.WriteEntityMetadataType(18, EntityMetadataType.Byte);
+        writer.WriteByte((byte)ClientInformation.MainHand);
 
         if (LeftShoulder is not null)
         {
-            stream.WriteEntityMetadataType(19, EntityMetadataType.Nbt);
-            stream.WriteNbtCompound(new NbtCompound());
+            writer.WriteEntityMetadataType(19, EntityMetadataType.Nbt);
+            ((MinecraftStream)writer).WriteNbtCompound(new NbtCompound());
         }
 
         if (RightShoulder is not null)
         {
-            stream.WriteEntityMetadataType(20, EntityMetadataType.Nbt);
-            stream.WriteNbtCompound(new NbtCompound());
+            writer.WriteEntityMetadataType(20, EntityMetadataType.Nbt);
+            ((MinecraftStream)writer).WriteNbtCompound(new NbtCompound());
         }
     }
 
