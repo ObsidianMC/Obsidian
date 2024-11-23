@@ -31,6 +31,19 @@ public partial record class ClientInformationPacket
     [Field(8), ActualType(typeof(int)), VarLength]
     public ParticleStatus ParticleStatus { get; private set; }
 
+    public override void Populate(INetStreamReader reader)
+    {
+        Locale = reader.ReadString();
+        ViewDistance = reader.ReadSignedByte();
+        ChatVisibility = reader.ReadVarInt<ChatVisibility>();
+        ChatColors = reader.ReadBoolean();
+        DisplayedSkinParts = reader.ReadUnsignedByte<PlayerBitMask>();
+        MainHand = reader.ReadVarInt<MainHand>();
+        EnableTextFiltering = reader.ReadBoolean();
+        AllowServerListings = reader.ReadBoolean();
+        ParticleStatus = reader.ReadVarInt<ParticleStatus>();
+    }
+
     public async override ValueTask HandleAsync(Server server, Player player)
     {
         player.ClientInformation = new()

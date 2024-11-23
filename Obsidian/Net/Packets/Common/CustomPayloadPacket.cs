@@ -50,6 +50,12 @@ public partial record class CustomPayloadPacket
         PluginData = reader.ReadUInt8Array((int)(reader.Length - reader.Position));
     }
 
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteString(this.Channel);
+        writer.WriteByteArray(this.PluginData);
+    }
+
     public override ValueTask HandleAsync(Server server, Player player)
     {
         var result = Handle();
