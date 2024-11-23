@@ -16,14 +16,23 @@ public partial class MovePlayerPosRotPacket
     public Angle Pitch { get; private set; }
 
     [Field(3)]
-    public bool OnGround { get; private set; }
+    public MovementFlags MovementFlags { get; private set; }
+
+
+    public override void Populate(INetStreamReader reader)
+    {
+        this.Position = reader.ReadAbsolutePositionF();
+        this.Yaw = reader.ReadAngle();
+        this.Pitch = reader.ReadAngle();
+        this.MovementFlags = reader.ReadSignedByte<MovementFlags>();
+    }
 
     public async override ValueTask HandleAsync(Server server, Player player)
     {
         // The first time we get this packet, it doesn't make sense so we should ignore it.
         if (player.LastPosition == Vector.Zero) { return; }
 
-        await player.UpdateAsync(Position, Yaw, Pitch, OnGround);
+        await player.UpdateAsync(Position, Yaw, Pitch, this.MovementFlags);
         if (player.Position.ToChunkCoord() != player.LastPosition.ToChunkCoord())
         {
             (int cx, int cz) = player.Position.ToChunkCoord();

@@ -14,7 +14,7 @@ public class ItemStack : IEquatable<ItemStack>
 
     public bool IsAir => this.Type == Material.Air;
 
-    public ItemStack(Material type, short count = 1, ItemMeta? meta = null)
+    public ItemStack(Material type, int count = 1, ItemMeta? meta = null)
     {
         this.Type = type;
         this.Count = count;

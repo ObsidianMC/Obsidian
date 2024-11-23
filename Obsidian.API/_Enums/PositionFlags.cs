@@ -3,6 +3,7 @@
 [Flags]
 public enum PositionFlags : sbyte
 {
+    None,
     X,
     Y,
     Z,

@@ -35,6 +35,9 @@ public partial class RespawnPacket
     [Field(11), VarLength]
     public int SeaLevel { get; init; }
 
+    [Field(12)]
+    public DataKept DataKept { get; init; }
+
     public override void Serialize(INetStreamWriter writer)
     {
         writer.WriteString(this.DimensionType);
@@ -52,5 +55,7 @@ public partial class RespawnPacket
 
         writer.WriteVarInt(this.PortalCooldown);
         writer.WriteVarInt(this.SeaLevel);
+
+        writer.WriteByte(this.DataKept);
     }
 }

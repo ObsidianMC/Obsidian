@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.Commands;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
@@ -22,7 +21,27 @@ public partial class ChatCommandSignedPacket
     public List<ArgumentSignature> ArgumentSignatures { get; private set; } = default!;
 
     [Field(4)]
-    public bool SignedPreview { get; private set; }
+    public List<SignedMessage> LastSeenMessages { get; private set; } = default!;
+
+    public override void Populate(INetStreamReader reader)
+    {
+        Command = reader.ReadString();
+        Timestamp = reader.ReadDateTimeOffset();
+        Salt = reader.ReadLong();
+
+        var argumentSignaturesLength = reader.ReadVarInt();
+
+        ArgumentSignatures = new List<ArgumentSignature>(argumentSignaturesLength);
+        for (int i = 0; i < argumentSignaturesLength; i++)
+            ArgumentSignatures[i] = reader.ReadArgumentSignature();
+
+        var lastSeenMessagesLength = reader.ReadVarInt();
+
+        //LastSeenMessages = new List<SignedMessage>(lastSeenMessagesLength);
+        //for(int i = 0;i < lastSeenMessagesLength; i++)
+        //    reader.ReadUInt8Array(256);//There's still a lot to this I don't understand so maybe someone can 😭😭
+    }
+
     public async override ValueTask HandleAsync(Server server, Player player)
     {
         var context = new CommandContext($"/{this.Command}", new CommandSender(CommandIssuers.Client, player, server._logger), player, server);

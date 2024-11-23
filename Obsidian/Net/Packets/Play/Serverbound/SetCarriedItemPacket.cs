@@ -9,14 +9,10 @@ public partial class SetCarriedItemPacket
     [Field(0)]
     public short Slot { get; private set; }
 
-    public static SetCarriedItemPacket Deserialize(MinecraftStream stream)
+    public override void Populate(INetStreamReader reader)
     {
-        var packet = new SetCarriedItemPacket();
-        packet.Populate(stream);
-        return packet;
+        this.Slot = reader.ReadShort();
     }
-
-    public override void Populate(MinecraftStream stream) { }
 
     public override ValueTask HandleAsync(Server server, Player player)
     {

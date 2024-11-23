@@ -2,7 +2,6 @@
 // https://wiki.vg/Map_Format
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
-using Obsidian.API._Types;
 using Obsidian.API.Events;
 using Obsidian.API.Utilities;
 using Obsidian.Nbt;
@@ -17,7 +16,6 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Linq;
 using System.Net;
 
 namespace Obsidian.Entities;
@@ -216,8 +214,6 @@ public sealed partial class Player : Living, IPlayer
                 EntityName = score.DisplayText,
                 ObjectiveName = actualBoard.name,
                 Value = score.Value,
-                HasDisplayName = false,
-                HasNumberFormat = false
             });
         }
 
@@ -331,8 +327,6 @@ public sealed partial class Player : Living, IPlayer
                 Volume = soundEffect.Volume,
                 Pitch = soundEffect.Pitch,
                 Seed = soundEffect.Seed,
-                SoundName = soundEffect.SoundName,
-                HasFixedRange = soundEffect.HasFixedRange,
                 FixedRange = soundEffect.FixedRange
             }
             :
@@ -344,9 +338,7 @@ public sealed partial class Player : Living, IPlayer
                 Volume = soundEffect.Volume,
                 Pitch = soundEffect.Pitch,
                 Seed = soundEffect.Seed,
-                SoundName = soundEffect.SoundName,
-                HasFixedRange = soundEffect.HasFixedRange,
-                Range = soundEffect.FixedRange
+                FixedRange = soundEffect.FixedRange
             };
 
         await client.QueuePacketAsync(packet);
@@ -378,7 +370,7 @@ public sealed partial class Player : Living, IPlayer
             HashedSeed = 0,
             IsFlat = false,
             IsDebug = false,
-            DataKept = dataKept
+            DataKept = dataKept,
         });
 
         visiblePlayers.Clear();
@@ -553,7 +545,6 @@ public sealed partial class Player : Living, IPlayer
     public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float extra = 0) =>
         await client.QueuePacketAsync(new LevelParticlesPacket
         {
-            Type = particle,
             Position = pos,
             ParticleCount = count,
             MaxSpeed = extra
@@ -563,7 +554,6 @@ public sealed partial class Player : Living, IPlayer
         float offsetZ, float extra = 0) => await client.QueuePacketAsync(
         new LevelParticlesPacket
         {
-            Type = particle,
             Position = pos,
             ParticleCount = count,
             Offset = new VectorF(offsetX, offsetY, offsetZ),
@@ -581,7 +571,6 @@ public sealed partial class Player : Living, IPlayer
         float extra = 0) =>
         await client.QueuePacketAsync(new LevelParticlesPacket
         {
-            Type = particle,
             Position = pos,
             ParticleCount = count,
             Data = data,
@@ -592,7 +581,6 @@ public sealed partial class Player : Living, IPlayer
         float offsetZ, ParticleData data, float extra = 0) => await client.QueuePacketAsync(
         new LevelParticlesPacket
         {
-            Type = particle,
             Position = pos,
             ParticleCount = count,
             Data = data,
@@ -713,7 +701,7 @@ public sealed partial class Player : Living, IPlayer
         var compound = reader.ReadNextTag() as NbtCompound;
         Debug.Assert(compound is not null); // TODO Handle invalid NBT
 
-        OnGround = compound.GetBool("OnGround");
+        MovementFlags = compound.GetBool("OnGround") ? MovementFlags.OnGround : default;
         Sleeping = compound.GetBool("Sleeping");
         Air = compound.GetShort("Air");
         AttackTime = compound.GetShort("AttackTime");
@@ -872,9 +860,9 @@ public sealed partial class Player : Living, IPlayer
 
     public override string ToString() => Username;
 
-    internal async override ValueTask UpdateAsync(VectorF position, bool onGround)
+    internal async override ValueTask UpdateAsync(VectorF position, MovementFlags movementFlags)
     {
-        await base.UpdateAsync(position, onGround);
+        await base.UpdateAsync(position, movementFlags);
 
         HeadY = position.Y + 1.62f;
 
@@ -883,9 +871,9 @@ public sealed partial class Player : Living, IPlayer
         await PickupNearbyItemsAsync();
     }
 
-    internal async override ValueTask UpdateAsync(VectorF position, Angle yaw, Angle pitch, bool onGround)
+    internal async override ValueTask UpdateAsync(VectorF position, Angle yaw, Angle pitch, MovementFlags movementFlags)
     {
-        await base.UpdateAsync(position, yaw, pitch, onGround);
+        await base.UpdateAsync(position, yaw, pitch, movementFlags);
 
         HeadY = position.Y + 1.62f;
 
@@ -894,9 +882,9 @@ public sealed partial class Player : Living, IPlayer
         await PickupNearbyItemsAsync();
     }
 
-    internal async override ValueTask UpdateAsync(Angle yaw, Angle pitch, bool onGround)
+    internal async override ValueTask UpdateAsync(Angle yaw, Angle pitch, MovementFlags movementFlags)
     {
-        await base.UpdateAsync(yaw, pitch, onGround);
+        await base.UpdateAsync(yaw, pitch, movementFlags);
 
         await PickupNearbyItemsAsync();
     }

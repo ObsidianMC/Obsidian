@@ -1,6 +1,5 @@
 ﻿using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
-using System.Diagnostics;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
@@ -12,22 +11,18 @@ public partial class MovePlayerRotPacket
     [Field(1), DataFormat(typeof(float))]
     public Angle Pitch { get; private set; }
 
-    [Field(2)]
-    public bool OnGround { get; private set; }
+    [Field(3)]
+    public MovementFlags MovementFlags { get; private set; }
 
-    public MovePlayerRotPacket()
+    public override void Populate(INetStreamReader reader)
     {
-    }
-
-    public MovePlayerRotPacket(float yaw, float pitch, bool onGround)
-    {
-        Yaw = yaw;
-        Pitch = pitch;
-        OnGround = onGround;
+        this.Yaw = reader.ReadAngle();
+        this.Pitch = reader.ReadAngle();
+        this.MovementFlags = reader.ReadSignedByte<MovementFlags>();
     }
 
     public async override ValueTask HandleAsync(Server server, Player player)
     {
-        await player.UpdateAsync(Yaw, Pitch, OnGround);
+        await player.UpdateAsync(Yaw, Pitch, this.MovementFlags);
     }
 }

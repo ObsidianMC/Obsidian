@@ -8,6 +8,9 @@ public partial class SwingPacket
 {
     [Field(0), ActualType(typeof(int)), VarLength]
     public Hand Hand { get; private set; }
+
+    public override void Populate(INetStreamReader reader) => this.Hand = reader.ReadVarInt<Hand>();
+
     public async override ValueTask HandleAsync(Server server, Player player)
     {
         var entities = player.GetEntitiesNear(player.ClientInformation.ViewDistance);

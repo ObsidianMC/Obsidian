@@ -20,6 +20,14 @@ public partial class PlayerActionPacket
     [Field(3), VarLength]
     public int Sequence { get; private set; }
 
+    public override void Populate(INetStreamReader reader)
+    {
+        this.Status = reader.ReadVarInt<PlayerActionStatus>();
+        this.Position = reader.ReadPosition();
+        this.Face = reader.ReadUnsignedByte<BlockFace>();
+        this.Sequence = reader.ReadVarInt();
+    }
+
     public async override ValueTask HandleAsync(Server server, Player player)
     {
         if (await player.world.GetBlockAsync(Position) is not IBlock block)

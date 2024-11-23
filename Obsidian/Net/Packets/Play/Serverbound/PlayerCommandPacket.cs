@@ -15,6 +15,13 @@ public partial class PlayerCommandPacket
     [Field(2), VarLength]
     public int JumpBoost { get; set; }
 
+    public override void Populate(INetStreamReader reader)
+    {
+        this.EntityId = reader.ReadVarInt();
+        this.Action = reader.ReadVarInt<EAction>();
+        this.JumpBoost = reader.ReadVarInt();
+    }
+
     public async override ValueTask HandleAsync(Server server, Player player)
     {
         var block = await player.world.GetBlockAsync((int)player.Position.X, (int)player.HeadY, (int)player.Position.Z);

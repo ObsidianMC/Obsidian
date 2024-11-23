@@ -10,20 +10,17 @@ public partial class MovePlayerPosPacket
     public VectorF Position { get; private set; }
 
     [Field(1)]
-    public bool OnGround { get; private set; }
-    public MovePlayerPosPacket()
-    {
-    }
+    public MovementFlags MovementFlags { get; private set; }
 
-    public MovePlayerPosPacket(VectorF position, bool onGround)
+    public override void Populate(INetStreamReader reader)
     {
-        Position = position;
-        OnGround = onGround;
+        this.Position = reader.ReadAbsolutePositionF();
+        this.MovementFlags = reader.ReadSignedByte<MovementFlags>();
     }
 
     public async override ValueTask HandleAsync(Server server, Player player)
     {
-        await player.UpdateAsync(Position, OnGround);
+        await player.UpdateAsync(Position, this.MovementFlags);
         if (player.Position.ToChunkCoord() != player.LastPosition.ToChunkCoord())
         {
             await player.UpdateChunksAsync(distance: player.ClientInformation.ViewDistance);

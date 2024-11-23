@@ -6,7 +6,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound;
 public partial class ChatPacket
 {
     [Field(0)]
-    public string Message { get; private set; }
+    public string Message { get; private set; } = default!;
 
     [Field(1)]
     public DateTimeOffset Timestamp { get; private set; }
@@ -15,42 +15,34 @@ public partial class ChatPacket
     public long Salt { get; private set; }
 
     [Field(4)]
-    public byte[] Signature { get; private set; }
+    public byte[] Signature { get; private set; } = default!;
 
     [Field(5)]
     public bool SignedPreview { get; set; }
 
     [Field(6)]
-    public List<SignedMessage> PreviouslySeenMessages { get; private set; }
-
-    [Field(7)]
-    public bool HasLastMessage { get; private set; }
-
-    [Field(8), Condition("HasLastMessage")]
-    public SignedMessage LastMessage { get; private set; }
+    public List<SignedMessage> LastSeenMessages { get; private set; } = default!;
 
     public async override ValueTask HandleAsync(Server server, Player player)
     {
         await server.HandleIncomingMessageAsync(this, player.client);
     }
 
-    public override void Populate(MinecraftStream stream)
+    public override void Populate(INetStreamReader reader)
     {
-        this.Message = stream.ReadString();
-        this.Timestamp = stream.ReadDateTimeOffset();
-        this.Salt = stream.ReadLong();
-        this.Signature = stream.ReadUInt8Array();
-        this.SignedPreview = stream.ReadBoolean();
-
-        this.PreviouslySeenMessages = new List<SignedMessage>(stream.ReadVarInt());
-
-        for (int i = 0; i < this.PreviouslySeenMessages.Count; i++)
-            this.PreviouslySeenMessages[i] = stream.ReadSignedMessage();
-
-        this.HasLastMessage = stream.ReadBoolean();
-        if (this.HasLastMessage)
-            this.LastMessage = stream.ReadSignedMessage();
+        this.Message = reader.ReadString();
+        this.Timestamp = reader.ReadDateTimeOffset();
+        this.Salt = reader.ReadLong();
         
+        var isSigned = reader.ReadBoolean();
+        if (isSigned)
+            this.Signature = reader.ReadUInt8Array(256);
+
+        //var lastSeenMessagesLength = reader.ReadVarInt();
+        //this.LastSeenMessages = new List<SignedMessage>(lastSeenMessagesLength);
+
+        //for (int i = 0; i < lastSeenMessagesLength; i++)
+        //    this.LastSeenMessages[i] = reader.ReadSignedMessage();
     }
 }
 

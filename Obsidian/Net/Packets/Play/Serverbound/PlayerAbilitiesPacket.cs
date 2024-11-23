@@ -9,18 +9,12 @@ public partial class PlayerAbilitiesPacket
 
     public float FieldOfViewModifier { get; set; } = 0.1F;
 
-    public override void Populate(MinecraftStream stream)
+    public override void Populate(INetStreamReader reader)
     {
-        Abilities = (PlayerAbility)stream.ReadByte();
+        Abilities = reader.ReadUnsignedByte<PlayerAbility>();
     }
 
-    public override void Populate(byte[] data)
-    {
-        using var stream = new MinecraftStream(data);
-        Populate(stream);
-    }
-
-    public override async ValueTask HandleAsync(Server server, Player player)
+    public async override ValueTask HandleAsync(Server server, Player player)
     {
         if (Abilities.HasFlag(PlayerAbility.Flying)
             && !Abilities.HasFlag(PlayerAbility.AllowFlying)

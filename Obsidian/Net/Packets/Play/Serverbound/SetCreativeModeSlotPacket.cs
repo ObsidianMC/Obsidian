@@ -10,7 +10,13 @@ public partial class SetCreativeModeSlotPacket
     public short ClickedSlot { get; private set; }
 
     [Field(1)]
-    public ItemStack ClickedItem { get; private set; }
+    public ItemStack? ClickedItem { get; private set; }
+
+    public override void Populate(INetStreamReader reader)
+    {
+        this.ClickedSlot = reader.ReadShort();
+        this.ClickedItem = reader.ReadItemStack(); 
+    }
 
     public override ValueTask HandleAsync(Server server, Player player)
     {

@@ -21,6 +21,20 @@ public partial class InteractPacket
     [Field(4)]
     public bool Sneaking { get; private set; }
 
+    public override void Populate(INetStreamReader reader)
+    {
+        this.EntityId = reader.ReadVarInt();
+        this.Type = reader.ReadVarInt<InteractionType>();
+
+        if (this.Type == InteractionType.InteractAt)
+            this.Target = reader.ReadAbsoluteFloatPositionF();
+
+        if (this.Type is InteractionType.Interact or InteractionType.InteractAt)
+            this.Hand = reader.ReadVarInt<Hand>();
+
+        this.Sneaking = reader.ReadBoolean();
+    }
+
     public async override ValueTask HandleAsync(Server server, Player player)
     {
         var entity = player.GetEntitiesNear(4).FirstOrDefault(x => x.EntityId == EntityId); // TODO check if the entity is within range and in vision/not being blocked by a wall

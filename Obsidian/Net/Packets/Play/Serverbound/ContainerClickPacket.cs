@@ -15,7 +15,7 @@ public partial class ContainerClickPacket
     /// The ID of the window which was clicked. 0 for player inventory.
     /// </summary>
     [Field(0)]
-    public byte WindowId { get; private set; }
+    public int ContainerId { get; private set; }
 
 
     /// <summary>
@@ -43,15 +43,32 @@ public partial class ContainerClickPacket
     public InventoryOperationMode Mode { get; private set; }
 
     [Field(5)]
-    public IDictionary<short, ItemStack> SlotsUpdated { get; private set; }
+    public IDictionary<short, ItemStack?> ChangedSlots { get; private set; } = default!;
 
     /// <summary>
     /// 	Item carried by the cursor. Has to be empty (item ID = -1) for drop mode, otherwise nothing will happen.
     /// </summary>
     [Field(6)]
-    public ItemStack CarriedItem { get; private set; }
+    public ItemStack? CarriedItem { get; private set; }
 
-    private bool IsPlayerInventory => this.WindowId == 0;
+    private bool IsPlayerInventory => this.ContainerId == 0;
+
+    public override void Populate(INetStreamReader reader)
+    {
+        this.ContainerId = reader.ReadVarInt();
+        this.StateId = reader.ReadVarInt();
+        this.ClickedSlot = reader.ReadShort();
+        this.Button = reader.ReadSignedByte();
+        this.Mode = reader.ReadVarInt<InventoryOperationMode>();
+        
+        var length = reader.ReadVarInt();
+
+        this.ChangedSlots = new Dictionary<short, ItemStack?>(length);
+        for (int i = 0; i < length; i++)
+            this.ChangedSlots.Add(reader.ReadShort(), reader.ReadItemStack());
+
+        this.CarriedItem = reader.ReadItemStack();
+    }
 
     public async override ValueTask HandleAsync(Server server, Player player)
     {

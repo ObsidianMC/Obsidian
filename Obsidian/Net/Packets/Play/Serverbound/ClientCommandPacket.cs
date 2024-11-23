@@ -15,6 +15,8 @@ public partial class ClientCommandPacket
             await player.RespawnAsync();
         }
     }
+
+    public override void Populate(INetStreamReader reader) => this.Action = (ClientAction)reader.ReadVarInt();
 }
 
 public enum ClientAction

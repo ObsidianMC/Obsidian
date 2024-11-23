@@ -11,6 +11,13 @@ public partial class UseItemPacket
 
     [Field(1), VarLength]
     public int Sequence { get; private set; }
+
+    public override void Populate(INetStreamReader reader)
+    {
+        this.Hand = reader.ReadVarInt<Hand>();
+        this.Sequence = reader.ReadVarInt();
+    }
+
     public async override ValueTask HandleAsync(Server server, Player player)
     {
         await server.EventDispatcher.ExecuteEventAsync(new PlayerInteractEventArgs(player, server)

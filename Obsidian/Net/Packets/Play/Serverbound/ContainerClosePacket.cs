@@ -6,13 +6,18 @@ namespace Obsidian.Net.Packets.Play.Serverbound;
 public partial class ContainerClosePacket
 {
     [Field(0)]
-    public byte WindowId { get; private set; }
+    public int ContainerId { get; private set; }
 
     public async override ValueTask HandleAsync(Server server, Player player)
     {
-        if (WindowId == 0)
+        if (ContainerId == 0)
             return;
 
         await server.EventDispatcher.ExecuteEventAsync(new ContainerClosedEventArgs(player, server) { Container = player.OpenedContainer! });
+    }
+
+    public override void Populate(INetStreamReader reader)
+    {
+        this.ContainerId = reader.ReadVarInt();
     }
 }

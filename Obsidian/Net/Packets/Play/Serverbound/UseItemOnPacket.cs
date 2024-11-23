@@ -23,8 +23,22 @@ public partial class UseItemOnPacket
     [Field(6)]
     public bool InsideBlock { get; private set; }
 
-    [Field(7), VarLength]
+    [Field(7)]
+    public bool IsWorldBorderHit { get; private set; }
+
+    [Field(8), VarLength]
     public int Sequence { get; private set; }
+
+    public override void Populate(INetStreamReader reader)
+    {
+        this.Hand = reader.ReadVarInt<Hand>();
+        this.Position = reader.ReadPosition();
+        this.Face = reader.ReadVarInt<BlockFace>();
+        this.Cursor = reader.ReadAbsoluteFloatPositionF();
+        this.InsideBlock = reader.ReadBoolean();
+        this.IsWorldBorderHit = reader.ReadBoolean();
+        this.Sequence = reader.ReadVarInt();
+    }
 
     public async override ValueTask HandleAsync(Server server, Player player)
     {
