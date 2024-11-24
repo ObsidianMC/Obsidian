@@ -363,13 +363,16 @@ public sealed partial class Player : Living, IPlayer
 
         await client.QueuePacketAsync(new RespawnPacket
         {
-            DimensionType = codec.Name,
-            DimensionName = world.DimensionName,
-            Gamemode = Gamemode,
-            PreviousGamemode = Gamemode,
-            HashedSeed = 0,
-            IsFlat = false,
-            IsDebug = false,
+            CommonPlayerSpawnInfo = new()
+            {
+                DimensionType = codec.Id,
+                DimensionName = world.DimensionName,
+                Gamemode = Gamemode,
+                PreviousGamemode = Gamemode,
+                HashedSeed = 0,
+                Flat = false,
+                Debug = false,
+            },
             DataKept = dataKept,
         });
 

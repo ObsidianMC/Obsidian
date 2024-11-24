@@ -1,7 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Obsidian.API.Advancements;
 using Obsidian.API.Crafting;
-using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registry.Codecs.ArmorTrims.TrimMaterial;
 using Obsidian.API.Registry.Codecs.ArmorTrims.TrimPattern;
@@ -20,7 +19,6 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.WindowProperties;
 using Obsidian.Registries;
 using Obsidian.Serialization.Attributes;
-using Org.BouncyCastle.Bcpg;
 using System.Buffers.Binary;
 using System.Text;
 using System.Text.Json;

@@ -59,6 +59,6 @@ public partial record class ClientInformationPacket
             ParticleStatus = ParticleStatus
         };
 
-        await player.client.SendInfoAsync();
+        
     }
 }

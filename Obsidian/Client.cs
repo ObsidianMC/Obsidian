@@ -571,22 +571,32 @@ public sealed class Client : IDisposable
         await QueuePacketAsync(new LoginPacket
         {
             EntityId = id,
-            Gamemode = Player.Gamemode,
             DimensionNames = CodecRegistry.Dimensions.All.Keys.ToList(),
-            DimensionType = codec.Id,
-            DimensionName = codec.Name,
-            HashedSeed = 0,
+            CommonPlayerSpawnInfo = new()
+            {
+                Gamemode = Player.Gamemode,
+                DimensionType = codec.Id,
+                DimensionName = codec.Name,
+                HashedSeed = 0,
+                Flat = false
+            },
             ReducedDebugInfo = false,
             EnableRespawnScreen = true,
-            Flat = false
         });
+
+        await QueuePacketAsync(new SetDefaultSpawnPositionPacket(Player.world.LevelData.SpawnPosition, 0));
+        await SendTimeUpdateAsync();
+        await SendWeatherUpdateAsync();
 
         await SendServerBrand();
 
         await SendCommandsAsync();
 
+        //Information has to be sent in a certain order or the client will auto throw a network protocol error.
         await SendPlayerInfoAsync();
-        await this.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
+        await SendInfoAsync();
+
+        await QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
 
         Player.TeleportId = Globals.Random.Next(0, 999);
         await QueuePacketAsync(new PlayerPositionPacket
@@ -599,7 +609,6 @@ public sealed class Client : IDisposable
         });
 
         await Player.UpdateChunksAsync(distance: 7);
-        //await SendInfoAsync();
         await this.server.EventDispatcher.ExecuteEventAsync(new PlayerJoinEventArgs(Player, this.server, DateTimeOffset.Now));
     }
 
@@ -608,22 +617,18 @@ public sealed class Client : IDisposable
     {
         if (Player is null)
             throw new UnreachableException("Player is null, which means the client has not yet logged in.");
+        
+        await QueuePacketAsync(new ContainerSetContentPacket(0, Player.Inventory.ToList())
+        {
+            StateId = Player.Inventory.StateId++,
+            CarriedItem = Player.GetHeldItem(),
+        });
 
-        //await QueuePacketAsync(new SetDefaultSpawnPositionPacket(Player.world.LevelData.SpawnPosition, 0));
-
-        //await SendTimeUpdateAsync();
-        //await SendWeatherUpdateAsync();
-        //await QueuePacketAsync(new ContainerSetContentPacket(0, Player.Inventory.ToList())
-        //{
-        //    StateId = Player.Inventory.StateId++,
-        //    CarriedItem = Player.GetHeldItem(),
-        //});
-
-        //await QueuePacketAsync(new SetEntityDataPacket
-        //{
-        //    EntityId = this.Player.EntityId,
-        //    Entity = this.Player
-        //});
+        await QueuePacketAsync(new SetEntityDataPacket
+        {
+            EntityId = this.Player.EntityId,
+            Entity = this.Player
+        });
     }
 
     internal async Task DisconnectAsync(ChatMessage reason)
