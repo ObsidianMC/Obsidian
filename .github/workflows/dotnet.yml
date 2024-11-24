@@ -17,14 +17,14 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 9.0.x
         include-prerelease: true
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
       run: dotnet build --no-restore --configuration Release /p:DebugType=None
     - name: Rename executables
-      working-directory: /home/runner/work/Obsidian/Obsidian/Obsidian.ConsoleApp/bin/Release/net8.0/
+      working-directory: /home/runner/work/Obsidian/Obsidian/Obsidian.ConsoleApp/bin/Release/net9.0/
       run: |
         mv Obsidian.ConsoleApp.dll ObsidianApp.dll
         mv Obsidian.ConsoleApp.deps.json ObsidianApp.deps.json
@@ -33,7 +33,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: Obsidian-Nightly-Build
-        path: /home/runner/work/Obsidian/Obsidian/Obsidian.ConsoleApp/bin/Release/net8.0/
+        path: /home/runner/work/Obsidian/Obsidian/Obsidian.ConsoleApp/bin/Release/net9.0/
       if: ${{ github.event_name == 'push' }} # Only upload artifacts on push, don't upload them for PRs
     - name: Discord Webhook Action
       uses: tsickert/discord-webhook@v4.0.0
