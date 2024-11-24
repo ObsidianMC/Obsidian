@@ -16,4 +16,6 @@ public partial class StatusResponsePacket
     {
         Json = status.ToJson();
     }
+
+    public override void Serialize(INetStreamWriter writer) => writer.WriteString(this.Json);
 }

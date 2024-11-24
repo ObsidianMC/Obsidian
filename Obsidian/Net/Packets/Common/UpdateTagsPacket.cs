@@ -17,7 +17,7 @@ public partial record class UpdateTagsPacket
 
             var namespaceId = $"minecraft:{resourceId.TrimEnd('s')}";
 
-            writer.WriteString(resourceId);
+            writer.WriteString(namespaceId);
             writer.WriteVarInt(tags.Length);
 
             foreach (var tag in tags)

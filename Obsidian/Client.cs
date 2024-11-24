@@ -14,6 +14,7 @@ using Obsidian.Net.Packets.Handshake.Serverbound;
 using Obsidian.Net.Packets.Login.Clientbound;
 using Obsidian.Net.Packets.Login.Serverbound;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Net.Packets.Status.Clientbound;
 using Obsidian.Registries;
 using Obsidian.Services;
@@ -251,7 +252,10 @@ public sealed class Client : IDisposable
                     }
                     else if (id == 0x01)
                     {
-                        HandlePong(data);
+                        var pong = Net.Packets.Status.Serverbound.PingRequestPacket.Deserialize(data);
+
+                        SendPacket(new Net.Packets.Status.Clientbound.PongResponsePacket { Timestamp = pong.Timestamp });
+                        Disconnect();
                     }
                     break;
 
@@ -362,14 +366,28 @@ public sealed class Client : IDisposable
 
     private void Configure()
     {
+        this.SendPacket(new SelectKnownPacksPacket
+        {
+            KnownPacks = [new() { Id = "core", Version = "1.21.3", Namespace = "minecraft" }]
+        });
+
         //This is very inconvenient
         this.SendPacket(new RegistryDataPacket(CodecRegistry.Biomes.CodecKey, CodecRegistry.Biomes.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        //this.SendPacket(new RegistryDataPacket(CodecRegistry.Biomes.CodecKey, new Dictionary<string, ICodec>()
+        //{
+        //    { CodecRegistry.Biomes.Plains.Name, CodecRegistry.Biomes.Plains },
+        //    { CodecRegistry.Biomes.Forest.Name, CodecRegistry.Biomes.Forest }
+        //}));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.Dimensions.CodecKey, CodecRegistry.Dimensions.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.ChatType.CodecKey, CodecRegistry.ChatType.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.DamageType.CodecKey, CodecRegistry.DamageType.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimPattern.CodecKey, CodecRegistry.TrimPattern.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimMaterial.CodecKey, CodecRegistry.TrimMaterial.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.WolfVariant.CodecKey, CodecRegistry.WolfVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        //this.SendPacket(new RegistryDataPacket(CodecRegistry.WolfVariant.CodecKey, CodecRegistry.WolfVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.WolfVariant.CodecKey, new Dictionary<string, ICodec>()
+        {
+            { CodecRegistry.WolfVariant.Woods.Name, CodecRegistry.WolfVariant.Woods },
+        }));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.PaintingVariant.CodecKey, CodecRegistry.PaintingVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
 
         this.SendPacket(UpdateTagsPacket.ClientboundConfiguration with { Tags = TagsRegistry.Categories });
@@ -388,8 +406,8 @@ public sealed class Client : IDisposable
 
     private void HandlePong(byte[] data)
     {
-        var pong = PingPacket.Deserialize(data);
-        SendPacket(PongPacket.ServerboundPlay with { Payload = pong.Payload });
+        var pong = PongPacket.Deserialize(data);
+        SendPacket(PingPacket.ClientboundPlay with { Payload = pong.Payload });
         Disconnect();
     }
 
@@ -598,26 +616,26 @@ public sealed class Client : IDisposable
 
         await QueuePacketAsync(new SetDefaultSpawnPositionPacket(Player.world.LevelData.SpawnPosition, 0));
 
-        await SendTimeUpdateAsync();
-        await SendWeatherUpdateAsync();
-        await QueuePacketAsync(new ContainerSetContentPacket(0, Player.Inventory.ToList())
-        {
-            StateId = Player.Inventory.StateId++,
-            CarriedItem = Player.GetHeldItem(),
-        });
+        //await SendTimeUpdateAsync();
+        //await SendWeatherUpdateAsync();
+        //await QueuePacketAsync(new ContainerSetContentPacket(0, Player.Inventory.ToList())
+        //{
+        //    StateId = Player.Inventory.StateId++,
+        //    CarriedItem = Player.GetHeldItem(),
+        //});
 
-        await QueuePacketAsync(new SetEntityDataPacket
-        {
-            EntityId = this.Player.EntityId,
-            Entity = this.Player
-        });
+        //await QueuePacketAsync(new SetEntityDataPacket
+        //{
+        //    EntityId = this.Player.EntityId,
+        //    Entity = this.Player
+        //});
     }
 
     internal async Task DisconnectAsync(ChatMessage reason)
     {
         if (this.State == ClientState.Login)
         {
-            await this.QueuePacketAsync(new LoginDisconnectPacket { ReasonJson = reason.ToString() });
+            await this.QueuePacketAsync(new LoginDisconnectPacket { ReasonJson = reason.ToString(Globals.JsonOptions) });
             return;
         }
 
@@ -739,7 +757,7 @@ public sealed class Client : IDisposable
         }
 
         await QueuePacketAsync(new PlayerInfoUpdatePacket(dict));
-        await QueuePacketAsync(new PlayerAbilitiesPacket
+        await QueuePacketAsync(new Net.Packets.Play.Clientbound.PlayerAbilitiesPacket
         {
             Abilities = Player.Abilities
         });

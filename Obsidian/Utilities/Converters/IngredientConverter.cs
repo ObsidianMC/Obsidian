@@ -14,26 +14,28 @@ public sealed class IngredientConverter : JsonConverter<Ingredient>
 
         if (element.ValueKind == JsonValueKind.Array)
         {
-            var rawRecipeItems = element.ToString().FromJson<RawRecipeItem[]>();
+            var rawRecipeItems = element.Deserialize<string[]>(options);
 
             var ingredient = new Ingredient();
             foreach (var rawRecipe in rawRecipeItems!)
             {
-                if (rawRecipe.Item == null && rawRecipe.Tag != null)
+                var resourceLocation = rawRecipe.TrimResourceTag(true);
+
+                var tag = TagsRegistry.Item.All.FirstOrDefault(x => x.Name.EqualsIgnoreCase(resourceLocation));
+                if (tag != null)
                 {
-                    var tag = TagsRegistry.Item.All.FirstOrDefault(x => x.Name.EqualsIgnoreCase(rawRecipe.Tag.Replace("minecraft:", "")));
                     foreach (var id in tag!.Entries)
                     {
                         var item = ItemsRegistry.Get(id);
 
-                        ingredient.Add(new ItemStack(item.Type, (short)rawRecipe.Count));
+                        ingredient.Add(new ItemStack(item.Type, 1));
                     }
                 }
                 else
                 {
-                    var i = ItemsRegistry.Get(rawRecipe.Item!);
+                    var i = ItemsRegistry.Get(rawRecipe);
 
-                    ingredient.Add(new ItemStack(i.Type, (short)rawRecipe.Count));
+                    ingredient.Add(new ItemStack(i.Type, 1));
                 }
             }
 
@@ -41,9 +43,9 @@ public sealed class IngredientConverter : JsonConverter<Ingredient>
         }
         else
         {
-            var ingredient = element.ValueKind == JsonValueKind.String ? new RawRecipeItem { Item = element.ToString() } : element.ToString().FromJson<RawRecipeItem>(); ;
+            var ingredient = element.ValueKind == JsonValueKind.String ? new RawRecipeItem { Item = element.ToString() } : element.Deserialize<RawRecipeItem>(options);
 
-            return new Ingredient { ItemsRegistry.GetSingleItem(ingredient.Item!) };
+            return [ItemsRegistry.GetSingleItem(ingredient.Item!)];
         }
     }
 
