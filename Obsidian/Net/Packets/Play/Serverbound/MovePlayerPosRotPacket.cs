@@ -21,8 +21,8 @@ public partial class MovePlayerPosRotPacket
     public override void Populate(INetStreamReader reader)
     {
         this.Position = reader.ReadAbsolutePositionF();
-        this.Yaw = reader.ReadAngle();
-        this.Pitch = reader.ReadAngle();
+        this.Yaw = reader.ReadFloat();
+        this.Pitch = reader.ReadFloat();
         this.MovementFlags = reader.ReadSignedByte<MovementFlags>();
     }
 
