@@ -22,7 +22,7 @@ public partial class MoveEntityPosRotPacket
     public override void Serialize(INetStreamWriter writer)
     {
         writer.WriteVarInt(this.EntityId);
-        writer.WriteAbsoluteFloatPosition(this.Delta);
+        writer.WriteAbsoluteShortPosition(this.Delta);
 
         writer.WriteByte(this.Yaw.Value);
         writer.WriteByte(this.Pitch.Value);

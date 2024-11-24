@@ -600,7 +600,7 @@ public sealed class Client : IDisposable
 
         await Player.UpdateChunksAsync(distance: 7);
         //await SendInfoAsync();
-        //await this.server.EventDispatcher.ExecuteEventAsync(new PlayerJoinEventArgs(Player, this.server, DateTimeOffset.Now));
+        await this.server.EventDispatcher.ExecuteEventAsync(new PlayerJoinEventArgs(Player, this.server, DateTimeOffset.Now));
     }
 
     #region Packet sending

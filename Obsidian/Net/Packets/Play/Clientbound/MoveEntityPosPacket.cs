@@ -16,7 +16,7 @@ public partial class MoveEntityPosPacket
     public override void Serialize(INetStreamWriter writer)
     {
         writer.WriteVarInt(this.EntityId);
-        writer.WriteAbsoluteFloatPosition(this.Delta);
+        writer.WriteAbsoluteShortPosition(this.Delta);
         writer.WriteBoolean(this.OnGround);
     }
 }
