@@ -1,5 +1,4 @@
-﻿using Obsidian.API._Types;
-using System.Net;
+﻿using System.Net;
 
 namespace Obsidian.API;
 

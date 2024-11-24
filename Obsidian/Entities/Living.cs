@@ -1,6 +1,4 @@
-﻿using Obsidian.API._Types;
-using Obsidian.Net;
-using Obsidian.Net.Packets.Play.Clientbound;
+﻿using Obsidian.Net.Packets.Play.Clientbound;
 
 namespace Obsidian.Entities;
 
