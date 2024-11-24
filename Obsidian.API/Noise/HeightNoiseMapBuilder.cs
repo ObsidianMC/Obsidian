@@ -1,75 +1,71 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-using SharpNoise;
+﻿using SharpNoise;
 using SharpNoise.Builders;
-using SharpNoise.Models;
+using System.Threading;
 
-namespace Obsidian.WorldData.Generators.Overworld
+namespace Obsidian.API.Noise;
+
+/// <summary>
+/// Builds a density noise map.
+/// </summary>
+/// <remarks>
+/// This class builds a noise map by filling it with coherent-noise values
+/// generated from the Y density of a noise cube.
+/// </remarks>
+public class HeightNoiseMapBuilder : NoiseMapBuilder
 {
-    /// <summary>
-    /// Builds a density noise map.
-    /// </summary>
-    /// <remarks>
-    /// This class builds a noise map by filling it with coherent-noise values
-    /// generated from the Y density of a noise cube.
-    /// </remarks>
-    public class HeightNoiseMapBuilder : NoiseMapBuilder
+    public NoiseCube SourceNoiseCube { get; set; }
+
+    public double BiasValue { get; set; } = 0;
+
+    protected override void PrepareBuild()
     {
-        public NoiseCube SourceNoiseCube { get; set; }
+        if (destWidth <= 0 ||
+            destHeight <= 0 ||
+            SourceNoiseCube == null ||
+            DestNoiseMap == null)
+            throw new InvalidOperationException("Builder isn't properly set up.");
 
-        public double BiasValue { get; set; } = 0;
+        DestNoiseMap.SetSize(destHeight, destWidth);
+    }
 
-        protected override void PrepareBuild()
+    protected override void BuildImpl(CancellationToken cancellationToken)
+    {
+        NoiseCube nc = SourceNoiseCube;
+
+        var xExtent = nc.Width;
+        var yExtent = nc.Height;
+        var zExtent = nc.Depth;
+        var xDelta = xExtent / destWidth;
+        var zDelta = zExtent / destHeight;
+
+        var po = new ParallelOptions()
         {
-            if (destWidth <= 0 ||
-                destHeight <= 0 ||
-                SourceNoiseCube == null ||
-                DestNoiseMap == null)
-                throw new InvalidOperationException("Builder isn't properly set up.");
+            CancellationToken = cancellationToken,
+        };
 
-            DestNoiseMap.SetSize(destHeight, destWidth);
-        }
-
-        protected override void BuildImpl(CancellationToken cancellationToken)
+        Parallel.For(0, destHeight, po, z =>
         {
-            NoiseCube nc = SourceNoiseCube;
+            double zCur = z * zDelta;
 
-            var xExtent = nc.Width;
-            var yExtent = nc.Height;
-            var zExtent = nc.Depth;
-            var xDelta = xExtent / destWidth;
-            var zDelta = zExtent / destHeight;
+            int x;
+            double xCur;
 
-            var po = new ParallelOptions()
+            for (x = 0, xCur = 0; x < destWidth; x++, xCur += xDelta)
             {
-                CancellationToken = cancellationToken,
-            };
-
-            Parallel.For(0, destHeight, po, z =>
-            {
-                double zCur = z * zDelta;
-
-                int x;
-                double xCur;
-
-                for (x = 0, xCur = 0; x < destWidth; x++, xCur += xDelta)
+                float finalValue = 0;
+                for (int y = yExtent; y > 0; y--)
                 {
-                    float finalValue = 0;
-                    for (int y=yExtent; y > 0; y--)
+                    if (nc.GetValue((int)xCur, y, (int)zCur) > BiasValue)
                     {
-                        if (nc.GetValue((int)xCur, y, (int)zCur) > BiasValue)
-                        {
-                            finalValue = y;
-                            break;
-                        }                        
+                        finalValue = y;
+                        break;
                     }
-                    finalValue /= yExtent;
-                    finalValue *= 2.0f;
-                    finalValue -= 1.33f;
-                    DestNoiseMap[x, z] = finalValue;
                 }
-            });
-        }
+                finalValue /= yExtent;
+                finalValue *= 2.0f;
+                finalValue -= 1.33f;
+                DestNoiseMap[x, z] = finalValue;
+            }
+        });
     }
 }

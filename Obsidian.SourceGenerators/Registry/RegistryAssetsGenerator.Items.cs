@@ -9,7 +9,7 @@ public partial class RegistryAssetsGenerator
         var builder = new CodeBuilder();
         builder.Using("System.Collections.Generic");
         builder.Using("Obsidian.API");
-        builder.Using("Obsidian.Items");
+        builder.Using("Obsidian.API.Inventory");
         builder.Line();
         builder.Namespace("Obsidian.Registries");
         builder.Line();
