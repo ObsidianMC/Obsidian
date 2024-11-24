@@ -14,7 +14,6 @@ using Obsidian.Net.Packets.Handshake.Serverbound;
 using Obsidian.Net.Packets.Login.Clientbound;
 using Obsidian.Net.Packets.Login.Serverbound;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Net.Packets.Status.Clientbound;
 using Obsidian.Registries;
 using Obsidian.Services;
