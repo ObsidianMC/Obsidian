@@ -5,7 +5,7 @@ namespace Obsidian.Net.Packets.Common;
 public partial record class KeepAlivePacket
 {
     [Field(0)]
-    public long KeepAliveId { get; private set; }
+    public long KeepAliveId { get; set; }
 
     public KeepAlivePacket() { }
 

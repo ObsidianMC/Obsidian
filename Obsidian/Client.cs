@@ -240,7 +240,7 @@ public sealed class Client : IDisposable
         {
             (var id, var data) = await GetNextPacketAsync();
 
-            if (State == ClientState.Play && data.Length < 1)
+            if (State == ClientState.Play && data.Length < 0)
                 Disconnect();
 
             switch (State)
@@ -373,11 +373,6 @@ public sealed class Client : IDisposable
 
         //This is very inconvenient
         this.SendPacket(new RegistryDataPacket(CodecRegistry.Biomes.CodecKey, CodecRegistry.Biomes.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-        //this.SendPacket(new RegistryDataPacket(CodecRegistry.Biomes.CodecKey, new Dictionary<string, ICodec>()
-        //{
-        //    { CodecRegistry.Biomes.Plains.Name, CodecRegistry.Biomes.Plains },
-        //    { CodecRegistry.Biomes.Forest.Name, CodecRegistry.Biomes.Forest }
-        //}));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.Dimensions.CodecKey, CodecRegistry.Dimensions.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.ChatType.CodecKey, CodecRegistry.ChatType.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.DamageType.CodecKey, CodecRegistry.DamageType.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
@@ -604,8 +599,8 @@ public sealed class Client : IDisposable
         });
 
         await Player.UpdateChunksAsync(distance: 7);
-        await SendInfoAsync();
-        await this.server.EventDispatcher.ExecuteEventAsync(new PlayerJoinEventArgs(Player, this.server, DateTimeOffset.Now));
+        //await SendInfoAsync();
+        //await this.server.EventDispatcher.ExecuteEventAsync(new PlayerJoinEventArgs(Player, this.server, DateTimeOffset.Now));
     }
 
     #region Packet sending
@@ -614,7 +609,7 @@ public sealed class Client : IDisposable
         if (Player is null)
             throw new UnreachableException("Player is null, which means the client has not yet logged in.");
 
-        await QueuePacketAsync(new SetDefaultSpawnPositionPacket(Player.world.LevelData.SpawnPosition, 0));
+        //await QueuePacketAsync(new SetDefaultSpawnPositionPacket(Player.world.LevelData.SpawnPosition, 0));
 
         //await SendTimeUpdateAsync();
         //await SendWeatherUpdateAsync();
@@ -679,10 +674,10 @@ public sealed class Client : IDisposable
         Logger.LogDebug("Doing KeepAlive ({keepAliveId}) with {Username} ({Uuid})", keepAliveId, Player.Username, Player.Uuid);
         // now that all is fine and dandy, we'd be fine to enqueue the new keepalive
 
-        SendPacket(new KeepAlivePacket(keepAliveId)
-        {
-            Id = this.State == ClientState.Configuration ? 0x03 : 0x26
-        });
+        var packet = this.State == ClientState.Configuration ? KeepAlivePacket.ClientboundConfiguration with { KeepAliveId = keepAliveId } :
+            KeepAlivePacket.ClientboundPlay with { KeepAliveId = keepAliveId };
+
+        SendPacket(packet);
         missedKeepAlives.Add(keepAliveId);
 
         // TODO: reimplement this? probably in KeepAlivePacket:HandleAsync ⬇️
@@ -817,7 +812,7 @@ public sealed class Client : IDisposable
     {
         await using var stream = new MinecraftStream();
         await stream.WriteStringAsync(this.server.Brand);
-        await QueuePacketAsync(new CustomPayloadPacket("minecraft:brand", stream.ToArray()));
+        await QueuePacketAsync(CustomPayloadPacket.ClientboundPlay with { Channel = "minecraft:brand", PluginData = stream.ToArray() });
         Logger.LogDebug("Sent server brand.");
     }
 

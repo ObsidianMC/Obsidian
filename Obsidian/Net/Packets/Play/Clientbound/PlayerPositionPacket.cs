@@ -20,7 +20,7 @@ public partial class PlayerPositionPacket
     [Field(3), DataFormat(typeof(float))]
     public Angle Pitch { get; init; }
 
-    [Field(4), ActualType(typeof(sbyte))]
+    [Field(4)]
     public PositionFlags Flags { get; init; } = PositionFlags.X | PositionFlags.Y | PositionFlags.Z;
 
     public override void Serialize(INetStreamWriter writer)
@@ -32,6 +32,6 @@ public partial class PlayerPositionPacket
         writer.WriteFloat(this.Yaw);
         writer.WriteFloat(this.Pitch);
 
-        writer.WriteByte(this.Flags);
+        writer.WriteInt(this.Flags);
     }
 }

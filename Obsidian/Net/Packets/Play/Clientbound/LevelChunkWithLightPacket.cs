@@ -10,48 +10,52 @@ public partial class LevelChunkWithLightPacket(Chunk chunk)
 
     public override void Serialize(INetStreamWriter writer)
     {
-        using var stream = new MinecraftStream();
-        using var dataStream = new MinecraftStream();
-
-        stream.WriteInt(Chunk.X);
-        stream.WriteInt(Chunk.Z);
+        writer.WriteInt(Chunk.X);
+        writer.WriteInt(Chunk.Z);
 
         //Chunk.CalculateHeightmap();
-        var nbtWriter = new NbtWriter(stream, true);
-        foreach (var (type, heightmap) in Chunk.Heightmaps)
-            if (type == ChunkData.HeightmapType.MotionBlocking)
-                nbtWriter.WriteTag(new NbtArray<long>(type.ToString().ToSnakeCase().ToUpper(), heightmap.GetDataArray()));
-
-        nbtWriter.EndCompound();
-        nbtWriter.TryFinish();
-
-        foreach (var section in Chunk.Sections)
+        using (var heightmapStream = new MinecraftStream())
         {
-            if (section is { BlockStateContainer.IsEmpty: false })
-            {
-                section.BlockStateContainer.WriteTo(dataStream);
-                section.BiomeContainer.WriteTo(dataStream);
-            }
+            var nbtWriter = new NbtWriter(heightmapStream, true);
+            foreach (var (type, heightmap) in Chunk.Heightmaps)
+                if (type == ChunkData.HeightmapType.MotionBlocking)
+                    nbtWriter.WriteTag(new NbtArray<long>(type.ToString().ToSnakeCase().ToUpper(), heightmap.GetDataArray()));
+
+            nbtWriter.EndCompound();
+            nbtWriter.TryFinish();
+
+            heightmapStream.Position = 0;
+            heightmapStream.CopyTo((MinecraftStream)writer);
         }
 
-        dataStream.Position = 0;
-        stream.WriteVarInt((int)dataStream.Length);
-        dataStream.CopyTo(stream);
+        using (var sectionStream = new MinecraftStream())
+        {
+            foreach (var section in Chunk.Sections)
+            {
+                if (section is { BlockStateContainer.IsEmpty: false })
+                {
+                    section.BlockStateContainer.WriteTo(sectionStream);
+                    section.BiomeContainer.WriteTo(sectionStream);
+                }
+            }
+
+            sectionStream.Position = 0;
+
+            writer.WriteVarInt((int)sectionStream.Length);
+            sectionStream.CopyTo((MinecraftStream)writer);
+        }
 
         // Num block entities
-        stream.WriteVarInt(0);
+        writer.WriteVarInt(0);
 
         // Lighting
-        Chunk.WriteLightMaskTo(stream, LightType.Sky);
-        Chunk.WriteLightMaskTo(stream, LightType.Block);
+        Chunk.WriteLightMaskTo(writer, LightType.Sky);
+        Chunk.WriteLightMaskTo(writer, LightType.Block);
 
-        Chunk.WriteEmptyLightMaskTo(stream, LightType.Sky);
-        Chunk.WriteEmptyLightMaskTo(stream, LightType.Block);
+        Chunk.WriteEmptyLightMaskTo(writer, LightType.Sky);
+        Chunk.WriteEmptyLightMaskTo(writer, LightType.Block);
 
-        Chunk.WriteLightTo(stream, LightType.Sky);
-        Chunk.WriteLightTo(stream, LightType.Block);
-
-        //PRobably make something so we don't cast :sweat_smile:
-        stream.CopyTo((MinecraftStream)writer);
+        Chunk.WriteLightTo(writer, LightType.Sky);
+        Chunk.WriteLightTo(writer, LightType.Block);
     }
 }

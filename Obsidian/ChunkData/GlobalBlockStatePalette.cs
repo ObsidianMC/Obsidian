@@ -28,8 +28,5 @@ public class GlobalBlockStatePalette : IPalette<IBlock>
 
     public IPalette<IBlock> Clone() => this;
 
-    public Task WriteToAsync(MinecraftStream stream) => Task.CompletedTask;
-
-    public Task ReadFromAsync(MinecraftStream stream) => Task.CompletedTask;
-    public void WriteTo(MinecraftStream stream) { }
+    public void WriteTo(INetStreamWriter writer) { }
 }

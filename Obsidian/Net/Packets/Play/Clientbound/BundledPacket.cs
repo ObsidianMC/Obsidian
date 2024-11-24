@@ -9,8 +9,5 @@ public partial class BundledPacket : ClientboundPacket
     {
         foreach (var packet in this.Packets)
             writer.WritePacket(packet);
-
-        writer.WriteVarInt(Id.GetVarIntLength());
-        writer.WriteVarInt(Id);
     }
 }

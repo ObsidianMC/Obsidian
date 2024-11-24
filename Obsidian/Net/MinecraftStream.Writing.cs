@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using Obsidian.API.Advancements;
 using Obsidian.API.Crafting;
+using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registry.Codecs.ArmorTrims.TrimMaterial;
 using Obsidian.API.Registry.Codecs.ArmorTrims.TrimPattern;
@@ -19,6 +20,7 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.WindowProperties;
 using Obsidian.Registries;
 using Obsidian.Serialization.Attributes;
+using Org.BouncyCastle.Bcpg;
 using System.Buffers.Binary;
 using System.Text;
 using System.Text.Json;
@@ -40,16 +42,26 @@ public partial class MinecraftStream : INetStreamWriter
 
     public void WritePacket(IClientboundPacket packet)
     {
-        using var tempStream = new MinecraftStream();
+        var isBundled = packet is BundledPacket;
+        var varLength = packet.Id.GetVarIntLength();
 
+        using var tempStream = new MinecraftStream();
         packet.Serialize(tempStream);
+     
+        var length = isBundled ? varLength : varLength + (int)tempStream.Length;
 
         this.Lock.Wait();
-        this.WriteVarInt(packet.Id.GetVarIntLength() + (int)tempStream.Length);
+        this.WriteVarInt(length);
         this.WriteVarInt(packet.Id);
 
         tempStream.Position = 0;
         tempStream.CopyTo(this);
+
+        if(isBundled)
+        {
+            this.WriteVarInt(length);
+            this.WriteVarInt(packet.Id);
+        }
 
         this.Lock.Release();
     }

@@ -1,6 +1,5 @@
 ﻿using Obsidian.API.Utilities;
 using Obsidian.Nbt;
-using Obsidian.Net.Packets;
 using Obsidian.Registries;
 using Obsidian.Serialization.Attributes;
 using System.Buffers.Binary;

@@ -87,6 +87,7 @@ public partial class LoginPacket
         writer.WriteBoolean(this.EnableRespawnScreen);
         writer.WriteBoolean(this.DoLimitedCrafting);
 
+        writer.WriteVarInt(this.DimensionType);
         writer.WriteString(this.DimensionName);
 
         writer.WriteLong(this.HashedSeed);
