@@ -16,7 +16,7 @@ public class GenHelper
     {
         this.world = world;
         if (!int.TryParse(world.Seed, out int seedHash))
-            seedHash = BitConverter.ToInt32(MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(world.Seed)));
+            seedHash = BitConverter.ToInt32(MD5.HashData(Encoding.UTF8.GetBytes(world.Seed)));
         Seed = seedHash;
         Noise = new OverworldTerrainNoise(Seed);
     }

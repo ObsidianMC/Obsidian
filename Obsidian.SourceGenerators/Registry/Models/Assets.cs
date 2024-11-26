@@ -1,5 +1,7 @@
-﻿using System.Collections.Immutable;
+﻿using Obsidian.SourceGenerators.Packets;
+using System.Collections.Immutable;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Obsidian.SourceGenerators.Registry.Models;
 
@@ -10,12 +12,15 @@ internal sealed class Assets
     public Item[] Items { get; }
 
     public Dictionary<string, Codec[]> Codecs { get; }
-    private Assets(Block[] blocks, Tag[] tags, Item[] items, Dictionary<string, Codec[]> codecs)
+    public IDictionary<string, List<Sound>> Sounds { get; }
+
+    private Assets(Block[] blocks, Tag[] tags, Item[] items, Dictionary<string, Codec[]> codecs, IDictionary<string, List<Sound>> sounds)
     {
         Blocks = blocks;
         Tags = tags;
         Items = items;
         Codecs = codecs;
+        Sounds = sounds;
     }
 
     public static Assets Get(ImmutableArray<(string name, string json)> files, SourceProductionContext ctx)
@@ -24,9 +29,10 @@ internal sealed class Assets
         Fluid[] fluids = GetFluids(files.GetJsonFromArray("fluids"));
         Tag[] tags = GetTags(files.GetJsonFromArray("tags"), blocks, fluids);
         Item[] items = GetItems(files.GetJsonFromArray("items"));
+        IDictionary<string, List<Sound>> sounds = GetSounds(files.GetJsonFromArray("sounds"));
         Dictionary<string, Codec[]> codecs = GetCodecs(files);
 
-        return new Assets(blocks, tags, items, codecs);
+        return new Assets(blocks, tags, items, codecs, sounds);
     }
 
     public static Dictionary<string, Codec[]> GetCodecs(ImmutableArray<(string name, string json)> files)
@@ -74,6 +80,32 @@ internal sealed class Assets
         }
 
         return dimensions.ToArray();
+    }
+
+    public static IDictionary<string, List<Sound>> GetSounds(string? json)
+    {
+        if (json is null)
+            return new Dictionary<string, List<Sound>>();
+
+        using var document = JsonDocument.Parse(json);
+
+        var soundsElement = document.RootElement.EnumerateObject();
+
+        var splitSounds = new Dictionary<string, List<Sound>>();
+
+        foreach (JsonProperty property in soundsElement)
+        {
+            var name = property.Name.RemoveNamespace();
+            var parentName = name.Split('.')[0];
+            var sound = new Sound(name, property.Value.GetProperty(Vocabulary.ProtocolId).GetInt32());
+
+            if (splitSounds.TryGetValue(parentName, out var list))
+                list.Add(sound);
+            else
+                splitSounds.Add(parentName, [sound]);
+        }
+
+        return splitSounds;
     }
 
     public static Fluid[] GetFluids(string? json)
