@@ -18,6 +18,13 @@ public partial class RegistryAssetsGenerator
         {
             var parentName = kv.Key;
             var sounds = kv.Value;
+            if (sounds.Count == 1 && sounds.First().Name == parentName)
+            {
+                var name = sounds.First().Name;
+                builder.Line($"public const string {name.ToPascalCase()} = \"{name}\";");
+                continue;
+            }
+
             builder.Type($"public static class {parentName.ToPascalCase()}");
 
             foreach (var sound in sounds)
@@ -30,8 +37,6 @@ public partial class RegistryAssetsGenerator
                     actualName = "eleven";
                 else if (actualName == "5")
                     actualName = "five";
-                else if (actualName == string.Empty)
-                    actualName = "i_dont_know_what_my_use_is";//WHY MOJANG????????????????????????
 
                 builder.Line($"public const string {actualName.ToPascalCase()} = \"{sound.Name}\";");
             }
