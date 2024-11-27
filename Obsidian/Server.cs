@@ -16,6 +16,7 @@ using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
+using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Net.Rcon;
@@ -52,7 +53,7 @@ public sealed partial class Server : IServer
         }
     }
 #endif
-    public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_21;
+    public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_21_3;
 
     public const string PersistentDataPath = "persistentdata";
     public const string PermissionPath = "permissions";
@@ -73,7 +74,7 @@ public sealed partial class Server : IServer
         }
     }
 
-    private readonly ConcurrentQueue<IClientboundPacket> _chatMessagesQueue = new();
+    private readonly ConcurrentQueue<ClientboundPacket> _chatMessagesQueue = new();
     private readonly ConcurrentHashSet<Client> _clients = new();
     private readonly ILoggerFactory loggerFactory;
     private readonly RconServer _rconServer;
@@ -225,17 +226,17 @@ public sealed partial class Server : IServer
     /// </summary>
     public void BroadcastMessage(ChatMessage message)
     {
-        _chatMessagesQueue.Enqueue(new SystemChatMessagePacket(message, false));
+        _chatMessagesQueue.Enqueue(new SystemChatPacket(message, false));
         _logger.LogInformation(message.Text);
     }
 
     /// <summary>
     /// Sends a message to all players on this server.
     /// </summary>
-    public void BroadcastMessage(PlayerChatMessagePacket message)
+    public void BroadcastMessage(PlayerChatPacket message)
     {
         _chatMessagesQueue.Enqueue(message);
-        _logger.LogInformation("{}", message.Header.PlainMessage);
+        _logger.LogInformation("{}", message.UnsignedContent);
     }
 
     /// <summary>
@@ -245,7 +246,7 @@ public sealed partial class Server : IServer
     {
         var chatMessage = ChatMessage.Simple(message);
 
-        _chatMessagesQueue.Enqueue(new SystemChatMessagePacket(chatMessage, false));
+        _chatMessagesQueue.Enqueue(new SystemChatPacket(chatMessage, false));
         _logger.LogInformation(message);
     }
 
@@ -496,7 +497,7 @@ public sealed partial class Server : IServer
         }
     }
 
-    internal async Task HandleIncomingMessageAsync(ChatMessagePacket packet, Client source, MessageType type = MessageType.Chat)
+    internal async Task HandleIncomingMessageAsync(ChatPacket packet, Client source, MessageType type = MessageType.Chat)
     {
         const string format = "<{0}> {1}";//TODO use this????
         var message = packet.Message;
@@ -507,7 +508,7 @@ public sealed partial class Server : IServer
         }
     }
 
-    internal async Task QueueBroadcastPacketAsync(IClientboundPacket packet)
+    internal async Task QueueBroadcastPacketAsync(ClientboundPacket packet)
     {
         foreach (Player player in Players)
             await player.client.QueuePacketAsync(packet);
@@ -584,13 +585,13 @@ public sealed partial class Server : IServer
                     foreach (Player player in Players)
                     {
                         var soundPosition = new SoundPosition(player.Position.X, player.Position.Y, player.Position.Z);
-                        await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.EntitySheepAmbient)
-                            .WithSoundPosition(soundPosition)
-                            .Build());
+                        //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.EntitySheepAmbient)
+                        //    .WithSoundPosition(soundPosition)
+                        //    .Build());
                     }
                 }
 
-                while (_chatMessagesQueue.TryDequeue(out IClientboundPacket packet))
+                while (_chatMessagesQueue.TryDequeue(out ClientboundPacket packet))
                 {
                     foreach (Player player in Players)
                     {
@@ -615,7 +616,10 @@ public sealed partial class Server : IServer
 
         foreach (var client in _clients)
         {
-            client.SendPacket(new DisconnectPacket(ChatMessage.Simple("Server closed"), client.State));
+            if (client.State == ClientState.Play)
+                client.SendPacket(DisconnectPacket.ClientboundPlay with { Reason = ChatMessage.Simple("Server closed") });
+            else if (client.State == ClientState.Configuration)
+                client.SendPacket(DisconnectPacket.ClientboundConfiguration with { Reason = ChatMessage.Simple("Server closed") });
         }
 
         _logger.LogInformation("The game loop has been stopped");

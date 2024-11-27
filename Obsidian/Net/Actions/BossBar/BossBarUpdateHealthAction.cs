@@ -6,16 +6,10 @@ public sealed class BossBarUpdateHealthAction : BossBarAction
 
     public BossBarUpdateHealthAction() : base(2) { }
 
-    public override void WriteTo(MinecraftStream stream)
+    public override void WriteTo(INetStreamWriter writer)
     {
-        base.WriteTo(stream);
+        base.WriteTo(writer);
 
-        stream.WriteFloat(Health);
-    }
-
-    public override async Task WriteToAsync(MinecraftStream stream)
-    {
-        await base.WriteToAsync(stream);
-        await stream.WriteFloatAsync(Health);
+        writer.WriteFloat(Health);
     }
 }

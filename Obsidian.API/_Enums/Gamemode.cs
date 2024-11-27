@@ -1,7 +1,8 @@
 ﻿namespace Obsidian.API;
 
-public enum Gamemode : byte
+public enum Gamemode : sbyte
 {
+    None = -1,
     Survival,
     Creative,
     Adventure,

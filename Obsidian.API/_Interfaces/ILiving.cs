@@ -1,6 +1,4 @@
-﻿using Obsidian.API._Types;
-
-namespace Obsidian.API;
+﻿namespace Obsidian.API;
 
 public interface ILiving : IEntity
 {

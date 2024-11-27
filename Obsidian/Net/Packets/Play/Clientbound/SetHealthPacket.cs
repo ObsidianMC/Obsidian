@@ -2,23 +2,23 @@
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class SetHealthPacket : IClientboundPacket
+public partial class SetHealthPacket(float health, int food, float saturation)
 {
     [Field(0)]
-    public float Health { get; }
+    public float Health { get; } = health;
 
     [Field(1), VarLength]
-    public int Food { get; }
+    public int Food { get; } = food;
 
     [Field(2)]
-    public float FoodSaturation { get; }
+    public float Saturation { get; } = saturation;
 
-    public int Id => 0x5D;
-
-    public SetHealthPacket(float health, int food, float foodSaturation)
+    public override void Serialize(INetStreamWriter writer)
     {
-        Health = health;
-        Food = food;
-        FoodSaturation = foodSaturation;
+        writer.WriteFloat(this.Health);
+
+        writer.WriteVarInt(this.Food);
+
+        writer.WriteFloat(this.Saturation);
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace Obsidian.API._Types;
+﻿namespace Obsidian.API;
 
 /// <summary>
 /// The potion effect data holds additional information about an active <see cref="PotionEffect"/>.

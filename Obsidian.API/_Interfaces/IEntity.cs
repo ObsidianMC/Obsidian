@@ -33,7 +33,7 @@ public interface IEntity
     public bool CustomNameVisible { get; }
     public bool Silent { get; }
     public bool NoGravity { get; }
-    public bool OnGround { get; }
+    public MovementFlags MovementFlags { get; }
     public bool Sneaking { get; }
     public bool Sprinting { get; }
     public bool Glowing { get; }
@@ -55,6 +55,8 @@ public interface IEntity
     public ValueTask TeleportAsync(IEntity to);
     public ValueTask TeleportAsync(VectorF pos);
 
+    public void Write(INetStreamWriter writer);
+
     public bool IsInRange(IEntity entity, float distance);
 
     /// <summary>
@@ -69,7 +71,7 @@ public interface IEntity
     public VectorF GetLookDirection();
 
     public void SetHeadRotation(Angle headYaw);
-    public void SetRotation(Angle yaw, Angle pitch, bool onGround = true);
+    public void SetRotation(Angle yaw, Angle pitch, MovementFlags movementFlags);
 
     public bool HasAttribute(string attributeResourceName);
     public bool TryAddAttribute(string attributeResourceName, float value);

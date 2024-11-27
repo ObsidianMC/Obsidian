@@ -1,5 +1,4 @@
-﻿using Obsidian.Net;
-using Obsidian.Registries;
+﻿using Obsidian.Registries;
 
 namespace Obsidian.Entities;
 
@@ -22,19 +21,13 @@ public partial class ItemEntity : Entity
 
     public ItemEntity() => this.Type = EntityType.Item;
 
-    public async override Task WriteAsync(MinecraftStream stream)
+
+    public override void Write(INetStreamWriter writer)
     {
-        await base.WriteAsync(stream);
+        base.Write(writer);
 
-        await stream.WriteEntityMetdata(8, EntityMetadataType.Slot, new ItemStack(this.Material, this.Count, this.ItemMeta));
-    }
-
-    public override void Write(MinecraftStream stream)
-    {
-        base.Write(stream);
-
-        stream.WriteEntityMetadataType(8, EntityMetadataType.Slot);
-        stream.WriteItemStack(new ItemStack(this.Material, this.Count, this.ItemMeta));
+        writer.WriteEntityMetadataType(8, EntityMetadataType.Slot);
+        writer.WriteItemStack(new ItemStack(this.Material, this.Count, this.ItemMeta));
     }
 
     public async override ValueTask TickAsync()

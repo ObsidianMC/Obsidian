@@ -2,25 +2,24 @@
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class SetExperiencePacket : IClientboundPacket
+public partial class SetExperiencePacket(float experienceBar, int level, int totalExperience)
 {
     [Field(0)]
-    public float ExperienceBar { get; }
+    public float ExperienceBar { get; } = experienceBar;
 
     [Field(1), VarLength]
-    public int Level { get; }
+    public int Level { get; } = level;
 
     [Field(2), VarLength]
-    public int TotalExperience { get; }
-
-    public int Id => 0x5C;
-
-    public SetExperiencePacket(float experienceBar, int level, int totalExperience)
-    {
-        ExperienceBar = experienceBar;
-        Level = level;
-        TotalExperience = totalExperience;
-    }
+    public int TotalExperience { get; } = totalExperience;
 
     public static SetExperiencePacket FromLevel(int level) => new(0, level, XpHelper.TotalExperienceFromLevel(level));
+
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteFloat(this.ExperienceBar);
+
+        writer.WriteVarInt(this.Level);
+        writer.WriteVarInt(this.TotalExperience);
+    }
 }

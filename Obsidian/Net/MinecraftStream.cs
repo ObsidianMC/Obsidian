@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Obsidian.Net.Packets;
-using System.IO;
+﻿using System.IO;
 using System.Threading;
 
 namespace Obsidian.Net;

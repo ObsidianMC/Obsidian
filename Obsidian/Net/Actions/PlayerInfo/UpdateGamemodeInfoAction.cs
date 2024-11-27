@@ -1,19 +1,12 @@
 ﻿namespace Obsidian.Net.Actions.PlayerInfo;
 
-public class UpdateGamemodeInfoAction : InfoAction
+public class UpdateGamemodeInfoAction(Gamemode gamemode) : InfoAction
 {
     public override PlayerInfoAction Type => PlayerInfoAction.UpdateGamemode;
-    public Gamemode Gamemode { get; init; }
+    public Gamemode Gamemode { get; init; } = gamemode;
 
-    public UpdateGamemodeInfoAction(Gamemode gamemode) => this.Gamemode = gamemode;
-
-    public override async Task WriteAsync(MinecraftStream stream)
+    public override void Write(INetStreamWriter writer)
     {
-        await stream.WriteVarIntAsync(this.Gamemode);
-    }
-
-    public override void Write(MinecraftStream stream)
-    {
-        stream.WriteVarInt(Gamemode);
+        writer.WriteVarInt(Gamemode);
     }
 }

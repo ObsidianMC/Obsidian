@@ -1,4 +1,5 @@
 ﻿using Obsidian.API;
+using Obsidian.API.Noise;
 using Obsidian.WorldData.Generators.Overworld;
 using SharpNoise;
 using SharpNoise.Builders;

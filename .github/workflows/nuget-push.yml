@@ -1,11 +1,15 @@
 name: Nuget
 
 on:
+  workflow_dispatch:
   push:
-    branches: [ "1.*" ]
+    branches: ["1.*"]
     # Publish semver tags as releases.
-    tags: [ 'v*.*.*' ]
-    
+    tags: ["v*.*.*"]
+    # don't publish when we change workflow files
+    paths-ignore:
+      - ".github/workflows/*.yml"
+
 env:
   DOTNET_NOLOGO: 1
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
@@ -26,6 +30,7 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: |
+            9
             8
             7
       - name: Pack n Push
@@ -33,4 +38,4 @@ jobs:
           cd Obsidian.API
           dotnet build -c Release -p:Version=1.0.0-${{ github.run_number }}-${{ github.sha }}
           dotnet pack -c Release -o build -p:Version=1.0.0-nightly-${{ github.run_number }}
-          dotnet nuget push "build/*" --skip-duplicate -k ${{ secrets.NUGET_ORG_API_KEY }} -s https://api.nuget.org/v3/index.json 
+          dotnet nuget push "build/*" --skip-duplicate -k ${{ secrets.NUGET_ORG_API_KEY }} -s https://api.nuget.org/v3/index.json

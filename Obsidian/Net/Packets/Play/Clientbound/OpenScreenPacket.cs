@@ -2,18 +2,16 @@
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class OpenScreenPacket : IClientboundPacket
+public partial class OpenScreenPacket
 {
     [Field(0), VarLength]
-    public int WindowId { get; }
+    public int ContainerId { get; }
 
     [Field(1), ActualType(typeof(int)), VarLength]
     public WindowType Type { get; }
 
     [Field(2)]
     public ChatMessage Title { get; }
-
-    public int Id => 0x33;
 
     public OpenScreenPacket(BaseContainer inventory, int windowId)
     {
@@ -24,10 +22,17 @@ public partial class OpenScreenPacket : IClientboundPacket
         else if (Enum.TryParse($"generic9x{inventory.Size / 9}", true, out type))
             Type = type;
 
-        WindowId = windowId;
+        ContainerId = windowId;
     }
 
-    public override string ToString() => $"{this.WindowId}:{this.Type}";
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteVarInt(this.ContainerId);
+        writer.WriteVarInt(this.Type);
+        writer.WriteChat(this.Title);
+    }
+
+    public override string ToString() => $"{this.ContainerId}:{this.Type}";
 }
 
 // Do not mess up the order this is how it's supposed to be ordered

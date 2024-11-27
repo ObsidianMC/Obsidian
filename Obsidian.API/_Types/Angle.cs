@@ -3,7 +3,7 @@
 /// <summary>
 /// A class that represents an angle from 0° to 360° degrees.
 /// </summary>
-public struct Angle
+public struct Angle : INetworkSerializable<Angle>
 {
     public byte Value { get; set; }
     public float Degrees
@@ -25,4 +25,6 @@ public struct Angle
         float clamped = degrees % 360f;
         return clamped < 0f ? clamped + 360f : clamped;
     }
+
+    public static void Write(Angle value, INetStreamWriter writer) => writer.WriteFloat(value);
 }

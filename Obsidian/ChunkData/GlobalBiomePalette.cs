@@ -28,7 +28,7 @@ public class GlobalBiomePalette : IPalette<Biome>
 
     public Task WriteToAsync(MinecraftStream stream) => Task.CompletedTask;
     public Task ReadFromAsync(MinecraftStream stream) => Task.CompletedTask;
-    public void WriteTo(MinecraftStream stream)
+    public void WriteTo(INetStreamWriter writer)
     {
     }
 }

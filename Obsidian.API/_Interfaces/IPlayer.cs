@@ -1,4 +1,4 @@
-﻿namespace Obsidian.API;
+namespace Obsidian.API;
 
 public interface IPlayer : ILiving
 {
@@ -50,7 +50,7 @@ public interface IPlayer : ILiving
     public Task KickAsync(ChatMessage reason);
     public Task KickAsync(string reason);
     public Task OpenInventoryAsync(BaseContainer container);
-    public Task DisplayScoreboardAsync(IScoreboard scoreboard, ScoreboardPosition position);
+    public Task DisplayScoreboardAsync(IScoreboard scoreboard, DisplaySlot position);
 
     /// <summary>
     /// Sends a title message to the player.

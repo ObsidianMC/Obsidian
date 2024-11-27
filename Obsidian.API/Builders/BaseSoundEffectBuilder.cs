@@ -6,7 +6,7 @@ public abstract class BaseSoundEffectBuilder : ISoundEffectBuilder, ISoundEffect
     private const float MinPitch = 2.0f;
     private const float MinVolume = 1.0f;
 
-    protected SoundId SoundId { get; init; }
+    protected string SoundLocation { get; init; }
 
     protected SoundCategory SoundCategory { get; init; }
 
@@ -14,9 +14,7 @@ public abstract class BaseSoundEffectBuilder : ISoundEffectBuilder, ISoundEffect
 
     protected SoundPosition? SoundPosition { get; set; }
 
-    protected bool HasFixedRange { get; set; }
-
-    protected float Range { get; set; }
+    protected float? FixedRange { get; set; }
 
     protected float Volume { get; set; } = .5f;
 
@@ -26,9 +24,9 @@ public abstract class BaseSoundEffectBuilder : ISoundEffectBuilder, ISoundEffect
 
     protected int? EntityId { get; set; }
 
-    public virtual IRangedSoundEffectBuilder WithFixedRange()
+    public virtual IRangedSoundEffectBuilder WithFixedRange(float range)
     {
-        this.HasFixedRange = true;
+        this.FixedRange = range;
 
         return this;
     }
@@ -37,13 +35,6 @@ public abstract class BaseSoundEffectBuilder : ISoundEffectBuilder, ISoundEffect
     public virtual ISoundEffectBaseBuilder WithPitch(float pitch)
     {
         this.Pitch = Math.Min(pitch, MinPitch);
-
-        return this;
-    }
-
-    public virtual ISoundEffectBaseBuilder WithRange(float range)
-    {
-        this.Range = range;
 
         return this;
     }

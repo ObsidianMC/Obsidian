@@ -1,14 +1,10 @@
-﻿using Obsidian.API._Types;
-
-namespace Obsidian.Net.ChatMessageTypes;
+﻿namespace Obsidian.Net.ChatMessageTypes;
 public sealed class PlayerChatMessageBody
 {
-    public bool UnsignedContentPresent => this.UnsignedContent != null;
+    public required string Content { get; init; }
 
-    public ChatMessage? UnsignedContent { get; init; }
+    public required MessageSignature Signature { get; init; }
 
-    public required ChatFilterType FilterType { get; init; }
-
-    public BitSet? FilterTypeBytes { get; init; }
+    public List<MessageSignature> LastSeenMessages { get; init; } = [];
 }
 

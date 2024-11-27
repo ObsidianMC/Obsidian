@@ -2,14 +2,12 @@
 using Obsidian.API.Plugins;
 using Obsidian.Entities;
 using Obsidian.Net;
-using Obsidian.Net.Packets;
 using Obsidian.Registries;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -24,7 +22,7 @@ public static partial class Extensions
 
     internal readonly static EntityType[] nonLiving = [ EntityType.Arrow,
                 EntityType.SpectralArrow,
-                EntityType.Boat,
+                //EntityType.Boat,
                 EntityType.DragonFireball,
                 EntityType.AreaEffectCloud,
                 EntityType.EndCrystal,

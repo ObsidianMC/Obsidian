@@ -4,53 +4,44 @@ using Obsidian.Serialization.Attributes;
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
 //TODO finish this packet PLEASE
-public partial class UpdateAdvancementsPacket : IClientboundPacket
+public partial class UpdateAdvancementsPacket
 {
     [Field(0)]
     public bool Reset { get; set; }
 
     [Field(1)]
-    public IDictionary<string, Advancement> Advancements { get; set; }
+    public List<Advancement> Added { get; set; } = [];
 
     [Field(2)]
-    public List<string> RemovedAdvancements { get; set; }
+    public List<string> Removed { get; set; } = [];
 
-    public int Id => 0x74;
-
-    public void Serialize(MinecraftStream stream)
+    public override void Serialize(INetStreamWriter writer)
     {
-        using var packetStream = new MinecraftStream();
+        writer.WriteBoolean(this.Reset);
 
-        packetStream.WriteBoolean(this.Reset);
-
-        packetStream.WriteAdvancements(this.Advancements);
+        writer.WriteVarInt(this.Added.Count);
+        foreach (var advancement in this.Added)
+            writer.WriteAdvancement(advancement);
 
         //Not sure what this is for
-        packetStream.WriteVarInt(this.RemovedAdvancements.Count);
-        foreach (var removed in this.RemovedAdvancements)
-            packetStream.WriteString(removed);
+        writer.WriteVarInt(this.Removed.Count);
+        foreach (var removed in this.Removed)
+            writer.WriteString(removed);
 
         //Write progress for advancements
-        foreach (var (name, advancement) in this.Advancements)
+        foreach (var advancement in this.Added)
         {
-            packetStream.WriteVarInt(advancement.Criteria.Count);
+            writer.WriteVarInt(advancement.Criteria.Count);
 
             foreach (var criteria in advancement.Criteria)
             {
-                packetStream.WriteString(criteria.Identifier);
+                writer.WriteString(criteria.Identifier);
 
-                packetStream.WriteBoolean(criteria.Achieved);
+                writer.WriteBoolean(criteria.Achieved);
 
                 if (criteria.Achieved)
-                    packetStream.WriteLong(criteria.AchievedAt.Value.ToUnixTimeMilliseconds());
+                    writer.WriteLong(criteria.AchievedAt!.Value.ToUnixTimeMilliseconds());
             }
         }
-
-        stream.Lock.Wait();
-        stream.WriteVarInt(this.Id.GetVarIntLength() + (int)packetStream.Length);
-        stream.WriteVarInt(this.Id);
-        packetStream.Position = 0;
-        packetStream.CopyTo(stream);
-        stream.Lock.Release();
     }
 }

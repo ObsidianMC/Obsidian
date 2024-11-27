@@ -6,8 +6,6 @@ public class ItemStack : IEquatable<ItemStack>
 
     internal int Slot { get; set; }
 
-    internal bool Present { get; set; }
-
     public int Count { get; internal set; }
 
     public ItemMeta ItemMeta { get; internal set; }
@@ -16,11 +14,10 @@ public class ItemStack : IEquatable<ItemStack>
 
     public bool IsAir => this.Type == Material.Air;
 
-    public ItemStack(Material type, short count = 1, ItemMeta? meta = null)
+    public ItemStack(Material type, int count = 1, ItemMeta? meta = null)
     {
         this.Type = type;
         this.Count = count;
-        if (count > 0) { Present = true; }
 
         if (meta.HasValue)
             this.ItemMeta = meta.Value;
@@ -64,5 +61,5 @@ public class ItemStack : IEquatable<ItemStack>
     public override bool Equals(object? obj) => obj is ItemStack itemStack && Equals(itemStack);
 
     public override int GetHashCode() =>
-        (this.Present, this.Count, this.ItemMeta).GetHashCode();
+        (this.Count, this.ItemMeta).GetHashCode();
 }

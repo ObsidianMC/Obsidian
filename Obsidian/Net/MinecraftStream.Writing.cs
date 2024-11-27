@@ -1,4 +1,4 @@
-﻿using Obsidian.API;
+﻿using Microsoft.CodeAnalysis;
 using Obsidian.API.Advancements;
 using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
@@ -12,7 +12,6 @@ using Obsidian.API.Registry.Codecs.PaintingVariant;
 using Obsidian.API.Registry.Codecs.WolfVariant;
 using Obsidian.API.Utilities;
 using Obsidian.Commands;
-using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net.Actions.BossBar;
 using Obsidian.Net.Actions.PlayerInfo;
@@ -21,7 +20,6 @@ using Obsidian.Net.WindowProperties;
 using Obsidian.Registries;
 using Obsidian.Serialization.Attributes;
 using System.Buffers.Binary;
-using System.IO;
 using System.Text;
 using System.Text.Json;
 
@@ -32,7 +30,43 @@ public partial class MinecraftStream : INetStreamWriter
     [WriteMethod]
     public void WriteByte(sbyte value)
     {
-        BaseStream.WriteByte((byte)value);
+        WriteByte((byte)value);
+    }
+
+    public void WriteByte(Enum value)
+    {
+        WriteByte((byte)value.GetHashCode());
+    }
+
+    public void WritePacket(IClientboundPacket packet)
+    {
+        var isBundled = packet is BundledPacket;
+        var varLength = packet.Id.GetVarIntLength();
+
+        using var tempStream = new MinecraftStream();
+        packet.Serialize(tempStream);
+     
+        var length = isBundled ? varLength : varLength + (int)tempStream.Length;
+
+        this.Lock.Wait();
+        this.WriteVarInt(length);
+        this.WriteVarInt(packet.Id);
+
+        tempStream.Position = 0;
+        tempStream.CopyTo(this);
+
+        if(isBundled)
+        {
+            this.WriteVarInt(length);
+            this.WriteVarInt(packet.Id);
+        }
+
+        this.Lock.Release();
+    }
+
+    public void WriteCompressedPacket(IClientboundPacket packet, int compressionThreshold)
+    {
+        throw new NotImplementedException();
     }
 
     public async Task WriteByteAsync(sbyte value)
@@ -42,12 +76,6 @@ public partial class MinecraftStream : INetStreamWriter
 #endif
 
         await WriteUnsignedByteAsync((byte)value);
-    }
-
-    [WriteMethod]
-    public void WriteUnsignedByte(byte value)
-    {
-        BaseStream.WriteByte(value);
     }
 
     public async Task WriteUnsignedByteAsync(byte value)
@@ -119,6 +147,8 @@ public partial class MinecraftStream : INetStreamWriter
         BinaryPrimitives.WriteInt32BigEndian(span, value);
         BaseStream.Write(span);
     }
+
+    public void WriteInt(Enum value) => this.WriteInt(value.GetHashCode());
 
     public async Task WriteIntAsync(int value)
     {
@@ -352,8 +382,8 @@ public partial class MinecraftStream : INetStreamWriter
     {
         this.WriteString(JsonNamingPolicy.SnakeCaseLower.ConvertName(sound.SoundName ?? sound.SoundId.ToString()));
 
-        if (sound.HasFixedRange)
-            this.WriteFloat(sound.Range);
+        if (sound.FixedRange.HasValue)
+            this.WriteFloat(sound.FixedRange.Value);
     }
 
     [WriteMethod]
@@ -452,6 +482,87 @@ public partial class MinecraftStream : INetStreamWriter
             var uuid = System.Numerics.BigInteger.Parse(value.ToString().Replace("-", ""), System.Globalization.NumberStyles.HexNumber);
             Write(uuid.ToByteArray(false, true));
         }
+    }
+
+    private bool ShouldWriteOptional<TValue>(TValue? value)
+    {
+        var notNull = value != null;
+
+        this.WriteBoolean(notNull);
+
+        return notNull;
+    }
+
+    public void WriteOptional(Enum? value)
+    {
+        if (!this.ShouldWriteOptional(value))
+            return;
+
+        this.WriteVarInt(value!.GetHashCode());
+    }
+
+    public void WriteOptional(int? value)
+    {
+        if (!this.ShouldWriteOptional(value))
+            return;
+
+        this.WriteInt(value!.Value);
+    }
+
+    public void WriteOptional(double? value)
+    {
+        if (!this.ShouldWriteOptional(value))
+            return;
+
+        this.WriteDouble(value!.Value);
+    }
+
+    public void WriteOptional(short? value)
+    {
+        if (!this.ShouldWriteOptional(value))
+            return;
+
+        this.WriteShort(value!.Value);
+    }
+
+    public void WriteOptional(float? value)
+    {
+        if (!this.ShouldWriteOptional(value))
+            return;
+
+        this.WriteFloat(value!.Value);
+    }
+
+    public void WriteOptional(byte? value)
+    {
+        if (!this.ShouldWriteOptional(value))
+            return;
+
+        this.WriteByte(value!.Value);
+    }
+
+    public void WriteOptional<TValue>(TValue? optional) where TValue : struct, INetworkSerializable<TValue>
+    {
+        this.WriteBoolean(optional.HasValue);
+
+        if (optional.HasValue)
+            TValue.Write(optional.Value, this);
+    }
+
+    public void WriteOptional<TValue>(TValue? value) where TValue : INetworkSerializable<TValue>
+    {
+        var shouldWrite = this.ShouldWriteOptional(value);
+        if (!shouldWrite)
+            return;
+
+        TValue.Write(value!, this);
+    }
+
+    public void WritePosition(SoundPosition position)
+    {
+        this.WriteInt(position.X);
+        this.WriteInt(position.Y);
+        this.WriteInt(position.Z);
     }
 
     [WriteMethod]
@@ -565,6 +676,7 @@ public partial class MinecraftStream : INetStreamWriter
         }
     }
 
+    //TODO make sure this is up to date
     public void WriteAdvancement(Advancement advancement)
     {
         var hasParent = !string.IsNullOrEmpty(advancement.Parent);
@@ -647,9 +759,9 @@ public partial class MinecraftStream : INetStreamWriter
     }
 
     [WriteMethod]
-    public void WriteItemStack(ItemStack value)
+    public void WriteItemStack(ItemStack? value)
     {
-        value ??= new ItemStack(0, 0) { Present = true };
+        value ??= new ItemStack(0, 0);
 
         var item = value.AsItem();
         var meta = value.ItemMeta;
@@ -668,16 +780,15 @@ public partial class MinecraftStream : INetStreamWriter
             return;
     }
 
-    [WriteMethod]
-    public void WriteEntity(Entity value)
+    public void WriteEntity(IEntity entity)
     {
-        value.Write(this);
-        WriteUnsignedByte(0xff);
+        entity.Write(this);
+        WriteByte(0xff);
     }
 
     public void WriteEntityMetadataType(byte index, EntityMetadataType entityMetadataType)
     {
-        WriteUnsignedByte(index);
+        WriteByte(index);
         WriteVarInt((int)entityMetadataType);
     }
 
@@ -853,86 +964,26 @@ public partial class MinecraftStream : INetStreamWriter
         await WriteLongAsync(val);
     }
 
-    public async Task WriteSlotAsync(ItemStack slot)
+    //TODO we probably don't use this anymore
+    public async Task WriteSlotAsync(ItemStack? value)
     {
-        if (slot is null)
-            slot = new ItemStack(0, 0)
-            {
-                Present = true
-            };
+        value ??= new ItemStack(0, 0);
 
-        var item = slot.AsItem();
+        var item = value.AsItem();
+        var meta = value.ItemMeta;
 
-        await WriteBooleanAsync(slot.Present);
-        if (slot.Present)
-        {
-            await WriteVarIntAsync(item.Id);
-            await WriteByteAsync((sbyte)slot.Count);
+        await WriteVarIntAsync(value.Count);
 
-            var writer = new NbtWriter(this, true);
+        //Stop serializing if item is invalid
+        if (value.Count <= 0)
+            return;
 
-            var itemMeta = slot.ItemMeta;
+        await WriteVarIntAsync(item.Id);
+        await WriteVarIntAsync(0);
+        await WriteVarIntAsync(0);
 
-            //TODO write enchants
-            if (itemMeta.HasTags())
-            {
-                writer.WriteBool("Unbreakable", itemMeta.Unbreakable);
-
-                if (itemMeta.Durability > 0)
-                    writer.WriteInt("Damage", itemMeta.Durability);
-
-                if (itemMeta.CustomModelData > 0)
-                    writer.WriteInt("CustomModelData", itemMeta.CustomModelData);
-
-                if (itemMeta.CanDestroy != null)
-                {
-                    writer.WriteListStart("CanDestroy", NbtTagType.String, itemMeta.CanDestroy.Count);
-
-                    foreach (var block in itemMeta.CanDestroy)
-                        writer.WriteString(block);
-
-                    writer.EndList();
-                }
-
-                if (itemMeta.Name != null)
-                {
-                    writer.WriteCompoundStart("display");
-
-                    writer.WriteString("Name", new List<ChatMessage> { itemMeta.Name }.ToJson());
-
-                    if (itemMeta.Lore != null)
-                    {
-                        writer.WriteListStart("Lore", NbtTagType.String, itemMeta.Lore.Count);
-
-                        foreach (var lore in itemMeta.Lore)
-                            writer.WriteString(new List<ChatMessage> { lore }.ToJson());
-
-                        writer.EndList();
-                    }
-
-                    writer.EndCompound();
-                }
-                else if (itemMeta.Lore != null)
-                {
-                    writer.WriteCompoundStart("display");
-
-                    writer.WriteListStart("Lore", NbtTagType.String, itemMeta.Lore.Count);
-
-                    foreach (var lore in itemMeta.Lore)
-                        writer.WriteString(new List<ChatMessage> { lore }.ToJson());
-
-                    writer.EndList();
-
-                    writer.EndCompound();
-                }
-            }
-
-            writer.WriteString("id", item.UnlocalizedName);
-            writer.WriteByte("Count", (byte)slot.Count);
-
-            writer.EndCompound();
-            await writer.TryFinishAsync();
-        }
+        if (!meta.HasTags())
+            return;
     }
 
     internal async Task WriteRecipeAsync(string name, IRecipe recipe)
@@ -1085,14 +1136,6 @@ public partial class MinecraftStream : INetStreamWriter
 
         this.WriteVarInt(chunkBiome.Data.Length);
         this.WriteByteArray(chunkBiome.Data);
-    }
-
-    [WriteMethod]
-    public void WriteRecipes(IDictionary<string, IRecipe> recipes)
-    {
-        WriteVarInt(recipes.Count);
-        foreach (var (name, recipe) in recipes)
-            WriteRecipe(name, recipe);
     }
 
     public void WriteRecipe(string name, IRecipe recipe)
@@ -1251,36 +1294,5 @@ public partial class MinecraftStream : INetStreamWriter
         WriteByte(record.X);
         WriteByte(record.Y);
         WriteByte(record.Z);
-    }
-
-
-    [WriteMethod]
-    public void WriteParticleData(ParticleData value)
-    {
-        if (value is null || value == ParticleData.None)
-            return;
-
-        switch (value.ParticleType)
-        {
-            case ParticleType.Block:
-                WriteVarInt(value.GetDataAs<int>());
-                break;
-
-            case ParticleType.Dust:
-                var (red, green, blue, scale) = value.GetDataAs<(float, float, float, float)>();
-                WriteFloat(red);
-                WriteFloat(green);
-                WriteFloat(blue);
-                WriteFloat(scale);
-                break;
-
-            case ParticleType.FallingDust:
-                WriteVarInt(value.GetDataAs<int>());
-                break;
-
-            case ParticleType.Item:
-                WriteItemStack(value.GetDataAs<ItemStack>());
-                break;
-        }
     }
 }

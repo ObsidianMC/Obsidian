@@ -52,7 +52,7 @@ internal sealed class MethodsRegistry
         return false;
     }
 
-    public void Offer(GeneratorExecutionContext context, MethodDeclarationSyntax method)
+    public void Offer(SourceProductionContext context, MethodDeclarationSyntax method)
     {
         if (method is null)
         {
@@ -88,7 +88,7 @@ internal sealed class MethodsRegistry
         }
     }
 
-    private bool TryGetWriteMethodType(GeneratorExecutionContext context, MethodDeclarationSyntax method, out string type)
+    private bool TryGetWriteMethodType(SourceProductionContext context, MethodDeclarationSyntax method, out string type)
     {
         type = null!;
 
@@ -115,7 +115,7 @@ internal sealed class MethodsRegistry
         return true;
     }
 
-    private bool TryGetReadMethodType(GeneratorExecutionContext context, MethodDeclarationSyntax method, out string type)
+    private bool TryGetReadMethodType(SourceProductionContext context, MethodDeclarationSyntax method, out string type)
     {
         type = method.ReturnType.ToString();
 

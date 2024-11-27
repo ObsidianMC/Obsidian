@@ -1,15 +1,11 @@
-﻿using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
+﻿using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
-public partial class RenameItemPacket : IServerboundPacket
+public partial class RenameItemPacket
 {
     [Field(0)]
-    public string ItemName { get; private set; }
+    public string ItemName { get; private set; } = default!;
 
-    public int Id => 0x2A;
-
-    public ValueTask HandleAsync(Client client) => default;
-    public ValueTask HandleAsync(Server server, Player player) => default;
+    public override void Populate(INetStreamReader reader) => this.ItemName = reader.ReadString();
 }

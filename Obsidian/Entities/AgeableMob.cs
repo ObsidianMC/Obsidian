@@ -1,23 +1,14 @@
-﻿using Obsidian.Net;
-
-namespace Obsidian.Entities;
+﻿namespace Obsidian.Entities;
 
 public class AgeableMob : PathfinderMob
 {
     public bool IsBaby { get; set; }
 
-    public override async Task WriteAsync(MinecraftStream stream)
+    public override void Write(INetStreamWriter writer)
     {
-        await base.WriteAsync(stream);
+        base.Write(writer);
 
-        await stream.WriteEntityMetdata(15, EntityMetadataType.Boolean, this.IsBaby);
-    }
-
-    public override void Write(MinecraftStream stream)
-    {
-        base.Write(stream);
-
-        stream.WriteEntityMetadataType(15, EntityMetadataType.Boolean);
-        stream.WriteBoolean(IsBaby);
+        writer.WriteEntityMetadataType(15, EntityMetadataType.Boolean);
+        writer.WriteBoolean(IsBaby);
     }
 }

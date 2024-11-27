@@ -1,6 +1,4 @@
-﻿using Obsidian.Net;
-
-namespace Obsidian.Commands.Parsers;
+﻿namespace Obsidian.Commands.Parsers;
 public sealed class MinecraftTimeParser : CommandParser
 {
     public int Min { get; set; } = 0;
@@ -9,10 +7,10 @@ public sealed class MinecraftTimeParser : CommandParser
     {
     }
 
-    public override void Write(MinecraftStream stream)
+    public override void Write(INetStreamWriter writer)
     {
-        base.Write(stream);
+        base.Write(writer);
 
-        stream.WriteInt(Min);
+        writer.WriteInt(Min);
     }
 }

@@ -3,7 +3,7 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class PlayerInfoUpdatePacket : IClientboundPacket
+public partial class PlayerInfoUpdatePacket
 {
     [Field(0)]
     public PlayerInfoAction Actions { get; private set; }
@@ -13,8 +13,6 @@ public partial class PlayerInfoUpdatePacket : IClientboundPacket
     /// </remarks>
     [Field(1)]
     public Dictionary<Guid, List<InfoAction>> Players { get; set; } = [];
-
-    public int Id => 0x3E;
 
     public PlayerInfoUpdatePacket(Dictionary<Guid, List<InfoAction>> infoActions)
     {
@@ -37,30 +35,21 @@ public partial class PlayerInfoUpdatePacket : IClientboundPacket
             this.Actions |= usedEnum;
     }
 
-    public void Serialize(MinecraftStream stream)
+    public override void Serialize(INetStreamWriter writer)
     {
-        using var packetStream = new MinecraftStream();
-
-        packetStream.WriteByte((sbyte)this.Actions);
-        packetStream.WriteVarInt(Players.Count);
+        writer.WriteByte((sbyte)this.Actions);
+        writer.WriteVarInt(Players.Count);
         foreach (var (uuid, actions) in this.Players)
         {
             var orderedActions = actions.OrderBy(x => (int)x.Type).ToList();
 
-            packetStream.WriteUuid(uuid);
+            writer.WriteUuid(uuid);
 
             for (int i = 0; i < orderedActions.Count; i++)
             {
-                packetStream.WritePlayerInfoAction(orderedActions[i]);
+                orderedActions[i].Write(writer);
             }
         }
-
-        stream.Lock.Wait();
-        stream.WriteVarInt(Id.GetVarIntLength() + (int)packetStream.Length);
-        stream.WriteVarInt(Id);
-        packetStream.Position = 0;
-        packetStream.CopyTo(stream);
-        stream.Lock.Release();
     }
 }
 

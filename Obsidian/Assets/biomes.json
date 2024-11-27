@@ -97,13 +97,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -285,13 +283,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -488,9 +484,7 @@
             "minecraft:ore_debris_small"
           ]
         ],
-        "carvers": {
-          "air": "minecraft:nether_cave"
-        },
+        "carvers": "minecraft:nether_cave",
         "spawners": {
           "ambient": [],
           "axolotls": [],
@@ -612,13 +606,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -798,13 +790,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -1001,13 +991,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -1188,20 +1176,17 @@
             "minecraft:patch_sugar_cane",
             "minecraft:patch_pumpkin",
             "minecraft:seagrass_cold",
-            "minecraft:seagrass_simple",
             "minecraft:kelp_cold"
           ],
           [
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -1377,9 +1362,7 @@
             "minecraft:crimson_forest_vegetation"
           ]
         ],
-        "carvers": {
-          "air": "minecraft:nether_cave"
-        },
+        "carvers": "minecraft:nether_cave",
         "spawners": {
           "ambient": [],
           "axolotls": [],
@@ -1516,13 +1499,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -1709,20 +1690,17 @@
             "minecraft:patch_sugar_cane",
             "minecraft:patch_pumpkin",
             "minecraft:seagrass_deep_cold",
-            "minecraft:seagrass_simple",
             "minecraft:kelp_cold"
           ],
           [
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -1918,13 +1896,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [],
           "axolotls": [],
@@ -2032,13 +2008,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -2227,20 +2201,17 @@
             "minecraft:patch_sugar_cane",
             "minecraft:patch_pumpkin",
             "minecraft:seagrass_deep_warm",
-            "minecraft:seagrass_simple",
             "minecraft:kelp_warm"
           ],
           [
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -2440,20 +2411,17 @@
             "minecraft:patch_sugar_cane",
             "minecraft:patch_pumpkin",
             "minecraft:seagrass_deep",
-            "minecraft:seagrass_simple",
             "minecraft:kelp_cold"
           ],
           [
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -2656,13 +2624,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -2852,13 +2818,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -2966,7 +2930,7 @@
         "has_precipitation": false,
         "player_spawn_friendly": false,
         "features": [],
-        "carvers": null,
+        "carvers": [],
         "spawners": {
           "ambient": [],
           "axolotls": [],
@@ -3027,7 +2991,7 @@
             "minecraft:chorus_plant"
           ]
         ],
-        "carvers": null,
+        "carvers": [],
         "spawners": {
           "ambient": [],
           "axolotls": [],
@@ -3073,7 +3037,7 @@
         "has_precipitation": false,
         "player_spawn_friendly": false,
         "features": [],
-        "carvers": null,
+        "carvers": [],
         "spawners": {
           "ambient": [],
           "axolotls": [],
@@ -3190,13 +3154,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -3376,13 +3338,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -3586,13 +3546,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -3794,13 +3752,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -3996,13 +3952,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -4175,13 +4129,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -4373,13 +4325,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -4567,13 +4517,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -4761,13 +4709,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -4949,13 +4895,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -5172,13 +5116,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -5390,13 +5332,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -5582,13 +5522,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -5786,13 +5724,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -5975,13 +5911,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -6083,9 +6017,7 @@
             "minecraft:red_mushroom_normal"
           ]
         ],
-        "carvers": {
-          "air": "minecraft:nether_cave"
-        },
+        "carvers": "minecraft:nether_cave",
         "spawners": {
           "ambient": [],
           "axolotls": [],
@@ -6222,20 +6154,17 @@
             "minecraft:patch_sugar_cane",
             "minecraft:patch_pumpkin",
             "minecraft:seagrass_normal",
-            "minecraft:seagrass_simple",
             "minecraft:kelp_cold"
           ],
           [
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -6434,13 +6363,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -6643,13 +6570,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -6870,13 +6795,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -7086,13 +7009,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -7296,13 +7217,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -7489,13 +7408,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -7705,13 +7622,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -7872,7 +7787,7 @@
             "minecraft:end_island_decorated"
           ]
         ],
-        "carvers": null,
+        "carvers": [],
         "spawners": {
           "ambient": [],
           "axolotls": [],
@@ -7981,13 +7896,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -8153,13 +8066,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -8349,13 +8260,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -8536,13 +8445,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -8735,9 +8642,7 @@
             "minecraft:spring_lava"
           ]
         ],
-        "carvers": {
-          "air": "minecraft:nether_cave"
-        },
+        "carvers": "minecraft:nether_cave",
         "spawners": {
           "ambient": [],
           "axolotls": [],
@@ -8891,13 +8796,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -9102,13 +9005,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -9273,13 +9174,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -9447,13 +9346,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -9668,13 +9565,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -9885,13 +9780,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -10052,7 +9945,7 @@
             "minecraft:end_platform"
           ]
         ],
-        "carvers": null,
+        "carvers": [],
         "spawners": {
           "ambient": [],
           "axolotls": [],
@@ -10112,7 +10005,7 @@
             "minecraft:void_start_platform"
           ]
         ],
-        "carvers": null,
+        "carvers": [],
         "spawners": {
           "ambient": [],
           "axolotls": [],
@@ -10218,13 +10111,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -10408,9 +10299,7 @@
             "minecraft:twisting_vines"
           ]
         ],
-        "carvers": {
-          "air": "minecraft:nether_cave"
-        },
+        "carvers": "minecraft:nether_cave",
         "spawners": {
           "ambient": [],
           "axolotls": [],
@@ -10535,13 +10424,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -10741,13 +10628,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -10947,13 +10832,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -11150,13 +11033,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {
@@ -11373,13 +11254,11 @@
             "minecraft:freeze_top_layer"
           ]
         ],
-        "carvers": {
-          "air": [
-            "minecraft:cave",
-            "minecraft:cave_extra_underground",
-            "minecraft:canyon"
-          ]
-        },
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
         "spawners": {
           "ambient": [
             {

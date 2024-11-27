@@ -8,27 +8,17 @@ public class AbstractHorse : Animal
 
     public Guid Owner { get; set; }
 
-    public async override Task WriteAsync(MinecraftStream stream)
+    public override void Write(INetStreamWriter writer)
     {
-        await base.WriteAsync(stream);
+        base.Write(writer);
 
-        await stream.WriteEntityMetdata(16, EntityMetadataType.Byte, this.HorseMask);
+        writer.WriteEntityMetadataType(16, EntityMetadataType.Byte);
+        writer.WriteByte((byte)HorseMask);
 
-        if (this.Owner != default)
-            await stream.WriteEntityMetdata(17, EntityMetadataType.OptionalUUID, Owner, true);
-    }
-
-    public override void Write(MinecraftStream stream)
-    {
-        base.Write(stream);
-
-        stream.WriteEntityMetadataType(16, EntityMetadataType.Byte);
-        stream.WriteUnsignedByte((byte)HorseMask);
-
-        stream.WriteEntityMetadataType(17, EntityMetadataType.OptionalUUID);
-        stream.WriteBoolean(true);
+        writer.WriteEntityMetadataType(17, EntityMetadataType.OptionalUUID);
+        writer.WriteBoolean(true);
         if (true)
-            stream.WriteUuid(Owner);
+            writer.WriteUuid(Owner);
     }
 }
 

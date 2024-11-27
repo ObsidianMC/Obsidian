@@ -2,15 +2,16 @@
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class RemoveEntitiesPacket : IClientboundPacket
+public partial class RemoveEntitiesPacket(params int[] entities)
 {
     [Field(0), VarLength]
-    public List<int> Entities { get; private set; } = new();
+    public List<int> Entities { get; private set; } = entities.ToList();
 
-    public int Id => 0x42;
-
-    public RemoveEntitiesPacket(params int[] entities)
+    public override void Serialize(INetStreamWriter writer)
     {
-        this.Entities = entities.ToList();
+        writer.WriteVarInt(this.Entities.Count);
+
+        foreach(var entityId in this.Entities)
+            writer.WriteVarInt(entityId);
     }
 }

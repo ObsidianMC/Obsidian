@@ -2,20 +2,29 @@
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class SetTitleTextPacket : IClientboundPacket
+public partial class SetTitleTextPacket
 {
     [Field(0)]
     public required ChatMessage Text { get; init; }
 
-    public int Id { get; }
-
-    public SetTitleTextPacket(TitleMode mode)
+    public override void Serialize(INetStreamWriter writer)
     {
-        this.Id = mode == TitleMode.SetTitle ? 0x65 : 0x63;
+        writer.WriteChat(this.Text);
     }
 }
 
-public partial class SetTitleAnimationTimesPacket : IClientboundPacket
+public partial class SetSubtitleTextPacket
+{
+    [Field(0)]
+    public required ChatMessage Text { get; init; }
+
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteChat(this.Text);
+    }
+}
+
+public partial class SetTitlesAnimationPacket
 {
     [Field(0)]
     public int FadeIn { get; set; }
@@ -26,12 +35,10 @@ public partial class SetTitleAnimationTimesPacket : IClientboundPacket
     [Field(2)]
     public int FadeOut { get; set; }
 
-    public int Id => 0X66;
-}
-
-public enum TitleMode
-{
-    SetTitle,
-
-    SetSubtitle
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteInt(this.FadeIn);
+        writer.WriteInt(this.Stay);
+        writer.WriteInt(this.FadeOut);
+    }
 }

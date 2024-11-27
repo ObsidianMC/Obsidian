@@ -4,18 +4,21 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
-public partial class SetCreativeModeSlotPacket : IServerboundPacket
+public partial class SetCreativeModeSlotPacket
 {
     [Field(0)]
     public short ClickedSlot { get; private set; }
 
     [Field(1)]
-    public ItemStack ClickedItem { get; private set; }
+    public ItemStack? ClickedItem { get; private set; }
 
-    public int Id => 0x2F;
+    public override void Populate(INetStreamReader reader)
+    {
+        this.ClickedSlot = reader.ReadShort();
+        this.ClickedItem = reader.ReadItemStack(); 
+    }
 
-    public ValueTask HandleAsync(Client client) => default;
-    public ValueTask HandleAsync(Server server, Player player)
+    public override ValueTask HandleAsync(Server server, Player player)
     {
         var inventory = player.OpenedContainer ?? player.Inventory;
 

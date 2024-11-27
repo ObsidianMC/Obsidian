@@ -8,17 +8,10 @@ public sealed class BossBarUpdateFlagsAction : BossBarAction
 
     public BossBarUpdateFlagsAction() : base(5) { }
 
-    public override void WriteTo(MinecraftStream stream)
+    public override void WriteTo(INetStreamWriter writer)
     {
-        base.WriteTo(stream);
+        base.WriteTo(writer);
 
-        stream.WriteUnsignedByte((byte)Flags);
-    }
-
-    public override async Task WriteToAsync(MinecraftStream stream)
-    {
-        await base.WriteToAsync(stream);
-
-        await stream.WriteUnsignedByteAsync((byte)Flags);
+        writer.WriteByte((byte)Flags);
     }
 }

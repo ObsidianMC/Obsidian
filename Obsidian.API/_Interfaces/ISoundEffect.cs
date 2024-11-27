@@ -1,28 +1,12 @@
 ﻿namespace Obsidian.API;
 public interface ISoundEffect
 {
-    public SoundId SoundId { get; init; }
-
-    /// <summary>
-    /// The name of the sound you want to use.
-    /// </summary>
-    /// <remarks>
-    /// Present if <see cref="SoundId"/> is <see cref="SoundId.None"/>.
-    /// </remarks>
-    public string? SoundName { get; init; }
-
-    /// <remarks>
-    /// Present if <see cref="SoundName"/> has a value.
-    /// </remarks>
-    public bool HasFixedRange { get; init; }
+    public string SoundId { get; init; }
 
     /// <summary>
     /// The fixed range of the sound.
     /// </summary>
-    /// <remarks>
-    /// Has value if <see cref="HasFixedRange"/> is true.
-    /// </remarks>
-    public float Range { get; init; }
+    public float? FixedRange { get; init; }
 
     /// <summary>
     /// The category that this sound will be played from.

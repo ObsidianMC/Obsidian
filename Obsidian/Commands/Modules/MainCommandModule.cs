@@ -351,7 +351,7 @@ public sealed class MainCommandModule : CommandModuleBase
             while (true)
             {
                 frogge.SetHeadRotation(new Angle((byte)(Random.Shared.Next(1, 255))));
-                frogge.SetRotation(new Angle((byte)(Random.Shared.Next(1, 255))), new Angle((byte)(Random.Shared.Next(1, 255))), false);
+                frogge.SetRotation(new Angle((byte)(Random.Shared.Next(1, 255))), new Angle((byte)(Random.Shared.Next(1, 255))), MovementFlags.None);
 
                 await Task.Delay(15);
             }

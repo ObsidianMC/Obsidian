@@ -4,7 +4,7 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
-public partial class PlayerCommandPacket : IServerboundPacket
+public partial class PlayerCommandPacket
 {
     [Field(0), VarLength]
     public int EntityId { get; private set; }
@@ -15,10 +15,14 @@ public partial class PlayerCommandPacket : IServerboundPacket
     [Field(2), VarLength]
     public int JumpBoost { get; set; }
 
-    public int Id => 0x25;
+    public override void Populate(INetStreamReader reader)
+    {
+        this.EntityId = reader.ReadVarInt();
+        this.Action = reader.ReadVarInt<EAction>();
+        this.JumpBoost = reader.ReadVarInt();
+    }
 
-    public ValueTask HandleAsync(Client client) => default;
-    public async ValueTask HandleAsync(Server server, Player player)
+    public async override ValueTask HandleAsync(Server server, Player player)
     {
         var block = await player.world.GetBlockAsync((int)player.Position.X, (int)player.HeadY, (int)player.Position.Z);
 
@@ -58,7 +62,7 @@ public partial class PlayerCommandPacket : IServerboundPacket
                 break;
         }
 
-        player.PacketBroadcaster.QueuePacketToWorld(player.World, new SetEntityMetadataPacket
+        player.PacketBroadcaster.QueuePacketToWorld(player.World, new SetEntityDataPacket
         {
             EntityId = player.EntityId,
             Entity = player

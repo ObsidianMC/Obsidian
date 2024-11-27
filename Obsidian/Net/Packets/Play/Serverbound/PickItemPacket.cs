@@ -1,15 +1,14 @@
-﻿using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
+﻿using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
-public partial class PickItemPacket : IServerboundPacket
+public partial class PickItemPacket
 {
     [Field(0), VarLength]
     public int SlotToUse { get; private set; }
 
-    public int Id => 0x20;
-
-    public ValueTask HandleAsync(Client client) => default;
-    public ValueTask HandleAsync(Server server, Player player) => default;
+    public override void Populate(INetStreamReader reader)
+    {
+        this.SlotToUse = reader.ReadVarInt();
+    }
 }

@@ -6,7 +6,7 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
-public partial class UseItemOnPacket : IServerboundPacket
+public partial class UseItemOnPacket
 {
     [Field(0), ActualType(typeof(int)), VarLength]
     public Hand Hand { get; private set; } // Hand it was placed from. 0 = Main, 1 = Off
@@ -23,13 +23,24 @@ public partial class UseItemOnPacket : IServerboundPacket
     [Field(6)]
     public bool InsideBlock { get; private set; }
 
-    [Field(7), VarLength]
+    [Field(7)]
+    public bool IsWorldBorderHit { get; private set; }
+
+    [Field(8), VarLength]
     public int Sequence { get; private set; }
 
-    public int Id => 0x38;
+    public override void Populate(INetStreamReader reader)
+    {
+        this.Hand = reader.ReadVarInt<Hand>();
+        this.Position = reader.ReadPosition();
+        this.Face = reader.ReadVarInt<BlockFace>();
+        this.Cursor = reader.ReadAbsoluteFloatPositionF();
+        this.InsideBlock = reader.ReadBoolean();
+        this.IsWorldBorderHit = reader.ReadBoolean();
+        this.Sequence = reader.ReadVarInt();
+    }
 
-    public ValueTask HandleAsync(Client client) => default;
-    public async ValueTask HandleAsync(Server server, Player player)
+    public async override ValueTask HandleAsync(Server server, Player player)
     {
         //Get main hand first return offhand if null
         var currentItem = player.GetHeldItem() ?? player.GetOffHandItem();
@@ -117,7 +128,7 @@ public partial class UseItemOnPacket : IServerboundPacket
                 (TagsRegistry.Block.ReplaceableByLiquid.Entries.Contains(below.RegistryId) || below.IsLiquid))
             {
                 await player.world.SetBlockAsync(position, BlocksRegistry.Air, true);
-                player.client.SendPacket(new AcknowledgeBlockChangePacket
+                player.client.SendPacket(new BlockChangedAckPacket
                 {
                     SequenceID = Sequence
                 });
@@ -127,7 +138,7 @@ public partial class UseItemOnPacket : IServerboundPacket
         }
 
         await player.world.SetBlockAsync(position, block, doBlockUpdate: true);
-        player.client.SendPacket(new AcknowledgeBlockChangePacket
+        player.client.SendPacket(new BlockChangedAckPacket
         {
             SequenceID = Sequence
         });

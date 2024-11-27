@@ -10,7 +10,6 @@ using Obsidian.API.Utilities;
 using Obsidian.Nbt;
 using Obsidian.Registries;
 using System.Reflection;
-using System.Text.Json;
 
 namespace Obsidian.Utilities;
 
@@ -19,7 +18,7 @@ public partial class Extensions
 {
     public static NbtCompound ToNbt(this ItemStack? value)
     {
-        value ??= new ItemStack(0, 0) { Present = true };
+        value ??= new ItemStack(0, 0);
 
         var item = value.AsItem();
 

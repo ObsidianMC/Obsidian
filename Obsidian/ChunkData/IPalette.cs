@@ -15,7 +15,5 @@ public interface IPalette<T>
 
     public IPalette<T> Clone();
 
-    public void WriteTo(MinecraftStream stream);
-    public Task WriteToAsync(MinecraftStream stream);
-    public Task ReadFromAsync(MinecraftStream stream);
+    public void WriteTo(INetStreamWriter writer);
 }

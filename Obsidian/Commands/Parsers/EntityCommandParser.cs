@@ -1,6 +1,4 @@
-﻿using Obsidian.Net;
-
-namespace Obsidian.Commands.Parsers;
+﻿namespace Obsidian.Commands.Parsers;
 
 public class EntityCommandParser : CommandParser
 {
@@ -11,18 +9,11 @@ public class EntityCommandParser : CommandParser
         this.Mask = mask;
     }
 
-    public override async Task WriteAsync(MinecraftStream stream)
+    public override void Write(INetStreamWriter writer)
     {
-        await base.WriteAsync(stream);
+        base.Write(writer);
 
-        await stream.WriteByteAsync((sbyte)this.Mask);
-    }
-
-    public override void Write(MinecraftStream stream)
-    {
-        base.Write(stream);
-
-        stream.WriteByte((sbyte)this.Mask);
+        writer.WriteByte((sbyte)this.Mask);
     }
 }
 

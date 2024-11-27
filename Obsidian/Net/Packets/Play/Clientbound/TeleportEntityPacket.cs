@@ -2,7 +2,7 @@
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class TeleportEntityPacket : IClientboundPacket
+public partial class TeleportEntityPacket
 {
     [Field(0), VarLength]
     public int EntityId { get; init; }
@@ -16,8 +16,23 @@ public partial class TeleportEntityPacket : IClientboundPacket
     [Field(3)]
     public Angle Pitch { get; init; }
 
-    [Field(4)]
+    [Field(5)]
+    public PositionFlags Flags { get; init; } = PositionFlags.X | PositionFlags.Y | PositionFlags.Z;
+
+    [Field(6)]
     public bool OnGround { get; init; }
 
-    public int Id => 0x70;
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteVarInt(this.EntityId);
+
+        writer.WriteAbsolutePositionF(this.Position);
+
+        writer.WriteFloat(this.Yaw);
+        writer.WriteFloat(this.Pitch);
+
+        writer.WriteInt(this.Flags);
+
+        writer.WriteBoolean(this.OnGround);
+    }
 }

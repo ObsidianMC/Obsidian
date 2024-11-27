@@ -33,6 +33,7 @@ public sealed partial class RegistryAssetsGenerator : IIncrementalGenerator
         else if (assembly == "Obsidian.API")
         {
             GenerateMaterials(assets, context);
+            GenerateSounds(assets, context);
         }
     }
 }

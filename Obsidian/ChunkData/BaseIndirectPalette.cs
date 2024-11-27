@@ -80,35 +80,14 @@ public abstract class BaseIndirectPalette<T> : IPalette<T>
         throw new NotSupportedException();
     }
 
-    public async Task ReadFromAsync(MinecraftStream stream)
+    public void WriteTo(INetStreamWriter writer)
     {
-        var length = await stream.ReadVarIntAsync();
-
-        for (int i = 0; i < length; i++)
-        {
-            int id = await stream.ReadVarIntAsync();
-
-            Values[i] = id;
-            Count++;
-        }
-    }
-
-    public async Task WriteToAsync(MinecraftStream stream)
-    {
-        await stream.WriteVarIntAsync(Count);
-
-        for (int i = 0; i < Count; ++i)
-            await stream.WriteVarIntAsync(Values[i]);
-    }
-
-    public void WriteTo(MinecraftStream stream)
-    {
-        stream.WriteVarInt(Count);
+        writer.WriteVarInt(Count);
 
         ReadOnlySpan<int> values = GetSpan();
 
         for (int i = 0; i < values.Length; ++i)
-            stream.WriteVarInt(values[i]);
+            writer.WriteVarInt(values[i]);
     }
 
     protected ReadOnlySpan<int> GetSpan()

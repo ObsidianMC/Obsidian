@@ -50,7 +50,7 @@ public class Entity : IEquatable<Entity>, IEntity
     public bool CustomNameVisible { get; set; }
     public bool Silent { get; set; }
     public bool NoGravity { get; set; }
-    public bool OnGround { get; set; }
+    public MovementFlags MovementFlags { get; set; }
     public bool Sneaking { get; set; }
     public bool Sprinting { get; set; }
     public bool CanBeSeen { get; set; }//What does this do???
@@ -68,7 +68,7 @@ public class Entity : IEquatable<Entity>, IEntity
     public IGoalController? GoalController { get; set; }
 
     #region Update methods
-    internal virtual async ValueTask UpdateAsync(VectorF position, bool onGround)
+    internal virtual async ValueTask UpdateAsync(VectorF position, MovementFlags movementFlags)
     {
         var isNewLocation = position != Position;
 
@@ -76,20 +76,20 @@ public class Entity : IEquatable<Entity>, IEntity
         {
             var delta = (Vector)((position * 32 - Position * 32) * 128);
 
-            this.PacketBroadcaster.BroadcastToWorldInRange(this.World, position, new UpdateEntityPositionPacket
+            this.PacketBroadcaster.BroadcastToWorldInRange(this.World, position, new MoveEntityPosPacket
             {
                 EntityId = EntityId,
 
                 Delta = delta,
 
-                OnGround = onGround
+                OnGround = movementFlags.HasFlag(MovementFlags.OnGround)
             }, EntityId);
         }
 
-        await UpdatePositionAsync(position, onGround);
+        await UpdatePositionAsync(position, movementFlags);
     }
 
-    internal virtual async ValueTask UpdateAsync(VectorF position, Angle yaw, Angle pitch, bool onGround)
+    internal virtual async ValueTask UpdateAsync(VectorF position, Angle yaw, Angle pitch, MovementFlags movementFlags)
     {
         var isNewLocation = position != Position;
         var isNewRotation = yaw != Yaw || pitch != Pitch;
@@ -100,7 +100,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
             if (isNewRotation)
             {
-                this.PacketBroadcaster.BroadcastToWorldInRange(this.World, position, new UpdateEntityPositionAndRotationPacket
+                this.PacketBroadcaster.BroadcastToWorldInRange(this.World, position, new MoveEntityPosRotPacket
                 {
                     EntityId = EntityId,
 
@@ -109,34 +109,34 @@ public class Entity : IEquatable<Entity>, IEntity
                     Yaw = yaw,
                     Pitch = pitch,
 
-                    OnGround = onGround
+                    OnGround = movementFlags.HasFlag(MovementFlags.OnGround)
                 }, EntityId);
 
                 this.SetHeadRotation(yaw);
             }
             else
             {
-                this.PacketBroadcaster.BroadcastToWorldInRange(this.World, position, new UpdateEntityPositionPacket
+                this.PacketBroadcaster.BroadcastToWorldInRange(this.World, position, new MoveEntityPosPacket
                 {
                     EntityId = EntityId,
 
                     Delta = delta,
 
-                    OnGround = onGround
+                    OnGround = movementFlags.HasFlag(MovementFlags.OnGround)
                 }, EntityId);
             }
         }
 
-        await UpdatePositionAsync(position, yaw, pitch, onGround);
+        await UpdatePositionAsync(position, yaw, pitch, movementFlags);
     }
 
-    internal virtual ValueTask UpdateAsync(Angle yaw, Angle pitch, bool onGround)
+    internal virtual ValueTask UpdateAsync(Angle yaw, Angle pitch, MovementFlags movementFlags)
     {
         var isNewRotation = yaw != Yaw || pitch != Pitch;
 
         if (isNewRotation)
         {
-            this.SetRotation(yaw, pitch, onGround);
+            this.SetRotation(yaw, pitch, movementFlags);
             this.SetHeadRotation(yaw);
         }
 
@@ -157,26 +157,26 @@ public class Entity : IEquatable<Entity>, IEntity
 
 
     public void SetHeadRotation(Angle headYaw) =>
-        this.PacketBroadcaster.BroadcastToWorldInRange(this.World, this.Position, new SetHeadRotationPacket
+        this.PacketBroadcaster.BroadcastToWorldInRange(this.World, this.Position, new RotateHeadPacket
         {
             EntityId = EntityId,
             HeadYaw = headYaw
         }, EntityId);
 
-    public void SetRotation(Angle yaw, Angle pitch, bool onGround = true)
+    public void SetRotation(Angle yaw, Angle pitch, MovementFlags movementFlags)
     {
-        this.PacketBroadcaster.BroadcastToWorldInRange(this.World, this.Position, new UpdateEntityRotationPacket
+        this.PacketBroadcaster.BroadcastToWorldInRange(this.World, this.Position, new MoveEntityRotPacket
         {
             EntityId = EntityId,
-            OnGround = onGround,
+            OnGround = movementFlags.HasFlag(MovementFlags.OnGround),
             Yaw = yaw,
             Pitch = pitch
         }, EntityId);
 
-        this.UpdatePosition(yaw, pitch, onGround);
+        this.UpdatePosition(yaw, pitch, movementFlags);
     }
 
-    public async Task UpdatePositionAsync(VectorF pos, bool onGround = true)
+    public async Task UpdatePositionAsync(VectorF pos, MovementFlags movementFlags)
     {
         var (x, z) = pos.ToChunkCoord();
         var chunk = await world.GetChunkAsync(x, z, false);
@@ -185,13 +185,13 @@ public class Entity : IEquatable<Entity>, IEntity
             Position = pos;
         }
 
-        OnGround = onGround;
+        MovementFlags = movementFlags;
 
         if (Dimension != EntityDimension.Zero)
             BoundingBox = Dimension.CreateBBFromPosition(pos);
     }
 
-    public async Task UpdatePositionAsync(VectorF pos, Angle yaw, Angle pitch, bool onGround = true)
+    public async Task UpdatePositionAsync(VectorF pos, Angle yaw, Angle pitch, MovementFlags movementFlags = MovementFlags.OnGround)
     {
         var (x, z) = pos.ToChunkCoord();
         var chunk = await world.GetChunkAsync(x, z, false);
@@ -202,17 +202,17 @@ public class Entity : IEquatable<Entity>, IEntity
 
         Yaw = yaw;
         Pitch = pitch;
-        OnGround = onGround;
+        MovementFlags = movementFlags;
 
         if (Dimension != EntityDimension.Zero)
             BoundingBox = Dimension.CreateBBFromPosition(pos);
     }
 
-    public void UpdatePosition(Angle yaw, Angle pitch, bool onGround = true)
+    public void UpdatePosition(Angle yaw, Angle pitch, MovementFlags movementFlags = MovementFlags.OnGround)
     {
         Yaw = yaw;
         Pitch = pitch;
-        OnGround = onGround;
+        MovementFlags = movementFlags;
     }
     #endregion
 
@@ -274,34 +274,34 @@ public class Entity : IEquatable<Entity>, IEntity
         await stream.WriteEntityMetdata(7, EntityMetadataType.VarInt, PowderedSnowTicks);
     }
 
-    public virtual void Write(MinecraftStream stream)
+    public virtual void Write(INetStreamWriter writer)
     {
-        stream.WriteEntityMetadataType(0, EntityMetadataType.Byte);
+        writer.WriteEntityMetadataType(0, EntityMetadataType.Byte);
 
-        stream.WriteUnsignedByte((byte)GenerateBitmask());
+        writer.WriteByte((byte)GenerateBitmask());
 
-        stream.WriteEntityMetadataType(1, EntityMetadataType.VarInt);
-        stream.WriteVarInt(Air);
+        writer.WriteEntityMetadataType(1, EntityMetadataType.VarInt);
+        writer.WriteVarInt(Air);
 
-        stream.WriteEntityMetadataType(2, EntityMetadataType.OptionalTextComponent);
-        stream.WriteBoolean(CustomName is not null);
+        writer.WriteEntityMetadataType(2, EntityMetadataType.OptionalTextComponent);
+        writer.WriteBoolean(CustomName is not null);
         if (CustomName is not null)
-            stream.WriteChat(CustomName);
+            writer.WriteChat(CustomName);
 
-        stream.WriteEntityMetadataType(3, EntityMetadataType.Boolean);
-        stream.WriteBoolean(CustomNameVisible);
+        writer.WriteEntityMetadataType(3, EntityMetadataType.Boolean);
+        writer.WriteBoolean(CustomNameVisible);
 
-        stream.WriteEntityMetadataType(4, EntityMetadataType.Boolean);
-        stream.WriteBoolean(Silent);
+        writer.WriteEntityMetadataType(4, EntityMetadataType.Boolean);
+        writer.WriteBoolean(Silent);
 
-        stream.WriteEntityMetadataType(5, EntityMetadataType.Boolean);
-        stream.WriteBoolean(NoGravity);
+        writer.WriteEntityMetadataType(5, EntityMetadataType.Boolean);
+        writer.WriteBoolean(NoGravity);
 
-        stream.WriteEntityMetadataType(6, EntityMetadataType.Pose);
-        stream.WriteVarInt((int)this.Pose);
+        writer.WriteEntityMetadataType(6, EntityMetadataType.Pose);
+        writer.WriteVarInt((int)this.Pose);
 
-        stream.WriteEntityMetadataType(7, EntityMetadataType.VarInt);
-        stream.WriteVarInt(PowderedSnowTicks);
+        writer.WriteEntityMetadataType(7, EntityMetadataType.VarInt);
+        writer.WriteVarInt(PowderedSnowTicks);
     }
 
     public IEnumerable<IEntity> GetEntitiesNear(float distance) => world.GetEntitiesInRange(Position, distance).Where(x => x != this);
@@ -316,7 +316,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
         if (this is ILiving living)
         {
-            this.PacketBroadcaster.QueuePacketToWorld(this.World, new EntityAnimationPacket
+            this.PacketBroadcaster.QueuePacketToWorld(this.World, new AnimatePacket
             {
                 EntityId = EntityId,
                 Animation = EntityAnimationType.CriticalEffect
@@ -389,7 +389,7 @@ public class Entity : IEquatable<Entity>, IEntity
             this.PacketBroadcaster.QueuePacketToWorld(this.World, 0, new TeleportEntityPacket
             {
                 EntityId = EntityId,
-                OnGround = OnGround,
+                OnGround = MovementFlags.HasFlag(MovementFlags.OnGround),
                 Position = pos,
                 Pitch = Pitch,
                 Yaw = Yaw
@@ -400,11 +400,11 @@ public class Entity : IEquatable<Entity>, IEntity
 
         var delta = (Vector)(pos * 32 - Position * 32) * 128;
 
-        this.PacketBroadcaster.QueuePacketToWorld(this.World, 0, new UpdateEntityPositionAndRotationPacket
+        this.PacketBroadcaster.QueuePacketToWorld(this.World, 0, new MoveEntityPosRotPacket
         {
             EntityId = EntityId,
             Delta = delta,
-            OnGround = OnGround,
+            OnGround = MovementFlags.HasFlag(MovementFlags.OnGround),
             Pitch = Pitch,
             Yaw = Yaw
         });
@@ -417,7 +417,7 @@ public class Entity : IEquatable<Entity>, IEntity
         this.PacketBroadcaster.QueuePacketToWorldInRange(this.World, this.Position, new BundledPacket
         {
             Packets = [
-                        new SpawnEntityPacket
+                        new AddEntityPacket
                         {
                             EntityId = this.EntityId,
                             Uuid = this.Uuid,
@@ -428,7 +428,7 @@ public class Entity : IEquatable<Entity>, IEntity
                             Data = additionalData,
                             Velocity = velocity ?? new Velocity(0, 0, 0)
                         },
-                        new SetEntityMetadataPacket
+                        new SetEntityDataPacket
                         {
                             EntityId = this.EntityId,
                             Entity = this

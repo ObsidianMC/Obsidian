@@ -2,18 +2,17 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class SetDefaultSpawnPositionPacket : IClientboundPacket
+public partial class SetDefaultSpawnPositionPacket(VectorF position, Angle angle)
 {
     [Field(0)]
-    public VectorF Position { get; }
+    public VectorF Position { get; } = position;
 
     [Field(1), DataFormat(typeof(float))]
-    public Angle Angle { get; set; }
+    public Angle Angle { get; set; } = angle;
 
-    public int Id => 0x56;
-
-    public SetDefaultSpawnPositionPacket(VectorF position)
+    public override void Serialize(INetStreamWriter writer)
     {
-        Position = position;
+        writer.WritePositionF(this.Position);
+        writer.WriteFloat(this.Angle);
     }
 }

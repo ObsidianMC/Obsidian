@@ -19,8 +19,7 @@ public partial class RegistryAssetsGenerator
         foreach (var childTags in tags)
         {
             builder.Type($"public static class {childTags.Key.ToPascalCase()}");
-            builder.Line($"public static Tag[] All = new[] {{ {string.Join(", ", childTags.Value.Select(tag => tag.CompileName()))} }};");
-
+           
             //Workaround for flat_level_generator_preset will change this up another time
             foreach (var groupedTags in childTags.Value.GroupBy(x => x.Type).Where(x => x.Count() > 1 || x.Key == "flat_level_generator_preset"))
             {
@@ -28,7 +27,7 @@ public partial class RegistryAssetsGenerator
                     continue;
 
                 builder.Type($"public static class {groupedTags.Key.ToPascalCase()}");
-                builder.Line($"public static Tag[] All = new[] {{ {string.Join(", ", groupedTags.Select(tag => tag.Name))} }};");
+                builder.Line($"public static Tag[] All {{ get; }} = new[] {{ {string.Join(", ", groupedTags.Select(tag => tag.Name))} }};");
 
                 skip.Add(groupedTags.Key);
 
@@ -47,11 +46,14 @@ public partial class RegistryAssetsGenerator
 
                 builder.Line($"public static Tag {tag.Name} {{ get; }} = new Tag {{ Name = \"{tag.MinecraftName}\", Type = \"{tag.Type}\", Entries = new int[] {{ {string.Join(", ", tag.Values.Select(value => value.GetTagValue()))} }} }};");
             }
+
+            builder.Line($"public static Tag[] All {{ get; }} = new[] {{ {string.Join(", ", childTags.Value.Select(tag => tag.CompileName()))} }};");
+
             builder.EndScope();
         }
 
         builder.Line();
-        builder.Line($"public static Tag[] All = new[] {{ {string.Join(", ", assets.Tags.Select(tag => tag.CompileName(true)))} }};");
+       
         builder.Method($"public static Dictionary<string, Tag[]> Categories = new()");
         foreach (var tagItem in tags)
         {
@@ -67,6 +69,8 @@ public partial class RegistryAssetsGenerator
             builder.Line();
         }
         builder.Line().EndScope(true);
+
+        builder.Line($"public static Tag[] All {{ get; }} = new[] {{ {string.Join(", ", assets.Tags.Select(tag => tag.CompileName(true)))} }};");
 
         builder.EndScope();
 

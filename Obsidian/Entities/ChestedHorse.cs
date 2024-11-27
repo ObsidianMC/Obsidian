@@ -1,24 +1,15 @@
-﻿using Obsidian.Net;
-
-namespace Obsidian.Entities;
+﻿namespace Obsidian.Entities;
 
 public class ChestedHorse : AbstractHorse
 {
     public bool HasChest { get; set; }
 
-    public override async Task WriteAsync(MinecraftStream stream)
+    public override void Write(INetStreamWriter writer)
     {
-        await base.WriteAsync(stream);
+        base.Write(writer);
 
-        await stream.WriteEntityMetdata(18, EntityMetadataType.Boolean, this.HasChest);
-    }
-
-    public override void Write(MinecraftStream stream)
-    {
-        base.Write(stream);
-
-        stream.WriteEntityMetadataType(18, EntityMetadataType.Boolean);
-        stream.WriteBoolean(HasChest);
+        writer.WriteEntityMetadataType(18, EntityMetadataType.Boolean);
+        writer.WriteBoolean(HasChest);
     }
 }
 
@@ -30,27 +21,18 @@ public class Llama : ChestedHorse
 
     public LlamaVariant Variant { get; set; }
 
-    public override async Task WriteAsync(MinecraftStream stream)
+    public override void Write(INetStreamWriter writer)
     {
-        await base.WriteAsync(stream);
+        base.Write(writer);
 
-        await stream.WriteEntityMetdata(19, EntityMetadataType.VarInt, this.Strength);
-        await stream.WriteEntityMetdata(20, EntityMetadataType.VarInt, this.CarpetColor);
-        await stream.WriteEntityMetdata(21, EntityMetadataType.VarInt, this.Variant);
-    }
+        writer.WriteEntityMetadataType(19, EntityMetadataType.VarInt);
+        writer.WriteVarInt(Strength);
 
-    public override void Write(MinecraftStream stream)
-    {
-        base.Write(stream);
+        writer.WriteEntityMetadataType(20, EntityMetadataType.VarInt);
+        writer.WriteVarInt(CarpetColor);
 
-        stream.WriteEntityMetadataType(19, EntityMetadataType.VarInt);
-        stream.WriteVarInt(Strength);
-
-        stream.WriteEntityMetadataType(20, EntityMetadataType.VarInt);
-        stream.WriteVarInt(CarpetColor);
-
-        stream.WriteEntityMetadataType(21, EntityMetadataType.VarInt);
-        stream.WriteVarInt(Variant);
+        writer.WriteEntityMetadataType(21, EntityMetadataType.VarInt);
+        writer.WriteVarInt(Variant);
     }
 }
 

@@ -1,19 +1,12 @@
 ﻿namespace Obsidian.Net.Actions.PlayerInfo;
 
-public class UpdatePingInfoAction : InfoAction
+public class UpdatePingInfoAction(int ping) : InfoAction
 {
     public override PlayerInfoAction Type => PlayerInfoAction.UpdateLatency;
-    public int Ping { get; set; }
+    public int Ping { get; set; } = ping;
 
-    public UpdatePingInfoAction(int ping) => this.Ping = ping;
-
-    public override async Task WriteAsync(MinecraftStream stream)
+    public override void Write(INetStreamWriter writer)
     {
-        await stream.WriteVarIntAsync(this.Ping);
-    }
-
-    public override void Write(MinecraftStream stream)
-    {
-        stream.WriteVarInt(Ping);
+        writer.WriteVarInt(Ping);
     }
 }

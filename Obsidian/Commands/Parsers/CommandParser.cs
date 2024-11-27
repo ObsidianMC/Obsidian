@@ -1,6 +1,4 @@
-﻿using Obsidian.Net;
-
-namespace Obsidian.Commands;
+﻿namespace Obsidian.Commands;
 
 public class CommandParser
 {
@@ -13,8 +11,7 @@ public class CommandParser
         this.Identifier = identifier ?? throw new ArgumentNullException(nameof(identifier));
     }
 
-    public virtual Task WriteAsync(MinecraftStream stream) => stream.WriteVarIntAsync(this.Id);
-    public virtual void Write(MinecraftStream stream) => stream.WriteVarInt(this.Id);
+    public virtual void Write(INetStreamWriter writer) => writer.WriteVarInt(this.Id);
 
     public override string ToString() => Identifier;
 }

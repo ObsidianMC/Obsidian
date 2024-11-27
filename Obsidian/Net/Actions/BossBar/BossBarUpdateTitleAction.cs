@@ -2,21 +2,14 @@
 
 public sealed class BossBarUpdateTitleAction : BossBarAction
 {
-    public ChatMessage Title { get; set; }
+    public required ChatMessage Title { get; set; }
 
     public BossBarUpdateTitleAction() : base(3) { }
 
-    public override void WriteTo(MinecraftStream stream)
+    public override void WriteTo(INetStreamWriter writer)
     {
-        base.WriteTo(stream);
+        base.WriteTo(writer);
 
-        stream.WriteChat(Title);
-    }
-
-    public override async Task WriteToAsync(MinecraftStream stream)
-    {
-        await base.WriteToAsync(stream);
-
-        await stream.WriteChatAsync(Title);
+        writer.WriteChat(Title);
     }
 }

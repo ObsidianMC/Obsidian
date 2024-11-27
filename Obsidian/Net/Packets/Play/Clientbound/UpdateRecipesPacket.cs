@@ -4,17 +4,17 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class UpdateRecipesPacket : IClientboundPacket
+public partial class UpdateRecipesPacket(IDictionary<string, IRecipe> recipes)
 {
     [Field(0)]
-    public IDictionary<string, IRecipe> Recipes { get; }
-
-    public int Id => 0x77;
+    public IDictionary<string, IRecipe> Recipes { get; } = recipes;
 
     public static readonly UpdateRecipesPacket FromRegistry = new(RecipesRegistry.Recipes);
 
-    public UpdateRecipesPacket(IDictionary<string, IRecipe> recipes)
+    public override void Serialize(INetStreamWriter writer)
     {
-        Recipes = recipes;
+        writer.WriteVarInt(Recipes.Count);
+        foreach (var (name, recipe) in Recipes)
+            writer.WriteRecipe(name, recipe);
     }
 }

@@ -65,7 +65,7 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
         return Palette.GetValueFromIndex(storageId);
     }
 
-    public override async Task WriteToAsync(MinecraftStream stream)
+    public override void WriteTo(INetStreamWriter writer)
     {
 #if CACHE_VALID_BLOCKS
         var validBlocks = validBlockCount.GetValue();
@@ -73,30 +73,13 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
         var validBlocks = GetNonAirBlocks();
 #endif
 
-        await stream.WriteShortAsync(validBlocks);
-        await stream.WriteUnsignedByteAsync(BitsPerEntry);
+        writer.WriteShort(validBlocks);
+        writer.WriteByte(BitsPerEntry);
 
-        await Palette.WriteToAsync(stream);
+        Palette.WriteTo(writer);
 
-        await stream.WriteVarIntAsync(DataArray.storage.Length);
-        await stream.WriteLongArrayAsync(DataArray.storage);
-    }
-
-    public override void WriteTo(MinecraftStream stream)
-    {
-#if CACHE_VALID_BLOCKS
-        var validBlocks = validBlockCount.GetValue();
-#else
-        var validBlocks = GetNonAirBlocks();
-#endif
-
-        stream.WriteShort(validBlocks);
-        stream.WriteUnsignedByte(BitsPerEntry);
-
-        Palette.WriteTo(stream);
-
-        stream.WriteVarInt(DataArray.storage.Length);
-        stream.WriteLongArray(DataArray.storage);
+        writer.WriteVarInt(DataArray.storage.Length);
+        writer.WriteLongArray(DataArray.storage);
     }
 
     public void Fill(IBlock block)

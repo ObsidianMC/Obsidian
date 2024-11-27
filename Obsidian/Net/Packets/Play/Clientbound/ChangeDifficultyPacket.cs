@@ -3,18 +3,17 @@ using Obsidian.WorldData;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class ChangeDifficultyPacket : IClientboundPacket
+public partial class ChangeDifficultyPacket(Difficulty difficulty)
 {
     [Field(0), ActualType(typeof(byte))]
-    public Difficulty Difficulty { get; }
+    public Difficulty Difficulty { get; } = difficulty;
 
     [Field(1)]
     public bool DifficultyLocked { get; init; }
 
-    public int Id => 0x0B;
-
-    public ChangeDifficultyPacket(Difficulty difficulty)
+    public override void Serialize(INetStreamWriter writer)
     {
-        Difficulty = difficulty;
+        writer.WriteByte((sbyte)this.Difficulty);
+        writer.WriteBoolean(this.DifficultyLocked);
     }
 }

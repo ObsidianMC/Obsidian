@@ -1,4 +1,4 @@
-﻿namespace Obsidian.Items;
+﻿namespace Obsidian.API.Inventory;
 
 public enum ItemType
 {

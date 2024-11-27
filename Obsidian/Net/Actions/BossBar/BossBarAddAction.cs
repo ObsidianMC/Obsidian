@@ -4,7 +4,7 @@ namespace Obsidian.Net.Actions.BossBar;
 
 public sealed class BossBarAddAction : BossBarAction
 {
-    public ChatMessage Title { get; set; }
+    public required ChatMessage Title { get; set; }
 
     public float Health { get; set; }
 
@@ -16,24 +16,14 @@ public sealed class BossBarAddAction : BossBarAction
 
     public BossBarAddAction() : base(0) { }
 
-    public override void WriteTo(MinecraftStream stream)
+    public override void WriteTo(INetStreamWriter writer)
     {
-        base.WriteTo(stream);
+        base.WriteTo(writer);
 
-        stream.WriteChat(Title);
-        stream.WriteFloat(Health);
-        stream.WriteVarInt(Color);
-        stream.WriteVarInt(Division);
-        stream.WriteUnsignedByte((byte)Flags);
-    }
-    public override async Task WriteToAsync(MinecraftStream stream)
-    {
-        await base.WriteToAsync(stream);
-
-        await stream.WriteChatAsync(Title);
-        await stream.WriteFloatAsync(Health);
-        await stream.WriteVarIntAsync(Color);
-        await stream.WriteVarIntAsync(Division);
-        await stream.WriteUnsignedByteAsync((byte)Flags);
+        writer.WriteChat(Title);
+        writer.WriteFloat(Health);
+        writer.WriteVarInt(Color);
+        writer.WriteVarInt(Division);
+        writer.WriteByte((byte)Flags);
     }
 }

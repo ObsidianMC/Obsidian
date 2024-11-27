@@ -1,6 +1,4 @@
-﻿using Obsidian.Net;
-
-namespace Obsidian.Entities;
+﻿namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:pig")]
 public sealed partial class Pig : Animal
@@ -9,22 +7,14 @@ public sealed partial class Pig : Animal
 
     public int TotalTimeBoost { get; set; }
 
-    public override async Task WriteAsync(MinecraftStream stream)
+    public override void Write(INetStreamWriter writer)
     {
-        await base.WriteAsync(stream);
+        base.Write(writer);
 
-        await stream.WriteEntityMetdata(16, EntityMetadataType.Boolean, this.HasSaddle);
-        await stream.WriteEntityMetdata(17, EntityMetadataType.VarInt, this.TotalTimeBoost);
-    }
+        writer.WriteEntityMetadataType(16, EntityMetadataType.Boolean);
+        writer.WriteBoolean(HasSaddle);
 
-    public override void Write(MinecraftStream stream)
-    {
-        base.Write(stream);
-
-        stream.WriteEntityMetadataType(16, EntityMetadataType.Boolean);
-        stream.WriteBoolean(HasSaddle);
-
-        stream.WriteEntityMetadataType(17, EntityMetadataType.VarInt);
-        stream.WriteVarInt(TotalTimeBoost);
+        writer.WriteEntityMetadataType(17, EntityMetadataType.VarInt);
+        writer.WriteVarInt(TotalTimeBoost);
     }
 }

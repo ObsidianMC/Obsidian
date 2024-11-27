@@ -1,16 +1,12 @@
 ﻿namespace Obsidian.Net.Actions.PlayerInfo;
-public sealed class UpdateListedInfoAction : InfoAction
+public sealed class UpdateListedInfoAction(bool listed) : InfoAction
 {
     public override PlayerInfoAction Type => PlayerInfoAction.UpdateListed;
 
-    public bool Listed { get; init; }
+    public bool Listed { get; init; } = listed;
 
-    public UpdateListedInfoAction(bool listed) => this.Listed = listed;
-
-    public override void Write(MinecraftStream stream)
+    public override void Write(INetStreamWriter writer)
     {
-        stream.WriteBoolean(this.Listed);
+        writer.WriteBoolean(this.Listed);
     }
-
-    public override async Task WriteAsync(MinecraftStream stream) => await stream.WriteBooleanAsync(this.Listed);
 }

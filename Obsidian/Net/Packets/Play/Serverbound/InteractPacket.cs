@@ -4,7 +4,7 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
-public partial class InteractPacket : IServerboundPacket
+public partial class InteractPacket
 {
     [Field(0), VarLength]
     public int EntityId { get; private set; }
@@ -21,10 +21,21 @@ public partial class InteractPacket : IServerboundPacket
     [Field(4)]
     public bool Sneaking { get; private set; }
 
-    public int Id => 0x16;
+    public override void Populate(INetStreamReader reader)
+    {
+        this.EntityId = reader.ReadVarInt();
+        this.Type = reader.ReadVarInt<InteractionType>();
 
-    public ValueTask HandleAsync(Client client) => default;
-    public async ValueTask HandleAsync(Server server, Player player)
+        if (this.Type == InteractionType.InteractAt)
+            this.Target = reader.ReadAbsoluteFloatPositionF();
+
+        if (this.Type is InteractionType.Interact or InteractionType.InteractAt)
+            this.Hand = reader.ReadVarInt<Hand>();
+
+        this.Sneaking = reader.ReadBoolean();
+    }
+
+    public async override ValueTask HandleAsync(Server server, Player player)
     {
         var entity = player.GetEntitiesNear(4).FirstOrDefault(x => x.EntityId == EntityId); // TODO check if the entity is within range and in vision/not being blocked by a wall
 
