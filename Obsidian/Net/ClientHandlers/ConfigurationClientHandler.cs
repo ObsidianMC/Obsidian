@@ -1,8 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.Net.Packets;
-using Obsidian.Net.Packets.Configuration;
-using Obsidian.Net.Packets.Play;
-using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Net.Packets.Common;
 
 namespace Obsidian.Net.ClientHandlers;
 internal sealed class ConfigurationClientHandler : ClientHandler
@@ -13,20 +10,16 @@ internal sealed class ConfigurationClientHandler : ClientHandler
 
         switch (id)
         {
-            case 0x00:
-                return await this.HandleFromPoolAsync<ClientInformationPacket>(data);
-            case 0x01://Cookies
-                break;
-            case 0x02:
-                return await HandleFromPoolAsync<PluginMessagePacket>(data);
-            case 0x03:
-                return await HandleFromPoolAsync<FinishConfigurationPacket>(data);
-            case 0x04:
+            case 0:
+                return await HandleFromPoolAsync<ClientInformationPacket>(data);
+            case 1:
+                return await HandleFromPoolAsync<CustomPayloadPacket>(data);
+            case 3:
+                return await HandleFromPoolAsync<Packets.Configuration.Serverbound.FinishConfigurationPacket>(data);
+            case 4:
                 return await HandleFromPoolAsync<KeepAlivePacket>(data);
-            case 0x05://pong useless
-                break;
-            case 0x06:
-                return await HandleFromPoolAsync<ResourcePackResponse>(data);
+            case 6:
+                return await HandleFromPoolAsync<ResourcePackPacket>(data);
             default:
                 this.Client.Logger.LogWarning("Packet with id {id} is not being handled.", id);
                 break;

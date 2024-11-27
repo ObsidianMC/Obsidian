@@ -169,7 +169,7 @@ public sealed partial class Player : Living, IPlayer
     public ItemStack? GetHeldItem() => Inventory.GetItem(inventorySlot);
     public ItemStack? GetOffHandItem() => Inventory.GetItem(45);
 
-    public async Task DisplayScoreboardAsync(IScoreboard scoreboard, ScoreboardPosition position)//TODO implement new features
+    public async ValueTask DisplayScoreboardAsync(IScoreboard scoreboard, DisplaySlot slot)//TODO implement new features
     {
         var actualBoard = (Scoreboard)scoreboard;
 
@@ -178,7 +178,7 @@ public sealed partial class Player : Living, IPlayer
 
         CurrentScoreboard = actualBoard;
 
-        await client.QueuePacketAsync(new UpdateObjectivesPacket
+        await client.QueuePacketAsync(new SetObjectivePacket
         {
             ObjectiveName = actualBoard.name,
             Mode = ScoreboardMode.Create,
@@ -188,24 +188,22 @@ public sealed partial class Player : Living, IPlayer
 
         foreach (var (_, score) in actualBoard.scores)
         {
-            await client.QueuePacketAsync(new UpdateScorePacket
+            await client.QueuePacketAsync(new SetScorePacket
             {
                 EntityName = score.DisplayText,
                 ObjectiveName = actualBoard.name,
                 Value = score.Value,
-                HasDisplayName = false,
-                HasNumberFormat = false
             });
         }
 
-        await client.QueuePacketAsync(new DisplayObjectivePacket
+        await client.QueuePacketAsync(new SetDisplayObjectivePacket
         {
-            ScoreName = actualBoard.name,
-            Position = position
+            ObjectiveName = actualBoard.name,
+            DisplaySlot = slot
         });
     }
 
-    public async Task OpenInventoryAsync(BaseContainer container)
+    public async ValueTask OpenInventoryAsync(BaseContainer container)
     {
         OpenedContainer = container;
 
@@ -214,7 +212,7 @@ public sealed partial class Player : Living, IPlayer
         await client.QueuePacketAsync(new OpenScreenPacket(container, nextId));
 
         if (container.HasItems())
-            await client.QueuePacketAsync(new SetContainerContentPacket(nextId, container.ToList()));
+            await client.QueuePacketAsync(new ContainerSetContentPacket(nextId, container.ToList()));
     }
 
     public async override ValueTask TeleportAsync(VectorF pos)
@@ -234,7 +232,7 @@ public sealed partial class Player : Living, IPlayer
                 pos
             ));
 
-        await client.QueuePacketAsync(new SynchronizePlayerPositionPacket
+        await client.QueuePacketAsync(new PlayerPositionPacket
         {
             Position = pos,
             Flags = PositionFlags.None,
@@ -252,7 +250,7 @@ public sealed partial class Player : Living, IPlayer
 
         TeleportId = Globals.Random.Next(0, 999);
 
-        await client.QueuePacketAsync(new SynchronizePlayerPositionPacket
+        await client.QueuePacketAsync(new PlayerPositionPacket
         {
             Position = to.Position,
             Flags = PositionFlags.None,
@@ -282,55 +280,51 @@ public sealed partial class Player : Living, IPlayer
         // reload world stuff and send rest of the info
         await UpdateChunksAsync(true, 2);
 
-        await SendInitialInfoAsync();
+        await SendPlayerInfoAsync();
 
         var (chunkX, chunkZ) = Position.ToChunkCoord();
-        await client.QueuePacketAsync(new SetCenterChunkPacket(chunkX, chunkZ));
+        await client.QueuePacketAsync(new SetChunkCacheCenterPacket(chunkX, chunkZ));
     }
 
     public ValueTask SendMessageAsync(ChatMessage message, Guid sender, SecureMessageSignature messageSignature) =>
         throw new NotImplementedException();
 
     public ValueTask SendMessageAsync(ChatMessage message) =>
-        client.QueuePacketAsync(new SystemChatMessagePacket(message, false));
+        client.QueuePacketAsync(new SystemChatPacket(message, false));
 
     public ValueTask SetActionBarTextAsync(ChatMessage message) =>
-        client.QueuePacketAsync(new SystemChatMessagePacket(message, true));
+        client.QueuePacketAsync(new SystemChatPacket(message, true));
 
-    public async Task SendSoundAsync(ISoundEffect soundEffect)
+    public async ValueTask SendSoundAsync(ISoundEffect soundEffect)
     {
-        IClientboundPacket packet = soundEffect.SoundPosition is SoundPosition soundPosition ?
-            new SoundEffectPacket
+        ClientboundPacket packet = soundEffect.SoundPosition is SoundPosition soundPosition ?
+            new SoundPacket
             {
-                SoundId = soundEffect.SoundId,
+                SoundLocation = soundEffect.SoundId,
                 SoundPosition = soundPosition,
                 Category = soundEffect.SoundCategory,
                 Volume = soundEffect.Volume,
                 Pitch = soundEffect.Pitch,
                 Seed = soundEffect.Seed,
-                SoundName = soundEffect.SoundName,
-                HasFixedRange = soundEffect.HasFixedRange,
-                Range = soundEffect.Range
+                FixedRange = soundEffect.FixedRange
             }
             :
-            new EntitySoundEffectPacket
+            new SoundEntityPacket
             {
-                SoundId = soundEffect.SoundId,
+                SoundLocation = soundEffect.SoundId,
                 EntityId = soundEffect.EntityId!.Value,
                 Category = soundEffect.SoundCategory,
                 Volume = soundEffect.Volume,
                 Pitch = soundEffect.Pitch,
                 Seed = soundEffect.Seed,
-                SoundName = soundEffect.SoundName,
-                HasFixedRange = soundEffect.HasFixedRange,
-                Range = soundEffect.Range
+                FixedRange = soundEffect.FixedRange
             };
 
         await client.QueuePacketAsync(packet);
     }
 
-    public async Task KickAsync(string reason) => await client.DisconnectAsync(ChatMessage.Simple(reason));
-    public async Task KickAsync(ChatMessage reason) => await client.DisconnectAsync(reason);
+    public async ValueTask KickAsync(string reason) => await client.DisconnectAsync(reason);
+    public async ValueTask KickAsync(ChatMessage reason) => await client.DisconnectAsync(reason);
 
     public async Task RespawnAsync(DataKept dataKept = DataKept.Metadata)
     {
@@ -348,14 +342,17 @@ public sealed partial class Player : Living, IPlayer
 
         await client.QueuePacketAsync(new RespawnPacket
         {
-            DimensionType = codec.Name,
-            DimensionName = world.DimensionName,
-            Gamemode = Gamemode,
-            PreviousGamemode = Gamemode,
-            HashedSeed = 0,
-            IsFlat = false,
-            IsDebug = false,
-            DataKept = dataKept
+            CommonPlayerSpawnInfo = new()
+            {
+                DimensionType = codec.Id,
+                DimensionName = world.DimensionName,
+                Gamemode = Gamemode,
+                PreviousGamemode = Gamemode,
+                HashedSeed = 0,
+                Flat = false,
+                Debug = false,
+            },
+            DataKept = dataKept,
         });
 
         visiblePlayers.Clear();
@@ -365,7 +362,7 @@ public sealed partial class Player : Living, IPlayer
 
         await UpdateChunksAsync(true, 2);
 
-        await client.QueuePacketAsync(new SynchronizePlayerPositionPacket
+        await client.QueuePacketAsync(new PlayerPositionPacket
         {
             Position = Position,
             Yaw = 0,
@@ -395,55 +392,36 @@ public sealed partial class Player : Living, IPlayer
             attacker.visiblePlayers.Remove(this);
     }
 
-    public async override Task WriteAsync(MinecraftStream stream)
+    public override void Write(INetStreamWriter writer)
     {
-        await base.WriteAsync(stream);
+        base.Write(writer);
 
-        await stream.WriteEntityMetdata(15, EntityMetadataType.Float, AdditionalHearts);
+        writer.WriteEntityMetadataType(15, EntityMetadataType.Float);
+        writer.WriteFloat(AdditionalHearts);
 
-        await stream.WriteEntityMetdata(16, EntityMetadataType.VarInt, XpP);
+        writer.WriteEntityMetadataType(16, EntityMetadataType.VarInt);
+        writer.WriteVarInt(XpTotal);
 
-        await stream.WriteEntityMetdata(17, EntityMetadataType.Byte, (byte)ClientInformation.DisplayedSkinParts);
+        writer.WriteEntityMetadataType(17, EntityMetadataType.Byte);
+        writer.WriteByte((byte)ClientInformation.DisplayedSkinParts);
 
-        await stream.WriteEntityMetdata(18, EntityMetadataType.Byte, (byte)ClientInformation.MainHand);
-
-        if (LeftShoulder is not null)
-            await stream.WriteEntityMetdata(19, EntityMetadataType.Nbt, LeftShoulder);
-
-        if (RightShoulder is not null)
-            await stream.WriteEntityMetdata(20, EntityMetadataType.Nbt, RightShoulder);
-    }
-
-    public override void Write(MinecraftStream stream)
-    {
-        base.Write(stream);
-
-        stream.WriteEntityMetadataType(15, EntityMetadataType.Float);
-        stream.WriteFloat(AdditionalHearts);
-
-        stream.WriteEntityMetadataType(16, EntityMetadataType.VarInt);
-        stream.WriteVarInt(XpTotal);
-
-        stream.WriteEntityMetadataType(17, EntityMetadataType.Byte);
-        stream.WriteByte((byte)ClientInformation.DisplayedSkinParts);
-
-        stream.WriteEntityMetadataType(18, EntityMetadataType.Byte);
-        stream.WriteByte((byte)ClientInformation.MainHand);
+        writer.WriteEntityMetadataType(18, EntityMetadataType.Byte);
+        writer.WriteByte((byte)ClientInformation.MainHand);
 
         if (LeftShoulder is not null)
         {
-            stream.WriteEntityMetadataType(19, EntityMetadataType.Nbt);
-            stream.WriteNbtCompound(new NbtCompound());
+            writer.WriteEntityMetadataType(19, EntityMetadataType.Nbt);
+            ((MinecraftStream)writer).WriteNbtCompound(new NbtCompound());
         }
 
         if (RightShoulder is not null)
         {
-            stream.WriteEntityMetadataType(20, EntityMetadataType.Nbt);
-            stream.WriteNbtCompound(new NbtCompound());
+            writer.WriteEntityMetadataType(20, EntityMetadataType.Nbt);
+            ((MinecraftStream)writer).WriteNbtCompound(new NbtCompound());
         }
     }
 
-    public async Task SetGamemodeAsync(Gamemode gamemode)
+    public async ValueTask SetGamemodeAsync(Gamemode gamemode)
     {
         this.PacketBroadcaster.QueuePacketToWorld(this.World, new PlayerInfoUpdatePacket(CompilePlayerInfo(new UpdateGamemodeInfoAction(gamemode))));
 
@@ -452,23 +430,23 @@ public sealed partial class Player : Living, IPlayer
         Gamemode = gamemode;
     }
 
-    public Task UpdateDisplayNameAsync(string newDisplayName)
+    public ValueTask UpdateDisplayNameAsync(string newDisplayName)
     {
         this.PacketBroadcaster.QueuePacketToWorld(this.World, new PlayerInfoUpdatePacket(CompilePlayerInfo(new UpdateDisplayNameInfoAction(newDisplayName))));
 
         CustomName = newDisplayName;
 
-        return Task.CompletedTask;
+        return default;
     }
 
-    public async Task SendTitleAsync(ChatMessage title, int fadeIn, int stay, int fadeOut)
+    public async ValueTask SendTitleAsync(ChatMessage title, int fadeIn, int stay, int fadeOut)
     {
-        var titlePacket = new SetTitleTextPacket(TitleMode.SetTitle)
+        var titlePacket = new SetTitleTextPacket
         {
             Text = title
         };
 
-        var titleTimesPacket = new SetTitleAnimationTimesPacket
+        var titleTimesPacket = new SetTitlesAnimationPacket
         {
             FadeIn = fadeIn,
             FadeOut = fadeOut,
@@ -479,9 +457,9 @@ public sealed partial class Player : Living, IPlayer
         await client.QueuePacketAsync(titleTimesPacket);
     }
 
-    public async Task SendTitleAsync(ChatMessage title, ChatMessage subtitle, int fadeIn, int stay, int fadeOut)
+    public async ValueTask SendTitleAsync(ChatMessage title, ChatMessage subtitle, int fadeIn, int stay, int fadeOut)
     {
-        var titlePacket = new SetTitleTextPacket(TitleMode.SetSubtitle)
+        var titlePacket = new SetSubtitleTextPacket
         {
             Text = subtitle
         };
@@ -491,14 +469,14 @@ public sealed partial class Player : Living, IPlayer
         await SendTitleAsync(title, fadeIn, stay, fadeOut);
     }
 
-    public async Task SendSubtitleAsync(ChatMessage subtitle, int fadeIn, int stay, int fadeOut)
+    public async ValueTask SendSubtitleAsync(ChatMessage subtitle, int fadeIn, int stay, int fadeOut)
     {
-        var titlePacket = new SetTitleTextPacket(TitleMode.SetSubtitle)
+        var titlePacket = new SetSubtitleTextPacket
         {
             Text = subtitle
         };
 
-        var titleTimesPacket = new SetTitleAnimationTimesPacket
+        var titleTimesPacket = new SetTitlesAnimationPacket
         {
             FadeIn = fadeIn,
             FadeOut = fadeOut,
@@ -509,7 +487,7 @@ public sealed partial class Player : Living, IPlayer
         await client.QueuePacketAsync(titleTimesPacket);
     }
 
-    public async Task SendActionBarAsync(string text)
+    public async ValueTask SendActionBarAsync(string text)
     {
         var actionBarPacket = new SetActionBarTextPacket
         {
@@ -519,62 +497,8 @@ public sealed partial class Player : Living, IPlayer
         await client.QueuePacketAsync(actionBarPacket);
     }
 
-    public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count, float extra = 0) =>
-        SpawnParticleAsync(particle, new VectorF(x, y, z), count, extra);
-
-    public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count, float offsetX,
-        float offsetY, float offsetZ, float extra = 0) =>
-        SpawnParticleAsync(particle, new VectorF(x, y, z), count, offsetX, offsetY, offsetZ, extra);
-
-    public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float extra = 0) =>
-        await client.QueuePacketAsync(new ParticlePacket
-        {
-            Type = particle,
-            Position = pos,
-            ParticleCount = count,
-            MaxSpeed = extra
-        });
-
-    public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float offsetX, float offsetY,
-        float offsetZ, float extra = 0) => await client.QueuePacketAsync(
-        new ParticlePacket
-        {
-            Type = particle,
-            Position = pos,
-            ParticleCount = count,
-            Offset = new VectorF(offsetX, offsetY, offsetZ),
-            MaxSpeed = extra
-        });
-
-    public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count, ParticleData data,
-        float extra = 0) =>
-        SpawnParticleAsync(particle, new VectorF(x, y, z), count, extra);
-
-    public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count, float offsetX, float offsetY, float offsetZ, ParticleData data, float extra = 0) =>
-        SpawnParticleAsync(particle, new VectorF(x, y, z), count, offsetX, offsetY, offsetZ, extra);
-
-    public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, ParticleData data,
-        float extra = 0) =>
-        await client.QueuePacketAsync(new ParticlePacket
-        {
-            Type = particle,
-            Position = pos,
-            ParticleCount = count,
-            Data = data,
-            MaxSpeed = extra
-        });
-
-    public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float offsetX, float offsetY,
-        float offsetZ, ParticleData data, float extra = 0) => await client.QueuePacketAsync(
-        new ParticlePacket
-        {
-            Type = particle,
-            Position = pos,
-            ParticleCount = count,
-            Data = data,
-            Offset = new VectorF(offsetX, offsetY, offsetZ),
-            MaxSpeed = extra
-        });
+    //TODO 
+    public ValueTask SpawnParticleAsync(ParticleData data) => throw new NotImplementedException();
 
     public async Task<bool> GrantPermissionAsync(string permissionNode)
     {
@@ -667,9 +591,9 @@ public sealed partial class Player : Living, IPlayer
 
     public override string ToString() => Username;
 
-    internal async override ValueTask UpdateAsync(VectorF position, bool onGround)
+    internal async override ValueTask UpdateAsync(VectorF position, MovementFlags movementFlags)
     {
-        await base.UpdateAsync(position, onGround);
+        await base.UpdateAsync(position, movementFlags);
 
         HeadY = position.Y + 1.62f;
 
@@ -678,9 +602,9 @@ public sealed partial class Player : Living, IPlayer
         await PickupNearbyItemsAsync();
     }
 
-    internal async override ValueTask UpdateAsync(VectorF position, Angle yaw, Angle pitch, bool onGround)
+    internal async override ValueTask UpdateAsync(VectorF position, Angle yaw, Angle pitch, MovementFlags movementFlags)
     {
-        await base.UpdateAsync(position, yaw, pitch, onGround);
+        await base.UpdateAsync(position, yaw, pitch, movementFlags);
 
         HeadY = position.Y + 1.62f;
 
@@ -689,9 +613,9 @@ public sealed partial class Player : Living, IPlayer
         await PickupNearbyItemsAsync();
     }
 
-    internal async override ValueTask UpdateAsync(Angle yaw, Angle pitch, bool onGround)
+    internal async override ValueTask UpdateAsync(Angle yaw, Angle pitch, MovementFlags movementFlags)
     {
-        await base.UpdateAsync(yaw, pitch, onGround);
+        await base.UpdateAsync(yaw, pitch, movementFlags);
 
         await PickupNearbyItemsAsync();
     }
@@ -750,9 +674,8 @@ public sealed partial class Player : Living, IPlayer
             var chunk = await world.GetChunkAsync(x, z);
             if (chunk is not null && chunk.IsGenerated)
             {
-                await client.QueuePacketAsync(new ChunkDataAndUpdateLightPacket(chunk));
+                await client.QueuePacketAsync(new LevelChunkWithLightPacket(chunk));
 
-                
                 LoadedChunks.Add(NumericsHelper.IntsToLong(chunk.X, chunk.Z));
             }
             else

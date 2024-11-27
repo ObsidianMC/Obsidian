@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.Net.Packets;
-using Obsidian.Net.Packets.Play;
-using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Play.Serverbound;
 using System.Collections.Frozen;
 
@@ -10,13 +9,12 @@ internal sealed class PlayClientHandler : ClientHandler
 {
     private FrozenDictionary<int, IServerboundPacket> Packets { get; } = new Dictionary<int, IServerboundPacket>()
     {
-        { 0x1A, new SetPlayerPositionPacket() },
-        { 0x1B, new SetPlayerPositionAndRotationPacket() },
-        { 0x1C, new SetPlayerRotationPacket() },
-        { 0x20, new PlayerAbilitiesPacket(false) },
-        { 0x2F, new SetHeldItemPacket(false) },
-        { 0x38, new UseItemOnPacket() },
-        { 0x39, new UseItemPacket() }
+        { 28, new MovePlayerPosPacket() },
+        { 29, new MovePlayerPosRotPacket() },
+        { 30, new MovePlayerRotPacket() },
+        { 37, new PlayerAbilitiesPacket() },
+        { 58, new UseItemOnPacket() },
+        { 59, new UseItemPacket() },
     }.ToFrozenDictionary();
 
     public async override ValueTask<bool> HandleAsync(PacketData packetData)
@@ -24,61 +22,86 @@ internal sealed class PlayClientHandler : ClientHandler
         var (id, data) = packetData;
         switch (id)
         {
-            case 0x00:
-                return await HandleFromPoolAsync<ConfirmTeleportationPacket>(data);
-            case 0x04:
-                return await HandleFromPoolAsync<ChatCommandPacket>(data);
-            case 0x06:
-                return await HandleFromPoolAsync<ChatMessagePacket>(data);
-            case 0x07:
-                return await HandleFromPoolAsync<PlayerSessionPacket>(data);
-            case 0x08:
-                return await HandleFromPoolAsync<ChunkBatchReceivedPacket>(data);
-            case 0x09:
-                return await HandleFromPoolAsync<ClientStatusPacket>(data);
-            case 0x0A:
-                return await HandleFromPoolAsync<ClientInformationPacket>(data);
-            case 0x0C:
-                return await HandleFromPoolAsync<AcknowledgeConfiguration>(data);
-            case 0x0D:
-                return await HandleFromPoolAsync<ClickContainerButtonPacket>(data);
-            case 0x0E:
-                return await HandleFromPoolAsync<ClickContainerPacket>(data);
-            case 0x0F:
-                return await HandleFromPoolAsync<CloseContainerPacket>(data);
-            case 0x12:
-                return await HandleFromPoolAsync<PluginMessagePacket>(data);
-            case 0x16:
-                return await HandleFromPoolAsync<InteractPacket>(data);
-            case 0x18:
-                return await HandleFromPoolAsync<KeepAlivePacket>(data);
-            case 0x20:
-                return await HandleFromPoolAsync<PickItemPacket>(data);
-            case 0x22:
-                return await HandleFromPoolAsync<PlaceRecipePacket>(data);
-            case 0x24:
-                return await HandleFromPoolAsync<PlayerActionPacket>(data);
-            case 0x25:
-                return await HandleFromPoolAsync<PlayerCommandPacket>(data);
-            case 0x29:
-                return await HandleFromPoolAsync<SetSeenRecipePacket>(data);
-            case 0x2A:
-                return await HandleFromPoolAsync<RenameItemPacket>(data);
-            case 0x32:
-                return await HandleFromPoolAsync<SetCreativeModeSlotPacket>(data);
-            case 0x36:
-                return await HandleFromPoolAsync<SwingArmPacket>(data);
-            case 0x38:
-                return await HandleFromPoolAsync<UseItemOnPacket>(data);
-            case 0x39:
-                return await HandleFromPoolAsync<UseItemPacket>(data);
+            case 0:
+                await HandleFromPoolAsync<AcceptTeleportationPacket>(data);
+                break;
+            case 5:
+                await HandleFromPoolAsync<ChatCommandPacket>(data);
+                break;
+            case 7:
+                await HandleFromPoolAsync<ChatPacket>(data);
+                break;
+            case 8:
+                await HandleFromPoolAsync<ChatSessionUpdatePacket>(data);
+                break;
+            case 9:
+                await HandleFromPoolAsync<ChunkBatchReceivedPacket>(data);
+                break;
+            case 10:
+                await HandleFromPoolAsync<ClientCommandPacket>(data);
+                break;
+            case 12:
+                await HandleFromPoolAsync<ClientInformationPacket>(data);
+                break;
+            case 14:
+                await HandleFromPoolAsync<ConfigurationAcknowledgedPacket>(data);
+                break;
+            case 15:
+                await HandleFromPoolAsync<ContainerButtonClickPacket>(data);
+                break;
+            case 16:
+                await HandleFromPoolAsync<ContainerClickPacket>(data);
+                break;
+            case 17:
+                await HandleFromPoolAsync<ContainerClosePacket>(data);
+                break;
+            case 20:
+                await HandleFromPoolAsync<CustomPayloadPacket>(data);
+                break;
+            case 24:
+                await HandleFromPoolAsync<InteractPacket>(data);
+                break;
+            case 26:
+                await HandleFromPoolAsync<KeepAlivePacket>(data);
+                break;
+            case 34:
+                await HandleFromPoolAsync<PickItemPacket>(data);
+                break;
+            case 36:
+                await HandleFromPoolAsync<PlaceRecipePacket>(data);
+                break;
+            case 38:
+                await HandleFromPoolAsync<PlayerActionPacket>(data);
+                break;
+            case 39:
+                await HandleFromPoolAsync<PlayerCommandPacket>(data);
+                break;
+            case 43:
+                await HandleFromPoolAsync<RecipeBookSeenRecipePacket>(data);
+                break;
+            case 44:
+                await HandleFromPoolAsync<RenameItemPacket>(data);
+                break;
+            case 52:
+                await HandleFromPoolAsync<SetCreativeModeSlotPacket>(data);
+                break;
+            case 56:
+                await HandleFromPoolAsync<SwingPacket>(data);
+                break;
+            case 58:
+                await HandleFromPoolAsync<UseItemOnPacket>(data);
+                break;
+            case 59:
+                await HandleFromPoolAsync<UseItemPacket>(data);
+                break;
             default:
                 if (!Packets.TryGetValue(id, out var packet))
                     return false;
 
                 try
                 {
-                    packet.Populate(data);
+                    using var mcStream = new MinecraftStream(data);
+                    packet.Populate(mcStream);
                     await packet.HandleAsync(this.Server, this.Client.Player!);
                 }
                 catch (Exception e)

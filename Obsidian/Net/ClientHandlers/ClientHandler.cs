@@ -20,8 +20,9 @@ internal abstract class ClientHandler
         var success = true;
         try
         {
-            packet.Populate(data);
-            await packet.HandleAsync(this.Server, this.Player!);
+            using var mcStream = new MinecraftStream(data);
+            packet.Populate(mcStream);
+            await packet.HandleAsync(this.Server, this.Player);
         }
         catch (Exception e)
         {

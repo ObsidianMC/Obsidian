@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.Net.Packets;
+using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Configuration.Clientbound;
-using Obsidian.Net.Packets.Configuration;
-using Obsidian.Net.Packets.Login;
+using Obsidian.Net.Packets.Login.Serverbound;
 using Obsidian.Registries;
 using Obsidian.WorldData;
 
@@ -61,6 +61,11 @@ internal sealed class LoginClientHandler : ClientHandler
 
     private void Configure()
     {
+        this.SendPacket(new SelectKnownPacksPacket
+        {
+            KnownPacks = [new() { Id = "core", Version = "1.21.3", Namespace = "minecraft" }]
+        });
+
         //This is very inconvenient
         this.SendPacket(new RegistryDataPacket(CodecRegistry.Biomes.CodecKey, CodecRegistry.Biomes.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.Dimensions.CodecKey, CodecRegistry.Dimensions.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
@@ -68,25 +73,28 @@ internal sealed class LoginClientHandler : ClientHandler
         this.SendPacket(new RegistryDataPacket(CodecRegistry.DamageType.CodecKey, CodecRegistry.DamageType.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimPattern.CodecKey, CodecRegistry.TrimPattern.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimMaterial.CodecKey, CodecRegistry.TrimMaterial.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.WolfVariant.CodecKey, CodecRegistry.WolfVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.WolfVariant.CodecKey, new Dictionary<string, ICodec>()
+        {
+            { CodecRegistry.WolfVariant.Woods.Name, CodecRegistry.WolfVariant.Woods },
+        }));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.PaintingVariant.CodecKey, CodecRegistry.PaintingVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
 
-        this.SendPacket(UpdateTagsPacket.FromRegistry);
+        this.SendPacket(UpdateTagsPacket.ClientboundConfiguration with { Tags = TagsRegistry.Categories });
 
         this.SendPacket(FinishConfigurationPacket.Default);
     }
 
     private async Task HandleLoginStartAsync(byte[] data)
     {
-        var loginStart = LoginStart.Deserialize(data);
+        var loginStart = Packets.Login.Serverbound.HelloPacket.Deserialize(data);
+
         var username = this.Server.Configuration.Network.MulitplayerDebugMode ? $"Player{Globals.Random.Next(1, 999)}" : loginStart.Username;
         var world = (World)this.Server.DefaultWorld;
 
         this.Logger.LogDebug("Received login request from user {Username}", username);
         await this.Server.DisconnectIfConnectedAsync(username);
 
-        if (this.Server.Configuration.OnlineMode &&
-            await this.Client.TrySetCachedProfileAsync(username))
+        if (this.Server.Configuration.OnlineMode && await this.Client.TrySetCachedProfileAsync(username))
         {
             this.Client.Initialize(world);
 
@@ -108,7 +116,7 @@ internal sealed class LoginClientHandler : ClientHandler
         this.Client.ThrowIfInvalidEncryptionRequest();
 
         // Decrypt the shared secret and verify the token
-        var encryptionResponse = EncryptionResponse.Deserialize(data);
+        var encryptionResponse = KeyPacket.Deserialize(data);
 
         await this.Client.TryValidateEncryptionResponseAsync(encryptionResponse.SharedSecret, encryptionResponse.VerifyToken);
     }

@@ -184,7 +184,7 @@ public partial class Player
         }
 
         await client.QueuePacketAsync(new PlayerInfoUpdatePacket(dict));
-        await client.QueuePacketAsync(new PlayerAbilitiesPacket(true)
+        await client.QueuePacketAsync(new PlayerAbilitiesPacket
         {
             Abilities = client.Player!.Abilities
         });
@@ -217,25 +217,22 @@ public partial class Player
         }));
     }
 
-    internal async ValueTask SendInitialInfoAsync()
+    internal async ValueTask SendPlayerInfoAsync()
     {
-        await client.QueuePacketAsync(new SetDefaultSpawnPositionPacket(world.LevelData.SpawnPosition));
-        await client.QueuePacketAsync(new UpdateTimePacket(world.LevelData.Time, world.LevelData.DayTime));
-        await client.QueuePacketAsync(new GameEventPacket(world.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
-        await client.QueuePacketAsync(new SetContainerContentPacket(0, Inventory.ToList())
+        await client.QueuePacketAsync(new ContainerSetContentPacket(0, Inventory.ToList())
         {
             StateId = Inventory.StateId++,
             CarriedItem = GetHeldItem(),
         });
 
-        await client.QueuePacketAsync(new SetEntityMetadataPacket
+        await client.QueuePacketAsync(new SetEntityDataPacket
         {
             EntityId = EntityId,
             Entity = this
         });
     }
 
-    internal ValueTask UnloadChunkAsync(int x, int z) => LoadedChunks.Contains(NumericsHelper.IntsToLong(x, z)) ? this.client.QueuePacketAsync(new UnloadChunkPacket(x, z)) : default;
+    internal ValueTask UnloadChunkAsync(int x, int z) => LoadedChunks.Contains(NumericsHelper.IntsToLong(x, z)) ? this.client.QueuePacketAsync(new ForgetLevelChunkPacket(x, z)) : default;
 
     private async ValueTask TrySpawnPlayerAsync(VectorF position)
     {
@@ -287,7 +284,7 @@ public partial class Player
             if (!item.CanPickup)
                 continue;
 
-            this.PacketBroadcaster.QueuePacketToWorld(this.World, new PickupItemPacket
+            this.PacketBroadcaster.QueuePacketToWorld(this.World, new TakeItemEntityPacket
             {
                 CollectedEntityId = item.EntityId,
                 CollectorEntityId = EntityId,
@@ -296,10 +293,10 @@ public partial class Player
 
             var slot = Inventory.AddItem(new ItemStack(item.Material, item.Count, item.ItemMeta));
 
-            client.SendPacket(new SetContainerSlotPacket
+            client.SendPacket(new ContainerSetSlotPacket
             {
                 Slot = (short)slot,
-                WindowId = 0,
+                ContainerId = 0,
                 SlotData = Inventory.GetItem(slot)!,
                 StateId = Inventory.StateId++
             });
@@ -351,7 +348,7 @@ public partial class Player
 
     private void InitializePlayer(NbtCompound compound)
     {
-        OnGround = compound.GetBool("OnGround");
+        MovementFlags = (MovementFlags)compound.GetByte("MovementFlags");
         Sleeping = compound.GetBool("Sleeping");
         Air = compound.GetShort("Air");
         AttackTime = compound.GetShort("AttackTime");

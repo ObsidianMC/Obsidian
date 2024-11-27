@@ -1,15 +1,16 @@
 ﻿using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
+using Obsidian.Blocks;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
 using Obsidian.Net;
 using Obsidian.Net.ClientHandlers;
 using Obsidian.Net.Packets;
-using Obsidian.Net.Packets.Handshaking;
-using Obsidian.Net.Packets.Login;
-using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Net.Packets.Status;
+using Obsidian.Net.Packets.Common;
+using Obsidian.Net.Packets.Handshake.Serverbound;
+using Obsidian.Net.Packets.Login.Clientbound;
+using Obsidian.Net.Packets.Status.Clientbound;
 using Obsidian.Services;
 using Obsidian.Utilities.Mojang;
 using Obsidian.WorldData;
@@ -43,7 +44,7 @@ public sealed class Client : IDisposable
     /// <summary>
     /// Used for signing chat messages.
     /// </summary>
-    internal MessageSigningData? messageSigningData;
+    internal SignedMessage? messageSigningData;
 
     /// <summary>
     /// The server that the client is connected to.
@@ -215,81 +216,96 @@ public sealed class Client : IDisposable
 
     private async Task HandlePacketQueueAsync()
     {
-        while (!cancellationSource.IsCancellationRequested && this.connectionContext.IsConnected())
+        try
         {
-            var packet = await this.packetQueue.Reader.ReadAsync(this.cancellationSource.Token);
+            while (!cancellationSource.IsCancellationRequested && this.connectionContext.IsConnected())
+            {
+                var packet = await this.packetQueue.Reader.ReadAsync(this.cancellationSource.Token);
 
-            this.SendPacket(packet);
+                this.SendPacket(packet);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            this.Logger.LogDebug("Client({id}) packet queue was cancelled", this.id);
         }
     }
 
     private async Task HandlePacketsAsync()
     {
-        while (!cancellationSource.IsCancellationRequested && this.connectionContext.IsConnected())
+        try
         {
-            using var packetData = await GetNextPacketAsync();
-
-            if (State == ClientState.Play && packetData.Data.Length < 1)
-                Disconnect();
-
-            switch (State)
+            while (!cancellationSource.IsCancellationRequested && this.connectionContext.IsConnected())
             {
-                case ClientState.Status: // Server ping/list
-                    if (packetData.Id == 0x00)
-                    {
-                        var status = new ServerStatus(this.server);
+                using var packetData = await GetNextPacketAsync();
 
-                        _ = await this.server.EventDispatcher.ExecuteEventAsync(new ServerStatusRequestEventArgs(this.server, status));
+                if (State == ClientState.Play && packetData.Data.Length < 0)//Empty packets get sent.
+                    Disconnect();
 
-                        this.SendPacket(new RequestResponse(status));
-                    }
-                    else if (packetData.Id == 0x01)
-                    {
-                        this.SendPacket(PingPong.Deserialize(packetData.Data));
-                        this.Disconnect();
-                    }
-                    break;
+                switch (State)
+                {
+                    case ClientState.Status: // Server ping/list
+                        if (packetData.Id == 0x00)
+                        {
+                            var status = new ServerStatus(this.server);
 
-                case ClientState.Handshaking:
-                    if (packetData.Id == 0x00)
-                    {
-                        var handshake = Handshake.Deserialize(packetData.Data);
-                        await handshake.HandleAsync(this);
-                    }
-                    else
-                    {
-                        // Handle legacy ping
-                    }
-                    break;
+                            _ = await this.server.EventDispatcher.ExecuteEventAsync(new ServerStatusRequestEventArgs(this.server, status));
 
-                case ClientState.Login:
-                    await this.HandlePacketAsync(packetData);
-                    break;
-                case ClientState.Configuration:
-                    Debug.Assert(Player is not null);
+                            SendPacket(new StatusResponsePacket(status));
+                        }
+                        else if (packetData.Id == 0x01)
+                        {
+                            var pong = Net.Packets.Status.Serverbound.PingRequestPacket.Deserialize(packetData.Data);
 
-                    var result = await this.server.EventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.server, packetData.Id, packetData.Data));
+                            SendPacket(new PongResponsePacket { Timestamp = pong.Timestamp });
+                            Disconnect();
+                        }
+                        break;
 
-                    if (result == EventResult.Cancelled)
-                        return;
+                    case ClientState.Handshaking:
+                        if (packetData.Id == 0x00)
+                        {
+                            await IntentionPacket.Deserialize(packetData.Data).HandleAsync(this);
+                        }
+                        else
+                        {
+                            // Handle legacy ping
+                        }
+                        break;
 
-                    await this.HandlePacketAsync(packetData);
-                    break;
-                case ClientState.Play:
-                    Debug.Assert(Player is not null);
+                    case ClientState.Login:
+                        await this.HandlePacketAsync(packetData);
+                        break;
+                    case ClientState.Configuration:
+                        Debug.Assert(Player is not null);
 
-                    result = await this.server.EventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.server, packetData.Id, packetData.Data));
+                        var result = await this.server.EventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.server, packetData.Id, packetData.Data));
 
-                    if (result == EventResult.Cancelled)
-                        return;
+                        if (result == EventResult.Cancelled)
+                            return;
 
-                    await this.HandlePacketAsync(packetData);
+                        await this.HandlePacketAsync(packetData);
+                        break;
+                    case ClientState.Play:
+                        Debug.Assert(Player is not null);
 
-                    break;
-                case ClientState.Closed:
-                default:
-                    break;
+                        result = await this.server.EventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.server, packetData.Id, packetData.Data));
+
+                        if (result == EventResult.Cancelled)
+                            return;
+
+                        await this.HandlePacketAsync(packetData);
+
+                        break;
+                    case ClientState.Closed:
+                    default:
+                        break;
+                }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            this.Logger.LogDebug("Client({id}) main loop was cancelled", this.id);
         }
     }
 
@@ -305,7 +321,8 @@ public sealed class Client : IDisposable
             await this.server.EventDispatcher.ExecuteEventAsync(new PlayerLeaveEventArgs(Player, this.server, DateTimeOffset.Now));
         }
 
-        this.Disconnect();
+        Disconnected?.Invoke(this);
+        this.Dispose();//Dispose client after
     }
 
 
@@ -358,7 +375,7 @@ public sealed class Client : IDisposable
         this.EncryptionEnabled = true;
         this.minecraftStream = new EncryptedMinecraftStream(networkStream, sharedKey);
 
-        this.SendPacket(new LoginSuccess(Player.Uuid, Player.Username)
+        this.SendPacket(new LoginFinishedPacket(Player.Uuid, Player.Username)
         {
             SkinProperties = this.Player.SkinProperties,
         });
@@ -381,7 +398,7 @@ public sealed class Client : IDisposable
 
         this.randomToken = randomToken;
 
-        this.SendPacket(new EncryptionRequest
+        this.SendPacket(new HelloPacket
         {
             PublicKey = publicKey,
             VerifyToken = randomToken,
@@ -395,7 +412,7 @@ public sealed class Client : IDisposable
 
         this.Player = new Player(GuidHelper.FromStringHash($"OfflinePlayer:{username}"), username, this, world);
 
-        this.SendPacket(new LoginSuccess(Player.Uuid, Player.Username)
+        this.SendPacket(new LoginFinishedPacket(Player.Uuid, Player.Username)
         {
             SkinProperties = this.Player.SkinProperties,
         });
@@ -423,7 +440,16 @@ public sealed class Client : IDisposable
         return false;
     }
 
-    public async ValueTask DisconnectAsync(ChatMessage reason) => await this.QueuePacketAsync(new DisconnectPacket(reason, State));
+    public async ValueTask DisconnectAsync(ChatMessage reason)
+    {
+        if (this.State == ClientState.Login)
+        {
+            await this.QueuePacketAsync(new LoginDisconnectPacket { ReasonJson = reason.ToString(Globals.JsonOptions) });
+            return;
+        }
+
+        await this.QueuePacketAsync(new DisconnectPacket { Reason = reason });
+    }
 
     public async ValueTask QueuePacketAsync(IClientboundPacket packet)
     {
@@ -449,7 +475,7 @@ public sealed class Client : IDisposable
         {
             if (!compressionEnabled)
             {
-                packet.Serialize(minecraftStream);
+                this.minecraftStream.WritePacket(packet);
             }
             else
             {

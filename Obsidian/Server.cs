@@ -574,7 +574,10 @@ public sealed partial class Server : IServer
                 {
                     foreach (var client in _clients.Where(x => x.State == ClientState.Play || x.State == ClientState.Configuration))
                     {
-                        await new KeepAlivePacket().HandleAsync(client);
+                        if (client.State == ClientState.Play)
+                            await KeepAlivePacket.ClientboundPlay.HandleAsync(client);
+                        else
+                            await KeepAlivePacket.ClientboundConfiguration.HandleAsync(client);
                     }
 
                     keepAliveTicks = 0;

@@ -8,4 +8,5 @@ public abstract class ServerboundPacket : IServerboundPacket
 
     public virtual void Populate(INetStreamReader reader) { }
     public virtual ValueTask HandleAsync(Server server, Player player) => default;
+    public virtual ValueTask HandleAsync(Client client) => default;
 }
