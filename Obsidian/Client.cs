@@ -66,7 +66,7 @@ public sealed class Client : IDisposable
     /// <summary>
     /// The random token used to encrypt the stream.
     /// </summary>
-    private byte[]? randomToken;
+    internal byte[]? randomToken;
 
     /// <summary>
     /// The server's token used to encrypt the stream.
@@ -110,6 +110,8 @@ public sealed class Client : IDisposable
     /// </summary>
     private readonly ConnectionContext connectionContext;
     private readonly ILoggerFactory loggerFactory;
+
+    private string? ServerId => sharedKey?.Concat(packetCryptography.PublicKey).MinecraftShaDigest();
 
     /// <summary>
     /// The client's ping in milliseconds.
@@ -325,8 +327,6 @@ public sealed class Client : IDisposable
         this.Dispose();//Dispose client after
     }
 
-
-
     public async ValueTask<bool> TrySetCachedProfileAsync(string username)
     {
         ArgumentNullException.ThrowIfNull(username, nameof(username));
@@ -351,40 +351,11 @@ public sealed class Client : IDisposable
         return true;
     }
 
-    public async Task<bool> TryValidateEncryptionResponseAsync(byte[] sharedSecret, byte[] verifyToken)
+    public ReadOnlySpan<byte> SetSharedKeyAndDecodeVerifyToken(byte[] secret, byte[] verifyToken)
     {
-        this.sharedKey = packetCryptography.Decrypt(sharedSecret);
-
-        var decryptedToken = packetCryptography.Decrypt(verifyToken);
-
-        if (!decryptedToken.SequenceEqual(this.randomToken!))
-        {
-            await this.DisconnectAsync("Invalid token...");
-            return false;
-        }
-
-        var serverId = sharedKey.Concat(packetCryptography.PublicKey).MinecraftShaDigest();
-        if (await this.userCache.HasJoinedAsync(this.Player!.Username, serverId) is not MojangProfile user)
-        {
-            this.Logger.LogWarning("Failed to auth {Username}", this.Player.Username);
-            await this.DisconnectAsync("Unable to authenticate...");
-            return false;
-        }
-
-        this.Player.SkinProperties = user.Properties!;
-        this.EncryptionEnabled = true;
-        this.minecraftStream = new EncryptedMinecraftStream(networkStream, sharedKey);
-
-        this.SendPacket(new LoginFinishedPacket(Player.Uuid, Player.Username)
-        {
-            SkinProperties = this.Player.SkinProperties,
-        });
-
-        this.Logger.LogDebug("Sent Login success to user {Username} {UUID}", this.Player.Username, this.Player.Uuid);
-
-        return true;
+        this.sharedKey = packetCryptography.Decrypt(secret);
+        return this.packetCryptography.Decrypt(verifyToken);
     }
-
     public void Initialize(World world)
     {
         if (this.profile == null)
@@ -504,6 +475,20 @@ public sealed class Client : IDisposable
         this.Dispose();
     }
 
+    internal void Login(MojangProfile user)
+    {
+        this.Player!.SkinProperties = user.Properties!;
+        this.EncryptionEnabled = true;
+        this.minecraftStream = new EncryptedMinecraftStream(networkStream, sharedKey!);
+
+        this.SendPacket(new LoginFinishedPacket(Player.Uuid, Player.Username)
+        {
+            SkinProperties = this.Player.SkinProperties,
+        });
+
+        this.Logger.LogDebug("Sent Login success to user {Username} {UUID}", this.Player.Username, this.Player.Uuid);
+    }
+
     internal void ThrowIfInvalidEncryptionRequest()
     {
         if (this.Player is null)
@@ -514,6 +499,8 @@ public sealed class Client : IDisposable
     }
 
     internal void SetState(ClientState state) => this.State = state;
+
+    public async Task<MojangProfile?> HasJoinedAsync() => await this.userCache.HasJoinedAsync(this.Player!.Username, this.ServerId!);
 
     public void Dispose()
     {

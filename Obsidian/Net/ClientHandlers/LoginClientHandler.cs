@@ -116,8 +116,6 @@ internal sealed class LoginClientHandler : ClientHandler
         this.Client.ThrowIfInvalidEncryptionRequest();
 
         // Decrypt the shared secret and verify the token
-        var encryptionResponse = KeyPacket.Deserialize(data);
-
-        await this.Client.TryValidateEncryptionResponseAsync(encryptionResponse.SharedSecret, encryptionResponse.VerifyToken);
+        await KeyPacket.Deserialize(data).HandleAsync(this.Client);
     }
 }
