@@ -249,7 +249,7 @@ public sealed class Client : IDisposable
                     case ClientState.Status: // Server ping/list
                         if (packetData.Id == 0x00)
                         {
-                            var status = new ServerStatus(this.server);
+                            var status = new ServerStatus(this.server, this.loggerFactory);
 
                             _ = await this.server.EventDispatcher.ExecuteEventAsync(new ServerStatusRequestEventArgs(this.server, status));
 
