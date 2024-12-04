@@ -2,7 +2,7 @@
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
-public partial class PickItemPacket
+public partial class PickItemFromBlockPacket
 {
     [Field(0), VarLength]
     public int SlotToUse { get; private set; }

@@ -119,7 +119,7 @@ public sealed class ClientHandler
                 await HandleFromPoolAsync<KeepAlivePacket>(data, client);
                 break;
             case 34:
-                await HandleFromPoolAsync<PickItemPacket>(data, client);
+                await HandleFromPoolAsync<PickItemFromBlockPacket>(data, client);
                 break;
             case 36:
                 await HandleFromPoolAsync<PlaceRecipePacket>(data, client);
