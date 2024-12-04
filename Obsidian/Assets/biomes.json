@@ -6,12 +6,17 @@
       "id": 0,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.overworld.badlands",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.overworld.badlands",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "mood_sound": {
             "sound": "minecraft:ambient.cave",
             "offset": 2,
@@ -190,12 +195,17 @@
       "id": 1,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.overworld.bamboo_jungle",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.overworld.bamboo_jungle",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "mood_sound": {
             "sound": "minecraft:ambient.cave",
             "offset": 2,
@@ -418,12 +428,17 @@
       "id": 2,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.nether.basalt_deltas",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.nether.basalt_deltas",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "ambient_sound": "minecraft:ambient.basalt_deltas.loop",
           "additions_sound": {
             "sound": "minecraft:ambient.basalt_deltas.additions",
@@ -699,12 +714,17 @@
       "id": 4,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.overworld.forest",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.overworld.forest",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "mood_sound": {
             "sound": "minecraft:ambient.cave",
             "offset": 2,
@@ -901,12 +921,17 @@
       "id": 5,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.overworld.cherry_grove",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.overworld.cherry_grove",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "mood_sound": {
             "sound": "minecraft:ambient.cave",
             "offset": 2,
@@ -1294,12 +1319,17 @@
       "id": 7,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.nether.crimson_forest",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.nether.crimson_forest",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "ambient_sound": "minecraft:ambient.crimson_forest.loop",
           "additions_sound": {
             "sound": "minecraft:ambient.crimson_forest.additions",
@@ -1407,12 +1437,17 @@
       "id": 8,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.overworld.forest",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.overworld.forest",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "grass_color_modifier": "dark_forest",
           "mood_sound": {
             "sound": "minecraft:ambient.cave",
@@ -1808,12 +1843,17 @@
       "id": 10,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.overworld.deep_dark",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.overworld.deep_dark",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "mood_sound": {
             "sound": "minecraft:ambient.cave",
             "offset": 2,
@@ -2529,12 +2569,17 @@
       "id": 14,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.overworld.desert",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.overworld.desert",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "mood_sound": {
             "sound": "minecraft:ambient.cave",
             "offset": 2,
@@ -2723,12 +2768,17 @@
       "id": 15,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.overworld.dripstone_caves",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.overworld.dripstone_caves",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "mood_sound": {
             "sound": "minecraft:ambient.cave",
             "offset": 2,
@@ -3063,12 +3113,17 @@
       "id": 19,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.overworld.badlands",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.overworld.badlands",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "mood_sound": {
             "sound": "minecraft:ambient.cave",
             "offset": 2,
@@ -3247,12 +3302,17 @@
       "id": 20,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.overworld.flower_forest",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.overworld.flower_forest",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "mood_sound": {
             "sound": "minecraft:ambient.cave",
             "offset": 2,
@@ -3455,12 +3515,17 @@
       "id": 21,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.overworld.forest",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.overworld.forest",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "mood_sound": {
             "sound": "minecraft:ambient.cave",
             "offset": 2,
@@ -3865,12 +3930,17 @@
       "id": 23,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.overworld.frozen_peaks",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.overworld.frozen_peaks",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "mood_sound": {
             "sound": "minecraft:ambient.cave",
             "offset": 2,
@@ -4235,12 +4305,17 @@
       "id": 25,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.overworld.grove",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.overworld.grove",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "mood_sound": {
             "sound": "minecraft:ambient.cave",
             "offset": 2,
@@ -4622,12 +4697,17 @@
       "id": 27,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.overworld.jagged_peaks",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.overworld.jagged_peaks",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "mood_sound": {
             "sound": "minecraft:ambient.cave",
             "offset": 2,
@@ -4802,12 +4882,17 @@
       "id": 28,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.overworld.jungle",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.overworld.jungle",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "mood_sound": {
             "sound": "minecraft:ambient.cave",
             "offset": 2,
@@ -5240,12 +5325,17 @@
       "id": 30,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.overworld.lush_caves",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.overworld.lush_caves",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "mood_sound": {
             "sound": "minecraft:ambient.cave",
             "offset": 2,
@@ -5432,12 +5522,17 @@
       "id": 31,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.overworld.swamp",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.overworld.swamp",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "grass_color_modifier": "swamp",
           "mood_sound": {
             "sound": "minecraft:ambient.cave",
@@ -5634,12 +5729,17 @@
       "id": 32,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.overworld.meadow",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.overworld.meadow",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "mood_sound": {
             "sound": "minecraft:ambient.cave",
             "offset": 2,
@@ -5955,12 +6055,17 @@
       "id": 34,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.nether.nether_wastes",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.nether.nether_wastes",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "ambient_sound": "minecraft:ambient.nether_wastes.loop",
           "additions_sound": {
             "sound": "minecraft:ambient.nether_wastes.additions",
@@ -6272,12 +6377,17 @@
       "id": 36,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.overworld.forest",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.overworld.forest",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "mood_sound": {
             "sound": "minecraft:ambient.cave",
             "offset": 2,
@@ -6474,12 +6584,17 @@
       "id": 37,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.overworld.old_growth_taiga",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.overworld.old_growth_taiga",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "mood_sound": {
             "sound": "minecraft:ambient.cave",
             "offset": 2,
@@ -6699,12 +6814,17 @@
       "id": 38,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.overworld.old_growth_taiga",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.overworld.old_growth_taiga",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "mood_sound": {
             "sound": "minecraft:ambient.cave",
             "offset": 2,
@@ -6920,8 +7040,179 @@
       }
     },
     {
-      "name": "minecraft:plains",
+      "name": "minecraft:pale_garden",
       "id": 39,
+      "element": {
+        "effects": {
+          "music": [],
+          "mood_sound": {
+            "sound": "minecraft:ambient.cave",
+            "offset": 2,
+            "tick_delay": 6000,
+            "block_search_extent": 8
+          },
+          "foliage_color": 8883574,
+          "sky_color": 12171705,
+          "water_fog_color": 5597568,
+          "fog_color": 8484720,
+          "water_color": 7768221,
+          "grass_color": 7832178
+        },
+        "depth": 0,
+        "temperature": 0.7,
+        "scale": 0,
+        "downfall": 0.8,
+        "has_precipitation": true,
+        "player_spawn_friendly": false,
+        "features": [
+          [],
+          [
+            "minecraft:lake_lava_underground",
+            "minecraft:lake_lava_surface"
+          ],
+          [
+            "minecraft:amethyst_geode"
+          ],
+          [
+            "minecraft:monster_room",
+            "minecraft:monster_room_deep"
+          ],
+          [],
+          [],
+          [
+            "minecraft:ore_dirt",
+            "minecraft:ore_gravel",
+            "minecraft:ore_granite_upper",
+            "minecraft:ore_granite_lower",
+            "minecraft:ore_diorite_upper",
+            "minecraft:ore_diorite_lower",
+            "minecraft:ore_andesite_upper",
+            "minecraft:ore_andesite_lower",
+            "minecraft:ore_tuff",
+            "minecraft:ore_coal_upper",
+            "minecraft:ore_coal_lower",
+            "minecraft:ore_iron_upper",
+            "minecraft:ore_iron_middle",
+            "minecraft:ore_iron_small",
+            "minecraft:ore_gold",
+            "minecraft:ore_gold_lower",
+            "minecraft:ore_redstone",
+            "minecraft:ore_redstone_lower",
+            "minecraft:ore_diamond",
+            "minecraft:ore_diamond_medium",
+            "minecraft:ore_diamond_large",
+            "minecraft:ore_diamond_buried",
+            "minecraft:ore_lapis",
+            "minecraft:ore_lapis_buried",
+            "minecraft:ore_copper",
+            "minecraft:underwater_magma",
+            "minecraft:disk_sand",
+            "minecraft:disk_clay",
+            "minecraft:disk_gravel"
+          ],
+          [],
+          [
+            "minecraft:spring_water",
+            "minecraft:spring_lava"
+          ],
+          [
+            "minecraft:glow_lichen",
+            "minecraft:pale_garden_vegetation",
+            "minecraft:pale_moss_patch",
+            "minecraft:pale_garden_flowers",
+            "minecraft:flower_pale_garden",
+            "minecraft:patch_grass_forest",
+            "minecraft:patch_sugar_cane",
+            "minecraft:patch_pumpkin"
+          ],
+          [
+            "minecraft:freeze_top_layer"
+          ]
+        ],
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
+        "spawners": {
+          "ambient": [
+            {
+              "type": "minecraft:bat",
+              "maxCount": 8,
+              "minCount": 8,
+              "weight": 10
+            }
+          ],
+          "axolotls": [],
+          "creature": [],
+          "misc": [],
+          "monster": [
+            {
+              "type": "minecraft:spider",
+              "maxCount": 4,
+              "minCount": 4,
+              "weight": 100
+            },
+            {
+              "type": "minecraft:zombie",
+              "maxCount": 4,
+              "minCount": 4,
+              "weight": 95
+            },
+            {
+              "type": "minecraft:zombie_villager",
+              "maxCount": 1,
+              "minCount": 1,
+              "weight": 5
+            },
+            {
+              "type": "minecraft:skeleton",
+              "maxCount": 4,
+              "minCount": 4,
+              "weight": 100
+            },
+            {
+              "type": "minecraft:creeper",
+              "maxCount": 4,
+              "minCount": 4,
+              "weight": 100
+            },
+            {
+              "type": "minecraft:slime",
+              "maxCount": 4,
+              "minCount": 4,
+              "weight": 100
+            },
+            {
+              "type": "minecraft:enderman",
+              "maxCount": 4,
+              "minCount": 1,
+              "weight": 10
+            },
+            {
+              "type": "minecraft:witch",
+              "maxCount": 1,
+              "minCount": 1,
+              "weight": 5
+            }
+          ],
+          "underground_water_creature": [
+            {
+              "type": "minecraft:glow_squid",
+              "maxCount": 6,
+              "minCount": 4,
+              "weight": 10
+            }
+          ],
+          "water_ambient": [],
+          "water_creature": []
+        },
+        "spawn_costs": {}
+      }
+    },
+    {
+      "name": "minecraft:plains",
+      "id": 40,
       "element": {
         "effects": {
           "mood_sound": {
@@ -7129,7 +7420,7 @@
     },
     {
       "name": "minecraft:river",
-      "id": 40,
+      "id": 41,
       "element": {
         "effects": {
           "mood_sound": {
@@ -7320,7 +7611,7 @@
     },
     {
       "name": "minecraft:savanna",
-      "id": 41,
+      "id": 42,
       "element": {
         "effects": {
           "mood_sound": {
@@ -7534,7 +7825,7 @@
     },
     {
       "name": "minecraft:savanna_plateau",
-      "id": 42,
+      "id": 43,
       "element": {
         "effects": {
           "mood_sound": {
@@ -7760,7 +8051,7 @@
     },
     {
       "name": "minecraft:small_end_islands",
-      "id": 43,
+      "id": 44,
       "element": {
         "effects": {
           "mood_sound": {
@@ -7810,7 +8101,7 @@
     },
     {
       "name": "minecraft:snowy_beach",
-      "id": 44,
+      "id": 45,
       "element": {
         "effects": {
           "mood_sound": {
@@ -7979,7 +8270,7 @@
     },
     {
       "name": "minecraft:snowy_plains",
-      "id": 45,
+      "id": 46,
       "element": {
         "effects": {
           "mood_sound": {
@@ -8168,15 +8459,20 @@
     },
     {
       "name": "minecraft:snowy_slopes",
-      "id": 46,
+      "id": 47,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.overworld.snowy_slopes",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.overworld.snowy_slopes",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "mood_sound": {
             "sound": "minecraft:ambient.cave",
             "offset": 2,
@@ -8356,7 +8652,7 @@
     },
     {
       "name": "minecraft:snowy_taiga",
-      "id": 47,
+      "id": 48,
       "element": {
         "effects": {
           "mood_sound": {
@@ -8571,15 +8867,20 @@
     },
     {
       "name": "minecraft:soul_sand_valley",
-      "id": 48,
+      "id": 49,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.nether.soul_sand_valley",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.nether.soul_sand_valley",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "ambient_sound": "minecraft:ambient.soul_sand_valley.loop",
           "additions_sound": {
             "sound": "minecraft:ambient.soul_sand_valley.additions",
@@ -8701,15 +9002,20 @@
     },
     {
       "name": "minecraft:sparse_jungle",
-      "id": 49,
+      "id": 50,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.overworld.sparse_jungle",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.overworld.sparse_jungle",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "mood_sound": {
             "sound": "minecraft:ambient.cave",
             "offset": 2,
@@ -8916,15 +9222,20 @@
     },
     {
       "name": "minecraft:stony_peaks",
-      "id": 50,
+      "id": 51,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.overworld.stony_peaks",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.overworld.stony_peaks",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "mood_sound": {
             "sound": "minecraft:ambient.cave",
             "offset": 2,
@@ -9088,7 +9399,7 @@
     },
     {
       "name": "minecraft:stony_shore",
-      "id": 51,
+      "id": 52,
       "element": {
         "effects": {
           "mood_sound": {
@@ -9257,7 +9568,7 @@
     },
     {
       "name": "minecraft:sunflower_plains",
-      "id": 52,
+      "id": 53,
       "element": {
         "effects": {
           "mood_sound": {
@@ -9466,15 +9777,20 @@
     },
     {
       "name": "minecraft:swamp",
-      "id": 53,
+      "id": 54,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.overworld.swamp",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.overworld.swamp",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "grass_color_modifier": "swamp",
           "mood_sound": {
             "sound": "minecraft:ambient.cave",
@@ -9691,7 +10007,7 @@
     },
     {
       "name": "minecraft:taiga",
-      "id": 54,
+      "id": 55,
       "element": {
         "effects": {
           "mood_sound": {
@@ -9906,7 +10222,7 @@
     },
     {
       "name": "minecraft:the_end",
-      "id": 55,
+      "id": 56,
       "element": {
         "effects": {
           "mood_sound": {
@@ -9968,7 +10284,7 @@
     },
     {
       "name": "minecraft:the_void",
-      "id": 56,
+      "id": 57,
       "element": {
         "effects": {
           "mood_sound": {
@@ -10021,7 +10337,7 @@
     },
     {
       "name": "minecraft:warm_ocean",
-      "id": 57,
+      "id": 58,
       "element": {
         "effects": {
           "mood_sound": {
@@ -10226,15 +10542,20 @@
     },
     {
       "name": "minecraft:warped_forest",
-      "id": 58,
+      "id": 59,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.nether.warped_forest",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.nether.warped_forest",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "ambient_sound": "minecraft:ambient.warped_forest.loop",
           "additions_sound": {
             "sound": "minecraft:ambient.warped_forest.additions",
@@ -10334,7 +10655,7 @@
     },
     {
       "name": "minecraft:windswept_forest",
-      "id": 59,
+      "id": 60,
       "element": {
         "effects": {
           "mood_sound": {
@@ -10538,210 +10859,6 @@
     },
     {
       "name": "minecraft:windswept_gravelly_hills",
-      "id": 60,
-      "element": {
-        "effects": {
-          "mood_sound": {
-            "sound": "minecraft:ambient.cave",
-            "offset": 2,
-            "tick_delay": 6000,
-            "block_search_extent": 8
-          },
-          "foliage_color": 0,
-          "sky_color": 8233727,
-          "water_fog_color": 329011,
-          "fog_color": 12638463,
-          "water_color": 4159204,
-          "grass_color": 0
-        },
-        "depth": 0,
-        "temperature": 0.2,
-        "scale": 0,
-        "downfall": 0.3,
-        "has_precipitation": true,
-        "player_spawn_friendly": false,
-        "features": [
-          [],
-          [
-            "minecraft:lake_lava_underground",
-            "minecraft:lake_lava_surface"
-          ],
-          [
-            "minecraft:amethyst_geode"
-          ],
-          [
-            "minecraft:monster_room",
-            "minecraft:monster_room_deep"
-          ],
-          [],
-          [],
-          [
-            "minecraft:ore_dirt",
-            "minecraft:ore_gravel",
-            "minecraft:ore_granite_upper",
-            "minecraft:ore_granite_lower",
-            "minecraft:ore_diorite_upper",
-            "minecraft:ore_diorite_lower",
-            "minecraft:ore_andesite_upper",
-            "minecraft:ore_andesite_lower",
-            "minecraft:ore_tuff",
-            "minecraft:ore_coal_upper",
-            "minecraft:ore_coal_lower",
-            "minecraft:ore_iron_upper",
-            "minecraft:ore_iron_middle",
-            "minecraft:ore_iron_small",
-            "minecraft:ore_gold",
-            "minecraft:ore_gold_lower",
-            "minecraft:ore_redstone",
-            "minecraft:ore_redstone_lower",
-            "minecraft:ore_diamond",
-            "minecraft:ore_diamond_medium",
-            "minecraft:ore_diamond_large",
-            "minecraft:ore_diamond_buried",
-            "minecraft:ore_lapis",
-            "minecraft:ore_lapis_buried",
-            "minecraft:ore_copper",
-            "minecraft:underwater_magma",
-            "minecraft:disk_sand",
-            "minecraft:disk_clay",
-            "minecraft:disk_gravel",
-            "minecraft:ore_emerald"
-          ],
-          [
-            "minecraft:ore_infested"
-          ],
-          [
-            "minecraft:spring_water",
-            "minecraft:spring_lava"
-          ],
-          [
-            "minecraft:glow_lichen",
-            "minecraft:trees_windswept_hills",
-            "minecraft:flower_default",
-            "minecraft:patch_grass_badlands",
-            "minecraft:brown_mushroom_normal",
-            "minecraft:red_mushroom_normal",
-            "minecraft:patch_sugar_cane",
-            "minecraft:patch_pumpkin"
-          ],
-          [
-            "minecraft:freeze_top_layer"
-          ]
-        ],
-        "carvers": [
-          "minecraft:cave",
-          "minecraft:cave_extra_underground",
-          "minecraft:canyon"
-        ],
-        "spawners": {
-          "ambient": [
-            {
-              "type": "minecraft:bat",
-              "maxCount": 8,
-              "minCount": 8,
-              "weight": 10
-            }
-          ],
-          "axolotls": [],
-          "creature": [
-            {
-              "type": "minecraft:sheep",
-              "maxCount": 4,
-              "minCount": 4,
-              "weight": 12
-            },
-            {
-              "type": "minecraft:pig",
-              "maxCount": 4,
-              "minCount": 4,
-              "weight": 10
-            },
-            {
-              "type": "minecraft:chicken",
-              "maxCount": 4,
-              "minCount": 4,
-              "weight": 10
-            },
-            {
-              "type": "minecraft:cow",
-              "maxCount": 4,
-              "minCount": 4,
-              "weight": 8
-            },
-            {
-              "type": "minecraft:llama",
-              "maxCount": 6,
-              "minCount": 4,
-              "weight": 5
-            }
-          ],
-          "misc": [],
-          "monster": [
-            {
-              "type": "minecraft:spider",
-              "maxCount": 4,
-              "minCount": 4,
-              "weight": 100
-            },
-            {
-              "type": "minecraft:zombie",
-              "maxCount": 4,
-              "minCount": 4,
-              "weight": 95
-            },
-            {
-              "type": "minecraft:zombie_villager",
-              "maxCount": 1,
-              "minCount": 1,
-              "weight": 5
-            },
-            {
-              "type": "minecraft:skeleton",
-              "maxCount": 4,
-              "minCount": 4,
-              "weight": 100
-            },
-            {
-              "type": "minecraft:creeper",
-              "maxCount": 4,
-              "minCount": 4,
-              "weight": 100
-            },
-            {
-              "type": "minecraft:slime",
-              "maxCount": 4,
-              "minCount": 4,
-              "weight": 100
-            },
-            {
-              "type": "minecraft:enderman",
-              "maxCount": 4,
-              "minCount": 1,
-              "weight": 10
-            },
-            {
-              "type": "minecraft:witch",
-              "maxCount": 1,
-              "minCount": 1,
-              "weight": 5
-            }
-          ],
-          "underground_water_creature": [
-            {
-              "type": "minecraft:glow_squid",
-              "maxCount": 6,
-              "minCount": 4,
-              "weight": 10
-            }
-          ],
-          "water_ambient": [],
-          "water_creature": []
-        },
-        "spawn_costs": {}
-      }
-    },
-    {
-      "name": "minecraft:windswept_hills",
       "id": 61,
       "element": {
         "effects": {
@@ -10945,8 +11062,212 @@
       }
     },
     {
-      "name": "minecraft:windswept_savanna",
+      "name": "minecraft:windswept_hills",
       "id": 62,
+      "element": {
+        "effects": {
+          "mood_sound": {
+            "sound": "minecraft:ambient.cave",
+            "offset": 2,
+            "tick_delay": 6000,
+            "block_search_extent": 8
+          },
+          "foliage_color": 0,
+          "sky_color": 8233727,
+          "water_fog_color": 329011,
+          "fog_color": 12638463,
+          "water_color": 4159204,
+          "grass_color": 0
+        },
+        "depth": 0,
+        "temperature": 0.2,
+        "scale": 0,
+        "downfall": 0.3,
+        "has_precipitation": true,
+        "player_spawn_friendly": false,
+        "features": [
+          [],
+          [
+            "minecraft:lake_lava_underground",
+            "minecraft:lake_lava_surface"
+          ],
+          [
+            "minecraft:amethyst_geode"
+          ],
+          [
+            "minecraft:monster_room",
+            "minecraft:monster_room_deep"
+          ],
+          [],
+          [],
+          [
+            "minecraft:ore_dirt",
+            "minecraft:ore_gravel",
+            "minecraft:ore_granite_upper",
+            "minecraft:ore_granite_lower",
+            "minecraft:ore_diorite_upper",
+            "minecraft:ore_diorite_lower",
+            "minecraft:ore_andesite_upper",
+            "minecraft:ore_andesite_lower",
+            "minecraft:ore_tuff",
+            "minecraft:ore_coal_upper",
+            "minecraft:ore_coal_lower",
+            "minecraft:ore_iron_upper",
+            "minecraft:ore_iron_middle",
+            "minecraft:ore_iron_small",
+            "minecraft:ore_gold",
+            "minecraft:ore_gold_lower",
+            "minecraft:ore_redstone",
+            "minecraft:ore_redstone_lower",
+            "minecraft:ore_diamond",
+            "minecraft:ore_diamond_medium",
+            "minecraft:ore_diamond_large",
+            "minecraft:ore_diamond_buried",
+            "minecraft:ore_lapis",
+            "minecraft:ore_lapis_buried",
+            "minecraft:ore_copper",
+            "minecraft:underwater_magma",
+            "minecraft:disk_sand",
+            "minecraft:disk_clay",
+            "minecraft:disk_gravel",
+            "minecraft:ore_emerald"
+          ],
+          [
+            "minecraft:ore_infested"
+          ],
+          [
+            "minecraft:spring_water",
+            "minecraft:spring_lava"
+          ],
+          [
+            "minecraft:glow_lichen",
+            "minecraft:trees_windswept_hills",
+            "minecraft:flower_default",
+            "minecraft:patch_grass_badlands",
+            "minecraft:brown_mushroom_normal",
+            "minecraft:red_mushroom_normal",
+            "minecraft:patch_sugar_cane",
+            "minecraft:patch_pumpkin"
+          ],
+          [
+            "minecraft:freeze_top_layer"
+          ]
+        ],
+        "carvers": [
+          "minecraft:cave",
+          "minecraft:cave_extra_underground",
+          "minecraft:canyon"
+        ],
+        "spawners": {
+          "ambient": [
+            {
+              "type": "minecraft:bat",
+              "maxCount": 8,
+              "minCount": 8,
+              "weight": 10
+            }
+          ],
+          "axolotls": [],
+          "creature": [
+            {
+              "type": "minecraft:sheep",
+              "maxCount": 4,
+              "minCount": 4,
+              "weight": 12
+            },
+            {
+              "type": "minecraft:pig",
+              "maxCount": 4,
+              "minCount": 4,
+              "weight": 10
+            },
+            {
+              "type": "minecraft:chicken",
+              "maxCount": 4,
+              "minCount": 4,
+              "weight": 10
+            },
+            {
+              "type": "minecraft:cow",
+              "maxCount": 4,
+              "minCount": 4,
+              "weight": 8
+            },
+            {
+              "type": "minecraft:llama",
+              "maxCount": 6,
+              "minCount": 4,
+              "weight": 5
+            }
+          ],
+          "misc": [],
+          "monster": [
+            {
+              "type": "minecraft:spider",
+              "maxCount": 4,
+              "minCount": 4,
+              "weight": 100
+            },
+            {
+              "type": "minecraft:zombie",
+              "maxCount": 4,
+              "minCount": 4,
+              "weight": 95
+            },
+            {
+              "type": "minecraft:zombie_villager",
+              "maxCount": 1,
+              "minCount": 1,
+              "weight": 5
+            },
+            {
+              "type": "minecraft:skeleton",
+              "maxCount": 4,
+              "minCount": 4,
+              "weight": 100
+            },
+            {
+              "type": "minecraft:creeper",
+              "maxCount": 4,
+              "minCount": 4,
+              "weight": 100
+            },
+            {
+              "type": "minecraft:slime",
+              "maxCount": 4,
+              "minCount": 4,
+              "weight": 100
+            },
+            {
+              "type": "minecraft:enderman",
+              "maxCount": 4,
+              "minCount": 1,
+              "weight": 10
+            },
+            {
+              "type": "minecraft:witch",
+              "maxCount": 1,
+              "minCount": 1,
+              "weight": 5
+            }
+          ],
+          "underground_water_creature": [
+            {
+              "type": "minecraft:glow_squid",
+              "maxCount": 6,
+              "minCount": 4,
+              "weight": 10
+            }
+          ],
+          "water_ambient": [],
+          "water_creature": []
+        },
+        "spawn_costs": {}
+      }
+    },
+    {
+      "name": "minecraft:windswept_savanna",
+      "id": 63,
       "element": {
         "effects": {
           "mood_sound": {
@@ -11159,15 +11480,20 @@
     },
     {
       "name": "minecraft:wooded_badlands",
-      "id": 63,
+      "id": 64,
       "element": {
         "effects": {
-          "music": {
-            "replace_current_music": false,
-            "max_delay": 24000,
-            "sound": "minecraft:music.overworld.badlands",
-            "min_delay": 12000
-          },
+          "music": [
+            {
+              "data": {
+                "replace_current_music": false,
+                "max_delay": 24000,
+                "sound": "minecraft:music.overworld.badlands",
+                "min_delay": 12000
+              },
+              "weight": 1
+            }
+          ],
           "mood_sound": {
             "sound": "minecraft:ambient.cave",
             "offset": 2,

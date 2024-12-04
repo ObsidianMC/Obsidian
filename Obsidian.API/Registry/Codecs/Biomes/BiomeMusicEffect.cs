@@ -10,3 +10,10 @@ public sealed record class BiomeMusicEffect
 
     public required int MinDelay { get; set; }
 }
+
+public sealed record class BiomeMusicEffectData
+{
+    public required BiomeMusicEffect Data { get; set; }
+
+    public int Weight { get; set; }
+}

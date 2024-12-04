@@ -32,7 +32,6 @@ public enum EntityType : int
     CommandBlockMinecart,
     Cow,
     Creaking,
-    CreakingTransient,
     Creeper,
     DarkOakBoat,
     DarkOakChestBoat,

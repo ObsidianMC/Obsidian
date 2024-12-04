@@ -530,6 +530,22 @@
         },
         "trigger": "minecraft:location"
       },
+      "minecraft:pale_garden": {
+        "conditions": {
+          "player": [
+            {
+              "condition": "minecraft:entity_properties",
+              "entity": "this",
+              "predicate": {
+                "location": {
+                  "biomes": "minecraft:pale_garden"
+                }
+              }
+            }
+          ]
+        },
+        "trigger": "minecraft:location"
+      },
       "minecraft:plains": {
         "conditions": {
           "player": [
@@ -1011,6 +1027,9 @@
       ],
       [
         "minecraft:cherry_grove"
+      ],
+      [
+        "minecraft:pale_garden"
       ],
       [
         "minecraft:frozen_peaks"
@@ -1524,6 +1543,20 @@
         },
         "trigger": "minecraft:player_killed_entity"
       },
+      "minecraft:creaking": {
+        "conditions": {
+          "entity": [
+            {
+              "condition": "minecraft:entity_properties",
+              "entity": "this",
+              "predicate": {
+                "type": "minecraft:creaking"
+              }
+            }
+          ]
+        },
+        "trigger": "minecraft:player_killed_entity"
+      },
       "minecraft:creeper": {
         "conditions": {
           "entity": [
@@ -2000,6 +2033,9 @@
         "minecraft:cave_spider"
       ],
       [
+        "minecraft:creaking"
+      ],
+      [
         "minecraft:creeper"
       ],
       [
@@ -2154,6 +2190,20 @@
               "entity": "this",
               "predicate": {
                 "type": "minecraft:cave_spider"
+              }
+            }
+          ]
+        },
+        "trigger": "minecraft:player_killed_entity"
+      },
+      "minecraft:creaking": {
+        "conditions": {
+          "entity": [
+            {
+              "condition": "minecraft:entity_properties",
+              "entity": "this",
+              "predicate": {
+                "type": "minecraft:creaking"
               }
             }
           ]
@@ -2627,6 +2677,7 @@
         "minecraft:bogged",
         "minecraft:breeze",
         "minecraft:cave_spider",
+        "minecraft:creaking",
         "minecraft:creeper",
         "minecraft:drowned",
         "minecraft:elder_guardian",
@@ -11339,6 +11390,70 @@
       ]
     }
   },
+  "minecraft:recipes/building_blocks/chiseled_resin_bricks": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_resin_brick_slab": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:resin_brick_slab"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:chiseled_resin_bricks"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_resin_brick_slab"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:chiseled_resin_bricks"
+      ]
+    }
+  },
+  "minecraft:recipes/building_blocks/chiseled_resin_bricks_from_resin_bricks_stonecutting": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_resin_bricks": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:resin_bricks"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:chiseled_resin_bricks_from_resin_bricks_stonecutting"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_resin_bricks"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:chiseled_resin_bricks_from_resin_bricks_stonecutting"
+      ]
+    }
+  },
   "minecraft:recipes/building_blocks/chiseled_sandstone": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -19587,6 +19702,134 @@
       ]
     }
   },
+  "minecraft:recipes/building_blocks/pale_oak_planks": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_log": {
+        "conditions": {
+          "items": [
+            {
+              "items": "#minecraft:pale_oak_logs"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:pale_oak_planks"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_log"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:pale_oak_planks"
+      ]
+    }
+  },
+  "minecraft:recipes/building_blocks/pale_oak_slab": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_planks": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:pale_oak_planks"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:pale_oak_slab"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_planks"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:pale_oak_slab"
+      ]
+    }
+  },
+  "minecraft:recipes/building_blocks/pale_oak_stairs": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_planks": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:pale_oak_planks"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:pale_oak_stairs"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_planks"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:pale_oak_stairs"
+      ]
+    }
+  },
+  "minecraft:recipes/building_blocks/pale_oak_wood": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_log": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:pale_oak_log"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:pale_oak_wood"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_log"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:pale_oak_wood"
+      ]
+    }
+  },
   "minecraft:recipes/building_blocks/pink_concrete_powder": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -23207,6 +23450,198 @@
       ]
     }
   },
+  "minecraft:recipes/building_blocks/resin_block": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_resin_clump": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:resin_clump"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:resin_block"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_resin_clump"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:resin_block"
+      ]
+    }
+  },
+  "minecraft:recipes/building_blocks/resin_bricks": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_resin_brick": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:resin_brick"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:resin_bricks"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_resin_brick"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:resin_bricks"
+      ]
+    }
+  },
+  "minecraft:recipes/building_blocks/resin_brick_slab": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_resin_bricks": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:resin_bricks"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:resin_brick_slab"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_resin_bricks"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:resin_brick_slab"
+      ]
+    }
+  },
+  "minecraft:recipes/building_blocks/resin_brick_slab_from_resin_bricks_stonecutting": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_resin_bricks": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:resin_bricks"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:resin_brick_slab_from_resin_bricks_stonecutting"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_resin_bricks"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:resin_brick_slab_from_resin_bricks_stonecutting"
+      ]
+    }
+  },
+  "minecraft:recipes/building_blocks/resin_brick_stairs": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_resin_bricks": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:resin_bricks"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:resin_brick_stairs"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_resin_bricks"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:resin_brick_stairs"
+      ]
+    }
+  },
+  "minecraft:recipes/building_blocks/resin_brick_stairs_from_resin_bricks_stonecutting": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_resin_bricks": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:resin_bricks"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:resin_brick_stairs_from_resin_bricks_stonecutting"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_resin_bricks"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:resin_brick_stairs_from_resin_bricks_stonecutting"
+      ]
+    }
+  },
   "minecraft:recipes/building_blocks/sandstone": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -24901,6 +25336,38 @@
     "rewards": {
       "recipes": [
         "minecraft:stripped_oak_wood"
+      ]
+    }
+  },
+  "minecraft:recipes/building_blocks/stripped_pale_oak_wood": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_log": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:stripped_pale_oak_log"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:stripped_pale_oak_wood"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_log"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:stripped_pale_oak_wood"
       ]
     }
   },
@@ -36318,6 +36785,134 @@
       ]
     }
   },
+  "minecraft:recipes/decorations/pale_moss_carpet": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_pale_moss_block": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:pale_moss_block"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:pale_moss_carpet"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_pale_moss_block"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:pale_moss_carpet"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/pale_oak_fence": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_planks": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:pale_oak_planks"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:pale_oak_fence"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_planks"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:pale_oak_fence"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/pale_oak_hanging_sign": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_stripped_logs": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:stripped_pale_oak_log"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:pale_oak_hanging_sign"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_stripped_logs"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:pale_oak_hanging_sign"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/pale_oak_sign": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_planks": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:pale_oak_planks"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:pale_oak_sign"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_planks"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:pale_oak_sign"
+      ]
+    }
+  },
   "minecraft:recipes/decorations/pink_banner": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -37724,6 +38319,70 @@
     "rewards": {
       "recipes": [
         "minecraft:red_stained_glass_pane_from_glass_pane"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/resin_brick_wall": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_resin_bricks": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:resin_bricks"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:resin_brick_wall"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_resin_bricks"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:resin_brick_wall"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/resin_brick_wall_from_resin_bricks_stonecutting": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_resin_bricks": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:resin_bricks"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:resin_brick_wall_from_resin_bricks_stonecutting"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_resin_bricks"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:resin_brick_wall_from_resin_bricks_stonecutting"
       ]
     }
   },
@@ -40513,6 +41172,38 @@
       ]
     }
   },
+  "minecraft:recipes/food/suspicious_stew_from_closed_eyeblossom": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_closed_eyeblossom": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:closed_eyeblossom"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:suspicious_stew_from_closed_eyeblossom"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_closed_eyeblossom"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:suspicious_stew_from_closed_eyeblossom"
+      ]
+    }
+  },
   "minecraft:recipes/food/suspicious_stew_from_cornflower": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -40606,6 +41297,38 @@
     "rewards": {
       "recipes": [
         "minecraft:suspicious_stew_from_lily_of_the_valley"
+      ]
+    }
+  },
+  "minecraft:recipes/food/suspicious_stew_from_open_eyeblossom": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_open_eyeblossom": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:open_eyeblossom"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:suspicious_stew_from_open_eyeblossom"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_open_eyeblossom"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:suspicious_stew_from_open_eyeblossom"
       ]
     }
   },
@@ -41919,6 +42642,38 @@
     "rewards": {
       "recipes": [
         "minecraft:copper_ingot_from_waxed_copper_block"
+      ]
+    }
+  },
+  "minecraft:recipes/misc/creaking_heart": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_resin_block": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:resin_block"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:creaking_heart"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_resin_block"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:creaking_heart"
       ]
     }
   },
@@ -43355,6 +44110,38 @@
     "rewards": {
       "recipes": [
         "minecraft:gray_dye"
+      ]
+    }
+  },
+  "minecraft:recipes/misc/gray_dye_from_closed_eyeblossom": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_closed_eyeblossom": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:closed_eyeblossom"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:gray_dye_from_closed_eyeblossom"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_closed_eyeblossom"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:gray_dye_from_closed_eyeblossom"
       ]
     }
   },
@@ -45183,6 +45970,38 @@
       ]
     }
   },
+  "minecraft:recipes/misc/orange_dye_from_open_eyeblossom": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_open_eyeblossom": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:open_eyeblossom"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:orange_dye_from_open_eyeblossom"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_open_eyeblossom"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:orange_dye_from_open_eyeblossom"
+      ]
+    }
+  },
   "minecraft:recipes/misc/orange_dye_from_orange_tulip": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -45917,6 +46736,70 @@
     "rewards": {
       "recipes": [
         "minecraft:red_dye_from_tulip"
+      ]
+    }
+  },
+  "minecraft:recipes/misc/resin_brick": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_resin_clump": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:resin_clump"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:resin_brick"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_resin_clump"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:resin_brick"
+      ]
+    }
+  },
+  "minecraft:recipes/misc/resin_clump": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_resin_block": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:resin_block"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:resin_clump"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_resin_block"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:resin_clump"
       ]
     }
   },
@@ -49181,6 +50064,166 @@
     "rewards": {
       "recipes": [
         "minecraft:oxidized_copper_bulb"
+      ]
+    }
+  },
+  "minecraft:recipes/redstone/pale_oak_button": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_planks": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:pale_oak_planks"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:pale_oak_button"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_planks"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:pale_oak_button"
+      ]
+    }
+  },
+  "minecraft:recipes/redstone/pale_oak_door": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_planks": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:pale_oak_planks"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:pale_oak_door"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_planks"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:pale_oak_door"
+      ]
+    }
+  },
+  "minecraft:recipes/redstone/pale_oak_fence_gate": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_planks": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:pale_oak_planks"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:pale_oak_fence_gate"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_planks"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:pale_oak_fence_gate"
+      ]
+    }
+  },
+  "minecraft:recipes/redstone/pale_oak_pressure_plate": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_planks": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:pale_oak_planks"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:pale_oak_pressure_plate"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_planks"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:pale_oak_pressure_plate"
+      ]
+    }
+  },
+  "minecraft:recipes/redstone/pale_oak_trapdoor": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_planks": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:pale_oak_planks"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:pale_oak_trapdoor"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_planks"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:pale_oak_trapdoor"
       ]
     }
   },
@@ -52627,6 +53670,66 @@
     "rewards": {
       "recipes": [
         "minecraft:oak_chest_boat"
+      ]
+    }
+  },
+  "minecraft:recipes/transportation/pale_oak_boat": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:pale_oak_boat"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      },
+      "in_water": {
+        "conditions": {
+          "block": "minecraft:water"
+        },
+        "trigger": "minecraft:enter_block"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "in_water"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:pale_oak_boat"
+      ]
+    }
+  },
+  "minecraft:recipes/transportation/pale_oak_chest_boat": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_boat": {
+        "conditions": {
+          "items": [
+            {
+              "items": "#minecraft:boats"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:pale_oak_chest_boat"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_boat"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:pale_oak_chest_boat"
       ]
     }
   },

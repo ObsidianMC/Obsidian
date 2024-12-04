@@ -7,7 +7,7 @@ public sealed record class BiomeEffect
     public string? GrassColorModifier { get; set; }
     public string? AmbientSound { get; set; }
 
-    public BiomeMusicEffect? Music { get; set; }
+    public BiomeMusicEffectData[]? Music { get; set; }
     public BiomeAdditionSound? AdditionsSound { get; set; }
     public BiomeParticle? Particle { get; set; }
 

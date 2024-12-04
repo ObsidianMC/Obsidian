@@ -556,7 +556,6 @@ public partial class Extensions
 
         writer.WriteString("ingredient", materialElement.Ingredient);
         writer.WriteString("asset_name", materialElement.AssetName);
-        writer.WriteDouble("item_model_index", materialElement.ItemModelIndex);
         writer.WriteTag(description);
     }
     #endregion
