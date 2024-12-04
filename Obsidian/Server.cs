@@ -60,16 +60,27 @@ public sealed partial class Server : IServer
     internal static readonly ConcurrentDictionary<string, DateTimeOffset> throttler = new();
 
     internal readonly CancellationTokenSource _cancelTokenSource;
+    internal readonly ILogger _logger;
+
+    internal byte[] BrandData
+    {
+        get
+        {
+            using var ms = new MinecraftStream();
+            ms.WriteString(this.Brand);
+
+            return ms.ToArray();
+        }
+    }
 
     private readonly ConcurrentQueue<ClientboundPacket> _chatMessagesQueue = new();
     private readonly ConcurrentHashSet<Client> _clients = new();
     private readonly ILoggerFactory loggerFactory;
     private readonly RconServer _rconServer;
     private readonly IUserCache userCache;
-    internal readonly ILogger _logger;
     private readonly IServiceProvider serviceProvider;
+    private readonly IDisposable? configWatcher;
 
-    private IDisposable? configWatcher;
     private IConnectionListener? _tcpListener;
 
     public IOptionsMonitor<WhitelistConfiguration> WhitelistConfiguration { get; }
@@ -296,8 +307,13 @@ public sealed partial class Server : IServer
         _logger.LogInformation("Server loaded in {time}", loadTimeStopwatch.Elapsed);
 
         //Wait for worlds to load
-        while (!this.WorldManager.ReadyToJoin && !this._cancelTokenSource.IsCancellationRequested)
+        while (!this.WorldManager.ReadyToJoin)
+        {
+            if (this._cancelTokenSource.IsCancellationRequested)
+                return;
+
             continue;
+        }
 
         await this.PluginManager.OnServerReadyAsync();
 
@@ -307,9 +323,9 @@ public sealed partial class Server : IServer
         {
             await Task.WhenAll(serverTasks);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Maybe write a crash log to somewhere?
+            _logger.LogError(ex, "An error has occured");
             throw;
         }
         finally
@@ -346,6 +362,7 @@ public sealed partial class Server : IServer
                 }
                 connection = acceptedConnection;
 
+                //TODO send a disconnect message
                 if (!WorldManager.ReadyToJoin)
                 {
                     connection.Abort();
@@ -450,7 +467,13 @@ public sealed partial class Server : IServer
         }
     }
 
-    internal IEnumerable<Player> PlayersInRange(World world, Vector worldPosition) => world.Players.Select(entry => entry.Value).Where(player => player.client.LoadedChunks.Contains(worldPosition.ToChunkCoord()));
+    internal IEnumerable<Player> PlayersInRange(World world, Vector worldPosition)
+    {
+        var (x, z) = worldPosition.ToChunkCoord();
+
+        var packedXZ = NumericsHelper.IntsToLong(x, z);
+        return world.Players.Select(entry => entry.Value).Where(player => player.LoadedChunks.Contains(packedXZ));
+    }
 
     internal void BroadcastBlockChange(World world, IBlock block, Vector location)
     {
@@ -548,10 +571,13 @@ public sealed partial class Server : IServer
                 keepAliveTicks++;
                 if (keepAliveTicks > (Configuration.Network.KeepAliveInterval / 50)) // to clarify: one tick is 50 milliseconds. 50 * 200 = 10000 millis means 10 seconds
                 {
-                    var keepAliveTime = DateTimeOffset.Now;
-
                     foreach (var client in _clients.Where(x => x.State == ClientState.Play || x.State == ClientState.Configuration))
-                        client.SendKeepAlive(keepAliveTime);
+                    {
+                        if (client.State == ClientState.Play)
+                            await KeepAlivePacket.ClientboundPlay.HandleAsync(client);
+                        else
+                            await KeepAlivePacket.ClientboundConfiguration.HandleAsync(client);
+                    }
 
                     keepAliveTicks = 0;
                 }
@@ -606,6 +632,31 @@ public sealed partial class Server : IServer
     {
         var status = $"    tps:{Tps} c:{WorldManager.GeneratingChunkCount}/{WorldManager.LoadedChunkCount} r:{WorldManager.RegionCount}";
         ConsoleIO.UpdateStatusLine(status);
+    }
+
+    public bool IsWhitedlisted(string username) => this.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => x.Name == username);
+
+    public bool IsWhitedlisted(Guid uuid) => this.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => x.Id == uuid);
+
+    public async ValueTask<bool> ShouldThrottleAsync(Client client)
+    {
+        if (!this.Configuration.Network.ShouldThrottle)
+            return false;
+
+        if (!throttler.TryGetValue(client.Ip!, out var timeLeft))
+        {
+            throttler.TryAdd(client.Ip!, DateTimeOffset.UtcNow.AddMilliseconds(this.Configuration.Network.ConnectionThrottle));
+            return false;
+        }
+
+        if (DateTimeOffset.UtcNow < timeLeft)
+        {
+            this._logger.LogDebug("{ip} has been throttled for reconnecting too fast.", client.Ip!);
+            await client.DisconnectAsync("Connection Throttled! Please wait before reconnecting.");
+            return true;
+        }
+
+        return false;
     }
 
     public void Dispose()

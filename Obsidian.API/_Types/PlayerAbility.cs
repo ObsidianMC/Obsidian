@@ -1,7 +1,7 @@
 ﻿namespace Obsidian.API;
 
 [Flags]
-public enum PlayerAbility
+public enum PlayerAbility : sbyte
 {
     None = 0x00,
     Invulnerable = 0x01,
