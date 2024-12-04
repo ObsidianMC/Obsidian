@@ -3,7 +3,7 @@ name: Update Docs
 on:
   workflow_dispatch:
   push:
-    branches: [1.*]
+    branches: [1.21.x]
     paths:
       - "**/*.cs"
       - "**/*.csproj"
