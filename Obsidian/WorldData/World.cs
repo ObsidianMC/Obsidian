@@ -18,29 +18,28 @@ namespace Obsidian.WorldData;
 
 public sealed class World : IWorld
 {
+    private const int SpawnChunkRadius = 12;
+
     public IWorldManager WorldManager { get; }
 
     private float rainLevel = 0f;
     private bool initialized = false;
 
-    private ConcurrentDictionary<(int x, int z), (int x, int z)> moduloCache = new();
-
-
-    internal Dictionary<string, World> dimensions = new();
+    internal Dictionary<string, World> dimensions = [];
 
     public Level LevelData { get; internal set; }
 
-    public ConcurrentDictionary<Guid, Player> Players { get; private set; } = new();
+    public ConcurrentDictionary<Guid, Player> Players { get; private set; } = [];
 
     public IWorldGenerator Generator { get; internal set; }
 
-    public ConcurrentDictionary<long, Region> Regions { get; private set; } = new();
+    public ConcurrentDictionary<long, Region> Regions { get; private set; } = [];
 
-    public ConcurrentQueue<(int X, int Z)> ChunksToGen { get; private set; } = new();
+    public ConcurrentQueue<long> ChunksToGen { get; private set; } = [];
 
-    public ConcurrentHashSet<(int X, int Z)> SpawnChunks { get; private set; } = new();
+    public long[] SpawnChunks { get; } = new long[SpawnChunkRadius * 48];
 
-    public ConcurrentHashSet<(int X, int Z)> LoadedChunks { get; private set; } = new();
+    public ConcurrentHashSet<long> LoadedChunks { get; private set; } = [];
 
     public required string Name { get; init; }
     public required string Seed { get; init; }
@@ -155,6 +154,7 @@ public sealed class World : IWorld
             return null;
 
         var (x, z) = (NumericsHelper.Modulo(chunkX, Region.CubicRegionSize), NumericsHelper.Modulo(chunkZ, Region.CubicRegionSize));
+        var packedXZ = NumericsHelper.IntsToLong(chunkX, chunkZ);
 
         var chunk = await region.GetChunkAsync(x, z);
 
@@ -162,20 +162,20 @@ public sealed class World : IWorld
         {
             if (!chunk.IsGenerated && scheduleGeneration)
             {
-                if (!ChunksToGen.Contains((chunkX, chunkZ)))
-                    ChunksToGen.Enqueue((chunkX, chunkZ));
+                if (!ChunksToGen.Contains(packedXZ))
+                    ChunksToGen.Enqueue(packedXZ);
                 return null;
             }
 
-            LoadedChunks.Add((chunkX, chunkZ));
+            LoadedChunks.Add(packedXZ);
             return chunk;
         }
 
         // Chunk hasn't been generated yet.
         if (scheduleGeneration)
         {
-            if (!ChunksToGen.Contains((chunkX, chunkZ)))
-                ChunksToGen.Enqueue((chunkX, chunkZ));
+            if (!ChunksToGen.Contains(packedXZ))
+                ChunksToGen.Enqueue(packedXZ);
             return null;
         }
 
@@ -253,8 +253,13 @@ public sealed class World : IWorld
         }
     }
 
-    public IEnumerable<Player> PlayersInRange(Vector location) =>
-        this.Players.Values.Where(player => player.client.LoadedChunks.Contains(location.ToChunkCoord()));
+    public IEnumerable<Player> PlayersInRange(Vector location)
+    {
+        var (x, z) = location.ToChunkCoord();
+        var packedXZ = NumericsHelper.IntsToLong(x, z);
+
+        return this.Players.Values.Where(player => player.LoadedChunks.Contains(packedXZ));
+    }
 
     public ValueTask SetBlockUntrackedAsync(Vector location, IBlock block, bool doBlockUpdate = false) => SetBlockUntrackedAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
 
@@ -472,16 +477,19 @@ public sealed class World : IWorld
             for (int rz = -1; rz < 1; rz++)
                 LoadRegion(rx, rz);
 
-        // spawn chunks are radius 12 from spawn,
-        var radius = 12;
         var (x, z) = LevelData.SpawnPosition.ToChunkCoord();
-        for (var cx = x - radius; cx < x + radius; cx++)
-            for (var cz = z - radius; cz < z + radius; cz++)
-                SpawnChunks.Add((cx, cz));
+        var spawnChunks = new List<long>();
+        var index = 0;
+        for (var cx = x - SpawnChunkRadius; cx < x + SpawnChunkRadius; cx++)
+            for (var cz = z - SpawnChunkRadius; cz < z + SpawnChunkRadius; cz++)
+            {
+                SpawnChunks[index++] = NumericsHelper.IntsToLong(cx, cz);
+            }
 
         await Parallel.ForEachAsync(SpawnChunks, async (c, cts) =>
         {
-            await GetChunkAsync(c.X, c.Z);
+            NumericsHelper.LongToInts(c, out var cx, out var cz);
+            await GetChunkAsync(cx, cz);
             //// Update status occasionally so we're not destroying consoleio
             //// Removing this for now
             //if (c.X % 5 == 0)
@@ -594,18 +602,19 @@ public sealed class World : IWorld
         // Check for chunks to unload every 30 seconds
         if (LevelData.Time > 0 && LevelData.Time % (20 * 30) == 0)
         {
-            List<(int X, int Z)> chunksToKeep = new();
-            Players.Where(p => p.Value.World == this).ForEach(p =>
+            var chunksToKeep = new List<long>();
+            Players.Values.Where(p => p.World == this).ForEach(p =>
             {
-                chunksToKeep.AddRange(p.Value.client.LoadedChunks);
+                chunksToKeep.AddRange(p.LoadedChunks);
             });
             //TODO: Task.WhenAll for the slow IO ops 
             LoadedChunks.Except(chunksToKeep).Except(SpawnChunks).ForEach(async c =>
             {
                 if (LoadedChunks.TryRemove(c))
                 {
-                    var r = GetRegionForChunk(c.X, c.Z);
-                    await r.UnloadChunk(c.X, c.Z);
+                    NumericsHelper.LongToInts(c, out var cx, out var cz);
+                    var r = GetRegionForChunk(cx, cz);
+                    await r.UnloadChunk(cx, cz);
                 }
             });
         }
@@ -613,7 +622,7 @@ public sealed class World : IWorld
         if (ChunksToGen.IsEmpty) { return; }
 
         // Pull some jobs out of the queue
-        var jobs = new List<(int x, int z)>();
+        var jobs = new List<long>();
         for (int a = 0; a < Environment.ProcessorCount; a++)
         {
             if (ChunksToGen.TryDequeue(out var job))
@@ -622,14 +631,15 @@ public sealed class World : IWorld
 
         await Parallel.ForEachAsync(jobs, async (job, _) =>
         {
-            Region region = GetRegionForChunk(job.x, job.z) ?? LoadRegionByChunk(job.x, job.z);
+            NumericsHelper.LongToInts(job, out var jobX, out var jobZ);
+            Region region = GetRegionForChunk(jobX, jobZ) ?? LoadRegionByChunk(jobX, jobZ);
 
-            var (x, z) = (NumericsHelper.Modulo(job.x, Region.CubicRegionSize), NumericsHelper.Modulo(job.z, Region.CubicRegionSize));
+            var (x, z) = (NumericsHelper.Modulo(jobX, Region.CubicRegionSize), NumericsHelper.Modulo(jobZ, Region.CubicRegionSize));
 
             Chunk c = await region.GetChunkAsync(x, z);
             if (c is null)
             {
-                c = new Chunk(job.x, job.z)
+                c = new Chunk(jobX, jobZ)
                 {
                     chunkStatus = ChunkStatus.structure_starts
                 };
@@ -638,7 +648,7 @@ public sealed class World : IWorld
             }
             if (!c.IsGenerated)
             {
-                c = await Generator.GenerateChunkAsync(job.x, job.z, c);
+                c = await Generator.GenerateChunkAsync(jobX, jobZ, c);
             }
             region.SetChunk(c);
         });
@@ -829,7 +839,7 @@ public sealed class World : IWorld
         {
             for (int z = -pregenerationRange; z < pregenerationRange; z++)
             {
-                ChunksToGen.Enqueue((x, z));
+                ChunksToGen.Enqueue(NumericsHelper.IntsToLong(x, z));
             }
         }
 
@@ -856,12 +866,12 @@ public sealed class World : IWorld
         if (setWorldSpawn)
         {
             await SetWorldSpawnAsync();
-            // spawn chunks are radius 12 from spawn,
-            var radius = 12;
+            var index = 0;
             var (x, z) = LevelData.SpawnPosition.ToChunkCoord();
-            for (var cx = x - radius; cx < x + radius; cx++)
-                for (var cz = z - radius; cz < z + radius; cz++)
-                    SpawnChunks.Add((cx, cz));
+            var spawnChunks = new List<long>();
+            for (var cx = x - SpawnChunkRadius; cx < x + SpawnChunkRadius; cx++)
+                for (var cz = z - SpawnChunkRadius; cz < z + SpawnChunkRadius; cz++)
+                    SpawnChunks[index++] = NumericsHelper.IntsToLong(cx, cz);
         }
     }
 

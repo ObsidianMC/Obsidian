@@ -1,5 +1,3 @@
-﻿using System.Net;
-
 namespace Obsidian.API;
 
 public interface IPlayer : ILiving
@@ -18,7 +16,7 @@ public interface IPlayer : ILiving
 
     public Vector? LastDeathLocation { get; set; }
 
-    public IPAddress? ClientIP { get; }
+    public string? ClientIP { get; }
     public Gamemode Gamemode { get; set; }
 
     public PlayerAbility Abilities { get; }
@@ -45,14 +43,14 @@ public interface IPlayer : ILiving
     public float FoodExhaustionLevel { get; set; }
     public float FoodSaturationLevel { get; set; }
 
-    public Task SendMessageAsync(ChatMessage message);
-    public Task SendMessageAsync(ChatMessage message, Guid sender, SecureMessageSignature messageSignature);
-    public Task SetActionBarTextAsync(ChatMessage message);
-    public Task SendSoundAsync(ISoundEffect soundEffect);
-    public Task KickAsync(ChatMessage reason);
-    public Task KickAsync(string reason);
-    public Task OpenInventoryAsync(BaseContainer container);
-    public Task DisplayScoreboardAsync(IScoreboard scoreboard, DisplaySlot position);
+    public ValueTask SendMessageAsync(ChatMessage message);
+    public ValueTask SendMessageAsync(ChatMessage message, Guid sender, SecureMessageSignature messageSignature);
+    public ValueTask SetActionBarTextAsync(ChatMessage message);
+    public ValueTask SendSoundAsync(ISoundEffect soundEffect);
+    public ValueTask KickAsync(ChatMessage reason);
+    public ValueTask KickAsync(string reason);
+    public ValueTask OpenInventoryAsync(BaseContainer container);
+    public ValueTask DisplayScoreboardAsync(IScoreboard scoreboard, DisplaySlot position);
 
     /// <summary>
     /// Sends a title message to the player.
@@ -61,7 +59,7 @@ public interface IPlayer : ILiving
     /// <param name="fadeIn">Time in ticks for the title to fade in</param>
     /// <param name="stay">Time in ticks for the title to stay on screen</param>
     /// <param name="fadeOut">Time in ticks for the title to fade out</param>
-    public Task SendTitleAsync(ChatMessage title, int fadeIn, int stay, int fadeOut);
+    public ValueTask SendTitleAsync(ChatMessage title, int fadeIn, int stay, int fadeOut);
 
     /// <summary>
     /// Sends a title and subtitle message to the player.
@@ -71,7 +69,7 @@ public interface IPlayer : ILiving
     /// <param name="fadeIn">Time in ticks for the title to fade in</param>
     /// <param name="stay">Time in ticks for the title to stay on screen</param>
     /// <param name="fadeOut">Time in ticks for the title to fade out</param>
-    public Task SendTitleAsync(ChatMessage title, ChatMessage subtitle, int fadeIn, int stay, int fadeOut);
+    public ValueTask SendTitleAsync(ChatMessage title, ChatMessage subtitle, int fadeIn, int stay, int fadeOut);
 
     /// <summary>
     /// Sends a subtitle message to the player.
@@ -80,122 +78,24 @@ public interface IPlayer : ILiving
     /// <param name="fadeIn">Time in ticks for the title to fade in</param>
     /// <param name="stay">Time in ticks for the title to stay on screen</param>
     /// <param name="fadeOut">Time in ticks for the title to fade out</param>
-    public Task SendSubtitleAsync(ChatMessage subtitle, int fadeIn, int stay, int fadeOut);
+    public ValueTask SendSubtitleAsync(ChatMessage subtitle, int fadeIn, int stay, int fadeOut);
 
     /// <summary>
     /// Sends an action bar text to the player.
     /// </summary>
     /// <param name="text">The text of the action bar.</param>
-    public Task SendActionBarAsync(string text);
+    public ValueTask SendActionBarAsync(string text);
 
-    /// <summary>
-    /// Spawns the given particle at the target coordinates.
-    /// </summary>
-    /// <param name="particle">The <see cref="ParticleType"/> to be spawned.</param>
-    /// <param name="x">The target x-coordination.</param>
-    /// <param name="y">The target y-coordination.</param>
-    /// <param name="z">The target z-coordination.</param>
-    /// <param name="count">The amount of particles to be spawned.</param>
-    /// <param name="extra">The extra data of the particle, mostly used for speed.</param>
-    public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count, float extra = 0);
-
-    /// <summary>
-    /// Spawns the given particle at the target coordinates and with the given offset.
-    /// </summary>
-    /// <param name="particle">The <see cref="ParticleType"/> to be spawned.</param>
-    /// <param name="x">The target x-coordination.</param>
-    /// <param name="y">The target y-coordination.</param>
-    /// <param name="z">The target z-coordination.</param>
-    /// <param name="count">The amount of particles to be spawned.</param>
-    /// <param name="offsetX">The x-offset.</param>
-    /// <param name="offsetY">The y-offset.</param>
-    /// <param name="offsetZ">The z-offset.</param>
-    /// <param name="extra">The extra data of the particle, mostly used for speed.</param>
-    public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count, float offsetX,
-        float offsetY, float offsetZ, float extra = 0);
-
-    /// <summary>
-    /// Spawns the given particle at the target position.
-    /// </summary>
-    /// <param name="particle">The <see cref="ParticleType"/> to be spawned.</param>
-    /// <param name="pos">The target position as <see cref="VectorF"/>.</param>
-    /// <param name="count">The amount of particles to be spawned.</param>
-    /// <param name="extra">The extra data of the particle, mostly used for speed.</param>
-    public Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float extra = 0);
-
-    /// <summary>
-    /// Spawns the given particle at the target position.
-    /// </summary>
-    /// <param name="particle">The <see cref="ParticleType"/> to be spawned.</param>
-    /// <param name="pos">The target position as <see cref="VectorF"/>.</param>
-    /// <param name="count">The amount of particles to be spawned.</param>
-    /// <param name="offsetX">The x-offset.</param>
-    /// <param name="offsetY">The y-offset.</param>
-    /// <param name="offsetZ">The z-offset.</param>
-    /// <param name="extra">The extra data of the particle, mostly used for speed.</param>
-    public Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float offsetX, float offsetY,
-        float offsetZ, float extra = 0);
-
-    /// <summary>
-    /// Spawns the given particle at the target coordinates.
-    /// </summary>
-    /// <param name="particle">The <see cref="ParticleType"/> to be spawned.</param>
-    /// <param name="x">The target x-coordination.</param>
-    /// <param name="y">The target y-coordination.</param>
-    /// <param name="z">The target z-coordination.</param>
-    /// <param name="count">The amount of particles to be spawned.</param>
-    /// <param name="data">The <see cref="ParticleData"/> of the particle.</param>
-    /// <param name="extra">The extra data of the particle, mostly used for speed.</param>
-    public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count, ParticleData data, float extra = 0);
-
-    /// <summary>
-    /// Spawns the given particle at the target coordinates and with the given offset.
-    /// </summary>
-    /// <param name="particle">The <see cref="ParticleType"/> to be spawned.</param>
-    /// <param name="x">The target x-coordination.</param>
-    /// <param name="y">The target y-coordination.</param>
-    /// <param name="z">The target z-coordination.</param>
-    /// <param name="count">The amount of particles to be spawned.</param>
-    /// <param name="offsetX">The x-offset.</param>
-    /// <param name="offsetY">The y-offset.</param>
-    /// <param name="offsetZ">The z-offset.</param>
-    /// <param name="data">The <see cref="ParticleData"/> of the particle.</param>
-    /// <param name="extra">The extra data of the particle, mostly used for speed.</param>
-    public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count, float offsetX,
-        float offsetY, float offsetZ, ParticleData data, float extra = 0);
-
-    /// <summary>
-    /// Spawns the given particle at the target position.
-    /// </summary>
-    /// <param name="particle">The <see cref="ParticleType"/> to be spawned.</param>
-    /// <param name="pos">The target position as <see cref="VectorF"/>.</param>
-    /// <param name="count">The amount of particles to be spawned.</param>
-    /// <param name="data">The <see cref="ParticleData"/> of the particle.</param>
-    /// <param name="extra">The extra data of the particle, mostly used for speed.</param>
-    public Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, ParticleData data, float extra = 0);
-
-    /// <summary>
-    /// Spawns the given particle at the target position.
-    /// </summary>
-    /// <param name="particle">The <see cref="ParticleType"/> to be spawned.</param>
-    /// <param name="pos">The target position as <see cref="VectorF"/>.</param>
-    /// <param name="count">The amount of particles to be spawned.</param>
-    /// <param name="offsetX">The x-offset.</param>
-    /// <param name="offsetY">The y-offset.</param>
-    /// <param name="offsetZ">The z-offset.</param>
-    /// <param name="data">The <see cref="ParticleData"/> of the particle.</param>
-    /// <param name="extra">The extra data of the particle, mostly used for speed.</param>
-    public Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float offsetX, float offsetY,
-        float offsetZ, ParticleData data, float extra = 0);
+    public ValueTask SpawnParticleAsync(ParticleData data);
 
     public Task<bool> GrantPermissionAsync(string permission);
     public Task<bool> RevokePermissionAsync(string permission);
     public bool HasPermission(string permission);
     public bool HasAnyPermission(IEnumerable<string> permissions);
     public bool HasAllPermissions(IEnumerable<string> permissions);
-    public Task SetGamemodeAsync(Gamemode gamemode);
+    public ValueTask SetGamemodeAsync(Gamemode gamemode);
 
-    public Task UpdateDisplayNameAsync(string newDisplayName);
+    public ValueTask UpdateDisplayNameAsync(string newDisplayName);
 
     public ItemStack? GetHeldItem();
     public ItemStack? GetOffHandItem();
