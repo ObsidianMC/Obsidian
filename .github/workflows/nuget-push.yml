@@ -3,7 +3,7 @@ name: Nuget
 on:
   workflow_dispatch:
   push:
-    branches: ["1.*"]
+    branches: ["1.21.x"]
     # Publish semver tags as releases.
     tags: ["v*.*.*"]
     # don't publish when we change workflow files
