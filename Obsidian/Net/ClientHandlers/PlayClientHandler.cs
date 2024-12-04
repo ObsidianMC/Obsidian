@@ -12,9 +12,9 @@ internal sealed class PlayClientHandler : ClientHandler
         { 28, new MovePlayerPosPacket() },
         { 29, new MovePlayerPosRotPacket() },
         { 30, new MovePlayerRotPacket() },
-        { 37, new PlayerAbilitiesPacket() },
-        { 58, new UseItemOnPacket() },
-        { 59, new UseItemPacket() },
+        { 38, new PlayerAbilitiesPacket() },
+        { 60, new UseItemOnPacket() },
+        { 61, new UseItemPacket() },
     }.ToFrozenDictionary();
 
     public async override ValueTask<bool> HandleAsync(PacketData packetData)
@@ -65,33 +65,33 @@ internal sealed class PlayClientHandler : ClientHandler
                 await HandleFromPoolAsync<KeepAlivePacket>(data);
                 break;
             case 34:
-                await HandleFromPoolAsync<PickItemPacket>(data);
+                await HandleFromPoolAsync<PickItemFromBlockPacket>(data);
                 break;
-            case 36:
+            case 37:
                 await HandleFromPoolAsync<PlaceRecipePacket>(data);
                 break;
-            case 38:
+            case 39:
                 await HandleFromPoolAsync<PlayerActionPacket>(data);
                 break;
-            case 39:
+            case 40:
                 await HandleFromPoolAsync<PlayerCommandPacket>(data);
                 break;
-            case 43:
+            case 45:
                 await HandleFromPoolAsync<RecipeBookSeenRecipePacket>(data);
                 break;
-            case 44:
+            case 46:
                 await HandleFromPoolAsync<RenameItemPacket>(data);
                 break;
-            case 52:
+            case 54:
                 await HandleFromPoolAsync<SetCreativeModeSlotPacket>(data);
                 break;
-            case 56:
+            case 58:
                 await HandleFromPoolAsync<SwingPacket>(data);
                 break;
-            case 58:
+            case 60:
                 await HandleFromPoolAsync<UseItemOnPacket>(data);
                 break;
-            case 59:
+            case 61:
                 await HandleFromPoolAsync<UseItemPacket>(data);
                 break;
             default:

@@ -23,10 +23,6 @@ public partial class DisguisedChatPacket
         writer.WriteChat(this.Message);
         writer.WriteVarInt(this.ChatType);
         writer.WriteChat(this.SenderName);
-
-        writer.WriteBoolean(this.HasTargetName);
-
-        if (this.HasTargetName)
-            writer.WriteChat(this.TargetName!);
+        writer.WriteOptional(this.TargetName);
     }
 }

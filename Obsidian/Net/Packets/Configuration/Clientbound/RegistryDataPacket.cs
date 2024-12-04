@@ -14,9 +14,9 @@ public partial class RegistryDataPacket(string registryId, IDictionary<string, I
         {
             writer.WriteString(key);
 
-            writer.WriteBoolean(false);
+            writer.WriteBoolean(true);
 
-            //writer.WriteCodec(codec);
+            writer.WriteCodec(codec);
         }
     }
 }

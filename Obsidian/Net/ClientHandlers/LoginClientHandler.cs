@@ -86,7 +86,7 @@ internal sealed class LoginClientHandler : ClientHandler
 
     private async Task HandleLoginStartAsync(byte[] data)
     {
-        var loginStart = Packets.Login.Serverbound.HelloPacket.Deserialize(data);
+        var loginStart = HelloPacket.Deserialize(data);
 
         var username = this.Server.Configuration.Network.MulitplayerDebugMode ? $"Player{Globals.Random.Next(1, 999)}" : loginStart.Username;
         var world = (World)this.Server.DefaultWorld;

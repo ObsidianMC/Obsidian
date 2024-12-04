@@ -12,7 +12,7 @@ internal sealed class ConfigurationClientHandler : ClientHandler
         {
             case 0:
                 return await HandleFromPoolAsync<ClientInformationPacket>(data);
-            case 1:
+            case 2:
                 return await HandleFromPoolAsync<CustomPayloadPacket>(data);
             case 3:
                 return await HandleFromPoolAsync<Packets.Configuration.Serverbound.FinishConfigurationPacket>(data);
