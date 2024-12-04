@@ -582,8 +582,6 @@ public sealed partial class Server : IServer
                 stopwatch.Restart();
                 tpsMeasure.PushMeasurement(elapsedTicks);
                 Tps = tpsMeasure.Tps;
-
-                UpdateStatusConsole();
             }
         }
         catch (OperationCanceledException)
@@ -601,12 +599,6 @@ public sealed partial class Server : IServer
 
         _logger.LogInformation("The game loop has been stopped");
         await WorldManager.FlushLoadedWorldsAsync();
-    }
-
-    internal void UpdateStatusConsole()
-    {
-        var status = $"    tps:{Tps} c:{WorldManager.GeneratingChunkCount}/{WorldManager.LoadedChunkCount} r:{WorldManager.RegionCount}";
-        ConsoleIO.UpdateStatusLine(status);
     }
 
     public void Dispose()

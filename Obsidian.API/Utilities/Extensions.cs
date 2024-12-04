@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Transactions;
 
 namespace Obsidian.API.Utilities;
 public static partial class Extensions

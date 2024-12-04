@@ -178,7 +178,7 @@ public sealed class Client : IDisposable
 
         LoadedChunks = [];
         packetCryptography = new();
-        handler = new(server.Configuration);
+        handler = new(server.Configuration, loggerFactory);
         networkStream = new(connectionContext.Transport);
         minecraftStream = new(networkStream);
 
@@ -391,7 +391,7 @@ public sealed class Client : IDisposable
 
     private async Task HandleServerStatusRequestAsync()
     {
-        var status = new ServerStatus(this.server);
+        var status = new ServerStatus(this.server, this.loggerFactory);
 
         _ = await this.server.EventDispatcher.ExecuteEventAsync(new ServerStatusRequestEventArgs(this.server, status));
 

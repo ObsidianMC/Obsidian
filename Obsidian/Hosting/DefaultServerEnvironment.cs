@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Obsidian.API.Configuration;
 using System.Threading;
@@ -12,7 +13,8 @@ namespace Obsidian.Hosting;
 /// 
 /// Use the <see cref="CreateAsync"/> method to create an instance.
 /// </summary>
-internal sealed class DefaultServerEnvironment(IOptionsMonitor<ServerConfiguration> serverConfig, ILogger<DefaultServerEnvironment> logger) : IServerEnvironment, IDisposable
+internal sealed class DefaultServerEnvironment(IOptionsMonitor<ServerConfiguration> serverConfig, IConfiguration configuration,
+    ILogger<DefaultServerEnvironment> logger) : IServerEnvironment, IDisposable
 {
     private readonly ILogger<DefaultServerEnvironment> logger = logger;
 
@@ -26,6 +28,9 @@ internal sealed class DefaultServerEnvironment(IOptionsMonitor<ServerConfigurati
     /// <returns></returns>
     public async Task ProvideServerCommandsAsync(Server server, CancellationToken cToken)
     {
+        if (configuration.GetValue<bool>("DOTNET_RUNNING_IN_CONTAINER"))
+            return;
+
         while (!cToken.IsCancellationRequested)
         {
             var input = Console.ReadLine();
@@ -64,7 +69,7 @@ internal sealed class DefaultServerEnvironment(IOptionsMonitor<ServerConfigurati
     public void Dispose()
     {
         GC.SuppressFinalize(this);
-        
+
     }
 }
 

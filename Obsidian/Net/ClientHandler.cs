@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Configuration;
-using Obsidian.API.Logging;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Play.Serverbound;
@@ -8,18 +7,11 @@ using Obsidian.Utilities.Collections;
 
 namespace Obsidian.Net;
 
-public sealed class ClientHandler
+public sealed class ClientHandler(ServerConfiguration config, ILoggerFactory loggerFactory)
 {
     private ConcurrentDictionary<int, ServerboundPacket> Packets { get; } = new ConcurrentDictionary<int, ServerboundPacket>();
-    private ServerConfiguration config;
-    private readonly ILogger _logger;
 
-    public ClientHandler(ServerConfiguration config)
-    {
-        this.config = config;
-        var loggerProvider = new LoggerProvider(LogLevel.Error);
-        _logger = loggerProvider.CreateLogger("ClientHanlder");
-    }
+    private readonly ILogger _logger = loggerFactory.CreateLogger("ClientHanlder");
 
     public void RegisterHandlers()
     {
