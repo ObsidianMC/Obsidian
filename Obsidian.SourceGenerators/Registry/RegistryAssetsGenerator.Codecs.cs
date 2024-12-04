@@ -1,6 +1,5 @@
 ﻿using Obsidian.SourceGenerators.Registry.Models;
 using System.Text.Json;
-using System.Xml.Linq;
 
 namespace Obsidian.SourceGenerators.Registry;
 public partial class RegistryAssetsGenerator
@@ -95,11 +94,11 @@ public partial class RegistryAssetsGenerator
 
                 if (value.ValueKind == JsonValueKind.Object)
                 {
-                    builder.ParseProperty(value, ctx, name == "OverrideArmorMaterials");
+                    builder.ParseProperty(value, ctx, name == "OverrideArmorAssets");
                     return;
                 }
 
-                builder.AppendValueType(value, ctx, name == "OverrideArmorMaterials");
+                builder.AppendValueType(value, ctx, name == "OverrideArmorAssets");
             }, ctx);
 
         builder.GenerateSimpleCodec(codecs["trim_pattern"].ToArray(), "TrimPattern", "minecraft:trim_pattern", "TrimPatternCodec", ctx);

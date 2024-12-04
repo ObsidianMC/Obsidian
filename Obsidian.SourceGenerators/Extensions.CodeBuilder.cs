@@ -36,6 +36,29 @@ public partial class Extensions
         builder.Append("}, ");
     }
 
+    internal static void ParseArray(this CodeBuilder builder, JsonElement element, SourceProductionContext ctx, bool isDictionary = false)
+    {
+        builder.Append("[");
+
+        foreach (var value in element.EnumerateArray())
+        {
+            if (value.ValueKind is JsonValueKind.Object)
+            {
+                builder.ParseProperty(value, ctx, isDictionary);
+                continue;
+            }
+            else if (value.ValueKind == JsonValueKind.Array)
+            {
+                builder.ParseArray(element, ctx, isDictionary);
+                continue;
+            }
+
+            builder.AppendValueType(value, ctx, isDictionary);
+        }
+
+        builder.Append("], ");
+    }
+
     internal static void ParseProperty(this CodeBuilder builder, JsonElement element, SourceProductionContext ctx, bool isDictionary = false)
     {
         builder.Append("new() { ");
@@ -46,12 +69,16 @@ public partial class Extensions
         {
             foreach (var value in element.EnumerateArray())
             {
-                if (value.ValueKind is JsonValueKind.Object or JsonValueKind.Array)
+                if (value.ValueKind is JsonValueKind.Object)
                 {
                     builder.ParseProperty(value, ctx, isDictionary);
                     continue;
                 }
-
+                else if (value.ValueKind == JsonValueKind.Array)
+                {
+                    builder.ParseArray(value, ctx, isDictionary);
+                    continue;
+                }
                 builder.AppendValueType(value, ctx, isDictionary);
             }
         }
@@ -74,9 +101,14 @@ public partial class Extensions
                     }
                 }
 
-                if (value.ValueKind is JsonValueKind.Object or JsonValueKind.Array)
+                if (value.ValueKind is JsonValueKind.Object)
                 {
                     builder.ParseProperty(value, ctx, isDictionary);
+                    continue;
+                }
+                else if (value.ValueKind == JsonValueKind.Array)
+                {
+                    builder.ParseArray(value, ctx, isDictionary);
                     continue;
                 }
 

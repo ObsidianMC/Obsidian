@@ -7,5 +7,5 @@ public sealed class TrimMaterialElement
 
     public required TrimDescription Description { get; init; }
 
-    public Dictionary<string, string>? OverrideArmorMaterials { get; init; }
+    public Dictionary<string, string>? OverrideArmorAssets { get; init; }
 }
