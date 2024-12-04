@@ -5,7 +5,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Obsidian.API.Boss;
-using Obsidian.API.Builders;
 using Obsidian.API.Configuration;
 using Obsidian.API.Crafting;
 using Obsidian.API.Events;
@@ -53,7 +52,7 @@ public sealed partial class Server : IServer
         }
     }
 #endif
-    public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_21_3;
+    public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_21_4;
 
     public const string PersistentDataPath = "persistentdata";
     public const string PermissionPath = "permissions";
