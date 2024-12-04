@@ -443,7 +443,14 @@ public partial class Extensions
             value.MoodSound.WriteMoodSound(effects);
 
         if (value.Music != null)
-            value.Music.WriteMusic(effects);
+        {
+            var list = new NbtList(NbtTagType.Compound, "music");
+
+            foreach(var item in value.Music)
+            {
+                item.Data.WriteMusic(effects);
+            }
+        }
 
         if (!value.AmbientSound.IsNullOrEmpty())
             effects.Add(new NbtTag<string>("ambient_sound", value.AmbientSound));
@@ -465,6 +472,19 @@ public partial class Extensions
         };
 
         compound.Add(music);
+    }
+
+    public static void WriteMusic(this BiomeMusicEffect musicEffect, NbtList list)
+    {
+        var music = new NbtCompound("music")
+        {
+            new NbtTag<bool>("replace_current_music", musicEffect.ReplaceCurrentMusic),
+            new NbtTag<string>("sound", musicEffect.Sound),
+            new NbtTag<int>("max_delay", musicEffect.MaxDelay),
+            new NbtTag<int>("min_delay", musicEffect.MinDelay)
+        };
+
+        list.Add(music);
     }
 
     public static void WriteAdditionSound(this BiomeAdditionSound value, NbtCompound compound)
@@ -544,14 +564,14 @@ public partial class Extensions
             new NbtTag<string>("color", materialElement.Description.Color!)
         };
 
-        if (materialElement.OverrideArmorMaterials is Dictionary<string, string> overrideArmorMats)
+        if (materialElement.OverrideArmorAssets is Dictionary<string, string> overrideArmorMats)
         {
-            var overrideArmorMaterialsCompound = new NbtCompound("override_armor_materials");
+            var overrideArmorAssets = new NbtCompound("override_armor_assets");
 
             foreach (var (type, replacement) in overrideArmorMats)
-                overrideArmorMaterialsCompound.Add(new NbtTag<string>(type, replacement));
+                overrideArmorAssets.Add(new NbtTag<string>(type, replacement));
 
-            writer.WriteTag(overrideArmorMaterialsCompound);
+            writer.WriteTag(overrideArmorAssets);
         }
 
         writer.WriteString("ingredient", materialElement.Ingredient);
