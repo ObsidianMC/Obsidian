@@ -39,6 +39,8 @@ public partial class Player
         await using var playerFileStream = playerDataFile.Create();
         await using var writer = new NbtWriter(playerFileStream, NbtCompression.GZip, "");
 
+        writer.WriteByte("MovementFlags", (byte)this.MovementFlags);
+
         writer.WriteInt("DataVersion", 3337);
         writer.WriteInt("playerGameType", (int)Gamemode);
         writer.WriteInt("previousPlayerGameType", (int)Gamemode);

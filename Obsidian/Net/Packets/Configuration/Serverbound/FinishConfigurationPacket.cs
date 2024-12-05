@@ -49,7 +49,7 @@ public sealed partial class FinishConfigurationPacket
         await player.UpdatePlayerInfoAsync();
         await player.SendPlayerInfoAsync();
 
-        await client.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
+        
 
         player.TeleportId = Globals.Random.Next(0, 999);
         await client.QueuePacketAsync(new PlayerPositionPacket
@@ -61,6 +61,7 @@ public sealed partial class FinishConfigurationPacket
             TeleportId = player.TeleportId
         });
 
+        await client.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
         await player.UpdateChunksAsync(distance: 7);
         await server.EventDispatcher.ExecuteEventAsync(new PlayerJoinEventArgs(player, server, DateTimeOffset.Now));
     }
