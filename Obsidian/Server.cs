@@ -607,8 +607,6 @@ public sealed partial class Server : IServer
                 stopwatch.Restart();
                 tpsMeasure.PushMeasurement(elapsedTicks);
                 Tps = tpsMeasure.Tps;
-
-                UpdateStatusConsole();
             }
         }
         catch (OperationCanceledException)
@@ -627,13 +625,7 @@ public sealed partial class Server : IServer
         _logger.LogInformation("The game loop has been stopped");
         await WorldManager.FlushLoadedWorldsAsync();
     }
-
-    internal void UpdateStatusConsole()
-    {
-        var status = $"    tps:{Tps} c:{WorldManager.GeneratingChunkCount}/{WorldManager.LoadedChunkCount} r:{WorldManager.RegionCount}";
-        ConsoleIO.UpdateStatusLine(status);
-    }
-
+    
     public bool IsWhitedlisted(string username) => this.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => x.Name == username);
 
     public bool IsWhitedlisted(Guid uuid) => this.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => x.Id == uuid);

@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Configuration;
-using Obsidian.API.Logging;
 using Obsidian.API.Utilities;
 using Obsidian.Entities;
 using System.IO;
@@ -28,11 +27,10 @@ public sealed class ServerStatus : IServerStatus
     /// <summary>
     /// Generates a server status from the specified <paramref name="server"/>.
     /// </summary>
-    public ServerStatus(IServer server, bool anonymous = false)
+    public ServerStatus(IServer server, ILoggerFactory loggerFactory, bool anonymous = false)
     {
         ArgumentNullException.ThrowIfNull(server);
-        var loggerProvider = new LoggerProvider();
-        _logger = loggerProvider.CreateLogger("ServerStatus");
+        _logger = loggerFactory.CreateLogger("ServerStatus");
 
         Version = ServerVersion.Create();
         if (!anonymous)

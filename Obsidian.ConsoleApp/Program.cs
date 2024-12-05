@@ -31,7 +31,15 @@ builder.ConfigureObsidian();
 builder.Services.AddLogging(loggingBuilder =>
 {
     loggingBuilder.ClearProviders();
-    loggingBuilder.AddSimpleConsole(x => x.ColorBehavior = LoggerColorBehavior.Enabled);
+
+    //Console logger can be edited through server.config https://learn.microsoft.com/en-us/dotnet/core/extensions/console-log-formatter
+    loggingBuilder.AddSimpleConsole(x =>
+    {
+        x.ColorBehavior = LoggerColorBehavior.Enabled;
+        x.SingleLine = true;
+        x.IncludeScopes = true;
+        x.TimestampFormat = "HH:mm:ss ";
+    });
 });
 
 builder.AddObsidian();
