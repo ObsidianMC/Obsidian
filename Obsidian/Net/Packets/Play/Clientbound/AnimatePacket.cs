@@ -13,7 +13,7 @@ public partial class AnimatePacket
     public override void Serialize(INetStreamWriter writer)
     {
         writer.WriteVarInt(this.EntityId);
-        writer.WriteByte((byte)this.Animation);
+        writer.WriteByte(this.Animation);
     }
 }
 

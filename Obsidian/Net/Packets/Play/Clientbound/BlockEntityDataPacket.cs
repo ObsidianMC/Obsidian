@@ -9,7 +9,7 @@ public partial class BlockEntityDataPacket
     public Vector Position { get; init; }
 
     [Field(1), VarLength]
-    private int Type { get; init; }
+    private EntityType Type { get; init; }
 
     [Field(2)]
     public INbtTag NBTData { get; init; } = default!;

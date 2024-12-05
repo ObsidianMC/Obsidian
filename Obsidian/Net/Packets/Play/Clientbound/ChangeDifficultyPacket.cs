@@ -13,7 +13,7 @@ public partial class ChangeDifficultyPacket(Difficulty difficulty)
 
     public override void Serialize(INetStreamWriter writer)
     {
-        writer.WriteByte((sbyte)this.Difficulty);
+        writer.WriteByte(this.Difficulty);
         writer.WriteBoolean(this.DifficultyLocked);
     }
 }
