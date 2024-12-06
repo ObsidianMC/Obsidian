@@ -11,5 +11,13 @@ public abstract class DataContainer<T>
 
     public virtual int GetIndex(int x, int y, int z) => (y << this.BitsPerEntry | z) << this.BitsPerEntry | x;
 
+    public void GrowDataArray()
+    {
+        if (Palette.BitCount <= DataArray.BitsPerEntry)
+            return;
+
+        DataArray = DataArray.Grow(Palette.BitCount);
+    }
+
     public abstract void WriteTo(INetStreamWriter writer);
 }

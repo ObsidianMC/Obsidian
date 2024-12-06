@@ -936,66 +936,7 @@ public sealed class World : IWorld
         return region.Entities.TryAdd(entity.EntityId, entity);
     }
 
-    //TODO 
-    private void LoadWorldGenSettings(NbtCompound levelCompound)
-    {
-        if (!levelCompound.TryGetTag("WorldGenSettings", out var genTag))
-            return;
-
-        var worldGenSettings = genTag as NbtCompound;
-
-        // bonus_chest
-        // seed
-        // generate_features
-
-        if (worldGenSettings.TryGetTag("dimensions", out var dimensionsTag))
-        {
-            var dimensions = dimensionsTag as NbtCompound;
-
-            foreach (var (_, childDimensionTag) in dimensions)
-            {
-                var childDimensionCompound = childDimensionTag as NbtCompound;
-            }
-
-            var dimensionType = dimensions.GetString("type");
-        }
-    }
-
     private void BroadcastTime() => this.PacketBroadcaster.QueuePacketToWorld(this, new SetTimePacket(LevelData.Time, LevelData.Time % 24000, true));
-
-    private void WriteWorldGenSettings(NbtWriter writer)
-    {
-        if (!CodecRegistry.TryGetDimension(DimensionName, out var codec))
-            return;
-
-        var dimensionsCompound = new NbtCompound("dimensions")
-        {
-            new NbtCompound(codec.Name)
-            {
-                new NbtTag<string>("type", codec.Name),
-            }
-        };
-
-        foreach (var (id, _) in dimensions)
-        {
-            CodecRegistry.TryGetDimension(id, out var childDimensionCodec);
-
-            dimensionsCompound.Add(new NbtCompound(childDimensionCodec.Name)
-            {
-                new NbtTag<string>("type", childDimensionCodec.Name),
-            });
-        }
-
-        var worldGenSettingsCompound = new NbtCompound("WorldGenSettings")
-        {
-            //THE SEED SHOULD BE NUMERICAL
-            new NbtTag<string>("seed", Seed),
-
-            dimensionsCompound
-        };
-
-        writer.WriteTag(worldGenSettingsCompound);
-    }
 
     public async ValueTask DisposeAsync()
     {

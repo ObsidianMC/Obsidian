@@ -27,8 +27,7 @@ public sealed class BiomeContainer : DataContainer<Biome>
 
         var paletteIndex = this.Palette.GetOrAddId(biome);
 
-        if (Palette.BitCount > DataArray.BitsPerEntry)
-            DataArray = DataArray.Grow(Palette.BitCount);
+        this.GrowDataArray();
 
         this.DataArray[index] = paletteIndex;
     }

@@ -195,7 +195,6 @@ public class Region : IRegion
                 section.BlockStateContainer.GrowDataArray();
             }
 
-            //TODO find a way around this (We shouldn't be storing the states data array in nbt anyway.)
             if (statesCompound.TryGetTag("data", out var dataArrayTag))
             {
                 var data = dataArrayTag as NbtArray<long>;
@@ -203,22 +202,24 @@ public class Region : IRegion
             }
 
             var biomesCompound = sectionCompound["biomes"] as NbtCompound;
-            var biomesPalette = biomesCompound!["palette"] as NbtList;
-
-            var biomePalette = section.BiomeContainer.Palette;
-            foreach (NbtTag<string> biome in biomesPalette!)
+            if(biomesCompound!.TryGetTag<NbtList>("palette", out var biomesPalette))
             {
-                if (Enum.TryParse<Biome>(biome.Value.TrimResourceTag(), true, out var value))
-                    biomePalette.GetOrAddId(value);
-            }
-            if (biomesPalette.Count > 1)
-            {
-                if (biomesCompound.TryGetTag("data", out var biomeDataArrayTag))
+                var biomePalette = section.BiomeContainer.Palette;
+                foreach (NbtTag<string> biome in biomesPalette!)
                 {
-                    var data = biomeDataArrayTag as NbtArray<long>;
-                    section.BiomeContainer.DataArray.storage = data!.GetArray();
+                    if (Enum.TryParse<Biome>(biome.Value.TrimResourceTag(), true, out var value))
+                        biomePalette.GetOrAddId(value);
                 }
+
+                section.BiomeContainer.GrowDataArray();
             }
+
+            if (biomesCompound.TryGetTag("data", out var biomeDataArrayTag))
+            {
+                var data = biomeDataArrayTag as NbtArray<long>;
+                section.BiomeContainer.DataArray.storage = data!.GetArray();
+            }
+
 
             if (sectionCompound.TryGetTag("SkyLight", out var skyLightTag))
             {
