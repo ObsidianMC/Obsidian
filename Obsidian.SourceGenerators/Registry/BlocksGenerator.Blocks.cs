@@ -15,14 +15,7 @@ public partial class BlocksGenerator
 
         foreach (var block in blocks)
         {
-            var blockName = block.Name;
-
-            if (blockName == "Obsidian")
-                blockName = "ObsidianBlock";
-            if (blockName == "TrialSpawner")
-                blockName = "TrialSpawnerBlock";
-            if (blockName == "Vault")
-                blockName = "VaultBlock";
+            var blockName = block.Name.SanitizeBlockName();
 
             var builder = new CodeBuilder()
                 .Using("Obsidian.API")

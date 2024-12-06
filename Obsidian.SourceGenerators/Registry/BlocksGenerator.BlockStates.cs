@@ -1,8 +1,10 @@
 ﻿using Obsidian.SourceGenerators.Registry.Models;
+using System.Text.Json;
 
 namespace Obsidian.SourceGenerators.Registry;
 public partial class BlocksGenerator
 {
+   
     private static void CreateBlockStates(Block[] blocks, SourceProductionContext ctx)
     {
         foreach (var block in blocks)
@@ -10,13 +12,7 @@ public partial class BlocksGenerator
             if (block.Properties.Length == 0)
                 continue;
 
-            var blockName = block.Name;
-
-            //TODO THIS NEEDS TO BE MOVED SOMEWHERE
-            if (blockName == "TrialSpawner")
-                blockName = "TrialSpawnerBlock";
-            if (blockName == "Vault")
-                blockName = "VaultBlock";
+            var blockName = block.Name.SanitizeBlockName();
 
             var builder = new CodeBuilder()
                 .Namespace("Obsidian.API.BlockStates")
@@ -34,7 +30,6 @@ public partial class BlocksGenerator
 
             builder.Line().Line().Method($"public {blockName}State()").EndScope();
 
-            //00010
             builder.EndScope();
 
             ctx.AddSource($"{blockName}State.g.cs", builder.ToString());

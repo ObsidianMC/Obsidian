@@ -1,9 +1,12 @@
-﻿using System.Text.Json;
-
-namespace Obsidian.SourceGenerators.Registry;
+﻿namespace Obsidian.SourceGenerators.Registry;
 
 internal static class NameHelper
 {
+    private static readonly string[] invalidBlockNames = ["TrialSpawner", "Vault", "Obsidian"];
+
+    public static string SanitizeBlockName(this string blockName) => 
+        invalidBlockNames.Contains(blockName) ? $"{blockName}Block" : blockName;
+
     public static string RemoveNamespace(this string namespacedName)
     {
         return namespacedName.Substring(namespacedName.IndexOf(":") + 1);
