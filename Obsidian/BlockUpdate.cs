@@ -1,5 +1,4 @@
-﻿using Obsidian.Registries;
-using Obsidian.WorldData;
+﻿using Obsidian.WorldData;
 
 namespace Obsidian;
 

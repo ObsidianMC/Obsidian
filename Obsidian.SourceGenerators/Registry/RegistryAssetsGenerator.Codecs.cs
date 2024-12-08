@@ -23,7 +23,7 @@ public partial class RegistryAssetsGenerator
             .Using("Obsidian.API.Registry.Codecs.PaintingVariant")
             .Using("System.Collections.Frozen")
             .Line()
-            .Namespace("Obsidian.Registries")
+            .Namespace("Obsidian.API.Registries")
             .Line()
             .Type("public static partial class CodecRegistry");
 
@@ -57,6 +57,11 @@ public partial class RegistryAssetsGenerator
                 if (value.ValueKind == JsonValueKind.Object)
                 {
                     builder.ParseProperty(value, ctx);
+                    return;
+                }
+                else if (value.ValueKind == JsonValueKind.Array)
+                {
+                    builder.ParseArray(value, ctx);
                     return;
                 }
 

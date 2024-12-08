@@ -3,9 +3,6 @@ using Obsidian.Commands.Framework.Entities;
 using Obsidian.Commands.Parsers;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Utilities.Interfaces;
-using System.Xml;
-using System;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Obsidian.Registries;
 public static class CommandsRegistry

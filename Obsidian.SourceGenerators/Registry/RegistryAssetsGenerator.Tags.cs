@@ -8,9 +8,8 @@ public partial class RegistryAssetsGenerator
     private static void GenerateTags(Assets assets, SourceProductionContext context)
     {
         var builder = new CodeBuilder();
-        builder.Using("Obsidian.Net.Packets.Play.Clientbound");
         builder.Line();
-        builder.Namespace("Obsidian.Registries");
+        builder.Namespace("Obsidian.API.Registries");
         builder.Line();
         builder.Type("internal static class TagsRegistry");
 

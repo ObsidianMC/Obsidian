@@ -1,13 +1,15 @@
 ﻿using Obsidian.API.Crafting;
 using Obsidian.API.Utilities;
 
-namespace Obsidian.Registries;
+namespace Obsidian.API.Registries;
 public static partial class ItemsRegistry
 {
     public static Item Get(int id) => Items.Values.SingleOrDefault(x => x.Id == id);
     public static Item Get(Material mat) => Items.GetValueOrDefault(mat);
     public static Item Get(string unlocalizedName) =>
         Items.Values.SingleOrDefault(x => x.UnlocalizedName.EqualsIgnoreCase(unlocalizedName));
+
+    public static bool TryGet(Material mat, out Item item) => Items.TryGetValue(mat, out item);
 
     public static ItemStack Get(string unlocalizedName, short count, ItemMeta? meta = null) => new(Get(unlocalizedName).Type, count, meta);
 
@@ -30,8 +32,8 @@ public static partial class ItemsRegistry
         return ingredient;
     }
 
-    public static Ingredient GetIngredientFromName(string name, short count) => new()
-    {
+    public static Ingredient GetIngredientFromName(string name, short count) =>
+    [
         Get(name, count)
-    };
+    ];
 }

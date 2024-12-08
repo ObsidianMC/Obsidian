@@ -1,13 +1,16 @@
-﻿namespace Obsidian.API;
+﻿using System.Diagnostics.CodeAnalysis;
 
-public struct Item
+namespace Obsidian.API;
+
+public readonly struct Item
 {
-    public string UnlocalizedName { get; }
+    public required string UnlocalizedName { get; init; }
 
-    public Material Type { get; }
+    public required Material Type { get; init; }
 
-    public short Id { get; internal set; }
+    public required short Id { get; init; }
 
+    [SetsRequiredMembers]
     public Item(int id, string unlocalizedName, Material type)
     {
         this.Id = (short)id;
@@ -15,6 +18,7 @@ public struct Item
         this.Type = type;
     }
 
+    [SetsRequiredMembers]
     public Item(Item item)
     {
         this.Id = item.Id;

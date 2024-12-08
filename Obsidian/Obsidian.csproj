@@ -86,6 +86,17 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <EmbeddedResource Include="Assets\Codecs\biomes.json" />
+	  <EmbeddedResource Include="Assets\Codecs\chat_type.json" />
+	  <EmbeddedResource Include="Assets\Codecs\damage_type.json" />
+	  <EmbeddedResource Include="Assets\Codecs\dimensions.json" />
+	  <EmbeddedResource Include="Assets\Codecs\painting_variant.json" />
+	  <EmbeddedResource Include="Assets\Codecs\trim_material.json" />
+	  <EmbeddedResource Include="Assets\Codecs\trim_pattern.json" />
+	  <EmbeddedResource Include="Assets\Codecs\wolf_variant.json" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<ProjectReference Include="..\Obsidian.API\Obsidian.API.csproj" />
 		<ProjectReference Include="..\Obsidian.SourceGenerators\Obsidian.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 		<ProjectReference Include="..\Obsidian.Nbt\Obsidian.Nbt.csproj" />

@@ -8,23 +8,31 @@ public partial class RegistryAssetsGenerator
     {
         var builder = new CodeBuilder();
         builder.Using("System.Collections.Generic");
+        builder.Using("System.Collections.Frozen");
         builder.Using("Obsidian.API");
         builder.Using("Obsidian.API.Inventory");
         builder.Line();
-        builder.Namespace("Obsidian.Registries");
+        builder.Namespace("Obsidian.API.Registries");
         builder.Line();
         builder.Type("public static partial class ItemsRegistry");
-
-        builder.Statement("internal static Dictionary<Material, Item> Items = new()");
 
         foreach (Item item in assets.Items)
         {
             var name = item.Name;
 
-            builder.Line($"{{ Material.{name}, new Item({item.Id}, \"{item.Tag}\", Material.{name}) }},");
+            builder.Line($"public static Item {name} {{ get; }} = new Item({item.Id}, \"{item.Tag}\", Material.{name});");
         }
 
-        builder.EndScope(semicolon: true);
+        builder.Statement("internal static FrozenDictionary<Material, Item> Items = new Dictionary<Material, Item>()");
+
+        foreach (Item item in assets.Items)
+        {
+            var name = item.Name;
+
+            builder.Line($"{{ Material.{name}, {name} }},");
+        }
+
+        builder.EndScope(".ToFrozenDictionary()", semicolon: true);
 
         builder.EndScope();
 

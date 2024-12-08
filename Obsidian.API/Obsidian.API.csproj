@@ -41,6 +41,9 @@
 		<AdditionalFiles Include="..\Obsidian\Assets\items.json" Link="Assets\items.json" />
 		<AdditionalFiles Include="..\Obsidian\Assets\fluids.json" Link="Assets\fluids.json" />
 		<AdditionalFiles Include="..\Obsidian\Assets\sounds.json" Link="Assets\sounds.json" />
+		<AdditionalFiles Include="..\Obsidian\Assets\tags.json" Link="Assets\tags.json" />
+		
+		<AdditionalFiles Include="..\Obsidian\Assets\Codecs\**\*.json" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -25,13 +25,13 @@ public sealed partial class RegistryAssetsGenerator : IIncrementalGenerator
 
         if (assembly == "Obsidian")
         {
-            GenerateTags(assets, context);
-            GenerateItems(assets, context);
             GenerateBlockIds(assets, context);
-            GenerateCodecs(assets, context);
         }
         else if (assembly == "Obsidian.API")
         {
+            GenerateTags(assets, context);
+            GenerateItems(assets, context);
+            GenerateCodecs(assets, context);
             GenerateMaterials(assets, context);
             GenerateSounds(assets, context);
         }
