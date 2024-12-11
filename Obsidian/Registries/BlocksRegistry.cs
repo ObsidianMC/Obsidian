@@ -139,5 +139,5 @@ internal static partial class BlocksRegistry
     }
 
     private static string GetSanitizedName(string value) =>
-        illegalBlockNames.Contains(value) ? $"{value}Block" : string.Empty;
+        illegalBlockNames.Contains(value) ? $"{value}Block" : value;
 }
