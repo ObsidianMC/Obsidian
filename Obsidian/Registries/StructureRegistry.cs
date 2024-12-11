@@ -8,6 +8,10 @@ internal static class StructureRegistry
     public static void Initialize()
     {
         var structDir = "Assets/Structures/";
+        if(!Directory.Exists("Assets/Structures/"))
+        {
+            Directory.CreateDirectory("Assets/Structures");
+        }
         var files = Directory.GetFiles(structDir, "*.nbt");
         foreach (var file in files)
         {

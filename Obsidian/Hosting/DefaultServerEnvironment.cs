@@ -47,6 +47,7 @@ internal sealed class DefaultServerEnvironment(IOptionsMonitor<ServerConfigurati
     Task IServerEnvironment.OnServerCrashAsync(Exception e)
     {
         // Write crash log somewhere?
+        // FileLogger implemented in ConsoleApp
         var byeMessages = new[]
         {
             "We had a good run...",

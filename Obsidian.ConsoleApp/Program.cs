@@ -3,6 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Obsidian;
+using Obsidian.ConsoleApp;
 using Obsidian.Hosting;
 
 // Cool startup console logo because that's cool
@@ -28,6 +29,14 @@ var builder = Host.CreateApplicationBuilder();
 
 builder.ConfigureObsidian();
 
+if(!Directory.Exists("logs"))
+{
+    Directory.CreateDirectory("logs");
+}
+// filename with date,time
+var logFile = $"logs/{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.log";
+var logFileStream = new FileStream(logFile, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
+
 builder.Services.AddLogging(loggingBuilder =>
 {
     loggingBuilder.ClearProviders();
@@ -40,6 +49,8 @@ builder.Services.AddLogging(loggingBuilder =>
         x.IncludeScopes = true;
         x.TimestampFormat = "HH:mm:ss ";
     });
+
+    loggingBuilder.AddProvider(new StreamLoggerProvider(logFileStream));
 });
 
 builder.AddObsidian();
