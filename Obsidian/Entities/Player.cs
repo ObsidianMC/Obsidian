@@ -43,8 +43,7 @@ public sealed partial class Player : Living, IPlayer
     /// </summary>
     public ConcurrentHashSet<long> LoadedChunks { get; internal set; } = [];
 
-    //TODO 
-    public bool IsOperator { get; private set; }
+    public bool IsOperator => this.client.server.Operators.IsOperator(this);
 
     public string Username { get; }
 
