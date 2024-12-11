@@ -214,6 +214,12 @@ public sealed class MainCommandModule : CommandModuleBase
         if (this.Player is not Player player)
             return;
 
+        // convert snake_case to PascalCase
+        if(item.Contains('_'))
+        {
+            var parts = item.Split('_');
+            item = string.Join("", parts.Select(x => $"{x[0].ToString().ToUpperInvariant()}{x.Substring(1)}"));
+        }
         // find material from string (enum Material)
         if (Enum.TryParse<Material>(item, out Material material))
         {
