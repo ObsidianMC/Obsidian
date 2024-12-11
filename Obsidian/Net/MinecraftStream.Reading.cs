@@ -666,7 +666,7 @@ public partial class MinecraftStream : INetStreamReader
             return itemStack;
         }
 
-        return null;
+        return itemStack;
     }
 
     [ReadMethod]
