@@ -34,7 +34,7 @@ if(!Directory.Exists("logs"))
 }
 // filename with date,time
 var logFile = $"logs/{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.log";
-var logFileStream = new FileStream(logFile, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
+var logFileStream = new FileStream(logFile, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
 
 builder.Services.AddLogging(loggingBuilder =>
 {
