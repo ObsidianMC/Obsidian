@@ -2,6 +2,7 @@
 using Obsidian.API.Utilities;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Entities;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
 using Obsidian.WorldData;
 using System.Collections.Frozen;
@@ -201,6 +202,34 @@ public sealed class MainCommandModule : CommandModuleBase
         if (this.Player is Player player)
         {
             await player.client.QueuePacketAsync(CommandsRegistry.Packet);
+        }
+    }
+
+    [Command("give")]
+    [CommandInfo("Gives you a block or item", "/get <item> <amount>")]
+    [IssuerScope(CommandIssuers.Client)]
+    [RequirePermission(op: true, permissions: "obsidian.give")]
+    public async Task GiveAsync(string item, int amount = 1)
+    {
+        if (this.Player is not Player player)
+            return;
+
+        // find material from string (enum Material)
+        if (Enum.TryParse<Material>(item, out Material material))
+        {
+            var slot = player.Inventory.AddItem(new ItemStack(material, count: amount));
+            await player.SendMessageAsync($"Given you {ChatColor.Gold}{amount} {item}(s)");
+            player.client.SendPacket(new ContainerSetSlotPacket
+            {
+                Slot = (short)slot,
+                ContainerId = 0,
+                SlotData = player.Inventory.GetItem(slot)!,
+                StateId = player.Inventory.StateId++
+            });
+        }
+        else
+        {
+            await player.SendMessageAsync($"{ChatColor.Red}Invalid item: {item}");
         }
     }
 
