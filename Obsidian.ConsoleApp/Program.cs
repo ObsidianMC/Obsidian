@@ -3,7 +3,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Obsidian;
-using Obsidian.ConsoleApp;
 using Obsidian.Hosting;
 
 // Cool startup console logo because that's cool

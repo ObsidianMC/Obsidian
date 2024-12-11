@@ -58,7 +58,17 @@ public class StreamLogger : ILogger
             return;
         }
 
-        _streamWriter.WriteLine("[{0}] [{1}] {2}", logLevel, _category, msg);
+        var dateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+        if (exception != null)
+        {
+            _streamWriter.WriteLine("[{0}] [{1}] ({2})\n--------------------\n{3}\n--------------------", dateTime, logLevel, _category, exception.ToString());
+        }
+        else
+        {
+            _streamWriter.WriteLine("[{0}] [{1}] ({2}) {3}", dateTime, logLevel, _category, msg);
+        }
+
         _streamWriter.Flush();
     }
 }
