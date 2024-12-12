@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.IO;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -72,6 +73,44 @@ public sealed class PacketClassesGenerator : IIncrementalGenerator
 
         var source = new CodeBuilder();
 
+        source.Using("System.Collections.Generic");
+        source.Using("System.Collections.Frozen");
+        source.Line();
+
+        source.Namespace($"Obsidian.Registries");
+        source.Line();
+
+        source.Type($"public partial class PacketsRegistry");
+
+        foreach (var groupedPackets in packets.GroupBy(x => x.State))
+        {
+            var state = groupedPackets.Key;
+
+            source.Type($"public static class {state}");
+
+            foreach (var groupedStatePackets in groupedPackets.GroupBy(x => x.Namespace))
+            {
+                var @namespace = groupedStatePackets.Key;
+
+                source.Method($"public static readonly FrozenDictionary<int, string> {@namespace}Names = new Dictionary<int, string>()");
+
+                foreach (var packet in groupedStatePackets)
+                {
+                    source.Line($"{{ {packet.PacketId}, \"{packet.Name}\" }},");
+                }
+
+                source.EndScope(".ToFrozenDictionary()", true).Line();
+            }
+
+            source.EndScope().Line();
+        }
+
+        source.EndScope();
+
+        context.AddSource("PacketsRegistry.g.cs", source.ToString());
+
+        source.Clear();
+
         var commonPackets = new List<Packet>();
         foreach (var packet in packets)
         {
@@ -95,7 +134,7 @@ public sealed class PacketClassesGenerator : IIncrementalGenerator
 
             source.Line($"public override int Id => {packet.PacketId};");
 
-            if(packet.UsableInterface == Vocabulary.ServerboundInterface)
+            if (packet.UsableInterface == Vocabulary.ServerboundInterface)
             {
                 source.Line();
 
