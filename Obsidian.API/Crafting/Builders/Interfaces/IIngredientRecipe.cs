@@ -1,4 +1,6 @@
-﻿namespace Obsidian.API.Crafting.Builders.Interfaces;
+﻿using Obsidian.API.Inventory;
+
+namespace Obsidian.API.Crafting.Builders.Interfaces;
 public interface IIngredientRecipe<TBuilder>
 {
     public TBuilder WithIngredient(params ItemStack[] items);

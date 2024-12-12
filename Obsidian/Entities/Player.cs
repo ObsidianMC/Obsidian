@@ -3,6 +3,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
+using Obsidian.API.Inventory;
 using Obsidian.API.Utilities;
 using Obsidian.Concurrency;
 using Obsidian.Nbt;

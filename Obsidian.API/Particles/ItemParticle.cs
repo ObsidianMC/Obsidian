@@ -1,4 +1,6 @@
-﻿namespace Obsidian.API.Particles;
+﻿using Obsidian.API.Inventory;
+
+namespace Obsidian.API.Particles;
 
 public class ItemParticle : IParticle
 {

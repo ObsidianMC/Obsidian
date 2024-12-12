@@ -1,4 +1,5 @@
-﻿using Obsidian.Entities;
+﻿using Obsidian.API.Inventory;
+using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
 

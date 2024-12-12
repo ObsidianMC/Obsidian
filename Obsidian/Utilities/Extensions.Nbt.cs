@@ -1,4 +1,5 @@
-﻿using Obsidian.API.Registry.Codecs.ArmorTrims.TrimMaterial;
+﻿using Obsidian.API.Inventory;
+using Obsidian.API.Registry.Codecs.ArmorTrims.TrimMaterial;
 using Obsidian.API.Registry.Codecs.ArmorTrims.TrimPattern;
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.Registry.Codecs.Chat;

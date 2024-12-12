@@ -1,4 +1,6 @@
-﻿namespace Obsidian.Entities;
+﻿using Obsidian.API.Inventory;
+
+namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:firework_rocket")]
 public sealed partial class FireworkRocket : Entity

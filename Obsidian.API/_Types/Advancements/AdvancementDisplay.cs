@@ -1,4 +1,6 @@
-﻿namespace Obsidian.API.Advancements;
+﻿using Obsidian.API.Inventory;
+
+namespace Obsidian.API.Advancements;
 
 public sealed class AdvancementDisplay
 {

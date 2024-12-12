@@ -1,4 +1,6 @@
-﻿namespace Obsidian.API.Containers;
+﻿using Obsidian.API.Inventory;
+
+namespace Obsidian.API.Containers;
 
 //TODO override add item and match fuel to fuel slot
 public sealed class BrewingStand : ResultContainer, IBlockEntity

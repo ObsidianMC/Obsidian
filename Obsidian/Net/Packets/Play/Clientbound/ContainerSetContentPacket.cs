@@ -1,4 +1,5 @@
-﻿using Obsidian.Serialization.Attributes;
+﻿using Obsidian.API.Inventory;
+using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 

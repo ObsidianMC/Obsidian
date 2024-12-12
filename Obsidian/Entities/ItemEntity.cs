@@ -1,4 +1,5 @@
-﻿using Obsidian.Registries;
+﻿using Obsidian.API.Inventory;
+using Obsidian.Registries;
 
 namespace Obsidian.Entities;
 

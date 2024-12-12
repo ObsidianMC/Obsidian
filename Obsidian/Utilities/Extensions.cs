@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Connections;
+using Obsidian.API.Inventory;
 using Obsidian.API.Plugins;
 using Obsidian.Entities;
 using Obsidian.Net;

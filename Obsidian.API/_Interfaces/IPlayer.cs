@@ -1,3 +1,5 @@
+using Obsidian.API.Inventory;
+
 namespace Obsidian.API;
 
 public interface IPlayer : ILiving

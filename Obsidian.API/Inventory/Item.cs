@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
-namespace Obsidian.API;
+namespace Obsidian.API.Inventory;
 
 public readonly struct Item
 {
@@ -13,16 +13,16 @@ public readonly struct Item
     [SetsRequiredMembers]
     public Item(int id, string unlocalizedName, Material type)
     {
-        this.Id = (short)id;
-        this.UnlocalizedName = unlocalizedName;
-        this.Type = type;
+        Id = (short)id;
+        UnlocalizedName = unlocalizedName;
+        Type = type;
     }
 
     [SetsRequiredMembers]
     public Item(Item item)
     {
-        this.Id = item.Id;
-        this.UnlocalizedName = item.UnlocalizedName;
-        this.Type = item.Type;
+        Id = item.Id;
+        UnlocalizedName = item.UnlocalizedName;
+        Type = item.Type;
     }
 }

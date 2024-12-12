@@ -1,4 +1,5 @@
-﻿using Obsidian.Net;
+﻿using Obsidian.API.Inventory;
+using Obsidian.Net;
 
 namespace Obsidian.Utilities;
 public partial class Extensions

@@ -1,4 +1,4 @@
-﻿namespace Obsidian.API;
+﻿namespace Obsidian.API.Inventory;
 
 public class ItemStack : IEquatable<ItemStack>
 {
@@ -12,15 +12,15 @@ public class ItemStack : IEquatable<ItemStack>
 
     public Material Type { get; }
 
-    public bool IsAir => this.Type == Material.Air;
+    public bool IsAir => Type == Material.Air;
 
     public ItemStack(Material type, int count = 1, ItemMeta? meta = null)
     {
-        this.Type = type;
-        this.Count = count;
+        Type = type;
+        Count = count;
 
         if (meta.HasValue)
-            this.ItemMeta = meta.Value;
+            ItemMeta = meta.Value;
     }
 
     public static ItemStack operator -(ItemStack item, int value)
@@ -56,10 +56,10 @@ public class ItemStack : IEquatable<ItemStack>
 
     public static bool operator !=(ItemStack? left, ItemStack? right) => !(left == right);
 
-    public bool Equals(ItemStack? other) => (this.Type, this.ItemMeta) == (other?.Type, other?.ItemMeta);
+    public bool Equals(ItemStack? other) => (Type, ItemMeta) == (other?.Type, other?.ItemMeta);
 
     public override bool Equals(object? obj) => obj is ItemStack itemStack && Equals(itemStack);
 
     public override int GetHashCode() =>
-        (this.Count, this.ItemMeta).GetHashCode();
+        (Count, ItemMeta).GetHashCode();
 }
