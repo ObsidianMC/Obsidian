@@ -285,7 +285,8 @@ public sealed class Client : IDisposable
 
                         if (result == EventResult.Cancelled)
                         {
-                            this.Logger.LogDebug("{name} packet was cancelled and is not being processed.", PacketsRegistry.Configuration.ServerboundNames[packetData.Id]);
+                            this.Logger.LogDebug("configuration packet({id}) {name} was cancelled and is not being processed.",
+                                packetData.Id, PacketsRegistry.Configuration.ServerboundNames[packetData.Id]);
                             return;
                         }
 
@@ -298,7 +299,8 @@ public sealed class Client : IDisposable
 
                         if (result == EventResult.Cancelled)
                         {
-                            this.Logger.LogDebug("{name} packet was cancelled and is not being processed.", PacketsRegistry.Play.ServerboundNames[packetData.Id]);
+                            this.Logger.LogDebug("play packet({id}) {name} was cancelled and is not being processed.",
+                                packetData.Id, PacketsRegistry.Play.ServerboundNames[packetData.Id]);
                             return;
                         }
 
@@ -476,12 +478,12 @@ public sealed class Client : IDisposable
                 packetName = PacketsRegistry.Login.ClientboundNames[packetId];
             else if (this.State == ClientState.Configuration)
                 packetName = PacketsRegistry.Configuration.ClientboundNames[packetId];
-            else if(this.State == ClientState.Play)
+            else if (this.State == ClientState.Play)
                 packetName = PacketsRegistry.Play.ClientboundNames[packetId];
-            else if(this.State == ClientState.Status)
+            else if (this.State == ClientState.Status)
                 packetName = PacketsRegistry.Status.ClientboundNames[packetId];
 
-            Logger.LogDebug(e, "Sending packet({id}) {name} failed", packetId, packetName);
+            Logger.LogDebug(e, "Sending {state} packet({id}) {name} failed", this.State, packetId, packetName);
         }
     }
 
