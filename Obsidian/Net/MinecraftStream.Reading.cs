@@ -1,4 +1,5 @@
-﻿using Obsidian.API.Utilities;
+﻿using Obsidian.API.Inventory;
+using Obsidian.API.Utilities;
 using Obsidian.Nbt;
 using Obsidian.Registries;
 using Obsidian.Serialization.Attributes;
@@ -566,104 +567,22 @@ public partial class MinecraftStream : INetStreamReader
 
         var item = ItemsRegistry.Get(ReadVarInt());
 
-        var itemStack = new ItemStack(item.Type, ReadVarInt());
+        var itemStack = new ItemStack(item.Type, count);
 
-        if(itemStack.Type == Material.Air)
+        var componentsToAdd = this.ReadVarInt();
+        var componentsToRemove = this.ReadVarInt();
+
+        if (itemStack.Type == Material.Air)
             return itemStack;
 
-        var reader = new NbtReader(this);
-
-        while (reader.TryReadNextTag(out var tag))
+        for (int i = 0; i < componentsToAdd; i++)
         {
-            var itemMetaBuilder = new ItemMetaBuilder();
 
-            if (tag is NbtCompound root)
-            {
-                foreach (var (name, child) in root)
-                {
-                    switch (name.ToUpperInvariant())
-                    {
-                        case "ENCHANTMENTS":
-                            {
-                                var enchantments = (NbtList)child;
+        }
 
-                                foreach (var enchant in enchantments)
-                                {
-                                    if (enchant is NbtCompound compound)
-                                    {
+        for(int i = 0; i < componentsToRemove; i++)
+        {
 
-                                        itemMetaBuilder.AddEnchantment(compound.GetString("id").ToEnchantType(), compound.GetShort("lvl"));
-                                    }
-                                }
-
-                                break;
-                            }
-
-                        case "STOREDENCHANTMENTS":
-                            {
-                                var enchantments = (NbtList)child;
-
-                                //Globals.PacketLogger.LogDebug("List Type: {ListType}", enchantments.ListType);
-
-                                foreach (var enchantment in enchantments)
-                                {
-                                    if (enchantment is NbtCompound compound)
-                                    {
-                                        compound.TryGetTag("id", out var id);
-                                        compound.TryGetTag("lvl", out var lvl);
-
-                                        itemMetaBuilder.AddStoredEnchantment(compound.GetString("id").ToEnchantType(), compound.GetShort("lvl"));
-                                    }
-                                }
-                                break;
-                            }
-
-                        case "SLOT":
-                            {
-                                var byteTag = (NbtTag<byte>)child;
-
-                                itemStack.Slot = byteTag.Value;
-                                //Console.WriteLine($"Setting slot: {itemMetaBuilder.Slot}");
-                                break;
-                            }
-
-                        case "DAMAGE":
-                            {
-                                var intTag = (NbtTag<int>)child;
-
-                                itemMetaBuilder.WithDurability(intTag.Value);
-                                //Globals.PacketLogger.LogDebug("Setting damage: {IntValue}", tag.IntValue);
-                                break;
-                            }
-
-                        case "DISPLAY":
-                            {
-                                var display = (NbtCompound)child;
-
-                                foreach (var (displayTagName, displayTag) in display)
-                                {
-                                    if (displayTagName.EqualsIgnoreCase("name") && displayTag is NbtTag<string> stringTag)
-                                    {
-                                        itemMetaBuilder.WithName(stringTag.Value);
-                                    }
-                                    else if (displayTag.Name.EqualsIgnoreCase("lore"))
-                                    {
-                                        var loreTag = (NbtList)displayTag;
-
-                                        foreach (NbtTag<string> lore in loreTag)
-                                            itemMetaBuilder.AddLore(lore.Value.FromJson<ChatMessage>());
-                                    }
-                                }
-                                break;
-                            }
-                    }
-                }
-            }
-
-            itemStack.ItemMeta = itemMetaBuilder.Build();
-
-
-            return itemStack;
         }
 
         return itemStack;

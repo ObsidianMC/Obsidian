@@ -1,6 +1,6 @@
 ﻿using Obsidian.API.Crafting;
+using Obsidian.API.Inventory;
 using Obsidian.API.Utilities;
-using Obsidian.Registries;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 

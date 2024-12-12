@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Inventory;
 using Obsidian.Nbt;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Registries;
 using Obsidian.WorldData;
 using System.Buffers;
 using System.IO;

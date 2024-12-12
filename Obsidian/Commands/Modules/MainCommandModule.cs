@@ -1,11 +1,11 @@
 ﻿using Obsidian.API.Commands;
+using Obsidian.API.Inventory;
 using Obsidian.API.Utilities;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
 using Obsidian.WorldData;
-using System.Collections.Frozen;
 using System.Diagnostics;
 
 namespace Obsidian.Commands.Modules;
