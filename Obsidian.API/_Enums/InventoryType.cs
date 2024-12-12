@@ -12,6 +12,8 @@ public enum InventoryType
 
     CartographyTable,
 
+    Crafter,
+
     Crafting,
 
     Custom,

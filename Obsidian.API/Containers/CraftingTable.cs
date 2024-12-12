@@ -10,3 +10,14 @@ public sealed class CraftingTable : ResultContainer
     public override void SetResult(ItemStack? result) => throw new NotImplementedException();
     public override ItemStack? GetResult() => throw new NotImplementedException();
 }
+
+public sealed class Crafter : ResultContainer
+{
+    public Crafter() : base(3 * 3, InventoryType.Crafter)
+    {
+
+    }
+
+    public override ItemStack? GetResult() => throw new NotImplementedException();
+    public override void SetResult(ItemStack? result) => throw new NotImplementedException();
+}
