@@ -21,7 +21,7 @@ internal sealed class ConfigurationClientHandler : ClientHandler
             case 6:
                 return await HandleFromPoolAsync<ResourcePackPacket>(data);
             default:
-                this.Client.Logger.LogWarning("Packet with id {id} is not being handled.", id);
+                this.Client.Logger.LogWarning("Configuration Packet({id}) {name} is not being handled.", id, PacketsRegistry.Configuration.ServerboundNames[id]);
                 break;
         }
 
