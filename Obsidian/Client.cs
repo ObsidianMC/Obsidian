@@ -284,7 +284,11 @@ public sealed class Client : IDisposable
                         var result = await this.server.EventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.server, packetData.Id, packetData.Data));
 
                         if (result == EventResult.Cancelled)
+                        {
+                            this.Logger.LogDebug("configuration packet({id}) {name} was cancelled and is not being processed.",
+                                packetData.Id, PacketsRegistry.Configuration.ServerboundNames[packetData.Id]);
                             return;
+                        }
 
                         await this.HandlePacketAsync(packetData);
                         break;
@@ -294,7 +298,11 @@ public sealed class Client : IDisposable
                         result = await this.server.EventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.server, packetData.Id, packetData.Data));
 
                         if (result == EventResult.Cancelled)
+                        {
+                            this.Logger.LogDebug("play packet({id}) {name} was cancelled and is not being processed.",
+                                packetData.Id, PacketsRegistry.Play.ServerboundNames[packetData.Id]);
                             return;
+                        }
 
                         await this.HandlePacketAsync(packetData);
 
@@ -463,7 +471,19 @@ public sealed class Client : IDisposable
         }
         catch (Exception e)
         {
-            Logger.LogDebug(e, "Sending packet {PacketId} failed", packet.Id);
+            var packetId = packet.Id;
+            var packetName = packet.Id.ToString();
+
+            if (this.State == ClientState.Login)
+                packetName = PacketsRegistry.Login.ClientboundNames[packetId];
+            else if (this.State == ClientState.Configuration)
+                packetName = PacketsRegistry.Configuration.ClientboundNames[packetId];
+            else if (this.State == ClientState.Play)
+                packetName = PacketsRegistry.Play.ClientboundNames[packetId];
+            else if (this.State == ClientState.Status)
+                packetName = PacketsRegistry.Status.ClientboundNames[packetId];
+
+            Logger.LogDebug(e, "Sending {state} packet({id}) {name} failed", this.State, packetId, packetName);
         }
     }
 

@@ -96,7 +96,10 @@ internal sealed class PlayClientHandler : ClientHandler
                 break;
             default:
                 if (!Packets.TryGetValue(id, out var packet))
+                {
+                    this.Client.Logger.LogWarning("Play Packet({id}) {name} is not being handled.", id, PacketsRegistry.Play.ServerboundNames[id]);
                     return false;
+                }
 
                 try
                 {
@@ -106,7 +109,7 @@ internal sealed class PlayClientHandler : ClientHandler
                 }
                 catch (Exception e)
                 {
-                    this.Logger.LogCritical(e, "An error has occured trying to populate a packet.");
+                    this.Logger.LogCritical(e, "An error has occured trying to populate play packet({id}) {name}.", id, PacketsRegistry.Play.ServerboundNames[id]);
                 }
                 break;
         }

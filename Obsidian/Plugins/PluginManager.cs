@@ -90,7 +90,9 @@ public sealed class PluginManager
     public async Task LoadPluginsAsync()
     {
         //TODO talk about what format we should support
-        var acceptedKeyFiles = Directory.GetFiles("accepted_keys");
+        // get directory surrent dll is in
+        var acceptedKeysPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "accepted_keys"); 
+        var acceptedKeyFiles = Directory.GetFiles(acceptedKeysPath);
 
         using var rsa = RSA.Create();
         foreach (var certFile in acceptedKeyFiles)
