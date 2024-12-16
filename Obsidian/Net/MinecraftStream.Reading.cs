@@ -1,7 +1,5 @@
 ﻿using Obsidian.API.Inventory;
-using Obsidian.API.Utilities;
 using Obsidian.Nbt;
-using Obsidian.Registries;
 using Obsidian.Serialization.Attributes;
 using System.Buffers.Binary;
 using System.IO;
@@ -580,7 +578,7 @@ public partial class MinecraftStream : INetStreamReader
 
         }
 
-        for(int i = 0; i < componentsToRemove; i++)
+        for (int i = 0; i < componentsToRemove; i++)
         {
 
         }
@@ -593,4 +591,10 @@ public partial class MinecraftStream : INetStreamReader
     {
         return new Velocity(ReadShort(), ReadShort(), ReadShort());
     }
+
+    public Enchantment ReadEnchantment() => new()
+    {
+        Id = this.ReadVarInt(),
+        Level = this.ReadVarInt(),
+    };
 }

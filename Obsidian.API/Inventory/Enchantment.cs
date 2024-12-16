@@ -2,7 +2,7 @@
 
 public struct Enchantment
 {
-    public EnchantmentType Type { get; set; }
+    public int Id { get; set; }
 
     public int Level { get; set; }
 }

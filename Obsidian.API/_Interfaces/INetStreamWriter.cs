@@ -51,6 +51,11 @@ public interface INetStreamWriter : INetStream
     public void WriteRecipe(string name, IRecipe recipe);
     public void WriteAdvancement(Advancement advancement);
 
+    public void WriteLengthPrefixedArray(params List<ChatMessage> messages);
+    public void WriteLengthPrefixedArray(bool showInTooltips, params List<Enchantment> enchantments);
+
+    public void WriteEnchantment(Enchantment enchantment);
+
     //This needs further implementing (ICodec.Serialize)
     [EditorBrowsable(EditorBrowsableState.Never)]
     public void WriteCodec(ICodec codec);

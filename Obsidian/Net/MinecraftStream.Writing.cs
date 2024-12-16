@@ -17,7 +17,6 @@ using Obsidian.Net.Actions.BossBar;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.WindowProperties;
-using Obsidian.Registries;
 using Obsidian.Serialization.Attributes;
 using System.Buffers.Binary;
 using System.Text;
@@ -67,6 +66,30 @@ public partial class MinecraftStream : INetStreamWriter
     public void WriteCompressedPacket(IClientboundPacket packet, int compressionThreshold)
     {
         throw new NotImplementedException();
+    }
+
+    public void WriteLengthPrefixedArray(params List<ChatMessage> textComponents)
+    {
+        this.WriteVarInt(textComponents.Count);
+
+        foreach(var component in textComponents)
+            this.WriteChat(component);
+    }
+
+    public void WriteLengthPrefixedArray(bool showInTooltips, params List<Enchantment> enchantments)
+    {
+        this.WriteVarInt(enchantments.Count);
+
+        foreach(var enchantment in enchantments)
+            this.WriteEnchantment(enchantment);
+
+        this.WriteBoolean(showInTooltips);
+    }
+
+    public void WriteEnchantment(Enchantment enchantment)
+    {
+        this.WriteVarInt(enchantment.Id);
+        this.WriteVarInt(enchantment.Level);
     }
 
     public async Task WriteByteAsync(sbyte value)

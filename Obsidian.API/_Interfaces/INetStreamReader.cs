@@ -23,6 +23,8 @@ public interface INetStreamReader : INetStream
     public byte[] ReadUInt8Array(int length = 0);
     public long ReadVarLong();
 
+    public Enchantment ReadEnchantment();
+
     public SignedMessage ReadSignedMessage();
     public ArgumentSignature ReadArgumentSignature();
     public DateTimeOffset ReadDateTimeOffset();
