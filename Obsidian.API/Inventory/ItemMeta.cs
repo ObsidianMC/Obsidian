@@ -12,8 +12,8 @@ public struct ItemMeta : IEquatable<ItemMeta>
 
     public bool Unbreakable { get; internal set; }
 
-    public IReadOnlyDictionary<EnchantmentType, Enchantment> Enchantments { get; internal set; }
-    public IReadOnlyDictionary<EnchantmentType, Enchantment> StoredEnchantments { get; internal set; }
+    public IReadOnlyDictionary<int, Enchantment> Enchantments { get; internal set; }
+    public IReadOnlyDictionary<int, Enchantment> StoredEnchantments { get; internal set; }
 
     public IReadOnlyList<string> CanDestroy { get; internal set; }
 

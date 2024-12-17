@@ -11,15 +11,15 @@ public class ItemMetaBuilder
 
     public bool Unbreakable { get; internal set; }
 
-    public IReadOnlyDictionary<EnchantmentType, Enchantment> Enchantments { get; }
-    public IReadOnlyDictionary<EnchantmentType, Enchantment> StoredEnchantments { get; }
+    public IReadOnlyDictionary<int, Enchantment> Enchantments { get; }
+    public IReadOnlyDictionary<int, Enchantment> StoredEnchantments { get; }
 
     public IReadOnlyList<string> CanDestroy { get; }
 
     public IReadOnlyList<ChatMessage> Lore { get; }
 
-    private readonly Dictionary<EnchantmentType, Enchantment> enchantments = [];
-    private readonly Dictionary<EnchantmentType, Enchantment> storedEnchantments = [];
+    private readonly Dictionary<int, Enchantment> enchantments = [];
+    private readonly Dictionary<int, Enchantment> storedEnchantments = [];
 
     private readonly List<string> canDestroy = [];
 
@@ -27,8 +27,8 @@ public class ItemMetaBuilder
 
     public ItemMetaBuilder()
     {
-        Enchantments = new ReadOnlyDictionary<EnchantmentType, Enchantment>(enchantments);
-        StoredEnchantments = new ReadOnlyDictionary<EnchantmentType, Enchantment>(storedEnchantments);
+        Enchantments = new ReadOnlyDictionary<int, Enchantment>(enchantments);
+        StoredEnchantments = new ReadOnlyDictionary<int, Enchantment>(storedEnchantments);
         CanDestroy = new ReadOnlyCollection<string>(canDestroy);
         Lore = new ReadOnlyCollection<ChatMessage>(lore);
     }
@@ -91,9 +91,10 @@ public class ItemMetaBuilder
 
     public ItemMetaBuilder AddEnchantment(EnchantmentType type, int level)
     {
-        enchantments.Add(type, new Enchantment
+        var enchantmentId = type.GetHashCode();
+        enchantments.Add(enchantmentId, new Enchantment
         {
-            Type = type,
+            Id = enchantmentId,
             Level = level
         });
 
@@ -102,9 +103,22 @@ public class ItemMetaBuilder
 
     public ItemMetaBuilder AddStoredEnchantment(EnchantmentType type, int level)
     {
-        storedEnchantments.Add(type, new Enchantment
+        var enchantmentId = type.GetHashCode();
+
+        storedEnchantments.Add(enchantmentId, new Enchantment
         {
-            Type = type,
+            Id = enchantmentId,
+            Level = level
+        });
+
+        return this;
+    }
+
+    public ItemMetaBuilder AddStoredEnchantment(int id, int level)
+    {
+        storedEnchantments.Add(id, new Enchantment
+        {
+            Id = id,
             Level = level
         });
 
@@ -121,8 +135,8 @@ public class ItemMetaBuilder
             Durability = Durability,
             Unbreakable = Unbreakable,
 
-            Enchantments = new ReadOnlyDictionary<EnchantmentType, Enchantment>(new Dictionary<EnchantmentType, Enchantment>(enchantments)),
-            StoredEnchantments = new ReadOnlyDictionary<EnchantmentType, Enchantment>(new Dictionary<EnchantmentType, Enchantment>(storedEnchantments)),
+            Enchantments = new ReadOnlyDictionary<int, Enchantment>(new Dictionary<int, Enchantment>(enchantments)),
+            StoredEnchantments = new ReadOnlyDictionary<int, Enchantment>(new Dictionary<int, Enchantment>(storedEnchantments)),
 
             CanDestroy = new ReadOnlyCollection<string>(new List<string>(canDestroy))
         };
