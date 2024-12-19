@@ -1,7 +1,7 @@
-﻿using Microsoft.CodeAnalysis;
-using Obsidian.API.Advancements;
+﻿using Obsidian.API.Advancements;
 using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
 using System.ComponentModel;
 
 namespace Obsidian.API;
@@ -54,6 +54,10 @@ public interface INetStreamWriter : INetStream
     public void WriteLengthPrefixedArray(params List<ChatMessage> messages);
     public void WriteLengthPrefixedArray(bool showInTooltips, params List<Enchantment> enchantments);
 
+    public void WriteLengthPrefixedArray<TValue>(Action<TValue> write, params List<TValue> values);
+
+    public void WriteAttributeModifier(AttributeModifier attribute);
+
     public void WriteEnchantment(Enchantment enchantment);
 
     //This needs further implementing (ICodec.Serialize)
@@ -73,6 +77,6 @@ public interface INetStreamWriter : INetStream
     public void WriteOptional(short? value);
     public void WriteOptional(float? value);
     public void WriteOptional(byte? value);
-
+    public void WriteOptional(bool? value);
     public byte[] ToArray();
 }

@@ -10,3 +10,10 @@ public record class SimpleDataComponent<TValue>(DataComponentType Type, string I
     public void Read(INetStreamReader reader) => this.Value = this.reader.Invoke(reader);
     public void Write(INetStreamWriter writer) => this.writer(writer, this.Value);
 }
+
+
+public record class SimpleDataComponent(DataComponentType Type, string Identifier) : IDataComponent
+{
+    public void Read(INetStreamReader reader) { }
+    public void Write(INetStreamWriter writer) { }
+}

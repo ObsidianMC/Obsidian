@@ -3,7 +3,6 @@ using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Configuration.Clientbound;
 using Obsidian.Net.Packets.Login.Serverbound;
-using Obsidian.Registries;
 using Obsidian.WorldData;
 
 namespace Obsidian.Net.ClientHandlers;
@@ -63,7 +62,7 @@ internal sealed class LoginClientHandler : ClientHandler
     {
         this.SendPacket(new SelectKnownPacksPacket
         {
-            KnownPacks = [new() { Id = "core", Version = "1.21.3", Namespace = "minecraft" }]
+            KnownPacks = [new() { Id = "core", Version = Server.ProtocolDescription, Namespace = "minecraft" }]
         });
 
         //This is very inconvenient

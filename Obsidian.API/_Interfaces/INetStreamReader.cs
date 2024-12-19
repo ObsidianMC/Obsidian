@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
 
 namespace Obsidian.API;
 public interface INetStreamReader : INetStream
@@ -23,11 +24,18 @@ public interface INetStreamReader : INetStream
     public byte[] ReadUInt8Array(int length = 0);
     public long ReadVarLong();
 
+    public IdSet ReadIdSet();
+
+    public List<TValue> ReadLengthPrefixedArray<TValue>(Func<TValue> read);
+
+    public AttributeModifier ReadAttributeModifier();
     public Enchantment ReadEnchantment();
 
     public SignedMessage ReadSignedMessage();
     public ArgumentSignature ReadArgumentSignature();
     public DateTimeOffset ReadDateTimeOffset();
+
+    public PotionEffectData ReadPotionEffectData();
 
     public Vector ReadPosition();
     public Vector ReadAbsolutePosition();
@@ -43,6 +51,9 @@ public interface INetStreamReader : INetStream
     public byte[] ReadByteArray();
     public Guid ReadGuid();
     public Guid? ReadOptionalGuid();
+    public float? ReadOptionalFloat();
+    public bool? ReadOptionalBoolean();
+
     public ItemStack? ReadItemStack();
     public Velocity ReadVelocity();
 }

@@ -1,8 +1,11 @@
-﻿using Obsidian.API.Inventory;
+﻿using Microsoft.AspNetCore.Razor.Runtime.TagHelpers;
+using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.Nbt;
 using Obsidian.Serialization.Attributes;
 using System.Buffers.Binary;
 using System.IO;
+using System.Reflection.PortableExecutable;
 using System.Text;
 
 namespace Obsidian.Net;
@@ -39,6 +42,49 @@ public partial class MinecraftStream : INetStreamReader
         return ReadUnsignedByte() == 0x01;
     }
 
+    public List<TValue> ReadLengthPrefixedArray<TValue>(Func<TValue> read)
+    {
+        var count = this.ReadVarInt();
+        var list = new List<TValue>(count);
+
+        for (var i = 0; i < count; i++)
+            list[i] = read();
+
+        return list;
+    }
+
+    public IdSet ReadIdSet()
+    {
+        var type = this.ReadVarInt();
+        string? tagName = type == 0 ? tagName = this.ReadString() : null;
+        List<int>? ids = type != 0 ? this.ReadLengthPrefixedArray(() => this.ReadVarInt()) : null;
+
+        return new() { Type = type, Ids = ids, TagName = tagName };
+    }
+
+    public float? ReadOptionalFloat() => this.ReadBoolean() ? this.ReadFloat() : null;
+    public bool? ReadOptionalBoolean() => this.ReadBoolean() ? this.ReadBoolean() : null;
+
+    public AttributeModifier ReadAttributeModifier() => new()
+    {
+        Id = this.ReadVarInt(),
+        Uuid = this.ReadGuid(),
+        Name = this.ReadString(),
+        Value = this.ReadDouble(),
+        Operation = this.ReadVarInt<AttributeOperation>(),
+        Slot = this.ReadVarInt<AttributeSlot>()
+    };
+
+    public PotionEffectData ReadPotionEffectData() => new()
+    {
+        Id = this.ReadVarInt(),
+        Amplifier = this.ReadVarInt(),
+        Duration = this.ReadVarInt(),
+        Ambient = this.ReadBoolean(),
+        ShowIcon = this.ReadBoolean(),
+        ShowParticles = this.ReadBoolean(),
+        HiddenEffect = this.ReadBoolean() ? this.ReadPotionEffectData() : null
+    };
     public async Task<bool> ReadBooleanAsync()
     {
         var value = (int)await this.ReadByteAsync();

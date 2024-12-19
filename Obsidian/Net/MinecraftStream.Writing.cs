@@ -2,6 +2,7 @@
 using Obsidian.API.Advancements;
 using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registry.Codecs.ArmorTrims.TrimMaterial;
 using Obsidian.API.Registry.Codecs.ArmorTrims.TrimPattern;
 using Obsidian.API.Registry.Codecs.Biomes;
@@ -18,9 +19,11 @@ using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.WindowProperties;
 using Obsidian.Serialization.Attributes;
+using System;
 using System.Buffers.Binary;
 using System.Text;
 using System.Text.Json;
+using System.Xml.Linq;
 
 namespace Obsidian.Net;
 
@@ -44,7 +47,7 @@ public partial class MinecraftStream : INetStreamWriter
 
         using var tempStream = new MinecraftStream();
         packet.Serialize(tempStream);
-     
+
         var length = isBundled ? varLength : varLength + (int)tempStream.Length;
 
         this.Lock.Wait();
@@ -54,7 +57,7 @@ public partial class MinecraftStream : INetStreamWriter
         tempStream.Position = 0;
         tempStream.CopyTo(this);
 
-        if(isBundled)
+        if (isBundled)
         {
             this.WriteVarInt(length);
             this.WriteVarInt(packet.Id);
@@ -62,6 +65,9 @@ public partial class MinecraftStream : INetStreamWriter
 
         this.Lock.Release();
     }
+
+    public void WriteAttributeModifier(AttributeModifier attributeModifier) =>
+        AttributeModifier.Write(attributeModifier, this);
 
     public void WriteCompressedPacket(IClientboundPacket packet, int compressionThreshold)
     {
@@ -72,15 +78,23 @@ public partial class MinecraftStream : INetStreamWriter
     {
         this.WriteVarInt(textComponents.Count);
 
-        foreach(var component in textComponents)
+        foreach (var component in textComponents)
             this.WriteChat(component);
+    }
+
+    public void WriteLengthPrefixedArray<TValue>(Action<TValue> write, params List<TValue> values)
+    {
+        this.WriteVarInt(values.Count);
+
+        foreach (var value in values)
+            write(value);
     }
 
     public void WriteLengthPrefixedArray(bool showInTooltips, params List<Enchantment> enchantments)
     {
         this.WriteVarInt(enchantments.Count);
 
-        foreach(var enchantment in enchantments)
+        foreach (var enchantment in enchantments)
             this.WriteEnchantment(enchantment);
 
         this.WriteBoolean(showInTooltips);
@@ -554,6 +568,14 @@ public partial class MinecraftStream : INetStreamWriter
             return;
 
         this.WriteFloat(value!.Value);
+    }
+
+    public void WriteOptional(bool? value)
+    {
+        if (!this.ShouldWriteOptional(value))
+            return;
+
+        this.WriteBoolean(value!.Value);
     }
 
     public void WriteOptional(byte? value)
