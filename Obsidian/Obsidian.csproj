@@ -68,7 +68,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <AdditionalFiles Remove="Assets\data_components.json" />
+	  <AdditionalFiles Remove="Assets\enums.json" />
 	  <AdditionalFiles Remove="assets\item_components.json" />
 	</ItemGroup>
 

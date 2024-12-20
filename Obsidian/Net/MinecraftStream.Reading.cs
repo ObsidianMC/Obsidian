@@ -1,11 +1,9 @@
-﻿using Microsoft.AspNetCore.Razor.Runtime.TagHelpers;
-using Obsidian.API.Inventory;
+﻿using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.Nbt;
 using Obsidian.Serialization.Attributes;
 using System.Buffers.Binary;
 using System.IO;
-using System.Reflection.PortableExecutable;
 using System.Text;
 
 namespace Obsidian.Net;
@@ -42,6 +40,12 @@ public partial class MinecraftStream : INetStreamReader
         return ReadUnsignedByte() == 0x01;
     }
 
+    public SoundEvent ReadSoundEvent() => new()
+    {
+        ResourceLocation = this.ReadString(),
+        FixedRange = this.ReadOptionalFloat()
+    };
+
     public List<TValue> ReadLengthPrefixedArray<TValue>(Func<TValue> read)
     {
         var count = this.ReadVarInt();
@@ -64,7 +68,7 @@ public partial class MinecraftStream : INetStreamReader
 
     public float? ReadOptionalFloat() => this.ReadBoolean() ? this.ReadFloat() : null;
     public bool? ReadOptionalBoolean() => this.ReadBoolean() ? this.ReadBoolean() : null;
-
+    public string? ReadOptionalString() => this.ReadBoolean() ? this.ReadString() : null;
     public AttributeModifier ReadAttributeModifier() => new()
     {
         Id = this.ReadVarInt(),

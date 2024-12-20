@@ -19,11 +19,9 @@ using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.WindowProperties;
 using Obsidian.Serialization.Attributes;
-using System;
 using System.Buffers.Binary;
 using System.Text;
 using System.Text.Json;
-using System.Xml.Linq;
 
 namespace Obsidian.Net;
 
@@ -414,6 +412,12 @@ public partial class MinecraftStream : INetStreamWriter
     {
     }
 
+    public void WriteSoundEvent(SoundEvent soundEvent)
+    {
+        this.WriteString(soundEvent.ResourceLocation);
+        this.WriteOptional(soundEvent.FixedRange);
+    }
+
     [WriteMethod]
     public void WriteSoundEffect(SoundEffect sound)
     {
@@ -568,6 +572,14 @@ public partial class MinecraftStream : INetStreamWriter
             return;
 
         this.WriteFloat(value!.Value);
+    }
+
+    public void WriteOptional(string? value)
+    {
+        if (!this.ShouldWriteOptional(value))
+            return;
+
+        this.WriteString(value!);
     }
 
     public void WriteOptional(bool? value)

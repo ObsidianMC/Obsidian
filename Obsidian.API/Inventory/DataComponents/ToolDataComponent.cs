@@ -9,6 +9,10 @@ public sealed class ToolDataComponent : IDataComponent
 
     public required List<ToolRule> Rules { get; set; }
 
+    public required float DefaultMiningSpeed { get; set; }
+
+    public required int DamagePerBlock { get; set; }
+
     public void Read(INetStreamReader reader)
     {
         this.Rules = reader.ReadLengthPrefixedArray(() => new ToolRule()
@@ -17,10 +21,17 @@ public sealed class ToolDataComponent : IDataComponent
             Speed = reader.ReadOptionalFloat(),
             CorrectDropForBlocks = reader.ReadOptionalBoolean()
         });
+
+        this.DefaultMiningSpeed = reader.ReadFloat();
+        this.DamagePerBlock = reader.ReadVarInt();
     }
 
-    public void Write(INetStreamWriter writer) =>
-         writer.WriteLengthPrefixedArray((rule) => ToolRule.Write(rule, writer), this.Rules);
+    public void Write(INetStreamWriter writer)
+    {
+        writer.WriteLengthPrefixedArray((rule) => ToolRule.Write(rule, writer), this.Rules);
+        writer.WriteFloat(this.DefaultMiningSpeed);
+        writer.WriteVarInt(this.DamagePerBlock);
+    }
 }
 
 public readonly struct ToolRule : INetworkSerializable<ToolRule>

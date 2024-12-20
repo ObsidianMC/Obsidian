@@ -35,6 +35,7 @@ public interface INetStreamWriter : INetStream
     public void WriteChat(ChatMessage chatMessage);
     public void WriteItemStack(ItemStack? itemStack);
     public void WriteDateTimeOffset(DateTimeOffset date);
+    public void WriteSoundEvent(SoundEvent soundEvent);
     public void WriteSoundEffect(SoundEffect sound);
     public void WriteByteArray(byte[] values);
     public void WriteUuid(Guid value);
@@ -51,7 +52,6 @@ public interface INetStreamWriter : INetStream
     public void WriteRecipe(string name, IRecipe recipe);
     public void WriteAdvancement(Advancement advancement);
 
-    public void WriteLengthPrefixedArray(params List<ChatMessage> messages);
     public void WriteLengthPrefixedArray(bool showInTooltips, params List<Enchantment> enchantments);
 
     public void WriteLengthPrefixedArray<TValue>(Action<TValue> write, params List<TValue> values);
@@ -78,5 +78,6 @@ public interface INetStreamWriter : INetStream
     public void WriteOptional(float? value);
     public void WriteOptional(byte? value);
     public void WriteOptional(bool? value);
+    public void WriteOptional(string? value);
     public byte[] ToArray();
 }

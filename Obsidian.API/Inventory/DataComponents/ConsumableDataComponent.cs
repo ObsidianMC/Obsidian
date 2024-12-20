@@ -1,35 +1,51 @@
-﻿namespace Obsidian.API.Inventory.DataComponents;
+﻿using Obsidian.API.Effects;
+
+namespace Obsidian.API.Inventory.DataComponents;
 public sealed class ConsumableDataComponent : IDataComponent
 {
     public DataComponentType Type => DataComponentType.Consumable;
 
     public string Identifier => "minecraft:consumable";
 
-    public required float ConsumeSeconds { get; init; }
+    public required float ConsumeSeconds { get; set; }
 
-    public required ItemAnimation Animation { get; init; }
+    public required ItemAnimation Animation { get; set; }
 
-    public required SoundEffect Sound { get; init; }
+    public required SoundEvent Sound { get; set; }
 
-    public bool HasConsumeParticles { get; init; }  
+    public bool HasConsumeParticles { get; set; }
 
+    public List<ConsumeEffect> Effects { get; set; } = [];
 
+    public void Read(INetStreamReader reader)
+    {
+        this.ConsumeSeconds = reader.ReadFloat();
+        this.Animation = reader.ReadVarInt<ItemAnimation>();
+        this.Sound = reader.ReadSoundEvent();
 
-    public void Read(INetStreamReader reader) => throw new NotImplementedException();
-    public void Write(INetStreamWriter writer) => throw new NotImplementedException();
-}
+        var count = reader.ReadVarInt();
+        var effects = new List<ConsumeEffect>(count);
 
-public enum ItemAnimation
-{
-    None,
-    Eat,
-    Drink,
-    Block,
-    Bow,
-    Spear,
-    Crossbow,
-    Spyglass,
-    TootHorn,
-    Brush,
-    Bundle
+        for (int i = 0; i < count; i++)
+        {
+            var type = reader.ReadString();
+
+            var effect = ConsumeEffects.Compile(type);
+
+            effects[i] = new() { Effect = effect, Type = type };
+        }
+    }
+    public void Write(INetStreamWriter writer)
+    {
+        writer.WriteFloat(this.ConsumeSeconds);
+        writer.WriteVarInt(this.Animation);
+        writer.WriteSoundEvent(this.Sound);
+        writer.WriteBoolean(this.HasConsumeParticles);
+
+        foreach (var consumeEffect in this.Effects)
+        {
+            writer.WriteString(consumeEffect.Type);
+            consumeEffect.Effect.Write(writer);
+        }
+    }
 }

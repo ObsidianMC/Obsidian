@@ -1,4 +1,4 @@
-﻿using Obsidian.API.Inventory.DataComponents;
+﻿using Obsidian.API.Effects;
 using Obsidian.Net.Packets.Play.Clientbound;
 
 namespace Obsidian.Entities;

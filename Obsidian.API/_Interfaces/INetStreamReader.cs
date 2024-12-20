@@ -25,6 +25,7 @@ public interface INetStreamReader : INetStream
     public long ReadVarLong();
 
     public IdSet ReadIdSet();
+    public SoundEvent ReadSoundEvent();
 
     public List<TValue> ReadLengthPrefixedArray<TValue>(Func<TValue> read);
 
@@ -50,6 +51,8 @@ public interface INetStreamReader : INetStream
     public ChatMessage ReadChat();
     public byte[] ReadByteArray();
     public Guid ReadGuid();
+
+    public string? ReadOptionalString();
     public Guid? ReadOptionalGuid();
     public float? ReadOptionalFloat();
     public bool? ReadOptionalBoolean();
