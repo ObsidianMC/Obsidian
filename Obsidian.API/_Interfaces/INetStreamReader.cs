@@ -14,6 +14,7 @@ public interface INetStreamReader : INetStream
     public ushort ReadUnsignedShort();
     public short ReadShort();
     public int ReadInt();
+    public TEnum ReadInt<TEnum>() where TEnum : Enum;
     public long ReadLong();
     public ulong ReadUnsignedLong();
     public float ReadFloat();

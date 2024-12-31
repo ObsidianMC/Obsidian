@@ -41,6 +41,11 @@ public static partial class ComponentBuilder
         (writer, value) => writer.WriteVarInt(value),
         (reader) => reader.ReadVarInt<ItemRarity>());
 
+    public static TooltipSimpleDataComponent<List<Enchantment>> Enchantments => BuildTooltipSimpleDataComponent(DataComponentType.Enchantments,
+        "minecraft:enchantments",
+        (writer, values) => writer.WriteLengthPrefixedArray(writer.WriteEnchantment, values),
+        (reader) => reader.ReadLengthPrefixedArray(reader.ReadEnchantment));
+
     public static SimpleDataComponent<ChatMessage> CustomModelData => BuildSimpleComponent(DataComponentType.CustomModelData, "minecraft:item_name",
         (writer, value) => writer.WriteChat(value),
         (reader) => reader.ReadChat());
@@ -220,10 +225,10 @@ public static partial class ComponentBuilder
     [
         MaxStackSize with { Value = 64 },
         Lore with { Value = [] },
-        new EnchantmentsDataComponent { Enchantments = [], ShowInToolTip = true },
+        Enchantments with { Value = [], ShowInTooltip = true },
         RepairCost with { Value = 0 },
         AttributeModifiers with { Value = [], ShowInTooltip = true },
-        Rarity  with { Value = ItemRarity.Common },
+        Rarity with { Value = ItemRarity.Common },
     ];
 
     public static SimpleDataComponent<TValue> BuildSimpleComponent<TValue>(DataComponentType type, string identifier,

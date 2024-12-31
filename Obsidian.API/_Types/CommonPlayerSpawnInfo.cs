@@ -12,7 +12,7 @@ public readonly struct CommonPlayerSpawnInfo : INetworkSerializable<CommonPlayer
 
     public bool Flat { get; init; }
 
-    public DeathLocation DeathLocation { get; init; }
+    public DeathLocation? DeathLocation { get; init; }
 
     public int PortalCooldown { get; init; }
 

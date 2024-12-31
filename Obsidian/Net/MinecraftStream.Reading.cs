@@ -27,6 +27,7 @@ public partial class MinecraftStream : INetStreamReader
 
     public TEnum ReadSignedByte<TEnum>() where TEnum : Enum => (TEnum)Enum.Parse(typeof(TEnum), this.ReadSignedByte().ToString());
     public TEnum ReadUnsignedByte<TEnum>() where TEnum : Enum => (TEnum)Enum.Parse(typeof(TEnum), this.ReadUnsignedByte().ToString());
+    public TEnum ReadInt<TEnum>() where TEnum : Enum => (TEnum)Enum.Parse(typeof(TEnum), this.ReadInt().ToString());
 
     public async Task<byte> ReadUnsignedByteAsync()
     {

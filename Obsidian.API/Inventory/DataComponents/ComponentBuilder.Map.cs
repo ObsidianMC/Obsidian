@@ -1,5 +1,4 @@
-﻿using System.Collections.Frozen;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 
 namespace Obsidian.API.Inventory.DataComponents;
 public partial class ComponentBuilder
@@ -17,7 +16,7 @@ public partial class ComponentBuilder
         () => ItemModel,
         () => Lore,
         () => Rarity,
-        () => new EnchantmentsDataComponent(),
+        () => Enchantments,
         () => new CanPlaceOnDataComponent(),
         () => new CanBreakDataComponent(),
         () => AttributeModifiers,

@@ -840,7 +840,10 @@ public partial class MinecraftStream : INetStreamWriter
         WriteVarInt(value.RemoveComponents.Count);
 
         foreach (var component in value)
+        {
+            this.WriteVarInt(component.Type);
             component.Write(this);
+        }
 
         foreach (var componentType in value.RemoveComponents)
             this.WriteVarInt(componentType);
