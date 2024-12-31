@@ -280,20 +280,20 @@ public partial class Player
     {
         foreach (var entity in world.GetNonPlayerEntitiesInRange(Position, distance))
         {
-            if (entity is not ItemEntity item)
+            if (entity is not ItemEntity itemEntity)
                 continue;
 
-            if (!item.CanPickup)
+            if (!itemEntity.CanPickup)
                 continue;
 
             this.PacketBroadcaster.QueuePacketToWorld(this.World, new TakeItemEntityPacket
             {
-                CollectedEntityId = item.EntityId,
+                CollectedEntityId = itemEntity.EntityId,
                 CollectorEntityId = EntityId,
-                PickupItemCount = item.Count
+                PickupItemCount = itemEntity.Item.Count
             });
 
-            var slot = Inventory.AddItem(new ItemStack(item.Material, item.Count));
+            var slot = Inventory.AddItem(new ItemStack(itemEntity.Item.Type, itemEntity.Item.Count));
 
             client.SendPacket(new ContainerSetSlotPacket
             {
@@ -303,7 +303,7 @@ public partial class Player
                 StateId = Inventory.StateId++
             });
 
-            await item.RemoveAsync();
+            await itemEntity.RemoveAsync();
         }
     }
 
