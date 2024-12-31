@@ -1,4 +1,5 @@
-﻿using System.Runtime.Serialization;
+﻿using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 
 namespace Obsidian.API.Inventory.DataComponents;
 public sealed class ToolDataComponent : IDataComponent
@@ -42,6 +43,13 @@ public readonly struct ToolRule : INetworkSerializable<ToolRule>
 
     public bool? CorrectDropForBlocks { get; init; }
 
+    public static ToolRule Read(INetStreamReader reader) => new()
+    {
+        Blocks = IdSet.Read(reader),
+        Speed = reader.ReadOptionalFloat(),
+        CorrectDropForBlocks = reader.ReadOptionalBoolean()
+    };
+
     public static void Write(ToolRule value, INetStreamWriter writer)
     {
         IdSet.Write(value.Blocks, writer);
@@ -76,6 +84,15 @@ public readonly struct IdSet : INetworkSerializable<IdSet>
     /// The size of the array is equal to Type - 1.
     /// </summary>
     public List<int>? Ids { get; init; }
+
+    public static IdSet Read(INetStreamReader reader)
+    {
+        var type = reader.ReadVarInt();
+
+        return type == 0
+            ? new() { Type = type, TagName = reader.ReadString() }
+            : new() { Type = type, Ids = reader.ReadLengthPrefixedArray(reader.ReadVarInt) };
+    }
 
     public static void Write(IdSet value, INetStreamWriter writer)
     {

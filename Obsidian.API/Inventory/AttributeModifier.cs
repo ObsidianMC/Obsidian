@@ -13,6 +13,16 @@ public readonly struct AttributeModifier : INetworkSerializable<AttributeModifie
 
     public required AttributeSlot Slot { get; init; }
 
+    public static AttributeModifier Read(INetStreamReader reader) => new()
+    {
+        Id = reader.ReadInt(),
+        Uuid = reader.ReadGuid(),
+        Name = reader.ReadString(),
+        Value = reader.ReadDouble(),
+        Operation = reader.ReadVarInt<AttributeOperation>(),
+        Slot = reader.ReadVarInt<AttributeSlot>()
+    };
+
     public static void Write(AttributeModifier value, INetStreamWriter writer)
     {
         writer.WriteVarInt(value.Id);

@@ -41,6 +41,19 @@ public sealed record class PotionEffectData : INetworkSerializable<PotionEffectD
     /// </summary>
     public PotionEffectData? HiddenEffect { get; init; }
 
+    public static PotionEffectData Read(INetStreamReader reader) => new()
+    {
+        Id = reader.ReadVarInt(),
+        Amplifier = reader.ReadVarInt(),
+        Duration = reader.ReadVarInt(),
+
+        Ambient = reader.ReadBoolean(),
+        ShowParticles = reader.ReadBoolean(),
+        ShowIcon = reader.ReadBoolean(),
+
+        HiddenEffect = reader.ReadOptional<PotionEffectData>()
+    };
+
     public static void Write(PotionEffectData value, INetStreamWriter writer)
     {
         writer.WriteVarInt(value.Id);
@@ -51,10 +64,6 @@ public sealed record class PotionEffectData : INetworkSerializable<PotionEffectD
         writer.WriteBoolean(value.ShowParticles);
         writer.WriteBoolean(value.ShowIcon);
 
-        var hasEffect = value.HiddenEffect != null;
-
-        writer.WriteBoolean(hasEffect);
-        if (hasEffect)
-            Write(value.HiddenEffect!, writer);
+        writer.WriteOptional(value.HiddenEffect);
     }
 }

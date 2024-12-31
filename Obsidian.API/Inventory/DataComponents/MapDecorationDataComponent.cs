@@ -50,6 +50,14 @@ public readonly struct MapDecoration : INetworkSerializable<MapDecoration>
 
     public required float Rotation { get; init; }
 
+    public static MapDecoration Read(INetStreamReader reader) => new()
+    {
+        Type = Enum.Parse<MapDecorationType>(reader.ReadString().TrimResourceTag(), true),
+        X = reader.ReadDouble(),
+        Z = reader.ReadDouble(),
+        Rotation = reader.ReadFloat()
+    };
+
     public static void Write(MapDecoration value, INetStreamWriter writer)
     {
         writer.WriteString($"minecraft:{value.Type.ToString().ToSnakeCase()}");

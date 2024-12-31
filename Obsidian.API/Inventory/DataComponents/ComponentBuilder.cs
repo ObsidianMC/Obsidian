@@ -199,15 +199,15 @@ public static class ComponentBuilder
     //MORE NBT
     public static SimpleDataComponent ContainerLoot => new(DataComponentType.ContainerLoot, "minecraft:container_loot");
 
-    public static List<IDataComponent> DefaultItemComponents => new()
-    {
+    public static List<IDataComponent> DefaultItemComponents =>
+    [
         MaxStackSize with { Value = 64 },
         Lore with { Value = [] },
         new EnchantmentsDataComponent { Enchantments = [], ShowInToolTip = true },
         RepairCost with { Value = 0 },
         AttributeModifiers with { Value = [], ShowInTooltip = true },
         Rarity  with { Value = ItemRarity.Common },
-    };
+    ];
 
     public static SimpleDataComponent<TValue> BuildSimpleComponent<TValue>(DataComponentType type, string identifier,
         Action<INetStreamWriter, TValue> writer,

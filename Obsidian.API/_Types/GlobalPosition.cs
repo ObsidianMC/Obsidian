@@ -5,6 +5,12 @@ public readonly struct GlobalPosition : INetworkSerializable<GlobalPosition>
 
     public required Vector Position { get; init; }
 
+    public static GlobalPosition Read(INetStreamReader reader) => new()
+    {
+        DimensionName = reader.ReadString(),
+        Position = reader.ReadPosition()
+    };
+
     public static void Write(GlobalPosition value, INetStreamWriter writer)
     {
         writer.WriteString(value.DimensionName);
