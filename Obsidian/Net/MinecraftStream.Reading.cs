@@ -1,4 +1,5 @@
-﻿using Obsidian.API.Inventory;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.Nbt;
 using Obsidian.Serialization.Attributes;
@@ -626,13 +627,13 @@ public partial class MinecraftStream : INetStreamReader
 
         for (int i = 0; i < componentsToAdd; i++)
         {
+            var type = this.ReadVarInt();
 
+            itemStack.Add(ComponentBuilder.ComponentsMap[type]());
         }
 
         for (int i = 0; i < componentsToRemove; i++)
-        {
-
-        }
+            itemStack.Remove(this.ReadVarInt<DataComponentType>());
 
         return itemStack;
     }

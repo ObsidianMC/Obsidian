@@ -1,4 +1,6 @@
-﻿namespace Obsidian.API.Inventory.DataComponents;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Obsidian.API.Inventory.DataComponents;
 public sealed record class FireworksDataComponent : IDataComponent
 {
     public DataComponentType Type => DataComponentType.Fireworks;
@@ -8,6 +10,9 @@ public sealed record class FireworksDataComponent : IDataComponent
     public required int FlightDuration { get; set; }
 
     public required List<FireworkExplosion> Explosions { get; set; }
+
+    [SetsRequiredMembers]
+    internal FireworksDataComponent() { }
 
     public void Read(INetStreamReader reader)
     {

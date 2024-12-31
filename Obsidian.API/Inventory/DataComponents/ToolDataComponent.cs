@@ -1,5 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
+﻿using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API.Inventory.DataComponents;
 public sealed class ToolDataComponent : IDataComponent
@@ -13,6 +12,9 @@ public sealed class ToolDataComponent : IDataComponent
     public required float DefaultMiningSpeed { get; set; }
 
     public required int DamagePerBlock { get; set; }
+
+    [SetsRequiredMembers]
+    internal ToolDataComponent() { }
 
     public void Read(INetStreamReader reader)
     {

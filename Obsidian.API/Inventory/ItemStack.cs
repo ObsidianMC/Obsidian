@@ -1,26 +1,45 @@
-﻿namespace Obsidian.API.Inventory;
+﻿using Obsidian.API.Inventory.DataComponents;
 
-public class ItemStack : IEquatable<ItemStack>
+namespace Obsidian.API.Inventory;
+
+public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
 {
-    public readonly static ItemStack Air = new(Material.Air, 0);
+    public static readonly ItemStack Air = new(Material.Air, 0);
 
     internal int Slot { get; set; }
 
-    public int Count { get; internal set; }
-
-    public ItemMeta ItemMeta { get; internal set; }
+    public int Count { get; set; }
 
     public Material Type { get; }
 
+    public bool Unbreakable => this.GetComponent<SimpleDataComponent<bool>>(DataComponentType.Unbreakable)?.Value ?? false;
+    public int MaxStackSize => this.GetComponent<SimpleDataComponent<int>>(DataComponentType.MaxStackSize).Value;
+    public ChatMessage? CustomName => this.GetComponent<SimpleDataComponent<ChatMessage>>(DataComponentType.CustomName)?.Value;
+    public ChatMessage? ItemName => this.GetComponent<SimpleDataComponent<ChatMessage>>(DataComponentType.ItemName)?.Value;
+
+    public int Damage => this.GetComponent<SimpleDataComponent<int>>(DataComponentType.Damage)?.Value ?? 0;
+
     public bool IsAir => Type == Material.Air;
 
-    public ItemStack(Material type, int count = 1, ItemMeta? meta = null)
+    public ItemStack(Material type, int count = 1, params List<IDataComponent> components)
     {
-        Type = type;
-        Count = count;
+        this.Type = type;
+        this.Count = count;
 
-        if (meta.HasValue)
-            ItemMeta = meta.Value;
+        // Every item gets these components
+        foreach (var defaultComponent in ComponentBuilder.DefaultItemComponents)
+            this.Add(defaultComponent);
+
+        foreach(var component in components)
+        {
+            if(this.TryGetComponent(component.Type, out var resolvedComponent))
+            {
+                resolvedComponent = component;
+                continue;
+            }
+
+            this.Add(component);
+        }
     }
 
     public static ItemStack operator -(ItemStack item, int value)
@@ -35,10 +54,20 @@ public class ItemStack : IEquatable<ItemStack>
 
     public static ItemStack operator +(ItemStack item, int value)
     {
-        if (item.Count >= 64)//TODO use max stack size
+        if (item.Count >= item.MaxStackSize)
             return item;
 
-        item.Count = Math.Min(64, item.Count + value);
+        item.Count = Math.Min(item.MaxStackSize, item.Count + value);
+
+        return item;
+    }
+
+    public static ItemStack operator +(ItemStack item, ItemStack value)
+    {
+        if (item.Count >= item.MaxStackSize)
+            return item;
+
+        item.Count = Math.Min(item.MaxStackSize, item.Count + value.Count);
 
         return item;
     }
@@ -56,10 +85,9 @@ public class ItemStack : IEquatable<ItemStack>
 
     public static bool operator !=(ItemStack? left, ItemStack? right) => !(left == right);
 
-    public bool Equals(ItemStack? other) => (Type, ItemMeta) == (other?.Type, other?.ItemMeta);
+    public bool Equals(ItemStack? other) => Type == other?.Type;
 
     public override bool Equals(object? obj) => obj is ItemStack itemStack && Equals(itemStack);
 
-    public override int GetHashCode() =>
-        (Count, ItemMeta).GetHashCode();
+    public override int GetHashCode() => Count.GetHashCode();
 }

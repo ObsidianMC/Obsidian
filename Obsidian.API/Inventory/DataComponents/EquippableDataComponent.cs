@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Utilities;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API.Inventory.DataComponents;
 public sealed record class EquippableDataComponent : IDataComponent
@@ -20,6 +21,9 @@ public sealed record class EquippableDataComponent : IDataComponent
     public bool Dispensable { get; set; }
     public bool Swappable { get; set; }
     public bool DamageOnHurt { get; set; }
+
+    [SetsRequiredMembers]
+    internal EquippableDataComponent() { }
 
     public void Read(INetStreamReader reader)
     {

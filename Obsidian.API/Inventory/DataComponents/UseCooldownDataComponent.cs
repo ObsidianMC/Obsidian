@@ -1,4 +1,6 @@
-﻿namespace Obsidian.API.Inventory.DataComponents;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Obsidian.API.Inventory.DataComponents;
 public sealed record class UseCooldownDataComponent : IDataComponent
 {
     public DataComponentType Type => DataComponentType.UseCooldown;
@@ -8,6 +10,9 @@ public sealed record class UseCooldownDataComponent : IDataComponent
     public required float Seconds { get; set; }
 
     public string? CooldownGroup { get; set; }
+
+    [SetsRequiredMembers]
+    internal UseCooldownDataComponent() { }
 
     public void Read(INetStreamReader reader)
     {

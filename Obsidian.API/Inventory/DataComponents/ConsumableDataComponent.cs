@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Effects;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API.Inventory.DataComponents;
 public sealed class ConsumableDataComponent : IDataComponent
@@ -16,6 +17,9 @@ public sealed class ConsumableDataComponent : IDataComponent
     public bool HasConsumeParticles { get; set; }
 
     public List<ConsumeEffect> Effects { get; set; } = [];
+
+    [SetsRequiredMembers]
+    internal ConsumableDataComponent() { }
 
     public void Read(INetStreamReader reader)
     {

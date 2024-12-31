@@ -1,4 +1,6 @@
-﻿namespace Obsidian.API.Inventory.DataComponents;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Obsidian.API.Inventory.DataComponents;
 
 /// <summary>
 /// Makes the item consumable.
@@ -14,6 +16,9 @@ public sealed class FoodDataComponent : IDataComponent
     public required float SaturationModifier { get; set; }
 
     public required bool CanAlwaysEat { get; set; }
+
+    [SetsRequiredMembers]
+    internal FoodDataComponent() { }
 
     public void Read(INetStreamReader reader)
     {

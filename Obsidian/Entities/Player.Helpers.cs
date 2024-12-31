@@ -293,7 +293,7 @@ public partial class Player
                 PickupItemCount = item.Count
             });
 
-            var slot = Inventory.AddItem(new ItemStack(item.Material, item.Count, item.ItemMeta));
+            var slot = Inventory.AddItem(new ItemStack(item.Material, item.Count));
 
             client.SendPacket(new ContainerSetSlotPacket
             {
@@ -326,8 +326,8 @@ public partial class Player
 
             writer.WriteCompoundStart("tag");
 
-            writer.WriteInt("Damage", item.ItemMeta.Durability);
-            writer.WriteBool("Unbreakable", item.ItemMeta.Unbreakable);
+            writer.WriteInt("Damage", item.Damage);
+            writer.WriteBool("Unbreakable", item.Unbreakable);
 
             //TODO: item attributes
 
@@ -400,13 +400,10 @@ public partial class Player
                 if (rawItemTag is not NbtCompound itemCompound)
                     continue;
 
+                //TODO serialize components in nbt
                 var slot = itemCompound.GetByte("Slot");
 
-                var itemMetaBuilder = new ItemMetaBuilder()
-                    .WithDurability(itemCompound.GetInt("Damage"))
-                    .IsUnbreakable(itemCompound.GetBool("Unbreakable"));
-
-                var item = ItemsRegistry.GetSingleItem(itemCompound.GetString("id"), itemMetaBuilder.Build());
+                var item = ItemsRegistry.GetSingleItem(itemCompound.GetString("id"));
                 item.Count = itemCompound.GetByte("Count");
                 item.Slot = slot;
 

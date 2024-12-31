@@ -826,23 +826,24 @@ public partial class MinecraftStream : INetStreamWriter
     [WriteMethod]
     public void WriteItemStack(ItemStack? value)
     {
-        value ??= new ItemStack(0, 0);
+        value ??= ItemStack.Air;
 
         var item = value.AsItem();
-        var meta = value.ItemMeta;
 
         WriteVarInt(value.Count);
 
-        //Stop serializing if item is invalid
         if (value.Count <= 0)
             return;
 
         WriteVarInt(item.Id);
-        WriteVarInt(0);
-        WriteVarInt(0);
+        WriteVarInt(value.TotalComponents);
+        WriteVarInt(value.RemoveComponents.Count);
 
-        if (!meta.HasTags())
-            return;
+        foreach (var component in value)
+            component.Write(this);
+
+        foreach (var componentType in value.RemoveComponents)
+            this.WriteVarInt(componentType);
     }
 
     public void WriteEntity(IEntity entity)
@@ -1027,28 +1028,6 @@ public partial class MinecraftStream : INetStreamWriter
         val |= (long)((int)value.Y & 0xFFF);
 
         await WriteLongAsync(val);
-    }
-
-    //TODO we probably don't use this anymore
-    public async Task WriteSlotAsync(ItemStack? value)
-    {
-        value ??= new ItemStack(0, 0);
-
-        var item = value.AsItem();
-        var meta = value.ItemMeta;
-
-        await WriteVarIntAsync(value.Count);
-
-        //Stop serializing if item is invalid
-        if (value.Count <= 0)
-            return;
-
-        await WriteVarIntAsync(item.Id);
-        await WriteVarIntAsync(0);
-        await WriteVarIntAsync(0);
-
-        if (!meta.HasTags())
-            return;
     }
 
     internal async Task WriteRecipeAsync(string name, IRecipe recipe)

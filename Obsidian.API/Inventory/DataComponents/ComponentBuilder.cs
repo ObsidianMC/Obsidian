@@ -1,9 +1,10 @@
 ﻿using Obsidian.API.Effects;
-using System.Data;
 
 namespace Obsidian.API.Inventory.DataComponents;
-public static class ComponentBuilder
+public static partial class ComponentBuilder
 {
+    public static SimpleDataComponent CustomData => new(DataComponentType.CustomData, "minecraft:custom_data");
+
     public static SimpleDataComponent<int> MaxStackSize => BuildSimpleComponent(DataComponentType.MaxStackSize, "minecraft:max_stack_size",
         (writer, value) => writer.WriteVarInt(value),
         (reader) => reader.ReadVarInt());
@@ -67,6 +68,8 @@ public static class ComponentBuilder
     public static SimpleDataComponent<int> EnchantmentGlintOverride => BuildSimpleComponent(DataComponentType.EnchantmentGlintOverride, "minecraft:enchantment_glint_override",
         (writer, value) => writer.WriteVarInt(value),
         (reader) => reader.ReadVarInt());
+
+    public static SimpleDataComponent IntangibleProjectile => new(DataComponentType.IntangibleProjectile, "minecraft:intangible_projectile");
 
     public static SimpleDataComponent<ItemStack?> UseRemainder => BuildSimpleComponent(DataComponentType.UseRemainder, "minecraft:use_remainder",
         (writer, value) => writer.WriteItemStack(value),
@@ -148,9 +151,14 @@ public static class ComponentBuilder
         (writer, values) => writer.WriteLengthPrefixedArray((value) => Page.Write(value, writer), values),
         reader => reader.ReadLengthPrefixedArray(() => Page.Read(reader)));
 
+    public static SimpleDataComponent<List<Page>> WrittenBookContent => BuildSimpleComponent(DataComponentType.WrittenBookContent, "minecraft:written_book_content",
+    (writer, values) => writer.WriteLengthPrefixedArray((value) => Page.Write(value, writer), values),
+    reader => reader.ReadLengthPrefixedArray(() => Page.Read(reader)));
+
     //TODO WE NEED NBT ACCESS IN API
     public static SimpleDataComponent DebugStickState => new(DataComponentType.DebugStickState, "minecraft:debug_stick_state");
     public static SimpleDataComponent EntityData => new(DataComponentType.EntityData, "minecraft:entity_data");
+    public static SimpleDataComponent BucketEntityData => new(DataComponentType.BucketEntityData, "minecraft:bucket_entity_data");
     public static SimpleDataComponent BlockEntityData => new(DataComponentType.BlockEntityData, "minecraft:block_entity_data");
 
     public static SimpleDataComponent<InstrumentData> Instrument => BuildSimpleComponent(DataComponentType.Instrument, "minecraft:instrument",
@@ -177,6 +185,10 @@ public static class ComponentBuilder
         (writer, values) => writer.WriteLengthPrefixedArray((value) => BannerPatternLayer.Write(value, writer), values),
         reader => reader.ReadLengthPrefixedArray(() => BannerPatternLayer.Read(reader)));
 
+    public static SimpleDataComponent<Dye> BaseColor => BuildSimpleComponent(DataComponentType.BaseColor, "minecraft:base_color",
+        (writer, value) => writer.WriteVarInt(value),
+        reader => reader.ReadVarInt<Dye>());
+
     public static SimpleDataComponent<Dye> DyedColor => BuildSimpleComponent(DataComponentType.DyedColor, "minecraft:dye_color",
         (writer, value) => writer.WriteVarInt(value),
         reader => reader.ReadVarInt<Dye>());
@@ -185,6 +197,11 @@ public static class ComponentBuilder
         "minecraft:pot_decorations",
         (writer, values) => writer.WriteLengthPrefixedArray((value) => Item.Write(value, writer), values),
         reader => reader.ReadLengthPrefixedArray(() => Item.Read(reader)));
+
+    public static SimpleDataComponent<List<ItemStack>> Container => BuildSimpleComponent(DataComponentType.Container,
+         "minecraft:container",
+         (writer, values) => writer.WriteLengthPrefixedArray((value) => writer.WriteItemStack(value), values),
+         reader => reader.ReadLengthPrefixedArray(reader.ReadItemStack));
 
     public static SimpleDataComponent<List<BlockStateProperty>> BlockState => BuildSimpleComponent(DataComponentType.BlockState,
         "minecraft:block_state",

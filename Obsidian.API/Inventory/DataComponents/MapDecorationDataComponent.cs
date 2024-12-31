@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Utilities;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API.Inventory.DataComponents;
 public sealed class MapDecorationDataComponent : IDataComponent
@@ -9,6 +10,8 @@ public sealed class MapDecorationDataComponent : IDataComponent
 
     public required Dictionary<string, MapDecoration> Decorations { get; set; }
 
+    [SetsRequiredMembers]
+    internal MapDecorationDataComponent() { }
 
     public void Read(INetStreamReader reader)
     {
