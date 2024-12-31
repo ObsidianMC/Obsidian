@@ -566,6 +566,14 @@ public partial class MinecraftStream : INetStreamWriter
         this.WriteShort(value!.Value);
     }
 
+    public void WriteOptional(Guid? value)
+    {
+        if (!this.ShouldWriteOptional(value))
+            return;
+
+        this.WriteUuid(value!.Value);
+    }
+
     public void WriteOptional(float? value)
     {
         if (!this.ShouldWriteOptional(value))

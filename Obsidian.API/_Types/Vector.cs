@@ -7,7 +7,7 @@ namespace Obsidian.API;
 /// Represents a three-dimensional vector. Uses <see cref="int"/>.
 /// </summary>
 [DebuggerDisplay("{ToString(),nq}")]
-public struct Vector : IEquatable<Vector>
+public struct Vector : IEquatable<Vector>, INetworkSerializable<Vector>
 {
     /// <summary>
     /// The X component of the <see cref="Vector"/>.
@@ -304,4 +304,7 @@ public struct Vector : IEquatable<Vector>
         return ToString();
     }
     #endregion
+
+    public static void Write(Vector value, INetStreamWriter writer) => writer.WritePosition(value);
+    public static Vector Read(INetStreamReader reader) => reader.ReadPosition();
 }

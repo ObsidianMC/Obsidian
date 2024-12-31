@@ -79,5 +79,6 @@ public interface INetStreamWriter : INetStream
     public void WriteOptional(byte? value);
     public void WriteOptional(bool? value);
     public void WriteOptional(string? value);
+    public void WriteOptional(Guid? value);
     public byte[] ToArray();
 }

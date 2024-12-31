@@ -1,6 +1,6 @@
 ﻿
 namespace Obsidian.API;
-public enum Dye
+public enum Dye : int
 {
     White,
     Orange,

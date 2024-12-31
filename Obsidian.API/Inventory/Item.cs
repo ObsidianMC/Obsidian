@@ -1,8 +1,9 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Obsidian.API.Registries;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API.Inventory;
 
-public readonly struct Item
+public readonly struct Item : INetworkSerializable<Item>
 {
     public required string UnlocalizedName { get; init; }
 
@@ -25,4 +26,7 @@ public readonly struct Item
         UnlocalizedName = item.UnlocalizedName;
         Type = item.Type;
     }
+
+    public static void Write(Item value, INetStreamWriter writer) => writer.WriteVarInt(value.Id);
+    public static Item Read(INetStreamReader reader) => ItemsRegistry.Get(reader);
 }

@@ -52,11 +52,12 @@ public interface INetStreamReader : INetStream
     public byte[] ReadByteArray();
     public Guid ReadGuid();
 
+    public TValue? ReadOptional<TValue>() where TValue : INetworkSerializable<TValue>;
     public string? ReadOptionalString();
     public Guid? ReadOptionalGuid();
     public float? ReadOptionalFloat();
     public bool? ReadOptionalBoolean();
-
+    public int? ReadOptionalInt();
     public ItemStack? ReadItemStack();
     public Velocity ReadVelocity();
 }

@@ -66,6 +66,7 @@ public partial class MinecraftStream : INetStreamReader
         return new() { Type = type, Ids = ids, TagName = tagName };
     }
 
+    public int? ReadOptionalInt() => this.ReadBoolean() ? this.ReadInt() : null;
     public float? ReadOptionalFloat() => this.ReadBoolean() ? this.ReadFloat() : null;
     public bool? ReadOptionalBoolean() => this.ReadBoolean() ? this.ReadBoolean() : null;
     public string? ReadOptionalString() => this.ReadBoolean() ? this.ReadString() : null;
@@ -641,6 +642,9 @@ public partial class MinecraftStream : INetStreamReader
     {
         return new Velocity(ReadShort(), ReadShort(), ReadShort());
     }
+
+    public TValue? ReadOptional<TValue>() where TValue : INetworkSerializable<TValue> =>
+        this.ReadBoolean() ? TValue.Read(this) : default;
 
     public Enchantment ReadEnchantment() => new()
     {

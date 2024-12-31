@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Effects;
+using System.Data;
 
 namespace Obsidian.API.Inventory.DataComponents;
 public static class ComponentBuilder
@@ -110,7 +111,7 @@ public static class ComponentBuilder
           return effect;
       }));
 
-    public static TooltipSimpleDataComponent<List<Enchantment>> ShowInTooltip => BuildTooltipSimpleDataComponent(DataComponentType.StoredEnchantments, "minecraft:stored_enchantments",
+    public static TooltipSimpleDataComponent<List<Enchantment>> StoredEnchantments => BuildTooltipSimpleDataComponent(DataComponentType.StoredEnchantments, "minecraft:stored_enchantments",
         (writer, values) => writer.WriteLengthPrefixedArray(writer.WriteEnchantment, values),
         reader => reader.ReadLengthPrefixedArray(reader.ReadEnchantment));
 
@@ -118,26 +119,95 @@ public static class ComponentBuilder
        (writer, values) => writer.WriteLengthPrefixedArray(writer.WriteAttributeModifier, values),
        reader => reader.ReadLengthPrefixedArray(reader.ReadAttributeModifier));
 
-    public static TooltipSimpleDataComponent<int> DyedColor => BuildTooltipSimpleDataComponent(DataComponentType.DyedColor, "minecraft:dyed_color",
+    public static SimpleDataComponent<int> MapColor => BuildSimpleComponent(DataComponentType.MapColor, "minecraft:map_color",
        (writer, value) => writer.WriteInt(value),
        reader => reader.ReadInt());
 
-    public static SimpleDataComponent<int> MapColor => BuildTooltipSimpleDataComponent(DataComponentType.MapColor, "minecraft:map_color",
-       (writer, value) => writer.WriteInt(value),
-       reader => reader.ReadInt());
-
-    public static SimpleDataComponent<int> MapId => BuildTooltipSimpleDataComponent(DataComponentType.MapId, "minecraft:map_id",
+    public static SimpleDataComponent<int> MapId => BuildSimpleComponent(DataComponentType.MapId, "minecraft:map_id",
        (writer, value) => writer.WriteVarInt(value),
        reader => reader.ReadVarInt());
 
-    public static SimpleDataComponent<MapPostProcessingType> MapPostProcessing => BuildTooltipSimpleDataComponent(DataComponentType.MapPostProcessing, "minecraft:map_post_processing",
+    public static SimpleDataComponent<MapPostProcessingType> MapPostProcessing => BuildSimpleComponent(DataComponentType.MapPostProcessing, "minecraft:map_post_processing",
        (writer, value) => writer.WriteVarInt(value),
        reader => reader.ReadVarInt<MapPostProcessingType>());
 
-    /// <summary>
-    /// Marks the projectile as intangible (cannot be picked-up).
-    /// </summary>
-    public static SimpleDataComponent IntangibleProjectile => new(DataComponentType.IntangibleProjectile, "minecraft:intangible_projectile");
+    public static SimpleDataComponent<List<ItemStack>> ChargedProjectiles => BuildSimpleComponent(DataComponentType.ChargedProjectiles, "minecraft:charged_projectiles",
+        (writer, values) => writer.WriteLengthPrefixedArray(writer.WriteItemStack, values),
+        reader => reader.ReadLengthPrefixedArray(reader.ReadItemStack));
+
+    public static SimpleDataComponent<List<ItemStack>> BundleContents => BuildSimpleComponent(DataComponentType.BundleContents, "minecraft:bundle_contents",
+        (writer, values) => writer.WriteLengthPrefixedArray(writer.WriteItemStack, values),
+        reader => reader.ReadLengthPrefixedArray(reader.ReadItemStack));
+
+    public static SimpleDataComponent<List<SuspiciousStewEffect>> SuspiciousStewEffects => BuildSimpleComponent(DataComponentType.SuspiciousStewEffects,
+        "minecraft:suspicious_stew_effects",
+        (writer, values) => writer.WriteLengthPrefixedArray(value => SuspiciousStewEffect.Write(value, writer), values),
+        reader => reader.ReadLengthPrefixedArray(() => SuspiciousStewEffect.Read(reader)));
+
+    public static SimpleDataComponent<List<Page>> WritableBookContent => BuildSimpleComponent(DataComponentType.WritableBookContent, "minecraft:writable_book_content",
+        (writer, values) => writer.WriteLengthPrefixedArray((value) => Page.Write(value, writer), values),
+        reader => reader.ReadLengthPrefixedArray(() => Page.Read(reader)));
+
+    //TODO WE NEED NBT ACCESS IN API
+    public static SimpleDataComponent DebugStickState => new(DataComponentType.DebugStickState, "minecraft:debug_stick_state");
+    public static SimpleDataComponent EntityData => new(DataComponentType.EntityData, "minecraft:entity_data");
+    public static SimpleDataComponent BlockEntityData => new(DataComponentType.BlockEntityData, "minecraft:block_entity_data");
+
+    public static SimpleDataComponent<InstrumentData> Instrument => BuildSimpleComponent(DataComponentType.Instrument, "minecraft:instrument",
+        (writer, value) => InstrumentData.Write(value, writer),
+        InstrumentData.Read);
+
+    public static SimpleDataComponent<int> OminousBottleAmplifier => BuildSimpleComponent(DataComponentType.OminousBottleAmplifier, "minecraft:ominous_bottle_amplifier",
+        (writer, value) => writer.WriteVarInt(value),
+        reader => reader.ReadVarInt());
+
+    //NBT
+    public static SimpleDataComponent Recipes => new(DataComponentType.Recipes, "minecraft:recipes");
+
+    public static SimpleDataComponent<FireworkExplosion> FireworkExplosion => BuildSimpleComponent(DataComponentType.FireworkExplosion, "minecraft:firework_explosion",
+        (writer, value) => API.FireworkExplosion.Write(value, writer),
+        API.FireworkExplosion.Read);
+
+    public static SimpleDataComponent<string> NoteBlockSound => BuildSimpleComponent(DataComponentType.NoteBlockSound, "minecraft:note_block_sound",
+        (writer, value) => writer.WriteString(value),
+        reader => reader.ReadString());
+
+    public static SimpleDataComponent<List<BannerPatternLayer>> BannerPatterns => BuildSimpleComponent(DataComponentType.BannerPatterns,
+        "minecraft:banner_patterns",
+        (writer, values) => writer.WriteLengthPrefixedArray((value) => BannerPatternLayer.Write(value, writer), values),
+        reader => reader.ReadLengthPrefixedArray(() => BannerPatternLayer.Read(reader)));
+
+    public static SimpleDataComponent<Dye> DyedColor => BuildSimpleComponent(DataComponentType.DyedColor, "minecraft:dye_color",
+        (writer, value) => writer.WriteVarInt(value),
+        reader => reader.ReadVarInt<Dye>());
+
+    public static SimpleDataComponent<List<Item>> PotDecorations => BuildSimpleComponent(DataComponentType.PotDecorations,
+        "minecraft:pot_decorations",
+        (writer, values) => writer.WriteLengthPrefixedArray((value) => Item.Write(value, writer), values),
+        reader => reader.ReadLengthPrefixedArray(() => Item.Read(reader)));
+
+    public static SimpleDataComponent<List<BlockStateProperty>> BlockState => BuildSimpleComponent(DataComponentType.BlockState,
+        "minecraft:block_state",
+        (writer, values) => writer.WriteLengthPrefixedArray((value) => BlockStateProperty.Write(value, writer), values),
+        reader => reader.ReadLengthPrefixedArray(() => BlockStateProperty.Read(reader)));
+
+    //REQUIRES NBT
+    public static SimpleDataComponent Bees => new(DataComponentType.Bees, "minecraft:bees");
+
+    public static SimpleDataComponent Lock => new(DataComponentType.Lock, "minecraft:lock");
+
+    //MORE NBT
+    public static SimpleDataComponent ContainerLoot => new(DataComponentType.ContainerLoot, "minecraft:container_loot");
+
+    public static List<IDataComponent> DefaultItemComponents => new()
+    {
+        MaxStackSize with { Value = 64 },
+        Lore with { Value = [] },
+        new EnchantmentsDataComponent { Enchantments = [], ShowInToolTip = true },
+        RepairCost with { Value = 0 },
+        AttributeModifiers with { Value = [], ShowInTooltip = true },
+        Rarity  with { Value = ItemRarity.Common },
+    };
 
     public static SimpleDataComponent<TValue> BuildSimpleComponent<TValue>(DataComponentType type, string identifier,
         Action<INetStreamWriter, TValue> writer,

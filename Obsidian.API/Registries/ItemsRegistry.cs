@@ -5,6 +5,7 @@ using Obsidian.API.Utilities;
 namespace Obsidian.API.Registries;
 public static partial class ItemsRegistry
 {
+    public static Item Get(INetStreamReader reader) => Get(reader.ReadVarInt());
     public static Item Get(int id) => Items.Values.SingleOrDefault(x => x.Id == id);
     public static Item Get(Material mat) => Items.GetValueOrDefault(mat);
     public static Item Get(string unlocalizedName) =>
