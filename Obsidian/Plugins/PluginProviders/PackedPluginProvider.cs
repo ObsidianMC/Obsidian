@@ -4,6 +4,7 @@ using Org.BouncyCastle.Crypto;
 using System.Collections.Frozen;
 using System.IO;
 using System.Reflection;
+using System.Runtime.Loader;
 using System.Security.Cryptography;
 
 namespace Obsidian.Plugins.PluginProviders;
@@ -239,6 +240,11 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
                     libsWithSymbols.Add(entry.Name.Replace(".dll", ".pdb"));
                     continue;
                 }
+
+                //Check to see if this assembly already exists in the shared context.
+                var sharedAssembly = AssemblyLoadContext.Default.LoadFromAssemblyName(new AssemblyName { Name = entry.Name.Replace(".dll", string.Empty) });
+                if (sharedAssembly != null)
+                    continue;
 
                 pluginContainer.LoadContext.LoadAssembly(actualBytes);
             }
