@@ -113,20 +113,21 @@ public sealed class PluginManager
             if (pluginContainer is null)
                 continue;
 
-            foreach (var canLoad in waitingForDepend.Where(x => x.IsDependency(pluginContainer.Info.Id)).ToList())
-            {
-                packedPluginProvider.InitializePlugin(canLoad);
-
-                //Add dependency to plugin
-                canLoad.AddDependency(pluginContainer.LoadContext);
-
-                await this.HandlePluginAsync(canLoad);
-
-                waitingForDepend.Remove(canLoad);
-            }
-
             if (pluginContainer.Plugin is null)
                 waitingForDepend.Add(pluginContainer);
+        }
+
+        foreach (var canLoad in waitingForDepend)
+        {
+            packedPluginProvider.InitializePlugin(canLoad);
+
+            var depends = canLoad.Info.Dependencies.Select(x => x.Id).SelectMany(x => this.Plugins.Where(p => p.Info.Id == x));
+            foreach (var depend in depends)
+                canLoad.AddDependency(depend.LoadContext);
+            
+            await this.HandlePluginAsync(canLoad);
+
+            this.logger.LogInformation("Loaded: {name} with {depend} depends.", canLoad.Info.Name, canLoad.Info.Dependencies.Length);
         }
 
         DirectoryWatcher.Watch("plugins");
