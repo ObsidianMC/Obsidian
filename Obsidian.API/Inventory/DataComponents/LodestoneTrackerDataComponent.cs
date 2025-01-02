@@ -5,13 +5,13 @@ public sealed record class LodestoneTrackerDataComponent : IDataComponent
 
     public string Identifier => "minecraft:lodestone_tracker";
 
-    public Vector? Target { get; set; }
+    public GlobalPosition? Target { get; set; }
 
     public bool Tracked { get; set; }
 
     public void Read(INetStreamReader reader)
     {
-        this.Target = reader.ReadOptional<Vector>();
+        this.Target = reader.ReadOptional<GlobalPosition>(); 
         this.Tracked = reader.ReadBoolean();
     }
 
