@@ -106,7 +106,7 @@ public sealed class PluginManager
         var files = Directory.GetFiles("plugins", "*.obby", SearchOption.AllDirectories);
 
         var waitingForDepend = new List<PluginContainer>();
-        foreach (var file in files)
+        foreach (var file in files.Reverse())
         {
             var pluginContainer = await this.LoadPluginAsync(file);
 
@@ -120,14 +120,13 @@ public sealed class PluginManager
         foreach (var canLoad in waitingForDepend)
         {
             packedPluginProvider.InitializePlugin(canLoad);
+            packedPluginProvider.HandlePlugin(canLoad, canLoad.PluginAssembly);
 
             var depends = canLoad.Info.Dependencies.Select(x => x.Id).SelectMany(x => this.Plugins.Where(p => p.Info.Id == x));
             foreach (var depend in depends)
                 canLoad.AddDependency(depend.LoadContext);
             
             await this.HandlePluginAsync(canLoad);
-
-            this.logger.LogInformation("Loaded: {name} with {depend} depends.", canLoad.Info.Name, canLoad.Info.Dependencies.Length);
         }
 
         DirectoryWatcher.Watch("plugins");
@@ -278,7 +277,7 @@ public sealed class PluginManager
             }
         }
 
-        logger?.LogInformation("Loading finished!");
+        logger?.LogInformation("Loaded {name}.", pluginContainer.Info.Name);
 
         return pluginContainer;
     }

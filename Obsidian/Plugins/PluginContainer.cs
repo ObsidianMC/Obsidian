@@ -33,7 +33,7 @@ public sealed class PluginContainer : IDisposable, IPluginContainer
     public required bool ValidSignature { get; init; }
 
     public bool HasDependencies { get; private set; } = true;
-    public bool IsReady => HasDependencies;
+    public bool IsReady => true;
     public bool Loaded { get; internal set; }
 
     ~PluginContainer()
