@@ -262,12 +262,9 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
                 var depends = pluginContainer.Info.Dependencies.Select(x => x.Id).SelectMany(x => this.pluginManager.Plugins.Where(p => p.Info.Id == x));
                 var dependency = depends.FirstOrDefault(x => x.PluginAssembly.GetName().Name == name);
 
-                //we should load the dependency assembly instead.
-                if(dependency != null)
-                {
-                    pluginContainer.LoadContext.LoadDependencyAssembly(dependency.PluginAssembly.GetName());
+                //we don't need to load this into the context.
+                if (dependency != null)
                     continue;
-                }
 
                 pluginContainer.LoadContext.LoadAssembly(actualBytes);
             }

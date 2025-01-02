@@ -18,8 +18,6 @@ public sealed class PluginLoadContext(string name) : AssemblyLoadContext(name: n
 
     public void AddDependency(PluginLoadContext context) => this.Dependencies.Add(context);
 
-    public Assembly? LoadDependencyAssembly(AssemblyName assemblyName) => this.Load(assemblyName);
-
     protected override Assembly? Load(AssemblyName assemblyName)
     {
         var assembly = this.Assemblies.FirstOrDefault(x => x.FullName == assemblyName.FullName);
