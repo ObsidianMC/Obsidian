@@ -1,16 +1,19 @@
 ﻿using Obsidian.API.Inventory.DataComponents;
+using Obsidian.API.Registries;
 
 namespace Obsidian.API.Inventory;
 
 public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
 {
-    public static readonly ItemStack Air = new(Material.Air, 0);
+    public static readonly ItemStack Air = new(ItemsRegistry.Air, 0);
 
     internal int Slot { get; set; }
 
     public int Count { get; set; }
 
-    public Material Type { get; }
+    public Item Holder { get; }
+
+    public Material Type => this.Holder.Type;
 
     public bool Unbreakable => this.GetComponent<SimpleDataComponent<bool>>(DataComponentType.Unbreakable)?.Value ?? false;
     public int MaxStackSize => this.GetComponent<SimpleDataComponent<int>>(DataComponentType.MaxStackSize).Value;
@@ -21,25 +24,12 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
 
     public bool IsAir => Type == Material.Air;
 
-    public ItemStack(Material type, int count = 1, params List<IDataComponent> components)
+    public ItemStack(Item holder, int count = 1, params List<IDataComponent> components)
     {
-        this.Type = type;
+        this.Holder = holder;
         this.Count = count;
 
-        // Every item gets these components
-        foreach (var defaultComponent in ComponentBuilder.DefaultItemComponents)
-            this.Add(defaultComponent);
-
-        foreach(var component in components)
-        {
-            if(this.TryGetComponent(component.Type, out var resolvedComponent))
-            {
-                resolvedComponent = component;
-                continue;
-            }
-
-            this.Add(component);
-        }
+        this.InitializeComponents(components);
     }
 
     public static ItemStack operator -(ItemStack item, int value)
@@ -90,4 +80,23 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
     public override bool Equals(object? obj) => obj is ItemStack itemStack && Equals(itemStack);
 
     public override int GetHashCode() => Count.GetHashCode();
+
+    private void InitializeComponents(params List<IDataComponent> components)
+    {
+        // Every item gets these components
+        foreach (var defaultComponent in ComponentBuilder.DefaultItemComponents)
+            this.Add(defaultComponent);
+
+        foreach (var component in components)
+        {
+            if (this.TryGetComponent(component.Type, out var resolvedComponent))
+            {
+                resolvedComponent = component;
+                continue;
+            }
+
+            this.Add(component);
+        }
+    }
+
 }

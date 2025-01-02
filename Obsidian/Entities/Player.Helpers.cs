@@ -293,7 +293,7 @@ public partial class Player
                 PickupItemCount = itemEntity.Item.Count
             });
 
-            var slot = Inventory.AddItem(new ItemStack(itemEntity.Item.Type, itemEntity.Item.Count));
+            var slot = Inventory.AddItem(new ItemStack(itemEntity.Item.Holder, itemEntity.Item.Count));
 
             client.SendPacket(new ContainerSetSlotPacket
             {

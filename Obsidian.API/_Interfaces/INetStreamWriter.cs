@@ -49,7 +49,6 @@ public interface INetStreamWriter : INetStream
     public void WriteAbsolutePositionF(VectorF value);
     public void WriteAbsoluteFloatPositionF(VectorF value);
     public void WriteVelocity(Velocity value);
-    public void WriteRecipe(string name, IRecipe recipe);
     public void WriteAdvancement(Advancement advancement);
 
     public void WriteLengthPrefixedArray(bool showInTooltips, params List<Enchantment> enchantments);

@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Obsidian.API.Inventory;
+﻿using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.Nbt;
 using Obsidian.Serialization.Attributes;
@@ -618,7 +617,7 @@ public partial class MinecraftStream : INetStreamReader
 
         var item = ItemsRegistry.Get(ReadVarInt());
 
-        var itemStack = new ItemStack(item.Type, count);
+        var itemStack = new ItemStack(item, count);
 
         var componentsToAdd = this.ReadVarInt();
         var componentsToRemove = this.ReadVarInt();

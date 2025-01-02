@@ -13,11 +13,11 @@ public static partial class ItemsRegistry
 
     public static bool TryGet(Material mat, out Item item) => Items.TryGetValue(mat, out item);
 
-    public static ItemStack Get(string unlocalizedName, short count, params List<IDataComponent> components) => new(Get(unlocalizedName).Type, count, components);
+    public static ItemStack Get(string unlocalizedName, short count, params List<IDataComponent> components) => new(Get(unlocalizedName), count, components);
 
-    public static ItemStack GetSingleItem(Material mat, params List<IDataComponent> components) => new(mat, 1, components);
+    public static ItemStack GetSingleItem(Material mat, params List<IDataComponent> components) => new(Get(mat), 1, components);
 
-    public static ItemStack GetSingleItem(string unlocalizedName, params List<IDataComponent> components) => new(Get(unlocalizedName).Type, 1, components);
+    public static ItemStack GetSingleItem(string unlocalizedName, params List<IDataComponent> components) => new(Get(unlocalizedName), 1, components);
 
     public static Ingredient GetIngredientFromTag(string tag, short count)
     {
@@ -28,7 +28,7 @@ public static partial class ItemsRegistry
         {
             var item = Get(id);
 
-            ingredient.Add(new ItemStack(item.Type, count));
+            ingredient.Add(new ItemStack(item, count));
         }
 
         return ingredient;

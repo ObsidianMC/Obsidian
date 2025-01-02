@@ -19,7 +19,7 @@ public partial class Extensions
     //TODO SERIALIZE COMPONENTS TO NBT
     public static NbtCompound ToNbt(this ItemStack? value)
     {
-        value ??= new ItemStack(0, 0);
+        value ??= ItemStack.Air;
 
         var item = value.AsItem();
 

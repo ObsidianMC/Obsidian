@@ -1,8 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Obsidian.API.Advancements;
-using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
-using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registry.Codecs.ArmorTrims.TrimMaterial;
 using Obsidian.API.Registry.Codecs.ArmorTrims.TrimPattern;
 using Obsidian.API.Registry.Codecs.Biomes;
@@ -11,7 +9,6 @@ using Obsidian.API.Registry.Codecs.DamageTypes;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.API.Registry.Codecs.PaintingVariant;
 using Obsidian.API.Registry.Codecs.WolfVariant;
-using Obsidian.API.Utilities;
 using Obsidian.Commands;
 using Obsidian.Nbt;
 using Obsidian.Net.Actions.BossBar;
@@ -952,149 +949,6 @@ public partial class MinecraftStream : INetStreamWriter
 
         this.WriteVarInt(chunkBiome.Data.Length);
         this.WriteByteArray(chunkBiome.Data);
-    }
-
-    public void WriteRecipe(string name, IRecipe recipe)
-    {
-        WriteString($"minecraft:{recipe.Type.ToString().ToSnakeCase()}");
-
-        WriteString(name);
-
-        if (recipe is ShapedRecipe shapedRecipe)
-        {
-            var patterns = shapedRecipe.Pattern;
-
-            int width = patterns[0].Length, height = patterns.Count;
-
-            WriteVarInt(width);
-            WriteVarInt(height);
-
-            WriteString(shapedRecipe.Group ?? string.Empty);
-            WriteVarInt(shapedRecipe.Category);
-
-            var ingredients = new List<ItemStack>[width * height];
-
-            var y = 0;
-            foreach (var pattern in patterns)
-            {
-                var x = 0;
-                foreach (var c in pattern)
-                {
-                    if (char.IsWhiteSpace(c))
-                    {
-                        x++;
-                        continue;
-                    }
-
-                    var index = x + (y * width);
-                    var key = shapedRecipe.Key[c];
-
-                    foreach (var item in key)
-                    {
-                        if (ingredients[index] is null)
-                            ingredients[index] = new List<ItemStack> { item };
-                        else
-                            ingredients[index].Add(item);
-                    }
-
-                    x++;
-                }
-                y++;
-            }
-
-            foreach (var items in ingredients)
-            {
-                if (items == null)
-                {
-                    WriteVarInt(0);
-                    continue;
-                }
-
-                WriteVarInt(items.Count);
-
-                foreach (var itemStack in items)
-                    WriteItemStack(itemStack);
-            }
-
-            WriteItemStack(shapedRecipe.Result.First());
-        }
-        else if (recipe is ShapelessRecipe shapelessRecipe)
-        {
-            var ingredients = shapelessRecipe.Ingredients;
-
-            WriteString(shapelessRecipe.Group ?? string.Empty);
-            WriteVarInt(shapelessRecipe.Category);
-
-            WriteVarInt(ingredients.Count);
-            foreach (var ingredient in ingredients)
-            {
-                WriteVarInt(ingredient.Count);
-                foreach (var item in ingredient)
-                    WriteItemStack(item);
-            }
-
-            var result = shapelessRecipe.Result.First();
-
-            WriteItemStack(result);
-        }
-        else if (recipe is SmeltingRecipe smeltingRecipe)
-        {
-            WriteString(smeltingRecipe.Group ?? string.Empty);
-            WriteVarInt(smeltingRecipe.Category);
-
-            WriteVarInt(smeltingRecipe.Ingredient.Count);
-            foreach (var i in smeltingRecipe.Ingredient)
-                WriteItemStack(i);
-
-            WriteItemStack(smeltingRecipe.Result.First());
-
-            WriteFloat(smeltingRecipe.Experience);
-            WriteVarInt(smeltingRecipe.CookingTime);
-        }
-        else if (recipe is CuttingRecipe cuttingRecipe)
-        {
-            WriteString(cuttingRecipe.Group ?? string.Empty);
-
-            WriteVarInt(cuttingRecipe.Ingredient.Count);
-            foreach (var item in cuttingRecipe.Ingredient)
-                WriteItemStack(item);
-
-            var result = cuttingRecipe.Result.First();
-
-            result.Count = (short)cuttingRecipe.Count;
-
-            WriteItemStack(result);
-        }
-        else if (recipe is SmithingTransformRecipe smithingTransformRecipe)
-        {
-            WriteVarInt(smithingTransformRecipe.Template.Count);
-            foreach (var item in smithingTransformRecipe.Template)
-                WriteItemStack(item);
-
-            WriteVarInt(smithingTransformRecipe.Base.Count);
-            foreach (var item in smithingTransformRecipe.Base)
-                WriteItemStack(item);
-
-            WriteVarInt(smithingTransformRecipe.Addition.Count);
-            foreach (var item in smithingTransformRecipe.Addition)
-                WriteItemStack(item);
-
-            WriteItemStack(smithingTransformRecipe.Result.First());
-        }
-        else if (recipe is SmithingTrimRecipe smithingTrimRecipe)
-        {
-            WriteVarInt(smithingTrimRecipe.Template.Count);
-            foreach (var item in smithingTrimRecipe.Template)
-                WriteItemStack(item);
-
-            WriteVarInt(smithingTrimRecipe.Base.Count);
-            foreach (var item in smithingTrimRecipe.Base)
-                WriteItemStack(item);
-
-            WriteVarInt(smithingTrimRecipe.Addition.Count);
-            foreach (var item in smithingTrimRecipe.Addition)
-                WriteItemStack(item);
-        }
     }
 
     [WriteMethod]

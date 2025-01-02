@@ -218,15 +218,15 @@ public sealed class MainCommandModule : CommandModuleBase
             return;
 
         // convert snake_case to PascalCase
-        if(item.Contains('_'))
+        if (item.Contains('_'))
         {
             var parts = item.Split('_');
             item = string.Join("", parts.Select(x => $"{x[0].ToString().ToUpperInvariant()}{x.Substring(1)}"));
         }
         // find material from string (enum Material)
-        if (Enum.TryParse<Material>(item, out Material material))
+        if (Enum.TryParse(item, out Material material))
         {
-            var slot = player.Inventory.AddItem(new ItemStack(material, count: amount));
+            var slot = player.Inventory.AddItem(new ItemStack(ItemsRegistry.Get(material), count: amount));
             await player.SendMessageAsync($"Given you {ChatColor.Gold}{amount} {item}(s)");
             player.client.SendPacket(new ContainerSetSlotPacket
             {
