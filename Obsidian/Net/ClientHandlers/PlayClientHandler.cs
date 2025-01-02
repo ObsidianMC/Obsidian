@@ -98,7 +98,7 @@ internal sealed class PlayClientHandler : ClientHandler
             default:
                 if (!Packets.TryGetValue(id, out var packet))
                 {
-                    this.Client.Logger.LogWarning("Play Packet({id}) {name} is not being handled.", id, PacketsRegistry.Play.ServerboundNames[id]);
+                    this.Client.Logger.LogTrace("Play Packet({id}) {name} is not being handled.", id, PacketsRegistry.Play.ServerboundNames[id]);
                     return false;
                 }
 

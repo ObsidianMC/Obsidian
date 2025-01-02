@@ -1,6 +1,6 @@
-﻿using Obsidian.API.Utilities;
+﻿using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.Nbt;
-using Obsidian.Registries;
 using Obsidian.Serialization.Attributes;
 using System.Buffers.Binary;
 using System.IO;
@@ -26,6 +26,7 @@ public partial class MinecraftStream : INetStreamReader
 
     public TEnum ReadSignedByte<TEnum>() where TEnum : Enum => (TEnum)Enum.Parse(typeof(TEnum), this.ReadSignedByte().ToString());
     public TEnum ReadUnsignedByte<TEnum>() where TEnum : Enum => (TEnum)Enum.Parse(typeof(TEnum), this.ReadUnsignedByte().ToString());
+    public TEnum ReadInt<TEnum>() where TEnum : Enum => (TEnum)Enum.Parse(typeof(TEnum), this.ReadInt().ToString());
 
     public async Task<byte> ReadUnsignedByteAsync()
     {
@@ -40,6 +41,56 @@ public partial class MinecraftStream : INetStreamReader
         return ReadUnsignedByte() == 0x01;
     }
 
+    public SoundEvent ReadSoundEvent() => new()
+    {
+        ResourceLocation = this.ReadString(),
+        FixedRange = this.ReadOptionalFloat()
+    };
+
+    public List<TValue> ReadLengthPrefixedArray<TValue>(Func<TValue> read)
+    {
+        var count = this.ReadVarInt();
+        var list = new List<TValue>(count);
+
+        for (var i = 0; i < count; i++)
+            list[i] = read();
+
+        return list;
+    }
+
+    public IdSet ReadIdSet()
+    {
+        var type = this.ReadVarInt();
+        string? tagName = type == 0 ? tagName = this.ReadString() : null;
+        List<int>? ids = type != 0 ? this.ReadLengthPrefixedArray(() => this.ReadVarInt()) : null;
+
+        return new() { Type = type, Ids = ids, TagName = tagName };
+    }
+
+    public int? ReadOptionalInt() => this.ReadBoolean() ? this.ReadInt() : null;
+    public float? ReadOptionalFloat() => this.ReadBoolean() ? this.ReadFloat() : null;
+    public bool? ReadOptionalBoolean() => this.ReadBoolean() ? this.ReadBoolean() : null;
+    public string? ReadOptionalString() => this.ReadBoolean() ? this.ReadString() : null;
+    public AttributeModifier ReadAttributeModifier() => new()
+    {
+        Id = this.ReadVarInt(),
+        Uuid = this.ReadGuid(),
+        Name = this.ReadString(),
+        Value = this.ReadDouble(),
+        Operation = this.ReadVarInt<AttributeOperation>(),
+        Slot = this.ReadVarInt<AttributeSlot>()
+    };
+
+    public PotionEffectData ReadPotionEffectData() => new()
+    {
+        Id = this.ReadVarInt(),
+        Amplifier = this.ReadVarInt(),
+        Duration = this.ReadVarInt(),
+        Ambient = this.ReadBoolean(),
+        ShowIcon = this.ReadBoolean(),
+        ShowParticles = this.ReadBoolean(),
+        HiddenEffect = this.ReadBoolean() ? this.ReadPotionEffectData() : null
+    };
     public async Task<bool> ReadBooleanAsync()
     {
         var value = (int)await this.ReadByteAsync();
@@ -566,105 +617,23 @@ public partial class MinecraftStream : INetStreamReader
 
         var item = ItemsRegistry.Get(ReadVarInt());
 
-        var itemStack = new ItemStack(item.Type, ReadVarInt());
+        var itemStack = new ItemStack(item, count);
 
-        if(itemStack.Type == Material.Air)
+        var componentsToAdd = this.ReadVarInt();
+        var componentsToRemove = this.ReadVarInt();
+
+        if (itemStack.Type == Material.Air)
             return itemStack;
 
-        var reader = new NbtReader(this);
-
-        while (reader.TryReadNextTag(out var tag))
+        for (int i = 0; i < componentsToAdd; i++)
         {
-            var itemMetaBuilder = new ItemMetaBuilder();
+            var type = this.ReadVarInt();
 
-            if (tag is NbtCompound root)
-            {
-                foreach (var (name, child) in root)
-                {
-                    switch (name.ToUpperInvariant())
-                    {
-                        case "ENCHANTMENTS":
-                            {
-                                var enchantments = (NbtList)child;
-
-                                foreach (var enchant in enchantments)
-                                {
-                                    if (enchant is NbtCompound compound)
-                                    {
-
-                                        itemMetaBuilder.AddEnchantment(compound.GetString("id").ToEnchantType(), compound.GetShort("lvl"));
-                                    }
-                                }
-
-                                break;
-                            }
-
-                        case "STOREDENCHANTMENTS":
-                            {
-                                var enchantments = (NbtList)child;
-
-                                //Globals.PacketLogger.LogDebug("List Type: {ListType}", enchantments.ListType);
-
-                                foreach (var enchantment in enchantments)
-                                {
-                                    if (enchantment is NbtCompound compound)
-                                    {
-                                        compound.TryGetTag("id", out var id);
-                                        compound.TryGetTag("lvl", out var lvl);
-
-                                        itemMetaBuilder.AddStoredEnchantment(compound.GetString("id").ToEnchantType(), compound.GetShort("lvl"));
-                                    }
-                                }
-                                break;
-                            }
-
-                        case "SLOT":
-                            {
-                                var byteTag = (NbtTag<byte>)child;
-
-                                itemStack.Slot = byteTag.Value;
-                                //Console.WriteLine($"Setting slot: {itemMetaBuilder.Slot}");
-                                break;
-                            }
-
-                        case "DAMAGE":
-                            {
-                                var intTag = (NbtTag<int>)child;
-
-                                itemMetaBuilder.WithDurability(intTag.Value);
-                                //Globals.PacketLogger.LogDebug("Setting damage: {IntValue}", tag.IntValue);
-                                break;
-                            }
-
-                        case "DISPLAY":
-                            {
-                                var display = (NbtCompound)child;
-
-                                foreach (var (displayTagName, displayTag) in display)
-                                {
-                                    if (displayTagName.EqualsIgnoreCase("name") && displayTag is NbtTag<string> stringTag)
-                                    {
-                                        itemMetaBuilder.WithName(stringTag.Value);
-                                    }
-                                    else if (displayTag.Name.EqualsIgnoreCase("lore"))
-                                    {
-                                        var loreTag = (NbtList)displayTag;
-
-                                        foreach (NbtTag<string> lore in loreTag)
-                                            itemMetaBuilder.AddLore(lore.Value.FromJson<ChatMessage>());
-                                    }
-                                }
-                                break;
-                            }
-                    }
-                }
-            }
-
-            itemStack.ItemMeta = itemMetaBuilder.Build();
-
-
-            return itemStack;
+            itemStack.Add(ComponentBuilder.ComponentsMap[type]());
         }
+
+        for (int i = 0; i < componentsToRemove; i++)
+            itemStack.Remove(this.ReadVarInt<DataComponentType>());
 
         return itemStack;
     }
@@ -674,4 +643,13 @@ public partial class MinecraftStream : INetStreamReader
     {
         return new Velocity(ReadShort(), ReadShort(), ReadShort());
     }
+
+    public TValue? ReadOptional<TValue>() where TValue : INetworkSerializable<TValue> =>
+        this.ReadBoolean() ? TValue.Read(this) : default;
+
+    public Enchantment ReadEnchantment() => new()
+    {
+        Id = this.ReadVarInt(),
+        Level = this.ReadVarInt(),
+    };
 }

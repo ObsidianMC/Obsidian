@@ -1,4 +1,6 @@
-﻿namespace Obsidian.Entities;
+﻿using Obsidian.API.Inventory;
+
+namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:item_frame")]
 public partial class ItemFrame : Entity

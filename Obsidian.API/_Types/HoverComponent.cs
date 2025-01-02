@@ -1,4 +1,6 @@
-﻿namespace Obsidian.API;
+﻿using Obsidian.API.Inventory;
+
+namespace Obsidian.API;
 
 public sealed class HoverComponent
 {

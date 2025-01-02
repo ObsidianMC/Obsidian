@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Inventory;
 using Obsidian.Nbt;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Registries;
 using Obsidian.WorldData;
 using System.Buffers;
 using System.IO;
@@ -280,20 +280,20 @@ public partial class Player
     {
         foreach (var entity in world.GetNonPlayerEntitiesInRange(Position, distance))
         {
-            if (entity is not ItemEntity item)
+            if (entity is not ItemEntity itemEntity)
                 continue;
 
-            if (!item.CanPickup)
+            if (!itemEntity.CanPickup)
                 continue;
 
             this.PacketBroadcaster.QueuePacketToWorld(this.World, new TakeItemEntityPacket
             {
-                CollectedEntityId = item.EntityId,
+                CollectedEntityId = itemEntity.EntityId,
                 CollectorEntityId = EntityId,
-                PickupItemCount = item.Count
+                PickupItemCount = itemEntity.Item.Count
             });
 
-            var slot = Inventory.AddItem(new ItemStack(item.Material, item.Count, item.ItemMeta));
+            var slot = Inventory.AddItem(new ItemStack(itemEntity.Item.Holder, itemEntity.Item.Count));
 
             client.SendPacket(new ContainerSetSlotPacket
             {
@@ -303,7 +303,7 @@ public partial class Player
                 StateId = Inventory.StateId++
             });
 
-            await item.RemoveAsync();
+            await itemEntity.RemoveAsync();
         }
     }
 
@@ -326,8 +326,8 @@ public partial class Player
 
             writer.WriteCompoundStart("tag");
 
-            writer.WriteInt("Damage", item.ItemMeta.Durability);
-            writer.WriteBool("Unbreakable", item.ItemMeta.Unbreakable);
+            writer.WriteInt("Damage", item.Damage);
+            writer.WriteBool("Unbreakable", item.Unbreakable);
 
             //TODO: item attributes
 
@@ -400,13 +400,10 @@ public partial class Player
                 if (rawItemTag is not NbtCompound itemCompound)
                     continue;
 
+                //TODO serialize components in nbt
                 var slot = itemCompound.GetByte("Slot");
 
-                var itemMetaBuilder = new ItemMetaBuilder()
-                    .WithDurability(itemCompound.GetInt("Damage"))
-                    .IsUnbreakable(itemCompound.GetBool("Unbreakable"));
-
-                var item = ItemsRegistry.GetSingleItem(itemCompound.GetString("id"), itemMetaBuilder.Build());
+                var item = ItemsRegistry.GetSingleItem(itemCompound.GetString("id"));
                 item.Count = itemCompound.GetByte("Count");
                 item.Slot = slot;
 

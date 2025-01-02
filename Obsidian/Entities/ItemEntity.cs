@@ -1,4 +1,4 @@
-﻿using Obsidian.Registries;
+﻿using Obsidian.API.Inventory;
 
 namespace Obsidian.Entities;
 
@@ -7,13 +7,7 @@ public partial class ItemEntity : Entity
 {
     private static readonly TimeSpan DropWaitTime = TimeSpan.FromSeconds(3);
 
-    public int Id { get; set; }
-
-    public Material Material => ItemsRegistry.Get(this.Id).Type;
-
-    public sbyte Count { get; set; }
-
-    public ItemMeta ItemMeta { get; set; }
+    public ItemStack Item { get; set; }
 
     public bool CanPickup { get; set; }
 
@@ -21,13 +15,12 @@ public partial class ItemEntity : Entity
 
     public ItemEntity() => this.Type = EntityType.Item;
 
-
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
 
         writer.WriteEntityMetadataType(8, EntityMetadataType.Slot);
-        writer.WriteItemStack(new ItemStack(this.Material, this.Count, this.ItemMeta));
+        writer.WriteItemStack(this.Item);
     }
 
     public async override ValueTask TickAsync()
@@ -39,15 +32,15 @@ public partial class ItemEntity : Entity
 
         foreach (var ent in this.world.GetNonPlayerEntitiesInRange(this.Position, 0.5f))
         {
-            if (ent is not ItemEntity item)
+            if (ent is not ItemEntity itemEntity)
                 continue;
 
-            if (item == this)
+            if (itemEntity == this)
                 continue;
 
-            this.Count += item.Count;
+            this.Item += itemEntity.Item;
 
-            await item.RemoveAsync();//TODO find a better way to removed item entities that merged
+            await itemEntity.RemoveAsync();//TODO find a better way to removed item entities that merged
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Crafting.Builders.Interfaces;
+using Obsidian.API.Inventory;
 
 namespace Obsidian.API.Crafting.Builders;
 

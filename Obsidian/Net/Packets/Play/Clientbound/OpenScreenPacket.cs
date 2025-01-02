@@ -45,6 +45,7 @@ public enum WindowType : int
     Generic9x5,
     Generic9x6,
     Generic3x3,
+    CRAFTER3x3,
 
     Anvil,
     Beacon,

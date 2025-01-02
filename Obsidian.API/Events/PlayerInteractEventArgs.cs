@@ -1,4 +1,6 @@
-﻿namespace Obsidian.API.Events;
+﻿using Obsidian.API.Inventory;
+
+namespace Obsidian.API.Events;
 
 /// <summary>
 /// An event for when a player interacts with a item and/or block.

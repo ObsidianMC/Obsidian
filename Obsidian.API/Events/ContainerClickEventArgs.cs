@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Obsidian.API.Inventory;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API.Events;
 

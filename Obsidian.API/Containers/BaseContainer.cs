@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using Obsidian.API.Inventory;
+using System.Collections;
 
 namespace Obsidian.API;
 

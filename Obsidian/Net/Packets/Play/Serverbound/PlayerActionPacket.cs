@@ -76,15 +76,14 @@ public partial class PlayerActionPacket
                         DestroyStage = -1
                     }, player.EntityId);
 
-                    var droppedItem = ItemsRegistry.Get(block.Material);
+                    var droppedItem = ItemsRegistry.GetSingleItem(block.Material);
 
-                    if (droppedItem.Id == 0) { break; }
+                    if (droppedItem.Type == Material.Air) { break; }
 
                     var item = new ItemEntity
                     {
                         EntityId = Server.GetNextEntityId(),
-                        Count = 1,
-                        Id = droppedItem.Id,
+                        Item = droppedItem,
                         World = player.world,
                         Position = (VectorF)this.Position + 0.5f,
                         PacketBroadcaster = player.PacketBroadcaster,
@@ -118,8 +117,7 @@ public partial class PlayerActionPacket
         var item = new ItemEntity
         {
             EntityId = Server.GetNextEntityId(),
-            Count = amountToRemove,
-            Id = droppedItem.AsItem().Id,
+            Item = droppedItem,
             World = player.world,
             PacketBroadcaster = player.PacketBroadcaster,
             Position = loc

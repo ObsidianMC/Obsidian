@@ -1,4 +1,6 @@
-﻿namespace Obsidian.API;
+﻿using Obsidian.API.Effects;
+
+namespace Obsidian.API;
 
 public interface ILiving : IEntity
 {
@@ -18,14 +20,14 @@ public interface ILiving : IEntity
     /// <summary>
     /// The dictionary containing all active <see cref="PotionEffect"/> with their respective <see cref="PotionEffectData"/>.
     /// </summary>
-    public IReadOnlyDictionary<PotionEffect, PotionEffectData> ActivePotionEffects { get; }
+    public IReadOnlyDictionary<int, EffectWithCurrentDuration> ActivePotionEffects { get; }
 
     /// <summary>
     /// Whether the entity has the given <see cref="PotionEffect"/> or not.
     /// </summary>
-    /// <param name="potion">The potion effect to be checked.</param>
+    /// <param name="effectId">The potion effect to be checked.</param>
     /// <returns>True, if the entity has the potion effect.</returns>
-    public bool HasPotionEffect(PotionEffect potion);
+    public bool HasPotionEffect(int effectId);
 
     /// <summary>
     /// Clears all potion effects of the entity.
@@ -35,14 +37,15 @@ public interface ILiving : IEntity
     /// <summary>
     /// Adds the given <see cref="PotionEffect"/> to the entity.
     /// </summary>
-    /// <param name="potion">The potion effect to be added.</param>
+    /// <param name="effectId">The potion effect to be added.</param>
     /// <param name="duration">The duration of the potion in ticks.</param>
     /// <param name="amplifier">The amplifier of the effect. The given amplifier + 1 will be displayed in the HUD.</param>
-    public void AddPotionEffect(PotionEffect potion, int duration, byte amplifier = 0, EntityEffect effect = EntityEffect.None);
+    /// <param name="effectFlags">Modifies how the effect should be displayed.</param>
+    public void AddPotionEffect(int effectId, int duration, int amplifier = 0, EntityEffectFlags effectFlags = EntityEffectFlags.None);
 
     /// <summary>
     /// Removes the given <see cref="PotionEffect"/> from the entity.
     /// </summary>
-    /// <param name="potion">The potion effect to be removed.</param>
-    public void RemovePotionEffect(PotionEffect potion);
+    /// <param name="effectId">The potion effect to be removed.</param>
+    public void RemovePotionEffect(int effectId);
 }

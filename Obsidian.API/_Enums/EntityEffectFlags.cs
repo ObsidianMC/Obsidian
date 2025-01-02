@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API;
 [Flags]
-public enum EntityEffect : sbyte
+public enum EntityEffectFlags : sbyte
 {
     None = 0x00,
 

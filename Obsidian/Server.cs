@@ -53,6 +53,8 @@ public sealed partial class Server : IServer
     }
 #endif
     public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_21_4;
+    public static readonly string ProtocolDescription = DefaultProtocol.GetDescription();
+
 
     public const string PersistentDataPath = "persistentdata";
     public const string PermissionPath = "permissions";
@@ -86,7 +88,6 @@ public sealed partial class Server : IServer
     public IOptionsMonitor<WhitelistConfiguration> WhitelistConfiguration { get; }
 
     public ProtocolVersion Protocol => DefaultProtocol;
-
     public int Tps { get; private set; }
     public DateTimeOffset StartTime { get; private set; }
 

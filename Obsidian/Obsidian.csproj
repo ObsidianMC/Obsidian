@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<OutputType>Library</OutputType>
 		<TargetFramework>net9.0</TargetFramework>
-		<Nullable>enable</Nullable>
+		<Nullable>annotations</Nullable>
 		<EnablePreviewFeatures>true</EnablePreviewFeatures>
 	</PropertyGroup>
 
@@ -65,6 +65,11 @@
 	<ItemGroup>
 		<AdditionalFiles Include="Assets\**\*.json" />
 		<EmbeddedResource Include="Assets\**\*.*" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <AdditionalFiles Remove="Assets\enums.json" />
+	  <AdditionalFiles Remove="assets\item_components.json" />
 	</ItemGroup>
 
 	<ItemGroup>

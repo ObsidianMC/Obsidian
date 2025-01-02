@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<TargetFramework>net9.0</TargetFramework>
 		<EnablePreviewFeatures>True</EnablePreviewFeatures>
-		<Nullable>enable</Nullable>
+		<Nullable>annotations</Nullable>
 		<AssemblyName>Obsidian.API</AssemblyName>
 		<RootNamespace>Obsidian.API</RootNamespace>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -42,8 +42,10 @@
 		<AdditionalFiles Include="..\Obsidian\Assets\fluids.json" Link="Assets\fluids.json" />
 		<AdditionalFiles Include="..\Obsidian\Assets\sounds.json" Link="Assets\sounds.json" />
 		<AdditionalFiles Include="..\Obsidian\Assets\tags.json" Link="Assets\tags.json" />
+		<AdditionalFiles Include="..\Obsidian\Assets\enums.json" Link="Assets\enums.json" />
+		<AdditionalFiles Include="..\Obsidian\Assets\item_components.json" Link="Assets\item_components.json" />
 		
-		<AdditionalFiles Include="..\Obsidian\Assets\Codecs\**\*.json" />
+		<AdditionalFiles Include="..\Obsidian\Assets\Codecs\**\*.json" LinkBase="Assets\Codecs" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -53,16 +55,16 @@
 	<ItemGroup>
 		<None Include="..\.editorconfig" Link=".editorconfig" />
 		<None Include="..\icon.png">
-		  <Pack>True</Pack>
-		  <PackagePath>\</PackagePath>
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
 		</None>
 		<None Include="..\LICENSE">
 			<Pack>True</Pack>
 			<PackagePath></PackagePath>
 		</None>
 		<None Include="..\README.md">
-		  <Pack>True</Pack>
-		  <PackagePath>\</PackagePath>
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
 		</None>
 	</ItemGroup>
 

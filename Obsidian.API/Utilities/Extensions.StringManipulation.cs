@@ -1,10 +1,9 @@
-﻿using System.ComponentModel;
+﻿using Obsidian.API.Inventory;
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 
 namespace Obsidian.API.Utilities;
 
@@ -23,8 +22,7 @@ public static partial class Extensions
             FieldInfo field = type.GetField(name);
             if (field != null)
             {
-                DescriptionAttribute attr = Attribute.GetCustomAttribute(field, typeof(DescriptionAttribute)) as DescriptionAttribute;
-                if (attr != null)
+                if (Attribute.GetCustomAttribute(field, typeof(DescriptionAttribute)) is DescriptionAttribute attr)
                 {
                     return attr.Description;
                 }

@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Crafting.Builders.Interfaces;
+using Obsidian.API.Inventory;
 
 namespace Obsidian.API.Crafting.Builders;
 public abstract class BaseRecipeBuilder<TRecipe> : IGroupedRecipe<TRecipe>, INamedRecipe<TRecipe>, IRecipeResult<TRecipe>, 

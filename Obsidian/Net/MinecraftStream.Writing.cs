@@ -1,6 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
 using Obsidian.API.Advancements;
-using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registry.Codecs.ArmorTrims.TrimMaterial;
 using Obsidian.API.Registry.Codecs.ArmorTrims.TrimPattern;
@@ -10,14 +9,12 @@ using Obsidian.API.Registry.Codecs.DamageTypes;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.API.Registry.Codecs.PaintingVariant;
 using Obsidian.API.Registry.Codecs.WolfVariant;
-using Obsidian.API.Utilities;
 using Obsidian.Commands;
 using Obsidian.Nbt;
 using Obsidian.Net.Actions.BossBar;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.WindowProperties;
-using Obsidian.Registries;
 using Obsidian.Serialization.Attributes;
 using System.Buffers.Binary;
 using System.Text;
@@ -45,7 +42,7 @@ public partial class MinecraftStream : INetStreamWriter
 
         using var tempStream = new MinecraftStream();
         packet.Serialize(tempStream);
-     
+
         var length = isBundled ? varLength : varLength + (int)tempStream.Length;
 
         this.Lock.Wait();
@@ -55,7 +52,7 @@ public partial class MinecraftStream : INetStreamWriter
         tempStream.Position = 0;
         tempStream.CopyTo(this);
 
-        if(isBundled)
+        if (isBundled)
         {
             this.WriteVarInt(length);
             this.WriteVarInt(packet.Id);
@@ -64,9 +61,44 @@ public partial class MinecraftStream : INetStreamWriter
         this.Lock.Release();
     }
 
+    public void WriteAttributeModifier(AttributeModifier attributeModifier) =>
+        AttributeModifier.Write(attributeModifier, this);
+
     public void WriteCompressedPacket(IClientboundPacket packet, int compressionThreshold)
     {
         throw new NotImplementedException();
+    }
+
+    public void WriteLengthPrefixedArray(params List<ChatMessage> textComponents)
+    {
+        this.WriteVarInt(textComponents.Count);
+
+        foreach (var component in textComponents)
+            this.WriteChat(component);
+    }
+
+    public void WriteLengthPrefixedArray<TValue>(Action<TValue> write, params List<TValue> values)
+    {
+        this.WriteVarInt(values.Count);
+
+        foreach (var value in values)
+            write(value);
+    }
+
+    public void WriteLengthPrefixedArray(bool showInTooltips, params List<Enchantment> enchantments)
+    {
+        this.WriteVarInt(enchantments.Count);
+
+        foreach (var enchantment in enchantments)
+            this.WriteEnchantment(enchantment);
+
+        this.WriteBoolean(showInTooltips);
+    }
+
+    public void WriteEnchantment(Enchantment enchantment)
+    {
+        this.WriteVarInt(enchantment.Id);
+        this.WriteVarInt(enchantment.Level);
     }
 
     public async Task WriteByteAsync(sbyte value)
@@ -377,6 +409,12 @@ public partial class MinecraftStream : INetStreamWriter
     {
     }
 
+    public void WriteSoundEvent(SoundEvent soundEvent)
+    {
+        this.WriteString(soundEvent.ResourceLocation);
+        this.WriteOptional(soundEvent.FixedRange);
+    }
+
     [WriteMethod]
     public void WriteSoundEffect(SoundEffect sound)
     {
@@ -525,12 +563,36 @@ public partial class MinecraftStream : INetStreamWriter
         this.WriteShort(value!.Value);
     }
 
+    public void WriteOptional(Guid? value)
+    {
+        if (!this.ShouldWriteOptional(value))
+            return;
+
+        this.WriteUuid(value!.Value);
+    }
+
     public void WriteOptional(float? value)
     {
         if (!this.ShouldWriteOptional(value))
             return;
 
         this.WriteFloat(value!.Value);
+    }
+
+    public void WriteOptional(string? value)
+    {
+        if (!this.ShouldWriteOptional(value))
+            return;
+
+        this.WriteString(value!);
+    }
+
+    public void WriteOptional(bool? value)
+    {
+        if (!this.ShouldWriteOptional(value))
+            return;
+
+        this.WriteBoolean(value!.Value);
     }
 
     public void WriteOptional(byte? value)
@@ -761,23 +823,27 @@ public partial class MinecraftStream : INetStreamWriter
     [WriteMethod]
     public void WriteItemStack(ItemStack? value)
     {
-        value ??= new ItemStack(0, 0);
+        value ??= ItemStack.Air;
 
         var item = value.AsItem();
-        var meta = value.ItemMeta;
 
         WriteVarInt(value.Count);
 
-        //Stop serializing if item is invalid
         if (value.Count <= 0)
             return;
 
         WriteVarInt(item.Id);
-        WriteVarInt(0);
-        WriteVarInt(0);
+        WriteVarInt(value.TotalComponents);
+        WriteVarInt(value.RemoveComponents.Count);
 
-        if (!meta.HasTags())
-            return;
+        foreach (var component in value)
+        {
+            this.WriteVarInt(component.Type);
+            component.Write(this);
+        }
+
+        foreach (var componentType in value.RemoveComponents)
+            this.WriteVarInt(componentType);
     }
 
     public void WriteEntity(IEntity entity)
@@ -848,95 +914,6 @@ public partial class MinecraftStream : INetStreamWriter
         WriteVarInt(value.Value);
     }
 
-    public async Task WriteEntityMetdata(byte index, EntityMetadataType type, object value, bool optional = false)
-    {
-        await WriteUnsignedByteAsync(index);
-        await WriteVarIntAsync((int)type);
-        switch (type)
-        {
-            case EntityMetadataType.Byte:
-                await WriteUnsignedByteAsync((byte)value);
-                break;
-
-            case EntityMetadataType.VarInt:
-                await WriteVarIntAsync((int)value);
-                break;
-
-            case EntityMetadataType.Float:
-                await WriteFloatAsync((float)value);
-                break;
-
-            case EntityMetadataType.String:
-                await WriteStringAsync((string)value);
-                break;
-
-            case EntityMetadataType.TextComponent:
-                await WriteChatAsync((ChatMessage)value);
-                break;
-
-            case EntityMetadataType.OptionalTextComponent:
-                await WriteBooleanAsync(optional);
-
-                if (optional)
-                    await WriteChatAsync((ChatMessage)value);
-                break;
-
-            case EntityMetadataType.Slot:
-                await WriteSlotAsync((ItemStack)value);
-                break;
-
-            case EntityMetadataType.Boolean:
-                await WriteBooleanAsync((bool)value);
-                break;
-
-            case EntityMetadataType.Rotations:
-                break;
-
-            case EntityMetadataType.BlockPos:
-                await WritePositionFAsync((VectorF)value);
-                break;
-
-            case EntityMetadataType.OptionalBlockPos:
-                await WriteBooleanAsync(optional);
-
-                if (optional)
-                    await WritePositionFAsync((VectorF)value);
-
-                break;
-
-            case EntityMetadataType.Direction:
-                break;
-
-            case EntityMetadataType.OptionalUUID:
-                await WriteBooleanAsync(optional);
-
-                if (optional)
-                    await WriteUuidAsync((Guid)value);
-                break;
-
-            case EntityMetadataType.OptionalBlockState:
-                await WriteVarIntAsync((int)value);
-                break;
-
-            case EntityMetadataType.Nbt:
-            case EntityMetadataType.Particle:
-            case EntityMetadataType.VillagerData:
-            case EntityMetadataType.OptionalUnsignedInt:
-                if (optional)
-                {
-                    await WriteVarIntAsync(0);
-                    break;
-                }
-                await WriteVarIntAsync(1 + (int)value);
-                break;
-            case EntityMetadataType.Pose:
-                await WriteVarIntAsync((Pose)value);
-                break;
-            default:
-                break;
-        }
-    }
-
     public async Task WriteUuidAsync(Guid value)
     {
         //var arr = value.ToByteArray();
@@ -964,170 +941,6 @@ public partial class MinecraftStream : INetStreamWriter
         await WriteLongAsync(val);
     }
 
-    //TODO we probably don't use this anymore
-    public async Task WriteSlotAsync(ItemStack? value)
-    {
-        value ??= new ItemStack(0, 0);
-
-        var item = value.AsItem();
-        var meta = value.ItemMeta;
-
-        await WriteVarIntAsync(value.Count);
-
-        //Stop serializing if item is invalid
-        if (value.Count <= 0)
-            return;
-
-        await WriteVarIntAsync(item.Id);
-        await WriteVarIntAsync(0);
-        await WriteVarIntAsync(0);
-
-        if (!meta.HasTags())
-            return;
-    }
-
-    internal async Task WriteRecipeAsync(string name, IRecipe recipe)
-    {
-        await WriteStringAsync($"minecraft:{recipe.Type.ToString().ToSnakeCase()}");
-
-        await WriteStringAsync(name);
-
-        if (recipe is ShapedRecipe shapedRecipe)
-        {
-            var patterns = shapedRecipe.Pattern;
-
-            int width = patterns[0].Length, height = patterns.Count;
-
-            await WriteStringAsync(shapedRecipe.Group ?? "");
-            await WriteVarIntAsync(shapedRecipe.Category);
-
-            await WriteVarIntAsync(width);
-            await WriteVarIntAsync(height);
-
-            var ingredients = new List<ItemStack>[width * height];
-
-            var y = 0;
-            foreach (var pattern in patterns)
-            {
-                var x = 0;
-                foreach (var c in pattern)
-                {
-                    var preX = ++x;
-
-                    if (char.IsWhiteSpace(c))
-                        continue;
-
-                    var index = preX + (y * width);
-
-                    var key = shapedRecipe.Key[c];
-
-                    foreach (var item in key)
-                    {
-                        if (ingredients[index] is null)
-                            ingredients[index] = new List<ItemStack> { item };
-                        else
-                            ingredients[index].Add(item);
-                    }
-                }
-                y++;
-            }
-
-            foreach (var items in ingredients)
-            {
-                if (items == null)
-                {
-                    await WriteVarIntAsync(0);
-                    continue;
-                }
-
-                await WriteVarIntAsync(items.Count);
-
-                foreach (var itemStack in items)
-                    await WriteSlotAsync(itemStack);
-            }
-
-            await WriteSlotAsync(shapedRecipe.Result.First());
-        }
-        else if (recipe is ShapelessRecipe shapelessRecipe)
-        {
-            var ingredients = shapelessRecipe.Ingredients;
-
-            await WriteStringAsync(shapelessRecipe.Group ?? "");
-            await WriteVarIntAsync(shapelessRecipe.Category);
-
-            await WriteVarIntAsync(ingredients.Count);
-            foreach (var ingredient in ingredients)
-            {
-                await WriteVarIntAsync(ingredient.Count);
-                foreach (var item in ingredient)
-                    await WriteSlotAsync(item);
-            }
-
-            var result = shapelessRecipe.Result.First();
-
-            await WriteSlotAsync(result);
-        }
-        else if (recipe is SmeltingRecipe smeltingRecipe)
-        {
-            await WriteStringAsync(smeltingRecipe.Group ?? "");
-            await WriteVarIntAsync(smeltingRecipe.Category);
-
-            await WriteVarIntAsync(smeltingRecipe.Ingredient.Count);
-            foreach (var i in smeltingRecipe.Ingredient)
-                await WriteSlotAsync(i);
-
-            await WriteSlotAsync(smeltingRecipe.Result.First());
-
-            await WriteFloatAsync(smeltingRecipe.Experience);
-            await WriteVarIntAsync(smeltingRecipe.CookingTime);
-        }
-        else if (recipe is CuttingRecipe cuttingRecipe)
-        {
-            await WriteStringAsync(cuttingRecipe.Group ?? "");
-
-            await WriteVarIntAsync(cuttingRecipe.Ingredient.Count);
-            foreach (var item in cuttingRecipe.Ingredient)
-                await WriteSlotAsync(item);
-
-
-            var result = cuttingRecipe.Result.First();
-
-            result.Count = (short)cuttingRecipe.Count;
-
-            await WriteSlotAsync(result);
-        }
-        else if (recipe is SmithingTransformRecipe smithingTransformRecipe)
-        {
-            await WriteVarIntAsync(smithingTransformRecipe.Template.Count);
-            foreach (var item in smithingTransformRecipe.Template)
-                await WriteSlotAsync(item);
-
-            await WriteVarIntAsync(smithingTransformRecipe.Base.Count);
-            foreach (var item in smithingTransformRecipe.Base)
-                await WriteSlotAsync(item);
-
-            await WriteVarIntAsync(smithingTransformRecipe.Addition.Count);
-            foreach (var item in smithingTransformRecipe.Addition)
-                await WriteSlotAsync(item);
-
-            await WriteSlotAsync(smithingTransformRecipe.Result.First());
-        }
-        else if (recipe is SmithingTrimRecipe smithingTrimRecipe)
-        {
-            await WriteVarIntAsync(smithingTrimRecipe.Template.Count);
-            foreach (var item in smithingTrimRecipe.Template)
-                await WriteSlotAsync(item);
-
-            await WriteVarIntAsync(smithingTrimRecipe.Base.Count);
-            foreach (var item in smithingTrimRecipe.Base)
-                await WriteSlotAsync(item);
-
-            await WriteVarIntAsync(smithingTrimRecipe.Addition.Count);
-            foreach (var item in smithingTrimRecipe.Addition)
-                await WriteSlotAsync(item);
-        }
-    }
-
     [WriteMethod]
     public void WriteChunkBiomes(ChunkBiome chunkBiome)
     {
@@ -1136,149 +949,6 @@ public partial class MinecraftStream : INetStreamWriter
 
         this.WriteVarInt(chunkBiome.Data.Length);
         this.WriteByteArray(chunkBiome.Data);
-    }
-
-    public void WriteRecipe(string name, IRecipe recipe)
-    {
-        WriteString($"minecraft:{recipe.Type.ToString().ToSnakeCase()}");
-
-        WriteString(name);
-
-        if (recipe is ShapedRecipe shapedRecipe)
-        {
-            var patterns = shapedRecipe.Pattern;
-
-            int width = patterns[0].Length, height = patterns.Count;
-
-            WriteVarInt(width);
-            WriteVarInt(height);
-
-            WriteString(shapedRecipe.Group ?? string.Empty);
-            WriteVarInt(shapedRecipe.Category);
-
-            var ingredients = new List<ItemStack>[width * height];
-
-            var y = 0;
-            foreach (var pattern in patterns)
-            {
-                var x = 0;
-                foreach (var c in pattern)
-                {
-                    if (char.IsWhiteSpace(c))
-                    {
-                        x++;
-                        continue;
-                    }
-
-                    var index = x + (y * width);
-                    var key = shapedRecipe.Key[c];
-
-                    foreach (var item in key)
-                    {
-                        if (ingredients[index] is null)
-                            ingredients[index] = new List<ItemStack> { item };
-                        else
-                            ingredients[index].Add(item);
-                    }
-
-                    x++;
-                }
-                y++;
-            }
-
-            foreach (var items in ingredients)
-            {
-                if (items == null)
-                {
-                    WriteVarInt(0);
-                    continue;
-                }
-
-                WriteVarInt(items.Count);
-
-                foreach (var itemStack in items)
-                    WriteItemStack(itemStack);
-            }
-
-            WriteItemStack(shapedRecipe.Result.First());
-        }
-        else if (recipe is ShapelessRecipe shapelessRecipe)
-        {
-            var ingredients = shapelessRecipe.Ingredients;
-
-            WriteString(shapelessRecipe.Group ?? string.Empty);
-            WriteVarInt(shapelessRecipe.Category);
-
-            WriteVarInt(ingredients.Count);
-            foreach (var ingredient in ingredients)
-            {
-                WriteVarInt(ingredient.Count);
-                foreach (var item in ingredient)
-                    WriteItemStack(item);
-            }
-
-            var result = shapelessRecipe.Result.First();
-
-            WriteItemStack(result);
-        }
-        else if (recipe is SmeltingRecipe smeltingRecipe)
-        {
-            WriteString(smeltingRecipe.Group ?? string.Empty);
-            WriteVarInt(smeltingRecipe.Category);
-
-            WriteVarInt(smeltingRecipe.Ingredient.Count);
-            foreach (var i in smeltingRecipe.Ingredient)
-                WriteItemStack(i);
-
-            WriteItemStack(smeltingRecipe.Result.First());
-
-            WriteFloat(smeltingRecipe.Experience);
-            WriteVarInt(smeltingRecipe.CookingTime);
-        }
-        else if (recipe is CuttingRecipe cuttingRecipe)
-        {
-            WriteString(cuttingRecipe.Group ?? string.Empty);
-
-            WriteVarInt(cuttingRecipe.Ingredient.Count);
-            foreach (var item in cuttingRecipe.Ingredient)
-                WriteItemStack(item);
-
-            var result = cuttingRecipe.Result.First();
-
-            result.Count = (short)cuttingRecipe.Count;
-
-            WriteItemStack(result);
-        }
-        else if (recipe is SmithingTransformRecipe smithingTransformRecipe)
-        {
-            WriteVarInt(smithingTransformRecipe.Template.Count);
-            foreach (var item in smithingTransformRecipe.Template)
-                WriteItemStack(item);
-
-            WriteVarInt(smithingTransformRecipe.Base.Count);
-            foreach (var item in smithingTransformRecipe.Base)
-                WriteItemStack(item);
-
-            WriteVarInt(smithingTransformRecipe.Addition.Count);
-            foreach (var item in smithingTransformRecipe.Addition)
-                WriteItemStack(item);
-
-            WriteItemStack(smithingTransformRecipe.Result.First());
-        }
-        else if (recipe is SmithingTrimRecipe smithingTrimRecipe)
-        {
-            WriteVarInt(smithingTrimRecipe.Template.Count);
-            foreach (var item in smithingTrimRecipe.Template)
-                WriteItemStack(item);
-
-            WriteVarInt(smithingTrimRecipe.Base.Count);
-            foreach (var item in smithingTrimRecipe.Base)
-                WriteItemStack(item);
-
-            WriteVarInt(smithingTrimRecipe.Addition.Count);
-            foreach (var item in smithingTrimRecipe.Addition)
-                WriteItemStack(item);
-        }
     }
 
     [WriteMethod]

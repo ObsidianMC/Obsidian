@@ -1,4 +1,6 @@
-﻿namespace Obsidian.API.Containers;
+﻿using Obsidian.API.Inventory;
+
+namespace Obsidian.API.Containers;
 
 public sealed class Grindstone : ResultContainer
 {

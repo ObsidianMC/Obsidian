@@ -11,13 +11,27 @@ public readonly struct CommonPlayerSpawnInfo : INetworkSerializable<CommonPlayer
     public bool Debug { get; init; }
 
     public bool Flat { get; init; }
-    public bool HasDeathLocation => !string.IsNullOrEmpty(this.DeathDimensionName);
-    public string? DeathDimensionName { get; init; }
-    public Vector? DeathLocation { get; init; }
+
+    public DeathLocation? DeathLocation { get; init; }
 
     public int PortalCooldown { get; init; }
 
     public int SeaLevel { get; init; }
+
+    public static CommonPlayerSpawnInfo Read(INetStreamReader reader) => new()
+    {
+        DimensionType = reader.ReadVarInt(),
+        DimensionName = reader.ReadString(),
+
+        HashedSeed = reader.ReadLong(),
+        
+        Gamemode = reader.ReadUnsignedByte<Gamemode>(),
+        PreviousGamemode = reader.ReadUnsignedByte<Gamemode>(),
+
+        Debug = reader.ReadBoolean(),
+        Flat = reader.ReadBoolean(),
+        DeathLocation = reader.ReadOptional<DeathLocation>()
+    };
 
     public static void Write(CommonPlayerSpawnInfo value, INetStreamWriter writer)
     {
@@ -31,13 +45,8 @@ public readonly struct CommonPlayerSpawnInfo : INetworkSerializable<CommonPlayer
 
         writer.WriteBoolean(value.Debug);
         writer.WriteBoolean(value.Flat);
-        writer.WriteBoolean(value.HasDeathLocation);
 
-        if (value.HasDeathLocation)
-        {
-            writer.WriteString(value.DeathDimensionName!);
-            writer.WritePosition(value.DeathLocation!.Value);
-        }
+        writer.WriteOptional(value.DeathLocation);
 
         writer.WriteVarInt(value.PortalCooldown);
         writer.WriteVarInt(value.SeaLevel);

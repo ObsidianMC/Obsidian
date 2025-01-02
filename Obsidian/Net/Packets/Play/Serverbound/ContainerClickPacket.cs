@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Events;
+using Obsidian.API.Inventory;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -148,8 +149,7 @@ public partial class ContainerClickPacket
                     var item = new ItemEntity
                     {
                         EntityId = Server.GetNextEntityId(),
-                        Count = 1,
-                        Id = removedItem.AsItem().Id,
+                        Item = removedItem,
                         Glowing = true,
                         World = player.world,
                         PacketBroadcaster = player.PacketBroadcaster,

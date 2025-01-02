@@ -259,21 +259,6 @@ public class Entity : IEquatable<Entity>, IEntity
         return mask;
     }
 
-    public virtual async Task WriteAsync(MinecraftStream stream)
-    {
-        await stream.WriteEntityMetdata(0, EntityMetadataType.Byte, (byte)GenerateBitmask());
-
-        await stream.WriteEntityMetdata(1, EntityMetadataType.VarInt, Air);
-
-        await stream.WriteEntityMetdata(2, EntityMetadataType.OptionalTextComponent, CustomName!, CustomName != null);
-
-        await stream.WriteEntityMetdata(3, EntityMetadataType.Boolean, CustomNameVisible);
-        await stream.WriteEntityMetdata(4, EntityMetadataType.Boolean, Silent);
-        await stream.WriteEntityMetdata(5, EntityMetadataType.Boolean, NoGravity);
-        await stream.WriteEntityMetdata(6, EntityMetadataType.Pose, Pose);
-        await stream.WriteEntityMetdata(7, EntityMetadataType.VarInt, PowderedSnowTicks);
-    }
-
     public virtual void Write(INetStreamWriter writer)
     {
         writer.WriteEntityMetadataType(0, EntityMetadataType.Byte);

@@ -1,6 +1,6 @@
 ﻿using Obsidian.API.Crafting;
+using Obsidian.API.Inventory;
 using Obsidian.API.Utilities;
-using Obsidian.Registries;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -28,14 +28,14 @@ public sealed class IngredientConverter : JsonConverter<Ingredient>
                     {
                         var item = ItemsRegistry.Get(id);
 
-                        ingredient.Add(new ItemStack(item.Type, 1));
+                        ingredient.Add(new ItemStack(item, 1));
                     }
                 }
                 else
                 {
                     var i = ItemsRegistry.Get(rawRecipe);
 
-                    ingredient.Add(new ItemStack(i.Type, 1));
+                    ingredient.Add(new ItemStack(i, 1));
                 }
             }
 
