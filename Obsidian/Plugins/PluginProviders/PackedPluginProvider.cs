@@ -242,6 +242,13 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
             //TODO LOAD OTHER FILES SOMEWHERE
             if (entry.Name.EndsWith(".dll"))
             {
+                var depends = pluginContainer.Info.Dependencies.Select(x => x.Id).SelectMany(x => this.pluginManager.Plugins.Where(p => p.Info.Id == x));
+                var dependency = depends.FirstOrDefault(x => x.PluginAssembly.GetName().Name == name);
+
+                //we don't need to load this into the context.
+                if (dependency != null)
+                    continue;
+
                 if (pluginContainer.FileEntries.ContainsKey(entry.Name.Replace(".dll", ".pdb")))
                 {
                     //Library has debug symbols load in last
@@ -258,13 +265,6 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
                         continue;
                 }
                 catch { }
-
-                var depends = pluginContainer.Info.Dependencies.Select(x => x.Id).SelectMany(x => this.pluginManager.Plugins.Where(p => p.Info.Id == x));
-                var dependency = depends.FirstOrDefault(x => x.PluginAssembly.GetName().Name == name);
-
-                //we don't need to load this into the context.
-                if (dependency != null)
-                    continue;
 
                 pluginContainer.LoadContext.LoadAssembly(actualBytes);
             }

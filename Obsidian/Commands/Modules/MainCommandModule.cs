@@ -131,7 +131,7 @@ public sealed class MainCommandModule : CommandModuleBase
             var info = pluginContainer.Info;
 
             var plugin = new ChatMessage();
-            var colorByState = pluginContainer.Loaded || pluginContainer.IsReady ? ChatColor.BrightGreen : ChatColor.Red;
+            var colorByState = pluginContainer.Loaded ? ChatColor.BrightGreen : ChatColor.Red;
 
             plugin.Text = pluginContainer.Info.Name;
             plugin.Color = new HexColor(colorByState.Color);
