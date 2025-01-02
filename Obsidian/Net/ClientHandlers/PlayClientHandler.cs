@@ -15,6 +15,7 @@ internal sealed class PlayClientHandler : ClientHandler
         { 38, new PlayerAbilitiesPacket() },
         { 60, new UseItemOnPacket() },
         { 61, new UseItemPacket() },
+        { 11, new ClientTickEndPacket() }
     }.ToFrozenDictionary();
 
     public async override ValueTask<bool> HandleAsync(PacketData packetData)
