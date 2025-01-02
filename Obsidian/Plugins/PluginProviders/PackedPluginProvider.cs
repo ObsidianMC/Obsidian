@@ -237,7 +237,8 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
                 if (pluginContainer.FileEntries.ContainsKey(entry.Name.Replace(".dll", ".pdb")))
                 {
                     //Library has debug symbols load in last
-                    libsWithSymbols.Add(entry.Name.Replace(".dll", ".pdb"));
+                    var index = entry.Name.IndexOf('.');
+                    libsWithSymbols.Add(entry.Name[..index]);
                     continue;
                 }
 
