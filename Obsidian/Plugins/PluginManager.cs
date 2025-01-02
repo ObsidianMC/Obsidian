@@ -106,7 +106,7 @@ public sealed class PluginManager
         var files = Directory.GetFiles("plugins", "*.obby", SearchOption.AllDirectories);
 
         var waitingForDepend = new List<PluginContainer>();
-        foreach (var file in files.Reverse())
+        foreach (var file in files)
         {
             var pluginContainer = await this.LoadPluginAsync(file);
 
