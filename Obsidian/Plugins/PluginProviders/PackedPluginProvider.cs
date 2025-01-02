@@ -53,10 +53,18 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
         //Can't load until those plugins are loaded
         if (partialContainer.Info.Dependencies.Any(x => x.Required && !this.pluginManager.Plugins.Any(d => d.Info.Id == x.Id)))
         {
-            var str = partialContainer.Info.Dependencies.Length > 1 ? "has multiple hard dependencies." : 
+            var str = partialContainer.Info.Dependencies.Length > 1 ? "has multiple hard dependencies." :
                 $"has a hard dependency on {partialContainer.Info.Dependencies.First().Id}.";
             this.logger.LogWarning("{name} {message}. Will Attempt to load after.", partialContainer.Info.Name, str);
             return partialContainer;
+        }
+
+        foreach (var depends in partialContainer.Info.Dependencies)
+        {
+            var plugin = this.pluginManager.Plugins.FirstOrDefault(x => x.Info.Id == depends.Id);
+
+            partialContainer.AddDependency(plugin.LoadContext);
+            this.logger.LogInformation("Added {depends} as a dependency for {name}", plugin.Info.Name, partialContainer.Info.Name);
         }
 
         var mainAssembly = this.InitializePlugin(partialContainer);
@@ -242,10 +250,24 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
                     continue;
                 }
 
-                //Check to see if this assembly already exists in the shared context.
-                var sharedAssembly = AssemblyLoadContext.Default.LoadFromAssemblyName(new AssemblyName { Name = entry.Name.Replace(".dll", string.Empty) });
-                if (sharedAssembly != null)
+                try
+                {
+                    //Check to see if this assembly already exists in the shared context.
+                    var sharedAssembly = AssemblyLoadContext.Default.LoadFromAssemblyName(new AssemblyName { Name = name });
+                    if (sharedAssembly != null)
+                        continue;
+                }
+                catch { }
+
+                var depends = pluginContainer.Info.Dependencies.Select(x => x.Id).SelectMany(x => this.pluginManager.Plugins.Where(p => p.Info.Id == x));
+                var dependency = depends.FirstOrDefault(x => x.PluginAssembly.GetName().Name == name);
+
+                //we should load the dependency assembly instead.
+                if(dependency != null)
+                {
+                    pluginContainer.LoadContext.LoadDependencyAssembly(dependency.PluginAssembly.GetName());
                     continue;
+                }
 
                 pluginContainer.LoadContext.LoadAssembly(actualBytes);
             }
