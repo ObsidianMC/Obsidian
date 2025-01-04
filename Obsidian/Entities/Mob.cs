@@ -8,7 +8,7 @@ public class Mob : Living
     {
         base.Write(writer);
 
-        writer.WriteEntityMetadataType(14, EntityMetadataType.Byte);
+        writer.WriteEntityMetadataType(15, EntityMetadataType.Byte);
         writer.WriteByte((byte)MobBitMask);
     }
 }

@@ -8,7 +8,7 @@ public class AgeableMob : PathfinderMob
     {
         base.Write(writer);
 
-        writer.WriteEntityMetadataType(15, EntityMetadataType.Boolean);
+        writer.WriteEntityMetadataType(16, EntityMetadataType.Boolean);
         writer.WriteBoolean(IsBaby);
     }
 }

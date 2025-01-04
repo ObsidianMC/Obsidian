@@ -11,10 +11,10 @@ public sealed partial class Pig : Animal
     {
         base.Write(writer);
 
-        writer.WriteEntityMetadataType(16, EntityMetadataType.Boolean);
+        writer.WriteEntityMetadataType(17, EntityMetadataType.Boolean);
         writer.WriteBoolean(HasSaddle);
 
-        writer.WriteEntityMetadataType(17, EntityMetadataType.VarInt);
+        writer.WriteEntityMetadataType(18, EntityMetadataType.VarInt);
         writer.WriteVarInt(TotalTimeBoost);
     }
 }
