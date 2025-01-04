@@ -14,18 +14,15 @@ internal class EntitySpawner : IEntitySpawner
 
     private EntityType? entityType = null;
 
-    private int entityId = 0;
     private VectorF position = VectorF.Zero;
     private bool isBaby = false;
     private string? customName = null;
     private bool customNameVisible = false;
-    private LivingBitMask livingBitMask;
-    private bool ambientPotionEffect;
-    private int absorbedArrows;
-    private int absorbtionAmount;
-    private int absorbedStingers;
-    private bool burning;
-    private bool glowing;
+    private bool ambientPotionEffect = false;
+    private int absorbedArrows = 0;
+    private int absorbedStingers = 0;
+    private bool burning = false;
+    private bool glowing = false;
 
     public EntitySpawner(IWorld world)
     {
@@ -50,22 +47,10 @@ internal class EntitySpawner : IEntitySpawner
         return this;
     }
 
-    public IEntitySpawner WithEntityId(int entityId)
-    {
-        this.entityId = entityId;
-        return this;
-    }
-
     public IEntitySpawner WithCustomName(string name, bool visible = true)
     {
         customName = name;
         customNameVisible = visible;
-        return this;
-    }
-
-    public IEntitySpawner WithLivingBitMask(LivingBitMask bitMask)
-    {
-        livingBitMask = bitMask;
         return this;
     }
 
@@ -78,12 +63,6 @@ internal class EntitySpawner : IEntitySpawner
     public IEntitySpawner WithAbsorbedArrows(int arrows)
     {
         absorbedArrows = arrows;
-        return this;
-    }
-
-    public IEntitySpawner WithAbsorbtionAmount(int amount)
-    {
-        absorbtionAmount = amount;
         return this;
     }
 
@@ -159,18 +138,15 @@ internal class EntitySpawner : IEntitySpawner
         };
 
         entity.Type = entityType.Value;
-        entity.EntityId = entityId;
+        entity.EntityId = Server.GetNextEntityId();
         entity.Position = position;
 
         if (entity is Living living && customName != null)
         {
             living.CustomName = customName;
             living.CustomNameVisible = customNameVisible;
-
-            living.LivingBitMask = livingBitMask;
             living.AmbientPotionEffect = ambientPotionEffect;
             living.AbsorbedArrows = absorbedArrows;
-            living.AbsorbtionAmount = absorbtionAmount;
             living.AbsorbedStingers = absorbedStingers;
         }
 

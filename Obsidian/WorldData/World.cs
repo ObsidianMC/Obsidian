@@ -691,7 +691,6 @@ public sealed partial class World : IWorld
         return GetNewEntitySpawner()
             .WithEntityType(type)
             .AtPosition(position)
-            .WithEntityId(Server.GetNextEntityId())
             .Spawn();
     }
 
