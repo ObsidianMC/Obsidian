@@ -12,5 +12,12 @@ public interface IEntitySpawner
     IEntitySpawner AtPosition(VectorF position);
     IEntitySpawner WithEntityId(int entityId);
     IEntitySpawner WithCustomName(string name, bool visible = true);
+    IEntitySpawner WithLivingBitMask(LivingBitMask bitMask);
+    IEntitySpawner WithAmbientPotionEffect(bool ambient);
+    IEntitySpawner WithAbsorbedArrows(int arrows);
+    IEntitySpawner WithAbsorbtionAmount(int amount);
+    IEntitySpawner WithAbsorbedStingers(int stingers);
+    IEntitySpawner IsBurning();
+    IEntitySpawner IsGlowing();
     IEntity Spawn();
 }
