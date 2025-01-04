@@ -1,10 +1,13 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Plugins;
+using Obsidian.Entities;
 using Org.BouncyCastle.Crypto;
 using System.Collections.Frozen;
 using System.IO;
 using System.Reflection;
+using System.Runtime.Loader;
 using System.Security.Cryptography;
+using System.Text.Json;
 
 namespace Obsidian.Plugins.PluginProviders;
 public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger logger)
@@ -52,10 +55,18 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
         //Can't load until those plugins are loaded
         if (partialContainer.Info.Dependencies.Any(x => x.Required && !this.pluginManager.Plugins.Any(d => d.Info.Id == x.Id)))
         {
-            var str = partialContainer.Info.Dependencies.Length > 1 ? "has multiple hard dependencies." : 
+            var str = partialContainer.Info.Dependencies.Length > 1 ? "has multiple hard dependencies." :
                 $"has a hard dependency on {partialContainer.Info.Dependencies.First().Id}.";
             this.logger.LogWarning("{name} {message}. Will Attempt to load after.", partialContainer.Info.Name, str);
             return partialContainer;
+        }
+
+        foreach (var depends in partialContainer.Info.Dependencies)
+        {
+            var plugin = this.pluginManager.Plugins.FirstOrDefault(x => x.Info.Id == depends.Id);
+
+            partialContainer.AddDependency(plugin.LoadContext);
+            this.logger.LogInformation("Added {depends} as a dependency for {name}", plugin.Info.Name, partialContainer.Info.Name);
         }
 
         var mainAssembly = this.InitializePlugin(partialContainer);
@@ -221,29 +232,98 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
         var pluginAssembly = pluginContainer.LoadContext.Name;
 
         var libsWithSymbols = new List<string>();
-        foreach (var (_, entry) in pluginContainer.FileEntries)
-        {
-            var actualBytes = entry.GetData();
 
-            var name = Path.GetFileNameWithoutExtension(entry.Name);
-            //Don't load this assembly wait
-            if (name == pluginAssembly)
+        using var dependenciesData = new MemoryStream(pluginContainer.GetFileData($"{pluginAssembly}.deps.json"));
+        var dependencies = JsonSerializer.Deserialize<DotNetDeps>(dependenciesData, JsonSerializerOptions.Web);
+        var targets = dependencies.Targets[dependencies.RuntimeTarget.Name].Deserialize<Dictionary<string, DotNetTarget>>(JsonSerializerOptions.Web);
+
+        foreach (var (key, target) in targets)
+        {
+            var deps = target.Dependencies;
+            var runtimes = target.Runtime;
+
+            if (runtimes == null)//We don't care if its null
                 continue;
 
-            //TODO LOAD OTHER FILES SOMEWHERE
-            if (entry.Name.EndsWith(".dll"))
+            foreach (var (dll, runtimeElement) in runtimes)
             {
-                if (pluginContainer.FileEntries.ContainsKey(entry.Name.Replace(".dll", ".pdb")))
+                var sanitizedDll = dll;
+                var split = dll.Split('/');
+                if (split.Length > 1)
+                    sanitizedDll = split.Last();
+
+                var name = sanitizedDll[..sanitizedDll.IndexOf(".dll")];
+
+                if (name == pluginAssembly || runtimeElement.ToString() == "{}")
+                    continue;
+
+                var runtime = runtimeElement.Deserialize<DependencyRuntime>(JsonSerializerOptions.Web);
+                var assemblyName = new AssemblyName
+                {
+                    Name = name,
+                    Version = new(runtime.AssemblyVersion),
+                };
+
+                var depends = pluginContainer.Info.Dependencies.Select(x => x.Id)
+                    .SelectMany(x => this.pluginManager.Plugins.Where(p => p.Info.Id == x));
+
+                //TODO allow users to define what version of a dependency is allowed/valid e.g version: >1.0.0 or >=1.0.0 or =1.0.0.
+                var dependency = depends.FirstOrDefault(x => x.PluginAssembly.GetName().Name == name && x.Info.Version == assemblyName.Version);
+
+                //we don't need to load this into the context.
+                if (dependency != null)
+                    continue;
+
+                if (pluginContainer.FileEntries.ContainsKey($"${name}.pdb"))
                 {
                     //Library has debug symbols load in last
-                    libsWithSymbols.Add(entry.Name.Replace(".dll", ".pdb"));
+                    libsWithSymbols.Add(name);
                     continue;
                 }
 
-                pluginContainer.LoadContext.LoadAssembly(actualBytes);
+                try
+                {
+                    //Check to see if this assembly already exists in the shared context.
+                    var sharedAssembly = AssemblyLoadContext.Default.LoadFromAssemblyName(assemblyName);
+                    if (sharedAssembly != null)
+                        continue;
+                }
+                catch { }
+
+                var data = pluginContainer.GetFileData(sanitizedDll);
+                pluginContainer.LoadContext.LoadAssembly(data);
             }
         }
 
         return libsWithSymbols;
     }
+}
+
+
+public readonly struct DotNetDeps
+{
+    public required RuntimeTarget RuntimeTarget { get; init; }
+
+    public required Dictionary<string, JsonElement> Targets { get; init; }
+}
+
+public readonly struct DotNetTarget
+{
+    public Dictionary<string, string>? Dependencies { get; init; }
+
+    public Dictionary<string, JsonElement>? Runtime { get; init; }
+}
+
+public readonly struct DependencyRuntime
+{
+    public required string AssemblyVersion { get; init; }
+
+    public required string FileVersion { get; init; }
+}
+
+public readonly struct RuntimeTarget
+{
+    public required string Name { get; init; }
+
+    public required string Signature { get; init; }
 }

@@ -13,17 +13,15 @@ public sealed class PluginLoadContext(string name) : AssemblyLoadContext(name: n
         using var mainStream = new MemoryStream(mainBytes, false);
         using var pbdStream = pbdBytes != null ? new MemoryStream(pbdBytes, false) : null;
 
-        var asm = this.LoadFromStream(mainStream, pbdStream);
-        
-        return asm;
+        return this.LoadFromStream(mainStream, pbdStream);
     }
 
     public void AddDependency(PluginLoadContext context) => this.Dependencies.Add(context);
 
     protected override Assembly? Load(AssemblyName assemblyName)
     {
-        var assembly = this.Assemblies.FirstOrDefault(x => x.GetName() == assemblyName);
+        var assembly = this.Assemblies.FirstOrDefault(x => x.FullName == assemblyName.FullName);
 
-        return assembly ?? this.Dependencies.Select(x => x.Load(assemblyName)).FirstOrDefault(x => x != null);
+        return this.Dependencies.Select(x => x.Load(assemblyName)).FirstOrDefault(x => x != null) ?? assembly;
     }
 }

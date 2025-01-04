@@ -132,15 +132,15 @@ public sealed class MainCommandModule : CommandModuleBase
             var info = pluginContainer.Info;
 
             var plugin = new ChatMessage();
-            var colorByState = pluginContainer.Loaded || pluginContainer.IsReady ? HexColor.Green : HexColor.Red;
+            var colorByState = pluginContainer.Loaded ? ChatColor.BrightGreen : ChatColor.Red;
 
             plugin.Text = pluginContainer.Info.Name;
-            plugin.Color = colorByState;
+            plugin.Color = new HexColor(colorByState.Color);
 
             plugin.HoverEvent = new HoverComponent
             {
                 Action = HoverAction.ShowText,
-                Contents = new HoverChatContent { ChatMessage = $"{colorByState}{info.Name}{ChatColor.Reset}\nVersion: {colorByState}{info.Version}{ChatColor.Reset}\nAuthor(s): {colorByState}{info.Authors}{ChatColor.Reset}" }
+                Contents = new HoverChatContent { ChatMessage = $"{colorByState}{info.Name}{ChatColor.Reset}\nVersion: {colorByState}{info.Version}{ChatColor.Reset}\nAuthor(s): {colorByState}{string.Join(", ", info.Authors)}{ChatColor.Reset}" }
             };
 
             if (pluginContainer.Info.ProjectUrl != null)

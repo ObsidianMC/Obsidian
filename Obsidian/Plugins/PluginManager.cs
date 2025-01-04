@@ -89,9 +89,7 @@ public sealed class PluginManager
 
     public async Task LoadPluginsAsync()
     {
-        //TODO talk about what format we should support
-        // get directory surrent dll is in
-        var acceptedKeysPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "accepted_keys"); 
+        var acceptedKeysPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "accepted_keys");
         var acceptedKeyFiles = Directory.GetFiles(acceptedKeysPath);
 
         using var rsa = RSA.Create();
@@ -113,20 +111,20 @@ public sealed class PluginManager
             if (pluginContainer is null)
                 continue;
 
-            foreach (var canLoad in waitingForDepend.Where(x => x.IsDependency(pluginContainer.Info.Id)).ToList())
-            {
-                packedPluginProvider.InitializePlugin(canLoad);
-
-                //Add dependency to plugin
-                canLoad.AddDependency(pluginContainer.LoadContext);
-
-                await this.HandlePluginAsync(canLoad);
-
-                waitingForDepend.Remove(canLoad);
-            }
-
             if (pluginContainer.Plugin is null)
                 waitingForDepend.Add(pluginContainer);
+        }
+
+        foreach (var canLoad in waitingForDepend)
+        {
+            packedPluginProvider.InitializePlugin(canLoad);
+            packedPluginProvider.HandlePlugin(canLoad, canLoad.PluginAssembly);
+
+            var depends = canLoad.Info.Dependencies.Select(x => x.Id).SelectMany(x => this.Plugins.Where(p => p.Info.Id == x));
+            foreach (var depend in depends)
+                canLoad.AddDependency(depend.LoadContext);
+
+            await this.HandlePluginAsync(canLoad);
         }
 
         DirectoryWatcher.Watch("plugins");
@@ -238,46 +236,62 @@ public sealed class PluginManager
 
     private async ValueTask<PluginContainer> HandlePluginAsync(PluginContainer pluginContainer)
     {
-        //The plugin still hasn't fully loaded. Probably due to it having a hard dependency
+        // If the plugin is already loaded or staged, skip loading it again
+        if (pluginContainer.Loaded || stagedPlugins.Contains(pluginContainer))
+            return pluginContainer;
+
+        // The plugin still hasn't fully loaded. Probably due to it having a hard dependency
         if (pluginContainer.Plugin is null)
             return pluginContainer;
 
-        //Inject first wave of services (services initialized by obsidian e.x IServerConfiguration)
+        // Inject first wave of services (services initialized by Obsidian e.g., IServerConfiguration)
         PluginServiceHandler.InjectServices(this.serverProvider, pluginContainer, this.logger);
 
-        if (pluginContainer.IsReady)
+        // Check if the plugin has dependencies that are not loaded yet
+        var missingDependencies = pluginContainer.Info.Dependencies
+            .Where(dep => !Plugins.Any(p => p.Info.Id == dep.Id && p.Loaded));
+
+        if (missingDependencies.Any())
         {
-            lock (plugins)
-            {
-                plugins.Add(pluginContainer);
-            }
-
-            pluginContainer.Plugin.ConfigureServices(this.pluginServiceDescriptors);
-            pluginContainer.Plugin.ConfigureRegistry(this.pluginRegistry);
-
-            pluginContainer.Loaded = true;
-
-            await pluginContainer.Plugin.OnLoadedAsync(this.server);
-        }
-        else
-        {
+            // Stage the plugin if dependencies are missing
             lock (stagedPlugins)
             {
                 stagedPlugins.Add(pluginContainer);
             }
 
-            if (logger != null)
-            {
-                var stageMessage = new System.Text.StringBuilder(50);
-                stageMessage.Append($"Plugin {pluginContainer.Info.Name} staged");
-                if (!pluginContainer.HasDependencies)
-                    stageMessage.Append(", missing dependencies");
+            logger.LogWarning("Plugin {name} staged, missing dependencies.", pluginContainer.Info.Name);
 
-                logger.LogWarning("{}", stageMessage.ToString());
+            return pluginContainer;
+        }
+
+        // Now we can load the plugin since all its dependencies are either loaded or are being loaded
+        lock (plugins)
+        {
+            plugins.Add(pluginContainer);
+        }
+
+        pluginContainer.Plugin.ConfigureServices(this.pluginServiceDescriptors);
+        pluginContainer.Plugin.ConfigureRegistry(this.pluginRegistry);
+
+        pluginContainer.Loaded = true;
+
+        await pluginContainer.Plugin.OnLoadedAsync(this.server);
+
+        // Check and resolve any other plugins that were staged and waiting on dependencies
+        foreach (var stagedPlugin in stagedPlugins.ToList())
+        {
+            // Check if all dependencies of this staged plugin are loaded now
+            var missingDepsForStaged = stagedPlugin.Info.Dependencies
+                .Where(dep => !Plugins.Any(p => p.Info.Id == dep.Id && p.Loaded));
+
+            if (!missingDepsForStaged.Any())
+            {
+                stagedPlugins.Remove(stagedPlugin);
+                await HandlePluginAsync(stagedPlugin); // Recurse and attempt to load this staged plugin now
             }
         }
 
-        logger?.LogInformation("Loading finished!");
+        logger.LogInformation("Loaded {name}.", pluginContainer.Info.Name);
 
         return pluginContainer;
     }
