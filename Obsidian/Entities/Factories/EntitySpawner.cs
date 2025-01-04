@@ -1,4 +1,5 @@
-﻿using Obsidian.Services;
+﻿using Obsidian.API.Entities;
+using Obsidian.Services;
 using Obsidian.WorldData;
 using System;
 using System.Collections.Generic;
@@ -7,36 +8,58 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Obsidian.Entities.Factories;
-internal class EntityFactory
+internal class EntitySpawner : IEntitySpawner
 {
+    private IWorld world;
+
     private EntityType entityType;
-    private PacketBroadcaster packetBroadcaster;
-    private World world;
 
     private int entityId = 0;
     private VectorF position = VectorF.Zero;
+    private bool isBaby = false;
+    private string? customName = null;
+    private bool customNameVisible = false;
 
-    public EntityFactory(EntityType type, PacketBroadcaster packetBroadcaster, World world)
+    public EntitySpawner(IWorld world)
     {
-        entityType = type;
-        this.packetBroadcaster = packetBroadcaster;
         this.world = world;
     }
 
-    public EntityFactory WithPosition(VectorF position)
+    public IEntitySpawner WithEntityType(EntityType type)
+    {
+        entityType = type;
+        return this;
+    }
+
+    public IEntitySpawner AsBaby()
+    {
+        isBaby = true;
+        return this;
+    }
+
+    public IEntitySpawner AtPosition(VectorF position)
     {
         this.position = position;
         return this;
     }
 
-    public EntityFactory WithEntityId(int entityId)
+    public IEntitySpawner WithEntityId(int entityId)
     {
         this.entityId = entityId;
         return this;
     }
 
-    public Entity Build()
+    public IEntitySpawner WithCustomName(string name, bool visible = true)
     {
+        customName = name;
+        customNameVisible = visible;
+        return this;
+    }
+
+    public IEntity Spawn()
+    {
+        var packetBroadcaster = (world as World).PacketBroadcaster;
+
         // This could get sgen'd, same for the entity classes. but for now, this is fine for implementation
         Entity entity = entityType switch
         {
@@ -87,6 +110,12 @@ internal class EntityFactory
         entity.EntityId = entityId;
         entity.Position = position;
 
-        return entity;
+        if(entity is ILiving living && customName != null)
+        {
+            living.CustomName = customName;
+            living.CustomNameVisible = customNameVisible;
+        }
+
+        return (world as World).SpawnEntity(entity);
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Configuration;
+using Obsidian.API.Entities;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.API.Utilities;
 using Obsidian.Blocks;
@@ -687,15 +688,17 @@ public sealed partial class World : IWorld
         if (type == EntityType.FallingBlock)
             return SpawnFallingBlock(position + (0, 20, 0), Material.Sand);
 
-        Entity entity = new EntityFactory(type, PacketBroadcaster as PacketBroadcaster, this)
-            .WithPosition(position)
+        return GetNewEntitySpawner()
+            .WithEntityType(type)
+            .AtPosition(position)
             .WithEntityId(Server.GetNextEntityId())
-            .Build();
+            .Spawn();
+    }
 
+    public IEntity SpawnEntity(IEntity entity)
+    {
         entity.SpawnEntity();
-
-        TryAddEntity(entity);
-
+        TryAddEntity(entity as Entity);
         return entity;
     }
 
@@ -926,4 +929,6 @@ public sealed partial class World : IWorld
             await region.DisposeAsync();
         }
     }
+
+    public IEntitySpawner GetNewEntitySpawner() => new EntitySpawner(this);
 }

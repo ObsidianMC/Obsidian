@@ -3,6 +3,7 @@ using Obsidian.API.Inventory;
 using Obsidian.API.Utilities;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Entities;
+using Obsidian.Entities.Factories;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
 using Obsidian.WorldData;
@@ -362,7 +363,11 @@ public sealed class MainCommandModule : CommandModuleBase
             return;
         }
 
-        player.World.SpawnEntity(player.Position, type);
+        var builder = player.World.GetNewEntitySpawner()
+            .WithEntityType(type)
+            .AtPosition(player.Position)
+            .Spawn();
+
         await player.SendMessageAsync($"Spawning: {type}");
     }
 

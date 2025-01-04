@@ -1,3 +1,5 @@
+using Obsidian.API.Entities;
+
 namespace Obsidian.API;
 
 public interface IWorld : IAsyncDisposable
@@ -17,6 +19,8 @@ public interface IWorld : IAsyncDisposable
     public int RegionCount { get; }
     public int LoadedChunkCount { get; }
     public int ChunksToGenCount { get; }
+
+    public IEntitySpawner GetNewEntitySpawner();
 
     public ValueTask<IBlock?> GetBlockAsync(Vector location);
     public ValueTask<IBlock?> GetBlockAsync(int x, int y, int z);

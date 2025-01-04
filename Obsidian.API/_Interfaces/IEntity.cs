@@ -30,7 +30,7 @@ public interface IEntity
 
     public string? TranslationKey { get; }
 
-    public bool CustomNameVisible { get; }
+    public bool CustomNameVisible { get; set; }
     public bool Silent { get; }
     public bool NoGravity { get; }
     public MovementFlags MovementFlags { get; }
