@@ -41,7 +41,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public int Air { get; set; } = 300;
 
-    public float Health { get; set; }
+    public float Health { get; set; } = 100;
 
     public ChatMessage? CustomName { get; set; }
 
