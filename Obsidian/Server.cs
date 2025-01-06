@@ -7,14 +7,12 @@ using Microsoft.Extensions.Options;
 using Obsidian.API.Boss;
 using Obsidian.API.Configuration;
 using Obsidian.API.Crafting;
-using Obsidian.API.Entities;
 using Obsidian.API.Events;
 using Obsidian.API.Utilities;
 using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
-using Obsidian.Entities.Factories;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Common;
@@ -22,7 +20,6 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Net.Rcon;
 using Obsidian.Plugins;
-using Obsidian.Registries;
 using Obsidian.Services;
 using Obsidian.WorldData;
 using System.Diagnostics;
@@ -334,18 +331,9 @@ public sealed partial class Server : IServer
         finally
         {
             // Try to shut the server down gracefully.
-            await HandleServerShutdown();
+            await this.StopAsync();
             _logger.LogInformation("The server has been shut down");
         }
-    }
-
-    private async Task HandleServerShutdown()
-    {
-        _logger.LogDebug("Flushing and disposing regions");
-        await WorldManager.FlushLoadedWorldsAsync();
-        await WorldManager.DisposeAsync();
-
-        await this.userCache.SaveAsync();
     }
 
     private async Task AcceptClientsAsync()
@@ -541,6 +529,13 @@ public sealed partial class Server : IServer
             client.Disconnect();
             client.Dispose();
         }
+
+        _logger.LogDebug("Flushing and disposing regions");
+        await WorldManager.FlushLoadedWorldsAsync();
+        await WorldManager.DisposeAsync();
+
+        await this.userCache.SaveAsync();
+        await this.PluginManager.UnloadPluginsAsync();
     }
 
     private async Task ServerSaveAsync()

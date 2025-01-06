@@ -8,7 +8,6 @@ using Obsidian.Commands.Framework;
 using Obsidian.Hosting;
 using Obsidian.Plugins.PluginProviders;
 using Obsidian.Plugins.ServiceProviders;
-using Obsidian.Registries;
 using Obsidian.Services;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -130,6 +129,18 @@ public sealed class PluginManager
         DirectoryWatcher.Watch("plugins");
     }
 
+    public async Task UnloadPluginsAsync()
+    {
+        var removed = new List<PluginContainer>();
+        foreach (var plugin in plugins)
+        {
+            removed.Add(await this.UnloadPluginAsync(plugin));
+        }
+
+        foreach(var plugin in removed)
+            this.plugins.Remove(plugin);
+    }
+
     /// <summary>
     /// Loads a plugin from selected path asynchronously.
     /// </summary>
@@ -154,23 +165,9 @@ public sealed class PluginManager
     /// <summary>
     /// Will cause selected plugin to be unloaded asynchronously.
     /// </summary>
-    public async Task UnloadPluginAsync(PluginContainer pluginContainer)
+    public async Task<PluginContainer> UnloadPluginAsync(PluginContainer pluginContainer)
     {
         this.logger.LogInformation("Unloading plugin...");
-
-        bool removed = false;
-        lock (plugins)
-        {
-            removed = plugins.Remove(pluginContainer);
-        }
-
-        if (!removed)
-        {
-            lock (stagedPlugins)
-            {
-                stagedPlugins.Remove(pluginContainer);
-            }
-        }
 
         this.commandHandler.UnregisterPluginCommands(pluginContainer);
 
@@ -191,11 +188,14 @@ public sealed class PluginManager
 
         //Dispose has to be called before the LoadContext can unload.
         pluginContainer.Dispose();
+        this.logger.LogInformation("Plugin {name} has been disposed", pluginContainer.Info.Name);
 
         stopwatch.Stop();
 
         loadContext.Unloading += _ => logger.LogInformation("Finished unloading {pluginName} plugin in  {timer}ms", pluginContainer.Info.Name, stopwatch.ElapsedMilliseconds);
         loadContext.Unload();
+
+        return pluginContainer;
     }
 
     public async ValueTask OnServerReadyAsync()
@@ -231,6 +231,7 @@ public sealed class PluginManager
             builder.ClearProviders();
             builder.AddConfiguration(this.configuration);
         });
+
         this.pluginServiceDescriptors.AddSingleton(serverProvider.GetRequiredService<IOptionsMonitor<ServerConfiguration>>());
     }
 

@@ -1,33 +1,25 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Obsidian.API.Plugins;
 using System.Reflection;
 
 namespace Obsidian.Plugins.ServiceProviders;
 
 public static class PluginServiceHandler
 {
-    private static readonly Type pluginBaseType = typeof(PluginBase);
-
     public static void InjectServices(IServiceProvider provider, PluginContainer container, ILogger logger) =>
-        InjectServices(provider, container.Plugin, container, logger);
+        InjectServices(provider, container.Plugin, logger);
 
-    public static void InjectServices(IServiceProvider provider, object target, PluginContainer container, ILogger logger)
+    public static void InjectServices(IServiceProvider provider, object target,  ILogger logger)
     {
-        var properties = target.GetType()
-            .GetProperties()
-            .Where(x => x.GetCustomAttribute<InjectAttribute>() != null && !x.PropertyType.IsAssignableTo(pluginBaseType));
+        var properties = target.GetType().WithInjectAttribute();
 
         foreach (var property in properties)
-            InjectService(provider, new() { Property = property, Target = target }, container.Info.Name, logger);
+            InjectService(provider, property, target, logger);
     }
 
-    private static void InjectService(IServiceProvider provider, Injectable injectable, string pluginName, ILogger logger)
+    private static void InjectService(IServiceProvider provider, PropertyInfo property, object target, ILogger logger)
     {
-        var property = injectable.Property;
-        var target = injectable.Target;
-
-        if (property.GetValue(injectable.Target) != null)
+        if (property.GetValue(target) != null)
             return;
 
         try
@@ -38,14 +30,7 @@ public static class PluginServiceHandler
         }
         catch(Exception ex)
         {
-            logger.LogError(ex, "Failed to inject service.");
+            logger.LogDebug(ex, "Failed to inject service.");//Not as important
         }
     }
-}
-
-public readonly struct Injectable
-{
-    public required PropertyInfo Property { get; init; }
-
-    public required object Target { get; init; }
 }

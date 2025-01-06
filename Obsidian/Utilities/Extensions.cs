@@ -57,7 +57,8 @@ public static partial class Extensions
                 EntityType.FishingBobber,
                 EntityType.EyeOfEnder];
 
-    public static IEnumerable<PropertyInfo> WithInjectAttribute(this Type type) => type.GetProperties().Where(x => x.GetCustomAttribute<InjectAttribute>() != null && !x.PropertyType.IsAssignableTo(pluginBaseType));
+    public static IEnumerable<PropertyInfo> WithInjectAttribute(this Type type) => type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+        .Where(x => x.GetCustomAttribute<InjectAttribute>() != null && !x.PropertyType.IsAssignableTo(pluginBaseType));
 
     private const string EventArgs = "EventArgs";
 

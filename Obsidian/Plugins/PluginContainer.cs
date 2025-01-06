@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Plugins;
 using Obsidian.Plugins.PluginProviders;
+using Obsidian.Plugins.ServiceProviders;
 using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
@@ -73,26 +74,7 @@ public sealed class PluginContainer : IDisposable, IPluginContainer
     /// <summary>
     /// Inject the scoped services into 
     /// </summary>
-    internal void InjectServices(ILogger? logger, object? target = null)
-    {
-        var properties = target is null ? this.PluginType!.WithInjectAttribute() : target.GetType().WithInjectAttribute();
-
-        target ??= this.Plugin;
-
-        foreach (var property in properties)
-        {
-            try
-            {
-                var service = this.ServiceScope.ServiceProvider.GetRequiredService(property.PropertyType);
-
-                property.SetValue(target, service);
-            }
-            catch (Exception ex)
-            {
-                logger?.LogError(ex, "Failed to inject service.");
-            }
-        }
-    }
+    internal void InjectServices(ILogger? logger, object? target = null) => PluginServiceHandler.InjectServices(this.ServiceScope.ServiceProvider, target ?? this.Plugin, logger);
 
     ///<inheritdoc/>
     public byte[]? GetFileData(string fileName)
