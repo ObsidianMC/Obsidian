@@ -533,9 +533,9 @@ public sealed partial class Server : IServer
         _logger.LogDebug("Flushing and disposing regions");
         await WorldManager.FlushLoadedWorldsAsync();
         await WorldManager.DisposeAsync();
+        await this.PluginManager.DisposeAsync();
 
         await this.userCache.SaveAsync();
-        await this.PluginManager.UnloadPluginsAsync();
     }
 
     private async Task ServerSaveAsync()

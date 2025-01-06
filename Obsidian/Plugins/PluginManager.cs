@@ -17,7 +17,7 @@ using System.Security.Cryptography;
 
 namespace Obsidian.Plugins;
 
-public sealed class PluginManager
+public sealed class PluginManager : IAsyncDisposable
 {
     internal readonly ILogger logger;
     private readonly IConfiguration configuration;
@@ -127,18 +127,6 @@ public sealed class PluginManager
         }
 
         DirectoryWatcher.Watch("plugins");
-    }
-
-    public async Task UnloadPluginsAsync()
-    {
-        var removed = new List<PluginContainer>();
-        foreach (var plugin in plugins)
-        {
-            removed.Add(await this.UnloadPluginAsync(plugin));
-        }
-
-        foreach(var plugin in removed)
-            this.plugins.Remove(plugin);
     }
 
     /// <summary>
@@ -309,6 +297,16 @@ public sealed class PluginManager
         var deletedPlugin = plugins.FirstOrDefault(plugin => plugin.Source == path) ?? stagedPlugins.FirstOrDefault(plugin => plugin.Source == path);
         if (deletedPlugin != null)
             await UnloadPluginAsync(deletedPlugin);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        foreach (var plugin in plugins)
+        {
+            await this.UnloadPluginAsync(plugin);
+        }
+
+        this.DirectoryWatcher.Dispose();
     }
 }
 
