@@ -129,6 +129,20 @@ public sealed class PluginManager : IAsyncDisposable
         DirectoryWatcher.Watch("plugins");
     }
 
+    public async Task UnloadPluginsAsync()
+    {
+        var removed = new List<PluginContainer>();
+        foreach (var plugin in this.Plugins)
+        {
+            await this.UnloadPluginAsync(plugin);
+
+            removed.Add(plugin);
+        }
+
+        foreach (var remove in removed)
+            this.plugins.Remove(remove);
+    }
+
     /// <summary>
     /// Loads a plugin from selected path asynchronously.
     /// </summary>
@@ -299,10 +313,7 @@ public sealed class PluginManager : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        foreach (var plugin in plugins)
-        {
-            await this.UnloadPluginAsync(plugin);
-        }
+        await this.UnloadPluginsAsync();
 
         this.DirectoryWatcher.Dispose();
     }
