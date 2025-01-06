@@ -153,7 +153,7 @@ public sealed class PluginManager : IAsyncDisposable
     /// <summary>
     /// Will cause selected plugin to be unloaded asynchronously.
     /// </summary>
-    public async Task<PluginContainer> UnloadPluginAsync(PluginContainer pluginContainer)
+    public async Task UnloadPluginAsync(PluginContainer pluginContainer)
     {
         this.logger.LogInformation("Unloading plugin...");
 
@@ -182,8 +182,6 @@ public sealed class PluginManager : IAsyncDisposable
 
         loadContext.Unloading += _ => logger.LogInformation("Finished unloading {pluginName} plugin in  {timer}ms", pluginContainer.Info.Name, stopwatch.ElapsedMilliseconds);
         loadContext.Unload();
-
-        return pluginContainer;
     }
 
     public async ValueTask OnServerReadyAsync()
