@@ -190,7 +190,6 @@ public sealed class PluginManager : IAsyncDisposable
 
         //Dispose has to be called before the LoadContext can unload.
         pluginContainer.Dispose();
-        this.logger.LogInformation("Plugin {name} has been disposed", pluginContainer.Info.Name);
 
         stopwatch.Stop();
 
