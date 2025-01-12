@@ -4,9 +4,8 @@ namespace Obsidian.API.Configuration;
 
 public sealed class ServerConfiguration
 {
-    private byte viewDistance = 10;
-    private byte simulationDistance = 10;
-    private ushort entityBroadcastRangePercentage = 100;
+    private const byte DefaultViewDistance = 10;
+    private const ushort DefaultEntityBroadcastRangePercentage = 100;
 
     // Anything lower than 3 will cause weird artifacts on the client.
     private const byte MinimumViewDistance = 3;
@@ -78,23 +77,24 @@ public sealed class ServerConfiguration
     /// </summary>
     /// <remarks>
     /// Players with higher view distance will use the server's view distance.
-    /// </remarks>
+    /// </remarks>   
+
     public byte ViewDistance
     {
-        get => viewDistance;
-        set => viewDistance = value >= MinimumViewDistance ? value : MinimumViewDistance;
+        get => field == 0 ? DefaultViewDistance : field;
+        set => field = value >= MinimumViewDistance ? value : MinimumViewDistance;
     }
 
     public byte SimulationDistance
     {
-        get => simulationDistance;
-        set => simulationDistance = value > this.ViewDistance ? value >= MinimumSimulationDistance ? value : MinimumSimulationDistance : ViewDistance;
+        get => field == 0 ? DefaultViewDistance : field;
+        set => field = value > this.ViewDistance ? value >= MinimumSimulationDistance ? value : MinimumSimulationDistance : ViewDistance;
     }
 
     public ushort EntityBroadcastRangePercentage
     {
-        get => entityBroadcastRangePercentage;
-        set => Math.Max((ushort)10, value);
+        get => field == 0 ? DefaultEntityBroadcastRangePercentage : field;
+        set => field = Math.Max((ushort)10, value);
     }
 
     public int PregenerateChunkRange { get; set; } = 15; // by default, pregenerate range from -15 to 15;

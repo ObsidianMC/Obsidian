@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Plugins;
-using Obsidian.Entities;
 using Org.BouncyCastle.Crypto;
 using System.Collections.Frozen;
 using System.IO;

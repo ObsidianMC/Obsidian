@@ -30,7 +30,7 @@ public static class PluginServiceHandler
         }
         catch(Exception ex)
         {
-            logger.LogDebug(ex, "Failed to inject service.");//Not as important
+            logger.LogWarning(ex, "Failed to inject service.");//Not as important
         }
     }
 }
