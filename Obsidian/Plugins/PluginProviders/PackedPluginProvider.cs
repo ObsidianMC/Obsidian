@@ -267,7 +267,7 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
                     .SelectMany(x => this.pluginManager.Plugins.Where(p => p.Info.Id == x));
 
                 //TODO allow users to define what version of a dependency is allowed/valid e.g version: >1.0.0 or >=1.0.0 or =1.0.0.
-                var dependency = depends.FirstOrDefault(x => x.PluginAssembly.GetName().Name == name && x.Info.Version == assemblyName.Version);
+                var dependency = depends.FirstOrDefault(x => x.PluginAssembly.GetName().Name == name && x.PluginAssembly.GetName().Version == assemblyName.Version);
 
                 //we don't need to load this into the context.
                 if (dependency != null)
