@@ -17,7 +17,7 @@ public partial struct NbtReader
 
         this.BaseStream.ReadExactly(buffer);
 
-        return Encoding.UTF8.GetString(buffer);
+        return ModifiedUtf8.GetString(buffer);
     }
 
     public short ReadInt16()

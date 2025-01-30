@@ -1,3 +1,4 @@
+using Obsidian.Nbt.Utilities;
 using System.Buffers.Binary;
 using System.Text;
 
@@ -137,7 +138,8 @@ public partial struct NbtWriter
         if (value.Length > short.MaxValue)
             throw new InvalidOperationException($"value length must be less than {short.MaxValue}");
 
-        var buffer = Encoding.UTF8.GetBytes(value);
+        if (!ModifiedUtf8.TryGetBytes(value, out var buffer))
+            throw new InvalidOperationException("Failed to get bytes from string.");
 
         this.WriteShortInternal((short)buffer.Length);
         this.BaseStream.Write(buffer);
