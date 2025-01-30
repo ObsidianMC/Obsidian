@@ -1,5 +1,4 @@
 ﻿using System.Buffers.Binary;
-using System.Text;
 
 namespace Obsidian.Nbt;
 public partial struct NbtReader
