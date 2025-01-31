@@ -109,7 +109,7 @@ public partial class MinecraftStream : INetStreamWriter
         }
         else
         {   // Do not compress the packet
-            int totalLength = dataLength.GetVarIntLength() + dataLength;
+            int totalLength = 0.GetVarIntLength() + dataLength;
             dataLength = 0;
 
             this.Lock.Wait();
