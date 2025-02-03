@@ -97,7 +97,7 @@ public partial class MinecraftStream : INetStreamWriter
         if (dataLength >= compressionThreshold)
         {   // Compress the packet
             using MinecraftStream compressedStream = new();
-            using (ZLibStream zlibStream = new(compressedStream, CompressionLevel.Optimal))
+            using (ZLibStream zlibStream = new(compressedStream, CompressionLevel.Optimal, true))
             {
                 zlibStream.Write(dataStream.ToArray());
             }
