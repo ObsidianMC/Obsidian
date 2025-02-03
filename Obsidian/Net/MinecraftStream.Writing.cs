@@ -17,6 +17,7 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.WindowProperties;
 using Obsidian.Serialization.Attributes;
 using System.Buffers.Binary;
+using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
 
@@ -35,28 +36,33 @@ public partial class MinecraftStream : INetStreamWriter
         WriteByte((byte)value.GetHashCode());
     }
 
+    /// <summary>
+    /// Writes a full packet to the stream. Note that this method should NOT be an alternative to
+    /// <see cref="WriteCompressedPacket"/> for packets whose size is less than the compression threshold.
+    /// </summary>
+    /// <param name="packet">The packet to write.</param>
     public void WritePacket(IClientboundPacket packet)
     {
-        var isBundled = packet is BundledPacket;
-        var varLength = packet.Id.GetVarIntLength();
+        if (packet is BundledPacket bp)
+        {
+            // Wrap the bundle with delimiter packets and writes all content packets
+            this.WritePacket(new BundleDelimiterPacket());
+            foreach (var p in bp.Packets)
+                this.WritePacket(p);
+            this.WritePacket(new BundleDelimiterPacket());
+            return;
+        }
 
-        using var tempStream = new MinecraftStream();
-        packet.Serialize(tempStream);
-
-        var length = isBundled ? varLength : varLength + (int)tempStream.Length;
+        using MinecraftStream dataStream = new();
+        dataStream.WriteVarInt(packet.Id);
+        packet.Serialize(dataStream);
+        int length = (int)dataStream.Length;
 
         this.Lock.Wait();
+
         this.WriteVarInt(length);
-        this.WriteVarInt(packet.Id);
-
-        tempStream.Position = 0;
-        tempStream.CopyTo(this);
-
-        if (isBundled)
-        {
-            this.WriteVarInt(length);
-            this.WriteVarInt(packet.Id);
-        }
+        dataStream.Position = 0;
+        dataStream.CopyTo(this);
 
         this.Lock.Release();
     }
@@ -64,9 +70,62 @@ public partial class MinecraftStream : INetStreamWriter
     public void WriteAttributeModifier(AttributeModifier attributeModifier) =>
         AttributeModifier.Write(attributeModifier, this);
 
+    /// <summary>
+    /// Writes a full packet to the stream with compression enabled. Note that this method is NOT
+    /// equivalent to <see cref="WritePacket"/> even if the packet size is less than <paramref name="compressionThreshold"/>.
+    /// See <see href="https://minecraft.wiki/w/Minecraft_Wiki:Projects/wiki.vg_merge/Protocol#With_compression"/>.
+    /// </summary>
+    /// <param name="packet">The packet to write.</param>
+    /// <param name="compressionThreshold">The threshold of packet size at which to compress the packet.</param>
     public void WriteCompressedPacket(IClientboundPacket packet, int compressionThreshold)
     {
-        throw new NotImplementedException();
+        if (packet is BundledPacket bp)
+        {
+            // Wrap the bundle with delimiter packets and writes all content packets
+            this.WriteCompressedPacket(new BundleDelimiterPacket(), compressionThreshold);
+            foreach (var p in bp.Packets)
+                this.WriteCompressedPacket(p, compressionThreshold);
+            this.WriteCompressedPacket(new BundleDelimiterPacket(), compressionThreshold);
+            return;
+        }
+
+        using MinecraftStream dataStream = new();
+        dataStream.WriteVarInt(packet.Id);
+        packet.Serialize(dataStream);
+        int dataLength = (int)dataStream.Length;
+
+        if (dataLength >= compressionThreshold)
+        {   // Compress the packet
+            using MinecraftStream compressedStream = new();
+            using (ZLibStream zlibStream = new(compressedStream, CompressionLevel.Optimal, true))
+            {
+                zlibStream.Write(dataStream.ToArray());
+            }
+            int totalLength = dataLength.GetVarIntLength() + (int)compressedStream.Length;
+
+            this.Lock.Wait();
+
+            this.WriteVarInt(totalLength);
+            this.WriteVarInt(dataLength);
+            compressedStream.Position = 0;
+            compressedStream.CopyTo(this);
+
+            this.Lock.Release();
+        }
+        else
+        {   // Do not compress the packet
+            int totalLength = dataLength + 1;
+
+            this.Lock.Wait();
+
+            // same as WritePacket but insert a 0 after length
+            this.WriteVarInt(totalLength);
+            this.WriteVarInt(0);
+            dataStream.Position = 0;
+            dataStream.CopyTo(this);
+
+            this.Lock.Release();
+        }
     }
 
     public void WriteLengthPrefixedArray(params List<ChatMessage> textComponents)

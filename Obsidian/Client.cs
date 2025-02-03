@@ -458,7 +458,7 @@ public sealed class Client : IDisposable
             }
             else
             {
-                //await packet.WriteCompressedAsync(minecraftStream, compressionThreshold);//TODO
+                this.minecraftStream.WriteCompressedPacket(packet, server.Configuration.Network.CompressionThreshold);
             }
         }
         catch (SocketException)
