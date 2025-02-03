@@ -37,7 +37,8 @@ public partial class MinecraftStream : INetStreamWriter
     }
 
     /// <summary>
-    /// Writes a full packet to the stream.
+    /// Writes a full packet to the stream. Note that this method should NOT be an alternative to
+    /// <see cref="WriteCompressedPacket"/> for packets whose size is less than the compression threshold.
     /// </summary>
     /// <param name="packet">The packet to write.</param>
     public void WritePacket(IClientboundPacket packet)
@@ -70,7 +71,9 @@ public partial class MinecraftStream : INetStreamWriter
         AttributeModifier.Write(attributeModifier, this);
 
     /// <summary>
-    /// Writes a full packet, may be compressed with zlib, to the stream.
+    /// Writes a full packet to the stream with compression enabled. Note that this method is NOT
+    /// equivalent to <see cref="WritePacket"/> even if the packet size is less than <paramref name="compressionThreshold"/>.
+    /// See <see href="https://minecraft.wiki/w/Minecraft_Wiki:Projects/wiki.vg_merge/Protocol#With_compression"/>.
     /// </summary>
     /// <param name="packet">The packet to write.</param>
     /// <param name="compressionThreshold">The threshold of packet size at which to compress the packet.</param>
@@ -94,8 +97,10 @@ public partial class MinecraftStream : INetStreamWriter
         if (dataLength >= compressionThreshold)
         {   // Compress the packet
             using MinecraftStream compressedStream = new();
-            using ZLibStream zlibStream = new(compressedStream, CompressionLevel.Optimal);
-            zlibStream.Write(dataStream.ToArray());
+            using (ZLibStream zlibStream = new(compressedStream, CompressionLevel.Optimal))
+            {
+                zlibStream.Write(dataStream.ToArray());
+            }
             int totalLength = dataLength.GetVarIntLength() + (int)compressedStream.Length;
 
             this.Lock.Wait();
@@ -109,13 +114,13 @@ public partial class MinecraftStream : INetStreamWriter
         }
         else
         {   // Do not compress the packet
-            int totalLength = 0.GetVarIntLength() + dataLength;
-            dataLength = 0;
+            int totalLength = dataLength + 1;
 
             this.Lock.Wait();
 
+            // same as WritePacket but insert a 0 after length
             this.WriteVarInt(totalLength);
-            this.WriteVarInt(dataLength);
+            this.WriteVarInt(0);
             dataStream.Position = 0;
             dataStream.CopyTo(this);
 
