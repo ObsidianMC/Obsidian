@@ -58,9 +58,9 @@ public sealed class NbtCompound : INbtTag, IEnumerable<KeyValuePair<string, INbt
 
     public bool TryGetTagValue<TValue>(string name, [MaybeNullWhen(false)] out TValue value)
     {
-        if (this.TryGetTag(name, out var tag) && tag is NbtTag<TValue> actualTag)
+        if (this.TryGetTag<NbtTag<TValue>>(name, out var tag))
         {
-            value = actualTag.Value;
+            value = tag.Value;
             return true;
         }
 
