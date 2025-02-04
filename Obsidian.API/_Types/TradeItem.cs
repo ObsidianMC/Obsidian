@@ -5,7 +5,7 @@ namespace Obsidian.API;
 /// <summary>
 /// Represents an item stack supplied as the "price" in a <see cref="TradeEntry"/>.
 /// </summary>
-public sealed record TradeItem
+public sealed record TradeItem : INetworkSerializable<TradeItem>
 {
     /// <summary>
     /// The item ID.
@@ -36,18 +36,17 @@ public sealed record TradeItem
         Components = components;
     }
 
-    /// <summary>
-    /// Writes the data to an <see cref="INetStreamWriter"/>.
-    /// </summary>
-    /// <param name="writer">The writer to write to.</param>
-    public void Write(INetStreamWriter writer)
+    public static void Write(TradeItem value, INetStreamWriter writer)
     {
-        writer.WriteVarInt(ID);
-        writer.WriteVarInt(Count);
+        writer.WriteVarInt(value.ID);
+        writer.WriteVarInt(value.Count);
         writer.WriteLengthPrefixedArray((c) =>
         {
             writer.WriteVarInt(c.Type);
             c.Write(writer);
-        }, Components);
+        }, value.Components);
     }
+
+    // No need to implement
+    public static TradeItem Read(INetStreamReader reader) => throw new NotImplementedException();
 }

@@ -5,7 +5,7 @@ namespace Obsidian.API;
 /// <summary>
 /// Represents a trade entry offered by a villager or wandering trader.
 /// </summary>
-public sealed record TradeEntry
+public sealed record TradeEntry : INetworkSerializable<TradeEntry>
 {
     /// <summary>
     /// The first input item of the trade. The required count of the first input is the "base price" of the trade.
@@ -28,7 +28,7 @@ public sealed record TradeEntry
     /// Whether the trade is disabled.
     /// </summary>
     public bool IsDisabled { get; set; }
-    
+
     /// <summary>
     /// Number of times the trade has been used.
     /// </summary>
@@ -59,21 +59,20 @@ public sealed record TradeEntry
     /// </summary>
     public int Demand { get; set; }
 
-    /// <summary>
-    /// Writes the data to an <see cref="INetStreamWriter"/>.
-    /// </summary>
-    /// <param name="writer">The writer to write to.</param>
-    public void Write(INetStreamWriter writer)
+    public static void Write(TradeEntry value, INetStreamWriter writer)
     {
-        FirstInput.Write(writer);
-        writer.WriteItemStack(Output);
-        SecondInput.Write(writer);
-        writer.WriteBoolean(IsDisabled);
-        writer.WriteInt(UsedCount);
-        writer.WriteInt(MaxCount);
-        writer.WriteInt(XP);
-        writer.WriteInt(Discount);
-        writer.WriteFloat(Multiplier);
-        writer.WriteInt(Demand);
+        TradeItem.Write(value.FirstInput, writer);
+        writer.WriteItemStack(value.Output);
+        TradeItem.Write(value.SecondInput, writer);
+        writer.WriteBoolean(value.IsDisabled);
+        writer.WriteInt(value.UsedCount);
+        writer.WriteInt(value.MaxCount);
+        writer.WriteInt(value.XP);
+        writer.WriteInt(value.Discount);
+        writer.WriteFloat(value.Multiplier);
+        writer.WriteInt(value.Demand);
     }
+
+    // No need to implement
+    public static TradeEntry Read(INetStreamReader reader) => throw new NotImplementedException();
 }
