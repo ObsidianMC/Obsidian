@@ -400,26 +400,26 @@ public class Entity : IEquatable<Entity>, IEntity
     public virtual void SpawnEntity(Velocity? velocity = null, int additionalData = 0)
     {
         this.PacketBroadcaster.QueuePacketToWorldInRange(this.World, this.Position, new BundledPacket
-        {
-            Packets = [
-                        new AddEntityPacket
-                        {
-                            EntityId = this.EntityId,
-                            Uuid = this.Uuid,
-                            Type = this.Type,
-                            Position = this.Position,
-                            Pitch = this.Pitch,
-                            Yaw = this.Yaw,
-                            Data = additionalData,
-                            Velocity = velocity ?? new Velocity(0, 0, 0)
-                        },
-                        new SetEntityDataPacket
-                        {
-                            EntityId = this.EntityId,
-                            Entity = this
-                        }
-                    ]
-        }, this.EntityId);
+        (
+             [
+                new AddEntityPacket
+                {
+                    EntityId = this.EntityId,
+                    Uuid = this.Uuid,
+                    Type = this.Type,
+                    Position = this.Position,
+                    Pitch = this.Pitch,
+                    Yaw = this.Yaw,
+                    Data = additionalData,
+                    Velocity = velocity ?? new Velocity(0, 0, 0)
+                },
+                new SetEntityDataPacket
+                {
+                    EntityId = this.EntityId,
+                    Entity = this
+                }
+            ]
+        ), this.EntityId);
     }
 
     public bool TryAddAttribute(string attributeResourceName, float value) =>
