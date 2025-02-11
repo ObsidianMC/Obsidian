@@ -51,6 +51,8 @@ public partial class Player
         writer.WriteInt("XpLevel", XpLevel);
         writer.WriteInt("XpTotal", XpTotal);
 
+        writer.WriteShort("Air", Air);
+
         writer.WriteFloat("Health", Health);
 
         writer.WriteFloat("foodExhaustionLevel", FoodExhaustionLevel);

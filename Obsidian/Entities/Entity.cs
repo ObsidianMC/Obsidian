@@ -39,7 +39,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public EntityType Type { get; set; }
 
-    public int Air { get; set; } = 300;
+    public short Air { get; set; } = 300;
 
     public float Health { get; set; } = 100;
 

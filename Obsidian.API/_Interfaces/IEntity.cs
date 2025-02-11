@@ -22,7 +22,7 @@ public interface IEntity
 
     public BoundingBox BoundingBox { get; }
     public EntityDimension Dimension { get; }
-    public int Air { get; set; }
+    public short Air { get; set; }
 
     public float Health { get; set; }
 
