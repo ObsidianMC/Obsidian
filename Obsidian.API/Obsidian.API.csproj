@@ -69,13 +69,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.11.0">
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.2">
 			<ExcludeAssets>runtime</ExcludeAssets>
 		</PackageReference>
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.0">
-			<ExcludeAssets>runtime</ExcludeAssets>
-		</PackageReference>
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0">
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.2">
 			<ExcludeAssets>runtime</ExcludeAssets>
 		</PackageReference>
 		<PackageReference Include="SharpNoise" Version="0.12.1.1">
