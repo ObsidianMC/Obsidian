@@ -1,6 +1,7 @@
 ﻿using Obsidian.API.Boss;
 using Obsidian.API.Configuration;
 using Obsidian.API.Crafting;
+using Obsidian.API.Handlers;
 
 namespace Obsidian.API;
 
@@ -28,6 +29,11 @@ public interface IServer : IDisposable
     public IPlayer? GetPlayer(Guid uuid);
     public IPlayer? GetPlayer(int entityId);
     public void RegisterRecipes(params IRecipe[] recipes);
+
+    /// <summary>
+    /// Replaces the default payload handler.
+    /// </summary>
+    public void RegisterCustomPayloadHandler(CustomPayloadHandler handler);
 
     public IBossBar CreateBossBar(ChatMessage title, float health, BossBarColor color, BossBarDivisionType divisionType, BossBarFlags flags);
 }

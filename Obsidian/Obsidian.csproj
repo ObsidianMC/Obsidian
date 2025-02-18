@@ -77,4 +77,8 @@
 		<ProjectReference Include="..\Obsidian.SourceGenerators\Obsidian.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 		<ProjectReference Include="..\Obsidian.Nbt\Obsidian.Nbt.csproj" />
 	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Net\CustomPayloads\NeoForge\" />
+	</ItemGroup>
 </Project>

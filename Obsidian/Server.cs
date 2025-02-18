@@ -8,12 +8,14 @@ using Obsidian.API.Boss;
 using Obsidian.API.Configuration;
 using Obsidian.API.Crafting;
 using Obsidian.API.Events;
+using Obsidian.API.Handlers;
 using Obsidian.API.Utilities;
 using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Net;
+using Obsidian.Net.CustomPayloads;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -99,7 +101,6 @@ public sealed partial class Server : IServer
 
     public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new();
 
-    public HashSet<string> RegisteredChannels { get; } = new();
     public CommandHandler CommandsHandler { get; }
     public ServerConfiguration Configuration { get; set; }
     public string Version => VERSION;
@@ -109,7 +110,7 @@ public sealed partial class Server : IServer
     public IWorld DefaultWorld => WorldManager.DefaultWorld;
     public IEnumerable<IPlayer> Players => GetPlayers();
 
-
+    public CustomPayloadHandler PayloadHandler { get; private set; }
 
     /// <summary>
     /// Creates a new instance of <see cref="Server"/>.
@@ -162,6 +163,8 @@ public sealed partial class Server : IServer
         this.WhitelistConfiguration = whitelistConfiguration;
         this.loggerFactory = loggerFactory;
         this.WorldManager = worldManager;
+
+        this.RegisterCustomPayloadHandler(new ServerPayloadHandler(this));
 
         Directory.CreateDirectory(PermissionPath);
         Directory.CreateDirectory(PersistentDataPath);
@@ -648,6 +651,8 @@ public sealed partial class Server : IServer
 
         return false;
     }
+
+    public void RegisterCustomPayloadHandler(CustomPayloadHandler handler) => this.PayloadHandler = handler;
 
     public void Dispose()
     {
