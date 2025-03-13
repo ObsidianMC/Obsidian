@@ -16,7 +16,7 @@ public struct BlockUpdate
         set
         {
             _block = value;
-            if (value is IBlock)
+            if (value is not null)
             {
                 if (TagsRegistry.Block.GravityAffected.Entries.Contains(value.RegistryId))
                 {

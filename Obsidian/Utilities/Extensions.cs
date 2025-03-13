@@ -142,17 +142,6 @@ public static partial class Extensions
         JsonSerializer.DeserializeAsync<TValue>(stream, options ?? Globals.JsonOptions, cancellationToken);
     public static Task ToJsonAsync(this object? value, Stream stream, CancellationToken cancellationToken = default) =>
         JsonSerializer.SerializeAsync(stream, value, Globals.JsonOptions, cancellationToken);
-    public static bool Contains<T>(this ReadOnlySpan<T> span, T value) where T : unmanaged
-    {
-        for (int i = 0; i < span.Length; i++)
-        {
-            if (span[i].Equals<T>(value))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool Equals<T>(this T a, T b) where T : unmanaged

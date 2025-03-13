@@ -584,7 +584,7 @@ public partial class MinecraftStream : INetStreamReader
         var reader = new NbtReader(this);
         var chatMessage = ChatMessage.Empty;
 
-        return !reader.TryReadNextTag<NbtCompound>(out var root) ? chatMessage : chatMessage.FromNbt(root);
+        return !reader.TryReadNextTag<NbtCompound>(false, out var root) ? chatMessage : chatMessage.FromNbt(root);
     }
 
     [ReadMethod]
