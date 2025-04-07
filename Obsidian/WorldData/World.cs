@@ -329,6 +329,11 @@ public sealed partial class World : IWorld
                 // Return entities in range
                 foreach ((_, Entity entity) in region.Entities)
                 {
+                    if (entity is Player)
+                    {
+                        continue;
+                    }
+
                     var locationDifference = LocationDiff.GetDifference(entity.Position, location);
 
                     if (locationDifference.CalculatedDifference <= distance)
