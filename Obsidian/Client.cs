@@ -1,7 +1,5 @@
-﻿using Microsoft.AspNetCore.Connections;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
-using Obsidian.Blocks;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
 using Obsidian.Net;
@@ -26,6 +24,8 @@ namespace Obsidian;
 
 public sealed class Client : IDisposable
 {
+    private const int MaxBufferSize = 1024 * 8;
+
     /// <summary>
     /// The player's entity id.
     /// </summary>
@@ -46,11 +46,21 @@ public sealed class Client : IDisposable
     /// </summary>
     internal SignedMessage? messageSigningData;
 
-    /// <summary>
-    /// The server that the client is connected to.
-    /// </summary>
-    internal readonly Server server;
+    private SocketAsyncEventArgs receiveEvent;
+    private SocketAsyncEventArgs sendEvent;
 
+    private long sendBufferFlushOffset;
+
+    private bool receiving;
+    private bool sending;
+
+    private NetworkBuffer receiveBuffer;
+    private NetworkBuffer sendBufferMain;
+    private NetworkBuffer sendBufferFlush;
+
+    private readonly Lock sendLock = new();
+
+    private readonly SocketManager socketManager;
     private readonly IUserCache userCache;
 
     /// <summary>
@@ -105,13 +115,11 @@ public sealed class Client : IDisposable
     /// </summary>
     private readonly PacketCryptography packetCryptography;
 
-    /// <summary>
-    /// The connection context associated with the <see cref="networkStream"/>.
-    /// </summary>
-    private readonly ConnectionContext connectionContext;
     private readonly ILoggerFactory loggerFactory;
 
     private string? ServerId => sharedKey?.Concat(packetCryptography.PublicKey).MinecraftShaDigest();
+
+    public Socket Socket { get; private set; }
 
     /// <summary>
     /// The client's ping in milliseconds.
@@ -131,7 +139,7 @@ public sealed class Client : IDisposable
     /// <summary>
     /// The client's ip and port used to establish this connection.
     /// </summary>
-    public IPEndPoint? RemoteEndPoint => connectionContext.RemoteEndPoint as IPEndPoint;
+    public IPEndPoint? RemoteEndPoint => this.Socket.RemoteEndPoint as IPEndPoint;
 
     public string? Ip => this.RemoteEndPoint?.Address.ToString();
 
@@ -155,13 +163,12 @@ public sealed class Client : IDisposable
     /// </summary>
     public string? Brand { get; internal set; }
 
-    public Client(ConnectionContext connectionContext,
-        ILoggerFactory loggerFactory, IUserCache playerCache,
-        Server server)
+    public bool Connected { get; private set; }
+
+    public Client(SocketManager socketManager, ILoggerFactory loggerFactory, IUserCache playerCache)
     {
-        this.connectionContext = connectionContext;
+        this.socketManager = socketManager;
         this.loggerFactory = loggerFactory;
-        this.server = server;
         this.userCache = playerCache;
         this.Logger = loggerFactory.CreateLogger("ConnectionHandler");
 
@@ -173,11 +180,33 @@ public sealed class Client : IDisposable
             { ClientState.Play, new PlayClientHandler { Client = this } }
         }.ToFrozenDictionary();
 
-        networkStream = new(connectionContext.Transport);
-        minecraftStream = new(networkStream);
-
         packetQueue = Channel.CreateUnbounded<IClientboundPacket>(new() { SingleReader = true, SingleWriter = true });
     }
+    
+    internal void Connect(Socket socket)
+    {
+        this.Socket = socket;
+
+        this.receiveBuffer = new();
+        this.sendBufferMain = new();
+        this.sendBufferFlush = new();
+
+        this.receiveEvent = new();
+        this.receiveEvent.Completed += OnAsyncCompleted;
+
+        this.sendEvent = new();
+        this.sendEvent.Completed += OnAsyncCompleted;
+
+        this.Socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.NoDelay, true);
+
+        this.receiveBuffer.Reserve(MaxBufferSize);
+        this.sendBufferMain.Reserve(MaxBufferSize);
+        this.sendBufferFlush.Reserve(MaxBufferSize);
+
+        this.Connected = true;
+    }
+
+   
 
     private async ValueTask<PacketData> GetNextPacketAsync()
     {
@@ -237,7 +266,7 @@ public sealed class Client : IDisposable
     {
         try
         {
-            while (!cancellationSource.IsCancellationRequested && this.connectionContext.IsConnected())
+            while (!cancellationSource.IsCancellationRequested && this.Connected)
             {
                 using var packetData = await GetNextPacketAsync();
 
@@ -403,6 +432,7 @@ public sealed class Client : IDisposable
     {
         this.id = Server.GetNextEntityId();
         this.Logger = this.loggerFactory.CreateLogger($"Client({this.id})");
+        this.socketManager.RegisterClient(this);
     }
 
     private async ValueTask<bool> HandlePacketAsync(PacketData packetData)
@@ -464,7 +494,7 @@ public sealed class Client : IDisposable
         catch (SocketException)
         {
             // Clients can disconnect at any point, causing exception to be raised
-            if (!connectionContext.IsConnected())
+            if (!this.Connected)
             {
                 Disconnect();
             }
@@ -522,6 +552,170 @@ public sealed class Client : IDisposable
 
     public async Task<MojangProfile?> HasJoinedAsync() => await this.userCache.HasJoinedAsync(this.Player!.Username, this.ServerId!);
 
+    #region Processing 
+    private void TryReceive()
+    {
+        if (!this.Connected)
+            return;
+
+        var process = true;
+
+        while (process)
+        {
+            process = true;
+
+            try
+            {
+                this.receiving = true;
+                this.receiveEvent.SetBuffer(this.receiveBuffer.Data, 0, (int)this.receiveBuffer.Capacity);
+
+                if (!this.Socket.ReceiveAsync(this.receiveEvent))
+                    process = this.ProcessReceive(this.receiveEvent);
+            }
+            catch (ObjectDisposedException) { }
+        }
+    }
+    private void TrySend()
+    {
+        if (!this.Connected)
+            return;
+
+        var empty = false;
+        var process = true;
+
+        while (process)
+        {
+            process = false;
+
+            lock (this.sendLock)
+            {
+                if (this.sendBufferFlush.IsEmpty)
+                {
+                    this.sendBufferFlush = Interlocked.Exchange(ref this.sendBufferMain, this.sendBufferFlush);
+                    this.sendBufferFlushOffset = 0;
+
+                    if (this.sendBufferFlush.IsEmpty)
+                    {
+                        empty = true;
+                        this.sending = false;
+                    }
+                }
+                else
+                    return;
+            }
+
+            if (empty)
+                return;
+
+            try
+            {
+                this.sendEvent.SetBuffer(this.sendBufferFlush.Data, (int)this.sendBufferFlushOffset,
+                    (int)(this.sendBufferFlush.Size - this.sendBufferFlushOffset));
+
+                if (!this.Socket.SendAsync(this.sendEvent))
+                    process = this.ProcessSend(this.sendEvent);
+            }
+            catch (ObjectDisposedException) { }
+        }
+    }
+
+    private bool ProcessReceive(SocketAsyncEventArgs e)
+    {
+        if (!this.Connected)
+            return false;
+
+        var size = e.BytesTransferred;
+
+        if (size > 0)
+        {
+            Interlocked.Add(ref this.socketManager.bytesReceived, size);
+
+            using var mcStream = new MinecraftStream();
+
+            mcStream.Read(this.receiveBuffer.Data);
+
+
+            if (this.receiveBuffer.Capacity == size)
+            {
+                // Check the receive buffer limit
+                if (((2 * size) > MaxBufferSize) && (MaxBufferSize > 0))
+                {
+                    this.Disconnect();
+                    return false;
+                }
+
+                this.receiveBuffer.Reserve(2 * size);
+            }
+        }
+
+        this.receiving = false;
+
+        if (e.SocketError == SocketError.Success)
+        {
+            if (size > 0)
+                return true;
+
+            this.Disconnect();
+        }
+        else
+        {
+            this.Logger.LogError("An error has occurred");
+        }
+
+        return false;
+    }
+
+    private bool ProcessSend(SocketAsyncEventArgs e)
+    {
+        if (!this.Connected) return false;
+
+        var size = e.BytesTransferred;
+
+        if (size > 0)
+        {
+            Interlocked.Add(ref this.socketManager.bytesSent, size);
+
+            this.sendBufferFlushOffset += size;
+
+            if (this.sendBufferFlushOffset == this.sendBufferFlush.Size)
+            {
+                this.sendBufferFlush.Clear();
+                this.sendBufferFlushOffset = 0;
+            }
+        }
+
+        if (e.SocketError == SocketError.Success)
+            return true;
+
+        this.Disconnect();
+
+        return false;
+    }
+    private void OnAsyncCompleted(object? sender, SocketAsyncEventArgs e)
+    {
+        if (this.disposed)
+            return;
+
+        switch (e.LastOperation)
+        {
+            case SocketAsyncOperation.Receive:
+                if (this.ProcessReceive(e))
+                    this.TryReceive();
+
+                break;
+            case SocketAsyncOperation.Send:
+                if (this.ProcessSend(e))
+                    this.TrySend();
+
+                break;
+            default:
+                throw new InvalidOperationException("The last operation completed on the socket was not a receive or send");
+        }
+    }
+   
+
+    #endregion
+
     public void Dispose()
     {
         if (disposed)
@@ -530,8 +724,10 @@ public sealed class Client : IDisposable
         disposed = true;
 
         minecraftStream.Dispose();
-        connectionContext.Abort();
         cancellationSource?.Dispose();
+
+        this.sendEvent.Dispose();
+        this.receiveEvent.Dispose();
 
         GC.SuppressFinalize(this);
     }

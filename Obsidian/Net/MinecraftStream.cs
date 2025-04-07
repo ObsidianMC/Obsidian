@@ -11,8 +11,6 @@ public partial class MinecraftStream : Stream
 
     public SemaphoreSlim Lock { get; } = new SemaphoreSlim(1, 1);
 
-    private MemoryStream debugMemoryStream;
-
     public override bool CanRead => BaseStream.CanRead;
 
     public override bool CanSeek => BaseStream.CanSeek;
@@ -27,69 +25,15 @@ public partial class MinecraftStream : Stream
         set => BaseStream.Position = value;
     }
 
-    public MinecraftStream(bool debug = false)
+
+    public MinecraftStream(Stream stream)
     {
-        if (debug)
-            this.debugMemoryStream = new MemoryStream();
-
-        this.BaseStream = new MemoryStream();
-    }
-
-    public MinecraftStream(Stream stream, bool debug = false)
-    {
-        if (debug)
-            this.debugMemoryStream = new MemoryStream();
-
         this.BaseStream = stream;
     }
 
     public MinecraftStream(byte[] data)
     {
         this.BaseStream = new MemoryStream(data);
-    }
-
-    // Unused
-    public async Task DumpAsync(bool clear = true, IPacket packet = null)
-    {
-        if (this.debugMemoryStream == null)
-            throw new Exception("Can't dump a stream who wasn't set to debug.");
-
-        // TODO: Stream the memory stream into a file stream for better performance and stuff :3
-        Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), $"obsidian"));
-
-        var filePath = Path.Combine(Path.GetTempPath(), $"obsidian/obsidian-{(packet != null ? packet.GetType().Name : "")}-" + Path.GetRandomFileName() + ".bin");
-        await File.WriteAllBytesAsync(filePath, this.debugMemoryStream.ToArray());
-
-        if (clear)
-            await ClearDebug();
-
-        //Globals.PacketLogger.LogDebug("Dumped stream to {FilePath}", filePath);
-    }
-
-    // unused
-    public async Task DumpAsync(bool clear = true, string name = "")
-    {
-        if (this.debugMemoryStream == null)
-            throw new Exception("Can't dump a stream who wasn't set to debug.");
-
-        // TODO: Stream the memory stream into a file stream for better performance and stuff :3
-        Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), $"obsidian"));
-
-        var filePath = Path.Combine(Path.GetTempPath(), $"obsidian/obsidian-{name}-" + Path.GetRandomFileName() + ".bin");
-        await File.WriteAllBytesAsync(filePath, this.debugMemoryStream.ToArray());
-
-        if (clear)
-            await ClearDebug();
-
-        //Globals.PacketLogger.LogDebug("Dumped stream to {FilePath}", filePath);
-    }
-
-    public Task ClearDebug()
-    {
-        this.debugMemoryStream.Dispose();
-        this.debugMemoryStream = new MemoryStream();
-
-        return Task.CompletedTask;
     }
 
     public override void Flush() => this.BaseStream.Flush();
@@ -126,25 +70,16 @@ public partial class MinecraftStream : Stream
 
     public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
     {
-        if (this.debugMemoryStream != null)
-            await debugMemoryStream.WriteAsync(buffer.AsMemory(offset, count), cancellationToken);
-
         await BaseStream.WriteAsync(buffer.AsMemory(offset, count), cancellationToken);
     }
 
     public virtual async Task WriteAsync(byte[] buffer, CancellationToken cancellationToken = default)
     {
-        if (this.debugMemoryStream != null)
-            await this.debugMemoryStream.WriteAsync(buffer, cancellationToken);
-
         await this.BaseStream.WriteAsync(buffer, cancellationToken);
     }
 
     public override void Write(byte[] buffer, int offset, int count)
     {
-        if (this.debugMemoryStream != null)
-            this.debugMemoryStream.Write(buffer, offset, count);
-
         this.BaseStream.Write(buffer, offset, count);
     }
 
