@@ -37,18 +37,16 @@ public sealed partial class NetworkBuffer
     /// </summary>
     public byte this[long index] => data[index];
 
-    /// <summary>
-    /// Initialize a new expandable buffer with zero capacity
-    /// </summary>
-    public NetworkBuffer() { data = []; size = 0; offset = 0; }
-    /// <summary>
-    /// Initialize a new expandable buffer with the given capacity
-    /// </summary>
-    public NetworkBuffer(long capacity) { data = new byte[capacity]; size = 0; offset = 0; }
-    /// <summary>
-    /// Initialize a new expandable buffer with the given data
-    /// </summary>
-    public NetworkBuffer(byte[] data) { this.data = data; size = data.Length; offset = 0; }
+    public NetworkBuffer() : this([], 0, 0) { }
+    public NetworkBuffer(long capacity) : this(new byte[capacity], 0, 0) { }
+    public NetworkBuffer(byte[] data) : this(data, data.LongLength, 0) { }
+
+    private NetworkBuffer(byte[] buffer, long size, long offset)
+    {
+        this.data = buffer;
+        this.size = size;
+        this.offset = offset;
+    }
 
     #region Memory buffer methods
 
@@ -95,38 +93,15 @@ public sealed partial class NetworkBuffer
     /// </summary>
     public void Reserve(long capacity)
     {
-        Debug.Assert((capacity >= 0), "Invalid reserve capacity!");
-        if (capacity < 0)
-            throw new ArgumentException("Invalid reserve capacity!", nameof(capacity));
+        if (capacity < this.Capacity)
+            return;
 
-        if (capacity > Capacity)
-        {
-            byte[] data = new byte[Math.Max(capacity, 2 * Capacity)];
-            Array.Copy(this.data, 0, data, 0, size);
-            this.data = data;
-        }
+        Array.Resize(ref this.data, (int)capacity);
+
+        this.size = capacity;
+        if (this.offset > this.size)
+            this.offset = this.size;
     }
-
-    /// <summary>
-    /// Resize the current buffer
-    /// </summary>
-    public void Resize(long size)
-    {
-        Reserve(size);
-        this.size = size;
-        if (offset > this.size)
-            offset = this.size;
-    }
-
-    /// <summary>
-    /// Shift the current buffer offset
-    /// </summary>
-    public void Shift(long offset) { this.offset += offset; }
-    /// <summary>
-    /// Unshift the current buffer offset
-    /// </summary>
-    public void Unshift(long offset) { this.offset -= offset; }
-
     #endregion
 
     #region Buffer I/O methods
@@ -136,7 +111,7 @@ public sealed partial class NetworkBuffer
     /// </summary>
     /// <param name="value">Byte value to append</param>
     /// <returns>Count of append bytes</returns>
-    public long Append(byte value)
+    public long WriteByte(byte value)
     {
         Reserve(size + 1);
         data[size] = value;
@@ -149,7 +124,7 @@ public sealed partial class NetworkBuffer
     /// </summary>
     /// <param name="buffer">Buffer to append</param>
     /// <returns>Count of append bytes</returns>
-    public long Append(byte[] buffer)
+    public long Write(byte[] buffer)
     {
         Reserve(size + buffer.Length);
         Array.Copy(buffer, 0, data, size, buffer.Length);
@@ -164,7 +139,7 @@ public sealed partial class NetworkBuffer
     /// <param name="offset">Buffer offset</param>
     /// <param name="size">Buffer size</param>
     /// <returns>Count of append bytes</returns>
-    public long Append(byte[] buffer, long offset, long size)
+    public long Write(byte[] buffer, long offset, long size)
     {
         Reserve(this.size + size);
         Array.Copy(buffer, offset, data, this.size, size);
@@ -177,7 +152,7 @@ public sealed partial class NetworkBuffer
     /// </summary>
     /// <param name="buffer">Buffer to append as a span of bytes</param>
     /// <returns>Count of append bytes</returns>
-    public long Append(ReadOnlySpan<byte> buffer)
+    public long Write(ReadOnlySpan<byte> buffer)
     {
         Reserve(size + buffer.Length);
         buffer.CopyTo(new Span<byte>(data, (int)size, buffer.Length));
@@ -190,35 +165,7 @@ public sealed partial class NetworkBuffer
     /// </summary>
     /// <param name="buffer">Buffer to append</param>
     /// <returns>Count of append bytes</returns>
-    public long Append(NetworkBuffer buffer) => Append(buffer.AsSpan());
-
-    /// <summary>
-    /// Append the given text in UTF-8 encoding
-    /// </summary>
-    /// <param name="text">Text to append</param>
-    /// <returns>Count of append bytes</returns>
-    public long Append(string text)
-    {
-        int length = Encoding.UTF8.GetMaxByteCount(text.Length);
-        Reserve(size + length);
-        long result = Encoding.UTF8.GetBytes(text, 0, text.Length, data, (int)size);
-        size += result;
-        return result;
-    }
-
-    /// <summary>
-    /// Append the given text in UTF-8 encoding
-    /// </summary>
-    /// <param name="text">Text to append as a span of characters</param>
-    /// <returns>Count of append bytes</returns>
-    public long Append(ReadOnlySpan<char> text)
-    {
-        int length = Encoding.UTF8.GetMaxByteCount(text.Length);
-        Reserve(size + length);
-        long result = Encoding.UTF8.GetBytes(text, new Span<byte>(data, (int)size, length));
-        size += result;
-        return result;
-    }
+    public long Write(NetworkBuffer buffer) => Write(buffer.AsSpan());
 
     #endregion
 }
