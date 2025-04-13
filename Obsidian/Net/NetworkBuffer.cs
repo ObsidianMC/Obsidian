@@ -1,14 +1,14 @@
 ﻿using System.Diagnostics;
 
-namespace Obsidian.Utilities;
+namespace Obsidian.Net;
 /// <summary>
 /// Dynamic byte buffer
 /// </summary>
-public sealed partial class NetworkBuffer
+public partial class NetworkBuffer
 {
-    private byte[] data;
-    private long size;
-    private long offset;
+    protected byte[] data;
+    protected long size;
+    protected long offset;
 
     /// <summary>
     /// Is the buffer empty?
@@ -109,7 +109,7 @@ public sealed partial class NetworkBuffer
     /// Append the single byte
     /// </summary>
     /// <param name="value">Byte value to append</param>
-    public void WriteByte(byte value)
+    public virtual void WriteByte(byte value)
     {
         Reserve(size + 1);
         data[size] = value;
@@ -120,7 +120,7 @@ public sealed partial class NetworkBuffer
     /// Append the given buffer
     /// </summary>
     /// <param name="buffer">Buffer to append</param>
-    public void Write(byte[] buffer)
+    public virtual void Write(byte[] buffer)
     {
         Reserve(size + buffer.Length);
         Array.Copy(buffer, 0, data, size, buffer.Length);
@@ -133,7 +133,7 @@ public sealed partial class NetworkBuffer
     /// <param name="buffer">Buffer to append</param>
     /// <param name="offset">Buffer offset</param>
     /// <param name="size">Buffer size</param>
-    public void Write(byte[] buffer, long offset, long size)
+    public virtual void Write(byte[] buffer, int offset, int size)
     {
         Reserve(this.size + size);
         Array.Copy(buffer, offset, data, this.size, size);
@@ -144,7 +144,7 @@ public sealed partial class NetworkBuffer
     /// Append the given span of bytes
     /// </summary>
     /// <param name="buffer">Buffer to append as a span of bytes</param>
-    public void Write(ReadOnlySpan<byte> buffer)
+    public virtual void Write(ReadOnlySpan<byte> buffer)
     {
         Reserve(size + buffer.Length);
         buffer.CopyTo(new Span<byte>(data, (int)size, buffer.Length));
@@ -155,7 +155,7 @@ public sealed partial class NetworkBuffer
     /// Append the given buffer
     /// </summary>
     /// <param name="buffer">Buffer to append</param>
-    public void Write(NetworkBuffer buffer) => Write(buffer.AsSpan());
+    public virtual void Write(NetworkBuffer buffer) => Write(buffer.AsSpan());
 
     #endregion
 

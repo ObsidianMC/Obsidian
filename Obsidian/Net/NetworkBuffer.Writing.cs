@@ -10,16 +10,15 @@ using Obsidian.API.Registry.Codecs.PaintingVariant;
 using Obsidian.API.Registry.Codecs.WolfVariant;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Net;
 using Obsidian.Serialization.Attributes;
 using System.Buffers.Binary;
 using System.Diagnostics;
-using System.Text;
-using System.IO.Compression;
 using System.IO;
+using System.IO.Compression;
+using System.Text;
 using System.Text.Json;
 
-namespace Obsidian.Utilities;
+namespace Obsidian.Net;
 public partial class NetworkBuffer : INetStreamWriter
 {
     public bool CanWrite { get; set; }
