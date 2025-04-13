@@ -21,6 +21,8 @@ public interface IServer : IDisposable
     public Task RunAsync();
 
     public bool IsPlayerOnline(string username);
+    public bool IsWhitelisted(string username);
+    public bool IsWhitelisted(Guid uuid);
     public bool IsPlayerOnline(Guid uuid);
     public void BroadcastMessage(string message);
     public void BroadcastMessage(ChatMessage message);

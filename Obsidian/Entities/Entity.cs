@@ -13,8 +13,8 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public required IPacketBroadcaster PacketBroadcaster { get; init; }
 
-    public required IWorld World { get => world; init => world = (World)value; }
-    internal World world = null!;
+    public required IWorld World { get; set; }
+
 
     #region Location properties
     public VectorF LastPosition { get; set; }
@@ -179,7 +179,7 @@ public class Entity : IEquatable<Entity>, IEntity
     public async Task UpdatePositionAsync(VectorF pos, MovementFlags movementFlags)
     {
         var (x, z) = pos.ToChunkCoord();
-        var chunk = await world.GetChunkAsync(x, z, false);
+        var chunk = await this.World.GetChunkAsync(x, z, false);
         if (chunk != null && chunk.IsGenerated)
         {
             Position = pos;
@@ -194,7 +194,7 @@ public class Entity : IEquatable<Entity>, IEntity
     public async Task UpdatePositionAsync(VectorF pos, Angle yaw, Angle pitch, MovementFlags movementFlags = MovementFlags.OnGround)
     {
         var (x, z) = pos.ToChunkCoord();
-        var chunk = await world.GetChunkAsync(x, z, false);
+        var chunk = await World.GetChunkAsync(x, z, false);
         if (chunk is { IsGenerated: true })
         {
             Position = pos;
@@ -227,7 +227,7 @@ public class Entity : IEquatable<Entity>, IEntity
         return new(-cosPitch * sinYaw, -sinPitch, cosPitch * cosYaw);
     }
 
-    public virtual async ValueTask RemoveAsync() => await this.world.DestroyEntityAsync(this);
+    public virtual async ValueTask RemoveAsync() => await this.World.DestroyEntityAsync(this);
 
     protected EntityBitMask GenerateBitmask()
     {
@@ -289,7 +289,7 @@ public class Entity : IEquatable<Entity>, IEntity
         writer.WriteVarInt(PowderedSnowTicks);
     }
 
-    public IEnumerable<IEntity> GetEntitiesNear(float distance) => world.GetEntitiesInRange(Position, distance).Where(x => x != this);
+    public IEnumerable<IEntity> GetEntitiesNear(float distance) => World.GetEntitiesInRange(Position, distance).Where(x => x != this);
 
     //TODO GRAVITY
     public virtual ValueTask TickAsync() => default;
@@ -354,12 +354,12 @@ public class Entity : IEquatable<Entity>, IEntity
         if (to is not Entity target)
             return;
 
-        if (to.World != world)
+        if (to.World != World)
         {
-            await world.DestroyEntityAsync(this);
+            await World.DestroyEntityAsync(this);
 
-            world = target.world;
-            world.SpawnEntity(to.Position, Type);
+            World = target.World;
+            World.SpawnEntity(to.Position, Type);
 
             return;
         }

@@ -14,7 +14,7 @@ public class BasePacketEventArgs : BaseMinecraftEventArgs
     /// </summary>
     public IPacket Packet { get; private set; }
 
-    internal BasePacketEventArgs(Server server, Client client, IPacket packet) : base(server)
+    internal BasePacketEventArgs(IServer server, Client client, IPacket packet) : base(server)
     {
         Client = client;
         Packet = packet;

@@ -67,22 +67,20 @@ public sealed partial class Server : IServer
     {
         get
         {
-            using var ms = new MinecraftStream();
-            ms.WriteString(this.Brand);
+            var buffer = new NetworkBuffer();
+            buffer.WriteString(this.Brand);
 
-            return ms.ToArray();
+            return buffer.Data;
         }
     }
 
     private readonly ConcurrentQueue<ClientboundPacket> _chatMessagesQueue = new();
-    private readonly ConcurrentHashSet<Client> _clients = new();
     private readonly ILoggerFactory loggerFactory;
     private readonly RconServer _rconServer;
     private readonly IUserCache userCache;
+    private readonly ServerMetrics serverMetrics;
     private readonly IServiceProvider serviceProvider;
     private readonly IDisposable? configWatcher;
-
-    private IConnectionListener? _tcpListener;
 
     public IOptionsMonitor<WhitelistConfiguration> WhitelistConfiguration { get; }
 
@@ -109,8 +107,6 @@ public sealed partial class Server : IServer
     public IWorld DefaultWorld => WorldManager.DefaultWorld;
     public IEnumerable<IPlayer> Players => GetPlayers();
 
-
-
     /// <summary>
     /// Creates a new instance of <see cref="Server"/>.
     /// </summary>
@@ -119,18 +115,16 @@ public sealed partial class Server : IServer
         IOptionsMonitor<ServerConfiguration> configuration,
         IOptionsMonitor<WhitelistConfiguration> whitelistConfiguration,
         ILoggerFactory loggerFactory,
-        IWorldManager worldManager,
-        RconServer rconServer,
-        IUserCache playerCache,
+        ServerMetrics serverMetrics,
         EventDispatcher eventDispatcher,
-        CommandHandler commandHandler,
         IServiceProvider serviceProvider)
     {
         _logger = loggerFactory.CreateLogger<Server>();
         _logger.LogInformation("SHA / Version: {VERSION}", VERSION);
         _cancelTokenSource = CancellationTokenSource.CreateLinkedTokenSource(lifetime.ApplicationStopping);
         _cancelTokenSource.Token.Register(() => _logger.LogWarning("Obsidian is shutting down..."));
-        _rconServer = rconServer;
+
+        _rconServer = serviceProvider.GetRequiredService<RconServer>();
 
         this.serviceProvider = serviceProvider;
         this.configWatcher = configuration.OnChange(this.ConfigChanged);
@@ -145,7 +139,7 @@ public sealed partial class Server : IServer
 
         _logger.LogDebug(message: "Initializing command handler...");
 
-        CommandsHandler = commandHandler;
+        CommandsHandler = serviceProvider.GetRequiredService<CommandHandler>();
 
         PluginManager = new PluginManager(this.serviceProvider, this, eventDispatcher, CommandsHandler, loggerFactory.CreateLogger<PluginManager>(),
             serviceProvider.GetRequiredService<IConfiguration>());
@@ -157,11 +151,12 @@ public sealed partial class Server : IServer
 
         _logger.LogDebug("Done registering commands.");
 
-        this.userCache = playerCache;
-        this.EventDispatcher = eventDispatcher;
+        this.userCache = serviceProvider.GetRequiredService<IUserCache>();
+        this.EventDispatcher = serviceProvider.GetRequiredService<EventDispatcher>();
         this.WhitelistConfiguration = whitelistConfiguration;
-        this.loggerFactory = loggerFactory;
-        this.WorldManager = worldManager;
+        this.serverMetrics = serverMetrics;
+        this.loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
+        this.WorldManager = serviceProvider.GetRequiredService<IWorldManager>();
 
         Directory.CreateDirectory(PermissionPath);
         Directory.CreateDirectory(PersistentDataPath);
@@ -295,7 +290,6 @@ public sealed partial class Server : IServer
 
         var serverTasks = new List<Task>()
         {
-            AcceptClientsAsync(),
             LoopAsync(),
             ServerSaveAsync()
         };
@@ -333,104 +327,6 @@ public sealed partial class Server : IServer
             // Try to shut the server down gracefully.
             await this.StopAsync();
             _logger.LogInformation("The server has been shut down");
-        }
-    }
-
-    private async Task AcceptClientsAsync()
-    {
-        _tcpListener = await SocketFactory.CreateListenerAsync(new IPEndPoint(IPAddress.Any, Port), token: _cancelTokenSource.Token);
-
-        while (!_cancelTokenSource.Token.IsCancellationRequested)
-        {
-            ConnectionContext connection;
-            try
-            {
-                var acceptedConnection = await _tcpListener.AcceptAsync(_cancelTokenSource.Token);
-                if (acceptedConnection is null)
-                {
-                    // No longer accepting clients.
-                    break;
-                }
-                connection = acceptedConnection;
-
-                //TODO send a disconnect message
-                if (!WorldManager.ReadyToJoin)
-                {
-                    connection.Abort();
-                    await connection.DisposeAsync();
-
-                    _logger.LogDebug("Server has not been fully initialized. Aborted the connection");
-                    continue;
-                }
-
-            }
-            catch (OperationCanceledException)
-            {
-                // No longer accepting clients.
-                break;
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "Listening for clients encountered an exception");
-                break;
-            }
-
-            _logger.LogDebug("New connection from client with IP {ip}", connection.RemoteEndPoint);
-
-            string ip = ((IPEndPoint)connection.RemoteEndPoint!).Address.ToString();
-
-            if (Configuration.Whitelist && !WhitelistConfiguration.CurrentValue.WhitelistedIps.Contains(ip))
-            {
-                _logger.LogInformation("{ip} is not whitelisted. Closing connection", ip);
-                connection.Abort();
-                return;
-            }
-
-            if (this.Configuration.Network.ShouldThrottle)
-            {
-                if (throttler.TryGetValue(ip, out var time) && time <= DateTimeOffset.UtcNow)
-                {
-                    throttler.Remove(ip, out _);
-                    _logger.LogDebug("Removed {ip} from throttler", ip);
-                }
-            }
-
-            // TODO Entity ids need to be unique on the entire server, not per world
-            var client = new Client(connection, this.loggerFactory, this.userCache, this);
-
-            _clients.Add(client);
-            _ = ExecuteAsync(client);
-        }
-
-        _logger.LogInformation("No longer accepting new clients");
-        await _tcpListener.UnbindAsync();
-        return;
-
-        async Task ExecuteAsync(Client client)
-        {
-            await Task.Yield();
-
-            try
-            {
-                await client.StartConnectionAsync();
-            }
-            catch (OperationCanceledException)
-            {
-                // Ignore.
-            }
-            catch (Exception exception)
-            {
-                _logger.LogError("Unexpected exception from client {Identifier}: {Message}", client.id, exception.Message);
-            }
-            finally
-            {
-                _clients.TryRemove(client);
-
-                if (client.Player is not null)
-                    _ = OnlinePlayers.TryRemove(client.Player.Uuid, out _);
-
-                client.Dispose();
-            }
         }
     }
 
@@ -519,14 +415,11 @@ public sealed partial class Server : IServer
     {
         _cancelTokenSource.Cancel();
 
-        if (_tcpListener is not null)
-        {
-            await _tcpListener.UnbindAsync();
-        }
+        this.socket.Close();
 
-        foreach (var client in _clients)
+        foreach (var client in this.Connections.Values)
         {
-            client.Disconnect();
+            await client.DisconnectAsync("Server shutdown");
             client.Dispose();
         }
 
@@ -569,7 +462,7 @@ public sealed partial class Server : IServer
                 keepAliveTicks++;
                 if (keepAliveTicks > (Configuration.Network.KeepAliveInterval / 50)) // to clarify: one tick is 50 milliseconds. 50 * 200 = 10000 millis means 10 seconds
                 {
-                    foreach (var client in _clients.Where(x => x.State == ClientState.Play || x.State == ClientState.Configuration))
+                    foreach (var client in this.Connections.Values.Where(x => x.State == ClientState.Play || x.State == ClientState.Configuration))
                     {
                         if (client.State == ClientState.Play)
                             await KeepAlivePacket.ClientboundPlay.HandleAsync(client);
@@ -612,7 +505,7 @@ public sealed partial class Server : IServer
             // Just stop looping.
         }
 
-        foreach (var client in _clients)
+        foreach (var client in this.Connections.Values)
         {
             if (client.State == ClientState.Play)
                 client.SendPacket(DisconnectPacket.ClientboundPlay with { Reason = ChatMessage.Simple("Server closed") });
@@ -624,9 +517,9 @@ public sealed partial class Server : IServer
         await WorldManager.FlushLoadedWorldsAsync();
     }
     
-    public bool IsWhitedlisted(string username) => this.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => x.Name == username);
+    public bool IsWhitelisted(string username) => this.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => x.Name == username);
 
-    public bool IsWhitedlisted(Guid uuid) => this.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => x.Id == uuid);
+    public bool IsWhitelisted(Guid uuid) => this.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => x.Id == uuid);
 
     public async ValueTask<bool> ShouldThrottleAsync(Client client)
     {

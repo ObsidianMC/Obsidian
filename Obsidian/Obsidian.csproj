@@ -50,11 +50,16 @@
 
 	<ItemGroup>
 		<PackageReference Include="BouncyCastle.Cryptography" Version="2.5.1" />
-		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" />
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.2" />
-		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.2" />
-		<PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.2" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.2" />
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.13.0" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.4" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.4" />
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.4" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.4" />
+		<PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.11.2" />
+		<PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.11.2" />
+		<PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.11.2" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.11.1" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.11.1" />
 		<PackageReference Include="SharpNoise" Version="0.12.1.1" />
 	</ItemGroup>
 

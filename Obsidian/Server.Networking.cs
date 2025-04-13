@@ -1,27 +1,20 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.Services;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 
 namespace Obsidian;
-public abstract class SocketManager(ILogger<SocketManager> logger, ILoggerFactory loggerFactory, IUserCache userCache) : IDisposable
+public partial class Server
 {
-    private readonly ILogger<SocketManager> logger = logger;
-    private readonly ILoggerFactory loggerFactory = loggerFactory;
-    private readonly IUserCache userCache = userCache;
-
     private Socket socket;
 
-    private int totalConnectedSockets;
     internal int bytesPending;
     internal int bytesReceived;
     internal int bytesSent;
 
-
     private SocketAsyncEventArgs acceptorEventArgs;
 
-    protected Dictionary<int, Client> Connections { get; private set; }
+    public ConcurrentDictionary<int, Client> Connections { get; private set; }
 
     public bool Disposed { get; private set; }
 
@@ -31,14 +24,14 @@ public abstract class SocketManager(ILogger<SocketManager> logger, ILoggerFactor
 
     public bool Started { get; private set; }
 
-    public void Start(int port)
+    public async ValueTask Start(int port)
     {
         var endpoint = new IPEndPoint(IPAddress.Any, port);
 
         this.acceptorEventArgs = new();
         this.acceptorEventArgs.Completed += OnAsyncCompleted;
 
-        this.Connections = new Dictionary<int, Client>(this.MaxConnections);
+        this.Connections = new ConcurrentDictionary<int, Client>(-1, this.MaxConnections);
 
         this.socket = new(endpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 
@@ -51,38 +44,61 @@ public abstract class SocketManager(ILogger<SocketManager> logger, ILoggerFactor
 
         this.Started = true;
 
-        this.Accept(this.acceptorEventArgs);
+        await this.Accept(this.acceptorEventArgs);
     }
 
-    protected virtual void OnError(SocketError error) { }
+    private void OnError(SocketError error) { }
 
-    internal void RegisterClient(Client client) => this.Connections.Add(client.id, client);
+    internal void RegisterClient(Client client) => this.Connections.TryAdd(client.Id, client);
 
-    internal void UnregisterClient(int id) => this.Connections.Remove(id);
+    internal void UnregisterClient(int id) => this.Connections.Remove(id, out _);
 
-    private void Accept(SocketAsyncEventArgs e)
+    private async ValueTask Accept(SocketAsyncEventArgs e)
     {
         e.AcceptSocket = null;
 
         if (!this.socket.AcceptAsync(e))
-            this.ProcessAccept(e);
+            await this.ProcessAccept(e);
     }
 
-    private void ProcessAccept(SocketAsyncEventArgs e)
+    private async ValueTask ProcessAccept(SocketAsyncEventArgs e)
     {
         if (e.SocketError == SocketError.Success)
         {
-            var client = new Client(this, this.loggerFactory, this.userCache);
-
-            Interlocked.Increment(ref this.totalConnectedSockets);
+            var client = this.CreateClient();
 
             client.Connect(e.AcceptSocket);
+
+            if (!this.WorldManager.ReadyToJoin)
+            {
+                await client.DisconnectAsync("World not ready to join");
+                return;
+            }
+
+            var ip = client.Ip;
+            if (Configuration.Whitelist && !WhitelistConfiguration.CurrentValue.WhitelistedIps.Contains(ip))
+            {
+                _logger.LogInformation("{ip} is not whitelisted. Closing connection", ip);
+                await client.DisconnectAsync("Not whitelisted.");
+                return;
+            }
+
+            if (this.Configuration.Network.ShouldThrottle)
+            {
+                if (throttler.TryGetValue(ip, out var time) && time <= DateTimeOffset.UtcNow)
+                {
+                    throttler.Remove(ip, out _);
+                    _logger.LogDebug("Removed {ip} from throttler", ip);
+                }
+            }
         }
         else
             this.SendError(e.SocketError);
 
-        this.Accept(e);
+        await this.Accept(e);
     }
+
+    private Client CreateClient() => new Client(this.EventDispatcher, this, this.loggerFactory, this.userCache, this.serverMetrics);;
 
     public void SendError(SocketError error)
     {
