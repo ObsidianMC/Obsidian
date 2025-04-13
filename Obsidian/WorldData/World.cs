@@ -3,14 +3,11 @@ using Microsoft.Extensions.Logging;
 using Obsidian.API.Configuration;
 using Obsidian.API.Entities;
 using Obsidian.API.Registry.Codecs.Dimensions;
-using Obsidian.API.Utilities;
-using Obsidian.Blocks;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Entities.Factories;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Registries;
 using Obsidian.Services;
 using System.Diagnostics;
 using System.IO;
@@ -107,9 +104,9 @@ public sealed partial class World : IWorld
 
     public void InitGenerator() => this.Generator.Init(this);
 
-    public ValueTask<bool> DestroyEntityAsync(Entity entity)
+    public ValueTask<bool> DestroyEntityAsync(IEntity entity)
     {
-        var destroyed = new RemoveEntitiesPacket(entity);
+        var destroyed = new RemoveEntitiesPacket(entity.EntityId);
 
         this.PacketBroadcaster.QueuePacketToWorld(this, destroyed);
 
@@ -148,7 +145,7 @@ public sealed partial class World : IWorld
     /// Whether to enqueue a job to generate the chunk if it doesn't exist and return null.
     /// When set to false, a partial Chunk is returned.</param>
     /// <returns>Null if the region or chunk doesn't exist yet. Otherwise the full chunk or a partial chunk.</returns>
-    public async ValueTask<Chunk?> GetChunkAsync(int chunkX, int chunkZ, bool scheduleGeneration = true)
+    public async ValueTask<IChunk?> GetChunkAsync(int chunkX, int chunkZ, bool scheduleGeneration = true)
     {
         Region? region = GetRegionForChunk(chunkX, chunkZ) ?? LoadRegion(chunkX >> Region.CubicRegionSizeShift, chunkZ >> Region.CubicRegionSizeShift);
 
@@ -196,7 +193,8 @@ public sealed partial class World : IWorld
     /// </summary>
     /// <param name="scheduleGeneration">When set to false, a partial Chunk is returned.</param>
     /// <returns>Null if the region or chunk doesn't exist yet. Otherwise the full chunk or a partial chunk.</returns>
-    public ValueTask<Chunk?> GetChunkAsync(Vector worldLocation, bool scheduleGeneration = true) => GetChunkAsync(worldLocation.X.ToChunkCoord(), worldLocation.Z.ToChunkCoord(), scheduleGeneration);
+    public ValueTask<IChunk?> GetChunkAsync(Vector worldLocation, bool scheduleGeneration = true) => 
+        GetChunkAsync(worldLocation.X.ToChunkCoord(), worldLocation.Z.ToChunkCoord(), scheduleGeneration);
 
     public ValueTask<IBlock?> GetBlockAsync(Vector location) => GetBlockAsync(location.X, location.Y, location.Z);
 
@@ -209,23 +207,8 @@ public sealed partial class World : IWorld
     public async ValueTask<int?> GetWorldSurfaceHeightAsync(int x, int z)
     {
         var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
-        return c?.Heightmaps[ChunkData.HeightmapType.MotionBlocking]
+        return c?.Heightmaps[HeightmapType.WorldSurface]
         .GetHeight(NumericsHelper.Modulo(x, 16), NumericsHelper.Modulo(z, 16));
-    }
-
-    public Task<NbtCompound?> GetBlockEntityAsync(Vector blockPosition) => GetBlockEntityAsync(blockPosition.X, blockPosition.Y, blockPosition.Z);
-
-    public async Task<NbtCompound?> GetBlockEntityAsync(int x, int y, int z)
-    {
-        var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
-        return c?.GetBlockEntity(x, y, z);
-    }
-
-    public ValueTask SetBlockEntity(Vector blockPosition, NbtCompound tileEntityData) => SetBlockEntity(blockPosition.X, blockPosition.Y, blockPosition.Z, tileEntityData);
-    public async ValueTask SetBlockEntity(int x, int y, int z, NbtCompound tileEntityData)
-    {
-        var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
-        c?.SetBlockEntity(x, y, z, tileEntityData);
     }
 
     public ValueTask SetBlockAsync(int x, int y, int z, IBlock block) => SetBlockAsync(new Vector(x, y, z), block);
@@ -275,22 +258,6 @@ public sealed partial class World : IWorld
         var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
         c?.SetBlock(x, y, z, block);
     }
-
-    public async Task SetBlockMetaAsync(int x, int y, int z, BlockMeta meta)
-    {
-        var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
-        c?.SetBlockMeta(x, y, z, meta);
-    }
-
-    public Task SetBlockMetaAsync(Vector location, BlockMeta meta) => SetBlockMetaAsync(location.X, location.Y, location.Z, meta);
-
-    public async Task<BlockMeta?> GetBlockMeta(int x, int y, int z)
-    {
-        var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord());
-        return c?.GetBlockMeta(x, y, z);
-    }
-
-    public Task<BlockMeta?> GetBlockMeta(Vector location) => GetBlockMeta(location.X, location.Y, location.Z);
 
     public IEnumerable<Entity> GetEntitiesInRange(VectorF location, float distance = 10f)
     {
@@ -871,7 +838,7 @@ public sealed partial class World : IWorld
                 for (int bz = 0; bz < 16; bz++)
                 {
                     // Get topmost block
-                    var by = chunk.Heightmaps[ChunkData.HeightmapType.MotionBlocking].GetHeight(bx, bz);
+                    var by = chunk.Heightmaps[HeightmapType.MotionBlocking].GetHeight(bx, bz);
                     IBlock block = chunk.GetBlock(bx, by, bz);
 
                     // Block must be high enough and either grass or sand

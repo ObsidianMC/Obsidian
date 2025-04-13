@@ -1,5 +1,7 @@
 ﻿global using Obsidian.API;
 global using Obsidian.API.Registries;
+global using Obsidian.API.Utilities;
+global using Obsidian.API.ChunkData;
 global using Obsidian.Registries;
 global using Obsidian.Utilities;
 global using System;

@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace Obsidian.Utilities.Collections;
-
+namespace Obsidian.API.Utilities;
 // Utility storage that can store multiple elements in 64-bit storage entries
 // This type's storage must correspond to minecraft's compacted data array
 internal sealed class DataArray

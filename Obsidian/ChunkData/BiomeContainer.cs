@@ -1,7 +1,4 @@
-﻿using Obsidian.Net;
-using Obsidian.Utilities.Collections;
-
-namespace Obsidian.ChunkData;
+﻿namespace Obsidian.ChunkData;
 
 public sealed class BiomeContainer : DataContainer<Biome>
 {
@@ -21,7 +18,7 @@ public sealed class BiomeContainer : DataContainer<Biome>
         DataArray = dataArray;
     }
 
-    public void Set(int x, int y, int z, Biome biome)
+    public override void Set(int x, int y, int z, Biome biome)
     {
         var index = this.GetIndex(x, y, z);
 
@@ -32,7 +29,7 @@ public sealed class BiomeContainer : DataContainer<Biome>
         this.DataArray[index] = paletteIndex;
     }
 
-    public Biome Get(int x, int y, int z)
+    public override Biome Get(int x, int y, int z)
     {
         var storageId = this.DataArray[this.GetIndex(x, y, z)];
 
@@ -49,10 +46,7 @@ public sealed class BiomeContainer : DataContainer<Biome>
         writer.WriteLongArray(this.DataArray.storage);
     }
 
-    public BiomeContainer Clone()
-    {
-        return new BiomeContainer(Palette.Clone(), DataArray.Clone());
-    }
+    public override BiomeContainer Clone() => new(Palette.Clone(), DataArray.Clone());
 
     public override int GetIndex(int x, int y, int z) => (y << 2 | z) << 2 | x;
 }

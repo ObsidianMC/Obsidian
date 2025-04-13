@@ -37,7 +37,7 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
 #endif
     }
 
-    public void Set(int x, int y, int z, IBlock blockState)
+    public override void Set(int x, int y, int z, IBlock blockState)
     {
 #if CACHE_VALID_BLOCKS
         validBlockCount.SetDirty();
@@ -51,7 +51,7 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
         DataArray[blockIndex] = paletteId;
     }
 
-    public IBlock Get(int x, int y, int z)
+    public override IBlock Get(int x, int y, int z)
     {
         int storageId = DataArray[GetIndex(x, y, z)];
 
@@ -148,10 +148,7 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
         return (short)validBlocksCount;
     }
 
-    public BlockStateContainer Clone()
-    {
-        return new BlockStateContainer(Palette.Clone(), DataArray.Clone());
-    }
+    public override BlockStateContainer Clone() => new(Palette.Clone(), DataArray.Clone());
 
     public override int GetIndex(int x, int y, int z) => (y << 4 | z) << 4 | x;
 }

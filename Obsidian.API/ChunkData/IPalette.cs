@@ -1,7 +1,4 @@
-﻿using Obsidian.Net;
-
-namespace Obsidian.ChunkData;
-
+﻿namespace Obsidian.API.ChunkData;
 public interface IPalette<T>
 {
     public int[] Values { get; }

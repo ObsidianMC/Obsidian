@@ -22,11 +22,13 @@ public interface IWorld : IAsyncDisposable
 
     public IEntitySpawner GetNewEntitySpawner();
 
+    public ValueTask<IChunk?> GetChunkAsync(int x, int z, bool scheduleGeneration = true);
+    public ValueTask<IChunk?> GetChunkAsync(Vector worldLocation, bool scheduleGeneration = true);
+    public ValueTask<bool> DestroyEntityAsync(IEntity entity);
     public ValueTask<IBlock?> GetBlockAsync(Vector location);
     public ValueTask<IBlock?> GetBlockAsync(int x, int y, int z);
     public ValueTask SetBlockAsync(Vector location, IBlock block);
     public ValueTask SetBlockAsync(int x, int y, int z, IBlock block);
-
     public ValueTask SetBlockUntrackedAsync(int x, int y, int z, IBlock block, bool doBlockUpdate);
 
     public ValueTask SetBlockUntrackedAsync(Vector location, IBlock block, bool doBlockUpdate);

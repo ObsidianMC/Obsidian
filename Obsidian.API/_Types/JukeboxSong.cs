@@ -13,7 +13,7 @@ public sealed record class JukeboxSong : INetworkSerializable<JukeboxSong>
     {
         SoundEvent = reader.ReadSoundEvent(),
         Description = reader.ReadChat(),
-        LengthInSeconds = reader.ReadFloat(),
+        LengthInSeconds = reader.ReadSingle(),
         ComparatorOutput = reader.ReadVarInt()
     };
 

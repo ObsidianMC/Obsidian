@@ -4,7 +4,7 @@ using Obsidian.Nbt;
 
 namespace Obsidian.WorldData;
 
-public class Chunk
+public sealed class Chunk : IChunk
 {
     public int X { get; }
     public int Z { get; }
@@ -21,23 +21,22 @@ public class Chunk
     public Dictionary<short, BlockMeta> BlockMetaStore { get; private set; } = new Dictionary<short, BlockMeta>();
     public Dictionary<short, NbtCompound> BlockEntities { get; private set; } = new Dictionary<short, NbtCompound>();
 
-    public ChunkSection[] Sections { get; private set; } = new ChunkSection[24];
-    public Dictionary<HeightmapType, Heightmap> Heightmaps { get; private set; } = new Dictionary<HeightmapType, Heightmap>();
-
+    public IChunkSection[] Sections { get; private set; } = new IChunkSection[24];
+    public IReadOnlyDictionary<HeightmapType, Heightmap> Heightmaps { get; }
 
     public Chunk(int x, int z)
     {
         X = x;
         Z = z;
 
-        Heightmaps = new()
+        Heightmaps = new Dictionary<HeightmapType, Heightmap>()
         {
             { HeightmapType.MotionBlocking, new Heightmap(HeightmapType.MotionBlocking, this) },
             { HeightmapType.OceanFloor, new Heightmap(HeightmapType.OceanFloor, this) },
             { HeightmapType.WorldSurface, new Heightmap(HeightmapType.WorldSurface, this) },
             { HeightmapType.WorldSurfaceWG, new Heightmap(HeightmapType.WorldSurfaceWG, this) },
             { HeightmapType.MotionBlockingNoLeaves, new Heightmap(HeightmapType.MotionBlockingNoLeaves, this) }
-        };
+        }.AsReadOnly();
 
         Sections = new ChunkSection[24];
         for (int i = 0; i < Sections.Length; i++)
@@ -46,7 +45,7 @@ public class Chunk
         }
     }
 
-    private Chunk(int x, int z, ChunkSection[] sections, Dictionary<HeightmapType, Heightmap> heightmaps)
+    private Chunk(int x, int z, IChunkSection[] sections, Dictionary<HeightmapType, Heightmap> heightmaps)
     {
         X = x;
         Z = z;
@@ -54,8 +53,6 @@ public class Chunk
         Heightmaps = heightmaps;
         Sections = sections;
     }
-
-    public IBlock GetBlock(Vector position) => GetBlock(position.X, position.Y, position.Z);
 
     public IBlock GetBlock(int x, int y, int z)
     {
@@ -68,8 +65,6 @@ public class Chunk
         return Sections[i].GetBlock(x, y, z);
     }
 
-    public Biome GetBiome(Vector position) => GetBiome(position.X, position.Y, position.Z);
-
     public Biome GetBiome(int x, int y, int z)
     {
         var i = SectionIndex(y);
@@ -80,8 +75,6 @@ public class Chunk
 
         return Sections[i].GetBiome(x, y, z);
     }
-
-    public void SetBiome(Vector position, Biome biome) => SetBiome(position.X, position.Y, position.Z, biome);
 
     public void SetBiome(int x, int y, int z, Biome biome)
     {
@@ -94,8 +87,6 @@ public class Chunk
         Sections[i].SetBiome(x, y, z, biome);
     }
 
-    public NbtCompound GetBlockEntity(Vector position) => this.GetBlockEntity(position.X, position.Y, position.Z);
-
     public NbtCompound GetBlockEntity(int x, int y, int z)
     {
         x = NumericsHelper.Modulo(x, 16);
@@ -105,8 +96,6 @@ public class Chunk
         return this.BlockEntities.GetValueOrDefault(value);
     }
 
-    public void SetBlockEntity(Vector position, NbtCompound tileEntityData) => this.SetBlockEntity(position.X, position.Y, position.Z, tileEntityData);
-
     public void SetBlockEntity(int x, int y, int z, NbtCompound tileEntityData)
     {
         x = NumericsHelper.Modulo(x, 16);
@@ -115,8 +104,6 @@ public class Chunk
 
         this.BlockEntities[value] = tileEntityData;
     }
-
-    public void SetBlock(Vector position, IBlock block) => SetBlock(position.X, position.Y, position.Z, block);
 
     public void SetBlock(int x, int y, int z, IBlock block)
     {
@@ -139,8 +126,6 @@ public class Chunk
         return BlockMetaStore.GetValueOrDefault(value);
     }
 
-    public BlockMeta GetBlockMeta(Vector position) => GetBlockMeta(position.X, position.Y, position.Z);
-
     public void SetBlockMeta(int x, int y, int z, BlockMeta meta)
     {
         x = NumericsHelper.Modulo(x, 16);
@@ -151,9 +136,6 @@ public class Chunk
         BlockMetaStore[value] = meta;
     }
 
-    public void SetBlockMeta(Vector position, BlockMeta meta) => SetBlockMeta(position.X, position.Y, position.Z, meta);
-
-    public void SetLightLevel(Vector position, LightType lt, int light) => this.SetLightLevel(position.X, position.Y, position.Z, lt, light);
     public void SetLightLevel(int x, int y, int z, LightType lt, int level)
     {
         var sec = Sections[SectionIndex(y)];
@@ -163,7 +145,6 @@ public class Chunk
         sec.SetLightLevel(x, y, z, lt, level);
     }
 
-    public int GetLightLevel(Vector position, LightType lt) => GetLightLevel(position.X, position.Y, position.Z, lt);
     public int GetLightLevel(int x, int y, int z, LightType lt)
     {
         var sec = Sections[SectionIndex(y)];
@@ -265,14 +246,9 @@ public class Chunk
         }
     }
 
-    public Chunk Clone()
+    public IChunk Clone(int x, int z)
     {
-        return Clone(X, Z);
-    }
-
-    public Chunk Clone(int x, int z)
-    {
-        var sections = new ChunkSection[Sections.Length];
+        var sections = new IChunkSection[Sections.Length];
         for (int i = 0; i < sections.Length; i++)
         {
             sections[i] = Sections[i].Clone();
