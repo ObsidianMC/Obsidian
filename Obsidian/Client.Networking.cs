@@ -1,13 +1,12 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
+using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Handshake.Serverbound;
 using Obsidian.Net.Packets.Status.Clientbound;
-using Obsidian.Net.Packets;
 using Obsidian.Services;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Threading;
-using System;
 
 namespace Obsidian;
 public partial class Client
@@ -65,14 +64,7 @@ public partial class Client
         // Sent data to the client
         var sent = this.Socket.Send(buffer, SocketFlags.None, out SocketError ec);
         if (sent > 0)
-        {
-            //// Update statistic
-            //BytesSent += sent;
-            //Interlocked.Add(ref Server._bytesSent, sent);
-
-            //// Call the buffer sent handler
-            //OnSent(sent, BytesPending + BytesSending);
-        }
+            serverMetrics.AddBytesSent(sent);
 
         // Check for socket error
         if (ec != SocketError.Success)
@@ -93,26 +85,13 @@ public partial class Client
 
         lock (this.sendLock)
         {
-            //// Check the send buffer limit
-            //if (((this.sendBufferMain.Size + buffer.Length) > OptionSendBufferLimit) && (OptionSendBufferLimit > 0))
-            //{
-            //    //SendError(SocketError.NoBufferSpaceAvailable);
-            //    return false;
-            //}
-
-            // Fill the main send buffer
             packet.Serialize(this.sendBufferMain);
 
-            // Update statistic
-            //BytesPending = _sendBufferMain.Size;
-
-            // Avoid multiple send handlers
             if (this.sending)
                 return true;
             else
                 this.sending = true;
 
-            // Try to send the main buffer
             TrySend();
         }
 
@@ -129,26 +108,13 @@ public partial class Client
 
         lock (this.sendLock)
         {
-            //// Check the send buffer limit
-            //if (((this.sendBufferMain.Size + buffer.Length) > OptionSendBufferLimit) && (OptionSendBufferLimit > 0))
-            //{
-            //    //SendError(SocketError.NoBufferSpaceAvailable);
-            //    return false;
-            //}
-
-            // Fill the main send buffer
             this.sendBufferMain.Write(buffer);
 
-            // Update statistic
-            //BytesPending = _sendBufferMain.Size;
-
-            // Avoid multiple send handlers
             if (this.sending)
                 return true;
             else
                 this.sending = true;
 
-            // Try to send the main buffer
             TrySend();
         }
 
@@ -316,7 +282,6 @@ public partial class Client
 
             if (this.receiveBuffer.Capacity == size)
             {
-                // Check the receive buffer limit
                 if (((2 * size) > MaxBufferSize) && (MaxBufferSize > 0))
                 {
                     this.Disconnect();
