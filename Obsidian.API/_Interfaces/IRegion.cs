@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using Obsidian.API.ChunkData;
+using System.Collections.Concurrent;
 
 namespace Obsidian.API;
 public interface IRegion : IAsyncDisposable
@@ -19,4 +20,8 @@ public interface IRegion : IAsyncDisposable
     public Task UnloadChunk(int x, int z);
 
     public Task<bool> InitAsync();
+
+    public void AddBlockUpdate(IBlockUpdate bu);
+
+    public IEnumerable<IChunk> GeneratedChunks();
 }

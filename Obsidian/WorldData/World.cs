@@ -110,7 +110,7 @@ public sealed partial class World : IWorld
 
         var (chunkX, chunkZ) = entity.Position.ToChunkCoord();
 
-       var region = GetRegionForChunk(chunkX, chunkZ);
+        var region = GetRegionForChunk(chunkX, chunkZ);
 
         if (region is null)
             throw new InvalidOperationException("Region is null this wasn't supposed to happen.");
@@ -188,7 +188,7 @@ public sealed partial class World : IWorld
     /// </summary>
     /// <param name="scheduleGeneration">When set to false, a partial Chunk is returned.</param>
     /// <returns>Null if the region or chunk doesn't exist yet. Otherwise the full chunk or a partial chunk.</returns>
-    public ValueTask<IChunk?> GetChunkAsync(Vector worldLocation, bool scheduleGeneration = true) => 
+    public ValueTask<IChunk?> GetChunkAsync(Vector worldLocation, bool scheduleGeneration = true) =>
         GetChunkAsync(worldLocation.X.ToChunkCoord(), worldLocation.Z.ToChunkCoord(), scheduleGeneration);
 
     public ValueTask<IBlock?> GetBlockAsync(Vector location) => GetBlockAsync(location.X, location.Y, location.Z);
@@ -554,8 +554,8 @@ public sealed partial class World : IWorld
 
     public async ValueTask ScheduleBlockUpdateAsync(IBlockUpdate blockUpdate)
     {
-        blockUpdate.Block ??= await GetBlockAsync(blockUpdate.position);
-        (int chunkX, int chunkZ) = blockUpdate.position.ToChunkCoord();
+        blockUpdate.Block ??= await GetBlockAsync(blockUpdate.Position);
+        (int chunkX, int chunkZ) = blockUpdate.Position.ToChunkCoord();
         var region = GetRegionForChunk(chunkX, chunkZ);
         region?.AddBlockUpdate(blockUpdate);
     }
@@ -689,7 +689,7 @@ public sealed partial class World : IWorld
     /// </summary>
     /// <param name="worldLoc"></param>
     /// <returns>Whether to update neighbor blocks.</returns>
-    internal async ValueTask<bool> HandleBlockUpdateAsync(IBlockUpdate update)
+    public async ValueTask<bool> HandleBlockUpdateAsync(IBlockUpdate update)
     {
         if (update.Block is not IBlock block)
             return false;
@@ -704,18 +704,17 @@ public sealed partial class World : IWorld
         return false;
     }
 
-    internal async Task BlockUpdateNeighborsAsync(IBlockUpdate update)
+    public async ValueTask BlockUpdateNeighborsAsync(IBlockUpdate update)
     {
-        update = update with
-        {
-            Block = null,
-            delayCounter = update.Delay
-        };
+        update.Block = null;
+
 
         Vector[] directions = Vector.AllDirections;
         for (int i = 0; i < directions.Length; i++)
         {
-            await ScheduleBlockUpdateAsync(update with { position = update.position + directions[i] });
+            update.Position = update.Position + directions[i];
+
+            await ScheduleBlockUpdateAsync(update);
         }
     }
 
@@ -870,7 +869,7 @@ public sealed partial class World : IWorld
     {
         var (chunkX, chunkZ) = entity.Position.ToChunkCoord();
 
-        Region? region = GetRegionForChunk(chunkX, chunkZ);
+        var region = GetRegionForChunk(chunkX, chunkZ);
 
         if (region is null)
             throw new InvalidOperationException("Region is null, this wasn't supposed to happen.");

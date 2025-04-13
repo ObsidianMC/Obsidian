@@ -376,8 +376,7 @@ public partial class MinecraftStream : INetStreamReader
     public TEnum ReadVarInt<TEnum>() where TEnum : Enum => (TEnum)Enum.Parse(typeof(TEnum), this.ReadVarInt().ToString());
 
     [ReadMethod]
-    public SignedMessage ReadSignedMessage() =>
-    new()
+    public SignedMessage ReadSignedMessage() => new()
     {
         UserId = this.ReadGuid(),
         Signature = this.ReadUInt8Array(256)

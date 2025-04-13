@@ -168,4 +168,13 @@ public sealed partial class NetworkBuffer
     public long Write(NetworkBuffer buffer) => Write(buffer.AsSpan());
 
     #endregion
+
+    public void Dispose() { this.Clear(); }
+
+    public ValueTask DisposeAsync()
+    {
+        this.Dispose();
+
+        return default;
+    }
 }

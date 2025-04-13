@@ -3,5 +3,5 @@ public interface INetStream : IDisposable, IAsyncDisposable
 {
     public long Size { get; }
 
-    public long Offset { get; set; }
+    public long Offset { get; }
 }

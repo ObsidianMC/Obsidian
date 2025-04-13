@@ -95,7 +95,7 @@ public class Region : IRegion
         return DeserializeChunk(nbtReader.ReadNextTag() as NbtCompound);
     }
 
-    internal IEnumerable<IChunk> GeneratedChunks()
+    public IEnumerable<IChunk> GeneratedChunks()
     {
         foreach (var c in loadedChunks)
         {

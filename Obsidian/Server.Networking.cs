@@ -128,7 +128,7 @@ public partial class Server
         this._logger.LogInformation("Client {address} was disconnected.", e.RemoteEndPoint);
     }
 
-    protected async void OnAsyncCompleted(object? sender, SocketAsyncEventArgs e)
+    private async void OnAsyncCompleted(object? sender, SocketAsyncEventArgs e)
     {
         if (this.Disposed)
             return;

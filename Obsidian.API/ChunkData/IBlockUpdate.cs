@@ -2,7 +2,7 @@
 
 public interface IBlockUpdate
 {
-    public IBlock? Block { get; }
+    public IBlock? Block { get; set; }
 
     public IWorld World { get; }
     public Vector Position { get; set; }

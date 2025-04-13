@@ -1,3 +1,4 @@
+using Obsidian.API.ChunkData;
 using Obsidian.API.Entities;
 
 namespace Obsidian.API;
@@ -30,6 +31,9 @@ public interface IWorld : IAsyncDisposable
     public ValueTask SetBlockAsync(Vector location, IBlock block);
     public ValueTask SetBlockAsync(int x, int y, int z, IBlock block);
     public ValueTask SetBlockUntrackedAsync(int x, int y, int z, IBlock block, bool doBlockUpdate);
+
+    public ValueTask<bool> HandleBlockUpdateAsync(IBlockUpdate update);
+    public ValueTask BlockUpdateNeighborsAsync(IBlockUpdate update);
 
     public ValueTask SetBlockUntrackedAsync(Vector location, IBlock block, bool doBlockUpdate);
 

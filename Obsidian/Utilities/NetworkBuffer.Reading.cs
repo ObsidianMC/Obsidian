@@ -18,11 +18,9 @@ public partial class NetworkBuffer : INetStreamReader
 
     public NetworkBuffer Read(int length)
     {
-        var data = this.data[(int)this.offset..length];
+        var data = this.ReadUntil(length);
 
-        this.offset += length;
-
-        return new(data, 0, 1);
+        return new(data, 0, 0);
     }
 
     [ReadMethod, VarLength]
@@ -73,19 +71,10 @@ public partial class NetworkBuffer : INetStreamReader
     public Guid ReadGuid() => GuidHelper.FromLongs(this.ReadLong(), this.ReadLong());
 
     [ReadMethod]
-    public Guid? ReadOptionalGuid()
-    {
-        if (this.ReadBoolean())
-            return this.ReadGuid();
-
-        return null;
-    }
+    public Guid? ReadOptionalGuid() => this.ReadBoolean() ? this.ReadGuid() : null;
 
     [ReadMethod]
-    public Velocity ReadVelocity()
-    {
-        return new Velocity(ReadShort(), ReadShort(), ReadShort());
-    }
+    public Velocity ReadVelocity() => new(ReadShort(), ReadShort(), ReadShort());
 
     public TValue? ReadOptional<TValue>() where TValue : INetworkSerializable<TValue> =>
         this.ReadBoolean() ? TValue.Read(this) : default;
@@ -223,7 +212,7 @@ public partial class NetworkBuffer : INetStreamReader
     public SoundPosition ReadSoundPosition() => new(this.ReadInt(), this.ReadInt(), this.ReadInt());
 
     [ReadMethod]
-    public Angle ReadAngle() => new Angle(this.ReadByte());
+    public Angle ReadAngle() => new(this.ReadByte());
 
     [ReadMethod]
     public ChatMessage ReadChat()
@@ -237,20 +226,16 @@ public partial class NetworkBuffer : INetStreamReader
     #region Generic Read Methods
     public byte ReadByte()
     {
-        this.ValidateOffset();
+        var buffer = this.ReadUntil(ByteSize);
 
-        var readByte = this.data[(int)this.offset..ByteSize];
-
-        this.offset += ByteSize;
-
-        return readByte[0];
+        return buffer[0];
     }
 
     [ReadMethod]
     public string ReadString(int maxLength = 32767)
     {
         var length = ReadVarInt();
-        var buffer = this.data[(int)this.offset..length];
+        var buffer = this.ReadUntil(length);
 
         var value = Encoding.UTF8.GetString(buffer);
         if (maxLength > 0 && value.Length > maxLength)
@@ -270,71 +255,149 @@ public partial class NetworkBuffer : INetStreamReader
     [ReadMethod]
     public ulong ReadUnsignedLong()
     {
-        this.ValidateOffset();
-
-        var buffer = this.data[(int)this.offset..LongSize];
-
-        this.offset += LongSize;
+        var buffer = this.ReadUntil(LongSize);
 
         return BinaryPrimitives.ReadUInt64BigEndian(buffer);
     }
 
     public short ReadShort()
     {
-        this.ValidateOffset();
-
-        var buffer = this.data[(int)this.offset..ShortSize];
-
-        this.offset += ShortSize;
+        var buffer = this.ReadUntil(ShortSize);
 
         return BinaryPrimitives.ReadInt16BigEndian(buffer);
     }
 
     public int ReadInt()
     {
-        this.ValidateOffset();
-
-        var buffer = this.data[(int)this.offset..IntSize];
-
-        this.offset += IntSize;
+        var buffer = this.ReadUntil(IntSize);
 
         return BinaryPrimitives.ReadInt32BigEndian(buffer);
     }
 
     public long ReadLong()
     {
-        this.ValidateOffset();
-
-        var buffer = this.data[(int)this.offset..LongSize];
-
-        this.offset += LongSize;
+        var buffer = this.ReadUntil(LongSize);
 
         return BinaryPrimitives.ReadInt64BigEndian(buffer);
     }
 
     public double ReadDouble()
     {
-        this.ValidateOffset();
-
-        var buffer = this.data[(int)this.offset..LongSize];
-
-        this.offset += LongSize;
+        var buffer = this.ReadUntil(LongSize);
 
         return BinaryPrimitives.ReadDoubleBigEndian(buffer);
     }
 
     public float ReadSingle()
     {
-        this.ValidateOffset();
-
-        var buffer = this.data[(int)this.offset..FloatSize];
-
-        this.offset += FloatSize;
+        var buffer = this.ReadUntil(FloatSize);
 
         return BinaryPrimitives.ReadSingleBigEndian(buffer);
     }
 
+    public ushort ReadUnsignedShort()
+    {
+        var buffer = this.ReadUntil(ShortSize);
+
+        return BinaryPrimitives.ReadUInt16BigEndian(buffer);
+    }
+
+    private byte[] ReadUntil(int size)
+    {
+        this.ValidateOffset();
+
+        var buffer = this.data[(int)this.offset..size];
+
+        this.offset += size;
+
+        return buffer;
+    }
+
     #endregion
+
+
+    [ReadMethod]
+    public byte[] ReadByteArray()
+    {
+        var length = ReadVarInt();
+        return ReadUInt8Array(length);
+    }
+
+    [ReadMethod]
+    public byte[] ReadUInt8Array(int length = 0)
+    {
+        if (length == 0)
+            length = ReadVarInt();
+
+        var result = this.ReadUntil(length);
+
+        return result;
+    }
+
+    public IdSet ReadIdSet()
+    {
+        var type = this.ReadVarInt();
+        string? tagName = type == 0 ? tagName = this.ReadString() : null;
+        List<int>? ids = type != 0 ? this.ReadLengthPrefixedArray(this.ReadVarInt) : null;
+
+        return new() { Type = type, Ids = ids, TagName = tagName };
+    }
+    public SoundEvent ReadSoundEvent() => new()
+    {
+        ResourceLocation = this.ReadString(),
+        FixedRange = this.ReadOptionalFloat()
+    };
+
+    public List<TValue> ReadLengthPrefixedArray<TValue>(Func<TValue> read)
+    {
+        var count = this.ReadVarInt();
+        var list = new List<TValue>(count);
+
+        for (var i = 0; i < count; i++)
+            list[i] = read();
+
+        return list;
+    }
+
+    public AttributeModifier ReadAttributeModifier() => new()
+    {
+        Id = this.ReadVarInt(),
+        Uuid = this.ReadGuid(),
+        Name = this.ReadString(),
+        Value = this.ReadDouble(),
+        Operation = this.ReadVarInt<AttributeOperation>(),
+        Slot = this.ReadVarInt<AttributeSlot>()
+    };
+
+    [ReadMethod]
+    public SignedMessage ReadSignedMessage() => 
+        new() { UserId = this.ReadGuid(), Signature = this.ReadUInt8Array(256) };
+
+    [ReadMethod]
+    public ArgumentSignature ReadArgumentSignature() => new()
+    {
+        ArgumentName = this.ReadString(16),
+        Signature = this.ReadUInt8Array(256)
+    };
+
+    public PotionEffectData ReadPotionEffectData() => new()
+    {
+        Id = this.ReadVarInt(),
+        Amplifier = this.ReadVarInt(),
+        Duration = this.ReadVarInt(),
+        Ambient = this.ReadBoolean(),
+        ShowIcon = this.ReadBoolean(),
+        ShowParticles = this.ReadBoolean(),
+        HiddenEffect = this.ReadBoolean() ? this.ReadPotionEffectData() : null
+    };
+
+    [ReadMethod, DataFormat(typeof(float))]
+    public Angle ReadFloatAngle() => ReadSingle();
+
+    public int? ReadOptionalInt() => this.ReadBoolean() ? this.ReadInt() : null;
+    public float? ReadOptionalFloat() => this.ReadBoolean() ? this.ReadSingle() : null;
+    public bool? ReadOptionalBoolean() => this.ReadBoolean() ? this.ReadBoolean() : null;
+    public string? ReadOptionalString() => this.ReadBoolean() ? this.ReadString() : null;
 
     private void ValidateOffset()
     {
