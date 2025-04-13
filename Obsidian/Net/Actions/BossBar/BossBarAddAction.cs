@@ -21,7 +21,7 @@ public sealed class BossBarAddAction : BossBarAction
         base.WriteTo(writer);
 
         writer.WriteChat(Title);
-        writer.WriteFloat(Health);
+        writer.WriteSingle(Health);
         writer.WriteVarInt(Color);
         writer.WriteVarInt(Division);
         writer.WriteByte((byte)Flags);

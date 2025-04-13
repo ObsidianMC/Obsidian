@@ -34,8 +34,8 @@ public partial class SoundEntityPacket
         writer.WriteVarInt(this.Category);
         writer.WriteVarInt(this.EntityId);
 
-        writer.WriteFloat(this.Volume);
-        writer.WriteFloat(this.Pitch);
+        writer.WriteSingle(this.Volume);
+        writer.WriteSingle(this.Pitch);
         writer.WriteLong(this.Seed);
     }
 }

@@ -11,7 +11,7 @@ public partial class PlayerAbilitiesPacket
     public override void Serialize(INetStreamWriter writer)
     {
         writer.WriteByte(Abilities);
-        writer.WriteFloat(FlyingSpeed);
-        writer.WriteFloat(WalkingSpeed);
+        writer.WriteSingle(FlyingSpeed);
+        writer.WriteSingle(WalkingSpeed);
     }
 }

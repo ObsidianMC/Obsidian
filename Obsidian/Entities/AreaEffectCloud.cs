@@ -22,7 +22,7 @@ public sealed partial class AreaEffectCloud : Entity
     public override void Write(INetStreamWriter writer)
     {
         writer.WriteEntityMetadataType(8, EntityMetadataType.Float);
-        writer.WriteFloat(this.Radius);
+        writer.WriteSingle(this.Radius);
 
         writer.WriteEntityMetadataType(9, EntityMetadataType.VarInt);
         writer.WriteVarInt(this.Color);

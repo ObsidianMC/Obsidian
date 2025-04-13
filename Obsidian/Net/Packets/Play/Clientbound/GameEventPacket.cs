@@ -48,7 +48,7 @@ public partial class GameEventPacket
     public override void Serialize(INetStreamWriter writer)
     {
         writer.WriteByte((byte)this.Reason);
-        writer.WriteFloat(this.Value);
+        writer.WriteSingle(this.Value);
     }
 }
 

@@ -30,7 +30,7 @@ public sealed class FoodDataComponent : IDataComponent
     public void Write(INetStreamWriter writer)
     {
         writer.WriteVarInt(this.Nutrition);
-        writer.WriteFloat(this.SaturationModifier);
+        writer.WriteSingle(this.SaturationModifier);
         writer.WriteBoolean(this.CanAlwaysEat);
     }
 }

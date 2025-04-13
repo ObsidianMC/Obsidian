@@ -10,6 +10,6 @@ public sealed class BossBarUpdateHealthAction : BossBarAction
     {
         base.WriteTo(writer);
 
-        writer.WriteFloat(Health);
+        writer.WriteSingle(Health);
     }
 }

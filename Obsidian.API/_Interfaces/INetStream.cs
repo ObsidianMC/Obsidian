@@ -1,7 +1,7 @@
 ﻿namespace Obsidian.API;
 public interface INetStream : IDisposable, IAsyncDisposable
 {
-    public long Length { get; }
+    public long Size { get; }
 
-    public long Position { get; set; }
+    public long Offset { get; set; }
 }

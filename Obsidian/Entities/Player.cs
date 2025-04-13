@@ -139,12 +139,12 @@ public sealed partial class Player : Living, IPlayer
     private Gamemode gamemode;
 
     [SetsRequiredMembers]
-    internal Player(Guid uuid, string username, Client client, World world)
+    internal Player(Guid uuid, string username, Client client, IWorld world)
     {
         Uuid = uuid;
         Username = username;
         this.client = client;
-        EntityId = client.id;
+        EntityId = client.Id;
 
         Inventory = new Container(9 * 5 + 1, InventoryType.Generic)
         {
@@ -156,7 +156,7 @@ public sealed partial class Player : Living, IPlayer
             Title = "Ender Chest"
         };
 
-        base.world = world;
+        base.World = world;
         Type = EntityType.Player;
 
         PersistentDataFile = Path.Combine(Server.PersistentDataPath, $"{Uuid}.dat");
@@ -397,7 +397,7 @@ public sealed partial class Player : Living, IPlayer
         base.Write(writer);
 
         writer.WriteEntityMetadataType(15, EntityMetadataType.Float);
-        writer.WriteFloat(AdditionalHearts);
+        writer.WriteSingle(AdditionalHearts);
 
         writer.WriteEntityMetadataType(16, EntityMetadataType.VarInt);
         writer.WriteVarInt(XpTotal);

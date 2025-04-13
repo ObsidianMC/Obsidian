@@ -22,10 +22,10 @@ public partial class NumberCommandParser<TNumber>
     protected void WriteAsSingle(INetStreamWriter writer)
     {
         if (this.Flags.HasFlag(NumberFlags.HasMinValue))
-            writer.WriteFloat(this.Min.ToSingle(null));
+            writer.WriteSingle(this.Min.ToSingle(null));
 
         if (this.Flags.HasFlag(NumberFlags.HasMaxValue))
-            writer.WriteFloat(this.Max.ToSingle(null));
+            writer.WriteSingle(this.Max.ToSingle(null));
     }
 
     protected void WriteAsLong(INetStreamWriter writer)

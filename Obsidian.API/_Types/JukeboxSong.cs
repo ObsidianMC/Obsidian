@@ -21,7 +21,7 @@ public sealed record class JukeboxSong : INetworkSerializable<JukeboxSong>
     {
         writer.WriteSoundEvent(value.SoundEvent);
         ChatMessage.Write(value.Description, writer);
-        writer.WriteFloat(value.LengthInSeconds);
+        writer.WriteSingle(value.LengthInSeconds);
         writer.WriteVarInt(value.ComparatorOutput);
     }
 }

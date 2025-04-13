@@ -66,6 +66,6 @@ public readonly struct MapDecoration : INetworkSerializable<MapDecoration>
         writer.WriteString($"minecraft:{value.Type.ToString().ToSnakeCase()}");
         writer.WriteDouble(value.X);
         writer.WriteDouble(value.Z);
-        writer.WriteFloat(value.Rotation);
+        writer.WriteSingle(value.Rotation);
     }
 }

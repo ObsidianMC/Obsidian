@@ -29,8 +29,8 @@ public partial class PlayerPositionPacket
 
         writer.WriteAbsolutePositionF(this.Position);
         writer.WriteAbsolutePositionF(this.Delta);
-        writer.WriteFloat(this.Yaw);
-        writer.WriteFloat(this.Pitch);
+        writer.WriteSingle(this.Yaw);
+        writer.WriteSingle(this.Pitch);
 
         writer.WriteInt(this.Flags);
     }

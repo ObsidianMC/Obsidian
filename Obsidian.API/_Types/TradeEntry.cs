@@ -69,7 +69,7 @@ public sealed record TradeEntry : INetworkSerializable<TradeEntry>
         writer.WriteInt(value.MaxCount);
         writer.WriteInt(value.XP);
         writer.WriteInt(value.Discount);
-        writer.WriteFloat(value.Multiplier);
+        writer.WriteSingle(value.Multiplier);
         writer.WriteInt(value.Demand);
     }
 

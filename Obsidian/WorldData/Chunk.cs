@@ -1,7 +1,6 @@
 ﻿using Obsidian.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Nbt;
-using Obsidian.Net;
 
 namespace Obsidian.WorldData;
 

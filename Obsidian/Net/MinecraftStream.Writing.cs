@@ -272,7 +272,7 @@ public partial class MinecraftStream : INetStreamWriter
     }
 
     [WriteMethod]
-    public void WriteFloat(float value)
+    public void WriteSingle(float value)
     {
         Span<byte> span = stackalloc byte[4];
         BinaryPrimitives.WriteSingleBigEndian(span, value);
@@ -480,7 +480,7 @@ public partial class MinecraftStream : INetStreamWriter
         this.WriteString(JsonNamingPolicy.SnakeCaseLower.ConvertName(sound.SoundName ?? sound.SoundId.ToString()));
 
         if (sound.FixedRange.HasValue)
-            this.WriteFloat(sound.FixedRange.Value);
+            this.WriteSingle(sound.FixedRange.Value);
     }
 
     [WriteMethod]
@@ -516,7 +516,7 @@ public partial class MinecraftStream : INetStreamWriter
     [WriteMethod, DataFormat(typeof(float))]
     public void WriteFloatAngle(Angle angle)
     {
-        WriteFloat(angle.Degrees);
+        WriteSingle(angle.Degrees);
     }
 
     public async Task WriteAngleAsync(Angle angle)
@@ -635,7 +635,7 @@ public partial class MinecraftStream : INetStreamWriter
         if (!this.ShouldWriteOptional(value))
             return;
 
-        this.WriteFloat(value!.Value);
+        this.WriteSingle(value!.Value);
     }
 
     public void WriteOptional(string? value)
@@ -707,9 +707,9 @@ public partial class MinecraftStream : INetStreamWriter
     [WriteMethod, DataFormat(typeof(float))]
     public void WriteAbsoluteFloatPosition(Vector value)
     {
-        WriteFloat(value.X);
-        WriteFloat(value.Y);
-        WriteFloat(value.Z);
+        WriteSingle(value.X);
+        WriteSingle(value.Y);
+        WriteSingle(value.Z);
     }
 
     [WriteMethod, DataFormat(typeof(short))]
@@ -749,9 +749,9 @@ public partial class MinecraftStream : INetStreamWriter
     [WriteMethod, DataFormat(typeof(float))]
     public void WriteAbsoluteFloatPositionF(VectorF value)
     {
-        WriteFloat(value.X);
-        WriteFloat(value.Y);
-        WriteFloat(value.Z);
+        WriteSingle(value.X);
+        WriteSingle(value.Y);
+        WriteSingle(value.Z);
     }
 
     [WriteMethod]
@@ -824,8 +824,8 @@ public partial class MinecraftStream : INetStreamWriter
             if (advancement.Display.Flags.HasFlag(AdvancementFlags.HasBackgroundTexture))
                 this.WriteString(advancement.Display.BackgroundTexture);
 
-            this.WriteFloat(advancement.Display.XCoord);
-            this.WriteFloat(advancement.Display.YCoord);
+            this.WriteSingle(advancement.Display.XCoord);
+            this.WriteSingle(advancement.Display.YCoord);
         }
 
         this.WriteVarInt(advancement.Criteria.Count);

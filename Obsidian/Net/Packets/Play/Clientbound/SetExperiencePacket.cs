@@ -17,7 +17,7 @@ public partial class SetExperiencePacket(float experienceBar, int level, int tot
 
     public override void Serialize(INetStreamWriter writer)
     {
-        writer.WriteFloat(this.ExperienceBar);
+        writer.WriteSingle(this.ExperienceBar);
 
         writer.WriteVarInt(this.Level);
         writer.WriteVarInt(this.TotalExperience);

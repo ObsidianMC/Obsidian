@@ -32,7 +32,7 @@ public sealed class ToolDataComponent : IDataComponent
     public void Write(INetStreamWriter writer)
     {
         writer.WriteLengthPrefixedArray((rule) => ToolRule.Write(rule, writer), this.Rules);
-        writer.WriteFloat(this.DefaultMiningSpeed);
+        writer.WriteSingle(this.DefaultMiningSpeed);
         writer.WriteVarInt(this.DamagePerBlock);
     }
 }

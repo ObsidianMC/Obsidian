@@ -34,8 +34,8 @@ public partial class SoundPacket
 
         writer.WritePosition(this.SoundPosition);
 
-        writer.WriteFloat(this.Volume);
-        writer.WriteFloat(this.Pitch);
+        writer.WriteSingle(this.Volume);
+        writer.WriteSingle(this.Pitch);
         writer.WriteLong(this.Seed);
     }
 }

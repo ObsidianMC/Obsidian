@@ -93,7 +93,7 @@ public class Living : Entity, ILiving
         writer.WriteByte((byte)LivingBitMask);
 
         writer.WriteEntityMetadataType(9, EntityMetadataType.Float);
-        writer.WriteFloat(Health);
+        writer.WriteSingle(Health);
 
         writer.WriteEntityMetadataType(10, EntityMetadataType.Particles);//This is a list of integers?
         writer.WriteVarInt(0);

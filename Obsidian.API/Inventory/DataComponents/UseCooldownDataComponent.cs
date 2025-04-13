@@ -22,7 +22,7 @@ public sealed record class UseCooldownDataComponent : IDataComponent
 
     public void Write(INetStreamWriter writer)
     {
-        writer.WriteFloat(this.Seconds);
+        writer.WriteSingle(this.Seconds);
         writer.WriteOptional(this.CooldownGroup);
     }
 }

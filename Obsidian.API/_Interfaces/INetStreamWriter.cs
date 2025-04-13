@@ -19,7 +19,7 @@ public interface INetStreamWriter : INetStream
     public void WriteInt(Enum value);
     public void WriteLong(long value);
 
-    public void WriteFloat(float value);
+    public void WriteSingle(float value);
     public void WriteDouble(double value);
 
     public void WriteString(string value, int maxLength = short.MaxValue);
