@@ -9,9 +9,9 @@ public sealed class Chunk : IChunk
     public int X { get; }
     public int Z { get; }
 
-    public bool IsGenerated => chunkStatus == ChunkStatus.full;
+    public bool IsGenerated => ChunkStatus == ChunkStatus.full;
 
-    public ChunkStatus chunkStatus = ChunkStatus.empty;
+    public ChunkStatus ChunkStatus { get; private set; } = ChunkStatus.empty;
 
     private const int width = 16;
     private const int worldHeight = 320;
@@ -24,7 +24,7 @@ public sealed class Chunk : IChunk
     public IChunkSection[] Sections { get; private set; } = new IChunkSection[24];
     public IReadOnlyDictionary<HeightmapType, Heightmap> Heightmaps { get; }
 
-    public Chunk(int x, int z)
+    public Chunk(int x, int z, ChunkStatus status = ChunkStatus.empty)
     {
         X = x;
         Z = z;
@@ -263,10 +263,12 @@ public sealed class Chunk : IChunk
             heightmaps.Add(type, heightmap.Clone(chunk));
         }
 
-        chunk.chunkStatus = chunkStatus;
+        chunk.SetChunkStatus(ChunkStatus);
 
         return chunk;
     }
+
+    public void SetChunkStatus(ChunkStatus status) => this.ChunkStatus = status;
 
     private static int SectionIndex(int y) => (y >> 4) + 4;
 }

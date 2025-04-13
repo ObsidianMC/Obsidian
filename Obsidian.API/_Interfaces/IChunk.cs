@@ -1,11 +1,20 @@
-﻿namespace Obsidian.API;
+﻿using Obsidian.API.ChunkData;
+using System.ComponentModel;
+
+namespace Obsidian.API;
 public interface IChunk
 {
     public int X { get; }
 
     public int Z { get; }
 
+    public bool IsGenerated { get; }
+
+    public ChunkStatus ChunkStatus { get; }
+
     public IReadOnlyDictionary<HeightmapType, Heightmap> Heightmaps { get; }
+
+    public IChunkSection[] Sections { get; }
 
     public IBlock GetBlock(Vector position) => this.GetBlock(position.X, position.Y, position.Z);
 
@@ -26,6 +35,9 @@ public interface IChunk
 
     public int GetLightLevel(Vector position, LightType lt) => this.GetLightLevel(position.X, position.Y, position.Z, lt);
     public int GetLightLevel(int x, int y, int z, LightType lt);
+
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public void SetChunkStatus(ChunkStatus status);
 
     public IChunk Clone(int x, int z);
 }

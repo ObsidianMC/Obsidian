@@ -72,7 +72,7 @@ public sealed class ChunkSection : IChunkSection
         return lt == LightType.Sky ? (skyLight[index] & mask) >> shift : (blockLight[index] & mask >> shift);
     }
 
-    internal void SetLight(byte[] data, LightType lt)
+    public void SetLight(byte[] data, LightType lt)
     {
         foreach (var b in data)
         {

@@ -9,10 +9,10 @@ namespace Obsidian.WorldData.Decorators;
 
 public static class OverworldDecorator
 {
-    private static readonly ConcurrentDictionary<Type, Func<GenHelper, Chunk, BaseFlora>> floraCache = new();
-    private static readonly ConcurrentDictionary<Type, Func<GenHelper, Chunk, BaseTree>> treeCache = new();
+    private static readonly ConcurrentDictionary<Type, Func<GenHelper, IChunk, BaseFlora>> floraCache = new();
+    private static readonly ConcurrentDictionary<Type, Func<GenHelper, IChunk, BaseTree>> treeCache = new();
 
-    private static readonly Type[] argumentCache = [typeof(GenHelper), typeof(Chunk)];
+    private static readonly Type[] argumentCache = [typeof(GenHelper), typeof(IChunk)];
     public static readonly ParameterExpression[] expressionParameters = argumentCache.Select((t, i) => Expression.Parameter(t, $"param{i}")).ToArray();
 
     static OverworldDecorator()
@@ -29,7 +29,7 @@ public static class OverworldDecorator
             var ctor = floraType.GetConstructor(argumentCache);
 
             var expression = Expression.New(ctor, expressionParameters);
-            var lambda = Expression.Lambda<Func<GenHelper, Chunk, BaseFlora>>(expression, expressionParameters);
+            var lambda = Expression.Lambda<Func<GenHelper, IChunk, BaseFlora>>(expression, expressionParameters);
 
             var compiledLamda = lambda.Compile();
 
@@ -41,7 +41,7 @@ public static class OverworldDecorator
             var ctor = treeType.GetConstructor(argumentCache);
 
             var expression = Expression.New(ctor, expressionParameters);
-            var lambda = Expression.Lambda<Func<GenHelper, Chunk, BaseTree>>(expression, expressionParameters);
+            var lambda = Expression.Lambda<Func<GenHelper, IChunk, BaseTree>>(expression, expressionParameters);
 
             var compiledLamda = lambda.Compile();
 
@@ -49,7 +49,7 @@ public static class OverworldDecorator
         }
     }
 
-    public static async Task DecorateAsync(Chunk chunk, GenHelper helper)
+    public static async Task DecorateAsync(IChunk chunk, GenHelper helper)
     {
         for (int x = 0; x < 16; x++)
         {
@@ -67,7 +67,7 @@ public static class OverworldDecorator
         }
     }
 
-    internal static async Task GenerateFloraAsync(Vector pos, DecoratorFeatures features, GenHelper helper, Chunk chunk)
+    internal static async Task GenerateFloraAsync(Vector pos, DecoratorFeatures features, GenHelper helper, IChunk chunk)
     {
         for(int i = 0; i < features.Flora.Count; i++)
         {
@@ -97,7 +97,7 @@ public static class OverworldDecorator
         await tree.TryGenerateTreeAsync(position, offset);
     }
 
-    internal static async Task GenerateTreesAsync(Vector pos, DecoratorFeatures features, GenHelper helper, Chunk chunk)
+    internal static async Task GenerateTreesAsync(Vector pos, DecoratorFeatures features, GenHelper helper, IChunk chunk)
     {
         for(int i = 0; i < features.Trees.Count; i++)
         {

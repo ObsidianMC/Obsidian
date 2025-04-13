@@ -22,7 +22,7 @@ public class JungleBushFlora : BaseFlora
                 {
                     int x = origin.X - radius + rx;
                     int z = origin.Z - radius + rz;
-                    int y = await helper.GetWorldHeightAsync(x, z, chunk) ?? -1;
+                    int y = await GenHelper.GetWorldHeightAsync(x, z, Chunk) ?? -1;
                     if (y == -1) { continue; }
                     y++;
 
@@ -32,6 +32,6 @@ public class JungleBushFlora : BaseFlora
             }
         }
 
-        await helper.SetBlockAsync(origin, jungleLogBlock, chunk);
+        await GenHelper.SetBlockAsync(origin, jungleLogBlock, Chunk);
     }
 }

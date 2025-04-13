@@ -19,40 +19,40 @@ public sealed class OverworldGenerator : IWorldGenerator
         if (helper is null)
             throw new NullReferenceException("GenHelper must not be null. Call Init()");
 
-        chunk.chunkStatus = chunk.chunkStatus == ChunkStatus.empty ? ChunkStatus.structure_references : chunk.chunkStatus;
+        chunk.chunkStatus = chunk.ChunkStatus == ChunkStatus.empty ? ChunkStatus.structure_references : chunk.ChunkStatus;
 
-        if (ChunkStatus.biomes <= stage && chunk.chunkStatus < ChunkStatus.biomes)
+        if (ChunkStatus.biomes <= stage && chunk.ChunkStatus < ChunkStatus.biomes)
         {
             ChunkBuilder.Biomes(helper, chunk);
             chunk.chunkStatus = ChunkStatus.biomes;
         }
 
-        if (ChunkStatus.surface <= stage && chunk.chunkStatus < ChunkStatus.surface)
+        if (ChunkStatus.surface <= stage && chunk.ChunkStatus < ChunkStatus.surface)
         {
             ChunkBuilder.Surface(helper, chunk);
             chunk.chunkStatus = ChunkStatus.surface;
         }
 
-        if (ChunkStatus.carvers <= stage && chunk.chunkStatus < ChunkStatus.carvers)
+        if (ChunkStatus.carvers <= stage && chunk.ChunkStatus < ChunkStatus.carvers)
         {
             ChunkBuilder.CavesAndOres(helper, chunk);
             ChunkBuilder.UpdateWGHeightmap(chunk);
             chunk.chunkStatus = ChunkStatus.carvers;
         }
 
-        if (ChunkStatus.features <= stage && chunk.chunkStatus < ChunkStatus.features)
+        if (ChunkStatus.features <= stage && chunk.ChunkStatus < ChunkStatus.features)
         {
             await OverworldDecorator.DecorateAsync(chunk, helper);
             chunk.chunkStatus = ChunkStatus.features;
         }
 
-        if (ChunkStatus.heightmaps <= stage && chunk.chunkStatus < ChunkStatus.heightmaps)
+        if (ChunkStatus.heightmaps <= stage && chunk.ChunkStatus < ChunkStatus.heightmaps)
         {
             ChunkBuilder.Heightmaps(chunk);
             chunk.chunkStatus = ChunkStatus.heightmaps;
         }
 
-        if (ChunkStatus.light <= stage && chunk.chunkStatus < ChunkStatus.full)
+        if (ChunkStatus.light <= stage && chunk.ChunkStatus < ChunkStatus.full)
         {
             WorldLight.InitialFillSkyLight(chunk);
             chunk.chunkStatus = ChunkStatus.light;

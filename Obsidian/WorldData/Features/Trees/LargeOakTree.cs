@@ -69,21 +69,21 @@ public class LargeOakTree : BaseTree
 
     protected override async Task GenerateTrunkAsync(Vector origin, int heightOffset)
     {
-        int topY = trunkHeight + heightOffset;
+        int topY = TrunkHeight + heightOffset;
         for (int x = 0; x < 2; x++)
         {
             for (int z = 0; z < 2; z++)
             {
                 for (int y = topY; y > 0; y--)
                 {
-                    await helper.SetBlockAsync(origin + (x, y, z), this.trunkBlock, chunk);
+                    await GenHelper.SetBlockAsync(origin + (x, y, z), this.TrunkBlock, Chunk);
                 }
 
                 // Fill in any air gaps under the trunk
-                var under = await helper.GetBlockAsync(origin + (x, -1, z), chunk);
+                var under = await GenHelper.GetBlockAsync(origin + (x, -1, z), Chunk);
                 if (under.IsAir)
                 {
-                    await helper.SetBlockAsync(origin + (x, -1, z), this.trunkBlock, chunk);
+                    await GenHelper.SetBlockAsync(origin + (x, -1, z), this.TrunkBlock, Chunk);
                 }
             }
         }
@@ -97,9 +97,9 @@ public class LargeOakTree : BaseTree
                 {
                     for (int y = -2; y < 2; y++)
                     {
-                        var b = await helper.GetBlockAsync(origin + (x - 4, y, z - 4), chunk);
+                        var b = await GenHelper.GetBlockAsync(origin + (x - 4, y, z - 4), Chunk);
                         if (b.Is(Material.GrassBlock))
-                            await helper.SetBlockAsync(origin + (x - 4, y, z - 4), BlocksRegistry.Podzol, chunk);
+                            await GenHelper.SetBlockAsync(origin + (x - 4, y, z - 4), BlocksRegistry.Podzol, Chunk);
                     }
                 }
             }
@@ -108,7 +108,7 @@ public class LargeOakTree : BaseTree
 
     protected override async Task GenerateLeavesAsync(Vector origin, int heightOffset)
     {
-        int topY = trunkHeight + heightOffset;
+        int topY = TrunkHeight + heightOffset;
         int y = topY + 1;
         for (int level = 0; level < 6; level++)
         {
@@ -127,7 +127,7 @@ public class LargeOakTree : BaseTree
                 {
                     if (leaves[x, z])
                     {
-                        await helper.SetBlockAsync(origin + (x - 4, y - level, z - 4), this.leafBlock, chunk);
+                        await GenHelper.SetBlockAsync(origin + (x - 4, y - level, z - 4), this.LeafBlock, Chunk);
                     }
                 }
             }

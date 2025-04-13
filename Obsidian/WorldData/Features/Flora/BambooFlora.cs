@@ -30,12 +30,12 @@ public class BambooFlora : BaseTallFlora
         // Grow base
         for (int y = 0; y < growHeight - 3; y++)
         {
-            await helper.SetBlockAsync(placeVector + (0, y, 0), bambooBase, chunk);
+            await GenHelper.SetBlockAsync(placeVector + (0, y, 0), bambooBase, Chunk);
         }
-        await helper.SetBlockAsync(placeVector + (0, growHeight - 3, 0), bambooLeaves, chunk);
-        await helper.SetBlockAsync(placeVector + (0, growHeight - 2, 0), bambooLeaves, chunk);
-        await helper.SetBlockAsync(placeVector + (0, growHeight - 1, 0), bambooLeavesFull, chunk);
-        await helper.SetBlockAsync(placeVector + (0, growHeight, 0), bambooLeavesFull, chunk);
+        await GenHelper.SetBlockAsync(placeVector + (0, growHeight - 3, 0), bambooLeaves, Chunk);
+        await GenHelper.SetBlockAsync(placeVector + (0, growHeight - 2, 0), bambooLeaves, Chunk);
+        await GenHelper.SetBlockAsync(placeVector + (0, growHeight - 1, 0), bambooLeavesFull, Chunk);
+        await GenHelper.SetBlockAsync(placeVector + (0, growHeight, 0), bambooLeavesFull, Chunk);
         return true;
     }
 }

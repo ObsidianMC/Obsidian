@@ -12,7 +12,7 @@ public abstract class BaseTallFlora : BaseFlora
     {
         this.blockWithLowerState = BlocksRegistry.Get(floraMat, lowerState);
         this.blockWithUpperState = BlocksRegistry.Get(floraMat, upperState);
-        this.height = maxHeight;
+        this.Height = maxHeight;
     }
 
     /// <summary>
@@ -29,11 +29,11 @@ public abstract class BaseTallFlora : BaseFlora
         // Grow base
         for (int y = 0; y < growHeight - 1; y++)
         {
-            await helper.SetBlockAsync(placeVector + (0, y, 0), this.blockWithLowerState, chunk);
+            await GenHelper.SetBlockAsync(placeVector + (0, y, 0), this.blockWithLowerState, Chunk);
         }
 
         // Top
-        await helper.SetBlockAsync(placeVector + (0, growHeight - 1, 0), this.blockWithUpperState, chunk);
+        await GenHelper.SetBlockAsync(placeVector + (0, growHeight - 1, 0), this.blockWithUpperState, Chunk);
         return true;
     }
 }

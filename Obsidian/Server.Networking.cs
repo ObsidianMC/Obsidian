@@ -98,7 +98,7 @@ public partial class Server
         await this.Accept(e);
     }
 
-    private Client CreateClient() => new Client(this.EventDispatcher, this, this.loggerFactory, this.userCache, this.serverMetrics);;
+    private Client CreateClient() => new Client(this.EventDispatcher, this, this.loggerFactory, this.userCache, this.serverMetrics);
 
     public void SendError(SocketError error)
     {
@@ -125,25 +125,25 @@ public partial class Server
 
         socket.Close();
 
-        Interlocked.Decrement(ref this.totalConnectedSockets);
-
-        this.logger.LogInformation("Client {address} was disconnected.", e.RemoteEndPoint);
+        this._logger.LogInformation("Client {address} was disconnected.", e.RemoteEndPoint);
     }
 
-    protected void OnAsyncCompleted(object? sender, SocketAsyncEventArgs e)
+    protected async void OnAsyncCompleted(object? sender, SocketAsyncEventArgs e)
     {
         if (this.Disposed)
             return;
 
-        this.ProcessAccept(e);
+        await this.ProcessAccept(e);
     }
 
-    public virtual void Dispose()
+    public void Dispose()
     {
         GC.SuppressFinalize(this);
 
         this.acceptorEventArgs.Completed -= this.OnAsyncCompleted;
         this.acceptorEventArgs.Dispose();
+
+        this.configWatcher?.Dispose();
 
         this.Disposed = true;
     }

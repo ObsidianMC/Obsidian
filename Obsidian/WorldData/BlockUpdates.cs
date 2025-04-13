@@ -11,7 +11,7 @@ internal static class BlockUpdates
     /// </summary>
     /// <param name="blockUpdate">Info about the block update</param>
     /// <returns>Whether caller should block update neighbors</returns>
-    internal static async Task<bool> HandleFallingBlock(BlockUpdate blockUpdate)
+    internal static async Task<bool> HandleFallingBlock(IBlockUpdate blockUpdate)
     {
         if (blockUpdate.Block is null) { return false; }
 
@@ -34,7 +34,7 @@ internal static class BlockUpdates
     /// </summary>
     /// <param name="blockUpdate">Info about the block update</param>
     /// <returns>Whether caller should block update neighbors</returns>
-    internal static async Task<bool> HandleLiquidPhysicsAsync(BlockUpdate blockUpdate)
+    internal static async Task<bool> HandleLiquidPhysicsAsync(IBlockUpdate blockUpdate)
     {
         if (blockUpdate.Block is null) { return false; }
 

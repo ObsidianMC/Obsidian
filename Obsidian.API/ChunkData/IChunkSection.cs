@@ -32,5 +32,7 @@ public interface IChunkSection
     public int GetLightLevel(Vector position, LightType lt) => GetLightLevel(position.X, position.Y, position.Z, lt);
     public int GetLightLevel(int x, int y, int z, LightType lt);
 
+
+    public void SetLight(byte[] data, LightType lt);
     public IChunkSection Clone();
 }

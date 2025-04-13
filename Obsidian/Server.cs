@@ -541,11 +541,4 @@ public sealed partial class Server : IServer
 
         return false;
     }
-
-    public void Dispose()
-    {
-        GC.SuppressFinalize(this);
-
-        this.configWatcher?.Dispose();
-    }
 }
