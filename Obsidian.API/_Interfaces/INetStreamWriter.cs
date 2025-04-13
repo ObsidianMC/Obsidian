@@ -1,7 +1,5 @@
 ﻿using Obsidian.API.Advancements;
-using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
-using Obsidian.API.Inventory.DataComponents;
 using System.ComponentModel;
 
 namespace Obsidian.API;

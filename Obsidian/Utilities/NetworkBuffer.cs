@@ -110,26 +110,22 @@ public sealed partial class NetworkBuffer
     /// Append the single byte
     /// </summary>
     /// <param name="value">Byte value to append</param>
-    /// <returns>Count of append bytes</returns>
-    public long WriteByte(byte value)
+    public void WriteByte(byte value)
     {
         Reserve(size + 1);
         data[size] = value;
         size += 1;
-        return 1;
     }
 
     /// <summary>
     /// Append the given buffer
     /// </summary>
     /// <param name="buffer">Buffer to append</param>
-    /// <returns>Count of append bytes</returns>
-    public long Write(byte[] buffer)
+    public void Write(byte[] buffer)
     {
         Reserve(size + buffer.Length);
         Array.Copy(buffer, 0, data, size, buffer.Length);
         size += buffer.Length;
-        return buffer.Length;
     }
 
     /// <summary>
@@ -138,34 +134,29 @@ public sealed partial class NetworkBuffer
     /// <param name="buffer">Buffer to append</param>
     /// <param name="offset">Buffer offset</param>
     /// <param name="size">Buffer size</param>
-    /// <returns>Count of append bytes</returns>
-    public long Write(byte[] buffer, long offset, long size)
+    public void Write(byte[] buffer, long offset, long size)
     {
         Reserve(this.size + size);
         Array.Copy(buffer, offset, data, this.size, size);
         this.size += size;
-        return size;
     }
 
     /// <summary>
     /// Append the given span of bytes
     /// </summary>
     /// <param name="buffer">Buffer to append as a span of bytes</param>
-    /// <returns>Count of append bytes</returns>
-    public long Write(ReadOnlySpan<byte> buffer)
+    public void Write(ReadOnlySpan<byte> buffer)
     {
         Reserve(size + buffer.Length);
         buffer.CopyTo(new Span<byte>(data, (int)size, buffer.Length));
         size += buffer.Length;
-        return buffer.Length;
     }
 
     /// <summary>
     /// Append the given buffer
     /// </summary>
     /// <param name="buffer">Buffer to append</param>
-    /// <returns>Count of append bytes</returns>
-    public long Write(NetworkBuffer buffer) => Write(buffer.AsSpan());
+    public void Write(NetworkBuffer buffer) => Write(buffer.AsSpan());
 
     #endregion
 

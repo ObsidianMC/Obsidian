@@ -5,6 +5,7 @@
 		<TargetFramework>net9.0</TargetFramework>
 		<Nullable>annotations</Nullable>
 		<EnablePreviewFeatures>true</EnablePreviewFeatures>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
