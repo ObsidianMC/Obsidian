@@ -12,8 +12,8 @@ public sealed record class InstrumentData : INetworkSerializable<InstrumentData>
     public static InstrumentData Read(INetStreamReader reader) => new()
     {
         SoundEvent = reader.ReadSoundEvent(),
-        UseDuration = reader.ReadFloat(),
-        Range = reader.ReadFloat(),
+        UseDuration = reader.ReadSingle(),
+        Range = reader.ReadSingle(),
         Description = reader.ReadChat()
     };
 

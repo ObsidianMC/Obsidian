@@ -12,7 +12,7 @@ public interface IChunk
 
     public ChunkStatus ChunkStatus { get; }
 
-    public IReadOnlyDictionary<HeightmapType, Heightmap> Heightmaps { get; }
+    public IDictionary<HeightmapType, Heightmap> Heightmaps { get; }
 
     public IChunkSection[] Sections { get; }
 

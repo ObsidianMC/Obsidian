@@ -1,11 +1,9 @@
-﻿using Obsidian.WorldData;
-
-namespace Obsidian;
+﻿namespace Obsidian;
 
 public struct BlockUpdate : IBlockUpdate
 {
     public IWorld World { get; }
-    public Vector Position { get; }
+    public Vector Position { get; set; }
 
     public int Delay { get; set; }
     public int DelayCounter { get; set; }
@@ -35,7 +33,7 @@ public struct BlockUpdate : IBlockUpdate
         }
     }
 
-    public BlockUpdate(World w, Vector pos, IBlock? blk = null)
+    public BlockUpdate(IWorld w, Vector pos, IBlock? blk = null)
     {
         World = w;
         Position = pos;

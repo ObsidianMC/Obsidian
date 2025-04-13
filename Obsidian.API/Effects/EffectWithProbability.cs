@@ -16,6 +16,6 @@ public sealed record class EffectWithProbability : IConsumeEffect
     public void Read(INetStreamReader reader)
     {
         this.EffectData = reader.ReadPotionEffectData();
-        this.Probability = reader.ReadFloat();
+        this.Probability = reader.ReadSingle();
     }
 }

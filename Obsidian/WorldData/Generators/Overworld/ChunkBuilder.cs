@@ -68,7 +68,7 @@ internal static class ChunkBuilder
         Diamond
     }
 
-    internal static void Biomes(GenHelper helper, Chunk chunk)
+    internal static void Biomes(GenHelper helper, IChunk chunk)
     {
 
         for (int x = 0; x < 16; x++)

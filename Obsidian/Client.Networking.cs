@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
+using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Handshake.Serverbound;
 using Obsidian.Net.Packets.Status.Clientbound;

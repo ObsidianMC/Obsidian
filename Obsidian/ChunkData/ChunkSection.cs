@@ -91,5 +91,5 @@ public sealed class ChunkSection : IChunkSection
             blockLight = data;
     }
 
-    public ChunkSection Clone() => new(BlockStateContainer.Clone(), BiomeContainer.Clone(), YBase);
+    public IChunkSection Clone() => new ChunkSection(BlockStateContainer.Clone(), BiomeContainer.Clone(), YBase);
 }

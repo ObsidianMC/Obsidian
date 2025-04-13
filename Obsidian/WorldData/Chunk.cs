@@ -22,7 +22,7 @@ public sealed class Chunk : IChunk
     public Dictionary<short, NbtCompound> BlockEntities { get; private set; } = new Dictionary<short, NbtCompound>();
 
     public IChunkSection[] Sections { get; private set; } = new IChunkSection[24];
-    public IReadOnlyDictionary<HeightmapType, Heightmap> Heightmaps { get; }
+    public IDictionary<HeightmapType, Heightmap> Heightmaps { get; }
 
     public Chunk(int x, int z, ChunkStatus status = ChunkStatus.empty)
     {

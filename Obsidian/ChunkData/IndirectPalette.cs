@@ -1,5 +1,4 @@
 ﻿using Obsidian.Exceptions;
-using Obsidian.Registries;
 
 namespace Obsidian.ChunkData;
 

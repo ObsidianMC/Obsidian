@@ -65,14 +65,6 @@ public static partial class Extensions
     public static string TrimEventArgs(this string value) =>
         value.Replace(EventArgs, string.Empty);
 
-    public static void WritePacketId(this IPacket packet, MinecraftStream stream)
-    {
-        stream.Lock.Wait();
-        stream.WriteVarInt(packet.Id.GetVarIntLength());
-        stream.WriteVarInt(packet.Id);
-        stream.Lock.Release();
-    }
-
     public static ParameterExpression[] GetParamExpressions(this Type[] types) => types.Select((t, i) => Expression.Parameter(t, $"param{i}")).ToArray();
 
     internal static bool IsNonLiving(this EntityType type) => nonLiving.Contains(type);

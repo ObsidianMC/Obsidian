@@ -1,8 +1,4 @@
-﻿using Obsidian.Net;
-using Obsidian.Registries;
-using Obsidian.Utilities.Collections;
-
-namespace Obsidian.ChunkData;
+﻿namespace Obsidian.ChunkData;
 
 public sealed class BlockStateContainer : DataContainer<IBlock>
 {

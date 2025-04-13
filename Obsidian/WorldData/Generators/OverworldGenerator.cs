@@ -9,7 +9,7 @@ public sealed class OverworldGenerator : IWorldGenerator
 
     public string Id => "overworld";
 
-    public async Task<Chunk> GenerateChunkAsync(int cx, int cz, Chunk? chunk = null, ChunkStatus stage = ChunkStatus.full)
+    public async ValueTask<IChunk> GenerateChunkAsync(int cx, int cz, IChunk? chunk = null, ChunkStatus stage = ChunkStatus.full)
     {
         chunk ??= new Chunk(cx, cz);
 
@@ -19,46 +19,46 @@ public sealed class OverworldGenerator : IWorldGenerator
         if (helper is null)
             throw new NullReferenceException("GenHelper must not be null. Call Init()");
 
-        chunk.chunkStatus = chunk.ChunkStatus == ChunkStatus.empty ? ChunkStatus.structure_references : chunk.ChunkStatus;
+        chunk.SetChunkStatus(chunk.ChunkStatus == ChunkStatus.empty ? ChunkStatus.structure_references : chunk.ChunkStatus);
 
         if (ChunkStatus.biomes <= stage && chunk.ChunkStatus < ChunkStatus.biomes)
         {
             ChunkBuilder.Biomes(helper, chunk);
-            chunk.chunkStatus = ChunkStatus.biomes;
+            chunk.SetChunkStatus(ChunkStatus.biomes);
         }
 
         if (ChunkStatus.surface <= stage && chunk.ChunkStatus < ChunkStatus.surface)
         {
             ChunkBuilder.Surface(helper, chunk);
-            chunk.chunkStatus = ChunkStatus.surface;
+            chunk.SetChunkStatus(ChunkStatus.surface);
         }
 
         if (ChunkStatus.carvers <= stage && chunk.ChunkStatus < ChunkStatus.carvers)
         {
             ChunkBuilder.CavesAndOres(helper, chunk);
             ChunkBuilder.UpdateWGHeightmap(chunk);
-            chunk.chunkStatus = ChunkStatus.carvers;
+            chunk.SetChunkStatus(ChunkStatus.carvers);
         }
 
         if (ChunkStatus.features <= stage && chunk.ChunkStatus < ChunkStatus.features)
         {
             await OverworldDecorator.DecorateAsync(chunk, helper);
-            chunk.chunkStatus = ChunkStatus.features;
+            chunk.SetChunkStatus(ChunkStatus.features);
         }
 
         if (ChunkStatus.heightmaps <= stage && chunk.ChunkStatus < ChunkStatus.heightmaps)
         {
             ChunkBuilder.Heightmaps(chunk);
-            chunk.chunkStatus = ChunkStatus.heightmaps;
+            chunk.SetChunkStatus(ChunkStatus.heightmaps);
         }
 
         if (ChunkStatus.light <= stage && chunk.ChunkStatus < ChunkStatus.full)
         {
             WorldLight.InitialFillSkyLight(chunk);
-            chunk.chunkStatus = ChunkStatus.light;
+            chunk.SetChunkStatus(ChunkStatus.light);
         }
 
-        chunk.chunkStatus = ChunkStatus.full;
+        chunk.SetChunkStatus(ChunkStatus.full);
         return chunk;
     }
 

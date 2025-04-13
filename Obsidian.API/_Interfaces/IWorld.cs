@@ -30,16 +30,18 @@ public interface IWorld : IAsyncDisposable
     public ValueTask<IBlock?> GetBlockAsync(int x, int y, int z);
     public ValueTask SetBlockAsync(Vector location, IBlock block);
     public ValueTask SetBlockAsync(int x, int y, int z, IBlock block);
-    public ValueTask SetBlockUntrackedAsync(int x, int y, int z, IBlock block, bool doBlockUpdate);
 
     public ValueTask<bool> HandleBlockUpdateAsync(IBlockUpdate update);
     public ValueTask BlockUpdateNeighborsAsync(IBlockUpdate update);
+    public ValueTask ScheduleBlockUpdateAsync(IBlockUpdate blockUpdate);
 
-    public ValueTask SetBlockUntrackedAsync(Vector location, IBlock block, bool doBlockUpdate);
+    public ValueTask SetBlockUntrackedAsync(Vector location, IBlock block, bool doBlockUpdate = false) => SetBlockUntrackedAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
+    public ValueTask SetBlockUntrackedAsync(int x, int y, int z, IBlock block, bool doBlockUpdate = false);
 
     public ValueTask<int?> GetWorldSurfaceHeightAsync(int x, int z);
 
     public IEntity SpawnEntity(VectorF position, EntityType type);
+    public IEntity SpawnFallingBlock(VectorF position, Material mat);
     public void SpawnExperienceOrbs(VectorF position, short count);
 
     public Task DoWorldTickAsync();

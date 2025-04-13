@@ -23,7 +23,7 @@ public sealed class FoodDataComponent : IDataComponent
     public void Read(INetStreamReader reader)
     {
         this.Nutrition = reader.ReadVarInt();
-        this.SaturationModifier = reader.ReadFloat();
+        this.SaturationModifier = reader.ReadSingle();
         this.CanAlwaysEat = reader.ReadBoolean();
     }
 
