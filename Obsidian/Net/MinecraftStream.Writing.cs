@@ -320,20 +320,6 @@ public partial class MinecraftStream : INetStreamWriter
         Write(bytes);
     }
 
-    [WriteMethod]
-    public void WriteNullableString(string? value, int maxLength = short.MaxValue)
-    {
-        if (value is null)
-            return;
-
-        System.Diagnostics.Debug.Assert(value.Length <= maxLength);
-
-        using var bytes = new RentedArray<byte>(Encoding.UTF8.GetByteCount(value));
-        Encoding.UTF8.GetBytes(value, bytes.Span);
-        WriteVarInt(bytes.Length);
-        Write(bytes);
-    }
-
     public async Task WriteStringAsync(string value, int maxLength = short.MaxValue)
     {
         //await Globals.PacketLogger.LogDebugAsync($"Writing String ({value})");
