@@ -21,15 +21,15 @@ public class BambooJungleDecorator : BaseDecorator
 
     public override void Decorate()
     {
-        if (pos.Y < noise.WaterLevel)
+        if (Position.Y < Noise.WaterLevel)
         {
             FillWater();
             return;
         }
 
-        chunk.SetBlock(pos, BlocksRegistry.GrassBlock);
+        Chunk.SetBlock(Position, BlocksRegistry.GrassBlock);
         for (int y = -1; y > -4; y--)
-            chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Dirt);
+            Chunk.SetBlock(Position + (0, y, 0), BlocksRegistry.Dirt);
 
     }
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
@@ -36,10 +37,11 @@ public sealed partial class Client : IClient
     /// </summary>
     internal SignedMessage? messageSigningData;
 
-    private readonly EventDispatcher eventDispatcher;
-    private readonly IServer server;
+    private readonly IEventDispatcher eventDispatcher;
     private readonly IUserCache userCache;
     private readonly ServerMetrics serverMetrics;
+    private readonly IServiceProvider serviceProvider;
+    private readonly PlayerFactory playerFactory;
 
     /// <summary>
     /// Whether this client is disposed.
@@ -126,18 +128,22 @@ public sealed partial class Client : IClient
 
     public IPlayer? Player { get; private set; }
 
+    public IServer Server { get; }
+
     public string? Brand { get; internal set; }
 
     public bool Connected { get; private set; }
 
-    public Client(EventDispatcher eventDispatcher, IServer server, ILoggerFactory loggerFactory, IUserCache playerCache,
-        ServerMetrics serverMetrics)
+    public Client(IEventDispatcher eventDispatcher, IServer server, ILoggerFactory loggerFactory,
+        IUserCache playerCache,
+        ServerMetrics serverMetrics, IServiceProvider serviceProvider)
     {
         this.eventDispatcher = eventDispatcher;
-        this.server = server;
+        this.Server = server;
         this.loggerFactory = loggerFactory;
         this.userCache = playerCache;
         this.serverMetrics = serverMetrics;
+        this.serviceProvider = serviceProvider;
         this.Logger = loggerFactory.CreateLogger("ConnectionHandler");
 
         packetCryptography = new();
@@ -160,7 +166,7 @@ public sealed partial class Client : IClient
         if (State == ClientState.Play)
         {
             Debug.Assert(Player is not null);
-            await this.eventDispatcher.ExecuteEventAsync(new PlayerLeaveEventArgs(Player, this.server, DateTimeOffset.Now));
+            await this.eventDispatcher.ExecuteEventAsync(new PlayerLeaveEventArgs(Player, this.Server, DateTimeOffset.Now));
         }
 
         await this.DisconnectAsync("Player disconnected");
@@ -178,7 +184,7 @@ public sealed partial class Client : IClient
 
             return false;
         }
-        else if (this.server.Configuration.Whitelist && !this.server.IsWhitelisted(this.profile.Uuid))
+        else if (this.Server.Configuration.Whitelist && !this.Server.IsWhitelisted(this.profile.Uuid))
         {
             await DisconnectAsync("You are not whitelisted on this server\nContact server administrator");
 
@@ -201,7 +207,7 @@ public sealed partial class Client : IClient
         if (this.profile == null)
             throw new UnreachableException("Profile was not set or is null.");
 
-        this.Player = new Player(this.profile.Uuid, this.profile.Name, this, world);
+        this.Player = this.CreatePlayer(this.profile.Uuid, this.profile.Name, world);
 
         this.packetCryptography.GenerateKeyPair();
 
@@ -221,7 +227,7 @@ public sealed partial class Client : IClient
     {
         this.InitializeId();
 
-        this.Player = new Player(GuidHelper.FromStringHash($"OfflinePlayer:{username}"), username, this, world);
+        this.Player = this.CreatePlayer(GuidHelper.FromStringHash($"OfflinePlayer:{username}"), username, world);
 
         this.SendPacket(new LoginFinishedPacket(Player.Uuid, Player.Username)
         {
@@ -247,7 +253,7 @@ public sealed partial class Client : IClient
         if (!this.Connected)
             return;
 
-        var args = new QueuePacketEventArgs(this.server, this, packet);
+        var args = new QueuePacketEventArgs(this.Server, this, packet);
 
         var result = await this.eventDispatcher.ExecuteEventAsync(args);
         if (result == EventResult.Cancelled)
@@ -357,7 +363,7 @@ public sealed partial class Client : IClient
 
     private void InitializeId()
     {
-        this.Id = Server.GetNextEntityId();
+        this.Id = Obsidian.Server.GetNextEntityId();
         this.Logger = this.loggerFactory.CreateLogger($"Client({this.Id})");
     }
 
@@ -368,4 +374,7 @@ public sealed partial class Client : IClient
 
         this.Dispose();
     }
+
+    private IPlayer CreatePlayer(Guid uuid, string username, IWorld world) =>
+     ActivatorUtilities.CreateInstance<Player>(this.serviceProvider, uuid, username, this, world);
 }

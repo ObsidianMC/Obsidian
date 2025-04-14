@@ -5,14 +5,14 @@ namespace Obsidian.WorldData.Features.Trees;
 
 public abstract class BaseTree
 {
-    protected IBlock LeafBlock { get; }
-    protected IBlock TrunkBlock { get; }
+    protected IBlock LeafBlock { get; set; }
+    protected IBlock TrunkBlock { get; set; }
 
     protected GenHelper GenHelper { get; }
 
     protected IChunk Chunk { get; }
 
-    protected int TrunkHeight { get; }
+    protected int TrunkHeight { get; set; }
 
     protected List<Material> ValidSourceBlocks { get; set; } =
     [

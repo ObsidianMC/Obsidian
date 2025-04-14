@@ -4,15 +4,12 @@ using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
 using Obsidian.API.Inventory;
-using Obsidian.API.Utilities;
 using Obsidian.Concurrency;
 using Obsidian.Nbt;
-using Obsidian.Net;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Scoreboard;
-using Obsidian.Registries;
 using Obsidian.WorldData;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -25,10 +22,9 @@ public sealed partial class Player : Living, IPlayer
 {
     private byte containerId = 0;
 
-    internal readonly Client client;
+    internal readonly IClient client;
 
-    private ILogger Logger => this.client.Logger;
-
+    internal ILogger Logger { get; set; }
 
     internal HashSet<IPlayer> visiblePlayers = [];
 
@@ -44,7 +40,7 @@ public sealed partial class Player : Living, IPlayer
     /// </summary>
     public ConcurrentHashSet<long> LoadedChunks { get; internal set; } = [];
 
-    public bool IsOperator => this.client.server.Operators.IsOperator(this);
+    public bool IsOperator => this.Server.Operators.IsOperator(this);
 
     public string Username { get; }
 
@@ -68,10 +64,10 @@ public sealed partial class Player : Living, IPlayer
 
     public Gamemode Gamemode
     {
-        get => gamemode;
+        get => field;
         set
         {
-            gamemode = value;
+            field = value;
 
             Abilities = Gamemode switch
             {
@@ -136,14 +132,12 @@ public sealed partial class Player : Living, IPlayer
 
     public string? ClientIP => client.Ip;
 
-    private Gamemode gamemode;
-
     [SetsRequiredMembers]
-    internal Player(Guid uuid, string username, Client client, IWorld world)
+    internal Player(Guid uuid, string username, IClient client, IWorld world, 
+        IPacketBroadcaster packetBroadcaster, IServer server) 
     {
         Uuid = uuid;
         Username = username;
-        this.client = client;
         EntityId = client.Id;
 
         Inventory = new Container(9 * 5 + 1, InventoryType.Generic)
@@ -156,14 +150,17 @@ public sealed partial class Player : Living, IPlayer
             Title = "Ender Chest"
         };
 
-        base.World = world;
+        World = world;
         Type = EntityType.Player;
 
-        PersistentDataFile = Path.Combine(Server.PersistentDataPath, $"{Uuid}.dat");
-        PersistentDataBackupFile = Path.Combine(Server.PersistentDataPath, $"{Uuid}.dat.old");
+        PersistentDataFile = Path.Combine(Obsidian.Server.PersistentDataPath, $"{Uuid}.dat");
+        PersistentDataBackupFile = Path.Combine(Obsidian.Server.PersistentDataPath, $"{Uuid}.dat.old");
 
         Health = 20f;
-        this.PacketBroadcaster = world.PacketBroadcaster;
+
+        this.client = client;
+        this.PacketBroadcaster = packetBroadcaster;
+        this.Server = server;
     }
 
     public ItemStack? GetHeldItem() => Inventory.GetItem(inventorySlot);
@@ -223,11 +220,11 @@ public sealed partial class Player : Living, IPlayer
 
         var tid = Globals.Random.Next(0, 999);
 
-        await client.server.EventDispatcher.ExecuteEventAsync(
+        await Server.EventDispatcher.ExecuteEventAsync(
             new PlayerTeleportEventArgs
             (
                 this,
-                this.client.server,
+                this.Server,
                 Position,
                 pos
             ));
@@ -269,10 +266,10 @@ public sealed partial class Player : Living, IPlayer
         // save current world/persistent data 
         await SaveAsync();
 
-        base.world.TryRemovePlayer(this);
+        World.TryRemovePlayer(this);
         w.TryAddPlayer(this);
 
-        base.world = w;
+        World = w;
 
         // resync player data
         await LoadAsync(false);
@@ -528,7 +525,7 @@ public sealed partial class Player : Living, IPlayer
         await SavePermsAsync();
 
         if (result)
-            await this.client.server.EventDispatcher.ExecuteEventAsync(new PermissionGrantedEventArgs(this, this.client.server, permissionNode));
+            await this.client.Server.EventDispatcher.ExecuteEventAsync(new PermissionGrantedEventArgs(this, this.client.Server, permissionNode));
 
         return result;
     }
@@ -550,7 +547,7 @@ public sealed partial class Player : Living, IPlayer
                 parent.Children.Remove(childToRemove);
 
                 await this.SavePermsAsync();
-                await this.client.server.EventDispatcher.ExecuteEventAsync(new PermissionRevokedEventArgs(this, this.client.server, permissionNode));
+                await this.client.Server.EventDispatcher.ExecuteEventAsync(new PermissionRevokedEventArgs(this, this.client.Server, permissionNode));
 
                 return true;
             }

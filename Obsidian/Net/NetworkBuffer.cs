@@ -155,7 +155,7 @@ public partial class NetworkBuffer
     /// Append the given buffer
     /// </summary>
     /// <param name="buffer">Buffer to append</param>
-    public virtual void Write(NetworkBuffer buffer) => Write(buffer.AsSpan());
+    public virtual void Write(INetStream buffer) => Write(buffer.AsSpan());
 
     #endregion
 

@@ -23,5 +23,7 @@ public interface IRegion : IAsyncDisposable
 
     public void AddBlockUpdate(IBlockUpdate bu);
 
+    public Task BeginTickAsync();
+    public Task FlushAsync();
     public IEnumerable<IChunk> GeneratedChunks();
 }

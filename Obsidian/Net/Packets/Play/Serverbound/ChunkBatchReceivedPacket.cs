@@ -6,5 +6,5 @@ public sealed partial class ChunkBatchReceivedPacket
     [Field(0)]
     public float ChunksPerTick { get; private set; }
 
-    public override void Populate(INetStreamReader reader) => this.ChunksPerTick = reader.ReadFloat();
+    public override void Populate(INetStreamReader reader) => this.ChunksPerTick = reader.ReadSingle();
 }

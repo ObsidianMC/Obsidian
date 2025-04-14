@@ -1,6 +1,4 @@
-using Obsidian.Nbt;
-
-namespace Obsidian.WorldData;
+namespace Obsidian.API;
 
 /// <summary>
 /// https://minecraft.wiki/w/Java_Edition_level_format
@@ -65,16 +63,6 @@ public sealed class Level
     public int ClearWeatherTime { get; set; }
 
     /// <summary>
-    ///  A collection of bossbars.
-    /// </summary>
-    public List<NbtCompound> CustomBossEvents { get; set; } = new();
-
-    /// <summary>
-    /// Options for datapacks.
-    /// </summary>
-    public List<NbtCompound> DataPacks { get; set; } = new();
-
-    /// <summary>
     /// The time of day. 0 is sunrise, 6000 is mid day, 12000 is sunset, 18000 is mid night, 24000 is the next day's 0.
     /// </summary>
     public int DayTime
@@ -98,17 +86,8 @@ public sealed class Level
     /// <summary>
     /// True if the difficulty has been locked. Defaults to 0.
     /// </summary>
-    public bool DiffficultyLocked { get; set; }
+    public bool DifficultyLocked { get; set; }
 
-    /// <summary>
-    /// This contains level data specific to certain dimensions.
-    /// </summary>
-    public NbtCompound DimensionData { get; set; }
-
-    /// <summary>
-    /// The gamerules used in the world.
-    /// </summary>
-    public List<NbtCompound> GameRules { get; set; }
 
     /// <summary>
     /// The default game mode for the singleplayer player when they initially spawn.
@@ -162,7 +141,7 @@ public sealed class Level
     /// <summary>
     /// The number of ticks before "raining" is toggled and this value gets set to another random value.
     /// </summary>
-    public int RainTime { get; set; } = Globals.Random.Next(12000, 180000); // first 0.5 - 7.5 days no rain
+    public int RainTime { get; set; }
 
     /// <summary>
     /// The random level seed used to generate consistent terrain.
@@ -190,11 +169,6 @@ public sealed class Level
     /// The NBT version of the level
     /// </summary>
     public int Version { get; set; } = 19133;
-
-    /// <summary>
-    /// Information about the Minecraft version the world was saved in.
-    /// </summary>
-    public NbtCompound VersionData { get; set; }
 
     /// <summary>
     /// The UUID of the current wandering trader in the world saved as four ints.

@@ -17,6 +17,7 @@ public interface IServer : IDisposable
     public ServerConfiguration Configuration { get; }
 
     public IScoreboardManager ScoreboardManager { get; }
+    public IEventDispatcher EventDispatcher { get; }
 
     public Task RunAsync();
 

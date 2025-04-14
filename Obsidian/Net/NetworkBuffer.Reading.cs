@@ -231,6 +231,8 @@ public partial class NetworkBuffer : INetStreamReader
         return buffer[0];
     }
 
+    public sbyte ReadSignedByte() => (sbyte)this.ReadByte();
+
     [ReadMethod]
     public string ReadString(int maxLength = 32767)
     {

@@ -204,9 +204,9 @@ public partial class Client
             case ClientState.Status: // Server ping/list
                 if (packetData.Id == 0x00)
                 {
-                    var status = new ServerStatus(this.server, this.loggerFactory);
+                    var status = new ServerStatus(this.Server, this.loggerFactory);
 
-                    await this.eventDispatcher.ExecuteEventAsync(new ServerStatusRequestEventArgs(this.server, status));
+                    await this.eventDispatcher.ExecuteEventAsync(new ServerStatusRequestEventArgs(this.Server, status));
 
                     SendPacket(new StatusResponsePacket(status));
                 }
@@ -236,7 +236,7 @@ public partial class Client
             case ClientState.Configuration:
                 Debug.Assert(Player is not null);
 
-                var result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.server, packetData.Id, packetData.NetworkBuffer.Data));
+                var result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.Server, packetData.Id, packetData.NetworkBuffer.Data));
 
                 if (result == EventResult.Cancelled)
                 {
@@ -250,7 +250,7 @@ public partial class Client
             case ClientState.Play:
                 Debug.Assert(Player is not null);
 
-                result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.server, packetData.Id, packetData.NetworkBuffer.Data));
+                result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.Server, packetData.Id, packetData.NetworkBuffer.Data));
 
                 if (result == EventResult.Cancelled)
                 {

@@ -10,7 +10,7 @@ public class DefaultDecorator : BaseDecorator
 
     public override void Decorate()
     {
-        if (pos.Y < noise.WaterLevel)
+        if (Position.Y < Noise.WaterLevel)
         {
             FillWater();
             return;

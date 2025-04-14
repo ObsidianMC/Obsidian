@@ -73,6 +73,7 @@ public static class DependencyInjection
         builder.Services.AddHostedService<ObsidianHostingService>();
         builder.Services.AddHostedService(sp => sp.GetRequiredService<WorldManager>());
 
+        builder.Services.AddSingleton<IEventDispatcher>(x => x.GetRequiredService<EventDispatcher>());
         builder.Services.AddSingleton<IWorldManager>(sp => sp.GetRequiredService<WorldManager>());
         builder.Services.AddSingleton<IPacketBroadcaster>(sp => sp.GetRequiredService<PacketBroadcaster>());
 

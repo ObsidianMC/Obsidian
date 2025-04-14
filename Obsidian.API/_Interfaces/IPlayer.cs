@@ -45,6 +45,8 @@ public interface IPlayer : ILiving
     public float FoodExhaustionLevel { get; set; }
     public float FoodSaturationLevel { get; set; }
 
+    public Task SaveAsync();
+
     public ValueTask SendMessageAsync(ChatMessage message);
     public ValueTask SendMessageAsync(ChatMessage message, Guid sender, SecureMessageSignature messageSignature);
     public ValueTask SetActionBarTextAsync(ChatMessage message);

@@ -89,7 +89,7 @@ public sealed partial class Server : IServer
     public DateTimeOffset StartTime { get; private set; }
 
     public PluginManager PluginManager { get; }
-    public EventDispatcher EventDispatcher { get; }
+    public IEventDispatcher EventDispatcher { get; }
 
     public IOperatorList Operators { get; }
     public IScoreboardManager ScoreboardManager { get; private set; }

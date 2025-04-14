@@ -24,15 +24,15 @@ public sealed partial class World : IWorld
     private float rainLevel = 0f;
     private bool initialized = false;
 
-    internal Dictionary<string, World> dimensions = [];
+    internal Dictionary<string, IWorld> dimensions = [];
 
     public Level LevelData { get; internal set; }
 
-    public ConcurrentDictionary<Guid, Player> Players { get; private set; } = [];
+    public ConcurrentDictionary<Guid, IPlayer> Players { get; private set; } = [];
 
     public IWorldGenerator Generator { get; internal set; }
 
-    public ConcurrentDictionary<long, Region> Regions { get; private set; } = [];
+    public ConcurrentDictionary<long, IRegion> Regions { get; private set; } = [];
 
     public ConcurrentQueue<long> ChunksToGen { get; private set; } = [];
 
@@ -122,7 +122,7 @@ public sealed partial class World : IWorld
     {
         (int chunkX, int chunkZ) = location.ToChunkCoord();
         long key = NumericsHelper.IntsToLong(chunkX >> Region.CubicRegionSizeShift, chunkZ >> Region.CubicRegionSizeShift);
-        Regions.TryGetValue(key, out Region? region);
+        Regions.TryGetValue(key, out var region);
         return region;
     }
 
@@ -130,7 +130,7 @@ public sealed partial class World : IWorld
     {
         long value = NumericsHelper.IntsToLong(chunkX >> Region.CubicRegionSizeShift, chunkZ >> Region.CubicRegionSizeShift);
 
-        return Regions.TryGetValue(value, out Region? region) ? region : null;
+        return Regions.TryGetValue(value, out var region) ? region : null;
     }
 
     public IRegion? GetRegionForChunk(Vector location) => GetRegionForChunk(location.X, location.Z);
@@ -233,7 +233,7 @@ public sealed partial class World : IWorld
         }
     }
 
-    public IEnumerable<Player> PlayersInRange(Vector location)
+    public IEnumerable<IPlayer> PlayersInRange(Vector location)
     {
         var (x, z) = location.ToChunkCoord();
         var packedXZ = NumericsHelper.IntsToLong(x, z);
@@ -291,6 +291,9 @@ public sealed partial class World : IWorld
                 // Return entities in range
                 foreach (var entity in region.Entities.Values)
                 {
+                    if (entity.Type == EntityType.Player)
+                        continue;
+
                     var locationDifference = LocationDiff.GetDifference(entity.Position, location);
 
                     if (locationDifference.CalculatedDifference <= distance)
@@ -323,7 +326,7 @@ public sealed partial class World : IWorld
 
         distance *= distance; // distance^2 <= deltaX^2 + deltaY^2
 
-        foreach ((_, Player player) in Players)
+        foreach (var player in Players.Values)
         {
             var locationDifference = LocationDiff.GetDifference(player.Position, location);
 
@@ -334,9 +337,9 @@ public sealed partial class World : IWorld
         }
     }
 
-    public bool TryAddPlayer(Player player) => Players.TryAdd(player.Uuid, player);
+    public bool TryAddPlayer(IPlayer player) => Players.TryAdd(player.Uuid, player);
 
-    public bool TryRemovePlayer(Player player) => Players.TryRemove(player.Uuid, out _);
+    public bool TryRemovePlayer(IPlayer player) => Players.TryRemove(player.Uuid, out _);
 
     /// <summary>
     /// Method that handles world-specific tick behavior.
@@ -433,8 +436,8 @@ public sealed partial class World : IWorld
             LevelName = levelCompound.GetString("LevelName")
         };
 
-        if (levelCompound.TryGetTag("Version", out var tag))
-            LevelData.VersionData = tag as NbtCompound;
+        //if (levelCompound.TryGetTag("Version", out var tag))
+        //    LevelData.VersionData = tag as NbtCompound;
 
         Logger.LogInformation("Loading spawn chunks into memory...");
         for (int rx = -1; rx < 1; rx++)
@@ -628,7 +631,7 @@ public sealed partial class World : IWorld
             EntityId = Server.GetNextEntityId(),
             World = this,
             PacketBroadcaster = this.PacketBroadcaster,
-            Block = BlocksRegistry.Get(mat)
+            Block = BlocksRegistry.Get(mat),
         };
 
 
@@ -881,7 +884,7 @@ public sealed partial class World : IWorld
 
     public async ValueTask DisposeAsync()
     {
-        foreach ((_, Region region) in Regions)
+        foreach (var region in Regions.Values)
         {
             await region.DisposeAsync();
         }

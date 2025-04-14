@@ -20,55 +20,55 @@ public class ForestDecorator : BaseDecorator
 
     public override void Decorate()
     {
-        if (pos.Y < noise.WaterLevel)
+        if (Position.Y < Noise.WaterLevel)
         {
             FillWater();
             return;
         }
 
-        int worldX = (chunk.X << 4) + pos.X;
-        int worldZ = (chunk.Z << 4) + pos.Z;
+        int worldX = (Chunk.X << 4) + Position.X;
+        int worldZ = (Chunk.Z << 4) + Position.Z;
 
-        chunk.SetBlock(pos, BlocksRegistry.GrassBlock);
+        Chunk.SetBlock(Position, BlocksRegistry.GrassBlock);
         for (int y = -1; y > -4; y--)
-            chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Dirt);
+            Chunk.SetBlock(Position + (0, y, 0), BlocksRegistry.Dirt);
 
-        if (!chunk.GetBlock(pos + (0, 1, 0)).IsAir) { return; }
+        if (!Chunk.GetBlock(Position + (0, 1, 0)).IsAir) { return; }
 
-        var grassNoise = noise.Decoration.GetValue(worldX * 0.1, 0, worldZ * 0.1);
+        var grassNoise = Noise.Decoration.GetValue(worldX * 0.1, 0, worldZ * 0.1);
         if (grassNoise > 0 && grassNoise < 0.1)
-            chunk.SetBlock(pos + (0, 1, 0), BlocksRegistry.ShortGrass);
+            Chunk.SetBlock(Position + (0, 1, 0), BlocksRegistry.ShortGrass);
 
-        if (noise.Decoration.GetValue(worldX * 0.03, 10, worldZ * 0.03) > 0.8)
+        if (Noise.Decoration.GetValue(worldX * 0.03, 10, worldZ * 0.03) > 0.8)
         {
-            chunk.SetBlock(pos, BlocksRegistry.Dirt);
+            Chunk.SetBlock(Position, BlocksRegistry.Dirt);
         }
-        var dandelionNoise = noise.Decoration.GetValue(worldX * 0.1, 1, worldZ * 0.1);
+        var dandelionNoise = Noise.Decoration.GetValue(worldX * 0.1, 1, worldZ * 0.1);
         if (dandelionNoise > 0 && dandelionNoise < 0.05)
         {
-            chunk.SetBlock(pos + (0, 1, 0), BlocksRegistry.Dandelion);
+            Chunk.SetBlock(Position + (0, 1, 0), BlocksRegistry.Dandelion);
             return;
         }
 
-        var peonyNoise = noise.Decoration.GetValue(worldX * 0.1, 2, worldZ * 0.1);
+        var peonyNoise = Noise.Decoration.GetValue(worldX * 0.1, 2, worldZ * 0.1);
         if (peonyNoise > 0.65 && peonyNoise < 0.665)
         {
-            chunk.SetBlock(pos + (0, 1, 0), BlocksRegistry.Peony);
-            chunk.SetBlock(pos + (0, 2, 0), peonyUpperState);
+            Chunk.SetBlock(Position + (0, 1, 0), BlocksRegistry.Peony);
+            Chunk.SetBlock(Position + (0, 2, 0), peonyUpperState);
             return;
         }
 
-        var roseNoise = noise.Decoration.GetValue(worldX * 0.1, 3, worldZ * 0.1);
+        var roseNoise = Noise.Decoration.GetValue(worldX * 0.1, 3, worldZ * 0.1);
         if (roseNoise > 0.17 && roseNoise < 0.185)
         {
-            chunk.SetBlock(pos + (0, 1, 0), BlocksRegistry.RoseBush);
-            chunk.SetBlock(pos + (0, 2, 0), roseBushUpperState);
+            Chunk.SetBlock(Position + (0, 1, 0), BlocksRegistry.RoseBush);
+            Chunk.SetBlock(Position + (0, 2, 0), roseBushUpperState);
             return;
         }
 
-        if (noise.Decoration.GetValue(worldX * 0.75, 4, worldZ * 0.75) > 0.95)
+        if (Noise.Decoration.GetValue(worldX * 0.75, 4, worldZ * 0.75) > 0.95)
         {
-            chunk.SetBlock(pos + (0, 1, 0), sweetBerryBush);
+            Chunk.SetBlock(Position + (0, 1, 0), sweetBerryBush);
         }
     }
 }

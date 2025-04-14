@@ -11,6 +11,8 @@ public class Entity : IEquatable<Entity>, IEntity
 {
     protected virtual ConcurrentDictionary<string, float> Attributes { get; } = new();
 
+    public required IServer Server { get; set; }
+
     public required IPacketBroadcaster PacketBroadcaster { get; init; }
 
     public required IWorld World { get; set; }

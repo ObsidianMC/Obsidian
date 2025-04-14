@@ -29,7 +29,7 @@ public partial record class KeepAlivePacket
     {
         var time = DateTimeOffset.Now;
         var player = client.Player!;
-        var server = client.server;
+        var server = client.Server;
 
         long keepAliveId = time.ToUnixTimeMilliseconds();
         if (keepAliveId - client.lastKeepAliveId > server.Configuration.Network.KeepAliveTimeoutInterval)

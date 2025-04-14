@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -98,7 +99,7 @@ public partial class Server
         await this.Accept(e);
     }
 
-    private Client CreateClient() => new Client(this.EventDispatcher, this, this.loggerFactory, this.userCache, this.serverMetrics);
+    private Client CreateClient() => ActivatorUtilities.CreateInstance<Client>(this.serviceProvider);
 
     public void SendError(SocketError error)
     {

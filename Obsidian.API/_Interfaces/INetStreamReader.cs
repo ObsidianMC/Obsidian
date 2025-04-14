@@ -7,13 +7,12 @@ public interface INetStreamReader : INetStream
     public bool CanRead { get; }
 
     public byte ReadByte();
+    public sbyte ReadSignedByte();
 
     public TEnum ReadSignedByte<TEnum>() where TEnum : Enum;
     public TEnum ReadUnsignedByte<TEnum>() where TEnum : Enum;
     public TEnum ReadVarInt<TEnum>() where TEnum : Enum;
     public TEnum ReadInt<TEnum>() where TEnum : Enum;
-
-   
     
     public bool ReadBoolean();
     public ushort ReadUnsignedShort();

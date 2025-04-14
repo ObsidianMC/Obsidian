@@ -91,7 +91,7 @@ internal static class ChunkBuilder
         }
     }
 
-    internal static void Surface(GenHelper helper, Chunk chunk)
+    internal static void Surface(GenHelper helper, IChunk chunk)
     {
         for (int x = 0; x < 16; x++)
         {
@@ -189,7 +189,7 @@ internal static class ChunkBuilder
         _ => true
     };
 
-    internal static void CavesAndOres(GenHelper helper, Chunk chunk)
+    internal static void CavesAndOres(GenHelper helper, IChunk chunk)
     {
         int chunkOffsetX = chunk.X * 16;
         int chunkOffsetZ = chunk.Z * 16;
@@ -255,7 +255,7 @@ internal static class ChunkBuilder
         }
     }
 
-    internal static void UpdateWGHeightmap(Chunk chunk)
+    internal static void UpdateWGHeightmap(IChunk chunk)
     {
         for (int x = 0; x < 16; x++)
         {
@@ -275,7 +275,7 @@ internal static class ChunkBuilder
         }
     }
 
-    internal static void Heightmaps(Chunk chunk)
+    internal static void Heightmaps(IChunk chunk)
     {
         for (int x = 0; x < 16; x++)
         {

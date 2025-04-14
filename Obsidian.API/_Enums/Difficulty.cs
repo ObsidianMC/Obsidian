@@ -1,5 +1,4 @@
-namespace Obsidian.WorldData;
-
+﻿namespace Obsidian.API;
 public enum Difficulty : byte
 {
     Peaceful,

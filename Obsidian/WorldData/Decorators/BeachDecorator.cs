@@ -11,15 +11,15 @@ public class BeachDecorator : BaseDecorator
 
     public override void Decorate()
     {
-        if (pos.Y < noise.WaterLevel)
+        if (Position.Y < Noise.WaterLevel)
         {
             FillWater();
             return;
         }
 
         for (int y = 0; y > -4; y--)
-            chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Sand);
+            Chunk.SetBlock(Position + (0, y, 0), BlocksRegistry.Sand);
         for (int y = -4; y > -7; y--)
-            chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Sandstone);
+            Chunk.SetBlock(Position + (0, y, 0), BlocksRegistry.Sandstone);
     }
 }

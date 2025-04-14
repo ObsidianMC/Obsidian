@@ -430,7 +430,7 @@ public sealed class MainCommandModule : CommandModuleBase
     {
         if (this.Player is Player player)
         {
-            player.world.LevelData.RainTime = 0;
+            player.World.LevelData.RainTime = 0;
             await this.Sender.SendMessageAsync("Toggled weather for this world.");
         }
     }

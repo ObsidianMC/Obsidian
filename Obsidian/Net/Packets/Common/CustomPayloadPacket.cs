@@ -19,14 +19,14 @@ public partial record class CustomPayloadPacket
 
     public PluginMessageStore? Handle()
     {
-        using var stream = new MinecraftStream(PluginData);
+        using var buffer = new NetworkBuffer(PluginData);
 
         var result = Channel switch
         {
             "minecraft:brand" => new PluginMessageStore
             {
                 Type = PluginMessageType.Brand,
-                Value = stream.ReadString()
+                Value = buffer.ReadString()
             },
             "minecraft:register" => new PluginMessageStore // Payload should be a list of strings
             {
@@ -47,7 +47,7 @@ public partial record class CustomPayloadPacket
     public override void Populate(INetStreamReader reader)
     {
         Channel = reader.ReadString();
-        PluginData = reader.ReadUInt8Array((int)(reader.Length - reader.Position));
+        PluginData = reader.ReadUInt8Array((int)(reader.Size - reader.Offset));
     }
 
     public override void Serialize(INetStreamWriter writer)

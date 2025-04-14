@@ -10,7 +10,7 @@ internal sealed class LoginClientHandler : ClientHandler
 {
     public async override ValueTask<bool> HandleAsync(PacketData packetData)
     {
-        var (id, data) = packetData;
+        var (id, buffer) = packetData;
 
         switch (id)
         {
@@ -21,7 +21,7 @@ internal sealed class LoginClientHandler : ClientHandler
 
                     try
                     {
-                        await this.HandleLoginStartAsync(data);
+                        await this.HandleLoginStartAsync(buffer.Data);
                     }
                     catch { return false; }
 
@@ -31,7 +31,7 @@ internal sealed class LoginClientHandler : ClientHandler
                 {
                     try
                     {
-                        await this.HandleEncryptionResponseAsync(data);
+                        await this.HandleEncryptionResponseAsync(buffer.Data);
                     }
                     catch { return false; }
 
@@ -100,7 +100,7 @@ internal sealed class LoginClientHandler : ClientHandler
             return;
         }
 
-        if (this.Server.Configuration.Whitelist && !this.Server.IsWhitedlisted(username))
+        if (this.Server.Configuration.Whitelist && !this.Server.IsWhitelisted(username))
         {
             await this.Client.DisconnectAsync("You are not whitelisted on this server\nContact server administrator");
         }

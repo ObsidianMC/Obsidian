@@ -14,15 +14,15 @@ public class RiverDecorator : BaseDecorator
     {
         FillWater();
 
-        if (pos.Y <= noise.WaterLevel)
+        if (Position.Y <= Noise.WaterLevel)
         {
-            chunk.SetBlock(pos, BlocksRegistry.Gravel);
+            Chunk.SetBlock(Position, BlocksRegistry.Gravel);
         }
         else
         {
-            chunk.SetBlock(pos, BlocksRegistry.Sand);
+            Chunk.SetBlock(Position, BlocksRegistry.Sand);
             for (int y = -1; y > -4; y--)
-                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Gravel);
+                Chunk.SetBlock(Position + (0, y, 0), BlocksRegistry.Gravel);
         }
     }
 }

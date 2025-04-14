@@ -25,7 +25,7 @@ public sealed class ToolDataComponent : IDataComponent
             CorrectDropForBlocks = reader.ReadOptionalBoolean()
         });
 
-        this.DefaultMiningSpeed = reader.ReadFloat();
+        this.DefaultMiningSpeed = reader.ReadSingle();
         this.DamagePerBlock = reader.ReadVarInt();
     }
 

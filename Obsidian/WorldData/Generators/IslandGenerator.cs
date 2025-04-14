@@ -41,7 +41,7 @@ public sealed class IslandGenerator : IWorldGenerator
         BlocksRegistry.Andesite
     ];
 
-    public async ValueTask<IChunk> GenerateChunkAsync(int cx, int cz, IChunk? chunk = null)
+    public async ValueTask<IChunk> GenerateChunkAsync(int cx, int cz, IChunk? chunk = null, ChunkStatus status = ChunkStatus.full)
     {
         chunk ??= new Chunk(cx, cz);
 

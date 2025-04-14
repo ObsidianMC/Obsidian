@@ -11,20 +11,20 @@ public class FrozenRiverDecorator : BaseDecorator
 
     public override void Decorate()
     {
-        if (pos.Y <= 64)
+        if (Position.Y <= 64)
         {
-            chunk.SetBlock(pos, BlocksRegistry.Gravel);
-            for (int y = 63; y > pos.Y; y--)
+            Chunk.SetBlock(Position, BlocksRegistry.Gravel);
+            for (int y = 63; y > Position.Y; y--)
             {
-                chunk.SetBlock(pos.X, y, pos.Z, BlocksRegistry.Water);
+                Chunk.SetBlock(Position.X, y, Position.Z, BlocksRegistry.Water);
             }
-            chunk.SetBlock(pos.X, 64, pos.Z, BlocksRegistry.Ice);
+            Chunk.SetBlock(Position.X, 64, Position.Z, BlocksRegistry.Ice);
         }
         else
         {
-            chunk.SetBlock(pos, BlocksRegistry.Sand);
+            Chunk.SetBlock(Position, BlocksRegistry.Sand);
             for (int y = -1; y > -4; y--)
-                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Sand);
+                Chunk.SetBlock(Position + (0, y, 0), BlocksRegistry.Sand);
         }
     }
 }

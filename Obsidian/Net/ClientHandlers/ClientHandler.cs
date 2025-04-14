@@ -6,9 +6,9 @@ using Obsidian.Utilities.Collections;
 namespace Obsidian.Net.ClientHandlers;
 internal abstract class ClientHandler
 {
-    protected Server Server => this.Client.server;
+    protected Server Server => (Server)this.Client.Server;
     protected ILogger Logger => this.Client.Logger;
-    protected Player? Player => this.Client.Player;
+    protected Player? Player => (Player)this.Client.Player;
 
     public required Client Client { get; init; }
 
@@ -20,7 +20,7 @@ internal abstract class ClientHandler
         var success = true;
         try
         {
-            using var mcStream = new MinecraftStream(data);
+            using var mcStream = new NetworkBuffer(data);
             packet.Populate(mcStream);
             await packet.HandleAsync(this.Server, this.Player);
         }

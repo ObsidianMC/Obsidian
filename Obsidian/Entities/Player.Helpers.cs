@@ -163,7 +163,7 @@ public partial class Player
 
     public async ValueTask UpdatePlayerInfoAsync()
     {
-        var server = client.server;
+        var server = client.Server;
 
         var dict = new Dictionary<Guid, List<InfoAction>>();
         foreach (var player in server.OnlinePlayers.Values)
@@ -198,7 +198,7 @@ public partial class Player
     {
         ArgumentNullException.ThrowIfNull(player, nameof(player));
 
-        var server = client.server;
+        var server = client.Server;
 
         var addAction = new AddPlayerInfoAction
         {

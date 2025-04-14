@@ -6,6 +6,7 @@ namespace Obsidian.API;
 public interface INetStreamWriter : INetStream
 {
     public bool CanWrite { get; }
+    public void Write(INetStream buffer);
     public void WriteByte(sbyte value);
     public void WriteByte(Enum value);
     public void WriteByte(byte value);

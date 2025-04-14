@@ -16,7 +16,7 @@ public sealed record class UseCooldownDataComponent : IDataComponent
 
     public void Read(INetStreamReader reader)
     {
-        this.Seconds = reader.ReadFloat();
+        this.Seconds = reader.ReadSingle();
         this.CooldownGroup = reader.ReadOptionalString();
     }
 

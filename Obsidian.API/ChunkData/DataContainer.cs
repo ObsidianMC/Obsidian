@@ -3,6 +3,7 @@
 namespace Obsidian.API.ChunkData;
 public abstract class DataContainer<T>
 {
+    public bool IsEmpty { get; }
     public byte BitsPerEntry => (byte)DataArray.BitsPerEntry;
 
     public abstract IPalette<T> Palette { get; internal set; }

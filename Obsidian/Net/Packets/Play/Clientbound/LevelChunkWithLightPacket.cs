@@ -1,6 +1,7 @@
 ﻿using Obsidian.API.Utilities;
 using Obsidian.Nbt;
 using Obsidian.WorldData;
+using System.IO;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
@@ -14,35 +15,39 @@ public partial class LevelChunkWithLightPacket(Chunk chunk)
         writer.WriteInt(Chunk.Z);
 
         //Chunk.CalculateHeightmap();
-        using (var heightmapStream = new MinecraftStream())
+        using (var heightmapBuffer = new NetworkBuffer())
         {
-            var nbtWriter = new NbtWriter(heightmapStream, true);
+            using var ms = new MemoryStream(heightmapBuffer.Data);
+            var nbtWriter = new NbtWriter(ms, true);
+
             foreach (var (type, heightmap) in Chunk.Heightmaps)
-                if (type == ChunkData.HeightmapType.MotionBlocking)
+                if (type == HeightmapType.MotionBlocking)
                     nbtWriter.WriteTag(new NbtArray<long>(type.ToString().ToSnakeCase().ToUpper(), heightmap.GetDataArray()));
 
             nbtWriter.EndCompound();
             nbtWriter.TryFinish();
 
-            heightmapStream.Position = 0;
-            heightmapStream.CopyTo((MinecraftStream)writer);
+            ms.Position = 0;
+
+            heightmapBuffer.Reserve(ms.Length);
+            ms.Read(heightmapBuffer.Data, 0, (int)ms.Length);
+
+            writer.Write(heightmapBuffer);
         }
 
-        using (var sectionStream = new MinecraftStream())
+        using (var sectionBuffer = new NetworkBuffer())
         {
             foreach (var section in Chunk.Sections)
             {
-                if (section is { BlockStateContainer.IsEmpty: false })
+                if (!section.BlockStateContainer.IsEmpty)
                 {
-                    section.BlockStateContainer.WriteTo(sectionStream);
-                    section.BiomeContainer.WriteTo(sectionStream);
+                    section.BlockStateContainer.WriteTo(sectionBuffer);
+                    section.BiomeContainer.WriteTo(sectionBuffer);
                 }
             }
 
-            sectionStream.Position = 0;
-
-            writer.WriteVarInt((int)sectionStream.Length);
-            sectionStream.CopyTo((MinecraftStream)writer);
+            writer.WriteVarInt((int)sectionBuffer.Size);
+            writer.Write(sectionBuffer);
         }
 
         // Num block entities

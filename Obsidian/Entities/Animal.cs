@@ -7,7 +7,7 @@ public class Animal : AgeableMob
     public async override ValueTask TickAsync()
     {
         // TODO obby doesn't properly spawn entities yet
-        var players = world.PlayersInRange((Vector)Position);
+        var players = World.PlayersInRange((Vector)Position);
         if (players.Any())
         {
             var closest = players.OrderBy(p => VectorF.Distance(Position, p.Position)).First();

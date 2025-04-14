@@ -12,7 +12,7 @@ using System.Reflection;
 
 namespace Obsidian.Services;
 
-public sealed class EventDispatcher : IDisposable
+public sealed class EventDispatcher : IEventDispatcher
 {
     private static readonly Type eventPriorityAttributeType = typeof(EventPriorityAttribute);
     private static readonly Type baseMinecraftEventArgsType = typeof(BaseMinecraftEventArgs);
@@ -205,13 +205,4 @@ public sealed class EventDispatcher : IDisposable
             values.Clear();
         }
     }
-}
-
-public enum EventResult
-{
-    Cancelled,
-
-    Completed,
-
-    Failed
 }

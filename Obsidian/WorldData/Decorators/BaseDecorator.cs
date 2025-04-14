@@ -1,5 +1,4 @@
-﻿using Obsidian.Registries;
-using Obsidian.WorldData.Generators;
+﻿using Obsidian.WorldData.Generators;
 using Obsidian.WorldData.Generators.Overworld;
 
 namespace Obsidian.WorldData.Decorators;
@@ -8,20 +7,20 @@ public abstract class BaseDecorator : IDecorator
 {
     public DecoratorFeatures Features { get; }
 
-    protected Biome biome;
+    protected Biome Biome { get; }
 
-    protected Chunk chunk;
+    protected IChunk Chunk { get; }
 
-    protected Vector pos;
+    protected Vector Position { get; }
 
-    protected OverworldTerrainNoise noise;
+    protected OverworldTerrainNoise Noise { get; }
 
-    protected BaseDecorator(Biome biome, Chunk chunk, Vector pos, GenHelper helper)
+    protected BaseDecorator(Biome biome, IChunk chunk, Vector pos, GenHelper helper)
     {
-        this.biome = biome;
-        this.chunk = chunk;
-        this.pos = pos;
-        this.noise = helper.Noise;
+        this.Biome = biome;
+        this.Chunk = chunk;
+        this.Position = pos;
+        this.Noise = helper.Noise;
 
         Features = new DecoratorFeatures();
     }
@@ -44,11 +43,11 @@ public abstract class BaseDecorator : IDecorator
 
     protected void FillSand()
     {
-        if (chunk is null) { return; }
+        if (Chunk is null) { return; }
 
-        if (pos.Y <= noise.WaterLevel)
+        if (Position.Y <= Noise.WaterLevel)
         {
-            chunk.SetBlock(pos, BlocksRegistry.Sand);
+            Chunk.SetBlock(Position, BlocksRegistry.Sand);
         }
     }
 }

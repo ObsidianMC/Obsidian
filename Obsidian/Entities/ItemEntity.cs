@@ -30,7 +30,7 @@ public partial class ItemEntity : Entity
         if (!CanPickup && DateTimeOffset.UtcNow - this.TimeDropped > DropWaitTime)
             this.CanPickup = true;
 
-        foreach (var ent in this.world.GetNonPlayerEntitiesInRange(this.Position, 0.5f))
+        foreach (var ent in this.World.GetNonPlayerEntitiesInRange(this.Position, 0.5f))
         {
             if (ent is not ItemEntity itemEntity)
                 continue;

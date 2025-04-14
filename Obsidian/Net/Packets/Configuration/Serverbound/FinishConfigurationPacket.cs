@@ -38,9 +38,9 @@ public sealed partial class FinishConfigurationPacket
             EnableRespawnScreen = true,
         });
 
-        await client.QueuePacketAsync(new SetDefaultSpawnPositionPacket(player.world.LevelData.SpawnPosition, 0));
-        await client.QueuePacketAsync(new SetTimePacket(player.world.LevelData.Time, player.world.LevelData.DayTime, true));
-        await client.QueuePacketAsync(new GameEventPacket(player.world.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
+        await client.QueuePacketAsync(new SetDefaultSpawnPositionPacket(player.World.LevelData.SpawnPosition, 0));
+        await client.QueuePacketAsync(new SetTimePacket(player.World.LevelData.Time, player.World.LevelData.DayTime, true));
+        await client.QueuePacketAsync(new GameEventPacket(player.World.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
 
         await client.QueuePacketAsync(CustomPayloadPacket.ClientboundPlay with { Channel = "minecraft:brand", PluginData = server.BrandData });
         await client.QueuePacketAsync(CommandsRegistry.Packet);
