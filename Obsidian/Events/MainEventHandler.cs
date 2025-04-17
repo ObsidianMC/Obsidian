@@ -17,7 +17,7 @@ public sealed class MainEventHandler : MinecraftEventHandler
         var server = e.Server;
 
         //TODO add bool for sending secure chat messages
-        ChatColor nameColor = e.Player.IsOperator ? ChatColor.BrightGreen : ChatColor.Gray;
+        ChatColor nameColor = e.Server.Operators.IsOperator(e.Player) ? ChatColor.BrightGreen : ChatColor.Gray;
         server.BroadcastMessage(ChatMessage.Simple(e.Player.Username, nameColor).AppendText($": {e.Message}", ChatColor.White));
 
         return Task.CompletedTask;
@@ -277,7 +277,7 @@ public sealed class MainEventHandler : MinecraftEventHandler
 
             if (container is IBlockEntity)
             {
-                var tileEntity = await player.world.GetBlockEntityAsync(blockPosition);
+                var tileEntity = await player.World.GetBlockEntityAsync(blockPosition);
 
                 if (tileEntity == null)
                 {
@@ -292,7 +292,7 @@ public sealed class MainEventHandler : MinecraftEventHandler
                         new NbtTag<string>("CustomName", container.Title.ToJson())
                     };
 
-                    await player.world.SetBlockEntity(blockPosition, tileEntity);
+                    await player.World.SetBlockEntity(blockPosition, tileEntity);
                 }
                 else if (tileEntity is NbtCompound)
                 {
@@ -326,7 +326,7 @@ public sealed class MainEventHandler : MinecraftEventHandler
 
         await player.SaveAsync();
 
-        player.world.TryRemovePlayer(player);
+        player.World.TryRemovePlayer(player);
 
         var destroy = new RemoveEntitiesPacket(player.EntityId);
 
@@ -353,8 +353,8 @@ public sealed class MainEventHandler : MinecraftEventHandler
         var joined = e.Player as Player;
         var server = e.Server as Server;
 
-        joined!.world.TryAddPlayer(joined);
-        joined!.world.TryAddEntity(joined);
+        joined!.World.TryAddPlayer(joined);
+        joined!.World.TryAddEntity(joined);
 
         server!.BroadcastMessage(new ChatMessage
         {

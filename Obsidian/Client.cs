@@ -41,7 +41,6 @@ public sealed partial class Client : IClient
     private readonly IUserCache userCache;
     private readonly ServerMetrics serverMetrics;
     private readonly IServiceProvider serviceProvider;
-    private readonly PlayerFactory playerFactory;
 
     /// <summary>
     /// Whether this client is disposed.

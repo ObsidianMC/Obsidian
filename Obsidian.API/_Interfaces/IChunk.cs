@@ -39,5 +39,14 @@ public interface IChunk
     [EditorBrowsable(EditorBrowsableState.Never)]
     public void SetChunkStatus(ChunkStatus status);
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public void WriteLightMaskTo(INetStreamWriter writer, LightType lt);
+
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public void WriteEmptyLightMaskTo(INetStreamWriter writer, LightType lt);
+
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public void WriteLightTo(INetStreamWriter writer, LightType lt);
+
     public IChunk Clone(int x, int z);
 }

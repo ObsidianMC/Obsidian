@@ -4,8 +4,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Obsidian.API.Configuration;
 using Obsidian.Hosting;
-using Obsidian.Registries;
-using Obsidian.Services;
 using Obsidian.WorldData.Generators;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -92,6 +90,7 @@ public sealed class WorldManager(ILoggerFactory loggerFactory, IServiceProvider 
             {
                 Configuration = this.configuration.CurrentValue,
                 PacketBroadcaster = this.serviceScope.ServiceProvider.GetRequiredService<IPacketBroadcaster>(),
+                EventDispatcher = this.serviceScope.ServiceProvider.GetRequiredService<IEventDispatcher>(),
                 Name = serverWorld.Name,
                 Seed = serverWorld.Seed
             };

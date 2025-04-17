@@ -5,9 +5,9 @@ using System.IO;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class LevelChunkWithLightPacket(Chunk chunk)
+public partial class LevelChunkWithLightPacket(IChunk chunk)
 {
-    public Chunk Chunk { get; } = chunk;
+    public IChunk Chunk { get; } = chunk;
 
     public override void Serialize(INetStreamWriter writer)
     {

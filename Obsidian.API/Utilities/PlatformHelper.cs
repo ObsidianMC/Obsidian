@@ -1,5 +1,4 @@
-﻿namespace Obsidian.Concurrency;
-
+﻿namespace Obsidian.API.Utilities;
 internal static class PlatformHelper
 {
     private const int ProcessorCountRefreshIntervalMs = 30000;

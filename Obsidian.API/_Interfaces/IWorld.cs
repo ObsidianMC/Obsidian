@@ -23,6 +23,9 @@ public interface IWorld : IAsyncDisposable
     public int LoadedChunkCount { get; }
     public int ChunksToGenCount { get; }
 
+    public IPacketBroadcaster PacketBroadcaster { get; }
+    public IEventDispatcher EventDispatcher { get; }
+
     public IEntitySpawner GetNewEntitySpawner();
 
     public IEnumerable<IEntity> GetNonPlayerEntitiesInRange(VectorF location, float distance);
@@ -44,6 +47,9 @@ public interface IWorld : IAsyncDisposable
     public ValueTask SetBlockUntrackedAsync(int x, int y, int z, IBlock block, bool doBlockUpdate = false);
 
     public ValueTask<int?> GetWorldSurfaceHeightAsync(int x, int z);
+
+    public bool TryAddEntity(IEntity entity);
+    public bool TryAddPlayer(IPlayer player);
 
     public IEntity SpawnEntity(VectorF position, EntityType type);
     public IEntity SpawnFallingBlock(VectorF position, Material mat);

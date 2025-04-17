@@ -4,7 +4,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
 using Obsidian.API.Inventory;
-using Obsidian.Concurrency;
 using Obsidian.Nbt;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets;
@@ -40,11 +39,11 @@ public sealed partial class Player : Living, IPlayer
     /// </summary>
     public ConcurrentHashSet<long> LoadedChunks { get; internal set; } = [];
 
-    public bool IsOperator => this.Server.Operators.IsOperator(this);
-
     public string Username { get; }
 
     public ClientInformation ClientInformation { get; internal set; }
+
+    public required IServer Server { get; init; }
 
     /// <summary>
     /// The players inventory.
@@ -134,7 +133,7 @@ public sealed partial class Player : Living, IPlayer
 
     [SetsRequiredMembers]
     internal Player(Guid uuid, string username, IClient client, IWorld world, 
-        IPacketBroadcaster packetBroadcaster, IServer server) 
+        IPacketBroadcaster packetBroadcaster) 
     {
         Uuid = uuid;
         Username = username;
@@ -160,7 +159,6 @@ public sealed partial class Player : Living, IPlayer
 
         this.client = client;
         this.PacketBroadcaster = packetBroadcaster;
-        this.Server = server;
     }
 
     public ItemStack? GetHeldItem() => Inventory.GetItem(inventorySlot);
@@ -220,7 +218,7 @@ public sealed partial class Player : Living, IPlayer
 
         var tid = Globals.Random.Next(0, 999);
 
-        await Server.EventDispatcher.ExecuteEventAsync(
+        await EventDispatcher.ExecuteEventAsync(
             new PlayerTeleportEventArgs
             (
                 this,
@@ -320,7 +318,7 @@ public sealed partial class Player : Living, IPlayer
         await client.QueuePacketAsync(packet);
     }
 
-    public async ValueTask KickAsync(string reason) => await client.DisconnectAsync(reason);
+    public async ValueTask KickAsync(string reason) => await this.client.DisconnectAsync(reason);
     public async ValueTask KickAsync(ChatMessage reason) => await client.DisconnectAsync(reason);
 
     public async Task RespawnAsync(DataKept dataKept = DataKept.Metadata)
@@ -329,20 +327,20 @@ public sealed partial class Player : Living, IPlayer
         {
             // if unalive, reset health and set location to world spawn
             Health = 20f;
-            Position = world.LevelData.SpawnPosition;
+            Position = World.LevelData.SpawnPosition;
         }
 
-        CodecRegistry.TryGetDimension(world.DimensionName, out var codec);
+        CodecRegistry.TryGetDimension(World.DimensionName, out var codec);
         Debug.Assert(codec is not null); // TODO Handle missing codec
 
-        Logger.LogDebug("Loading into world: {}", world.Name);
+        Logger.LogDebug("Loading into world: {}", World.Name);
 
         await client.QueuePacketAsync(new RespawnPacket
         {
             CommonPlayerSpawnInfo = new()
             {
                 DimensionType = codec.Id,
-                DimensionName = world.DimensionName,
+                DimensionName = World.DimensionName,
                 Gamemode = Gamemode,
                 PreviousGamemode = Gamemode,
                 HashedSeed = 0,
@@ -405,17 +403,18 @@ public sealed partial class Player : Living, IPlayer
         writer.WriteEntityMetadataType(18, EntityMetadataType.Byte);
         writer.WriteByte((byte)ClientInformation.MainHand);
 
-        if (LeftShoulder is not null)
-        {
-            writer.WriteEntityMetadataType(19, EntityMetadataType.Nbt);
-            ((MinecraftStream)writer).WriteNbtCompound(new NbtCompound());
-        }
+        //TODO fix possibly an extension method?
+        //if (LeftShoulder is not null)
+        //{
+        //    writer.WriteEntityMetadataType(19, EntityMetadataType.Nbt);
+        //    ((MinecraftStream)writer).WriteNbtCompound(new NbtCompound());
+        //}
 
-        if (RightShoulder is not null)
-        {
-            writer.WriteEntityMetadataType(20, EntityMetadataType.Nbt);
-            ((MinecraftStream)writer).WriteNbtCompound(new NbtCompound());
-        }
+        //if (RightShoulder is not null)
+        //{
+        //    writer.WriteEntityMetadataType(20, EntityMetadataType.Nbt);
+        //    ((MinecraftStream)writer).WriteNbtCompound(new NbtCompound());
+        //}
     }
 
     public async ValueTask SetGamemodeAsync(Gamemode gamemode)
@@ -525,7 +524,7 @@ public sealed partial class Player : Living, IPlayer
         await SavePermsAsync();
 
         if (result)
-            await this.client.Server.EventDispatcher.ExecuteEventAsync(new PermissionGrantedEventArgs(this, this.client.Server, permissionNode));
+            await this.EventDispatcher.ExecuteEventAsync(new PermissionGrantedEventArgs(this, this.Server, permissionNode));
 
         return result;
     }
@@ -547,7 +546,7 @@ public sealed partial class Player : Living, IPlayer
                 parent.Children.Remove(childToRemove);
 
                 await this.SavePermsAsync();
-                await this.client.Server.EventDispatcher.ExecuteEventAsync(new PermissionRevokedEventArgs(this, this.client.Server, permissionNode));
+                await this.Server.EventDispatcher.ExecuteEventAsync(new PermissionRevokedEventArgs(this, this.Server, permissionNode));
 
                 return true;
             }
@@ -668,7 +667,7 @@ public sealed partial class Player : Living, IPlayer
         foreach (var value in clientNeededChunks)
         {
             NumericsHelper.LongToInts(value, out var x, out var z);
-            var chunk = await world.GetChunkAsync(x, z);
+            var chunk = await World.GetChunkAsync(x, z);
             if (chunk is not null && chunk.IsGenerated)
             {
                 await client.QueuePacketAsync(new LevelChunkWithLightPacket(chunk));

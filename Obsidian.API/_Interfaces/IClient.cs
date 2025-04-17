@@ -21,5 +21,6 @@ public interface IClient : IDisposable
 
     public bool SendPacket(IClientboundPacket packet);
 
+    public ValueTask DisconnectAsync(ChatMessage reason);
     public ValueTask QueuePacketAsync(IClientboundPacket packet);
 }

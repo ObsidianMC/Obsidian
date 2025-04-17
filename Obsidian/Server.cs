@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -8,10 +7,8 @@ using Obsidian.API.Boss;
 using Obsidian.API.Configuration;
 using Obsidian.API.Crafting;
 using Obsidian.API.Events;
-using Obsidian.API.Utilities;
 using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Entities;
-using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
@@ -24,7 +21,6 @@ using Obsidian.Services;
 using Obsidian.WorldData;
 using System.Diagnostics;
 using System.IO;
-using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Text;
@@ -354,12 +350,12 @@ public sealed partial class Server : IServer
         }
     }
 
-    internal IEnumerable<Player> PlayersInRange(World world, Vector worldPosition)
+    internal IEnumerable<IPlayer> PlayersInRange(World world, Vector worldPosition)
     {
         var (x, z) = worldPosition.ToChunkCoord();
 
         var packedXZ = NumericsHelper.IntsToLong(x, z);
-        return world.Players.Select(entry => entry.Value).Where(player => player.LoadedChunks.Contains(packedXZ));
+        return world.Players.Values.Where(player => player.LoadedChunks.Contains(packedXZ));
     }
 
     internal void BroadcastBlockChange(World world, IBlock block, Vector location)

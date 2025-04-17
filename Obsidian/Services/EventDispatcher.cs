@@ -181,7 +181,7 @@ public sealed class EventDispatcher : IEventDispatcher
         {
             try
             {
-                await @event.Execute(serviceScope.ServiceProvider, new[] { eventArgs });
+                await @event.Execute(serviceScope.ServiceProvider, [eventArgs]);
 
                 if (eventArgs is ICancellable cancellable && cancellable.IsCancelled)
                     eventResult = EventResult.Cancelled;

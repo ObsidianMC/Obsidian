@@ -1,8 +1,5 @@
 ﻿using Obsidian.API.AI;
-using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Services;
-using Obsidian.WorldData;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.Entities;
@@ -11,12 +8,10 @@ public class Entity : IEquatable<Entity>, IEntity
 {
     protected virtual ConcurrentDictionary<string, float> Attributes { get; } = new();
 
-    public required IServer Server { get; set; }
-
-    public required IPacketBroadcaster PacketBroadcaster { get; init; }
-
     public required IWorld World { get; set; }
 
+    public IPacketBroadcaster PacketBroadcaster => this.World.PacketBroadcaster;
+    public IEventDispatcher EventDispatcher => this.World.EventDispatcher;
 
     #region Location properties
     public VectorF LastPosition { get; set; }

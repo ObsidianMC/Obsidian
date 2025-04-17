@@ -3,12 +3,10 @@ using Microsoft.Extensions.Logging;
 using Obsidian.API.Configuration;
 using Obsidian.API.Entities;
 using Obsidian.API.Registry.Codecs.Dimensions;
-using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Entities.Factories;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Services;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -75,6 +73,7 @@ public sealed partial class World : IWorld
     public int LoadedChunkCount => this.Regions.Values.Sum(x => x.LoadedChunkCount);
 
     public required IPacketBroadcaster PacketBroadcaster { get; init; }
+    public required IEventDispatcher EventDispatcher { get; init; }
     public required ServerConfiguration Configuration { get; init; }
 
     public Gamemode DefaultGamemode => LevelData.DefaultGamemode;
@@ -85,11 +84,7 @@ public sealed partial class World : IWorld
 
     private static Semaphore _regionLock;
 
-
-    /// <summary>
-    /// Used to log actions caused by the client.
-    /// </summary>
-    protected ILogger Logger { get; }
+    private ILogger Logger { get; }
 
     internal World(ILogger logger, Type generatorType, IWorldManager worldManager)
     {
@@ -570,7 +565,7 @@ public sealed partial class World : IWorld
         if (LevelData.Time > 0 && LevelData.Time % (20 * 30) == 0)
         {
             var chunksToKeep = new List<long>();
-            Players.Values.Where(p => p.World == this).ForEach(p =>
+            Players.Values.ForEach(p =>
             {
                 chunksToKeep.AddRange(p.LoadedChunks);
             });
@@ -625,15 +620,14 @@ public sealed partial class World : IWorld
         // offset position so it spawns in the right spot
         position.X += 0.5f;
         position.Z += 0.5f;
+
         FallingBlock entity = new(position)
         {
             Type = EntityType.FallingBlock,
             EntityId = Server.GetNextEntityId(),
             World = this,
-            PacketBroadcaster = this.PacketBroadcaster,
             Block = BlocksRegistry.Get(mat),
         };
-
 
         entity.SpawnEntity(null, entity.Block.GetHashCode());
 
@@ -675,6 +669,7 @@ public sealed partial class World : IWorld
         var dimensionWorld = new World(this.Logger, generatorType, this.WorldManager)
         {
             PacketBroadcaster = this.PacketBroadcaster,
+            EventDispatcher = this.EventDispatcher,
             Configuration = this.Configuration,
             Name = codec.Name.TrimResourceTag(true),
             Seed = this.Seed
@@ -868,7 +863,7 @@ public sealed partial class World : IWorld
         Logger.LogWarning("Failed to set World Spawn.");
     }
 
-    internal bool TryAddEntity(Entity entity)
+    public bool TryAddEntity(IEntity entity)
     {
         var (chunkX, chunkZ) = entity.Position.ToChunkCoord();
 

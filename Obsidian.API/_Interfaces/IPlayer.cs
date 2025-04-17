@@ -1,9 +1,12 @@
 using Obsidian.API.Inventory;
+using Obsidian.API.Utilities.Concurrency;
 
 namespace Obsidian.API;
 
 public interface IPlayer : ILiving
 {
+    public ConcurrentHashSet<long> LoadedChunks { get; }
+
     public Container Inventory { get; }
     public Container EnderInventory { get; }
     public BaseContainer? OpenedContainer { get; set; }
@@ -13,8 +16,6 @@ public interface IPlayer : ILiving
     public ClientInformation ClientInformation { get; }
 
     public string Username { get; }
-
-    public bool IsOperator { get; }
 
     public Vector? LastDeathLocation { get; set; }
 
