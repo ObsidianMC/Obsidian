@@ -85,12 +85,12 @@ public static class DependencyInjection
                     tracing.SetSampler<AlwaysOnSampler>();
                 }
 
-                tracing.AddConsoleExporter();
+                //tracing.AddConsoleExporter();
                 tracing.AddHttpClientInstrumentation();
             })
             .WithMetrics(metrics =>
             {
-                metrics.AddConsoleExporter();
+                //metrics.AddConsoleExporter();
 
                 metrics.AddRuntimeInstrumentation().AddMeter("Obsidian.Server", "Obsidian.Client", "System.Net.Http");
             });
