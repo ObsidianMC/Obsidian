@@ -1,4 +1,5 @@
-﻿using Obsidian.API.Inventory;
+﻿using Obsidian.API.BlockStates;
+using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.Nbt;
 using Obsidian.Serialization.Attributes;
@@ -25,7 +26,7 @@ public partial class NetworkBuffer : INetStreamReader
 
     [ReadMethod, VarLength]
     public int ReadVarInt()
-    {
+   {
         int numRead = 0;
         int result = 0;
         byte read;
@@ -308,11 +309,11 @@ public partial class NetworkBuffer : INetStreamReader
     {
         this.ValidateOffset();
 
-        var buffer = this.data[(int)this.offset..size];
+        var span = this.AsSpan(size);
 
         this.offset += size;
 
-        return buffer;
+        return span.ToArray();
     }
 
     #endregion

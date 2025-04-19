@@ -52,10 +52,12 @@ public partial class NetworkBuffer
     /// <summary>
     /// Get a span of bytes from the current buffer
     /// </summary>
-    public Span<byte> AsSpan()
-    {
-        return new Span<byte>(data, (int)offset, (int)size);
-    }
+    public Span<byte> AsSpan() => new(data, (int)offset, (int)size);
+
+    /// <summary>
+    /// Get a span of bytes from the current buffer with the specified size.
+    /// </summary>
+    public Span<byte> AsSpan(int size) => new(data, (int)offset, size);
 
     /// <summary>
     /// Clear the current buffer and its offset

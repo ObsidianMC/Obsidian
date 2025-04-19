@@ -13,6 +13,7 @@ using Obsidian.Utilities.Mojang;
 using System.Collections.Frozen;
 using System.Diagnostics;
 using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Channels;
 
@@ -302,10 +303,15 @@ public sealed partial class Client : IClient
 
         disposed = true;
 
-        cancellationSource?.Dispose();
+        try
+        {
+            cancellationSource?.Dispose();
 
-        this.sendEvent.Dispose();
-        this.receiveEvent.Dispose();
+            this.sendEvent.Dispose();
+            this.receiveEvent.Dispose();
+            this.Socket.Dispose();
+        }
+        catch (ObjectDisposedException) { }
 
         GC.SuppressFinalize(this);
     }
@@ -366,14 +372,34 @@ public sealed partial class Client : IClient
         this.Logger = this.loggerFactory.CreateLogger($"Client({this.Id})");
     }
 
-    private void Disconnect()
+    public void Disconnect()
     {
         cancellationSource.Cancel();
         Disconnected?.Invoke(this);
 
+        try
+        {
+            this.Socket.Shutdown(SocketShutdown.Both);
+        }
+        catch (SocketException) { }
+
+        this.Socket.Close();
+
+        this.Connected = false;
+
+        this.receiving = false;
+        this.sending = false;
+
+        lock(this.sendLock)
+        {
+            this.sendBufferMain.Clear();
+            this.sendBufferFlush.Clear();
+
+            this.sendBufferFlushOffset = 0;
+        }
+
         this.Dispose();
     }
 
-    private IPlayer CreatePlayer(Guid uuid, string username, IWorld world) =>
-     ActivatorUtilities.CreateInstance<Player>(this.serviceProvider, uuid, username, this, world);
+    private IPlayer CreatePlayer(Guid uuid, string username, IWorld world) => ActivatorUtilities.CreateInstance<Player>(this.serviceProvider, uuid, username, this, world);
 }

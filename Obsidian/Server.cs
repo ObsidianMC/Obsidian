@@ -309,6 +309,8 @@ public sealed partial class Server : IServer
 
         _logger.LogInformation("Listening for new clients...");
 
+        await this.StartAsync(this.Port);
+
         try
         {
             await Task.WhenAll(serverTasks);
@@ -416,7 +418,7 @@ public sealed partial class Server : IServer
         foreach (var client in this.Connections.Values)
         {
             await client.DisconnectAsync("Server shutdown");
-            client.Dispose();
+            client.Disconnect();
         }
 
         _logger.LogDebug("Flushing and disposing regions");

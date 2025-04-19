@@ -29,7 +29,7 @@ public partial class Client
     public Socket Socket { get; private set; }
 
 
-    internal void Connect(Socket socket)
+    internal async ValueTask ConnectAsync(Socket socket)
     {
         this.Socket = socket;
 
@@ -43,13 +43,13 @@ public partial class Client
         this.sendEvent = new();
         this.sendEvent.Completed += OnAsyncCompleted;
 
-        this.Socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.NoDelay, true);
-
         this.receiveBuffer.Reserve(MaxBufferSize);
         this.sendBufferMain.Reserve(MaxBufferSize);
         this.sendBufferFlush.Reserve(MaxBufferSize);
 
         this.Connected = true;
+
+        await this.TryReceive();
     }
 
     private int Send(byte[] buffer, int offset, int count) => Send(buffer.AsSpan(offset, count));
@@ -125,14 +125,14 @@ public partial class Client
     #region Processing 
     private async ValueTask TryReceive()
     {
-        if (!this.Connected)
+        if (this.receiving || !this.Connected)
             return;
 
         var process = true;
 
         while (process)
         {
-            process = true;
+            process = false;
 
             try
             {

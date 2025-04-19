@@ -25,7 +25,7 @@ public partial class Server
 
     public bool Started { get; private set; }
 
-    public async ValueTask Start(int port)
+    public async ValueTask StartAsync(int port)
     {
         var endpoint = new IPEndPoint(IPAddress.Any, port);
 
@@ -68,7 +68,7 @@ public partial class Server
         {
             var client = this.CreateClient();
 
-            client.Connect(e.AcceptSocket);
+            await client.ConnectAsync(e.AcceptSocket);
 
             if (!this.WorldManager.ReadyToJoin)
             {
