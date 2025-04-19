@@ -4,7 +4,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
 using Obsidian.API.Inventory;
-using Obsidian.Nbt;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -21,18 +20,15 @@ public sealed partial class Player : Living, IPlayer
 {
     private byte containerId = 0;
 
-    internal readonly IClient client;
+    public IClient Client { get; internal set; }
 
     internal ILogger Logger { get; set; }
 
     internal HashSet<IPlayer> visiblePlayers = [];
 
-    //TODO: better name??
-    internal short inventorySlot = 36;
+    public bool IsDragging { get; set; }
 
-    internal bool isDragging;
-
-    internal int TeleportId { get; set; }
+    public int TeleportId { get; set; }
 
     // <summary>
     /// Which chunks the player should have loaded around them.
@@ -41,7 +37,7 @@ public sealed partial class Player : Living, IPlayer
 
     public string Username { get; }
 
-    public ClientInformation ClientInformation { get; internal set; }
+    public ClientInformation ClientInformation { get; set; }
 
     public required IServer Server { get; init; }
 
@@ -57,7 +53,7 @@ public sealed partial class Player : Living, IPlayer
 
     public Vector? LastDeathLocation { get; set; }
 
-    public ItemStack? LastClickedItem { get; internal set; }
+    public ItemStack? LastClickedItem { get; set; }
 
     public IBlock? LastClickedBlock { get; internal set; }
 
@@ -78,7 +74,7 @@ public sealed partial class Player : Living, IPlayer
         }
     }
 
-    public PlayerAbility Abilities { get; internal set; }
+    public PlayerAbility Abilities { get; set; }
 
     public IScoreboard? CurrentScoreboard { get; set; }
 
@@ -91,19 +87,19 @@ public sealed partial class Player : Living, IPlayer
     public short HurtTime { get; set; }
     public short SleepTimer { get; set; }
 
-    public short CurrentSlot
+    public short CurrentHeldItemSlot
     {
-        get => (short)(inventorySlot - 36);
-        internal set
+        get => (short)(field - 36);
+        set
         {
             if (value is < 0 or > 8)
                 throw new IndexOutOfRangeException("Value must be >= 0 or <= 8");
 
-            inventorySlot = (short)(value + 36);
+            field = (short)(value + 36);
         }
     }
 
-    public int Ping => client.Ping;
+    public int Ping => Client.Ping;
     public int FoodLevel { get; set; }
     public int FoodTickTimer { get; set; }
     public int XpLevel { get; set; }
@@ -129,11 +125,10 @@ public sealed partial class Player : Living, IPlayer
     public string PersistentDataFile { get; }
     public string PersistentDataBackupFile { get; }
 
-    public string? ClientIP => client.Ip;
+    public string? ClientIP => Client.Ip;
 
     [SetsRequiredMembers]
-    internal Player(Guid uuid, string username, IClient client, IWorld world, 
-        IPacketBroadcaster packetBroadcaster) 
+    internal Player(Guid uuid, string username, IClient client, IWorld world) 
     {
         Uuid = uuid;
         Username = username;
@@ -157,11 +152,10 @@ public sealed partial class Player : Living, IPlayer
 
         Health = 20f;
 
-        this.client = client;
-        this.PacketBroadcaster = packetBroadcaster;
+        this.Client = client;
     }
 
-    public ItemStack? GetHeldItem() => Inventory.GetItem(inventorySlot);
+    public ItemStack? GetHeldItem() => Inventory.GetItem(CurrentHeldItemSlot);
     public ItemStack? GetOffHandItem() => Inventory.GetItem(45);
 
     public async ValueTask DisplayScoreboardAsync(IScoreboard scoreboard, DisplaySlot slot)//TODO implement new features
@@ -173,7 +167,7 @@ public sealed partial class Player : Living, IPlayer
 
         CurrentScoreboard = actualBoard;
 
-        await client.QueuePacketAsync(new SetObjectivePacket
+        await Client.QueuePacketAsync(new SetObjectivePacket
         {
             ObjectiveName = actualBoard.name,
             Mode = ScoreboardMode.Create,
@@ -183,7 +177,7 @@ public sealed partial class Player : Living, IPlayer
 
         foreach (var (_, score) in actualBoard.scores)
         {
-            await client.QueuePacketAsync(new SetScorePacket
+            await Client.QueuePacketAsync(new SetScorePacket
             {
                 EntityName = score.DisplayText,
                 ObjectiveName = actualBoard.name,
@@ -191,7 +185,7 @@ public sealed partial class Player : Living, IPlayer
             });
         }
 
-        await client.QueuePacketAsync(new SetDisplayObjectivePacket
+        await Client.QueuePacketAsync(new SetDisplayObjectivePacket
         {
             ObjectiveName = actualBoard.name,
             DisplaySlot = slot
@@ -204,10 +198,10 @@ public sealed partial class Player : Living, IPlayer
 
         var nextId = GetNextContainerId();
 
-        await client.QueuePacketAsync(new OpenScreenPacket(container, nextId));
+        await Client.QueuePacketAsync(new OpenScreenPacket(container, nextId));
 
         if (container.HasItems())
-            await client.QueuePacketAsync(new ContainerSetContentPacket(nextId, container.ToList()));
+            await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId, container.ToList()));
     }
 
     public async override ValueTask TeleportAsync(VectorF pos)
@@ -227,7 +221,7 @@ public sealed partial class Player : Living, IPlayer
                 pos
             ));
 
-        await client.QueuePacketAsync(new PlayerPositionPacket
+        await Client.QueuePacketAsync(new PlayerPositionPacket
         {
             Position = pos,
             Flags = PositionFlags.None,
@@ -245,7 +239,7 @@ public sealed partial class Player : Living, IPlayer
 
         TeleportId = Globals.Random.Next(0, 999);
 
-        await client.QueuePacketAsync(new PlayerPositionPacket
+        await Client.QueuePacketAsync(new PlayerPositionPacket
         {
             Position = to.Position,
             Flags = PositionFlags.None,
@@ -278,17 +272,17 @@ public sealed partial class Player : Living, IPlayer
         await SendPlayerInfoAsync();
 
         var (chunkX, chunkZ) = Position.ToChunkCoord();
-        await client.QueuePacketAsync(new SetChunkCacheCenterPacket(chunkX, chunkZ));
+        await Client.QueuePacketAsync(new SetChunkCacheCenterPacket(chunkX, chunkZ));
     }
 
     public ValueTask SendMessageAsync(ChatMessage message, Guid sender, SecureMessageSignature messageSignature) =>
         throw new NotImplementedException();
 
     public ValueTask SendMessageAsync(ChatMessage message) =>
-        client.QueuePacketAsync(new SystemChatPacket(message, false));
+        Client.QueuePacketAsync(new SystemChatPacket(message, false));
 
     public ValueTask SetActionBarTextAsync(ChatMessage message) =>
-        client.QueuePacketAsync(new SystemChatPacket(message, true));
+        Client.QueuePacketAsync(new SystemChatPacket(message, true));
 
     public async ValueTask SendSoundAsync(ISoundEffect soundEffect)
     {
@@ -315,11 +309,11 @@ public sealed partial class Player : Living, IPlayer
                 FixedRange = soundEffect.FixedRange
             };
 
-        await client.QueuePacketAsync(packet);
+        await Client.QueuePacketAsync(packet);
     }
 
-    public async ValueTask KickAsync(string reason) => await this.client.DisconnectAsync(reason);
-    public async ValueTask KickAsync(ChatMessage reason) => await client.DisconnectAsync(reason);
+    public async ValueTask KickAsync(string reason) => await this.Client.DisconnectAsync(reason);
+    public async ValueTask KickAsync(ChatMessage reason) => await Client.DisconnectAsync(reason);
 
     public async Task RespawnAsync(DataKept dataKept = DataKept.Metadata)
     {
@@ -335,7 +329,7 @@ public sealed partial class Player : Living, IPlayer
 
         Logger.LogDebug("Loading into world: {}", World.Name);
 
-        await client.QueuePacketAsync(new RespawnPacket
+        await Client.QueuePacketAsync(new RespawnPacket
         {
             CommonPlayerSpawnInfo = new()
             {
@@ -357,7 +351,7 @@ public sealed partial class Player : Living, IPlayer
 
         await UpdateChunksAsync(true, 2);
 
-        await client.QueuePacketAsync(new PlayerPositionPacket
+        await Client.QueuePacketAsync(new PlayerPositionPacket
         {
             Position = Position,
             Yaw = 0,
@@ -380,7 +374,7 @@ public sealed partial class Player : Living, IPlayer
         //});
         // TODO implement new death packets
 
-        await client.QueuePacketAsync(new GameEventPacket(RespawnReason.EnableRespawnScreen));
+        await Client.QueuePacketAsync(new GameEventPacket(RespawnReason.EnableRespawnScreen));
         await RemoveAsync();
 
         if (source is Player attacker)
@@ -421,7 +415,7 @@ public sealed partial class Player : Living, IPlayer
     {
         this.PacketBroadcaster.QueuePacketToWorld(this.World, new PlayerInfoUpdatePacket(CompilePlayerInfo(new UpdateGamemodeInfoAction(gamemode))));
 
-        await client.QueuePacketAsync(new GameEventPacket(gamemode));
+        await Client.QueuePacketAsync(new GameEventPacket(gamemode));
 
         Gamemode = gamemode;
     }
@@ -449,8 +443,8 @@ public sealed partial class Player : Living, IPlayer
             Stay = stay,
         };
 
-        await client.QueuePacketAsync(titlePacket);
-        await client.QueuePacketAsync(titleTimesPacket);
+        await Client.QueuePacketAsync(titlePacket);
+        await Client.QueuePacketAsync(titleTimesPacket);
     }
 
     public async ValueTask SendTitleAsync(ChatMessage title, ChatMessage subtitle, int fadeIn, int stay, int fadeOut)
@@ -460,7 +454,7 @@ public sealed partial class Player : Living, IPlayer
             Text = subtitle
         };
 
-        await client.QueuePacketAsync(titlePacket);
+        await Client.QueuePacketAsync(titlePacket);
 
         await SendTitleAsync(title, fadeIn, stay, fadeOut);
     }
@@ -479,8 +473,8 @@ public sealed partial class Player : Living, IPlayer
             Stay = stay,
         };
 
-        await client.QueuePacketAsync(titlePacket);
-        await client.QueuePacketAsync(titleTimesPacket);
+        await Client.QueuePacketAsync(titlePacket);
+        await Client.QueuePacketAsync(titleTimesPacket);
     }
 
     public async ValueTask SendActionBarAsync(string text)
@@ -490,7 +484,7 @@ public sealed partial class Player : Living, IPlayer
             Text = text
         };
 
-        await client.QueuePacketAsync(actionBarPacket);
+        await Client.QueuePacketAsync(actionBarPacket);
     }
 
     //TODO 
@@ -587,7 +581,7 @@ public sealed partial class Player : Living, IPlayer
 
     public override string ToString() => Username;
 
-    internal async override ValueTask UpdateAsync(VectorF position, MovementFlags movementFlags)
+    public async override ValueTask UpdateAsync(VectorF position, MovementFlags movementFlags)
     {
         await base.UpdateAsync(position, movementFlags);
 
@@ -598,7 +592,7 @@ public sealed partial class Player : Living, IPlayer
         await PickupNearbyItemsAsync();
     }
 
-    internal async override ValueTask UpdateAsync(VectorF position, Angle yaw, Angle pitch, MovementFlags movementFlags)
+    public async override ValueTask UpdateAsync(VectorF position, Angle yaw, Angle pitch, MovementFlags movementFlags)
     {
         await base.UpdateAsync(position, yaw, pitch, movementFlags);
 
@@ -609,7 +603,7 @@ public sealed partial class Player : Living, IPlayer
         await PickupNearbyItemsAsync();
     }
 
-    internal async override ValueTask UpdateAsync(Angle yaw, Angle pitch, MovementFlags movementFlags)
+    public async override ValueTask UpdateAsync(Angle yaw, Angle pitch, MovementFlags movementFlags)
     {
         await base.UpdateAsync(yaw, pitch, movementFlags);
 
@@ -622,7 +616,7 @@ public sealed partial class Player : Living, IPlayer
     /// <param name="unloadAll"></param>
     /// <param name="distance"></param>
     /// <returns>Whether all chunks have been sent.</returns>
-    internal async Task<bool> UpdateChunksAsync(bool unloadAll = false, int distance = 0)
+    public async Task<bool> UpdateChunksAsync(bool unloadAll = false, int distance = 0)
     {
         bool sentAll = true;
         if (unloadAll)
@@ -670,7 +664,7 @@ public sealed partial class Player : Living, IPlayer
             var chunk = await World.GetChunkAsync(x, z);
             if (chunk is not null && chunk.IsGenerated)
             {
-                await client.QueuePacketAsync(new LevelChunkWithLightPacket(chunk));
+                await Client.QueuePacketAsync(new LevelChunkWithLightPacket(chunk));
 
                 LoadedChunks.Add(NumericsHelper.IntsToLong(chunk.X, chunk.Z));
             }

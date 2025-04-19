@@ -1,7 +1,4 @@
-﻿using Org.BouncyCastle.Bcpg;
-using System.IO;
-
-namespace Obsidian.Net.Packets;
+﻿namespace Obsidian.Net.Packets;
 
 public abstract class ClientboundPacket : IClientboundPacket
 {

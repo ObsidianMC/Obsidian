@@ -6,10 +6,13 @@ namespace Obsidian.API;
 public interface IWorld : IAsyncDisposable
 {
     public string Name { get; }
+    public string FolderPath { get; }
+    public string PlayerDataPath { get; }
+    public string LevelDataFilePath { get; }
+    public string DimensionName { get; }
+    public string? ParentWorldName { get; }
 
     public bool Loaded { get; }
-
-    public string DimensionName { get; }
 
     public long Time { get; set; }
     public int DayTime { get; set; }
@@ -25,25 +28,54 @@ public interface IWorld : IAsyncDisposable
 
     public IPacketBroadcaster PacketBroadcaster { get; }
     public IEventDispatcher EventDispatcher { get; }
+    public IWorldManager WorldManager { get; }
 
     public IEntitySpawner GetNewEntitySpawner();
 
     public IEnumerable<IEntity> GetNonPlayerEntitiesInRange(VectorF location, float distance);
     public IEnumerable<IEntity> GetEntitiesInRange(VectorF location, float distance);
+    public IEnumerable<IPlayer> GetPlayersInRange(VectorF location, float distance);
 
+    /// <summary>
+    /// Gets a Chunk from a Region.
+    /// If the Chunk doesn't exist, it will be scheduled for generation unless scheduleGeneration is false.
+    /// </summary>
+    /// <param name="scheduleGeneration">
+    /// Whether to enqueue a job to generate the chunk if it doesn't exist and return null.
+    /// When set to false, a partial Chunk is returned.</param>
+    /// <returns>Null if the region or chunk doesn't exist yet. Otherwise the full chunk or a partial chunk.</returns>
     public ValueTask<IChunk?> GetChunkAsync(int x, int z, bool scheduleGeneration = true);
+
+    /// <summary>
+    /// Gets a Chunk from a Region.
+    /// If the Chunk doesn't exist, it will be scheduled for generation unless scheduleGeneration is false.
+    /// </summary>
+    /// <param name="scheduleGeneration">
+    /// Whether to enqueue a job to generate the chunk if it doesn't exist and return null.
+    /// When set to false, a partial Chunk is returned.</param>
+    /// <returns>Null if the region or chunk doesn't exist yet. Otherwise the full chunk or a partial chunk.</returns>
     public ValueTask<IChunk?> GetChunkAsync(Vector worldLocation, bool scheduleGeneration = true);
+
     public ValueTask<bool> DestroyEntityAsync(IEntity entity);
     public ValueTask<IBlock?> GetBlockAsync(Vector location);
     public ValueTask<IBlock?> GetBlockAsync(int x, int y, int z);
     public ValueTask SetBlockAsync(Vector location, IBlock block);
     public ValueTask SetBlockAsync(int x, int y, int z, IBlock block);
+
+    public ValueTask SetBlockAsync(Vector location, IBlock block, bool doBlockUpdate);
+    public ValueTask SetBlockAsync(int x, int y, int z, IBlock block, bool doBlockUpdate);
     public bool TryRemovePlayer(IPlayer player);
     public ValueTask<bool> HandleBlockUpdateAsync(IBlockUpdate update);
     public ValueTask BlockUpdateNeighborsAsync(IBlockUpdate update);
     public ValueTask ScheduleBlockUpdateAsync(IBlockUpdate blockUpdate);
 
-    public ValueTask SetBlockUntrackedAsync(Vector location, IBlock block, bool doBlockUpdate = false) => SetBlockUntrackedAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
+    public ValueTask SetBlockEntity(Vector blockPosition, IBlockEntity tileEntityData);
+    public ValueTask SetBlockEntity(int x, int y, int z, IBlockEntity tileEntityData);
+
+    public ValueTask<IBlockEntity?> GetBlockEntityAsync(Vector blockPosition);
+    public ValueTask<IBlockEntity?> GetBlockEntityAsync(int x, int y, int z);
+
+    public ValueTask SetBlockUntrackedAsync(Vector location, IBlock block, bool doBlockUpdate = false);
     public ValueTask SetBlockUntrackedAsync(int x, int y, int z, IBlock block, bool doBlockUpdate = false);
 
     public ValueTask<int?> GetWorldSurfaceHeightAsync(int x, int z);

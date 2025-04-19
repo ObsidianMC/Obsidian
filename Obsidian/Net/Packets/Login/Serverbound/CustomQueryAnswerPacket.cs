@@ -1,5 +1,4 @@
-﻿using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
+﻿using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Login.Serverbound;
 public partial class CustomQueryAnswerPacket
@@ -25,12 +24,5 @@ public partial class CustomQueryAnswerPacket
         {
             throw new NotImplementedException();
         }
-    }
-
-    //TODO handle this maybe as an event?
-    public override ValueTask HandleAsync(Server server, Player player)
-    {
-
-        return default;
     }
 }

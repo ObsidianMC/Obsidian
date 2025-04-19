@@ -1,5 +1,4 @@
 ﻿using Obsidian.API.AI;
-using static Obsidian.API.SoundId;
 
 namespace Obsidian.API;
 
@@ -12,6 +11,7 @@ public interface IEntity
 
     public Guid Uuid { get; set; }
 
+    public VectorF LastPosition { get; set; }
     public VectorF Position { get; set; }
     public Angle Pitch { get; set; }
     public Angle Yaw { get; set; }
@@ -35,13 +35,13 @@ public interface IEntity
     public bool Silent { get; }
     public bool NoGravity { get; }
     public MovementFlags MovementFlags { get; }
-    public bool Sneaking { get; }
-    public bool Sprinting { get; }
+    public bool Sneaking { get; set; }
+    public bool Sprinting { get; set; }
     public bool Glowing { get; }
     public bool Invisible { get; }
     public bool Burning { get; }
-    public bool Swimming { get; }
-    public bool FlyingWithElytra { get; }
+    public bool Swimming { get; set; }
+    public bool FlyingWithElytra { get; set; }
     public bool Summonable { get; }
     public bool IsFireImmune { get; }
 
@@ -55,6 +55,10 @@ public interface IEntity
     public ValueTask TeleportAsync(IWorld world);
     public ValueTask TeleportAsync(IEntity to);
     public ValueTask TeleportAsync(VectorF pos);
+
+    public ValueTask UpdateAsync(VectorF position, MovementFlags movementFlags);
+    public ValueTask UpdateAsync(VectorF position, Angle yaw, Angle pitch, MovementFlags movementFlags);
+    public ValueTask UpdateAsync(Angle yaw, Angle pitch, MovementFlags movementFlags);
 
     public void Write(INetStreamWriter writer);
 

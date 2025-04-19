@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.Commands.Framework.Entities;
-using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
@@ -42,7 +41,7 @@ public partial class ChatCommandSignedPacket
         //    reader.ReadUInt8Array(256);//There's still a lot to this I don't understand so maybe someone can 😭😭
     }
 
-    public async override ValueTask HandleAsync(Server server, Player player)
+    public async override ValueTask HandleAsync(Server server, IPlayer player)
     {
         var context = new CommandContext($"/{this.Command}", new CommandSender(CommandIssuers.Client, player, server._logger), player, server);
         try

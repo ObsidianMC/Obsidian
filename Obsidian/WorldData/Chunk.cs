@@ -19,7 +19,7 @@ public sealed class Chunk : IChunk
 
     //TODO try and do some temp caching
     public Dictionary<short, BlockMeta> BlockMetaStore { get; private set; } = new Dictionary<short, BlockMeta>();
-    public Dictionary<short, NbtCompound> BlockEntities { get; private set; } = new Dictionary<short, NbtCompound>();
+    public Dictionary<short, IBlockEntity> BlockEntities { get; private set; } = new Dictionary<short, IBlockEntity>();
 
     public IChunkSection[] Sections { get; private set; } = new IChunkSection[24];
     public IDictionary<HeightmapType, Heightmap> Heightmaps { get; }
@@ -87,7 +87,7 @@ public sealed class Chunk : IChunk
         Sections[i].SetBiome(x, y, z, biome);
     }
 
-    public NbtCompound GetBlockEntity(int x, int y, int z)
+    public IBlockEntity GetBlockEntity(int x, int y, int z)
     {
         x = NumericsHelper.Modulo(x, 16);
         z = NumericsHelper.Modulo(z, 16);
@@ -96,7 +96,7 @@ public sealed class Chunk : IChunk
         return this.BlockEntities.GetValueOrDefault(value);
     }
 
-    public void SetBlockEntity(int x, int y, int z, NbtCompound tileEntityData)
+    public void SetBlockEntity(int x, int y, int z, IBlockEntity tileEntityData)
     {
         x = NumericsHelper.Modulo(x, 16);
         z = NumericsHelper.Modulo(z, 16);

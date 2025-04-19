@@ -1,5 +1,4 @@
-﻿using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
+﻿using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
@@ -9,7 +8,7 @@ public partial class SetEntityDataPacket
     public required int EntityId { get; init; }
 
     [Field(1)]
-    public required Entity Entity { get; init; }
+    public required IEntity Entity { get; init; }
 
     public override void Serialize(INetStreamWriter writer)
     {

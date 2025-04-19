@@ -91,7 +91,7 @@ public sealed partial class Server : IServer
     public IScoreboardManager ScoreboardManager { get; private set; }
     public IWorldManager WorldManager { get; }
 
-    public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new();
+    public ConcurrentDictionary<Guid, IPlayer> OnlinePlayers { get; } = new();
 
     public HashSet<string> RegisteredChannels { get; } = new();
     public CommandHandler CommandsHandler { get; }
@@ -363,7 +363,7 @@ public sealed partial class Server : IServer
         var packet = new BlockUpdatePacket(location, block.GetHashCode());
         foreach (Player player in PlayersInRange(world, location))
         {
-            player.client.SendPacket(packet);
+            player.Client.SendPacket(packet);
         }
     }
 
@@ -375,25 +375,25 @@ public sealed partial class Server : IServer
             if (player == initiator)
                 continue;
 
-            player.client.SendPacket(packet);
+            player.Client.SendPacket(packet);
         }
     }
 
-    internal async Task HandleIncomingMessageAsync(ChatPacket packet, Client source, MessageType type = MessageType.Chat)
+    internal async Task HandleIncomingMessageAsync(ChatPacket packet, IPlayer source, MessageType type = MessageType.Chat)
     {
         const string format = "<{0}> {1}";//TODO use this????
         var message = packet.Message;
 
         if (type is MessageType.Chat or MessageType.System)
         {
-            await this.EventDispatcher.ExecuteEventAsync(new IncomingChatMessageEventArgs(source.Player, this, message, format));
+            await this.EventDispatcher.ExecuteEventAsync(new IncomingChatMessageEventArgs(source, this, message, format));
         }
     }
 
     internal async Task QueueBroadcastPacketAsync(ClientboundPacket packet)
     {
         foreach (Player player in Players)
-            await player.client.QueuePacketAsync(packet);
+            await player.Client.QueuePacketAsync(packet);
     }
 
     internal async Task DisconnectIfConnectedAsync(string username, ChatMessage? reason = null)
@@ -484,7 +484,7 @@ public sealed partial class Server : IServer
                 {
                     foreach (Player player in Players)
                     {
-                        player.client.SendPacket(packet);
+                        player.Client.SendPacket(packet);
                     }
                 }
 

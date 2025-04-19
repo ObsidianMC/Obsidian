@@ -65,7 +65,7 @@ public class Entity : IEquatable<Entity>, IEntity
     public IGoalController? GoalController { get; set; }
 
     #region Update methods
-    internal virtual async ValueTask UpdateAsync(VectorF position, MovementFlags movementFlags)
+    public virtual async ValueTask UpdateAsync(VectorF position, MovementFlags movementFlags)
     {
         var isNewLocation = position != Position;
 
@@ -86,7 +86,7 @@ public class Entity : IEquatable<Entity>, IEntity
         await UpdatePositionAsync(position, movementFlags);
     }
 
-    internal virtual async ValueTask UpdateAsync(VectorF position, Angle yaw, Angle pitch, MovementFlags movementFlags)
+    public virtual async ValueTask UpdateAsync(VectorF position, Angle yaw, Angle pitch, MovementFlags movementFlags)
     {
         var isNewLocation = position != Position;
         var isNewRotation = yaw != Yaw || pitch != Pitch;
@@ -127,7 +127,7 @@ public class Entity : IEquatable<Entity>, IEntity
         await UpdatePositionAsync(position, yaw, pitch, movementFlags);
     }
 
-    internal virtual ValueTask UpdateAsync(Angle yaw, Angle pitch, MovementFlags movementFlags)
+    public virtual ValueTask UpdateAsync(Angle yaw, Angle pitch, MovementFlags movementFlags)
     {
         var isNewRotation = yaw != Yaw || pitch != Pitch;
 
@@ -306,7 +306,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
             if (living is Player player)
             {
-                await player.client.QueuePacketAsync(new SetHealthPacket(Health, 20, 5));
+                await player.Client.QueuePacketAsync(new SetHealthPacket(Health, 20, 5));
 
                 if (!player.Alive)
                     await player.KillAsync(source, ChatMessage.Simple("You died xd"));

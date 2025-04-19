@@ -14,14 +14,13 @@ internal abstract class ClientHandler
 
     public abstract ValueTask<bool> HandleAsync(PacketData packetData);
 
-    protected async ValueTask<bool> HandleFromPoolAsync<T>(byte[] data) where T : IServerboundPacket, new()
+    protected async ValueTask<bool> HandleFromPoolAsync<T>(NetworkBuffer data) where T : IServerboundPacket, new()
     {
         var packet = ObjectPool<T>.Shared.Rent();
         var success = true;
         try
         {
-            using var mcStream = new NetworkBuffer(data);
-            packet.Populate(mcStream);
+            packet.Populate(data);
             await packet.HandleAsync(this.Server, this.Player);
         }
         catch (Exception e)

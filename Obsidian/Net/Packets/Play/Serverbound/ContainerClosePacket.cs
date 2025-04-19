@@ -1,5 +1,4 @@
 ﻿using Obsidian.API.Events;
-using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
@@ -8,7 +7,7 @@ public partial class ContainerClosePacket
     [Field(0)]
     public int ContainerId { get; private set; }
 
-    public async override ValueTask HandleAsync(Server server, Player player)
+    public async override ValueTask HandleAsync(Server server, IPlayer player)
     {
         if (ContainerId == 0)
             return;

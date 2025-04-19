@@ -71,7 +71,7 @@ public partial class ContainerClickPacket
         this.CarriedItem = reader.ReadItemStack();
     }
 
-    public async override ValueTask HandleAsync(Server server, Player player)
+    public async override ValueTask HandleAsync(Server server, IPlayer player)
     {
         var container = player.OpenedContainer ?? player.Inventory;
 
@@ -151,8 +151,7 @@ public partial class ContainerClickPacket
                         EntityId = Server.GetNextEntityId(),
                         Item = removedItem,
                         Glowing = true,
-                        World = player.world,
-                        PacketBroadcaster = player.PacketBroadcaster,
+                        World = player.World,
                         Position = loc
                     };
 
@@ -160,7 +159,7 @@ public partial class ContainerClickPacket
                     var vel = Velocity.FromDirection(loc, lookDir);
 
                     //TODO Get this shooting out from the player properly.
-                    player.PacketBroadcaster.QueuePacketToWorld(player.World, new AddEntityPacket
+                    player.World.PacketBroadcaster.QueuePacketToWorld(player.World, new AddEntityPacket
                     {
                         EntityId = item.EntityId,
                         Uuid = item.Uuid,
@@ -171,7 +170,7 @@ public partial class ContainerClickPacket
                         Data = 1,
                         Velocity = vel
                     });
-                    player.PacketBroadcaster.QueuePacketToWorld(player.World, new SetEntityDataPacket
+                    player.World.PacketBroadcaster.QueuePacketToWorld(player.World, new SetEntityDataPacket
                     {
                         EntityId = item.EntityId,
                         Entity = item
@@ -195,29 +194,24 @@ public partial class ContainerClickPacket
 
         if (container is IBlockEntity tileEntityContainer)
         {
-            var blockEntity = await player.world.GetBlockEntityAsync(tileEntityContainer.BlockPosition);
+            var blockEntity = await player.World.GetBlockEntityAsync(tileEntityContainer.BlockPosition);
 
-            if (blockEntity is null)
+            if (blockEntity is not BaseContainer blockEntityContainer)
                 return;
 
-            if (blockEntity.TryGetTag("Items", out var list))
+            var itemsToBeRemoved = new HashSet<int>();
+            var itemsToBeUpdated = new HashSet<NbtCompound>();
+
+            for (int i = 0; i < container.Size; i++)
             {
-                var items = list as NbtList;
+                var item = container[i];
 
-                var itemsToBeRemoved = new HashSet<int>();
-                var itemsToBeUpdated = new HashSet<NbtCompound>();
+                if (item is null)
+                    continue;
 
-                items!.Clear();
+                item.Slot = i;
 
-                this.FillNbtList(items, container);
-            }
-            else
-            {
-                var items = new NbtList(NbtTagType.Compound, "Items");
-
-                this.FillNbtList(items, container);
-
-                blockEntity.Add(items);
+                blockEntityContainer.SetItem(i, item);
             }
         }
     }
@@ -271,22 +265,7 @@ public partial class ContainerClickPacket
         }
     }
 
-    private void FillNbtList(NbtList items, BaseContainer container)
-    {
-        for (int i = 0; i < container.Size; i++)
-        {
-            var item = container[i];
-
-            if (item is null)
-                continue;
-
-            item.Slot = i;
-
-            items.Add(item.ToNbt());
-        }
-    }
-
-    private async Task HandleMouseClick(BaseContainer container, Server server, Player player, int slot)
+    private async Task HandleMouseClick(BaseContainer container, Server server, IPlayer player, int slot)
     {
         if (!CarriedItem.IsAir)
         {
@@ -295,7 +274,7 @@ public partial class ContainerClickPacket
                 Slot = slot
             });
 
-            if (result == Services.EventResult.Cancelled)
+            if (result == EventResult.Cancelled)
                 return;
 
             player.LastClickedItem = CarriedItem;
@@ -319,18 +298,18 @@ public partial class ContainerClickPacket
         }
     }
 
-    private void HandleDragClick(BaseContainer container, Player player, int value)
+    private void HandleDragClick(BaseContainer container, IPlayer player, int value)
     {
         if (ClickedSlot == Outsideinventory)
         {
-            player.isDragging = Button switch
+            player.IsDragging = Button switch
             {
                 0 or 4 or 8 => true,
                 2 or 6 or 10 => false,
-                _ => player.isDragging
+                _ => player.IsDragging
             };
         }
-        else if (player.isDragging)
+        else if (player.IsDragging)
         {
             if (player.Gamemode == Gamemode.Creative)
             {

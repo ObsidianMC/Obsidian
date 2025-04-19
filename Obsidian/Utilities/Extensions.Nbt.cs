@@ -1,4 +1,5 @@
-﻿using Obsidian.API.Inventory;
+﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Obsidian.API.Inventory;
 using Obsidian.API.Registry.Codecs.ArmorTrims.TrimMaterial;
 using Obsidian.API.Registry.Codecs.ArmorTrims.TrimPattern;
 using Obsidian.API.Registry.Codecs.Biomes;
@@ -7,8 +8,8 @@ using Obsidian.API.Registry.Codecs.DamageTypes;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.API.Registry.Codecs.PaintingVariant;
 using Obsidian.API.Registry.Codecs.WolfVariant;
-using Obsidian.API.Utilities;
 using Obsidian.Nbt;
+using System.IO;
 using System.Reflection;
 
 namespace Obsidian.Utilities;
@@ -33,6 +34,18 @@ public partial class Extensions
         return compound;
     }
 
+    public static void WriteNbtCompound(this INetStreamWriter writer, NbtCompound compound)
+    {
+        using var ms = new MemoryStream();
+        using var nbtWriter = new NbtWriter(ms, true);
+
+        foreach (var (_, tag) in compound)
+            nbtWriter.WriteTag(tag);
+
+        nbtWriter.TryFinish();
+
+        writer.WriteByteArray(ms.ToArray());
+    }
 
     //DESERIALIZE ITEM COMPONENTS
     public static ItemStack? ItemFromNbt(this NbtCompound? item)

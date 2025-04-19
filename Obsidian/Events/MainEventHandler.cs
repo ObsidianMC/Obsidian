@@ -1,8 +1,6 @@
 ﻿using Obsidian.API.Containers;
 using Obsidian.API.Events;
-using Obsidian.API.Utilities;
 using Obsidian.Entities;
-using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 
 namespace Obsidian.Events;
@@ -62,60 +60,60 @@ public sealed class MainEventHandler : MinecraftEventHandler
         switch (block.Material)
         {
             case Material.Chest:
-            {
-                await player.client.QueuePacketAsync(new BlockEventPacket
                 {
-                    Position = position,
-                    ActionId = 1,
-                    ActionParam = 0,
-                    BlockType = block.BaseId
-                });
+                    await player.Client.QueuePacketAsync(new BlockEventPacket
+                    {
+                        Position = position,
+                        ActionId = 1,
+                        ActionParam = 0,
+                        BlockType = block.BaseId
+                    });
 
-                //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockChestClose)
-                //    .WithSoundPosition(position.SoundPosition)
-                //    .Build());
+                    //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockChestClose)
+                    //    .WithSoundPosition(position.SoundPosition)
+                    //    .Build());
 
-                break;
-            }
+                    break;
+                }
             case Material.EnderChest:
-            {
-                await player.client.QueuePacketAsync(new BlockEventPacket
                 {
-                    Position = position,
-                    ActionId = 1,
-                    ActionParam = 0,
-                    BlockType = block.BaseId
-                });
+                    await player.Client.QueuePacketAsync(new BlockEventPacket
+                    {
+                        Position = position,
+                        ActionId = 1,
+                        ActionParam = 0,
+                        BlockType = block.BaseId
+                    });
 
-                //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockEnderChestClose)
-                //    .WithSoundPosition(position.SoundPosition)
-                //    .Build());
-                break;
-            }
+                    //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockEnderChestClose)
+                    //    .WithSoundPosition(position.SoundPosition)
+                    //    .Build());
+                    break;
+                }
             case Material.Barrel://Barrels don't have a block action
-            {
-                //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockBarrelClose)
-                //    .WithSoundPosition(position.SoundPosition)
-                //    .Build());
-
-                break;
-            }
-            case Material.ShulkerBox:
-            {
-                await player.client.QueuePacketAsync(new BlockEventPacket
                 {
-                    Position = position,
-                    ActionId = 1,
-                    ActionParam = 0,
-                    BlockType = block.BaseId
-                });
+                    //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockBarrelClose)
+                    //    .WithSoundPosition(position.SoundPosition)
+                    //    .Build());
 
-                //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockShulkerBoxClose)
-                //    .WithSoundPosition(position.SoundPosition)
-                //    .Build());
+                    break;
+                }
+            case Material.ShulkerBox:
+                {
+                    await player.Client.QueuePacketAsync(new BlockEventPacket
+                    {
+                        Position = position,
+                        ActionId = 1,
+                        ActionParam = 0,
+                        BlockType = block.BaseId
+                    });
 
-                break;
-            }
+                    //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockShulkerBoxClose)
+                    //    .WithSoundPosition(position.SoundPosition)
+                    //    .Build());
+
+                    break;
+                }
         }
     }
 
@@ -188,7 +186,7 @@ public sealed class MainEventHandler : MinecraftEventHandler
                 };
 
                 await player.OpenInventoryAsync(container);
-                await player.client.QueuePacketAsync(new BlockEventPacket
+                await player.Client.QueuePacketAsync(new BlockEventPacket
                 {
                     Position = blockPosition,
                     ActionId = 1,
@@ -209,7 +207,7 @@ public sealed class MainEventHandler : MinecraftEventHandler
                 };
 
                 await player.OpenInventoryAsync(container);
-                await player.client.QueuePacketAsync(new BlockEventPacket
+                await player.Client.QueuePacketAsync(new BlockEventPacket
                 {
                     Position = blockPosition,
                     ActionId = 1,
@@ -246,7 +244,7 @@ public sealed class MainEventHandler : MinecraftEventHandler
                     Id = "shulker_box"
                 };
 
-                await player.client.QueuePacketAsync(new BlockEventPacket
+                await player.Client.QueuePacketAsync(new BlockEventPacket
                 {
                     Position = blockPosition,
                     ActionId = 1,
@@ -275,38 +273,20 @@ public sealed class MainEventHandler : MinecraftEventHandler
                 //TODO open lectern??
             }
 
-            if (container is IBlockEntity)
+            if (container is IBlockEntity containerTileEntity)
             {
                 var tileEntity = await player.World.GetBlockEntityAsync(blockPosition);
 
                 if (tileEntity == null)
                 {
-                    tileEntity = new NbtCompound()
-                    {
-                        new NbtTag<string>("id", (container as IBlockEntity).Id),
-
-                        new NbtTag<int>("x", blockPosition.X),
-                        new NbtTag<int>("y", blockPosition.Y),
-                        new NbtTag<int>("z", blockPosition.Z),
-
-                        new NbtTag<string>("CustomName", container.Title.ToJson())
-                    };
+                    tileEntity = containerTileEntity.Clone();
 
                     await player.World.SetBlockEntity(blockPosition, tileEntity);
                 }
-                else if (tileEntity is NbtCompound)
+                else if (tileEntity is BaseContainer tileEntityContainer)
                 {
-                    if (tileEntity.TryGetTag("Items", out var tag))
-                    {
-                        var items = tag as NbtList;
-
-                        foreach (NbtCompound i in items)
-                        {
-                            var inventoryItem = i.ItemFromNbt();
-
-                            container.SetItem(inventoryItem.Slot, inventoryItem);
-                        }
-                    }
+                    foreach (var i in tileEntityContainer)
+                        container.SetItem(i.Slot, i);
                 }
             }
 
@@ -335,13 +315,13 @@ public sealed class MainEventHandler : MinecraftEventHandler
             if (other == player)
                 continue;
 
-            await other.client.QueuePacketAsync(new PlayerInfoRemovePacket
+            await other.Client.QueuePacketAsync(new PlayerInfoRemovePacket
             {
                 UUIDs = [player.Uuid]
             });
 
             if (other.visiblePlayers.Contains(player))
-                await other.client.QueuePacketAsync(destroy);
+                await other.Client.QueuePacketAsync(destroy);
         }
 
         server.BroadcastMessage(string.Format(server.Configuration.Messages.Leave, e.Player.Username));

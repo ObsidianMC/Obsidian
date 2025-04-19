@@ -46,7 +46,7 @@ public partial class SetObjectivePacket
                 writer.WriteVarInt(this.NumberFormat);
 
                 if(this.NumberFormat == Scoreboard.NumberFormat.Styled)
-                    ((MinecraftStream)writer).WriteNbtCompound(this.StyledFormat!);//API methods don't reference nbt.
+                    writer.WriteNbtCompound(this.StyledFormat!);
                 else if(this.NumberFormat == Scoreboard.NumberFormat.Fixed)
                     writer.WriteChat(this.Content!);
 

@@ -202,7 +202,7 @@ public sealed class MainCommandModule : CommandModuleBase
     {
         if (this.Player is Player player)
         {
-            await player.client.QueuePacketAsync(CommandsRegistry.Packet);
+            await player.Client.QueuePacketAsync(CommandsRegistry.Packet);
         }
     }
 
@@ -229,7 +229,7 @@ public sealed class MainCommandModule : CommandModuleBase
         {
             var slot = player.Inventory.AddItem(new ItemStack(ItemsRegistry.Get(material), count: amount));
             await player.SendMessageAsync($"Given you {ChatColor.Gold}{amount} {item}(s)");
-            player.client.SendPacket(new ContainerSetSlotPacket
+            player.Client.SendPacket(new ContainerSetSlotPacket
             {
                 Slot = (short)slot,
                 ContainerId = 0,

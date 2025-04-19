@@ -1,7 +1,5 @@
 using Microsoft.Extensions.Logging;
-using Obsidian.API.Utilities;
 using Obsidian.Serialization.Attributes;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Obsidian.Net.Packets.Handshake.Serverbound;
 

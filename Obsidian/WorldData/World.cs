@@ -130,14 +130,6 @@ public sealed partial class World : IWorld
 
     public IRegion? GetRegionForChunk(Vector location) => GetRegionForChunk(location.X, location.Z);
 
-    /// <summary>
-    /// Gets a Chunk from a Region.
-    /// If the Chunk doesn't exist, it will be scheduled for generation unless scheduleGeneration is false.
-    /// </summary>
-    /// <param name="scheduleGeneration">
-    /// Whether to enqueue a job to generate the chunk if it doesn't exist and return null.
-    /// When set to false, a partial Chunk is returned.</param>
-    /// <returns>Null if the region or chunk doesn't exist yet. Otherwise the full chunk or a partial chunk.</returns>
     public async ValueTask<IChunk?> GetChunkAsync(int chunkX, int chunkZ, bool scheduleGeneration = true)
     {
         var region = GetRegionForChunk(chunkX, chunkZ) ?? LoadRegion(chunkX >> Region.CubicRegionSizeShift, chunkZ >> Region.CubicRegionSizeShift);
@@ -177,17 +169,6 @@ public sealed partial class World : IWorld
         return chunk;
     }
 
-    /// <summary>
-    /// Gets a Chunk from a Region.
-    /// If the Chunk doesn't exist, it will be scheduled for generation unless scheduleGeneration is false.
-    /// </summary>
-    /// <param name="scheduleGeneration">When set to false, a partial Chunk is returned.</param>
-    /// <returns>Null if the region or chunk doesn't exist yet. Otherwise the full chunk or a partial chunk.</returns>
-    public ValueTask<IChunk?> GetChunkAsync(Vector worldLocation, bool scheduleGeneration = true) =>
-        GetChunkAsync(worldLocation.X.ToChunkCoord(), worldLocation.Z.ToChunkCoord(), scheduleGeneration);
-
-    public ValueTask<IBlock?> GetBlockAsync(Vector location) => GetBlockAsync(location.X, location.Y, location.Z);
-
     public async ValueTask<IBlock?> GetBlockAsync(int x, int y, int z)
     {
         var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
@@ -201,21 +182,17 @@ public sealed partial class World : IWorld
         .GetHeight(NumericsHelper.Modulo(x, 16), NumericsHelper.Modulo(z, 16));
     }
 
-    public ValueTask SetBlockAsync(int x, int y, int z, IBlock block) => SetBlockAsync(new Vector(x, y, z), block);
-
-    public async ValueTask SetBlockAsync(Vector location, IBlock block)
+    public async ValueTask SetBlockAsync(int x, int y, int z, IBlock block)
     {
-        await SetBlockUntrackedAsync(location.X, location.Y, location.Z, block);
+        await SetBlockUntrackedAsync(x, y, z, block);
 
-        this.BroadcastBlockChange(block, location);
+        this.BroadcastBlockChange(block, new(x, y, z));
     }
 
-    public ValueTask SetBlockAsync(int x, int y, int z, IBlock block, bool doBlockUpdate) => SetBlockAsync(new Vector(x, y, z), block, doBlockUpdate);
-
-    public async ValueTask SetBlockAsync(Vector location, IBlock block, bool doBlockUpdate)
+    public async ValueTask SetBlockAsync(int x, int y, int z, IBlock block, bool doBlockUpdate)
     {
-        await SetBlockUntrackedAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
-        this.BroadcastBlockChange(block, location);
+        await SetBlockUntrackedAsync(x, y, z, block, doBlockUpdate);
+        this.BroadcastBlockChange(block, new(x, y, z));
     }
 
     //TODO ?????
@@ -224,7 +201,7 @@ public sealed partial class World : IWorld
         var packet = new BlockUpdatePacket(location, block.GetHashCode());
         foreach (Player player in this.PlayersInRange(location))
         {
-            player.client.SendPacket(packet);
+            player.Client.SendPacket(packet);
         }
     }
 
@@ -636,6 +613,21 @@ public sealed partial class World : IWorld
         return entity;
     }
 
+    public ValueTask<IBlockEntity?> GetBlockEntityAsync(Vector blockPosition) => GetBlockEntityAsync(blockPosition.X, blockPosition.Y, blockPosition.Z);
+
+    public async ValueTask<IBlockEntity?> GetBlockEntityAsync(int x, int y, int z)
+    {
+        var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
+        return c?.GetBlockEntity(x, y, z);
+    }
+
+    public ValueTask SetBlockEntity(Vector blockPosition, IBlockEntity tileEntityData) => SetBlockEntity(blockPosition.X, blockPosition.Y, blockPosition.Z, tileEntityData);
+    public async ValueTask SetBlockEntity(int x, int y, int z, IBlockEntity tileEntityData)
+    {
+        var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
+        c?.SetBlockEntity(x, y, z, tileEntityData);
+    }
+
     public IEntity SpawnEntity(VectorF position, EntityType type)
     {
         if (type == EntityType.ExperienceOrb)
@@ -886,4 +878,10 @@ public sealed partial class World : IWorld
     }
 
     public IEntitySpawner GetNewEntitySpawner() => new EntitySpawner(this);
+    public ValueTask<IChunk?> GetChunkAsync(Vector worldLocation, bool scheduleGeneration = true) => 
+        this.GetChunkAsync(worldLocation.X, worldLocation.Z, scheduleGeneration);
+
+    public ValueTask<IBlock?> GetBlockAsync(Vector location) => this.GetBlockAsync(location.X, location.Y, location.Z);
+    public ValueTask SetBlockAsync(Vector location, IBlock block) => this.SetBlockAsync(location.X, location.Y, location.Z, block);
+    public ValueTask SetBlockAsync(Vector location, IBlock block, bool doBlockUpdate) => this.SetBlockAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
 }

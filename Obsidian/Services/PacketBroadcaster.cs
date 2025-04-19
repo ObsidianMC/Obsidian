@@ -30,7 +30,7 @@ public sealed class PacketBroadcaster(IServer server, ILoggerFactory loggerFacto
     public void Broadcast(IClientboundPacket packet, params int[] excludedIds)
     {
         foreach (var player in this.server.Players.Cast<Player>().Where(player => !excludedIds.Contains(player.EntityId)))
-            player.client.SendPacket(packet);
+            player.Client.SendPacket(packet);
     }
 
     public void BroadcastToWorldInRange(IWorld toWorld, VectorF location, IClientboundPacket packet, params int[] excludedIds)
@@ -39,7 +39,7 @@ public sealed class PacketBroadcaster(IServer server, ILoggerFactory loggerFacto
             return;
 
         foreach (var player in world.GetPlayersInRange(location, world.Configuration.EntityBroadcastRangePercentage).Cast<Player>())
-            player.client.SendPacket(packet);
+            player.Client.SendPacket(packet);
     }
 
     public void QueuePacketToWorldInRange(IWorld toWorld, VectorF location, IClientboundPacket packet, params int[] excludedIds)
@@ -71,7 +71,7 @@ public sealed class PacketBroadcaster(IServer server, ILoggerFactory loggerFacto
             return;
 
         foreach (var player in world.Players.Values.Where(player => !excludedIds.Contains(player.EntityId)))
-            player.client.SendPacket(packet);
+            player.Client.SendPacket(packet);
     }
 
     protected async override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -88,13 +88,13 @@ public sealed class PacketBroadcaster(IServer server, ILoggerFactory loggerFacto
                 if (queuedPacket.ToWorld is World toWorld)
                 {
                     foreach (var player in toWorld.Players.Values.Where(player => queuedPacket.ExcludedIds != null && !queuedPacket.ExcludedIds.Contains(player.EntityId)))
-                        await player.client.QueuePacketAsync(queuedPacket.Packet);
+                        await player.Client.QueuePacketAsync(queuedPacket.Packet);
 
                     continue;
                 }
 
                 foreach (var player in this.server.Players.Cast<Player>().Where(player => queuedPacket.ExcludedIds != null && !queuedPacket.ExcludedIds.Contains(player.EntityId)))
-                    await player.client.QueuePacketAsync(queuedPacket.Packet);
+                    await player.Client.QueuePacketAsync(queuedPacket.Packet);
 
             }
         }

@@ -1,5 +1,4 @@
-namespace Obsidian.Net.Packets;
-
+﻿namespace Obsidian.API;
 public enum ClientState
 {
     Handshaking = 0,

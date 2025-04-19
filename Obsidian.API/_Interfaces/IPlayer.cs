@@ -1,19 +1,23 @@
 using Obsidian.API.Inventory;
 using Obsidian.API.Utilities.Concurrency;
+using System.ComponentModel;
 
 namespace Obsidian.API;
 
 public interface IPlayer : ILiving
 {
+    public IClient Client { get; }
+    public IScoreboard? CurrentScoreboard { get; set; }
+
     public ConcurrentHashSet<long> LoadedChunks { get; }
 
     public Container Inventory { get; }
     public Container EnderInventory { get; }
     public BaseContainer? OpenedContainer { get; set; }
-
+    public ItemStack? LastClickedItem { get; set; }
     public List<SkinProperty> SkinProperties { get; set; }
 
-    public ClientInformation ClientInformation { get; }
+    public ClientInformation ClientInformation { get; set; }
 
     public string Username { get; }
 
@@ -22,8 +26,9 @@ public interface IPlayer : ILiving
     public string? ClientIP { get; }
     public Gamemode Gamemode { get; set; }
 
-    public PlayerAbility Abilities { get; }
+    public PlayerAbility Abilities { get; set; }
 
+    public bool IsDragging { get; set; }
     public bool Sleeping { get; set; }
     public bool InHorseInventory { get; set; }
 
@@ -31,8 +36,9 @@ public interface IPlayer : ILiving
     public short DeathTime { get; set; }
     public short HurtTime { get; set; }
     public short SleepTimer { get; set; }
-    public short CurrentSlot { get; }
+    public short CurrentHeldItemSlot { get; set; }
 
+    public int TeleportId { get; set; }
     public int Ping { get; }
     public int FoodLevel { get; set; }
     public int FoodTickTimer { get; set; }
@@ -47,6 +53,7 @@ public interface IPlayer : ILiving
     public float FoodSaturationLevel { get; set; }
 
     public Task SaveAsync();
+    public Task LoadAsync(bool loadFromPersistentWorld = true);
 
     public ValueTask SendMessageAsync(ChatMessage message);
     public ValueTask SendMessageAsync(ChatMessage message, Guid sender, SecureMessageSignature messageSignature);
@@ -56,6 +63,15 @@ public interface IPlayer : ILiving
     public ValueTask KickAsync(string reason);
     public ValueTask OpenInventoryAsync(BaseContainer container);
     public ValueTask DisplayScoreboardAsync(IScoreboard scoreboard, DisplaySlot position);
+
+    [EditorBrowsable(EditorBrowsableState.Advanced)]
+    public ValueTask UpdatePlayerInfoAsync();
+
+    [EditorBrowsable(EditorBrowsableState.Advanced)]
+    public ValueTask SendPlayerInfoAsync();
+
+    public Task<bool> UpdateChunksAsync(bool unloadAll = false, int distance = 0);
+    public Task RespawnAsync(DataKept dataKept = DataKept.Metadata);
 
     /// <summary>
     /// Sends a title message to the player.

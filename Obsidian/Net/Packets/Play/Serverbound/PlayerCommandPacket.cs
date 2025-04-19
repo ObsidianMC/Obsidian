@@ -22,9 +22,9 @@ public partial class PlayerCommandPacket
         this.JumpBoost = reader.ReadVarInt();
     }
 
-    public async override ValueTask HandleAsync(Server server, Player player)
+    public async override ValueTask HandleAsync(Server server, IPlayer player)
     {
-        var block = await player.world.GetBlockAsync((int)player.Position.X, (int)player.HeadY, (int)player.Position.Z);
+        var block = await player.World.GetBlockAsync((int)player.Position.X, (int)player.HeadY, (int)player.Position.Z);
 
         switch (Action)
         {
@@ -62,7 +62,7 @@ public partial class PlayerCommandPacket
                 break;
         }
 
-        player.PacketBroadcaster.QueuePacketToWorld(player.World, new SetEntityDataPacket
+        player.World.PacketBroadcaster.QueuePacketToWorld(player.World, new SetEntityDataPacket
         {
             EntityId = player.EntityId,
             Entity = player

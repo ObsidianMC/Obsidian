@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Common;
@@ -32,7 +31,7 @@ public partial record class KeepAlivePacket
         var server = client.Server;
 
         long keepAliveId = time.ToUnixTimeMilliseconds();
-        if (keepAliveId - client.lastKeepAliveId > server.Configuration.Network.KeepAliveTimeoutInterval)
+        if (keepAliveId - client.LastKeepAliveId > server.Configuration.Network.KeepAliveTimeoutInterval)
         {
             await client.DisconnectAsync("Timed out..");
             return;
@@ -44,16 +43,16 @@ public partial record class KeepAlivePacket
 
         client.SendPacket(this);
 
-        client.lastKeepAliveId = keepAliveId;
+        client.LastKeepAliveId = keepAliveId;
     }
 
-    public async override ValueTask HandleAsync(Server server, Player player)
+    public async override ValueTask HandleAsync(Server server, IPlayer player)
     {
         ArgumentNullException.ThrowIfNull(player);
 
-        var client = player.client;
+        var client = player.Client;
 
-        if (this.KeepAliveId != client.lastKeepAliveId)
+        if (this.KeepAliveId != client.LastKeepAliveId)
         {
             client.Logger.LogWarning("Received invalid KeepAlive from {Username}?? Naughty???? ({Uuid})", player.Username, player.Uuid);
             await client.DisconnectAsync("Kicked for invalid KeepAlive.");
@@ -69,6 +68,6 @@ public partial record class KeepAlivePacket
         client.Logger.LogDebug("Valid KeepAlive ({KeepAliveId}) handled from {Username} ({Uuid})", this.KeepAliveId, player.Username, player.Uuid);
         // KeepAlive is handled.
 
-        client.lastKeepAliveId = null;
+        client.LastKeepAliveId = null;
     }
 }

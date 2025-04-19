@@ -23,9 +23,9 @@ public partial class ChatPacket
     [Field(6)]
     public List<SignedMessage> LastSeenMessages { get; private set; } = default!;
 
-    public async override ValueTask HandleAsync(Server server, Player player)
+    public async override ValueTask HandleAsync(Server server, IPlayer player)
     {
-        await server.HandleIncomingMessageAsync(this, player.client);
+        await server.HandleIncomingMessageAsync(this, player);
     }
 
     public override void Populate(INetStreamReader reader)

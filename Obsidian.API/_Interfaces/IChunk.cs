@@ -36,6 +36,9 @@ public interface IChunk
     public int GetLightLevel(Vector position, LightType lt) => this.GetLightLevel(position.X, position.Y, position.Z, lt);
     public int GetLightLevel(int x, int y, int z, LightType lt);
 
+    public IBlockEntity GetBlockEntity(int x, int y, int z);
+    public void SetBlockEntity(int x, int y, int z, IBlockEntity tileEntityData);
+
     [EditorBrowsable(EditorBrowsableState.Never)]
     public void SetChunkStatus(ChunkStatus status);
 

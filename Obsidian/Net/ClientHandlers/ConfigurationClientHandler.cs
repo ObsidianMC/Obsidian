@@ -11,15 +11,15 @@ internal sealed class ConfigurationClientHandler : ClientHandler
         switch (id)
         {
             case 0:
-                return await HandleFromPoolAsync<ClientInformationPacket>(buffer.Data);
+                return await HandleFromPoolAsync<ClientInformationPacket>(buffer);
             case 2:
-                return await HandleFromPoolAsync<CustomPayloadPacket>(buffer.Data);
+                return await HandleFromPoolAsync<CustomPayloadPacket>(buffer);
             case 3:
-                return await HandleFromPoolAsync<Packets.Configuration.Serverbound.FinishConfigurationPacket>(buffer.Data);
+                return await HandleFromPoolAsync<Packets.Configuration.Serverbound.FinishConfigurationPacket>(buffer);
             case 4:
-                return await HandleFromPoolAsync<KeepAlivePacket>(buffer.Data);
+                return await HandleFromPoolAsync<KeepAlivePacket>(buffer);
             case 6:
-                return await HandleFromPoolAsync<ResourcePackPacket>(buffer.Data);
+                return await HandleFromPoolAsync<ResourcePackPacket>(buffer);
             default:
                 this.Client.Logger.LogWarning("Configuration Packet({id}) {name} is not being handled.", id, PacketsRegistry.Configuration.ServerboundNames[id]);
                 break;

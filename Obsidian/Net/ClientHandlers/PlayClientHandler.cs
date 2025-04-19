@@ -104,8 +104,7 @@ internal sealed class PlayClientHandler : ClientHandler
 
                 try
                 {
-                    using var mcStream = new MinecraftStream(data);
-                    packet.Populate(mcStream);
+                    packet.Populate(data);
                     await packet.HandleAsync(this.Server, this.Client.Player!);
                 }
                 catch (Exception e)

@@ -54,9 +54,9 @@ public class Region : IRegion
 
     public async Task<bool> InitAsync() => await regionFile.InitializeAsync();
 
-    internal async Task FlushAsync()
+    public async Task FlushAsync(CancellationToken cts = default)
     {
-        foreach (Chunk c in loadedChunks)
+        foreach (Chunk c in loadedChunks.Cast<Chunk>())
             await SerializeChunkAsync(c);
 
         regionFile.Flush();
@@ -129,7 +129,7 @@ public class Region : IRegion
         await regionFile.SetChunkAsync(x, z, strm.ToArray());
     }
 
-    internal async Task BeginTickAsync(CancellationToken cts = default)
+    public async Task BeginTickAsync(CancellationToken cts = default)
     {
         await Parallel.ForEachAsync(Entities.Values, cts, async (entity, cts) => await entity.TickAsync());
 
@@ -241,9 +241,10 @@ public class Region : IRegion
 
         foreach (var tileEntityNbt in (NbtList)chunkCompound["block_entities"])
         {
-            var tileEntityCompound = tileEntityNbt as NbtCompound;
+            //TODO convert nbt tile entity to its respective type
+            //var tileEntityCompound = tileEntityNbt as NbtCompound;
 
-            chunk.SetBlockEntity(tileEntityCompound.GetInt("x"), tileEntityCompound.GetInt("y"), tileEntityCompound.GetInt("z"), tileEntityCompound);
+            //chunk.SetBlockEntity(tileEntityCompound.GetInt("x"), tileEntityCompound.GetInt("y"), tileEntityCompound.GetInt("z"), tileEntityCompound);
         }
 
         chunk.SetChunkStatus((ChunkStatus)(Enum.TryParse(typeof(ChunkStatus), chunkCompound.GetString("Status"), out var status) ? status : ChunkStatus.empty));

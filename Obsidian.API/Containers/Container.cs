@@ -76,4 +76,13 @@ public sealed class Container : BaseContainer, IBlockEntity
     }
     public void ToNbt() => throw new NotImplementedException();
     public void FromNbt() => throw new NotImplementedException();
+    public IBlockEntity Clone() => new Container(Type)
+    {
+        Id = this.Id,
+        Title = this.Title,
+        BlockPosition = this.BlockPosition,
+        Owner = this.Owner,
+        items = this.items,
+        IsPlayerInventory = this.IsPlayerInventory,
+    };
 }

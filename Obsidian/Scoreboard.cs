@@ -48,11 +48,11 @@ public class Scoreboard : IScoreboard
             {
                 if (player.CurrentScoreboard == this)
                 {
-                    await player.client.QueuePacketAsync(packet);
+                    await player.Client.QueuePacketAsync(packet);
 
                     foreach (var score in this.scores.Select(x => x.Value).OrderByDescending(x => x.Value))
                     {
-                        await player.client.QueuePacketAsync(new SetScorePacket
+                        await player.Client.QueuePacketAsync(new SetScorePacket
                         {
                             EntityName = score.DisplayText,
                             ObjectiveName = this.name,
@@ -81,7 +81,7 @@ public class Scoreboard : IScoreboard
                 if (player.CurrentScoreboard != this)
                     continue;
 
-                await player.client.QueuePacketAsync(new SetScorePacket
+                await player.Client.QueuePacketAsync(new SetScorePacket
                 {
                     EntityName = score.DisplayText,
                     ObjectiveName = this.name,
@@ -110,7 +110,7 @@ public class Scoreboard : IScoreboard
 
             foreach (var (_, s) in this.scores.OrderBy(x => x.Value.Value))
             {
-                await player.client.QueuePacketAsync(new SetScorePacket
+                await player.Client.QueuePacketAsync(new SetScorePacket
                 {
                     EntityName = s.DisplayText,
                     ObjectiveName = this.name,
@@ -131,7 +131,7 @@ public class Scoreboard : IScoreboard
                 if (player.CurrentScoreboard != this)
                     continue;
 
-                await player.client.QueuePacketAsync(new SetScorePacket
+                await player.Client.QueuePacketAsync(new SetScorePacket
                 {
                     EntityName = score.DisplayText,
                     ObjectiveName = this.name,
@@ -157,7 +157,7 @@ public class Scoreboard : IScoreboard
         foreach (var (_, player) in this.server.OnlinePlayers)
         {
             if (player.CurrentScoreboard == this)
-                await player.client.QueuePacketAsync(obj);
+                await player.Client.QueuePacketAsync(obj);
         }
     }
 
@@ -168,11 +168,11 @@ public class Scoreboard : IScoreboard
         {
             if (player.CurrentScoreboard == this)
             {
-                await player.client.QueuePacketAsync(packet);
+                await player.Client.QueuePacketAsync(packet);
 
                 foreach (var score in this.scores.Select(x => x.Value).OrderByDescending(x => x.Value))
                 {
-                    await player.client.QueuePacketAsync(new SetScorePacket
+                    await player.Client.QueuePacketAsync(new SetScorePacket
                     {
                         EntityName = score.DisplayText,
                         ObjectiveName = this.name,

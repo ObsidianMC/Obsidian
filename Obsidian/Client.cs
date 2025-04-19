@@ -25,12 +25,12 @@ public sealed partial class Client : IClient
     /// <summary>
     /// How many <see cref="KeepAlivePacket"/>s the client has missed.
     /// </summary>
-    internal long? lastKeepAliveId;
+    public long? LastKeepAliveId { get; set; }
 
     /// <summary>
     /// The public key/signature data received from mojang.
     /// </summary>
-    internal SignatureData? signatureData;
+    public SignatureData? SignatureData { get; set; }
 
     /// <summary>
     /// Used for signing chat messages.
@@ -91,7 +91,7 @@ public sealed partial class Client : IClient
     /// <summary>
     /// The client's ping in milliseconds.
     /// </summary>
-    public int Ping { get; internal set; }
+    public int Ping { get; set; }
 
     /// <summary>
     /// Whether the client has compression enabled on the Minecraft stream.
@@ -129,7 +129,7 @@ public sealed partial class Client : IClient
 
     public IServer Server { get; }
 
-    public string? Brand { get; internal set; }
+    public string? Brand { get; set; }
 
     public bool Connected { get; private set; }
 
@@ -291,7 +291,7 @@ public sealed partial class Client : IClient
             throw new InvalidOperationException("Received Encryption Response before sending Encryption Request.");
     }
 
-    internal void SetState(ClientState state) => this.State = state;
+    public void SetState(ClientState state) => this.State = state;
 
     public async Task<MojangProfile?> HasJoinedAsync() => await this.userCache.HasJoinedAsync(this.Player!.Username, this.ServerId!);
 

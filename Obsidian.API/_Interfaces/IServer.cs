@@ -1,6 +1,7 @@
 ﻿using Obsidian.API.Boss;
 using Obsidian.API.Configuration;
 using Obsidian.API.Crafting;
+using System.Collections.Concurrent;
 
 namespace Obsidian.API;
 
@@ -15,6 +16,7 @@ public interface IServer : IDisposable
     public IOperatorList Operators { get; }
     public IWorld DefaultWorld { get; }
     public ServerConfiguration Configuration { get; }
+    public ConcurrentDictionary<Guid, IPlayer> OnlinePlayers { get; }
 
     public IScoreboardManager ScoreboardManager { get; }
     public IEventDispatcher EventDispatcher { get; }

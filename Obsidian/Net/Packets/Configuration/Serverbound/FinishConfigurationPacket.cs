@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
-using Obsidian.Entities;
 using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Play.Clientbound;
 using System.Diagnostics;
@@ -8,9 +7,9 @@ using System.Diagnostics;
 namespace Obsidian.Net.Packets.Configuration.Serverbound;
 public sealed partial class FinishConfigurationPacket
 {
-    public async override ValueTask HandleAsync(Server server, Player player)
+    public async override ValueTask HandleAsync(Server server, IPlayer player)
     {
-        var client = player.client;
+        var client = player.Client;
 
         client.Logger.LogDebug("Got finished configuration");
 
@@ -47,8 +46,6 @@ public sealed partial class FinishConfigurationPacket
 
         await player.UpdatePlayerInfoAsync();
         await player.SendPlayerInfoAsync();
-
-        
 
         player.TeleportId = Globals.Random.Next(0, 999);
         await client.QueuePacketAsync(new PlayerPositionPacket

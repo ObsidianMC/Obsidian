@@ -76,7 +76,7 @@ public class BossBar : IBossBar
             if (!this.HasPlayer(uuid))
                 continue;
 
-            await player.client.QueuePacketAsync(new BossEventPacket(updateHealthAction));
+            await player.Client.QueuePacketAsync(new BossEventPacket(updateHealthAction));
         }
     }
 
@@ -95,7 +95,7 @@ public class BossBar : IBossBar
             if (!this.HasPlayer(uuid))
                 continue;
 
-            await player.client.QueuePacketAsync(new BossEventPacket(updateHealthAction));
+            await player.Client.QueuePacketAsync(new BossEventPacket(updateHealthAction));
         }
     }
 
@@ -119,7 +119,7 @@ public class BossBar : IBossBar
 
         var player = this.server.GetPlayer(playerUuid) as Player;
 
-        await player.client.QueuePacketAsync(new BossEventPacket(addAction));
+        await player.Client.QueuePacketAsync(new BossEventPacket(addAction));
     }
 
     public async Task RemovePlayerAsync(Guid playerUuid)
@@ -132,7 +132,7 @@ public class BossBar : IBossBar
 
         var player = this.server.GetPlayer(playerUuid) as Player;
 
-        await player.client.QueuePacketAsync(new BossEventPacket(this.removeAction));
+        await player.Client.QueuePacketAsync(new BossEventPacket(this.removeAction));
     }
 
     public bool HasPlayer(Guid uuid) => this.Players.Contains(uuid);
@@ -150,7 +150,7 @@ public class BossBar : IBossBar
             if (!this.HasPlayer(uuid))
                 continue;
 
-            await player.client.QueuePacketAsync(new BossEventPacket(updateFlagAction));
+            await player.Client.QueuePacketAsync(new BossEventPacket(updateFlagAction));
         }
     }
 
@@ -168,7 +168,7 @@ public class BossBar : IBossBar
             if (!this.HasPlayer(uuid))
                 continue;
 
-            await player.client.QueuePacketAsync(new BossEventPacket(updateStyleAction));
+            await player.Client.QueuePacketAsync(new BossEventPacket(updateStyleAction));
         }
     }
 }
