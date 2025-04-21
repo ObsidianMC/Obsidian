@@ -1,10 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
 using Obsidian.Net;
-using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Handshake.Serverbound;
 using Obsidian.Net.Packets.Status.Clientbound;
-using Obsidian.Services;
+using System;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Threading;
@@ -43,13 +42,11 @@ public partial class Client
         this.sendEvent = new();
         this.sendEvent.Completed += OnAsyncCompleted;
 
-        this.receiveBuffer.Reserve(MaxBufferSize);
-        this.sendBufferMain.Reserve(MaxBufferSize);
-        this.sendBufferFlush.Reserve(MaxBufferSize);
-
         this.Connected = true;
 
-        await this.TryReceive();
+        this.receiveBuffer.Reserve(MaxBufferSize);
+
+        await this.TryReceiveAsync();
     }
 
     private int Send(byte[] buffer, int offset, int count) => Send(buffer.AsSpan(offset, count));
@@ -86,7 +83,13 @@ public partial class Client
 
         lock (this.sendLock)
         {
-            packet.Serialize(this.sendBufferMain);
+            this.sendBufferMain.WritePacket(packet);
+
+            if ((this.sendBufferMain.Size > MaxBufferSize) && (MaxBufferSize > 0))
+            {
+                this.sendBufferMain.Clear();
+                return false;
+            }
 
             if (this.sending)
                 return true;
@@ -109,6 +112,9 @@ public partial class Client
 
         lock (this.sendLock)
         {
+            if ((buffer.Length > MaxBufferSize) && (MaxBufferSize > 0))
+                return false;
+
             this.sendBufferMain.Write(buffer);
 
             if (this.sending)
@@ -123,7 +129,7 @@ public partial class Client
     }
 
     #region Processing 
-    private async ValueTask TryReceive()
+    private async ValueTask TryReceiveAsync()
     {
         if (this.receiving || !this.Connected)
             return;
@@ -179,8 +185,7 @@ public partial class Client
 
             try
             {
-                this.sendEvent.SetBuffer(this.sendBufferFlush.Data, (int)this.sendBufferFlushOffset,
-                    (int)(this.sendBufferFlush.Size - this.sendBufferFlushOffset));
+                this.sendEvent.SetBuffer(this.sendBufferFlush.Data, (int)this.sendBufferFlushOffset, (int)this.sendBufferFlush.Offset);
 
                 if (!this.Socket.SendAsync(this.sendEvent))
                     process = this.ProcessSend(this.sendEvent);
@@ -215,6 +220,7 @@ public partial class Client
                     var pong = Net.Packets.Status.Serverbound.PingRequestPacket.Deserialize(packetData.NetworkBuffer.Data);
 
                     SendPacket(new PongResponsePacket { Timestamp = pong.Timestamp });
+
                     Disconnect();
                 }
                 break;
@@ -312,7 +318,8 @@ public partial class Client
 
     private bool ProcessSend(SocketAsyncEventArgs e)
     {
-        if (!this.Connected) return false;
+        if (!this.Connected) 
+            return false;
 
         var size = e.BytesTransferred;
 
@@ -322,7 +329,7 @@ public partial class Client
 
             this.sendBufferFlushOffset += size;
 
-            if (this.sendBufferFlushOffset == this.sendBufferFlush.Size)
+            if (this.sendBufferFlushOffset == this.sendBufferFlush.Offset)
             {
                 this.sendBufferFlush.Clear();
                 this.sendBufferFlushOffset = 0;
@@ -338,14 +345,14 @@ public partial class Client
     }
     private async void OnAsyncCompleted(object? sender, SocketAsyncEventArgs e)
     {
-        if (this.disposed)
+        if (!this.Connected || this.disposed)
             return;
 
         switch (e.LastOperation)
         {
             case SocketAsyncOperation.Receive:
                 if (await this.ProcessReceiveAsync(e))
-                    await this.TryReceive();
+                    await this.TryReceiveAsync();
 
                 break;
             case SocketAsyncOperation.Send:

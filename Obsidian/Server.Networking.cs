@@ -76,27 +76,36 @@ public partial class Server
                 return;
             }
 
-            var ip = client.Ip;
-            if (Configuration.Whitelist && !WhitelistConfiguration.CurrentValue.WhitelistedIps.Contains(ip))
-            {
-                _logger.LogInformation("{ip} is not whitelisted. Closing connection", ip);
-                await client.DisconnectAsync("Not whitelisted.");
-                return;
-            }
-
-            if (this.Configuration.Network.ShouldThrottle)
-            {
-                if (throttler.TryGetValue(ip, out var time) && time <= DateTimeOffset.UtcNow)
-                {
-                    throttler.Remove(ip, out _);
-                    _logger.LogDebug("Removed {ip} from throttler", ip);
-                }
-            }
+            await this.TryProcessClientAsync(client);
         }
         else
             this.SendError(e.SocketError);
 
         await this.Accept(e);
+    }
+
+
+    private async ValueTask TryProcessClientAsync(Client client)
+    {
+        if (!client.Connected)
+            return;
+
+        var ip = client.Ip;
+        if (Configuration.Whitelist && !WhitelistConfiguration.CurrentValue.WhitelistedIps.Contains(ip))
+        {
+            _logger.LogInformation("{ip} is not whitelisted. Closing connection", ip);
+            await client.DisconnectAsync("Not whitelisted.");
+            return;
+        }
+
+        if (this.Configuration.Network.ShouldThrottle)
+        {
+            if (throttler.TryGetValue(ip, out var time) && time <= DateTimeOffset.UtcNow)
+            {
+                throttler.Remove(ip, out _);
+                _logger.LogDebug("Removed {ip} from throttler", ip);
+            }
+        }
     }
 
     private Client CreateClient() => ActivatorUtilities.CreateInstance<Client>(this.serviceProvider);

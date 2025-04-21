@@ -446,15 +446,16 @@ public partial class NetworkBuffer : INetStreamWriter
             return;
         }
 
-        using NetworkBuffer networkBuffer = new();
+        using var packetStream = new NetworkBuffer();
 
-        networkBuffer.WriteVarInt(packet.Id);
-        packet.Serialize(networkBuffer);
+        packet.Serialize(packetStream);
 
-        int length = (int)networkBuffer.Size;
+        this.WriteVarInt(packet.Id);
+        var length = (int)packetStream.Size;
 
         this.WriteVarInt(length);
-        this.Write(networkBuffer);
+
+        this.Write(packetStream);
     }
 
     /// <summary>

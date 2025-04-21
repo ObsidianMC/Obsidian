@@ -21,7 +21,7 @@ public partial class NetworkBuffer : INetStreamReader
     {
         var data = this.ReadUntil(length);
 
-        return new(data, 0, 0);
+        return new(data);
     }
 
     [ReadMethod, VarLength]

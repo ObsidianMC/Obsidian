@@ -6,6 +6,8 @@ namespace Obsidian.Net;
 /// </summary>
 public partial class NetworkBuffer
 {
+    private const int DefaultInitialCapacity = 64;
+
     protected byte[] data;
     protected long size;
     protected long offset;
@@ -13,7 +15,7 @@ public partial class NetworkBuffer
     /// <summary>
     /// Is the buffer empty?
     /// </summary>
-    public bool IsEmpty => (data == null) || (size == 0);
+    public bool IsEmpty => size == 0;
     /// <summary>
     /// Bytes memory buffer
     /// </summary>
@@ -36,7 +38,7 @@ public partial class NetworkBuffer
     /// </summary>
     public byte this[long index] => data[index];
 
-    public NetworkBuffer() : this([], 0, 0) { }
+    public NetworkBuffer() : this(0) { }
     public NetworkBuffer(long capacity) : this(new byte[capacity], 0, 0) { }
     public NetworkBuffer(byte[] data) : this(data, data.LongLength, 0) { }
 
@@ -59,6 +61,8 @@ public partial class NetworkBuffer
     /// </summary>
     public Span<byte> AsSpan(int size) => new(data, (int)offset, size);
 
+    public Span<byte> AsSpan(long offset, long? size = null) => new(data, (int)offset, size.HasValue ? (int)size.Value : (int)this.size);
+
     /// <summary>
     /// Clear the current buffer and its offset
     /// </summary>
@@ -69,39 +73,20 @@ public partial class NetworkBuffer
     }
 
     /// <summary>
-    /// Remove the buffer of the given offset and size
-    /// </summary>
-    public void Remove(long offset, long size)
-    {
-        Debug.Assert(((offset + size) <= Size), "Invalid offset & size!");
-        if ((offset + size) > Size)
-            throw new ArgumentException("Invalid offset & size!", nameof(offset));
-
-        Array.Copy(data, offset + size, data, offset, this.size - size - offset);
-        this.size -= size;
-        if (this.offset >= (offset + size))
-            this.offset -= size;
-        else if (this.offset >= offset)
-        {
-            this.offset -= this.offset - offset;
-            if (this.offset > Size)
-                this.offset = Size;
-        }
-    }
-
-    /// <summary>
     /// Reserve the buffer of the given capacity
     /// </summary>
     public void Reserve(long capacity)
     {
-        if (capacity < this.Capacity)
-            return;
+        Debug.Assert(capacity >= 0);
+        var required = offset + capacity;
 
-        Array.Resize(ref this.data, (int)capacity);
+        if (required > data.LongLength)
+        {
+            var newCapacity = Math.Max(required, data.LongLength * 2);
+            Array.Resize(ref data, (int)newCapacity);
+        }
 
-        this.size = capacity;
-        if (this.offset > this.size)
-            this.offset = this.size;
+        size = Math.Max(size, required);
     }
     #endregion
 
@@ -113,21 +98,16 @@ public partial class NetworkBuffer
     /// <param name="value">Byte value to append</param>
     public virtual void WriteByte(byte value)
     {
-        Reserve(size + 1);
-        data[size] = value;
-        size += 1;
+        Reserve(ByteSize);
+        data[this.offset] = value;
+        this.offset += ByteSize;
     }
 
     /// <summary>
     /// Append the given buffer
     /// </summary>
     /// <param name="buffer">Buffer to append</param>
-    public virtual void Write(byte[] buffer)
-    {
-        Reserve(size + buffer.Length);
-        Array.Copy(buffer, 0, data, size, buffer.Length);
-        size += buffer.Length;
-    }
+    public virtual void Write(byte[] buffer) => this.Write(buffer.AsSpan());
 
     /// <summary>
     /// Append the given buffer fragment
@@ -137,9 +117,9 @@ public partial class NetworkBuffer
     /// <param name="size">Buffer size</param>
     public virtual void Write(byte[] buffer, int offset, int size)
     {
-        Reserve(this.size + size);
-        Array.Copy(buffer, offset, data, this.size, size);
-        this.size += size;
+        Reserve(size);
+        Array.Copy(buffer, offset, data, this.offset, size);
+        this.offset += size;
     }
 
     /// <summary>
@@ -148,20 +128,25 @@ public partial class NetworkBuffer
     /// <param name="buffer">Buffer to append as a span of bytes</param>
     public virtual void Write(ReadOnlySpan<byte> buffer)
     {
-        Reserve(size + buffer.Length);
-        buffer.CopyTo(new Span<byte>(data, (int)size, buffer.Length));
-        size += buffer.Length;
+        Reserve(buffer.Length);
+        buffer.CopyTo(new Span<byte>(data, (int)this.offset, buffer.Length));
+        this.offset += buffer.Length;
     }
 
     /// <summary>
     /// Append the given buffer
     /// </summary>
     /// <param name="buffer">Buffer to append</param>
-    public virtual void Write(INetStream buffer) => Write(buffer.AsSpan());
+    public virtual void Write(INetStream buffer) => Write(buffer.AsSpan(0, buffer.Size));
 
     #endregion
 
-    public void Dispose() { this.Clear(); }
+    public void Dispose()
+    {
+        this.Clear();
+
+        GC.SuppressFinalize(this);
+    }
 
     public ValueTask DisposeAsync()
     {

@@ -5,7 +5,6 @@ using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
 using Obsidian.Net;
 using Obsidian.Net.ClientHandlers;
-using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Login.Clientbound;
 using Obsidian.Services;
@@ -323,7 +322,9 @@ public sealed partial class Client : IClient
             var length = this.receiveBuffer.ReadVarInt();
             var packetId = this.receiveBuffer.ReadVarInt();
 
-            var packetDataLength = length - packetId.GetVarIntLength();
+            var varLen = packetId.GetVarIntLength();
+
+            var packetDataLength = Math.Max(length - varLen, 0);
 
             var packetData = this.receiveBuffer.Read(packetDataLength);
 
@@ -377,6 +378,8 @@ public sealed partial class Client : IClient
         cancellationSource.Cancel();
         Disconnected?.Invoke(this);
 
+        this.Logger.LogInformation("Client {ip} disconnected.", this.Ip);
+
         try
         {
             this.Socket.Shutdown(SocketShutdown.Both);
@@ -401,5 +404,5 @@ public sealed partial class Client : IClient
         this.Dispose();
     }
 
-    private IPlayer CreatePlayer(Guid uuid, string username, IWorld world) => ActivatorUtilities.CreateInstance<Player>(this.serviceProvider, uuid, username, this, world);
+    private Player CreatePlayer(Guid uuid, string username, IWorld world) => ActivatorUtilities.CreateInstance<Player>(this.serviceProvider, uuid, username, this, world);
 }
