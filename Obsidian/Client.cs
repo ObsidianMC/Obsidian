@@ -156,21 +156,6 @@ public sealed partial class Client : IClient
         packetQueue = Channel.CreateUnbounded<IClientboundPacket>(new() { SingleReader = true, SingleWriter = true });
     }
 
-    public async Task StartConnectionAsync()
-    {
-        await this.HandlePacketQueueAsync();
-
-        Logger.LogInformation("Disconnected client");
-
-        if (State == ClientState.Play)
-        {
-            Debug.Assert(Player is not null);
-            await this.eventDispatcher.ExecuteEventAsync(new PlayerLeaveEventArgs(Player, this.Server, DateTimeOffset.Now));
-        }
-
-        await this.DisconnectAsync("Player disconnected");
-    }
-
     public async ValueTask<bool> TrySetCachedProfileAsync(string username)
     {
         ArgumentNullException.ThrowIfNull(username, nameof(username));
@@ -341,7 +326,7 @@ public sealed partial class Client : IClient
         return PacketData.Default;
     }
 
-    private async ValueTask HandlePacketQueueAsync()
+    private async Task HandlePacketQueueAsync()
     {
         try
         {

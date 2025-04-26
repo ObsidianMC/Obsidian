@@ -46,6 +46,8 @@ public partial class Client
 
         this.receiveBuffer.Reserve(MaxBufferSize);
 
+        _ = this.HandlePacketQueueAsync();
+
         await this.TryReceiveAsync();
     }
 
