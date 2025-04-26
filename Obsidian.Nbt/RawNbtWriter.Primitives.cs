@@ -1,7 +1,7 @@
 ﻿using System.Buffers.Binary;
 
 namespace Obsidian.Nbt;
-public partial struct RawNbtWriter
+public partial class RawNbtWriter
 {
     public void WriteString(string value)
     {

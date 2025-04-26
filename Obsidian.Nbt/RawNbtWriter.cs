@@ -3,7 +3,7 @@ using Obsidian.Nbt.Utilities;
 using System.Buffers;
 
 namespace Obsidian.Nbt;
-public partial struct RawNbtWriter : INbtWriter
+public sealed partial class RawNbtWriter : INbtWriter
 {
     private const int MaxBufferSize = 1024 * 4;
 
@@ -17,9 +17,9 @@ public partial struct RawNbtWriter : INbtWriter
 
     public bool Networked { get; }
 
-    public readonly Span<byte> Data => this.AsSpan();
+    public Span<byte> Data => this.AsSpan();
 
-    public readonly int Offset => this.offset;
+    public int Offset => this.offset;
 
     public RawNbtWriter(string name)
     {
@@ -258,19 +258,19 @@ public partial struct RawNbtWriter : INbtWriter
         this.currentState = this.currentState.PreviousState;
     }
 
-    public readonly void TryFinish()
+    public void TryFinish()
     {
         if (this.currentState != null)
             throw new InvalidOperationException($"Unable to close writer. Root tag has yet to be closed.");//TODO maybe more info here??
     }
 
-    public readonly Task TryFinishAsync()
+    public Task TryFinishAsync()
     {
         this.TryFinish();
         return Task.CompletedTask;
     }
 
-    public readonly Span<byte> AsSpan() => new(data, 0, offset);
+    public Span<byte> AsSpan() => new(data, 0, offset);
 
     public void Dispose()
     {

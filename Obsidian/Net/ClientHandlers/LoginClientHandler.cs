@@ -74,7 +74,7 @@ internal sealed class LoginClientHandler : ClientHandler
         this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimMaterial.CodecKey, CodecRegistry.TrimMaterial.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.WolfVariant.CodecKey, new Dictionary<string, ICodec>()
         {
-            { CodecRegistry.WolfVariant.Woods.Name, CodecRegistry.WolfVariant.Woods },
+            { CodecRegistry.WolfVariant.Black.Name, CodecRegistry.WolfVariant.Black },
         }));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.PaintingVariant.CodecKey, CodecRegistry.PaintingVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
 
