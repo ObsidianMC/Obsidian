@@ -410,5 +410,8 @@ public sealed partial class Client : IClient
         this.Dispose();
     }
 
-    private Player CreatePlayer(Guid uuid, string username, IWorld world) => new(uuid, username, this, world);
+    private Player CreatePlayer(Guid uuid, string username, IWorld world) => new(uuid, username, this, world)
+    {
+        Server = this.serviceProvider.GetRequiredService<IServer>()
+    };
 }
