@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Obsidian.Nbt;
 
-public partial struct NbtWriter
+public partial struct NbtWriterStream
 {
     public void WriteString(string value)
     {
@@ -127,11 +127,11 @@ public partial struct NbtWriter
         this.WriteDoubleInternal(value);
     }
 
-    internal void Write(NbtTagType tagType) => this.WriteByteInternal((byte)tagType);
+    public void Write(NbtTagType tagType) => this.WriteByteInternal((byte)tagType);
 
-    internal void WriteByteInternal(byte value) => this.BaseStream.WriteByte(value);
+    private void WriteByteInternal(byte value) => this.BaseStream.WriteByte(value);
 
-    internal void WriteStringInternal(string value)
+    private void WriteStringInternal(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
 
@@ -144,7 +144,7 @@ public partial struct NbtWriter
         this.WriteShortInternal((short)buffer.Length);
         this.BaseStream.Write(buffer);
     }
-    internal void WriteShortInternal(short value)
+    private void WriteShortInternal(short value)
     {
         Span<byte> buffer = stackalloc byte[2];
 
@@ -153,7 +153,7 @@ public partial struct NbtWriter
         this.BaseStream.Write(buffer);
     }
 
-    internal void WriteIntInternal(int value)
+    private void WriteIntInternal(int value)
     {
         Span<byte> buffer = stackalloc byte[4];
 
@@ -162,7 +162,7 @@ public partial struct NbtWriter
         this.BaseStream.Write(buffer);
     }
 
-    internal void WriteFloatInternal(float value)
+    private void WriteFloatInternal(float value)
     {
         Span<byte> buffer = stackalloc byte[4];
 
@@ -171,7 +171,7 @@ public partial struct NbtWriter
         this.BaseStream.Write(buffer);
     }
 
-    internal void WriteLongInternal(long value)
+    private void WriteLongInternal(long value)
     {
         Span<byte> buffer = stackalloc byte[8];
 
@@ -180,7 +180,7 @@ public partial struct NbtWriter
         this.BaseStream.Write(buffer);
     }
 
-    internal void WriteDoubleInternal(double value)
+    private void WriteDoubleInternal(double value)
     {
         Span<byte> buffer = stackalloc byte[8];
 

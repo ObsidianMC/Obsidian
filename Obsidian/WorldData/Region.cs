@@ -118,7 +118,7 @@ public class Region : IRegion
         var (x, z) = (NumericsHelper.Modulo(chunk.X, CubicRegionSize), NumericsHelper.Modulo(chunk.Z, CubicRegionSize));
 
         await using MemoryStream strm = new();
-        await using NbtWriter writer = new(strm, ChunkCompression, "");
+        await using NbtWriterStream writer = new(strm, ChunkCompression, "");
 
         SerializeChunk(writer, chunk);
 
@@ -252,7 +252,7 @@ public class Region : IRegion
         return chunk;
     }
 
-    private static void SerializeChunk(NbtWriter writer, IChunk chunk)
+    private static void SerializeChunk(NbtWriterStream writer, IChunk chunk)
     {
         writer.WriteListStart("sections", NbtTagType.Compound, chunk.Sections.Length);
 

@@ -1,12 +1,13 @@
 ﻿using Obsidian.API.Utilities;
 using Obsidian.Nbt;
+using Obsidian.Nbt.Interfaces;
 using System.Text.Json;
 
 namespace Obsidian.Utilities;
 
 public partial class Extensions
 {
-    public static void WriteChatMessage(this NbtWriter writer, ChatMessage chatMessage)
+    public static void WriteChatMessage(this INbtWriter writer, ChatMessage chatMessage)
     {
         if (!chatMessage.Text.IsNullOrEmpty())
             writer.WriteString("text", chatMessage.Text);

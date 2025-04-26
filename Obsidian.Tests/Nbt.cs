@@ -109,7 +109,7 @@ public class Nbt(ITestOutputHelper output)
     public void WriteBigTest()
     {
         this.stream = new MemoryStream();
-        using var writer = new NbtWriter(stream, NbtCompression.GZip, "Level");
+        using var writer = new NbtWriterStream(stream, NbtCompression.GZip, "Level");
         {
             writer.WriteCompoundStart("nested compound test");
             {
@@ -184,7 +184,7 @@ public class Nbt(ITestOutputHelper output)
     public void TestWrite()
     {
         using var stream = new MemoryStream();
-        using var writer = new NbtWriter(stream, "Test Compound");
+        using var writer = new NbtWriterStream(stream, "Test Compound");
 
         writer.WriteString("egg", "cheese");
 

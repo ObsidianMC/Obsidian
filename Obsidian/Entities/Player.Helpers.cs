@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Inventory;
 using Obsidian.Nbt;
+using Obsidian.Nbt.Interfaces;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
@@ -28,7 +29,7 @@ public partial class Player
         }
 
         await using var persistentDataStream = persistentDataFile.Create();
-        await using var persistentDataWriter = new NbtWriter(persistentDataStream, NbtCompression.GZip, "");
+        await using var persistentDataWriter = new NbtWriterStream(persistentDataStream, NbtCompression.GZip, "");
         
         persistentDataWriter.WriteString("worldName", World.ParentWorldName ?? World.Name);
         //TODO make sure to save inventory in the right location if has using global data set to true
@@ -37,7 +38,7 @@ public partial class Player
         await persistentDataWriter.TryFinishAsync();
 
         await using var playerFileStream = playerDataFile.Create();
-        await using var writer = new NbtWriter(playerFileStream, NbtCompression.GZip, "");
+        await using var writer = new NbtWriterStream(playerFileStream, NbtCompression.GZip, "");
 
         writer.WriteByte("MovementFlags", (byte)this.MovementFlags);
 
@@ -309,7 +310,7 @@ public partial class Player
         }
     }
 
-    private void WriteItems(NbtWriter writer, bool inventory = true)
+    private void WriteItems(INbtWriter writer, bool inventory = true)
     {
         var items = inventory ? Inventory.Select((item, slot) => (item, slot)) : EnderInventory.Select((item, slot) => (item, slot));
 

@@ -162,6 +162,9 @@ public partial class NetworkBuffer : INetStreamWriter
     [WriteMethod]
     public void WriteByteArray(byte[] values) => this.Write(values);
 
+    [WriteMethod]
+    public void WriteByteArray(Span<byte> values) => this.Write(values);
+
     #endregion
 
     public void WritePosition(SoundPosition position)
@@ -324,24 +327,20 @@ public partial class NetworkBuffer : INetStreamWriter
         if (chatMessage == null)
             return;
 
-        //TODO NEED TO RE-DO NBT WRITER
-        using var ms = new MemoryStream();
-        var writer = new NbtWriter(ms, true);
+        var writer = new RawNbtWriter(true);
 
         writer.WriteChatMessage(chatMessage);
 
         writer.EndCompound();
         writer.TryFinish();
 
-        this.Write(ms.ToArray());
+        this.Write(writer.Data);
     }
 
     [WriteMethod]
     public void WriteCodec(ICodec codec)
     {
-        //TODO NEED TO RE-DO NBT WRITER
-        using var ms = new MemoryStream();
-        var writer = new NbtWriter(ms, true);
+        using var writer = new RawNbtWriter(true);
 
         if (codec is DimensionCodec dim)
             dim.WriteElement(writer);
@@ -362,6 +361,8 @@ public partial class NetworkBuffer : INetStreamWriter
 
         writer.EndCompound();
         writer.TryFinish();
+
+        this.Write(writer.Data);
     }
 
     [WriteMethod]

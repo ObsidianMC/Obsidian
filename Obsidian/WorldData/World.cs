@@ -451,7 +451,7 @@ public sealed partial class World : IWorld
         }
 
         await using var fs = worldFile.Create();
-        await using var writer = new NbtWriter(fs, NbtCompression.GZip, "");
+        await using var writer = new NbtWriterStream(fs, NbtCompression.GZip, "");
 
         writer.WriteBool("hardcore", LevelData.Hardcore);
         writer.WriteBool("MapFeatures", LevelData.MapFeatures);

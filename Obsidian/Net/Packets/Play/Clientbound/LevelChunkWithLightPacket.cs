@@ -18,7 +18,7 @@ public partial class LevelChunkWithLightPacket(IChunk chunk)
         using (var heightmapBuffer = new NetworkBuffer())
         {
             using var ms = new MemoryStream(heightmapBuffer.Data);
-            var nbtWriter = new NbtWriter(ms, true);
+            var nbtWriter = new NbtWriterStream(ms, true);
 
             foreach (var (type, heightmap) in Chunk.Heightmaps)
                 if (type == HeightmapType.MotionBlocking)

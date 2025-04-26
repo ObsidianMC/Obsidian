@@ -1,11 +1,13 @@
-﻿using System.IO;
+﻿using Obsidian.Nbt.Interfaces;
+using Obsidian.Nbt.Utilities;
+using System.IO;
 using System.IO.Compression;
 
 namespace Obsidian.Nbt;
 
-public partial struct NbtWriter(Stream outstream, NbtCompression compressionMode = NbtCompression.None) : IDisposable, IAsyncDisposable
+public partial struct NbtWriterStream(Stream outstream, NbtCompression compressionMode = NbtCompression.None) : INbtWriter
 {
-    private State? currentState;
+    private NbtWriterState? currentState;
     public NbtTagType? RootType { get; private set; }
 
     public Stream BaseStream { get; } = compressionMode switch
@@ -17,7 +19,7 @@ public partial struct NbtWriter(Stream outstream, NbtCompression compressionMode
 
     public bool Networked { get; }
 
-    public NbtWriter(Stream outstream, string name) : this(outstream)
+    public NbtWriterStream(Stream outstream, string name) : this(outstream)
     {
         this.Write(NbtTagType.Compound);
         this.WriteStringInternal(name);
@@ -25,7 +27,7 @@ public partial struct NbtWriter(Stream outstream, NbtCompression compressionMode
         this.SetRootTag(NbtTagType.Compound);
     }
 
-    public NbtWriter(Stream outstream, bool networked) : this(outstream)
+    public NbtWriterStream(Stream outstream, bool networked) : this(outstream)
     {
         this.Networked = networked;
 
@@ -34,7 +36,7 @@ public partial struct NbtWriter(Stream outstream, NbtCompression compressionMode
         this.SetRootTag(NbtTagType.Compound);
     }
 
-    public NbtWriter(Stream outstream, NbtCompression compressionMode, string name) : this(outstream, compressionMode)
+    public NbtWriterStream(Stream outstream, NbtCompression compressionMode, string name) : this(outstream, compressionMode)
     {
         this.Write(NbtTagType.Compound);
         this.WriteStringInternal(name);
@@ -298,7 +300,7 @@ public partial struct NbtWriter(Stream outstream, NbtCompression compressionMode
         this.BaseStream.Write(values);
     }
 
-    public void Validate(string name, NbtTagType type)
+    private void Validate(string name, NbtTagType type)
     {
         if (this.TryValidateList(name, type))
             return;
@@ -332,7 +334,7 @@ public partial struct NbtWriter(Stream outstream, NbtCompression compressionMode
         return true;
     }
 
-    public void TryFinish()
+    public readonly void TryFinish()
     {
         if (this.currentState != null)
             throw new InvalidOperationException($"Unable to close writer. Root tag has yet to be closed.");//TODO maybe more info here??
@@ -340,7 +342,7 @@ public partial struct NbtWriter(Stream outstream, NbtCompression compressionMode
         this.BaseStream.Flush();
     }
 
-    public async Task TryFinishAsync()
+    public readonly async Task TryFinishAsync()
     {
         if (this.currentState != null)
             throw new InvalidOperationException("Unable to close writer. Root tag has yet to be closed.");//TODO maybe more info here??
@@ -348,8 +350,8 @@ public partial struct NbtWriter(Stream outstream, NbtCompression compressionMode
         await this.BaseStream.FlushAsync();
     }
 
-    public ValueTask DisposeAsync() => this.BaseStream.DisposeAsync();
-    public void Dispose() => this.BaseStream.Dispose();
+    public readonly ValueTask DisposeAsync() => this.BaseStream.DisposeAsync();
+    public readonly void Dispose() => this.BaseStream.Dispose();
 
     private void WriteArray(INbtTag array)
     {
@@ -366,29 +368,6 @@ public partial struct NbtWriter(Stream outstream, NbtCompression compressionMode
         else if (array is NbtArray<byte> byteArray)
         {
             this.WriteArray(byteArray.Name, byteArray.GetArray());
-        }
-    }
-
-    private sealed class State
-    {
-        public int ListSize { get; init; }
-
-        public int ListIndex { get; set; }
-
-        public NbtTagType? ExpectedListType { get; init; }
-
-        public required State? PreviousState { get; init; }
-
-        public required NbtTagType? ParentTagType { get; init; }
-
-        public List<string> ChildrenAdded { get; init; }
-
-        public bool HasExpectedListType(NbtTagType type)
-        {
-            if (this.ExpectedListType == type)
-                return true;
-
-            return this.PreviousState?.HasExpectedListType(type) ?? false;
         }
     }
 }

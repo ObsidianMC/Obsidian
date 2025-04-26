@@ -330,7 +330,7 @@ public sealed partial class Client : IClient
     {
         try
         {
-            while (this.Connected)
+            while (this.Connected || !this.disposed || !this.cancellationSource.IsCancellationRequested)
             {
                 var packet = await this.packetQueue.Reader.ReadAsync(this.cancellationSource.Token);
 
