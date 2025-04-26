@@ -2,12 +2,8 @@
 
 namespace Obsidian.WorldData.Decorators;
 
-public class DefaultDecorator : BaseDecorator
+public class DefaultDecorator(Biome biome, IChunk chunk, Vector surfacePos, GenHelper helper) : BaseDecorator(biome, chunk, surfacePos, helper)
 {
-    public DefaultDecorator(Biome biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
-    {
-    }
-
     public override void Decorate()
     {
         if (Position.Y < Noise.WaterLevel)

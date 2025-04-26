@@ -1,11 +1,11 @@
-﻿using System.Linq.Expressions;
-using Obsidian.WorldData.Generators;
+﻿using Obsidian.WorldData.Generators;
+using System.Linq.Expressions;
 
 namespace Obsidian.WorldData.Decorators;
 
 public static class DecoratorFactory
 {
-    private static readonly Type[] argumentCache = [typeof(Biome), typeof(Chunk), typeof(Vector), typeof(GenHelper)];
+    private static readonly Type[] argumentCache = [typeof(Biome), typeof(IChunk), typeof(Vector), typeof(GenHelper)];
     public static readonly ParameterExpression[] expressionParameters = argumentCache.Select((t, i) => Expression.Parameter(t, $"param{i}")).ToArray();
 
     private static readonly ConcurrentDictionary<Biome, Func<Biome, IChunk, Vector, GenHelper, BaseDecorator>> decoratorFactory = new();

@@ -2,11 +2,6 @@
 
 namespace Obsidian.WorldData.Features.Flora;
 
-public class OxeyeDaisyFlora : BaseFlora
+public class OxeyeDaisyFlora(GenHelper helper, IChunk chunk) : BaseFlora(helper, chunk, Material.OxeyeDaisy)
 {
-    public OxeyeDaisyFlora(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.OxeyeDaisy)
-    {
-
-    }
-
 }

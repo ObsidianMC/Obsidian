@@ -1,16 +1,10 @@
 ﻿using Obsidian.API.BlockStates.Builders;
-using Obsidian.Registries;
 using Obsidian.WorldData.Generators;
 
 namespace Obsidian.WorldData.Features.Flora;
 
-public class BambooFlora : BaseTallFlora
+public class BambooFlora(GenHelper helper, IChunk chunk) : BaseTallFlora(helper, chunk, Material.Bamboo, 15)
 {
-    public BambooFlora(GenHelper helper, Chunk chunk) : 
-        base(helper, chunk, Material.Bamboo, 15)
-    {
-
-    }
 
     /// <summary>
     /// Place a single plant.

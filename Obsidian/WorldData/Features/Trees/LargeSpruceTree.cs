@@ -1,14 +1,9 @@
-﻿using Obsidian.Registries;
-using Obsidian.WorldData.Generators;
+﻿using Obsidian.WorldData.Generators;
 
 namespace Obsidian.WorldData.Features.Trees;
 
-public class LargeSpruceTree : BaseTree
+public class LargeSpruceTree(GenHelper helper, IChunk chunk) : BaseTree(helper, chunk, Material.SpruceLeaves, Material.SpruceLog, 18)
 {
-    public LargeSpruceTree(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.SpruceLeaves, Material.SpruceLog, 18)
-    {
-    }
-
     private const bool V = false;
     private const bool X = true;
     private readonly bool[,] level0 = new bool[10, 10]

@@ -2,11 +2,6 @@
 
 namespace Obsidian.WorldData.Features.Flora;
 
-public class PoppyFlora : BaseFlora
+public class PoppyFlora(GenHelper helper, IChunk chunk) : BaseFlora(helper, chunk, Material.Poppy)
 {
-    public PoppyFlora(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.Poppy)
-    {
-
-    }
-
 }

@@ -2,11 +2,6 @@
 
 namespace Obsidian.WorldData.Features.Flora;
 
-public class BlueOrchidFlora : BaseFlora
+public class BlueOrchidFlora(GenHelper helper, IChunk chunk) : BaseFlora(helper, chunk, Material.BlueOrchid)
 {
-    public BlueOrchidFlora(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.BlueOrchid)
-    {
-
-    }
-
 }

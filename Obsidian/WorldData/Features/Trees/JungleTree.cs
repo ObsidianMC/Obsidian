@@ -1,10 +1,9 @@
-﻿using Obsidian.WorldData.Generators;
-using Obsidian.API.BlockStates.Builders;
-using Obsidian.Registries;
+﻿using Obsidian.API.BlockStates.Builders;
+using Obsidian.WorldData.Generators;
 
 namespace Obsidian.WorldData.Features.Trees;
 
-public class JungleTree : BaseTree
+public class JungleTree(GenHelper helper, IChunk chunk) : BaseTree(helper, chunk, Material.JungleLeaves, Material.JungleLog, 7)
 {
     protected int leavesRadius = 5;
 
@@ -13,10 +12,6 @@ public class JungleTree : BaseTree
     private static readonly IBlock vineNorth = BlocksRegistry.Get(Material.Vine, new VineStateBuilder().IsNorth().Build());
     private static readonly IBlock vineEast = BlocksRegistry.Get(Material.Vine, new VineStateBuilder().IsEast().Build());
     private static readonly IBlock cocoa = BlocksRegistry.Get(Material.Cocoa, new CocoaStateBuilder().WithAge(2).WithFacing(Facing.South).Build());
-
-    public JungleTree(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.JungleLeaves, Material.JungleLog, 7)
-    {
-    }
 
     protected override async Task GenerateLeavesAsync(Vector origin, int heightOffset)
     {

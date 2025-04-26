@@ -2,10 +2,6 @@
 
 namespace Obsidian.WorldData.Features.Flora;
 
-public class CornflowerFlora : BaseFlora
+public class CornflowerFlora(GenHelper helper, IChunk chunk) : BaseFlora(helper, chunk, Material.Cornflower)
 {
-    public CornflowerFlora(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.Cornflower)
-    {
-
-    }
 }

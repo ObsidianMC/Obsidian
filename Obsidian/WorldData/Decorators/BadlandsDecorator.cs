@@ -2,7 +2,7 @@
 
 namespace Obsidian.WorldData.Decorators;
 
-public sealed class BadlandsDecorator(Biome biome, Chunk chunk, Vector surfacePos, GenHelper helper) : BaseDecorator(biome, chunk, surfacePos, helper)
+public sealed class BadlandsDecorator(Biome biome, IChunk chunk, Vector surfacePos, GenHelper helper) : BaseDecorator(biome, chunk, surfacePos, helper)
 {
     public override void Decorate()
     {

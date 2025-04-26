@@ -1,12 +1,11 @@
-﻿using Obsidian.Registries;
+﻿using Obsidian.WorldData.Features.Trees;
 using Obsidian.WorldData.Generators;
-using Obsidian.WorldData.Features.Trees;
 
 namespace Obsidian.WorldData.Decorators;
 
 public class SnowySlopesDecorator : BaseDecorator
 {
-    public SnowySlopesDecorator(Biome biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
+    public SnowySlopesDecorator(Biome biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(3, typeof(DarkOakTree)));
     }

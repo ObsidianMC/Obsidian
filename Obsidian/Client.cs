@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
 using Obsidian.Net;
@@ -333,6 +332,17 @@ public sealed partial class Client : IClient
             while (this.Connected || !this.disposed || !this.cancellationSource.IsCancellationRequested)
             {
                 var packet = await this.packetQueue.Reader.ReadAsync(this.cancellationSource.Token);
+
+                string name = "";
+
+                if(this.State == ClientState.Login)
+                    PacketsRegistry.Login.ServerboundNames.TryGetValue(packet.Id, out name);
+                else if(this.State == ClientState.Configuration)
+                    PacketsRegistry.Configuration.ServerboundNames.TryGetValue(packet.Id, out name);
+                else if(this.State == ClientState.Play)
+                    PacketsRegistry.Play.ServerboundNames.TryGetValue(packet.Id, out name);
+
+                this.Logger.LogInformation("Sending packet({name})", name);
 
                 this.SendPacket(packet);
             }

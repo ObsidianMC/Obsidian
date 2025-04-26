@@ -1,5 +1,4 @@
-﻿using Obsidian.Registries;
-using Obsidian.WorldData.Features.Flora;
+﻿using Obsidian.WorldData.Features.Flora;
 using Obsidian.WorldData.Features.Trees;
 using Obsidian.WorldData.Generators;
 
@@ -7,7 +6,7 @@ namespace Obsidian.WorldData.Decorators;
 
 public class PlainsDecorator : BaseDecorator
 {
-    public PlainsDecorator(Biome biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
+    public PlainsDecorator(Biome biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, typeof(OakTree)));
         Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(DandelionFlora), 4, 3));

@@ -32,8 +32,6 @@ public partial class Server
         this.acceptorEventArgs = new();
         this.acceptorEventArgs.Completed += OnAsyncCompleted;
 
-        this.Connections = new ConcurrentDictionary<int, Client>(-1, this.MaxConnections);
-
         this.socket = new(endpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 
         this.socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, false);

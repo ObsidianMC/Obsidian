@@ -1,16 +1,11 @@
 ﻿using Obsidian.API.BlockStates.Builders;
 using Obsidian.WorldData.Generators;
-using Obsidian.Registries;
 
 namespace Obsidian.WorldData.Features.Flora;
 
-public class JungleBushFlora : BaseFlora
+public class JungleBushFlora(GenHelper helper, IChunk chunk) : BaseFlora(helper, chunk, Material.JungleLeaves)
 {
     private static readonly IBlock jungleLogBlock = BlocksRegistry.Get(Material.JungleLog, new JungleLogStateBuilder().WithAxis(Axis.Y).Build());
-
-    public JungleBushFlora(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.JungleLeaves)
-    {
-    }
 
     public override async Task GenerateFloraAsync(Vector origin, int seed, int radius, int density)
     {

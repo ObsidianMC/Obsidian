@@ -1,7 +1,4 @@
-﻿using Obsidian.API.Utilities;
-using Obsidian.Nbt;
-using Obsidian.WorldData;
-using System.IO;
+﻿using Obsidian.Nbt;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 

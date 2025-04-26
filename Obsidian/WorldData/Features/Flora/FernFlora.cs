@@ -3,10 +3,6 @@
 
 namespace Obsidian.WorldData.Features.Flora;
 
-public class FernFlora : BaseFlora
+public class FernFlora(GenHelper helper, IChunk chunk) : BaseFlora(helper, chunk, Material.Fern)
 {
-    public FernFlora(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.Fern)
-    {
-
-    }
 }

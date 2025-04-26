@@ -36,7 +36,7 @@ public sealed class Chunk : IChunk
             { HeightmapType.WorldSurface, new Heightmap(HeightmapType.WorldSurface, this) },
             { HeightmapType.WorldSurfaceWG, new Heightmap(HeightmapType.WorldSurfaceWG, this) },
             { HeightmapType.MotionBlockingNoLeaves, new Heightmap(HeightmapType.MotionBlockingNoLeaves, this) }
-        }.AsReadOnly();
+        };
 
         Sections = new ChunkSection[24];
         for (int i = 0; i < Sections.Length; i++)

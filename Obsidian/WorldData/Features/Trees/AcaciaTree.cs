@@ -2,13 +2,9 @@
 
 namespace Obsidian.WorldData.Features.Trees;
 
-public class AcaciaTree : BaseTree
+public class AcaciaTree(GenHelper helper, IChunk chunk) : BaseTree(helper, chunk, Material.AcaciaLeaves, Material.AcaciaLog, 7)
 {
-    public AcaciaTree(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.AcaciaLeaves, Material.AcaciaLog, 7)
-    {
-    }
-
-    protected override async Task GenerateLeavesAsync(Vector origin, int heightOffset)
+    protected async override Task GenerateLeavesAsync(Vector origin, int heightOffset)
     {
         int topY = origin.Y + TrunkHeight + heightOffset + 1;
         for (int y = topY; y >= topY - 1; y--)

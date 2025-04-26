@@ -6,13 +6,13 @@ public class LargeJungleTree : JungleTree
 {
     private readonly XorshiftRandom rand = new();
 
-    public LargeJungleTree(GenHelper helper, Chunk chunk) : base(helper, chunk)
+    public LargeJungleTree(GenHelper helper, IChunk chunk) : base(helper, chunk)
     {
         leavesRadius = 6;
         TrunkHeight = 20;
     }
 
-    protected override async Task GenerateLeavesAsync(Vector origin, int heightOffset)
+    protected async override Task GenerateLeavesAsync(Vector origin, int heightOffset)
     {
         List<Vector> vineCandidates = new();
         int topY = origin.Y + TrunkHeight + heightOffset + 1;

@@ -1,5 +1,4 @@
-﻿using Obsidian.Registries;
-using Obsidian.WorldData.Features.Flora;
+﻿using Obsidian.WorldData.Features.Flora;
 using Obsidian.WorldData.Features.Trees;
 using Obsidian.WorldData.Generators;
 
@@ -7,7 +6,7 @@ namespace Obsidian.WorldData.Decorators;
 
 public class OldGrowthBirchForestDecorator : BaseDecorator
 {
-    public OldGrowthBirchForestDecorator(Biome biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
+    public OldGrowthBirchForestDecorator(Biome biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(6, typeof(BirchTree)));
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, typeof(TallBirchTree)));

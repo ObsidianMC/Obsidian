@@ -4,7 +4,7 @@ using Generators;
 public class ColdOceanDecorator : OceanDecorator
 {
 
-    public ColdOceanDecorator(Biome biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
+    public ColdOceanDecorator(Biome biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
         hasMagma = false;
         hasKelp = false;

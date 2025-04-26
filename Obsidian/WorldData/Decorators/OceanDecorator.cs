@@ -1,6 +1,5 @@
 ﻿using Obsidian.API.BlockStates.Builders;
 using Obsidian.WorldData.Generators;
-using Obsidian.Registries;
 
 namespace Obsidian.WorldData.Decorators;
 
@@ -25,7 +24,7 @@ public class OceanDecorator : BaseDecorator
 
     protected bool IsMagma => Noise.Decoration.GetValue(Position.X + (Chunk.X * 16) / 2.0, -90, Position.Z + (Chunk.Z * 16) / 2.0) > 0.85;
 
-    public OceanDecorator(Biome biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
+    public OceanDecorator(Biome biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
         sand = BlocksRegistry.Sand;
         dirt = BlocksRegistry.Dirt;

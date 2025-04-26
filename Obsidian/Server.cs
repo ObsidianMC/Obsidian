@@ -248,6 +248,7 @@ public sealed partial class Server : IServer
     public async Task RunAsync()
     {
         StartTime = DateTimeOffset.Now;
+        this.Connections = new ConcurrentDictionary<int, Client>(-1, this.MaxConnections);
 
         _logger.LogInformation("Launching Obsidian Server v{Version}", this.Version);
         var loadTimeStopwatch = Stopwatch.StartNew();
@@ -484,7 +485,7 @@ public sealed partial class Server : IServer
 
                 while (_chatMessagesQueue.TryDequeue(out ClientboundPacket packet))
                 {
-                    foreach (Player player in Players)
+                    foreach (var player in Players)
                     {
                         player.Client.SendPacket(packet);
                     }

@@ -3,5 +3,5 @@
 public interface IDecorator
 {
     public DecoratorFeatures Features { get; }
-    void Decorate();
+    public void Decorate();
 }
