@@ -72,6 +72,8 @@ public partial class NetworkBuffer
         offset = 0;
     }
 
+    public void Reset() => this.offset = 0;
+
     /// <summary>
     /// Reserve the buffer of the given capacity
     /// </summary>

@@ -6,7 +6,7 @@ namespace Obsidian.Tests;
 
 public class BitSetTest
 {
-    [Fact(DisplayName = "BitSet Tests", Timeout = 100)]
+    [Fact(DisplayName = "BitSet Tests")]
     public void TestGetSet()
     {
         var bs = new BitSet();

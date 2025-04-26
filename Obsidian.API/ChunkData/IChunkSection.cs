@@ -14,22 +14,22 @@ public interface IChunkSection
 
     public bool IsEmpty { get; }
 
-    public IBlock GetBlock(Vector position) => this.GetBlock(position.X, position.Y, position.Z);
+    public IBlock GetBlock(Vector position);
     public IBlock GetBlock(int x, int y, int z);
 
-    public Biome GetBiome(Vector position) => this.GetBiome(position.X, position.Y, position.Z);
+    public Biome GetBiome(Vector position);
     public Biome GetBiome(int x, int y, int z);
 
-    public void SetBlock(Vector position, IBlock block) => this.SetBlock(position.X, position.Y, position.Z, block);
+    public void SetBlock(Vector position, IBlock block);
     public void SetBlock(int x, int y, int z, IBlock block);
 
-    public void SetBiome(Vector position, Biome biome) => this.SetBiome(position.X, position.Y, position.Z, biome);
+    public void SetBiome(Vector position, Biome biome);
     public void SetBiome(int x, int y, int z, Biome biome);
 
-    public void SetLightLevel(Vector position, LightType lt, int level) => this.SetLightLevel(position.X, position.Y, position.Z, lt, level);
+    public void SetLightLevel(Vector position, LightType lt, int level);
     public void SetLightLevel(int x, int y, int z, LightType lt, int level);
 
-    public int GetLightLevel(Vector position, LightType lt) => GetLightLevel(position.X, position.Y, position.Z, lt);
+    public int GetLightLevel(Vector position, LightType lt);
     public int GetLightLevel(int x, int y, int z, LightType lt);
 
 

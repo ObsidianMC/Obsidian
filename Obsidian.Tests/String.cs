@@ -10,16 +10,16 @@ namespace Obsidian.Tests;
 public class String
 {
     [MemberData(nameof(StringData))]
-    [Theory(DisplayName = "Equal strings", Timeout = 100)]
-    public async void SameAsync(string expectedValue)
+    [Theory(DisplayName = "Equal strings")]
+    public void Same(string expectedValue)
     {
-        using var stream = new MinecraftStream();
+        using var stream = new NetworkBuffer();
 
-        await stream.WriteStringAsync(expectedValue);
+        stream.WriteString(expectedValue);
 
-        stream.Position = 0; //Reset to beginning for read
+        stream.Reset(); //Reset to beginning for read
 
-        string actualValue = await stream.ReadStringAsync();
+        string actualValue = stream.ReadString();
 
         Assert.Equal(expectedValue, actualValue);
     }

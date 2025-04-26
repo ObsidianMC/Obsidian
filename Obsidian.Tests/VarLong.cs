@@ -9,26 +9,28 @@ namespace Obsidian.Tests;
 public class VarLong
 {
     [MemberData(nameof(VarLongData))]
-    [Theory(DisplayName = "Serialization of VarLongs", Timeout = 100)]
-    public async void SerializeAsync(long input, byte[] bytes)
+    [Theory(DisplayName = "Serialization of VarLongs")]
+    public void Serialize(long input, byte[] bytes)
     {
-        using var stream = new MinecraftStream();
+        using var buffer = new NetworkBuffer();
 
-        await stream.WriteVarLongAsync(input);
+        buffer.WriteVarLong(input);
 
-        byte[] actualBytes = stream.ToArray();
+        buffer.Reset();
 
-        Assert.InRange(actualBytes.Length, 1, 10);
-        Assert.Equal(bytes, actualBytes);
+        var actualBytes = buffer.Read(bytes.Length);
+
+        Assert.InRange(actualBytes.Size, 1, 10);
+        Assert.Equal(bytes, actualBytes.Data);
     }
 
     [MemberData(nameof(VarLongData))]
-    [Theory(DisplayName = "Deserialization of VarLongs", Timeout = 100)]
-    public async void DeserializeAsync(long input, byte[] bytes)
+    [Theory(DisplayName = "Deserialization of VarLongs")]
+    public void Deserialize(long input, byte[] bytes)
     {
-        using var stream = new MinecraftStream(bytes);
+        using var stream = new NetworkBuffer(bytes);
 
-        long varLong = await stream.ReadVarLongAsync();
+        long varLong = stream.ReadVarLong();
 
         Assert.Equal(input, varLong);
     }

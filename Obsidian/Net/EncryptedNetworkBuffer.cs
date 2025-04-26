@@ -9,6 +9,7 @@ public sealed class EncryptedNetworkBuffer : NetworkBuffer
     private readonly BufferedBlockCipher encryptCipher;
     private readonly BufferedBlockCipher decryptCipher;
 
+    public EncryptedNetworkBuffer(byte[] key) : this(key, 0) { }
     public EncryptedNetworkBuffer(byte[] key, long capacity) : this(key, new byte[capacity]) { }
     public EncryptedNetworkBuffer(byte[] key, byte[] data) : base(data)
     {

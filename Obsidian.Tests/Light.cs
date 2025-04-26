@@ -6,7 +6,7 @@ namespace Obsidian.Tests;
 
 public class LightTests
 {
-    [Fact(DisplayName = "Light Get/Set Tests", Timeout = 100)]
+    [Fact(DisplayName = "Light Get/Set Tests")]
     public void TestGetSet()
     {
         var cs = new ChunkSection();

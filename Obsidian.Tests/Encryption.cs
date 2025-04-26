@@ -2,8 +2,6 @@
 using Obsidian.Net;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -14,22 +12,21 @@ public class Encryption
 
     [MemberData(nameof(RandomData))]
     [Theory]
-    public async Task TestEncryption(byte[] testData)
+    public void TestEncryption(byte[] testData)
     {
         var random = new Random();
         var sharedKey = new byte[32];
         random.NextBytes(sharedKey);
 
-        await using var memoryStream = new MemoryStream();
-        await using var stream = new EncryptedMinecraftStream(memoryStream, sharedKey);
+        using var buffer = new EncryptedNetworkBuffer(sharedKey);
 
-        await stream.WriteAsync(testData);
-        memoryStream.Position = 0;
+        buffer.Write(testData);
 
-        var incomingRandomData = new byte[testDataLength];
-        await stream.ReadAsync(incomingRandomData, 0, incomingRandomData.Length);
+        buffer.Reset();
 
-        Assert.Equal(testData, incomingRandomData);
+        using var incomingRandomData = buffer.Read(testDataLength);
+
+        Assert.Equal(testData, incomingRandomData.Data);
     }
 
     public static IEnumerable<object[]> RandomData
