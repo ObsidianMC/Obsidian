@@ -450,10 +450,10 @@ public partial class NetworkBuffer : INetStreamWriter
 
         packet.Serialize(packetStream);
 
-        this.WriteVarInt(packet.Id);
         var length = (int)packetStream.Size;
 
-        this.WriteVarInt(length);
+        this.WriteVarInt(length + packet.Id.GetVarIntLength());
+        this.WriteVarInt(packet.Id);
 
         this.Write(packetStream);
     }

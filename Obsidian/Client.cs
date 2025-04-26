@@ -328,9 +328,15 @@ public sealed partial class Client : IClient
 
             var packetData = this.receiveBuffer.Read(packetDataLength);
 
+            this.receiveBuffer.Clear();
+            this.receiveBuffer.Reserve(MaxBufferSize);
+
             return new PacketData { Id = packetId, NetworkBuffer = packetData };
         }
         catch { }
+
+        this.receiveBuffer.Clear();
+        this.receiveBuffer.Reserve(MaxBufferSize);
 
         return PacketData.Default;
     }
@@ -404,5 +410,5 @@ public sealed partial class Client : IClient
         this.Dispose();
     }
 
-    private Player CreatePlayer(Guid uuid, string username, IWorld world) => ActivatorUtilities.CreateInstance<Player>(this.serviceProvider, uuid, username, this, world);
+    private Player CreatePlayer(Guid uuid, string username, IWorld world) => new(uuid, username, this, world);
 }
