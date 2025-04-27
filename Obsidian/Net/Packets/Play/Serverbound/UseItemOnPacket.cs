@@ -38,7 +38,7 @@ public partial class UseItemOnPacket
         this.Sequence = reader.ReadVarInt();
     }
 
-    public async override ValueTask HandleAsync(Server server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
         //Get main hand first return offhand if null
         var currentItem = player.GetHeldItem() ?? player.GetOffHandItem();

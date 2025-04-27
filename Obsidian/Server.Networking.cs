@@ -15,7 +15,7 @@ public partial class Server
 
     private SocketAsyncEventArgs acceptorEventArgs;
 
-    public ConcurrentDictionary<int, Client> Connections { get; private set; }
+    public ConcurrentDictionary<int, IClient> Connections { get; private set; }
 
     public bool Disposed { get; private set; }
 
@@ -104,6 +104,8 @@ public partial class Server
                 _logger.LogDebug("Removed {ip} from throttler", ip);
             }
         }
+
+        this.Connections.TryAdd(client.Id, client);
     }
 
     private Client CreateClient() => ActivatorUtilities.CreateInstance<Client>(this.serviceProvider);

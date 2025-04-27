@@ -1,11 +1,7 @@
 ﻿using Obsidian.API.Commands;
 using Obsidian.API.Inventory;
-using Obsidian.API.Utilities;
-using Obsidian.Commands.Framework.Entities;
 using Obsidian.Entities;
-using Obsidian.Entities.Factories;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Registries;
 using Obsidian.WorldData;
 using System.Diagnostics;
 
@@ -24,8 +20,7 @@ public sealed class MainCommandModule : CommandModuleBase
     public async Task HelpAsync(int page)
     {
         var sender = this.Sender;
-        var server = (Server)this.Server;
-        var commandHandler = server.CommandsHandler;
+        var commandHandler = this.Server.CommandHandler;
         var allCommands = commandHandler.GetAllCommands();
         var availableCommands = new List<Command>();
 

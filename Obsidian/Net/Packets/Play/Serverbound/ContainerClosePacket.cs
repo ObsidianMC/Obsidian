@@ -7,7 +7,7 @@ public partial class ContainerClosePacket
     [Field(0)]
     public int ContainerId { get; private set; }
 
-    public async override ValueTask HandleAsync(Server server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
         if (ContainerId == 0)
             return;

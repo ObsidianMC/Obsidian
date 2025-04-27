@@ -1,22 +1,18 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using Obsidian.API.Commands.Exceptions;
+using Obsidian.API.Plugins;
 using Obsidian.API.Utilities;
-using Obsidian.Commands.Framework.Exceptions;
-using Obsidian.Plugins;
-using Obsidian.Utilities.Interfaces;
+using Obsidian.API.Utilities.Interfaces;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
-namespace Obsidian.Commands.Framework.Entities;
-
+namespace Obsidian.API.Commands;
 public sealed class Command
 {
-    internal CommandIssuers AllowedIssuers { get; init; }
+    public CommandIssuers AllowedIssuers { get; init; }
 
-    private ILogger? Logger => this.CommandHandler.logger;
-
-    public required CommandHandler CommandHandler { get; init; }
-    public required PluginContainer? PluginContainer { get; init; }
+    public required ICommandHandler CommandHandler { get; init; }
+    public required IPluginContainer? PluginContainer { get; init; }
     public required string Name { get; init; }
 
     public string[] Aliases { get; init; } = [];
@@ -85,7 +81,7 @@ public sealed class Command
         {
             await context.Sender.SendMessageAsync(ChatMessage.Simple($"Correct usage: {Usage}", ChatColor.Red));
             return;
-        }   
+        }
 
         await this.ExecuteAsync(executor, context, args);
     }

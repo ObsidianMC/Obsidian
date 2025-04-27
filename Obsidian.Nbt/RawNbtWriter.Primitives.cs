@@ -33,20 +33,9 @@ public partial class RawNbtWriter
         this.Write(value);
     }
 
-    public unsafe void WriteBool(bool value)
-    {
-        this.Validate(null, NbtTagType.Byte);
-        this.Write(*(byte*)&value);
-    }
+    public unsafe void WriteBool(bool value) => this.WriteByte(*(byte*)&value);
 
-    public unsafe void WriteBool(string name, bool value)
-    {
-        this.Validate(name, NbtTagType.Byte);
-
-        this.Write(NbtTagType.Byte);
-        this.Write(name);
-        this.Write(*(byte*)&value);
-    }
+    public unsafe void WriteBool(string name, bool value) => this.WriteByte(name, *(byte*)&value);
 
     public void WriteShort(short value)
     {
@@ -71,7 +60,7 @@ public partial class RawNbtWriter
 
     public void WriteInt(string name, int value)
     {
-        this.Validate(name, NbtTagType.Byte);
+        this.Validate(name, NbtTagType.Int);
 
         this.Write(NbtTagType.Int);
         this.Write(name);

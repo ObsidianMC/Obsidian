@@ -18,7 +18,7 @@ public partial class SetCreativeModeSlotPacket
         this.ClickedItem = reader.ReadItemStack(); 
     }
 
-    public override ValueTask HandleAsync(Server server, IPlayer player)
+    public override ValueTask HandleAsync(IServer server, IPlayer player)
     {
         var inventory = player.OpenedContainer ?? player.Inventory;
 

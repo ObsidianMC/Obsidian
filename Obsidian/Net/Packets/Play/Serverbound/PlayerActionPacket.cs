@@ -28,7 +28,7 @@ public partial class PlayerActionPacket
         this.Sequence = reader.ReadVarInt();
     }
 
-    public async override ValueTask HandleAsync(Server server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
         if (await player.World.GetBlockAsync(Position) is not IBlock block)
             return;

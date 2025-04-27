@@ -14,7 +14,7 @@ public partial class PlaceRecipePacket
     [Field(2)]
     public bool MakeAll { get; private set; }
 
-    public async override ValueTask HandleAsync(Server server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
         await player.Client.QueuePacketAsync(new PlaceGhostRecipePacket(ContainerId, RecipeId));
     }

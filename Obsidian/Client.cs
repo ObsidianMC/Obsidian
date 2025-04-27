@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Obsidian.API;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
 using Obsidian.Net;
@@ -49,7 +50,7 @@ public sealed partial class Client : IClient
     /// <summary>
     /// The random token used to encrypt the stream.
     /// </summary>
-    internal byte[]? randomToken;
+    public byte[]? RandomToken { get; private set; }
 
     /// <summary>
     /// The server's token used to encrypt the stream.
@@ -196,7 +197,7 @@ public sealed partial class Client : IClient
 
         var (publicKey, randomToken) = this.packetCryptography.GeneratePublicKeyAndToken();
 
-        this.randomToken = randomToken;
+        this.RandomToken = randomToken;
 
         this.SendPacket(new HelloPacket
         {
@@ -271,13 +272,11 @@ public sealed partial class Client : IClient
         if (this.Player is null)
             throw new InvalidOperationException("Received Encryption Response before sending Login Start.");
 
-        if (this.randomToken is null)
+        if (this.RandomToken is null)
             throw new InvalidOperationException("Received Encryption Response before sending Encryption Request.");
     }
 
     public void SetState(ClientState state) => this.State = state;
-
-    public async Task<MojangProfile?> HasJoinedAsync() => await this.userCache.HasJoinedAsync(this.Player!.Username, this.ServerId!);
 
     public void Dispose()
     {
@@ -298,6 +297,54 @@ public sealed partial class Client : IClient
 
         GC.SuppressFinalize(this);
     }
+
+    public async ValueTask<bool> VerifyProfileAsync()
+    {
+        if (await this.HasJoinedAsync() is not MojangProfile user)
+        {
+            this.Logger.LogWarning("Failed to auth {Username}", this.Player?.Username);
+            await this.DisconnectAsync("Unable to authenticate...");
+            return false;
+        }
+
+        this.Login(user);
+
+        return true;
+    }
+
+    public void Disconnect()
+    {
+        cancellationSource.Cancel();
+        Disconnected?.Invoke(this);
+
+        this.Logger.LogInformation("Client {ip} disconnected.", this.Ip);
+
+        try
+        {
+            this.Socket.Shutdown(SocketShutdown.Both);
+        }
+        catch (SocketException) { }
+
+        this.Socket.Close();
+
+        this.Connected = false;
+
+        this.receiving = false;
+        this.sending = false;
+
+        lock (this.sendLock)
+        {
+            this.sendBufferMain.Clear();
+            this.sendBufferFlush.Clear();
+
+            this.sendBufferFlushOffset = 0;
+        }
+
+        this.Server.Connections.Remove(this.Id, out _);
+
+        this.Dispose();
+    }
+
 
     private PacketData GetNextPacket()
     {
@@ -325,6 +372,8 @@ public sealed partial class Client : IClient
         return PacketData.Default;
     }
 
+    private async Task<MojangProfile?> HasJoinedAsync() => await this.userCache.HasJoinedAsync(this.Player!.Username, this.ServerId!);
+
     private async Task HandlePacketQueueAsync()
     {
         try
@@ -336,13 +385,13 @@ public sealed partial class Client : IClient
                 string name = "";
 
                 if(this.State == ClientState.Login)
-                    PacketsRegistry.Login.ServerboundNames.TryGetValue(packet.Id, out name);
+                    PacketsRegistry.Login.ClientboundNames.TryGetValue(packet.Id, out name);
                 else if(this.State == ClientState.Configuration)
-                    PacketsRegistry.Configuration.ServerboundNames.TryGetValue(packet.Id, out name);
+                    PacketsRegistry.Configuration.ClientboundNames.TryGetValue(packet.Id, out name);
                 else if(this.State == ClientState.Play)
-                    PacketsRegistry.Play.ServerboundNames.TryGetValue(packet.Id, out name);
+                    PacketsRegistry.Play.ClientboundNames.TryGetValue(packet.Id, out name);
 
-                this.Logger.LogInformation("Sending packet({name})", name);
+                this.Logger.LogDebug("Sending packet({name})", name);
 
                 this.SendPacket(packet);
             }
@@ -372,37 +421,6 @@ public sealed partial class Client : IClient
     {
         this.Id = Obsidian.Server.GetNextEntityId();
         this.Logger = this.loggerFactory.CreateLogger($"Client({this.Id})");
-    }
-
-    public void Disconnect()
-    {
-        cancellationSource.Cancel();
-        Disconnected?.Invoke(this);
-
-        this.Logger.LogInformation("Client {ip} disconnected.", this.Ip);
-
-        try
-        {
-            this.Socket.Shutdown(SocketShutdown.Both);
-        }
-        catch (SocketException) { }
-
-        this.Socket.Close();
-
-        this.Connected = false;
-
-        this.receiving = false;
-        this.sending = false;
-
-        lock(this.sendLock)
-        {
-            this.sendBufferMain.Clear();
-            this.sendBufferFlush.Clear();
-
-            this.sendBufferFlushOffset = 0;
-        }
-
-        this.Dispose();
     }
 
     private Player CreatePlayer(Guid uuid, string username, IWorld world) => new(uuid, username, this, world)

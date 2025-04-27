@@ -7,7 +7,7 @@ using System.Diagnostics;
 namespace Obsidian.Net.Packets.Configuration.Serverbound;
 public sealed partial class FinishConfigurationPacket
 {
-    public async override ValueTask HandleAsync(Server server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
         var client = player.Client;
 

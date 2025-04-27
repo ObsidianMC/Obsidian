@@ -12,36 +12,35 @@ public partial class LevelChunkWithLightPacket(IChunk chunk)
         writer.WriteInt(Chunk.Z);
 
         //Chunk.CalculateHeightmap();
-        using (var heightmapBuffer = new NetworkBuffer())
+        var heightmapBuffer = new NetworkBuffer();
+
+        using var nbtWriter = new RawNbtWriter(true);
+
+        foreach (var (type, heightmap) in Chunk.Heightmaps)
+            if (type == HeightmapType.MotionBlocking)
+                nbtWriter.WriteTag(new NbtArray<long>(type.ToString().ToSnakeCase().ToUpper(), heightmap.GetDataArray()));
+
+        nbtWriter.EndCompound();
+        nbtWriter.TryFinish();
+
+        heightmapBuffer.Write(nbtWriter.Data);
+
+        writer.Write(heightmapBuffer);
+
+        var sectionBuffer = new NetworkBuffer();
+
+        foreach (var section in Chunk.Sections)
         {
-            using var nbtWriter = new RawNbtWriter(true);
-
-            foreach (var (type, heightmap) in Chunk.Heightmaps)
-                if (type == HeightmapType.MotionBlocking)
-                    nbtWriter.WriteTag(new NbtArray<long>(type.ToString().ToSnakeCase().ToUpper(), heightmap.GetDataArray()));
-
-            nbtWriter.EndCompound();
-            nbtWriter.TryFinish();
-
-            heightmapBuffer.Write(nbtWriter.Data);
-
-            writer.Write(heightmapBuffer);
-        }
-
-        using (var sectionBuffer = new NetworkBuffer())
-        {
-            foreach (var section in Chunk.Sections)
+            if (!section.BlockStateContainer.IsEmpty)
             {
-                if (!section.BlockStateContainer.IsEmpty)
-                {
-                    section.BlockStateContainer.WriteTo(sectionBuffer);
-                    section.BiomeContainer.WriteTo(sectionBuffer);
-                }
+                section.BlockStateContainer.WriteTo(sectionBuffer);
+                section.BiomeContainer.WriteTo(sectionBuffer);
             }
-
-            writer.WriteVarInt((int)sectionBuffer.Size);
-            writer.Write(sectionBuffer);
         }
+
+        writer.WriteVarInt((int)sectionBuffer.Size);
+        writer.Write(sectionBuffer);
+
 
         // Num block entities
         writer.WriteVarInt(0);

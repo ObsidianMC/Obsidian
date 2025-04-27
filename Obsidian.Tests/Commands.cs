@@ -1,10 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.VisualStudio.TestPlatform.ObjectModel.Engine.ClientProtocol;
 using Obsidian.API;
 using Obsidian.API.Commands;
 using Obsidian.Commands.Framework;
-using Obsidian.Commands.Framework.Entities;
 using System;
 using System.Threading.Tasks;
 using Xunit;
@@ -44,7 +42,7 @@ public class Commands
 
         var cmd = services.GetRequiredService<CommandHandler>();
 
-        ICommandSender sender = new CommandSender(CommandIssuers.Console, player: null, logger: null);
+        ICommandSender sender = new CommandSender(CommandIssuers.Console, player: null);
 
         cmd.RegisterCommandClass<Command>(null);
 

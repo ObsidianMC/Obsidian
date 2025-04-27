@@ -1,8 +1,8 @@
-﻿using Obsidian.Commands;
-using Obsidian.Commands.Framework.Entities;
+﻿using Obsidian.API.Commands;
+using Obsidian.API.Utilities.Interfaces;
+using Obsidian.Commands;
 using Obsidian.Commands.Parsers;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Utilities.Interfaces;
 
 namespace Obsidian.Registries;
 public static class CommandsRegistry
@@ -13,7 +13,7 @@ public static class CommandsRegistry
     {
         Packet = new();
         var index = 0;
-        var commands = server.CommandsHandler.GetAllCommands()!;
+        var commands = server.CommandHandler.GetAllCommands()!;
 
         var rootNode = new CommandNode()
         {
@@ -72,7 +72,7 @@ public static class CommandsRegistry
 
             var type = arg.ParameterType;
 
-            var (id, mctype) = server.CommandsHandler.FindMinecraftType(type);
+            var (id, mctype) = server.CommandHandler.FindMinecraftType(type);
 
             //TODO make this better 
             argNode.Parser = mctype switch

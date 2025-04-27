@@ -87,12 +87,6 @@ public partial class Client
         {
             this.sendBufferMain.WritePacket(packet);
 
-            if ((this.sendBufferMain.Size > MaxBufferSize) && (MaxBufferSize > 0))
-            {
-                this.sendBufferMain.Clear();
-                return false;
-            }
-
             if (this.sending)
                 return true;
             else
@@ -114,9 +108,6 @@ public partial class Client
 
         lock (this.sendLock)
         {
-            if ((buffer.Length > MaxBufferSize) && (MaxBufferSize > 0))
-                return false;
-
             this.sendBufferMain.Write(buffer);
 
             if (this.sending)

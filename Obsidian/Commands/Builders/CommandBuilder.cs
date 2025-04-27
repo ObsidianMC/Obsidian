@@ -1,7 +1,7 @@
-﻿using Obsidian.Commands.Framework;
-using Obsidian.Commands.Framework.Entities;
-using Obsidian.Plugins;
-using Obsidian.Utilities.Interfaces;
+﻿using Obsidian.API.Commands;
+using Obsidian.API.Plugins;
+using Obsidian.API.Utilities.Interfaces;
+using Obsidian.Commands.Framework;
 
 namespace Obsidian.Commands.Builders;
 public sealed class CommandBuilder
@@ -124,7 +124,7 @@ public sealed class CommandBuilder
         return this;
     }
 
-    public Command Build(CommandHandler commandHandler, PluginContainer? pluginContainer) => new()
+    public Command Build(CommandHandler commandHandler, IPluginContainer? pluginContainer) => new()
     {
         Name = this.Name,
         Aliases = this.aliases.ToArray(),

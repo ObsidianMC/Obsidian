@@ -71,7 +71,7 @@ public partial class ContainerClickPacket
         this.CarriedItem = reader.ReadItemStack();
     }
 
-    public async override ValueTask HandleAsync(Server server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
         var container = player.OpenedContainer ?? player.Inventory;
 
@@ -265,7 +265,7 @@ public partial class ContainerClickPacket
         }
     }
 
-    private async Task HandleMouseClick(BaseContainer container, Server server, IPlayer player, int slot)
+    private async Task HandleMouseClick(BaseContainer container, IServer server, IPlayer player, int slot)
     {
         if (!CarriedItem.IsAir)
         {

@@ -26,7 +26,7 @@ public partial class MovePlayerPosRotPacket
         this.MovementFlags = reader.ReadSignedByte<MovementFlags>();
     }
 
-    public async override ValueTask HandleAsync(Server server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
         // The first time we get this packet, it doesn't make sense so we should ignore it.
         if (player.LastPosition == Vector.Zero) { return; }

@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
-using Obsidian.Plugins;
-using Obsidian.Utilities.Interfaces;
+using Obsidian.API.Plugins;
+using Obsidian.API.Utilities.Interfaces;
 using System.Reflection;
 
 namespace Obsidian.Commands.Framework;
@@ -10,7 +10,7 @@ internal sealed class CommandExecutor : IExecutor<CommandContext>
 {
     public required ILogger? Logger { get; init; }
 
-    public PluginContainer? PluginContainer { get; init; }
+    public IPluginContainer? PluginContainer { get; init; }
 
     public required Type ModuleType { get; init; }
 

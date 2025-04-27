@@ -11,7 +11,7 @@ public partial class SwingPacket
 
     public override void Populate(INetStreamReader reader) => this.Hand = reader.ReadVarInt<Hand>();
 
-    public async override ValueTask HandleAsync(Server server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
         var entities = player.GetEntitiesNear(player.ClientInformation.ViewDistance);
         foreach (var otherEntity in entities)

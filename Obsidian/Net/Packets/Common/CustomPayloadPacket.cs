@@ -1,5 +1,4 @@
-﻿using Obsidian.Entities;
-using System.Text;
+﻿using System.Text;
 
 namespace Obsidian.Net.Packets.Common;
 
@@ -56,7 +55,7 @@ public partial record class CustomPayloadPacket
         writer.WriteByteArray(this.PluginData);
     }
 
-    public override ValueTask HandleAsync(Server server, IPlayer player)
+    public override ValueTask HandleAsync(IServer server, IPlayer player)
     {
         var result = Handle();
 

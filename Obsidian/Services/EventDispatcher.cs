@@ -3,10 +3,10 @@ using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
 using Obsidian.API.Plugins;
+using Obsidian.API.Utilities.Interfaces;
 using Obsidian.Events;
 using Obsidian.Events.EventArgs;
 using Obsidian.Plugins;
-using Obsidian.Utilities.Interfaces;
 using System.Collections.Frozen;
 using System.Reflection;
 

@@ -14,11 +14,15 @@ public interface IClient : IDisposable
     [EditorBrowsable(EditorBrowsableState.Advanced)]
     public long? LastKeepAliveId { get; set; }
 
+    public IServer Server { get; }
+
     public ClientState State { get; }
 
     public SignatureData? SignatureData { get; set; }
 
     public int Ping { get; set; }
+
+    public byte[]? RandomToken { get; }
 
     /// <summary>
     /// The player that the client is logged in as.
@@ -29,9 +33,13 @@ public interface IClient : IDisposable
 
     public bool SendPacket(IClientboundPacket packet);
 
+    public ReadOnlySpan<byte> SetSharedKeyAndDecodeVerifyToken(byte[] sharedKey, byte[] verifyToken);
+
     public ValueTask DisconnectAsync(ChatMessage reason);
     public ValueTask QueuePacketAsync(IClientboundPacket packet);
 
     [EditorBrowsable(EditorBrowsableState.Advanced)]
     public void SetState(ClientState state);
+
+    public ValueTask<bool> VerifyProfileAsync();
 }

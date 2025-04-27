@@ -1,20 +1,17 @@
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Obsidian.API.Boss;
+using Obsidian.API.Commands;
 using Obsidian.API.Configuration;
 using Obsidian.API.Crafting;
-using Obsidian.API.Events;
 using Obsidian.Commands.Framework;
-using Obsidian.Commands.Framework.Entities;
 using Obsidian.Entities;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Net.Rcon;
 using Obsidian.Plugins;
 using Obsidian.Services;
@@ -59,7 +56,7 @@ public sealed partial class Server : IServer
     internal readonly CancellationTokenSource _cancelTokenSource;
     internal readonly ILogger _logger;
 
-    internal byte[] BrandData
+    public byte[] BrandData
     {
         get
         {
@@ -94,7 +91,7 @@ public sealed partial class Server : IServer
     public ConcurrentDictionary<Guid, IPlayer> OnlinePlayers { get; } = new();
 
     public HashSet<string> RegisteredChannels { get; } = new();
-    public CommandHandler CommandsHandler { get; }
+    public ICommandHandler CommandHandler { get; }
     public ServerConfiguration Configuration { get; set; }
     public string Version => VERSION;
 
@@ -135,14 +132,13 @@ public sealed partial class Server : IServer
 
         _logger.LogDebug(message: "Initializing command handler...");
 
-        CommandsHandler = serviceProvider.GetRequiredService<CommandHandler>();
+        CommandHandler = serviceProvider.GetRequiredService<CommandHandler>();
 
-        PluginManager = new PluginManager(this.serviceProvider, this, eventDispatcher, CommandsHandler, loggerFactory.CreateLogger<PluginManager>(),
-            serviceProvider.GetRequiredService<IConfiguration>());
+        PluginManager = ActivatorUtilities.CreateInstance<PluginManager>(this.serviceProvider, this);
 
         _logger.LogDebug("Registering events & commands...");
 
-        CommandsHandler.RegisterCommands();
+        CommandHandler.RegisterCommands();
         eventDispatcher.RegisterEvents();
 
         _logger.LogDebug("Done registering commands.");
@@ -248,7 +244,7 @@ public sealed partial class Server : IServer
     public async Task RunAsync()
     {
         StartTime = DateTimeOffset.Now;
-        this.Connections = new ConcurrentDictionary<int, Client>(-1, this.MaxConnections);
+        this.Connections = new ConcurrentDictionary<int, IClient>(-1, this.MaxConnections);
 
         _logger.LogInformation("Launching Obsidian Server v{Version}", this.Version);
         var loadTimeStopwatch = Stopwatch.StartNew();
@@ -340,17 +336,9 @@ public sealed partial class Server : IServer
 
     public async Task ExecuteCommand(string input)
     {
-        var context = new CommandContext(CommandHelpers.DefaultPrefix + input,
-            new CommandSender(CommandIssuers.Console, null, _logger), null, this);
+        var context = new CommandContext(CommandHelpers.DefaultPrefix + input, new CommandSender(CommandIssuers.Console, null), null, this);
 
-        try
-        {
-            await CommandsHandler.ProcessCommand(context);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "{exceptionMessage}", e.Message);
-        }
+        await CommandHandler.ProcessCommand(context);
     }
 
     internal IEnumerable<IPlayer> PlayersInRange(World world, Vector worldPosition)
@@ -382,17 +370,6 @@ public sealed partial class Server : IServer
         }
     }
 
-    internal async Task HandleIncomingMessageAsync(ChatPacket packet, IPlayer source, MessageType type = MessageType.Chat)
-    {
-        const string format = "<{0}> {1}";//TODO use this????
-        var message = packet.Message;
-
-        if (type is MessageType.Chat or MessageType.System)
-        {
-            await this.EventDispatcher.ExecuteEventAsync(new IncomingChatMessageEventArgs(source, this, message, format));
-        }
-    }
-
     internal async Task QueueBroadcastPacketAsync(ClientboundPacket packet)
     {
         foreach (Player player in Players)
@@ -419,7 +396,6 @@ public sealed partial class Server : IServer
         foreach (var client in this.Connections.Values)
         {
             await client.DisconnectAsync("Server shutdown");
-            client.Disconnect();
         }
 
         _logger.LogDebug("Flushing and disposing regions");
@@ -515,7 +491,7 @@ public sealed partial class Server : IServer
         _logger.LogInformation("The game loop has been stopped");
         await WorldManager.FlushLoadedWorldsAsync();
     }
-    
+
     public bool IsWhitelisted(string username) => this.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => x.Name == username);
 
     public bool IsWhitelisted(Guid uuid) => this.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => x.Id == uuid);

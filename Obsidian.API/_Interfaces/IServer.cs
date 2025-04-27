@@ -17,7 +17,12 @@ public interface IServer : IDisposable
     public IWorld DefaultWorld { get; }
     public ServerConfiguration Configuration { get; }
     public ConcurrentDictionary<Guid, IPlayer> OnlinePlayers { get; }
+    public ConcurrentDictionary<int, IClient> Connections { get; }
+    public HashSet<string> RegisteredChannels { get; }
 
+    public byte[] BrandData { get; }
+
+    public ICommandHandler CommandHandler { get; }
     public IScoreboardManager ScoreboardManager { get; }
     public IEventDispatcher EventDispatcher { get; }
 

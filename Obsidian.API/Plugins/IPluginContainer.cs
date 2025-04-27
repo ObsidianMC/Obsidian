@@ -1,6 +1,16 @@
-﻿namespace Obsidian.API.Plugins;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System.Reflection;
+
+namespace Obsidian.API.Plugins;
 public interface IPluginContainer
 {
+    public PluginBase? Plugin { get; }
+    public IServiceScope ServiceScope { get; }
+    public Assembly PluginAssembly { get; }
+
+    public void InjectServices(ILogger logger, object module);
+
     /// <summary>
     /// Searches for the specified file that was packed alongside your plugin.
     /// </summary>

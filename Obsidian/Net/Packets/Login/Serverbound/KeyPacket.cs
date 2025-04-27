@@ -21,23 +21,16 @@ public partial class KeyPacket
         this.VerifyToken = reader.ReadByteArray();
     }
 
-    public async override ValueTask HandleAsync(Client client)
+    public async override ValueTask HandleAsync(IClient client)
     {
         var decryptedToken = client.SetSharedKeyAndDecodeVerifyToken(this.SharedSecret, this.VerifyToken);
 
-        if (!decryptedToken.SequenceEqual(client.randomToken!))
+        if (!decryptedToken.SequenceEqual(client.RandomToken!))
         {
             await client.DisconnectAsync("Invalid token...");
             return;
         }
 
-        if (await client.HasJoinedAsync() is not MojangProfile user)
-        {
-            client.Logger.LogWarning("Failed to auth {Username}", client.Player?.Username);
-            await client.DisconnectAsync("Unable to authenticate...");
-            return;
-        }
-
-        client.Login(user);
+        await client.VerifyProfileAsync();
     }
 }

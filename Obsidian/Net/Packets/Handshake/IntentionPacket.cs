@@ -25,7 +25,7 @@ public partial class IntentionPacket
         this.NextState = (ClientState)reader.ReadVarInt();
     }
 
-    public async override ValueTask HandleAsync(Client client)
+    public async override ValueTask HandleAsync(IClient client)
     {
         var nextState = this.NextState;
 

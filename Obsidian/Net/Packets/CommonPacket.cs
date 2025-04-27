@@ -6,6 +6,6 @@ public abstract record class CommonPacket : IClientboundPacket, IServerboundPack
     public virtual void Serialize(INetStreamWriter writer) { }
 
     public virtual void Populate(INetStreamReader reader) { }
-    public virtual ValueTask HandleAsync(Server server, IPlayer player) => default;
-    public virtual ValueTask HandleAsync(Client client) => default;
+    public virtual ValueTask HandleAsync(IServer server, IPlayer player) => default;
+    public virtual ValueTask HandleAsync(IClient client) => default;
 }

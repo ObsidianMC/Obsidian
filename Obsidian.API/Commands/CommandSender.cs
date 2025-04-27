@@ -1,11 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
-
-namespace Obsidian.Commands.Framework.Entities;
-
-public class CommandSender(CommandIssuers issuer, IPlayer? player, ILogger logger) : ICommandSender
+﻿namespace Obsidian.API.Commands;
+public class CommandSender(CommandIssuers issuer, IPlayer? player) : ICommandSender
 {
-    private readonly ILogger logger = logger;
-
     public IPlayer? Player { get; } = player;
     public CommandIssuers Issuer { get; } = issuer;
 
@@ -22,8 +17,6 @@ public class CommandSender(CommandIssuers issuer, IPlayer? player, ILogger logge
         var messageString = message.Text;
         foreach (var extra in message.GetExtras())
             messageString += extra.Text;
-
-        this.logger.LogInformation("{message}", messageString);
     }
 
     public Task SendMessageAsync(ChatMessage message, Guid sender) => throw new NotImplementedException();

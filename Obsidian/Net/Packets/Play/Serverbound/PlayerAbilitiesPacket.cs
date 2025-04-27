@@ -12,7 +12,7 @@ public partial class PlayerAbilitiesPacket
         Abilities = reader.ReadUnsignedByte<PlayerAbility>();
     }
 
-    public async override ValueTask HandleAsync(Server server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
         if (Abilities.HasFlag(PlayerAbility.Flying)
             && !Abilities.HasFlag(PlayerAbility.AllowFlying)

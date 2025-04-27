@@ -55,8 +55,8 @@ public sealed class PluginManager : IAsyncDisposable
 
     public IServiceProvider PluginServiceProvider { get; private set; } = default!;
 
-    public PluginManager(IServiceProvider serverProvider, IServer server,
-        EventDispatcher eventDispatcher, CommandHandler commandHandler, ILogger logger, IConfiguration configuration)
+    public PluginManager(IServer server, IServiceProvider serverProvider,
+        EventDispatcher eventDispatcher, CommandHandler commandHandler, ILogger<PluginManager> logger, IConfiguration configuration)
     {
         var env = serverProvider.GetRequiredService<IServerEnvironment>();
 

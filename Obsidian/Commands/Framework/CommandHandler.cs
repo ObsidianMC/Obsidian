@@ -3,16 +3,15 @@ using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Commands;
 using Obsidian.API.Commands.ArgumentParsers;
-using Obsidian.API.Utilities;
+using Obsidian.API.Plugins;
 using Obsidian.Commands.Builders;
-using Obsidian.Commands.Framework.Entities;
 using Obsidian.Commands.Framework.Exceptions;
 using Obsidian.Plugins;
 using System.Reflection;
 
 namespace Obsidian.Commands.Framework;
 
-public sealed class CommandHandler
+public sealed class CommandHandler : ICommandHandler
 {
     internal readonly ILogger logger;
 
@@ -84,11 +83,11 @@ public sealed class CommandHandler
 
     public void AddArgumentParser(BaseArgumentParser parser) => _argumentParsers.Add(parser);
 
-    public void UnregisterPluginCommands(PluginContainer? plugin) => _commands.RemoveAll(x => x.PluginContainer == plugin);
+    public void UnregisterPluginCommands(IPluginContainer? plugin) => _commands.RemoveAll(x => x.PluginContainer == plugin);
 
-    public void RegisterCommandClass<T>(PluginContainer? plugin) => RegisterCommandClass(plugin, typeof(T));
+    public void RegisterCommandClass<T>(IPluginContainer? plugin) => RegisterCommandClass(plugin, typeof(T));
 
-    public void RegisterCommandClass(PluginContainer? plugin, Type moduleType)
+    public void RegisterCommandClass(IPluginContainer? plugin, Type moduleType)
     {
         if (moduleType.GetCustomAttribute<CommandGroupAttribute>() != null)
         {
@@ -100,7 +99,7 @@ public sealed class CommandHandler
         RegisterSubcommands(moduleType, plugin);
     }
 
-    public void RegisterCommands(PluginContainer? pluginContainer = null)
+    public void RegisterCommands(IPluginContainer? pluginContainer = null)
     {
         var assembly = pluginContainer?.PluginAssembly ?? Assembly.GetExecutingAssembly();
 
@@ -112,7 +111,7 @@ public sealed class CommandHandler
         }
     }
 
-    private void RegisterGroupCommand(Type moduleType, PluginContainer? pluginContainer, Command? parent = null)
+    private void RegisterGroupCommand(Type moduleType, IPluginContainer? pluginContainer, Command? parent = null)
     {
         var group = moduleType.GetCustomAttribute<CommandGroupAttribute>()!;
         // Get command name from first constructor argument for command attribute.
@@ -140,7 +139,7 @@ public sealed class CommandHandler
         _commands.Add(command);
     }
 
-    private void RegisterSubgroups(Type moduleType, PluginContainer? pluginContainer, Command? parent = null)
+    private void RegisterSubgroups(Type moduleType, IPluginContainer? pluginContainer, Command? parent = null)
     {
         // find all command groups under this command
         var subModules = moduleType.GetNestedTypes()
@@ -152,7 +151,7 @@ public sealed class CommandHandler
         }
     }
 
-    private void RegisterSubcommands(Type moduleType, PluginContainer? pluginContainer, Command? parent = null)
+    private void RegisterSubcommands(Type moduleType, IPluginContainer? pluginContainer, Command? parent = null)
     {
         // loop through methods and find valid commands
         var methods = moduleType.GetMethods();

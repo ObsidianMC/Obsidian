@@ -14,8 +14,6 @@ public sealed class PluginContainer : IDisposable, IPluginContainer
 {
     private bool initialized;
 
-    private Type? PluginType => this.Plugin?.GetType();
-
     public IServiceScope ServiceScope { get; internal set; } = default!;
     public PluginInfo Info { get; private set; } = default!;
 
@@ -74,7 +72,7 @@ public sealed class PluginContainer : IDisposable, IPluginContainer
     /// <summary>
     /// Inject the scoped services into 
     /// </summary>
-    internal void InjectServices(ILogger? logger, object? target = null) => PluginServiceHandler.InjectServices(this.ServiceScope.ServiceProvider, target ?? this.Plugin, logger);
+    public void InjectServices(ILogger? logger, object? target = null) => PluginServiceHandler.InjectServices(this.ServiceScope.ServiceProvider, target ?? this.Plugin, logger);
 
     ///<inheritdoc/>
     public byte[]? GetFileData(string fileName)

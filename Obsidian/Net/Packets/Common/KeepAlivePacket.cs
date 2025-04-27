@@ -24,7 +24,7 @@ public partial record class KeepAlivePacket
         writer.WriteLong(KeepAliveId);
     }
 
-    public async override ValueTask HandleAsync(Client client)
+    public async override ValueTask HandleAsync(IClient client)
     {
         var time = DateTimeOffset.Now;
         var player = client.Player!;
@@ -46,7 +46,7 @@ public partial record class KeepAlivePacket
         client.LastKeepAliveId = keepAliveId;
     }
 
-    public async override ValueTask HandleAsync(Server server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
         ArgumentNullException.ThrowIfNull(player);
 

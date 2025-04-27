@@ -327,7 +327,7 @@ public partial class NetworkBuffer : INetStreamWriter
         if (chatMessage == null)
             return;
 
-        var writer = new RawNbtWriter(true);
+        using var writer = new RawNbtWriter(true);
 
         writer.WriteChatMessage(chatMessage);
 
