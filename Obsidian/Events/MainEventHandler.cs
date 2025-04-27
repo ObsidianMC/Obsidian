@@ -16,7 +16,8 @@ public sealed class MainEventHandler : MinecraftEventHandler
 
         //TODO add bool for sending secure chat messages
         ChatColor nameColor = e.Server.Operators.IsOperator(e.Player) ? ChatColor.BrightGreen : ChatColor.Gray;
-        server.BroadcastMessage(ChatMessage.Simple(e.Player.Username, nameColor).AppendText($": {e.Message}", ChatColor.White));
+        var message = ChatMessage.Simple(e.Player.Username, nameColor).AppendText($": {e.Message}", ChatColor.White);
+        server.BroadcastMessage(message);
 
         return Task.CompletedTask;
     }

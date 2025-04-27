@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Obsidian.API;
+using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
 using Obsidian.Net;
@@ -223,6 +224,9 @@ public sealed partial class Client : IClient
 
     public async ValueTask DisconnectAsync(ChatMessage reason)
     {
+        if (this.Player != null)
+            await this.eventDispatcher.ExecuteEventAsync(new PlayerLeaveEventArgs(this.Player, this.Server, DateTimeOffset.Now));
+
         if (this.State == ClientState.Login)
         {
             await this.QueuePacketAsync(new LoginDisconnectPacket { ReasonJson = reason.ToString(Globals.JsonOptions) });
@@ -317,6 +321,10 @@ public sealed partial class Client : IClient
         cancellationSource.Cancel();
         Disconnected?.Invoke(this);
 
+        var removed = this.Server.Connections.Remove(this.Id, out _);
+        if (this.Player != null)
+            this.Server.OnlinePlayers.Remove(this.Player.Uuid, out _);
+
         this.Logger.LogInformation("Client {ip} disconnected.", this.Ip);
 
         try
@@ -339,8 +347,6 @@ public sealed partial class Client : IClient
 
             this.sendBufferFlushOffset = 0;
         }
-
-        this.Server.Connections.Remove(this.Id, out _);
 
         this.Dispose();
     }
@@ -384,11 +390,11 @@ public sealed partial class Client : IClient
 
                 string name = "";
 
-                if(this.State == ClientState.Login)
+                if (this.State == ClientState.Login)
                     PacketsRegistry.Login.ClientboundNames.TryGetValue(packet.Id, out name);
-                else if(this.State == ClientState.Configuration)
+                else if (this.State == ClientState.Configuration)
                     PacketsRegistry.Configuration.ClientboundNames.TryGetValue(packet.Id, out name);
-                else if(this.State == ClientState.Play)
+                else if (this.State == ClientState.Play)
                     PacketsRegistry.Play.ClientboundNames.TryGetValue(packet.Id, out name);
 
                 this.Logger.LogDebug("Sending packet({name})", name);
@@ -419,7 +425,12 @@ public sealed partial class Client : IClient
 
     private void InitializeId()
     {
+        this.Server.Connections.Remove(this.Id, out _);
+
         this.Id = Obsidian.Server.GetNextEntityId();
+
+        this.Server.Connections.TryAdd(this.Id, this);
+
         this.Logger = this.loggerFactory.CreateLogger($"Client({this.Id})");
     }
 

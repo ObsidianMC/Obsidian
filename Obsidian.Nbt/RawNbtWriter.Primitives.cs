@@ -122,7 +122,7 @@ public partial class RawNbtWriter
         if (!ModifiedUtf8.TryGetBytes(value, out var buffer))
             throw new InvalidOperationException("Failed to get bytes from string.");
 
-        this.Write((short)value.Length);
+        this.Write((short)buffer.Length);
         this.Write(buffer);
     }
 
