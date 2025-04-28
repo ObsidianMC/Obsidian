@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
 using Obsidian.API.Inventory;
+using Obsidian.Nbt;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -392,23 +393,23 @@ public sealed partial class Player : Living, IPlayer
         writer.WriteVarInt(XpTotal);
 
         writer.WriteEntityMetadataType(17, EntityMetadataType.Byte);
-        writer.WriteByte((byte)ClientInformation.DisplayedSkinParts);
+        writer.WriteByte(ClientInformation.DisplayedSkinParts);
 
         writer.WriteEntityMetadataType(18, EntityMetadataType.Byte);
-        writer.WriteByte((byte)ClientInformation.MainHand);
+        writer.WriteByte(ClientInformation.MainHand);
 
         //TODO fix possibly an extension method?
-        //if (LeftShoulder is not null)
-        //{
-        //    writer.WriteEntityMetadataType(19, EntityMetadataType.Nbt);
-        //    ((MinecraftStream)writer).WriteNbtCompound(new NbtCompound());
-        //}
+        if (LeftShoulder is not null)
+        {
+            writer.WriteEntityMetadataType(19, EntityMetadataType.Nbt);
+            writer.WriteNbtCompound([]);
+        }
 
-        //if (RightShoulder is not null)
-        //{
-        //    writer.WriteEntityMetadataType(20, EntityMetadataType.Nbt);
-        //    ((MinecraftStream)writer).WriteNbtCompound(new NbtCompound());
-        //}
+        if (RightShoulder is not null)
+        {
+            writer.WriteEntityMetadataType(20, EntityMetadataType.Nbt);
+            writer.WriteNbtCompound([]);
+        }
     }
 
     public async ValueTask SetGamemodeAsync(Gamemode gamemode)

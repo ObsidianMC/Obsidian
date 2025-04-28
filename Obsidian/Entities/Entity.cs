@@ -260,15 +260,13 @@ public class Entity : IEquatable<Entity>, IEntity
     {
         writer.WriteEntityMetadataType(0, EntityMetadataType.Byte);
 
-        writer.WriteByte((byte)GenerateBitmask());
+        writer.WriteByte(GenerateBitmask());
 
         writer.WriteEntityMetadataType(1, EntityMetadataType.VarInt);
         writer.WriteVarInt(Air);
 
         writer.WriteEntityMetadataType(2, EntityMetadataType.OptionalTextComponent);
-        writer.WriteBoolean(CustomName is not null);
-        if (CustomName is not null)
-            writer.WriteChat(CustomName);
+        writer.WriteOptional(CustomName);
 
         writer.WriteEntityMetadataType(3, EntityMetadataType.Boolean);
         writer.WriteBoolean(CustomNameVisible);
@@ -280,7 +278,7 @@ public class Entity : IEquatable<Entity>, IEntity
         writer.WriteBoolean(NoGravity);
 
         writer.WriteEntityMetadataType(6, EntityMetadataType.Pose);
-        writer.WriteVarInt((int)this.Pose);
+        writer.WriteVarInt(this.Pose);
 
         writer.WriteEntityMetadataType(7, EntityMetadataType.VarInt);
         writer.WriteVarInt(PowderedSnowTicks);

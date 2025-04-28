@@ -17,7 +17,7 @@ public class Living : Entity, ILiving
 
     public int AbsorbedStingers { get; set; }
 
-    public Vector BedBlockPosition { get; set; }
+    public Vector? BedBlockPosition { get; set; }
 
     public bool Alive => this.Health > 0f;
 
@@ -90,7 +90,7 @@ public class Living : Entity, ILiving
         base.Write(writer);
 
         writer.WriteEntityMetadataType(8, EntityMetadataType.Byte);
-        writer.WriteByte((byte)LivingBitMask);
+        writer.WriteByte(LivingBitMask);
 
         writer.WriteEntityMetadataType(9, EntityMetadataType.Float);
         writer.WriteSingle(Health);
@@ -108,8 +108,6 @@ public class Living : Entity, ILiving
         writer.WriteVarInt(AbsorbedStingers);
 
         writer.WriteEntityMetadataType(14, EntityMetadataType.OptionalBlockPos);
-        writer.WriteBoolean(BedBlockPosition != default);
-        if (BedBlockPosition != default)
-            writer.WritePositionF(BedBlockPosition);
+        writer.WriteOptional(BedBlockPosition);
     }
 }
