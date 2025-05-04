@@ -7,10 +7,6 @@ namespace Obsidian.Nbt;
 
 public readonly partial struct NbtReader(Stream input, NbtCompression compressionMode = NbtCompression.None)
 {
-    public NbtReader(byte[] data, NbtCompression compressionMode = NbtCompression.None) : this(new MemoryStream(data), compressionMode)
-    {
-    }
-
     public Stream BaseStream { get; } = compressionMode switch
     {
         NbtCompression.GZip => new GZipStream(input, CompressionMode.Decompress),

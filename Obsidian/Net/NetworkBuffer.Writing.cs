@@ -11,6 +11,7 @@ using Obsidian.API.Registry.Codecs.WolfVariant;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.IO;
@@ -458,6 +459,8 @@ public partial class NetworkBuffer : INetStreamWriter
 
         this.Write(packetStream);
     }
+    
+    private static readonly BundleDelimiterPacket delimiterPacket = new BundleDelimiterPacket();
 
     /// <summary>
     /// Writes a full packet to the stream with compression enabled. Note that this method is NOT
@@ -471,27 +474,40 @@ public partial class NetworkBuffer : INetStreamWriter
         if (packet is BundledPacket bp)
         {
             // Wrap the bundle with delimiter packets and writes all content packets
-            this.WriteCompressedPacket(new BundleDelimiterPacket(), compressionThreshold);
+            this.WriteCompressedPacket(delimiterPacket, compressionThreshold);
             foreach (var p in bp.Packets)
                 this.WriteCompressedPacket(p, compressionThreshold);
-            this.WriteCompressedPacket(new BundleDelimiterPacket(), compressionThreshold);
+            this.WriteCompressedPacket(delimiterPacket, compressionThreshold);
             return;
         }
 
-        using NetworkBuffer networkBuffer = new();
+        using var networkBuffer = new NetworkBuffer();
+
         networkBuffer.WriteVarInt(packet.Id);
         packet.Serialize(networkBuffer);
-        int dataLength = (int)networkBuffer.Size;
+
+        var dataLength = (int)networkBuffer.Offset;
 
         if (dataLength >= compressionThreshold)
         {   // Compress the packet
             using NetworkBuffer compressedBuffer = new();
 
-            using (ZLibStream zlibStream = new(new MemoryStream(compressedBuffer.Data), CompressionLevel.Optimal, false))
+            using var ms = new MemoryStream();
+            using (ZLibStream zlibStream = new(ms, CompressionLevel.Optimal, true))
             {
-                zlibStream.Write(networkBuffer.ToArray());
+                zlibStream.Write(networkBuffer.AsSpan(offset: 0));
             }
-            int totalLength = dataLength.GetVarIntLength() + (int)compressedBuffer.Size;
+
+            var data = ArrayPool<byte>.Shared.Rent(dataLength);
+            ms.Position = 0;
+
+            ms.ReadExactly(data);
+
+            compressedBuffer.Write(data.AsSpan(0, dataLength));
+
+            ArrayPool<byte>.Shared.Return(data);
+
+            int totalLength = dataLength.GetVarIntLength() + (int)compressedBuffer.Offset;
 
             this.WriteVarInt(totalLength);
             this.WriteVarInt(dataLength);

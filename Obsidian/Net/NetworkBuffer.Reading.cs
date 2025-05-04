@@ -4,6 +4,7 @@ using Obsidian.API.Inventory.DataComponents;
 using Obsidian.Nbt;
 using Obsidian.Serialization.Attributes;
 using System.Buffers.Binary;
+using System.IO;
 using System.Text;
 
 namespace Obsidian.Net;
@@ -196,7 +197,7 @@ public partial class NetworkBuffer : INetStreamReader
             Y = (float)ReadDouble(),
             Z = (float)ReadDouble()
         };
-    }
+    } 
 
     [ReadMethod, DataFormat(typeof(float))]
     public VectorF ReadAbsoluteFloatPositionF()
@@ -218,10 +219,21 @@ public partial class NetworkBuffer : INetStreamReader
     [ReadMethod]
     public ChatMessage ReadChat()
     {
-        var reader = new NbtReader(this.data);
+        //TODO this can be sped up or done better
+        using var ms = new MemoryStream(this.AsSpan((int)(this.size - this.offset)).ToArray());
+
+        var reader = new NbtReader(ms);
         var chatMessage = ChatMessage.Empty;
 
-        return !reader.TryReadNextTag<NbtCompound>(false, out var root) ? chatMessage : chatMessage.FromNbt(root);
+        if(!reader.TryReadNextTag<NbtCompound>(false, out var root))
+        {
+            this.offset += ms.Position;
+            return chatMessage;
+        }
+
+        this.offset += ms.Position;
+
+        return chatMessage.FromNbt(root);
     }
 
     #region Generic Read Methods
