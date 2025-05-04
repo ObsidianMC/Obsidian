@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Obsidian.API;
+using Microsoft.Extensions.ObjectPool;
 using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
@@ -42,6 +42,7 @@ public sealed partial class Client : IClient
     private readonly IUserCache userCache;
     private readonly ServerMetrics serverMetrics;
     private readonly IServiceProvider serviceProvider;
+    private readonly ObjectPool<SocketAsyncEventArgs> pool;
 
     /// <summary>
     /// Whether this client is disposed.
@@ -136,7 +137,7 @@ public sealed partial class Client : IClient
 
     public Client(IEventDispatcher eventDispatcher, IServer server, ILoggerFactory loggerFactory,
         IUserCache playerCache,
-        ServerMetrics serverMetrics, IServiceProvider serviceProvider)
+        ServerMetrics serverMetrics, IServiceProvider serviceProvider, ObjectPool<SocketAsyncEventArgs> pool)
     {
         this.eventDispatcher = eventDispatcher;
         this.Server = server;
@@ -144,6 +145,7 @@ public sealed partial class Client : IClient
         this.userCache = playerCache;
         this.serverMetrics = serverMetrics;
         this.serviceProvider = serviceProvider;
+        this.pool = pool;
         this.Logger = loggerFactory.CreateLogger("ConnectionHandler");
 
         packetCryptography = new();
@@ -293,8 +295,6 @@ public sealed partial class Client : IClient
         {
             cancellationSource?.Dispose();
 
-            this.sendEvent.Dispose();
-            this.receiveEvent.Dispose();
             this.Socket.Dispose();
         }
         catch (ObjectDisposedException) { }
@@ -320,6 +320,12 @@ public sealed partial class Client : IClient
     {
         cancellationSource.Cancel();
         Disconnected?.Invoke(this);
+
+        this.receiveEvent.Completed -= this.OnAsyncCompleted;
+        this.sendEvent.Completed -= this.OnAsyncCompleted;
+
+        this.pool.Return(this.receiveEvent);
+        this.pool.Return(this.sendEvent);
 
         var removed = this.Server.Connections.Remove(this.Id, out _);
         if (this.Player != null)
@@ -351,33 +357,6 @@ public sealed partial class Client : IClient
         this.Dispose();
     }
 
-
-    private PacketData GetNextPacket()
-    {
-        try
-        {
-            var length = this.receiveBuffer.ReadVarInt();
-            var packetId = this.receiveBuffer.ReadVarInt();
-
-            var varLen = packetId.GetVarIntLength();
-
-            var packetDataLength = Math.Max(length - varLen, 0);
-
-            var packetData = this.receiveBuffer.Read(packetDataLength);
-
-            this.receiveBuffer.Clear();
-            this.receiveBuffer.Reserve(MaxBufferSize);
-
-            return new PacketData { Id = packetId, NetworkBuffer = packetData };
-        }
-        catch { }
-
-        this.receiveBuffer.Clear();
-        this.receiveBuffer.Reserve(MaxBufferSize);
-
-        return PacketData.Default;
-    }
-
     private async Task<MojangProfile?> HasJoinedAsync() => await this.userCache.HasJoinedAsync(this.Player!.Username, this.ServerId!);
 
     private async Task HandlePacketQueueAsync()
@@ -397,7 +376,7 @@ public sealed partial class Client : IClient
                 else if (this.State == ClientState.Play)
                     PacketsRegistry.Play.ClientboundNames.TryGetValue(packet.Id, out name);
 
-                this.Logger.LogDebug("Sending packet({name})", name);
+                this.Logger.LogTrace("Sending packet({name})", name);
 
                 this.SendPacket(packet);
             }

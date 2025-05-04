@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Obsidian.Utilities.Collections;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading;
 
 namespace Obsidian;
 public partial class Server
@@ -14,6 +14,7 @@ public partial class Server
     internal int bytesSent;
 
     private SocketAsyncEventArgs acceptorEventArgs;
+    private SimpleObjectPool<SocketAsyncEventArgs> socketEventArgsPool;
 
     public ConcurrentDictionary<int, IClient> Connections { get; private set; }
 
@@ -28,6 +29,7 @@ public partial class Server
     public async ValueTask StartAsync(int port)
     {
         var endpoint = new IPEndPoint(IPAddress.Any, port);
+        this.socketEventArgsPool = new(this.Configuration.MaxPlayers * 2);
 
         this.acceptorEventArgs = new();
         this.acceptorEventArgs.Completed += OnAsyncCompleted;
@@ -35,7 +37,6 @@ public partial class Server
         this.socket = new(endpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 
         this.socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, false);
-        this.socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ExclusiveAddressUse, false);
 
         this.socket.Bind(endpoint);
 
@@ -45,12 +46,6 @@ public partial class Server
 
         await this.Accept(this.acceptorEventArgs);
     }
-
-    private void OnError(SocketError error) { }
-
-    internal void RegisterClient(Client client) => this.Connections.TryAdd(client.Id, client);
-
-    internal void UnregisterClient(int id) => this.Connections.Remove(id, out _);
 
     private async ValueTask Accept(SocketAsyncEventArgs e)
     {
@@ -71,19 +66,20 @@ public partial class Server
             if (!this.WorldManager.ReadyToJoin)
             {
                 await client.DisconnectAsync("World not ready to join");
+                await this.Accept(e);
                 return;
             }
 
             await this.TryProcessClientAsync(client);
         }
         else
-            this.SendError(e.SocketError);
+            this._logger.LogError("An error has occurred on a socket with the error {error}.", e.SocketError);
 
         await this.Accept(e);
     }
 
 
-    private async ValueTask TryProcessClientAsync(Client client)
+    private async ValueTask TryProcessClientAsync(IClient client)
     {
         if (!client.Connected)
             return;
@@ -108,35 +104,7 @@ public partial class Server
         this.Connections.TryAdd(client.Id, client);
     }
 
-    private Client CreateClient() => ActivatorUtilities.CreateInstance<Client>(this.serviceProvider);
-
-    public void SendError(SocketError error)
-    {
-        // Skip disconnect errors
-        if ((error == SocketError.ConnectionAborted) ||
-            (error == SocketError.ConnectionRefused) ||
-            (error == SocketError.ConnectionReset) ||
-            (error == SocketError.OperationAborted) ||
-            (error == SocketError.Shutdown))
-            return;
-
-        OnError(error);
-    }
-
-    private void CloseSocket(SocketAsyncEventArgs e)
-    {
-        var socket = (Socket)e.UserToken;
-
-        try
-        {
-            socket.Shutdown(SocketShutdown.Send);
-        }
-        catch { }
-
-        socket.Close();
-
-        this._logger.LogInformation("Client {address} was disconnected.", e.RemoteEndPoint);
-    }
+    private Client CreateClient() => ActivatorUtilities.CreateInstance<Client>(this.serviceProvider, this.socketEventArgsPool);
 
     private async void OnAsyncCompleted(object? sender, SocketAsyncEventArgs e)
     {

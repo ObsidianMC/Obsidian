@@ -11,6 +11,8 @@ public interface IClient : IDisposable
     public string? Brand { get; set; }
     public string? Ip { get; }
 
+    public bool Connected { get; }
+
     [EditorBrowsable(EditorBrowsableState.Advanced)]
     public long? LastKeepAliveId { get; set; }
 

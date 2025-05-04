@@ -46,8 +46,7 @@ public partial class IntentionPacket
             await client.DisconnectAsync($"Invalid client state! Expected Status or Login, received {nextState}.");
         }
 
-        client.SetState(nextState == ClientState.Login && this.Version != Server.DefaultProtocol ? ClientState.Closed : nextState);
-
+        client.SetState(nextState);
 
         var versionDesc = this.Version.GetDescription();
         if (versionDesc is null)

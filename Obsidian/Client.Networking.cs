@@ -3,7 +3,6 @@ using Obsidian.API.Events;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Handshake.Serverbound;
 using Obsidian.Net.Packets.Status.Clientbound;
-using System;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Threading;
@@ -36,10 +35,10 @@ public partial class Client
         this.sendBufferMain = new();
         this.sendBufferFlush = new();
 
-        this.receiveEvent = new();
+        this.receiveEvent = this.pool.Get();
         this.receiveEvent.Completed += OnAsyncCompleted;
 
-        this.sendEvent = new();
+        this.sendEvent = this.pool.Get();
         this.sendEvent.Completed += OnAsyncCompleted;
 
         this.Connected = true;
@@ -138,11 +137,15 @@ public partial class Client
                 this.receiving = true;
                 this.receiveEvent.SetBuffer(this.receiveBuffer.Data, 0, (int)this.receiveBuffer.Capacity);
 
-                if (!this.Socket.ReceiveAsync(this.receiveEvent))
+                var willRaiseEvent = this.Socket.ReceiveAsync(this.receiveEvent);
+                if (!willRaiseEvent)
                     process = await this.ProcessReceiveAsync(this.receiveEvent);
             }
             catch (ObjectDisposedException) { }
         }
+
+        if(this.receiving)
+            this.receiving = false;
     }
     private void TrySend()
     {
@@ -187,83 +190,104 @@ public partial class Client
         }
     }
 
-    private async ValueTask ProcessPacketAsync()
+    private PacketData GetNextPacket()
+    {
+        try
+        {
+            var length = this.receiveBuffer.ReadVarInt();
+            var packetId = this.receiveBuffer.ReadVarInt();
+
+            var varLen = packetId.GetVarIntLength();
+
+            var packetDataLength = Math.Max(length - varLen, 0);
+
+            var packetData = this.receiveBuffer.Read(packetDataLength);
+
+            return new PacketData { Id = packetId, NetworkBuffer = packetData };
+        }
+        catch { }
+
+        this.receiveBuffer.Clear();
+        this.receiveBuffer.Reserve(MaxBufferSize);
+
+        return PacketData.Default;
+    }
+
+    private async ValueTask ProcessPacketAsync(int bytesReceived)
     {
         if (!this.Connected)
             return;
 
-        var packetData = GetNextPacket();
-
-        if (State == ClientState.Play && packetData.NetworkBuffer.Size < 0)//Empty packets get sent.
-            Disconnect();
-
-        switch (State)
+        while (this.receiveBuffer.Offset < bytesReceived)
         {
-            case ClientState.Status: // Server ping/list
-                if (packetData.Id == 0x00)
-                {
-                    var status = new ServerStatus(this.Server, this.loggerFactory);
+            var packetData = GetNextPacket();
 
-                    await this.eventDispatcher.ExecuteEventAsync(new ServerStatusRequestEventArgs(this.Server, status));
+            switch (State)
+            {
+                case ClientState.Status: // Server ping/list
+                    if (packetData.Id == 0x00)
+                    {
+                        var status = new ServerStatus(this.Server, this.loggerFactory);
 
-                    SendPacket(new StatusResponsePacket(status));
-                }
-                else if (packetData.Id == 0x01)
-                {
-                    var pong = Net.Packets.Status.Serverbound.PingRequestPacket.Deserialize(packetData.NetworkBuffer.Data);
+                        await this.eventDispatcher.ExecuteEventAsync(new ServerStatusRequestEventArgs(this.Server, status));
 
-                    SendPacket(new PongResponsePacket { Timestamp = pong.Timestamp });
+                        SendPacket(new StatusResponsePacket(status));
+                    }
+                    else if (packetData.Id == 0x01)
+                    {
+                        var pong = Net.Packets.Status.Serverbound.PingRequestPacket.Deserialize(packetData.NetworkBuffer.Data);
 
-                    Disconnect();
-                }
-                break;
+                        SendPacket(new PongResponsePacket { Timestamp = pong.Timestamp });
+                    }
+                    break;
 
-            case ClientState.Handshaking:
-                if (packetData.Id == 0x00)
-                {
-                    await IntentionPacket.Deserialize(packetData.NetworkBuffer.Data).HandleAsync(this);
-                }
-                else
-                {
-                    // Handle legacy ping
-                }
-                break;
+                case ClientState.Handshaking:
+                    if (packetData.Id == 0x00)
+                    {
+                        await IntentionPacket.Deserialize(packetData.NetworkBuffer.Data).HandleAsync(this);
+                    }
+                    else
+                    {
+                        // Handle legacy ping
+                    }
+                    break;
 
-            case ClientState.Login:
-                await this.HandlePacketAsync(packetData);
-                break;
-            case ClientState.Configuration:
-                Debug.Assert(Player is not null);
+                case ClientState.Login:
+                    await this.HandlePacketAsync(packetData);
+                    break;
+                case ClientState.Configuration:
+                    Debug.Assert(Player is not null);
 
-                var result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.Server, packetData.Id, packetData.NetworkBuffer.Data));
+                    var result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.Server, packetData.Id, packetData.NetworkBuffer.Data));
 
-                if (result == EventResult.Cancelled)
-                {
-                    this.Logger.LogDebug("configuration packet({id}) {name} was cancelled and is not being processed.",
-                        packetData.Id, PacketsRegistry.Configuration.ServerboundNames[packetData.Id]);
-                    return;
-                }
+                    if (result == EventResult.Cancelled)
+                    {
+                        this.Logger.LogDebug("configuration packet({id}) {name} was cancelled and is not being processed.",
+                            packetData.Id, PacketsRegistry.Configuration.ServerboundNames[packetData.Id]);
+                        return;
+                    }
 
-                await this.HandlePacketAsync(packetData);
-                break;
-            case ClientState.Play:
-                Debug.Assert(Player is not null);
+                    await this.HandlePacketAsync(packetData);
+                    break;
+                case ClientState.Play:
+                    Debug.Assert(Player is not null);
 
-                result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.Server, packetData.Id, packetData.NetworkBuffer.Data));
+                    result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.Server, packetData.Id, packetData.NetworkBuffer.Data));
 
-                if (result == EventResult.Cancelled)
-                {
-                    this.Logger.LogDebug("play packet({id}) {name} was cancelled and is not being processed.",
-                        packetData.Id, PacketsRegistry.Play.ServerboundNames[packetData.Id]);
-                    return;
-                }
+                    if (result == EventResult.Cancelled)
+                    {
+                        this.Logger.LogDebug("play packet({id}) {name} was cancelled and is not being processed.",
+                            packetData.Id, PacketsRegistry.Play.ServerboundNames[packetData.Id]);
+                        return;
+                    }
 
-                await this.HandlePacketAsync(packetData);
+                    await this.HandlePacketAsync(packetData);
 
-                break;
-            case ClientState.Closed:
-            default:
-                break;
+                    break;
+                case ClientState.Closed:
+                default:
+                    break;
+            }
         }
     }
 
@@ -278,9 +302,9 @@ public partial class Client
         {
             this.serverMetrics.AddBytesReceived(size);
 
-            await this.ProcessPacketAsync();
+            await this.ProcessPacketAsync(size);
 
-            if (this.receiveBuffer.Capacity == size)
+            if (this.receiveBuffer.Offset == size)
             {
                 if (((2 * size) > MaxBufferSize) && (MaxBufferSize > 0))
                 {
@@ -288,7 +312,8 @@ public partial class Client
                     return false;
                 }
 
-                this.receiveBuffer.Reserve(2 * size);
+                this.receiveBuffer.Clear();
+                this.receiveBuffer.Reserve(MaxBufferSize);
             }
         }
 
@@ -298,12 +323,13 @@ public partial class Client
         {
             if (size > 0)
                 return true;
-
-            this.Disconnect();
+            else
+                this.Disconnect();
         }
         else
         {
-            this.Logger.LogError("An error has occurred");
+            this.Logger.LogError("An error has occurred: {error}", e.SocketError);
+            this.Disconnect();
         }
 
         return false;
@@ -311,7 +337,7 @@ public partial class Client
 
     private bool ProcessSend(SocketAsyncEventArgs e)
     {
-        if (!this.Connected) 
+        if (!this.Connected)
             return false;
 
         var size = e.BytesTransferred;

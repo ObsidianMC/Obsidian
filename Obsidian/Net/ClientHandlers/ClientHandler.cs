@@ -14,9 +14,10 @@ internal abstract class ClientHandler
 
     public abstract ValueTask<bool> HandleAsync(PacketData packetData);
 
-    protected async ValueTask<bool> HandleFromPoolAsync<T>(NetworkBuffer data) where T : IServerboundPacket, new()
+    protected async ValueTask<bool> HandleFromPoolAsync<T>(NetworkBuffer data) where T : class, IServerboundPacket, new()
     {
-        var packet = ObjectPool<T>.Shared.Rent();
+        var packet = SimpleObjectPool<T>.Shared.Get();
+
         var success = true;
         try
         {
@@ -28,7 +29,7 @@ internal abstract class ClientHandler
             this.Logger.LogCritical(e, "An error has occured trying to populate a packet.");
             success = false;
         }
-        ObjectPool<T>.Shared.Return(packet);
+        SimpleObjectPool<T>.Shared.Return(packet);
 
         return success;
     }
