@@ -12,15 +12,7 @@ internal sealed class ConfigurationClientHandler : ClientHandler
         switch (id)
         {
             case 0:
-                {
-                    if(await HandleFromPoolAsync<ClientInformationPacket>(buffer))
-                    {
-                        this.Configure();
-                        return true;
-                    }
-
-                    return false;
-                }
+                return await HandleFromPoolAsync<ClientInformationPacket>(buffer);
             case 2:
                 return await HandleFromPoolAsync<CustomPayloadPacket>(buffer);
             case 3:
@@ -35,30 +27,5 @@ internal sealed class ConfigurationClientHandler : ClientHandler
         }
 
         return false;
-    }
-
-    private void Configure()
-    {
-        this.SendPacket(new SelectKnownPacksPacket
-        {
-            KnownPacks = [new() { Id = "core", Version = Server.ProtocolDescription, Namespace = "minecraft" }]
-        });
-
-        //This is very inconvenient
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.Biomes.CodecKey, CodecRegistry.Biomes.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.Dimensions.CodecKey, CodecRegistry.Dimensions.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.ChatType.CodecKey, CodecRegistry.ChatType.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.DamageType.CodecKey, CodecRegistry.DamageType.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimPattern.CodecKey, CodecRegistry.TrimPattern.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimMaterial.CodecKey, CodecRegistry.TrimMaterial.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.WolfVariant.CodecKey, new Dictionary<string, ICodec>()
-        {
-            { CodecRegistry.WolfVariant.Black.Name, CodecRegistry.WolfVariant.Black },
-        }));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.PaintingVariant.CodecKey, CodecRegistry.PaintingVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
-
-        this.SendPacket(UpdateTagsPacket.ClientboundConfiguration with { Tags = TagsRegistry.Categories });
-
-        this.SendPacket(FinishConfigurationPacket.Default);
     }
 }
