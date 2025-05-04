@@ -72,19 +72,11 @@ public static class ModifiedUtf8
     {
         if (chars.Length == bytes.Length)
         {
-            if (BitConverter.IsLittleEndian && Sse2.IsSupported && bytes.Length >= 32)
-            {
-                GetBytesAsciiSse2(chars, bytes);
-            }
-            else
-            {
-                GetBytesAsciiScalar(chars, bytes);
-            }
+            GetBytesAsciiScalar(chars, bytes);
+            return;
         }
-        else
-        {
-            GetBytesScalar(chars, bytes);
-        }
+
+        GetBytesScalar(chars, bytes);
     }
 
     private static void GetBytesScalar(ReadOnlySpan<char> chars, Span<byte> bytes)
