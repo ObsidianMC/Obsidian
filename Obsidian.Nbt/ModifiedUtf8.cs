@@ -72,11 +72,19 @@ public static class ModifiedUtf8
     {
         if (chars.Length == bytes.Length)
         {
-            GetBytesAsciiScalar(chars, bytes);
-            return;
+            if (BitConverter.IsLittleEndian && Sse2.IsSupported && bytes.Length >= 32)
+            {
+                GetBytesAsciiSse2(chars, bytes);
+            }
+            else
+            {
+                GetBytesAsciiScalar(chars, bytes);
+            }
         }
-
-        GetBytesScalar(chars, bytes);
+        else
+        {
+            GetBytesScalar(chars, bytes);
+        }
     }
 
     private static void GetBytesScalar(ReadOnlySpan<char> chars, Span<byte> bytes)
@@ -267,19 +275,12 @@ public static class ModifiedUtf8
     {
         if (bytes.Length == stringLength)
         {
-            if (!BitConverter.IsLittleEndian || stringLength < 16)
-            {
-                GetStringAsciiScalar(bytes, ref destination);
-                return;
-            }
-            else if (Avx2.IsSupported)
-            {
-                GetStringAsciiAvx2(bytes, ref destination);
-                return;
-            }
+            GetStringAsciiScalar(bytes, ref destination);
         }
-
-        GetStringScalar(bytes, ref destination);
+        else
+        {
+            GetStringScalar(bytes, ref destination);
+        }
     }
 
     private static void GetStringAsciiAvx2(ReadOnlySpan<byte> bytes, ref char destination)
