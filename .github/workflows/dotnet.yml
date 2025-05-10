@@ -1,6 +1,7 @@
 name: .NET Build
 
 on:
+  workflow_dispatch:
   push:
     branches: [ 1.* ]
     paths:
