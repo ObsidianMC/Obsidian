@@ -9,17 +9,17 @@ internal class MojangGenerator : IWorldGenerator
 
     private ChunkBuilder _builder;
 
-    public async Task<Chunk> GenerateChunkAsync(int cx, int cz, Chunk? chunk = null, ChunkGenStage stage = ChunkGenStage.full)
+    public ValueTask<IChunk> GenerateChunkAsync(int cx, int cz, IChunk? chunk = null, ChunkGenStage stage = ChunkGenStage.full)
     {
         chunk ??= new Chunk(cx, cz);
 
         // Sanity checks
         if (chunk.IsGenerated)
-            return chunk;
+            return ValueTask.FromResult(chunk);
 
-        chunk.chunkStatus = chunk.chunkStatus == ChunkGenStage.empty ? ChunkGenStage.structure_references : chunk.chunkStatus;
+        chunk.SetChunkStatus(chunk.ChunkStatus == ChunkGenStage.empty ? ChunkGenStage.structure_references : chunk.ChunkStatus);
 
-        if (ChunkGenStage.biomes <= stage && chunk.chunkStatus < ChunkGenStage.biomes)
+        if (ChunkGenStage.biomes <= stage && chunk.ChunkStatus < ChunkGenStage.biomes)
         {
             for (int x = 0; x < 16; x++)
             {
@@ -39,45 +39,40 @@ internal class MojangGenerator : IWorldGenerator
                     }
                 }
             }
-
-
-
-            
-            chunk.chunkStatus = ChunkGenStage.biomes;
+            chunk.SetChunkStatus(ChunkGenStage.biomes);
         }
 
-        if (ChunkGenStage.surface <= stage && chunk.chunkStatus < ChunkGenStage.surface)
+        if (ChunkGenStage.surface <= stage && chunk.ChunkStatus < ChunkGenStage.surface)
         {
             _builder.InitialShape(chunk, BlocksRegistry.GrassBlock);
-            chunk.chunkStatus = ChunkGenStage.surface;
+            chunk.SetChunkStatus(ChunkGenStage.surface);
         }
 
-        if (ChunkGenStage.carvers <= stage && chunk.chunkStatus < ChunkGenStage.carvers)
+        if (ChunkGenStage.carvers <= stage && chunk.ChunkStatus < ChunkGenStage.carvers)
         {
-            chunk.chunkStatus = ChunkGenStage.carvers;
+            chunk.SetChunkStatus(ChunkGenStage.carvers);
         }
 
-        if (ChunkGenStage.features <= stage && chunk.chunkStatus < ChunkGenStage.features)
+        if (ChunkGenStage.features <= stage && chunk.ChunkStatus < ChunkGenStage.features)
         {
-            chunk.chunkStatus = ChunkGenStage.features;
+            chunk.SetChunkStatus(ChunkGenStage.features);
         }
 
-        if (ChunkGenStage.heightmaps <= stage && chunk.chunkStatus < ChunkGenStage.heightmaps)
+        if (ChunkGenStage.heightmaps <= stage && chunk.ChunkStatus < ChunkGenStage.heightmaps)
         {
-            chunk.chunkStatus = ChunkGenStage.heightmaps;
+            chunk.SetChunkStatus(ChunkGenStage.heightmaps);
         }
 
-        if (ChunkGenStage.light <= stage && chunk.chunkStatus < ChunkGenStage.full)
+        if (ChunkGenStage.light <= stage && chunk.ChunkStatus < ChunkGenStage.full)
         {
             WorldLight.InitialFillSkyLight(chunk);
-            chunk.chunkStatus = ChunkGenStage.light;
+            chunk.SetChunkStatus(ChunkGenStage.light);
         }
 
-        chunk.chunkStatus = ChunkGenStage.full;
-        return chunk;
+        chunk.SetChunkStatus(ChunkGenStage.full);
+        return ValueTask.FromResult(chunk);
     }
     public void Init(IWorld world)
     {
         _builder = new ChunkBuilder(world, "minecraft:overworld");
-    }
-}
+    }}

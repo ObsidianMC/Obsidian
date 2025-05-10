@@ -164,7 +164,7 @@ public sealed partial class World : IWorld
         }
 
         // Create a partial chunk.
-        chunk = new Chunk(chunkX, chunkZ, ChunkStatus.structure_starts);
+        chunk = new Chunk(chunkX, chunkZ, ChunkGenStage.structure_starts);
         region.SetChunk(chunk);
         return chunk;
     }
@@ -578,7 +578,7 @@ public sealed partial class World : IWorld
             var c = await region.GetChunkAsync(x, z);
             if (c is null)
             {
-                c = new Chunk(jobX, jobZ, ChunkStatus.structure_starts);
+                c = new Chunk(jobX, jobZ, ChunkGenStage.structure_starts);
                 // Set chunk now so that it no longer comes back as null. #threadlyfe
                 region.SetChunk(c);
             }

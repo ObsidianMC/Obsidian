@@ -1,5 +1,4 @@
-﻿using Obsidian.API._Interfaces;
-using Obsidian.API.Registries;
+﻿using Obsidian.API.Registries;
 using Obsidian.API.World.Generator.DensityFunctions;
 using Obsidian.API.World.Generator.Noise;
 using System.Security.Cryptography;

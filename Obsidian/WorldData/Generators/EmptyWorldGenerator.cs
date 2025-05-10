@@ -48,7 +48,7 @@ public class EmptyWorldGenerator : IWorldGenerator
         spawn.SetChunkStatus(ChunkGenStage.full);
     }
 
-    public ValueTask<IChunk> GenerateChunkAsync(int x, int z, IChunk? chunk = null, ChunkStatus status = ChunkStatus.full)
+    public ValueTask<IChunk> GenerateChunkAsync(int x, int z, IChunk? chunk = null, ChunkGenStage status = ChunkGenStage.full)
     {
         if (chunk is { IsGenerated: true })
             return ValueTask.FromResult(chunk);

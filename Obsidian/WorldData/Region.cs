@@ -247,7 +247,7 @@ public class Region : IRegion
             //chunk.SetBlockEntity(tileEntityCompound.GetInt("x"), tileEntityCompound.GetInt("y"), tileEntityCompound.GetInt("z"), tileEntityCompound);
         }
 
-        chunk.SetChunkStatus((ChunkStatus)(Enum.TryParse(typeof(ChunkStatus), chunkCompound.GetString("Status"), out var status) ? status : ChunkStatus.empty));
+        chunk.SetChunkStatus((ChunkGenStage)(Enum.TryParse(typeof(ChunkGenStage), chunkCompound.GetString("Status"), out var status) ? status : ChunkGenStage.empty));
 
         return chunk;
     }

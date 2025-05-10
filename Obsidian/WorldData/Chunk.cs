@@ -1,7 +1,5 @@
-﻿using Obsidian.API._Interfaces;
-using Obsidian.Blocks;
+﻿using Obsidian.Blocks;
 using Obsidian.ChunkData;
-using Obsidian.Nbt;
 
 namespace Obsidian.WorldData;
 
@@ -25,7 +23,7 @@ public sealed class Chunk : IChunk
     public IChunkSection[] Sections { get; private set; } = new IChunkSection[24];
     public IDictionary<HeightmapType, Heightmap> Heightmaps { get; }
 
-    public Chunk(int x, int z, ChunkStatus status = ChunkStatus.empty)
+    public Chunk(int x, int z, ChunkGenStage status = ChunkGenStage.empty)
     {
         X = x;
         Z = z;
@@ -271,7 +269,7 @@ public sealed class Chunk : IChunk
         return chunk;
     }
 
-    public void SetChunkStatus(ChunkStatus status) => this.ChunkStatus = status;
+    public void SetChunkStatus(ChunkGenStage status) => this.ChunkStatus = status;
 
     private static int SectionIndex(int y) => (y >> 4) + 4;
 }

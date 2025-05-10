@@ -39,7 +39,7 @@ public class SuperflatGenerator : IWorldGenerator
             }
         }
 
-        model.SetChunkStatus(ChunkStatus.full);
+        model.SetChunkStatus(ChunkGenStage.full);
     }
 
     public ValueTask<IChunk> GenerateChunkAsync(int x, int z, IChunk? chunk = null, ChunkGenStage status = ChunkGenStage.full) =>

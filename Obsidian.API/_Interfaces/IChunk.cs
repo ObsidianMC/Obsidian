@@ -10,7 +10,7 @@ public interface IChunk
 
     public bool IsGenerated { get; }
 
-    public ChunkStatus ChunkStatus { get; }
+    public ChunkGenStage ChunkStatus { get; }
 
     public IDictionary<HeightmapType, Heightmap> Heightmaps { get; }
 
