@@ -784,7 +784,7 @@ public sealed partial class World : IWorld
             var pctComplete = (int)((1.0 - ChunksToGenCount / startChunks) * 100);
             var completedChunks = startChunks - ChunksToGenCount;
             var cps = completedChunks / (stopwatch.ElapsedMilliseconds / 1000.0);
-            int remain = ChunksToGenCount / (int)cps;
+            int remain = ChunksToGenCount / (int)Math.Max(cps, 1);
             Console.Write("\r{0} chunks/second - {1}% complete - {2} seconds remaining   ", cps.ToString("###.00"), pctComplete, remain);
             if (completedChunks % 1024 == 0)
             { // For Jon when he's doing large world gens

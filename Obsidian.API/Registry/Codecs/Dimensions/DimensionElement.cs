@@ -124,10 +124,7 @@ public sealed record class DimensionElement
     /// Whether the dimension has a bedrock ceiling or not.
     /// </summary>
     public bool HasCeiling { get; set; }
-
-    internal DimensionElement() { }
 }
-
 
 public sealed record class MonsterSpawnLightLevel
 {

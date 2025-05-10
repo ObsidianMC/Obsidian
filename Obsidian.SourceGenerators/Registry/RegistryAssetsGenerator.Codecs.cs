@@ -1,4 +1,5 @@
 ﻿using Obsidian.SourceGenerators.Registry.Models;
+using System.Diagnostics;
 using System.Text.Json;
 
 namespace Obsidian.SourceGenerators.Registry;
@@ -10,6 +11,9 @@ public partial class RegistryAssetsGenerator
 
     private static void GenerateCodecs(Assets assets, SourceProductionContext ctx)
     {
+        //if (!Debugger.IsAttached)
+        //    Debugger.Launch();
+
         var builder = new CodeBuilder()
             .Using("Obsidian.API.Registry.Codecs")
             .Using("Obsidian.API.Registry.Codecs.Biomes")
@@ -19,6 +23,8 @@ public partial class RegistryAssetsGenerator
             .Using("Obsidian.API.Registry.Codecs.ArmorTrims")
             .Using("Obsidian.API.Registry.Codecs.ArmorTrims.TrimPattern")
             .Using("Obsidian.API.Registry.Codecs.ArmorTrims.TrimMaterial")
+            .Using("System.Reflection")
+            .Using("System.Text.Json")
             .Using("Obsidian.API.Registry.Codecs.WolfVariant")
             .Using("Obsidian.API.Registry.Codecs.PaintingVariant")
             .Using("System.Collections.Frozen")

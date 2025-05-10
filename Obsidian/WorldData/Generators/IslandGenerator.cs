@@ -135,7 +135,7 @@ public sealed class IslandGenerator : IWorldGenerator
         }
 
         WorldLight.InitialFillSkyLight(chunk);
-        chunk.SetChunkStatus(ChunkStatus.full);
+        chunk.SetChunkStatus(ChunkGenStage.full);
         return chunk;
     }
 

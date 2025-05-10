@@ -75,7 +75,6 @@ public sealed class WorldManager(ILoggerFactory loggerFactory, IServiceProvider 
     public async Task LoadWorldsAsync()
     {
         var worlds = await LoadServerWorldsAsync();
-
         foreach (var serverWorld in worlds)
         {
             //var server = (Server)this.server;
@@ -177,6 +176,7 @@ public sealed class WorldManager(ILoggerFactory loggerFactory, IServiceProvider 
         this.RegisterGenerator<OverworldGenerator>();
         this.RegisterGenerator<IslandGenerator>();
         this.RegisterGenerator<EmptyWorldGenerator>();
+        this.RegisterGenerator<MojangGenerator>();
     }
 
     private static async Task<List<ServerWorld>> LoadServerWorldsAsync()

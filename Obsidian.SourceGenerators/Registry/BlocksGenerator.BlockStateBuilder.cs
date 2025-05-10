@@ -1,9 +1,10 @@
 ﻿using Obsidian.SourceGenerators.Registry.Models;
-using System.Reflection;
+using System.Text.Json;
 
 namespace Obsidian.SourceGenerators.Registry;
 public partial class BlocksGenerator
 {
+    private static readonly string[] ValueTypes = ["short", "int", "bool", "double", "float", "decimal", "string"];
     private static void GenerateValueStore(CodeBuilder stateBuilder, BlockProperty[] properties)
     {
         stateBuilder.Statement("private Dictionary<string, string[]> valueStore = new()");
@@ -53,8 +54,12 @@ public partial class BlocksGenerator
         stateBuilder.Append("];").Line();
     }
 
+    
+
     private static int GetPropertyIndex(string[] array, string value)
     {
+        var dict = new Dictionary<string, string>();
+
         var propertyValue = bool.TryParse(value, out _) ? value.ToLower() : value;
 
         if (!array.Contains(propertyValue))
@@ -91,6 +96,37 @@ public partial class BlocksGenerator
             };
 
             stateBuilder.Line($"this.{name} = {method}");
+
+            count++;
+        }
+
+        stateBuilder.EndScope();
+    }
+
+    private static void SetStateFromDictionaryMethod(string fullName, CodeBuilder stateBuilder, BlockProperty[] properties)
+    {
+        stateBuilder.Line().Line().Method($"public {fullName}(Dictionary<string, string> properties)");
+
+        var count = 0;
+        //TODO find a different way to keep the other properties the default state while only modifying the ones avaliable
+        foreach (var property in properties)
+        {
+            var propertyName = property.Name.Replace("Is", string.Empty);
+            var camelCaseName = Sanitize(JsonNamingPolicy.CamelCase.ConvertName(propertyName));
+            var mojangPropertyName = JsonNamingPolicy.SnakeCaseLower.ConvertName(propertyName);
+
+            stateBuilder.Statement($"if(properties.TryGetValue(\"{mojangPropertyName}\", out var {camelCaseName}))");
+
+            var method = property.Type switch
+            {
+                "bool" => $"bool.Parse({camelCaseName});",
+                "int" => $"int.Parse({camelCaseName});",
+                _ => $"Enum.Parse<{property.Type}>({camelCaseName});"
+            };
+
+            stateBuilder.Line($"this.{propertyName} = {method}");
+
+            stateBuilder.EndScope();
 
             count++;
         }
@@ -137,6 +173,7 @@ public partial class BlocksGenerator
             stateBuilder.Line().Line().Method($"public {fullName}()").EndScope();
 
             SetStateFromIdMethod(fullName, stateBuilder, block.Properties);
+            SetStateFromDictionaryMethod(fullName, stateBuilder, block.Properties);
 
             stateBuilder.Line().Line().Method($"public {fullName}(IBlockState oldState)");
 
@@ -220,4 +257,7 @@ public partial class BlocksGenerator
 
         stateBuilder.Line().Line($"var stateId = StateIds[stateIndex];");
     }
+
+    private static string Sanitize(string value) => 
+        ValueTypes.Contains(value) ? $"{value}Value" : value;
 }

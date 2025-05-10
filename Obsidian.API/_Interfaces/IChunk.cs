@@ -40,7 +40,7 @@ public interface IChunk
     public void SetBlockEntity(int x, int y, int z, IBlockEntity tileEntityData);
 
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public void SetChunkStatus(ChunkStatus status);
+    public void SetChunkStatus(ChunkGenStage status);
 
     [EditorBrowsable(EditorBrowsableState.Never)]
     public void WriteLightMaskTo(INetStreamWriter writer, LightType lt);

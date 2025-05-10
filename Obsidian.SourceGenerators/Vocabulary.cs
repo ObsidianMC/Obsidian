@@ -20,6 +20,20 @@ internal static class Vocabulary
 
     public const string ProtocolId = "protocol_id";
 
+    public const string Noise = "noise";
+    public const string INoise = "INoise";
+    public const string DensityFunction = "DensityFunction";
+    public const string IDensityFunction = "IDensityFunction";
+
+    public const string ISurfaceCondition = "ISurfaceCondition";
+    public const string ISurfaceRule = "ISurfaceRule";
+    public const string SurfaceCondition = "SurfaceCondition";
+    public const string SurfaceRule = "SurfaceRule";
+
+    public const string ConstantSpline = "SplineConstant";
+    public const string SplinePoints = "SplinePoint";
+    public const string Spline = "Spline";
+
     public static bool AttributeNamesEqual(string attributeName1, string attributeName2)
     {
         ReadOnlySpan<char> name1 = attributeName1.EndsWith("Attribute") ? attributeName1.AsSpan(0, attributeName1.Length - 9) : attributeName1.AsSpan();

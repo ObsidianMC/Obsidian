@@ -59,7 +59,7 @@ public sealed partial class EntityGenerator : IIncrementalGenerator
         if (asm != "Obsidian")
             return;
 
-        var classes = new List<EntityClass>();
+        var classes = new List<TypeInformation>();
 
         foreach (var @class in typeList)
         {
@@ -84,34 +84,34 @@ public sealed partial class EntityGenerator : IIncrementalGenerator
             var expression = arg.Expression;
             var value = model.GetConstantValue(expression).ToString();
 
-            classes.Add(new EntityClass(symbol, value));
+            classes.Add(new TypeInformation(symbol, value));
         }
 
         this.GenerateClasses(classes, document, context);
 
     }
 
-    private void GenerateClasses(List<EntityClass> classes, JsonDocument document, SourceProductionContext context)
+    private void GenerateClasses(List<TypeInformation> classes, JsonDocument document, SourceProductionContext context)
     {
         var element = document.RootElement;
 
         foreach (var @class in classes)
         {
-            if (!element.TryGetProperty(@class.EntityResourceLocation, out var entityElement))
+            if (!element.TryGetProperty(@class.ResourceLocation, out var entityElement))
             {
-                context.ReportDiagnostic(DiagnosticSeverity.Warning, $"Failed to find valid entity {@class.EntityResourceLocation}");
+                context.ReportDiagnostic(DiagnosticSeverity.Warning, $"Failed to find valid entity {@class.ResourceLocation}");
                 continue;
             }
 
             if (!entityElement.TryGetProperty("width", out var widthElement))
             {
-                context.ReportDiagnostic(DiagnosticSeverity.Error, $"Failed to find valid width for {@class.EntityResourceLocation}");
+                context.ReportDiagnostic(DiagnosticSeverity.Error, $"Failed to find valid width for {@class.ResourceLocation}");
                 continue;
             }
 
             if (!entityElement.TryGetProperty("height", out var heightElement))
             {
-                context.ReportDiagnostic(DiagnosticSeverity.Error, $"Failed to find valid height for {@class.EntityResourceLocation}");
+                context.ReportDiagnostic(DiagnosticSeverity.Error, $"Failed to find valid height for {@class.ResourceLocation}");
                 continue;
             }
 

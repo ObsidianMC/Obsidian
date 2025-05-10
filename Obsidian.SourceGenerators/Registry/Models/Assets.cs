@@ -57,7 +57,7 @@ internal sealed class Assets
 
         using var document = JsonDocument.Parse(json);
 
-        var dimensions = new List<Codec>();
+        var codecs = new List<Codec>();
 
         var codecElements = document.RootElement.GetProperty("value").EnumerateArray();
 
@@ -76,10 +76,10 @@ internal sealed class Assets
                 }
             }
 
-            dimensions.Add(obj);
+            codecs.Add(obj);
         }
 
-        return dimensions.ToArray();
+        return codecs.ToArray();
     }
 
     public static IDictionary<string, List<Sound>> GetSounds(string? json)

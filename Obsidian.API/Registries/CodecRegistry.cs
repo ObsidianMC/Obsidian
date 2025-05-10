@@ -1,4 +1,5 @@
-﻿using Obsidian.API.Registry.Codecs.Biomes;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.Registry.Codecs.Chat;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using System.Diagnostics.CodeAnalysis;

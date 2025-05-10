@@ -1,5 +1,5 @@
 ﻿namespace Obsidian.API;
-public enum ChunkStatus
+public enum ChunkGenStage
 {
     empty,
     structure_starts,

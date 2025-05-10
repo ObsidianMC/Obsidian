@@ -20,6 +20,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Obsidian.ConsoleApp", "Obsidian.ConsoleApp\Obsidian.ConsoleApp.csproj", "{6CC32C2C-C807-40D3-8B2D-9A7B16A36B54}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Obsidian.NoiseTests", "Obsidian.NoiseTests\Obsidian.NoiseTests.csproj", "{EB6273C9-F1D6-4204-814C-4BBCFDC12561}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -50,6 +52,10 @@ Global
 		{6CC32C2C-C807-40D3-8B2D-9A7B16A36B54}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6CC32C2C-C807-40D3-8B2D-9A7B16A36B54}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6CC32C2C-C807-40D3-8B2D-9A7B16A36B54}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EB6273C9-F1D6-4204-814C-4BBCFDC12561}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EB6273C9-F1D6-4204-814C-4BBCFDC12561}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EB6273C9-F1D6-4204-814C-4BBCFDC12561}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EB6273C9-F1D6-4204-814C-4BBCFDC12561}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

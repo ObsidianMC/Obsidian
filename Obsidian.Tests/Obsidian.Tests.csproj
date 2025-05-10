@@ -1,18 +1,20 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <EnablePreviewFeatures>true</EnablePreviewFeatures>
-    <IsPackable>false</IsPackable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<EnablePreviewFeatures>true</EnablePreviewFeatures>
+		<IsPackable>false</IsPackable>
+		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+		<CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="Assets\bigtest.nbt" />
-  </ItemGroup>
+	<ItemGroup>
+		<None Remove="Assets\bigtest.nbt" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Include="Assets\bigtest.nbt" />
-  </ItemGroup>
+	<ItemGroup>
+		<EmbeddedResource Include="Assets\bigtest.nbt" />
+	</ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="MartinCostello.Logging.XUnit" Version="0.5.1" />
@@ -26,9 +28,8 @@
     </PackageReference>
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Obsidian.Nbt\Obsidian.Nbt.csproj" />
-    <ProjectReference Include="..\Obsidian\Obsidian.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Obsidian\Obsidian.csproj" />
+	</ItemGroup>
 
 </Project>

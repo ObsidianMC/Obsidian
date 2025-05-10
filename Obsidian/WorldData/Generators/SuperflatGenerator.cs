@@ -42,7 +42,7 @@ public class SuperflatGenerator : IWorldGenerator
         model.SetChunkStatus(ChunkStatus.full);
     }
 
-    public ValueTask<IChunk> GenerateChunkAsync(int x, int z, IChunk? chunk = null, ChunkStatus status = ChunkStatus.full) =>
+    public ValueTask<IChunk> GenerateChunkAsync(int x, int z, IChunk? chunk = null, ChunkGenStage status = ChunkGenStage.full) =>
         chunk is { IsGenerated: true } ? ValueTask.FromResult(chunk) : ValueTask.FromResult(model.Clone(x, z));
 
     public void Init(IWorld world) { }

@@ -214,6 +214,14 @@ public struct Vector : IEquatable<Vector>, INetworkSerializable<Vector>
         z = Z;
     }
 
+    public Vector Relative(Vector direction, int distance = 0)
+    {
+        if (distance == 0)
+            return this;
+
+        return new(this.X + direction.X * distance, this.Y + direction.Y * distance, this.Z + direction.Z * distance);
+    }
+
     /// <inheritdoc/>
     public readonly override bool Equals(object? obj)
     {

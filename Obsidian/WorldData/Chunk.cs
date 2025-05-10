@@ -1,4 +1,5 @@
-﻿using Obsidian.Blocks;
+﻿using Obsidian.API._Interfaces;
+using Obsidian.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Nbt;
 
@@ -9,9 +10,9 @@ public sealed class Chunk : IChunk
     public int X { get; }
     public int Z { get; }
 
-    public bool IsGenerated => ChunkStatus == ChunkStatus.full;
+    public bool IsGenerated => ChunkStatus == ChunkGenStage.full;
 
-    public ChunkStatus ChunkStatus { get; private set; } = ChunkStatus.empty;
+    public ChunkGenStage ChunkStatus { get; private set; } = ChunkGenStage.empty;
 
     private const int width = 16;
     private const int worldHeight = 320;
@@ -43,6 +44,8 @@ public sealed class Chunk : IChunk
         {
             Sections[i] = new ChunkSection(4, yBase: i - 4);
         }
+
+
     }
 
     private Chunk(int x, int z, IChunkSection[] sections, Dictionary<HeightmapType, Heightmap> heightmaps)

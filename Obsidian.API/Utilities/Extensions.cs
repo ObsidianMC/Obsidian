@@ -3,6 +3,12 @@
 namespace Obsidian.API.Utilities;
 public static partial class Extensions
 {
+    public static Vector ToVector(this IList<int> value) =>
+        new(value[0], value[1], value[2]);
+
+    public static IList<int> ToList(this Vector value) =>
+        [value.X, value.Y, value.Z];
+
     public static List<string> GetStateValues(this int[] indexes, Dictionary<string, string[]> valueStores)
     {
         var list = new List<string>();
@@ -22,7 +28,7 @@ public static partial class Extensions
 
     public static int GetIndexFromJaggedArray(this int[][] array, int[] value)
     {
-        for(int i = 0; i < array.Length; i++)
+        for (int i = 0; i < array.Length; i++)
         {
             var child = array[i];
 
@@ -40,7 +46,7 @@ public static partial class Extensions
         if (!array.Contains(propertyValue))
             throw new ArgumentException("Failed to find value from the supplied array.", nameof(value));
 
-        for(int i = 0; i < array.Length; i++)
+        for (int i = 0; i < array.Length; i++)
         {
             if (array[i] == propertyValue)
                 return i;

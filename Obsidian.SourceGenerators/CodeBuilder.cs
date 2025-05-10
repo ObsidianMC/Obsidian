@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using Obsidian.SourceGenerators.Registry;
+using System.Text;
+using System.Text.Json;
 
 namespace Obsidian.SourceGenerators;
 
@@ -40,6 +42,9 @@ public sealed class CodeBuilder
         return AppendLine($"using {library};");
     }
 
+    public CodeBuilder StaticUsing(string library) =>
+        AppendLine($"using static {library};");
+
     public CodeBuilder Namespace(string name)
     {
         return AppendLine($"namespace {name};");
@@ -49,6 +54,8 @@ public sealed class CodeBuilder
     {
         return AppendScoped(signature);
     }
+
+    public CodeBuilder Array(string signature) => AppendArrayScoped(signature);
 
     public CodeBuilder Type(INamedTypeSymbol typeSymbol)
     {
@@ -119,6 +126,8 @@ public sealed class CodeBuilder
         return this;
     }
 
+    public CodeBuilder AppendSimple(string code, bool newLine) => newLine ? this.Line(code) : this.Append(code);
+
     public CodeBuilder Line(string code)
     {
         return AppendLine(code);
@@ -159,6 +168,41 @@ public sealed class CodeBuilder
         return this;
     }
 
+    public CodeBuilder EndArrayScope(bool semicolon)
+    {
+        _indent--;
+        if (semicolon)
+        {
+            AppendLine("];");
+        }
+        else
+        {
+            AppendLine("]");
+        }
+        return this;
+    }
+
+    public CodeBuilder EndArrayScope(string code, bool semicolon)
+    {
+        _indent--;
+        if (semicolon)
+        {
+            AppendLine($"]{code};");
+        }
+        else
+        {
+            AppendLine($"]{code}");
+        }
+        return this;
+    }
+
+    public CodeBuilder EndArrayScope()
+    {
+        _indent--;
+        AppendLine("]");
+        return this;
+    }
+
     public CodeBuilder XmlSummary(string summary)
     {
         return Xml("summary", summary, inline: false);
@@ -191,6 +235,13 @@ public sealed class CodeBuilder
     private CodeBuilder AppendScoped(string line)
     {
         var instance = AppendLine(line).AppendLine("{");
+        _indent++;
+        return instance;
+    }
+
+    private CodeBuilder AppendArrayScoped(string line)
+    {
+        var instance = AppendLine(line).AppendLine("[");
         _indent++;
         return instance;
     }
