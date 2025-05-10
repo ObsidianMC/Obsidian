@@ -328,6 +328,7 @@ public sealed partial class Client : IClient
         this.pool.Return(this.sendEvent);
 
         var removed = this.Server.Connections.Remove(this.Id, out _);
+
         if (this.Player != null)
             this.Server.OnlinePlayers.Remove(this.Player.Uuid, out _);
 
