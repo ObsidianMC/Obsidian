@@ -1,10 +1,6 @@
-﻿using Obsidian.API.Registries;
-
-namespace Obsidian.API.Registry.Codecs.ArmorTrims.TrimMaterial;
+﻿namespace Obsidian.API.Registry.Codecs.ArmorTrims.TrimMaterial;
 public sealed class TrimMaterialElement : INetworkSerializable<TrimMaterialElement>
 {
-    public required string Ingredient { get; init; }
-
     public required string AssetName { get; init; }
 
     public required TrimDescription Description { get; init; }
@@ -14,7 +10,6 @@ public sealed class TrimMaterialElement : INetworkSerializable<TrimMaterialEleme
     public static TrimMaterialElement Read(INetStreamReader reader) => new()
     {
         AssetName = reader.ReadString(),
-        Ingredient = ItemsRegistry.Get(reader.ReadVarInt()).UnlocalizedName,
         OverrideArmorAssets = reader.ReadLengthPrefixedArray(() =>
         {
             return (rootId: reader.ReadString(), name: reader.ReadString());
@@ -25,7 +20,6 @@ public sealed class TrimMaterialElement : INetworkSerializable<TrimMaterialEleme
     public static void Write(TrimMaterialElement element, INetStreamWriter writer)
     {
         writer.WriteString(element.AssetName);
-        writer.WriteVarInt(ItemsRegistry.Get(element.Ingredient).Id);
 
         var count = element.OverrideArmorAssets?.Count ?? 0;
         writer.WriteVarInt(count);

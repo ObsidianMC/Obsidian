@@ -1,5 +1,4 @@
 ﻿using Obsidian.Providers.IntProviders;
-using Obsidian.Registries;
 
 namespace Obsidian.Providers.BlockStateProviders;
 
@@ -19,11 +18,10 @@ public sealed class RandomizedIntStateProvider : IBlockStateProvider
         var simpleState = this.Source.GetSimple();
         if (this.Values is RangedIntProvider rangedIntProvider)
         {
-            var (min, max) = rangedIntProvider.Value;
 
             simpleState.Properties[this.Property] = rangedIntProvider.Type == IntProviderTypes.Uniform
-                ? Globals.Random.Next(min, max).ToString()
-                : Math.Min(Globals.Random.Next(min, max), min).ToString();//Not sure if this is right
+                ? Globals.Random.Next(rangedIntProvider.MinInclusive, rangedIntProvider.MaxInclusive).ToString()
+                : Math.Min(Globals.Random.Next(rangedIntProvider.MinInclusive, rangedIntProvider.MaxInclusive), rangedIntProvider.MinInclusive).ToString();//Not sure if this is right
         }
 
         return BlocksRegistry.GetFromSimpleState(simpleState);
@@ -34,11 +32,9 @@ public sealed class RandomizedIntStateProvider : IBlockStateProvider
         var simpleState = this.Source.GetSimple();
         if (this.Values is RangedIntProvider rangedIntProvider)
         {
-            var (min, max) = rangedIntProvider.Value;
-
             simpleState.Properties[this.Property] = rangedIntProvider.Type == IntProviderTypes.Uniform
-                ? Globals.Random.Next(min, max).ToString()
-                : Math.Min(Globals.Random.Next(min, max), min).ToString();
+                ? Globals.Random.Next(rangedIntProvider.MinInclusive, rangedIntProvider.MaxInclusive).ToString()
+                : Math.Min(Globals.Random.Next(rangedIntProvider.MinInclusive, rangedIntProvider.MaxInclusive), rangedIntProvider.MinInclusive).ToString();
         }
 
         return simpleState;

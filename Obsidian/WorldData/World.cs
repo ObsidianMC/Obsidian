@@ -672,7 +672,10 @@ public sealed partial class World : IWorld
         dimensions.Add(codec.Name, dimensionWorld);
     }
 
-    public void SpawnExperienceOrbs(VectorF position, short count = 1) => this.PacketBroadcaster.QueuePacketToWorld(this, new AddExperienceOrbPacket(count, position));
+    public void SpawnExperienceOrbs(VectorF position, short count = 1)
+    {
+        // this.PacketBroadcaster.QueuePacketToWorld(this, new AddExperienceOrbPacket(count, position));
+    }
 
     /// <summary>
     /// 
@@ -878,7 +881,7 @@ public sealed partial class World : IWorld
     }
 
     public IEntitySpawner GetNewEntitySpawner() => new EntitySpawner(this);
-    public ValueTask<IChunk?> GetChunkAsync(Vector worldLocation, bool scheduleGeneration = true) => 
+    public ValueTask<IChunk?> GetChunkAsync(Vector worldLocation, bool scheduleGeneration = true) =>
         this.GetChunkAsync(worldLocation.X, worldLocation.Z, scheduleGeneration);
 
     public ValueTask<IBlock?> GetBlockAsync(Vector location) => this.GetBlockAsync(location.X, location.Y, location.Z);

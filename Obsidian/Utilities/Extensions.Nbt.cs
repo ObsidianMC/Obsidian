@@ -407,7 +407,7 @@ public partial class Extensions
             new NbtTag<string>("translate", patternElement.Description.Translate)
         };
 
-        writer.WriteString("template_item", patternElement.TemplateItem);
+        //writer.WriteString("template_item", patternElement.TemplateItem);
         writer.WriteString("asset_id", patternElement.AssetId);
         writer.WriteBool("decal", patternElement.Decal);
         writer.WriteTag(description);
@@ -436,7 +436,7 @@ public partial class Extensions
             writer.WriteTag(overrideArmorAssets);
         }
 
-        writer.WriteString("ingredient", materialElement.Ingredient);
+        //writer.WriteString("ingredient", materialElement.Ingredient);
         writer.WriteString("asset_name", materialElement.AssetName);
         writer.WriteTag(description);
     }
@@ -448,10 +448,11 @@ public partial class Extensions
     {
         var materialElement = value.Element;
 
-        writer.WriteString("tame_texture", materialElement.TameTexture);
-        writer.WriteString("angry_texture", materialElement.AngryTexture);
-        writer.WriteString("wild_texture", materialElement.WildTexture);
-        writer.WriteString("biomes", materialElement.Biomes);
+        //TODO: implement new stuff
+        //writer.WriteString("tame_texture", materialElement.TameTexture);
+        //writer.WriteString("angry_texture", materialElement.AngryTexture);
+        //writer.WriteString("wild_texture", materialElement.WildTexture);
+        //writer.WriteString("biomes", materialElement.Biomes);
     }
     #endregion
 

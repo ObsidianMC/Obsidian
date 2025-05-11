@@ -113,7 +113,18 @@ public partial class RegistryAssetsGenerator
             }, ctx);
 
         builder.GenerateSimpleCodec(codecs["trim_pattern"].ToArray(), "TrimPattern", "minecraft:trim_pattern", "TrimPatternCodec", ctx);
-        builder.GenerateSimpleCodec(codecs["wolf_variant"].ToArray(), "WolfVariant", "minecraft:wolf_variant", "WolfVariantCodec", ctx);
+        builder.GenerateSimpleCodec(codecs["wolf_variant"].ToArray(), "WolfVariant", "minecraft:wolf_variant", "WolfVariantCodec", (name, value) =>
+        {
+            builder.Append($"{name} = ");
+
+            if (value.ValueKind == JsonValueKind.Object)
+            {
+                builder.ParseProperty(value, ctx, name == "Assets");
+                return;
+            }
+
+            builder.AppendValueType(value, ctx, name == "Assets");
+        }, ctx);
         builder.GenerateSimpleCodec(codecs["painting_variant"].ToArray(), "PaintingVariant", "minecraft:painting_variant", "PaintingVariantCodec", ctx);
 
         builder.EndScope();
