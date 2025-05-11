@@ -82,6 +82,16 @@ public partial class Client
         if (!this.Connected)
             return false;
 
+        string name = "";
+
+        if (this.State == ClientState.Login)
+            PacketsRegistry.Login.ClientboundNames.TryGetValue(packet.Id, out name);
+        else if (this.State == ClientState.Configuration)
+            PacketsRegistry.Configuration.ClientboundNames.TryGetValue(packet.Id, out name);
+        else if (this.State == ClientState.Play)
+            PacketsRegistry.Play.ClientboundNames.TryGetValue(packet.Id, out name);
+
+        this.Logger.LogDebug("Sending packet({name})", name);
         lock (this.sendLock)
         {
             this.sendBufferMain.WritePacket(packet);

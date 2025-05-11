@@ -26,6 +26,7 @@ public partial class RegistryAssetsGenerator
             .Using("System.Reflection")
             .Using("System.Text.Json")
             .Using("Obsidian.API.Registry.Codecs.WolfVariant")
+            .Using("Obsidian.API.Registry.Codecs.WolfSoundVariant")
             .Using("Obsidian.API.Registry.Codecs.PaintingVariant")
             .Using("System.Collections.Frozen")
             .Line()
@@ -125,6 +126,7 @@ public partial class RegistryAssetsGenerator
 
             builder.AppendValueType(value, ctx, name == "Assets");
         }, ctx);
+        builder.GenerateSimpleCodec(codecs["wolf_sound_variant"].ToArray(), "WolfSoundVariant", "minecraft:wolf_sound_variant", "WolfSoundVariantCodec", ctx);
         builder.GenerateSimpleCodec(codecs["painting_variant"].ToArray(), "PaintingVariant", "minecraft:painting_variant", "PaintingVariantCodec", ctx);
 
         builder.EndScope();

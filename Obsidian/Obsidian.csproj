@@ -73,6 +73,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <AdditionalFiles Remove="assets\codecs\wolf_sound_variant.json" />
 	  <AdditionalFiles Remove="Assets\enums.json" />
 	  <AdditionalFiles Remove="assets\item_components.json" />
 	</ItemGroup>
