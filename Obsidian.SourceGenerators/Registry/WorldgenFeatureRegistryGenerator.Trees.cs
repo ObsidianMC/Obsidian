@@ -1,4 +1,5 @@
 ﻿using Obsidian.SourceGenerators.Registry.Models;
+using System.Globalization;
 using System.Text.Json;
 
 namespace Obsidian.SourceGenerators.Registry;
@@ -68,14 +69,14 @@ public partial class WorldgenFeatureRegistryGenerator
 
                     if (numbers.Contains(property.Type.Name))
                     {
-                        AppendNumber(builder, elementName, element, property.Type.Name, newLine);
+                        AppendNumberProperty(builder, elementName, element, property.Type.Name, newLine);
                         break;
                     }
                 }
 
                 builder.AppendSimple($"{elementName.ToPascalCase()} = new ConstantIntProvider {{ Type = \"minecraft:constant\", Value = ", newLine);
 
-                AppendNumber(builder, element, newLine: false);
+                AppendNumberValue(builder, element, newLine: false);
                 builder.Append("}, ");
                 break;
             case JsonValueKind.Array:
@@ -179,46 +180,21 @@ public partial class WorldgenFeatureRegistryGenerator
         return isState;
     }
 
-    private static void AppendNumber(CodeBuilder builder, string elementName, JsonElement element, string numberType = "Int32", bool newLine = true)
+    private static void AppendNumberProperty(CodeBuilder builder, string elementName, JsonElement element, string numberType = "Int32", bool newLine = true)
     {
-        if (numberType == "Int16")
-            builder.AppendSimple($"{elementName.ToPascalCase()} = {element.GetInt16()},", newLine);
-        else if (numberType == "Int32")
-            builder.AppendSimple($"{elementName.ToPascalCase()} = {element.GetInt32()},", newLine);
-        else if (numberType == "Int64")
-            builder.AppendSimple($"{elementName.ToPascalCase()} = {element.GetInt64()},", newLine);
-        else if (numberType == "Single")
-            builder.AppendSimple($"{elementName.ToPascalCase()} = {element.GetSingle()}f,", newLine);
+        var pascalCaseElementName = elementName.ToPascalCase();
+
+        builder.AppendSimple($"{pascalCaseElementName} = ", newLine);
+        AppendNumberValue(builder, element, numberType, false);
+    }
+
+    private static void AppendNumberValue(CodeBuilder builder, JsonElement element, string numberType = "Int32", bool newLine = true)
+    {
+        if (numberType == "Single")
+            builder.AppendSimple($"{element.GetSingle().ToString(CultureInfo.InvariantCulture)}f,", newLine);
         else if (numberType == "Double")
-            builder.AppendSimple($"{elementName.ToPascalCase()} = {element.GetDouble()}d,", newLine);
+            builder.AppendSimple($"{element.GetDouble().ToString(CultureInfo.InvariantCulture)}d,", newLine);
+        else
+            builder.AppendSimple($"{element},", newLine);
     }
-
-    private static void AppendNumber(CodeBuilder builder, JsonElement element, string numberType = "Int32", bool newLine = true)
-    {
-        if (numberType == "Int16")
-            builder.AppendSimple($"{element.GetInt16()},", newLine);
-        else if (numberType == "Int32")
-            builder.AppendSimple($"{element.GetInt32()},", newLine);
-        else if (numberType == "Int64")
-            builder.AppendSimple($"{element.GetInt64()},", newLine);
-        else if (numberType == "Single")
-            builder.AppendSimple($"{element.GetSingle()}f,", newLine);
-        else if (numberType == "Double")
-            builder.AppendSimple($"{element.GetDouble()}d,", newLine);
-    }
-
-    private static void AppendUnknownNumber(CodeBuilder builder, JsonElement element, bool newLine = true)
-    {
-        if (element.TryGetInt16(out var shortValue))
-            builder.AppendSimple($"{shortValue},", newLine);
-        else if (element.TryGetInt32(out var intValue))
-            builder.AppendSimple($"{intValue},", newLine);
-        else if (element.TryGetInt64(out var longValue))
-            builder.AppendSimple($"{longValue},", newLine);
-        else if (element.TryGetSingle(out var floatValue))
-            builder.AppendSimple($"{floatValue}f,", newLine);
-        else if (element.TryGetDouble(out var doubleValue))
-            builder.AppendSimple($"{doubleValue}d,", newLine);
-    }
-
 }
