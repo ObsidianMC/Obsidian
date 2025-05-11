@@ -443,8 +443,10 @@
       "minecraft:mangrove_propagule",
       "minecraft:cherry_leaves",
       "minecraft:pink_petals",
+      "minecraft:wildflowers",
       "minecraft:chorus_flower",
-      "minecraft:spore_blossom"
+      "minecraft:spore_blossom",
+      "minecraft:cactus_flower"
     ]
   },
   "block/bee_growables": {
@@ -462,7 +464,15 @@
     "type": "block",
     "values": [
       "#minecraft:small_dripleaf_placeable",
-      "#minecraft:dirt",
+      "minecraft:dirt",
+      "minecraft:grass_block",
+      "minecraft:podzol",
+      "minecraft:coarse_dirt",
+      "minecraft:mycelium",
+      "minecraft:rooted_dirt",
+      "minecraft:moss_block",
+      "minecraft:mud",
+      "minecraft:muddy_mangrove_roots",
       "minecraft:farmland"
     ]
   },
@@ -490,6 +500,13 @@
     "values": [
       "#minecraft:wooden_buttons",
       "#minecraft:stone_buttons"
+    ]
+  },
+  "block/camels_spawnable_on": {
+    "name": "camels_spawnable_on",
+    "type": "block",
+    "values": [
+      "#minecraft:sand"
     ]
   },
   "block/camel_sand_step_sound_blocks": {
@@ -769,15 +786,6 @@
       "minecraft:stripped_dark_oak_wood"
     ]
   },
-  "block/dead_bush_may_place_on": {
-    "name": "dead_bush_may_place_on",
-    "type": "block",
-    "values": [
-      "#minecraft:sand",
-      "#minecraft:terracotta",
-      "#minecraft:dirt"
-    ]
-  },
   "block/deepslate_ore_replaceables": {
     "name": "deepslate_ore_replaceables",
     "type": "block",
@@ -853,7 +861,9 @@
       "minecraft:end_stone",
       "minecraft:iron_bars",
       "minecraft:respawn_anchor",
-      "minecraft:reinforced_deepslate"
+      "minecraft:reinforced_deepslate",
+      "minecraft:test_block",
+      "minecraft:test_instance_block"
     ]
   },
   "block/dragon_transparent": {
@@ -869,6 +879,26 @@
     "type": "block",
     "values": [
       "#minecraft:base_stone_overworld"
+    ]
+  },
+  "block/dry_vegetation_may_place_on": {
+    "name": "dry_vegetation_may_place_on",
+    "type": "block",
+    "values": [
+      "#minecraft:sand",
+      "#minecraft:terracotta",
+      "#minecraft:dirt",
+      "minecraft:farmland"
+    ]
+  },
+  "block/edible_for_sheep": {
+    "name": "edible_for_sheep",
+    "type": "block",
+    "values": [
+      "minecraft:short_grass",
+      "minecraft:short_dry_grass",
+      "minecraft:tall_dry_grass",
+      "minecraft:fern"
     ]
   },
   "block/emerald_ores": {
@@ -915,7 +945,8 @@
       "minecraft:crimson_roots",
       "minecraft:warped_fungus",
       "minecraft:warped_nylium",
-      "minecraft:warped_roots"
+      "minecraft:warped_roots",
+      "minecraft:cactus_flower"
     ]
   },
   "block/fall_damage_resetting": {
@@ -989,8 +1020,10 @@
       "minecraft:mangrove_propagule",
       "minecraft:cherry_leaves",
       "minecraft:pink_petals",
+      "minecraft:wildflowers",
       "minecraft:chorus_flower",
-      "minecraft:spore_blossom"
+      "minecraft:spore_blossom",
+      "minecraft:cactus_flower"
     ]
   },
   "block/flower_pots": {
@@ -1233,7 +1266,9 @@
       "minecraft:glow_lichen",
       "minecraft:lily_pad",
       "minecraft:small_amethyst_bud",
-      "minecraft:pink_petals"
+      "minecraft:pink_petals",
+      "minecraft:wildflowers",
+      "minecraft:leaf_litter"
     ]
   },
   "block/invalid_spawn_inside": {
@@ -1660,6 +1695,15 @@
       "minecraft:cherry_planks"
     ]
   },
+  "block/plays_ambient_desert_block_sounds": {
+    "name": "plays_ambient_desert_block_sounds",
+    "type": "block",
+    "values": [
+      "#minecraft:terracotta",
+      "minecraft:sand",
+      "minecraft:red_sand"
+    ]
+  },
   "block/polar_bears_spawnable_on_alternate": {
     "name": "polar_bears_spawnable_on_alternate",
     "type": "block",
@@ -1731,6 +1775,9 @@
       "minecraft:short_grass",
       "minecraft:fern",
       "minecraft:dead_bush",
+      "minecraft:bush",
+      "minecraft:short_dry_grass",
+      "minecraft:tall_dry_grass",
       "minecraft:seagrass",
       "minecraft:tall_seagrass",
       "minecraft:fire",
@@ -1749,7 +1796,45 @@
       "minecraft:warped_roots",
       "minecraft:nether_sprouts",
       "minecraft:crimson_roots",
+      "minecraft:leaf_litter",
       "minecraft:hanging_roots"
+    ]
+  },
+  "block/replaceable_by_mushrooms": {
+    "name": "replaceable_by_mushrooms",
+    "type": "block",
+    "values": [
+      "#minecraft:leaves",
+      "#minecraft:small_flowers",
+      "minecraft:pale_moss_carpet",
+      "minecraft:short_grass",
+      "minecraft:fern",
+      "minecraft:dead_bush",
+      "minecraft:vine",
+      "minecraft:glow_lichen",
+      "minecraft:sunflower",
+      "minecraft:lilac",
+      "minecraft:rose_bush",
+      "minecraft:peony",
+      "minecraft:tall_grass",
+      "minecraft:large_fern",
+      "minecraft:hanging_roots",
+      "minecraft:pitcher_plant",
+      "minecraft:water",
+      "minecraft:seagrass",
+      "minecraft:tall_seagrass",
+      "minecraft:brown_mushroom",
+      "minecraft:red_mushroom",
+      "minecraft:brown_mushroom_block",
+      "minecraft:red_mushroom_block",
+      "minecraft:warped_roots",
+      "minecraft:nether_sprouts",
+      "minecraft:crimson_roots",
+      "minecraft:leaf_litter",
+      "minecraft:short_dry_grass",
+      "minecraft:tall_dry_grass",
+      "minecraft:bush",
+      "minecraft:firefly_bush"
     ]
   },
   "block/replaceable_by_trees": {
@@ -1775,9 +1860,14 @@
       "minecraft:water",
       "minecraft:seagrass",
       "minecraft:tall_seagrass",
+      "minecraft:bush",
+      "minecraft:firefly_bush",
       "minecraft:warped_roots",
       "minecraft:nether_sprouts",
-      "minecraft:crimson_roots"
+      "minecraft:crimson_roots",
+      "minecraft:leaf_litter",
+      "minecraft:short_dry_grass",
+      "minecraft:tall_dry_grass"
     ]
   },
   "block/sand": {
@@ -2176,53 +2266,25 @@
     "type": "block",
     "values": [
       "#minecraft:leaves",
-      "#minecraft:saplings",
-      "#minecraft:crops",
-      "minecraft:short_grass",
-      "minecraft:fern",
-      "minecraft:dead_bush",
       "minecraft:vine",
       "minecraft:glow_lichen",
-      "minecraft:sunflower",
-      "minecraft:lilac",
-      "minecraft:rose_bush",
-      "minecraft:peony",
-      "minecraft:tall_grass",
-      "minecraft:large_fern",
-      "minecraft:hanging_roots",
-      "minecraft:pitcher_plant",
-      "minecraft:brown_mushroom",
-      "minecraft:red_mushroom",
-      "minecraft:sugar_cane",
       "minecraft:pumpkin",
       "minecraft:carved_pumpkin",
       "minecraft:jack_o_lantern",
       "minecraft:melon",
-      "minecraft:attached_pumpkin_stem",
-      "minecraft:attached_melon_stem",
-      "minecraft:lily_pad",
       "minecraft:cocoa",
-      "minecraft:pitcher_crop",
-      "minecraft:sweet_berry_bush",
-      "minecraft:cave_vines",
-      "minecraft:cave_vines_plant",
-      "minecraft:spore_blossom",
-      "minecraft:pink_petals",
       "minecraft:big_dripleaf",
       "minecraft:big_dripleaf_stem",
-      "minecraft:small_dripleaf",
-      "minecraft:nether_wart",
-      "minecraft:warped_fungus",
-      "minecraft:warped_roots",
-      "minecraft:nether_sprouts",
-      "minecraft:crimson_fungus",
-      "minecraft:weeping_vines",
-      "minecraft:weeping_vines_plant",
-      "minecraft:twisting_vines",
-      "minecraft:twisting_vines_plant",
-      "minecraft:crimson_roots",
       "minecraft:chorus_plant",
       "minecraft:chorus_flower"
+    ]
+  },
+  "block/sword_instantly_mines": {
+    "name": "sword_instantly_mines",
+    "type": "block",
+    "values": [
+      "minecraft:bamboo",
+      "minecraft:bamboo_sapling"
     ]
   },
   "block/terracotta": {
@@ -2373,7 +2435,8 @@
       "minecraft:tripwire",
       "#minecraft:signs",
       "#minecraft:banners",
-      "#minecraft:pressure_plates"
+      "#minecraft:pressure_plates",
+      "minecraft:cactus_flower"
     ]
   },
   "block/wall_signs": {
@@ -2428,7 +2491,9 @@
       "minecraft:jigsaw",
       "minecraft:moving_piston",
       "minecraft:light",
-      "minecraft:reinforced_deepslate"
+      "minecraft:reinforced_deepslate",
+      "minecraft:test_block",
+      "minecraft:test_instance_block"
     ]
   },
   "block/wither_summon_base_blocks": {
@@ -2620,30 +2685,6 @@
       "minecraft:black_carpet"
     ]
   },
-  "cat_variant/default_spawns": {
-    "name": "default_spawns",
-    "type": "cat_variant",
-    "values": [
-      "minecraft:tabby",
-      "minecraft:black",
-      "minecraft:red",
-      "minecraft:siamese",
-      "minecraft:british_shorthair",
-      "minecraft:calico",
-      "minecraft:persian",
-      "minecraft:ragdoll",
-      "minecraft:white",
-      "minecraft:jellie"
-    ]
-  },
-  "cat_variant/full_moon_spawns": {
-    "name": "full_moon_spawns",
-    "type": "cat_variant",
-    "values": [
-      "#minecraft:default_spawns",
-      "minecraft:all_black"
-    ]
-  },
   "damage_type/always_hurts_ender_dragons": {
     "name": "always_hurts_ender_dragons",
     "type": "damage_type",
@@ -2760,8 +2801,16 @@
     "type": "damage_type",
     "values": [
       "#minecraft:bypasses_armor",
+      "minecraft:cactus",
+      "minecraft:campfire",
+      "minecraft:dry_out",
       "minecraft:falling_anvil",
-      "minecraft:falling_stalactite"
+      "minecraft:falling_stalactite",
+      "minecraft:hot_floor",
+      "minecraft:in_fire",
+      "minecraft:lava",
+      "minecraft:lightning_bolt",
+      "minecraft:sweet_berry_bush"
     ]
   },
   "damage_type/bypasses_wolf_armor": {
@@ -3290,11 +3339,32 @@
       "minecraft:armor_stand"
     ]
   },
+  "entity_type/can_equip_saddle": {
+    "name": "can_equip_saddle",
+    "type": "entity_type",
+    "values": [
+      "minecraft:horse",
+      "minecraft:skeleton_horse",
+      "minecraft:zombie_horse",
+      "minecraft:donkey",
+      "minecraft:mule",
+      "minecraft:pig",
+      "minecraft:strider",
+      "minecraft:camel"
+    ]
+  },
   "entity_type/can_turn_in_boats": {
     "name": "can_turn_in_boats",
     "type": "entity_type",
     "values": [
       "minecraft:breeze"
+    ]
+  },
+  "entity_type/can_wear_horse_armor": {
+    "name": "can_wear_horse_armor",
+    "type": "entity_type",
+    "values": [
+      "minecraft:horse"
     ]
   },
   "entity_type/deflects_projectiles": {
@@ -3905,8 +3975,10 @@
       "minecraft:mangrove_propagule",
       "minecraft:cherry_leaves",
       "minecraft:pink_petals",
+      "minecraft:wildflowers",
       "minecraft:chorus_flower",
-      "minecraft:spore_blossom"
+      "minecraft:spore_blossom",
+      "minecraft:cactus_flower"
     ]
   },
   "item/birch_logs": {
@@ -3945,6 +4017,13 @@
       "minecraft:enchanted_book",
       "minecraft:writable_book",
       "minecraft:knowledge_book"
+    ]
+  },
+  "item/book_cloning_target": {
+    "name": "book_cloning_target",
+    "type": "item",
+    "values": [
+      "minecraft:writable_book"
     ]
   },
   "item/breaks_decorated_pots": {
@@ -4310,6 +4389,15 @@
       "minecraft:wolf_armor"
     ]
   },
+  "item/eggs": {
+    "name": "eggs",
+    "type": "item",
+    "values": [
+      "minecraft:egg",
+      "minecraft:blue_egg",
+      "minecraft:brown_egg"
+    ]
+  },
   "item/emerald_ores": {
     "name": "emerald_ores",
     "type": "item",
@@ -4354,6 +4442,27 @@
       "minecraft:cooked_salmon",
       "minecraft:pufferfish",
       "minecraft:tropical_fish"
+    ]
+  },
+  "item/flowers": {
+    "name": "flowers",
+    "type": "item",
+    "values": [
+      "#minecraft:small_flowers",
+      "minecraft:sunflower",
+      "minecraft:lilac",
+      "minecraft:peony",
+      "minecraft:rose_bush",
+      "minecraft:pitcher_plant",
+      "minecraft:flowering_azalea_leaves",
+      "minecraft:flowering_azalea",
+      "minecraft:mangrove_propagule",
+      "minecraft:cherry_leaves",
+      "minecraft:pink_petals",
+      "minecraft:wildflowers",
+      "minecraft:chorus_flower",
+      "minecraft:spore_blossom",
+      "minecraft:cactus_flower"
     ]
   },
   "item/foot_armor": {
@@ -5806,76 +5915,43 @@
     "type": "block/mineable",
     "values": [
       "minecraft:note_block",
-      "minecraft:attached_melon_stem",
-      "minecraft:attached_pumpkin_stem",
-      "minecraft:azalea",
       "minecraft:bamboo",
       "minecraft:barrel",
       "minecraft:bee_nest",
       "minecraft:beehive",
-      "minecraft:beetroots",
       "minecraft:big_dripleaf_stem",
       "minecraft:big_dripleaf",
       "minecraft:bookshelf",
       "minecraft:brown_mushroom_block",
-      "minecraft:brown_mushroom",
       "minecraft:campfire",
-      "minecraft:carrots",
       "minecraft:cartography_table",
       "minecraft:carved_pumpkin",
-      "minecraft:cave_vines_plant",
-      "minecraft:cave_vines",
       "minecraft:chest",
       "minecraft:chorus_flower",
       "minecraft:chorus_plant",
       "minecraft:cocoa",
       "minecraft:composter",
       "minecraft:crafting_table",
-      "minecraft:crimson_fungus",
       "minecraft:daylight_detector",
-      "minecraft:dead_bush",
-      "minecraft:fern",
       "minecraft:fletching_table",
       "minecraft:glow_lichen",
-      "minecraft:short_grass",
-      "minecraft:hanging_roots",
       "minecraft:jack_o_lantern",
       "minecraft:jukebox",
       "minecraft:ladder",
-      "minecraft:large_fern",
       "minecraft:lectern",
-      "minecraft:lily_pad",
       "minecraft:loom",
-      "minecraft:melon_stem",
       "minecraft:melon",
       "minecraft:mushroom_stem",
-      "minecraft:nether_wart",
-      "minecraft:potatoes",
-      "minecraft:pumpkin_stem",
       "minecraft:pumpkin",
       "minecraft:red_mushroom_block",
-      "minecraft:red_mushroom",
-      "minecraft:scaffolding",
-      "minecraft:small_dripleaf",
       "minecraft:smithing_table",
       "minecraft:soul_campfire",
-      "minecraft:spore_blossom",
-      "minecraft:sugar_cane",
-      "minecraft:sweet_berry_bush",
-      "minecraft:tall_grass",
       "minecraft:trapped_chest",
-      "minecraft:twisting_vines_plant",
-      "minecraft:twisting_vines",
       "minecraft:vine",
-      "minecraft:warped_fungus",
-      "minecraft:weeping_vines_plant",
-      "minecraft:weeping_vines",
-      "minecraft:wheat",
       "#minecraft:banners",
       "#minecraft:fence_gates",
       "#minecraft:logs",
       "#minecraft:planks",
-      "#minecraft:saplings",
       "#minecraft:signs",
       "#minecraft:wooden_buttons",
       "#minecraft:wooden_doors",
@@ -5898,6 +5974,7 @@
     "name": "hoe",
     "type": "block/mineable",
     "values": [
+      "#minecraft:leaves",
       "minecraft:nether_wart_block",
       "minecraft:warped_wart_block",
       "minecraft:hay_block",
@@ -5906,16 +5983,6 @@
       "minecraft:shroomlight",
       "minecraft:sponge",
       "minecraft:wet_sponge",
-      "minecraft:jungle_leaves",
-      "minecraft:oak_leaves",
-      "minecraft:spruce_leaves",
-      "minecraft:pale_oak_leaves",
-      "minecraft:dark_oak_leaves",
-      "minecraft:acacia_leaves",
-      "minecraft:birch_leaves",
-      "minecraft:azalea_leaves",
-      "minecraft:flowering_azalea_leaves",
-      "minecraft:mangrove_leaves",
       "minecraft:sculk_sensor",
       "minecraft:calibrated_sculk_sensor",
       "minecraft:moss_block",
@@ -5925,9 +5992,7 @@
       "minecraft:sculk",
       "minecraft:sculk_catalyst",
       "minecraft:sculk_vein",
-      "minecraft:sculk_shrieker",
-      "minecraft:pink_petals",
-      "minecraft:cherry_leaves"
+      "minecraft:sculk_shrieker"
     ]
   },
   "block/mineable/pickaxe": {
@@ -6764,6 +6829,7 @@
       "minecraft:flower_forest",
       "minecraft:birch_forest",
       "minecraft:dark_forest",
+      "minecraft:pale_garden",
       "minecraft:savanna_plateau",
       "minecraft:savanna",
       "minecraft:jungle",
@@ -6783,7 +6849,6 @@
       "minecraft:eroded_badlands",
       "minecraft:windswept_savanna",
       "minecraft:cherry_grove",
-      "minecraft:pale_garden",
       "minecraft:frozen_peaks",
       "minecraft:dripstone_caves",
       "minecraft:lush_caves",
@@ -6887,6 +6952,34 @@
       "minecraft:wooded_badlands"
     ]
   },
+  "worldgen/biome/spawns_cold_variant_farm_animals": {
+    "name": "spawns_cold_variant_farm_animals",
+    "type": "worldgen/biome",
+    "values": [
+      "minecraft:snowy_plains",
+      "minecraft:ice_spikes",
+      "minecraft:frozen_peaks",
+      "minecraft:jagged_peaks",
+      "minecraft:snowy_slopes",
+      "minecraft:frozen_ocean",
+      "minecraft:deep_frozen_ocean",
+      "minecraft:grove",
+      "minecraft:deep_dark",
+      "minecraft:frozen_river",
+      "minecraft:snowy_taiga",
+      "minecraft:snowy_beach",
+      "#minecraft:is_end",
+      "minecraft:cold_ocean",
+      "minecraft:deep_cold_ocean",
+      "minecraft:old_growth_pine_taiga",
+      "minecraft:old_growth_spruce_taiga",
+      "minecraft:taiga",
+      "minecraft:windswept_forest",
+      "minecraft:windswept_gravelly_hills",
+      "minecraft:windswept_hills",
+      "minecraft:stony_peaks"
+    ]
+  },
   "worldgen/biome/spawns_cold_variant_frogs": {
     "name": "spawns_cold_variant_frogs",
     "type": "worldgen/biome",
@@ -6927,6 +7020,21 @@
       "minecraft:jagged_peaks",
       "minecraft:snowy_slopes",
       "minecraft:grove"
+    ]
+  },
+  "worldgen/biome/spawns_warm_variant_farm_animals": {
+    "name": "spawns_warm_variant_farm_animals",
+    "type": "worldgen/biome",
+    "values": [
+      "minecraft:desert",
+      "minecraft:warm_ocean",
+      "#minecraft:is_jungle",
+      "#minecraft:is_savanna",
+      "#minecraft:is_nether",
+      "#minecraft:is_badlands",
+      "minecraft:mangrove_swamp",
+      "minecraft:deep_lukewarm_ocean",
+      "minecraft:lukewarm_ocean"
     ]
   },
   "worldgen/biome/spawns_warm_variant_frogs": {
@@ -7091,11 +7199,60 @@
       "minecraft:ocean_ruin_warm"
     ]
   },
+  "worldgen/structure/on_desert_village_maps": {
+    "name": "on_desert_village_maps",
+    "type": "worldgen/structure",
+    "values": [
+      "minecraft:village_desert"
+    ]
+  },
+  "worldgen/structure/on_jungle_explorer_maps": {
+    "name": "on_jungle_explorer_maps",
+    "type": "worldgen/structure",
+    "values": [
+      "minecraft:jungle_pyramid"
+    ]
+  },
   "worldgen/structure/on_ocean_explorer_maps": {
     "name": "on_ocean_explorer_maps",
     "type": "worldgen/structure",
     "values": [
       "minecraft:monument"
+    ]
+  },
+  "worldgen/structure/on_plains_village_maps": {
+    "name": "on_plains_village_maps",
+    "type": "worldgen/structure",
+    "values": [
+      "minecraft:village_plains"
+    ]
+  },
+  "worldgen/structure/on_savanna_village_maps": {
+    "name": "on_savanna_village_maps",
+    "type": "worldgen/structure",
+    "values": [
+      "minecraft:village_savanna"
+    ]
+  },
+  "worldgen/structure/on_snowy_village_maps": {
+    "name": "on_snowy_village_maps",
+    "type": "worldgen/structure",
+    "values": [
+      "minecraft:village_snowy"
+    ]
+  },
+  "worldgen/structure/on_swamp_explorer_maps": {
+    "name": "on_swamp_explorer_maps",
+    "type": "worldgen/structure",
+    "values": [
+      "minecraft:swamp_hut"
+    ]
+  },
+  "worldgen/structure/on_taiga_village_maps": {
+    "name": "on_taiga_village_maps",
+    "type": "worldgen/structure",
+    "values": [
+      "minecraft:village_taiga"
     ]
   },
   "worldgen/structure/on_treasure_maps": {
@@ -7456,6 +7613,7 @@
       "minecraft:flower_forest",
       "minecraft:birch_forest",
       "minecraft:dark_forest",
+      "minecraft:pale_garden",
       "minecraft:savanna_plateau",
       "minecraft:savanna",
       "minecraft:jungle",
@@ -7475,7 +7633,6 @@
       "minecraft:eroded_badlands",
       "minecraft:windswept_savanna",
       "minecraft:cherry_grove",
-      "minecraft:pale_garden",
       "minecraft:frozen_peaks",
       "minecraft:dripstone_caves",
       "minecraft:lush_caves"
@@ -7521,7 +7678,8 @@
     "name": "woodland_mansion",
     "type": "worldgen/biome/has_structure",
     "values": [
-      "minecraft:dark_forest"
+      "minecraft:dark_forest",
+      "minecraft:pale_garden"
     ]
   }
 }
