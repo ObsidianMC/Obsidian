@@ -72,6 +72,12 @@ internal sealed class LoginClientHandler : ClientHandler
         this.SendPacket(new RegistryDataPacket(CodecRegistry.DamageType.CodecKey, CodecRegistry.DamageType.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimPattern.CodecKey, CodecRegistry.TrimPattern.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimMaterial.CodecKey, CodecRegistry.TrimMaterial.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.CatVariant.CodecKey, CodecRegistry.CatVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.ChickenVariant.CodecKey, CodecRegistry.ChickenVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.CowVariant.CodecKey, CodecRegistry.CowVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.FrogVariant.CodecKey, CodecRegistry.FrogVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.PigVariant.CodecKey, CodecRegistry.PigVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         //Figure out why sending all the wolf variants throw a network protocol error
         this.SendPacket(new RegistryDataPacket(CodecRegistry.WolfVariant.CodecKey, new Dictionary<string, ICodec>()
         {
