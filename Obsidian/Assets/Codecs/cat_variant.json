@@ -1,0 +1,151 @@
+{
+  "type": "minecraft:cat_variant",
+  "value": [
+    {
+      "name": "minecraft:all_black",
+      "id": 0,
+      "element": {
+        "asset_id": "minecraft:entity/cat/all_black",
+        "spawn_conditions": [
+          {
+            "condition": {
+              "type": "minecraft:structure",
+              "structures": "#minecraft:cats_spawn_as_black"
+            },
+            "priority": 1
+          },
+          {
+            "condition": {
+              "type": "minecraft:moon_brightness",
+              "range": {
+                "min": 0.9,
+                "max": 0
+              }
+            },
+            "priority": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "minecraft:black",
+      "id": 1,
+      "element": {
+        "asset_id": "minecraft:entity/cat/black",
+        "spawn_conditions": [
+          {
+            "priority": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "minecraft:british_shorthair",
+      "id": 2,
+      "element": {
+        "asset_id": "minecraft:entity/cat/british_shorthair",
+        "spawn_conditions": [
+          {
+            "priority": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "minecraft:calico",
+      "id": 3,
+      "element": {
+        "asset_id": "minecraft:entity/cat/calico",
+        "spawn_conditions": [
+          {
+            "priority": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "minecraft:jellie",
+      "id": 4,
+      "element": {
+        "asset_id": "minecraft:entity/cat/jellie",
+        "spawn_conditions": [
+          {
+            "priority": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "minecraft:persian",
+      "id": 5,
+      "element": {
+        "asset_id": "minecraft:entity/cat/persian",
+        "spawn_conditions": [
+          {
+            "priority": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "minecraft:ragdoll",
+      "id": 6,
+      "element": {
+        "asset_id": "minecraft:entity/cat/ragdoll",
+        "spawn_conditions": [
+          {
+            "priority": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "minecraft:red",
+      "id": 7,
+      "element": {
+        "asset_id": "minecraft:entity/cat/red",
+        "spawn_conditions": [
+          {
+            "priority": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "minecraft:siamese",
+      "id": 8,
+      "element": {
+        "asset_id": "minecraft:entity/cat/siamese",
+        "spawn_conditions": [
+          {
+            "priority": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "minecraft:tabby",
+      "id": 9,
+      "element": {
+        "asset_id": "minecraft:entity/cat/tabby",
+        "spawn_conditions": [
+          {
+            "priority": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "minecraft:white",
+      "id": 10,
+      "element": {
+        "asset_id": "minecraft:entity/cat/white",
+        "spawn_conditions": [
+          {
+            "priority": 0
+          }
+        ]
+      }
+    }
+  ]
+}
