@@ -1,12 +1,12 @@
 ﻿namespace Obsidian.API;
-public enum HeightmapType
+public enum HeightmapType : int
 {
+    WorldSurfaceWG,
+    WorldSurface,
+
+    OceanFloorWG,
+    OceanFloor,
+
     MotionBlocking,
     MotionBlockingNoLeaves,
-
-    OceanFloor,
-    OceanFloorWG,
-
-    WorldSurface,
-    WorldSurfaceWG
 }

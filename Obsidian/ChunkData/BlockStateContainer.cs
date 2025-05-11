@@ -67,7 +67,6 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
 
         Palette.WriteTo(writer);
 
-        writer.WriteVarInt(DataArray.storage.Length);
         writer.WriteLongArray(DataArray.storage);
     }
 

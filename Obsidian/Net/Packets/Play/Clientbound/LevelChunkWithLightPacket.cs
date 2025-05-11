@@ -12,20 +12,21 @@ public partial class LevelChunkWithLightPacket(IChunk chunk)
         writer.WriteInt(Chunk.Z);
 
         //Chunk.CalculateHeightmap();
-        var heightmapBuffer = new NetworkBuffer();
 
-        using var nbtWriter = new RawNbtWriter(true);
-
+        writer.WriteVarInt(1);
         foreach (var (type, heightmap) in Chunk.Heightmaps)
             if (type == HeightmapType.MotionBlocking)
-                nbtWriter.WriteTag(new NbtArray<long>(type.ToString().ToSnakeCase().ToUpper(), heightmap.GetDataArray()));
+            {
+                var dataArray = heightmap.GetDataArray();
 
-        nbtWriter.EndCompound();
-        nbtWriter.TryFinish();
+                writer.WriteVarInt(type.GetHashCode());
+                writer.WriteVarInt(dataArray.Length);
 
-        heightmapBuffer.Write(nbtWriter.Data);
+                foreach(var height in dataArray)
+                    writer.WriteLong(height);
 
-        writer.Write(heightmapBuffer);
+                break;
+            }
 
         var sectionBuffer = new NetworkBuffer();
 
