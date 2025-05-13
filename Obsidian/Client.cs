@@ -133,7 +133,7 @@ public sealed partial class Client : IClient
 
     public string? Brand { get; set; }
 
-    public bool Connected { get; private set; }
+    public bool Connected => this.Socket.Connected;
 
     public Client(IEventDispatcher eventDispatcher, IServer server, ILoggerFactory loggerFactory,
         IUserCache playerCache,
@@ -232,10 +232,13 @@ public sealed partial class Client : IClient
         if (this.State == ClientState.Login)
         {
             await this.QueuePacketAsync(new LoginDisconnectPacket { ReasonJson = reason.ToString(Globals.JsonOptions) });
+
+            this.Disconnect();
             return;
         }
 
         await this.QueuePacketAsync(new DisconnectPacket { Reason = reason });
+        this.Disconnect();
     }
 
     public async ValueTask QueuePacketAsync(IClientboundPacket packet)
@@ -263,7 +266,12 @@ public sealed partial class Client : IClient
     {
         this.Player!.SkinProperties = user.Properties!;
         this.EncryptionEnabled = true;
-        //this.minecraftStream = new EncryptedMinecraftStream(networkStream, sharedKey!);
+
+        this.receiveBuffer = new EncryptedNetworkBuffer(sharedKey!);
+        this.sendBufferMain = new EncryptedNetworkBuffer(sharedKey);
+        this.sendBufferFlush = new EncryptedNetworkBuffer(sharedKey);
+
+        this.receiveBuffer.Reserve(MaxBufferSize);
 
         this.SendPacket(new LoginFinishedPacket(Player.Uuid, Player.Username)
         {
@@ -342,8 +350,6 @@ public sealed partial class Client : IClient
 
         this.Socket.Close();
 
-        this.Connected = false;
-
         this.receiving = false;
         this.sending = false;
 
@@ -382,7 +388,7 @@ public sealed partial class Client : IClient
                 this.SendPacket(packet);
             }
         }
-        catch (OperationCanceledException)
+        catch (Exception ex) when (ex is OperationCanceledException or TaskCanceledException)
         {
             this.Logger.LogDebug("Client({id}) packet queue was cancelled", this.Id);
         }

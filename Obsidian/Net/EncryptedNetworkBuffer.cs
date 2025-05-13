@@ -2,6 +2,7 @@
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Parameters;
+using System.Buffers;
 
 namespace Obsidian.Net;
 public sealed class EncryptedNetworkBuffer : NetworkBuffer
@@ -13,36 +14,55 @@ public sealed class EncryptedNetworkBuffer : NetworkBuffer
     public EncryptedNetworkBuffer(byte[] key, long capacity) : this(key, new byte[capacity]) { }
     public EncryptedNetworkBuffer(byte[] key, byte[] data) : base(data)
     {
+        var keyParam = new KeyParameter(key);
+        var ivParam = new ParametersWithIV(keyParam, key, 0, 16);
+
         encryptCipher = new BufferedBlockCipher(new CfbBlockCipher(new AesEngine(), 8));
-        encryptCipher.Init(true, new ParametersWithIV(new KeyParameter(key), key, 0, 16));
+        encryptCipher.Init(true, ivParam);
 
         decryptCipher = new BufferedBlockCipher(new CfbBlockCipher(new AesEngine(), 8));
-        decryptCipher.Init(false, new ParametersWithIV(new KeyParameter(key), key, 0, 16));
+        decryptCipher.Init(false, ivParam);
     }
 
     public override void Write(byte[] buffer, int offset, int size)
     {
-        var span = new ReadOnlySpan<byte>(buffer, offset, size);
-        var encrypted = ProcessCipher(encryptCipher, span);
-        Write(encrypted);
+        var output = ArrayPool<byte>.Shared.Rent(encryptCipher.GetOutputSize(size));
+
+        int outLen = encryptCipher.ProcessBytes(buffer, offset, size, output, 0);
+
+        base.Write(output, 0, outLen);
+
+        ArrayPool<byte>.Shared.Return(output);
+    }
+
+    public override void WriteByte(byte value)
+    {
+        Span<byte> single = [value];
+        Write(single);
+    }
+
+    public override void Write(ReadOnlySpan<byte> buffer)
+    {
+        var output = ArrayPool<byte>.Shared.Rent(encryptCipher.GetOutputSize(buffer.Length));
+        int outLen = encryptCipher.ProcessBytes(buffer.ToArray(), 0, buffer.Length, output, 0);
+        base.Write(output, 0, outLen);
+
+        ArrayPool<byte>.Shared.Return(output);
     }
 
     protected override byte[] ReadUntil(int size)
     {
         ValidateOffset();
-        var encrypted = base.ReadUntil(size);
-        return ProcessCipher(decryptCipher, encrypted);
-    }
+        //Dk how I should do this
+        var encrypted = ArrayPool<byte>.Shared.Rent(size);
+        Buffer.BlockCopy(this.data, this.offset, encrypted, 0, size);
 
-    private static byte[] ProcessCipher(BufferedBlockCipher cipher, ReadOnlySpan<byte> input)
-    {
-        var inputBuffer = input.ToArray(); // still need to copy since BouncyCastle requires array
-        var output = new byte[cipher.GetOutputSize(inputBuffer.Length)];
-        var length = cipher.ProcessBytes(inputBuffer, 0, inputBuffer.Length, output, 0);
-        length += cipher.DoFinal(output, length);
+        var output = new byte[size];
+        int outLen = decryptCipher.ProcessBytes(encrypted, 0, size, output, 0);
 
-        if (length < output.Length)
-            Array.Resize(ref output, length);
+        ArrayPool<byte>.Shared.Return(encrypted);
+
+        this.offset += size;
 
         return output;
     }

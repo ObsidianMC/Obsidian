@@ -41,8 +41,6 @@ public partial class Client
         this.sendEvent = this.pool.Get();
         this.sendEvent.Completed += OnAsyncCompleted;
 
-        this.Connected = true;
-
         this.receiveBuffer.Reserve(MaxBufferSize);
 
         _ = this.HandlePacketQueueAsync();
@@ -135,7 +133,7 @@ public partial class Client
             try
             {
                 this.receiving = true;
-                this.receiveEvent.SetBuffer(this.receiveBuffer.Data, 0, (int)this.receiveBuffer.Capacity);
+                this.receiveEvent.SetBuffer(this.receiveBuffer.Data, this.receiveBuffer.Offset, this.receiveBuffer.Capacity);
 
                 var willRaiseEvent = this.Socket.ReceiveAsync(this.receiveEvent);
                 if (!willRaiseEvent)
@@ -301,6 +299,8 @@ public partial class Client
         if (size > 0)
         {
             this.serverMetrics.AddBytesReceived(size);
+
+            this.receiveBuffer.Reserve(size);
 
             await this.ProcessPacketAsync(size);
 

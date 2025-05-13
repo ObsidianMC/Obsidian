@@ -227,11 +227,11 @@ public partial class NetworkBuffer : INetStreamReader
 
         if(!reader.TryReadNextTag<NbtCompound>(false, out var root))
         {
-            this.offset += ms.Position;
+            this.offset += (int)ms.Position;
             return chatMessage;
         }
 
-        this.offset += ms.Position;
+        this.offset += (int)ms.Position;
 
         return chatMessage.FromNbt(root);
     }

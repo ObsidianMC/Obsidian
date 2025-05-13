@@ -9,8 +9,8 @@ public partial class NetworkBuffer
     private const int DefaultInitialCapacity = 64;
 
     protected byte[] data;
-    protected long size;
-    protected long offset;
+    protected int size;
+    protected int offset;
 
     /// <summary>
     /// Is the buffer empty?
@@ -23,15 +23,15 @@ public partial class NetworkBuffer
     /// <summary>
     /// Bytes memory buffer capacity
     /// </summary>
-    public long Capacity => data.Length;
+    public int Capacity => data.Length;
     /// <summary>
     /// Bytes memory buffer size
     /// </summary>
-    public long Size => size;
+    public int Size => size;
     /// <summary>
     /// Bytes memory buffer offset
     /// </summary>
-    public long Offset => offset;
+    public int Offset => offset;
 
     /// <summary>
     /// Buffer indexer operator
@@ -40,9 +40,9 @@ public partial class NetworkBuffer
 
     public NetworkBuffer() : this(0) { }
     public NetworkBuffer(long capacity) : this(new byte[capacity], 0, 0) { }
-    public NetworkBuffer(byte[] data) : this(data, data.LongLength, 0) { }
+    public NetworkBuffer(byte[] data) : this(data, data.Length, 0) { }
 
-    private NetworkBuffer(byte[] buffer, long size, long offset)
+    private NetworkBuffer(byte[] buffer, int size, int offset)
     {
         this.data = buffer;
         this.size = size;
@@ -61,7 +61,7 @@ public partial class NetworkBuffer
     /// </summary>
     public Span<byte> AsSpan(int size) => new(data, (int)offset, size);
 
-    public Span<byte> AsSpan(long offset, long? size = null) => new(data, (int)offset, size.HasValue ? (int)size.Value : (int)this.size);
+    public Span<byte> AsSpan(int offset, int? size = null) => new(data, offset, size.HasValue ? size.Value : this.size);
 
     /// <summary>
     /// Clear the current buffer and its offset
@@ -77,15 +77,15 @@ public partial class NetworkBuffer
     /// <summary>
     /// Reserve the buffer of the given capacity
     /// </summary>
-    public void Reserve(long capacity)
+    public void Reserve(int capacity)
     {
         Debug.Assert(capacity >= 0);
         var required = offset + capacity;
 
         if (required > data.LongLength)
         {
-            var newCapacity = Math.Max(required, data.LongLength * 2);
-            Array.Resize(ref data, (int)newCapacity);
+            var newCapacity = Math.Max(required, data.Length * 2);
+            Array.Resize(ref data, newCapacity);
         }
 
         size = Math.Max(size, required);
@@ -143,14 +143,14 @@ public partial class NetworkBuffer
 
     #endregion
 
-    public void Dispose()
+    public virtual void Dispose()
     {
         this.Clear();
 
         GC.SuppressFinalize(this);
     }
 
-    public ValueTask DisposeAsync()
+    public virtual ValueTask DisposeAsync()
     {
         this.Dispose();
 
