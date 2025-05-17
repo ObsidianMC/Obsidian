@@ -15,7 +15,7 @@ public sealed class AesCfbBlockCipher : IDisposable
     {
         this.iv = new byte[key.Length];
 
-        Array.Copy(key, this.iv, key.Length);
+        key.CopyTo(this.iv);
 
         this.block = new byte[BlockSize];
 
