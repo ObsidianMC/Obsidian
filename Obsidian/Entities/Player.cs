@@ -23,7 +23,7 @@ public sealed partial class Player : Living, IPlayer
 
     public IClient Client { get; internal set; }
 
-    internal ILogger Logger { get; set; }
+    public ILogger Logger => this.Client.Logger;
 
     internal HashSet<IPlayer> visiblePlayers = [];
 
