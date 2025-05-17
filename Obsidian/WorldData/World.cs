@@ -1,5 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Configuration;
 using Obsidian.API.Entities;
 using Obsidian.API.Registry.Codecs.Dimensions;

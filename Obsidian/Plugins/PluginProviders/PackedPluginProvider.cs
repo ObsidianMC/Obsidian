@@ -1,7 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Plugins;
-using Obsidian.Entities;
-using Org.BouncyCastle.Crypto;
 using System.Collections.Frozen;
 using System.IO;
 using System.Reflection;
@@ -199,7 +197,7 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
             var bytesRead = await fs.ReadAsync(data);
 
             if (bytesRead != entry.CompressedLength)
-                throw new DataLengthException();
+                throw new Exception("Invalid entry length");
 
             entry.rawData = data;
         }

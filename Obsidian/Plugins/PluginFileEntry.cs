@@ -1,5 +1,4 @@
-﻿using Org.BouncyCastle.Crypto;
-using System.IO;
+﻿using System.IO;
 using System.IO.Compression;
 
 namespace Obsidian.Plugins;
@@ -28,6 +27,6 @@ public sealed class PluginFileEntry
 
         ds.CopyTo(outStream);
 
-        return outStream.Length != this.Length ? throw new DataLengthException() : outStream.ToArray();
+        return outStream.Length != this.Length ? throw new Exception("Invalid stream length") : outStream.ToArray();
     }
 }

@@ -69,7 +69,8 @@ public sealed partial class Server : IServer
 
     private readonly ConcurrentQueue<ClientboundPacket> _chatMessagesQueue = new();
     private readonly ILoggerFactory loggerFactory;
-    private readonly RconServer _rconServer;
+    //TODO reimplement this
+    //private readonly RconServer _rconServer;
     private readonly IUserCache userCache;
     private readonly ServerMetrics serverMetrics;
     private readonly IServiceProvider serviceProvider;
@@ -117,7 +118,7 @@ public sealed partial class Server : IServer
         _cancelTokenSource = CancellationTokenSource.CreateLinkedTokenSource(lifetime.ApplicationStopping);
         _cancelTokenSource.Token.Register(() => _logger.LogWarning("Obsidian is shutting down..."));
 
-        _rconServer = serviceProvider.GetRequiredService<RconServer>();
+        //_rconServer = serviceProvider.GetRequiredService<RconServer>();
 
         this.serviceProvider = serviceProvider;
         this.configWatcher = configuration.OnChange(this.ConfigChanged);
@@ -287,8 +288,8 @@ public sealed partial class Server : IServer
             ServerSaveAsync()
         };
 
-        if (Configuration.EnableRcon)
-            serverTasks.Add(_rconServer.RunAsync(this, _cancelTokenSource.Token));
+        //if (Configuration.EnableRcon)
+        //    serverTasks.Add(_rconServer.RunAsync(this, _cancelTokenSource.Token));
 
         loadTimeStopwatch.Stop();
         _logger.LogInformation("Server loaded in {time}", loadTimeStopwatch.Elapsed);

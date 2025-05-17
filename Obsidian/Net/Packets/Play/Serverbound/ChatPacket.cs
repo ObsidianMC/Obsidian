@@ -1,8 +1,5 @@
 using Obsidian.API.Events;
-using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
-using OpenTelemetry.Resources;
-using static Org.BouncyCastle.Bcpg.Attr.ImageAttrib;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 

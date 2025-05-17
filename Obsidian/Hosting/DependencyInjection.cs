@@ -4,14 +4,11 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Obsidian.API.Configuration;
-using Obsidian.API.Utilities;
 using Obsidian.Commands.Framework;
-using Obsidian.Net.Rcon;
 using Obsidian.Services;
 using Obsidian.WorldData;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
-using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using System.IO;
 
@@ -60,7 +57,7 @@ public static class DependencyInjection
 
         builder.Services.AddSingleton<IServerEnvironment, DefaultServerEnvironment>();
         builder.Services.AddSingleton<CommandHandler>();
-        builder.Services.AddSingleton<RconServer>();
+        //builder.Services.AddSingleton<RconServer>();
         builder.Services.AddSingleton<WorldManager>();
         builder.Services.AddSingleton<PacketBroadcaster>();
         builder.Services.AddSingleton<IServer, Server>();
