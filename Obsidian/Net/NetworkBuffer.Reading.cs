@@ -324,6 +324,7 @@ public partial class NetworkBuffer : INetStreamReader
         var span = this.AsSpan(size);
 
         this.offset += size;
+        this.BytesPending -= size;
 
         return span.ToArray();
     }

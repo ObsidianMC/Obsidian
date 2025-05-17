@@ -31,7 +31,9 @@ public partial class NetworkBuffer
     /// <summary>
     /// Bytes memory buffer offset
     /// </summary>
-    public int Offset => offset;
+    public int Offset { get => this.offset; internal set => this.offset = value; }
+
+    public int BytesPending { get; internal set; }
 
     /// <summary>
     /// Buffer indexer operator
@@ -131,7 +133,7 @@ public partial class NetworkBuffer
     public virtual void Write(ReadOnlySpan<byte> buffer)
     {
         Reserve(buffer.Length);
-        buffer.CopyTo(new Span<byte>(data, (int)this.offset, buffer.Length));
+        buffer.CopyTo(new Span<byte>(data, this.offset, buffer.Length));
         this.offset += buffer.Length;
     }
 

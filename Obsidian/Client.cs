@@ -16,6 +16,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Channels;
+using System.Threading.Tasks;
 
 namespace Obsidian;
 
@@ -261,24 +262,11 @@ public sealed partial class Client : IClient
 
     public bool SendPacket(IClientboundPacket packet) => this.SendAsync(packet);
 
-    //TODO ENCRYPTION
     internal void Login(MojangProfile user)
     {
         this.Player!.SkinProperties = user.Properties!;
         this.EncryptionEnabled = true;
-
-        this.receiveBuffer = new EncryptedNetworkBuffer(sharedKey!);
-        this.sendBufferMain = new EncryptedNetworkBuffer(sharedKey);
-        this.sendBufferFlush = new EncryptedNetworkBuffer(sharedKey);
-
-        this.receiveBuffer.Reserve(MaxBufferSize);
-
-        this.SendPacket(new LoginFinishedPacket(Player.Uuid, Player.Username)
-        {
-            SkinProperties = this.Player.SkinProperties,
-        });
-
-        this.Logger.LogDebug("Sent Login success to user {Username} {UUID}", this.Player.Username, this.Player.Uuid);
+        this.loginPending = true;
     }
 
     internal void ThrowIfInvalidEncryptionRequest()

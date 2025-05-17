@@ -2,10 +2,12 @@
 using Obsidian.API.Events;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Handshake.Serverbound;
+using Obsidian.Net.Packets.Login.Clientbound;
 using Obsidian.Net.Packets.Status.Clientbound;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Threading;
+using static Obsidian.API.Registries.CodecRegistry;
 
 namespace Obsidian;
 public partial class Client
@@ -13,7 +15,7 @@ public partial class Client
     private SocketAsyncEventArgs receiveEvent;
     private SocketAsyncEventArgs sendEvent;
 
-    private long sendBufferFlushOffset;
+    private int sendBufferFlushOffset;
 
     private bool receiving;
     private bool sending;
@@ -26,6 +28,7 @@ public partial class Client
 
     public Socket Socket { get; private set; }
 
+    private bool loginPending;
 
     internal async ValueTask ConnectAsync(Socket socket)
     {
@@ -48,33 +51,6 @@ public partial class Client
         await this.TryReceiveAsync();
     }
 
-    private int Send(byte[] buffer, int offset, int count) => Send(buffer.AsSpan(offset, count));
-
-    private int Send(ReadOnlySpan<byte> buffer)
-    {
-        if (!this.Connected)
-            return 0;
-
-        if (buffer.IsEmpty)
-            return 0;
-
-        // Sent data to the client
-        var sent = this.Socket.Send(buffer, SocketFlags.None, out SocketError ec);
-        if (sent > 0)
-            serverMetrics.AddBytesSent(sent);
-
-        // Check for socket error
-        if (ec != SocketError.Success)
-            Disconnect();
-
-        return sent;
-    }
-
-    private bool SendAsync(byte[] buffer) => SendAsync(buffer.AsSpan());
-
-
-    private bool SendAsync(byte[] buffer, int offset, int size) => SendAsync(buffer.AsSpan(offset, size));
-
     private bool SendAsync(IClientboundPacket packet)
     {
         if (!this.Connected)
@@ -94,30 +70,6 @@ public partial class Client
 
         return true;
     }
-
-    private bool SendAsync(ReadOnlySpan<byte> buffer)
-    {
-        if (!this.Connected)
-            return false;
-
-        if (buffer.IsEmpty)
-            return true;
-
-        lock (this.sendLock)
-        {
-            this.sendBufferMain.Write(buffer);
-
-            if (this.sending)
-                return true;
-            else
-                this.sending = true;
-
-            TrySend();
-        }
-
-        return true;
-    }
-
     #region Processing 
     private async ValueTask TryReceiveAsync()
     {
@@ -125,11 +77,12 @@ public partial class Client
             return;
 
         var process = true;
-
         while (process)
         {
-            process = false;
+            if (this.loginPending)
+                continue;
 
+            process = false;
             try
             {
                 this.receiving = true;
@@ -142,7 +95,7 @@ public partial class Client
             catch (ObjectDisposedException) { }
         }
 
-        if(this.receiving)
+        if (this.receiving)
             this.receiving = false;
     }
     private void TrySend()
@@ -179,7 +132,7 @@ public partial class Client
 
             try
             {
-                this.sendEvent.SetBuffer(this.sendBufferFlush.Data, (int)this.sendBufferFlushOffset, (int)this.sendBufferFlush.Offset);
+                this.sendEvent.SetBuffer(this.sendBufferFlush.Data, this.sendBufferFlushOffset, this.sendBufferFlush.Offset);
 
                 if (!this.Socket.SendAsync(this.sendEvent))
                     process = this.ProcessSend(this.sendEvent);
@@ -193,6 +146,9 @@ public partial class Client
         try
         {
             var length = this.receiveBuffer.ReadVarInt();
+            if (length == 0)
+                throw new UnreachableException("Packet length returned 0");
+
             var packetId = this.receiveBuffer.ReadVarInt();
 
             var varLen = packetId.GetVarIntLength();
@@ -287,6 +243,24 @@ public partial class Client
                     break;
             }
         }
+
+        if (this.loginPending)
+        {
+            this.receiveBuffer = new EncryptedNetworkBuffer(sharedKey);
+            this.sendBufferMain = new EncryptedNetworkBuffer(sharedKey);
+            this.sendBufferFlush = new EncryptedNetworkBuffer(sharedKey);
+
+            this.receiveBuffer.Reserve(MaxBufferSize);
+
+            this.SendPacket(new LoginFinishedPacket(Player.Uuid, Player.Username)
+            {
+                SkinProperties = this.Player.SkinProperties,
+            });
+
+            this.Logger.LogDebug("Sent Login success to user {Username} {UUID}", this.Player.Username, this.Player.Uuid);
+
+            this.loginPending = false;
+        }
     }
 
     private async ValueTask<bool> ProcessReceiveAsync(SocketAsyncEventArgs e)
@@ -298,15 +272,15 @@ public partial class Client
 
         if (size > 0)
         {
-            this.serverMetrics.AddBytesReceived(size);
+            this.receiveBuffer.BytesPending = size;
 
-            this.receiveBuffer.Reserve(size);
+            this.serverMetrics.AddBytesReceived(size);
 
             await this.ProcessPacketAsync(size);
 
-            if (this.receiveBuffer.Offset == size)
+            if (this.receiveBuffer.BytesPending <= 0)
             {
-                if (((2 * size) > MaxBufferSize) && (MaxBufferSize > 0))
+                if (2 * size > MaxBufferSize)
                 {
                     this.Disconnect();
                     return false;

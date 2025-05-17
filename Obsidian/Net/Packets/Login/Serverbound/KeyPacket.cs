@@ -1,9 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Obsidian.Entities;
-using Obsidian.Net.Packets.Login.Clientbound;
-using Obsidian.Serialization.Attributes;
-using Obsidian.Utilities.Mojang;
-using System.Net.Sockets;
+﻿using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Login.Serverbound;
 

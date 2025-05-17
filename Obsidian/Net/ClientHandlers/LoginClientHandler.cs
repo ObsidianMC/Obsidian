@@ -89,7 +89,7 @@ internal sealed class LoginClientHandler : ClientHandler
         var loginStart = HelloPacket.Deserialize(data);
 
         var username = this.Server.Configuration.Network.MulitplayerDebugMode ? $"Player{Globals.Random.Next(1, 999)}" : loginStart.Username;
-        var world = (World)this.Server.DefaultWorld;
+        var world = this.Server.DefaultWorld;
 
         this.Logger.LogDebug("Received login request from user {Username}", username);
         await this.Server.DisconnectIfConnectedAsync(username);

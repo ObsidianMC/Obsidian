@@ -501,6 +501,9 @@ public sealed partial class Server : IServer
         if (!this.Configuration.Network.ShouldThrottle)
             return false;
 
+        if (!client.Connected)
+            return false;
+
         if (!throttler.TryGetValue(client.Ip!, out var timeLeft))
         {
             throttler.TryAdd(client.Ip!, DateTimeOffset.UtcNow.AddMilliseconds(this.Configuration.Network.ConnectionThrottle));
