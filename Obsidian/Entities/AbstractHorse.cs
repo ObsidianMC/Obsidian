@@ -15,7 +15,7 @@ public class AbstractHorse : Animal
         writer.WriteEntityMetadataType(16, EntityMetadataType.Byte);
         writer.WriteByte((byte)HorseMask);
 
-        writer.WriteEntityMetadataType(17, EntityMetadataType.OptionalUUID);
+        writer.WriteEntityMetadataType(17, EntityMetadataType.OptionalLivingEntityReference);
         writer.WriteBoolean(true);
         if (true)
             writer.WriteUuid(Owner);

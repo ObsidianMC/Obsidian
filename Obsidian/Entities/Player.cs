@@ -399,13 +399,13 @@ public sealed partial class Player : Living, IPlayer
         //TODO fix possibly an extension method?
         if (LeftShoulder is not null)
         {
-            writer.WriteEntityMetadataType(19, EntityMetadataType.Nbt);
+            writer.WriteEntityMetadataType(19, EntityMetadataType.CompoundTag);
             writer.WriteNbtCompound([]);
         }
 
         if (RightShoulder is not null)
         {
-            writer.WriteEntityMetadataType(20, EntityMetadataType.Nbt);
+            writer.WriteEntityMetadataType(20, EntityMetadataType.CompoundTag);
             writer.WriteNbtCompound([]);
         }
     }
