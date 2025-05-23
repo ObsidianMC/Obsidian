@@ -1,8 +1,10 @@
-﻿using System.Text.Json.Serialization;
+﻿using Obsidian.Nbt;
+using Obsidian.Nbt.Interfaces;
+using System.Text.Json.Serialization;
 
 namespace Obsidian.API.Registry.Codecs.Dimensions;
 
-public sealed record class DimensionElement
+public sealed record class DimensionElement : INbtSerializable
 {
     public int MonsterSpawnBlockLightLimit { get; set; }
 
@@ -124,6 +126,53 @@ public sealed record class DimensionElement
     /// Whether the dimension has a bedrock ceiling or not.
     /// </summary>
     public bool HasCeiling { get; set; }
+
+    public void Write(INbtWriter writer)
+    {
+        writer.WriteBool("piglin_safe", this.PiglinSafe);
+        writer.WriteBool("natural", this.Natural);
+
+        writer.WriteFloat("ambient_light", this.AmbientLight);
+
+        if (this.FixedTime.HasValue)
+            writer.WriteLong("fixed_time", this.FixedTime.Value);
+
+        writer.WriteString("infiniburn", this.Infiniburn);
+
+        writer.WriteBool("respawn_anchor_works", this.RespawnAnchorWorks);
+        writer.WriteBool("has_skylight", this.HasSkylight);
+        writer.WriteBool("bed_works", this.BedWorks);
+
+        writer.WriteString("effects", this.Effects);
+
+        writer.WriteBool("has_raids", this.HasRaids);
+
+        writer.WriteInt("monster_spawn_block_light_limit", this.MonsterSpawnBlockLightLimit);
+
+        if (this.MonsterSpawnLightLevel.IntValue.HasValue)
+            writer.WriteInt("monster_spawn_light_level", this.MonsterSpawnLightLevel.IntValue.Value);
+        else
+        {
+            var monsterLight = this.MonsterSpawnLightLevel.Value!.Value;
+            writer.WriteTag(new NbtCompound("monster_spawn_light_level")
+            {
+                new NbtTag<string>("type", monsterLight.Type),
+                new NbtTag<int>("max_inclusive", monsterLight.MaxInclusive),
+                new NbtTag<int>("min_inclusive", monsterLight.MinInclusive)
+            });
+        }
+
+        writer.WriteInt("min_y", this.MinY);
+
+        writer.WriteInt("height", this.Height);
+
+        writer.WriteInt("logical_height", this.LogicalHeight);
+
+        writer.WriteFloat("coordinate_scale", this.CoordinateScale);
+
+        writer.WriteBool("ultrawarm", this.Ultrawarm);
+        writer.WriteBool("has_ceiling", this.HasCeiling);
+    }
 }
 
 public sealed record class MonsterSpawnLightLevel

@@ -9,8 +9,7 @@
         "description": {
           "color": "#9A5CC6",
           "translate": "trim_material.minecraft.amethyst"
-        },
-        "ingredient": "minecraft:amethyst_shard"
+        }
       }
     },
     {
@@ -21,8 +20,7 @@
         "description": {
           "color": "#B4684D",
           "translate": "trim_material.minecraft.copper"
-        },
-        "ingredient": "minecraft:copper_ingot"
+        }
       }
     },
     {
@@ -34,7 +32,6 @@
           "color": "#6EECD2",
           "translate": "trim_material.minecraft.diamond"
         },
-        "ingredient": "minecraft:diamond",
         "override_armor_assets": {
           "minecraft:diamond": "diamond_darker"
         }
@@ -48,8 +45,7 @@
         "description": {
           "color": "#11A036",
           "translate": "trim_material.minecraft.emerald"
-        },
-        "ingredient": "minecraft:emerald"
+        }
       }
     },
     {
@@ -61,7 +57,6 @@
           "color": "#DEB12D",
           "translate": "trim_material.minecraft.gold"
         },
-        "ingredient": "minecraft:gold_ingot",
         "override_armor_assets": {
           "minecraft:gold": "gold_darker"
         }
@@ -76,7 +71,6 @@
           "color": "#ECECEC",
           "translate": "trim_material.minecraft.iron"
         },
-        "ingredient": "minecraft:iron_ingot",
         "override_armor_assets": {
           "minecraft:iron": "iron_darker"
         }
@@ -90,8 +84,7 @@
         "description": {
           "color": "#416E97",
           "translate": "trim_material.minecraft.lapis"
-        },
-        "ingredient": "minecraft:lapis_lazuli"
+        }
       }
     },
     {
@@ -103,7 +96,6 @@
           "color": "#625859",
           "translate": "trim_material.minecraft.netherite"
         },
-        "ingredient": "minecraft:netherite_ingot",
         "override_armor_assets": {
           "minecraft:netherite": "netherite_darker"
         }
@@ -117,8 +109,7 @@
         "description": {
           "color": "#E3D4C4",
           "translate": "trim_material.minecraft.quartz"
-        },
-        "ingredient": "minecraft:quartz"
+        }
       }
     },
     {
@@ -129,8 +120,7 @@
         "description": {
           "color": "#971607",
           "translate": "trim_material.minecraft.redstone"
-        },
-        "ingredient": "minecraft:redstone"
+        }
       }
     },
     {
@@ -141,8 +131,7 @@
         "description": {
           "color": "#FC7812",
           "translate": "trim_material.minecraft.resin"
-        },
-        "ingredient": "minecraft:resin_brick"
+        }
       }
     }
   ]

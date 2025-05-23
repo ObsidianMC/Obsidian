@@ -5,7 +5,7 @@ namespace Obsidian.Registries;
 
 internal static partial class BlocksRegistry
 {
-    private static string[] illegalBlockNames = ["Obsidian", "TrialSpawner", "Vault"];
+    private static string[] illegalBlockNames = ["Obsidian", "TrialSpawner", "Vault", "CreakingHeart"];
 
     public static int GlobalBitsPerBlocks { get; private set; }
     static BlocksRegistry()

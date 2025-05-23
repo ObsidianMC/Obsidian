@@ -1,8 +1,33 @@
-﻿namespace Obsidian.API.Registry.Codecs.WolfVariant;
-public sealed class WolfVariantElement
+﻿using Obsidian.Nbt;
+using Obsidian.Nbt.Interfaces;
+
+namespace Obsidian.API.Registry.Codecs.WolfVariant;
+public sealed class WolfVariantElement : INbtSerializable
 {
-    public required string AngryTexture { get; init; }
-    public required string Biomes { get; init; }
-    public required string TameTexture { get; init; }
-    public required string WildTexture { get; init; }
+    public Dictionary<string, string> Assets { get; set; } = [];
+
+    public List<SpawnConditionElement> SpawnConditions { get; set; } = [];
+
+    public void Write(INbtWriter writer)
+    {
+        writer.WriteCompoundStart("assets");
+
+        foreach (var asset in this.Assets)
+            writer.WriteString(asset.Key, asset.Value);
+
+        writer.EndCompound();
+
+        writer.WriteListStart("spawn_conditions", NbtTagType.Compound, this.SpawnConditions.Count);
+
+        foreach(var spawnCondition in this.SpawnConditions)
+        {
+            writer.WriteCompoundStart();
+
+            spawnCondition.Write(writer);
+
+            writer.EndCompound();
+        }
+
+        writer.EndList();
+    }
 }

@@ -6,7 +6,9 @@ public sealed class RangedIntProvider : IIntProvider
 {
     public required string Type { get; init; }
 
-    public IntProviderRangeValue Value { get; init; }
+    public required int MinInclusive { get; init; }
+
+    public required int MaxInclusive { get; init; }
 
     //TODO
     public int Get() => 0;

@@ -26,6 +26,7 @@ public partial class RegistryAssetsGenerator
             .Using("System.Reflection")
             .Using("System.Text.Json")
             .Using("Obsidian.API.Registry.Codecs.WolfVariant")
+            .Using("Obsidian.API.Registry.Codecs.WolfSoundVariant")
             .Using("Obsidian.API.Registry.Codecs.PaintingVariant")
             .Using("System.Collections.Frozen")
             .Line()
@@ -113,7 +114,26 @@ public partial class RegistryAssetsGenerator
             }, ctx);
 
         builder.GenerateSimpleCodec(codecs["trim_pattern"].ToArray(), "TrimPattern", "minecraft:trim_pattern", "TrimPatternCodec", ctx);
-        builder.GenerateSimpleCodec(codecs["wolf_variant"].ToArray(), "WolfVariant", "minecraft:wolf_variant", "WolfVariantCodec", ctx);
+        builder.GenerateSimpleCodec(codecs["wolf_variant"].ToArray(), "WolfVariant", "minecraft:wolf_variant", "WolfVariantCodec", (name, value) =>
+        {
+            builder.Append($"{name} = ");
+
+            if (value.ValueKind == JsonValueKind.Object)
+            {
+                builder.ParseProperty(value, ctx, name == "Assets");
+                return;
+            }
+
+            builder.AppendValueType(value, ctx, name == "Assets");
+        }, ctx);
+        builder.GenerateSimpleCodec(codecs["wolf_sound_variant"].ToArray(), "WolfSoundVariant", "minecraft:wolf_sound_variant", "WolfSoundVariantCodec", ctx);
+
+        builder.GenerateSimpleCodec(codecs["cat_variant"].ToArray(), "CatVariant", "minecraft:cat_variant", "BiomeVariantCodec", ctx);
+        builder.GenerateSimpleCodec(codecs["chicken_variant"].ToArray(), "ChickenVariant", "minecraft:chicken_variant", "BiomeVariantCodec", ctx);
+        builder.GenerateSimpleCodec(codecs["cow_variant"].ToArray(), "CowVariant", "minecraft:cow_variant", "BiomeVariantCodec", ctx);
+        builder.GenerateSimpleCodec(codecs["frog_variant"].ToArray(), "FrogVariant", "minecraft:frog_variant", "BiomeVariantCodec", ctx);
+        builder.GenerateSimpleCodec(codecs["pig_variant"].ToArray(), "PigVariant", "minecraft:pig_variant", "BiomeVariantCodec", ctx);
+
         builder.GenerateSimpleCodec(codecs["painting_variant"].ToArray(), "PaintingVariant", "minecraft:painting_variant", "PaintingVariantCodec", ctx);
 
         builder.EndScope();

@@ -42,7 +42,6 @@ public sealed class BiomeContainer : DataContainer<Biome>
 
         this.Palette.WriteTo(writer);
 
-        writer.WriteVarInt(this.DataArray.storage.Length);
         writer.WriteLongArray(this.DataArray.storage);
     }
 

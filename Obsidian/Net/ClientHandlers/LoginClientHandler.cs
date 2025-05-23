@@ -66,17 +66,24 @@ internal sealed class LoginClientHandler : ClientHandler
         });
 
         //This is very inconvenient
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.Biomes.CodecKey, CodecRegistry.Biomes.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.Dimensions.CodecKey, CodecRegistry.Dimensions.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.Biomes.CodecKey, CodecRegistry.Biomes.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.ChatType.CodecKey, CodecRegistry.ChatType.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.DamageType.CodecKey, CodecRegistry.DamageType.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimPattern.CodecKey, CodecRegistry.TrimPattern.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimMaterial.CodecKey, CodecRegistry.TrimMaterial.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.CatVariant.CodecKey, CodecRegistry.CatVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.ChickenVariant.CodecKey, CodecRegistry.ChickenVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.CowVariant.CodecKey, CodecRegistry.CowVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.FrogVariant.CodecKey, CodecRegistry.FrogVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.PigVariant.CodecKey, CodecRegistry.PigVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         //Figure out why sending all the wolf variants throw a network protocol error
         this.SendPacket(new RegistryDataPacket(CodecRegistry.WolfVariant.CodecKey, new Dictionary<string, ICodec>()
         {
             { CodecRegistry.WolfVariant.Black.Name, CodecRegistry.WolfVariant.Black },
         }));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.WolfSoundVariant.CodecKey, CodecRegistry.WolfSoundVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.PaintingVariant.CodecKey, CodecRegistry.PaintingVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
 
         this.SendPacket(UpdateTagsPacket.ClientboundConfiguration with { Tags = TagsRegistry.Categories });

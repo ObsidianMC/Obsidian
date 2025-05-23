@@ -146,6 +146,9 @@ public partial class Extensions
                     break;
                 case JsonValueKind.Null:
                     break;
+                case JsonValueKind.Array:
+                    builder.ParseArray(element, ctx, isDictionary);
+                    break;
                 default:
                     ctx.ReportDiagnostic(DiagnosticSeverity.Error, $"Found an invalid property type: {element.ValueKind} in json.");
                     break;
@@ -176,6 +179,9 @@ public partial class Extensions
                 builder.Append($"{element.GetBoolean().ToString().ToLower()}, ");
                 break;
             case JsonValueKind.Null:
+                break;
+            case JsonValueKind.Array:
+                builder.ParseArray(element, ctx, isDictionary);
                 break;
             default:
                 ctx.ReportDiagnostic(DiagnosticSeverity.Error, $"Found an invalid property type: {element.ValueKind} in json.");

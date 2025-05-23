@@ -343,6 +343,8 @@ public partial class NetworkBuffer : INetStreamWriter
     {
         using var writer = new RawNbtWriter(true);
 
+        codec.WriteElement(writer);
+
         if (codec is DimensionCodec dim)
             dim.WriteElement(writer);
         else if (codec is BiomeCodec biome)

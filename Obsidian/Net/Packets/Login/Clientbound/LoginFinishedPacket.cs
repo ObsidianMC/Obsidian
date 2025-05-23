@@ -24,10 +24,7 @@ public partial class LoginFinishedPacket(Guid uuid, string username)
             writer.WriteString(skinProperty.Name);
             writer.WriteString(skinProperty.Value);
 
-            writer.WriteBoolean(skinProperty.HasSignature);
-
-            if(skinProperty.HasSignature)
-                writer.WriteString(skinProperty.Signature!);
+            writer.WriteOptional(skinProperty.Signature);
         }
     }
 }

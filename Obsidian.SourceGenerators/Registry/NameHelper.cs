@@ -5,7 +5,7 @@ namespace Obsidian.SourceGenerators.Registry;
 
 internal static class NameHelper
 {
-    private static readonly string[] invalidBlockNames = ["TrialSpawner", "Vault", "Obsidian"];
+    private static readonly string[] invalidBlockNames = ["TrialSpawner", "Vault", "Obsidian", "CreakingHeart"];
 
     public static string SanitizeBlockName(this string blockName) => 
         invalidBlockNames.Contains(blockName) ? $"{blockName}Block" : blockName;

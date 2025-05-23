@@ -141,13 +141,7 @@ public partial class BlocksGenerator
             if (block.Properties.Length == 0)
                 continue;
 
-            var blockName = block.Name;
-
-            //TODO THIS NEEDS TO BE MOVED SOMEWHERE
-            if (blockName == "TrialSpawner")
-                blockName = "TrialSpawnerBlock";
-            if (blockName == "Vault")
-                blockName = "VaultBlock";
+            var blockName = block.Name.SanitizeBlockName();
 
             var fullName = $"{blockName}StateBuilder";
 
