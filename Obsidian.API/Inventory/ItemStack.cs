@@ -11,6 +11,8 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
 
     public int Count { get; set; }
 
+    public bool Hashed { get; set; }
+
     public Item Holder { get; }
 
     public Material Type => this.Holder.Type;

@@ -68,7 +68,7 @@ public partial class ContainerClickPacket
         for (int i = 0; i < length; i++)
             this.ChangedSlots.Add(reader.ReadShort(), reader.ReadItemStack());
 
-        this.CarriedItem = reader.ReadItemStack();
+        this.CarriedItem = reader.ReadItemStack(true);
     }
 
     public async override ValueTask HandleAsync(IServer server, IPlayer player)

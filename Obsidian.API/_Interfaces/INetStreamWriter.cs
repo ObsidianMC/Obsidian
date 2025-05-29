@@ -32,7 +32,7 @@ public interface INetStreamWriter : INetStream
     public void WriteEntity(IEntity entity);
     public void WriteBitSet(BitSet bitset, bool isFixed = false);
     public void WriteChat(ChatMessage chatMessage);
-    public void WriteItemStack(ItemStack? itemStack);
+    public void WriteItemStack(ItemStack? itemStack, bool hashed = false);
     public void WriteDateTimeOffset(DateTimeOffset date);
     public void WriteSoundEvent(SoundEvent soundEvent);
     public void WriteSoundEffect(SoundEffect sound);
