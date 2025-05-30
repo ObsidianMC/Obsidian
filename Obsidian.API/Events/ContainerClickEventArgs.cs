@@ -8,21 +8,34 @@ public sealed class ContainerClickEventArgs : ContainerEventArgs, ICancellable
     /// <summary>
     /// Gets the current item that was clicked
     /// </summary>
-    public ItemStack Item { get; }
+    public ItemStack Item => this.Container.GetItem(this.ClickedSlot);
+
+    public bool IsPlayerInventory => this.ContainerId == 0;
+
+    public required int ContainerId { get; init; }
 
     /// <summary>
     /// Gets the slot that was clicked
     /// </summary>
-    public int Slot { get; set; }
+    public required int ClickedSlot { get; init; }
+
+    public required sbyte Button { get; init; }
+
+    public required int StateId { get; init; }
+
+    public required ClickType ClickType { get; init; }
+
+    public ItemStack? CarriedItem { get; init; }
+
+    public required IReadOnlyDictionary<short, ItemStack?> ChangedSlots { get; init; }
 
     /// <inheritdoc />
     public bool IsCancelled { get; private set; }
 
     [SetsRequiredMembers]
-    internal ContainerClickEventArgs(IPlayer player, IServer server, BaseContainer container, ItemStack item) : base(player, server)
+    internal ContainerClickEventArgs(IPlayer player, IServer server, BaseContainer container) : base(player, server)
     {
         this.Container = container;
-        this.Item = item;
     }
 
     /// <inheritdoc />
