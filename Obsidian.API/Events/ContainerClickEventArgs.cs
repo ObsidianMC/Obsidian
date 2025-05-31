@@ -6,7 +6,7 @@ namespace Obsidian.API.Events;
 public sealed class ContainerClickEventArgs : ContainerEventArgs, ICancellable
 {
     /// <summary>
-    /// Gets the current item that was clicked. Is also <see cref="CarriedItem" />
+    /// Gets the current item that was clicked. />
     /// </summary>
     public ItemStack? Item => this.Container.GetItem(this.ClickedSlot);
 
@@ -33,24 +33,6 @@ public sealed class ContainerClickEventArgs : ContainerEventArgs, ICancellable
     public required int StateId { get; init; }
 
     public required ClickType ClickType { get; init; }
-
-    /// <summary>
-    /// The item that the player is carrying otherwise null or air.
-    /// </summary>
-    /// <remarks>
-    /// This item does not carry components and only carries the hash of those components.
-    /// You'll have to compare hashes to make sure the item wasn't modified on the client side.
-    /// </remarks>
-    public IHashedItemStack? CarriedItem { get; init; }
-
-    /// <summary>
-    /// The slots that were changed.
-    /// </summary>
-    /// <remarks>
-    /// The items represented in this dictionary do not carry any components. 
-    /// The hashes must be compared to make sure they weren't modified.
-    /// </remarks>
-    public required IReadOnlyDictionary<short, IHashedItemStack?> ChangedSlots { get; init; }
 
     /// <inheritdoc />
     public bool IsCancelled { get; private set; }

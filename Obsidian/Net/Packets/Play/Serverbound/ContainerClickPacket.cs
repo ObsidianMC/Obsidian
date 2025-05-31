@@ -1,5 +1,6 @@
-﻿using Obsidian.API.Events;
-using Obsidian.API.Inventory;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Events;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
@@ -74,14 +75,48 @@ public partial class ContainerClickPacket
         if (this.IsPlayerInventory || forPlayer)
             container = player.Inventory;
 
+        var clickedItem = container[slot];
+
+        if (!this.CarriedItem.Compare(clickedItem))
+        {
+            player.Client.Logger.LogWarning("Item being carried does not match the one that was picked up from the inventory.");
+
+            //The items don't match sync the client back.
+            await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
+            {
+                ContainerId = this.ContainerId,
+                Slot = -1,
+                SlotData = clickedItem,
+                StateId = 0,//State id is ignored if slot is set to -1
+            });
+        }
+
+        var invalidItems = new Dictionary<short, IHashedItemStack>();
+        foreach (var (changedSlot, hashedItem) in this.ChangedSlots)
+        {
+            var checkedItem = container[changedSlot];
+
+            if (!hashedItem.Compare(checkedItem))
+                invalidItems.Add(changedSlot, hashedItem);
+        }
+
+        if (invalidItems.Count > 0)
+        {
+            player.Client.Logger.LogWarning("Out of sync inventory. Contained {count} items that were out of sync.", invalidItems.Count);
+
+            await player.Client.QueuePacketAsync(new ContainerSetContentPacket(this.ContainerId, container.ToList())
+            {
+                StateId = this.StateId,
+                CarriedItem = clickedItem
+            });
+        }
+
         await server.EventDispatcher.ExecuteEventAsync(new ContainerClickEventArgs(player, server, container)
         {
             ClickedSlot = slot,
             ClickType = this.ClickType,
-            ChangedSlots = this.ChangedSlots.AsReadOnly(),
             Button = this.Button,
             StateId = this.StateId,
-            CarriedItem = this.CarriedItem,
             ContainerId = this.ContainerId,
         });
     }

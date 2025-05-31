@@ -9,18 +9,12 @@ public partial class MainEventHandler
     private const int OutsideInventory = -999;
 
     [EventPriority(Priority = Priority.Internal)]
-    public async ValueTask OnInventoryClick(ContainerClickEventArgs args)
+    public ValueTask OnInventoryClick(ContainerClickEventArgs args)
     {
         var clickedSlotItem = args.Item;
 
-        if (!args.CarriedItem.Compare(clickedSlotItem))
-        {
-            await args.Player.DisconnectAsync("Invalid item");
-            return;
-        }
-
         if (args.IsCancelled)
-            return;
+            return default;
 
         switch (args.ClickType)
         {
@@ -45,6 +39,8 @@ public partial class MainEventHandler
             default:
                 break;
         }
+
+        return default;
     }
 
     private static void HandlePickupAll(ContainerClickEventArgs args)
