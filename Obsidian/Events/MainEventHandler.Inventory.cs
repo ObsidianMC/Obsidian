@@ -6,13 +6,21 @@ using Obsidian.Net.Packets.Play.Clientbound;
 namespace Obsidian.Events;
 public partial class MainEventHandler
 {
-    private const int Outsideinventory = -999;
+    private const int OutsideInventory = -999;
 
     [EventPriority(Priority = Priority.Internal)]
-    public ValueTask OnInventoryClick(ContainerClickEventArgs args)
+    public async ValueTask OnInventoryClick(ContainerClickEventArgs args)
     {
+        var clickedSlotItem = args.Item;
+
+        if (!args.CarriedItem.Compare(clickedSlotItem))
+        {
+            await args.Player.DisconnectAsync("Invalid item");
+            return;
+        }
+
         if (args.IsCancelled)
-            return default;
+            return;
 
         switch (args.ClickType)
         {
@@ -37,15 +45,13 @@ public partial class MainEventHandler
             default:
                 break;
         }
-
-        return default;
     }
 
     private static void HandlePickupAll(ContainerClickEventArgs args)
     {
         var container = args.Container;
         var player = args.Player;
-        var carriedItem = args.CarriedItem;
+        var carriedItem = args.Item;
 
         if (carriedItem == null || carriedItem.Count >= carriedItem.MaxStackSize)
             return;
@@ -103,9 +109,9 @@ public partial class MainEventHandler
         var container = args.Container;
         var player = args.Player;
         var button = args.Button;
-        var carriedItem = args.CarriedItem;
+        var carriedItem = args.Item;
 
-        if (clickedSlot == Outsideinventory)
+        if (clickedSlot == OutsideInventory)
         {
             player.IsDragging = button switch
             {
@@ -142,7 +148,7 @@ public partial class MainEventHandler
         var player = args.Player;
         var button = args.Button;
 
-        if (clickedSlot != Outsideinventory)
+        if (clickedSlot != OutsideInventory)
         {
             ItemStack? removedItem;
             if (button == 0)
@@ -189,7 +195,7 @@ public partial class MainEventHandler
 
     private static void HandlePickup(ContainerClickEventArgs args)
     {
-        var carriedItem = args.CarriedItem;
+        var carriedItem = args.Item;
         var clickedSlot = args.ClickedSlot;
         var container = args.Container;
         var player = args.Player;
@@ -213,7 +219,7 @@ public partial class MainEventHandler
 
     private static void HandleSwap(ContainerClickEventArgs args)
     {
-        var carriedItem = args.CarriedItem;
+        var carriedItem = args.Item;
         var clickedSlot = args.ClickedSlot;
         var container = args.Container;
         var player = args.Player;

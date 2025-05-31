@@ -88,7 +88,7 @@ public partial class NetworkBuffer : INetStreamReader
     };
 
     [ReadMethod]
-    public ItemStack? ReadItemStack(bool hashed = false)
+    public ItemStack? ReadItemStack()
     {
         var count = this.ReadVarInt();
 
@@ -101,13 +101,6 @@ public partial class NetworkBuffer : INetStreamReader
 
         if (itemStack.Type == Material.Air)
             return itemStack;
-
-        if(hashed)
-        {
-            this.ReadHashedItemComponents(itemStack);
-
-            return itemStack;
-        }
 
         var componentsToAdd = this.ReadVarInt();
         var componentsToRemove = this.ReadVarInt();
@@ -125,22 +118,36 @@ public partial class NetworkBuffer : INetStreamReader
         return itemStack;
     }
 
-    private void ReadHashedItemComponents(ItemStack itemStack)
+    public IHashedItemStack? ReadHashedItemStack()
     {
-        itemStack.Hashed = true;
+        if (!this.ReadBoolean())
+            return null;
+
+        var count = this.ReadVarInt();
+        var item = ItemsRegistry.Get(ReadVarInt());
+       
+        var itemStack = new HashedItemStack(item, count);
+
+        //Might be best to change this
+        if (itemStack.Type == Material.Air)
+            return itemStack;
+
         var componentsToAdd = this.ReadVarInt();
         for (int i = 0; i < componentsToAdd; i++)
         {
             var type = this.ReadVarInt<DataComponentType>();
 
-            itemStack.AddHashedComponent(type, this.ReadInt());
+            itemStack.HashedComponents.Add(type, this.ReadInt());
         }
 
         var componentsToRemove = this.ReadVarInt();
 
         for (int i = 0; i < componentsToRemove; i++)
-            itemStack.Remove(this.ReadVarInt<DataComponentType>());
+            itemStack.ComponentsToRemove.Add(this.ReadVarInt<DataComponentType>());
+
+        return itemStack;
     }
+
 
     [ReadMethod]
     public DateTimeOffset ReadDateTimeOffset() => DateTimeOffset.FromUnixTimeMilliseconds(this.ReadLong());

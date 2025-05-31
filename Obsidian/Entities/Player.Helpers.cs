@@ -408,7 +408,6 @@ public partial class Player
 
                 var item = ItemsRegistry.GetSingleItem(itemCompound.GetString("id"));
                 item.Count = itemCompound.GetByte("Count");
-                item.Slot = slot;
 
                 Inventory.SetItem(slot, item);
             }

@@ -63,6 +63,7 @@ public interface INetStreamReader : INetStream
     public float? ReadOptionalFloat();
     public bool? ReadOptionalBoolean();
     public int? ReadOptionalInt();
-    public ItemStack? ReadItemStack(bool hashed = false);
+    public ItemStack? ReadItemStack();
+    public IHashedItemStack? ReadHashedItemStack();
     public Velocity ReadVelocity();
 }

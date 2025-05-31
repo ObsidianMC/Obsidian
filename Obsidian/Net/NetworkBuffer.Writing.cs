@@ -16,7 +16,6 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.IO.Hashing;
 using System.Text;
 using System.Text.Json;
 
@@ -391,7 +390,7 @@ public partial class NetworkBuffer : INetStreamWriter
     }
 
     [WriteMethod]
-    public void WriteItemStack(ItemStack? value, bool hashed = false)
+    public void WriteItemStack(ItemStack? value)
     {
         value ??= ItemStack.Air;
 
@@ -410,19 +409,7 @@ public partial class NetworkBuffer : INetStreamWriter
         {
             this.WriteVarInt(component.Type);
 
-            if (hashed)
-            {
-                using var componentStream = new NetworkBuffer();
-                component.Write(componentStream);
-
-                var hash = Crc32.Hash(componentStream.Data);
-
-                this.WriteInt(BitConverter.ToInt32(hash));
-            }
-            else
-            {
-                component.Write(this);
-            }
+            component.Write(this);
         }
 
         foreach (var componentType in value.RemoveComponents)

@@ -140,12 +140,12 @@ public static partial class ComponentBuilder
        reader => reader.ReadVarInt<MapPostProcessingType>());
 
     public static SimpleDataComponent<List<ItemStack>> ChargedProjectiles => BuildSimpleComponent(DataComponentType.ChargedProjectiles, "minecraft:charged_projectiles",
-        (writer, values) => writer.WriteLengthPrefixedArray(writer.WriteItemStack, values),
-        reader => reader.ReadLengthPrefixedArray(reader.ReadItemStack));
+        (writer, values) => writer.WriteLengthPrefixedArray(item => writer.WriteItemStack(item), values),
+        reader => reader.ReadLengthPrefixedArray(() => reader.ReadItemStack()));
 
     public static SimpleDataComponent<List<ItemStack>> BundleContents => BuildSimpleComponent(DataComponentType.BundleContents, "minecraft:bundle_contents",
-        (writer, values) => writer.WriteLengthPrefixedArray(writer.WriteItemStack, values),
-        reader => reader.ReadLengthPrefixedArray(reader.ReadItemStack));
+        (writer, values) => writer.WriteLengthPrefixedArray(item => writer.WriteItemStack(item), values),
+        reader => reader.ReadLengthPrefixedArray(() => reader.ReadItemStack()));
 
     public static SimpleDataComponent<List<SuspiciousStewEffect>> SuspiciousStewEffects => BuildSimpleComponent(DataComponentType.SuspiciousStewEffects,
         "minecraft:suspicious_stew_effects",
@@ -206,7 +206,7 @@ public static partial class ComponentBuilder
     public static SimpleDataComponent<List<ItemStack>> Container => BuildSimpleComponent(DataComponentType.Container,
          "minecraft:container",
          (writer, values) => writer.WriteLengthPrefixedArray((value) => writer.WriteItemStack(value), values),
-         reader => reader.ReadLengthPrefixedArray(reader.ReadItemStack));
+         reader => reader.ReadLengthPrefixedArray(() => reader.ReadItemStack()));
 
     public static SimpleDataComponent<List<BlockStateProperty>> BlockState => BuildSimpleComponent(DataComponentType.BlockState,
         "minecraft:block_state",

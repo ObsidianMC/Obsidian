@@ -1,8 +1,5 @@
 ﻿using Obsidian.API.Events;
 using Obsidian.API.Inventory;
-using Obsidian.Entities;
-using Obsidian.Nbt;
-using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
@@ -10,14 +7,11 @@ namespace Obsidian.Net.Packets.Play.Serverbound;
 // Source: https://wiki.vg/index.php?title=Protocol&oldid=14889#Click_Window
 public partial class ContainerClickPacket
 {
-    private const int Outsideinventory = -999;
-
     /// <summary>
     /// The ID of the window which was clicked. 0 for player inventory.
     /// </summary>
     [Field(0)]
     public int ContainerId { get; private set; }
-
 
     /// <summary>
     /// The last recieved State ID from either a Set Slot or a Window Items packet
@@ -44,13 +38,13 @@ public partial class ContainerClickPacket
     public ClickType ClickType { get; private set; }
 
     [Field(5)]
-    public IDictionary<short, ItemStack?> ChangedSlots { get; private set; } = default!;
+    public IDictionary<short, IHashedItemStack?> ChangedSlots { get; private set; } = default!;
 
     /// <summary>
     /// 	Item carried by the cursor. Has to be empty (item ID = -1) for drop mode, otherwise nothing will happen.
     /// </summary>
     [Field(6)]
-    public ItemStack? CarriedItem { get; private set; }
+    public IHashedItemStack? CarriedItem { get; private set; }
 
     private bool IsPlayerInventory => this.ContainerId == 0;
 
@@ -64,11 +58,11 @@ public partial class ContainerClickPacket
 
         var length = reader.ReadVarInt();
 
-        this.ChangedSlots = new Dictionary<short, ItemStack?>(length);
+        this.ChangedSlots = new Dictionary<short, IHashedItemStack?>(length);
         for (int i = 0; i < length; i++)
-            this.ChangedSlots.Add(reader.ReadShort(), reader.ReadItemStack());
+            this.ChangedSlots.Add(reader.ReadShort(), reader.ReadHashedItemStack());
 
-        this.CarriedItem = reader.ReadItemStack(true);
+        this.CarriedItem = reader.ReadHashedItemStack();
     }
 
     public async override ValueTask HandleAsync(IServer server, IPlayer player)

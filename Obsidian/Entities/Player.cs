@@ -609,6 +609,8 @@ public sealed partial class Player : Living, IPlayer
         await PickupNearbyItemsAsync();
     }
 
+    public async ValueTask DisconnectAsync(ChatMessage reason) => await this.Client.DisconnectAsync(reason);
+
     /// <summary>
     /// Updates client chunks. Only send <paramref name="distance"/> when sending initial chunks.
     /// </summary>

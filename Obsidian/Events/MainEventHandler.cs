@@ -4,7 +4,7 @@ using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 
 namespace Obsidian.Events;
-public sealed class MainEventHandler : MinecraftEventHandler
+public sealed partial class MainEventHandler : MinecraftEventHandler
 {
     [EventPriority(Priority = Priority.Internal)]
     public Task OnIncomingChatMessage(IncomingChatMessageEventArgs e)
@@ -286,8 +286,12 @@ public sealed class MainEventHandler : MinecraftEventHandler
                 }
                 else if (tileEntity is BaseContainer tileEntityContainer)
                 {
-                    foreach (var i in tileEntityContainer)
-                        container.SetItem(i.Slot, i);
+                    for(int i = 0; i < tileEntityContainer.Size; i++)
+                    {
+                        var slotItem = tileEntityContainer[i];
+
+                        container.SetItem(i, slotItem);
+                    }
                 }
             }
 

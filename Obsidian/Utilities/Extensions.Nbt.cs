@@ -7,23 +7,6 @@ namespace Obsidian.Utilities;
 //TODO MAKE NBT DE/SERIALIZERS PLEASE
 public partial class Extensions
 {
-    //TODO SERIALIZE COMPONENTS TO NBT
-    public static NbtCompound ToNbt(this ItemStack? value)
-    {
-        value ??= ItemStack.Air;
-
-        var item = value.AsItem();
-
-        var compound = new NbtCompound
-            {
-                new NbtTag<string>("id", item.UnlocalizedName),
-                new NbtTag<byte>("Count", (byte)value.Count),
-                new NbtTag<byte>("Slot", (byte)value.Slot)
-            };
-
-        return compound;
-    }
-
     public static void WriteNbtCompound(this INetStreamWriter writer, NbtCompound compound)
     {
         using var nbtWriter = new RawNbtWriter(true);
