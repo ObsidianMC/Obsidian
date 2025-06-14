@@ -77,6 +77,8 @@ public partial class ContainerClickPacket
 
         var clickedItem = container[slot];
 
+
+        // Maybe we should have an event called ValidateContainerContentsEventArgs? 
         if (!this.CarriedItem.Compare(clickedItem))
         {
             player.Client.Logger.LogWarning("Item being carried does not match the one that was picked up from the inventory.");
@@ -95,6 +97,12 @@ public partial class ContainerClickPacket
         foreach (var (changedSlot, hashedItem) in this.ChangedSlots)
         {
             var checkedItem = container[changedSlot];
+
+            if(hashedItem == null)
+            {
+                container.RemoveItem(changedSlot);
+                continue;
+            }
 
             if (!hashedItem.Compare(checkedItem))
                 invalidItems.Add(changedSlot, hashedItem);

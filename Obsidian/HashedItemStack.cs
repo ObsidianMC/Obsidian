@@ -32,6 +32,9 @@ public sealed class HashedItemStack(Item holder, int count = 1) : IHashedItemSta
             var otherHash = Crc32.HashToUInt32(sharedBuffer.AsSpan(0, writer.Size));
 
             passed = hash == otherHash;
+
+            if (!passed)
+                return false;
         }
 
         ArrayPool<byte>.Shared.Return(sharedBuffer);

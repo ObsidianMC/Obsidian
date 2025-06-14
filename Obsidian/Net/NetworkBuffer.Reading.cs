@@ -123,9 +123,9 @@ public partial class NetworkBuffer : INetStreamReader
         if (!this.ReadBoolean())
             return null;
 
-        var count = this.ReadVarInt();
         var item = ItemsRegistry.Get(ReadVarInt());
-       
+        var count = this.ReadVarInt();
+      
         var itemStack = new HashedItemStack(item, count);
 
         //Might be best to change this
