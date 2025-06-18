@@ -11,8 +11,6 @@ public partial class MainEventHandler
     [EventPriority(Priority = Priority.Internal)]
     public ValueTask OnInventoryClick(ContainerClickEventArgs args)
     {
-        var clickedSlotItem = args.Item;
-
         if (args.IsCancelled)
             return default;
 
