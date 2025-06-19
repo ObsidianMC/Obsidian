@@ -17,14 +17,17 @@ public class CommandNode
 
     public HashSet<CommandNode> Children = [];
 
+    public string? SuggestionType { get; set; }
+
     public void CopyTo(INetStreamWriter writer)
     {
         writer.WriteByte((sbyte)Type);
-        writer.WriteVarInt(Children.Count);
 
-        foreach (var child in Children.Select(c => c.Index))
+        writer.WriteLengthPrefixedArray(writer.WriteVarInt, Children.Select(c => c.Index).ToList());
+
+        if (Type.HasFlag(CommandNodeType.HasRedirect))
         {
-            writer.WriteVarInt(child);
+            writer.WriteVarInt(Index);
         }
 
         if (Type.HasFlag(CommandNodeType.Literal) || Type.HasFlag(CommandNodeType.Argument))
@@ -35,6 +38,11 @@ public class CommandNode
         if (Type.HasFlag(CommandNodeType.Argument))
         {
             Parser!.Write(writer);
+        }
+
+        if (Type.HasFlag(CommandNodeType.HasSuggestions))
+        {
+            writer.WriteString(SuggestionType!);
         }
     }
 

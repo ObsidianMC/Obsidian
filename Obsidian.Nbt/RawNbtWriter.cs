@@ -5,7 +5,7 @@ using System.Buffers;
 namespace Obsidian.Nbt;
 public sealed partial class RawNbtWriter : INbtWriter
 {
-    private const int MaxBufferSize = 1024 * 4;
+    private const int MaxBufferSize = 1024 * 8;
 
     private bool disposed;
 

@@ -11,5 +11,6 @@ public enum CommandNodeType : sbyte
     Argument = 0x02,
     IsExecutable = 0x04,
     HasRedirect = 0x08,
-    HasSuggestions = 0x10
+    HasSuggestions = 0x10,
+    IsRestricted = 0x20,
 }

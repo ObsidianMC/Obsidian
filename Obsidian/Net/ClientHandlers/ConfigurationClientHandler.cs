@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.Net.Packets.Common;
-using Obsidian.Net.Packets.Configuration.Clientbound;
 
 namespace Obsidian.Net.ClientHandlers;
 internal sealed class ConfigurationClientHandler : ClientHandler

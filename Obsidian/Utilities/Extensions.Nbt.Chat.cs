@@ -1,5 +1,4 @@
-﻿using Obsidian.API.Utilities;
-using Obsidian.Nbt;
+﻿using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
 using System.Text.Json;
 

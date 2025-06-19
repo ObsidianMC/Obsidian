@@ -42,7 +42,7 @@ public sealed partial class FinishConfigurationPacket
         await client.QueuePacketAsync(new GameEventPacket(player.World.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
 
         await client.QueuePacketAsync(CustomPayloadPacket.ClientboundPlay with { Channel = "minecraft:brand", PluginData = server.BrandData });
-        await client.QueuePacketAsync(CommandsRegistry.Packet);
+        //await client.QueuePacketAsync(CommandsRegistry.Packet);
 
         await player.UpdatePlayerInfoAsync();
         await player.SendPlayerInfoAsync();

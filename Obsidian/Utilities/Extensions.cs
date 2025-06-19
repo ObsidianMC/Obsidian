@@ -53,7 +53,8 @@ public static partial class Extensions
                 EntityType.SmallFireball,
                 EntityType.Egg,
                 EntityType.ExperienceBottle,
-                EntityType.Potion,
+                EntityType.SplashPotion,
+                EntityType.LingeringPotion,
                 EntityType.Trident,
                 EntityType.FishingBobber,
                 EntityType.EyeOfEnder];

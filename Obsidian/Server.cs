@@ -44,7 +44,7 @@ public sealed partial class Server : IServer
         }
     }
 #endif
-    public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_21_5;
+    public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_21_6;
     public static readonly string ProtocolDescription = DefaultProtocol.GetDescription();
 
 
