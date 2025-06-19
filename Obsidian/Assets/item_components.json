@@ -1623,7 +1623,9 @@
           "minecraft:trader_llama"
         ],
         "asset_id": "minecraft:black_carpet",
+        "can_be_sheared": true,
         "equip_sound": "minecraft:entity.llama.swag",
+        "shearing_sound": "minecraft:item.llama_carpet.unequip",
         "slot": "body"
       },
       "minecraft:item_model": "minecraft:black_carpet",
@@ -1696,6 +1698,31 @@
       },
       "minecraft:lore": [],
       "minecraft:max_stack_size": 64,
+      "minecraft:rarity": "common",
+      "minecraft:repair_cost": 0,
+      "minecraft:tooltip_display": {}
+    }
+  },
+  "minecraft:black_harness": {
+    "components": {
+      "minecraft:attribute_modifiers": [],
+      "minecraft:break_sound": "minecraft:entity.item.break",
+      "minecraft:enchantments": {},
+      "minecraft:equippable": {
+        "allowed_entities": "#minecraft:can_equip_harness",
+        "asset_id": "minecraft:black_harness",
+        "can_be_sheared": true,
+        "equip_on_interact": true,
+        "equip_sound": "minecraft:entity.happy_ghast.equip",
+        "shearing_sound": "minecraft:entity.happy_ghast.unequip",
+        "slot": "body"
+      },
+      "minecraft:item_model": "minecraft:black_harness",
+      "minecraft:item_name": {
+        "translate": "item.minecraft.black_harness"
+      },
+      "minecraft:lore": [],
+      "minecraft:max_stack_size": 1,
       "minecraft:rarity": "common",
       "minecraft:repair_cost": 0,
       "minecraft:tooltip_display": {}
@@ -2004,7 +2031,9 @@
           "minecraft:trader_llama"
         ],
         "asset_id": "minecraft:blue_carpet",
+        "can_be_sheared": true,
         "equip_sound": "minecraft:entity.llama.swag",
+        "shearing_sound": "minecraft:item.llama_carpet.unequip",
         "slot": "body"
       },
       "minecraft:item_model": "minecraft:blue_carpet",
@@ -2094,6 +2123,31 @@
       },
       "minecraft:lore": [],
       "minecraft:max_stack_size": 64,
+      "minecraft:rarity": "common",
+      "minecraft:repair_cost": 0,
+      "minecraft:tooltip_display": {}
+    }
+  },
+  "minecraft:blue_harness": {
+    "components": {
+      "minecraft:attribute_modifiers": [],
+      "minecraft:break_sound": "minecraft:entity.item.break",
+      "minecraft:enchantments": {},
+      "minecraft:equippable": {
+        "allowed_entities": "#minecraft:can_equip_harness",
+        "asset_id": "minecraft:blue_harness",
+        "can_be_sheared": true,
+        "equip_on_interact": true,
+        "equip_sound": "minecraft:entity.happy_ghast.equip",
+        "shearing_sound": "minecraft:entity.happy_ghast.unequip",
+        "slot": "body"
+      },
+      "minecraft:item_model": "minecraft:blue_harness",
+      "minecraft:item_name": {
+        "translate": "item.minecraft.blue_harness"
+      },
+      "minecraft:lore": [],
+      "minecraft:max_stack_size": 1,
       "minecraft:rarity": "common",
       "minecraft:repair_cost": 0,
       "minecraft:tooltip_display": {}
@@ -2672,7 +2726,9 @@
           "minecraft:trader_llama"
         ],
         "asset_id": "minecraft:brown_carpet",
+        "can_be_sheared": true,
         "equip_sound": "minecraft:entity.llama.swag",
+        "shearing_sound": "minecraft:item.llama_carpet.unequip",
         "slot": "body"
       },
       "minecraft:item_model": "minecraft:brown_carpet",
@@ -2762,6 +2818,31 @@
       },
       "minecraft:lore": [],
       "minecraft:max_stack_size": 64,
+      "minecraft:rarity": "common",
+      "minecraft:repair_cost": 0,
+      "minecraft:tooltip_display": {}
+    }
+  },
+  "minecraft:brown_harness": {
+    "components": {
+      "minecraft:attribute_modifiers": [],
+      "minecraft:break_sound": "minecraft:entity.item.break",
+      "minecraft:enchantments": {},
+      "minecraft:equippable": {
+        "allowed_entities": "#minecraft:can_equip_harness",
+        "asset_id": "minecraft:brown_harness",
+        "can_be_sheared": true,
+        "equip_on_interact": true,
+        "equip_sound": "minecraft:entity.happy_ghast.equip",
+        "shearing_sound": "minecraft:entity.happy_ghast.unequip",
+        "slot": "body"
+      },
+      "minecraft:item_model": "minecraft:brown_harness",
+      "minecraft:item_name": {
+        "translate": "item.minecraft.brown_harness"
+      },
+      "minecraft:lore": [],
+      "minecraft:max_stack_size": 1,
       "minecraft:rarity": "common",
       "minecraft:repair_cost": 0,
       "minecraft:tooltip_display": {}
@@ -3213,7 +3294,18 @@
   },
   "minecraft:carved_pumpkin": {
     "components": {
-      "minecraft:attribute_modifiers": [],
+      "minecraft:attribute_modifiers": [
+        {
+          "type": "minecraft:waypoint_transmit_range",
+          "amount": -1.0,
+          "display": {
+            "type": "hidden"
+          },
+          "id": "minecraft:waypoint_transmit_range_hide",
+          "operation": "add_multiplied_total",
+          "slot": "head"
+        }
+      ],
       "minecraft:break_sound": "minecraft:entity.item.break",
       "minecraft:enchantments": {},
       "minecraft:equippable": {
@@ -5063,7 +5155,18 @@
   },
   "minecraft:creeper_head": {
     "components": {
-      "minecraft:attribute_modifiers": [],
+      "minecraft:attribute_modifiers": [
+        {
+          "type": "minecraft:waypoint_transmit_range",
+          "amount": -1.0,
+          "display": {
+            "type": "hidden"
+          },
+          "id": "minecraft:waypoint_transmit_range_hide",
+          "operation": "add_multiplied_total",
+          "slot": "head"
+        }
+      ],
       "minecraft:break_sound": "minecraft:entity.item.break",
       "minecraft:enchantments": {},
       "minecraft:equippable": {
@@ -5580,7 +5683,9 @@
           "minecraft:trader_llama"
         ],
         "asset_id": "minecraft:cyan_carpet",
+        "can_be_sheared": true,
         "equip_sound": "minecraft:entity.llama.swag",
+        "shearing_sound": "minecraft:item.llama_carpet.unequip",
         "slot": "body"
       },
       "minecraft:item_model": "minecraft:cyan_carpet",
@@ -5653,6 +5758,31 @@
       },
       "minecraft:lore": [],
       "minecraft:max_stack_size": 64,
+      "minecraft:rarity": "common",
+      "minecraft:repair_cost": 0,
+      "minecraft:tooltip_display": {}
+    }
+  },
+  "minecraft:cyan_harness": {
+    "components": {
+      "minecraft:attribute_modifiers": [],
+      "minecraft:break_sound": "minecraft:entity.item.break",
+      "minecraft:enchantments": {},
+      "minecraft:equippable": {
+        "allowed_entities": "#minecraft:can_equip_harness",
+        "asset_id": "minecraft:cyan_harness",
+        "can_be_sheared": true,
+        "equip_on_interact": true,
+        "equip_sound": "minecraft:entity.happy_ghast.equip",
+        "shearing_sound": "minecraft:entity.happy_ghast.unequip",
+        "slot": "body"
+      },
+      "minecraft:item_model": "minecraft:cyan_harness",
+      "minecraft:item_name": {
+        "translate": "item.minecraft.cyan_harness"
+      },
+      "minecraft:lore": [],
+      "minecraft:max_stack_size": 1,
       "minecraft:rarity": "common",
       "minecraft:repair_cost": 0,
       "minecraft:tooltip_display": {}
@@ -7007,8 +7137,10 @@
       "minecraft:equippable": {
         "allowed_entities": "#minecraft:can_wear_horse_armor",
         "asset_id": "minecraft:diamond",
+        "can_be_sheared": true,
         "damage_on_hurt": false,
         "equip_sound": "minecraft:entity.horse.armor",
+        "shearing_sound": "minecraft:item.horse_armor.unequip",
         "slot": "body"
       },
       "minecraft:item_model": "minecraft:diamond_horse_armor",
@@ -7446,7 +7578,18 @@
   },
   "minecraft:dragon_head": {
     "components": {
-      "minecraft:attribute_modifiers": [],
+      "minecraft:attribute_modifiers": [
+        {
+          "type": "minecraft:waypoint_transmit_range",
+          "amount": -1.0,
+          "display": {
+            "type": "hidden"
+          },
+          "id": "minecraft:waypoint_transmit_range_hide",
+          "operation": "add_multiplied_total",
+          "slot": "head"
+        }
+      ],
       "minecraft:break_sound": "minecraft:entity.item.break",
       "minecraft:enchantments": {},
       "minecraft:equippable": {
@@ -7460,6 +7603,22 @@
       "minecraft:lore": [],
       "minecraft:max_stack_size": 64,
       "minecraft:rarity": "epic",
+      "minecraft:repair_cost": 0,
+      "minecraft:tooltip_display": {}
+    }
+  },
+  "minecraft:dried_ghast": {
+    "components": {
+      "minecraft:attribute_modifiers": [],
+      "minecraft:break_sound": "minecraft:entity.item.break",
+      "minecraft:enchantments": {},
+      "minecraft:item_model": "minecraft:dried_ghast",
+      "minecraft:item_name": {
+        "translate": "block.minecraft.dried_ghast"
+      },
+      "minecraft:lore": [],
+      "minecraft:max_stack_size": 64,
+      "minecraft:rarity": "common",
       "minecraft:repair_cost": 0,
       "minecraft:tooltip_display": {}
     }
@@ -9386,8 +9545,10 @@
       "minecraft:equippable": {
         "allowed_entities": "#minecraft:can_wear_horse_armor",
         "asset_id": "minecraft:gold",
+        "can_be_sheared": true,
         "damage_on_hurt": false,
         "equip_sound": "minecraft:entity.horse.armor",
+        "shearing_sound": "minecraft:item.horse_armor.unequip",
         "slot": "body"
       },
       "minecraft:item_model": "minecraft:golden_horse_armor",
@@ -9787,7 +9948,9 @@
           "minecraft:trader_llama"
         ],
         "asset_id": "minecraft:gray_carpet",
+        "can_be_sheared": true,
         "equip_sound": "minecraft:entity.llama.swag",
+        "shearing_sound": "minecraft:item.llama_carpet.unequip",
         "slot": "body"
       },
       "minecraft:item_model": "minecraft:gray_carpet",
@@ -9860,6 +10023,31 @@
       },
       "minecraft:lore": [],
       "minecraft:max_stack_size": 64,
+      "minecraft:rarity": "common",
+      "minecraft:repair_cost": 0,
+      "minecraft:tooltip_display": {}
+    }
+  },
+  "minecraft:gray_harness": {
+    "components": {
+      "minecraft:attribute_modifiers": [],
+      "minecraft:break_sound": "minecraft:entity.item.break",
+      "minecraft:enchantments": {},
+      "minecraft:equippable": {
+        "allowed_entities": "#minecraft:can_equip_harness",
+        "asset_id": "minecraft:gray_harness",
+        "can_be_sheared": true,
+        "equip_on_interact": true,
+        "equip_sound": "minecraft:entity.happy_ghast.equip",
+        "shearing_sound": "minecraft:entity.happy_ghast.unequip",
+        "slot": "body"
+      },
+      "minecraft:item_model": "minecraft:gray_harness",
+      "minecraft:item_name": {
+        "translate": "item.minecraft.gray_harness"
+      },
+      "minecraft:lore": [],
+      "minecraft:max_stack_size": 1,
       "minecraft:rarity": "common",
       "minecraft:repair_cost": 0,
       "minecraft:tooltip_display": {}
@@ -10023,7 +10211,9 @@
           "minecraft:trader_llama"
         ],
         "asset_id": "minecraft:green_carpet",
+        "can_be_sheared": true,
         "equip_sound": "minecraft:entity.llama.swag",
+        "shearing_sound": "minecraft:item.llama_carpet.unequip",
         "slot": "body"
       },
       "minecraft:item_model": "minecraft:green_carpet",
@@ -10096,6 +10286,31 @@
       },
       "minecraft:lore": [],
       "minecraft:max_stack_size": 64,
+      "minecraft:rarity": "common",
+      "minecraft:repair_cost": 0,
+      "minecraft:tooltip_display": {}
+    }
+  },
+  "minecraft:green_harness": {
+    "components": {
+      "minecraft:attribute_modifiers": [],
+      "minecraft:break_sound": "minecraft:entity.item.break",
+      "minecraft:enchantments": {},
+      "minecraft:equippable": {
+        "allowed_entities": "#minecraft:can_equip_harness",
+        "asset_id": "minecraft:green_harness",
+        "can_be_sheared": true,
+        "equip_on_interact": true,
+        "equip_sound": "minecraft:entity.happy_ghast.equip",
+        "shearing_sound": "minecraft:entity.happy_ghast.unequip",
+        "slot": "body"
+      },
+      "minecraft:item_model": "minecraft:green_harness",
+      "minecraft:item_name": {
+        "translate": "item.minecraft.green_harness"
+      },
+      "minecraft:lore": [],
+      "minecraft:max_stack_size": 1,
       "minecraft:rarity": "common",
       "minecraft:repair_cost": 0,
       "minecraft:tooltip_display": {}
@@ -10271,6 +10486,22 @@
       "minecraft:item_model": "minecraft:hanging_roots",
       "minecraft:item_name": {
         "translate": "block.minecraft.hanging_roots"
+      },
+      "minecraft:lore": [],
+      "minecraft:max_stack_size": 64,
+      "minecraft:rarity": "common",
+      "minecraft:repair_cost": 0,
+      "minecraft:tooltip_display": {}
+    }
+  },
+  "minecraft:happy_ghast_spawn_egg": {
+    "components": {
+      "minecraft:attribute_modifiers": [],
+      "minecraft:break_sound": "minecraft:entity.item.break",
+      "minecraft:enchantments": {},
+      "minecraft:item_model": "minecraft:happy_ghast_spawn_egg",
+      "minecraft:item_name": {
+        "translate": "item.minecraft.happy_ghast_spawn_egg"
       },
       "minecraft:lore": [],
       "minecraft:max_stack_size": 64,
@@ -11095,8 +11326,10 @@
       "minecraft:equippable": {
         "allowed_entities": "#minecraft:can_wear_horse_armor",
         "asset_id": "minecraft:iron",
+        "can_be_sheared": true,
         "damage_on_hurt": false,
         "equip_sound": "minecraft:entity.horse.armor",
+        "shearing_sound": "minecraft:item.horse_armor.unequip",
         "slot": "body"
       },
       "minecraft:item_model": "minecraft:iron_horse_armor",
@@ -12089,8 +12322,10 @@
       "minecraft:equippable": {
         "allowed_entities": "#minecraft:can_wear_horse_armor",
         "asset_id": "minecraft:leather",
+        "can_be_sheared": true,
         "damage_on_hurt": false,
         "equip_sound": "minecraft:entity.horse.armor",
+        "shearing_sound": "minecraft:item.horse_armor.unequip",
         "slot": "body"
       },
       "minecraft:item_model": "minecraft:leather_horse_armor",
@@ -12276,7 +12511,9 @@
           "minecraft:trader_llama"
         ],
         "asset_id": "minecraft:light_blue_carpet",
+        "can_be_sheared": true,
         "equip_sound": "minecraft:entity.llama.swag",
+        "shearing_sound": "minecraft:item.llama_carpet.unequip",
         "slot": "body"
       },
       "minecraft:item_model": "minecraft:light_blue_carpet",
@@ -12349,6 +12586,31 @@
       },
       "minecraft:lore": [],
       "minecraft:max_stack_size": 64,
+      "minecraft:rarity": "common",
+      "minecraft:repair_cost": 0,
+      "minecraft:tooltip_display": {}
+    }
+  },
+  "minecraft:light_blue_harness": {
+    "components": {
+      "minecraft:attribute_modifiers": [],
+      "minecraft:break_sound": "minecraft:entity.item.break",
+      "minecraft:enchantments": {},
+      "minecraft:equippable": {
+        "allowed_entities": "#minecraft:can_equip_harness",
+        "asset_id": "minecraft:light_blue_harness",
+        "can_be_sheared": true,
+        "equip_on_interact": true,
+        "equip_sound": "minecraft:entity.happy_ghast.equip",
+        "shearing_sound": "minecraft:entity.happy_ghast.unequip",
+        "slot": "body"
+      },
+      "minecraft:item_model": "minecraft:light_blue_harness",
+      "minecraft:item_name": {
+        "translate": "item.minecraft.light_blue_harness"
+      },
+      "minecraft:lore": [],
+      "minecraft:max_stack_size": 1,
       "minecraft:rarity": "common",
       "minecraft:repair_cost": 0,
       "minecraft:tooltip_display": {}
@@ -12512,7 +12774,9 @@
           "minecraft:trader_llama"
         ],
         "asset_id": "minecraft:light_gray_carpet",
+        "can_be_sheared": true,
         "equip_sound": "minecraft:entity.llama.swag",
+        "shearing_sound": "minecraft:item.llama_carpet.unequip",
         "slot": "body"
       },
       "minecraft:item_model": "minecraft:light_gray_carpet",
@@ -12585,6 +12849,31 @@
       },
       "minecraft:lore": [],
       "minecraft:max_stack_size": 64,
+      "minecraft:rarity": "common",
+      "minecraft:repair_cost": 0,
+      "minecraft:tooltip_display": {}
+    }
+  },
+  "minecraft:light_gray_harness": {
+    "components": {
+      "minecraft:attribute_modifiers": [],
+      "minecraft:break_sound": "minecraft:entity.item.break",
+      "minecraft:enchantments": {},
+      "minecraft:equippable": {
+        "allowed_entities": "#minecraft:can_equip_harness",
+        "asset_id": "minecraft:light_gray_harness",
+        "can_be_sheared": true,
+        "equip_on_interact": true,
+        "equip_sound": "minecraft:entity.happy_ghast.equip",
+        "shearing_sound": "minecraft:entity.happy_ghast.unequip",
+        "slot": "body"
+      },
+      "minecraft:item_model": "minecraft:light_gray_harness",
+      "minecraft:item_name": {
+        "translate": "item.minecraft.light_gray_harness"
+      },
+      "minecraft:lore": [],
+      "minecraft:max_stack_size": 1,
       "minecraft:rarity": "common",
       "minecraft:repair_cost": 0,
       "minecraft:tooltip_display": {}
@@ -12828,7 +13117,9 @@
           "minecraft:trader_llama"
         ],
         "asset_id": "minecraft:lime_carpet",
+        "can_be_sheared": true,
         "equip_sound": "minecraft:entity.llama.swag",
+        "shearing_sound": "minecraft:item.llama_carpet.unequip",
         "slot": "body"
       },
       "minecraft:item_model": "minecraft:lime_carpet",
@@ -12901,6 +13192,31 @@
       },
       "minecraft:lore": [],
       "minecraft:max_stack_size": 64,
+      "minecraft:rarity": "common",
+      "minecraft:repair_cost": 0,
+      "minecraft:tooltip_display": {}
+    }
+  },
+  "minecraft:lime_harness": {
+    "components": {
+      "minecraft:attribute_modifiers": [],
+      "minecraft:break_sound": "minecraft:entity.item.break",
+      "minecraft:enchantments": {},
+      "minecraft:equippable": {
+        "allowed_entities": "#minecraft:can_equip_harness",
+        "asset_id": "minecraft:lime_harness",
+        "can_be_sheared": true,
+        "equip_on_interact": true,
+        "equip_sound": "minecraft:entity.happy_ghast.equip",
+        "shearing_sound": "minecraft:entity.happy_ghast.unequip",
+        "slot": "body"
+      },
+      "minecraft:item_model": "minecraft:lime_harness",
+      "minecraft:item_name": {
+        "translate": "item.minecraft.lime_harness"
+      },
+      "minecraft:lore": [],
+      "minecraft:max_stack_size": 1,
       "minecraft:rarity": "common",
       "minecraft:repair_cost": 0,
       "minecraft:tooltip_display": {}
@@ -13175,7 +13491,9 @@
           "minecraft:trader_llama"
         ],
         "asset_id": "minecraft:magenta_carpet",
+        "can_be_sheared": true,
         "equip_sound": "minecraft:entity.llama.swag",
+        "shearing_sound": "minecraft:item.llama_carpet.unequip",
         "slot": "body"
       },
       "minecraft:item_model": "minecraft:magenta_carpet",
@@ -13248,6 +13566,31 @@
       },
       "minecraft:lore": [],
       "minecraft:max_stack_size": 64,
+      "minecraft:rarity": "common",
+      "minecraft:repair_cost": 0,
+      "minecraft:tooltip_display": {}
+    }
+  },
+  "minecraft:magenta_harness": {
+    "components": {
+      "minecraft:attribute_modifiers": [],
+      "minecraft:break_sound": "minecraft:entity.item.break",
+      "minecraft:enchantments": {},
+      "minecraft:equippable": {
+        "allowed_entities": "#minecraft:can_equip_harness",
+        "asset_id": "minecraft:magenta_harness",
+        "can_be_sheared": true,
+        "equip_on_interact": true,
+        "equip_sound": "minecraft:entity.happy_ghast.equip",
+        "shearing_sound": "minecraft:entity.happy_ghast.unequip",
+        "slot": "body"
+      },
+      "minecraft:item_model": "minecraft:magenta_harness",
+      "minecraft:item_name": {
+        "translate": "item.minecraft.magenta_harness"
+      },
+      "minecraft:lore": [],
+      "minecraft:max_stack_size": 1,
       "minecraft:rarity": "common",
       "minecraft:repair_cost": 0,
       "minecraft:tooltip_display": {}
@@ -14461,6 +14804,23 @@
         "translate": "item.minecraft.music_disc_strad"
       },
       "minecraft:jukebox_playable": "minecraft:strad",
+      "minecraft:lore": [],
+      "minecraft:max_stack_size": 1,
+      "minecraft:rarity": "uncommon",
+      "minecraft:repair_cost": 0,
+      "minecraft:tooltip_display": {}
+    }
+  },
+  "minecraft:music_disc_tears": {
+    "components": {
+      "minecraft:attribute_modifiers": [],
+      "minecraft:break_sound": "minecraft:entity.item.break",
+      "minecraft:enchantments": {},
+      "minecraft:item_model": "minecraft:music_disc_tears",
+      "minecraft:item_name": {
+        "translate": "item.minecraft.music_disc_tears"
+      },
+      "minecraft:jukebox_playable": "minecraft:tears",
       "minecraft:lore": [],
       "minecraft:max_stack_size": 1,
       "minecraft:rarity": "uncommon",
@@ -15857,7 +16217,9 @@
           "minecraft:trader_llama"
         ],
         "asset_id": "minecraft:orange_carpet",
+        "can_be_sheared": true,
         "equip_sound": "minecraft:entity.llama.swag",
+        "shearing_sound": "minecraft:item.llama_carpet.unequip",
         "slot": "body"
       },
       "minecraft:item_model": "minecraft:orange_carpet",
@@ -15930,6 +16292,31 @@
       },
       "minecraft:lore": [],
       "minecraft:max_stack_size": 64,
+      "minecraft:rarity": "common",
+      "minecraft:repair_cost": 0,
+      "minecraft:tooltip_display": {}
+    }
+  },
+  "minecraft:orange_harness": {
+    "components": {
+      "minecraft:attribute_modifiers": [],
+      "minecraft:break_sound": "minecraft:entity.item.break",
+      "minecraft:enchantments": {},
+      "minecraft:equippable": {
+        "allowed_entities": "#minecraft:can_equip_harness",
+        "asset_id": "minecraft:orange_harness",
+        "can_be_sheared": true,
+        "equip_on_interact": true,
+        "equip_sound": "minecraft:entity.happy_ghast.equip",
+        "shearing_sound": "minecraft:entity.happy_ghast.unequip",
+        "slot": "body"
+      },
+      "minecraft:item_model": "minecraft:orange_harness",
+      "minecraft:item_name": {
+        "translate": "item.minecraft.orange_harness"
+      },
+      "minecraft:lore": [],
+      "minecraft:max_stack_size": 1,
       "minecraft:rarity": "common",
       "minecraft:repair_cost": 0,
       "minecraft:tooltip_display": {}
@@ -16739,7 +17126,18 @@
   },
   "minecraft:piglin_head": {
     "components": {
-      "minecraft:attribute_modifiers": [],
+      "minecraft:attribute_modifiers": [
+        {
+          "type": "minecraft:waypoint_transmit_range",
+          "amount": -1.0,
+          "display": {
+            "type": "hidden"
+          },
+          "id": "minecraft:waypoint_transmit_range_hide",
+          "operation": "add_multiplied_total",
+          "slot": "head"
+        }
+      ],
       "minecraft:break_sound": "minecraft:entity.item.break",
       "minecraft:enchantments": {},
       "minecraft:equippable": {
@@ -16866,7 +17264,9 @@
           "minecraft:trader_llama"
         ],
         "asset_id": "minecraft:pink_carpet",
+        "can_be_sheared": true,
         "equip_sound": "minecraft:entity.llama.swag",
+        "shearing_sound": "minecraft:item.llama_carpet.unequip",
         "slot": "body"
       },
       "minecraft:item_model": "minecraft:pink_carpet",
@@ -16939,6 +17339,31 @@
       },
       "minecraft:lore": [],
       "minecraft:max_stack_size": 64,
+      "minecraft:rarity": "common",
+      "minecraft:repair_cost": 0,
+      "minecraft:tooltip_display": {}
+    }
+  },
+  "minecraft:pink_harness": {
+    "components": {
+      "minecraft:attribute_modifiers": [],
+      "minecraft:break_sound": "minecraft:entity.item.break",
+      "minecraft:enchantments": {},
+      "minecraft:equippable": {
+        "allowed_entities": "#minecraft:can_equip_harness",
+        "asset_id": "minecraft:pink_harness",
+        "can_be_sheared": true,
+        "equip_on_interact": true,
+        "equip_sound": "minecraft:entity.happy_ghast.equip",
+        "shearing_sound": "minecraft:entity.happy_ghast.unequip",
+        "slot": "body"
+      },
+      "minecraft:item_model": "minecraft:pink_harness",
+      "minecraft:item_name": {
+        "translate": "item.minecraft.pink_harness"
+      },
+      "minecraft:lore": [],
+      "minecraft:max_stack_size": 1,
       "minecraft:rarity": "common",
       "minecraft:repair_cost": 0,
       "minecraft:tooltip_display": {}
@@ -17107,7 +17532,18 @@
   },
   "minecraft:player_head": {
     "components": {
-      "minecraft:attribute_modifiers": [],
+      "minecraft:attribute_modifiers": [
+        {
+          "type": "minecraft:waypoint_transmit_range",
+          "amount": -1.0,
+          "display": {
+            "type": "hidden"
+          },
+          "id": "minecraft:waypoint_transmit_range_hide",
+          "operation": "add_multiplied_total",
+          "slot": "head"
+        }
+      ],
       "minecraft:break_sound": "minecraft:entity.item.break",
       "minecraft:enchantments": {},
       "minecraft:equippable": {
@@ -18173,7 +18609,9 @@
           "minecraft:trader_llama"
         ],
         "asset_id": "minecraft:purple_carpet",
+        "can_be_sheared": true,
         "equip_sound": "minecraft:entity.llama.swag",
+        "shearing_sound": "minecraft:item.llama_carpet.unequip",
         "slot": "body"
       },
       "minecraft:item_model": "minecraft:purple_carpet",
@@ -18246,6 +18684,31 @@
       },
       "minecraft:lore": [],
       "minecraft:max_stack_size": 64,
+      "minecraft:rarity": "common",
+      "minecraft:repair_cost": 0,
+      "minecraft:tooltip_display": {}
+    }
+  },
+  "minecraft:purple_harness": {
+    "components": {
+      "minecraft:attribute_modifiers": [],
+      "minecraft:break_sound": "minecraft:entity.item.break",
+      "minecraft:enchantments": {},
+      "minecraft:equippable": {
+        "allowed_entities": "#minecraft:can_equip_harness",
+        "asset_id": "minecraft:purple_harness",
+        "can_be_sheared": true,
+        "equip_on_interact": true,
+        "equip_sound": "minecraft:entity.happy_ghast.equip",
+        "shearing_sound": "minecraft:entity.happy_ghast.unequip",
+        "slot": "body"
+      },
+      "minecraft:item_model": "minecraft:purple_harness",
+      "minecraft:item_name": {
+        "translate": "item.minecraft.purple_harness"
+      },
+      "minecraft:lore": [],
+      "minecraft:max_stack_size": 1,
       "minecraft:rarity": "common",
       "minecraft:repair_cost": 0,
       "minecraft:tooltip_display": {}
@@ -18824,7 +19287,9 @@
           "minecraft:trader_llama"
         ],
         "asset_id": "minecraft:red_carpet",
+        "can_be_sheared": true,
         "equip_sound": "minecraft:entity.llama.swag",
+        "shearing_sound": "minecraft:item.llama_carpet.unequip",
         "slot": "body"
       },
       "minecraft:item_model": "minecraft:red_carpet",
@@ -18897,6 +19362,31 @@
       },
       "minecraft:lore": [],
       "minecraft:max_stack_size": 64,
+      "minecraft:rarity": "common",
+      "minecraft:repair_cost": 0,
+      "minecraft:tooltip_display": {}
+    }
+  },
+  "minecraft:red_harness": {
+    "components": {
+      "minecraft:attribute_modifiers": [],
+      "minecraft:break_sound": "minecraft:entity.item.break",
+      "minecraft:enchantments": {},
+      "minecraft:equippable": {
+        "allowed_entities": "#minecraft:can_equip_harness",
+        "asset_id": "minecraft:red_harness",
+        "can_be_sheared": true,
+        "equip_on_interact": true,
+        "equip_sound": "minecraft:entity.happy_ghast.equip",
+        "shearing_sound": "minecraft:entity.happy_ghast.unequip",
+        "slot": "body"
+      },
+      "minecraft:item_model": "minecraft:red_harness",
+      "minecraft:item_name": {
+        "translate": "item.minecraft.red_harness"
+      },
+      "minecraft:lore": [],
+      "minecraft:max_stack_size": 1,
       "minecraft:rarity": "common",
       "minecraft:repair_cost": 0,
       "minecraft:tooltip_display": {}
@@ -19524,8 +20014,10 @@
       "minecraft:equippable": {
         "allowed_entities": "#minecraft:can_equip_saddle",
         "asset_id": "minecraft:saddle",
+        "can_be_sheared": true,
         "equip_on_interact": true,
         "equip_sound": "minecraft:entity.horse.saddle",
+        "shearing_sound": "minecraft:item.saddle.unequip",
         "slot": "saddle"
       },
       "minecraft:item_model": "minecraft:saddle",
@@ -20139,7 +20631,18 @@
   },
   "minecraft:skeleton_skull": {
     "components": {
-      "minecraft:attribute_modifiers": [],
+      "minecraft:attribute_modifiers": [
+        {
+          "type": "minecraft:waypoint_transmit_range",
+          "amount": -1.0,
+          "display": {
+            "type": "hidden"
+          },
+          "id": "minecraft:waypoint_transmit_range_hide",
+          "operation": "add_multiplied_total",
+          "slot": "head"
+        }
+      ],
       "minecraft:break_sound": "minecraft:entity.item.break",
       "minecraft:enchantments": {},
       "minecraft:equippable": {
@@ -24330,7 +24833,9 @@
           "minecraft:trader_llama"
         ],
         "asset_id": "minecraft:white_carpet",
+        "can_be_sheared": true,
         "equip_sound": "minecraft:entity.llama.swag",
+        "shearing_sound": "minecraft:item.llama_carpet.unequip",
         "slot": "body"
       },
       "minecraft:item_model": "minecraft:white_carpet",
@@ -24403,6 +24908,31 @@
       },
       "minecraft:lore": [],
       "minecraft:max_stack_size": 64,
+      "minecraft:rarity": "common",
+      "minecraft:repair_cost": 0,
+      "minecraft:tooltip_display": {}
+    }
+  },
+  "minecraft:white_harness": {
+    "components": {
+      "minecraft:attribute_modifiers": [],
+      "minecraft:break_sound": "minecraft:entity.item.break",
+      "minecraft:enchantments": {},
+      "minecraft:equippable": {
+        "allowed_entities": "#minecraft:can_equip_harness",
+        "asset_id": "minecraft:white_harness",
+        "can_be_sheared": true,
+        "equip_on_interact": true,
+        "equip_sound": "minecraft:entity.happy_ghast.equip",
+        "shearing_sound": "minecraft:entity.happy_ghast.unequip",
+        "slot": "body"
+      },
+      "minecraft:item_model": "minecraft:white_harness",
+      "minecraft:item_name": {
+        "translate": "item.minecraft.white_harness"
+      },
+      "minecraft:lore": [],
+      "minecraft:max_stack_size": 1,
       "minecraft:rarity": "common",
       "minecraft:repair_cost": 0,
       "minecraft:tooltip_display": {}
@@ -24590,7 +25120,18 @@
   },
   "minecraft:wither_skeleton_skull": {
     "components": {
-      "minecraft:attribute_modifiers": [],
+      "minecraft:attribute_modifiers": [
+        {
+          "type": "minecraft:waypoint_transmit_range",
+          "amount": -1.0,
+          "display": {
+            "type": "hidden"
+          },
+          "id": "minecraft:waypoint_transmit_range_hide",
+          "operation": "add_multiplied_total",
+          "slot": "head"
+        }
+      ],
       "minecraft:break_sound": "minecraft:entity.item.break",
       "minecraft:enchantments": {},
       "minecraft:equippable": {
@@ -24664,7 +25205,9 @@
       "minecraft:equippable": {
         "allowed_entities": "minecraft:wolf",
         "asset_id": "minecraft:armadillo_scute",
+        "can_be_sheared": true,
         "equip_sound": "minecraft:item.armor.equip_wolf",
+        "shearing_sound": "minecraft:item.armor.unequip_wolf",
         "slot": "body"
       },
       "minecraft:item_model": "minecraft:wolf_armor",
@@ -25089,7 +25632,9 @@
           "minecraft:trader_llama"
         ],
         "asset_id": "minecraft:yellow_carpet",
+        "can_be_sheared": true,
         "equip_sound": "minecraft:entity.llama.swag",
+        "shearing_sound": "minecraft:item.llama_carpet.unequip",
         "slot": "body"
       },
       "minecraft:item_model": "minecraft:yellow_carpet",
@@ -25162,6 +25707,31 @@
       },
       "minecraft:lore": [],
       "minecraft:max_stack_size": 64,
+      "minecraft:rarity": "common",
+      "minecraft:repair_cost": 0,
+      "minecraft:tooltip_display": {}
+    }
+  },
+  "minecraft:yellow_harness": {
+    "components": {
+      "minecraft:attribute_modifiers": [],
+      "minecraft:break_sound": "minecraft:entity.item.break",
+      "minecraft:enchantments": {},
+      "minecraft:equippable": {
+        "allowed_entities": "#minecraft:can_equip_harness",
+        "asset_id": "minecraft:yellow_harness",
+        "can_be_sheared": true,
+        "equip_on_interact": true,
+        "equip_sound": "minecraft:entity.happy_ghast.equip",
+        "shearing_sound": "minecraft:entity.happy_ghast.unequip",
+        "slot": "body"
+      },
+      "minecraft:item_model": "minecraft:yellow_harness",
+      "minecraft:item_name": {
+        "translate": "item.minecraft.yellow_harness"
+      },
+      "minecraft:lore": [],
+      "minecraft:max_stack_size": 1,
       "minecraft:rarity": "common",
       "minecraft:repair_cost": 0,
       "minecraft:tooltip_display": {}
@@ -25266,7 +25836,18 @@
   },
   "minecraft:zombie_head": {
     "components": {
-      "minecraft:attribute_modifiers": [],
+      "minecraft:attribute_modifiers": [
+        {
+          "type": "minecraft:waypoint_transmit_range",
+          "amount": -1.0,
+          "display": {
+            "type": "hidden"
+          },
+          "id": "minecraft:waypoint_transmit_range_hide",
+          "operation": "add_multiplied_total",
+          "slot": "head"
+        }
+      ],
       "minecraft:break_sound": "minecraft:entity.item.break",
       "minecraft:enchantments": {},
       "minecraft:equippable": {
