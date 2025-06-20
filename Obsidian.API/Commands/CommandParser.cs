@@ -8,3 +8,10 @@ public abstract class CommandParser
 
     public override string ToString() => Identifier;
 }
+
+public sealed class EmptyCommandParser(int id, string identifier) : CommandParser
+{
+    public override int Id { get; } = id;
+    public override string Identifier { get; } = identifier;
+
+}

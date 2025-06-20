@@ -1,4 +1,4 @@
-﻿using Obsidian.Net;
+﻿using Obsidian.API.Commands;
 
 namespace Obsidian.Commands;
 
@@ -11,7 +11,7 @@ public class CommandNode
 
     public int Index { get; set; }
 
-    public CommandParserAttribute? Parser { get; set; }
+    public CommandParser? Parser { get; set; }
 
     public CommandNodeType Type { get; set; }
 

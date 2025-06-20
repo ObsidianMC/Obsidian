@@ -60,7 +60,7 @@ public sealed partial class FloatCommandParser : NumberCommandParser<float>
     public FloatCommandParser(float min, float max) : base(min, max) { }
 }
 
-[CommandParser("brigadier:int")]
+[CommandParser("brigadier:integer")]
 public sealed partial class IntCommandParser : NumberCommandParser<int>
 {
     public IntCommandParser() : base(int.MinValue, int.MaxValue) { }

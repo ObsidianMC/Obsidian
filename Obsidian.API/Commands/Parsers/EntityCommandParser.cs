@@ -1,7 +1,7 @@
 ﻿namespace Obsidian.API.Commands.Parsers;
 
 [CommandParser("minecraft:entity")]
-public partial class EntityCommandParser(EntityCommadBitMask mask)
+public partial class EntityCommandParser(EntityCommadBitMask mask) : CommandParser
 {
     public EntityCommadBitMask Mask { get; set; } = mask;
 

@@ -1,7 +1,7 @@
 ﻿using Obsidian.API.Commands;
+using Obsidian.API.Commands.Parsers;
 using Obsidian.API.Utilities.Interfaces;
 using Obsidian.Commands;
-using Obsidian.Commands.Parsers;
 using Obsidian.Net.Packets.Play.Clientbound;
 
 namespace Obsidian.Registries;
@@ -83,7 +83,7 @@ public static class CommandsRegistry
                 "brigadier:integer" => new IntCommandParser(),
                 "brigadier:long" => new LongCommandParser(),
                 "minecraft:time" => new MinecraftTimeParser(),
-                _ => new CommandParser(id, mctype),
+                _ => new EmptyCommandParser(id, mctype),
             };
 
             prev.AddChild(argNode);
