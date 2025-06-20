@@ -3,7 +3,7 @@ public sealed class MinecraftTimeParser : CommandParser
 {
     public int Min { get; set; } = 0;
 
-    public MinecraftTimeParser() : base(42, "minecraft:time")
+    public MinecraftTimeParser() : base(43, "minecraft:time")
     {
     }
 

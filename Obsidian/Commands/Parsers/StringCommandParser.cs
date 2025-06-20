@@ -1,13 +1,8 @@
 ﻿namespace Obsidian.Commands.Parsers;
 
-public sealed class StringCommandParser : CommandParser
+public sealed class StringCommandParser(StringType type) : CommandParser(5, "brigadier:string")
 {
-    public StringType Type { get; }
-
-    public StringCommandParser(StringType type) : base(5, "brigadier:string")
-    {
-        Type = type;
-    }
+    public StringType Type { get; } = type;
 
     public override void Write(INetStreamWriter writer)
     {
