@@ -1,4 +1,4 @@
-﻿namespace Obsidian.Commands.Parsers;
+﻿namespace Obsidian.API.Commands.Parsers;
 public partial class NumberCommandParser<TNumber>
 {
     protected void WriteAsInt(INetStreamWriter writer)

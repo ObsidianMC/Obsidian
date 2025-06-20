@@ -40,7 +40,8 @@
 		<AdditionalFiles Include="..\Obsidian\Assets\blocks.json" Link="Assets\blocks.json" />
 		<AdditionalFiles Include="..\Obsidian\Assets\items.json" Link="Assets\items.json" />
 		<AdditionalFiles Include="..\Obsidian\Assets\fluids.json" Link="Assets\fluids.json" />
-		
+
+		<AdditionalFiles Include="..\Obsidian\Assets\command_parsers.json" Link="Assets\command_parsers.json" />
 		<AdditionalFiles Include="..\Obsidian\Assets\sounds.json" Link="Assets\sounds.json" />
 		<AdditionalFiles Include="..\Obsidian\Assets\tags.json" Link="Assets\tags.json" />
 		

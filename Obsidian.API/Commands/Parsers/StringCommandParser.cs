@@ -1,6 +1,7 @@
-﻿namespace Obsidian.Commands.Parsers;
+﻿namespace Obsidian.API.Commands.Parsers;
 
-public sealed class StringCommandParser(StringType type) : CommandParser(5, "brigadier:string")
+[CommandParser("brigadier:string")]
+public sealed partial class StringCommandParser(StringType type) : CommandParser
 {
     public StringType Type { get; } = type;
 

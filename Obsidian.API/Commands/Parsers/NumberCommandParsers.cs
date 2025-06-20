@@ -1,6 +1,6 @@
 ﻿using System.Numerics;
 
-namespace Obsidian.Commands.Parsers;
+namespace Obsidian.API.Commands.Parsers;
 
 public abstract partial class NumberCommandParser<TNumber> : CommandParser where TNumber : struct,
     IConvertible,
@@ -14,8 +14,7 @@ public abstract partial class NumberCommandParser<TNumber> : CommandParser where
 
     public TNumber Max { get; }
 
-    protected NumberCommandParser(int id, string identifier,
-        TNumber min, TNumber max) : base(id, identifier)
+    protected NumberCommandParser(TNumber min, TNumber max)
     {
         if (min != TNumber.MinValue)
             this.Flags |= NumberFlags.HasMinValue;
@@ -45,34 +44,38 @@ public abstract partial class NumberCommandParser<TNumber> : CommandParser where
     }
 }
 
-public sealed class DoubleCommandParser : NumberCommandParser<double>
+[CommandParser("brigadier:double")]
+public sealed partial class DoubleCommandParser : NumberCommandParser<double>
 {
-    public DoubleCommandParser() : base(2, "brigadier:double", double.MinValue, double.MaxValue) { }
+    public DoubleCommandParser() : base(double.MinValue, double.MaxValue) { }
 
-    public DoubleCommandParser(double min, double max) : base(2, "brigadier:double", min, max) { }
+    public DoubleCommandParser(double min, double max) : base(min, max) { }
 }
 
-public sealed class FloatCommandParser : NumberCommandParser<float>
+[CommandParser("brigadier:float")]
+public sealed partial class FloatCommandParser : NumberCommandParser<float>
 {
-    public FloatCommandParser() : base(1, "brigadier:float", float.MinValue, float.MaxValue) { }
+    public FloatCommandParser() : base(float.MinValue, float.MaxValue) { }
 
-    public FloatCommandParser(float min, float max) : base(1, "brigadier:float", min, max) { }
+    public FloatCommandParser(float min, float max) : base(min, max) { }
 }
 
-public sealed class IntCommandParser : NumberCommandParser<int>
+[CommandParser("brigadier:int")]
+public sealed partial class IntCommandParser : NumberCommandParser<int>
 {
-    public IntCommandParser() : base(3, "brigadier:integer", int.MinValue, int.MaxValue) { }
+    public IntCommandParser() : base(int.MinValue, int.MaxValue) { }
 
-    public IntCommandParser(int min, int max) : base(3, "brigadier:integer", min, max)
+    public IntCommandParser(int min, int max) : base(min, max)
     {
     }
 }
 
-public sealed class LongCommandParser : NumberCommandParser<long>
+[CommandParser("brigadier:long")]
+public sealed partial class LongCommandParser : NumberCommandParser<long>
 {
-    public LongCommandParser() : base(4, "brigadier:long", long.MinValue, long.MaxValue) { }
+    public LongCommandParser() : base(long.MinValue, long.MaxValue) { }
 
-    public LongCommandParser(long min, long max) : base(4, "brigadier:long", min, max) { }
+    public LongCommandParser(long min, long max) : base(min, max) { }
 }
 
 [Flags]
