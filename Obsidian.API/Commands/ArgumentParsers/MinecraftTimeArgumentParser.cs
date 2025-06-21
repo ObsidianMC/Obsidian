@@ -1,10 +1,9 @@
 namespace Obsidian.API.Commands.ArgumentParsers;
 
-public sealed class MinecraftTimeArgumentParser : BaseArgumentParser<MinecraftTime>
+[ArgumentParser("minecraft:time")]
+public sealed partial class MinecraftTimeArgumentParser : BaseArgumentParser<MinecraftTime>
 {
-    public MinecraftTimeArgumentParser() : base(42, "minecraft:time")
-    {
-    }
+    public int Min { get; set; } = 0;
 
     public override bool TryParseArgument(string input, CommandContext ctx, out MinecraftTime result)
     {
@@ -39,5 +38,12 @@ public sealed class MinecraftTimeArgumentParser : BaseArgumentParser<MinecraftTi
         }
 
         return isSuccess;
+    }
+
+    public override void Write(INetStreamWriter writer)
+    {
+        base.Write(writer);
+
+        writer.WriteInt(Min);
     }
 }

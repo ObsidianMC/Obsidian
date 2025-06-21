@@ -9,8 +9,8 @@ namespace Obsidian.SourceGenerators.Registry;
 [Generator]
 public sealed partial class RegistryGenerator : IIncrementalGenerator
 {
-    private const string AttributeName = "CommandParserAttribute";
-    private const string CleanedAttributeName = "CommandParser";
+    private const string AttributeName = "ArgumentParserAttribute";
+    private const string CleanedAttributeName = "ArgumentParser";
 
     public void Initialize(IncrementalGeneratorInitializationContext ctx)
     {
@@ -106,7 +106,7 @@ public sealed partial class RegistryGenerator : IIncrementalGenerator
 
             var builder = new CodeBuilder();
             builder.Line();
-            builder.Namespace("Obsidian.API.Commands.Parsers");
+            builder.Namespace("Obsidian.API.Commands.ArgumentParsers");
             builder.Line();
             builder.Type($"public partial class {@class.Symbol.Name}");
 

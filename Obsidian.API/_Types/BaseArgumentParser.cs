@@ -2,26 +2,28 @@
 
 namespace Obsidian.API;
 
-//TODO custom parsers needs to get assigned their own ids by the server. Out of scope for this pr so I will leave it like this for now
 public abstract class BaseArgumentParser
 {
-    public int Id { get; internal set; }
-    public string ParserIdentifier => minecraftType;
-    private readonly string minecraftType;
+    public abstract int Id { get; }
+    public abstract string Identifier { get; }
 
-    public BaseArgumentParser(int id, string minecraftType)
-    {
-        if (!MinecraftArgumentTypes.IsValidMcType(minecraftType))
-            throw new Exception($"Invalid minecraft type: {minecraftType} in {GetType().Name}");
-
-        this.Id = id;
-        this.minecraftType = minecraftType;
-    }
+    public virtual void Write(INetStreamWriter writer) => writer.WriteVarInt(this.Id);
 
     internal abstract bool TryParseArgument(string input, CommandContext ctx, [NotNullWhen(true)] out object? result);
+
+    public override string ToString() => Identifier;
 }
 
-public abstract class BaseArgumentParser<T>(int id, string minecraftType) : BaseArgumentParser(id, minecraftType)
+public sealed class EmptyArgumentParser(int id, string resourceLocation) : BaseArgumentParser
+{
+    public override int Id { get; } = id;
+
+    public override string Identifier { get; } = resourceLocation;
+
+    internal override bool TryParseArgument(string input, CommandContext ctx, [NotNullWhen(true)] out object? result) => throw new NotImplementedException();
+}
+
+public abstract class BaseArgumentParser<T> : BaseArgumentParser
 {
     public abstract bool TryParseArgument(string input, CommandContext ctx, out T result);
 

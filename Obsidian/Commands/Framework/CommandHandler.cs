@@ -28,7 +28,7 @@ public sealed class CommandHandler : ICommandHandler
 
         // Find all predefined argument parsers
         var parsers = typeof(StringArgumentParser).Assembly.GetTypes()
-            .Where(type => typeof(BaseArgumentParser).IsAssignableFrom(type) && !type.IsAbstract)
+            .Where(type => typeof(BaseArgumentParser).IsAssignableFrom(type) && !type.IsAbstract && type.Name != "EmptyArgumentParser")
             .Select(x => (Activator.CreateInstance(x) as BaseArgumentParser)!);
 
         _argumentParsers = parsers.OrderBy(x => x.Id).ToList();
@@ -44,7 +44,7 @@ public sealed class CommandHandler : ICommandHandler
         if (parserType is null || Activator.CreateInstance(parserType) is not BaseArgumentParser parserInstance)
             throw new Exception($"No such parser registered! {type}");
 
-        return (parserInstance.Id, parserInstance.ParserIdentifier);
+        return (parserInstance.Id, parserInstance.Identifier);
     }
 
     public bool IsValidArgumentType(Type argumentType) =>

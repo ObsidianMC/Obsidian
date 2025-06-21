@@ -25,10 +25,10 @@ public class Commands
         var message = "/test help help \"help help \\n\" help";
         var expected = new[] { "test", "help", "help", "help help \n", "help" };
 
-        var cmd = new CommandParser("/");
+        var cmd = new Obsidian.Commands.Framework.CommandParser("/");
 
         cmd.IsCommandQualified(message, out ReadOnlyMemory<char> qualified);
-        var split = CommandParser.SplitQualifiedString(qualified);
+        var split = Obsidian.Commands.Framework.CommandParser.SplitQualifiedString(qualified);
         Assert.Equal(split, expected);
     }
 

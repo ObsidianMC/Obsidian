@@ -1,6 +1,4 @@
-﻿using Obsidian.API.Commands;
-
-namespace Obsidian.Commands;
+﻿namespace Obsidian.Commands;
 
 /// <summary>
 /// https://wiki.vg/Command_Data
@@ -11,7 +9,7 @@ public class CommandNode
 
     public int Index { get; set; }
 
-    public CommandParser? Parser { get; set; }
+    public BaseArgumentParser? Parser { get; set; }
 
     public CommandNodeType Type { get; set; }
 
