@@ -17,7 +17,7 @@ public sealed class CommandHandler : ICommandHandler
 
     private readonly List<Command> _commands;
     private readonly CommandParser _commandParser;
-    private readonly List<BaseArgumentParser> _argumentParsers;
+    private readonly Dictionary<Type, BaseArgumentParser> _argumentParsers;
 
     public IServiceProvider ServiceProvider { get; }
 
@@ -31,7 +31,7 @@ public sealed class CommandHandler : ICommandHandler
             .Where(type => typeof(BaseArgumentParser).IsAssignableFrom(type) && !type.IsAbstract && type.Name != "EmptyArgumentParser")
             .Select(x => (Activator.CreateInstance(x) as BaseArgumentParser)!);
 
-        _argumentParsers = parsers.OrderBy(x => x.Id).ToList();
+        _argumentParsers = parsers.OrderBy(x => x.Id).ToDictionary(x => x.GetType().BaseType?.GetGenericArguments().First(), x => x);
 
         this.ServiceProvider = serviceProvider;
         this.logger = logger;
@@ -39,7 +39,7 @@ public sealed class CommandHandler : ICommandHandler
 
     public (int id, string mctype) FindMinecraftType(Type type)
     {
-        var parserType = _argumentParsers.FirstOrDefault(x => x.GetType().BaseType?.GetGenericArguments()[0] == type)?.GetType();
+        var parserType = _argumentParsers[type]?.GetType();
 
         if (parserType is null || Activator.CreateInstance(parserType) is not BaseArgumentParser parserInstance)
             throw new Exception($"No such parser registered! {type}");
@@ -48,10 +48,10 @@ public sealed class CommandHandler : ICommandHandler
     }
 
     public bool IsValidArgumentType(Type argumentType) =>
-        this._argumentParsers.Any(x => x.GetType().BaseType?.GetGenericArguments().First() == argumentType);
+        this._argumentParsers.TryGetValue(argumentType, out _);
 
     public BaseArgumentParser GetArgumentParser(Type argumentType) =>
-        this._argumentParsers.First(x => x.GetType().BaseType?.GetGenericArguments().First() == argumentType);
+        this._argumentParsers[argumentType];
 
     public Command[] GetAllCommands() => _commands.ToArray();
 
@@ -81,7 +81,8 @@ public sealed class CommandHandler : ICommandHandler
         _commands.Add(command);
     }
 
-    public void AddArgumentParser(BaseArgumentParser parser) => _argumentParsers.Add(parser);
+    public void AddArgumentParser(BaseArgumentParser parser) => 
+        _argumentParsers.Add(parser.GetType().BaseType?.GetGenericArguments().First(), parser);
 
     public void UnregisterPluginCommands(IPluginContainer? plugin) => _commands.RemoveAll(x => x.PluginContainer == plugin);
 
