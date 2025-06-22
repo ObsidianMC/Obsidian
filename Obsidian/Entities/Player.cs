@@ -40,6 +40,8 @@ public sealed partial class Player : Living, IPlayer
 
     public required IServer Server { get; init; }
 
+    public PlayerInput Input { get; set; }
+
     /// <summary>
     /// The players inventory.
     /// </summary>

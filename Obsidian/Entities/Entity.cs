@@ -224,9 +224,9 @@ public class Entity : IEquatable<Entity>, IEntity
         return new(-cosPitch * sinYaw, -sinPitch, cosPitch * cosYaw);
     }
 
-    public virtual async ValueTask RemoveAsync() => await this.World.DestroyEntityAsync(this);
+    public async virtual ValueTask RemoveAsync() => await this.World.DestroyEntityAsync(this);
 
-    protected EntityBitMask GenerateBitmask()
+    protected virtual EntityBitMask GenerateBitmask()
     {
         EntityBitMask mask = EntityBitMask.None;
 

@@ -77,6 +77,9 @@ internal sealed class PlayClientHandler : ClientHandler
             case 41:
                 await HandleFromPoolAsync<PlayerCommandPacket>(data);
                 break;
+            case 42:
+                await HandleFromPoolAsync<PlayerInputPacket>(data);
+                break;
             case 46:
                 await HandleFromPoolAsync<RecipeBookSeenRecipePacket>(data);
                 break;
