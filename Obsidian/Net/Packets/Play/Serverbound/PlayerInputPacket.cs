@@ -14,14 +14,18 @@ public partial class PlayerInputPacket
 
     public override ValueTask HandleAsync(IServer server, IPlayer player)
     {
-        player.Input = this.Flags;
-        player.Sneaking = this.Flags.HasFlag(PlayerInput.Sneak);
+        var wasSneaking = player.Sneaking;
 
-        player.World.PacketBroadcaster.QueuePacketToWorld(player.World, new SetEntityDataPacket
+        player.Input = this.Flags;
+
+        if (player.Sneaking != wasSneaking)
         {
-            EntityId = player.EntityId,
-            Entity = player
-        }, player.EntityId);
+            player.World.PacketBroadcaster.QueuePacketToWorld(player.World, new SetEntityDataPacket
+            {
+                EntityId = player.EntityId,
+                Entity = player
+            }, player.EntityId);
+        }    
 
         return default;
     }
