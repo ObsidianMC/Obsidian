@@ -2,6 +2,7 @@
 
 namespace Obsidian.API;
 
+//TODO async TryParseArgument
 public abstract class BaseArgumentParser
 {
     public abstract int Id { get; }
@@ -20,16 +21,20 @@ public sealed class EmptyArgumentParser(int id, string resourceLocation) : BaseA
 
     public override string Identifier { get; } = resourceLocation;
 
-    internal override bool TryParseArgument(string input, CommandContext ctx, [NotNullWhen(true)] out object? result) => throw new NotImplementedException();
+    internal override bool TryParseArgument(string input, CommandContext ctx, [NotNullWhen(true)] out object? result)
+    {
+        result = default;
+        return false;
+    }
 }
 
 public abstract class BaseArgumentParser<T> : BaseArgumentParser
 {
-    public abstract bool TryParseArgument(string input, CommandContext ctx, out T result);
+    public abstract bool TryParseArgument(string input, CommandContext ctx, out T? result);
 
     internal override bool TryParseArgument(string input, CommandContext ctx, [NotNullWhen(true)] out object? result)
     {
-        if (this.TryParseArgument(input, ctx, out T tResult))
+        if (this.TryParseArgument(input, ctx, out T? tResult))
         {
             result = tResult!;
             return true;

@@ -37,6 +37,12 @@ public sealed partial class MinecraftTimeArgumentParser : BaseArgumentParser<Min
             isSuccess = true;
         }
 
+        if (result.Tick < Min)
+        {
+            result = default;
+            return false;
+        }
+
         return isSuccess;
     }
 

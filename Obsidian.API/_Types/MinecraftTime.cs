@@ -1,7 +1,4 @@
-﻿using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-
-namespace Obsidian.API;
+﻿namespace Obsidian.API;
 public readonly struct MinecraftTime
 {
     public int? Day { get; private init; }
@@ -10,11 +7,26 @@ public readonly struct MinecraftTime
 
     public int? Tick { get; private init; }
 
-    public static MinecraftTime FromDay(int day) => new() { Day = day };
+    public static MinecraftTime FromDay(int day) => new()
+    {
+        Day = day,
+        Second = day * 1200,
+        Tick = day * 24000
+    };
 
-    public static MinecraftTime FromSecond(int second) => new() { Second = second };
+    public static MinecraftTime FromSecond(int second) => new()
+    {
+        Second = second,
+        Tick = second * 20,
+        Day = second / 1200
+    };
 
-    public static MinecraftTime FromTick(int tick) => new() { Tick = tick };
+    public static MinecraftTime FromTick(int tick) => new()
+    { 
+        Tick = tick,
+        Second = tick / 20,
+        Day = tick / 24000
+    };
 
     public bool ConvertServerTime(IServer server)
     {

@@ -7,7 +7,12 @@ public sealed partial class EntityArgumentParser(EntityFilter mask) : BaseArgume
 
     public EntityArgumentParser() : this(EntityFilter.SingleEntityOrPlayer) { }
 
-    public override bool TryParseArgument(string input, CommandContext ctx, out IEntity result) => throw new NotImplementedException();
+    public override bool TryParseArgument(string input, CommandContext ctx, out IEntity result)
+    {
+        // TODO: Implement entity parsing logic based on entity selectors (@p, @a, @e, @r) or entity names
+        result = null;
+        return false;
+    }
 
     public override void Write(INetStreamWriter writer)
     {

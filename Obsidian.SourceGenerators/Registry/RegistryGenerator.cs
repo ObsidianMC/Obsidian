@@ -83,9 +83,15 @@ public sealed partial class RegistryGenerator : IIncrementalGenerator
 
             var arg = attribute.ArgumentList!.Arguments[0];
             var expression = arg.Expression;
-            var value = model.GetConstantValue(expression).ToString();
+            var constantValue = model.GetConstantValue(expression);
 
-            classes.Add(new TypeInformation(symbol, value));
+            if(!constantValue.HasValue)
+            {
+                context.ReportDiagnostic(DiagnosticSeverity.Error, $"ArgumentParserAttribute for type {symbol.Name} must be a constant value.", @class);
+                continue;
+            }
+
+            classes.Add(new TypeInformation(symbol, constantValue.Value!.ToString()));
         }
 
         this.GenerateClasses(classes, document, context);
@@ -110,7 +116,7 @@ public sealed partial class RegistryGenerator : IIncrementalGenerator
             builder.Line();
             builder.Type($"public partial class {@class.Symbol.Name}");
 
-            builder.Line($"public override string Identifier => \"{@class.ResourceLocation}\";");
+            builder.Line($"public override string Identifier => {SymbolDisplay.FormatLiteral(@class.ResourceLocation, true)};");
             builder.Line($"public override int Id => {parser.GetInt32()};");
 
             builder.EndScope();

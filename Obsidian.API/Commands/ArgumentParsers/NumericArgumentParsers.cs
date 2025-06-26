@@ -16,6 +16,9 @@ public abstract partial class NumericArgumentParser<TNumber> : BaseArgumentParse
 
     protected NumericArgumentParser(TNumber min, TNumber max)
     {
+        this.Min = min;
+        this.Max = max;
+
         if (min != TNumber.MinValue)
             this.Flags |= NumberFlags.HasMinValue;
         if (max != TNumber.MaxValue)
