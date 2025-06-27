@@ -328,14 +328,25 @@ public partial class NetworkBuffer : INetStreamWriter
         if (chatMessage == null)
             return;
 
-        using var writer = new RawNbtWriter(true);
+        try
+        {
+            using var writer = new RawNbtWriter(true);
 
-        writer.WriteChatMessage(chatMessage);
+            writer.WriteChatMessage(chatMessage);
 
-        writer.EndCompound();
-        writer.TryFinish();
+            writer.EndCompound();
+            writer.TryFinish();
 
-        this.Write(writer.Data);
+            Directory.CreateDirectory("chat");
+            File.WriteAllBytes($"chat/{Path.GetRandomFileName()}.nbt", writer.Data);
+
+            this.Write(writer.Data);
+        }
+        catch(Exception ex)
+        {
+            Debugger.Break();
+        }
+
     }
 
     [WriteMethod]
@@ -459,7 +470,7 @@ public partial class NetworkBuffer : INetStreamWriter
 
         this.Write(packetStream);
     }
-    
+
     private static readonly BundleDelimiterPacket delimiterPacket = new BundleDelimiterPacket();
 
     /// <summary>

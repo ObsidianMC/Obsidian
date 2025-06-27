@@ -1,4 +1,7 @@
-﻿using System.Buffers.Binary;
+﻿using System.Buffers;
+using System.Buffers.Binary;
+using System.Diagnostics;
+using CommunityToolkit.HighPerformance;
 
 namespace Obsidian.Nbt;
 public partial class RawNbtWriter
@@ -165,8 +168,26 @@ public partial class RawNbtWriter
 
     private void Write(ReadOnlySpan<byte> buffer)
     {
+        Reserve(buffer.Length);
         buffer.CopyTo(new Span<byte>(this.data, this.offset, buffer.Length));
         this.offset += buffer.Length;
+    }
+
+    
+
+    /// <summary>
+    /// Reserve the buffer of the given capacity
+    /// </summary>
+    public void Reserve(int capacity)
+    {
+        Debug.Assert(capacity >= 0);
+        var required = offset + capacity;
+
+        if (required > data.LongLength)
+        {
+            var newCapacity = Math.Max(required, data.Length * 2);
+            ArrayPool<byte>.Shared.Resize(ref data, newCapacity);
+        }
     }
     #endregion
 
