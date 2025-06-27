@@ -30,7 +30,7 @@ public readonly struct HexColor
     /// <inheritdoc/>
     public readonly override string ToString() => hexColor;
 
-    public static readonly HexColor Black = new(0, 0, 0);
+    public static readonly HexColor Black = new("#000000");
     public static readonly HexColor DarkBlue = new("#0000AA");
     public static readonly HexColor DarkGreen = new("#00AA00");
     public static readonly HexColor DarkAqua = new("#00AAAA");
@@ -45,5 +45,5 @@ public readonly struct HexColor
     public static readonly HexColor Red = new("#FF5555");
     public static readonly HexColor LightPurple = new("#FF55FF");
     public static readonly HexColor Yellow = new("#FFFF55");
-    public static readonly HexColor White = new(255, 255, 255);
+    public static readonly HexColor White = new("#FFFFFF");
 }

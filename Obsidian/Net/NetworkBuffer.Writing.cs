@@ -328,25 +328,17 @@ public partial class NetworkBuffer : INetStreamWriter
         if (chatMessage == null)
             return;
 
-        try
-        {
-            using var writer = new RawNbtWriter(true);
+        using var writer = new RawNbtWriter(true);
 
-            writer.WriteChatMessage(chatMessage);
+        writer.WriteChatMessage(chatMessage);
 
-            writer.EndCompound();
-            writer.TryFinish();
+        writer.EndCompound();
+        writer.TryFinish();
 
-            Directory.CreateDirectory("chat");
-            File.WriteAllBytes($"chat/{Path.GetRandomFileName()}.nbt", writer.Data);
+        Directory.CreateDirectory("chat");
+        File.WriteAllBytes($"chat/{Path.GetRandomFileName()}.nbt", writer.Data);
 
-            this.Write(writer.Data);
-        }
-        catch(Exception ex)
-        {
-            Debugger.Break();
-        }
-
+        this.Write(writer.Data);
     }
 
     [WriteMethod]
