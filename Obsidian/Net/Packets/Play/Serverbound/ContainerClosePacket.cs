@@ -12,7 +12,7 @@ public partial class ContainerClosePacket
         if (ContainerId == 0)
             return;
 
-        await server.EventDispatcher.ExecuteEventAsync(new ContainerClosedEventArgs(player, server) { Container = player.OpenedContainer! });
+        await server.EventDispatcher.ExecuteEventAsync(new ContainerClosedEventArgs(player, server, player.OpenedContainer!));
     }
 
     public override void Populate(INetStreamReader reader)

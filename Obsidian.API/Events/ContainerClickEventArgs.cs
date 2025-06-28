@@ -36,10 +36,7 @@ public sealed class ContainerClickEventArgs : ContainerEventArgs, ICancellable
     /// <inheritdoc />
     public bool IsCancelled { get; private set; }
 
-    internal ContainerClickEventArgs(IPlayer player, IServer server, BaseContainer container) : base(player, server)
-    {
-        this.Container = container;
-    }
+    internal ContainerClickEventArgs(IPlayer player, IServer server, BaseContainer container) : base(player, server, container) { }
 
     /// <inheritdoc />
     public void Cancel()
