@@ -78,9 +78,9 @@ public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher 
         return this;
     }
 
-    public IPluginRegistry RegisterCommandArgumentHandler<T>(T parser) where T : BaseArgumentParser
+    public IPluginRegistry RegisterCommandArgumentHandler<T>(BaseArgumentParser<T> parser) 
     {
-        this.commandHandler.AddArgumentParser(parser);
+        this.commandHandler.TryAddArgumentParser(parser);
 
         return this;
     }

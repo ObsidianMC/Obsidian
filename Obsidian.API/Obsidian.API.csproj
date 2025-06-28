@@ -40,7 +40,8 @@
 		<AdditionalFiles Include="..\Obsidian\Assets\blocks.json" Link="Assets\blocks.json" />
 		<AdditionalFiles Include="..\Obsidian\Assets\items.json" Link="Assets\items.json" />
 		<AdditionalFiles Include="..\Obsidian\Assets\fluids.json" Link="Assets\fluids.json" />
-		
+
+		<AdditionalFiles Include="..\Obsidian\Assets\command_parsers.json" Link="Assets\command_parsers.json" />
 		<AdditionalFiles Include="..\Obsidian\Assets\sounds.json" Link="Assets\sounds.json" />
 		<AdditionalFiles Include="..\Obsidian\Assets\tags.json" Link="Assets\tags.json" />
 		
@@ -73,10 +74,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.4">
+		<PackageReference Include="CommunityToolkit.HighPerformance" Version="8.4.0" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.6">
 			<ExcludeAssets>runtime</ExcludeAssets>
 		</PackageReference>
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.4">
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.6">
 			<ExcludeAssets>runtime</ExcludeAssets>
 		</PackageReference>
 		<PackageReference Include="SharpNoise" Version="0.12.1.1">

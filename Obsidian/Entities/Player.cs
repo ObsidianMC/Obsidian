@@ -40,6 +40,21 @@ public sealed partial class Player : Living, IPlayer
 
     public required IServer Server { get; init; }
 
+    public PlayerInput Input { get; set; }
+
+    public override bool Sneaking
+    {
+        get => this.Input.HasFlag(PlayerInput.Sneak);
+        set
+        {
+            if(value)
+                this.Input |= PlayerInput.Sneak;
+            else
+                this.Input &= ~PlayerInput.Sneak;
+        }
+    }
+
+
     /// <summary>
     /// The players inventory.
     /// </summary>
@@ -127,7 +142,7 @@ public sealed partial class Player : Living, IPlayer
     public string? ClientIP => Client.Ip;
 
     [SetsRequiredMembers]
-    internal Player(Guid uuid, string username, IClient client, IWorld world) 
+    internal Player(Guid uuid, string username, IClient client, IWorld world)
     {
         Uuid = uuid;
         Username = username;

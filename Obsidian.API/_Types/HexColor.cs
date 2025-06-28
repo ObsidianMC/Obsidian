@@ -30,21 +30,20 @@ public readonly struct HexColor
     /// <inheritdoc/>
     public readonly override string ToString() => hexColor;
 
-    public static readonly HexColor Black = new(0, 0, 0);
-    public static readonly HexColor DarkBlue = new(0, 0, 42);
-    public static readonly HexColor DarkGreen = new(0, 42, 0);
-    public static readonly HexColor DarkCyan = new(0, 42, 42);
-    public static readonly HexColor DarkRed = new(42, 0, 0);
-    public static readonly HexColor Purple = new(42, 0, 42);
-    public static readonly HexColor Gold = new(42, 42, 0);
-    public static readonly HexColor Gray = new(42, 42, 42);
-    public static readonly HexColor DarkGray = new(85, 85, 85);
-    public static readonly HexColor Blue = new(85, 85, 255);
-    public static readonly HexColor Green = new(0, 128, 0);
-    public static readonly HexColor Red = new(255, 0, 0);
-    public static readonly HexColor BrightGreen = new(85, 255, 85);
-    public static readonly HexColor Cyan = new(85, 255, 255);
-    public static readonly HexColor Pink = new(255, 85, 255);
-    public static readonly HexColor Yellow = new(255, 255, 85);
-    public static readonly HexColor White = new(255, 255, 255);
+    public static readonly HexColor Black = new("#000000");
+    public static readonly HexColor DarkBlue = new("#0000AA");
+    public static readonly HexColor DarkGreen = new("#00AA00");
+    public static readonly HexColor DarkAqua = new("#00AAAA");
+    public static readonly HexColor DarkRed = new("#AA0000");
+    public static readonly HexColor DarkPurple = new("#AA00AA");
+    public static readonly HexColor Gold = new("#FFAA00");
+    public static readonly HexColor Gray = new("#AAAAAA");
+    public static readonly HexColor DarkGray = new("#555555");
+    public static readonly HexColor Blue = new("#5555FF");
+    public static readonly HexColor Green = new("#55FF55");
+    public static readonly HexColor Aqua = new("#55FFFF");
+    public static readonly HexColor Red = new("#FF5555");
+    public static readonly HexColor LightPurple = new("#FF55FF");
+    public static readonly HexColor Yellow = new("#FFFF55");
+    public static readonly HexColor White = new("#FFFFFF");
 }

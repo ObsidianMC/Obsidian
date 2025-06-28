@@ -1,11 +1,8 @@
 ﻿namespace Obsidian.API.Commands.ArgumentParsers;
 
-public class PlayerArgumentParser : BaseArgumentParser<IPlayer>
+[ArgumentParser("minecraft:game_profile")]
+public sealed partial class PlayerArgumentParser : BaseArgumentParser<IPlayer>
 {
-    public PlayerArgumentParser() : base(7, "minecraft:game_profile")
-    {
-    }
-
     //TODO support selectors
     public override bool TryParseArgument(string input, CommandContext context, out IPlayer result)
     {

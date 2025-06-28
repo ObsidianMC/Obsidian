@@ -5,7 +5,7 @@ using System.Buffers;
 namespace Obsidian.Nbt;
 public sealed partial class RawNbtWriter : INbtWriter
 {
-    private const int MaxBufferSize = 1024 * 4;
+    private const int InitialBufferSize = 256;
 
     private bool disposed;
 
@@ -23,7 +23,7 @@ public sealed partial class RawNbtWriter : INbtWriter
 
     public RawNbtWriter(string name)
     {
-        this.data = ArrayPool<byte>.Shared.Rent(MaxBufferSize);
+        this.data = ArrayPool<byte>.Shared.Rent(InitialBufferSize);
 
         this.Write(NbtTagType.Compound);
         this.Write(name);
@@ -33,7 +33,7 @@ public sealed partial class RawNbtWriter : INbtWriter
 
     public RawNbtWriter(bool networked)
     {
-        this.data = ArrayPool<byte>.Shared.Rent(MaxBufferSize);
+        this.data = ArrayPool<byte>.Shared.Rent(InitialBufferSize);
         this.Networked = networked;
 
         this.Write(NbtTagType.Compound);
@@ -73,9 +73,13 @@ public sealed partial class RawNbtWriter : INbtWriter
     {
         this.Validate(name, NbtTagType.Compound);
 
-        this.SetRootTag(NbtTagType.Compound);
         if (this.RootType == NbtTagType.List)
+        {
+            this.SetRootTag(NbtTagType.Compound);
             return;
+        }
+
+        this.SetRootTag(NbtTagType.Compound);
 
         this.Write(NbtTagType.Compound);
         this.Write(name);
@@ -143,8 +147,6 @@ public sealed partial class RawNbtWriter : INbtWriter
                 this.EndList();
                 break;
             case NbtTagType.Compound:
-                this.WriteCompoundStart();
-
                 foreach (var (_, child) in (NbtCompound)tag)
                     this.WriteTag(child);
 

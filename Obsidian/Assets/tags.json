@@ -1147,6 +1147,18 @@
       "#minecraft:gold_ores"
     ]
   },
+  "block/happy_ghast_avoids": {
+    "name": "happy_ghast_avoids",
+    "type": "block",
+    "values": [
+      "minecraft:sweet_berry_bush",
+      "minecraft:cactus",
+      "minecraft:wither_rose",
+      "minecraft:magma_block",
+      "minecraft:fire",
+      "minecraft:pointed_dripstone"
+    ]
+  },
   "block/hoglin_repellents": {
     "name": "hoglin_repellents",
     "type": "block",
@@ -1695,15 +1707,6 @@
       "minecraft:cherry_planks"
     ]
   },
-  "block/plays_ambient_desert_block_sounds": {
-    "name": "plays_ambient_desert_block_sounds",
-    "type": "block",
-    "values": [
-      "#minecraft:terracotta",
-      "minecraft:sand",
-      "minecraft:red_sand"
-    ]
-  },
   "block/polar_bears_spawnable_on_alternate": {
     "name": "polar_bears_spawnable_on_alternate",
     "type": "block",
@@ -1876,7 +1879,6 @@
     "values": [
       "minecraft:sand",
       "minecraft:red_sand",
-      "minecraft:suspicious_sand",
       "minecraft:suspicious_sand"
     ]
   },
@@ -2331,6 +2333,31 @@
       "minecraft:waxed_exposed_copper_trapdoor",
       "minecraft:waxed_weathered_copper_trapdoor",
       "minecraft:waxed_oxidized_copper_trapdoor"
+    ]
+  },
+  "block/triggers_ambient_desert_dry_vegetation_block_sounds": {
+    "name": "triggers_ambient_desert_dry_vegetation_block_sounds",
+    "type": "block",
+    "values": [
+      "#minecraft:terracotta",
+      "minecraft:sand",
+      "minecraft:red_sand"
+    ]
+  },
+  "block/triggers_ambient_desert_sand_block_sounds": {
+    "name": "triggers_ambient_desert_sand_block_sounds",
+    "type": "block",
+    "values": [
+      "minecraft:sand",
+      "minecraft:red_sand"
+    ]
+  },
+  "block/triggers_ambient_dried_ghast_block_sounds": {
+    "name": "triggers_ambient_dried_ghast_block_sounds",
+    "type": "block",
+    "values": [
+      "minecraft:soul_sand",
+      "minecraft:soul_soil"
     ]
   },
   "block/underwater_bonemeals": {
@@ -3042,6 +3069,16 @@
       "minecraft:drown"
     ]
   },
+  "dialog/pause_screen_additions": {
+    "name": "pause_screen_additions",
+    "type": "dialog",
+    "values": []
+  },
+  "dialog/quick_actions": {
+    "name": "quick_actions",
+    "type": "dialog",
+    "values": []
+  },
   "enchantment/curse": {
     "name": "curse",
     "type": "enchantment",
@@ -3339,6 +3376,13 @@
       "minecraft:armor_stand"
     ]
   },
+  "entity_type/can_equip_harness": {
+    "name": "can_equip_harness",
+    "type": "entity_type",
+    "values": [
+      "minecraft:happy_ghast"
+    ]
+  },
   "entity_type/can_equip_saddle": {
     "name": "can_equip_saddle",
     "type": "entity_type",
@@ -3381,6 +3425,7 @@
       "minecraft:camel",
       "minecraft:chicken",
       "minecraft:donkey",
+      "minecraft:happy_ghast",
       "minecraft:horse",
       "minecraft:llama",
       "minecraft:mule",
@@ -3406,12 +3451,44 @@
       "minecraft:cat",
       "minecraft:chicken",
       "minecraft:ghast",
+      "minecraft:happy_ghast",
       "minecraft:phantom",
       "minecraft:magma_cube",
       "minecraft:ocelot",
       "minecraft:parrot",
       "minecraft:wither",
       "minecraft:breeze"
+    ]
+  },
+  "entity_type/followable_friendly_mobs": {
+    "name": "followable_friendly_mobs",
+    "type": "entity_type",
+    "values": [
+      "minecraft:armadillo",
+      "minecraft:bee",
+      "minecraft:camel",
+      "minecraft:cat",
+      "minecraft:chicken",
+      "minecraft:cow",
+      "minecraft:donkey",
+      "minecraft:fox",
+      "minecraft:goat",
+      "minecraft:happy_ghast",
+      "minecraft:horse",
+      "minecraft:skeleton_horse",
+      "minecraft:llama",
+      "minecraft:mule",
+      "minecraft:ocelot",
+      "minecraft:panda",
+      "minecraft:parrot",
+      "minecraft:pig",
+      "minecraft:polar_bear",
+      "minecraft:rabbit",
+      "minecraft:sheep",
+      "minecraft:sniffer",
+      "minecraft:strider",
+      "minecraft:villager",
+      "minecraft:wolf"
     ]
   },
   "entity_type/freeze_hurts_extra_types": {
@@ -4559,6 +4636,43 @@
       "minecraft:bamboo_hanging_sign"
     ]
   },
+  "item/happy_ghast_food": {
+    "name": "happy_ghast_food",
+    "type": "item",
+    "values": [
+      "minecraft:snowball"
+    ]
+  },
+  "item/happy_ghast_tempt_items": {
+    "name": "happy_ghast_tempt_items",
+    "type": "item",
+    "values": [
+      "#minecraft:happy_ghast_food",
+      "#minecraft:harnesses"
+    ]
+  },
+  "item/harnesses": {
+    "name": "harnesses",
+    "type": "item",
+    "values": [
+      "minecraft:white_harness",
+      "minecraft:orange_harness",
+      "minecraft:magenta_harness",
+      "minecraft:light_blue_harness",
+      "minecraft:yellow_harness",
+      "minecraft:lime_harness",
+      "minecraft:pink_harness",
+      "minecraft:gray_harness",
+      "minecraft:light_gray_harness",
+      "minecraft:cyan_harness",
+      "minecraft:purple_harness",
+      "minecraft:blue_harness",
+      "minecraft:brown_harness",
+      "minecraft:green_harness",
+      "minecraft:red_harness",
+      "minecraft:black_harness"
+    ]
+  },
   "item/head_armor": {
     "name": "head_armor",
     "type": "item",
@@ -4599,6 +4713,7 @@
       "minecraft:sugar",
       "minecraft:hay_block",
       "minecraft:apple",
+      "minecraft:carrot",
       "minecraft:golden_carrot",
       "minecraft:golden_apple",
       "minecraft:enchanted_golden_apple"
@@ -5079,7 +5194,6 @@
     "values": [
       "minecraft:sand",
       "minecraft:red_sand",
-      "minecraft:suspicious_sand",
       "minecraft:suspicious_sand"
     ]
   },

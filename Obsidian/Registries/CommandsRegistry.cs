@@ -1,7 +1,7 @@
 ﻿using Obsidian.API.Commands;
+using Obsidian.API.Commands.ArgumentParsers;
 using Obsidian.API.Utilities.Interfaces;
 using Obsidian.Commands;
-using Obsidian.Commands.Parsers;
 using Obsidian.Net.Packets.Play.Clientbound;
 
 namespace Obsidian.Registries;
@@ -77,13 +77,13 @@ public static class CommandsRegistry
             //TODO make this better 
             argNode.Parser = mctype switch
             {
-                "brigadier:string" => new StringCommandParser(arg.CustomAttributes.Any(x => x.AttributeType == typeof(RemainingAttribute)) ? StringType.GreedyPhrase : StringType.QuotablePhrase),
-                "brigadier:double" => new DoubleCommandParser(),
-                "brigadier:float" => new FloatCommandParser(),
-                "brigadier:integer" => new IntCommandParser(),
-                "brigadier:long" => new LongCommandParser(),
-                "minecraft:time" => new MinecraftTimeParser(),
-                _ => new CommandParser(id, mctype),
+                "brigadier:string" => new StringArgumentParser(arg.CustomAttributes.Any(x => x.AttributeType == typeof(RemainingAttribute)) ? StringType.GreedyPhrase : StringType.QuotablePhrase),
+                "brigadier:double" => new DoubleArgumentParser(),
+                "brigadier:float" => new FloatArgumentParser(),
+                "brigadier:integer" => new UnsignedIntArgumentParser(),
+                "brigadier:long" => new UnsignedLongArgumentParser(),
+                "minecraft:time" => new MinecraftTimeArgumentParser(),
+                _ => new EmptyArgumentParser(id, mctype),
             };
 
             prev.AddChild(argNode);

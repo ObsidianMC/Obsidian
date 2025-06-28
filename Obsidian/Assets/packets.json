@@ -1,5 +1,13 @@
 [
   {
+    "name": "ClearDialog",
+    "resource_id": "clear_dialog",
+    "namespace": "Clientbound",
+    "state": "Configuration",
+    "packet_id": 17,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
     "name": "CookieRequest",
     "resource_id": "cookie_request",
     "namespace": "Clientbound",
@@ -104,6 +112,14 @@
     "usable_interface": "IClientboundPacket"
   },
   {
+    "name": "ShowDialog",
+    "resource_id": "show_dialog",
+    "namespace": "Clientbound",
+    "state": "Configuration",
+    "packet_id": 18,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
     "name": "StoreCookie",
     "resource_id": "store_cookie",
     "namespace": "Clientbound",
@@ -149,6 +165,14 @@
     "namespace": "Serverbound",
     "state": "Configuration",
     "packet_id": 1,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "CustomClickAction",
+    "resource_id": "custom_click_action",
+    "namespace": "Serverbound",
+    "state": "Configuration",
+    "packet_id": 8,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -405,6 +429,14 @@
     "namespace": "Clientbound",
     "state": "Play",
     "packet_id": 13,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "ClearDialog",
+    "resource_id": "clear_dialog",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 132,
     "usable_interface": "IClientboundPacket"
   },
   {
@@ -1192,6 +1224,14 @@
     "usable_interface": "IClientboundPacket"
   },
   {
+    "name": "ShowDialog",
+    "resource_id": "show_dialog",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 133,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
     "name": "Sound",
     "resource_id": "sound",
     "namespace": "Clientbound",
@@ -1344,6 +1384,14 @@
     "usable_interface": "IClientboundPacket"
   },
   {
+    "name": "Waypoint",
+    "resource_id": "waypoint",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 131,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
     "name": "AcceptTeleportation",
     "resource_id": "accept_teleportation",
     "namespace": "Serverbound",
@@ -1376,11 +1424,19 @@
     "usable_interface": "IServerboundPacket"
   },
   {
+    "name": "ChangeGameMode",
+    "resource_id": "change_game_mode",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 4,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
     "name": "Chat",
     "resource_id": "chat",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 7,
+    "packet_id": 8,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1388,7 +1444,7 @@
     "resource_id": "chat_ack",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 4,
+    "packet_id": 5,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1396,7 +1452,7 @@
     "resource_id": "chat_command",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 5,
+    "packet_id": 6,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1404,7 +1460,7 @@
     "resource_id": "chat_command_signed",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 6,
+    "packet_id": 7,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1412,7 +1468,7 @@
     "resource_id": "chat_session_update",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 8,
+    "packet_id": 9,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1420,7 +1476,7 @@
     "resource_id": "chunk_batch_received",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 9,
+    "packet_id": 10,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1428,7 +1484,7 @@
     "resource_id": "client_command",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 10,
+    "packet_id": 11,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1436,7 +1492,7 @@
     "resource_id": "client_information",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 12,
+    "packet_id": 13,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1444,7 +1500,7 @@
     "resource_id": "client_tick_end",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 11,
+    "packet_id": 12,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1452,7 +1508,7 @@
     "resource_id": "command_suggestion",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 13,
+    "packet_id": 14,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1460,7 +1516,7 @@
     "resource_id": "configuration_acknowledged",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 14,
+    "packet_id": 15,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1468,7 +1524,7 @@
     "resource_id": "container_button_click",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 15,
+    "packet_id": 16,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1476,7 +1532,7 @@
     "resource_id": "container_click",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 16,
+    "packet_id": 17,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1484,7 +1540,7 @@
     "resource_id": "container_close",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 17,
+    "packet_id": 18,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1492,7 +1548,7 @@
     "resource_id": "container_slot_state_changed",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 18,
+    "packet_id": 19,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1500,7 +1556,15 @@
     "resource_id": "cookie_response",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 19,
+    "packet_id": 20,
+    "usable_interface": "IServerboundPacket"
+  },
+  {
+    "name": "CustomClickAction",
+    "resource_id": "custom_click_action",
+    "namespace": "Serverbound",
+    "state": "Play",
+    "packet_id": 65,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1508,7 +1572,7 @@
     "resource_id": "custom_payload",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 20,
+    "packet_id": 21,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1516,7 +1580,7 @@
     "resource_id": "debug_sample_subscription",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 21,
+    "packet_id": 22,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1524,7 +1588,7 @@
     "resource_id": "edit_book",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 22,
+    "packet_id": 23,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1532,7 +1596,7 @@
     "resource_id": "entity_tag_query",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 23,
+    "packet_id": 24,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1540,7 +1604,7 @@
     "resource_id": "interact",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 24,
+    "packet_id": 25,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1548,7 +1612,7 @@
     "resource_id": "jigsaw_generate",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 25,
+    "packet_id": 26,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1556,7 +1620,7 @@
     "resource_id": "keep_alive",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 26,
+    "packet_id": 27,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1564,7 +1628,7 @@
     "resource_id": "lock_difficulty",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 27,
+    "packet_id": 28,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1572,7 +1636,7 @@
     "resource_id": "move_player_pos",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 28,
+    "packet_id": 29,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1580,7 +1644,7 @@
     "resource_id": "move_player_pos_rot",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 29,
+    "packet_id": 30,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1588,7 +1652,7 @@
     "resource_id": "move_player_rot",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 30,
+    "packet_id": 31,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1596,7 +1660,7 @@
     "resource_id": "move_player_status_only",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 31,
+    "packet_id": 32,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1604,7 +1668,7 @@
     "resource_id": "move_vehicle",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 32,
+    "packet_id": 33,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1612,7 +1676,7 @@
     "resource_id": "paddle_boat",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 33,
+    "packet_id": 34,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1620,7 +1684,7 @@
     "resource_id": "pick_item_from_block",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 34,
+    "packet_id": 35,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1628,7 +1692,7 @@
     "resource_id": "pick_item_from_entity",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 35,
+    "packet_id": 36,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1636,7 +1700,7 @@
     "resource_id": "ping_request",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 36,
+    "packet_id": 37,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1644,7 +1708,7 @@
     "resource_id": "place_recipe",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 37,
+    "packet_id": 38,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1652,7 +1716,7 @@
     "resource_id": "player_abilities",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 38,
+    "packet_id": 39,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1660,7 +1724,7 @@
     "resource_id": "player_action",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 39,
+    "packet_id": 40,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1668,7 +1732,7 @@
     "resource_id": "player_command",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 40,
+    "packet_id": 41,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1676,7 +1740,7 @@
     "resource_id": "player_input",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 41,
+    "packet_id": 42,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1684,7 +1748,7 @@
     "resource_id": "player_loaded",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 42,
+    "packet_id": 43,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1692,7 +1756,7 @@
     "resource_id": "pong",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 43,
+    "packet_id": 44,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1700,7 +1764,7 @@
     "resource_id": "recipe_book_change_settings",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 44,
+    "packet_id": 45,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1708,7 +1772,7 @@
     "resource_id": "recipe_book_seen_recipe",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 45,
+    "packet_id": 46,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1716,7 +1780,7 @@
     "resource_id": "rename_item",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 46,
+    "packet_id": 47,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1724,7 +1788,7 @@
     "resource_id": "resource_pack",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 47,
+    "packet_id": 48,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1732,7 +1796,7 @@
     "resource_id": "seen_advancements",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 48,
+    "packet_id": 49,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1740,7 +1804,7 @@
     "resource_id": "select_trade",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 49,
+    "packet_id": 50,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1748,7 +1812,7 @@
     "resource_id": "set_beacon",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 50,
+    "packet_id": 51,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1756,7 +1820,7 @@
     "resource_id": "set_carried_item",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 51,
+    "packet_id": 52,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1764,7 +1828,7 @@
     "resource_id": "set_command_block",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 52,
+    "packet_id": 53,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1772,7 +1836,7 @@
     "resource_id": "set_command_minecart",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 53,
+    "packet_id": 54,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1780,7 +1844,7 @@
     "resource_id": "set_creative_mode_slot",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 54,
+    "packet_id": 55,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1788,7 +1852,7 @@
     "resource_id": "set_jigsaw_block",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 55,
+    "packet_id": 56,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1796,7 +1860,7 @@
     "resource_id": "set_structure_block",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 56,
+    "packet_id": 57,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1804,7 +1868,7 @@
     "resource_id": "set_test_block",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 57,
+    "packet_id": 58,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1812,7 +1876,7 @@
     "resource_id": "sign_update",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 58,
+    "packet_id": 59,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1820,7 +1884,7 @@
     "resource_id": "swing",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 59,
+    "packet_id": 60,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1828,7 +1892,7 @@
     "resource_id": "teleport_to_entity",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 60,
+    "packet_id": 61,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1836,7 +1900,7 @@
     "resource_id": "test_instance_block_action",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 61,
+    "packet_id": 62,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1844,7 +1908,7 @@
     "resource_id": "use_item",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 63,
+    "packet_id": 64,
     "usable_interface": "IServerboundPacket"
   },
   {
@@ -1852,7 +1916,7 @@
     "resource_id": "use_item_on",
     "namespace": "Serverbound",
     "state": "Play",
-    "packet_id": 62,
+    "packet_id": 63,
     "usable_interface": "IServerboundPacket"
   },
   {

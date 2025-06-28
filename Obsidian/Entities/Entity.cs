@@ -44,18 +44,18 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public virtual string? TranslationKey { get; protected set; }
 
-    public bool CustomNameVisible { get; set; }
-    public bool Silent { get; set; }
-    public bool NoGravity { get; set; }
-    public MovementFlags MovementFlags { get; set; }
-    public bool Sneaking { get; set; }
-    public bool Sprinting { get; set; }
-    public bool CanBeSeen { get; set; }//What does this do???
-    public bool Glowing { get; set; }
-    public bool Invisible { get; set; }
-    public bool Burning { get; set; }
-    public bool Swimming { get; set; }
-    public bool FlyingWithElytra { get; set; }
+    public virtual bool CustomNameVisible { get; set; }
+    public virtual bool Silent { get; set; }
+    public virtual bool NoGravity { get; set; }
+    public virtual MovementFlags MovementFlags { get; set; }
+    public virtual bool Sneaking { get; set; }
+    public virtual bool Sprinting { get; set; }
+    public virtual bool CanBeSeen { get; set; }//What does this do???
+    public virtual bool Glowing { get; set; }
+    public virtual bool Invisible { get; set; }
+    public virtual bool Burning { get; set; }
+    public virtual bool Swimming { get; set; }
+    public virtual bool FlyingWithElytra { get; set; }
 
     public virtual bool Summonable { get; set; }
 
@@ -224,9 +224,9 @@ public class Entity : IEquatable<Entity>, IEntity
         return new(-cosPitch * sinYaw, -sinPitch, cosPitch * cosYaw);
     }
 
-    public virtual async ValueTask RemoveAsync() => await this.World.DestroyEntityAsync(this);
+    public async virtual ValueTask RemoveAsync() => await this.World.DestroyEntityAsync(this);
 
-    protected EntityBitMask GenerateBitmask()
+    protected virtual EntityBitMask GenerateBitmask()
     {
         EntityBitMask mask = EntityBitMask.None;
 

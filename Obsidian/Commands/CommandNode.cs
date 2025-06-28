@@ -1,6 +1,4 @@
-﻿using Obsidian.Net;
-
-namespace Obsidian.Commands;
+﻿namespace Obsidian.Commands;
 
 /// <summary>
 /// https://wiki.vg/Command_Data
@@ -11,20 +9,23 @@ public class CommandNode
 
     public int Index { get; set; }
 
-    public CommandParser? Parser { get; set; }
+    public BaseArgumentParser? Parser { get; set; }
 
     public CommandNodeType Type { get; set; }
 
     public HashSet<CommandNode> Children = [];
 
+    public string? SuggestionType { get; set; }
+
     public void CopyTo(INetStreamWriter writer)
     {
         writer.WriteByte((sbyte)Type);
-        writer.WriteVarInt(Children.Count);
 
-        foreach (var child in Children.Select(c => c.Index))
+        writer.WriteLengthPrefixedArray(writer.WriteVarInt, Children.Select(c => c.Index).ToList());
+
+        if (Type.HasFlag(CommandNodeType.HasRedirect))
         {
-            writer.WriteVarInt(child);
+            writer.WriteVarInt(Index);
         }
 
         if (Type.HasFlag(CommandNodeType.Literal) || Type.HasFlag(CommandNodeType.Argument))
@@ -35,6 +36,11 @@ public class CommandNode
         if (Type.HasFlag(CommandNodeType.Argument))
         {
             Parser!.Write(writer);
+        }
+
+        if (Type.HasFlag(CommandNodeType.HasSuggestions))
+        {
+            writer.WriteString(SuggestionType!);
         }
     }
 

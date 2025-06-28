@@ -17,7 +17,7 @@ public sealed class CommandHandler : ICommandHandler
 
     private readonly List<Command> _commands;
     private readonly CommandParser _commandParser;
-    private readonly List<BaseArgumentParser> _argumentParsers;
+    private readonly Dictionary<Type, BaseArgumentParser> _argumentParsers;
 
     public IServiceProvider ServiceProvider { get; }
 
@@ -29,9 +29,11 @@ public sealed class CommandHandler : ICommandHandler
         // Find all predefined argument parsers
         var parsers = typeof(StringArgumentParser).Assembly.GetTypes()
             .Where(type => typeof(BaseArgumentParser).IsAssignableFrom(type) && !type.IsAbstract)
+            .Where(type => type.BaseType?.IsGenericType is true && type.BaseType.GetGenericArguments().Length != 0)
             .Select(x => (Activator.CreateInstance(x) as BaseArgumentParser)!);
 
-        _argumentParsers = parsers.OrderBy(x => x.Id).ToList();
+        _argumentParsers = parsers.OrderBy(x => x.Id)
+            .ToDictionary(x => x.GetType().BaseType!.GetGenericArguments().First(), x => x);
 
         this.ServiceProvider = serviceProvider;
         this.logger = logger;
@@ -39,19 +41,17 @@ public sealed class CommandHandler : ICommandHandler
 
     public (int id, string mctype) FindMinecraftType(Type type)
     {
-        var parserType = _argumentParsers.FirstOrDefault(x => x.GetType().BaseType?.GetGenericArguments()[0] == type)?.GetType();
+        if (!this._argumentParsers.TryGetValue(type, out var parser))
+            throw new Exception($"No valid argument parser found for type {type.Name}!");
 
-        if (parserType is null || Activator.CreateInstance(parserType) is not BaseArgumentParser parserInstance)
-            throw new Exception($"No such parser registered! {type}");
-
-        return (parserInstance.Id, parserInstance.ParserIdentifier);
+        return (parser.Id, parser.Identifier);
     }
 
     public bool IsValidArgumentType(Type argumentType) =>
-        this._argumentParsers.Any(x => x.GetType().BaseType?.GetGenericArguments().First() == argumentType);
+        this._argumentParsers.TryGetValue(argumentType, out _);
 
     public BaseArgumentParser GetArgumentParser(Type argumentType) =>
-        this._argumentParsers.First(x => x.GetType().BaseType?.GetGenericArguments().First() == argumentType);
+        this._argumentParsers.TryGetValue(argumentType, out var parser) ? parser : throw new ArgumentException($"No parser registered for type {argumentType}");
 
     public Command[] GetAllCommands() => _commands.ToArray();
 
@@ -81,7 +81,8 @@ public sealed class CommandHandler : ICommandHandler
         _commands.Add(command);
     }
 
-    public void AddArgumentParser(BaseArgumentParser parser) => _argumentParsers.Add(parser);
+    public bool TryAddArgumentParser<TValue>(BaseArgumentParser<TValue> parser) =>
+        _argumentParsers.TryAdd(typeof(TValue), parser);
 
     public void UnregisterPluginCommands(IPluginContainer? plugin) => _commands.RemoveAll(x => x.PluginContainer == plugin);
 

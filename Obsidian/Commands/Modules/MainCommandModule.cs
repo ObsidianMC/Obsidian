@@ -68,7 +68,7 @@ public sealed class MainCommandModule : CommandModuleBase
             string usage = cmd.Usage.IsNullOrEmpty() ? $"/{cmd.Name}" : cmd.Usage;
             var commandName = new ChatMessage
             {
-                Text = $"\n{ChatColor.Gold}{usage}",
+                Text = $"\n{usage}",
                 ClickEvent = new ClickComponent
                 {
                     Action = ClickAction.SuggestCommand,
@@ -78,13 +78,18 @@ public sealed class MainCommandModule : CommandModuleBase
                 {
                     Action = HoverAction.ShowText,
                     Contents = new HoverChatContent() { ChatMessage = "Click to suggest the command" }
-                }
+                },
+                Color = HexColor.Gold
             };
             commands.AddExtra(commandName);
 
             if (!cmd.Description.IsNullOrEmpty())
             {
-                commands.AddExtra($"{ChatColor.Gray}:{ChatColor.Reset} {cmd.Description}");
+                var desc = ChatMessage.Simple(": ");
+
+                desc.AddExtra(ChatMessage.Simple(cmd.Description) with { Color = HexColor.White });
+
+                commands.AddExtra(desc);
             }
         }
 

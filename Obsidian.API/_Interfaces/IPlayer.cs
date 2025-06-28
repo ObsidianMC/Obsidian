@@ -9,6 +9,8 @@ public interface IPlayer : ILiving
     public IClient Client { get; }
     public IScoreboard? CurrentScoreboard { get; set; }
 
+    public PlayerInput Input { get; set; }
+
     public ConcurrentHashSet<long> LoadedChunks { get; }
 
     public Container Inventory { get; }

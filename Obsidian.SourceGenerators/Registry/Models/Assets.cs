@@ -14,7 +14,8 @@ internal sealed class Assets
     public Dictionary<string, Codec[]> Codecs { get; }
     public IDictionary<string, List<Sound>> Sounds { get; }
 
-    private Assets(Block[] blocks, Tag[] tags, Item[] items, Dictionary<string, Codec[]> codecs, IDictionary<string, List<Sound>> sounds)
+    private Assets(Block[] blocks, Tag[] tags, Item[] items, Dictionary<string, Codec[]> codecs,
+        IDictionary<string, List<Sound>> sounds)
     {
         Blocks = blocks;
         Tags = tags;

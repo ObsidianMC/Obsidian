@@ -1,5 +1,4 @@
-﻿using Obsidian.API.Utilities;
-using Obsidian.Nbt;
+﻿using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
 using System.Text.Json;
 
@@ -31,12 +30,18 @@ public partial class Extensions
 
         if (chatMessage.Extra is List<ChatMessage> extras)
         {
-            var list = new NbtList(NbtTagType.Compound, "extra");
+            writer.WriteListStart("extra", NbtTagType.Compound, extras.Count);
 
             foreach (var item in extras)
-                list.Add(item.ToNbt());
+            {
+                writer.WriteCompoundStart();
 
-            writer.WriteTag(list);
+                writer.WriteChatMessage(item);
+
+                writer.EndCompound();
+            }
+
+            writer.EndList();
         }
 
         if (chatMessage.With is List<ChatMessage> extraChatComponents)
@@ -135,6 +140,7 @@ public partial class Extensions
         };
     }
 
+    //TODO: CHat message stuff need to be updated.
     public static HoverComponent? ToHoverComponent(this NbtCompound compound)
     {
         if (!compound.TryGetTag<NbtCompound>("contents", out var contentsCompound))
@@ -158,35 +164,24 @@ public partial class Extensions
 
     public static NbtCompound ToNbt(this HoverComponent hoverComponent)
     {
-        var compound = new NbtCompound("hoverEvent")
+        var compound = new NbtCompound("hover_event")
         {
             new NbtTag<string>("action", JsonNamingPolicy.SnakeCaseLower.ConvertName(hoverComponent.Action.ToString())),
         };
 
-
         if (hoverComponent.Contents is HoverChatContent chatContent)
-            compound.Add(chatContent.ChatMessage.ToNbt("contents"));
+            compound.Add(chatContent.ChatMessage.ToNbt("value"));
         else if (hoverComponent.Contents is HoverItemContent)
             throw new NotImplementedException("Missing properties from ItemStack can't implement.");
-        else if (hoverComponent.Contents is HoverEntityComponent entityComponent)
-        {
-            var entityCompound = new NbtCompound("contents")
-            {
-                new NbtTag<string>("id", entityComponent.Entity.Uuid.ToString()),
-            };
-
-            if (entityComponent.Entity.CustomName is ChatMessage name)
-                entityCompound.Add(name.ToNbt("name"));
-            else
-                entityCompound.Add(new NbtTag<string>("name", entityComponent.Entity.Type.ToString()));
-        }
+        else if (hoverComponent.Contents is HoverEntityComponent)
+            throw new NotImplementedException("Re-implement");
 
         return compound;
     }
 
-    public static NbtCompound ToNbt(this ClickComponent clickComponent) => new("clickEvent")
+    public static NbtCompound ToNbt(this ClickComponent clickComponent) => new("click_event")
     {
          new NbtTag<string>("action", JsonNamingPolicy.SnakeCaseLower.ConvertName(clickComponent.Action.ToString())),
-         new NbtTag<string>("value", clickComponent.Value)
+         new NbtTag<string>("command", clickComponent.Value)
     };
 }

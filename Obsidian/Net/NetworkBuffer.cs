@@ -56,12 +56,12 @@ public partial class NetworkBuffer
     /// <summary>
     /// Get a span of bytes from the current buffer
     /// </summary>
-    public Span<byte> AsSpan() => new(data, (int)offset, (int)size);
+    public Span<byte> AsSpan() => new(data, offset, size);
 
     /// <summary>
     /// Get a span of bytes from the current buffer with the specified size.
     /// </summary>
-    public Span<byte> AsSpan(int size) => new(data, (int)offset, size);
+    public Span<byte> AsSpan(int size) => new(data, offset, size);
 
     public Span<byte> AsSpan(int offset, int? size = null) => new(data, offset, size.HasValue ? size.Value : this.size);
 

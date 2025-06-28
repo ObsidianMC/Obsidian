@@ -1,11 +1,8 @@
 ﻿namespace Obsidian.API.Commands.ArgumentParsers;
 
-public sealed class LocationArgumentParser : BaseArgumentParser<VectorF>
+[ArgumentParser("minecraft:vec3")]
+public sealed partial class LocationArgumentParser : BaseArgumentParser<VectorF>
 {
-    public LocationArgumentParser() : base(10, "minecraft:vec3")
-    {
-    }
-
     public override bool TryParseArgument(string input, CommandContext context, out VectorF result)
     {
         var splitted = input.Split(' ');

@@ -1,4 +1,5 @@
-﻿using Obsidian.Entities;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
 
@@ -10,7 +11,7 @@ public partial class PlayerCommandPacket
     public int EntityId { get; private set; }
 
     [Field(1), ActualType(typeof(int)), VarLength]
-    public EAction Action { get; set; }
+    public PlayerCommand Action { get; set; }
 
     [Field(2), VarLength]
     public int JumpBoost { get; set; }
@@ -18,7 +19,7 @@ public partial class PlayerCommandPacket
     public override void Populate(INetStreamReader reader)
     {
         this.EntityId = reader.ReadVarInt();
-        this.Action = reader.ReadVarInt<EAction>();
+        this.Action = reader.ReadVarInt<PlayerCommand>();
         this.JumpBoost = reader.ReadVarInt();
     }
 
@@ -28,36 +29,29 @@ public partial class PlayerCommandPacket
 
         switch (Action)
         {
-            case EAction.StartSneaking:
-                player.Sneaking = true;
-                break;
-            case EAction.StopSneaking:
-                player.Sneaking = false;
-                player.Pose = Pose.Standing;
-                break;
-            case EAction.LeaveBed:
+            case PlayerCommand.LeaveBed:
                 player.Sleeping = false;
                 break;
-            case EAction.StartSprinting:
+            case PlayerCommand.StartSprinting:
                 if ((bool)(block?.IsLiquid))
                     player.Swimming = true;
 
                 player.Sprinting = true;
                 break;
-            case EAction.StopSprinting:
+            case PlayerCommand.StopSprinting:
                 if (player.Swimming)
                     player.Swimming = false;
 
                 player.Sprinting = false;
                 break;
-            case EAction.StartJumpWithHorse:
+            case PlayerCommand.StartJumpWithHorse:
                 break;
-            case EAction.StopJumpWithHorse:
+            case PlayerCommand.StopJumpWithHorse:
                 break;
-            case EAction.OpenHorseInventory:
+            case PlayerCommand.OpenHorseInventory:
                 player.InHorseInventory = true;
                 break;
-            case EAction.StartFlyingWithElytra:
+            case PlayerCommand.StartFlyingWithElytra:
                 player.FlyingWithElytra = true;
                 break;
         }
@@ -70,11 +64,8 @@ public partial class PlayerCommandPacket
     }
 }
 
-public enum EAction : int
+public enum PlayerCommand : int
 {
-    StartSneaking,
-    StopSneaking,
-
     LeaveBed,
 
     StartSprinting,

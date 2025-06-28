@@ -1,11 +1,9 @@
 ﻿using Microsoft.CodeAnalysis.CSharp;
 using Obsidian.SourceGenerators.Registry.Models;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text.Json;
-using System.Xml.Schema;
 
 namespace Obsidian.SourceGenerators.Registry;
 

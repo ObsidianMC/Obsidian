@@ -335,6 +335,9 @@ public partial class NetworkBuffer : INetStreamWriter
         writer.EndCompound();
         writer.TryFinish();
 
+        Directory.CreateDirectory("chat");
+        File.WriteAllBytes($"chat/{Path.GetRandomFileName()}.nbt", writer.Data);
+
         this.Write(writer.Data);
     }
 
