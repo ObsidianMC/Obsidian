@@ -21,7 +21,7 @@ public sealed class HashedItemStack(Item holder, int count = 1) : IHashedItemSta
             return false;
 
         var passed = true;
-        var sharedBuffer = ArrayPool<byte>.Shared.Rent(256);
+        var sharedBuffer = ArrayPool<byte>.Shared.Rent(1024 * 4);
         foreach(var (type, hash) in this.HashedComponents)
         {
             var writer = new NetworkBuffer(sharedBuffer);
