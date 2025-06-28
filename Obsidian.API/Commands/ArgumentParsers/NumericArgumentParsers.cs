@@ -147,7 +147,7 @@ public sealed partial class DoubleArgumentParser : NumericArgumentParser<double>
         => double.TryParse(input, out result);
 }
 
-[ArgumentParser("brigadier:integer")]
+[ArgumentParser("brigadier:double")]
 public sealed partial class DecimalArgumentParser : NumericArgumentParser<decimal>
 {
     public DecimalArgumentParser() : base(decimal.MinValue, decimal.MaxValue) { }
@@ -162,5 +162,5 @@ public enum NumberFlags : byte
 {
     None,
     HasMinValue = 1,
-    HasMaxValue
+    HasMaxValue = 2
 }

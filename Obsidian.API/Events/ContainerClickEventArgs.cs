@@ -1,5 +1,4 @@
 ﻿using Obsidian.API.Inventory;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API.Events;
 
@@ -37,7 +36,6 @@ public sealed class ContainerClickEventArgs : ContainerEventArgs, ICancellable
     /// <inheritdoc />
     public bool IsCancelled { get; private set; }
 
-    [SetsRequiredMembers]
     internal ContainerClickEventArgs(IPlayer player, IServer server, BaseContainer container) : base(player, server)
     {
         this.Container = container;

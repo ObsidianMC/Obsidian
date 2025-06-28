@@ -127,7 +127,7 @@ public partial class MainEventHandler
             {
                 // 1 = left mouse
                 // 5 = right mouse
-                if (button != 1 || button != 5)
+                if (button != 1 && button != 5)
                     return;
 
                 container.SetItem(clickedSlot, carriedItem);

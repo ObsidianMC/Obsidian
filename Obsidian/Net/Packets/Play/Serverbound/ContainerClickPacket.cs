@@ -39,7 +39,7 @@ public partial class ContainerClickPacket
     public ClickType ClickType { get; private set; }
 
     [Field(5)]
-    public IDictionary<short, IHashedItemStack?> ChangedSlots { get; private set; } = default!;
+    public IDictionary<short, IHashedItemStack?> ChangedSlots { get; private set; } = new Dictionary<short, IHashedItemStack?>();
 
     /// <summary>
     /// 	Item carried by the cursor. Has to be empty (item ID = -1) for drop mode, otherwise nothing will happen.
@@ -76,7 +76,6 @@ public partial class ContainerClickPacket
             container = player.Inventory;
 
         var clickedItem = container[slot];
-
 
         // Maybe we should have an event called ValidateContainerContentsEventArgs? 
         if (!this.CarriedItem.Compare(clickedItem))
