@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Obsidian.Commands.Framework.Entities;
-using Obsidian.Entities;
+﻿using Obsidian.API.Commands;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
@@ -15,16 +13,10 @@ public partial class ChatCommandPacket
         Command = reader.ReadString();
     }
 
-    public async override ValueTask HandleAsync(Server server, Player player)
+    public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
-        var context = new CommandContext($"/{this.Command}", new CommandSender(CommandIssuers.Client, player, server._logger), player, server);
-        try
-        {
-            await server.CommandsHandler.ProcessCommand(context);
-        }
-        catch (Exception e)
-        {
-            server._logger.LogError(e, e.Message);
-        }
+        var context = new CommandContext($"/{this.Command}", new CommandSender(CommandIssuers.Client, player), player, server);
+
+        await server.CommandHandler.ProcessCommand(context);
     }
 }

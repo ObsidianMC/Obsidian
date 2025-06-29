@@ -1,10 +1,13 @@
-﻿namespace Obsidian.API;
+﻿using Obsidian.Nbt.Interfaces;
 
-//TODO NBTWRITER NEEDS TO BE ACCESSIBLE FROM API
+namespace Obsidian.API;
+
 public interface ICodec
 {
     public string Name { get; }
 
     public int Id { get; }
+
+    public void WriteElement(INbtWriter writer);
 }
 

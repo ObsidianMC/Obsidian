@@ -46,7 +46,7 @@ public sealed class NbtCompound : INbtTag, IEnumerable<KeyValuePair<string, INbt
     public bool TryGetTag(string name, [MaybeNullWhen(false)] out INbtTag tag) => this.children.TryGetValue(name, out tag);
     public bool TryGetTag<T>(string name, [MaybeNullWhen(false)] out T tag) where T : INbtTag
     {
-        if (this.children.TryGetValue(name, out var childTag) && childTag is T matchedTag)
+        if (this.TryGetTag(name, out var childTag) && childTag is T matchedTag)
         {
             tag = matchedTag;
             return true;
@@ -55,18 +55,18 @@ public sealed class NbtCompound : INbtTag, IEnumerable<KeyValuePair<string, INbt
         tag = default;
         return false;
     }
-    public bool TryGetTagValue<TValue>(string name, [MaybeNullWhen(false)]out TValue value)
+
+    public bool TryGetTagValue<TValue>(string name, [MaybeNullWhen(false)] out TValue value)
     {
-        if(this.GetTagValue<TValue>(name) is TValue tagValue)
+        if (this.TryGetTag<NbtTag<TValue>>(name, out var tag))
         {
-            value = tagValue;
+            value = tag.Value;
             return true;
         }
 
         value = default;
         return false;
     }
-
 
     public byte GetByte(string name) => this.GetTagValue<byte>(name);
 
@@ -149,11 +149,5 @@ public sealed class NbtCompound : INbtTag, IEnumerable<KeyValuePair<string, INbt
 
     IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
 
-    private T? GetTagValue<T>(string name)
-    {
-        if (this.TryGetTag(name, out var tag) && tag is NbtTag<T> actualTag)
-            return actualTag.Value;
-
-        throw new TagNotFoundException(name);
-    }
+    private T? GetTagValue<T>(string name) => this.TryGetTag(name, out var tag) && tag is NbtTag<T> actualTag ? actualTag.Value : throw new TagNotFoundException(name);
 }

@@ -1,56 +1,51 @@
-﻿using Obsidian.Registries;
-using Obsidian.WorldData.Generators;
+﻿using Obsidian.WorldData.Generators;
 
 namespace Obsidian.WorldData.Decorators;
 
-public class StonyPeaksDecorator : BaseDecorator
+public class StonyPeaksDecorator(Biome biome, IChunk chunk, Vector surfacePos, GenHelper helper) : BaseDecorator(biome, chunk, surfacePos, helper)
 {
-    public StonyPeaksDecorator(Biome biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
-    {
-    }
-
     public override void Decorate()
     {
-        if (pos.Y < 74)
+        if (Position.Y < 74)
         {
-            chunk.SetBlock(pos, BlocksRegistry.GrassBlock);
-            for (int y = pos.Y - 1; y > pos.Y - 5; y--)
+            Chunk.SetBlock(Position, BlocksRegistry.GrassBlock);
+            for (int y = Position.Y - 1; y > Position.Y - 5; y--)
             {
-                chunk.SetBlock(pos.X, y, pos.Z, BlocksRegistry.Dirt);
+                Chunk.SetBlock(Position.X, y, Position.Z, BlocksRegistry.Dirt);
             }
         }
 
-        if (pos.Y > 120)
+        if (Position.Y > 120)
         {
-            chunk.SetBlock(pos, BlocksRegistry.Gravel);
+            Chunk.SetBlock(Position, BlocksRegistry.Gravel);
             return;
         }
 
-        int worldX = (chunk.X << 4) + pos.X;
-        int worldZ = (chunk.Z << 4) + pos.Z;
+        int worldX = (Chunk.X << 4) + Position.X;
+        int worldZ = (Chunk.Z << 4) + Position.Z;
 
-        var cobbleNoise = noise.Decoration.GetValue(worldX * 0.1, 8, worldZ * 0.1);
+        var cobbleNoise = Noise.Decoration.GetValue(worldX * 0.1, 8, worldZ * 0.1);
         if (cobbleNoise > 0 && cobbleNoise < 0.5) // 50% chance for grass
-            chunk.SetBlock(pos + (0, -1, 0), BlocksRegistry.Cobblestone);
+            Chunk.SetBlock(Position + (0, -1, 0), BlocksRegistry.Cobblestone);
 
-        var mossNoise = noise.Decoration.GetValue(worldX * 0.03, 9, worldZ * 0.03);
+        var mossNoise = Noise.Decoration.GetValue(worldX * 0.03, 9, worldZ * 0.03);
         if (mossNoise > 1)
-            chunk.SetBlock(pos, BlocksRegistry.MossBlock);
+            Chunk.SetBlock(Position, BlocksRegistry.MossBlock);
 
-        var clayNoise = noise.Decoration.GetValue(worldX * 0.03, 10, worldZ * 0.03);
+        var clayNoise = Noise.Decoration.GetValue(worldX * 0.03, 10, worldZ * 0.03);
         if (clayNoise > 1)
-            chunk.SetBlock(pos + (0, -1, 0), BlocksRegistry.Clay);
+            Chunk.SetBlock(Position + (0, -1, 0), BlocksRegistry.Clay);
 
-        var grassNoise = noise.Decoration.GetValue(worldX * 0.03, 11, worldZ * 0.03);
+        var grassNoise = Noise.Decoration.GetValue(worldX * 0.03, 11, worldZ * 0.03);
         if (grassNoise > 1)
-            chunk.SetBlock(pos, BlocksRegistry.ShortGrass);
+            Chunk.SetBlock(Position, BlocksRegistry.ShortGrass);
 
-        var coalNoise = noise.Decoration.GetValue(worldX * 0.03, 12, worldZ * 0.03);
+        var coalNoise = Noise.Decoration.GetValue(worldX * 0.03, 12, worldZ * 0.03);
         if (coalNoise > 1)
-            chunk.SetBlock(pos + (0, -1, 0), BlocksRegistry.CoalOre);
+            Chunk.SetBlock(Position + (0, -1, 0), BlocksRegistry.CoalOre);
 
-        var ironNoise = noise.Decoration.GetValue(worldX * 0.03, 13, worldZ * 0.03);
+        var ironNoise = Noise.Decoration.GetValue(worldX * 0.03, 13, worldZ * 0.03);
         if (ironNoise > 1)
-            chunk.SetBlock(pos + (0, -1, 0), BlocksRegistry.IronOre);
+            Chunk.SetBlock(Position + (0, -1, 0), BlocksRegistry.IronOre);
     }
 }

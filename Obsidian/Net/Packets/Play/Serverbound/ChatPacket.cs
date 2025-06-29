@@ -1,4 +1,4 @@
-using Obsidian.Entities;
+using Obsidian.API.Events;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
@@ -23,9 +23,10 @@ public partial class ChatPacket
     [Field(6)]
     public List<SignedMessage> LastSeenMessages { get; private set; } = default!;
 
-    public async override ValueTask HandleAsync(Server server, Player player)
+    //TODO specify custom format in config
+    public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
-        await server.HandleIncomingMessageAsync(this, player.client);
+        await server.EventDispatcher.ExecuteEventAsync(new IncomingChatMessageEventArgs(player, server, this.Message, "<{0}> {1}"));
     }
 
     public override void Populate(INetStreamReader reader)
@@ -33,7 +34,7 @@ public partial class ChatPacket
         this.Message = reader.ReadString();
         this.Timestamp = reader.ReadDateTimeOffset();
         this.Salt = reader.ReadLong();
-        
+
         var isSigned = reader.ReadBoolean();
         if (isSigned)
             this.Signature = reader.ReadUInt8Array(256);

@@ -10,12 +10,12 @@ public sealed record class EffectWithProbability : IConsumeEffect
     public void Write(INetStreamWriter writer)
     {
         PotionEffectData.Write(this.EffectData, writer);
-        writer.WriteFloat(this.Probability);
+        writer.WriteSingle(this.Probability);
     }
 
     public void Read(INetStreamReader reader)
     {
         this.EffectData = reader.ReadPotionEffectData();
-        this.Probability = reader.ReadFloat();
+        this.Probability = reader.ReadSingle();
     }
 }

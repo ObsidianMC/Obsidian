@@ -10,7 +10,7 @@ internal sealed class LoginClientHandler : ClientHandler
 {
     public async override ValueTask<bool> HandleAsync(PacketData packetData)
     {
-        var (id, data) = packetData;
+        var (id, buffer) = packetData;
 
         switch (id)
         {
@@ -21,7 +21,7 @@ internal sealed class LoginClientHandler : ClientHandler
 
                     try
                     {
-                        await this.HandleLoginStartAsync(data);
+                        await this.HandleLoginStartAsync(buffer.Data);
                     }
                     catch { return false; }
 
@@ -31,7 +31,7 @@ internal sealed class LoginClientHandler : ClientHandler
                 {
                     try
                     {
-                        await this.HandleEncryptionResponseAsync(data);
+                        await this.HandleEncryptionResponseAsync(buffer.Data);
                     }
                     catch { return false; }
 
@@ -66,16 +66,24 @@ internal sealed class LoginClientHandler : ClientHandler
         });
 
         //This is very inconvenient
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.Biomes.CodecKey, CodecRegistry.Biomes.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.Dimensions.CodecKey, CodecRegistry.Dimensions.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.Biomes.CodecKey, CodecRegistry.Biomes.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.ChatType.CodecKey, CodecRegistry.ChatType.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.DamageType.CodecKey, CodecRegistry.DamageType.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimPattern.CodecKey, CodecRegistry.TrimPattern.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimMaterial.CodecKey, CodecRegistry.TrimMaterial.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.CatVariant.CodecKey, CodecRegistry.CatVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.ChickenVariant.CodecKey, CodecRegistry.ChickenVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.CowVariant.CodecKey, CodecRegistry.CowVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.FrogVariant.CodecKey, CodecRegistry.FrogVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.PigVariant.CodecKey, CodecRegistry.PigVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        //Figure out why sending all the wolf variants throw a network protocol error
         this.SendPacket(new RegistryDataPacket(CodecRegistry.WolfVariant.CodecKey, new Dictionary<string, ICodec>()
         {
-            { CodecRegistry.WolfVariant.Woods.Name, CodecRegistry.WolfVariant.Woods },
+            { CodecRegistry.WolfVariant.Black.Name, CodecRegistry.WolfVariant.Black },
         }));
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.WolfSoundVariant.CodecKey, CodecRegistry.WolfSoundVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.PaintingVariant.CodecKey, CodecRegistry.PaintingVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
 
         this.SendPacket(UpdateTagsPacket.ClientboundConfiguration with { Tags = TagsRegistry.Categories });
@@ -88,7 +96,7 @@ internal sealed class LoginClientHandler : ClientHandler
         var loginStart = HelloPacket.Deserialize(data);
 
         var username = this.Server.Configuration.Network.MulitplayerDebugMode ? $"Player{Globals.Random.Next(1, 999)}" : loginStart.Username;
-        var world = (World)this.Server.DefaultWorld;
+        var world = this.Server.DefaultWorld;
 
         this.Logger.LogDebug("Received login request from user {Username}", username);
         await this.Server.DisconnectIfConnectedAsync(username);
@@ -100,7 +108,7 @@ internal sealed class LoginClientHandler : ClientHandler
             return;
         }
 
-        if (this.Server.Configuration.Whitelist && !this.Server.IsWhitedlisted(username))
+        if (this.Server.Configuration.Whitelist && !this.Server.IsWhitelisted(username))
         {
             await this.Client.DisconnectAsync("You are not whitelisted on this server\nContact server administrator");
         }

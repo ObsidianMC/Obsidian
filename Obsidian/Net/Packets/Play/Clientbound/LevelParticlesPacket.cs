@@ -27,7 +27,7 @@ public partial class LevelParticlesPacket
         writer.WriteBoolean(this.OverrideLimiter);
         writer.WriteAbsolutePositionF(this.Position);
         writer.WriteAbsoluteFloatPositionF(this.Offset);
-        writer.WriteFloat(this.MaxSpeed);
+        writer.WriteSingle(this.MaxSpeed);
         writer.WriteInt(this.ParticleCount);
 
         writer.WriteVarInt((int)this.Data.ParticleType);

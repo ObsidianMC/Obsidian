@@ -9,4 +9,6 @@ public interface IBlockEntity
     public void ToNbt();
 
     public void FromNbt();
+
+    public IBlockEntity Clone();
 }

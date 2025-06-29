@@ -1,5 +1,4 @@
 ﻿using Obsidian.API.Inventory;
-using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
 
@@ -19,7 +18,7 @@ public partial class SetCreativeModeSlotPacket
         this.ClickedItem = reader.ReadItemStack(); 
     }
 
-    public override ValueTask HandleAsync(Server server, Player player)
+    public override ValueTask HandleAsync(IServer server, IPlayer player)
     {
         var inventory = player.OpenedContainer ?? player.Inventory;
 
@@ -32,22 +31,22 @@ public partial class SetCreativeModeSlotPacket
 
         player.LastClickedItem = ClickedItem;
 
-        if (player.inventorySlot == ClickedSlot)
+        if (player.CurrentHeldItemSlot == ClickedSlot)
         {
             var heldItem = player.GetHeldItem();
 
-            player.PacketBroadcaster.QueuePacketToWorld(player.World, new SetEquipmentPacket
+            player.World.PacketBroadcaster.QueuePacketToWorld(player.World, new SetEquipmentPacket
             {
                 EntityId = player.EntityId,
-                Equipment = new()
-                {
+                Equipment =
+                [
                     new()
                     {
                         Item = heldItem,
-                        Slot = API.Inventory.EquipmentSlot.MainHand
+                        Slot = EquipmentSlot.MainHand
                     }
-                }
-            }, player);
+                ]
+            }, player.EntityId);
         }
 
         return ValueTask.CompletedTask;

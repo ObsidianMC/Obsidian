@@ -1,6 +1,5 @@
 ﻿using Obsidian.API.BlockStates;
 using Obsidian.API.BlockStates.Builders;
-using Obsidian.Registries;
 
 namespace Obsidian.WorldData;
 
@@ -11,12 +10,12 @@ internal static class BlockUpdates
     /// </summary>
     /// <param name="blockUpdate">Info about the block update</param>
     /// <returns>Whether caller should block update neighbors</returns>
-    internal static async Task<bool> HandleFallingBlock(BlockUpdate blockUpdate)
+    internal static async Task<bool> HandleFallingBlock(IBlockUpdate blockUpdate)
     {
         if (blockUpdate.Block is null) { return false; }
 
-        var world = blockUpdate.world;
-        var position = blockUpdate.position;
+        var world = blockUpdate.World;
+        var position = blockUpdate.Position;
         var material = blockUpdate.Block.Material;
         if (await world.GetBlockAsync(position + Vector.Down) is IBlock below &&
             (TagsRegistry.Block.ReplaceableByLiquid.Entries.Contains(below.RegistryId) || below.IsLiquid))
@@ -34,13 +33,13 @@ internal static class BlockUpdates
     /// </summary>
     /// <param name="blockUpdate">Info about the block update</param>
     /// <returns>Whether caller should block update neighbors</returns>
-    internal static async Task<bool> HandleLiquidPhysicsAsync(BlockUpdate blockUpdate)
+    internal static async Task<bool> HandleLiquidPhysicsAsync(IBlockUpdate blockUpdate)
     {
         if (blockUpdate.Block is null) { return false; }
 
         var block = blockUpdate.Block;
-        var world = blockUpdate.world;
-        var position = blockUpdate.position;
+        var world = blockUpdate.World;
+        var position = blockUpdate.Position;
         int liquidLevel = GetLiquidState(block);
         Vector belowPos = position + Vector.Down;
 

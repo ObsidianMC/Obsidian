@@ -26,9 +26,15 @@ public enum Pose : int
 
     Roaring,
 
-    Smiffing,
+    Sniffing,
 
     Emerging,
 
-    Digging
+    Digging,
+
+    Sliding,
+
+    Shooting,
+    
+    Inhaling
 }

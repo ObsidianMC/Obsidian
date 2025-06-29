@@ -1,10 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.VisualStudio.TestPlatform.ObjectModel.Engine.ClientProtocol;
 using Obsidian.API;
 using Obsidian.API.Commands;
 using Obsidian.Commands.Framework;
-using Obsidian.Commands.Framework.Entities;
 using System;
 using System.Threading.Tasks;
 using Xunit;
@@ -27,10 +25,10 @@ public class Commands
         var message = "/test help help \"help help \\n\" help";
         var expected = new[] { "test", "help", "help", "help help \n", "help" };
 
-        var cmd = new CommandParser("/");
+        var cmd = new Obsidian.Commands.Framework.CommandParser("/");
 
         cmd.IsCommandQualified(message, out ReadOnlyMemory<char> qualified);
-        var split = CommandParser.SplitQualifiedString(qualified);
+        var split = Obsidian.Commands.Framework.CommandParser.SplitQualifiedString(qualified);
         Assert.Equal(split, expected);
     }
 
@@ -44,7 +42,7 @@ public class Commands
 
         var cmd = services.GetRequiredService<CommandHandler>();
 
-        ICommandSender sender = new CommandSender(CommandIssuers.Console, player: null, logger: null);
+        ICommandSender sender = new CommandSender(CommandIssuers.Console, player: null);
 
         cmd.RegisterCommandClass<Command>(null);
 

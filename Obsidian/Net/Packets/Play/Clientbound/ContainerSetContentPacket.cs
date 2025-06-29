@@ -3,10 +3,10 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class ContainerSetContentPacket(byte windowId, List<ItemStack> items)
+public partial class ContainerSetContentPacket(int containerId, List<ItemStack> items)
 {
     [Field(0)]
-    public int ContainerId { get; } = windowId;
+    public int ContainerId { get; } = containerId;
 
     [Field(1), VarLength]
     public int StateId { get; set; }

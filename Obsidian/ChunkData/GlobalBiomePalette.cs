@@ -1,6 +1,4 @@
-﻿using Obsidian.Net;
-
-namespace Obsidian.ChunkData;
+﻿namespace Obsidian.ChunkData;
 
 public class GlobalBiomePalette : IPalette<Biome>
 {
@@ -26,8 +24,6 @@ public class GlobalBiomePalette : IPalette<Biome>
 
     public IPalette<Biome> Clone() => this;
 
-    public Task WriteToAsync(MinecraftStream stream) => Task.CompletedTask;
-    public Task ReadFromAsync(MinecraftStream stream) => Task.CompletedTask;
     public void WriteTo(INetStreamWriter writer)
     {
     }

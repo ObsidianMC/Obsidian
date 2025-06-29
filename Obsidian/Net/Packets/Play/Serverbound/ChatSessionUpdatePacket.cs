@@ -1,5 +1,4 @@
-﻿using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
+﻿using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 public sealed partial class ChatSessionUpdatePacket
@@ -10,9 +9,9 @@ public sealed partial class ChatSessionUpdatePacket
     [Field(1)]
     public SignatureData SignatureData { get; private set; }
 
-    public override ValueTask HandleAsync(Server server, Player player)
+    public override ValueTask HandleAsync(IServer server, IPlayer player)
     {
-        player.client.signatureData = this.SignatureData;
+        player.Client.SignatureData = this.SignatureData;
 
         return default;
     }

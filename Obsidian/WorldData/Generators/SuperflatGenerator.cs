@@ -1,7 +1,4 @@
-﻿using Obsidian.ChunkData;
-using Obsidian.Registries;
-
-namespace Obsidian.WorldData.Generators;
+﻿namespace Obsidian.WorldData.Generators;
 
 public class SuperflatGenerator : IWorldGenerator
 {
@@ -42,16 +39,11 @@ public class SuperflatGenerator : IWorldGenerator
             }
         }
 
-        model.chunkStatus = ChunkStatus.full;
+        model.SetChunkStatus(ChunkGenStage.full);
     }
 
-    public async Task<Chunk> GenerateChunkAsync(int x, int z, Chunk? chunk = null, ChunkStatus minlevel = ChunkStatus.full)
-    {
-        if (chunk is { IsGenerated: true })
-            return chunk;
-
-        return model.Clone(x, z);
-    }
+    public ValueTask<IChunk> GenerateChunkAsync(int x, int z, IChunk? chunk = null, ChunkGenStage status = ChunkGenStage.full) =>
+        chunk is { IsGenerated: true } ? ValueTask.FromResult(chunk) : ValueTask.FromResult(model.Clone(x, z));
 
     public void Init(IWorld world) { }
 

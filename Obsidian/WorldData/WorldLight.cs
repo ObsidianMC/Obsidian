@@ -1,17 +1,8 @@
-﻿using Obsidian.Registries;
+﻿namespace Obsidian.WorldData;
 
-namespace Obsidian.WorldData;
-
-internal class WorldLight
+internal static class WorldLight
 {
-    private readonly World world;
-
-    public WorldLight(World world)
-    {
-        this.world = world;
-    }
-
-    public static void InitialFillSkyLight(Chunk chunk)
+    public static void InitialFillSkyLight(IChunk chunk)
     {
         // Start by directly lighting the entire chunk
         for (int x = 0; x < 16; x++)
@@ -20,7 +11,7 @@ internal class WorldLight
             {
                 int lightLevel = 15;
                 int diffuse = 0;
-                var surfaceY = chunk.Heightmaps[ChunkData.HeightmapType.WorldSurfaceWG].GetHeight(x, z);
+                var surfaceY = chunk.Heightmaps[HeightmapType.WorldSurfaceWG].GetHeight(x, z);
                 for (int y = 319; y >= surfaceY; y--)
                 {
                     var secIndex = (y >> 4) + 4;
@@ -45,7 +36,7 @@ internal class WorldLight
         {
             for (int z = 0; z < 16; z++)
             {
-                var y = chunk.Heightmaps[ChunkData.HeightmapType.WorldSurfaceWG].GetHeight(x, z);
+                var y = chunk.Heightmaps[HeightmapType.WorldSurfaceWG].GetHeight(x, z);
                 var pos = new Vector(x, y, z);
                 var level = chunk.GetLightLevel(pos + Vector.Up, LightType.Sky);
                 SetLightAndSpread(pos, LightType.Sky, level, chunk, initial: true);
@@ -53,7 +44,7 @@ internal class WorldLight
         }
     }
 
-    public static void SetLightAndSpread(Vector pos, LightType lt, int level, Chunk chunk, bool initial = false)
+    public static void SetLightAndSpread(Vector pos, LightType lt, int level, IChunk chunk, bool initial = false)
     {
         if (chunk is null) { return; }
 

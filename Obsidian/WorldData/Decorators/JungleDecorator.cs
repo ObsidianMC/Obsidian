@@ -1,13 +1,12 @@
-﻿using Obsidian.Registries;
-using Obsidian.WorldData.Generators;
-using Obsidian.WorldData.Features.Flora;
+﻿using Obsidian.WorldData.Features.Flora;
 using Obsidian.WorldData.Features.Trees;
+using Obsidian.WorldData.Generators;
 
 namespace Obsidian.WorldData.Decorators;
 
 public class JungleDecorator : BaseDecorator
 {
-    public JungleDecorator(Biome biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
+    public JungleDecorator(Biome biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, typeof(OakTree)));
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(4, typeof(JungleTree)));
@@ -20,7 +19,7 @@ public class JungleDecorator : BaseDecorator
 
     public override void Decorate()
     {
-        if (pos.Y < noise.WaterLevel)
+        if (Position.Y < Noise.WaterLevel)
         {
             FillWater();
             return;
@@ -29,9 +28,9 @@ public class JungleDecorator : BaseDecorator
         //int worldX = (chunk.X << 4) + pos.X;
         //int worldZ = (chunk.Z << 4) + pos.Z;
 
-        chunk.SetBlock(pos, BlocksRegistry.GrassBlock);
+        Chunk.SetBlock(Position, BlocksRegistry.GrassBlock);
         for (int y = -1; y > -4; y--)
-            chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Dirt);
+            Chunk.SetBlock(Position + (0, y, 0), BlocksRegistry.Dirt);
 
     }
 }

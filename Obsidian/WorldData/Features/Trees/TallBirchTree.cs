@@ -2,9 +2,6 @@
 
 namespace Obsidian.WorldData.Features.Trees;
 
-public class TallBirchTree : BaseTree
+public class TallBirchTree(GenHelper helper, IChunk chunk) : BaseTree(helper, chunk, Material.BirchLeaves, Material.BirchLog, 11)
 {
-    public TallBirchTree(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.BirchLeaves, Material.BirchLog, 11)
-    {
-    }
 }

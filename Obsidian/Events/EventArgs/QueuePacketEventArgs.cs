@@ -10,7 +10,7 @@ public class QueuePacketEventArgs : BasePacketEventArgs, ICancellable
     /// <inheritdoc />
     public bool IsCancelled { get; private set; }
 
-    internal QueuePacketEventArgs(Server server, Client client, IPacket packet) : base(server, client, packet)
+    internal QueuePacketEventArgs(IServer server, Client client, IPacket packet) : base(server, client, packet)
     {
     }
 

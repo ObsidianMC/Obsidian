@@ -13,6 +13,7 @@ using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading;
+using Obsidian.Providers.IntProviders;
 #nullable enable
 
 namespace Obsidian.Utilities;
@@ -52,7 +53,8 @@ public static partial class Extensions
                 EntityType.SmallFireball,
                 EntityType.Egg,
                 EntityType.ExperienceBottle,
-                EntityType.Potion,
+                EntityType.SplashPotion,
+                EntityType.LingeringPotion,
                 EntityType.Trident,
                 EntityType.FishingBobber,
                 EntityType.EyeOfEnder];
@@ -64,14 +66,6 @@ public static partial class Extensions
 
     public static string TrimEventArgs(this string value) =>
         value.Replace(EventArgs, string.Empty);
-
-    public static void WritePacketId(this IPacket packet, MinecraftStream stream)
-    {
-        stream.Lock.Wait();
-        stream.WriteVarInt(packet.Id.GetVarIntLength());
-        stream.WriteVarInt(packet.Id);
-        stream.Lock.Release();
-    }
 
     public static ParameterExpression[] GetParamExpressions(this Type[] types) => types.Select((t, i) => Expression.Parameter(t, $"param{i}")).ToArray();
 
@@ -142,17 +136,6 @@ public static partial class Extensions
         JsonSerializer.DeserializeAsync<TValue>(stream, options ?? Globals.JsonOptions, cancellationToken);
     public static Task ToJsonAsync(this object? value, Stream stream, CancellationToken cancellationToken = default) =>
         JsonSerializer.SerializeAsync(stream, value, Globals.JsonOptions, cancellationToken);
-    public static bool Contains<T>(this ReadOnlySpan<T> span, T value) where T : unmanaged
-    {
-        for (int i = 0; i < span.Length; i++)
-        {
-            if (span[i].Equals<T>(value))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool Equals<T>(this T a, T b) where T : unmanaged

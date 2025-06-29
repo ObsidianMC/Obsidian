@@ -14,7 +14,8 @@ internal sealed class Assets
     public Dictionary<string, Codec[]> Codecs { get; }
     public IDictionary<string, List<Sound>> Sounds { get; }
 
-    private Assets(Block[] blocks, Tag[] tags, Item[] items, Dictionary<string, Codec[]> codecs, IDictionary<string, List<Sound>> sounds)
+    private Assets(Block[] blocks, Tag[] tags, Item[] items, Dictionary<string, Codec[]> codecs,
+        IDictionary<string, List<Sound>> sounds)
     {
         Blocks = blocks;
         Tags = tags;
@@ -45,8 +46,14 @@ internal sealed class Assets
             { "damage_type", ParseCodec(files.GetJsonFromArray("damage_type")) },
             { "trim_pattern", ParseCodec(files.GetJsonFromArray("trim_pattern")) },
             { "trim_material", ParseCodec(files.GetJsonFromArray("trim_material")) },
+            { "cat_variant", ParseCodec(files.GetJsonFromArray("cat_variant")) },
+            { "chicken_variant", ParseCodec(files.GetJsonFromArray("chicken_variant")) },
+            { "cow_variant", ParseCodec(files.GetJsonFromArray("cow_variant")) },
+            { "frog_variant", ParseCodec(files.GetJsonFromArray("frog_variant")) },
+            { "pig_variant", ParseCodec(files.GetJsonFromArray("pig_variant")) },
             { "wolf_variant", ParseCodec(files.GetJsonFromArray("wolf_variant")) },
-            { "painting_variant", ParseCodec(files.GetJsonFromArray("painting_variant")) }
+            { "painting_variant", ParseCodec(files.GetJsonFromArray("painting_variant")) },
+            { "wolf_sound_variant", ParseCodec(files.GetJsonFromArray("wolf_sound_variant")) }
         };
     }
 
@@ -57,7 +64,7 @@ internal sealed class Assets
 
         using var document = JsonDocument.Parse(json);
 
-        var dimensions = new List<Codec>();
+        var codecs = new List<Codec>();
 
         var codecElements = document.RootElement.GetProperty("value").EnumerateArray();
 
@@ -76,10 +83,10 @@ internal sealed class Assets
                 }
             }
 
-            dimensions.Add(obj);
+            codecs.Add(obj);
         }
 
-        return dimensions.ToArray();
+        return codecs.ToArray();
     }
 
     public static IDictionary<string, List<Sound>> GetSounds(string? json)

@@ -11,6 +11,7 @@ public abstract class BlockPredicatesDataComponent : IDataComponent
 
     public virtual void Read(INetStreamReader reader) => throw new NotImplementedException();
     public virtual void Write(INetStreamWriter writer) => throw new NotImplementedException();
+    public void WriteHashed(INetStreamWriter writer) => throw new NotImplementedException();
 }
 
 

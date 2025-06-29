@@ -2,10 +2,6 @@
 
 namespace Obsidian.WorldData.Features.Flora;
 
-public class LilyFlora : BaseFlora
+public class LilyFlora(GenHelper helper, IChunk chunk) : BaseFlora(helper, chunk, Material.LilyOfTheValley)
 {
-    public LilyFlora(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.LilyOfTheValley)
-    {
-
-    }
 }

@@ -1,5 +1,4 @@
-﻿using Obsidian.Net;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 
 namespace Obsidian.ChunkData;
 

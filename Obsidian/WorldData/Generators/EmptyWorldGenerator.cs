@@ -1,7 +1,4 @@
-﻿using Obsidian.ChunkData;
-using Obsidian.Registries;
-
-namespace Obsidian.WorldData.Generators;
+﻿namespace Obsidian.WorldData.Generators;
 
 public class EmptyWorldGenerator : IWorldGenerator
 {
@@ -47,18 +44,16 @@ public class EmptyWorldGenerator : IWorldGenerator
             }
         }
 
-        empty.chunkStatus = ChunkStatus.full;
-        spawn.chunkStatus = ChunkStatus.full;
+        empty.SetChunkStatus(ChunkGenStage.full);
+        spawn.SetChunkStatus(ChunkGenStage.full);
     }
 
-    public async Task<Chunk> GenerateChunkAsync(int x, int z, Chunk? chunk = null, ChunkStatus minlevel = ChunkStatus.full)
+    public ValueTask<IChunk> GenerateChunkAsync(int x, int z, IChunk? chunk = null, ChunkGenStage status = ChunkGenStage.full)
     {
         if (chunk is { IsGenerated: true })
-            return chunk;
+            return ValueTask.FromResult(chunk);
 
-        if (x == 0 && z == 0)
-            return spawn.Clone(x, z);
-        return empty.Clone(x, z);
+        return x == 0 && z == 0 ? ValueTask.FromResult(spawn.Clone(x, z)) : ValueTask.FromResult(empty.Clone(x, z));
     }
 
     public void Init(IWorld world) { }

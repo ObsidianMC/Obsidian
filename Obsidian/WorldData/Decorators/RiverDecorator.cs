@@ -1,28 +1,22 @@
-﻿using Obsidian.Registries;
-using Obsidian.WorldData.Generators;
+﻿using Obsidian.WorldData.Generators;
 
 namespace Obsidian.WorldData.Decorators;
 
-public class RiverDecorator : BaseDecorator
+public class RiverDecorator(Biome biome, IChunk chunk, Vector surfacePos, GenHelper helper) : BaseDecorator(biome, chunk, surfacePos, helper)
 {
-
-    public RiverDecorator(Biome biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
-    {
-    }
-
     public override void Decorate()
     {
         FillWater();
 
-        if (pos.Y <= noise.WaterLevel)
+        if (Position.Y <= Noise.WaterLevel)
         {
-            chunk.SetBlock(pos, BlocksRegistry.Gravel);
+            Chunk.SetBlock(Position, BlocksRegistry.Gravel);
         }
         else
         {
-            chunk.SetBlock(pos, BlocksRegistry.Sand);
+            Chunk.SetBlock(Position, BlocksRegistry.Sand);
             for (int y = -1; y > -4; y--)
-                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Gravel);
+                Chunk.SetBlock(Position + (0, y, 0), BlocksRegistry.Gravel);
         }
     }
 }

@@ -1,5 +1,4 @@
-﻿using Obsidian.Registries;
-using Obsidian.WorldData.Decorators;
+﻿using Obsidian.WorldData.Decorators;
 using SharpNoise.Modules;
 
 namespace Obsidian.WorldData.Generators;
@@ -42,13 +41,14 @@ public sealed class IslandGenerator : IWorldGenerator
         BlocksRegistry.Andesite
     ];
 
-    public async Task<Chunk> GenerateChunkAsync(int cx, int cz, Chunk? chunk = null, ChunkStatus minlevel = ChunkStatus.full)
+    public async ValueTask<IChunk> GenerateChunkAsync(int cx, int cz, IChunk? chunk = null, ChunkGenStage status = ChunkGenStage.full)
     {
         chunk ??= new Chunk(cx, cz);
 
         // Sanity checks
         if (chunk.IsGenerated)
             return chunk;
+
         if (helper is null)
             throw new NullReferenceException("GenHelper must not be null. Call Init()");
 
@@ -82,8 +82,8 @@ public sealed class IslandGenerator : IWorldGenerator
                             chunk.SetBiome(bx, y, bz, biome);
                         }
                         chunk.SetBlock(bx, y, bz, BlocksRegistry.Stone);
-                        chunk.Heightmaps[ChunkData.HeightmapType.MotionBlocking].Set(bx, bz, y);
-                        chunk.Heightmaps[ChunkData.HeightmapType.WorldSurfaceWG].Set(bx, bz, y);
+                        chunk.Heightmaps[HeightmapType.MotionBlocking].Set(bx, bz, y);
+                        chunk.Heightmaps[HeightmapType.WorldSurfaceWG].Set(bx, bz, y);
                     }
                     else
                     {
@@ -135,7 +135,7 @@ public sealed class IslandGenerator : IWorldGenerator
         }
 
         WorldLight.InitialFillSkyLight(chunk);
-        chunk.chunkStatus = ChunkStatus.full;
+        chunk.SetChunkStatus(ChunkGenStage.full);
         return chunk;
     }
 

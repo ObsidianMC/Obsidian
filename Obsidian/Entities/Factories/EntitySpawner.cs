@@ -1,16 +1,10 @@
 ﻿using Obsidian.API.Entities;
-using Obsidian.Services;
 using Obsidian.WorldData;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Obsidian.Entities.Factories;
-internal class EntitySpawner : IEntitySpawner
+internal class EntitySpawner(IWorld world) : IEntitySpawner
 {
-    private IWorld world;
+    private readonly IWorld world = world;
 
     private EntityType? entityType = null;
 
@@ -23,11 +17,6 @@ internal class EntitySpawner : IEntitySpawner
     private int absorbedStingers = 0;
     private bool burning = false;
     private bool glowing = false;
-
-    public EntitySpawner(IWorld world)
-    {
-        this.world = world;
-    }
 
     public IEntitySpawner WithEntityType(EntityType type)
     {
@@ -86,39 +75,31 @@ internal class EntitySpawner : IEntitySpawner
 
     public IEntity Spawn()
     {
-        var packetBroadcaster = (world as World).PacketBroadcaster;
-
         // This could get sgen'd, same for the entity classes. but for now, this is fine for implementation
         Entity entity = entityType switch
         {
             EntityType.Pig => new Pig()
             {
-                PacketBroadcaster = packetBroadcaster,
                 World = world,
             },
             EntityType.Horse => new Horse()
             {
-                PacketBroadcaster = packetBroadcaster,
                 World = world,
             },
             EntityType.Llama => new Llama()
             {
-                PacketBroadcaster = packetBroadcaster,
                 World = world,
             },
             EntityType.Donkey => new Donkey()
             {
-                PacketBroadcaster = packetBroadcaster,
                 World = world
             },
             EntityType.SkeletonHorse => new SkeletonHorse()
             {
-                PacketBroadcaster = packetBroadcaster,
                 World = world
             },
             EntityType.ZombieHorse => new ZombieHorse()
             {
-                PacketBroadcaster = packetBroadcaster,
                 World = world
             },
 
@@ -127,12 +108,10 @@ internal class EntitySpawner : IEntitySpawner
             _ => entityType.Value.IsNonLiving() ?
             new Entity()
             {
-                PacketBroadcaster = packetBroadcaster,
                 World = world,
             } :
             new Living()
             {
-                PacketBroadcaster = packetBroadcaster,
                 World = world
             }
         };

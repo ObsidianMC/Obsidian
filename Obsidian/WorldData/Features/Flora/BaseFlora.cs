@@ -1,39 +1,29 @@
-﻿using Obsidian.Registries;
-using Obsidian.WorldData.Generators;
+﻿using Obsidian.WorldData.Generators;
 
 namespace Obsidian.WorldData.Features.Flora;
 
-public abstract class BaseFlora
+public abstract class BaseFlora(GenHelper helper, IChunk chunk, Material mat = Material.RedTulip)
 {
-    protected readonly IBlock floraBlock;
-    protected GenHelper helper;
+    protected IBlock FloraBlock { get; } = BlocksRegistry.Get(mat);
+    protected GenHelper GenHelper { get; } = helper;
 
-    protected Chunk chunk;
+    protected IChunk Chunk { get; } = chunk;
 
-    protected Material FloraMat { get; set; }
+    protected Material FloraMat { get; set; } = mat;
 
-    protected int height = 1;
+    protected int Height { get; set; } = 1;
 
-    protected List<Material> growsIn = new()
-    {
+    protected List<Material> GrowsIn { get; set; } =
+    [
         Material.Air
-    };
+    ];
 
-    protected List<Material> growsOn = new()
-    {
+    protected List<Material> GrowsOn { get; set; } =
+    [
         Material.GrassBlock,
         Material.Dirt,
         Material.Podzol
-    };
-
-    protected BaseFlora(GenHelper helper, Chunk chunk, Material mat = Material.RedTulip)
-    {
-        this.helper = helper;
-        this.chunk = chunk;
-        this.FloraMat = mat;
-
-        this.floraBlock = BlocksRegistry.Get(mat);
-    }
+    ];
 
     /// <summary>
     /// Place a grouping of plants in a circular patch.
@@ -55,7 +45,7 @@ public abstract class BaseFlora
                 {
                     int x = origin.X - radius + rx;
                     int z = origin.Z - radius + rz;
-                    int y = await helper.GetWorldHeightAsync(x, z, chunk) ?? -1;
+                    int y = await GenHelper.GetWorldHeightAsync(x, z, Chunk) ?? -1;
                     if (y == -1) { continue; }
                     bool isFlora = seedRand.Next(10) % density == 0;
                     var placeVec = new Vector(x, y + 1, z);
@@ -75,9 +65,9 @@ public abstract class BaseFlora
     /// <returns>Whether plant was planted.</returns>
     public virtual async Task<bool> TryPlaceFloraAsync(Vector placeVector)
     {
-        if (await GetGrowHeightAsync(placeVector) >= height && await GetValidSurfaceAsync(placeVector))
+        if (await GetGrowHeightAsync(placeVector) >= Height && await GetValidSurfaceAsync(placeVector))
         {
-            await helper.SetBlockAsync(placeVector, this.floraBlock, chunk);
+            await GenHelper.SetBlockAsync(placeVector, this.FloraBlock, Chunk);
             return true;
         }
         return false;
@@ -88,7 +78,7 @@ public abstract class BaseFlora
     /// </summary>
     /// <param name="loc">The position above the surface block.</param>
     /// <returns>Whether surface is compatible.</returns>
-    protected virtual async Task<bool> GetValidSurfaceAsync(Vector loc) => await helper.GetBlockAsync(loc + Vector.Down, chunk) is IBlock b && growsOn.Contains(b.Material);
+    protected virtual async Task<bool> GetValidSurfaceAsync(Vector loc) => await GenHelper.GetBlockAsync(loc + Vector.Down, Chunk) is IBlock b && GrowsOn.Contains(b.Material);
 
     /// <summary>
     /// Check free space above grow location.
@@ -98,9 +88,9 @@ public abstract class BaseFlora
     protected virtual async Task<int> GetGrowHeightAsync(Vector loc)
     {
         int freeSpace = 0;
-        for (int y = 0; y < height; y++)
+        for (int y = 0; y < Height; y++)
         {
-            if (await helper.GetBlockAsync(loc + (0, y, 0), chunk) is IBlock above && growsIn.Contains(above.Material))
+            if (await GenHelper.GetBlockAsync(loc + (0, y, 0), Chunk) is IBlock above && GrowsIn.Contains(above.Material))
             {
                 freeSpace++;
             }

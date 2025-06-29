@@ -53,7 +53,7 @@ internal static class ChunkBuilder
         BlocksRegistry.DeepslateDiamondOre,
     ];
 
-    private static ReadOnlySpan<Biome> EmeraldBiomes => [Biome.WindsweptHills, Biome.WindsweptGravellyHills, Biome.Meadow, Biome.Grove, Biome.SnowySlopes, Biome.FrozenPeaks, Biome.JaggedPeaks, Biome.StonyPeaks];
+    private static Biome[] EmeraldBiomes => [Biome.WindsweptHills, Biome.WindsweptGravellyHills, Biome.Meadow, Biome.Grove, Biome.SnowySlopes, Biome.FrozenPeaks, Biome.JaggedPeaks, Biome.StonyPeaks];
     private static ReadOnlySpan<OreType> OreTypes => [OreType.Coal, OreType.Iron, OreType.Copper, OreType.Gold, OreType.Lapis, OreType.Redstone, OreType.Emerald, OreType.Diamond];
 
     internal enum OreType : int
@@ -68,9 +68,9 @@ internal static class ChunkBuilder
         Diamond
     }
 
-    internal static void Biomes(GenHelper helper, Chunk chunk)
+    internal static void Biomes(GenHelper helper, IChunk chunk)
     {
-        
+
         for (int x = 0; x < 16; x++)
         {
             for (int z = 0; z < 16; z++)
@@ -91,7 +91,7 @@ internal static class ChunkBuilder
         }
     }
 
-    internal static void Surface(GenHelper helper, Chunk chunk)
+    internal static void Surface(GenHelper helper, IChunk chunk)
     {
         for (int x = 0; x < 16; x++)
         {
@@ -189,7 +189,7 @@ internal static class ChunkBuilder
         _ => true
     };
 
-    internal static void CavesAndOres(GenHelper helper, Chunk chunk)
+    internal static void CavesAndOres(GenHelper helper, IChunk chunk)
     {
         int chunkOffsetX = chunk.X * 16;
         int chunkOffsetZ = chunk.Z * 16;
@@ -200,7 +200,7 @@ internal static class ChunkBuilder
             {
                 int terrainY = chunk.Heightmaps[HeightmapType.WorldSurfaceWG].GetHeight(x, z);
                 var (worldX, worldZ) = (x + chunkOffsetX, z + chunkOffsetZ);
-                for (int y = -60; y <= terrainY-6; y++)
+                for (int y = -60; y <= terrainY - 6; y++)
                 {
                     bool isCave = helper.Noise.Cave.GetValue(x + chunkOffsetX, y, z + chunkOffsetZ) > 1 - CaveSize;
                     if (isCave)
@@ -255,7 +255,7 @@ internal static class ChunkBuilder
         }
     }
 
-    internal static void UpdateWGHeightmap(Chunk chunk)
+    internal static void UpdateWGHeightmap(IChunk chunk)
     {
         for (int x = 0; x < 16; x++)
         {
@@ -275,7 +275,7 @@ internal static class ChunkBuilder
         }
     }
 
-    internal static void Heightmaps(Chunk chunk)
+    internal static void Heightmaps(IChunk chunk)
     {
         for (int x = 0; x < 16; x++)
         {

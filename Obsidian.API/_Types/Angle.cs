@@ -24,6 +24,6 @@ public struct Angle(byte value) : INetworkSerializable<Angle>
         return clamped < 0f ? clamped + 360f : clamped;
     }
 
-    public static void Write(Angle value, INetStreamWriter writer) => writer.WriteFloat(value);
-    public static Angle Read(INetStreamReader reader) => reader.ReadFloat();
+    public static void Write(Angle value, INetStreamWriter writer) => writer.WriteSingle(value);
+    public static Angle Read(INetStreamReader reader) => reader.ReadSingle();
 }

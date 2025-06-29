@@ -1,9 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
+using Obsidian.API.Utilities.Interfaces;
 using Obsidian.Plugins;
-using Obsidian.Utilities.Interfaces;
-using System.Diagnostics;
 using System.Reflection;
 
 namespace Obsidian.Events;

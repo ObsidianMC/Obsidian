@@ -15,10 +15,10 @@ public partial class SetHealthPacket(float health, int food, float saturation)
 
     public override void Serialize(INetStreamWriter writer)
     {
-        writer.WriteFloat(this.Health);
+        writer.WriteSingle(this.Health);
 
         writer.WriteVarInt(this.Food);
 
-        writer.WriteFloat(this.Saturation);
+        writer.WriteSingle(this.Saturation);
     }
 }

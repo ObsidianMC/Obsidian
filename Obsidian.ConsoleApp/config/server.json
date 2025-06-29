@@ -23,7 +23,7 @@
 
   "Logging": {
     "LogLevel": {
-      "Default": "Warning",
+      "Default": "Information",
       "Microsoft": "Warning"
     }
   }

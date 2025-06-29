@@ -4,8 +4,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Obsidian.API.Configuration;
 using Obsidian.Hosting;
-using Obsidian.Registries;
-using Obsidian.Services;
 using Obsidian.WorldData.Generators;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -77,7 +75,6 @@ public sealed class WorldManager(ILoggerFactory loggerFactory, IServiceProvider 
     public async Task LoadWorldsAsync()
     {
         var worlds = await LoadServerWorldsAsync();
-
         foreach (var serverWorld in worlds)
         {
             //var server = (Server)this.server;
@@ -92,6 +89,7 @@ public sealed class WorldManager(ILoggerFactory loggerFactory, IServiceProvider 
             {
                 Configuration = this.configuration.CurrentValue,
                 PacketBroadcaster = this.serviceScope.ServiceProvider.GetRequiredService<IPacketBroadcaster>(),
+                EventDispatcher = this.serviceScope.ServiceProvider.GetRequiredService<IEventDispatcher>(),
                 Name = serverWorld.Name,
                 Seed = serverWorld.Seed
             };
@@ -178,6 +176,7 @@ public sealed class WorldManager(ILoggerFactory loggerFactory, IServiceProvider 
         this.RegisterGenerator<OverworldGenerator>();
         this.RegisterGenerator<IslandGenerator>();
         this.RegisterGenerator<EmptyWorldGenerator>();
+        this.RegisterGenerator<MojangGenerator>();
     }
 
     private static async Task<List<ServerWorld>> LoadServerWorldsAsync()

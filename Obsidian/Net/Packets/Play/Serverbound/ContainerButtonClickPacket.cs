@@ -1,5 +1,4 @@
-﻿using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
+﻿using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
@@ -10,8 +9,6 @@ public partial class ContainerButtonClickPacket
 
     [Field(1)]
     public int ButtonId { get; private set; }
-
-    public override ValueTask HandleAsync(Server server, Player player) => default;
 
     public override void Populate(INetStreamReader reader)
     {

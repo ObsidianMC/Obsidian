@@ -1,0 +1,20 @@
+name: 'Obsidian: Feature Request'
+description: 'Create a Feature Request for Obsidian; the Minecraft server'
+title: 'Feature Request'
+labels: ['enhancement', 'sir we are a minecraft server']
+
+body:
+  - type: textarea
+    attributes:
+      label: 'What feature would you like?'
+      description: 'Please, explain in great detail what this feature would add.'
+    validations:
+      required: true
+
+  - type: checkboxes
+    attributes:
+      label: 'Confirmation'
+      options:
+        - label: 'I am aware that I am making a GitHub issue for the Obsidian that is a Minecraft server, and not the Obsidian that is a Markdown editor.'
+          required: true
+          

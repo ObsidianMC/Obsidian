@@ -6,5 +6,5 @@ public interface IWorldGenerator
 
     public void Init(IWorld world);
 
-    public Task<Chunk> GenerateChunkAsync(int x, int z, Chunk? chunk = null, ChunkStatus minlevel = ChunkStatus.full);
+    public ValueTask<IChunk> GenerateChunkAsync(int x, int z, IChunk? chunk = null, ChunkGenStage stage = ChunkGenStage.full);
 }

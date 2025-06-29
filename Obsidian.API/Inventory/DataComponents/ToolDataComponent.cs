@@ -25,14 +25,14 @@ public sealed class ToolDataComponent : IDataComponent
             CorrectDropForBlocks = reader.ReadOptionalBoolean()
         });
 
-        this.DefaultMiningSpeed = reader.ReadFloat();
+        this.DefaultMiningSpeed = reader.ReadSingle();
         this.DamagePerBlock = reader.ReadVarInt();
     }
 
     public void Write(INetStreamWriter writer)
     {
         writer.WriteLengthPrefixedArray((rule) => ToolRule.Write(rule, writer), this.Rules);
-        writer.WriteFloat(this.DefaultMiningSpeed);
+        writer.WriteSingle(this.DefaultMiningSpeed);
         writer.WriteVarInt(this.DamagePerBlock);
     }
 }

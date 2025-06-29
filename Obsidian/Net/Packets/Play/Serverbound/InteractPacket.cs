@@ -35,7 +35,7 @@ public partial class InteractPacket
         this.Sneaking = reader.ReadBoolean();
     }
 
-    public async override ValueTask HandleAsync(Server server, Player player)
+    public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
         var entity = player.GetEntitiesNear(4).FirstOrDefault(x => x.EntityId == EntityId); // TODO check if the entity is within range and in vision/not being blocked by a wall
 

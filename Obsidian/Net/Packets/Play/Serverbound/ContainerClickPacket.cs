@@ -1,7 +1,5 @@
-﻿using Obsidian.API.Events;
-using Obsidian.API.Inventory;
-using Obsidian.Entities;
-using Obsidian.Nbt;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Events;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
 
@@ -10,14 +8,11 @@ namespace Obsidian.Net.Packets.Play.Serverbound;
 // Source: https://wiki.vg/index.php?title=Protocol&oldid=14889#Click_Window
 public partial class ContainerClickPacket
 {
-    private const int Outsideinventory = -999;
-
     /// <summary>
     /// The ID of the window which was clicked. 0 for player inventory.
     /// </summary>
     [Field(0)]
     public int ContainerId { get; private set; }
-
 
     /// <summary>
     /// The last recieved State ID from either a Set Slot or a Window Items packet
@@ -41,16 +36,16 @@ public partial class ContainerClickPacket
     /// Inventory operation mode
     /// </summary>
     [Field(4), ActualType(typeof(int)), VarLength]
-    public InventoryOperationMode Mode { get; private set; }
+    public ClickType ClickType { get; private set; }
 
     [Field(5)]
-    public IDictionary<short, ItemStack?> ChangedSlots { get; private set; } = default!;
+    public IDictionary<short, IHashedItemStack?> ChangedSlots { get; private set; } = new Dictionary<short, IHashedItemStack?>();
 
     /// <summary>
     /// 	Item carried by the cursor. Has to be empty (item ID = -1) for drop mode, otherwise nothing will happen.
     /// </summary>
     [Field(6)]
-    public ItemStack? CarriedItem { get; private set; }
+    public IHashedItemStack? CarriedItem { get; private set; }
 
     private bool IsPlayerInventory => this.ContainerId == 0;
 
@@ -60,18 +55,18 @@ public partial class ContainerClickPacket
         this.StateId = reader.ReadVarInt();
         this.ClickedSlot = reader.ReadShort();
         this.Button = reader.ReadSignedByte();
-        this.Mode = reader.ReadVarInt<InventoryOperationMode>();
-        
+        this.ClickType = reader.ReadVarInt<ClickType>();
+
         var length = reader.ReadVarInt();
 
-        this.ChangedSlots = new Dictionary<short, ItemStack?>(length);
+        this.ChangedSlots = new Dictionary<short, IHashedItemStack?>(length);
         for (int i = 0; i < length; i++)
-            this.ChangedSlots.Add(reader.ReadShort(), reader.ReadItemStack());
+            this.ChangedSlots.Add(reader.ReadShort(), reader.ReadHashedItemStack());
 
-        this.CarriedItem = reader.ReadItemStack();
+        this.CarriedItem = reader.ReadHashedItemStack();
     }
 
-    public async override ValueTask HandleAsync(Server server, Player player)
+    public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
         var container = player.OpenedContainer ?? player.Inventory;
 
@@ -80,285 +75,57 @@ public partial class ContainerClickPacket
         if (this.IsPlayerInventory || forPlayer)
             container = player.Inventory;
 
-        switch (Mode)
+        var clickedItem = container[slot];
+
+        // Maybe we should have an event called ValidateContainerContentsEventArgs? 
+        if (!this.CarriedItem.Compare(clickedItem))
         {
-            case InventoryOperationMode.MouseClick:
+            player.Client.Logger.LogWarning("Item being carried does not match the one that was picked up from the inventory.");
+
+            //The items don't match sync the client back.
+            await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
             {
-                if (CarriedItem == null)
-                    return;
-
-                await HandleMouseClick(container, server, player, slot);
-                break;
-            }
-            case InventoryOperationMode.ShiftMouseClick:
-            {
-                if (CarriedItem == null)
-                    return;
-
-                //TODO implement shift click
-
-                break;
-            }
-
-            case InventoryOperationMode.NumberKeys:
-            {
-                var localSlot = Button + 36;
-
-                var currentItem = player.Inventory.GetItem(localSlot);
-
-                if (currentItem.IsAir && CarriedItem != null)
-                {
-                    container.RemoveItem(slot);
-
-                    player.Inventory.SetItem(localSlot, CarriedItem);
-                }
-                else if (!currentItem.IsAir && CarriedItem != null)
-                {
-                    container.SetItem(slot, currentItem);
-
-                    player.Inventory.SetItem(localSlot, CarriedItem);
-                }
-                else
-                {
-                    container.SetItem(slot, currentItem);
-
-                    player.Inventory.RemoveItem(localSlot);
-                }
-
-                break;
-            }
-
-            case InventoryOperationMode.MiddleMouseClick:
-                break;
-
-            case InventoryOperationMode.Drop:
-            {
-                if (ClickedSlot != Outsideinventory)
-                {
-                    ItemStack? removedItem;
-                    if (Button == 0)
-                        container.RemoveItem(slot, 1, out removedItem);
-                    else
-                        container.RemoveItem(slot, 64, out removedItem);
-
-                    if (removedItem == null)
-                        return;
-
-                    var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
-
-                    var item = new ItemEntity
-                    {
-                        EntityId = Server.GetNextEntityId(),
-                        Item = removedItem,
-                        Glowing = true,
-                        World = player.world,
-                        PacketBroadcaster = player.PacketBroadcaster,
-                        Position = loc
-                    };
-
-                    var lookDir = player.GetLookDirection();
-                    var vel = Velocity.FromDirection(loc, lookDir);
-
-                    //TODO Get this shooting out from the player properly.
-                    player.PacketBroadcaster.QueuePacketToWorld(player.World, new AddEntityPacket
-                    {
-                        EntityId = item.EntityId,
-                        Uuid = item.Uuid,
-                        Type = EntityType.Item,
-                        Position = item.Position,
-                        Pitch = 0,
-                        Yaw = 0,
-                        Data = 1,
-                        Velocity = vel
-                    });
-                    player.PacketBroadcaster.QueuePacketToWorld(player.World, new SetEntityDataPacket
-                    {
-                        EntityId = item.EntityId,
-                        Entity = item
-                    });
-                }
-                break;
-            }
-            case InventoryOperationMode.MouseDrag:
-                HandleDragClick(container, player, slot);
-                break;
-
-            case InventoryOperationMode.DoubleClick:
-            {
-                if (CarriedItem == null || CarriedItem.Count >= 64)
-                    return;
-
-                TakeFromContainer(container, player.Inventory);
-                break;
-            }
-        }
-
-        if (container is IBlockEntity tileEntityContainer)
-        {
-            var blockEntity = await player.world.GetBlockEntityAsync(tileEntityContainer.BlockPosition);
-
-            if (blockEntity is null)
-                return;
-
-            if (blockEntity.TryGetTag("Items", out var list))
-            {
-                var items = list as NbtList;
-
-                var itemsToBeRemoved = new HashSet<int>();
-                var itemsToBeUpdated = new HashSet<NbtCompound>();
-
-                items!.Clear();
-
-                this.FillNbtList(items, container);
-            }
-            else
-            {
-                var items = new NbtList(NbtTagType.Compound, "Items");
-
-                this.FillNbtList(items, container);
-
-                blockEntity.Add(items);
-            }
-        }
-    }
-
-    private void TakeFromContainer(BaseContainer container, BaseContainer playerContainer)
-    {
-        int amountNeeded = 64 - CarriedItem.Count; // TODO use max item count
-        if (amountNeeded == 0)
-            return;
-
-        for (int i = 0; i < container.Size; i++)
-        {
-            ItemStack? item = container[i];
-            if (item is null || item != CarriedItem)
-                continue;
-
-            int amountTaken = Math.Min(item.Count, amountNeeded);
-            item.Count -= amountTaken;
-
-            if (item.Count == 0)
-                container.RemoveItem(i);
-
-            CarriedItem.Count += amountTaken;
-            amountNeeded -= amountTaken;
-
-            if (amountNeeded == 0)
-                break;
-        }
-
-        //Try the player inventory
-        if (amountNeeded > 0 && !this.IsPlayerInventory)
-        {
-            for (int i = 0; i < playerContainer.Size; i++)
-            {
-                ItemStack? item = playerContainer[i];
-                if (item is null || item != CarriedItem)
-                    continue;
-
-                int amountTaken = Math.Min(item.Count, amountNeeded);
-                item.Count -= amountTaken;
-
-                if (item.Count == 0)
-                    playerContainer.RemoveItem(i);
-
-                CarriedItem.Count += amountTaken;
-                amountNeeded -= amountTaken;
-
-                if (amountNeeded == 0)
-                    break;
-            }
-        }
-    }
-
-    private void FillNbtList(NbtList items, BaseContainer container)
-    {
-        for (int i = 0; i < container.Size; i++)
-        {
-            var item = container[i];
-
-            if (item is null)
-                continue;
-
-            item.Slot = i;
-
-            items.Add(item.ToNbt());
-        }
-    }
-
-    private async Task HandleMouseClick(BaseContainer container, Server server, Player player, int slot)
-    {
-        if (!CarriedItem.IsAir)
-        {
-            var result = await server.EventDispatcher.ExecuteEventAsync(new ContainerClickEventArgs(player, server, container, CarriedItem)
-            {
-                Slot = slot
+                ContainerId = this.ContainerId,
+                Slot = -1,
+                SlotData = clickedItem,
+                StateId = 0,//State id is ignored if slot is set to -1
             });
-
-            if (result == Services.EventResult.Cancelled)
-                return;
-
-            player.LastClickedItem = CarriedItem;
-
-            container.RemoveItem(slot);
         }
-        else
+
+        var invalidItems = new Dictionary<short, IHashedItemStack>();
+        foreach (var (changedSlot, hashedItem) in this.ChangedSlots)
         {
-            if (Button == 0)
-            {
-                container.SetItem(slot, player.LastClickedItem);
+            var checkedItem = container[changedSlot];
 
-                player.LastClickedItem = CarriedItem;
-            }
-            else
+            if(hashedItem == null)
             {
-                container.SetItem(slot, player.LastClickedItem);
-
-                player.LastClickedItem = CarriedItem;
+                container.RemoveItem(changedSlot);
+                continue;
             }
+
+            if (!hashedItem.Compare(checkedItem))
+                invalidItems.Add(changedSlot, hashedItem);
         }
-    }
 
-    private void HandleDragClick(BaseContainer container, Player player, int value)
-    {
-        if (ClickedSlot == Outsideinventory)
+        if (invalidItems.Count > 0)
         {
-            player.isDragging = Button switch
+            player.Client.Logger.LogWarning("Out of sync inventory. Contained {count} items that were out of sync.", invalidItems.Count);
+
+            await player.Client.QueuePacketAsync(new ContainerSetContentPacket(this.ContainerId, container.ToList())
             {
-                0 or 4 or 8 => true,
-                2 or 6 or 10 => false,
-                _ => player.isDragging
-            };
+                StateId = this.StateId,
+                CarriedItem = clickedItem
+            });
         }
-        else if (player.isDragging)
+
+        await server.EventDispatcher.ExecuteEventAsync(new ContainerClickEventArgs(player, server, container)
         {
-            if (player.Gamemode == Gamemode.Creative)
-            {
-                if (Button != 9)
-                    return;
-
-                container.SetItem(value, CarriedItem);
-            }
-            else
-            {
-                // 1 = left mouse
-                // 5 = right mouse
-                if (Button != 1 || Button != 5)
-                    return;
-
-                container.SetItem(value, CarriedItem);
-            }
-        }
+            ClickedSlot = slot,
+            ClickType = this.ClickType,
+            Button = this.Button,
+            StateId = this.StateId,
+            ContainerId = this.ContainerId,
+        });
     }
 }
 
-public enum InventoryOperationMode : int
-{
-    MouseClick,
-    ShiftMouseClick,
-    NumberKeys,
-    MiddleMouseClick,
-    Drop,
-    MouseDrag,
-    DoubleClick
-}

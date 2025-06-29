@@ -32,4 +32,13 @@ public class SmeltingContainer : ResultContainer, IBlockEntity
 
     public void ToNbt() => throw new NotImplementedException();
     public void FromNbt() => throw new NotImplementedException();
+    public IBlockEntity Clone() => new SmeltingContainer(this.Type, this.Size, this.Id)
+    {
+        BlockPosition = this.BlockPosition,
+        Title = this.Title,
+        items = this.items,
+        CookTime = this.CookTime,
+        CookTimeTotal = this.CookTimeTotal,
+        FuelBurnTime = this.FuelBurnTime,
+    };
 }

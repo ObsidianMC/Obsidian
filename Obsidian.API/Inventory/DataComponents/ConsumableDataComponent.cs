@@ -23,7 +23,7 @@ public sealed class ConsumableDataComponent : IDataComponent
 
     public void Read(INetStreamReader reader)
     {
-        this.ConsumeSeconds = reader.ReadFloat();
+        this.ConsumeSeconds = reader.ReadSingle();
         this.Animation = reader.ReadVarInt<ItemAnimation>();
         this.Sound = reader.ReadSoundEvent();
 
@@ -41,7 +41,7 @@ public sealed class ConsumableDataComponent : IDataComponent
     }
     public void Write(INetStreamWriter writer)
     {
-        writer.WriteFloat(this.ConsumeSeconds);
+        writer.WriteSingle(this.ConsumeSeconds);
         writer.WriteVarInt(this.Animation);
         writer.WriteSoundEvent(this.Sound);
         writer.WriteBoolean(this.HasConsumeParticles);

@@ -1,30 +1,25 @@
-﻿using Obsidian.Registries;
-using Obsidian.WorldData.Generators;
+﻿using Obsidian.WorldData.Generators;
 
 namespace Obsidian.WorldData.Decorators;
 
-public class FrozenRiverDecorator : BaseDecorator
+public class FrozenRiverDecorator(Biome biome, IChunk chunk, Vector surfacePos, GenHelper helper) : BaseDecorator(biome, chunk, surfacePos, helper)
 {
-    public FrozenRiverDecorator(Biome biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
-    {
-    }
-
     public override void Decorate()
     {
-        if (pos.Y <= 64)
+        if (Position.Y <= 64)
         {
-            chunk.SetBlock(pos, BlocksRegistry.Gravel);
-            for (int y = 63; y > pos.Y; y--)
+            Chunk.SetBlock(Position, BlocksRegistry.Gravel);
+            for (int y = 63; y > Position.Y; y--)
             {
-                chunk.SetBlock(pos.X, y, pos.Z, BlocksRegistry.Water);
+                Chunk.SetBlock(Position.X, y, Position.Z, BlocksRegistry.Water);
             }
-            chunk.SetBlock(pos.X, 64, pos.Z, BlocksRegistry.Ice);
+            Chunk.SetBlock(Position.X, 64, Position.Z, BlocksRegistry.Ice);
         }
         else
         {
-            chunk.SetBlock(pos, BlocksRegistry.Sand);
+            Chunk.SetBlock(Position, BlocksRegistry.Sand);
             for (int y = -1; y > -4; y--)
-                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Sand);
+                Chunk.SetBlock(Position + (0, y, 0), BlocksRegistry.Sand);
         }
     }
 }

@@ -1,10 +1,11 @@
-﻿using System.Linq.Expressions;
+﻿using Obsidian.Providers.BlockStateProviders;
+using System.Linq.Expressions;
 
 namespace Obsidian.Registries;
 
 internal static partial class BlocksRegistry
 {
-    private static string[] illegalBlockNames = ["Obsidian", "TrialSpawner", "Vault"];
+    private static string[] illegalBlockNames = ["Obsidian", "TrialSpawner", "Vault", "CreakingHeart"];
 
     public static int GlobalBitsPerBlocks { get; private set; }
     static BlocksRegistry()
@@ -63,6 +64,27 @@ internal static partial class BlocksRegistry
         blockWithStateCache.TryAdd(stateId, block);
 
         return block;
+    }
+
+    public static string? GetBlockName(string resourceId) => resourceIdToName.GetValueOrDefault(resourceId);
+
+    public static IBlock GetFromSimpleState(SimpleBlockState simpleState)
+    {
+        IBlockState? state = null;       
+        if(simpleState.Properties.Count > 0)
+        {
+            var blockName = GetSanitizedName(GetBlockName(simpleState.Name) ??
+                throw new NullReferenceException($"Unable to find block with name: {simpleState.Name}"));
+
+            var stateBuilderType = Type.GetType($"Obsidian.API.BlockStates.Builders.{blockName}StateBuilder") ?? 
+                throw new InvalidOperationException("Failed to find builder for block");
+
+            var builder = Activator.CreateInstance(stateBuilderType, simpleState.Properties)!;
+
+            state = (IBlockState)builder.GetType().GetMethod("Build")!.Invoke(builder, null)!;
+        }
+
+        return Get(simpleState.Name, state);
     }
 
     public static IBlock Get(string resourceId, IBlockState? state = null)

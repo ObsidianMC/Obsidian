@@ -1,7 +1,5 @@
 using Microsoft.Extensions.Logging;
-using Obsidian.API.Utilities;
 using Obsidian.Serialization.Attributes;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Obsidian.Net.Packets.Handshake.Serverbound;
 
@@ -27,7 +25,7 @@ public partial class IntentionPacket
         this.NextState = (ClientState)reader.ReadVarInt();
     }
 
-    public async override ValueTask HandleAsync(Client client)
+    public async override ValueTask HandleAsync(IClient client)
     {
         var nextState = this.NextState;
 
@@ -48,8 +46,7 @@ public partial class IntentionPacket
             await client.DisconnectAsync($"Invalid client state! Expected Status or Login, received {nextState}.");
         }
 
-        client.SetState(nextState == ClientState.Login && this.Version != Server.DefaultProtocol ? ClientState.Closed : nextState);
-
+        client.SetState(nextState);
 
         var versionDesc = this.Version.GetDescription();
         if (versionDesc is null)

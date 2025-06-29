@@ -11,7 +11,7 @@ public partial class SwingPacket
 
     public override void Populate(INetStreamReader reader) => this.Hand = reader.ReadVarInt<Hand>();
 
-    public async override ValueTask HandleAsync(Server server, Player player)
+    public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
         var entities = player.GetEntitiesNear(player.ClientInformation.ViewDistance);
         foreach (var otherEntity in entities)
@@ -22,7 +22,7 @@ public partial class SwingPacket
             switch (Hand)
             {
                 case Hand.MainHand:
-                    await otherPlayer.client.QueuePacketAsync(new AnimatePacket
+                    await otherPlayer.Client.QueuePacketAsync(new AnimatePacket
                     {
                         EntityId = player.EntityId,
                         Animation = EntityAnimationType.SwingMainArm
@@ -30,7 +30,7 @@ public partial class SwingPacket
                     break;
 
                 case Hand.OffHand:
-                    await otherPlayer.client.QueuePacketAsync(new AnimatePacket
+                    await otherPlayer.Client.QueuePacketAsync(new AnimatePacket
                     {
                         EntityId = player.EntityId,
                         Animation = EntityAnimationType.SwingOffhand

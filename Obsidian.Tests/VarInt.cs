@@ -9,26 +9,28 @@ namespace Obsidian.Tests;
 public class VarInt
 {
     [MemberData(nameof(VarIntData))]
-    [Theory(DisplayName = "Serialization of VarInts", Timeout = 100)]
-    public async void SerializeAsync(int input, byte[] bytes)
+    [Theory(DisplayName = "Serialization of VarInts")]
+    public void Serialize(int input, byte[] bytes)
     {
-        using var stream = new MinecraftStream();
+        using var stream = new NetworkBuffer();
 
-        await stream.WriteVarIntAsync(input);
+        stream.WriteVarInt(input);
 
-        byte[] actualBytes = stream.ToArray();
+        stream.Reset();
 
-        Assert.InRange(actualBytes.Length, 1, 5);
-        Assert.Equal(bytes, actualBytes);
+        var actualBytes = stream.Read(bytes.Length);
+
+        Assert.InRange(stream.Size, 1, 5);
+        Assert.Equal(bytes, actualBytes.Data);
     }
 
     [MemberData(nameof(VarIntData))]
-    [Theory(DisplayName = "Deserialization of VarInts", Timeout = 100)]
-    public async void DeserializeAsync(int input, byte[] bytes)
+    [Theory(DisplayName = "Deserialization of VarInts")]
+    public void Deserialize(int input, byte[] bytes)
     {
-        using var stream = new MinecraftStream(bytes);
+        using var stream = new NetworkBuffer(bytes);
 
-        int varInt = await stream.ReadVarIntAsync();
+        int varInt = stream.ReadVarInt();
 
         Assert.Equal(input, varInt);
     }

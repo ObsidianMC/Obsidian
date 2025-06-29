@@ -2,9 +2,6 @@
 
 namespace Obsidian.WorldData.Features.Trees;
 
-public class OakTree : BaseTree
+public class OakTree(GenHelper helper, IChunk chunk) : BaseTree(helper, chunk, Material.OakLeaves, Material.OakLog, 7)
 {
-    public OakTree(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.OakLeaves, Material.OakLog, 7)
-    {
-    }
 }

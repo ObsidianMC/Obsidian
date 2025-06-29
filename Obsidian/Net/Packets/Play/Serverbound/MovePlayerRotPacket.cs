@@ -16,12 +16,12 @@ public partial class MovePlayerRotPacket
 
     public override void Populate(INetStreamReader reader)
     {
-        this.Yaw = reader.ReadFloat();
-        this.Pitch = reader.ReadFloat();
+        this.Yaw = reader.ReadSingle();
+        this.Pitch = reader.ReadSingle();
         this.MovementFlags = reader.ReadSignedByte<MovementFlags>();
     }
 
-    public async override ValueTask HandleAsync(Server server, Player player)
+    public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
         await player.UpdateAsync(Yaw, Pitch, this.MovementFlags);
     }

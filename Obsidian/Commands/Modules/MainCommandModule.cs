@@ -1,11 +1,7 @@
 ﻿using Obsidian.API.Commands;
 using Obsidian.API.Inventory;
-using Obsidian.API.Utilities;
-using Obsidian.Commands.Framework.Entities;
 using Obsidian.Entities;
-using Obsidian.Entities.Factories;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Registries;
 using Obsidian.WorldData;
 using System.Diagnostics;
 
@@ -24,8 +20,7 @@ public sealed class MainCommandModule : CommandModuleBase
     public async Task HelpAsync(int page)
     {
         var sender = this.Sender;
-        var server = (Server)this.Server;
-        var commandHandler = server.CommandsHandler;
+        var commandHandler = this.Server.CommandHandler;
         var allCommands = commandHandler.GetAllCommands();
         var availableCommands = new List<Command>();
 
@@ -73,7 +68,7 @@ public sealed class MainCommandModule : CommandModuleBase
             string usage = cmd.Usage.IsNullOrEmpty() ? $"/{cmd.Name}" : cmd.Usage;
             var commandName = new ChatMessage
             {
-                Text = $"\n{ChatColor.Gold}{usage}",
+                Text = $"\n{usage}",
                 ClickEvent = new ClickComponent
                 {
                     Action = ClickAction.SuggestCommand,
@@ -83,13 +78,18 @@ public sealed class MainCommandModule : CommandModuleBase
                 {
                     Action = HoverAction.ShowText,
                     Contents = new HoverChatContent() { ChatMessage = "Click to suggest the command" }
-                }
+                },
+                Color = HexColor.Gold
             };
             commands.AddExtra(commandName);
 
             if (!cmd.Description.IsNullOrEmpty())
             {
-                commands.AddExtra($"{ChatColor.Gray}:{ChatColor.Reset} {cmd.Description}");
+                var desc = ChatMessage.Simple(": ");
+
+                desc.AddExtra(ChatMessage.Simple(cmd.Description) with { Color = HexColor.White });
+
+                commands.AddExtra(desc);
             }
         }
 
@@ -202,7 +202,7 @@ public sealed class MainCommandModule : CommandModuleBase
     {
         if (this.Player is Player player)
         {
-            await player.client.QueuePacketAsync(CommandsRegistry.Packet);
+            await player.Client.QueuePacketAsync(CommandsRegistry.Packet);
         }
     }
 
@@ -229,7 +229,7 @@ public sealed class MainCommandModule : CommandModuleBase
         {
             var slot = player.Inventory.AddItem(new ItemStack(ItemsRegistry.Get(material), count: amount));
             await player.SendMessageAsync($"Given you {ChatColor.Gold}{amount} {item}(s)");
-            player.client.SendPacket(new ContainerSetSlotPacket
+            player.Client.SendPacket(new ContainerSetSlotPacket
             {
                 Slot = (short)slot,
                 ContainerId = 0,
@@ -430,7 +430,7 @@ public sealed class MainCommandModule : CommandModuleBase
     {
         if (this.Player is Player player)
         {
-            player.world.LevelData.RainTime = 0;
+            player.World.LevelData.RainTime = 0;
             await this.Sender.SendMessageAsync("Toggled weather for this world.");
         }
     }

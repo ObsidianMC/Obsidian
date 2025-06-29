@@ -14,10 +14,11 @@ public partial class BlockEntityDataPacket
     [Field(2)]
     public INbtTag NBTData { get; init; } = default!;
 
+    //TODO write nbt data
     public override void Serialize(INetStreamWriter writer)
     {
         writer.WritePosition(Position);
         writer.WriteVarInt(Type);
-        ((MinecraftStream)writer).WriteNbt(NBTData);
+       // ((MinecraftStream)writer).WriteNbt(NBTData);
     }
 }

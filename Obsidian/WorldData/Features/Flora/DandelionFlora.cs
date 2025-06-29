@@ -2,11 +2,6 @@
 
 namespace Obsidian.WorldData.Features.Flora;
 
-public class DandelionFlora : BaseFlora
+public class DandelionFlora(GenHelper helper, IChunk chunk) : BaseFlora(helper, chunk, Material.Dandelion)
 {
-    public DandelionFlora(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.Dandelion)
-    {
-
-    }
-
 }

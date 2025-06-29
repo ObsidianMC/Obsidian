@@ -18,4 +18,10 @@ public sealed class BrewingStand : ResultContainer, IBlockEntity
     public override ItemStack? GetResult() => throw new NotImplementedException();
     public void ToNbt() => throw new NotImplementedException();
     public void FromNbt() => throw new NotImplementedException();
+    public IBlockEntity Clone() => new BrewingStand()
+    {
+        BlockPosition = this.BlockPosition,
+        Title = this.Title,
+        items = this.items
+    };
 }

@@ -1,5 +1,4 @@
 ﻿using Obsidian.API.Inventory;
-using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
 
@@ -14,13 +13,13 @@ public partial class SetCarriedItemPacket
         this.Slot = reader.ReadShort();
     }
 
-    public override ValueTask HandleAsync(Server server, Player player)
+    public override ValueTask HandleAsync(IServer server, IPlayer player)
     {
-        player.CurrentSlot = Slot;
+        player.CurrentHeldItemSlot = Slot;
 
         var heldItem = player.GetHeldItem();
 
-        player.PacketBroadcaster.QueuePacketToWorld(player.World, new SetEquipmentPacket
+        player.World.PacketBroadcaster.QueuePacketToWorld(player.World, new SetEquipmentPacket
         {
             EntityId = player.EntityId,
             Equipment = new()

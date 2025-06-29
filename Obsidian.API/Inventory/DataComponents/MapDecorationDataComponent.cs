@@ -28,7 +28,7 @@ public sealed class MapDecorationDataComponent : IDataComponent
                 Type = Enum.Parse<MapDecorationType>(reader.ReadString().TrimResourceTag().ToPascalCase(), true),
                 X = reader.ReadDouble(),
                 Z = reader.ReadDouble(),
-                Rotation = reader.ReadFloat()
+                Rotation = reader.ReadSingle()
             };
         }
     }
@@ -58,7 +58,7 @@ public readonly struct MapDecoration : INetworkSerializable<MapDecoration>
         Type = Enum.Parse<MapDecorationType>(reader.ReadString().TrimResourceTag(), true),
         X = reader.ReadDouble(),
         Z = reader.ReadDouble(),
-        Rotation = reader.ReadFloat()
+        Rotation = reader.ReadSingle()
     };
 
     public static void Write(MapDecoration value, INetStreamWriter writer)
@@ -66,6 +66,6 @@ public readonly struct MapDecoration : INetworkSerializable<MapDecoration>
         writer.WriteString($"minecraft:{value.Type.ToString().ToSnakeCase()}");
         writer.WriteDouble(value.X);
         writer.WriteDouble(value.Z);
-        writer.WriteFloat(value.Rotation);
+        writer.WriteSingle(value.Rotation);
     }
 }

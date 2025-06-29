@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
-using Obsidian.Entities;
 using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Play.Clientbound;
 using System.Diagnostics;
@@ -8,9 +7,9 @@ using System.Diagnostics;
 namespace Obsidian.Net.Packets.Configuration.Serverbound;
 public sealed partial class FinishConfigurationPacket
 {
-    public async override ValueTask HandleAsync(Server server, Player player)
+    public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
-        var client = player.client;
+        var client = player.Client;
 
         client.Logger.LogDebug("Got finished configuration");
 
@@ -38,17 +37,15 @@ public sealed partial class FinishConfigurationPacket
             EnableRespawnScreen = true,
         });
 
-        await client.QueuePacketAsync(new SetDefaultSpawnPositionPacket(player.world.LevelData.SpawnPosition, 0));
-        await client.QueuePacketAsync(new SetTimePacket(player.world.LevelData.Time, player.world.LevelData.DayTime, true));
-        await client.QueuePacketAsync(new GameEventPacket(player.world.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
+        await client.QueuePacketAsync(new SetDefaultSpawnPositionPacket(player.World.LevelData.SpawnPosition, 0));
+        await client.QueuePacketAsync(new SetTimePacket(player.World.LevelData.Time, player.World.LevelData.DayTime, true));
+        await client.QueuePacketAsync(new GameEventPacket(player.World.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
 
         await client.QueuePacketAsync(CustomPayloadPacket.ClientboundPlay with { Channel = "minecraft:brand", PluginData = server.BrandData });
         await client.QueuePacketAsync(CommandsRegistry.Packet);
 
         await player.UpdatePlayerInfoAsync();
         await player.SendPlayerInfoAsync();
-
-        
 
         player.TeleportId = Globals.Random.Next(0, 999);
         await client.QueuePacketAsync(new PlayerPositionPacket

@@ -1,36 +1,35 @@
 ﻿using Obsidian.API.BlockStates.Builders;
-using Obsidian.Registries;
 using Obsidian.WorldData.Generators;
 
 namespace Obsidian.WorldData.Features.Trees;
 
 public abstract class BaseTree
 {
-    protected readonly IBlock leafBlock;
-    protected readonly IBlock trunkBlock;
+    protected IBlock LeafBlock { get; set; }
+    protected IBlock TrunkBlock { get; set; }
 
-    protected readonly GenHelper helper;
+    protected GenHelper GenHelper { get; }
 
-    protected readonly Chunk chunk;
+    protected IChunk Chunk { get; }
 
-    protected int trunkHeight;
+    protected int TrunkHeight { get; set; }
 
-    protected readonly List<Material> ValidSourceBlocks = new()
-    {
+    protected List<Material> ValidSourceBlocks { get; set; } =
+    [
         Material.GrassBlock,
         Material.Dirt,
         Material.Podzol,
         Material.Farmland,
         Material.SnowBlock
-    };
+    ];
 
-    protected BaseTree(GenHelper helper, Chunk chunk, Material leaf, Material trunk, int trunkHeight)
+    protected BaseTree(GenHelper helper, IChunk chunk, Material leaf, Material trunk, int trunkHeight)
     {
-        this.helper = helper;
-        this.chunk = chunk;
-        this.trunkHeight = trunkHeight;
+        this.GenHelper = helper;
+        this.Chunk = chunk;
+        this.TrunkHeight = trunkHeight;
 
-        this.leafBlock = BlocksRegistry.Get(leaf);
+        this.LeafBlock = BlocksRegistry.Get(leaf);
 
         IBlockState? state = trunk switch
         {
@@ -44,10 +43,10 @@ public abstract class BaseTree
             _ => null
         };
 
-        this.trunkBlock = BlocksRegistry.Get(trunk, state);
+        this.TrunkBlock = BlocksRegistry.Get(trunk, state);
     }
 
-    public virtual async Task<bool> TryGenerateTreeAsync(Vector origin, int heightOffset)
+    public async virtual Task<bool> TryGenerateTreeAsync(Vector origin, int heightOffset)
     {
         if (!await TreeCanGrowAsync(origin)) { return false; }
 
@@ -63,21 +62,21 @@ public abstract class BaseTree
         {
             for (int zz = -2; zz <= 2; zz++)
             {
-                await helper.SetBlockAsync(origin.X + xx, trunkHeight + origin.Y - 1 + heightOffset, origin.Z + zz,
-                    this.leafBlock,
-                    chunk);
-                await helper.SetBlockAsync(origin.X + xx, trunkHeight + origin.Y + heightOffset, origin.Z + zz,
-                    this.leafBlock, chunk);
+                await GenHelper.SetBlockAsync(origin.X + xx, TrunkHeight + origin.Y - 1 + heightOffset, origin.Z + zz,
+                    this.LeafBlock,
+                    Chunk);
+                await GenHelper.SetBlockAsync(origin.X + xx, TrunkHeight + origin.Y + heightOffset, origin.Z + zz,
+                    this.LeafBlock, Chunk);
 
                 if (Math.Abs(xx) < 2 && Math.Abs(zz) < 2)
                 {
-                    await helper.SetBlockAsync(origin.X + xx, trunkHeight + origin.Y + 1 + heightOffset, origin.Z + zz,
-                        this.leafBlock,
-                        chunk);
+                    await GenHelper.SetBlockAsync(origin.X + xx, TrunkHeight + origin.Y + 1 + heightOffset, origin.Z + zz,
+                        this.LeafBlock,
+                        Chunk);
 
                     if (xx == 0 || zz == 0)
-                        await helper.SetBlockAsync(origin.X + xx, trunkHeight + origin.Y + heightOffset, origin.Z + zz,
-                            this.leafBlock, chunk);
+                        await GenHelper.SetBlockAsync(origin.X + xx, TrunkHeight + origin.Y + heightOffset, origin.Z + zz,
+                            this.LeafBlock, Chunk);
                 }
             }
         }
@@ -85,30 +84,30 @@ public abstract class BaseTree
 
     protected async virtual Task GenerateTrunkAsync(Vector origin, int heightOffset)
     {
-        int topY = trunkHeight + heightOffset;
+        int topY = TrunkHeight + heightOffset;
         for (int y = topY; y > 0; y--)
         {
-            await helper.SetBlockAsync(origin + (0, y, 0), this.trunkBlock, chunk);
+            await GenHelper.SetBlockAsync(origin + (0, y, 0), this.TrunkBlock, Chunk);
         }
 
-        await helper.SetBlockAsync(origin, BlocksRegistry.Dirt, chunk);
+        await GenHelper.SetBlockAsync(origin, BlocksRegistry.Dirt, Chunk);
     }
 
     protected async virtual Task<bool> TreeCanGrowAsync(Vector origin)
     {
-        var surfaceBlock = await helper.GetBlockAsync(origin, chunk);
+        var surfaceBlock = await GenHelper.GetBlockAsync(origin, Chunk);
         bool surfaceValid = ValidSourceBlocks.Contains(surfaceBlock.Material);
 
         bool plentyOfRoom =
-            (await helper.GetBlockAsync(origin + (-1, 2, -1), chunk)).IsAir &&
-            (await helper.GetBlockAsync(origin + (-1, 2, 0), chunk)).IsAir &&
-            (await helper.GetBlockAsync(origin + (-1, 2, 1), chunk)).IsAir &&
-            (await helper.GetBlockAsync(origin + (0, 2, -1), chunk)).IsAir &&
-            (await helper.GetBlockAsync(origin + (0, 2, 0), chunk)).IsAir &&
-            (await helper.GetBlockAsync(origin + (0, 2, 1), chunk)).IsAir &&
-            (await helper.GetBlockAsync(origin + (1, 2, -1), chunk)).IsAir &&
-            (await helper.GetBlockAsync(origin + (1, 2, 0), chunk)).IsAir &&
-            (await helper.GetBlockAsync(origin + (1, 2, 1), chunk)).IsAir;
+            (await GenHelper.GetBlockAsync(origin + (-1, 2, -1), Chunk)).IsAir &&
+            (await GenHelper.GetBlockAsync(origin + (-1, 2, 0), Chunk)).IsAir &&
+            (await GenHelper.GetBlockAsync(origin + (-1, 2, 1), Chunk)).IsAir &&
+            (await GenHelper.GetBlockAsync(origin + (0, 2, -1), Chunk)).IsAir &&
+            (await GenHelper.GetBlockAsync(origin + (0, 2, 0), Chunk)).IsAir &&
+            (await GenHelper.GetBlockAsync(origin + (0, 2, 1), Chunk)).IsAir &&
+            (await GenHelper.GetBlockAsync(origin + (1, 2, -1), Chunk)).IsAir &&
+            (await GenHelper.GetBlockAsync(origin + (1, 2, 0), Chunk)).IsAir &&
+            (await GenHelper.GetBlockAsync(origin + (1, 2, 1), Chunk)).IsAir;
 
         return surfaceValid && plentyOfRoom;
     }

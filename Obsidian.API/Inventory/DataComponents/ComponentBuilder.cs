@@ -41,7 +41,7 @@ public static partial class ComponentBuilder
         (writer, value) => writer.WriteVarInt(value),
         (reader) => reader.ReadVarInt<ItemRarity>());
 
-    public static TooltipSimpleDataComponent<List<Enchantment>> Enchantments => BuildTooltipSimpleDataComponent(DataComponentType.Enchantments,
+    public static SimpleDataComponent<List<Enchantment>> Enchantments => BuildSimpleComponent(DataComponentType.Enchantments,
         "minecraft:enchantments",
         (writer, values) => writer.WriteLengthPrefixedArray(writer.WriteEnchantment, values),
         (reader) => reader.ReadLengthPrefixedArray(reader.ReadEnchantment));
@@ -50,9 +50,9 @@ public static partial class ComponentBuilder
         (writer, value) => writer.WriteChat(value),
         (reader) => reader.ReadChat());
 
-    public static SimpleDataComponent HideAdditionalTooltip => new(DataComponentType.HideAdditionalTooltip, "minecraft:hide_additional_tooltip");
+    //public static SimpleDataComponent HideAdditionalTooltip => new(DataComponentType.HideAdditionalTooltip, "minecraft:hide_additional_tooltip");
 
-    public static SimpleDataComponent HideTooltip => new(DataComponentType.HideTooltip, "minecraft:hide_tooltip");
+    //public static SimpleDataComponent HideTooltip => new(DataComponentType.HideTooltip, "minecraft:hide_tooltip");
 
     /// <summary>
     /// Accumulated anvil usage cost. The client displays "Too Expensive" if the value is greater than 40 and the player is not in creative mode 
@@ -70,9 +70,9 @@ public static partial class ComponentBuilder
     /// </summary>
     public static SimpleDataComponent CreativeSlotLock => new(DataComponentType.CreativeSlotLock, "minecraft:creative_slot_lock");
 
-    public static SimpleDataComponent<int> EnchantmentGlintOverride => BuildSimpleComponent(DataComponentType.EnchantmentGlintOverride, "minecraft:enchantment_glint_override",
-        (writer, value) => writer.WriteVarInt(value),
-        (reader) => reader.ReadVarInt());
+    public static SimpleDataComponent<bool> EnchantmentGlintOverride => BuildSimpleComponent(DataComponentType.EnchantmentGlintOverride, "minecraft:enchantment_glint_override",
+        (writer, value) => writer.WriteBoolean(value),
+        (reader) => reader.ReadBoolean());
 
     public static SimpleDataComponent IntangibleProjectile => new(DataComponentType.IntangibleProjectile, "minecraft:intangible_projectile");
 
@@ -123,7 +123,7 @@ public static partial class ComponentBuilder
         (writer, values) => writer.WriteLengthPrefixedArray(writer.WriteEnchantment, values),
         reader => reader.ReadLengthPrefixedArray(reader.ReadEnchantment));
 
-    public static TooltipSimpleDataComponent<List<AttributeModifier>> AttributeModifiers => BuildTooltipSimpleDataComponent(DataComponentType.AttributeModifiers, "minecraft:attribute_modifiers",
+    public static SimpleDataComponent<List<AttributeModifier>> AttributeModifiers => BuildSimpleComponent(DataComponentType.AttributeModifiers, "minecraft:attribute_modifiers",
        (writer, values) => writer.WriteLengthPrefixedArray(writer.WriteAttributeModifier, values),
        reader => reader.ReadLengthPrefixedArray(reader.ReadAttributeModifier));
 
@@ -140,12 +140,12 @@ public static partial class ComponentBuilder
        reader => reader.ReadVarInt<MapPostProcessingType>());
 
     public static SimpleDataComponent<List<ItemStack>> ChargedProjectiles => BuildSimpleComponent(DataComponentType.ChargedProjectiles, "minecraft:charged_projectiles",
-        (writer, values) => writer.WriteLengthPrefixedArray(writer.WriteItemStack, values),
-        reader => reader.ReadLengthPrefixedArray(reader.ReadItemStack));
+        (writer, values) => writer.WriteLengthPrefixedArray(item => writer.WriteItemStack(item), values),
+        reader => reader.ReadLengthPrefixedArray(() => reader.ReadItemStack()));
 
     public static SimpleDataComponent<List<ItemStack>> BundleContents => BuildSimpleComponent(DataComponentType.BundleContents, "minecraft:bundle_contents",
-        (writer, values) => writer.WriteLengthPrefixedArray(writer.WriteItemStack, values),
-        reader => reader.ReadLengthPrefixedArray(reader.ReadItemStack));
+        (writer, values) => writer.WriteLengthPrefixedArray(item => writer.WriteItemStack(item), values),
+        reader => reader.ReadLengthPrefixedArray(() => reader.ReadItemStack()));
 
     public static SimpleDataComponent<List<SuspiciousStewEffect>> SuspiciousStewEffects => BuildSimpleComponent(DataComponentType.SuspiciousStewEffects,
         "minecraft:suspicious_stew_effects",
@@ -206,7 +206,7 @@ public static partial class ComponentBuilder
     public static SimpleDataComponent<List<ItemStack>> Container => BuildSimpleComponent(DataComponentType.Container,
          "minecraft:container",
          (writer, values) => writer.WriteLengthPrefixedArray((value) => writer.WriteItemStack(value), values),
-         reader => reader.ReadLengthPrefixedArray(reader.ReadItemStack));
+         reader => reader.ReadLengthPrefixedArray(() => reader.ReadItemStack()));
 
     public static SimpleDataComponent<List<BlockStateProperty>> BlockState => BuildSimpleComponent(DataComponentType.BlockState,
         "minecraft:block_state",
@@ -225,9 +225,9 @@ public static partial class ComponentBuilder
     [
         MaxStackSize with { Value = 64 },
         Lore with { Value = [] },
-        Enchantments with { Value = [], ShowInTooltip = true },
+        Enchantments with { Value = [] },
         RepairCost with { Value = 0 },
-        AttributeModifiers with { Value = [], ShowInTooltip = true },
+        AttributeModifiers with { Value = [] },
         Rarity with { Value = ItemRarity.Common },
     ];
 

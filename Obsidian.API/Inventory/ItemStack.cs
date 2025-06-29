@@ -3,11 +3,9 @@ using Obsidian.API.Registries;
 
 namespace Obsidian.API.Inventory;
 
-public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
+public sealed record class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
 {
     public static readonly ItemStack Air = new(ItemsRegistry.Air, 0);
-
-    internal int Slot { get; set; }
 
     public int Count { get; set; }
 
@@ -61,25 +59,6 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
 
         return item;
     }
-
-    public static bool operator ==(ItemStack? left, ItemStack? right)
-    {
-        if (ReferenceEquals(left, right))
-            return true;
-
-        if (left is null || right is null)
-            return false;
-
-        return left.Equals(right);
-    }
-
-    public static bool operator !=(ItemStack? left, ItemStack? right) => !(left == right);
-
-    public bool Equals(ItemStack? other) => Type == other?.Type;
-
-    public override bool Equals(object? obj) => obj is ItemStack itemStack && Equals(itemStack);
-
-    public override int GetHashCode() => Count.GetHashCode();
 
     private void InitializeComponents(params List<IDataComponent> components)
     {

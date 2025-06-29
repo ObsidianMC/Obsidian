@@ -1,5 +1,4 @@
 ﻿using Obsidian.API.Events;
-using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
@@ -18,7 +17,7 @@ public partial class UseItemPacket
         this.Sequence = reader.ReadVarInt();
     }
 
-    public async override ValueTask HandleAsync(Server server, Player player)
+    public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
         await server.EventDispatcher.ExecuteEventAsync(new PlayerInteractEventArgs(player, server)
         {

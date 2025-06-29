@@ -1,13 +1,11 @@
-﻿using Obsidian.Registries;
+﻿using Obsidian.WorldData.Features.Flora;
 using Obsidian.WorldData.Generators;
-using Obsidian.WorldData.Features.Flora;
-using Obsidian.WorldData.Features.Trees;
 
 namespace Obsidian.WorldData.Decorators;
 
 public class SunflowerPlainsDecorator : BaseDecorator
 {
-    public SunflowerPlainsDecorator(Biome biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
+    public SunflowerPlainsDecorator(Biome biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
         Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(PoppyFlora), 2, 9));
         Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(OxeyeDaisyFlora), 2, 9));
@@ -20,21 +18,21 @@ public class SunflowerPlainsDecorator : BaseDecorator
 
     public override void Decorate()
     {
-        if (pos.Y < noise.WaterLevel)
+        if (Position.Y < Noise.WaterLevel)
         {
             FillWater();
             return;
         }
 
-        int worldX = (chunk.X << 4) + pos.X;
-        int worldZ = (chunk.Z << 4) + pos.Z;
+        int worldX = (Chunk.X << 4) + Position.X;
+        int worldZ = (Chunk.Z << 4) + Position.Z;
 
-        chunk.SetBlock(pos, BlocksRegistry.GrassBlock);
+        Chunk.SetBlock(Position, BlocksRegistry.GrassBlock);
         for (int y = -1; y > -4; y--)
-            chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Dirt);
+            Chunk.SetBlock(Position + (0, y, 0), BlocksRegistry.Dirt);
 
-        var grassNoise = noise.Decoration.GetValue(worldX * 0.1, 8, worldZ * 0.1);
+        var grassNoise = Noise.Decoration.GetValue(worldX * 0.1, 8, worldZ * 0.1);
         if (grassNoise > 0 && grassNoise < 0.5) // 50% chance for grass
-            chunk.SetBlock(pos + (0, 1, 0), BlocksRegistry.ShortGrass);
+            Chunk.SetBlock(Position + (0, 1, 0), BlocksRegistry.ShortGrass);
     }
 }

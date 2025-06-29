@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Inventory;
 using Obsidian.Nbt;
+using Obsidian.Nbt.Interfaces;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
@@ -28,16 +29,16 @@ public partial class Player
         }
 
         await using var persistentDataStream = persistentDataFile.Create();
-        await using var persistentDataWriter = new NbtWriter(persistentDataStream, NbtCompression.GZip, "");
-
-        persistentDataWriter.WriteString("worldName", world.ParentWorldName ?? world.Name);
+        await using var persistentDataWriter = new NbtWriterStream(persistentDataStream, NbtCompression.GZip, "");
+        
+        persistentDataWriter.WriteString("worldName", World.ParentWorldName ?? World.Name);
         //TODO make sure to save inventory in the right location if has using global data set to true
 
         persistentDataWriter.EndCompound();
         await persistentDataWriter.TryFinishAsync();
 
         await using var playerFileStream = playerDataFile.Create();
-        await using var writer = new NbtWriter(playerFileStream, NbtCompression.GZip, "");
+        await using var writer = new NbtWriterStream(playerFileStream, NbtCompression.GZip, "");
 
         writer.WriteByte("MovementFlags", (byte)this.MovementFlags);
 
@@ -45,18 +46,20 @@ public partial class Player
         writer.WriteInt("playerGameType", (int)Gamemode);
         writer.WriteInt("previousPlayerGameType", (int)Gamemode);
         writer.WriteInt("Score", 0);
-        writer.WriteInt("SelectedItemSlot", inventorySlot);
+        writer.WriteInt("SelectedItemSlot", CurrentHeldItemSlot);
         writer.WriteInt("foodLevel", FoodLevel);
         writer.WriteInt("foodTickTimer", FoodTickTimer);
         writer.WriteInt("XpLevel", XpLevel);
         writer.WriteInt("XpTotal", XpTotal);
+
+        writer.WriteShort("Air", Air);
 
         writer.WriteFloat("Health", Health);
 
         writer.WriteFloat("foodExhaustionLevel", FoodExhaustionLevel);
         writer.WriteFloat("foodSaturationLevel", FoodSaturationLevel);
 
-        writer.WriteString("Dimension", world.DimensionName);
+        writer.WriteString("Dimension", World.DimensionName);
 
         writer.WriteListStart("Pos", NbtTagType.Double, 3);
 
@@ -99,9 +102,9 @@ public partial class Player
 
                 Logger.LogInformation("persistent world: {worldName}", worldName);
 
-                if (loadFromPersistentWorld && this.world.WorldManager.TryGetWorld<World>(worldName, out var world))
+                if (loadFromPersistentWorld && this.World.WorldManager.TryGetWorld<IWorld>(worldName, out var world))
                 {
-                    base.world = world;
+                    World = world;
                     Logger.LogInformation("Loading from persistent world: {worldName}", worldName);
                 }
             }
@@ -114,7 +117,7 @@ public partial class Player
 
         if (!playerDataFile.Exists)
         {
-            Position = world.LevelData.SpawnPosition;
+            Position = World.LevelData.SpawnPosition;
             return;
         }
 
@@ -129,7 +132,7 @@ public partial class Player
         catch (Exception ex)
         {
             this.Logger.LogWarning(ex, "Player has invalid saved data.");
-            Position = world.LevelData.SpawnPosition;//Set spawn here cause the data loaded was invalid
+            Position = World.LevelData.SpawnPosition;//Set spawn here cause the data loaded was invalid
         }
 
         if (!Alive)
@@ -139,7 +142,7 @@ public partial class Player
     public async Task LoadPermsAsync()
     {
         // Load a JSON file that contains all permissions
-        var file = new FileInfo(Path.Combine(Server.PermissionPath, $"{Uuid}.json"));
+        var file = new FileInfo(Path.Combine(Obsidian.Server.PermissionPath, $"{Uuid}.json"));
 
         if (file.Exists)
         {
@@ -152,7 +155,7 @@ public partial class Player
     public async Task SavePermsAsync()
     {
         // Save permissions to JSON file
-        var file = new FileInfo(Path.Combine(Server.PermissionPath, $"{Uuid}.json"));
+        var file = new FileInfo(Path.Combine(Obsidian.Server.PermissionPath, $"{Uuid}.json"));
 
         await using var fs = file.Open(FileMode.OpenOrCreate, FileAccess.ReadWrite);
 
@@ -161,7 +164,7 @@ public partial class Player
 
     public async ValueTask UpdatePlayerInfoAsync()
     {
-        var server = client.server;
+        var server = this.Server;
 
         var dict = new Dictionary<Guid, List<InfoAction>>();
         foreach (var player in server.OnlinePlayers.Values)
@@ -185,10 +188,10 @@ public partial class Player
             dict.Add(player.Uuid, list);
         }
 
-        await client.QueuePacketAsync(new PlayerInfoUpdatePacket(dict));
-        await client.QueuePacketAsync(new PlayerAbilitiesPacket
+        await Client.QueuePacketAsync(new PlayerInfoUpdatePacket(dict));
+        await Client.QueuePacketAsync(new PlayerAbilitiesPacket
         {
-            Abilities = client.Player!.Abilities
+            Abilities = Client.Player!.Abilities
         });
     }
 
@@ -196,7 +199,7 @@ public partial class Player
     {
         ArgumentNullException.ThrowIfNull(player, nameof(player));
 
-        var server = client.server;
+        var server = this.Server;
 
         var addAction = new AddPlayerInfoAction
         {
@@ -213,35 +216,35 @@ public partial class Player
             new UpdateListedInfoAction(player.ClientInformation.AllowServerListings),
         };
 
-        await client.QueuePacketAsync(new PlayerInfoUpdatePacket(new Dictionary<Guid, List<InfoAction>>()
+        await Client.QueuePacketAsync(new PlayerInfoUpdatePacket(new Dictionary<Guid, List<InfoAction>>()
         {
             { player.Uuid, list }
         }));
     }
 
-    internal async ValueTask SendPlayerInfoAsync()
+    public async ValueTask SendPlayerInfoAsync()
     {
-        await client.QueuePacketAsync(new ContainerSetContentPacket(0, Inventory.ToList())
+        await Client.QueuePacketAsync(new ContainerSetContentPacket(0, Inventory.ToList())
         {
             StateId = Inventory.StateId++,
             CarriedItem = GetHeldItem(),
         });
 
-        await client.QueuePacketAsync(new SetEntityDataPacket
+        await Client.QueuePacketAsync(new SetEntityDataPacket
         {
             EntityId = EntityId,
             Entity = this
         });
     }
 
-    internal ValueTask UnloadChunkAsync(int x, int z) => LoadedChunks.Contains(NumericsHelper.IntsToLong(x, z)) ? this.client.QueuePacketAsync(new ForgetLevelChunkPacket(x, z)) : default;
+    internal ValueTask UnloadChunkAsync(int x, int z) => LoadedChunks.Contains(NumericsHelper.IntsToLong(x, z)) ? this.Client.QueuePacketAsync(new ForgetLevelChunkPacket(x, z)) : default;
 
     private async ValueTask TrySpawnPlayerAsync(VectorF position)
     {
         //TODO PROPER DISTANCE CALCULATION
-        var entityBroadcastDistance = this.world.Configuration.EntityBroadcastRangePercentage;
+        var entityBroadcastDistance = this.Server.Configuration.EntityBroadcastRangePercentage;
 
-        foreach (var player in world.GetPlayersInRange(position, entityBroadcastDistance))
+        foreach (var player in World.GetPlayersInRange(position, entityBroadcastDistance))
         {
             if (player == this)
                 continue;
@@ -271,14 +274,14 @@ public partial class Player
         });
 
         if (index > 0)
-            await client.QueuePacketAsync(new RemoveEntitiesPacket(removed.ToArray()));
+            await Client.QueuePacketAsync(new RemoveEntitiesPacket(removed.ToArray()));
 
         ArrayPool<int>.Shared.Return(removed);
     }
 
     private async Task PickupNearbyItemsAsync(float distance = 1.5f)
     {
-        foreach (var entity in world.GetNonPlayerEntitiesInRange(Position, distance))
+        foreach (var entity in World.GetNonPlayerEntitiesInRange(Position, distance))
         {
             if (entity is not ItemEntity itemEntity)
                 continue;
@@ -295,7 +298,7 @@ public partial class Player
 
             var slot = Inventory.AddItem(new ItemStack(itemEntity.Item.Holder, itemEntity.Item.Count));
 
-            client.SendPacket(new ContainerSetSlotPacket
+            Client.SendPacket(new ContainerSetSlotPacket
             {
                 Slot = (short)slot,
                 ContainerId = 0,
@@ -307,7 +310,7 @@ public partial class Player
         }
     }
 
-    private void WriteItems(NbtWriter writer, bool inventory = true)
+    private void WriteItems(INbtWriter writer, bool inventory = true)
     {
         var items = inventory ? Inventory.Select((item, slot) => (item, slot)) : EnderInventory.Select((item, slot) => (item, slot));
 
@@ -346,7 +349,7 @@ public partial class Player
         { Uuid, actions.ToList() }
     };
 
-    private string GetPlayerDataPath(bool isOld = false) => Path.Join(world.PlayerDataPath, isOld ? $"{Uuid}.dat.old" : $"{Uuid}.dat");
+    private string GetPlayerDataPath(bool isOld = false) => Path.Join(World.PlayerDataPath, isOld ? $"{Uuid}.dat.old" : $"{Uuid}.dat");
 
     private void InitializePlayer(NbtCompound compound)
     {
@@ -378,7 +381,7 @@ public partial class Player
         Position = (posTag as NbtList) switch
         {
         [NbtTag<double> a, NbtTag<double> b, NbtTag<double> c, ..] => new VectorF((float)a.Value, (float)b.Value, (float)c.Value),
-            _ => world.LevelData.SpawnPosition
+            _ => World.LevelData.SpawnPosition
         };
 
         if (compound.TryGetTag("Rotation", out var rotationTag))
@@ -405,7 +408,6 @@ public partial class Player
 
                 var item = ItemsRegistry.GetSingleItem(itemCompound.GetString("id"));
                 item.Count = itemCompound.GetByte("Count");
-                item.Slot = slot;
 
                 Inventory.SetItem(slot, item);
             }

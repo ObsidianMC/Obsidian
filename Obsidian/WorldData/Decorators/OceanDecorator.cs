@@ -1,6 +1,5 @@
 ﻿using Obsidian.API.BlockStates.Builders;
 using Obsidian.WorldData.Generators;
-using Obsidian.Registries;
 
 namespace Obsidian.WorldData.Decorators;
 
@@ -13,19 +12,19 @@ public class OceanDecorator : BaseDecorator
 
     protected bool hasSeaGrass, hasKelp, hasMagma = true;
 
-    protected bool IsSurface2 => noise.Decoration.GetValue(pos.X + (chunk.X * 16) / 12.0, 9, pos.Z + (chunk.Z * 16) / 12.0) > 0.666;
+    protected bool IsSurface2 => Noise.Decoration.GetValue(Position.X + (Chunk.X * 16) / 12.0, 9, Position.Z + (Chunk.Z * 16) / 12.0) > 0.666;
 
-    protected bool isSurface3 => noise.Decoration.GetValue(pos.X + (chunk.X * 16) / 12.0, 90, pos.Z + (chunk.Z * 16) / 12.0) < -0.666;
+    protected bool isSurface3 => Noise.Decoration.GetValue(Position.X + (Chunk.X * 16) / 12.0, 90, Position.Z + (Chunk.Z * 16) / 12.0) < -0.666;
 
-    protected bool IsGrass => noise.Decoration.GetValue(pos.X + (chunk.X * 16), 900, pos.Z + (chunk.Z * 16)) > 0.4;
+    protected bool IsGrass => Noise.Decoration.GetValue(Position.X + (Chunk.X * 16), 900, Position.Z + (Chunk.Z * 16)) > 0.4;
 
-    protected bool IsTallGrass => noise.Decoration.GetValue(pos.X + (chunk.X * 16), 900, pos.Z + (chunk.Z * 16)) < -0.4;
+    protected bool IsTallGrass => Noise.Decoration.GetValue(Position.X + (Chunk.X * 16), 900, Position.Z + (Chunk.Z * 16)) < -0.4;
 
-    protected bool IsKelp => noise.Decoration.GetValue(pos.X + (chunk.X * 16), -900, pos.Z + (chunk.Z * 16)) > 0.75;
+    protected bool IsKelp => Noise.Decoration.GetValue(Position.X + (Chunk.X * 16), -900, Position.Z + (Chunk.Z * 16)) > 0.75;
 
-    protected bool IsMagma => noise.Decoration.GetValue(pos.X + (chunk.X * 16) / 2.0, -90, pos.Z + (chunk.Z * 16) / 2.0) > 0.85;
+    protected bool IsMagma => Noise.Decoration.GetValue(Position.X + (Chunk.X * 16) / 2.0, -90, Position.Z + (Chunk.Z * 16) / 2.0) > 0.85;
 
-    public OceanDecorator(Biome biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
+    public OceanDecorator(Biome biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
         sand = BlocksRegistry.Sand;
         dirt = BlocksRegistry.Dirt;
@@ -46,17 +45,17 @@ public class OceanDecorator : BaseDecorator
     {
         FillWater();
 
-        chunk.SetBlock(pos, IsSurface2 ? secondarySurface : isSurface3 ? tertiarySurface : primarySurface);
+        Chunk.SetBlock(Position, IsSurface2 ? secondarySurface : isSurface3 ? tertiarySurface : primarySurface);
         for (int y = -1; y > -4; y--)
-            chunk.SetBlock(pos + (0, y, 0), dirt);
+            Chunk.SetBlock(Position + (0, y, 0), dirt);
 
         // Add magma
         if (hasMagma & IsMagma)
         {
-            chunk.SetBlock(pos, magma);
-            for (int y = pos.Y + 1; y <= noise.WaterLevel; y++)
+            Chunk.SetBlock(Position, magma);
+            for (int y = Position.Y + 1; y <= Noise.WaterLevel; y++)
             {
-                chunk.SetBlock(pos.X, y, pos.Z, bubble);
+                Chunk.SetBlock(Position.X, y, Position.Z, bubble);
             }
             return;
         }
@@ -64,19 +63,19 @@ public class OceanDecorator : BaseDecorator
         // Add sea grass
         if (hasSeaGrass & IsGrass)
         {
-            chunk.SetBlock(pos + (0, 1, 0), seaGrass);
+            Chunk.SetBlock(Position + (0, 1, 0), seaGrass);
         }
         if (hasSeaGrass & IsTallGrass)
         {
-            chunk.SetBlock(pos + (0, 1, 0), tallSeaGrass);
-            chunk.SetBlock(pos + (0, 2, 0), tallSeaGrassUpperState);
+            Chunk.SetBlock(Position + (0, 1, 0), tallSeaGrass);
+            Chunk.SetBlock(Position + (0, 2, 0), tallSeaGrassUpperState);
         }
 
         if (hasKelp & IsKelp)
         {
-            for (int y = pos.Y + 1; y <= noise.WaterLevel; y++)
+            for (int y = Position.Y + 1; y <= Noise.WaterLevel; y++)
             {
-                chunk.SetBlock(pos.X, y, pos.Z, kelp);
+                Chunk.SetBlock(Position.X, y, Position.Z, kelp);
             }
         }
     }

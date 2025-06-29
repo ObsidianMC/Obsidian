@@ -32,25 +32,6 @@ if(!Directory.Exists("logs"))
 {
     Directory.CreateDirectory("logs");
 }
-// filename with date,time
-var logFile = $"logs/{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.log";
-var logFileStream = new FileStream(logFile, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
-
-builder.Services.AddLogging(loggingBuilder =>
-{
-    loggingBuilder.ClearProviders();
-
-    //Console logger can be edited through server.config https://learn.microsoft.com/en-us/dotnet/core/extensions/console-log-formatter
-    loggingBuilder.AddSimpleConsole(x =>
-    {
-        x.ColorBehavior = LoggerColorBehavior.Enabled;
-        x.SingleLine = true;
-        x.IncludeScopes = true;
-        x.TimestampFormat = "HH:mm:ss ";
-    });
-
-    loggingBuilder.AddProvider(new StreamLoggerProvider(logFileStream));
-});
 
 builder.AddObsidian();
 

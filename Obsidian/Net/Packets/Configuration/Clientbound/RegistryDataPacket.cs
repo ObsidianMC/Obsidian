@@ -4,19 +4,22 @@ public partial class RegistryDataPacket(string registryId, IDictionary<string, I
     public string RegistryId { get; } = registryId;
     public IDictionary<string, ICodec> Codecs { get; } = codecs;
 
+    public bool WriteCodecs { get; set; }
+
     public override void Serialize(INetStreamWriter writer)
     {
         writer.WriteString(this.RegistryId);
 
         writer.WriteVarInt(this.Codecs.Count);
 
-        foreach(var (key, codec) in this.Codecs)
+        foreach (var (key, codec) in this.Codecs)
         {
             writer.WriteString(key);
 
-            writer.WriteBoolean(true);
+            writer.WriteBoolean(WriteCodecs);
 
-            writer.WriteCodec(codec);
+            if (this.WriteCodecs)
+                writer.WriteCodec(codec);
         }
     }
 }

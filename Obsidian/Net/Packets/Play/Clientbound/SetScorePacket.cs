@@ -47,7 +47,7 @@ public partial class SetScorePacket
         writer.WriteOptional(this.NumberFormat);
 
         if (this.NumberFormat == Scoreboard.NumberFormat.Styled)
-            ((MinecraftStream)writer).WriteNbtCompound(this.StyledFormat!);
+            writer.WriteNbtCompound(this.StyledFormat!);
 
         if (this.NumberFormat == Scoreboard.NumberFormat.Fixed)
             writer.WriteChat(this.Content!);

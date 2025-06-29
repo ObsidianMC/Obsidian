@@ -13,6 +13,6 @@ public partial class SetDefaultSpawnPositionPacket(VectorF position, Angle angle
     public override void Serialize(INetStreamWriter writer)
     {
         writer.WritePositionF(this.Position);
-        writer.WriteFloat(this.Angle);
+        writer.WriteSingle(this.Angle);
     }
 }

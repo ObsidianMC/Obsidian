@@ -1,12 +1,10 @@
-﻿using Obsidian.Entities;
-
-namespace Obsidian.Net.Packets;
+﻿namespace Obsidian.Net.Packets;
 
 public abstract class ServerboundPacket : IServerboundPacket
 {
     public abstract int Id { get; }
 
     public virtual void Populate(INetStreamReader reader) { }
-    public virtual ValueTask HandleAsync(Server server, Player player) => default;
-    public virtual ValueTask HandleAsync(Client client) => default;
+    public virtual ValueTask HandleAsync(IServer server, IPlayer player) => default;
+    public virtual ValueTask HandleAsync(IClient client) => default;
 }

@@ -1,6 +1,4 @@
-﻿using Obsidian.Entities;
-
-namespace Obsidian.Net.Packets.Play.Serverbound;
+﻿namespace Obsidian.Net.Packets.Play.Serverbound;
 public partial class PlayerAbilitiesPacket
 {
     public PlayerAbility Abilities { get; set; } = PlayerAbility.None;
@@ -14,7 +12,7 @@ public partial class PlayerAbilitiesPacket
         Abilities = reader.ReadUnsignedByte<PlayerAbility>();
     }
 
-    public async override ValueTask HandleAsync(Server server, Player player)
+    public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
         if (Abilities.HasFlag(PlayerAbility.Flying)
             && !Abilities.HasFlag(PlayerAbility.AllowFlying)

@@ -2,10 +2,6 @@
 
 namespace Obsidian.WorldData.Features.Flora;
 
-public class MelonFlora : BaseFlora
+public class MelonFlora(GenHelper helper, IChunk chunk) : BaseFlora(helper, chunk, Material.Melon)
 {
-    public MelonFlora(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.Melon)
-    {
-
-    }
 }

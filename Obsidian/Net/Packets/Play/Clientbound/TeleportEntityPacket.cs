@@ -28,8 +28,8 @@ public partial class TeleportEntityPacket
 
         writer.WriteAbsolutePositionF(this.Position);
 
-        writer.WriteFloat(this.Yaw);
-        writer.WriteFloat(this.Pitch);
+        writer.WriteSingle(this.Yaw);
+        writer.WriteSingle(this.Pitch);
 
         writer.WriteInt(this.Flags);
 

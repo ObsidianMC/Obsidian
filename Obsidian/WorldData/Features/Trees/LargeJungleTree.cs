@@ -6,16 +6,16 @@ public class LargeJungleTree : JungleTree
 {
     private readonly XorshiftRandom rand = new();
 
-    public LargeJungleTree(GenHelper helper, Chunk chunk) : base(helper, chunk)
+    public LargeJungleTree(GenHelper helper, IChunk chunk) : base(helper, chunk)
     {
         leavesRadius = 6;
-        trunkHeight = 20;
+        TrunkHeight = 20;
     }
 
-    protected override async Task GenerateLeavesAsync(Vector origin, int heightOffset)
+    protected async override Task GenerateLeavesAsync(Vector origin, int heightOffset)
     {
         List<Vector> vineCandidates = new();
-        int topY = origin.Y + trunkHeight + heightOffset + 1;
+        int topY = origin.Y + TrunkHeight + heightOffset + 1;
 
         for (int y = topY - 3; y < topY + 1; y++)
         {
@@ -25,9 +25,9 @@ public class LargeJungleTree : JungleTree
                 {
                     if (Math.Sqrt((x - 0.5) * (x - 0.5) + (z - 0.5) * (z - 0.5)) < leavesRadius)
                     {
-                        if (await helper.GetBlockAsync(x + origin.X, y, z + origin.Z, chunk) is { IsAir: true })
+                        if (await GenHelper.GetBlockAsync(x + origin.X, y, z + origin.Z, Chunk) is { IsAir: true })
                         {
-                            await helper.SetBlockAsync(x + origin.X, y, z + origin.Z, leafBlock, chunk);
+                            await GenHelper.SetBlockAsync(x + origin.X, y, z + origin.Z, LeafBlock, Chunk);
                             if (rand.Next(4) == 0)
                             {
                                 vineCandidates.Add(new Vector(x + origin.X, y, z + origin.Z));
@@ -44,7 +44,7 @@ public class LargeJungleTree : JungleTree
     protected override async Task GenerateTrunkAsync(Vector origin, int heightOffset)
     {
         List<Vector> vineCandidates = new();
-        int topY = trunkHeight + heightOffset;
+        int topY = TrunkHeight + heightOffset;
 
         for (int x = 0; x < 2; x++)
         {
@@ -52,7 +52,7 @@ public class LargeJungleTree : JungleTree
             {
                 for (int y = topY; y > 0; y--)
                 {
-                    await helper.SetBlockAsync(origin + (x, y, z), this.trunkBlock, chunk);
+                    await GenHelper.SetBlockAsync(origin + (x, y, z), this.TrunkBlock, Chunk);
 
                     // Roll the dice to place a vine on this trunk block.
                     if (rand.Next(10) == 0)
@@ -62,10 +62,10 @@ public class LargeJungleTree : JungleTree
                 }
 
                 // Fill in any air gaps under the trunk
-                var under = await helper.GetBlockAsync(origin + (x, -1, z), chunk);
+                var under = await GenHelper.GetBlockAsync(origin + (x, -1, z), Chunk);
                 if (under.Material != Material.GrassBlock)
                 {
-                    await helper.SetBlockAsync(origin + (x, -1, z), this.trunkBlock, chunk);
+                    await GenHelper.SetBlockAsync(origin + (x, -1, z), this.TrunkBlock, Chunk);
                 }
             }
         }

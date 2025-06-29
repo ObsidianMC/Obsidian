@@ -1,39 +1,28 @@
-﻿using Org.BouncyCastle.Crypto;
-using Org.BouncyCastle.Crypto.Encodings;
-using Org.BouncyCastle.Crypto.Engines;
-using Org.BouncyCastle.Crypto.Generators;
-using Org.BouncyCastle.Security;
-using Org.BouncyCastle.X509;
+﻿using System.Formats.Asn1;
 using System.Security.Cryptography;
 
 namespace Obsidian.Net;
 
 public sealed class PacketCryptography
 {
-    private RsaKeyPairGenerator provider = default!;
+    private RSA provider;
 
-    private IAsymmetricBlockCipher encryptCipher = default!;
-    private IAsymmetricBlockCipher decryptCipher = default!;
 
     internal byte[] VerifyToken { get; set; } = default!;
     internal byte[] PublicKey { get; set; } = default!;
 
-    internal AsymmetricCipherKeyPair KeyPair { get; set; } = default!;
+    internal RSAParameters RSAParameters { get; set; } = default!;
 
-    public AsymmetricCipherKeyPair GenerateKeyPair()
+    public RSAParameters GenerateKeyPair()
     {
         if (provider is null)
         {
             try
             {
-                this.provider = new RsaKeyPairGenerator();
-                this.provider.Init(new KeyGenerationParameters(new SecureRandom(), 1024));
-                this.encryptCipher = new Pkcs1Encoding(new RsaEngine());
-                this.decryptCipher = new Pkcs1Encoding(new RsaEngine());
-                this.KeyPair = provider.GenerateKeyPair();
+                this.provider = RSA.Create();
+                this.provider.KeySize = 1024;
 
-                this.encryptCipher.Init(true, KeyPair.Public);
-                this.decryptCipher.Init(false, KeyPair.Private);
+                this.RSAParameters = provider.ExportParameters(true);
             }
             catch
             {
@@ -41,19 +30,19 @@ public sealed class PacketCryptography
             }
         }
 
-        return this.KeyPair;
+        return this.RSAParameters;
     }
 
-    public byte[] Decrypt(byte[] toDecrypt) => this.decryptCipher.ProcessBlock(toDecrypt, 0, this.decryptCipher.GetInputBlockSize());
+    public byte[] Decrypt(byte[] toDecrypt) => this.provider.Decrypt(toDecrypt, RSAEncryptionPadding.Pkcs1);
 
-    public byte[] Encrypt(byte[] toDecrypt) => this.encryptCipher.ProcessBlock(toDecrypt, 0, this.encryptCipher.GetInputBlockSize());
+    public byte[] Encrypt(byte[] toDecrypt) => this.provider.Encrypt(toDecrypt, RSAEncryptionPadding.Pkcs1);
 
     public (byte[] publicKey, byte[] randomToken) GeneratePublicKeyAndToken()
     {
         var randomToken = RandomNumberGenerator.GetBytes(4);
 
         this.VerifyToken = randomToken;
-        this.PublicKey = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(this.KeyPair.Public).ToAsn1Object().GetDerEncoded();
+        this.PublicKey = this.provider.ExportSubjectPublicKeyInfo();
 
         return (this.PublicKey, this.VerifyToken);
     }

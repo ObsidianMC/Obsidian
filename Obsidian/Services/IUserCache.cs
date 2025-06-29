@@ -30,21 +30,26 @@ public sealed class UserCache(HttpClient httpClient, ILogger<UserCache> logger) 
         if (cachedUser != null && !cachedUser.Expired)
             return cachedUser;
 
-        var user = await httpClient.GetFromJsonAsync<MojangProfile>($"{userWithNameEndpoint}{escapedUsername}", Globals.JsonOptions);
-
-        if (user is null)
-            return null;
-
-        cachedUser = new()
+        try
         {
-            Uuid = user.Id,
-            Name = user.Name,
-            ExpiresOn = DateTimeOffset.UtcNow.AddMonths(1)
-        };
+            var user = await httpClient.GetFromJsonAsync<MojangProfile>($"{userWithNameEndpoint}{escapedUsername}", Globals.JsonOptions);
 
-        cachedUsers.Add(cachedUser);
+            cachedUser = new()
+            {
+                Uuid = user.Id,
+                Name = user.Name,
+                ExpiresOn = DateTimeOffset.UtcNow.AddMonths(1)
+            };
 
-        return cachedUser;
+            cachedUsers.Add(cachedUser);
+
+            return cachedUser;
+        }
+        catch
+        {
+            logger.LogWarning("Could not get user profile for {Username}", username);
+            return null;
+        }
     }
 
     public async ValueTask<CachedProfile> GetCachedUserFromUuidAsync(Guid uuid)

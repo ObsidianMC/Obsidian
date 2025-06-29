@@ -1,7 +1,5 @@
 ﻿using Obsidian.API.Events;
-using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Registries;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
@@ -40,13 +38,13 @@ public partial class UseItemOnPacket
         this.Sequence = reader.ReadVarInt();
     }
 
-    public async override ValueTask HandleAsync(Server server, Player player)
+    public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
         //Get main hand first return offhand if null
         var currentItem = player.GetHeldItem() ?? player.GetOffHandItem();
         var position = this.Position;
 
-        var b = await player.world.GetBlockAsync(position);
+        var b = await player.World.GetBlockAsync(position);
 
         if (b is null)
             return;
@@ -90,7 +88,7 @@ public partial class UseItemOnPacket
         }
 
         if (player.Gamemode != Gamemode.Creative)
-            player.Inventory.RemoveItem(player.inventorySlot, 1);
+            player.Inventory.RemoveItem(player.CurrentHeldItemSlot, 1);
 
         switch (Face) // TODO fix this for logs
         {
@@ -127,18 +125,18 @@ public partial class UseItemOnPacket
             if (await player.World.GetBlockAsync(position + Vector.Down) is IBlock below &&
                 (TagsRegistry.Block.ReplaceableByLiquid.Entries.Contains(below.RegistryId) || below.IsLiquid))
             {
-                await player.world.SetBlockAsync(position, BlocksRegistry.Air, true);
-                player.client.SendPacket(new BlockChangedAckPacket
+                await player.World.SetBlockAsync(position, BlocksRegistry.Air, true);
+                player.Client.SendPacket(new BlockChangedAckPacket
                 {
                     SequenceID = Sequence
                 });
-                player.world.SpawnFallingBlock(position, block.Material);
+                player.World.SpawnFallingBlock(position, block.Material);
                 return;
             }
         }
 
-        await player.world.SetBlockAsync(position, block, doBlockUpdate: true);
-        player.client.SendPacket(new BlockChangedAckPacket
+        await player.World.SetBlockAsync(position, block, doBlockUpdate: true);
+        player.Client.SendPacket(new BlockChangedAckPacket
         {
             SequenceID = Sequence
         });

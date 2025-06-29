@@ -972,6 +972,9 @@
         "minecraft:dark_forest"
       ],
       [
+        "minecraft:pale_garden"
+      ],
+      [
         "minecraft:savanna_plateau"
       ],
       [
@@ -1027,9 +1030,6 @@
       ],
       [
         "minecraft:cherry_grove"
-      ],
-      [
-        "minecraft:pale_garden"
       ],
       [
         "minecraft:frozen_peaks"
@@ -1385,6 +1385,311 @@
     ],
     "sends_telemetry_event": true
   },
+  "minecraft:adventure/heart_transplanter": {
+    "parent": "minecraft:adventure/root",
+    "criteria": {
+      "place_creaking_heart_awake": {
+        "conditions": {
+          "location": [
+            {
+              "block": "minecraft:creaking_heart",
+              "condition": "minecraft:block_state_property",
+              "properties": {
+                "creaking_heart_state": "awake"
+              }
+            }
+          ]
+        },
+        "trigger": "minecraft:placed_block"
+      },
+      "place_creaking_heart_dormant": {
+        "conditions": {
+          "location": [
+            {
+              "block": "minecraft:creaking_heart",
+              "condition": "minecraft:block_state_property",
+              "properties": {
+                "creaking_heart_state": "dormant"
+              }
+            }
+          ]
+        },
+        "trigger": "minecraft:placed_block"
+      },
+      "place_pale_oak_log": {
+        "conditions": {
+          "location": [
+            {
+              "condition": "minecraft:any_of",
+              "terms": [
+                {
+                  "condition": "minecraft:all_of",
+                  "terms": [
+                    {
+                      "condition": "minecraft:location_check",
+                      "predicate": {
+                        "block": {
+                          "blocks": "#minecraft:pale_oak_logs",
+                          "state": {
+                            "axis": "y"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "condition": "minecraft:location_check",
+                      "offsetY": -1,
+                      "predicate": {
+                        "block": {
+                          "blocks": "minecraft:creaking_heart",
+                          "state": {
+                            "axis": "y"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "condition": "minecraft:location_check",
+                      "offsetY": -2,
+                      "predicate": {
+                        "block": {
+                          "blocks": "#minecraft:pale_oak_logs",
+                          "state": {
+                            "axis": "y"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "condition": "minecraft:all_of",
+                  "terms": [
+                    {
+                      "condition": "minecraft:location_check",
+                      "predicate": {
+                        "block": {
+                          "blocks": "#minecraft:pale_oak_logs",
+                          "state": {
+                            "axis": "y"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "condition": "minecraft:location_check",
+                      "offsetY": 1,
+                      "predicate": {
+                        "block": {
+                          "blocks": "minecraft:creaking_heart",
+                          "state": {
+                            "axis": "y"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "condition": "minecraft:location_check",
+                      "offsetY": 2,
+                      "predicate": {
+                        "block": {
+                          "blocks": "#minecraft:pale_oak_logs",
+                          "state": {
+                            "axis": "y"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "condition": "minecraft:all_of",
+                  "terms": [
+                    {
+                      "condition": "minecraft:location_check",
+                      "predicate": {
+                        "block": {
+                          "blocks": "#minecraft:pale_oak_logs",
+                          "state": {
+                            "axis": "z"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "condition": "minecraft:location_check",
+                      "offsetZ": -1,
+                      "predicate": {
+                        "block": {
+                          "blocks": "minecraft:creaking_heart",
+                          "state": {
+                            "axis": "z"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "condition": "minecraft:location_check",
+                      "offsetZ": -2,
+                      "predicate": {
+                        "block": {
+                          "blocks": "#minecraft:pale_oak_logs",
+                          "state": {
+                            "axis": "z"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "condition": "minecraft:all_of",
+                  "terms": [
+                    {
+                      "condition": "minecraft:location_check",
+                      "predicate": {
+                        "block": {
+                          "blocks": "#minecraft:pale_oak_logs",
+                          "state": {
+                            "axis": "z"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "condition": "minecraft:location_check",
+                      "offsetZ": 1,
+                      "predicate": {
+                        "block": {
+                          "blocks": "minecraft:creaking_heart",
+                          "state": {
+                            "axis": "z"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "condition": "minecraft:location_check",
+                      "offsetZ": 2,
+                      "predicate": {
+                        "block": {
+                          "blocks": "#minecraft:pale_oak_logs",
+                          "state": {
+                            "axis": "z"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "condition": "minecraft:all_of",
+                  "terms": [
+                    {
+                      "condition": "minecraft:location_check",
+                      "predicate": {
+                        "block": {
+                          "blocks": "#minecraft:pale_oak_logs",
+                          "state": {
+                            "axis": "x"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "condition": "minecraft:location_check",
+                      "offsetX": -1,
+                      "predicate": {
+                        "block": {
+                          "blocks": "minecraft:creaking_heart",
+                          "state": {
+                            "axis": "x"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "condition": "minecraft:location_check",
+                      "offsetX": -2,
+                      "predicate": {
+                        "block": {
+                          "blocks": "#minecraft:pale_oak_logs",
+                          "state": {
+                            "axis": "x"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "condition": "minecraft:all_of",
+                  "terms": [
+                    {
+                      "condition": "minecraft:location_check",
+                      "predicate": {
+                        "block": {
+                          "blocks": "#minecraft:pale_oak_logs",
+                          "state": {
+                            "axis": "x"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "condition": "minecraft:location_check",
+                      "offsetX": 1,
+                      "predicate": {
+                        "block": {
+                          "blocks": "minecraft:creaking_heart",
+                          "state": {
+                            "axis": "x"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "condition": "minecraft:location_check",
+                      "offsetX": 2,
+                      "predicate": {
+                        "block": {
+                          "blocks": "#minecraft:pale_oak_logs",
+                          "state": {
+                            "axis": "x"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "trigger": "minecraft:placed_block"
+      }
+    },
+    "display": {
+      "description": {
+        "translate": "advancements.adventure.heart_transplanter.description"
+      },
+      "icon": {
+        "count": 1,
+        "id": "minecraft:creaking_heart"
+      },
+      "title": {
+        "translate": "advancements.adventure.heart_transplanter.title"
+      }
+    },
+    "requirements": [
+      [
+        "place_creaking_heart_dormant",
+        "place_creaking_heart_awake",
+        "place_pale_oak_log"
+      ]
+    ],
+    "sends_telemetry_event": true
+  },
   "minecraft:adventure/hero_of_the_village": {
     "parent": "minecraft:adventure/voluntary_exile",
     "criteria": {
@@ -1434,9 +1739,15 @@
               "pattern": "minecraft:border"
             }
           ],
-          "minecraft:hide_additional_tooltip": {},
-          "minecraft:item_name": "{\"translate\":\"block.minecraft.ominous_banner\"}",
-          "minecraft:rarity": "uncommon"
+          "minecraft:item_name": {
+            "translate": "block.minecraft.ominous_banner"
+          },
+          "minecraft:rarity": "uncommon",
+          "minecraft:tooltip_display": {
+            "hidden_components": [
+              "minecraft:banner_patterns"
+            ]
+          }
         },
         "count": 1,
         "id": "minecraft:white_banner"
@@ -3269,7 +3580,7 @@
     },
     "display": {
       "announce_to_chat": false,
-      "background": "minecraft:textures/gui/advancements/backgrounds/adventure.png",
+      "background": "minecraft:gui/advancements/backgrounds/adventure",
       "description": {
         "translate": "advancements.adventure.root.description"
       },
@@ -4149,6 +4460,50 @@
     ],
     "sends_telemetry_event": true
   },
+  "minecraft:adventure/use_lodestone": {
+    "parent": "minecraft:adventure/root",
+    "criteria": {
+      "use_lodestone": {
+        "conditions": {
+          "location": [
+            {
+              "condition": "minecraft:location_check",
+              "predicate": {
+                "block": {
+                  "blocks": "minecraft:lodestone"
+                }
+              }
+            },
+            {
+              "condition": "minecraft:match_tool",
+              "predicate": {
+                "items": "minecraft:compass"
+              }
+            }
+          ]
+        },
+        "trigger": "minecraft:item_used_on_block"
+      }
+    },
+    "display": {
+      "description": {
+        "translate": "advancements.adventure.use_lodestone.description"
+      },
+      "icon": {
+        "count": 1,
+        "id": "minecraft:lodestone"
+      },
+      "title": {
+        "translate": "advancements.adventure.use_lodestone.title"
+      }
+    },
+    "requirements": [
+      [
+        "use_lodestone"
+      ]
+    ],
+    "sends_telemetry_event": true
+  },
   "minecraft:adventure/very_very_frightening": {
     "parent": "minecraft:adventure/throw_trident",
     "criteria": {
@@ -4236,7 +4591,9 @@
                           "pattern": "minecraft:border"
                         }
                       ],
-                      "minecraft:item_name": "{\"translate\":\"block.minecraft.ominous_banner\"}"
+                      "minecraft:item_name": {
+                        "translate": "block.minecraft.ominous_banner"
+                      }
                     },
                     "items": "minecraft:white_banner"
                   }
@@ -4289,9 +4646,15 @@
               "pattern": "minecraft:border"
             }
           ],
-          "minecraft:hide_additional_tooltip": {},
-          "minecraft:item_name": "{\"translate\":\"block.minecraft.ominous_banner\"}",
-          "minecraft:rarity": "uncommon"
+          "minecraft:item_name": {
+            "translate": "block.minecraft.ominous_banner"
+          },
+          "minecraft:rarity": "uncommon",
+          "minecraft:tooltip_display": {
+            "hidden_components": [
+              "minecraft:banner_patterns"
+            ]
+          }
         },
         "count": 1,
         "id": "minecraft:white_banner"
@@ -4730,7 +5093,7 @@
     },
     "display": {
       "announce_to_chat": false,
-      "background": "minecraft:textures/gui/advancements/backgrounds/end.png",
+      "background": "minecraft:gui/advancements/backgrounds/end",
       "description": {
         "translate": "advancements.end.root.description"
       },
@@ -5840,9 +6203,8 @@
               "condition": "minecraft:entity_properties",
               "entity": "this",
               "predicate": {
-                "type_specific": {
-                  "type": "minecraft:cat",
-                  "variant": "minecraft:all_black"
+                "components": {
+                  "minecraft:cat/variant": "minecraft:all_black"
                 }
               }
             }
@@ -5857,9 +6219,8 @@
               "condition": "minecraft:entity_properties",
               "entity": "this",
               "predicate": {
-                "type_specific": {
-                  "type": "minecraft:cat",
-                  "variant": "minecraft:black"
+                "components": {
+                  "minecraft:cat/variant": "minecraft:black"
                 }
               }
             }
@@ -5874,9 +6235,8 @@
               "condition": "minecraft:entity_properties",
               "entity": "this",
               "predicate": {
-                "type_specific": {
-                  "type": "minecraft:cat",
-                  "variant": "minecraft:british_shorthair"
+                "components": {
+                  "minecraft:cat/variant": "minecraft:british_shorthair"
                 }
               }
             }
@@ -5891,9 +6251,8 @@
               "condition": "minecraft:entity_properties",
               "entity": "this",
               "predicate": {
-                "type_specific": {
-                  "type": "minecraft:cat",
-                  "variant": "minecraft:calico"
+                "components": {
+                  "minecraft:cat/variant": "minecraft:calico"
                 }
               }
             }
@@ -5908,9 +6267,8 @@
               "condition": "minecraft:entity_properties",
               "entity": "this",
               "predicate": {
-                "type_specific": {
-                  "type": "minecraft:cat",
-                  "variant": "minecraft:jellie"
+                "components": {
+                  "minecraft:cat/variant": "minecraft:jellie"
                 }
               }
             }
@@ -5925,9 +6283,8 @@
               "condition": "minecraft:entity_properties",
               "entity": "this",
               "predicate": {
-                "type_specific": {
-                  "type": "minecraft:cat",
-                  "variant": "minecraft:persian"
+                "components": {
+                  "minecraft:cat/variant": "minecraft:persian"
                 }
               }
             }
@@ -5942,9 +6299,8 @@
               "condition": "minecraft:entity_properties",
               "entity": "this",
               "predicate": {
-                "type_specific": {
-                  "type": "minecraft:cat",
-                  "variant": "minecraft:ragdoll"
+                "components": {
+                  "minecraft:cat/variant": "minecraft:ragdoll"
                 }
               }
             }
@@ -5959,9 +6315,8 @@
               "condition": "minecraft:entity_properties",
               "entity": "this",
               "predicate": {
-                "type_specific": {
-                  "type": "minecraft:cat",
-                  "variant": "minecraft:red"
+                "components": {
+                  "minecraft:cat/variant": "minecraft:red"
                 }
               }
             }
@@ -5976,9 +6331,8 @@
               "condition": "minecraft:entity_properties",
               "entity": "this",
               "predicate": {
-                "type_specific": {
-                  "type": "minecraft:cat",
-                  "variant": "minecraft:siamese"
+                "components": {
+                  "minecraft:cat/variant": "minecraft:siamese"
                 }
               }
             }
@@ -5993,9 +6347,8 @@
               "condition": "minecraft:entity_properties",
               "entity": "this",
               "predicate": {
-                "type_specific": {
-                  "type": "minecraft:cat",
-                  "variant": "minecraft:tabby"
+                "components": {
+                  "minecraft:cat/variant": "minecraft:tabby"
                 }
               }
             }
@@ -6010,9 +6363,8 @@
               "condition": "minecraft:entity_properties",
               "entity": "this",
               "predicate": {
-                "type_specific": {
-                  "type": "minecraft:cat",
-                  "variant": "minecraft:white"
+                "components": {
+                  "minecraft:cat/variant": "minecraft:white"
                 }
               }
             }
@@ -6264,9 +6616,8 @@
               "entity": "this",
               "predicate": {
                 "type": "minecraft:frog",
-                "type_specific": {
-                  "type": "minecraft:frog",
-                  "variant": "minecraft:cold"
+                "components": {
+                  "minecraft:frog/variant": "minecraft:cold"
                 }
               }
             }
@@ -6285,9 +6636,8 @@
               "entity": "this",
               "predicate": {
                 "type": "minecraft:frog",
-                "type_specific": {
-                  "type": "minecraft:frog",
-                  "variant": "minecraft:temperate"
+                "components": {
+                  "minecraft:frog/variant": "minecraft:temperate"
                 }
               }
             }
@@ -6306,9 +6656,8 @@
               "entity": "this",
               "predicate": {
                 "type": "minecraft:frog",
-                "type_specific": {
-                  "type": "minecraft:frog",
-                  "variant": "minecraft:warm"
+                "components": {
+                  "minecraft:frog/variant": "minecraft:warm"
                 }
               }
             }
@@ -6334,13 +6683,13 @@
     },
     "requirements": [
       [
+        "minecraft:cold"
+      ],
+      [
         "minecraft:temperate"
       ],
       [
         "minecraft:warm"
-      ],
-      [
-        "minecraft:cold"
       ]
     ],
     "sends_telemetry_event": true
@@ -6456,6 +6805,43 @@
     "requirements": [
       [
         "obtain_sniffer_egg"
+      ]
+    ],
+    "sends_telemetry_event": true
+  },
+  "minecraft:husbandry/place_dried_ghast_in_water": {
+    "parent": "minecraft:husbandry/root",
+    "criteria": {
+      "place_dried_ghast_in_water": {
+        "conditions": {
+          "location": [
+            {
+              "block": "minecraft:dried_ghast",
+              "condition": "minecraft:block_state_property",
+              "properties": {
+                "waterlogged": "true"
+              }
+            }
+          ]
+        },
+        "trigger": "minecraft:placed_block"
+      }
+    },
+    "display": {
+      "description": {
+        "translate": "advancements.husbandry.place_dried_ghast_in_water.description"
+      },
+      "icon": {
+        "count": 1,
+        "id": "minecraft:dried_ghast"
+      },
+      "title": {
+        "translate": "advancements.husbandry.place_dried_ghast_in_water.title"
+      }
+    },
+    "requirements": [
+      [
+        "place_dried_ghast_in_water"
       ]
     ],
     "sends_telemetry_event": true
@@ -6628,10 +7014,10 @@
             }
           ],
           "item": {
-            "items": "minecraft:shears"
+            "items": "minecraft:wolf_armor"
           }
         },
-        "trigger": "minecraft:player_interacted_with_entity"
+        "trigger": "minecraft:player_sheared_equipment"
       }
     },
     "display": {
@@ -6751,7 +7137,7 @@
     },
     "display": {
       "announce_to_chat": false,
-      "background": "minecraft:textures/gui/advancements/backgrounds/husbandry.png",
+      "background": "minecraft:gui/advancements/backgrounds/husbandry",
       "description": {
         "translate": "advancements.husbandry.root.description"
       },
@@ -7152,9 +7538,8 @@
               "condition": "minecraft:entity_properties",
               "entity": "this",
               "predicate": {
-                "type_specific": {
-                  "type": "minecraft:wolf",
-                  "variant": "minecraft:ashen"
+                "components": {
+                  "minecraft:wolf/variant": "minecraft:ashen"
                 }
               }
             }
@@ -7169,9 +7554,8 @@
               "condition": "minecraft:entity_properties",
               "entity": "this",
               "predicate": {
-                "type_specific": {
-                  "type": "minecraft:wolf",
-                  "variant": "minecraft:black"
+                "components": {
+                  "minecraft:wolf/variant": "minecraft:black"
                 }
               }
             }
@@ -7186,9 +7570,8 @@
               "condition": "minecraft:entity_properties",
               "entity": "this",
               "predicate": {
-                "type_specific": {
-                  "type": "minecraft:wolf",
-                  "variant": "minecraft:chestnut"
+                "components": {
+                  "minecraft:wolf/variant": "minecraft:chestnut"
                 }
               }
             }
@@ -7203,9 +7586,8 @@
               "condition": "minecraft:entity_properties",
               "entity": "this",
               "predicate": {
-                "type_specific": {
-                  "type": "minecraft:wolf",
-                  "variant": "minecraft:pale"
+                "components": {
+                  "minecraft:wolf/variant": "minecraft:pale"
                 }
               }
             }
@@ -7220,9 +7602,8 @@
               "condition": "minecraft:entity_properties",
               "entity": "this",
               "predicate": {
-                "type_specific": {
-                  "type": "minecraft:wolf",
-                  "variant": "minecraft:rusty"
+                "components": {
+                  "minecraft:wolf/variant": "minecraft:rusty"
                 }
               }
             }
@@ -7237,9 +7618,8 @@
               "condition": "minecraft:entity_properties",
               "entity": "this",
               "predicate": {
-                "type_specific": {
-                  "type": "minecraft:wolf",
-                  "variant": "minecraft:snowy"
+                "components": {
+                  "minecraft:wolf/variant": "minecraft:snowy"
                 }
               }
             }
@@ -7254,9 +7634,8 @@
               "condition": "minecraft:entity_properties",
               "entity": "this",
               "predicate": {
-                "type_specific": {
-                  "type": "minecraft:wolf",
-                  "variant": "minecraft:spotted"
+                "components": {
+                  "minecraft:wolf/variant": "minecraft:spotted"
                 }
               }
             }
@@ -7271,9 +7650,8 @@
               "condition": "minecraft:entity_properties",
               "entity": "this",
               "predicate": {
-                "type_specific": {
-                  "type": "minecraft:wolf",
-                  "variant": "minecraft:striped"
+                "components": {
+                  "minecraft:wolf/variant": "minecraft:striped"
                 }
               }
             }
@@ -7288,9 +7666,8 @@
               "condition": "minecraft:entity_properties",
               "entity": "this",
               "predicate": {
-                "type_specific": {
-                  "type": "minecraft:wolf",
-                  "variant": "minecraft:woods"
+                "components": {
+                  "minecraft:wolf/variant": "minecraft:woods"
                 }
               }
             }
@@ -8393,7 +8770,7 @@
     },
     "display": {
       "announce_to_chat": false,
-      "background": "minecraft:textures/gui/advancements/backgrounds/nether.png",
+      "background": "minecraft:gui/advancements/backgrounds/nether",
       "description": {
         "translate": "advancements.nether.root.description"
       },
@@ -8492,50 +8869,6 @@
     "rewards": {
       "experience": 100
     },
-    "sends_telemetry_event": true
-  },
-  "minecraft:nether/use_lodestone": {
-    "parent": "minecraft:nether/obtain_ancient_debris",
-    "criteria": {
-      "use_lodestone": {
-        "conditions": {
-          "location": [
-            {
-              "condition": "minecraft:location_check",
-              "predicate": {
-                "block": {
-                  "blocks": "minecraft:lodestone"
-                }
-              }
-            },
-            {
-              "condition": "minecraft:match_tool",
-              "predicate": {
-                "items": "minecraft:compass"
-              }
-            }
-          ]
-        },
-        "trigger": "minecraft:item_used_on_block"
-      }
-    },
-    "display": {
-      "description": {
-        "translate": "advancements.nether.use_lodestone.description"
-      },
-      "icon": {
-        "count": 1,
-        "id": "minecraft:lodestone"
-      },
-      "title": {
-        "translate": "advancements.nether.use_lodestone.title"
-      }
-    },
-    "requirements": [
-      [
-        "use_lodestone"
-      ]
-    ],
     "sends_telemetry_event": true
   },
   "minecraft:recipes/root": {
@@ -8985,7 +9318,7 @@
     },
     "display": {
       "announce_to_chat": false,
-      "background": "minecraft:textures/gui/advancements/backgrounds/stone.png",
+      "background": "minecraft:gui/advancements/backgrounds/stone",
       "description": {
         "translate": "advancements.story.root.description"
       },
@@ -14537,6 +14870,38 @@
       ]
     }
   },
+  "minecraft:recipes/building_blocks/dried_ghast": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_ghast_tear": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:ghast_tear"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dried_ghast"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_ghast_tear"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dried_ghast"
+      ]
+    }
+  },
   "minecraft:recipes/building_blocks/dried_kelp_block": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -14601,70 +14966,6 @@
       ]
     }
   },
-  "minecraft:recipes/building_blocks/dye_black_bed": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:black_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_black_bed"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_black_bed"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/dye_black_carpet": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:black_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_black_carpet"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_black_carpet"
-      ]
-    }
-  },
   "minecraft:recipes/building_blocks/dye_black_wool": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -14694,70 +14995,6 @@
     "rewards": {
       "recipes": [
         "minecraft:dye_black_wool"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/dye_blue_bed": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:blue_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_blue_bed"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_blue_bed"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/dye_blue_carpet": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:blue_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_blue_carpet"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_blue_carpet"
       ]
     }
   },
@@ -14793,70 +15030,6 @@
       ]
     }
   },
-  "minecraft:recipes/building_blocks/dye_brown_bed": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:brown_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_brown_bed"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_brown_bed"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/dye_brown_carpet": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:brown_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_brown_carpet"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_brown_carpet"
-      ]
-    }
-  },
   "minecraft:recipes/building_blocks/dye_brown_wool": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -14886,70 +15059,6 @@
     "rewards": {
       "recipes": [
         "minecraft:dye_brown_wool"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/dye_cyan_bed": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:cyan_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_cyan_bed"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_cyan_bed"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/dye_cyan_carpet": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:cyan_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_cyan_carpet"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_cyan_carpet"
       ]
     }
   },
@@ -14985,70 +15094,6 @@
       ]
     }
   },
-  "minecraft:recipes/building_blocks/dye_gray_bed": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:gray_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_gray_bed"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_gray_bed"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/dye_gray_carpet": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:gray_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_gray_carpet"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_gray_carpet"
-      ]
-    }
-  },
   "minecraft:recipes/building_blocks/dye_gray_wool": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -15078,70 +15123,6 @@
     "rewards": {
       "recipes": [
         "minecraft:dye_gray_wool"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/dye_green_bed": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:green_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_green_bed"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_green_bed"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/dye_green_carpet": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:green_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_green_carpet"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_green_carpet"
       ]
     }
   },
@@ -15177,70 +15158,6 @@
       ]
     }
   },
-  "minecraft:recipes/building_blocks/dye_light_blue_bed": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:light_blue_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_light_blue_bed"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_light_blue_bed"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/dye_light_blue_carpet": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:light_blue_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_light_blue_carpet"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_light_blue_carpet"
-      ]
-    }
-  },
   "minecraft:recipes/building_blocks/dye_light_blue_wool": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -15270,70 +15187,6 @@
     "rewards": {
       "recipes": [
         "minecraft:dye_light_blue_wool"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/dye_light_gray_bed": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:light_gray_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_light_gray_bed"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_light_gray_bed"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/dye_light_gray_carpet": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:light_gray_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_light_gray_carpet"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_light_gray_carpet"
       ]
     }
   },
@@ -15369,70 +15222,6 @@
       ]
     }
   },
-  "minecraft:recipes/building_blocks/dye_lime_bed": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:lime_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_lime_bed"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_lime_bed"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/dye_lime_carpet": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:lime_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_lime_carpet"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_lime_carpet"
-      ]
-    }
-  },
   "minecraft:recipes/building_blocks/dye_lime_wool": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -15462,70 +15251,6 @@
     "rewards": {
       "recipes": [
         "minecraft:dye_lime_wool"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/dye_magenta_bed": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:magenta_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_magenta_bed"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_magenta_bed"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/dye_magenta_carpet": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:magenta_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_magenta_carpet"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_magenta_carpet"
       ]
     }
   },
@@ -15561,70 +15286,6 @@
       ]
     }
   },
-  "minecraft:recipes/building_blocks/dye_orange_bed": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:orange_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_orange_bed"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_orange_bed"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/dye_orange_carpet": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:orange_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_orange_carpet"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_orange_carpet"
-      ]
-    }
-  },
   "minecraft:recipes/building_blocks/dye_orange_wool": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -15654,70 +15315,6 @@
     "rewards": {
       "recipes": [
         "minecraft:dye_orange_wool"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/dye_pink_bed": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:pink_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_pink_bed"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_pink_bed"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/dye_pink_carpet": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:pink_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_pink_carpet"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_pink_carpet"
       ]
     }
   },
@@ -15753,70 +15350,6 @@
       ]
     }
   },
-  "minecraft:recipes/building_blocks/dye_purple_bed": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:purple_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_purple_bed"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_purple_bed"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/dye_purple_carpet": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:purple_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_purple_carpet"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_purple_carpet"
-      ]
-    }
-  },
   "minecraft:recipes/building_blocks/dye_purple_wool": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -15846,70 +15379,6 @@
     "rewards": {
       "recipes": [
         "minecraft:dye_purple_wool"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/dye_red_bed": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:red_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_red_bed"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_red_bed"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/dye_red_carpet": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:red_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_red_carpet"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_red_carpet"
       ]
     }
   },
@@ -15945,70 +15414,6 @@
       ]
     }
   },
-  "minecraft:recipes/building_blocks/dye_white_bed": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:white_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_white_bed"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_white_bed"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/dye_white_carpet": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:white_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_white_carpet"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_white_carpet"
-      ]
-    }
-  },
   "minecraft:recipes/building_blocks/dye_white_wool": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -16038,70 +15443,6 @@
     "rewards": {
       "recipes": [
         "minecraft:dye_white_wool"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/dye_yellow_bed": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:yellow_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_yellow_bed"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_yellow_bed"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/dye_yellow_carpet": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_needed_dye": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:yellow_dye"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:dye_yellow_carpet"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_needed_dye"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:dye_yellow_carpet"
       ]
     }
   },
@@ -29628,6 +28969,70 @@
       ]
     }
   },
+  "minecraft:recipes/combat/black_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_dried_ghast": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:dried_ghast"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:black_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_dried_ghast"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:black_harness"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/blue_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_dried_ghast": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:dried_ghast"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:blue_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_dried_ghast"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:blue_harness"
+      ]
+    }
+  },
   "minecraft:recipes/combat/bow": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -29657,6 +29062,38 @@
     "rewards": {
       "recipes": [
         "minecraft:bow"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/brown_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_dried_ghast": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:dried_ghast"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:brown_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_dried_ghast"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:brown_harness"
       ]
     }
   },
@@ -29711,6 +29148,38 @@
     "rewards": {
       "recipes": [
         "minecraft:crossbow"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/cyan_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_dried_ghast": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:dried_ghast"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:cyan_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_dried_ghast"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:cyan_harness"
       ]
     }
   },
@@ -29874,6 +29343,518 @@
       ]
     }
   },
+  "minecraft:recipes/combat/dye_black_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:black_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_black_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_black_harness"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/dye_blue_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:blue_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_blue_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_blue_harness"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/dye_brown_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:brown_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_brown_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_brown_harness"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/dye_cyan_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:cyan_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_cyan_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_cyan_harness"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/dye_gray_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:gray_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_gray_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_gray_harness"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/dye_green_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:green_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_green_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_green_harness"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/dye_light_blue_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:light_blue_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_light_blue_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_light_blue_harness"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/dye_light_gray_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:light_gray_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_light_gray_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_light_gray_harness"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/dye_lime_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:lime_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_lime_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_lime_harness"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/dye_magenta_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:magenta_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_magenta_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_magenta_harness"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/dye_orange_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:orange_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_orange_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_orange_harness"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/dye_pink_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:pink_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_pink_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_pink_harness"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/dye_purple_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:purple_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_purple_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_purple_harness"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/dye_red_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:red_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_red_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_red_harness"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/dye_white_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:white_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_white_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_white_harness"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/dye_yellow_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:yellow_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_yellow_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_yellow_harness"
+      ]
+    }
+  },
   "minecraft:recipes/combat/golden_boots": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -30031,6 +30012,70 @@
     "rewards": {
       "recipes": [
         "minecraft:golden_sword"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/gray_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_dried_ghast": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:dried_ghast"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:gray_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_dried_ghast"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:gray_harness"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/green_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_dried_ghast": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:dried_ghast"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:green_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_dried_ghast"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:green_harness"
       ]
     }
   },
@@ -30322,6 +30367,102 @@
       ]
     }
   },
+  "minecraft:recipes/combat/light_blue_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_dried_ghast": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:dried_ghast"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:light_blue_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_dried_ghast"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:light_blue_harness"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/light_gray_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_dried_ghast": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:dried_ghast"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:light_gray_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_dried_ghast"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:light_gray_harness"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/lime_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_dried_ghast": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:dried_ghast"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:lime_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_dried_ghast"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:lime_harness"
+      ]
+    }
+  },
   "minecraft:recipes/combat/mace": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -30362,6 +30503,38 @@
     "rewards": {
       "recipes": [
         "minecraft:mace"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/magenta_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_dried_ghast": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:dried_ghast"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:magenta_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_dried_ghast"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:magenta_harness"
       ]
     }
   },
@@ -30525,6 +30698,166 @@
       ]
     }
   },
+  "minecraft:recipes/combat/orange_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_dried_ghast": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:dried_ghast"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:orange_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_dried_ghast"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:orange_harness"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/pink_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_dried_ghast": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:dried_ghast"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:pink_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_dried_ghast"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:pink_harness"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/purple_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_dried_ghast": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:dried_ghast"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:purple_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_dried_ghast"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:purple_harness"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/red_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_dried_ghast": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:dried_ghast"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:red_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_dried_ghast"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:red_harness"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/saddle": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_leather": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:leather"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:saddle"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_leather"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:saddle"
+      ]
+    }
+  },
   "minecraft:recipes/combat/shield": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -30653,6 +30986,38 @@
       ]
     }
   },
+  "minecraft:recipes/combat/white_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_dried_ghast": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:dried_ghast"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:white_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_dried_ghast"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:white_harness"
+      ]
+    }
+  },
   "minecraft:recipes/combat/wolf_armor": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -30714,6 +31079,38 @@
     "rewards": {
       "recipes": [
         "minecraft:wooden_sword"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/yellow_harness": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_dried_ghast": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:dried_ghast"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:yellow_harness"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_dried_ghast"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:yellow_harness"
       ]
     }
   },
@@ -33518,6 +33915,1030 @@
       ]
     }
   },
+  "minecraft:recipes/decorations/dye_black_bed": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:black_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_black_bed"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_black_bed"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_black_carpet": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:black_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_black_carpet"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_black_carpet"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_blue_bed": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:blue_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_blue_bed"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_blue_bed"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_blue_carpet": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:blue_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_blue_carpet"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_blue_carpet"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_brown_bed": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:brown_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_brown_bed"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_brown_bed"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_brown_carpet": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:brown_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_brown_carpet"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_brown_carpet"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_cyan_bed": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:cyan_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_cyan_bed"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_cyan_bed"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_cyan_carpet": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:cyan_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_cyan_carpet"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_cyan_carpet"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_gray_bed": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:gray_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_gray_bed"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_gray_bed"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_gray_carpet": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:gray_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_gray_carpet"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_gray_carpet"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_green_bed": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:green_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_green_bed"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_green_bed"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_green_carpet": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:green_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_green_carpet"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_green_carpet"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_light_blue_bed": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:light_blue_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_light_blue_bed"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_light_blue_bed"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_light_blue_carpet": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:light_blue_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_light_blue_carpet"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_light_blue_carpet"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_light_gray_bed": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:light_gray_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_light_gray_bed"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_light_gray_bed"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_light_gray_carpet": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:light_gray_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_light_gray_carpet"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_light_gray_carpet"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_lime_bed": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:lime_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_lime_bed"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_lime_bed"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_lime_carpet": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:lime_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_lime_carpet"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_lime_carpet"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_magenta_bed": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:magenta_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_magenta_bed"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_magenta_bed"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_magenta_carpet": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:magenta_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_magenta_carpet"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_magenta_carpet"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_orange_bed": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:orange_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_orange_bed"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_orange_bed"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_orange_carpet": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:orange_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_orange_carpet"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_orange_carpet"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_pink_bed": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:pink_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_pink_bed"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_pink_bed"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_pink_carpet": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:pink_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_pink_carpet"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_pink_carpet"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_purple_bed": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:purple_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_purple_bed"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_purple_bed"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_purple_carpet": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:purple_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_purple_carpet"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_purple_carpet"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_red_bed": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:red_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_red_bed"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_red_bed"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_red_carpet": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:red_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_red_carpet"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_red_carpet"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_white_bed": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:white_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_white_bed"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_white_bed"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_white_carpet": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:white_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_white_carpet"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_white_carpet"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_yellow_bed": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:yellow_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_yellow_bed"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_yellow_bed"
+      ]
+    }
+  },
+  "minecraft:recipes/decorations/dye_yellow_carpet": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_needed_dye": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:yellow_dye"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:dye_yellow_carpet"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_needed_dye"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:dye_yellow_carpet"
+      ]
+    }
+  },
   "minecraft:recipes/decorations/enchanting_table": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -35646,11 +37067,21 @@
   "minecraft:recipes/decorations/lodestone": {
     "parent": "minecraft:recipes/root",
     "criteria": {
-      "has_netherite_ingot": {
+      "has_iron_ingot": {
         "conditions": {
           "items": [
             {
-              "items": "minecraft:netherite_ingot"
+              "items": "minecraft:iron_ingot"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_lodestone": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:lodestone"
             }
           ]
         },
@@ -35666,7 +37097,8 @@
     "requirements": [
       [
         "has_the_recipe",
-        "has_netherite_ingot"
+        "has_iron_ingot",
+        "has_lodestone"
       ]
     ],
     "rewards": {
@@ -39983,7 +41415,7 @@
         "conditions": {
           "items": [
             {
-              "items": "minecraft:egg"
+              "items": "#minecraft:eggs"
             }
           ]
         },
@@ -45039,6 +46471,38 @@
       ]
     }
   },
+  "minecraft:recipes/misc/leaf_litter": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_leaves": {
+        "conditions": {
+          "items": [
+            {
+              "items": "#minecraft:leaves"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:leaf_litter"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_leaves"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:leaf_litter"
+      ]
+    }
+  },
   "minecraft:recipes/misc/leather": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -46138,6 +47602,38 @@
     "rewards": {
       "recipes": [
         "minecraft:paper"
+      ]
+    }
+  },
+  "minecraft:recipes/misc/pink_dye_from_cactus_flower": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_cactus_flower": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:cactus_flower"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:pink_dye_from_cactus_flower"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_cactus_flower"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:pink_dye_from_cactus_flower"
       ]
     }
   },
@@ -47920,6 +49416,38 @@
     "rewards": {
       "recipes": [
         "minecraft:yellow_dye_from_sunflower"
+      ]
+    }
+  },
+  "minecraft:recipes/misc/yellow_dye_from_wildflowers": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:yellow_dye_from_wildflowers"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      },
+      "has_wildflowers": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:wildflowers"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_wildflowers"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:yellow_dye_from_wildflowers"
       ]
     }
   },
@@ -52140,11 +53668,11 @@
   "minecraft:recipes/tools/lead": {
     "parent": "minecraft:recipes/root",
     "criteria": {
-      "has_slime_ball": {
+      "has_string": {
         "conditions": {
           "items": [
             {
-              "items": "minecraft:slime_ball"
+              "items": "minecraft:string"
             }
           ]
         },
@@ -52160,7 +53688,7 @@
     "requirements": [
       [
         "has_the_recipe",
-        "has_slime_ball"
+        "has_string"
       ]
     ],
     "rewards": {

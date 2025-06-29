@@ -3,16 +3,16 @@ using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
 using Obsidian.API.Plugins;
+using Obsidian.API.Utilities.Interfaces;
 using Obsidian.Events;
 using Obsidian.Events.EventArgs;
 using Obsidian.Plugins;
-using Obsidian.Utilities.Interfaces;
 using System.Collections.Frozen;
 using System.Reflection;
 
 namespace Obsidian.Services;
 
-public sealed class EventDispatcher : IDisposable
+public sealed class EventDispatcher : IEventDispatcher
 {
     private static readonly Type eventPriorityAttributeType = typeof(EventPriorityAttribute);
     private static readonly Type baseMinecraftEventArgsType = typeof(BaseMinecraftEventArgs);
@@ -181,7 +181,7 @@ public sealed class EventDispatcher : IDisposable
         {
             try
             {
-                await @event.Execute(serviceScope.ServiceProvider, new[] { eventArgs });
+                await @event.Execute(serviceScope.ServiceProvider, [eventArgs]);
 
                 if (eventArgs is ICancellable cancellable && cancellable.IsCancelled)
                     eventResult = EventResult.Cancelled;
@@ -205,13 +205,4 @@ public sealed class EventDispatcher : IDisposable
             values.Clear();
         }
     }
-}
-
-public enum EventResult
-{
-    Cancelled,
-
-    Completed,
-
-    Failed
 }

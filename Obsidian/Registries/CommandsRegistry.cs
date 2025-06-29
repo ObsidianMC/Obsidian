@@ -1,8 +1,8 @@
-﻿using Obsidian.Commands;
-using Obsidian.Commands.Framework.Entities;
-using Obsidian.Commands.Parsers;
+﻿using Obsidian.API.Commands;
+using Obsidian.API.Commands.ArgumentParsers;
+using Obsidian.API.Utilities.Interfaces;
+using Obsidian.Commands;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Utilities.Interfaces;
 
 namespace Obsidian.Registries;
 public static class CommandsRegistry
@@ -13,7 +13,7 @@ public static class CommandsRegistry
     {
         Packet = new();
         var index = 0;
-        var commands = server.CommandsHandler.GetAllCommands()!;
+        var commands = server.CommandHandler.GetAllCommands()!;
 
         var rootNode = new CommandNode()
         {
@@ -72,18 +72,18 @@ public static class CommandsRegistry
 
             var type = arg.ParameterType;
 
-            var (id, mctype) = server.CommandsHandler.FindMinecraftType(type);
+            var (id, mctype) = server.CommandHandler.FindMinecraftType(type);
 
             //TODO make this better 
             argNode.Parser = mctype switch
             {
-                "brigadier:string" => new StringCommandParser(arg.CustomAttributes.Any(x => x.AttributeType == typeof(RemainingAttribute)) ? StringType.GreedyPhrase : StringType.QuotablePhrase),
-                "brigadier:double" => new DoubleCommandParser(),
-                "brigadier:float" => new FloatCommandParser(),
-                "brigadier:integer" => new IntCommandParser(),
-                "brigadier:long" => new LongCommandParser(),
-                "minecraft:time" => new MinecraftTimeParser(),
-                _ => new CommandParser(id, mctype),
+                "brigadier:string" => new StringArgumentParser(arg.CustomAttributes.Any(x => x.AttributeType == typeof(RemainingAttribute)) ? StringType.GreedyPhrase : StringType.QuotablePhrase),
+                "brigadier:double" => new DoubleArgumentParser(),
+                "brigadier:float" => new FloatArgumentParser(),
+                "brigadier:integer" => new UnsignedIntArgumentParser(),
+                "brigadier:long" => new UnsignedLongArgumentParser(),
+                "minecraft:time" => new MinecraftTimeArgumentParser(),
+                _ => new EmptyArgumentParser(id, mctype),
             };
 
             prev.AddChild(argNode);

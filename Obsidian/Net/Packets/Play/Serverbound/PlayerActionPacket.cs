@@ -28,15 +28,15 @@ public partial class PlayerActionPacket
         this.Sequence = reader.ReadVarInt();
     }
 
-    public async override ValueTask HandleAsync(Server server, Player player)
+    public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
-        if (await player.world.GetBlockAsync(Position) is not IBlock block)
+        if (await player.World.GetBlockAsync(Position) is not IBlock block)
             return;
 
         if (Status == PlayerActionStatus.FinishedDigging || (Status == PlayerActionStatus.StartedDigging && player.Gamemode == Gamemode.Creative))
         {
-            await player.world.SetBlockAsync(Position, BlocksRegistry.Air, true);
-            player.client.SendPacket(new BlockChangedAckPacket
+            await player.World.SetBlockAsync(Position, BlocksRegistry.Air, true);
+            player.Client.SendPacket(new BlockChangedAckPacket
             {
                 SequenceID = Sequence
             });
@@ -50,7 +50,7 @@ public partial class PlayerActionPacket
         this.BroadcastPlayerAction(player, block);
     }
 
-    private void BroadcastPlayerAction(Player player, IBlock block)
+    private void BroadcastPlayerAction(IPlayer player, IBlock block)
     {
         switch (this.Status)
         {
@@ -69,9 +69,9 @@ public partial class PlayerActionPacket
                 break;
             case PlayerActionStatus.FinishedDigging:
                 {
-                    player.PacketBroadcaster.QueuePacketToWorld(player.world, 0, new BlockDestructionPacket
+                    player.World.PacketBroadcaster.QueuePacketToWorld(player.World, 0, new BlockDestructionPacket
                     {
-                        EntityId = player,
+                        EntityId = player.EntityId,
                         Position = this.Position,
                         DestroyStage = -1
                     }, player.EntityId);
@@ -84,12 +84,11 @@ public partial class PlayerActionPacket
                     {
                         EntityId = Server.GetNextEntityId(),
                         Item = droppedItem,
-                        World = player.world,
+                        World = player.World,
                         Position = (VectorF)this.Position + 0.5f,
-                        PacketBroadcaster = player.PacketBroadcaster,
                     };
 
-                    player.world.TryAddEntity(item);
+                    player.World.TryAddEntity(item);
 
                     item.SpawnEntity(Velocity.FromBlockPerTick(GetRandDropVelocity(), GetRandDropVelocity(), GetRandDropVelocity()));
 
@@ -105,7 +104,7 @@ public partial class PlayerActionPacket
         return f * 0.5f;
     }
 
-    private static void DropItem(Player player, sbyte amountToRemove)
+    private static void DropItem(IPlayer player, sbyte amountToRemove)
     {
         var droppedItem = player.GetHeldItem();
 
@@ -118,12 +117,11 @@ public partial class PlayerActionPacket
         {
             EntityId = Server.GetNextEntityId(),
             Item = droppedItem,
-            World = player.world,
-            PacketBroadcaster = player.PacketBroadcaster,
+            World = player.World,
             Position = loc
         };
 
-        player.world.TryAddEntity(item);
+        player.World.TryAddEntity(item);
 
         var lookDir = player.GetLookDirection();
 
@@ -131,11 +129,11 @@ public partial class PlayerActionPacket
 
         item.SpawnEntity(vel);
 
-        player.Inventory.RemoveItem(player.inventorySlot, amountToRemove);
+        player.Inventory.RemoveItem(player.CurrentHeldItemSlot, amountToRemove);
 
-        player.client.SendPacket(new ContainerSetSlotPacket
+        player.Client.SendPacket(new ContainerSetSlotPacket
         {
-            Slot = player.inventorySlot,
+            Slot = player.CurrentHeldItemSlot,
 
             ContainerId = 0,
 

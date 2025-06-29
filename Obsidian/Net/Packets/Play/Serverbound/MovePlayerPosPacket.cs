@@ -1,5 +1,4 @@
-﻿using Obsidian.Entities;
-using Obsidian.Net.Packets.Play.Clientbound;
+﻿using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
@@ -18,14 +17,14 @@ public partial class MovePlayerPosPacket
         this.MovementFlags = reader.ReadSignedByte<MovementFlags>();
     }
 
-    public async override ValueTask HandleAsync(Server server, Player player)
+    public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
         await player.UpdateAsync(Position, this.MovementFlags);
         if (player.Position.ToChunkCoord() != player.LastPosition.ToChunkCoord())
         {
             await player.UpdateChunksAsync(distance: player.ClientInformation.ViewDistance);
             (int cx, int cz) = player.Position.ToChunkCoord();
-            await player.client.QueuePacketAsync(new SetChunkCacheCenterPacket(cx, cz));
+            await player.Client.QueuePacketAsync(new SetChunkCacheCenterPacket(cx, cz));
         }
 
         player.LastPosition = player.Position;

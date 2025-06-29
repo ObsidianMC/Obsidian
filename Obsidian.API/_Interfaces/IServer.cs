@@ -1,6 +1,7 @@
 ﻿using Obsidian.API.Boss;
 using Obsidian.API.Configuration;
 using Obsidian.API.Crafting;
+using System.Collections.Concurrent;
 
 namespace Obsidian.API;
 
@@ -15,12 +16,21 @@ public interface IServer : IDisposable
     public IOperatorList Operators { get; }
     public IWorld DefaultWorld { get; }
     public ServerConfiguration Configuration { get; }
+    public ConcurrentDictionary<Guid, IPlayer> OnlinePlayers { get; }
+    public ConcurrentDictionary<int, IClient> Connections { get; }
+    public HashSet<string> RegisteredChannels { get; }
 
+    public byte[] BrandData { get; }
+
+    public ICommandHandler CommandHandler { get; }
     public IScoreboardManager ScoreboardManager { get; }
+    public IEventDispatcher EventDispatcher { get; }
 
     public Task RunAsync();
 
     public bool IsPlayerOnline(string username);
+    public bool IsWhitelisted(string username);
+    public bool IsWhitelisted(Guid uuid);
     public bool IsPlayerOnline(Guid uuid);
     public void BroadcastMessage(string message);
     public void BroadcastMessage(ChatMessage message);

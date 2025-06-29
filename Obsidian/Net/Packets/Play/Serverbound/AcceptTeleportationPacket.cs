@@ -1,5 +1,4 @@
-﻿using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
+﻿using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
@@ -13,7 +12,7 @@ public partial class AcceptTeleportationPacket
         TeleportId = reader.ReadVarInt();
     }
 
-    public async override ValueTask HandleAsync(Server server, Player player)
+    public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
         if (TeleportId == player.TeleportId)
             return;
@@ -21,5 +20,4 @@ public partial class AcceptTeleportationPacket
         await player.KickAsync("Invalid teleport... cheater?");
         //await player.TeleportAsync(player.LastLocation); // Teleport them back we didn't send this packet
     }
-    public ValueTask HandleAsync(Client client) => default;
 }

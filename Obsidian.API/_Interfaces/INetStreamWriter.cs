@@ -1,13 +1,12 @@
 ﻿using Obsidian.API.Advancements;
-using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
-using Obsidian.API.Inventory.DataComponents;
 using System.ComponentModel;
 
 namespace Obsidian.API;
 public interface INetStreamWriter : INetStream
 {
     public bool CanWrite { get; }
+    public void Write(INetStream buffer);
     public void WriteByte(sbyte value);
     public void WriteByte(Enum value);
     public void WriteByte(byte value);
@@ -19,7 +18,7 @@ public interface INetStreamWriter : INetStream
     public void WriteInt(Enum value);
     public void WriteLong(long value);
 
-    public void WriteFloat(float value);
+    public void WriteSingle(float value);
     public void WriteDouble(double value);
 
     public void WriteString(string value, int maxLength = short.MaxValue);
@@ -38,6 +37,7 @@ public interface INetStreamWriter : INetStream
     public void WriteSoundEvent(SoundEvent soundEvent);
     public void WriteSoundEffect(SoundEffect sound);
     public void WriteByteArray(byte[] values);
+    public void WriteByteArray(Span<byte> values);
     public void WriteUuid(Guid value);
     public void WritePosition(Vector value);
     public void WritePosition(SoundPosition position);

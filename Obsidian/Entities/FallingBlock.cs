@@ -1,7 +1,4 @@
-﻿using Obsidian.Registries;
-using Obsidian.WorldData;
-
-namespace Obsidian.Entities;
+﻿namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:falling_block")]
 public sealed partial class FallingBlock : Entity
@@ -47,7 +44,7 @@ public sealed partial class FallingBlock : Entity
         {
             checkedBlocks.Add(upcomingBlockPos);
 
-            var upcomingBlock = await world.GetBlockAsync(upcomingBlockPos);
+            var upcomingBlock = await World.GetBlockAsync(upcomingBlockPos);
             if (upcomingBlock is IBlock && !TagsRegistry.Block.ReplaceableByLiquid.Entries.Contains(upcomingBlock.RegistryId) && !upcomingBlock.IsLiquid)
             {
                 await ConvertToBlock(upcomingBlockPos + Vector.Up);
@@ -57,8 +54,8 @@ public sealed partial class FallingBlock : Entity
 
     private async Task ConvertToBlock(Vector loc)
     {
-        await world.SetBlockAsync(loc, this.Block);
+        await World.SetBlockAsync(loc, this.Block);
 
-        await world.DestroyEntityAsync(this);
+        await World.DestroyEntityAsync(this);
     }
 }

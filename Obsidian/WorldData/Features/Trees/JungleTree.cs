@@ -1,10 +1,9 @@
-﻿using Obsidian.WorldData.Generators;
-using Obsidian.API.BlockStates.Builders;
-using Obsidian.Registries;
+﻿using Obsidian.API.BlockStates.Builders;
+using Obsidian.WorldData.Generators;
 
 namespace Obsidian.WorldData.Features.Trees;
 
-public class JungleTree : BaseTree
+public class JungleTree(GenHelper helper, IChunk chunk) : BaseTree(helper, chunk, Material.JungleLeaves, Material.JungleLog, 7)
 {
     protected int leavesRadius = 5;
 
@@ -14,16 +13,12 @@ public class JungleTree : BaseTree
     private static readonly IBlock vineEast = BlocksRegistry.Get(Material.Vine, new VineStateBuilder().IsEast().Build());
     private static readonly IBlock cocoa = BlocksRegistry.Get(Material.Cocoa, new CocoaStateBuilder().WithAge(2).WithFacing(Facing.South).Build());
 
-    public JungleTree(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.JungleLeaves, Material.JungleLog, 7)
-    {
-    }
-
     protected override async Task GenerateLeavesAsync(Vector origin, int heightOffset)
     {
-        int topY = origin.Y + trunkHeight + heightOffset + 1;
+        int topY = origin.Y + TrunkHeight + heightOffset + 1;
         List<Vector> vineCandidates = new()
         {
-            origin + (0, heightOffset + trunkHeight - 2, 0)
+            origin + (0, heightOffset + TrunkHeight - 2, 0)
         };
         for (int y = topY - 2; y < topY + 1; y++)
         {
@@ -33,9 +28,9 @@ public class JungleTree : BaseTree
                 {
                     if (Math.Sqrt(x * x + z * z) < leavesRadius)
                     {
-                        if (await helper.GetBlockAsync(x + origin.X, y, z + origin.Z, chunk) is { IsAir: true })
+                        if (await GenHelper.GetBlockAsync(x + origin.X, y, z + origin.Z, Chunk) is { IsAir: true })
                         {
-                            await helper.SetBlockAsync(x + origin.X, y, z + origin.Z, leafBlock, chunk);
+                            await GenHelper.SetBlockAsync(x + origin.X, y, z + origin.Z, LeafBlock, Chunk);
                             if (Globals.Random.Next(3) == 0)
                             {
                                 vineCandidates.Add(new Vector(x + origin.X, y, z + origin.Z));
@@ -57,18 +52,18 @@ public class JungleTree : BaseTree
             foreach (var dir in Vector.CardinalDirs)
             {
                 var samplePos = candidate + dir;
-                if (await helper.GetBlockAsync(samplePos, chunk) is IBlock vineBlock && vineBlock.IsAir)
+                if (await GenHelper.GetBlockAsync(samplePos, Chunk) is IBlock vineBlock && vineBlock.IsAir)
                 {
                     var vine = GetVineType(dir);
-                    await helper.SetBlockAsync(samplePos, vine, chunk);
+                    await GenHelper.SetBlockAsync(samplePos, vine, Chunk);
 
                     // Grow downwards
                     var growAmt = Globals.Random.Next(3, 10);
                     for (int y = -1; y > -growAmt; y--)
                     {
-                        if (await helper.GetBlockAsync(samplePos + (0, y, 0), chunk) is IBlock downward && downward.IsAir)
+                        if (await GenHelper.GetBlockAsync(samplePos + (0, y, 0), Chunk) is IBlock downward && downward.IsAir)
                         {
-                            await helper.SetBlockAsync(samplePos + (0, y, 0), vine, chunk);
+                            await GenHelper.SetBlockAsync(samplePos + (0, y, 0), vine, Chunk);
                         }
                         else
                         {
@@ -85,7 +80,7 @@ public class JungleTree : BaseTree
         await base.GenerateTrunkAsync(origin, heightOffset);
         if (Globals.Random.Next(3) == 0)
         {
-            await helper.SetBlockAsync(origin + (0, trunkHeight + heightOffset - 3, -1), cocoa, chunk);
+            await GenHelper.SetBlockAsync(origin + (0, TrunkHeight + heightOffset - 3, -1), cocoa, Chunk);
         }
     }
 

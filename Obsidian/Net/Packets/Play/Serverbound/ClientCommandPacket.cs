@@ -1,5 +1,4 @@
-﻿using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
+﻿using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
@@ -8,7 +7,7 @@ public partial class ClientCommandPacket
     [Field(0), ActualType(typeof(int)), VarLength]
     public ClientAction Action { get; private set; }
 
-    public async override ValueTask HandleAsync(Server server, Player player)
+    public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
         if (Action == ClientAction.PerformRespawn)
         {

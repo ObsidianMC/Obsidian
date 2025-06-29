@@ -1,7 +1,5 @@
 ﻿using Obsidian.Net;
-
 using System.Collections.Generic;
-
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -9,12 +7,12 @@ namespace Obsidian.Tests;
 public class Boolean
 {
     [MemberData(nameof(BooleanData))]
-    [Theory(DisplayName = "Serialization of booleans", Timeout = 100)]
-    public async void SerializeAsync(bool input, byte @byte)
+    [Theory(DisplayName = "Serialization of booleans")]
+    public  void Serialize(bool input, byte @byte)
     {
-        using var stream = new MinecraftStream();
+        using var stream = new NetworkBuffer();
 
-        await stream.WriteBooleanAsync(input);
+        stream.WriteBoolean(input);
 
         byte[] actualBytes = stream.ToArray();
 
@@ -24,12 +22,12 @@ public class Boolean
     }
 
     [MemberData(nameof(BooleanData))]
-    [Theory(DisplayName = "Deserialization of booleans", Timeout = 100)]
-    public async void DeserializeAsync(bool input, byte @byte)
+    [Theory(DisplayName = "Deserialization of booleans")]
+    public void Deserialize(bool input, byte @byte)
     {
-        using var stream = new MinecraftStream([@byte]);
+        using var stream = new NetworkBuffer([@byte]);
 
-        bool boolean = await stream.ReadBooleanAsync();
+        bool boolean = stream.ReadBoolean();
 
         Assert.Equal(input, boolean);
     }

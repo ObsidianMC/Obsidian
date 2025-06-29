@@ -1,16 +1,13 @@
-﻿using Obsidian.Registries;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 
 namespace Obsidian.ChunkData;
 
-public sealed class ChunkSection
+public sealed class ChunkSection : IChunkSection
 {
-    public bool Overworld = true;
-
     public int? YBase { get; }
 
-    public BlockStateContainer BlockStateContainer { get; }
-    public BiomeContainer BiomeContainer { get; }
+    public DataContainer<IBlock> BlockStateContainer { get; }
+    public DataContainer<Biome> BiomeContainer { get; }
 
     public bool HasSkyLight { get; private set; } = false;
     public ReadOnlyMemory<byte> SkyLightArray => skyLight.AsMemory();
@@ -26,8 +23,8 @@ public sealed class ChunkSection
 
     public ChunkSection(byte bitsPerBlock = 4, byte bitsPerBiome = 2, int? yBase = null)
     {
-        this.BlockStateContainer = new(bitsPerBlock);
-        this.BiomeContainer = new(bitsPerBiome);
+        this.BlockStateContainer = new BlockStateContainer(bitsPerBlock);
+        this.BiomeContainer = new BiomeContainer(bitsPerBiome);
 
         this.YBase = yBase;
 
@@ -35,20 +32,16 @@ public sealed class ChunkSection
         Debug.Assert(airIndex == 0);
     }
 
-    private ChunkSection(BlockStateContainer blockContainer, BiomeContainer biomeContainer, int? yBase)
+    private ChunkSection(DataContainer<IBlock> blockContainer, DataContainer<Biome> biomeContainer, int? yBase)
     {
         BlockStateContainer = blockContainer;
         BiomeContainer = biomeContainer;
         YBase = yBase;
     }
 
-    public IBlock GetBlock(Vector position) => this.GetBlock(position.X, position.Y, position.Z);
     public IBlock GetBlock(int x, int y, int z) => this.BlockStateContainer.Get(x, y, z);
 
-    public Biome GetBiome(Vector position) => this.GetBiome(position.X, position.Y, position.Z);
     public Biome GetBiome(int x, int y, int z) => this.BiomeContainer.Get(x, y, z);
-
-    public void SetBlock(Vector position, IBlock block) => this.SetBlock(position.X, position.Y, position.Z, block);
     public void SetBlock(int x, int y, int z, IBlock block)
     {
         if (block.Material != Material.Air)
@@ -56,11 +49,7 @@ public sealed class ChunkSection
 
         this.BlockStateContainer.Set(x, y, z, block);
     }
-
-    public void SetBiome(Vector position, Biome biome) => this.SetBiome(position.X, position.Y, position.Z, biome);
     public void SetBiome(int x, int y, int z, Biome biome) => this.BiomeContainer.Set(x, y, z, biome);
-
-    public void SetLightLevel(Vector position, LightType lt, int level) => this.SetLightLevel(position.X, position.Y, position.Z, lt, level);
     public void SetLightLevel(int x, int y, int z, LightType lt, int level)
     {
         // each value is 4 bits. So upper 4 bits will be odd, lower even
@@ -74,7 +63,6 @@ public sealed class ChunkSection
         HasBlockLight |= lt == LightType.Block;
     }
 
-    public int GetLightLevel(Vector position, LightType lt) => GetLightLevel(position.X, position.Y, position.Z, lt);
     public int GetLightLevel(int x, int y, int z, LightType lt)
     {
         var index = (y << 8) | (z << 4) | x;
@@ -84,7 +72,7 @@ public sealed class ChunkSection
         return lt == LightType.Sky ? (skyLight[index] & mask) >> shift : (blockLight[index] & mask >> shift);
     }
 
-    internal void SetLight(byte[] data, LightType lt)
+    public void SetLight(byte[] data, LightType lt)
     {
         foreach (var b in data)
         {
@@ -101,11 +89,14 @@ public sealed class ChunkSection
             skyLight = data;
         else
             blockLight = data;
-
     }
 
-    public ChunkSection Clone()
-    {
-        return new ChunkSection(BlockStateContainer.Clone(), BiomeContainer.Clone(), YBase);
-    }
+    public IBlock GetBlock(Vector position) => this.GetBlock(position.X, position.Y, position.Z);
+    public Biome GetBiome(Vector position) => this.GetBiome(position.X, position.Y, position.Z);
+    public void SetBlock(Vector position, IBlock block) => this.SetBlock(position.X, position.Y, position.Z, block);
+    public void SetBiome(Vector position, Biome biome) => this.SetBiome(position.X, position.Y, position.Z, biome);
+    public void SetLightLevel(Vector position, LightType lt, int level) => this.SetLightLevel(position.X, position.Y, position.Z, lt, level);
+    public int GetLightLevel(Vector position, LightType lt) => this.GetLightLevel(position.X, position.Y, position.Z, lt);
+
+    public IChunkSection Clone() => new ChunkSection(BlockStateContainer.Clone(), BiomeContainer.Clone(), YBase);
 }

@@ -1,5 +1,4 @@
-﻿using Obsidian.Entities;
-using System.Text;
+﻿using System.Text;
 
 namespace Obsidian.Net.Packets.Common;
 
@@ -19,14 +18,14 @@ public partial record class CustomPayloadPacket
 
     public PluginMessageStore? Handle()
     {
-        using var stream = new MinecraftStream(PluginData);
+        using var buffer = new NetworkBuffer(PluginData);
 
         var result = Channel switch
         {
             "minecraft:brand" => new PluginMessageStore
             {
                 Type = PluginMessageType.Brand,
-                Value = stream.ReadString()
+                Value = buffer.ReadString()
             },
             "minecraft:register" => new PluginMessageStore // Payload should be a list of strings
             {
@@ -47,7 +46,7 @@ public partial record class CustomPayloadPacket
     public override void Populate(INetStreamReader reader)
     {
         Channel = reader.ReadString();
-        PluginData = reader.ReadUInt8Array((int)(reader.Length - reader.Position));
+        PluginData = reader.ReadUInt8Array((int)(reader.Size - reader.Offset));
     }
 
     public override void Serialize(INetStreamWriter writer)
@@ -56,7 +55,7 @@ public partial record class CustomPayloadPacket
         writer.WriteByteArray(this.PluginData);
     }
 
-    public override ValueTask HandleAsync(Server server, Player player)
+    public override ValueTask HandleAsync(IServer server, IPlayer player)
     {
         var result = Handle();
 
@@ -66,7 +65,7 @@ public partial record class CustomPayloadPacket
         switch (result.Type)
         {
             case PluginMessageType.Brand:
-                player.client.Brand = result.Value.ToString();
+                player.Client.Brand = result.Value.ToString();
                 break;
 
             case PluginMessageType.Register:

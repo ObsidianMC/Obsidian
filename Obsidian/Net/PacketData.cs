@@ -1,25 +1,16 @@
-﻿using System.Buffers;
-
-namespace Obsidian.Net;
-public readonly struct PacketData : IDisposable
+﻿namespace Obsidian.Net;
+public readonly struct PacketData
 {
-    public static readonly PacketData Default = new() { Id = -1, Data = [] };
+    public static readonly PacketData Default = new() { Id = -1, NetworkBuffer = new() };
 
     public required int Id { get; init; }
 
-    public byte[] Data { get; init; }
+    public NetworkBuffer NetworkBuffer { get; init; }
 
-    public bool IsDisposable { get; init; }
-
-    public void Deconstruct(out int id, out byte[] data)
+    public void Deconstruct(out int id, out NetworkBuffer networkBuffer)
     {
         id = this.Id;
-        data = this.Data;
+        networkBuffer = this.NetworkBuffer;
     }
 
-    public void Dispose()
-    {
-        if (this.IsDisposable)
-            ArrayPool<byte>.Shared.Return(this.Data);
-    }
 }

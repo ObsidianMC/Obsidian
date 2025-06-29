@@ -1,0 +1,51 @@
+name: 'Obsidian: Bug Report'
+description: 'Create a Bug Report for Obsidian; the Minecraft server'
+title: 'Bug Report'
+labels: ['bug', 'sir we are a minecraft server']
+
+body:
+  - type: input
+    attributes:
+      label: 'Obsidian Version'
+      description: 'When not using a release, please provide a commit hash.'
+      placeholder: '0.0.1'
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: 'Please explain what happened'
+      description: 'Also, if applicable, explain what the expected behavior is.'
+    validations:
+      required: true
+
+  - type: dropdown
+    attributes:
+      label: 'Operating System'
+      description: 'What operating system did this issue appear on?'
+      multiple: false
+      options:
+        - Windows (x64)
+        - Windows (x86)
+        - Linux (x64)
+        - Linux (x86)
+        - Linux (ARM)
+        - MacOS (x64)
+        - MacOS (ARM)
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: 'Operating System Version / Variant?'
+      description: 'What variant of this OS are you using? e.g. "Windown 11", "Debian 12 (bookworm)" or "Raspberry Pi OS 12 (bookworm)".'
+      placeholder: "e.g. Debian Bookworm 12.9"
+
+  - type: checkboxes
+    attributes:
+      label: 'Confirmation'
+      options:
+        - label: 'I am aware that I am making a GitHub issue for the Obsidian that is a Minecraft server, and not the Obsidian that is a Markdown editor.'
+          required: true
+          

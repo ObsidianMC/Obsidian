@@ -1,13 +1,12 @@
-﻿using Obsidian.Registries;
-using Obsidian.WorldData.Generators;
-using Obsidian.WorldData.Features.Flora;
+﻿using Obsidian.WorldData.Features.Flora;
 using Obsidian.WorldData.Features.Trees;
+using Obsidian.WorldData.Generators;
 
 namespace Obsidian.WorldData.Decorators;
 
 public class BambooJungleDecorator : BaseDecorator
 {
-    public BambooJungleDecorator(Biome biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
+    public BambooJungleDecorator(Biome biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
 
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(4, typeof(JungleTree)));
@@ -21,15 +20,15 @@ public class BambooJungleDecorator : BaseDecorator
 
     public override void Decorate()
     {
-        if (pos.Y < noise.WaterLevel)
+        if (Position.Y < Noise.WaterLevel)
         {
             FillWater();
             return;
         }
 
-        chunk.SetBlock(pos, BlocksRegistry.GrassBlock);
+        Chunk.SetBlock(Position, BlocksRegistry.GrassBlock);
         for (int y = -1; y > -4; y--)
-            chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Dirt);
+            Chunk.SetBlock(Position + (0, y, 0), BlocksRegistry.Dirt);
 
     }
 }

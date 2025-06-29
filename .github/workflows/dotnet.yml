@@ -1,6 +1,7 @@
 name: .NET Build
 
 on:
+  workflow_dispatch:
   push:
     branches: [ 1.* ]
     paths:
@@ -19,14 +20,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: xXx_set_env_variables_xXx
       run: echo "GIT_SHA=${GITHUB_SHA}" >> $GITHUB_ENV
     - name: Setup .NET
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 9.0.x
-        include-prerelease: true
     - name: Restore dependencies
       run: dotnet restore
     - name: Build

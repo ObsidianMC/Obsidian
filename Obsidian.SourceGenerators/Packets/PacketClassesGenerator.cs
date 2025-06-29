@@ -198,7 +198,7 @@ public sealed class PacketClassesGenerator : IIncrementalGenerator
     {
         source.Method($"public static {packetClassName} Deserialize(byte[] data)");
         source.Line($"var packet = new {packetClassName}();");
-        source.Line("using var mcStream = new MinecraftStream(data);");
+        source.Line("using var mcStream = new NetworkBuffer(data);");
         source.Line("packet.Populate(mcStream);");
         source.Line().Line("return packet;");
         source.EndScope();

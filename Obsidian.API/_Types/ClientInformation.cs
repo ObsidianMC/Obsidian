@@ -9,7 +9,7 @@ public readonly record struct ClientInformation
 
     public required bool ChatColors { get; init; }
 
-    public required PlayerBitMask DisplayedSkinParts { get; init; } 
+    public required PlayerBitMask DisplayedSkinParts { get; init; }
 
     public required MainHand MainHand { get; init; }
 

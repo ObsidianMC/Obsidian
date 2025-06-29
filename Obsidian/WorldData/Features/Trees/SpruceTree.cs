@@ -2,9 +2,6 @@
 
 namespace Obsidian.WorldData.Features.Trees;
 
-public class SpruceTree : BaseTree
+public class SpruceTree(GenHelper helper, IChunk chunk) : BaseTree(helper, chunk, Material.SpruceLeaves, Material.SpruceLog, 9)
 {
-    public SpruceTree(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.SpruceLeaves, Material.SpruceLog, 9)
-    {
-    }
 }

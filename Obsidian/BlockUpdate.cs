@@ -1,22 +1,20 @@
-﻿using Obsidian.WorldData;
+﻿namespace Obsidian;
 
-namespace Obsidian;
-
-public struct BlockUpdate
+public struct BlockUpdate : IBlockUpdate
 {
-    internal readonly World world;
-    internal Vector position;
+    public IWorld World { get; }
+    public Vector Position { get; set; }
 
-    internal int Delay { get; private set; }
-    internal int delayCounter;
+    public int Delay { get; set; }
+    public int DelayCounter { get; set; }
 
-    internal IBlock? Block
+    public IBlock? Block
     {
-        get => _block;
+        readonly get => field;
         set
         {
-            _block = value;
-            if (value is IBlock)
+            field = value;
+            if (value is not null)
             {
                 if (TagsRegistry.Block.GravityAffected.Entries.Contains(value.RegistryId))
                 {
@@ -31,18 +29,16 @@ public struct BlockUpdate
                     Delay = 5;
                 }
             }
-            delayCounter = Delay;
+            DelayCounter = Delay;
         }
     }
-    private IBlock? _block;
 
-    public BlockUpdate(World w, Vector pos, IBlock? blk = null)
+    public BlockUpdate(IWorld w, Vector pos, IBlock? blk = null)
     {
-        world = w;
-        position = pos;
+        World = w;
+        Position = pos;
         Delay = 0;
-        delayCounter = Delay;
-        _block = null;
+        DelayCounter = Delay;
         Block = blk;
     }
 }

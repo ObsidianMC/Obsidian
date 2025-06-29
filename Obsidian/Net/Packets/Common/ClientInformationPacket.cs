@@ -44,7 +44,7 @@ public partial record class ClientInformationPacket
         ParticleStatus = reader.ReadVarInt<ParticleStatus>();
     }
 
-    public async override ValueTask HandleAsync(Server server, Player player)
+    public override ValueTask HandleAsync(IServer server, IPlayer player)
     {
         player.ClientInformation = new()
         {
@@ -59,6 +59,6 @@ public partial record class ClientInformationPacket
             ParticleStatus = ParticleStatus
         };
 
-        
+        return default;
     }
 }

@@ -21,12 +21,12 @@ public partial class MovePlayerPosRotPacket
     public override void Populate(INetStreamReader reader)
     {
         this.Position = reader.ReadAbsolutePositionF();
-        this.Yaw = reader.ReadFloat();
-        this.Pitch = reader.ReadFloat();
+        this.Yaw = reader.ReadSingle();
+        this.Pitch = reader.ReadSingle();
         this.MovementFlags = reader.ReadSignedByte<MovementFlags>();
     }
 
-    public async override ValueTask HandleAsync(Server server, Player player)
+    public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
         // The first time we get this packet, it doesn't make sense so we should ignore it.
         if (player.LastPosition == Vector.Zero) { return; }
@@ -35,7 +35,7 @@ public partial class MovePlayerPosRotPacket
         if (player.Position.ToChunkCoord() != player.LastPosition.ToChunkCoord())
         {
             (int cx, int cz) = player.Position.ToChunkCoord();
-            await player.client.QueuePacketAsync(new SetChunkCacheCenterPacket(cx, cz));
+            await player.Client.QueuePacketAsync(new SetChunkCacheCenterPacket(cx, cz));
         }
 
         player.LastPosition = player.Position;
