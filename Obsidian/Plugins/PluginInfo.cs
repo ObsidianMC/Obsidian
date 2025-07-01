@@ -13,7 +13,7 @@ public sealed class PluginInfo : IPluginInfo
     public PluginDependency[] Dependencies { get; init; } = [];
     public string Description { get; init; } = string.Empty;
     public string[] Authors { get; init; } = [];
-    public Uri ProjectUrl { get; init; } = default!;
+    public Uri? ProjectUrl { get; init; }
 
     [JsonConstructor]
     internal PluginInfo() { }

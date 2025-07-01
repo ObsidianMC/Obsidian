@@ -25,6 +25,27 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
         //TODO save api version somewhere
         var apiVersion = reader.ReadString();
 
+        var pluginAssembly = reader.ReadString();
+        var pluginVersion = reader.ReadString();
+
+        var pluginName = reader.ReadString();
+        var pluginId = reader.ReadString();
+        var pluginAuthors = reader.ReadString();
+        var pluginDescription = reader.ReadString();
+        var projectUrl = reader.ReadString();
+
+        var dependenciesLength = reader.ReadInt32();
+        var dependencies = new PluginDependency[dependenciesLength];
+        for(int i = 0; i < dependenciesLength; i++)
+        {
+            dependencies[i] = new()
+            {
+                Id = reader.ReadString(),
+                Version = reader.ReadString(),
+                Required = reader.ReadBoolean()
+            };
+        }
+
         var hash = reader.ReadBytes(SHA384.HashSizeInBytes);
         var isSigned = reader.ReadBoolean();
 
@@ -32,23 +53,25 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
 
         var dataLength = reader.ReadInt32();
 
-        var curPos = fs.Position;
-
         //Don't load untrusted plugins
         var isSigValid = await this.TryValidatePluginAsync(fs, hash, path, isSigned, signature);
         if (!isSigValid)
             return null;
 
-        fs.Position = curPos;
-
-        var pluginAssembly = reader.ReadString();
-        var pluginVersion = reader.ReadString();
-
         var loadContext = new PluginLoadContext(pluginAssembly);
 
         var entries = await this.InitializeEntriesAsync(reader, fs);
 
-        var partialContainer = this.BuildPartialContainer(loadContext, path, entries, isSigValid);
+        var partialContainer = BuildPartialContainer(loadContext, path, entries, isSigValid, new PluginInfo
+        {
+            Id = pluginId,
+            Name = pluginName,
+            Version = Version.Parse(pluginVersion),
+            Authors = pluginAuthors.Split(','),
+            Dependencies = dependencies,
+            Description = pluginDescription,
+            ProjectUrl = Uri.TryCreate(projectUrl, UriKind.Absolute, out var uri) ? uri : null,
+        });
 
         //Can't load until those plugins are loaded
         if (partialContainer.Info.Dependencies.Any(x => x.Required && !this.pluginManager.Plugins.Any(d => d.Info.Id == x.Id)))
@@ -205,15 +228,16 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
         return entries;
     }
 
-    private PluginContainer BuildPartialContainer(PluginLoadContext loadContext, string path,
-        Dictionary<string, PluginFileEntry> entries, bool validSignature)
+    private static PluginContainer BuildPartialContainer(PluginLoadContext loadContext, string path,
+        Dictionary<string, PluginFileEntry> entries, bool validSignature, PluginInfo info)
     {
         var pluginContainer = new PluginContainer
         {
             LoadContext = loadContext,
             Source = path,
             FileEntries = entries.ToFrozenDictionary(),
-            ValidSignature = validSignature
+            ValidSignature = validSignature,
+            Info = info
         };
 
         pluginContainer.Initialize();

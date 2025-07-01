@@ -15,7 +15,7 @@ public sealed class PluginContainer : IDisposable, IPluginContainer
     private bool initialized;
 
     public IServiceScope ServiceScope { get; internal set; } = default!;
-    public PluginInfo Info { get; private set; } = default!;
+    public PluginInfo Info { get; internal set; } = default!;
 
     public PluginBase? Plugin { get; internal set; }
 
@@ -39,17 +39,6 @@ public sealed class PluginContainer : IDisposable, IPluginContainer
 
     internal void Initialize()
     {
-        if (!this.initialized)
-        {
-            var pluginJsonData = this.GetFileData("plugin.json") ?? throw new InvalidOperationException("Failed to find plugin.json");
-
-            this.Info = pluginJsonData.FromJson<PluginInfo>() ?? throw new NullReferenceException("Failed to deserialize plugin.json");
-
-            this.initialized = true;
-
-            return;
-        }
-
         this.Plugin!.Container = this;
         this.Plugin!.Info = this.Info;
     }
