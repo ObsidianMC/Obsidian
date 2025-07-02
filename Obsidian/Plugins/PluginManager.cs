@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using NuGet.Versioning;
 using Obsidian.API.Configuration;
 using Obsidian.API.Plugins;
 using Obsidian.Commands.Framework;
@@ -11,6 +12,7 @@ using Obsidian.Plugins.ServiceProviders;
 using Obsidian.Services;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -222,6 +224,38 @@ public sealed class PluginManager : IAsyncDisposable
     /// <param name="assembly">The assembly you want to use to find the plugin container.</param>
     public PluginContainer GetPluginContainerByAssembly(Assembly? assembly = null) =>
         this.Plugins.First(x => x.PluginAssembly == (assembly ?? Assembly.GetCallingAssembly()));
+
+    public bool TryGetDependency(string assemblyName, PluginContainer dependent, [NotNullWhen(true)] out PluginContainer? pluginContainer)
+    {
+        foreach (var dependency in dependent.Info.Dependencies)
+        {
+            var plugin = this.Plugins.FirstOrDefault(x => x.Info.Id == dependency.Id && x.Info.Id != dependent.Info.Id);
+
+            if (plugin == null)
+                continue;
+
+            var info = plugin.Info;
+
+            if (info.AssemblyName != assemblyName)
+                continue;
+
+            if(IsVersionSatisfied(dependency.Version, info.Version))
+            {
+                pluginContainer = plugin;
+                return true;
+            }
+        }
+
+        pluginContainer = null;
+        return false;
+    }
+
+    private static bool IsVersionSatisfied(string range, Version version)
+    {
+        var versionRange = VersionRange.Parse(range);
+        var semVersion = NuGetVersion.Parse(version.ToString());
+        return versionRange.Satisfies(semVersion);
+    }
 
     private void ConfigureInitialServices()
     {

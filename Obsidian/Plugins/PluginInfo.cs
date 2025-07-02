@@ -9,6 +9,7 @@ public sealed class PluginInfo : IPluginInfo
     public required string Name { get; init; }
     public required string Id { get; init; }
     public required Version Version { get; init; } = new Version();
+    public required string AssemblyName { get; init; }
 
     public PluginDependency[] Dependencies { get; init; } = [];
     public string Description { get; init; } = string.Empty;

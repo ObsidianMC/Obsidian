@@ -36,7 +36,7 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
 
         var dependenciesLength = reader.ReadInt32();
         var dependencies = new PluginDependency[dependenciesLength];
-        for(int i = 0; i < dependenciesLength; i++)
+        for (int i = 0; i < dependenciesLength; i++)
         {
             dependencies[i] = new()
             {
@@ -71,6 +71,7 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
             Dependencies = dependencies,
             Description = pluginDescription,
             ProjectUrl = Uri.TryCreate(projectUrl, UriKind.Absolute, out var uri) ? uri : null,
+            AssemblyName = pluginAssembly
         });
 
         //Can't load until those plugins are loaded
@@ -286,14 +287,7 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
                     Version = new(runtime.AssemblyVersion),
                 };
 
-                var depends = pluginContainer.Info.Dependencies.Select(x => x.Id)
-                    .SelectMany(x => this.pluginManager.Plugins.Where(p => p.Info.Id == x));
-
-                //TODO allow users to define what version of a dependency is allowed/valid e.g version: >1.0.0 or >=1.0.0 or =1.0.0.
-                var dependency = depends.FirstOrDefault(x => x.PluginAssembly.GetName().Name == name && x.PluginAssembly.GetName().Version == assemblyName.Version);
-
-                //we don't need to load this into the context.
-                if (dependency != null)
+                if (this.pluginManager.TryGetDependency(name, pluginContainer, out _))
                     continue;
 
                 if (pluginContainer.FileEntries.ContainsKey($"${name}.pdb"))

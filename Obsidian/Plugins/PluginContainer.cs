@@ -12,8 +12,6 @@ namespace Obsidian.Plugins;
 
 public sealed class PluginContainer : IDisposable, IPluginContainer
 {
-    private bool initialized;
-
     public IServiceScope ServiceScope { get; internal set; } = default!;
     public PluginInfo Info { get; internal set; } = default!;
 
