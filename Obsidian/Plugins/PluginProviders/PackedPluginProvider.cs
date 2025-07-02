@@ -280,15 +280,15 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
                 if (name == pluginAssembly || runtimeElement.ToString() == "{}")
                     continue;
 
+                if (this.pluginManager.TryGetDependency(name, pluginContainer, out _))
+                    continue;
+
                 var runtime = runtimeElement.Deserialize<DependencyRuntime>(JsonSerializerOptions.Web);
                 var assemblyName = new AssemblyName
                 {
                     Name = name,
                     Version = new(runtime.AssemblyVersion),
                 };
-
-                if (this.pluginManager.TryGetDependency(name, pluginContainer, out _))
-                    continue;
 
                 if (pluginContainer.FileEntries.ContainsKey($"${name}.pdb"))
                 {
