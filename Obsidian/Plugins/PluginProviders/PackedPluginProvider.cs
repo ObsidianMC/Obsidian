@@ -25,6 +25,22 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
         //TODO save api version somewhere
         var apiVersion = reader.ReadString();
 
+        var hash = reader.ReadBytes(SHA384.HashSizeInBytes);
+        byte[]? signature = null;
+        if (reader.ReadBoolean())
+        {
+            var length = reader.ReadInt32();
+            signature = reader.ReadBytes(length);
+        }
+
+        var dataLength = reader.ReadInt32();
+        var dataPos = fs.Position;
+
+        var isSigValid = await this.TryValidatePluginAsync(fs, hash, path, signature);
+        if (!isSigValid)
+            return null;
+
+        fs.Position = dataPos;
         var pluginAssembly = reader.ReadString();
         var pluginVersion = reader.ReadString();
 
@@ -45,18 +61,6 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
                 Required = reader.ReadBoolean()
             };
         }
-
-        var hash = reader.ReadBytes(SHA384.HashSizeInBytes);
-        var isSigned = reader.ReadBoolean();
-
-        byte[]? signature = isSigned ? reader.ReadBytes(SHA384.HashSizeInBits) : null;
-
-        var dataLength = reader.ReadInt32();
-
-        //Don't load untrusted plugins
-        var isSigValid = await this.TryValidatePluginAsync(fs, hash, path, isSigned, signature);
-        if (!isSigValid)
-            return null;
 
         var loadContext = new PluginLoadContext(pluginAssembly);
 
@@ -148,11 +152,12 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
     /// Verifies the file hash and tries to validate the signature
     /// </summary>
     /// <returns>True if the provided plugin was successfully validated. Otherwise false.</returns>
-    private async Task<bool> TryValidatePluginAsync(FileStream fs, byte[] hash, string path, bool isSigned, byte[]? signature = null)
+    private async Task<bool> TryValidatePluginAsync(FileStream fs, byte[] hash, string path, byte[]? signature = null)
     {
         using (var sha384 = SHA384.Create())
         {
             var verifyHash = await sha384.ComputeHashAsync(fs);
+            var hexHash = Convert.ToHexString(hash);
 
             if (!verifyHash.SequenceEqual(hash))
             {
@@ -164,19 +169,15 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
         var isSigValid = true;
         if (!this.pluginManager.server.Configuration.AllowUntrustedPlugins)
         {
-            if (!isSigned)
+            if (signature == null)
                 return false;
-
-            var deformatter = new RSAPKCS1SignatureDeformatter();
-            deformatter.SetHashAlgorithm("SHA384");
 
             using var rsa = RSA.Create();
             foreach (var rsaParameter in this.pluginManager.AcceptedKeys)
             {
                 rsa.ImportParameters(rsaParameter);
-                deformatter.SetKey(rsa);
 
-                isSigValid = deformatter.VerifySignature(hash, signature!);
+                isSigValid = rsa.VerifyData(hash, signature, HashAlgorithmName.SHA384, RSASignaturePadding.Pkcs1);
 
                 if (isSigValid)
                     break;

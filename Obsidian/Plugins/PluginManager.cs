@@ -96,8 +96,8 @@ public sealed class PluginManager : IAsyncDisposable
         using var rsa = RSA.Create();
         foreach (var certFile in acceptedKeyFiles)
         {
-            var xml = await File.ReadAllTextAsync(certFile);
-            rsa.FromXmlString(xml);
+            var text = await File.ReadAllTextAsync(certFile);
+            rsa.ImportFromPem(text);
 
             this.acceptedKeys.Add(rsa.ExportParameters(false));
         }

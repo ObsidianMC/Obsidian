@@ -20,10 +20,4 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Obsidian\Obsidian.csproj" />
 	</ItemGroup>
-
-	<ItemGroup>
-		<None Update="accepted_keys\obsidian.pub.xml">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-	</ItemGroup>
 </Project>
