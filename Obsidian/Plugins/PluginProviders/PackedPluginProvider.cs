@@ -242,8 +242,6 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
             Info = info
         };
 
-        pluginContainer.Initialize();
-
         return pluginContainer;
     }
 
