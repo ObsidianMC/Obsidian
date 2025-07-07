@@ -157,8 +157,6 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
         using (var sha384 = SHA384.Create())
         {
             var verifyHash = await sha384.ComputeHashAsync(fs);
-            var hexHash = Convert.ToHexString(hash);
-
             if (!verifyHash.SequenceEqual(hash))
             {
                 this.logger.LogWarning("File {filePath} integrity does not match specified hash.", path);
