@@ -87,7 +87,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Obsidian.Nbt\Obsidian.Nbt.csproj" />
+		<ProjectReference Include="..\Obsidian.Nbt\Obsidian.Nbt.csproj" PrivateAssets="all" />
 		<ProjectReference Include="..\Obsidian.SourceGenerators\Obsidian.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 	</ItemGroup>
 </Project>
