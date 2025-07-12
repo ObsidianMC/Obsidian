@@ -175,11 +175,7 @@
   "block/air": {
     "name": "air",
     "type": "block",
-    "values": [
-      "minecraft:air",
-      "minecraft:void_air",
-      "minecraft:cave_air"
-    ]
+    "values": [ "minecraft:air", "minecraft:void_air", "minecraft:cave_air" ]
   },
   "block/all_hanging_signs": {
     "name": "all_hanging_signs",
@@ -192,10 +188,7 @@
   "block/all_signs": {
     "name": "all_signs",
     "type": "block",
-    "values": [
-      "#minecraft:signs",
-      "#minecraft:all_hanging_signs"
-    ]
+    "values": [ "#minecraft:signs", "#minecraft:all_hanging_signs" ]
   },
   "block/ancient_city_replaceable": {
     "name": "ancient_city_replaceable",
@@ -218,9 +211,7 @@
   "block/animals_spawnable_on": {
     "name": "animals_spawnable_on",
     "type": "block",
-    "values": [
-      "minecraft:grass_block"
-    ]
+    "values": [ "minecraft:grass_block" ]
   },
   "block/anvil": {
     "name": "anvil",
@@ -244,9 +235,7 @@
   "block/axolotls_spawnable_on": {
     "name": "axolotls_spawnable_on",
     "type": "block",
-    "values": [
-      "minecraft:clay"
-    ]
+    "values": [ "minecraft:clay" ]
   },
   "block/azalea_grows_on": {
     "name": "azalea_grows_on",
@@ -290,10 +279,7 @@
   "block/bamboo_blocks": {
     "name": "bamboo_blocks",
     "type": "block",
-    "values": [
-      "minecraft:bamboo_block",
-      "minecraft:stripped_bamboo_block"
-    ]
+    "values": [ "minecraft:bamboo_block", "minecraft:stripped_bamboo_block" ]
   },
   "block/bamboo_plantable_on": {
     "name": "bamboo_plantable_on",
@@ -369,9 +355,7 @@
   "block/bats_spawnable_on": {
     "name": "bats_spawnable_on",
     "type": "block",
-    "values": [
-      "#minecraft:base_stone_overworld"
-    ]
+    "values": [ "#minecraft:base_stone_overworld" ]
   },
   "block/beacon_base_blocks": {
     "name": "beacon_base_blocks",
@@ -409,10 +393,7 @@
   "block/beehives": {
     "name": "beehives",
     "type": "block",
-    "values": [
-      "minecraft:bee_nest",
-      "minecraft:beehive"
-    ]
+    "values": [ "minecraft:bee_nest", "minecraft:beehive" ]
   },
   "block/bee_attractive": {
     "name": "bee_attractive",
@@ -489,41 +470,27 @@
   "block/blocks_wind_charge_explosions": {
     "name": "blocks_wind_charge_explosions",
     "type": "block",
-    "values": [
-      "minecraft:barrier",
-      "minecraft:bedrock"
-    ]
+    "values": [ "minecraft:barrier", "minecraft:bedrock" ]
   },
   "block/buttons": {
     "name": "buttons",
     "type": "block",
-    "values": [
-      "#minecraft:wooden_buttons",
-      "#minecraft:stone_buttons"
-    ]
+    "values": [ "#minecraft:wooden_buttons", "#minecraft:stone_buttons" ]
   },
   "block/camels_spawnable_on": {
     "name": "camels_spawnable_on",
     "type": "block",
-    "values": [
-      "#minecraft:sand"
-    ]
+    "values": [ "#minecraft:sand" ]
   },
   "block/camel_sand_step_sound_blocks": {
     "name": "camel_sand_step_sound_blocks",
     "type": "block",
-    "values": [
-      "#minecraft:sand",
-      "#minecraft:concrete_powder"
-    ]
+    "values": [ "#minecraft:sand", "#minecraft:concrete_powder" ]
   },
   "block/campfires": {
     "name": "campfires",
     "type": "block",
-    "values": [
-      "minecraft:campfire",
-      "minecraft:soul_campfire"
-    ]
+    "values": [ "minecraft:campfire", "minecraft:soul_campfire" ]
   },
   "block/candles": {
     "name": "candles",
@@ -584,10 +551,7 @@
   "block/cave_vines": {
     "name": "cave_vines",
     "type": "block",
-    "values": [
-      "minecraft:cave_vines_plant",
-      "minecraft:cave_vines"
-    ]
+    "values": [ "minecraft:cave_vines_plant", "minecraft:cave_vines" ]
   },
   "block/ceiling_hanging_signs": {
     "name": "ceiling_hanging_signs",
@@ -635,10 +599,7 @@
   "block/coal_ores": {
     "name": "coal_ores",
     "type": "block",
-    "values": [
-      "minecraft:coal_ore",
-      "minecraft:deepslate_coal_ore"
-    ]
+    "values": [ "minecraft:coal_ore", "minecraft:deepslate_coal_ore" ]
   },
   "block/combination_step_sound_blocks": {
     "name": "combination_step_sound_blocks",
@@ -657,11 +618,7 @@
   "block/completes_find_tree_tutorial": {
     "name": "completes_find_tree_tutorial",
     "type": "block",
-    "values": [
-      "#minecraft:logs",
-      "#minecraft:leaves",
-      "#minecraft:wart_blocks"
-    ]
+    "values": [ "#minecraft:logs", "#minecraft:leaves", "#minecraft:wart_blocks" ]
   },
   "block/concrete_powder": {
     "name": "concrete_powder",
@@ -697,10 +654,7 @@
   "block/copper_ores": {
     "name": "copper_ores",
     "type": "block",
-    "values": [
-      "minecraft:copper_ore",
-      "minecraft:deepslate_copper_ore"
-    ]
+    "values": [ "minecraft:copper_ore", "minecraft:deepslate_copper_ore" ]
   },
   "block/corals": {
     "name": "corals",
@@ -763,18 +717,12 @@
   "block/crystal_sound_blocks": {
     "name": "crystal_sound_blocks",
     "type": "block",
-    "values": [
-      "minecraft:amethyst_block",
-      "minecraft:budding_amethyst"
-    ]
+    "values": [ "minecraft:amethyst_block", "minecraft:budding_amethyst" ]
   },
   "block/dampens_vibrations": {
     "name": "dampens_vibrations",
     "type": "block",
-    "values": [
-      "#minecraft:wool",
-      "#minecraft:wool_carpets"
-    ]
+    "values": [ "#minecraft:wool", "#minecraft:wool_carpets" ]
   },
   "block/dark_oak_logs": {
     "name": "dark_oak_logs",
@@ -789,18 +737,12 @@
   "block/deepslate_ore_replaceables": {
     "name": "deepslate_ore_replaceables",
     "type": "block",
-    "values": [
-      "minecraft:deepslate",
-      "minecraft:tuff"
-    ]
+    "values": [ "minecraft:deepslate", "minecraft:tuff" ]
   },
   "block/diamond_ores": {
     "name": "diamond_ores",
     "type": "block",
-    "values": [
-      "minecraft:diamond_ore",
-      "minecraft:deepslate_diamond_ore"
-    ]
+    "values": [ "minecraft:diamond_ore", "minecraft:deepslate_diamond_ore" ]
   },
   "block/dirt": {
     "name": "dirt",
@@ -821,9 +763,7 @@
   "block/does_not_block_hoppers": {
     "name": "does_not_block_hoppers",
     "type": "block",
-    "values": [
-      "#minecraft:beehives"
-    ]
+    "values": [ "#minecraft:beehives" ]
   },
   "block/doors": {
     "name": "doors",
@@ -869,17 +809,12 @@
   "block/dragon_transparent": {
     "name": "dragon_transparent",
     "type": "block",
-    "values": [
-      "minecraft:light",
-      "#minecraft:fire"
-    ]
+    "values": [ "minecraft:light", "#minecraft:fire" ]
   },
   "block/dripstone_replaceable_blocks": {
     "name": "dripstone_replaceable_blocks",
     "type": "block",
-    "values": [
-      "#minecraft:base_stone_overworld"
-    ]
+    "values": [ "#minecraft:base_stone_overworld" ]
   },
   "block/dry_vegetation_may_place_on": {
     "name": "dry_vegetation_may_place_on",
@@ -904,24 +839,17 @@
   "block/emerald_ores": {
     "name": "emerald_ores",
     "type": "block",
-    "values": [
-      "minecraft:emerald_ore",
-      "minecraft:deepslate_emerald_ore"
-    ]
+    "values": [ "minecraft:emerald_ore", "minecraft:deepslate_emerald_ore" ]
   },
   "block/enchantment_power_provider": {
     "name": "enchantment_power_provider",
     "type": "block",
-    "values": [
-      "minecraft:bookshelf"
-    ]
+    "values": [ "minecraft:bookshelf" ]
   },
   "block/enchantment_power_transmitter": {
     "name": "enchantment_power_transmitter",
     "type": "block",
-    "values": [
-      "#minecraft:replaceable"
-    ]
+    "values": [ "#minecraft:replaceable" ]
   },
   "block/enderman_holdable": {
     "name": "enderman_holdable",
@@ -974,10 +902,7 @@
   "block/fences": {
     "name": "fences",
     "type": "block",
-    "values": [
-      "#minecraft:wooden_fences",
-      "minecraft:nether_brick_fence"
-    ]
+    "values": [ "#minecraft:wooden_fences", "minecraft:nether_brick_fence" ]
   },
   "block/fence_gates": {
     "name": "fence_gates",
@@ -1000,10 +925,7 @@
   "block/fire": {
     "name": "fire",
     "type": "block",
-    "values": [
-      "minecraft:fire",
-      "minecraft:soul_fire"
-    ]
+    "values": [ "minecraft:fire", "minecraft:soul_fire" ]
   },
   "block/flowers": {
     "name": "flowers",
@@ -1094,10 +1016,7 @@
   "block/frog_prefer_jump_to": {
     "name": "frog_prefer_jump_to",
     "type": "block",
-    "values": [
-      "minecraft:lily_pad",
-      "minecraft:big_dripleaf"
-    ]
+    "values": [ "minecraft:lily_pad", "minecraft:big_dripleaf" ]
   },
   "block/geode_invalid_blocks": {
     "name": "geode_invalid_blocks",
@@ -1220,9 +1139,7 @@
   "block/incorrect_for_iron_tool": {
     "name": "incorrect_for_iron_tool",
     "type": "block",
-    "values": [
-      "#minecraft:needs_diamond_tool"
-    ]
+    "values": [ "#minecraft:needs_diamond_tool" ]
   },
   "block/incorrect_for_netherite_tool": {
     "name": "incorrect_for_netherite_tool",
@@ -1232,10 +1149,7 @@
   "block/incorrect_for_stone_tool": {
     "name": "incorrect_for_stone_tool",
     "type": "block",
-    "values": [
-      "#minecraft:needs_diamond_tool",
-      "#minecraft:needs_iron_tool"
-    ]
+    "values": [ "#minecraft:needs_diamond_tool", "#minecraft:needs_iron_tool" ]
   },
   "block/incorrect_for_wooden_tool": {
     "name": "incorrect_for_wooden_tool",
@@ -1249,25 +1163,17 @@
   "block/infiniburn_end": {
     "name": "infiniburn_end",
     "type": "block",
-    "values": [
-      "#minecraft:infiniburn_overworld",
-      "minecraft:bedrock"
-    ]
+    "values": [ "#minecraft:infiniburn_overworld", "minecraft:bedrock" ]
   },
   "block/infiniburn_nether": {
     "name": "infiniburn_nether",
     "type": "block",
-    "values": [
-      "#minecraft:infiniburn_overworld"
-    ]
+    "values": [ "#minecraft:infiniburn_overworld" ]
   },
   "block/infiniburn_overworld": {
     "name": "infiniburn_overworld",
     "type": "block",
-    "values": [
-      "minecraft:netherrack",
-      "minecraft:magma_block"
-    ]
+    "values": [ "minecraft:netherrack", "minecraft:magma_block" ]
   },
   "block/inside_step_sound_blocks": {
     "name": "inside_step_sound_blocks",
@@ -1286,18 +1192,12 @@
   "block/invalid_spawn_inside": {
     "name": "invalid_spawn_inside",
     "type": "block",
-    "values": [
-      "minecraft:end_portal",
-      "minecraft:end_gateway"
-    ]
+    "values": [ "minecraft:end_portal", "minecraft:end_gateway" ]
   },
   "block/iron_ores": {
     "name": "iron_ores",
     "type": "block",
-    "values": [
-      "minecraft:iron_ore",
-      "minecraft:deepslate_iron_ore"
-    ]
+    "values": [ "minecraft:iron_ore", "minecraft:deepslate_iron_ore" ]
   },
   "block/jungle_logs": {
     "name": "jungle_logs",
@@ -1312,10 +1212,7 @@
   "block/lapis_ores": {
     "name": "lapis_ores",
     "type": "block",
-    "values": [
-      "minecraft:lapis_ore",
-      "minecraft:deepslate_lapis_ore"
-    ]
+    "values": [ "minecraft:lapis_ore", "minecraft:deepslate_lapis_ore" ]
   },
   "block/lava_pool_stone_cannot_replace": {
     "name": "lava_pool_stone_cannot_replace",
@@ -1449,9 +1346,7 @@
   "block/mooshrooms_spawnable_on": {
     "name": "mooshrooms_spawnable_on",
     "type": "block",
-    "values": [
-      "minecraft:mycelium"
-    ]
+    "values": [ "minecraft:mycelium" ]
   },
   "block/moss_replaceable": {
     "name": "moss_replaceable",
@@ -1599,10 +1494,7 @@
   "block/nylium": {
     "name": "nylium",
     "type": "block",
-    "values": [
-      "minecraft:crimson_nylium",
-      "minecraft:warped_nylium"
-    ]
+    "values": [ "minecraft:crimson_nylium", "minecraft:warped_nylium" ]
   },
   "block/oak_logs": {
     "name": "oak_logs",
@@ -1617,9 +1509,7 @@
   "block/occludes_vibration_signals": {
     "name": "occludes_vibration_signals",
     "type": "block",
-    "values": [
-      "#minecraft:wool"
-    ]
+    "values": [ "#minecraft:wool" ]
   },
   "block/overworld_carver_replaceables": {
     "name": "overworld_carver_replaceables",
@@ -1710,9 +1600,7 @@
   "block/polar_bears_spawnable_on_alternate": {
     "name": "polar_bears_spawnable_on_alternate",
     "type": "block",
-    "values": [
-      "minecraft:ice"
-    ]
+    "values": [ "minecraft:ice" ]
   },
   "block/portals": {
     "name": "portals",
@@ -1736,9 +1624,7 @@
   "block/prevent_mob_spawning_inside": {
     "name": "prevent_mob_spawning_inside",
     "type": "block",
-    "values": [
-      "#minecraft:rails"
-    ]
+    "values": [ "#minecraft:rails" ]
   },
   "block/rabbits_spawnable_on": {
     "name": "rabbits_spawnable_on",
@@ -1763,10 +1649,7 @@
   "block/redstone_ores": {
     "name": "redstone_ores",
     "type": "block",
-    "values": [
-      "minecraft:redstone_ore",
-      "minecraft:deepslate_redstone_ore"
-    ]
+    "values": [ "minecraft:redstone_ore", "minecraft:deepslate_redstone_ore" ]
   },
   "block/replaceable": {
     "name": "replaceable",
@@ -1961,10 +1844,7 @@
   "block/signs": {
     "name": "signs",
     "type": "block",
-    "values": [
-      "#minecraft:standing_signs",
-      "#minecraft:wall_signs"
-    ]
+    "values": [ "#minecraft:standing_signs", "#minecraft:wall_signs" ]
   },
   "block/slabs": {
     "name": "slabs",
@@ -2026,10 +1906,7 @@
   "block/small_dripleaf_placeable": {
     "name": "small_dripleaf_placeable",
     "type": "block",
-    "values": [
-      "minecraft:clay",
-      "minecraft:moss_block"
-    ]
+    "values": [ "minecraft:clay", "minecraft:moss_block" ]
   },
   "block/small_flowers": {
     "name": "small_flowers",
@@ -2056,10 +1933,7 @@
   "block/smelts_to_glass": {
     "name": "smelts_to_glass",
     "type": "block",
-    "values": [
-      "minecraft:sand",
-      "minecraft:red_sand"
-    ]
+    "values": [ "minecraft:sand", "minecraft:red_sand" ]
   },
   "block/snaps_goat_horn": {
     "name": "snaps_goat_horn",
@@ -2092,9 +1966,7 @@
   "block/sniffer_egg_hatch_boost": {
     "name": "sniffer_egg_hatch_boost",
     "type": "block",
-    "values": [
-      "minecraft:moss_block"
-    ]
+    "values": [ "minecraft:moss_block" ]
   },
   "block/snow": {
     "name": "snow",
@@ -2108,36 +1980,22 @@
   "block/snow_layer_cannot_survive_on": {
     "name": "snow_layer_cannot_survive_on",
     "type": "block",
-    "values": [
-      "minecraft:ice",
-      "minecraft:packed_ice",
-      "minecraft:barrier"
-    ]
+    "values": [ "minecraft:ice", "minecraft:packed_ice", "minecraft:barrier" ]
   },
   "block/snow_layer_can_survive_on": {
     "name": "snow_layer_can_survive_on",
     "type": "block",
-    "values": [
-      "minecraft:honey_block",
-      "minecraft:soul_sand",
-      "minecraft:mud"
-    ]
+    "values": [ "minecraft:honey_block", "minecraft:soul_sand", "minecraft:mud" ]
   },
   "block/soul_fire_base_blocks": {
     "name": "soul_fire_base_blocks",
     "type": "block",
-    "values": [
-      "minecraft:soul_sand",
-      "minecraft:soul_soil"
-    ]
+    "values": [ "minecraft:soul_sand", "minecraft:soul_soil" ]
   },
   "block/soul_speed_blocks": {
     "name": "soul_speed_blocks",
     "type": "block",
-    "values": [
-      "minecraft:soul_sand",
-      "minecraft:soul_soil"
-    ]
+    "values": [ "minecraft:soul_sand", "minecraft:soul_soil" ]
   },
   "block/spruce_logs": {
     "name": "spruce_logs",
@@ -2233,10 +2091,7 @@
   "block/stone_buttons": {
     "name": "stone_buttons",
     "type": "block",
-    "values": [
-      "minecraft:stone_button",
-      "minecraft:polished_blackstone_button"
-    ]
+    "values": [ "minecraft:stone_button", "minecraft:polished_blackstone_button" ]
   },
   "block/stone_ore_replaceables": {
     "name": "stone_ore_replaceables",
@@ -2259,9 +2114,7 @@
   "block/strider_warm_blocks": {
     "name": "strider_warm_blocks",
     "type": "block",
-    "values": [
-      "minecraft:lava"
-    ]
+    "values": [ "minecraft:lava" ]
   },
   "block/sword_efficient": {
     "name": "sword_efficient",
@@ -2284,10 +2137,7 @@
   "block/sword_instantly_mines": {
     "name": "sword_instantly_mines",
     "type": "block",
-    "values": [
-      "minecraft:bamboo",
-      "minecraft:bamboo_sapling"
-    ]
+    "values": [ "minecraft:bamboo", "minecraft:bamboo_sapling" ]
   },
   "block/terracotta": {
     "name": "terracotta",
@@ -2315,9 +2165,7 @@
   "block/trail_ruins_replaceable": {
     "name": "trail_ruins_replaceable",
     "type": "block",
-    "values": [
-      "minecraft:gravel"
-    ]
+    "values": [ "minecraft:gravel" ]
   },
   "block/trapdoors": {
     "name": "trapdoors",
@@ -2338,27 +2186,17 @@
   "block/triggers_ambient_desert_dry_vegetation_block_sounds": {
     "name": "triggers_ambient_desert_dry_vegetation_block_sounds",
     "type": "block",
-    "values": [
-      "#minecraft:terracotta",
-      "minecraft:sand",
-      "minecraft:red_sand"
-    ]
+    "values": [ "#minecraft:terracotta", "minecraft:sand", "minecraft:red_sand" ]
   },
   "block/triggers_ambient_desert_sand_block_sounds": {
     "name": "triggers_ambient_desert_sand_block_sounds",
     "type": "block",
-    "values": [
-      "minecraft:sand",
-      "minecraft:red_sand"
-    ]
+    "values": [ "minecraft:sand", "minecraft:red_sand" ]
   },
   "block/triggers_ambient_dried_ghast_block_sounds": {
     "name": "triggers_ambient_dried_ghast_block_sounds",
     "type": "block",
-    "values": [
-      "minecraft:soul_sand",
-      "minecraft:soul_soil"
-    ]
+    "values": [ "minecraft:soul_sand", "minecraft:soul_soil" ]
   },
   "block/underwater_bonemeals": {
     "name": "underwater_bonemeals",
@@ -2372,24 +2210,17 @@
   "block/unstable_bottom_center": {
     "name": "unstable_bottom_center",
     "type": "block",
-    "values": [
-      "#minecraft:fence_gates"
-    ]
+    "values": [ "#minecraft:fence_gates" ]
   },
   "block/valid_spawn": {
     "name": "valid_spawn",
     "type": "block",
-    "values": [
-      "minecraft:grass_block",
-      "minecraft:podzol"
-    ]
+    "values": [ "minecraft:grass_block", "minecraft:podzol" ]
   },
   "block/vibration_resonators": {
     "name": "vibration_resonators",
     "type": "block",
-    "values": [
-      "minecraft:amethyst_block"
-    ]
+    "values": [ "minecraft:amethyst_block" ]
   },
   "block/walls": {
     "name": "walls",
@@ -2497,10 +2328,7 @@
   "block/wart_blocks": {
     "name": "wart_blocks",
     "type": "block",
-    "values": [
-      "minecraft:nether_wart_block",
-      "minecraft:warped_wart_block"
-    ]
+    "values": [ "minecraft:nether_wart_block", "minecraft:warped_wart_block" ]
   },
   "block/wither_immune": {
     "name": "wither_immune",
@@ -2526,10 +2354,7 @@
   "block/wither_summon_base_blocks": {
     "name": "wither_summon_base_blocks",
     "type": "block",
-    "values": [
-      "minecraft:soul_sand",
-      "minecraft:soul_soil"
-    ]
+    "values": [ "minecraft:soul_sand", "minecraft:soul_soil" ]
   },
   "block/wolves_spawnable_on": {
     "name": "wolves_spawnable_on",
@@ -2715,9 +2540,7 @@
   "damage_type/always_hurts_ender_dragons": {
     "name": "always_hurts_ender_dragons",
     "type": "damage_type",
-    "values": [
-      "#minecraft:is_explosion"
-    ]
+    "values": [ "#minecraft:is_explosion" ]
   },
   "damage_type/always_kills_armor_stands": {
     "name": "always_kills_armor_stands",
@@ -2733,40 +2556,27 @@
   "damage_type/always_most_significant_fall": {
     "name": "always_most_significant_fall",
     "type": "damage_type",
-    "values": [
-      "minecraft:out_of_world"
-    ]
+    "values": [ "minecraft:out_of_world" ]
   },
   "damage_type/always_triggers_silverfish": {
     "name": "always_triggers_silverfish",
     "type": "damage_type",
-    "values": [
-      "minecraft:magic"
-    ]
+    "values": [ "minecraft:magic" ]
   },
   "damage_type/avoids_guardian_thorns": {
     "name": "avoids_guardian_thorns",
     "type": "damage_type",
-    "values": [
-      "minecraft:magic",
-      "minecraft:thorns",
-      "#minecraft:is_explosion"
-    ]
+    "values": [ "minecraft:magic", "minecraft:thorns", "#minecraft:is_explosion" ]
   },
   "damage_type/burns_armor_stands": {
     "name": "burns_armor_stands",
     "type": "damage_type",
-    "values": [
-      "minecraft:on_fire"
-    ]
+    "values": [ "minecraft:on_fire" ]
   },
   "damage_type/burn_from_stepping": {
     "name": "burn_from_stepping",
     "type": "damage_type",
-    "values": [
-      "minecraft:campfire",
-      "minecraft:hot_floor"
-    ]
+    "values": [ "minecraft:campfire", "minecraft:hot_floor" ]
   },
   "damage_type/bypasses_armor": {
     "name": "bypasses_armor",
@@ -2796,32 +2606,22 @@
   "damage_type/bypasses_effects": {
     "name": "bypasses_effects",
     "type": "damage_type",
-    "values": [
-      "minecraft:starve"
-    ]
+    "values": [ "minecraft:starve" ]
   },
   "damage_type/bypasses_enchantments": {
     "name": "bypasses_enchantments",
     "type": "damage_type",
-    "values": [
-      "minecraft:sonic_boom"
-    ]
+    "values": [ "minecraft:sonic_boom" ]
   },
   "damage_type/bypasses_invulnerability": {
     "name": "bypasses_invulnerability",
     "type": "damage_type",
-    "values": [
-      "minecraft:out_of_world",
-      "minecraft:generic_kill"
-    ]
+    "values": [ "minecraft:out_of_world", "minecraft:generic_kill" ]
   },
   "damage_type/bypasses_resistance": {
     "name": "bypasses_resistance",
     "type": "damage_type",
-    "values": [
-      "minecraft:out_of_world",
-      "minecraft:generic_kill"
-    ]
+    "values": [ "minecraft:out_of_world", "minecraft:generic_kill" ]
   },
   "damage_type/bypasses_shield": {
     "name": "bypasses_shield",
@@ -2861,10 +2661,7 @@
   "damage_type/can_break_armor_stand": {
     "name": "can_break_armor_stand",
     "type": "damage_type",
-    "values": [
-      "minecraft:player_explosion",
-      "#minecraft:is_player_attack"
-    ]
+    "values": [ "minecraft:player_explosion", "#minecraft:is_player_attack" ]
   },
   "damage_type/damages_helmet": {
     "name": "damages_helmet",
@@ -2878,17 +2675,12 @@
   "damage_type/ignites_armor_stands": {
     "name": "ignites_armor_stands",
     "type": "damage_type",
-    "values": [
-      "minecraft:in_fire",
-      "minecraft:campfire"
-    ]
+    "values": [ "minecraft:in_fire", "minecraft:campfire" ]
   },
   "damage_type/is_drowning": {
     "name": "is_drowning",
     "type": "damage_type",
-    "values": [
-      "minecraft:drown"
-    ]
+    "values": [ "minecraft:drown" ]
   },
   "damage_type/is_explosion": {
     "name": "is_explosion",
@@ -2925,24 +2717,17 @@
   "damage_type/is_freezing": {
     "name": "is_freezing",
     "type": "damage_type",
-    "values": [
-      "minecraft:freeze"
-    ]
+    "values": [ "minecraft:freeze" ]
   },
   "damage_type/is_lightning": {
     "name": "is_lightning",
     "type": "damage_type",
-    "values": [
-      "minecraft:lightning_bolt"
-    ]
+    "values": [ "minecraft:lightning_bolt" ]
   },
   "damage_type/is_player_attack": {
     "name": "is_player_attack",
     "type": "damage_type",
-    "values": [
-      "minecraft:player_attack",
-      "minecraft:mace_smash"
-    ]
+    "values": [ "minecraft:player_attack", "minecraft:mace_smash" ]
   },
   "damage_type/is_projectile": {
     "name": "is_projectile",
@@ -2961,23 +2746,17 @@
   "damage_type/mace_smash": {
     "name": "mace_smash",
     "type": "damage_type",
-    "values": [
-      "minecraft:mace_smash"
-    ]
+    "values": [ "minecraft:mace_smash" ]
   },
   "damage_type/no_anger": {
     "name": "no_anger",
     "type": "damage_type",
-    "values": [
-      "minecraft:mob_attack_no_aggro"
-    ]
+    "values": [ "minecraft:mob_attack_no_aggro" ]
   },
   "damage_type/no_impact": {
     "name": "no_impact",
     "type": "damage_type",
-    "values": [
-      "minecraft:drown"
-    ]
+    "values": [ "minecraft:drown" ]
   },
   "damage_type/no_knockback": {
     "name": "no_knockback",
@@ -3065,9 +2844,7 @@
   "damage_type/wither_immune_to": {
     "name": "wither_immune_to",
     "type": "damage_type",
-    "values": [
-      "minecraft:drown"
-    ]
+    "values": [ "minecraft:drown" ]
   },
   "dialog/pause_screen_additions": {
     "name": "pause_screen_additions",
@@ -3082,24 +2859,17 @@
   "enchantment/curse": {
     "name": "curse",
     "type": "enchantment",
-    "values": [
-      "minecraft:binding_curse",
-      "minecraft:vanishing_curse"
-    ]
+    "values": [ "minecraft:binding_curse", "minecraft:vanishing_curse" ]
   },
   "enchantment/double_trade_price": {
     "name": "double_trade_price",
     "type": "enchantment",
-    "values": [
-      "#minecraft:treasure"
-    ]
+    "values": [ "#minecraft:treasure" ]
   },
   "enchantment/in_enchanting_table": {
     "name": "in_enchanting_table",
     "type": "enchantment",
-    "values": [
-      "#minecraft:non_treasure"
-    ]
+    "values": [ "#minecraft:non_treasure" ]
   },
   "enchantment/non_treasure": {
     "name": "non_treasure",
@@ -3145,9 +2915,7 @@
   "enchantment/on_mob_spawn_equipment": {
     "name": "on_mob_spawn_equipment",
     "type": "enchantment",
-    "values": [
-      "#minecraft:non_treasure"
-    ]
+    "values": [ "#minecraft:non_treasure" ]
   },
   "enchantment/on_random_loot": {
     "name": "on_random_loot",
@@ -3163,44 +2931,32 @@
   "enchantment/on_traded_equipment": {
     "name": "on_traded_equipment",
     "type": "enchantment",
-    "values": [
-      "#minecraft:non_treasure"
-    ]
+    "values": [ "#minecraft:non_treasure" ]
   },
   "enchantment/prevents_bee_spawns_when_mining": {
     "name": "prevents_bee_spawns_when_mining",
     "type": "enchantment",
-    "values": [
-      "minecraft:silk_touch"
-    ]
+    "values": [ "minecraft:silk_touch" ]
   },
   "enchantment/prevents_decorated_pot_shattering": {
     "name": "prevents_decorated_pot_shattering",
     "type": "enchantment",
-    "values": [
-      "minecraft:silk_touch"
-    ]
+    "values": [ "minecraft:silk_touch" ]
   },
   "enchantment/prevents_ice_melting": {
     "name": "prevents_ice_melting",
     "type": "enchantment",
-    "values": [
-      "minecraft:silk_touch"
-    ]
+    "values": [ "minecraft:silk_touch" ]
   },
   "enchantment/prevents_infested_spawns": {
     "name": "prevents_infested_spawns",
     "type": "enchantment",
-    "values": [
-      "minecraft:silk_touch"
-    ]
+    "values": [ "minecraft:silk_touch" ]
   },
   "enchantment/smelts_loot": {
     "name": "smelts_loot",
     "type": "enchantment",
-    "values": [
-      "minecraft:fire_aspect"
-    ]
+    "values": [ "minecraft:fire_aspect" ]
   },
   "enchantment/tooltip_order": {
     "name": "tooltip_order",
@@ -3295,10 +3051,7 @@
   "entity_type/arrows": {
     "name": "arrows",
     "type": "entity_type",
-    "values": [
-      "minecraft:arrow",
-      "minecraft:spectral_arrow"
-    ]
+    "values": [ "minecraft:arrow", "minecraft:spectral_arrow" ]
   },
   "entity_type/arthropod": {
     "name": "arthropod",
@@ -3336,9 +3089,7 @@
   "entity_type/beehive_inhabitors": {
     "name": "beehive_inhabitors",
     "type": "entity_type",
-    "values": [
-      "minecraft:bee"
-    ]
+    "values": [ "minecraft:bee" ]
   },
   "entity_type/boat": {
     "name": "boat",
@@ -3379,9 +3130,7 @@
   "entity_type/can_equip_harness": {
     "name": "can_equip_harness",
     "type": "entity_type",
-    "values": [
-      "minecraft:happy_ghast"
-    ]
+    "values": [ "minecraft:happy_ghast" ]
   },
   "entity_type/can_equip_saddle": {
     "name": "can_equip_saddle",
@@ -3400,23 +3149,17 @@
   "entity_type/can_turn_in_boats": {
     "name": "can_turn_in_boats",
     "type": "entity_type",
-    "values": [
-      "minecraft:breeze"
-    ]
+    "values": [ "minecraft:breeze" ]
   },
   "entity_type/can_wear_horse_armor": {
     "name": "can_wear_horse_armor",
     "type": "entity_type",
-    "values": [
-      "minecraft:horse"
-    ]
+    "values": [ "minecraft:horse" ]
   },
   "entity_type/deflects_projectiles": {
     "name": "deflects_projectiles",
     "type": "entity_type",
-    "values": [
-      "minecraft:breeze"
-    ]
+    "values": [ "minecraft:breeze" ]
   },
   "entity_type/dismounts_underwater": {
     "name": "dismounts_underwater",
@@ -3494,11 +3237,7 @@
   "entity_type/freeze_hurts_extra_types": {
     "name": "freeze_hurts_extra_types",
     "type": "entity_type",
-    "values": [
-      "minecraft:strider",
-      "minecraft:blaze",
-      "minecraft:magma_cube"
-    ]
+    "values": [ "minecraft:strider", "minecraft:blaze", "minecraft:magma_cube" ]
   },
   "entity_type/freeze_immune_entity_types": {
     "name": "freeze_immune_entity_types",
@@ -3513,17 +3252,12 @@
   "entity_type/frog_food": {
     "name": "frog_food",
     "type": "entity_type",
-    "values": [
-      "minecraft:slime",
-      "minecraft:magma_cube"
-    ]
+    "values": [ "minecraft:slime", "minecraft:magma_cube" ]
   },
   "entity_type/ignores_poison_and_regen": {
     "name": "ignores_poison_and_regen",
     "type": "entity_type",
-    "values": [
-      "#minecraft:undead"
-    ]
+    "values": [ "#minecraft:undead" ]
   },
   "entity_type/illager": {
     "name": "illager",
@@ -3538,23 +3272,17 @@
   "entity_type/illager_friends": {
     "name": "illager_friends",
     "type": "entity_type",
-    "values": [
-      "#minecraft:illager"
-    ]
+    "values": [ "#minecraft:illager" ]
   },
   "entity_type/immune_to_infested": {
     "name": "immune_to_infested",
     "type": "entity_type",
-    "values": [
-      "minecraft:silverfish"
-    ]
+    "values": [ "minecraft:silverfish" ]
   },
   "entity_type/immune_to_oozing": {
     "name": "immune_to_oozing",
     "type": "entity_type",
-    "values": [
-      "minecraft:slime"
-    ]
+    "values": [ "minecraft:slime" ]
   },
   "entity_type/impact_projectiles": {
     "name": "impact_projectiles",
@@ -3576,17 +3304,12 @@
   "entity_type/inverted_healing_and_harm": {
     "name": "inverted_healing_and_harm",
     "type": "entity_type",
-    "values": [
-      "#minecraft:undead"
-    ]
+    "values": [ "#minecraft:undead" ]
   },
   "entity_type/non_controlling_rider": {
     "name": "non_controlling_rider",
     "type": "entity_type",
-    "values": [
-      "minecraft:slime",
-      "minecraft:magma_cube"
-    ]
+    "values": [ "minecraft:slime", "minecraft:magma_cube" ]
   },
   "entity_type/not_scary_for_pufferfish": {
     "name": "not_scary_for_pufferfish",
@@ -3654,23 +3377,17 @@
   "entity_type/sensitive_to_bane_of_arthropods": {
     "name": "sensitive_to_bane_of_arthropods",
     "type": "entity_type",
-    "values": [
-      "#minecraft:arthropod"
-    ]
+    "values": [ "#minecraft:arthropod" ]
   },
   "entity_type/sensitive_to_impaling": {
     "name": "sensitive_to_impaling",
     "type": "entity_type",
-    "values": [
-      "#minecraft:aquatic"
-    ]
+    "values": [ "#minecraft:aquatic" ]
   },
   "entity_type/sensitive_to_smite": {
     "name": "sensitive_to_smite",
     "type": "entity_type",
-    "values": [
-      "#minecraft:undead"
-    ]
+    "values": [ "#minecraft:undead" ]
   },
   "entity_type/skeletons": {
     "name": "skeletons",
@@ -3696,9 +3413,7 @@
   "entity_type/wither_friends": {
     "name": "wither_friends",
     "type": "entity_type",
-    "values": [
-      "#minecraft:undead"
-    ]
+    "values": [ "#minecraft:undead" ]
   },
   "entity_type/zombies": {
     "name": "zombies",
@@ -3716,25 +3431,17 @@
   "fluid/lava": {
     "name": "lava",
     "type": "fluid",
-    "values": [
-      "minecraft:lava",
-      "minecraft:flowing_lava"
-    ]
+    "values": [ "minecraft:lava", "minecraft:flowing_lava" ]
   },
   "fluid/water": {
     "name": "water",
     "type": "fluid",
-    "values": [
-      "minecraft:water",
-      "minecraft:flowing_water"
-    ]
+    "values": [ "minecraft:water", "minecraft:flowing_water" ]
   },
   "game_event/allay_can_listen": {
     "name": "allay_can_listen",
     "type": "game_event",
-    "values": [
-      "minecraft:note_block_play"
-    ]
+    "values": [ "minecraft:note_block_play" ]
   },
   "game_event/ignore_vibrations_sneaking": {
     "name": "ignore_vibrations_sneaking",
@@ -3751,9 +3458,7 @@
   "game_event/shrieker_can_listen": {
     "name": "shrieker_can_listen",
     "type": "game_event",
-    "values": [
-      "minecraft:sculk_sensor_tendrils_clicking"
-    ]
+    "values": [ "minecraft:sculk_sensor_tendrils_clicking" ]
   },
   "game_event/vibrations": {
     "name": "vibrations",
@@ -3928,9 +3633,7 @@
   "item/armadillo_food": {
     "name": "armadillo_food",
     "type": "item",
-    "values": [
-      "minecraft:spider_eye"
-    ]
+    "values": [ "minecraft:spider_eye" ]
   },
   "item/arrows": {
     "name": "arrows",
@@ -3956,17 +3659,12 @@
   "item/axolotl_food": {
     "name": "axolotl_food",
     "type": "item",
-    "values": [
-      "minecraft:tropical_fish_bucket"
-    ]
+    "values": [ "minecraft:tropical_fish_bucket" ]
   },
   "item/bamboo_blocks": {
     "name": "bamboo_blocks",
     "type": "item",
-    "values": [
-      "minecraft:bamboo_block",
-      "minecraft:stripped_bamboo_block"
-    ]
+    "values": [ "minecraft:bamboo_block", "minecraft:stripped_bamboo_block" ]
   },
   "item/banners": {
     "name": "banners",
@@ -4099,9 +3797,7 @@
   "item/book_cloning_target": {
     "name": "book_cloning_target",
     "type": "item",
-    "values": [
-      "minecraft:writable_book"
-    ]
+    "values": [ "minecraft:writable_book" ]
   },
   "item/breaks_decorated_pots": {
     "name": "breaks_decorated_pots",
@@ -4119,9 +3815,7 @@
   "item/brewing_fuel": {
     "name": "brewing_fuel",
     "type": "item",
-    "values": [
-      "minecraft:blaze_powder"
-    ]
+    "values": [ "minecraft:blaze_powder" ]
   },
   "item/bundles": {
     "name": "bundles",
@@ -4149,17 +3843,12 @@
   "item/buttons": {
     "name": "buttons",
     "type": "item",
-    "values": [
-      "#minecraft:wooden_buttons",
-      "#minecraft:stone_buttons"
-    ]
+    "values": [ "#minecraft:wooden_buttons", "#minecraft:stone_buttons" ]
   },
   "item/camel_food": {
     "name": "camel_food",
     "type": "item",
-    "values": [
-      "minecraft:cactus"
-    ]
+    "values": [ "minecraft:cactus" ]
   },
   "item/candles": {
     "name": "candles",
@@ -4187,10 +3876,7 @@
   "item/cat_food": {
     "name": "cat_food",
     "type": "item",
-    "values": [
-      "minecraft:cod",
-      "minecraft:salmon"
-    ]
+    "values": [ "minecraft:cod", "minecraft:salmon" ]
   },
   "item/cherry_logs": {
     "name": "cherry_logs",
@@ -4257,50 +3943,32 @@
   "item/coals": {
     "name": "coals",
     "type": "item",
-    "values": [
-      "minecraft:coal",
-      "minecraft:charcoal"
-    ]
+    "values": [ "minecraft:coal", "minecraft:charcoal" ]
   },
   "item/coal_ores": {
     "name": "coal_ores",
     "type": "item",
-    "values": [
-      "minecraft:coal_ore",
-      "minecraft:deepslate_coal_ore"
-    ]
+    "values": [ "minecraft:coal_ore", "minecraft:deepslate_coal_ore" ]
   },
   "item/compasses": {
     "name": "compasses",
     "type": "item",
-    "values": [
-      "minecraft:compass",
-      "minecraft:recovery_compass"
-    ]
+    "values": [ "minecraft:compass", "minecraft:recovery_compass" ]
   },
   "item/completes_find_tree_tutorial": {
     "name": "completes_find_tree_tutorial",
     "type": "item",
-    "values": [
-      "#minecraft:logs",
-      "#minecraft:leaves",
-      "#minecraft:wart_blocks"
-    ]
+    "values": [ "#minecraft:logs", "#minecraft:leaves", "#minecraft:wart_blocks" ]
   },
   "item/copper_ores": {
     "name": "copper_ores",
     "type": "item",
-    "values": [
-      "minecraft:copper_ore",
-      "minecraft:deepslate_copper_ore"
-    ]
+    "values": [ "minecraft:copper_ore", "minecraft:deepslate_copper_ore" ]
   },
   "item/cow_food": {
     "name": "cow_food",
     "type": "item",
-    "values": [
-      "minecraft:wheat"
-    ]
+    "values": [ "minecraft:wheat" ]
   },
   "item/creeper_drop_music_discs": {
     "name": "creeper_drop_music_discs",
@@ -4323,10 +3991,7 @@
   "item/creeper_igniters": {
     "name": "creeper_igniters",
     "type": "item",
-    "values": [
-      "minecraft:flint_and_steel",
-      "minecraft:fire_charge"
-    ]
+    "values": [ "minecraft:flint_and_steel", "minecraft:fire_charge" ]
   },
   "item/crimson_stems": {
     "name": "crimson_stems",
@@ -4341,10 +4006,7 @@
   "item/dampens_vibrations": {
     "name": "dampens_vibrations",
     "type": "item",
-    "values": [
-      "#minecraft:wool",
-      "#minecraft:wool_carpets"
-    ]
+    "values": [ "#minecraft:wool", "#minecraft:wool_carpets" ]
   },
   "item/dark_oak_logs": {
     "name": "dark_oak_logs",
@@ -4359,10 +4021,7 @@
   "item/decorated_pot_ingredients": {
     "name": "decorated_pot_ingredients",
     "type": "item",
-    "values": [
-      "minecraft:brick",
-      "#minecraft:decorated_pot_sherds"
-    ]
+    "values": [ "minecraft:brick", "#minecraft:decorated_pot_sherds" ]
   },
   "item/decorated_pot_sherds": {
     "name": "decorated_pot_sherds",
@@ -4396,17 +4055,12 @@
   "item/diamond_ores": {
     "name": "diamond_ores",
     "type": "item",
-    "values": [
-      "minecraft:diamond_ore",
-      "minecraft:deepslate_diamond_ore"
-    ]
+    "values": [ "minecraft:diamond_ore", "minecraft:deepslate_diamond_ore" ]
   },
   "item/diamond_tool_materials": {
     "name": "diamond_tool_materials",
     "type": "item",
-    "values": [
-      "minecraft:diamond"
-    ]
+    "values": [ "minecraft:diamond" ]
   },
   "item/dirt": {
     "name": "dirt",
@@ -4443,16 +4097,12 @@
   "item/drowned_preferred_weapons": {
     "name": "drowned_preferred_weapons",
     "type": "item",
-    "values": [
-      "minecraft:trident"
-    ]
+    "values": [ "minecraft:trident" ]
   },
   "item/duplicates_allays": {
     "name": "duplicates_allays",
     "type": "item",
-    "values": [
-      "minecraft:amethyst_shard"
-    ]
+    "values": [ "minecraft:amethyst_shard" ]
   },
   "item/dyeable": {
     "name": "dyeable",
@@ -4469,27 +4119,17 @@
   "item/eggs": {
     "name": "eggs",
     "type": "item",
-    "values": [
-      "minecraft:egg",
-      "minecraft:blue_egg",
-      "minecraft:brown_egg"
-    ]
+    "values": [ "minecraft:egg", "minecraft:blue_egg", "minecraft:brown_egg" ]
   },
   "item/emerald_ores": {
     "name": "emerald_ores",
     "type": "item",
-    "values": [
-      "minecraft:emerald_ore",
-      "minecraft:deepslate_emerald_ore"
-    ]
+    "values": [ "minecraft:emerald_ore", "minecraft:deepslate_emerald_ore" ]
   },
   "item/fences": {
     "name": "fences",
     "type": "item",
-    "values": [
-      "#minecraft:wooden_fences",
-      "minecraft:nether_brick_fence"
-    ]
+    "values": [ "#minecraft:wooden_fences", "minecraft:nether_brick_fence" ]
   },
   "item/fence_gates": {
     "name": "fence_gates",
@@ -4557,10 +4197,7 @@
   "item/fox_food": {
     "name": "fox_food",
     "type": "item",
-    "values": [
-      "minecraft:sweet_berries",
-      "minecraft:glow_berries"
-    ]
+    "values": [ "minecraft:sweet_berries", "minecraft:glow_berries" ]
   },
   "item/freeze_immune_wearables": {
     "name": "freeze_immune_wearables",
@@ -4576,31 +4213,22 @@
   "item/frog_food": {
     "name": "frog_food",
     "type": "item",
-    "values": [
-      "minecraft:slime_ball"
-    ]
+    "values": [ "minecraft:slime_ball" ]
   },
   "item/furnace_minecart_fuel": {
     "name": "furnace_minecart_fuel",
     "type": "item",
-    "values": [
-      "minecraft:coal",
-      "minecraft:charcoal"
-    ]
+    "values": [ "minecraft:coal", "minecraft:charcoal" ]
   },
   "item/gaze_disguise_equipment": {
     "name": "gaze_disguise_equipment",
     "type": "item",
-    "values": [
-      "minecraft:carved_pumpkin"
-    ]
+    "values": [ "minecraft:carved_pumpkin" ]
   },
   "item/goat_food": {
     "name": "goat_food",
     "type": "item",
-    "values": [
-      "minecraft:wheat"
-    ]
+    "values": [ "minecraft:wheat" ]
   },
   "item/gold_ores": {
     "name": "gold_ores",
@@ -4614,9 +4242,7 @@
   "item/gold_tool_materials": {
     "name": "gold_tool_materials",
     "type": "item",
-    "values": [
-      "minecraft:gold_ingot"
-    ]
+    "values": [ "minecraft:gold_ingot" ]
   },
   "item/hanging_signs": {
     "name": "hanging_signs",
@@ -4639,17 +4265,12 @@
   "item/happy_ghast_food": {
     "name": "happy_ghast_food",
     "type": "item",
-    "values": [
-      "minecraft:snowball"
-    ]
+    "values": [ "minecraft:snowball" ]
   },
   "item/happy_ghast_tempt_items": {
     "name": "happy_ghast_tempt_items",
     "type": "item",
-    "values": [
-      "#minecraft:happy_ghast_food",
-      "#minecraft:harnesses"
-    ]
+    "values": [ "#minecraft:happy_ghast_food", "#minecraft:harnesses" ]
   },
   "item/harnesses": {
     "name": "harnesses",
@@ -4701,9 +4322,7 @@
   "item/hoglin_food": {
     "name": "hoglin_food",
     "type": "item",
-    "values": [
-      "minecraft:crimson_fungus"
-    ]
+    "values": [ "minecraft:crimson_fungus" ]
   },
   "item/horse_food": {
     "name": "horse_food",
@@ -4731,24 +4350,17 @@
   "item/ignored_by_piglin_babies": {
     "name": "ignored_by_piglin_babies",
     "type": "item",
-    "values": [
-      "minecraft:leather"
-    ]
+    "values": [ "minecraft:leather" ]
   },
   "item/iron_ores": {
     "name": "iron_ores",
     "type": "item",
-    "values": [
-      "minecraft:iron_ore",
-      "minecraft:deepslate_iron_ore"
-    ]
+    "values": [ "minecraft:iron_ore", "minecraft:deepslate_iron_ore" ]
   },
   "item/iron_tool_materials": {
     "name": "iron_tool_materials",
     "type": "item",
-    "values": [
-      "minecraft:iron_ingot"
-    ]
+    "values": [ "minecraft:iron_ingot" ]
   },
   "item/jungle_logs": {
     "name": "jungle_logs",
@@ -4763,10 +4375,7 @@
   "item/lapis_ores": {
     "name": "lapis_ores",
     "type": "item",
-    "values": [
-      "minecraft:lapis_ore",
-      "minecraft:deepslate_lapis_ore"
-    ]
+    "values": [ "minecraft:lapis_ore", "minecraft:deepslate_lapis_ore" ]
   },
   "item/leaves": {
     "name": "leaves",
@@ -4788,10 +4397,7 @@
   "item/lectern_books": {
     "name": "lectern_books",
     "type": "item",
-    "values": [
-      "minecraft:written_book",
-      "minecraft:writable_book"
-    ]
+    "values": [ "minecraft:written_book", "minecraft:writable_book" ]
   },
   "item/leg_armor": {
     "name": "leg_armor",
@@ -4808,17 +4414,12 @@
   "item/llama_food": {
     "name": "llama_food",
     "type": "item",
-    "values": [
-      "minecraft:wheat",
-      "minecraft:hay_block"
-    ]
+    "values": [ "minecraft:wheat", "minecraft:hay_block" ]
   },
   "item/llama_tempt_items": {
     "name": "llama_tempt_items",
     "type": "item",
-    "values": [
-      "minecraft:hay_block"
-    ]
+    "values": [ "minecraft:hay_block" ]
   },
   "item/logs": {
     "name": "logs",
@@ -4857,9 +4458,7 @@
   "item/map_invisibility_equipment": {
     "name": "map_invisibility_equipment",
     "type": "item",
-    "values": [
-      "minecraft:carved_pumpkin"
-    ]
+    "values": [ "minecraft:carved_pumpkin" ]
   },
   "item/meat": {
     "name": "meat",
@@ -4881,9 +4480,7 @@
   "item/netherite_tool_materials": {
     "name": "netherite_tool_materials",
     "type": "item",
-    "values": [
-      "minecraft:netherite_ingot"
-    ]
+    "values": [ "minecraft:netherite_ingot" ]
   },
   "item/non_flammable_wood": {
     "name": "non_flammable_wood",
@@ -4947,10 +4544,7 @@
   "item/ocelot_food": {
     "name": "ocelot_food",
     "type": "item",
-    "values": [
-      "minecraft:cod",
-      "minecraft:salmon"
-    ]
+    "values": [ "minecraft:cod", "minecraft:salmon" ]
   },
   "item/pale_oak_logs": {
     "name": "pale_oak_logs",
@@ -4965,17 +4559,12 @@
   "item/panda_eats_from_ground": {
     "name": "panda_eats_from_ground",
     "type": "item",
-    "values": [
-      "#minecraft:panda_food",
-      "minecraft:cake"
-    ]
+    "values": [ "#minecraft:panda_food", "minecraft:cake" ]
   },
   "item/panda_food": {
     "name": "panda_food",
     "type": "item",
-    "values": [
-      "minecraft:bamboo"
-    ]
+    "values": [ "minecraft:bamboo" ]
   },
   "item/parrot_food": {
     "name": "parrot_food",
@@ -4992,9 +4581,7 @@
   "item/parrot_poisonous_food": {
     "name": "parrot_poisonous_food",
     "type": "item",
-    "values": [
-      "minecraft:cookie"
-    ]
+    "values": [ "minecraft:cookie" ]
   },
   "item/pickaxes": {
     "name": "pickaxes",
@@ -5011,10 +4598,7 @@
   "item/piglin_food": {
     "name": "piglin_food",
     "type": "item",
-    "values": [
-      "minecraft:porkchop",
-      "minecraft:cooked_porkchop"
-    ]
+    "values": [ "minecraft:porkchop", "minecraft:cooked_porkchop" ]
   },
   "item/piglin_loved": {
     "name": "piglin_loved",
@@ -5048,9 +4632,7 @@
   "item/piglin_preferred_weapons": {
     "name": "piglin_preferred_weapons",
     "type": "item",
-    "values": [
-      "minecraft:crossbow"
-    ]
+    "values": [ "minecraft:crossbow" ]
   },
   "item/piglin_repellents": {
     "name": "piglin_repellents",
@@ -5074,18 +4656,12 @@
   "item/pig_food": {
     "name": "pig_food",
     "type": "item",
-    "values": [
-      "minecraft:carrot",
-      "minecraft:potato",
-      "minecraft:beetroot"
-    ]
+    "values": [ "minecraft:carrot", "minecraft:potato", "minecraft:beetroot" ]
   },
   "item/pillager_preferred_weapons": {
     "name": "pillager_preferred_weapons",
     "type": "item",
-    "values": [
-      "minecraft:crossbow"
-    ]
+    "values": [ "minecraft:crossbow" ]
   },
   "item/planks": {
     "name": "planks",
@@ -5127,66 +4703,47 @@
   "item/redstone_ores": {
     "name": "redstone_ores",
     "type": "item",
-    "values": [
-      "minecraft:redstone_ore",
-      "minecraft:deepslate_redstone_ore"
-    ]
+    "values": [ "minecraft:redstone_ore", "minecraft:deepslate_redstone_ore" ]
   },
   "item/repairs_chain_armor": {
     "name": "repairs_chain_armor",
     "type": "item",
-    "values": [
-      "minecraft:iron_ingot"
-    ]
+    "values": [ "minecraft:iron_ingot" ]
   },
   "item/repairs_diamond_armor": {
     "name": "repairs_diamond_armor",
     "type": "item",
-    "values": [
-      "minecraft:diamond"
-    ]
+    "values": [ "minecraft:diamond" ]
   },
   "item/repairs_gold_armor": {
     "name": "repairs_gold_armor",
     "type": "item",
-    "values": [
-      "minecraft:gold_ingot"
-    ]
+    "values": [ "minecraft:gold_ingot" ]
   },
   "item/repairs_iron_armor": {
     "name": "repairs_iron_armor",
     "type": "item",
-    "values": [
-      "minecraft:iron_ingot"
-    ]
+    "values": [ "minecraft:iron_ingot" ]
   },
   "item/repairs_leather_armor": {
     "name": "repairs_leather_armor",
     "type": "item",
-    "values": [
-      "minecraft:leather"
-    ]
+    "values": [ "minecraft:leather" ]
   },
   "item/repairs_netherite_armor": {
     "name": "repairs_netherite_armor",
     "type": "item",
-    "values": [
-      "minecraft:netherite_ingot"
-    ]
+    "values": [ "minecraft:netherite_ingot" ]
   },
   "item/repairs_turtle_helmet": {
     "name": "repairs_turtle_helmet",
     "type": "item",
-    "values": [
-      "minecraft:turtle_scute"
-    ]
+    "values": [ "minecraft:turtle_scute" ]
   },
   "item/repairs_wolf_armor": {
     "name": "repairs_wolf_armor",
     "type": "item",
-    "values": [
-      "minecraft:armadillo_scute"
-    ]
+    "values": [ "minecraft:armadillo_scute" ]
   },
   "item/sand": {
     "name": "sand",
@@ -5217,9 +4774,7 @@
   "item/sheep_food": {
     "name": "sheep_food",
     "type": "item",
-    "values": [
-      "minecraft:wheat"
-    ]
+    "values": [ "minecraft:wheat" ]
   },
   "item/shovels": {
     "name": "shovels",
@@ -5277,9 +4832,7 @@
   "item/skeleton_preferred_weapons": {
     "name": "skeleton_preferred_weapons",
     "type": "item",
-    "values": [
-      "minecraft:bow"
-    ]
+    "values": [ "minecraft:bow" ]
   },
   "item/skulls": {
     "name": "skulls",
@@ -5376,25 +4929,17 @@
   "item/smelts_to_glass": {
     "name": "smelts_to_glass",
     "type": "item",
-    "values": [
-      "minecraft:sand",
-      "minecraft:red_sand"
-    ]
+    "values": [ "minecraft:sand", "minecraft:red_sand" ]
   },
   "item/sniffer_food": {
     "name": "sniffer_food",
     "type": "item",
-    "values": [
-      "minecraft:torchflower_seeds"
-    ]
+    "values": [ "minecraft:torchflower_seeds" ]
   },
   "item/soul_fire_base_blocks": {
     "name": "soul_fire_base_blocks",
     "type": "item",
-    "values": [
-      "minecraft:soul_sand",
-      "minecraft:soul_soil"
-    ]
+    "values": [ "minecraft:soul_sand", "minecraft:soul_soil" ]
   },
   "item/spruce_logs": {
     "name": "spruce_logs",
@@ -5472,10 +5017,7 @@
   "item/stone_buttons": {
     "name": "stone_buttons",
     "type": "item",
-    "values": [
-      "minecraft:stone_button",
-      "minecraft:polished_blackstone_button"
-    ]
+    "values": [ "minecraft:stone_button", "minecraft:polished_blackstone_button" ]
   },
   "item/stone_crafting_materials": {
     "name": "stone_crafting_materials",
@@ -5498,17 +5040,12 @@
   "item/strider_food": {
     "name": "strider_food",
     "type": "item",
-    "values": [
-      "minecraft:warped_fungus"
-    ]
+    "values": [ "minecraft:warped_fungus" ]
   },
   "item/strider_tempt_items": {
     "name": "strider_tempt_items",
     "type": "item",
-    "values": [
-      "#minecraft:strider_food",
-      "minecraft:warped_fungus_on_a_stick"
-    ]
+    "values": [ "#minecraft:strider_food", "minecraft:warped_fungus_on_a_stick" ]
   },
   "item/swords": {
     "name": "swords",
@@ -5591,9 +5128,7 @@
   "item/turtle_food": {
     "name": "turtle_food",
     "type": "item",
-    "values": [
-      "minecraft:seagrass"
-    ]
+    "values": [ "minecraft:seagrass" ]
   },
   "item/villager_picks_up": {
     "name": "villager_picks_up",
@@ -5662,18 +5197,12 @@
   "item/wart_blocks": {
     "name": "wart_blocks",
     "type": "item",
-    "values": [
-      "minecraft:nether_wart_block",
-      "minecraft:warped_wart_block"
-    ]
+    "values": [ "minecraft:nether_wart_block", "minecraft:warped_wart_block" ]
   },
   "item/wither_skeleton_disliked_weapons": {
     "name": "wither_skeleton_disliked_weapons",
     "type": "item",
-    "values": [
-      "minecraft:bow",
-      "minecraft:crossbow"
-    ]
+    "values": [ "minecraft:bow", "minecraft:crossbow" ]
   },
   "item/wolf_food": {
     "name": "wolf_food",
@@ -5800,9 +5329,7 @@
   "item/wooden_tool_materials": {
     "name": "wooden_tool_materials",
     "type": "item",
-    "values": [
-      "#minecraft:planks"
-    ]
+    "values": [ "#minecraft:planks" ]
   },
   "item/wooden_trapdoors": {
     "name": "wooden_trapdoors",
@@ -5915,7 +5442,8 @@
       "minecraft:passage",
       "minecraft:pond",
       "minecraft:sunflowers",
-      "minecraft:tides"
+      "minecraft:tides",
+      "minecraft:dennis"
     ]
   },
   "point_of_interest_type/acquirable_job_site": {
@@ -5940,10 +5468,7 @@
   "point_of_interest_type/bee_home": {
     "name": "bee_home",
     "type": "point_of_interest_type",
-    "values": [
-      "minecraft:beehive",
-      "minecraft:bee_nest"
-    ]
+    "values": [ "minecraft:beehive", "minecraft:bee_nest" ]
   },
   "point_of_interest_type/village": {
     "name": "village",
@@ -5957,72 +5482,52 @@
   "banner_pattern/pattern_item/bordure_indented": {
     "name": "bordure_indented",
     "type": "banner_pattern/pattern_item",
-    "values": [
-      "minecraft:curly_border"
-    ]
+    "values": [ "minecraft:curly_border" ]
   },
   "banner_pattern/pattern_item/creeper": {
     "name": "creeper",
     "type": "banner_pattern/pattern_item",
-    "values": [
-      "minecraft:creeper"
-    ]
+    "values": [ "minecraft:creeper" ]
   },
   "banner_pattern/pattern_item/field_masoned": {
     "name": "field_masoned",
     "type": "banner_pattern/pattern_item",
-    "values": [
-      "minecraft:bricks"
-    ]
+    "values": [ "minecraft:bricks" ]
   },
   "banner_pattern/pattern_item/flow": {
     "name": "flow",
     "type": "banner_pattern/pattern_item",
-    "values": [
-      "minecraft:flow"
-    ]
+    "values": [ "minecraft:flow" ]
   },
   "banner_pattern/pattern_item/flower": {
     "name": "flower",
     "type": "banner_pattern/pattern_item",
-    "values": [
-      "minecraft:flower"
-    ]
+    "values": [ "minecraft:flower" ]
   },
   "banner_pattern/pattern_item/globe": {
     "name": "globe",
     "type": "banner_pattern/pattern_item",
-    "values": [
-      "minecraft:globe"
-    ]
+    "values": [ "minecraft:globe" ]
   },
   "banner_pattern/pattern_item/guster": {
     "name": "guster",
     "type": "banner_pattern/pattern_item",
-    "values": [
-      "minecraft:guster"
-    ]
+    "values": [ "minecraft:guster" ]
   },
   "banner_pattern/pattern_item/mojang": {
     "name": "mojang",
     "type": "banner_pattern/pattern_item",
-    "values": [
-      "minecraft:mojang"
-    ]
+    "values": [ "minecraft:mojang" ]
   },
   "banner_pattern/pattern_item/piglin": {
     "name": "piglin",
     "type": "banner_pattern/pattern_item",
-    "values": [
-      "minecraft:piglin"
-    ]
+    "values": [ "minecraft:piglin" ]
   },
   "banner_pattern/pattern_item/skull": {
     "name": "skull",
     "type": "banner_pattern/pattern_item",
-    "values": [
-      "minecraft:skull"
-    ]
+    "values": [ "minecraft:skull" ]
   },
   "block/mineable/axe": {
     "name": "axe",
@@ -6544,26 +6049,17 @@
   "enchantment/exclusive_set/boots": {
     "name": "boots",
     "type": "enchantment/exclusive_set",
-    "values": [
-      "minecraft:frost_walker",
-      "minecraft:depth_strider"
-    ]
+    "values": [ "minecraft:frost_walker", "minecraft:depth_strider" ]
   },
   "enchantment/exclusive_set/bow": {
     "name": "bow",
     "type": "enchantment/exclusive_set",
-    "values": [
-      "minecraft:infinity",
-      "minecraft:mending"
-    ]
+    "values": [ "minecraft:infinity", "minecraft:mending" ]
   },
   "enchantment/exclusive_set/crossbow": {
     "name": "crossbow",
     "type": "enchantment/exclusive_set",
-    "values": [
-      "minecraft:multishot",
-      "minecraft:piercing"
-    ]
+    "values": [ "minecraft:multishot", "minecraft:piercing" ]
   },
   "enchantment/exclusive_set/damage": {
     "name": "damage",
@@ -6580,18 +6076,12 @@
   "enchantment/exclusive_set/mining": {
     "name": "mining",
     "type": "enchantment/exclusive_set",
-    "values": [
-      "minecraft:fortune",
-      "minecraft:silk_touch"
-    ]
+    "values": [ "minecraft:fortune", "minecraft:silk_touch" ]
   },
   "enchantment/exclusive_set/riptide": {
     "name": "riptide",
     "type": "enchantment/exclusive_set",
-    "values": [
-      "minecraft:loyalty",
-      "minecraft:channeling"
-    ]
+    "values": [ "minecraft:loyalty", "minecraft:channeling" ]
   },
   "item/enchantable/armor": {
     "name": "armor",
@@ -6606,23 +6096,17 @@
   "item/enchantable/bow": {
     "name": "bow",
     "type": "item/enchantable",
-    "values": [
-      "minecraft:bow"
-    ]
+    "values": [ "minecraft:bow" ]
   },
   "item/enchantable/chest_armor": {
     "name": "chest_armor",
     "type": "item/enchantable",
-    "values": [
-      "#minecraft:chest_armor"
-    ]
+    "values": [ "#minecraft:chest_armor" ]
   },
   "item/enchantable/crossbow": {
     "name": "crossbow",
     "type": "item/enchantable",
-    "values": [
-      "minecraft:crossbow"
-    ]
+    "values": [ "minecraft:crossbow" ]
   },
   "item/enchantable/durability": {
     "name": "durability",
@@ -6667,45 +6151,32 @@
   "item/enchantable/fire_aspect": {
     "name": "fire_aspect",
     "type": "item/enchantable",
-    "values": [
-      "#minecraft:enchantable/sword",
-      "minecraft:mace"
-    ]
+    "values": [ "#minecraft:enchantable/sword", "minecraft:mace" ]
   },
   "item/enchantable/fishing": {
     "name": "fishing",
     "type": "item/enchantable",
-    "values": [
-      "minecraft:fishing_rod"
-    ]
+    "values": [ "minecraft:fishing_rod" ]
   },
   "item/enchantable/foot_armor": {
     "name": "foot_armor",
     "type": "item/enchantable",
-    "values": [
-      "#minecraft:foot_armor"
-    ]
+    "values": [ "#minecraft:foot_armor" ]
   },
   "item/enchantable/head_armor": {
     "name": "head_armor",
     "type": "item/enchantable",
-    "values": [
-      "#minecraft:head_armor"
-    ]
+    "values": [ "#minecraft:head_armor" ]
   },
   "item/enchantable/leg_armor": {
     "name": "leg_armor",
     "type": "item/enchantable",
-    "values": [
-      "#minecraft:leg_armor"
-    ]
+    "values": [ "#minecraft:leg_armor" ]
   },
   "item/enchantable/mace": {
     "name": "mace",
     "type": "item/enchantable",
-    "values": [
-      "minecraft:mace"
-    ]
+    "values": [ "minecraft:mace" ]
   },
   "item/enchantable/mining": {
     "name": "mining",
@@ -6731,24 +6202,17 @@
   "item/enchantable/sharp_weapon": {
     "name": "sharp_weapon",
     "type": "item/enchantable",
-    "values": [
-      "#minecraft:swords",
-      "#minecraft:axes"
-    ]
+    "values": [ "#minecraft:swords", "#minecraft:axes" ]
   },
   "item/enchantable/sword": {
     "name": "sword",
     "type": "item/enchantable",
-    "values": [
-      "#minecraft:swords"
-    ]
+    "values": [ "#minecraft:swords" ]
   },
   "item/enchantable/trident": {
     "name": "trident",
     "type": "item/enchantable",
-    "values": [
-      "minecraft:trident"
-    ]
+    "values": [ "minecraft:trident" ]
   },
   "item/enchantable/vanishing": {
     "name": "vanishing",
@@ -6763,33 +6227,22 @@
   "item/enchantable/weapon": {
     "name": "weapon",
     "type": "item/enchantable",
-    "values": [
-      "#minecraft:enchantable/sharp_weapon",
-      "minecraft:mace"
-    ]
+    "values": [ "#minecraft:enchantable/sharp_weapon", "minecraft:mace" ]
   },
   "worldgen/biome/allows_surface_slime_spawns": {
     "name": "allows_surface_slime_spawns",
     "type": "worldgen/biome",
-    "values": [
-      "minecraft:swamp",
-      "minecraft:mangrove_swamp"
-    ]
+    "values": [ "minecraft:swamp", "minecraft:mangrove_swamp" ]
   },
   "worldgen/biome/allows_tropical_fish_spawns_at_any_height": {
     "name": "allows_tropical_fish_spawns_at_any_height",
     "type": "worldgen/biome",
-    "values": [
-      "minecraft:lush_caves"
-    ]
+    "values": [ "minecraft:lush_caves" ]
   },
   "worldgen/biome/has_closer_water_fog": {
     "name": "has_closer_water_fog",
     "type": "worldgen/biome",
-    "values": [
-      "minecraft:swamp",
-      "minecraft:mangrove_swamp"
-    ]
+    "values": [ "minecraft:swamp", "minecraft:mangrove_swamp" ]
   },
   "worldgen/biome/increased_fire_burnout": {
     "name": "increased_fire_burnout",
@@ -6817,10 +6270,7 @@
   "worldgen/biome/is_beach": {
     "name": "is_beach",
     "type": "worldgen/biome",
-    "values": [
-      "minecraft:beach",
-      "minecraft:snowy_beach"
-    ]
+    "values": [ "minecraft:beach", "minecraft:snowy_beach" ]
   },
   "worldgen/biome/is_deep_ocean": {
     "name": "is_deep_ocean",
@@ -6972,10 +6422,7 @@
   "worldgen/biome/is_river": {
     "name": "is_river",
     "type": "worldgen/biome",
-    "values": [
-      "minecraft:river",
-      "minecraft:frozen_river"
-    ]
+    "values": [ "minecraft:river", "minecraft:frozen_river" ]
   },
   "worldgen/biome/is_savanna": {
     "name": "is_savanna",
@@ -6999,54 +6446,37 @@
   "worldgen/biome/mineshaft_blocking": {
     "name": "mineshaft_blocking",
     "type": "worldgen/biome",
-    "values": [
-      "minecraft:deep_dark"
-    ]
+    "values": [ "minecraft:deep_dark" ]
   },
   "worldgen/biome/more_frequent_drowned_spawns": {
     "name": "more_frequent_drowned_spawns",
     "type": "worldgen/biome",
-    "values": [
-      "#minecraft:is_river"
-    ]
+    "values": [ "#minecraft:is_river" ]
   },
   "worldgen/biome/plays_underwater_music": {
     "name": "plays_underwater_music",
     "type": "worldgen/biome",
-    "values": [
-      "#minecraft:is_ocean",
-      "#minecraft:is_river"
-    ]
+    "values": [ "#minecraft:is_ocean", "#minecraft:is_river" ]
   },
   "worldgen/biome/polar_bears_spawn_on_alternate_blocks": {
     "name": "polar_bears_spawn_on_alternate_blocks",
     "type": "worldgen/biome",
-    "values": [
-      "minecraft:frozen_ocean",
-      "minecraft:deep_frozen_ocean"
-    ]
+    "values": [ "minecraft:frozen_ocean", "minecraft:deep_frozen_ocean" ]
   },
   "worldgen/biome/produces_corals_from_bonemeal": {
     "name": "produces_corals_from_bonemeal",
     "type": "worldgen/biome",
-    "values": [
-      "minecraft:warm_ocean"
-    ]
+    "values": [ "minecraft:warm_ocean" ]
   },
   "worldgen/biome/reduce_water_ambient_spawns": {
     "name": "reduce_water_ambient_spawns",
     "type": "worldgen/biome",
-    "values": [
-      "#minecraft:is_river"
-    ]
+    "values": [ "#minecraft:is_river" ]
   },
   "worldgen/biome/required_ocean_monument_surrounding": {
     "name": "required_ocean_monument_surrounding",
     "type": "worldgen/biome",
-    "values": [
-      "#minecraft:is_ocean",
-      "#minecraft:is_river"
-    ]
+    "values": [ "#minecraft:is_ocean", "#minecraft:is_river" ]
   },
   "worldgen/biome/snow_golem_melts": {
     "name": "snow_golem_melts",
@@ -7116,9 +6546,7 @@
   "worldgen/biome/spawns_gold_rabbits": {
     "name": "spawns_gold_rabbits",
     "type": "worldgen/biome",
-    "values": [
-      "minecraft:desert"
-    ]
+    "values": [ "minecraft:desert" ]
   },
   "worldgen/biome/spawns_snow_foxes": {
     "name": "spawns_snow_foxes",
@@ -7235,23 +6663,17 @@
   "worldgen/biome/without_patrol_spawns": {
     "name": "without_patrol_spawns",
     "type": "worldgen/biome",
-    "values": [
-      "minecraft:mushroom_fields"
-    ]
+    "values": [ "minecraft:mushroom_fields" ]
   },
   "worldgen/biome/without_wandering_trader_spawns": {
     "name": "without_wandering_trader_spawns",
     "type": "worldgen/biome",
-    "values": [
-      "minecraft:the_void"
-    ]
+    "values": [ "minecraft:the_void" ]
   },
   "worldgen/biome/without_zombie_sieges": {
     "name": "without_zombie_sieges",
     "type": "worldgen/biome",
-    "values": [
-      "minecraft:mushroom_fields"
-    ]
+    "values": [ "minecraft:mushroom_fields" ]
   },
   "worldgen/flat_level_generator_preset/visible": {
     "name": "visible",
@@ -7271,124 +6693,87 @@
   "worldgen/structure/cats_spawn_as_black": {
     "name": "cats_spawn_as_black",
     "type": "worldgen/structure",
-    "values": [
-      "minecraft:swamp_hut"
-    ]
+    "values": [ "minecraft:swamp_hut" ]
   },
   "worldgen/structure/cats_spawn_in": {
     "name": "cats_spawn_in",
     "type": "worldgen/structure",
-    "values": [
-      "minecraft:swamp_hut"
-    ]
+    "values": [ "minecraft:swamp_hut" ]
   },
   "worldgen/structure/dolphin_located": {
     "name": "dolphin_located",
     "type": "worldgen/structure",
-    "values": [
-      "#minecraft:ocean_ruin",
-      "#minecraft:shipwreck"
-    ]
+    "values": [ "#minecraft:ocean_ruin", "#minecraft:shipwreck" ]
   },
   "worldgen/structure/eye_of_ender_located": {
     "name": "eye_of_ender_located",
     "type": "worldgen/structure",
-    "values": [
-      "minecraft:stronghold"
-    ]
+    "values": [ "minecraft:stronghold" ]
   },
   "worldgen/structure/mineshaft": {
     "name": "mineshaft",
     "type": "worldgen/structure",
-    "values": [
-      "minecraft:mineshaft",
-      "minecraft:mineshaft_mesa"
-    ]
+    "values": [ "minecraft:mineshaft", "minecraft:mineshaft_mesa" ]
   },
   "worldgen/structure/ocean_ruin": {
     "name": "ocean_ruin",
     "type": "worldgen/structure",
-    "values": [
-      "minecraft:ocean_ruin_cold",
-      "minecraft:ocean_ruin_warm"
-    ]
+    "values": [ "minecraft:ocean_ruin_cold", "minecraft:ocean_ruin_warm" ]
   },
   "worldgen/structure/on_desert_village_maps": {
     "name": "on_desert_village_maps",
     "type": "worldgen/structure",
-    "values": [
-      "minecraft:village_desert"
-    ]
+    "values": [ "minecraft:village_desert" ]
   },
   "worldgen/structure/on_jungle_explorer_maps": {
     "name": "on_jungle_explorer_maps",
     "type": "worldgen/structure",
-    "values": [
-      "minecraft:jungle_pyramid"
-    ]
+    "values": [ "minecraft:jungle_pyramid" ]
   },
   "worldgen/structure/on_ocean_explorer_maps": {
     "name": "on_ocean_explorer_maps",
     "type": "worldgen/structure",
-    "values": [
-      "minecraft:monument"
-    ]
+    "values": [ "minecraft:monument" ]
   },
   "worldgen/structure/on_plains_village_maps": {
     "name": "on_plains_village_maps",
     "type": "worldgen/structure",
-    "values": [
-      "minecraft:village_plains"
-    ]
+    "values": [ "minecraft:village_plains" ]
   },
   "worldgen/structure/on_savanna_village_maps": {
     "name": "on_savanna_village_maps",
     "type": "worldgen/structure",
-    "values": [
-      "minecraft:village_savanna"
-    ]
+    "values": [ "minecraft:village_savanna" ]
   },
   "worldgen/structure/on_snowy_village_maps": {
     "name": "on_snowy_village_maps",
     "type": "worldgen/structure",
-    "values": [
-      "minecraft:village_snowy"
-    ]
+    "values": [ "minecraft:village_snowy" ]
   },
   "worldgen/structure/on_swamp_explorer_maps": {
     "name": "on_swamp_explorer_maps",
     "type": "worldgen/structure",
-    "values": [
-      "minecraft:swamp_hut"
-    ]
+    "values": [ "minecraft:swamp_hut" ]
   },
   "worldgen/structure/on_taiga_village_maps": {
     "name": "on_taiga_village_maps",
     "type": "worldgen/structure",
-    "values": [
-      "minecraft:village_taiga"
-    ]
+    "values": [ "minecraft:village_taiga" ]
   },
   "worldgen/structure/on_treasure_maps": {
     "name": "on_treasure_maps",
     "type": "worldgen/structure",
-    "values": [
-      "minecraft:buried_treasure"
-    ]
+    "values": [ "minecraft:buried_treasure" ]
   },
   "worldgen/structure/on_trial_chambers_maps": {
     "name": "on_trial_chambers_maps",
     "type": "worldgen/structure",
-    "values": [
-      "minecraft:trial_chambers"
-    ]
+    "values": [ "minecraft:trial_chambers" ]
   },
   "worldgen/structure/on_woodland_explorer_maps": {
     "name": "on_woodland_explorer_maps",
     "type": "worldgen/structure",
-    "values": [
-      "minecraft:mansion"
-    ]
+    "values": [ "minecraft:mansion" ]
   },
   "worldgen/structure/ruined_portal": {
     "name": "ruined_portal",
@@ -7406,10 +6791,7 @@
   "worldgen/structure/shipwreck": {
     "name": "shipwreck",
     "type": "worldgen/structure",
-    "values": [
-      "minecraft:shipwreck",
-      "minecraft:shipwreck_beached"
-    ]
+    "values": [ "minecraft:shipwreck", "minecraft:shipwreck_beached" ]
   },
   "worldgen/structure/village": {
     "name": "village",
@@ -7425,10 +6807,7 @@
   "worldgen/world_preset/extended": {
     "name": "extended",
     "type": "worldgen/world_preset",
-    "values": [
-      "#minecraft:normal",
-      "minecraft:debug_all_block_states"
-    ]
+    "values": [ "#minecraft:normal", "minecraft:debug_all_block_states" ]
   },
   "worldgen/world_preset/normal": {
     "name": "normal",
@@ -7444,9 +6823,7 @@
   "worldgen/biome/has_structure/ancient_city": {
     "name": "ancient_city",
     "type": "worldgen/biome/has_structure",
-    "values": [
-      "minecraft:deep_dark"
-    ]
+    "values": [ "minecraft:deep_dark" ]
   },
   "worldgen/biome/has_structure/bastion_remnant": {
     "name": "bastion_remnant",
@@ -7461,24 +6838,17 @@
   "worldgen/biome/has_structure/buried_treasure": {
     "name": "buried_treasure",
     "type": "worldgen/biome/has_structure",
-    "values": [
-      "#minecraft:is_beach"
-    ]
+    "values": [ "#minecraft:is_beach" ]
   },
   "worldgen/biome/has_structure/desert_pyramid": {
     "name": "desert_pyramid",
     "type": "worldgen/biome/has_structure",
-    "values": [
-      "minecraft:desert"
-    ]
+    "values": [ "minecraft:desert" ]
   },
   "worldgen/biome/has_structure/end_city": {
     "name": "end_city",
     "type": "worldgen/biome/has_structure",
-    "values": [
-      "minecraft:end_highlands",
-      "minecraft:end_midlands"
-    ]
+    "values": [ "minecraft:end_highlands", "minecraft:end_midlands" ]
   },
   "worldgen/biome/has_structure/igloo": {
     "name": "igloo",
@@ -7492,10 +6862,7 @@
   "worldgen/biome/has_structure/jungle_temple": {
     "name": "jungle_temple",
     "type": "worldgen/biome/has_structure",
-    "values": [
-      "minecraft:bamboo_jungle",
-      "minecraft:jungle"
-    ]
+    "values": [ "minecraft:bamboo_jungle", "minecraft:jungle" ]
   },
   "worldgen/biome/has_structure/mineshaft": {
     "name": "mineshaft",
@@ -7528,30 +6895,22 @@
   "worldgen/biome/has_structure/mineshaft_mesa": {
     "name": "mineshaft_mesa",
     "type": "worldgen/biome/has_structure",
-    "values": [
-      "#minecraft:is_badlands"
-    ]
+    "values": [ "#minecraft:is_badlands" ]
   },
   "worldgen/biome/has_structure/nether_fortress": {
     "name": "nether_fortress",
     "type": "worldgen/biome/has_structure",
-    "values": [
-      "#minecraft:is_nether"
-    ]
+    "values": [ "#minecraft:is_nether" ]
   },
   "worldgen/biome/has_structure/nether_fossil": {
     "name": "nether_fossil",
     "type": "worldgen/biome/has_structure",
-    "values": [
-      "minecraft:soul_sand_valley"
-    ]
+    "values": [ "minecraft:soul_sand_valley" ]
   },
   "worldgen/biome/has_structure/ocean_monument": {
     "name": "ocean_monument",
     "type": "worldgen/biome/has_structure",
-    "values": [
-      "#minecraft:is_deep_ocean"
-    ]
+    "values": [ "#minecraft:is_deep_ocean" ]
   },
   "worldgen/biome/has_structure/ocean_ruin_cold": {
     "name": "ocean_ruin_cold",
@@ -7590,16 +6949,12 @@
   "worldgen/biome/has_structure/ruined_portal_desert": {
     "name": "ruined_portal_desert",
     "type": "worldgen/biome/has_structure",
-    "values": [
-      "minecraft:desert"
-    ]
+    "values": [ "minecraft:desert" ]
   },
   "worldgen/biome/has_structure/ruined_portal_jungle": {
     "name": "ruined_portal_jungle",
     "type": "worldgen/biome/has_structure",
-    "values": [
-      "#minecraft:is_jungle"
-    ]
+    "values": [ "#minecraft:is_jungle" ]
   },
   "worldgen/biome/has_structure/ruined_portal_mountain": {
     "name": "ruined_portal_mountain",
@@ -7616,16 +6971,12 @@
   "worldgen/biome/has_structure/ruined_portal_nether": {
     "name": "ruined_portal_nether",
     "type": "worldgen/biome/has_structure",
-    "values": [
-      "#minecraft:is_nether"
-    ]
+    "values": [ "#minecraft:is_nether" ]
   },
   "worldgen/biome/has_structure/ruined_portal_ocean": {
     "name": "ruined_portal_ocean",
     "type": "worldgen/biome/has_structure",
-    "values": [
-      "#minecraft:is_ocean"
-    ]
+    "values": [ "#minecraft:is_ocean" ]
   },
   "worldgen/biome/has_structure/ruined_portal_standard": {
     "name": "ruined_portal_standard",
@@ -7648,38 +6999,27 @@
   "worldgen/biome/has_structure/ruined_portal_swamp": {
     "name": "ruined_portal_swamp",
     "type": "worldgen/biome/has_structure",
-    "values": [
-      "minecraft:swamp",
-      "minecraft:mangrove_swamp"
-    ]
+    "values": [ "minecraft:swamp", "minecraft:mangrove_swamp" ]
   },
   "worldgen/biome/has_structure/shipwreck": {
     "name": "shipwreck",
     "type": "worldgen/biome/has_structure",
-    "values": [
-      "#minecraft:is_ocean"
-    ]
+    "values": [ "#minecraft:is_ocean" ]
   },
   "worldgen/biome/has_structure/shipwreck_beached": {
     "name": "shipwreck_beached",
     "type": "worldgen/biome/has_structure",
-    "values": [
-      "#minecraft:is_beach"
-    ]
+    "values": [ "#minecraft:is_beach" ]
   },
   "worldgen/biome/has_structure/stronghold": {
     "name": "stronghold",
     "type": "worldgen/biome/has_structure",
-    "values": [
-      "#minecraft:is_overworld"
-    ]
+    "values": [ "#minecraft:is_overworld" ]
   },
   "worldgen/biome/has_structure/swamp_hut": {
     "name": "swamp_hut",
     "type": "worldgen/biome/has_structure",
-    "values": [
-      "minecraft:swamp"
-    ]
+    "values": [ "minecraft:swamp" ]
   },
   "worldgen/biome/has_structure/trail_ruins": {
     "name": "trail_ruins",
@@ -7755,45 +7095,31 @@
   "worldgen/biome/has_structure/village_desert": {
     "name": "village_desert",
     "type": "worldgen/biome/has_structure",
-    "values": [
-      "minecraft:desert"
-    ]
+    "values": [ "minecraft:desert" ]
   },
   "worldgen/biome/has_structure/village_plains": {
     "name": "village_plains",
     "type": "worldgen/biome/has_structure",
-    "values": [
-      "minecraft:plains",
-      "minecraft:meadow"
-    ]
+    "values": [ "minecraft:plains", "minecraft:meadow" ]
   },
   "worldgen/biome/has_structure/village_savanna": {
     "name": "village_savanna",
     "type": "worldgen/biome/has_structure",
-    "values": [
-      "minecraft:savanna"
-    ]
+    "values": [ "minecraft:savanna" ]
   },
   "worldgen/biome/has_structure/village_snowy": {
     "name": "village_snowy",
     "type": "worldgen/biome/has_structure",
-    "values": [
-      "minecraft:snowy_plains"
-    ]
+    "values": [ "minecraft:snowy_plains" ]
   },
   "worldgen/biome/has_structure/village_taiga": {
     "name": "village_taiga",
     "type": "worldgen/biome/has_structure",
-    "values": [
-      "minecraft:taiga"
-    ]
+    "values": [ "minecraft:taiga" ]
   },
   "worldgen/biome/has_structure/woodland_mansion": {
     "name": "woodland_mansion",
     "type": "worldgen/biome/has_structure",
-    "values": [
-      "minecraft:dark_forest",
-      "minecraft:pale_garden"
-    ]
+    "values": [ "minecraft:dark_forest", "minecraft:pale_garden" ]
   }
 }

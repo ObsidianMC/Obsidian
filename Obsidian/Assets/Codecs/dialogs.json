@@ -1,0 +1,70 @@
+{
+  "type": "minecraft:dialog",
+  "value": [
+    {
+      "name": "minecraft:custom_options",
+      "id": 0,
+      "element": {
+        "type": "minecraft:dialog_list",
+        "button_width": 310,
+        "columns": 1,
+        "dialogs": "#minecraft:pause_screen_additions",
+        "exit_action": {
+          "label": {
+            "translate": "gui.back"
+          },
+          "width": 200
+        },
+        "external_title": {
+          "translate": "menu.custom_options"
+        },
+        "title": {
+          "translate": "menu.custom_options.title"
+        }
+      }
+    },
+    {
+      "name": "minecraft:quick_actions",
+      "id": 1,
+      "element": {
+        "type": "minecraft:dialog_list",
+        "button_width": 310,
+        "columns": 1,
+        "dialogs": "#minecraft:quick_actions",
+        "exit_action": {
+          "label": {
+            "translate": "gui.back"
+          },
+          "width": 200
+        },
+        "external_title": {
+          "translate": "menu.quick_actions"
+        },
+        "title": {
+          "translate": "menu.quick_actions.title"
+        }
+      }
+    },
+    {
+      "name": "minecraft:server_links",
+      "id": 2,
+      "element": {
+        "type": "minecraft:server_links",
+        "button_width": 310,
+        "columns": 1,
+        "exit_action": {
+          "label": {
+            "translate": "gui.back"
+          },
+          "width": 200
+        },
+        "external_title": {
+          "translate": "menu.server_links"
+        },
+        "title": {
+          "translate": "menu.server_links.title"
+        }
+      }
+    }
+  ]
+}
