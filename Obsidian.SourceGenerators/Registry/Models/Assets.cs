@@ -53,7 +53,8 @@ internal sealed class Assets
             { "pig_variant", ParseCodec(files.GetJsonFromArray("pig_variant")) },
             { "wolf_variant", ParseCodec(files.GetJsonFromArray("wolf_variant")) },
             { "painting_variant", ParseCodec(files.GetJsonFromArray("painting_variant")) },
-            { "wolf_sound_variant", ParseCodec(files.GetJsonFromArray("wolf_sound_variant")) }
+            { "wolf_sound_variant", ParseCodec(files.GetJsonFromArray("wolf_sound_variant")) },
+            { "dialogs", ParseCodec(files.GetJsonFromArray("dialogs")) }
         };
     }
 

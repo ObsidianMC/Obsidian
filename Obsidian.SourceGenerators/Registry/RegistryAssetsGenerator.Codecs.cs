@@ -18,6 +18,7 @@ public partial class RegistryAssetsGenerator
             .Using("Obsidian.API.Registry.Codecs")
             .Using("Obsidian.API.Registry.Codecs.Biomes")
             .Using("Obsidian.API.Registry.Codecs.Chat")
+            .Using("Obsidian.API.Registry.Codecs.Dialogs")
             .Using("Obsidian.API.Registry.Codecs.Dimensions")
             .Using("Obsidian.API.Registry.Codecs.DamageTypes")
             .Using("Obsidian.API.Registry.Codecs.ArmorTrims")
@@ -135,7 +136,7 @@ public partial class RegistryAssetsGenerator
         builder.GenerateSimpleCodec(codecs["pig_variant"].ToArray(), "PigVariant", "minecraft:pig_variant", "BiomeVariantCodec", ctx);
 
         builder.GenerateSimpleCodec(codecs["painting_variant"].ToArray(), "PaintingVariant", "minecraft:painting_variant", "PaintingVariantCodec", ctx);
-
+        builder.GenerateSimpleCodec(codecs["dialogs"].ToArray(), "Dialog", "minecraft:dialog", "DialogCodec", ctx);
         builder.EndScope();
 
         ctx.AddSource("CodecRegistry.g.cs", builder.ToString());
