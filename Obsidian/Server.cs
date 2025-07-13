@@ -12,7 +12,6 @@ using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Net.Rcon;
 using Obsidian.Plugins;
 using Obsidian.Services;
 using Obsidian.WorldData;
@@ -44,7 +43,7 @@ public sealed partial class Server : IServer
         }
     }
 #endif
-    public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_21_6;
+    public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_21_7;
     public static readonly string ProtocolDescription = DefaultProtocol.GetDescription();
 
 
