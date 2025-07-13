@@ -62,7 +62,7 @@ internal sealed class LoginClientHandler : ClientHandler
     {
         this.SendPacket(new SelectKnownPacksPacket
         {
-            KnownPacks = [new() { Id = "core", Version = Server.ProtocolDescription, Namespace = "minecraft" }]
+            KnownPacks = [new() { Id = "core", Version = ServerConstants.ProtocolDescription, Namespace = "minecraft" }]
         });
 
         //This is very inconvenient
@@ -100,7 +100,7 @@ internal sealed class LoginClientHandler : ClientHandler
         var world = this.Server.DefaultWorld;
 
         this.Logger.LogDebug("Received login request from user {Username}", username);
-        await this.Server.DisconnectIfConnectedAsync(username);
+        await this.Server.DisconnectPlayerIfConnectedAsync(username);
 
         if (this.Server.Configuration.OnlineMode && await this.Client.TrySetCachedProfileAsync(username))
         {

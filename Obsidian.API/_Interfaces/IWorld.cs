@@ -35,6 +35,7 @@ public interface IWorld : IAsyncDisposable
     public IEnumerable<IEntity> GetNonPlayerEntitiesInRange(VectorF location, float distance);
     public IEnumerable<IEntity> GetEntitiesInRange(VectorF location, float distance);
     public IEnumerable<IPlayer> GetPlayersInRange(VectorF location, float distance);
+    public IEnumerable<IPlayer> GetPlayersInChunkRange(Vector worldPosition);
 
     /// <summary>
     /// Gets a Chunk from a Region.

@@ -23,22 +23,22 @@ public interface ITeam
     /// </summary>
     /// <param name="entities">Identifiers for the entities in this team. For players, this is their username; for other entities, it is their UUID.</param>
     /// /// <returns>Returns the amount of entities added to the team.</returns>
-    public Task<int> AddEntitiesAsync(params string[] entities);
+    public int AddEntities(params string[] entities);
 
     /// <summary>
     /// Removes entities to the team.
     /// </summary>
     /// <param name="entities">Identifiers for the entities in this team. For players, this is their username; for other entities, it is their UUID.</param>
     /// <returns>Returns the amount of entities removed from the team.</returns>
-    public Task<int> RemoveEntitiesAsync(params string[] entities);
+    public int RemoveEntities(params string[] entities);
 
     /// <summary>
     /// Updates the team for all the players on the server
     /// </summary>
-    public Task UpdateAsync();
+    public void Update();
 
     /// <summary>
     /// Deletes the team
     /// </summary>
-    public Task DeleteAsync();
+    public void Delete();
 }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API;
 using Obsidian.API.Configuration;
 using Obsidian.API.Entities;
 using Obsidian.API.Registry.Codecs.Dimensions;
@@ -306,6 +307,14 @@ public sealed partial class World : IWorld
                 yield return player;
             }
         }
+    }
+
+    public IEnumerable<IPlayer> GetPlayersInChunkRange(Vector worldPosition)
+    {
+        var (x, z) = worldPosition.ToChunkCoord();
+
+        var packedXZ = NumericsHelper.IntsToLong(x, z);
+        return this.Players.Values.Where(player => player.LoadedChunks.Contains(packedXZ));
     }
 
     public bool TryAddPlayer(IPlayer player) => Players.TryAdd(player.Uuid, player);

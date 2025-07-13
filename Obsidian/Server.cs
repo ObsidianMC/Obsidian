@@ -15,10 +15,12 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Plugins;
 using Obsidian.Services;
 using Obsidian.WorldData;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 
@@ -43,12 +45,6 @@ public sealed partial class Server : IServer
         }
     }
 #endif
-    public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_21_7;
-    public static readonly string ProtocolDescription = DefaultProtocol.GetDescription();
-
-
-    public const string PersistentDataPath = "persistentdata";
-    public const string PermissionPath = "permissions";
 
     internal static readonly ConcurrentDictionary<string, DateTimeOffset> throttler = new();
 
@@ -66,18 +62,16 @@ public sealed partial class Server : IServer
         }
     }
 
-    private readonly ConcurrentQueue<ClientboundPacket> _chatMessagesQueue = new();
     private readonly ILoggerFactory loggerFactory;
-    //TODO reimplement this
-    //private readonly RconServer _rconServer;
     private readonly IUserCache userCache;
     private readonly ServerMetrics serverMetrics;
     private readonly IServiceProvider serviceProvider;
     private readonly IDisposable? configWatcher;
+    private readonly IPacketBroadcaster packetBroadcaster;
 
     public IOptionsMonitor<WhitelistConfiguration> WhitelistConfiguration { get; }
 
-    public ProtocolVersion Protocol => DefaultProtocol;
+    public ProtocolVersion Protocol => ServerConstants.DefaultProtocol;
     public int Tps { get; private set; }
     public DateTimeOffset StartTime { get; private set; }
 
@@ -98,7 +92,6 @@ public sealed partial class Server : IServer
     public string Brand { get; } = "obsidian";
     public int Port { get; }
     public IWorld DefaultWorld => WorldManager.DefaultWorld;
-    public IEnumerable<IPlayer> Players => GetPlayers();
 
     /// <summary>
     /// Creates a new instance of <see cref="Server"/>.
@@ -117,10 +110,11 @@ public sealed partial class Server : IServer
         _cancelTokenSource = CancellationTokenSource.CreateLinkedTokenSource(lifetime.ApplicationStopping);
         _cancelTokenSource.Token.Register(() => _logger.LogWarning("Obsidian is shutting down..."));
 
-        //_rconServer = serviceProvider.GetRequiredService<RconServer>();
-
         this.serviceProvider = serviceProvider;
-        this.configWatcher = configuration.OnChange(this.ConfigChanged);
+        this.configWatcher = configuration.OnChange((config) =>
+        {
+            this.Configuration = config;
+        });
 
         var config = configuration.CurrentValue;
 
@@ -149,94 +143,61 @@ public sealed partial class Server : IServer
         this.serverMetrics = serverMetrics;
         this.loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
         this.WorldManager = serviceProvider.GetRequiredService<IWorldManager>();
+        this.packetBroadcaster = serviceProvider.GetRequiredService<IPacketBroadcaster>();
 
-        Directory.CreateDirectory(PermissionPath);
-        Directory.CreateDirectory(PersistentDataPath);
-
-        //TODO turn this into a hosted service
-        if (config.AllowLan)
-        {
-            _ = Task.Run(async () =>
-            {
-                var udpClient = new UdpClient("224.0.2.60", 4445);
-                var timer = new PeriodicTimer(TimeSpan.FromSeconds(1.5));
-                string? lastMotd = null;
-                byte[] bytes = []; // Cached motd as utf-8 bytes
-                while (await timer.WaitForNextTickAsync(_cancelTokenSource.Token))
-                {
-                    if (config.Motd != lastMotd)
-                    {
-                        lastMotd = config.Motd;
-                        bytes = Encoding.UTF8.GetBytes($"[MOTD]{config.Motd.Replace('[', '(').Replace(']', ')')}[/MOTD][AD]{config.Port}[/AD]");
-                    }
-                    await udpClient.SendAsync(bytes, bytes.Length);
-                }
-            });
-        }
+        Directory.CreateDirectory(ServerConstants.PermissionPath);
+        Directory.CreateDirectory(ServerConstants.PersistentDataPath);
     }
 
-    private void ConfigChanged(ServerConfiguration configuration) => this.Configuration = configuration;
+    public static int GetNextEntityId() => Interlocked.Increment(ref EntityCounter);
 
-    // TODO make sure to re-send recipes
     public void RegisterRecipes(params IRecipe[] recipes)
     {
         foreach (var recipe in recipes)
             RecipesRegistry.Recipes.Add(recipe.Identifier.ToSnakeCase(), recipe);
     }
 
-    /// <summary>
-    /// Checks if a player is online.
-    /// </summary>
-    /// <param name="username">The username you want to check for.</param>
-    /// <returns>True if the player is online.</returns>
-    public bool IsPlayerOnline(string username) => OnlinePlayers.Any(x => x.Value.Username.EqualsIgnoreCase(username));
+    public bool IsPlayerOnline(string username) => OnlinePlayers.Values.Any(x => x.Username.EqualsIgnoreCase(username));
 
     public bool IsPlayerOnline(Guid uuid) => OnlinePlayers.ContainsKey(uuid);
 
-    public IPlayer GetPlayer(string username) => OnlinePlayers.FirstOrDefault(player => player.Value.Username.EqualsIgnoreCase(username)).Value;
+    public IPlayer? GetPlayer(string username) => OnlinePlayers.Values.FirstOrDefault(player => player.Username.EqualsIgnoreCase(username));
 
     public IPlayer? GetPlayer(Guid uuid) => OnlinePlayers.TryGetValue(uuid, out var player) ? player : null;
 
-    public IPlayer GetPlayer(int entityId) => OnlinePlayers.FirstOrDefault(player => player.Value.EntityId == entityId).Value;
+    public IPlayer? GetPlayer(int entityId) => OnlinePlayers.Values.FirstOrDefault(player => player.EntityId == entityId);
 
-    private IEnumerable<IPlayer> GetPlayers()
+    public bool TryGetPlayer(string username, out IPlayer? player)
     {
-        foreach (var (_, player) in OnlinePlayers)
+        if (this.GetPlayer(username) is IPlayer foundPlayer)
         {
-            yield return player;
+            player = foundPlayer;
+            return true;
         }
+
+        player = null;
+        return false;
     }
 
-    /// <summary>
-    /// Sends a message to all players on this server.
-    /// </summary>
+    public bool TryGetPlayer(Guid uuid, out IPlayer? player) => this.OnlinePlayers.TryGetValue(uuid, out player);
+
+    public bool TryGetPlayer(int entityId, out IPlayer? player)
+    {
+        if (this.GetPlayer(entityId) is IPlayer foundPlayer)
+        {
+            player = foundPlayer;
+            return true;
+        }
+
+        player = null;
+        return false;
+    }
+
     public void BroadcastMessage(ChatMessage message)
     {
-        _chatMessagesQueue.Enqueue(new SystemChatPacket(message, false));
-        _logger.LogInformation(message.Text);
+        this.packetBroadcaster.Broadcast(new SystemChatPacket(message, false));
+        _logger.LogInformation("{message}", message.Text);
     }
-
-    /// <summary>
-    /// Sends a message to all players on this server.
-    /// </summary>
-    public void BroadcastMessage(PlayerChatPacket message)
-    {
-        _chatMessagesQueue.Enqueue(message);
-        _logger.LogInformation("{}", message.UnsignedContent);
-    }
-
-    /// <summary>
-    /// Sends a message to all players on this server.
-    /// </summary>
-    public void BroadcastMessage(string message)
-    {
-        var chatMessage = ChatMessage.Simple(message);
-
-        _chatMessagesQueue.Enqueue(new SystemChatPacket(chatMessage, false));
-        _logger.LogInformation(message);
-    }
-
-    public static int GetNextEntityId() => Interlocked.Increment(ref EntityCounter);
 
     /// <summary>
     /// Starts this server asynchronously.
@@ -287,9 +248,6 @@ public sealed partial class Server : IServer
             ServerSaveAsync()
         };
 
-        //if (Configuration.EnableRcon)
-        //    serverTasks.Add(_rconServer.RunAsync(this, _cancelTokenSource.Token));
-
         loadTimeStopwatch.Stop();
         _logger.LogInformation("Server loaded in {time}", loadTimeStopwatch.Elapsed);
 
@@ -339,52 +297,6 @@ public sealed partial class Server : IServer
         var context = new CommandContext(CommandHelpers.DefaultPrefix + input, new CommandSender(CommandIssuers.Console, null), null, this);
 
         await CommandHandler.ProcessCommand(context);
-    }
-
-    internal IEnumerable<IPlayer> PlayersInRange(World world, Vector worldPosition)
-    {
-        var (x, z) = worldPosition.ToChunkCoord();
-
-        var packedXZ = NumericsHelper.IntsToLong(x, z);
-        return world.Players.Values.Where(player => player.LoadedChunks.Contains(packedXZ));
-    }
-
-    internal void BroadcastBlockChange(World world, IBlock block, Vector location)
-    {
-        var packet = new BlockUpdatePacket(location, block.GetHashCode());
-        foreach (Player player in PlayersInRange(world, location))
-        {
-            player.Client.SendPacket(packet);
-        }
-    }
-
-    internal void BroadcastBlockChange(World world, Player initiator, IBlock block, Vector location)
-    {
-        var packet = new BlockUpdatePacket(location, block.GetHashCode());
-        foreach (Player player in PlayersInRange(world, location))
-        {
-            if (player == initiator)
-                continue;
-
-            player.Client.SendPacket(packet);
-        }
-    }
-
-    internal async Task QueueBroadcastPacketAsync(ClientboundPacket packet)
-    {
-        foreach (Player player in Players)
-            await player.Client.QueuePacketAsync(packet);
-    }
-
-    internal async Task DisconnectIfConnectedAsync(string username, ChatMessage? reason = null)
-    {
-        var player = Players.FirstOrDefault(x => x.Username == username);
-        if (player != null)
-        {
-            reason ??= "Connected from another location";
-
-            await player.KickAsync(reason);
-        }
     }
 
     public async Task StopAsync()
@@ -446,25 +358,6 @@ public sealed partial class Server : IServer
                     }
 
                     keepAliveTicks = 0;
-                }
-
-                if (Configuration.Baah.HasValue)
-                {
-                    foreach (Player player in Players)
-                    {
-                        var soundPosition = new SoundPosition(player.Position.X, player.Position.Y, player.Position.Z);
-                        //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.EntitySheepAmbient)
-                        //    .WithSoundPosition(soundPosition)
-                        //    .Build());
-                    }
-                }
-
-                while (_chatMessagesQueue.TryDequeue(out ClientboundPacket packet))
-                {
-                    foreach (var player in Players)
-                    {
-                        player.Client.SendPacket(packet);
-                    }
                 }
 
                 await this.WorldManager.TickWorldsAsync();

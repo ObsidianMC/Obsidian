@@ -2,10 +2,10 @@
 
 namespace Obsidian;
 
-public sealed class Team : ITeam
+public sealed class Team(IScoreboard scoreboard, IPacketBroadcaster packetBroadcaster) : ITeam
 {
-    private readonly Scoreboard scoreboard;
-    private readonly Server server;
+    private readonly IScoreboard scoreboard = scoreboard;
+    private readonly IPacketBroadcaster packetBroadcaster = packetBroadcaster;
 
     private SetPlayerTeamPacket packet;
     public string Name { get; set; }
@@ -19,13 +19,7 @@ public sealed class Team : ITeam
 
     public HashSet<string> Entities { get; set; }
 
-    public Team(Scoreboard scoreboard, Server server)
-    {
-        this.scoreboard = scoreboard;
-        this.server = server;
-    }
-
-    public async Task CreateAsync()
+    public void Create()
     {
         this.packet = new()
         {
@@ -39,10 +33,10 @@ public sealed class Team : ITeam
             Entities = this.Entities
         };
 
-        await this.server.QueueBroadcastPacketAsync(this.packet);
+        this.packetBroadcaster.Broadcast(this.packet);
     }
 
-    public async Task<int> AddEntitiesAsync(params string[] entities)
+    public int AddEntities(params string[] entities)
     {
         this.SetPacketMode(TeamModeOption.AddEntities);
 
@@ -57,14 +51,14 @@ public sealed class Team : ITeam
             }
         }
 
-        await this.server.QueueBroadcastPacketAsync(this.packet);
+        this.packetBroadcaster.Broadcast(this.packet);
 
         this.packet.Entities.Clear();
 
         return added;
     }
 
-    public async Task<int> RemoveEntitiesAsync(params string[] entities)
+    public int RemoveEntities(params string[] entities)
     {
         this.SetPacketMode(TeamModeOption.RemoveEntities);
 
@@ -78,23 +72,23 @@ public sealed class Team : ITeam
             }
         }
 
-        await this.server.QueueBroadcastPacketAsync(this.packet);
+        this.packetBroadcaster.Broadcast(this.packet);
 
         this.packet.Entities.Clear();
 
         return removed;
     }
 
-    public async Task DeleteAsync()
+    public void Delete()
     {
         this.SetPacketMode(TeamModeOption.RemoveTeam);
 
-        await this.server.QueueBroadcastPacketAsync(this.packet);
+        this.packetBroadcaster.Broadcast(this.packet);
 
         this.scoreboard.Teams.Remove(this);
     }
 
-    public async Task UpdateAsync()
+    public void Update()
     {
         this.packet = new()
         {
@@ -109,7 +103,7 @@ public sealed class Team : ITeam
             Entities = this.Entities
         };
 
-        await this.server.QueueBroadcastPacketAsync(this.packet);
+        this.packetBroadcaster.Broadcast(this.packet);
     }
 
     private void SetPacketMode(TeamModeOption mode) => this.packet.Mode = mode;

@@ -2,6 +2,7 @@
 using Obsidian.API.Configuration;
 using Obsidian.API.Crafting;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API;
 
@@ -12,7 +13,6 @@ public interface IServer : IDisposable
     public int Tps { get; }
     public DateTimeOffset StartTime { get; }
     public ProtocolVersion Protocol { get; }
-    public IEnumerable<IPlayer> Players { get; }
     public IOperatorList Operators { get; }
     public IWorld DefaultWorld { get; }
     public ServerConfiguration Configuration { get; }
@@ -28,15 +28,56 @@ public interface IServer : IDisposable
 
     public Task RunAsync();
 
+    /// <summary>
+    /// Checks if a player is online.
+    /// </summary>
+    /// <param name="username">The username you want to check for.</param>
+    /// <returns>True if the player is online.</returns>
     public bool IsPlayerOnline(string username);
+
+    /// <summary>
+    /// Checks if a player is online.
+    /// </summary>
+    /// <param name="uuid">The uuid you want to check for.</param>
+    /// <returns>True if the player is online.</returns>
+    public bool IsPlayerOnline(Guid uuid);
+
     public bool IsWhitelisted(string username);
     public bool IsWhitelisted(Guid uuid);
-    public bool IsPlayerOnline(Guid uuid);
-    public void BroadcastMessage(string message);
+
+    /// <summary>
+    /// Sends a message to all players on this server.
+    /// </summary>
     public void BroadcastMessage(ChatMessage message);
+
     public IPlayer? GetPlayer(string username);
     public IPlayer? GetPlayer(Guid uuid);
     public IPlayer? GetPlayer(int entityId);
+
+    /// <summary>
+    /// Tries and gets an online player by username.
+    /// </summary>
+    /// <param name="username">The username of the player</param>
+    /// <param name="player">The player if found.</param>
+    /// <returns>True if a player is found, false if not.</returns>
+    public bool TryGetPlayer(string username, [NotNullWhen(true)] out IPlayer? player);
+
+    /// <summary>
+    /// Tries and gets an online player by uuid.
+    /// </summary>
+    /// <param name="uuid">The uuid of the player</param>
+    /// <param name="player">The player if found.</param>
+    /// <returns>True if a player is found, false if not.</returns>
+    public bool TryGetPlayer(Guid uuid, [NotNullWhen(true)] out IPlayer? player);
+
+    /// <summary>
+    /// Tries and gets an online player by username.
+    /// </summary>
+    /// <param name="entityId">The <see cref="IEntity.EntityId"/> of the player</param>
+    /// <param name="player">The player if found.</param>
+    /// <returns>True if a player is found, false if not.</returns>
+    public bool TryGetPlayer(int entityId, [NotNullWhen(true)] out IPlayer? player);
+
     public void RegisterRecipes(params IRecipe[] recipes);
 
     public IBossBar CreateBossBar(ChatMessage title, float health, BossBarColor color, BossBarDivisionType divisionType, BossBarFlags flags);

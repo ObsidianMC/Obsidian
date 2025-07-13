@@ -14,7 +14,7 @@ public sealed partial class CustomQueryPacket
 
     public override void Serialize(INetStreamWriter writer)
     {
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(this.Payload.Length, Constants.MaxPayloadLength, "Payload");
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(this.Payload.Length, ServerConstants.MaxPayloadLength, "Payload");
 
         writer.WriteVarInt(this.MessageId);
         writer.WriteString(this.Channel);
