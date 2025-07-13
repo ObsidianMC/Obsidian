@@ -1,9 +1,10 @@
-﻿using Obsidian.Nbt;
+﻿using Obsidian.API.Inventory;
+using Obsidian.API.Registries;
+using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
 using System.Text.Json;
 
-namespace Obsidian.Utilities;
-
+namespace Obsidian.API.Utilities;
 public partial class Extensions
 {
     public static void WriteChatMessage(this INbtWriter writer, ChatMessage chatMessage)
@@ -184,4 +185,27 @@ public partial class Extensions
          new NbtTag<string>("action", JsonNamingPolicy.SnakeCaseLower.ConvertName(clickComponent.Action.ToString())),
          new NbtTag<string>("command", clickComponent.Value)
     };
+
+    public static void WriteNbtCompound(this INetStreamWriter writer, NbtCompound compound)
+    {
+        using var nbtWriter = new RawNbtWriter(true);
+
+        foreach (var (_, tag) in compound)
+            nbtWriter.WriteTag(tag);
+
+        nbtWriter.TryFinish();
+
+        writer.WriteByteArray(nbtWriter.Data);
+    }
+
+    //DESERIALIZE ITEM COMPONENTS
+    public static ItemStack? ItemFromNbt(this NbtCompound? item)
+    {
+        if (item is null)
+            return null;
+
+        var itemStack = ItemsRegistry.GetSingleItem(item.GetString("id"));
+
+        return itemStack;
+    }
 }

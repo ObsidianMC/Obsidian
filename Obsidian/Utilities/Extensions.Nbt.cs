@@ -1,5 +1,4 @@
-﻿using Obsidian.API.Inventory;
-using Obsidian.Nbt;
+﻿using Obsidian.Nbt;
 using System.Reflection;
 
 namespace Obsidian.Utilities;
@@ -7,29 +6,6 @@ namespace Obsidian.Utilities;
 //TODO MAKE NBT DE/SERIALIZERS PLEASE
 public partial class Extensions
 {
-    public static void WriteNbtCompound(this INetStreamWriter writer, NbtCompound compound)
-    {
-        using var nbtWriter = new RawNbtWriter(true);
-
-        foreach (var (_, tag) in compound)
-            nbtWriter.WriteTag(tag);
-
-        nbtWriter.TryFinish();
-
-        writer.WriteByteArray(nbtWriter.Data);
-    }
-
-    //DESERIALIZE ITEM COMPONENTS
-    public static ItemStack? ItemFromNbt(this NbtCompound? item)
-    {
-        if (item is null)
-            return null;
-
-        var itemStack = ItemsRegistry.GetSingleItem(item.GetString("id"));
-
-        return itemStack;
-    }
-
     //TODO this can be made A LOT FASTER
     public static IBlock ToBlock(this NbtCompound comp)
     {

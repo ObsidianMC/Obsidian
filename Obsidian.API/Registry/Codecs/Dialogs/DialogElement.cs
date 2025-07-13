@@ -5,7 +5,7 @@ namespace Obsidian.API.Registry.Codecs.Dialogs;
 //TODO: Expand this class to include more properties as needed
 public sealed record class DialogElement : INbtSerializable
 {
-    public required string Type { get; set; }
+    public required string Type { get; init; }
 
     public int ButtonWidth { get; set; } = 200;
 
