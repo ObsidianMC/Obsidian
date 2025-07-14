@@ -95,7 +95,7 @@ public sealed class ServerPlayers
 
 public readonly struct ServerDescription(ServerConfiguration config)
 {
-    public string Text { get => field; init => field = FormatText(config.Motd); }
+    public string Text => FormatText(config.Motd);
 
     private static string FormatText(string text) => text.Replace('&', '§');
 }

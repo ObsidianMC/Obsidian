@@ -14,7 +14,6 @@ using Obsidian.Plugins;
 using Obsidian.Services;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
 using System.Threading;
 
 namespace Obsidian;
@@ -39,12 +38,10 @@ public sealed partial class Server : IServer
         }
     }
 
-    private readonly ILoggerFactory loggerFactory;
     private readonly IUserCache userCache;
-    private readonly ServerMetrics serverMetrics;
+    private readonly ILoggerFactory loggerFactory;
     private readonly IServiceProvider serviceProvider;
     private readonly IDisposable? configWatcher;
-    private readonly IPacketBroadcaster packetBroadcaster;
 
     public IOptionsMonitor<WhitelistConfiguration> WhitelistConfiguration { get; }
 
@@ -78,7 +75,6 @@ public sealed partial class Server : IServer
         IOptionsMonitor<ServerConfiguration> configuration,
         IOptionsMonitor<WhitelistConfiguration> whitelistConfiguration,
         ILoggerFactory loggerFactory,
-        ServerMetrics serverMetrics,
         EventDispatcher eventDispatcher,
         IServiceProvider serviceProvider)
     {
@@ -88,10 +84,15 @@ public sealed partial class Server : IServer
         _cancelTokenSource.Token.Register(() => _logger.LogWarning("Obsidian is shutting down..."));
 
         this.serviceProvider = serviceProvider;
+        this.WhitelistConfiguration = whitelistConfiguration;
+        this.loggerFactory = loggerFactory;
         this.configWatcher = configuration.OnChange((config) =>
         {
             this.Configuration = config;
         });
+        this.userCache = serviceProvider.GetRequiredService<IUserCache>();
+        this.EventDispatcher = serviceProvider.GetRequiredService<EventDispatcher>();
+        this.WorldManager = serviceProvider.GetRequiredService<IWorldManager>();
 
         var config = configuration.CurrentValue;
 
@@ -99,7 +100,6 @@ public sealed partial class Server : IServer
         Port = config.Port;
 
         Operators = new OperatorList(this, loggerFactory);
-        ScoreboardManager = new ScoreboardManager(this, loggerFactory);
 
         _logger.LogDebug(message: "Initializing command handler...");
 
@@ -114,16 +114,9 @@ public sealed partial class Server : IServer
 
         _logger.LogDebug("Done registering commands.");
 
-        this.userCache = serviceProvider.GetRequiredService<IUserCache>();
-        this.EventDispatcher = serviceProvider.GetRequiredService<EventDispatcher>();
-        this.WhitelistConfiguration = whitelistConfiguration;
-        this.serverMetrics = serverMetrics;
-        this.loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
-        this.WorldManager = serviceProvider.GetRequiredService<IWorldManager>();
-        this.packetBroadcaster = serviceProvider.GetRequiredService<IPacketBroadcaster>();
-
         Directory.CreateDirectory(ServerConstants.PermissionPath);
         Directory.CreateDirectory(ServerConstants.PersistentDataPath);
+        Directory.CreateDirectory("plugins");
     }
 
     public static int GetNextEntityId() => Interlocked.Increment(ref EntityCounter);
@@ -172,7 +165,7 @@ public sealed partial class Server : IServer
 
     public void BroadcastMessage(ChatMessage message)
     {
-        this.packetBroadcaster.Broadcast(new SystemChatPacket(message, false));
+        this.DefaultWorld.PacketBroadcaster.Broadcast(new SystemChatPacket(message, false));
         _logger.LogInformation("{message}", message.Text);
     }
 
@@ -208,11 +201,7 @@ public sealed partial class Server : IServer
 
         _logger.LogInformation("Loading plugins...");
 
-        Directory.CreateDirectory("plugins");
-
         await PluginManager.LoadPluginsAsync();
-
-        //await Task.WhenAll(Configuration.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
         if (!Configuration.OnlineMode)
             _logger.LogInformation("Starting in offline mode...");
@@ -237,6 +226,8 @@ public sealed partial class Server : IServer
             continue;
         }
 
+        ScoreboardManager = new ScoreboardManager(this, this.loggerFactory);
+
         await this.PluginManager.OnServerReadyAsync();
 
         _logger.LogInformation("Listening for new clients...");
@@ -249,7 +240,7 @@ public sealed partial class Server : IServer
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error has occured");
+            _logger.LogError(ex, "An error has occurred");
             throw;
         }
         finally
@@ -282,12 +273,8 @@ public sealed partial class Server : IServer
 
         this.socket.Close();
 
-        foreach (var client in this.Connections.Values)
-        {
-            await client.DisconnectAsync("Server shutdown");
-        }
+        _logger.LogDebug("Saving worlds..");
 
-        _logger.LogDebug("Flushing and disposing regions");
         await WorldManager.FlushLoadedWorldsAsync();
         await WorldManager.DisposeAsync();
         await this.PluginManager.DisposeAsync();
@@ -318,13 +305,17 @@ public sealed partial class Server : IServer
         var tpsMeasure = new TpsMeasure();
         var stopwatch = Stopwatch.StartNew();
         var timer = new BalancingTimer(50, _cancelTokenSource.Token);
+        var keepAliveInterval = Configuration.Network.KeepAliveInterval / 50;
 
         try
         {
             while (await timer.WaitForNextTickAsync())
             {
+                if(keepAliveInterval != Configuration.Network.KeepAliveInterval / 50)
+                    keepAliveInterval = Configuration.Network.KeepAliveInterval / 50;
+
                 keepAliveTicks++;
-                if (keepAliveTicks > (Configuration.Network.KeepAliveInterval / 50)) // to clarify: one tick is 50 milliseconds. 50 * 200 = 10000 millis means 10 seconds
+                if (keepAliveTicks > keepAliveInterval)
                 {
                     foreach (var client in this.Connections.Values.Where(x => x.State == ClientState.Play || x.State == ClientState.Configuration))
                     {
@@ -352,10 +343,7 @@ public sealed partial class Server : IServer
 
         foreach (var client in this.Connections.Values)
         {
-            if (client.State == ClientState.Play)
-                client.SendPacket(DisconnectPacket.ClientboundPlay with { Reason = ChatMessage.Simple("Server closed") });
-            else if (client.State == ClientState.Configuration)
-                client.SendPacket(DisconnectPacket.ClientboundConfiguration with { Reason = ChatMessage.Simple("Server closed") });
+            await client.DisconnectAsync("Server closed");
         }
 
         _logger.LogInformation("The game loop has been stopped");

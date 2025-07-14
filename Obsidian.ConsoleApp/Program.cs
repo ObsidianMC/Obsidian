@@ -22,6 +22,8 @@ Console.ResetColor();
 
 await GenerateConfigFiles();
 
+//_ = Task.Run(() => ReadConsoleInput());
+
 var builder = Host.CreateApplicationBuilder();
 
 builder.ConfigureObsidian();
@@ -42,3 +44,20 @@ builder.Services.Configure<HostOptions>(opts =>
 var app = builder.Build();
 
 await app.RunAsync();
+
+static void ReadConsoleInput()
+{
+    while (true)
+    {
+        Console.Write("Your input: ");
+        string? input = Console.ReadLine();
+
+        if (input?.ToLower() == "exit")
+        {
+            Console.WriteLine("Exiting application by user request.");
+            break;
+        }
+
+        Console.WriteLine($"User input: {input}");
+    }
+}

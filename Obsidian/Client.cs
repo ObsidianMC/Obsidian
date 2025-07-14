@@ -16,7 +16,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Channels;
-using System.Threading.Tasks;
 
 namespace Obsidian;
 
@@ -233,12 +232,15 @@ public sealed partial class Client : IClient
         if (this.State == ClientState.Login)
         {
             await this.QueuePacketAsync(new LoginDisconnectPacket { ReasonJson = reason.ToString(Globals.JsonOptions) });
+        }
+        else
+        {
+            var packet = this.State == ClientState.Play ? DisconnectPacket.ClientboundPlay with { Reason = reason }
+               : DisconnectPacket.ClientboundConfiguration with { Reason = reason };
 
-            this.Disconnect();
-            return;
+            await this.QueuePacketAsync(packet);
         }
 
-        await this.QueuePacketAsync(new DisconnectPacket { Reason = reason });
         this.Disconnect();
     }
 
