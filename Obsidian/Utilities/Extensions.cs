@@ -1,6 +1,7 @@
 ﻿using Obsidian.API.Inventory;
 using Obsidian.API.Plugins;
 using Obsidian.WorldData;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq.Expressions;

@@ -161,8 +161,8 @@ public sealed partial class Player : Living, IPlayer
         World = world;
         Type = EntityType.Player;
 
-        PersistentDataFile = Path.Combine(Obsidian.Server.PersistentDataPath, $"{Uuid}.dat");
-        PersistentDataBackupFile = Path.Combine(Obsidian.Server.PersistentDataPath, $"{Uuid}.dat.old");
+        PersistentDataFile = Path.Combine(ServerConstants.PersistentDataPath, $"{Uuid}.dat");
+        PersistentDataBackupFile = Path.Combine(ServerConstants.PersistentDataPath, $"{Uuid}.dat.old");
 
         Health = 20f;
 

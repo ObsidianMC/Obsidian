@@ -191,7 +191,7 @@ public partial class Client
                 case ClientState.Status: // Server ping/list
                     if (packetData.Id == 0x00)
                     {
-                        var status = new ServerStatus(this.Server, this.loggerFactory);
+                        var status = new ServerStatus(this.Server, ServerConstants.ServerIcon);
 
                         await this.eventDispatcher.ExecuteEventAsync(new ServerStatusRequestEventArgs(this.Server, status));
 
@@ -206,14 +206,10 @@ public partial class Client
                     break;
 
                 case ClientState.Handshaking:
-                    if (packetData.Id == 0x00)
-                    {
-                        await IntentionPacket.Deserialize(packetData.NetworkBuffer.Data).HandleAsync(this);
-                    }
-                    else
-                    {
-                        // Handle legacy ping
-                    }
+                    if (packetData.Id != 0x00)
+                        return;
+
+                    await IntentionPacket.Deserialize(packetData.NetworkBuffer.Data).HandleAsync(this);
                     break;
 
                 case ClientState.Login:

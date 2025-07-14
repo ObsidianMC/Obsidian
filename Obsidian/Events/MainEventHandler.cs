@@ -1,7 +1,9 @@
 ﻿using Obsidian.API.Containers;
 using Obsidian.API.Events;
 using Obsidian.Entities;
+using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
+using System.Collections.Generic;
 
 namespace Obsidian.Events;
 public sealed partial class MainEventHandler : MinecraftEventHandler
@@ -306,37 +308,30 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
     [EventPriority(Priority = Priority.Internal)]
     public async Task OnPlayerLeave(PlayerLeaveEventArgs e)
     {
-        var player = e.Player as Player;
-        var server = e.Server as Server;
+        var player = e.Player;
+        var server = e.Server;
+
+        var packetBroadcaster = player.World.PacketBroadcaster;
 
         await player.SaveAsync();
 
         player.World.TryRemovePlayer(player);
 
-        var destroy = new RemoveEntitiesPacket(player.EntityId);
-
-        foreach (Player other in server.Players)
+        packetBroadcaster.Broadcast(new PlayerInfoRemovePacket
         {
-            if (other == player)
-                continue;
-
-            await other.Client.QueuePacketAsync(new PlayerInfoRemovePacket
-            {
-                UUIDs = [player.Uuid]
-            });
-
-            if (other.visiblePlayers.Contains(player))
-                await other.Client.QueuePacketAsync(destroy);
-        }
+            UUIDs = [player.Uuid]
+        }, player.EntityId);
 
         server.BroadcastMessage(string.Format(server.Configuration.Messages.Leave, e.Player.Username));
     }
 
     [EventPriority(Priority = Priority.Internal)]
-    public async ValueTask OnPlayerJoin(PlayerJoinEventArgs e)
+    public ValueTask OnPlayerJoin(PlayerJoinEventArgs e)
     {
-        var joined = e.Player as Player;
-        var server = e.Server as Server;
+        var joined = e.Player;
+        var server = e.Server;
+
+        var packetBroadcaster = joined.World.PacketBroadcaster;
 
         joined!.World.TryAddPlayer(joined);
         joined!.World.TryAddEntity(joined);
@@ -347,9 +342,26 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             Color = HexColor.Yellow
         });
 
-        foreach (Player other in server.Players)
+        var addAction = new AddPlayerInfoAction
         {
-            await other.AddPlayerToListAsync(joined);
-        }
+            Name = joined.Username,
+        };
+
+        if (server.Configuration.OnlineMode)
+            addAction.Properties.AddRange(joined.SkinProperties);
+
+        var list = new List<InfoAction>()
+        {
+            addAction,
+            new UpdatePingInfoAction(joined.Ping),
+            new UpdateListedInfoAction(joined.ClientInformation.AllowServerListings),
+        };
+
+        packetBroadcaster.Broadcast(new PlayerInfoUpdatePacket(new Dictionary<Guid, List<InfoAction>>()
+        {
+            { joined.Uuid, list }
+        }));
+
+        return default;
     }
 }

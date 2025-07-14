@@ -7,21 +7,14 @@ using Obsidian.API.Commands;
 using Obsidian.API.Configuration;
 using Obsidian.API.Crafting;
 using Obsidian.Commands.Framework;
-using Obsidian.Entities;
 using Obsidian.Net;
-using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Plugins;
 using Obsidian.Services;
-using Obsidian.WorldData;
-using System;
 using System.Diagnostics;
 using System.IO;
-using System.Net.Sockets;
 using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 
 namespace Obsidian;
@@ -29,22 +22,6 @@ namespace Obsidian;
 public sealed partial class Server : IServer
 {
     private static int EntityCounter = 0;
-
-#if RELEASE
-    public const string VERSION = "0.1";
-#else
-    public static string VERSION
-    {
-        get
-        {
-            var informalVersion = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>();
-            if (informalVersion != null && informalVersion.InformationalVersion.Contains('+'))
-                return informalVersion.InformationalVersion.Split('+')[1];
-
-            return "0.1";
-        }
-    }
-#endif
 
     internal static readonly ConcurrentDictionary<string, DateTimeOffset> throttler = new();
 
@@ -87,7 +64,7 @@ public sealed partial class Server : IServer
     public HashSet<string> RegisteredChannels { get; } = new();
     public ICommandHandler CommandHandler { get; }
     public ServerConfiguration Configuration { get; set; }
-    public string Version => VERSION;
+    public string Version => ServerConstants.VERSION;
 
     public string Brand { get; } = "obsidian";
     public int Port { get; }
@@ -106,7 +83,7 @@ public sealed partial class Server : IServer
         IServiceProvider serviceProvider)
     {
         _logger = loggerFactory.CreateLogger<Server>();
-        _logger.LogInformation("SHA / Version: {VERSION}", VERSION);
+        _logger.LogInformation("SHA / Version: {VERSION}", ServerConstants.VERSION);
         _cancelTokenSource = CancellationTokenSource.CreateLinkedTokenSource(lifetime.ApplicationStopping);
         _cancelTokenSource.Token.Register(() => _logger.LogWarning("Obsidian is shutting down..."));
 

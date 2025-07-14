@@ -31,13 +31,13 @@ public partial class IntentionPacket
 
         if (nextState == ClientState.Login)
         {
-            if ((int)this.Version > (int)Server.DefaultProtocol)
+            if ((int)this.Version > (int)ServerConstants.DefaultProtocol)
             {
-                await client.DisconnectAsync($"Outdated server! I'm still on {Server.DefaultProtocol.GetDescription()}.");
+                await client.DisconnectAsync($"Outdated server! I'm still on {ServerConstants.DefaultProtocol.GetDescription()}.");
             }
-            else if ((int)this.Version < (int)Server.DefaultProtocol)
+            else if ((int)this.Version < (int)ServerConstants.DefaultProtocol)
             {
-                await client.DisconnectAsync($"Outdated client! Please use {Server.DefaultProtocol.GetDescription()}.");
+                await client.DisconnectAsync($"Outdated client! Please use {ServerConstants.DefaultProtocol.GetDescription()}.");
             }
         }
         else if (nextState is not ClientState.Status or ClientState.Login or ClientState.Handshaking)

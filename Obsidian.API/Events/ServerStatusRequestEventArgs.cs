@@ -2,9 +2,9 @@
 
 public class ServerStatusRequestEventArgs : BaseMinecraftEventArgs
 {
-    public IServerStatus Status { get; }
+    public ServerStatus Status { get; }
 
-    internal ServerStatusRequestEventArgs(IServer server, IServerStatus status) : base(server)
+    internal ServerStatusRequestEventArgs(IServer server, ServerStatus status) : base(server)
     {
         this.Status = status;
     }

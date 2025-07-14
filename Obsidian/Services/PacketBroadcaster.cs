@@ -29,7 +29,7 @@ public sealed class PacketBroadcaster(IServer server, ILoggerFactory loggerFacto
 
     public void Broadcast(IClientboundPacket packet, params int[] excludedIds)
     {
-        foreach (var player in this.server.Players.Cast<Player>().Where(player => !excludedIds.Contains(player.EntityId)))
+        foreach (var player in this.server.OnlinePlayers.Values.Where(player => !excludedIds.Contains(player.EntityId)))
             player.Client.SendPacket(packet);
     }
 
@@ -93,7 +93,7 @@ public sealed class PacketBroadcaster(IServer server, ILoggerFactory loggerFacto
                     continue;
                 }
 
-                foreach (var player in this.server.Players.Cast<Player>().Where(player => queuedPacket.ExcludedIds != null && !queuedPacket.ExcludedIds.Contains(player.EntityId)))
+                foreach (var player in this.server.OnlinePlayers.Values.Where(player => queuedPacket.ExcludedIds != null && !queuedPacket.ExcludedIds.Contains(player.EntityId)))
                     await player.Client.QueuePacketAsync(queuedPacket.Packet);
 
             }

@@ -142,7 +142,7 @@ public partial class Player
     public async Task LoadPermsAsync()
     {
         // Load a JSON file that contains all permissions
-        var file = new FileInfo(Path.Combine(Obsidian.Server.PermissionPath, $"{Uuid}.json"));
+        var file = new FileInfo(Path.Combine(ServerConstants.PermissionPath, $"{Uuid}.json"));
 
         if (file.Exists)
         {
@@ -155,7 +155,7 @@ public partial class Player
     public async Task SavePermsAsync()
     {
         // Save permissions to JSON file
-        var file = new FileInfo(Path.Combine(Obsidian.Server.PermissionPath, $"{Uuid}.json"));
+        var file = new FileInfo(Path.Combine(ServerConstants.PermissionPath, $"{Uuid}.json"));
 
         await using var fs = file.Open(FileMode.OpenOrCreate, FileAccess.ReadWrite);
 
@@ -195,33 +195,6 @@ public partial class Player
         });
     }
 
-    public async ValueTask AddPlayerToListAsync(IPlayer player)
-    {
-        ArgumentNullException.ThrowIfNull(player, nameof(player));
-
-        var server = this.Server;
-
-        var addAction = new AddPlayerInfoAction
-        {
-            Name = player.Username,
-        };
-
-        if (server.Configuration.OnlineMode)
-            addAction.Properties.AddRange(player.SkinProperties);
-
-        var list = new List<InfoAction>()
-        {
-            addAction,
-            new UpdatePingInfoAction(player.Ping),
-            new UpdateListedInfoAction(player.ClientInformation.AllowServerListings),
-        };
-
-        await Client.QueuePacketAsync(new PlayerInfoUpdatePacket(new Dictionary<Guid, List<InfoAction>>()
-        {
-            { player.Uuid, list }
-        }));
-    }
-
     public async ValueTask SendPlayerInfoAsync()
     {
         await Client.QueuePacketAsync(new ContainerSetContentPacket(0, Inventory.ToList())
@@ -246,7 +219,7 @@ public partial class Player
 
         foreach (var player in World.GetPlayersInRange(position, entityBroadcastDistance))
         {
-            if (player == this)
+            if (player.EntityId == this.EntityId)
                 continue;
 
             if (player.Alive && !visiblePlayers.Contains(player))

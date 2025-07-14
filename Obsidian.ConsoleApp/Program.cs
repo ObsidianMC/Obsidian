@@ -1,7 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Console;
 using Obsidian;
 using Obsidian.Hosting;
 
@@ -15,7 +13,7 @@ const string asciilogo =
     "▐█▌ ▐▌██▄ ▐█▐█▄ ▐█▐█▌██  ██ ▐█▌▐█  ▐▌██▐█▌\n" +
     " ▀█▄▀  ▀▀▀▀  ▀▀▀▀ ▀▀▀▀▀▀▀▀  ▀▀▀ ▀  ▀ ▀▀ █ \n\n";
 
-Console.Title = $"Obsidian for {Server.DefaultProtocol} ({Server.VERSION})";
+Console.Title = $"Obsidian for {ServerConstants.DefaultProtocol} ({ServerConstants.VERSION})";
 Console.BackgroundColor = ConsoleColor.White;
 Console.ForegroundColor = ConsoleColor.Black;
 Console.CursorVisible = false;

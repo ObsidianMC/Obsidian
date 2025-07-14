@@ -87,7 +87,7 @@ public sealed class OperatorList : IOperatorList
 
     public bool IsOperator(IPlayer player) => this.operators.Any(x => x.Uuid == player.Uuid);
 
-    public ImmutableList<IPlayer> GetOnlineOperators() => server.Players.Where(IsOperator).ToImmutableList();
+    public ImmutableList<IPlayer> GetOnlineOperators() => server.OnlinePlayers.Values.Where(IsOperator).ToImmutableList();
 
     private void UpdateList() =>
         File.WriteAllText(OpsFilePath, operators.ToJson());
