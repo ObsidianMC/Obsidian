@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Plugins;
 using Obsidian.API.Utilities.Interfaces;
-using Obsidian.Plugins;
 using System.Reflection;
 
 namespace Obsidian.Events;
@@ -12,7 +12,7 @@ internal readonly struct MinecraftEventDelegateExecutor : IEventExecutor
 
     public required ILogger? Logger { get; init; }
 
-    public PluginContainer? PluginContainer { get; init; }
+    public IPluginContainer? PluginContainer { get; init; }
 
     public required Delegate MethodDelegate { get; init; }
 

@@ -73,7 +73,7 @@ public partial class Server
             await this.TryProcessClientAsync(client);
         }
         else
-            this._logger.LogError("An error has occurred on a socket with the error {error}.", e.SocketError);
+            this.logger.LogError("An error has occurred on a socket with the error {error}.", e.SocketError);
 
         await this.Accept(e);
     }
@@ -87,7 +87,7 @@ public partial class Server
         var ip = client.Ip;
         if (Configuration.Whitelist && !WhitelistConfiguration.CurrentValue.WhitelistedIps.Contains(ip))
         {
-            _logger.LogInformation("{ip} is not whitelisted. Closing connection", ip);
+            logger.LogInformation("{ip} is not whitelisted. Closing connection", ip);
             await client.DisconnectAsync("Not whitelisted.");
             return;
         }
@@ -97,7 +97,7 @@ public partial class Server
             if (throttler.TryGetValue(ip, out var time) && time <= DateTimeOffset.UtcNow)
             {
                 throttler.Remove(ip, out _);
-                _logger.LogDebug("Removed {ip} from throttler", ip);
+                logger.LogDebug("Removed {ip} from throttler", ip);
             }
         }
 

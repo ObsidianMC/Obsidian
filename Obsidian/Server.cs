@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Obsidian.API;
 using Obsidian.API.Boss;
 using Obsidian.API.Commands;
 using Obsidian.API.Configuration;
@@ -24,8 +25,8 @@ public sealed partial class Server : IServer
 
     internal static readonly ConcurrentDictionary<string, DateTimeOffset> throttler = new();
 
-    internal readonly CancellationTokenSource _cancelTokenSource;
-    internal readonly ILogger _logger;
+    internal readonly CancellationTokenSource cancelTokenSource;
+    internal readonly ILogger logger;
 
     public byte[] BrandData
     {
@@ -76,12 +77,13 @@ public sealed partial class Server : IServer
         IOptionsMonitor<WhitelistConfiguration> whitelistConfiguration,
         ILoggerFactory loggerFactory,
         EventDispatcher eventDispatcher,
-        IServiceProvider serviceProvider)
+        IServiceProvider serviceProvider, 
+        CommandHandler commandHandler,
+        IUserCache userCache,
+        IWorldManager worldManager)
     {
-        _logger = loggerFactory.CreateLogger<Server>();
-        _logger.LogInformation("SHA / Version: {VERSION}", ServerConstants.VERSION);
-        _cancelTokenSource = CancellationTokenSource.CreateLinkedTokenSource(lifetime.ApplicationStopping);
-        _cancelTokenSource.Token.Register(() => _logger.LogWarning("Obsidian is shutting down..."));
+        this.logger = loggerFactory.CreateLogger<Server>();
+        this.cancelTokenSource = CancellationTokenSource.CreateLinkedTokenSource(lifetime.ApplicationStopping);
 
         this.serviceProvider = serviceProvider;
         this.WhitelistConfiguration = whitelistConfiguration;
@@ -90,31 +92,18 @@ public sealed partial class Server : IServer
         {
             this.Configuration = config;
         });
-        this.userCache = serviceProvider.GetRequiredService<IUserCache>();
-        this.EventDispatcher = serviceProvider.GetRequiredService<EventDispatcher>();
-        this.WorldManager = serviceProvider.GetRequiredService<IWorldManager>();
+        this.userCache = userCache;
+        this.EventDispatcher = eventDispatcher;
+        this.WorldManager = worldManager;
 
         var config = configuration.CurrentValue;
 
-        Configuration = config;
-        Port = config.Port;
+        this.Configuration = config;
+        this.Port = config.Port;
 
-        Operators = new OperatorList(this, loggerFactory);
-
-        _logger.LogDebug(message: "Initializing command handler...");
-
-        CommandHandler = serviceProvider.GetRequiredService<CommandHandler>();
-
-        PluginManager = ActivatorUtilities.CreateInstance<PluginManager>(this.serviceProvider, this);
-
-        _logger.LogDebug("Registering events & commands...");
-
-        CommandHandler.RegisterCommands();
-        eventDispatcher.RegisterEvents();
-
-        Directory.CreateDirectory(ServerConstants.PermissionPath);
-        Directory.CreateDirectory(ServerConstants.PersistentDataPath);
-        Directory.CreateDirectory("plugins");
+        this.Operators = new OperatorList(this, loggerFactory);
+        this.CommandHandler = commandHandler;
+        this.PluginManager = ActivatorUtilities.CreateInstance<PluginManager>(this.serviceProvider, this);
     }
 
     public static int GetNextEntityId() => Interlocked.Increment(ref EntityCounter);
@@ -163,8 +152,14 @@ public sealed partial class Server : IServer
 
     public void BroadcastMessage(ChatMessage message)
     {
-        this.DefaultWorld.PacketBroadcaster.Broadcast(new SystemChatPacket(message, false));
-        _logger.LogInformation("{message}", message.Text);
+        this.DefaultWorld.PacketBroadcaster.QueuePacket(new SystemChatPacket(message, false));
+        logger.LogInformation("{message}", message.Text);
+    }
+
+    public void BroadcastMessage(IWorld world, ChatMessage message)
+    {
+        this.DefaultWorld.PacketBroadcaster.QueuePacketToWorld(world, new SystemChatPacket(message, false));
+        logger.LogInformation("{message}", message.Text);
     }
 
     /// <summary>
@@ -172,37 +167,48 @@ public sealed partial class Server : IServer
     /// </summary>
     public async Task RunAsync()
     {
+        this.logger.LogInformation("SHA / Version: {VERSION}", ServerConstants.VERSION);
+
+        this.logger.LogDebug("Registering events & commands...");
+
+        this.CommandHandler.RegisterCommands();
+        this.EventDispatcher.RegisterEvents();
+
+        Directory.CreateDirectory(ServerConstants.PermissionPath);
+        Directory.CreateDirectory(ServerConstants.PersistentDataPath);
+        Directory.CreateDirectory("plugins");
+
         StartTime = DateTimeOffset.Now;
         this.Connections = new ConcurrentDictionary<int, IClient>(-1, this.MaxConnections);
 
-        _logger.LogInformation("Launching Obsidian Server v{Version}", this.Version);
+        logger.LogInformation("Launching Obsidian Server v{Version}", this.Version);
         var loadTimeStopwatch = Stopwatch.StartNew();
 
         // Check if MPDM and OM are enabled, if so, we can't handle connections
         if (Configuration.Network.MulitplayerDebugMode && Configuration.OnlineMode)
         {
-            _logger.LogError("Incompatible Config: Multiplayer debug mode can't be enabled at the same time as online mode since usernames will be overwritten");
+            logger.LogError("Incompatible Config: Multiplayer debug mode can't be enabled at the same time as online mode since usernames will be overwritten");
             await StopAsync();
             return;
         }
 
         await RecipesRegistry.InitializeAsync();
 
-        _logger.LogInformation("Loading structures...");
+        logger.LogInformation("Loading structures...");
         StructureRegistry.Initialize();
 
-        await this.userCache.LoadAsync(this._cancelTokenSource.Token);
+        await this.userCache.LoadAsync(this.cancelTokenSource.Token);
 
-        _logger.LogInformation("Loading properties...");
+        logger.LogInformation("Loading properties...");
 
         await (Operators as OperatorList).InitializeAsync();
 
-        _logger.LogInformation("Loading plugins...");
+        logger.LogInformation("Loading plugins...");
 
         await PluginManager.LoadPluginsAsync();
 
         if (!Configuration.OnlineMode)
-            _logger.LogInformation("Starting in offline mode...");
+            logger.LogInformation("Starting in offline mode...");
 
         CommandsRegistry.Register(this);
 
@@ -213,12 +219,12 @@ public sealed partial class Server : IServer
         };
 
         loadTimeStopwatch.Stop();
-        _logger.LogInformation("Server loaded in {time}", loadTimeStopwatch.Elapsed);
+        logger.LogInformation("Server loaded in {time}", loadTimeStopwatch.Elapsed);
 
         //Wait for worlds to load
         while (!this.WorldManager.ReadyToJoin)
         {
-            if (this._cancelTokenSource.IsCancellationRequested)
+            if (this.cancelTokenSource.IsCancellationRequested)
                 return;
 
             continue;
@@ -228,7 +234,7 @@ public sealed partial class Server : IServer
 
         await this.PluginManager.OnServerReadyAsync();
 
-        _logger.LogInformation("Listening for new clients...");
+        logger.LogInformation("Listening for new clients...");
 
         await this.StartAsync(this.Port);
 
@@ -238,14 +244,14 @@ public sealed partial class Server : IServer
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error has occurred");
+            logger.LogError(ex, "An error has occurred");
             throw;
         }
         finally
         {
             // Try to shut the server down gracefully.
             await this.StopAsync();
-            _logger.LogInformation("The server has been shut down");
+            logger.LogInformation("The server has been shut down");
         }
     }
 
@@ -261,11 +267,11 @@ public sealed partial class Server : IServer
 
     public async Task StopAsync()
     {
-        _cancelTokenSource.Cancel();
+        cancelTokenSource.Cancel();
 
         this.socket.Close();
 
-        _logger.LogDebug("Saving worlds..");
+        logger.LogDebug("Saving worlds..");
 
         await WorldManager.FlushLoadedWorldsAsync();
         await WorldManager.DisposeAsync();
@@ -280,9 +286,9 @@ public sealed partial class Server : IServer
 
         try
         {
-            while (await timer.WaitForNextTickAsync(this._cancelTokenSource.Token))
+            while (await timer.WaitForNextTickAsync(this.cancelTokenSource.Token))
             {
-                _logger.LogInformation("Saving world...");
+                logger.LogInformation("Saving world...");
                 await WorldManager.FlushLoadedWorldsAsync();
                 await this.userCache.SaveAsync();
             }
@@ -296,7 +302,7 @@ public sealed partial class Server : IServer
 
         var tpsMeasure = new TpsMeasure();
         var stopwatch = Stopwatch.StartNew();
-        var timer = new BalancingTimer(50, _cancelTokenSource.Token);
+        var timer = new BalancingTimer(50, cancelTokenSource.Token);
         var keepAliveInterval = Configuration.Network.KeepAliveInterval / 50;
 
         try
@@ -338,7 +344,7 @@ public sealed partial class Server : IServer
             await client.DisconnectAsync("Server closed");
         }
 
-        _logger.LogInformation("The game loop has been stopped");
+        logger.LogInformation("The game loop has been stopped");
         await WorldManager.FlushLoadedWorldsAsync();
     }
 
@@ -362,7 +368,7 @@ public sealed partial class Server : IServer
 
         if (DateTimeOffset.UtcNow < timeLeft)
         {
-            this._logger.LogDebug("{ip} has been throttled for reconnecting too fast.", client.Ip!);
+            this.logger.LogDebug("{ip} has been throttled for reconnecting too fast.", client.Ip!);
             await client.DisconnectAsync("Connection Throttled! Please wait before reconnecting.");
             return true;
         }

@@ -6,7 +6,6 @@ using Obsidian.API.Plugins;
 using Obsidian.API.Utilities.Interfaces;
 using Obsidian.Events;
 using Obsidian.Events.EventArgs;
-using Obsidian.Plugins;
 using System.Collections.Frozen;
 using System.Reflection;
 
@@ -55,7 +54,7 @@ public sealed class EventDispatcher : IEventDispatcher
         this.eventNames = names.ToFrozenDictionary();
     }
 
-    public void RegisterEvents<TEventModule>(PluginContainer? pluginContainer) where TEventModule : MinecraftEventHandler
+    public void RegisterEvents<TEventModule>(IPluginContainer? pluginContainer) where TEventModule : MinecraftEventHandler
     {
         var eventModule = typeof(TEventModule);
         var eventModuleTypeInfo = eventModule.GetTypeInfo();
@@ -85,7 +84,7 @@ public sealed class EventDispatcher : IEventDispatcher
         }
     }
 
-    public void RegisterEvent<TEventArgs>(PluginContainer pluginContainer, ValueTaskContextDelegate<TEventArgs> contextDelegate,
+    public void RegisterEvent<TEventArgs>(IPluginContainer pluginContainer, ValueTaskContextDelegate<TEventArgs> contextDelegate,
         Priority priority = Priority.Low)
         where TEventArgs : BaseMinecraftEventArgs
     {
@@ -102,7 +101,7 @@ public sealed class EventDispatcher : IEventDispatcher
         });
     }
 
-    public void RegisterEvent(PluginContainer? pluginContainer, Delegate handler, Priority priority = Priority.Low)
+    public void RegisterEvent(IPluginContainer? pluginContainer, Delegate handler, Priority priority = Priority.Low)
     {
         var eventType = handler.Method.GetParameters().FirstOrDefault()?.ParameterType ??
             throw new InvalidOperationException("Missing parameter for event.");
@@ -120,17 +119,16 @@ public sealed class EventDispatcher : IEventDispatcher
         });
     }
 
-    public void RegisterEvents(PluginContainer? pluginContainer = null)
+    public void RegisterEvents(IPluginContainer? pluginContainer = null)
     {
         var assembly = pluginContainer?.PluginAssembly ?? Assembly.GetExecutingAssembly();
-
 
         var modules = assembly.GetTypes().Where(x => x.IsSubclassOf(minecraftEventHandlerType));
 
         this.RegisterEventsInternal(modules, pluginContainer);
     }
 
-    private void RegisterEventsInternal(IEnumerable<Type>? modules, PluginContainer? pluginContainer = null)
+    private void RegisterEventsInternal(IEnumerable<Type>? modules, IPluginContainer? pluginContainer = null)
     {
         if (modules == null)
             return;

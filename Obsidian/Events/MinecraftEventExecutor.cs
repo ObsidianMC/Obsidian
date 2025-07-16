@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
+using Obsidian.API.Plugins;
 using Obsidian.API.Utilities.Interfaces;
-using Obsidian.Plugins;
 using System.Reflection;
 
 namespace Obsidian.Events;
@@ -14,7 +14,7 @@ internal readonly struct MinecraftEventExecutor : IEventExecutor
 
     public required Type ModuleType { get; init; }
 
-    public required PluginContainer? PluginContainer { get; init; }
+    public required IPluginContainer? PluginContainer { get; init; }
 
     public required Priority Priority { get; init; }
 

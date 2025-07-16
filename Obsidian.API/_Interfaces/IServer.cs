@@ -50,6 +50,11 @@ public interface IServer : IDisposable
     /// </summary>
     public void BroadcastMessage(ChatMessage message);
 
+    /// <summary>
+    /// Sends a message to all players on the specified world.
+    /// </summary>
+    public void BroadcastMessage(IWorld world, ChatMessage message);
+
     public IPlayer? GetPlayer(string username);
     public IPlayer? GetPlayer(Guid uuid);
     public IPlayer? GetPlayer(int entityId);
