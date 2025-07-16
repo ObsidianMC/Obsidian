@@ -1,7 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Obsidian.API.Configuration;
 using System.Threading;
 
 namespace Obsidian.Hosting;
@@ -13,12 +11,9 @@ namespace Obsidian.Hosting;
 /// 
 /// Use the <see cref="CreateAsync"/> method to create an instance.
 /// </summary>
-internal sealed class DefaultServerEnvironment(IOptionsMonitor<ServerConfiguration> serverConfig, IConfiguration configuration,
-    ILogger<DefaultServerEnvironment> logger) : IServerEnvironment, IDisposable
+internal sealed class DefaultServerEnvironment(IConfiguration configuration, ILogger<DefaultServerEnvironment> logger) : IServerEnvironment
 {
     private readonly ILogger<DefaultServerEnvironment> logger = logger;
-
-    public IOptionsMonitor<ServerConfiguration> ServerConfig { get; } = serverConfig;
 
     /// <summary>
     /// Provide server commands using the Console.
@@ -26,7 +21,7 @@ internal sealed class DefaultServerEnvironment(IOptionsMonitor<ServerConfigurati
     /// <param name="server"></param>
     /// <param name="cToken"></param>
     /// <returns></returns>
-    public async Task ProvideServerCommandsAsync(Server server, CancellationToken cToken)
+    public async ValueTask ProvideServerCommandsAsync(Server server, CancellationToken cToken)
     {
         if (configuration.GetValue<bool>("DOTNET_RUNNING_IN_CONTAINER"))
             return;
@@ -39,12 +34,13 @@ internal sealed class DefaultServerEnvironment(IOptionsMonitor<ServerConfigurati
         }
     }
 
-    Task IServerEnvironment.OnServerStoppedGracefullyAsync()
+    public ValueTask OnServerStoppedGracefullyAsync()
     {
         logger.LogInformation("Goodbye!");
-        return Task.CompletedTask;
+        return default;
     }
-    Task IServerEnvironment.OnServerCrashAsync(Exception e)
+
+    public ValueTask OnServerCrashAsync(Exception e)
     {
         // Write crash log somewhere?
         // FileLogger implemented in ConsoleApp
@@ -64,13 +60,7 @@ internal sealed class DefaultServerEnvironment(IOptionsMonitor<ServerConfigurati
         logger.LogCritical("{message}", byeMessages[new Random().Next(byeMessages.Length)]);
         logger.LogCritical(e, "Reason: {reason}", e.Message);
         logger.LogCritical("{}", e.StackTrace);
-        return Task.CompletedTask;
-    }
-
-    public void Dispose()
-    {
-        GC.SuppressFinalize(this);
-
+        return default;
     }
 }
 

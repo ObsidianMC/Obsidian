@@ -5,7 +5,7 @@ namespace Obsidian.Entities;
 [MinecraftEntity("minecraft:item")]
 public partial class ItemEntity : Entity
 {
-    private static readonly TimeSpan DropWaitTime = TimeSpan.FromSeconds(3);
+    private static readonly TimeSpan DropWaitTime = TimeSpan.FromSeconds(.5);
 
     public ItemStack Item { get; set; }
 

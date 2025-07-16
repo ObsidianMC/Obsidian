@@ -15,14 +15,14 @@ public interface IServerEnvironment
     /// </summary>
     /// <param name="cToken"></param>
     /// <returns></returns>
-    public Task ProvideServerCommandsAsync(Server server, CancellationToken cToken);
+    public ValueTask ProvideServerCommandsAsync(Server server, CancellationToken cToken);
 
     /// <summary>
     /// Called when the server succesfuly ran to completion.
     /// </summary>
     /// <param name="logger"></param>
     /// <returns></returns>
-    public Task OnServerStoppedGracefullyAsync();
+    public ValueTask OnServerStoppedGracefullyAsync();
 
     /// <summary>
     /// Called when the server stopped due to a crash.
@@ -30,6 +30,6 @@ public interface IServerEnvironment
     /// <param name="logger"></param>
     /// <param name="e"></param>
     /// <returns></returns>
-    public Task OnServerCrashAsync(Exception e);
+    public ValueTask OnServerCrashAsync(Exception e);
 
 }
