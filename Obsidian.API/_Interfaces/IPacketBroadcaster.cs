@@ -17,7 +17,7 @@ public interface IPacketBroadcaster
     /// <param name="excludedIds">The list of entity ids to exlude from the broadcast.</param>
     public void BroadcastToWorld(IWorld toWorld, IClientboundPacket packet, params int[] excludedIds);
 
-    public void BroadcastToWorldInRange(IWorld world, VectorF location, IClientboundPacket packet, params int[] excludedIdss);
+    public void BroadcastToWorldInRange(IWorld world, VectorF location, IClientboundPacket packet, params int[] excludedIds);
 
     public void QueuePacketTo(IClientboundPacket packet, params int[] ids);
     public void QueuePacketTo(IClientboundPacket packet, int priority, params int[] ids);

@@ -2,9 +2,6 @@
 using Microsoft.Extensions.Hosting;
 using Obsidian;
 using Obsidian.Hosting;
-using System.ComponentModel.DataAnnotations;
-using System.Threading;
-using System.Threading.Tasks;
 
 // Cool startup console logo because that's cool
 // 10/10 -IGN

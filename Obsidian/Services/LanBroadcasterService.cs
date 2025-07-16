@@ -30,7 +30,7 @@ public sealed class LanBroadcasterService : BackgroundService
 
         using var udpClient = new UdpClient("224.0.2.60", 4445);
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1.5));
-        string? lastMotd = null;
+        string lastMotd = string.Empty;
         byte[] bytes = []; // Cached motd as utf-8 bytes
 
         try

@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Obsidian.API;
 using Obsidian.Entities;
 using Obsidian.Hosting;
 using Obsidian.WorldData;
@@ -128,7 +127,7 @@ public sealed class PacketBroadcaster(IServer server, ILoggerFactory loggerFacto
     }
 
     private static bool IsNotExcluded(IPlayer player, QueuedPacket packet) =>
-        packet.ExcludedIds != null && !packet.ExcludedIds.Contains(player.EntityId);
+        packet.ExcludedIds == null || !packet.ExcludedIds.Contains(player.EntityId);
 
     private readonly struct QueuedPacket
     {

@@ -70,6 +70,7 @@ public class Scoreboard(string name, IPacketBroadcaster packetBroadcaster, IServ
             {
                 EntityName = score.DisplayText,
                 ObjectiveName = this.name,
+                Value = score.Value
             }, players);
 
             score.DisplayText = displayText;
