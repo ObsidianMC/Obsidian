@@ -2,6 +2,9 @@
 using Microsoft.Extensions.Hosting;
 using Obsidian;
 using Obsidian.Hosting;
+using System.ComponentModel.DataAnnotations;
+using System.Threading;
+using System.Threading.Tasks;
 
 // Cool startup console logo because that's cool
 // 10/10 -IGN
@@ -21,8 +24,6 @@ Console.WriteLine(asciilogo);
 Console.ResetColor();
 
 await GenerateConfigFiles();
-
-//_ = Task.Run(() => ReadConsoleInput());
 
 var builder = Host.CreateApplicationBuilder();
 
@@ -44,20 +45,3 @@ builder.Services.Configure<HostOptions>(opts =>
 var app = builder.Build();
 
 await app.RunAsync();
-
-static void ReadConsoleInput()
-{
-    while (true)
-    {
-        Console.Write("Your input: ");
-        string? input = Console.ReadLine();
-
-        if (input?.ToLower() == "exit")
-        {
-            Console.WriteLine("Exiting application by user request.");
-            break;
-        }
-
-        Console.WriteLine($"User input: {input}");
-    }
-}

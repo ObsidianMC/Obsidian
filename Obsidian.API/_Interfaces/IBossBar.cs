@@ -6,21 +6,21 @@ public interface IBossBar
 {
     public Guid Uuid { get; }
 
-    public bool HasPlayer(Guid uuid);
+    public bool HasPlayer(int id);
 
-    public Task AddPlayerAsync(Guid uuid);
+    public void AddPlayer(int id);
 
-    public Task RemovePlayerAsync(Guid uuid);
+    public void RemovePlayer(int id);
 
-    public Task UpdateTitleAsync(ChatMessage newTitle);
+    public void UpdateTitle(ChatMessage newTitle);
 
-    public Task UpdateHealthAsync(float newHealth);
+    public void UpdateHealth(float newHealth);
 
-    public Task UpdateColorAsync(BossBarColor newColor);
+    public void UpdateColor(BossBarColor newColor);
 
-    public Task UpdateDivisionAsync(BossBarDivisionType newDivision);
+    public void UpdateDivision(BossBarDivisionType newDivision);
 
-    public Task AddFlagsAsync(BossBarFlags newFlags);
+    public void AddFlags(BossBarFlags newFlags);
 
-    public Task RemoveFlagAsync(BossBarFlags flag);
+    public void RemoveFlag(BossBarFlags flag);
 }

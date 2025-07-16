@@ -112,8 +112,6 @@ public sealed partial class Server : IServer
         CommandHandler.RegisterCommands();
         eventDispatcher.RegisterEvents();
 
-        _logger.LogDebug("Done registering commands.");
-
         Directory.CreateDirectory(ServerConstants.PermissionPath);
         Directory.CreateDirectory(ServerConstants.PersistentDataPath);
         Directory.CreateDirectory("plugins");
@@ -251,14 +249,8 @@ public sealed partial class Server : IServer
         }
     }
 
-    public IBossBar CreateBossBar(ChatMessage title, float health, BossBarColor color, BossBarDivisionType divisionType, BossBarFlags flags) => new BossBar(this)
-    {
-        Title = title,
-        Health = health,
-        Color = color,
-        DivisionType = divisionType,
-        Flags = flags
-    };
+    public IBossBar CreateBossBar(ChatMessage title, float health, BossBarColor color, BossBarDivisionType divisionType, BossBarFlags flags) =>
+        ActivatorUtilities.CreateInstance<BossBar>(this.serviceProvider, title, health, color, divisionType, flags);
 
     public async Task ExecuteCommand(string input)
     {
@@ -311,7 +303,7 @@ public sealed partial class Server : IServer
         {
             while (await timer.WaitForNextTickAsync())
             {
-                if(keepAliveInterval != Configuration.Network.KeepAliveInterval / 50)
+                if (keepAliveInterval != Configuration.Network.KeepAliveInterval / 50)
                     keepAliveInterval = Configuration.Network.KeepAliveInterval / 50;
 
                 keepAliveTicks++;

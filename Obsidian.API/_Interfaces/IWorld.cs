@@ -1,5 +1,6 @@
 using Obsidian.API.ChunkData;
 using Obsidian.API.Entities;
+using System.Collections.Concurrent;
 
 namespace Obsidian.API;
 
@@ -29,6 +30,8 @@ public interface IWorld : IAsyncDisposable
     public IPacketBroadcaster PacketBroadcaster { get; }
     public IEventDispatcher EventDispatcher { get; }
     public IWorldManager WorldManager { get; }
+
+    public ConcurrentDictionary<Guid, IPlayer> Players { get; }
 
     public IEntitySpawner GetNewEntitySpawner();
 
