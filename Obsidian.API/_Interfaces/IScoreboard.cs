@@ -19,4 +19,7 @@ public interface IScoreboard
        CollisionRule collisionRule, TeamColor color, ChatMessage prefix, ChatMessage suffix, params string[] entities);
 
     public Score GetScore(string scoreName);
+
+    public void AddPlayer(int entityId);
+    public bool RemovePlayer(int entityId);
 }

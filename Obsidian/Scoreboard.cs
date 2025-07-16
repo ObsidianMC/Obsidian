@@ -11,11 +11,13 @@ public class Scoreboard(string name, IPacketBroadcaster packetBroadcaster, IServ
     internal readonly string name = name;
     internal readonly Dictionary<string, Score> scores = [];
 
+    public ConcurrentHashSet<int> Players { get; } = [];
+
     public ScoreboardObjective Objective { get; private set; }
 
     public List<ITeam> Teams { get; set; } = [];
 
-    public void CreateOrUpdateObjective(ChatMessage title, DisplayType displayType = DisplayType.Integer)//TODO impl new scoreboard stuff
+    public void CreateOrUpdateObjective(ChatMessage title, DisplayType displayType = DisplayType.Integer)
     {
         var packet = new SetObjectivePacket
         {
@@ -38,25 +40,24 @@ public class Scoreboard(string name, IPacketBroadcaster packetBroadcaster, IServ
                 displayType
             );
 
-            var excludedPlayers = this.GetExcludedPlayers();
             foreach (var score in this.scores.Select(x => x.Value).OrderByDescending(x => x.Value))
             {
 
-                this.packetBroadcaster.Broadcast(new SetScorePacket
+                this.packetBroadcaster.QueuePacketTo(new SetScorePacket
                 {
                     EntityName = score.DisplayText,
                     ObjectiveName = this.name,
                     Value = score.Value
-                }, excludedPlayers);
+                }, this.Players.ToArray());
             }
         }
     }
 
     public void CreateOrUpdateScore(string scoreName, string displayText, int? value = null)
     {
-        var excludedPlayers = this.GetExcludedPlayers();
-
         var score = new Score(displayText, value ?? 0);
+
+        var players = this.Players.ToArray();
 
         if (this.scores.TryGetValue(scoreName, out var cachedScore))
         {
@@ -65,11 +66,11 @@ public class Scoreboard(string name, IPacketBroadcaster packetBroadcaster, IServ
             if (value.HasValue)
                 score.Value = (int)value;
 
-            this.packetBroadcaster.Broadcast(new SetScorePacket
+            this.packetBroadcaster.QueuePacketTo(new SetScorePacket
             {
                 EntityName = score.DisplayText,
                 ObjectiveName = this.name,
-            }, excludedPlayers);
+            }, players);
 
             score.DisplayText = displayText;
         }
@@ -88,12 +89,12 @@ public class Scoreboard(string name, IPacketBroadcaster packetBroadcaster, IServ
 
         foreach (var (_, s) in this.scores.OrderBy(x => x.Value.Value))
         {
-            this.packetBroadcaster.Broadcast(new SetScorePacket
+            this.packetBroadcaster.QueuePacketTo(new SetScorePacket
             {
                 EntityName = s.DisplayText,
                 ObjectiveName = this.name,
                 Value = s.Value,
-            }, excludedPlayers);
+            }, players);
         }
     }
 
@@ -101,11 +102,11 @@ public class Scoreboard(string name, IPacketBroadcaster packetBroadcaster, IServ
     {
         if (this.scores.Remove(scoreName, out var score))
         {
-            this.packetBroadcaster.Broadcast(new SetScorePacket
+            this.packetBroadcaster.QueuePacketTo(new SetScorePacket
             {
                 EntityName = score.DisplayText,
                 ObjectiveName = this.name,
-            }, this.GetExcludedPlayers());
+            }, this.Players.ToArray());
 
             return true;
         }
@@ -123,14 +124,13 @@ public class Scoreboard(string name, IPacketBroadcaster packetBroadcaster, IServ
             Mode = ScoreboardMode.Remove
         };
 
-        this.packetBroadcaster.Broadcast(obj, this.GetExcludedPlayers());
+        this.packetBroadcaster.Broadcast(obj, this.Players.ToArray());
     }
 
     private void UpdateObjective(SetObjectivePacket packet)
     {
-        var excludedIds = GetExcludedPlayers();
-
-        this.packetBroadcaster.Broadcast(packet, excludedIds);
+        var players = this.Players.ToArray();
+        this.packetBroadcaster.QueuePacketTo(packet, players);
 
         foreach (var score in this.scores.Select(x => x.Value).OrderByDescending(x => x.Value))
         {
@@ -139,7 +139,7 @@ public class Scoreboard(string name, IPacketBroadcaster packetBroadcaster, IServ
                 EntityName = score.DisplayText,
                 ObjectiveName = this.name,
                 Value = score.Value,
-            }, excludedIds);
+            }, players);
         }
     }
 
@@ -184,8 +184,6 @@ public class Scoreboard(string name, IPacketBroadcaster packetBroadcaster, IServ
         return team;
     }
 
-    private int[] GetExcludedPlayers() => this.server.OnlinePlayers
-            .Where(x => x.Value.CurrentScoreboard != this)
-            .Select(x => x.Value.EntityId)
-            .ToArray();
+    public void AddPlayer(int entityId) => this.Players.Add(entityId);
+    public bool RemovePlayer(int entityId) => this.Players.TryRemove(entityId);
 }
