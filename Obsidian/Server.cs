@@ -12,6 +12,7 @@ using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Plugins;
 using Obsidian.Services;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -57,7 +58,7 @@ public sealed partial class Server : IServer
     public IWorldManager WorldManager { get; }
 
     public ConcurrentDictionary<Guid, IPlayer> OnlinePlayers { get; } = [];
-    private ConcurrentDictionary<string, Guid> UsernameToUuidMappings { get; } = [];
+    private ConcurrentDictionary<string, Guid> UsernameToUuidMappings { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     public HashSet<string> RegisteredChannels { get; } = [];
 
@@ -115,7 +116,7 @@ public sealed partial class Server : IServer
             RecipesRegistry.Recipes.Add(recipe.Identifier.ToSnakeCase(), recipe);
     }
 
-    public bool IsPlayerOnline(string username) => this.UsernameToUuidMappings.ContainsKey(username.ToLowerInvariant());
+    public bool IsPlayerOnline(string username) => this.UsernameToUuidMappings.ContainsKey(username);
 
     public bool IsPlayerOnline(Guid uuid) => OnlinePlayers.ContainsKey(uuid);
 
