@@ -17,7 +17,7 @@ public sealed partial class FinishConfigurationPacket
         await player.LoadAsync();
         if (!server.AddPlayer(player))
         {
-            await player.DisconnectAsync("Failed to add you to the list of online players. This is a bug. Please show the server admin.");
+            await player.DisconnectAsync("Unable to complete login due to a server error. Please try again or contact an administrator.");
             client.Logger.LogWarning("Failed to add player {Username} to online players. Disconnecting...", player.Username);
             return;
         }

@@ -115,7 +115,7 @@ public sealed partial class Server : IServer
             RecipesRegistry.Recipes.Add(recipe.Identifier.ToSnakeCase(), recipe);
     }
 
-    public bool IsPlayerOnline(string username) => OnlinePlayers.Values.Any(x => x.Username.EqualsIgnoreCase(username));
+    public bool IsPlayerOnline(string username) => this.UsernameToUuidMappings.ContainsKey(username.ToLowerInvariant());
 
     public bool IsPlayerOnline(Guid uuid) => OnlinePlayers.ContainsKey(uuid);
 
