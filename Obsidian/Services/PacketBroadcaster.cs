@@ -15,8 +15,7 @@ public sealed class PacketBroadcaster(IServer server, ILoggerFactory loggerFacto
 
     public void QueuePacketTo(IClientboundPacket packet, params int[] ids)
     {
-        this.priorityQueue.Enqueue(new() { Packet = packet, ExcludedIds = this.server.OnlinePlayers.Values
-            .Select(x => x.EntityId).Where(x => !ids.Contains(x)).ToArray() }, 1);
+        this.priorityQueue.Enqueue(new() { Packet = packet, IncludedIds = ids }, 1);
     }
 
     public void QueuePacketTo(IClientboundPacket packet, int priority, params int[] ids)
@@ -24,8 +23,7 @@ public sealed class PacketBroadcaster(IServer server, ILoggerFactory loggerFacto
         this.priorityQueue.Enqueue(new()
         {
             Packet = packet,
-            ExcludedIds = this.server.OnlinePlayers.Values
-           .Select(x => x.EntityId).Where(x => !ids.Contains(x)).ToArray()
+            IncludedIds = ids
         }, priority);
     }
 
@@ -109,13 +107,13 @@ public sealed class PacketBroadcaster(IServer server, ILoggerFactory loggerFacto
 
                 if (queuedPacket.ToWorld is IWorld toWorld)
                 {
-                    foreach (var player in toWorld.Players.Values.Where(player => IsNotExcluded(player, queuedPacket)))
+                    foreach (var player in toWorld.Players.Values.Where(player => ShouldGetPacket(player, queuedPacket)))
                         await player.Client.QueuePacketAsync(queuedPacket.Packet);
 
                     continue;
                 }
 
-                foreach (var player in this.server.OnlinePlayers.Values.Where(player => IsNotExcluded(player, queuedPacket)))
+                foreach (var player in this.server.OnlinePlayers.Values.Where(player => ShouldGetPacket(player, queuedPacket)))
                     await player.Client.QueuePacketAsync(queuedPacket.Packet);
 
             }
@@ -126,14 +124,20 @@ public sealed class PacketBroadcaster(IServer server, ILoggerFactory loggerFacto
         }
     }
 
-    private static bool IsNotExcluded(IPlayer player, QueuedPacket packet) =>
-        packet.ExcludedIds == null || !packet.ExcludedIds.Contains(player.EntityId);
+    private static bool ShouldGetPacket(IPlayer player, QueuedPacket packet)
+    {
+        if (packet.IncludedIds != null)
+            return packet.IncludedIds.Contains(player.EntityId);
+
+        return packet.ExcludedIds == null || !packet.ExcludedIds.Contains(player.EntityId);
+    }
 
     private readonly struct QueuedPacket
     {
         public required IClientboundPacket Packet { get; init; }
 
         public int[]? ExcludedIds { get; init; }
+        public int[]? IncludedIds { get; init; }
 
         public IWorld? ToWorld { get; init; }
     }

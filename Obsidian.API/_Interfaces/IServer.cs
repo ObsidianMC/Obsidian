@@ -85,5 +85,8 @@ public interface IServer : IDisposable
 
     public void RegisterRecipes(params IRecipe[] recipes);
 
+    public bool AddPlayer(IPlayer player);
+    public bool RemovePlayer(IPlayer player);
+
     public IBossBar CreateBossBar(ChatMessage title, float health, BossBarColor color, BossBarDivisionType divisionType, BossBarFlags flags);
 }

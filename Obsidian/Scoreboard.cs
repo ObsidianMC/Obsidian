@@ -40,6 +40,8 @@ public class Scoreboard(string name, IPacketBroadcaster packetBroadcaster, IServ
                 displayType
             );
 
+            var players = this.Players.ToArray();
+
             foreach (var score in this.scores.Select(x => x.Value).OrderByDescending(x => x.Value))
             {
 
@@ -48,7 +50,7 @@ public class Scoreboard(string name, IPacketBroadcaster packetBroadcaster, IServ
                     EntityName = score.DisplayText,
                     ObjectiveName = this.name,
                     Value = score.Value
-                }, this.Players.ToArray());
+                }, players);
             }
         }
     }

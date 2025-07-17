@@ -96,6 +96,9 @@ public sealed partial class Player : Living, IPlayer
         
         set
         {
+            if (field == value)
+                return;
+
             field?.RemovePlayer(this.EntityId);
 
             value?.AddPlayer(this.EntityId);

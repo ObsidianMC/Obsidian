@@ -2,7 +2,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Obsidian.API;
 using Obsidian.API.Boss;
 using Obsidian.API.Commands;
 using Obsidian.API.Configuration;
@@ -57,9 +56,11 @@ public sealed partial class Server : IServer
     public IScoreboardManager ScoreboardManager { get; private set; }
     public IWorldManager WorldManager { get; }
 
-    public ConcurrentDictionary<Guid, IPlayer> OnlinePlayers { get; } = new();
+    public ConcurrentDictionary<Guid, IPlayer> OnlinePlayers { get; } = [];
+    private ConcurrentDictionary<string, Guid> UsernameToUuidMappings { get; } = [];
 
-    public HashSet<string> RegisteredChannels { get; } = new();
+    public HashSet<string> RegisteredChannels { get; } = [];
+
     public ICommandHandler CommandHandler { get; }
     public ServerConfiguration Configuration { get; set; }
     public string Version => ServerConstants.VERSION;
@@ -77,7 +78,7 @@ public sealed partial class Server : IServer
         IOptionsMonitor<WhitelistConfiguration> whitelistConfiguration,
         ILoggerFactory loggerFactory,
         EventDispatcher eventDispatcher,
-        IServiceProvider serviceProvider, 
+        IServiceProvider serviceProvider,
         CommandHandler commandHandler,
         IUserCache userCache,
         IWorldManager worldManager)
@@ -118,11 +119,23 @@ public sealed partial class Server : IServer
 
     public bool IsPlayerOnline(Guid uuid) => OnlinePlayers.ContainsKey(uuid);
 
-    public IPlayer? GetPlayer(string username) => OnlinePlayers.Values.FirstOrDefault(player => player.Username.EqualsIgnoreCase(username));
+    public IPlayer? GetPlayer(string username)
+    {
+        if (this.UsernameToUuidMappings.TryGetValue(username, out var uuid) && OnlinePlayers.TryGetValue(uuid, out var player))
+            return player;
+
+        return null;
+    }
 
     public IPlayer? GetPlayer(Guid uuid) => OnlinePlayers.TryGetValue(uuid, out var player) ? player : null;
 
-    public IPlayer? GetPlayer(int entityId) => OnlinePlayers.Values.FirstOrDefault(player => player.EntityId == entityId);
+    public IPlayer? GetPlayer(int entityId)
+    {
+        if (this.Connections.TryGetValue(entityId, out var client) && OnlinePlayers.TryGetValue(client.Player!.Uuid, out var player))
+            return player;
+
+        return null;
+    }
 
     public bool TryGetPlayer(string username, out IPlayer? player)
     {
@@ -278,6 +291,20 @@ public sealed partial class Server : IServer
         await this.PluginManager.DisposeAsync();
 
         await this.userCache.SaveAsync();
+    }
+
+    public bool AddPlayer(IPlayer player)
+    {
+        this.UsernameToUuidMappings.TryAdd(player.Username, player.Uuid);
+
+        return this.OnlinePlayers.TryAdd(player.Uuid, player);
+    }
+
+    public bool RemovePlayer(IPlayer player)
+    {
+        this.UsernameToUuidMappings.Remove(player.Username, out _);
+
+        return this.OnlinePlayers.Remove(player.Uuid, out _);
     }
 
     private async Task ServerSaveAsync()
