@@ -86,6 +86,9 @@ internal sealed class PlayClientHandler : ClientHandler
             case 47:
                 await HandleFromPoolAsync<RenameItemPacket>(data);
                 break;
+            case 52:
+                await HandleFromPoolAsync<SetCarriedItemPacket>(data);
+                break;
             case 55:
                 await HandleFromPoolAsync<SetCreativeModeSlotPacket>(data);
                 break;

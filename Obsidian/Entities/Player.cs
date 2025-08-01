@@ -118,7 +118,7 @@ public sealed partial class Player : Living, IPlayer
 
     public short CurrentHeldItemSlot
     {
-        get => (short)(field > 0 ? field - 36 : field);
+        get => field;
         set
         {
             if (value is < 0 or > 8)

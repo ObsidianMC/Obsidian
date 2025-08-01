@@ -1,4 +1,6 @@
-﻿using Obsidian.API.Events;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Containers;
+using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -37,6 +39,21 @@ public partial class MainEventHandler
             default:
                 break;
         }
+
+        var container = args.Container;
+
+        if (container is not CraftingTable table)
+            return default;
+
+        var recipe = RecipesRegistry.FindRecipe(table);
+
+        if (recipe is null)
+        {
+            logger.LogInformation("No recipe found");
+            return default;
+        }
+
+        logger.LogInformation("Found Recipe: {recipe}", recipe.Identifier);
 
         return default;
     }

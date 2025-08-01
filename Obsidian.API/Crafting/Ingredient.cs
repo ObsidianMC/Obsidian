@@ -23,6 +23,8 @@ public class Ingredient : IEnumerable<ItemStack>
 
     IEnumerator IEnumerable.GetEnumerator() => (IEnumerator)this;
 
+    public bool CanBe(ItemStack item) => this.items.Any(x => x == item);
+
     private class IngredientEnumerator : IEnumerator<ItemStack>
     {
         public int Position { get; set; } = -1;
