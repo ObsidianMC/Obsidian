@@ -190,6 +190,7 @@ public sealed partial class Server : IServer
 
         Directory.CreateDirectory(ServerConstants.PermissionPath);
         Directory.CreateDirectory(ServerConstants.PersistentDataPath);
+        Directory.CreateDirectory(ServerConstants.AcceptedKeysPath);
         Directory.CreateDirectory("plugins");
 
         StartTime = DateTimeOffset.Now;
