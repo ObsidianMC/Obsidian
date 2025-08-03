@@ -28,8 +28,9 @@ internal sealed class Assets
     {
         Block[] blocks = GetBlocks(files.GetJsonFromArray("blocks"));
         Fluid[] fluids = GetFluids(files.GetJsonFromArray("fluids"));
-        Tag[] tags = GetTags(files.GetJsonFromArray("tags"), blocks, fluids);
         Item[] items = GetItems(files.GetJsonFromArray("items"));
+        Tag[] tags = GetTags(files.GetJsonFromArray("tags"), blocks, items, fluids);
+
         IDictionary<string, List<Sound>> sounds = GetSounds(files.GetJsonFromArray("sounds"));
         Dictionary<string, Codec[]> codecs = GetCodecs(files);
 
@@ -184,22 +185,16 @@ internal sealed class Assets
         return items.ToArray();
     }
 
-    public static Tag[] GetTags(string? json, Block[] blocks, Fluid[] fluids)
+    public static Tag[] GetTags(string? json, Block[] blocks, Item[] items, Fluid[] fluids)
     {
         if (json is null)
             return [];
 
-        var taggables = new Dictionary<string, ITaggable>();
-        foreach (Block block in blocks)
-        {
-            if (block.Tag is "minecraft:water" or "minecraft:lava")//Skip fluids
-                continue;
+        var taggables = new List<ITaggable>();
 
-            taggables.Add(block.Tag, block);
-        }
-
-        foreach (Fluid fluid in fluids)
-            taggables.Add(fluid.Tag, fluid);
+        taggables.AddRange(blocks.Where(x => x.Tag is not "minecraft:water" or "minecraft:lava"));
+        taggables.AddRange(items);
+        taggables.AddRange(fluids);
 
         var tags = new List<Tag>();
         var knownTags = new Dictionary<string, Tag>();
@@ -218,7 +213,7 @@ internal sealed class Assets
         return tags.ToArray();
     }
 
-    private static void VerifyTags(Dictionary<string, Tag> knownTags, Dictionary<string, List<string>> missedTags, Dictionary<string, ITaggable> taggables)
+    private static void VerifyTags(Dictionary<string, Tag> knownTags, Dictionary<string, List<string>> missedTags, List<ITaggable> taggables)
     {
         foreach (var missedTag in missedTags)
         {
@@ -238,7 +233,7 @@ internal sealed class Assets
                         prop.Values.Add(value);
                     }
                 }
-                else if (taggables.TryGetValue(tagMissed, out var taggable) && !prop.Values.Contains(taggable))
+                else if (taggables.Where(x => x.Tag == tagMissed && x.Type == prop.Type) is ITaggable taggable && !prop.Values.Contains(taggable))
                 {
                     prop.Values.Add(taggable);
                 }

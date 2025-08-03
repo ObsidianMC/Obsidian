@@ -8,6 +8,9 @@ internal sealed class Item : IHasName, ITaggable
     public string Tag { get; }
     public int Id { get; }
 
+    public string Type => "item";
+    public string Parent => "item";
+
     private Item(string name, string tag, int id)
     {
         Name = name;

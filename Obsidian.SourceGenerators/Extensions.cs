@@ -13,9 +13,9 @@ public static partial class Extensions
     internal static string CompileName(this Tag tag, bool last = false)
     {
         if(last)
-            return tag.Parent == tag.Type ? $"{tag.Parent.ToPascalCase()}.{tag.Name}" : $"{tag.Parent.ToPascalCase()}.{tag.Type.ToPascalCase()}.{tag.Name}";
+            return tag.Type == tag.Parent ? $"{tag.Type.ToPascalCase()}.{tag.PropertyName}" : $"{tag.Parent.ToPascalCase()}.{tag.Type.GetActualType(1).ToPascalCase()}.{tag.PropertyName}";
 
-        return tag.Parent == tag.Type ? tag.Name : $"{tag.Type.ToPascalCase()}.{tag.Name}";
+        return tag.Type == tag.Parent ? tag.PropertyName : $"{tag.Type.GetActualType(1).ToPascalCase()}.{tag.PropertyName}";
     }
 
     public static void Deconstruct<TKey, TValue>(this IGrouping<TKey, TValue> grouping, out TKey key, out List<TValue> values)
@@ -23,4 +23,7 @@ public static partial class Extensions
         key = grouping.Key;
         values = grouping.ToList();
     }
+
+    public static string GetActualType(this string type, int index = 0) =>
+      type.Contains("/") ? type.Split('/')[index] : type;
 }

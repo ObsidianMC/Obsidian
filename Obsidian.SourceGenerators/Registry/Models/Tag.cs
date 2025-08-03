@@ -4,30 +4,27 @@ namespace Obsidian.SourceGenerators.Registry.Models;
 
 internal sealed class Tag
 {
-    public string Name { get; }
-    public string Parent { get; }
-    public string MinecraftName { get; }
+    public string PropertyName { get; }
+    public string Identifier { get; }
     public string Type { get; }
+    public string Parent => this.Type.Contains('/') ? this.Type.Split('/')[0] : this.Type;
     public List<ITaggable> Values { get; }
 
-    private Tag(string name, string minecraftName, string type, List<ITaggable> values, string parent)
+
+    private Tag(string name, string type, List<ITaggable> values)
     {
-        Name = name;
-        MinecraftName = minecraftName;
+        PropertyName = name.ToPascalCase();
+        Identifier = name;
         Type = type;
         Values = values;
-        Parent = parent;
     }
 
-    public static Tag Get(JsonProperty property, Dictionary<string, ITaggable> taggables, Dictionary<string, Tag> knownTags, Dictionary<string, List<string>> missedTags)
+    public static Tag Get(JsonProperty property, List<ITaggable> taggables, Dictionary<string, Tag> knownTags, Dictionary<string, List<string>> missedTags)
     {
         JsonElement propertyValues = property.Value;
-        var tagTypes = property.Name.Split('/');
-        var parent = tagTypes[0];
 
-        string minecraftName = propertyValues.GetProperty("name").GetString()!;
-        string name = minecraftName.ToPascalCase();
-        string type = tagTypes.Length > 2 ? tagTypes.ElementAtOrDefault(1) : parent;
+        var type = propertyValues.GetProperty("type").GetString()!;
+        var name = propertyValues.GetProperty("name").GetString()!;
 
         var values = new List<ITaggable>();
 
@@ -50,7 +47,7 @@ internal sealed class Tag
                     UpdateMissedTags(property.Name, valueTag, missedTags);
                 }
             }
-            else if (taggables.TryGetValue(valueTag, out ITaggable taggable))
+            else if (taggables.FirstOrDefault(x => x.Tag == valueTag && x.Type == type) is ITaggable taggable)
             {
                 values.Add(taggable);
             }
@@ -60,7 +57,7 @@ internal sealed class Tag
             }
         }
 
-        var tag = new Tag(name, minecraftName, type, values, parent);
+        var tag = new Tag(name, type, values);
         knownTags[property.Name] = tag;
         return tag;
     }

@@ -1,18 +1,15 @@
 ﻿namespace Obsidian.SourceGenerators.Registry.Models;
-public sealed class Fluid : ITaggable, IHasName, IRegistryItem
+public sealed class Fluid(string tag, string name, int registryId) : ITaggable, IHasName, IRegistryItem
 {
-    public string Tag { get; }
+    public string Tag { get; } = tag;
 
-    public string Name { get; }
+    public string Name { get; } = name;
 
-    public int RegistryId { get; }
+    public int RegistryId { get; } = registryId;
 
-    public Fluid(string tag, string name, int registryId)
-    {
-        this.Tag = tag;
-        this.Name = name;
-        this.RegistryId = registryId;
-    }
+    public string Type => "fluid";
+
+    public string Parent => "fluid";
 
     public string GetTagValue() => this.RegistryId.ToString();
 }

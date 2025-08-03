@@ -5,6 +5,8 @@ namespace Obsidian.SourceGenerators.Registry.Models;
 internal sealed class Block : ITaggable, IHasName, IRegistryItem
 {
     public string Name { get; }
+    public string Type => "block";
+    public string Parent => "block";
     public string Tag { get; }
     public int BaseId { get; }
     public int DefaultId { get; }
@@ -83,5 +85,5 @@ internal sealed class Block : ITaggable, IHasName, IRegistryItem
         }
     }
 
-    public string GetTagValue() => RegistryId.ToString();
+    public string GetTagValue() => DefaultId.ToString();
 }
