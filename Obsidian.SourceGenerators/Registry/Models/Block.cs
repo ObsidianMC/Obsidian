@@ -85,5 +85,5 @@ internal sealed class Block : ITaggable, IHasName, IRegistryItem
         }
     }
 
-    public string GetTagValue() => DefaultId.ToString();
+    public string GetTagValue() => RegistryId.ToString();
 }
