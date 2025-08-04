@@ -22,7 +22,6 @@ public class Ingredient : IEnumerable<ItemStack>
 
     IEnumerator IEnumerable.GetEnumerator() => (IEnumerator)this;
 
-    //TODO: Match metadata as well. e.x item components
     public bool CanBe(ItemStack item) => this.items.Any(x => x.Equals(item));
 
     private class IngredientEnumerator : IEnumerator<ItemStack>
