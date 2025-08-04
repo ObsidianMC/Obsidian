@@ -75,7 +75,7 @@ public partial class ContainerClickPacket
         if (this.IsPlayerInventory || forPlayer)
             container = player.Inventory;
 
-        var clickedItem = slot != -999 ?  container[slot] : null;
+        var clickedItem = slot != -999 ? container[slot] : null;
 
         // Maybe we should have an event called ValidateContainerContentsEventArgs? 
         if (clickedItem != null && this.CarriedItem != null && !this.CarriedItem.Compare(clickedItem))
@@ -95,11 +95,13 @@ public partial class ContainerClickPacket
         var invalidItems = new Dictionary<short, IHashedItemStack>();
         foreach (var (changedSlot, hashedItem) in this.ChangedSlots)
         {
-            var checkedItem = container[changedSlot];
+            var currentContainer = changedSlot > container.Size ? player.Inventory : player.OpenedContainer;
+
+            var checkedItem = currentContainer[changedSlot];
 
             if (hashedItem == null)
             {
-                container.RemoveItem(changedSlot);
+                currentContainer.RemoveItem(changedSlot);
                 continue;
             }
 
