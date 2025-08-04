@@ -62,7 +62,6 @@ public sealed record class ItemStack : DataComponentsStorage, IEquatable<ItemSta
 
     private void InitializeComponents(params IEnumerable<IDataComponent> components)
     {
-        // Every item gets these components
         foreach (var defaultComponent in ComponentBuilder.DefaultItemComponents)
             this.Add(defaultComponent);
 
@@ -76,6 +75,24 @@ public sealed record class ItemStack : DataComponentsStorage, IEquatable<ItemSta
 
             this.Add(component);
         }
+    }
+
+    public bool Equals(ItemStack? other) =>
+        other is not null && this.Holder.Equals(other.Holder) && !base.Equals(other);
+
+    public override int GetHashCode()
+    {
+        var hashCode = new HashCode();
+        hashCode.Add(base.GetHashCode());
+        hashCode.Add(this.Holder);
+
+        int removeComponentsHash = 0;
+        foreach (var componentType in this.RemoveComponents)
+            removeComponentsHash ^= componentType.GetHashCode();
+        
+        hashCode.Add(removeComponentsHash);
+
+        return hashCode.ToHashCode();
     }
 
     public override string ToString() => $"{this.Holder.UnlocalizedName}";

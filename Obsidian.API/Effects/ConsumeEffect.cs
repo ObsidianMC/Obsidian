@@ -1,5 +1,5 @@
 ﻿namespace Obsidian.API.Effects;
-public readonly struct ConsumeEffect
+public readonly record struct ConsumeEffect
 {
     public required string Type { get; init; }
 

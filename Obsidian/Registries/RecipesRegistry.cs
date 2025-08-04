@@ -7,9 +7,10 @@ using System.Reflection;
 namespace Obsidian.Registries;
 public static partial class RecipesRegistry
 {
-    public static readonly Dictionary<string, IRecipe> Recipes = [];
     private static FrozenDictionary<string, List<CanonicalRecipe>> shapedRecipeLookup;
     private static FrozenDictionary<int, List<ShapelessRecipe>> shapelessRecipeLookup;
+
+    public static readonly Dictionary<string, IRecipe> Recipes = [];
 
     public static async Task InitializeAsync()
     {

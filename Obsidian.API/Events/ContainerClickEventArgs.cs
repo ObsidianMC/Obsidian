@@ -7,7 +7,7 @@ public sealed class ContainerClickEventArgs : ContainerEventArgs, ICancellable
     /// <summary>
     /// Gets the current item that was clicked. />
     /// </summary>
-    public ItemStack? Item => this.Container.GetItem(this.ClickedSlot);
+    public ItemStack? Item => this.ClickedSlot != -999 ? this.Container.GetItem(this.ClickedSlot) : null;
 
     public bool IsPlayerInventory => this.ContainerId == 0;
 

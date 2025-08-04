@@ -18,13 +18,12 @@ public class Ingredient : IEnumerable<ItemStack>
 
     public void Remove(ItemStack item) => this.items.Remove(item);
 
-    /// <inheritdoc/>
     public IEnumerator<ItemStack> GetEnumerator() => new IngredientEnumerator(this.items);
 
     IEnumerator IEnumerable.GetEnumerator() => (IEnumerator)this;
 
     //TODO: Match metadata as well. e.x item components
-    public bool CanBe(ItemStack item) => this.items.Any(x => x.Holder == item.Holder);
+    public bool CanBe(ItemStack item) => this.items.Any(x => x.Equals(item));
 
     private class IngredientEnumerator : IEnumerator<ItemStack>
     {
