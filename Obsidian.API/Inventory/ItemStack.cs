@@ -60,6 +60,12 @@ public sealed record class ItemStack : DataComponentsStorage, IEquatable<ItemSta
         return item;
     }
 
+    //
+    public bool Equals(ItemStack? other) => other is not null && this.Holder.Equals(other.Holder) && base.Equals(other);
+
+    public override int GetHashCode() => 
+        HashCode.Combine(this.Holder, this.InternalStorage, this.HashedStorage, this.RemoveComponents);
+
     private void InitializeComponents(params IEnumerable<IDataComponent> components)
     {
         foreach (var defaultComponent in ComponentBuilder.DefaultItemComponents)
@@ -67,32 +73,14 @@ public sealed record class ItemStack : DataComponentsStorage, IEquatable<ItemSta
 
         foreach (var component in components)
         {
-            if (this.TryGetComponent(component.Type, out var resolvedComponent))
+            if(this.ContainsKey(component.Type))
             {
-                resolvedComponent = component;
+                this.InternalStorage[component.Type] = component;
                 continue;
             }
 
             this.Add(component);
         }
-    }
-
-    public bool Equals(ItemStack? other) =>
-        other is not null && this.Holder.Equals(other.Holder) && !base.Equals(other);
-
-    public override int GetHashCode()
-    {
-        var hashCode = new HashCode();
-        hashCode.Add(base.GetHashCode());
-        hashCode.Add(this.Holder);
-
-        int removeComponentsHash = 0;
-        foreach (var componentType in this.RemoveComponents)
-            removeComponentsHash ^= componentType.GetHashCode();
-        
-        hashCode.Add(removeComponentsHash);
-
-        return hashCode.ToHashCode();
     }
 
     public override string ToString() => $"{this.Holder.UnlocalizedName}";

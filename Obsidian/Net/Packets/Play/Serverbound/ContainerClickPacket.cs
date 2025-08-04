@@ -95,7 +95,7 @@ public partial class ContainerClickPacket
         var invalidItems = new Dictionary<short, IHashedItemStack>();
         foreach (var (changedSlot, hashedItem) in this.ChangedSlots)
         {
-            var currentContainer = changedSlot > container.Size ? player.Inventory : player.OpenedContainer;
+            var currentContainer = changedSlot > container.Size || forPlayer ? player.Inventory : player.OpenedContainer;
 
             var checkedItem = currentContainer[changedSlot];
 

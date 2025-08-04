@@ -2,8 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API.Inventory;
-
-public readonly struct Item : INetworkSerializable<Item>, IEquatable<Item>
+public readonly record struct Item : INetworkSerializable<Item>
 {
     public required string UnlocalizedName { get; init; }
 
@@ -31,12 +30,4 @@ public readonly struct Item : INetworkSerializable<Item>, IEquatable<Item>
     public static Item Read(INetStreamReader reader) => ItemsRegistry.Get(reader);
 
     public override string ToString() => $"{{{this.UnlocalizedName}}}";
-
-    public bool Equals(Item other) => other.UnlocalizedName == this.UnlocalizedName && other.Type == this.Type && other.Id == this.Id;
-
-    public override bool Equals(object? obj) => Equals((Item)obj);
-
-    public static bool operator ==(Item item1, Item item2) => item1.Equals(item2);
-
-    public static bool operator !=(Item item1, Item item2) => !item1.Equals(item2);
 }

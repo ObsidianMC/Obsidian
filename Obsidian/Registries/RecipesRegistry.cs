@@ -90,7 +90,12 @@ public static partial class RecipesRegistry
         {
             int offset = entry.Key;
             Ingredient requiredIngredient = entry.Value;
-            var itemInGrid = grid[anchorSlot + offset];
+
+            int gridSlot = anchorSlot + offset;
+            if (gridSlot >= 9)
+                return false;
+
+            var itemInGrid = grid[gridSlot];
 
             if (!requiredIngredient.CanBe(itemInGrid))
                 return false;

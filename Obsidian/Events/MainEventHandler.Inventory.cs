@@ -46,6 +46,7 @@ public partial class MainEventHandler
     private async ValueTask HandleCraftingAsync(ContainerClickEventArgs args)
     {
         var container = args.Container;
+        var player = args.Player;
 
         if (container is not CraftingTable table)
             return;
@@ -54,6 +55,16 @@ public partial class MainEventHandler
 
         if (recipe is null)
         {
+            if (container[9] != null)
+                container.RemoveItem(9);
+
+            await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
+            {
+                Slot = 0,
+                ContainerId = player.CurrentContainerId,
+                SlotData = null
+            });
+
             logger.LogTrace("No recipe found: {table}", table);
             return;
         }
@@ -63,8 +74,7 @@ public partial class MainEventHandler
         var result = recipe.Result.First();
         container.SetItem(9, result);
 
-        var player = args.Player;
-
+       
         await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
         {
             Slot = 0,

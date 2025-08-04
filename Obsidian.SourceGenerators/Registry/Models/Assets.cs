@@ -233,7 +233,7 @@ internal sealed class Assets
                         prop.Values.Add(value);
                     }
                 }
-                else if (taggables.Where(x => x.Tag == tagMissed && x.Type == prop.Type) is ITaggable taggable && !prop.Values.Contains(taggable))
+                else if (taggables.FirstOrDefault(x => x.Tag == tagMissed && x.Type == prop.Type) is ITaggable taggable && !prop.Values.Contains(taggable))
                 {
                     prop.Values.Add(taggable);
                 }
