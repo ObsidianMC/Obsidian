@@ -6,6 +6,7 @@ namespace Obsidian.API;
 
 public interface IPlayer : ILiving
 {
+    public byte CurrentContainerId { get; }
     public IClient Client { get; }
     public IScoreboard? CurrentScoreboard { get; set; }
 
@@ -16,7 +17,12 @@ public interface IPlayer : ILiving
     public Container Inventory { get; }
     public Container EnderInventory { get; }
     public BaseContainer? OpenedContainer { get; set; }
-    public ItemStack? LastClickedItem { get; set; }
+
+    /// <summary>
+    /// The item currently being held by the player. Not null if they're in a container screen and carrying the item.
+    /// </summary>
+    public ItemStack? CarriedItem { get; set; }
+
     public List<SkinProperty> SkinProperties { get; set; }
 
     public ClientInformation ClientInformation { get; set; }

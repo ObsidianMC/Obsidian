@@ -75,10 +75,15 @@ public partial class ContainerClickPacket
         if (this.IsPlayerInventory || forPlayer)
             container = player.Inventory;
 
+        if (slot == -999)
+        {
+            player.Client.Logger.LogWarning("Slot is outside for some reason: {slot} - {type}", slot, this.ClickType);
+        }
+
         var clickedItem = container[slot];
 
         // Maybe we should have an event called ValidateContainerContentsEventArgs? 
-        if (!this.CarriedItem.Compare(clickedItem))
+        if (clickedItem != null && this.CarriedItem != null && !this.CarriedItem.Compare(clickedItem))
         {
             player.Client.Logger.LogWarning("Item being carried does not match the one that was picked up from the inventory.");
 
@@ -97,13 +102,13 @@ public partial class ContainerClickPacket
         {
             var checkedItem = container[changedSlot];
 
-            if(hashedItem == null)
+            if (hashedItem == null)
             {
                 container.RemoveItem(changedSlot);
                 continue;
             }
 
-            if (!hashedItem.Compare(checkedItem))
+            if (checkedItem != null && !hashedItem.Compare(checkedItem))
                 invalidItems.Add(changedSlot, hashedItem);
         }
 
@@ -124,7 +129,7 @@ public partial class ContainerClickPacket
             ClickType = this.ClickType,
             Button = this.Button,
             StateId = this.StateId,
-            ContainerId = this.ContainerId,
+            ContainerId = this.ContainerId
         });
     }
 }

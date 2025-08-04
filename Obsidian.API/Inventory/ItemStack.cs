@@ -22,7 +22,7 @@ public sealed record class ItemStack : DataComponentsStorage, IEquatable<ItemSta
 
     public bool IsAir => Type == Material.Air;
 
-    public ItemStack(Item holder, int count = 1, params List<IDataComponent> components)
+    public ItemStack(Item holder, int count = 1, params IEnumerable<IDataComponent> components)
     {
         this.Holder = holder;
         this.Count = count;
@@ -60,7 +60,7 @@ public sealed record class ItemStack : DataComponentsStorage, IEquatable<ItemSta
         return item;
     }
 
-    private void InitializeComponents(params List<IDataComponent> components)
+    private void InitializeComponents(params IEnumerable<IDataComponent> components)
     {
         // Every item gets these components
         foreach (var defaultComponent in ComponentBuilder.DefaultItemComponents)
@@ -78,4 +78,5 @@ public sealed record class ItemStack : DataComponentsStorage, IEquatable<ItemSta
         }
     }
 
+    public override string ToString() => $"{this.Holder.UnlocalizedName}";
 }

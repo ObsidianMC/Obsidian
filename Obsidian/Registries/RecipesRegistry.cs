@@ -1,13 +1,13 @@
 ﻿using Obsidian.API.Containers;
 using Obsidian.API.Crafting;
+using System.Collections.Frozen;
 using System.Reflection;
-using System.Text;
 
 namespace Obsidian.Registries;
 public static partial class RecipesRegistry
 {
     public static readonly Dictionary<string, IRecipe> Recipes = [];
-    private static readonly Dictionary<string, List<ShapedRecipe>> _recipeLookup = [];
+    private static FrozenDictionary<string, List<CanonicalRecipe>> recipeLookup;
 
     public static async Task InitializeAsync()
     {
@@ -16,131 +16,92 @@ public static partial class RecipesRegistry
         var recipes = await fs.FromJsonAsync<IRecipe[]>();
 
         foreach (var recipe in recipes!)
-        {
             Recipes.Add(recipe.Identifier, recipe);
-        }
 
+        var recipeKeyDictionary = new Dictionary<string, List<CanonicalRecipe>>();
         foreach (var recipe in recipes.Where(x => x is ShapedRecipe).Cast<ShapedRecipe>())
         {
-            // The key is now based only on the shape, not the items.
-            var key = GenerateShapeKey(recipe);
-            if (!_recipeLookup.TryGetValue(key, out var value))
+            var occupiedSlots = new List<int>();
+            var ingredientsBySlot = new Dictionary<int, Ingredient>();
+
+            for (int r = 0; r < recipe.Pattern.Count; r++)
             {
-                value = [];
-                _recipeLookup[key] = value;
+                for (int c = 0; c < recipe.Pattern[r].Length; c++)
+                {
+                    if (recipe.Pattern[r][c] != ' ')
+                    {
+                        int slot = r * 3 + c;
+                        occupiedSlots.Add(slot);
+                        ingredientsBySlot[slot] = recipe.Key[recipe.Pattern[r][c]];
+                    }
+                }
             }
 
-            value.Add(recipe);
+            if (occupiedSlots.Count == 0)
+                continue;
+
+            int anchorSlot = occupiedSlots.Min();
+
+            var ingredientsByOffset = new Dictionary<int, Ingredient>();
+            foreach (int slot in occupiedSlots)
+                ingredientsByOffset[slot - anchorSlot] = ingredientsBySlot[slot];
+
+            var canonicalRecipe = new CanonicalRecipe(ingredientsByOffset, recipe);
+
+            var key = string.Join(":", ingredientsByOffset.Keys.OrderBy(k => k));
+
+            if (!recipeKeyDictionary.ContainsKey(key))
+                recipeKeyDictionary[key] = [];
+
+            recipeKeyDictionary[key].Add(canonicalRecipe);
         }
+
+        recipeLookup = recipeKeyDictionary.ToFrozenDictionary();
     }
 
-    // The lookup dictionary now maps a shape key to a LIST of recipes.
-
-
-    /// <summary>
-    /// Finds a recipe matching the grid. O(1) for shape lookup, then a
-    /// quick check over a very small list.
-    /// </summary>
     public static ShapedRecipe? FindRecipe(CraftingTable grid)
     {
-        // Phase 1: Find candidate recipes based on the shape of items in the grid.
-        var shapeKey = GenerateShapeKey(grid, out int minRow, out int minCol);
-        if (shapeKey == null || !_recipeLookup.TryGetValue(shapeKey, out var candidates))
+        var occupiedSlots = new List<int>();
+        for (int i = 0; i < 9; i++)
+        {
+            if (grid[i] != null)
+                occupiedSlots.Add(i);
+        }
+
+        if (occupiedSlots.Count == 0) 
             return null;
 
-        // Phase 2: Check the ingredients for each candidate recipe.
+        int anchorSlot = occupiedSlots.Min();
+        var relativeOffsets = occupiedSlots.Select(s => s - anchorSlot).OrderBy(o => o);
+        var key = string.Join(":", relativeOffsets);
+
+        if (!recipeLookup.TryGetValue(key, out var candidates))
+            return null;
+
         foreach (var candidate in candidates)
         {
-            if (DoesGridMatchRecipe(grid, candidate, minRow, minCol))
-                return candidate;
+            if (!DoesGridMatchIngredients(grid, anchorSlot, candidate))
+                continue;
 
+            return candidate.OriginalRecipe;
         }
 
         return null;
     }
 
-    /// <summary>
-    /// Checks if the items in the grid satisfy the ingredient requirements of a recipe.
-    /// </summary>
-    private static bool DoesGridMatchRecipe(CraftingTable grid, ShapedRecipe recipe, int gridMinRow, int gridMinCol)
+    private static bool DoesGridMatchIngredients(CraftingTable grid, int anchorSlot, CanonicalRecipe recipe)
     {
-        for (int r = 0; r < recipe.Pattern.Count; r++)
+        foreach (var entry in recipe.IngredientsByOffset)
         {
-            for (int c = 0; c < recipe.Pattern[r].Length; c++)
-            {
-                char ingredientChar = recipe.Pattern[r][c];
-                var itemInGrid = grid.GetItem(gridMinRow + r, gridMinCol + c);
+            int offset = entry.Key;
+            Ingredient requiredIngredient = entry.Value;
+            var itemInGrid = grid[anchorSlot + offset];
 
-                if (ingredientChar == ' ') // Empty space in recipe
-                {
-                    if (itemInGrid != null)
-                        return false; // Grid has an item where recipe expects none.
-                }
-                else // Recipe expects an item here
-                {
-                    if (itemInGrid == null)
-                        return false; // Grid has no item where recipe expects one.
-
-                    // Check if the item satisfies the ingredient requirement.
-                    if (!recipe.Key[ingredientChar].CanBe(itemInGrid))
-                        return false;
-
-                }
-            }
+            if (!requiredIngredient.CanBe(itemInGrid))
+                return false;
         }
 
         return true;
     }
-
-    // Generates a key from a raw recipe definition
-    private static string GenerateShapeKey(ShapedRecipe recipe)
-    {
-        var keyBuilder = new StringBuilder();
-        foreach (var row in recipe.Pattern)
-        {
-            foreach (char c in row)
-            {
-                // 'X' for an item, '.' for an empty space.
-                keyBuilder.Append(c == ' ' ? '.' : 'X');
-            }
-            keyBuilder.Append(';'); // Row separator
-        }
-        return keyBuilder.ToString();
-    }
-
-    // Generates a key from a live crafting grid
-    private static string? GenerateShapeKey(CraftingTable grid, out int minRow, out int minCol)
-    {
-        minRow = -1;
-        minCol = -1;
-        int maxRow = -1, maxCol = -1;
-
-        // Find the bounding box of the items in the grid
-        for (int i = 0; i < grid.Size; i++)
-        {
-            if (grid[i] != null)
-            {
-                int r = i / grid.Size;
-                int c = i % grid.Size;
-                if (minRow == -1) minRow = r;
-                maxRow = r;
-                if (minCol == -1 || c < minCol) minCol = c;
-                if (maxCol == -1 || c > maxCol) maxCol = c;
-            }
-        }
-
-        if (minRow == -1) return null; // Grid is empty
-
-        var keyBuilder = new StringBuilder();
-        for (int r = minRow; r <= maxRow; r++)
-        {
-            for (int c = minCol; c <= maxCol; c++)
-            {
-                keyBuilder.Append(grid.GetItem(r, c) != null ? 'X' : '.');
-            }
-            keyBuilder.Append(';');
-        }
-
-        return keyBuilder.ToString();
-    }
+    public record CanonicalRecipe(Dictionary<int, Ingredient> IngredientsByOffset, ShapedRecipe OriginalRecipe);
 }

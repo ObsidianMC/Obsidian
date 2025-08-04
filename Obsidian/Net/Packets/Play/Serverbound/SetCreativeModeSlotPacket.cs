@@ -29,8 +29,6 @@ public partial class SetCreativeModeSlotPacket
 
         inventory.SetItem(slot, ClickedItem);
 
-        player.LastClickedItem = ClickedItem;
-
         if (player.CurrentHeldItemSlot == ClickedSlot)
         {
             var heldItem = player.GetHeldItem();

@@ -3,6 +3,7 @@
 namespace Obsidian.Net.Packets.Common;
 public partial record class UpdateTagsPacket
 {
+    private static string[] Invalids = ["worlgen", "worldgen/biome", "item/enchantable", ];
     [Field(0)]
     public IDictionary<string, Tag[]> Tags { get; init; } = default!;
 

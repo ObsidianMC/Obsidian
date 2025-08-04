@@ -11,10 +11,10 @@ public partial class MainEventHandler
     private const int OutsideInventory = -999;
 
     [EventPriority(Priority = Priority.Internal)]
-    public ValueTask OnInventoryClick(ContainerClickEventArgs args)
+    public async ValueTask OnInventoryClick(ContainerClickEventArgs args)
     {
         if (args.IsCancelled)
-            return default;
+            return;
 
         switch (args.ClickType)
         {
@@ -43,19 +43,29 @@ public partial class MainEventHandler
         var container = args.Container;
 
         if (container is not CraftingTable table)
-            return default;
+            return;
 
         var recipe = RecipesRegistry.FindRecipe(table);
 
         if (recipe is null)
         {
-            logger.LogInformation("No recipe found");
-            return default;
+            logger.LogInformation("No recipe found: {table}", table);
+            return;
         }
 
         logger.LogInformation("Found Recipe: {recipe}", recipe.Identifier);
 
-        return default;
+        var result = recipe.Result.First();
+        container.SetItem(9, result);
+
+        var player = args.Player;
+
+        await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
+        {
+            Slot = 0,
+            ContainerId = player.CurrentContainerId,
+            SlotData = result
+        });
     }
 
     private static void HandlePickupAll(ContainerClickEventArgs args)
@@ -206,26 +216,45 @@ public partial class MainEventHandler
 
     private static void HandlePickup(ContainerClickEventArgs args)
     {
-        var carriedItem = args.Item;
         var clickedSlot = args.ClickedSlot;
         var container = args.Container;
         var player = args.Player;
+        var clickedItem = args.Item;
+        var button = args.Button;
+        var logger = player.Client.Logger;
 
-        if (carriedItem == null)
-            return;
-
-        if (!carriedItem.IsAir)
+        if (!player.CarriedItem.IsNullOrAir())
         {
-            player.LastClickedItem = carriedItem;
+            logger.LogInformation("Item count: {count} - {type}", player.CarriedItem.Count, player.CarriedItem.Holder.UnlocalizedName);
+            switch (button)
+            {
+                case 0:
+                    container.SetItem(clickedSlot, player.CarriedItem);
+                    player.CarriedItem = null;
+                    break;
+                case 1:
+                    var newItem = player.CarriedItem - 1;
+                    player.CarriedItem = newItem;
 
-            container.RemoveItem(clickedSlot);
+                    container.SetItem(clickedSlot, new(newItem.Holder, 1, newItem));
+                    logger.LogInformation("Setting item in container slot: {slot} - {item}", clickedSlot, player.CarriedItem.Holder.UnlocalizedName);
+                    break;
+                default:
+                    break;
+            }
 
             return;
         }
 
-        container.SetItem(clickedSlot, player.LastClickedItem);
+        logger.LogInformation("Carried item is null or air");
 
-        player.LastClickedItem = carriedItem;
+        if (clickedItem.IsNullOrAir())
+            return;
+
+        logger.LogInformation("Picked up item: {item}", clickedItem.Holder.UnlocalizedName);
+
+        player.CarriedItem = clickedItem;
+        container.RemoveItem(clickedSlot);
     }
 
     private static void HandleSwap(ContainerClickEventArgs args)

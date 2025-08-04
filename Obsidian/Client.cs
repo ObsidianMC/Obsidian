@@ -364,6 +364,9 @@ public sealed partial class Client : IClient
             {
                 var packet = await this.packetQueue.Reader.ReadAsync(this.cancellationSource.Token);
 
+                if (packet == null)
+                    continue;
+
                 string name = "";
 
                 if (this.State == ClientState.Login)
