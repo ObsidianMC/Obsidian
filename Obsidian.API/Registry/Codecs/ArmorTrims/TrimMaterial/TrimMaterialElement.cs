@@ -1,5 +1,5 @@
 ﻿namespace Obsidian.API.Registry.Codecs.ArmorTrims.TrimMaterial;
-public sealed class TrimMaterialElement : INetworkSerializable<TrimMaterialElement>
+public sealed record class TrimMaterialElement : INetworkSerializable<TrimMaterialElement>
 {
     public required string AssetName { get; init; }
 

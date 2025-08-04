@@ -2,7 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API.Inventory.DataComponents;
-public sealed class MapDecorationDataComponent : IDataComponent
+public sealed record class MapDecorationDataComponent : IDataComponent
 {
     public DataComponentType Type => DataComponentType.MapDecorations;
 
@@ -43,7 +43,7 @@ public sealed class MapDecorationDataComponent : IDataComponent
     }
 }
 
-public readonly struct MapDecoration : INetworkSerializable<MapDecoration>
+public readonly record struct MapDecoration : INetworkSerializable<MapDecoration>
 {
     public required MapDecorationType Type { get; init; }
 

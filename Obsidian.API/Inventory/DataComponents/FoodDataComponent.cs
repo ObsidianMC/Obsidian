@@ -5,7 +5,7 @@ namespace Obsidian.API.Inventory.DataComponents;
 /// <summary>
 /// Makes the item consumable.
 /// </summary>
-public sealed class FoodDataComponent : IDataComponent
+public sealed record class FoodDataComponent : IDataComponent
 {
     public DataComponentType Type => DataComponentType.Food;
 

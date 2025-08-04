@@ -2,7 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API.Inventory.DataComponents;
-public sealed class ConsumableDataComponent : IDataComponent
+public sealed record class ConsumableDataComponent : IDataComponent
 {
     public DataComponentType Type => DataComponentType.Consumable;
 
@@ -52,4 +52,5 @@ public sealed class ConsumableDataComponent : IDataComponent
             consumeEffect.Effect.Write(writer);
         }
     }
+
 }

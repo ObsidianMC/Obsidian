@@ -1,5 +1,5 @@
 ﻿namespace Obsidian.API.Inventory.DataComponents;
-public sealed class PotionContentsDataComponent : IDataComponent
+public sealed record class PotionContentsDataComponent : IDataComponent
 {
     public DataComponentType Type => DataComponentType.PotionContents;
 
@@ -47,7 +47,7 @@ public sealed class PotionContentsDataComponent : IDataComponent
     }
 }
 
-public readonly struct Potion
+public readonly record struct Potion
 {
     public required string Name { get; init; }
     public required List<PotionEffectData> Effects { get; init; }

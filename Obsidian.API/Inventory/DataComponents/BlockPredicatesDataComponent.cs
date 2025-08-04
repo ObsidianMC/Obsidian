@@ -1,5 +1,7 @@
-﻿namespace Obsidian.API.Inventory.DataComponents;
-public abstract class BlockPredicatesDataComponent : IDataComponent
+﻿using Obsidian.Nbt;
+
+namespace Obsidian.API.Inventory.DataComponents;
+public abstract record class BlockPredicatesDataComponent : IDataComponent
 {
     public abstract DataComponentType Type { get; }
 
@@ -15,12 +17,11 @@ public abstract class BlockPredicatesDataComponent : IDataComponent
 }
 
 
-public readonly struct BlockPredicate
+public readonly record struct BlockPredicate
 {
     public bool HasBlocks => this.BlockIds.Count > 0;
 
     public List<string> BlockIds { get; init; }
-
 
     public bool HasProperties => this.Properties.Count > 0;
 
@@ -28,11 +29,10 @@ public readonly struct BlockPredicate
 
     public bool HasNbt => this.Nbt != null;
 
-    //WE NEED NBT PAIN
-    public object? Nbt { get; init; }
+    public NbtCompound? Nbt { get; init; }
 }
 
-public readonly struct BlockProperty
+public readonly record struct BlockProperty
 {
     public required string Name { get; init; }
 

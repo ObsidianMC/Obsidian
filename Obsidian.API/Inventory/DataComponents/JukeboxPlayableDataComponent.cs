@@ -1,5 +1,5 @@
 ﻿namespace Obsidian.API.Inventory.DataComponents;
-public sealed class JukeboxPlayableDataComponent : IDataComponent
+public sealed record class JukeboxPlayableDataComponent : IDataComponent
 {
     public DataComponentType Type => DataComponentType.JukeboxPlayable;
 

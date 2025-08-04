@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API.Inventory.DataComponents;
-public sealed class ToolDataComponent : IDataComponent
+public sealed record class ToolDataComponent : IDataComponent
 {
     public DataComponentType Type => DataComponentType.Tool;
 
@@ -37,7 +37,7 @@ public sealed class ToolDataComponent : IDataComponent
     }
 }
 
-public readonly struct ToolRule : INetworkSerializable<ToolRule>
+public readonly record struct ToolRule : INetworkSerializable<ToolRule>
 {
     public required IdSet Blocks { get; init; }
 
@@ -60,7 +60,7 @@ public readonly struct ToolRule : INetworkSerializable<ToolRule>
     }
 }
 
-public readonly struct IdSet : INetworkSerializable<IdSet>
+public readonly record struct IdSet : INetworkSerializable<IdSet>
 {
     /// <summary>
     /// Value used to determine the data that follows. 

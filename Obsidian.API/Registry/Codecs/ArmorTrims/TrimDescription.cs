@@ -1,5 +1,5 @@
 ﻿namespace Obsidian.API.Registry.Codecs.ArmorTrims;
-public sealed class TrimDescription : INetworkSerializable<TrimDescription>
+public sealed record class TrimDescription : INetworkSerializable<TrimDescription>
 {
     public required string Translate { get; init; }
 
