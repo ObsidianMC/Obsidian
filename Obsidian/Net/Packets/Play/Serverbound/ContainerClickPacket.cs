@@ -75,12 +75,7 @@ public partial class ContainerClickPacket
         if (this.IsPlayerInventory || forPlayer)
             container = player.Inventory;
 
-        if (slot == -999)
-        {
-            player.Client.Logger.LogWarning("Slot is outside for some reason: {slot} - {type}", slot, this.ClickType);
-        }
-
-        var clickedItem = container[slot];
+        var clickedItem = slot != -999 ?  container[slot] : null;
 
         // Maybe we should have an event called ValidateContainerContentsEventArgs? 
         if (clickedItem != null && this.CarriedItem != null && !this.CarriedItem.Compare(clickedItem))

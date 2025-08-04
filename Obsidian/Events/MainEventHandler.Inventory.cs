@@ -40,6 +40,11 @@ public partial class MainEventHandler
                 break;
         }
 
+        await this.HandleCraftingAsync(args);
+    }
+
+    private async ValueTask HandleCraftingAsync(ContainerClickEventArgs args)
+    {
         var container = args.Container;
 
         if (container is not CraftingTable table)
@@ -49,11 +54,11 @@ public partial class MainEventHandler
 
         if (recipe is null)
         {
-            logger.LogInformation("No recipe found: {table}", table);
+            logger.LogTrace("No recipe found: {table}", table);
             return;
         }
 
-        logger.LogInformation("Found Recipe: {recipe}", recipe.Identifier);
+        logger.LogTrace("Found Recipe: {recipe}", recipe.Identifier);
 
         var result = recipe.Result.First();
         container.SetItem(9, result);
