@@ -2,11 +2,11 @@
 using Obsidian.API.Registry.Codecs.ArmorTrims.TrimPattern;
 
 namespace Obsidian.API.Inventory.DataComponents;
-public sealed record class TrimDataComponent : IDataComponent
+public sealed record class TrimDataComponent : DataComponent
 {
-    public DataComponentType Type => DataComponentType.Trim;
+    public override DataComponentType Type => DataComponentType.Trim;
 
-    public string Identifier => "minecraft:trim";
+    public override string Identifier => "minecraft:trim";
 
     public TrimMaterialElement Material { get; set; }
 
@@ -14,7 +14,7 @@ public sealed record class TrimDataComponent : IDataComponent
 
     public bool ShowInToolTip { get; set; }
 
-    public void Read(INetStreamReader reader)
+    public override void Read(INetStreamReader reader)
     {
         TrimMaterialElement.Read(reader);
         TrimPatternElement.Read(reader);
@@ -22,7 +22,7 @@ public sealed record class TrimDataComponent : IDataComponent
         this.ShowInToolTip = reader.ReadBoolean();
     }
 
-    public void Write(INetStreamWriter writer)
+    public override void Write(INetStreamWriter writer)
     {
         TrimMaterialElement.Write(this.Material, writer);
         TrimPatternElement.Write(this.Pattern, writer);

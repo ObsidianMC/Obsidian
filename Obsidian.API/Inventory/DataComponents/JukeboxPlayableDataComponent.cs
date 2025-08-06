@@ -1,15 +1,15 @@
 ﻿namespace Obsidian.API.Inventory.DataComponents;
-public sealed record class JukeboxPlayableDataComponent : IDataComponent
+public sealed record class JukeboxPlayableDataComponent : DataComponent
 {
-    public DataComponentType Type => DataComponentType.JukeboxPlayable;
+    public override DataComponentType Type => DataComponentType.JukeboxPlayable;
 
-    public string Identifier => "minecraft:jukebox_playable";
+    public override string Identifier => "minecraft:jukebox_playable";
 
     public EitherHolder<string, JukeboxSong> Song { get; set; }
 
     public bool ShowInTooltip { get; set; }
 
-    public void Read(INetStreamReader reader)
+    public override void Read(INetStreamReader reader)
     {
         var resourceLocation = reader.ReadOptionalString();
 
@@ -22,7 +22,7 @@ public sealed record class JukeboxPlayableDataComponent : IDataComponent
         this.Song = new(JukeboxSong.Read(reader));
     }
 
-    public void Write(INetStreamWriter writer)
+    public override void Write(INetStreamWriter writer)
     {
         var isLeft = this.Song.Left != null;
 

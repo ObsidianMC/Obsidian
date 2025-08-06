@@ -32,7 +32,7 @@ public interface INetStreamReader : INetStream
     public IdSet ReadIdSet();
     public SoundEvent ReadSoundEvent();
 
-    public List<TValue> ReadLengthPrefixedArray<TValue>(Func<TValue> read);
+    public TValue[] ReadLengthPrefixedArray<TValue>(Func<TValue> read);
 
     public AttributeModifier ReadAttributeModifier();
     public Enchantment ReadEnchantment();

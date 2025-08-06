@@ -1,5 +1,5 @@
 ﻿namespace Obsidian.API.Registry.Codecs.ArmorTrims.TrimPattern;
-public sealed class TrimPatternElement : INetworkSerializable<TrimPatternElement>
+public sealed record class TrimPatternElement : INetworkSerializable<TrimPatternElement>
 {
     public required TrimDescription Description { get; init; }
 

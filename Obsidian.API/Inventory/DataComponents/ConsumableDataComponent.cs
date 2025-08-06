@@ -2,11 +2,11 @@
 using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API.Inventory.DataComponents;
-public sealed record class ConsumableDataComponent : IDataComponent
+public sealed record class ConsumableDataComponent : DataComponent
 {
-    public DataComponentType Type => DataComponentType.Consumable;
+    public override DataComponentType Type => DataComponentType.Consumable;
 
-    public string Identifier => "minecraft:consumable";
+    public override string Identifier => "minecraft:consumable";
 
     public required float ConsumeSeconds { get; set; }
 
@@ -21,7 +21,7 @@ public sealed record class ConsumableDataComponent : IDataComponent
     [SetsRequiredMembers]
     internal ConsumableDataComponent() { }
 
-    public void Read(INetStreamReader reader)
+    public override void Read(INetStreamReader reader)
     {
         this.ConsumeSeconds = reader.ReadSingle();
         this.Animation = reader.ReadVarInt<ItemAnimation>();
@@ -39,7 +39,8 @@ public sealed record class ConsumableDataComponent : IDataComponent
             effects[i] = new() { Effect = effect, Type = type };
         }
     }
-    public void Write(INetStreamWriter writer)
+
+    public override void Write(INetStreamWriter writer)
     {
         writer.WriteSingle(this.ConsumeSeconds);
         writer.WriteVarInt(this.Animation);
@@ -52,5 +53,4 @@ public sealed record class ConsumableDataComponent : IDataComponent
             consumeEffect.Effect.Write(writer);
         }
     }
-
 }

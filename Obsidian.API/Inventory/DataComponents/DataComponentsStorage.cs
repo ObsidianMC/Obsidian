@@ -1,18 +1,16 @@
-﻿using System.Collections;
-
-namespace Obsidian.API.Inventory.DataComponents;
-public abstract record class DataComponentsStorage : IEnumerable<IDataComponent>
+﻿namespace Obsidian.API.Inventory.DataComponents;
+public abstract class DataComponentsStorage
 {
-    protected Dictionary<DataComponentType, IDataComponent> InternalStorage { get; } = [];
+    protected Dictionary<DataComponentType, DataComponent> InternalStorage { get; } = [];
     protected Dictionary<DataComponentType, int> HashedStorage { get; } = [];
 
     public List<DataComponentType> RemoveComponents { get; } = [];
 
     public int TotalComponents => this.InternalStorage.Count;
 
-    public IDataComponent this[DataComponentType type] { get => this.InternalStorage[type]; set => this.InternalStorage[type] = value; }
+    public DataComponent this[DataComponentType type] { get => this.InternalStorage[type]; set => this.InternalStorage[type] = value; }
 
-    public bool Add(IDataComponent component) => this.InternalStorage.TryAdd(component.Type, component);
+    public bool Add(DataComponent component) => this.InternalStorage.TryAdd(component.Type, component);
 
     /// <summary>
     /// Adds a hashed components to the item.
@@ -32,18 +30,16 @@ public abstract record class DataComponentsStorage : IEnumerable<IDataComponent>
 
     public bool Remove(DataComponentType type) => this.InternalStorage.Remove(type);
 
-    public TComponent? GetComponent<TComponent>(DataComponentType type) where TComponent : IDataComponent =>
+    public TComponent? GetComponent<TComponent>(DataComponentType type) where TComponent : DataComponent =>
         (TComponent)this.InternalStorage.GetValueOrDefault(type);
 
-    public bool TryGetComponent<TComponent>(DataComponentType componentType, out IDataComponent component) where TComponent : IDataComponent =>
+    public bool TryGetComponent<TComponent>(DataComponentType componentType, out DataComponent component) where TComponent : DataComponent =>
         this.InternalStorage.TryGetValue(componentType, out component);
 
-    public bool TryGetComponent(DataComponentType componentType, out IDataComponent component) =>
+    public bool TryGetComponent(DataComponentType componentType, out DataComponent component) =>
        this.InternalStorage.TryGetValue(componentType, out component);
 
     public bool ContainsKey(DataComponentType type) => this.InternalStorage.ContainsKey(type);
 
-    public IEnumerator<IDataComponent> GetEnumerator() => this.InternalStorage.Values.GetEnumerator();
-
-    IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
+    public IEnumerator<DataComponent> GetEnumerator() => this.InternalStorage.Values.GetEnumerator();
 }

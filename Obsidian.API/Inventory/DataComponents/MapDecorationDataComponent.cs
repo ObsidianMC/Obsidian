@@ -2,18 +2,18 @@
 using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API.Inventory.DataComponents;
-public sealed record class MapDecorationDataComponent : IDataComponent
+public sealed record class MapDecorationDataComponent : DataComponent
 {
-    public DataComponentType Type => DataComponentType.MapDecorations;
+    public override DataComponentType Type => DataComponentType.MapDecorations;
 
-    public string Identifier => "minecraft:map_decorations";
+    public override string Identifier => "minecraft:map_decorations";
 
     public required Dictionary<string, MapDecoration> Decorations { get; set; }
 
     [SetsRequiredMembers]
     internal MapDecorationDataComponent() { }
 
-    public void Read(INetStreamReader reader)
+    public override void Read(INetStreamReader reader)
     {
         var count = reader.ReadVarInt();
 
@@ -32,7 +32,8 @@ public sealed record class MapDecorationDataComponent : IDataComponent
             };
         }
     }
-    public void Write(INetStreamWriter writer)
+
+    public override void Write(INetStreamWriter writer)
     {
         writer.WriteVarInt(this.Decorations.Count);
         foreach (var (key, value) in this.Decorations)

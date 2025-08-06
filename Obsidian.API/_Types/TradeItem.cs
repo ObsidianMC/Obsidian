@@ -21,7 +21,7 @@ public sealed record TradeItem : INetworkSerializable<TradeItem>
     /// The item's components. An item stack must match all the component requirements to be considered a
     /// valid input.
     /// </summary>
-    public List<IDataComponent> Components { get; set; }
+    public DataComponent[] Components { get; set; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TradeItem"/> record.
@@ -29,7 +29,7 @@ public sealed record TradeItem : INetworkSerializable<TradeItem>
     /// <param name="id">The item ID.</param>
     /// <param name="count">The item count.</param>
     /// <param name="components">The item's components.</param>
-    public TradeItem(int id, int count, List<IDataComponent> components)
+    public TradeItem(int id, int count, DataComponent[] components)
     {
         ID = id;
         Count = count;

@@ -4,9 +4,9 @@ public sealed record class FireworkExplosion : INetworkSerializable<FireworkExpl
 {
     public required int Shape { get; set; }
 
-    public required List<int> Colors { get; set; }
+    public required int[] Colors { get; set; }
 
-    public required List<int> FadeColors { get; set; }
+    public required int[] FadeColors { get; set; }
 
     public bool HasTrail { get; set; }
 

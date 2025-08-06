@@ -385,7 +385,7 @@ public partial class NetworkBuffer : INetStreamReader
     {
         var type = this.ReadVarInt();
         string? tagName = type == 0 ? tagName = this.ReadString() : null;
-        List<int>? ids = type != 0 ? this.ReadLengthPrefixedArray(this.ReadVarInt) : null;
+        var ids = type != 0 ? this.ReadLengthPrefixedArray(this.ReadVarInt) : null;
 
         return new() { Type = type, Ids = ids, TagName = tagName };
     }
@@ -395,10 +395,10 @@ public partial class NetworkBuffer : INetStreamReader
         FixedRange = this.ReadOptionalFloat()
     };
 
-    public List<TValue> ReadLengthPrefixedArray<TValue>(Func<TValue> read)
+    public TValue[] ReadLengthPrefixedArray<TValue>(Func<TValue> read)
     {
         var count = this.ReadVarInt();
-        var list = new List<TValue>(count);
+        var list = new TValue[count];
 
         for (var i = 0; i < count; i++)
             list[i] = read();

@@ -1,9 +1,11 @@
 ﻿using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;
+using Obsidian.API.Utilities;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API.Inventory;
 
-public sealed record class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
+public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
 {
     public static readonly ItemStack Air = new(ItemsRegistry.Air, 0);
 
@@ -22,13 +24,15 @@ public sealed record class ItemStack : DataComponentsStorage, IEquatable<ItemSta
 
     public bool IsAir => Type == Material.Air;
 
-    public ItemStack(Item holder, int count = 1, params IEnumerable<IDataComponent> components)
+    public ItemStack(Item holder, int count = 1, params IEnumerable<DataComponent> components)
     {
         this.Holder = holder;
         this.Count = count;
 
         this.InitializeComponents(components);
     }
+
+    public ItemStack([DisallowNull] ItemStack item, int count = 1) : this(item.Holder, count, item.InternalStorage.Values) { }
 
     public static ItemStack operator -(ItemStack item, int value)
     {
@@ -60,13 +64,10 @@ public sealed record class ItemStack : DataComponentsStorage, IEquatable<ItemSta
         return item;
     }
 
-    //
-    public bool Equals(ItemStack? other) => other is not null && this.Holder.Equals(other.Holder) && base.Equals(other);
+    //TODO: Fix equality check for ItemStack DataComponents
+    public override int GetHashCode() => HashCode.Combine(this.Holder, this.InternalStorage);
 
-    public override int GetHashCode() => 
-        HashCode.Combine(this.Holder, this.InternalStorage, this.HashedStorage, this.RemoveComponents);
-
-    private void InitializeComponents(params IEnumerable<IDataComponent> components)
+    private void InitializeComponents(params IEnumerable<DataComponent> components)
     {
         foreach (var defaultComponent in ComponentBuilder.DefaultItemComponents)
             this.Add(defaultComponent);
@@ -84,4 +85,9 @@ public sealed record class ItemStack : DataComponentsStorage, IEquatable<ItemSta
     }
 
     public override string ToString() => $"{this.Holder.UnlocalizedName}";
+
+    public override bool Equals(object obj) => Equals(obj as ItemStack);
+
+    public bool Equals(ItemStack? other) => other is not null && this.Holder.Equals(other.Holder) &&
+        this.InternalStorage.SequenceEqual(other.InternalStorage);
 }

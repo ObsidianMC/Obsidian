@@ -4,7 +4,7 @@ namespace Obsidian.API.Inventory.DataComponents;
 public partial class ComponentBuilder
 {
     //TODO SOURCE GENERATE THIS
-    internal static ImmutableArray<Func<IDataComponent?>> ComponentsMap { get; } = new List<Func<IDataComponent?>>
+    internal static ImmutableArray<Func<DataComponent?>> ComponentsMap { get; } = new List<Func<DataComponent?>>
     {
         () => CustomData,
         () => MaxStackSize,

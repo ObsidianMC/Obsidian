@@ -5,11 +5,11 @@ namespace Obsidian.API.Inventory.DataComponents;
 /// <summary>
 /// Makes the item consumable.
 /// </summary>
-public sealed record class FoodDataComponent : IDataComponent
+public sealed record class FoodDataComponent : DataComponent
 {
-    public DataComponentType Type => DataComponentType.Food;
+    public override DataComponentType Type => DataComponentType.Food;
 
-    public string Identifier => "minecraft:food";
+    public override string Identifier => "minecraft:food";
 
     public required int Nutrition { get; set; }
 
@@ -20,14 +20,14 @@ public sealed record class FoodDataComponent : IDataComponent
     [SetsRequiredMembers]
     internal FoodDataComponent() { }
 
-    public void Read(INetStreamReader reader)
+    public override void Read(INetStreamReader reader)
     {
         this.Nutrition = reader.ReadVarInt();
         this.SaturationModifier = reader.ReadSingle();
         this.CanAlwaysEat = reader.ReadBoolean();
     }
 
-    public void Write(INetStreamWriter writer)
+    public override void Write(INetStreamWriter writer)
     {
         writer.WriteVarInt(this.Nutrition);
         writer.WriteSingle(this.SaturationModifier);

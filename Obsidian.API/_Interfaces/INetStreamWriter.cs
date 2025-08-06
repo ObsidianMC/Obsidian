@@ -51,9 +51,9 @@ public interface INetStreamWriter : INetStream
     public void WriteVelocity(Velocity value);
     public void WriteAdvancement(Advancement advancement);
 
-    public void WriteLengthPrefixedArray(bool showInTooltips, params List<Enchantment> enchantments);
+    public void WriteLengthPrefixedArray(bool showInTooltips, params Enchantment[] enchantments);
 
-    public void WriteLengthPrefixedArray<TValue>(Action<TValue> write, params List<TValue> values);
+    public void WriteLengthPrefixedArray<TValue>(Action<TValue> write, params TValue[] values);
 
     public void WriteAttributeModifier(AttributeModifier attribute);
 

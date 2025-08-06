@@ -2,11 +2,11 @@
 using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API.Inventory.DataComponents;
-public sealed record class EquippableDataComponent : IDataComponent
+public sealed record class EquippableDataComponent : DataComponent
 {
-    public DataComponentType Type => DataComponentType.Equippable;
+    public override DataComponentType Type => DataComponentType.Equippable;
 
-    public string Identifier => "minecraft:equippable";
+    public override string Identifier => "minecraft:equippable";
 
     public required EquipmentSlot Slot { get; set; }
 
@@ -16,7 +16,7 @@ public sealed record class EquippableDataComponent : IDataComponent
 
     public string? CameraOverlay { get; set; }
 
-    public List<int>? AllowedEntities { get; set; }
+    public int[]? AllowedEntities { get; set; }
 
     public bool Dispensable { get; set; }
     public bool Swappable { get; set; }
@@ -25,7 +25,7 @@ public sealed record class EquippableDataComponent : IDataComponent
     [SetsRequiredMembers]
     internal EquippableDataComponent() { }
 
-    public void Read(INetStreamReader reader)
+    public override void Read(INetStreamReader reader)
     {
         this.Slot = reader.ReadVarInt<EquipmentSlot>();
         this.EquipSound = reader.ReadSoundEvent();
@@ -41,7 +41,7 @@ public sealed record class EquippableDataComponent : IDataComponent
         this.DamageOnHurt = reader.ReadBoolean();
     }
 
-    public void Write(INetStreamWriter writer)
+    public override void Write(INetStreamWriter writer)
     {
         writer.WriteVarInt(this.Slot);
         writer.WriteSoundEvent(this.EquipSound);

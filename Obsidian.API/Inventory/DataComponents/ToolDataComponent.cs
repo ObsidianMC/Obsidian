@@ -1,13 +1,13 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API.Inventory.DataComponents;
-public sealed record class ToolDataComponent : IDataComponent
+public sealed record class ToolDataComponent : DataComponent
 {
-    public DataComponentType Type => DataComponentType.Tool;
+    public override DataComponentType Type => DataComponentType.Tool;
 
-    public string Identifier => "minecraft:tool";
+    public override string Identifier => "minecraft:tool";
 
-    public required List<ToolRule> Rules { get; set; }
+    public required ToolRule[] Rules { get; set; }
 
     public required float DefaultMiningSpeed { get; set; }
 
@@ -16,7 +16,7 @@ public sealed record class ToolDataComponent : IDataComponent
     [SetsRequiredMembers]
     internal ToolDataComponent() { }
 
-    public void Read(INetStreamReader reader)
+    public override void Read(INetStreamReader reader)
     {
         this.Rules = reader.ReadLengthPrefixedArray(() => new ToolRule()
         {
@@ -29,7 +29,7 @@ public sealed record class ToolDataComponent : IDataComponent
         this.DamagePerBlock = reader.ReadVarInt();
     }
 
-    public void Write(INetStreamWriter writer)
+    public override void Write(INetStreamWriter writer)
     {
         writer.WriteLengthPrefixedArray((rule) => ToolRule.Write(rule, writer), this.Rules);
         writer.WriteSingle(this.DefaultMiningSpeed);
@@ -85,7 +85,7 @@ public readonly record struct IdSet : INetworkSerializable<IdSet>
     /// An array of registry IDs. Only present if Type is not 0. 
     /// The size of the array is equal to Type - 1.
     /// </summary>
-    public List<int>? Ids { get; init; }
+    public int[]? Ids { get; init; }
 
     public static IdSet Read(INetStreamReader reader)
     {
@@ -111,7 +111,7 @@ public readonly record struct IdSet : INetworkSerializable<IdSet>
         if (value.Ids == null)
             throw new NullReferenceException("Ids must have a value set if type is anything other than 0.");
 
-        writer.WriteVarInt(value.Ids.Count);
+        writer.WriteVarInt(value.Ids.Length);
 
         foreach (var id in value.Ids)
             writer.WriteVarInt(id);

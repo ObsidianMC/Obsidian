@@ -18,7 +18,7 @@ public partial class MerchantOffersPacket
     /// The offered trades list.
     /// </summary>
     [Field(1)]
-    public List<TradeEntry> Offers { get; set; }
+    public TradeEntry[] Offers { get; set; }
 
     /// <summary>
     /// The level of the villager. 1: Novice, 2: Apprentice, 3: Journeyman, 4: Expert, 5: Master.

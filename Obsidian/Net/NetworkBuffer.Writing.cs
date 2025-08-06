@@ -419,17 +419,17 @@ public partial class NetworkBuffer : INetStreamWriter
             this.WriteVarInt(componentType);
     }
 
-    public void WriteLengthPrefixedArray<TValue>(Action<TValue> write, params List<TValue> values)
+    public void WriteLengthPrefixedArray<TValue>(Action<TValue> write, params TValue[] values)
     {
-        this.WriteVarInt(values.Count);
+        this.WriteVarInt(values.Count());
 
         foreach (var value in values)
             write(value);
     }
 
-    public void WriteLengthPrefixedArray(bool showInTooltips, params List<Enchantment> enchantments)
+    public void WriteLengthPrefixedArray(bool showInTooltips, params Enchantment[] enchantments)
     {
-        this.WriteVarInt(enchantments.Count);
+        this.WriteVarInt(enchantments.Count());
 
         foreach (var enchantment in enchantments)
             this.WriteEnchantment(enchantment);

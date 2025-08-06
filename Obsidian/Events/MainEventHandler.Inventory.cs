@@ -251,7 +251,7 @@ public partial class MainEventHandler
                     var newItem = player.CarriedItem - 1;
                     player.CarriedItem = newItem;
 
-                    container.SetItem(clickedSlot, new(newItem.Holder, 1, newItem));
+                    container.SetItem(clickedSlot, new(newItem));
                     logger.LogInformation("Setting item in container slot: {slot} - {item}", clickedSlot, player.CarriedItem.Holder.UnlocalizedName);
                     break;
                 default:

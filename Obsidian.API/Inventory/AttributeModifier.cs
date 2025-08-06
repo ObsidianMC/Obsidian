@@ -1,5 +1,5 @@
 ﻿namespace Obsidian.API.Inventory;
-public readonly struct AttributeModifier : INetworkSerializable<AttributeModifier>
+public readonly record struct AttributeModifier : INetworkSerializable<AttributeModifier>
 {
     public required int Id { get; init; }
 

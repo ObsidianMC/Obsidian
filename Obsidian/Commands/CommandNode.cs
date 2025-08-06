@@ -13,7 +13,7 @@ public class CommandNode
 
     public CommandNodeType Type { get; set; }
 
-    public HashSet<CommandNode> Children = [];
+    public List<CommandNode> Children = [];
 
     public string? SuggestionType { get; set; }
 
@@ -21,7 +21,7 @@ public class CommandNode
     {
         writer.WriteByte((sbyte)Type);
 
-        writer.WriteLengthPrefixedArray(writer.WriteVarInt, Children.Select(c => c.Index).ToList());
+        writer.WriteLengthPrefixedArray(writer.WriteVarInt, Children.Select(c => c.Index).ToArray());
 
         if (Type.HasFlag(CommandNodeType.HasRedirect))
         {

@@ -1,18 +1,16 @@
 ﻿using Obsidian.Nbt;
 
 namespace Obsidian.API.Inventory.DataComponents;
-public abstract record class BlockPredicatesDataComponent : IDataComponent
+public abstract record class BlockPredicatesDataComponent : DataComponent
 {
-    public abstract DataComponentType Type { get; }
+    public override DataComponentType Type { get; }
 
-    public abstract string Identifier { get; }
+    public override string Identifier { get; }
 
     public List<BlockPredicate> Predicates { get; init; }
 
     public bool ShowInTooltip { get; init; }
 
-    public virtual void Read(INetStreamReader reader) => throw new NotImplementedException();
-    public virtual void Write(INetStreamWriter writer) => throw new NotImplementedException();
     public void WriteHashed(INetStreamWriter writer) => throw new NotImplementedException();
 }
 

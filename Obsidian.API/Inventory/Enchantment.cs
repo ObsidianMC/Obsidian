@@ -1,8 +1,8 @@
 ﻿namespace Obsidian.API.Inventory;
 
-public struct Enchantment
+public readonly record struct Enchantment
 {
-    public int Id { get; set; }
+    public required int Id { get; init; }
 
-    public int Level { get; set; }
+    public required int Level { get; init; }
 }
