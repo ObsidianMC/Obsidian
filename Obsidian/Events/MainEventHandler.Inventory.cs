@@ -4,6 +4,7 @@ using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
+using System.Runtime.CompilerServices;
 
 namespace Obsidian.Events;
 public partial class MainEventHandler
@@ -74,7 +75,7 @@ public partial class MainEventHandler
         var result = recipe.Result.First();
         container.SetItem(9, result);
 
-       
+
         await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
         {
             Slot = 0,
@@ -141,40 +142,41 @@ public partial class MainEventHandler
 
     private static void HandleQuickCraft(ContainerClickEventArgs args)
     {
-        var clickedSlot = args.ClickedSlot;
         var container = args.Container;
         var player = args.Player;
         var button = args.Button;
-        var carriedItem = args.Item;
+        var carriedItem = player.CarriedItem;
+        var clickedSlot = args.ClickedSlot;
 
-        if (clickedSlot == OutsideInventory)
+        // 1 = left mouse
+        // 5 = right mouse
+        if (!player.IsDragging)
+            return;
+
+        var state = (DraggingState)button;
+
+        switch (state)
         {
-            player.IsDragging = button switch
-            {
-                0 or 4 or 8 => true,
-                2 or 6 or 10 => false,
-                _ => player.IsDragging
-            };
-        }
-        else if (player.IsDragging)
-        {
-            if (player.Gamemode == Gamemode.Creative)
-            {
-                if (button != 9)
-                    return;
+            case DraggingState.Left:
+                player.CarriedItem = new(player.CarriedItem, 64 / player.DragIndex);
 
+                container.SetItem(clickedSlot, player.CarriedItem);
+              
+                player.Client.Logger.LogInformation("Carried Item count: {index} - {count} - {item}", player.DragIndex, player.CarriedItem.Count, player.CarriedItem.Holder.UnlocalizedName);
+                player.DragIndex++;
+                break;
+            case DraggingState.Right:
                 container.SetItem(clickedSlot, carriedItem);
-            }
-            else
-            {
-                // 1 = left mouse
-                // 5 = right mouse
-                if (button != 1 && button != 5)
-                    return;
-
-                container.SetItem(clickedSlot, carriedItem);
-            }
+                player.CarriedItem -= 1;
+                break;
+            case DraggingState.Middle:
+                container.SetItem(clickedSlot, new(carriedItem, carriedItem.MaxStackSize));
+                break;
+            default:
+                break;
         }
+        
+        player.Client.Logger.LogInformation("Dragging: {button}", state);
     }
 
     private static void HandleThrow(ContainerClickEventArgs args)
@@ -299,5 +301,12 @@ public partial class MainEventHandler
         container.SetItem(clickedSlot, currentItem);
 
         player.Inventory.RemoveItem(localSlot);
+    }
+
+    private enum DraggingState
+    {
+        Left = 1,
+        Right = 5,
+        Middle = 9
     }
 }

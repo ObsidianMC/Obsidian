@@ -120,14 +120,22 @@ public partial class ContainerClickPacket
             });
         }
 
+        if (this.ClickType == ClickType.QuickCraft && ClickedSlot == -999)
+        {
+            player.IsDragging = DraggingButtons.Contains(Button);
+            player.DragIndex = 2;
+        }
+
         await server.EventDispatcher.ExecuteEventAsync(new ContainerClickEventArgs(player, server, container)
         {
             ClickedSlot = slot,
             ClickType = this.ClickType,
             Button = this.Button,
             StateId = this.StateId,
-            ContainerId = this.ContainerId
+            ContainerId = this.ContainerId,
         });
     }
+
+    private static readonly sbyte[] DraggingButtons = [0, 4, 8];
 }
 

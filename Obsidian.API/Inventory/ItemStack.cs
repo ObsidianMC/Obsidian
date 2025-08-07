@@ -44,6 +44,18 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
         return item;
     }
 
+    public static ItemStack operator /(ItemStack item, int value)
+    {
+        if (item.Count <= 0)
+            return Air;
+
+        item.Count = Math.Max(0, item.Count / value);
+
+        Console.WriteLine($"New Count: {item.Count}");
+
+        return item;
+    }
+
     public static ItemStack operator +(ItemStack item, int value)
     {
         if (item.Count >= item.MaxStackSize)

@@ -37,6 +37,7 @@ public interface IPlayer : ILiving
     public PlayerAbility Abilities { get; set; }
 
     public bool IsDragging { get; set; }
+    public int DragIndex { get; set; }
     public bool Sleeping { get; set; }
     public bool InHorseInventory { get; set; }
 
