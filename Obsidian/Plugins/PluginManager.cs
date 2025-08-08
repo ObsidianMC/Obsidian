@@ -90,7 +90,7 @@ public sealed class PluginManager : IAsyncDisposable
 
     public async Task LoadPluginsAsync()
     {
-        var acceptedKeysPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "accepted_keys");
+        var acceptedKeysPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), ServerConstants.AcceptedKeysPath);
         var acceptedKeyFiles = Directory.GetFiles(acceptedKeysPath);
 
         using var rsa = RSA.Create();
