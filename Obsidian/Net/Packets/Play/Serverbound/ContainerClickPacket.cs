@@ -121,10 +121,7 @@ public partial class ContainerClickPacket
         }
 
         if (this.ClickType == ClickType.QuickCraft && ClickedSlot == -999)
-        {
             player.IsDragging = DraggingButtons.Contains(Button);
-            player.DragIndex = 2;
-        }
 
         await server.EventDispatcher.ExecuteEventAsync(new ContainerClickEventArgs(player, server, container)
         {

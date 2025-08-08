@@ -22,7 +22,7 @@ public sealed class ContainerClickEventArgs : ContainerEventArgs, ICancellable
     /// <summary>
     /// Gets the slot that was clicked
     /// </summary>
-    public required int ClickedSlot { get; init; }
+    public required short ClickedSlot { get; init; }
 
     /// <summary>
     /// The button that was clicked in the inventory. Can vary depending on the inventory type.

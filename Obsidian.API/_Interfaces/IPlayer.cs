@@ -23,6 +23,7 @@ public interface IPlayer : ILiving
     /// </summary>
     public ItemStack? CarriedItem { get; set; }
 
+    public List<short> DraggedSlots { get; }
     public List<SkinProperty> SkinProperties { get; set; }
 
     public ClientInformation ClientInformation { get; set; }
@@ -37,7 +38,6 @@ public interface IPlayer : ILiving
     public PlayerAbility Abilities { get; set; }
 
     public bool IsDragging { get; set; }
-    public int DragIndex { get; set; }
     public bool Sleeping { get; set; }
     public bool InHorseInventory { get; set; }
 

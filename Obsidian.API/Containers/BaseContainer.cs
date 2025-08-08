@@ -7,7 +7,7 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
 {
     protected ItemStack?[] items;
 
-    public int Size => this.items.Length;
+    public short Size => (short)this.items.Length;
 
     public InventoryType Type { get; }
 
@@ -117,8 +117,8 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
         return this.RemoveItem(slot, amount);
     }
 
-    public virtual (int slot, bool forPlayer) GetDifference(int clickedSlot) =>
-        clickedSlot > this.Size ? (clickedSlot - this.Size + 9, true) : (clickedSlot, false);
+    public virtual (short slot, bool forPlayer) GetDifference(short clickedSlot) =>
+        clickedSlot > this.Size ? ((short)(clickedSlot - this.Size + 9), true) : (clickedSlot, false);
 
     public virtual void Resize(int newSize) => Array.Resize(ref this.items, newSize);
 

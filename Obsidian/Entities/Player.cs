@@ -26,7 +26,7 @@ public sealed partial class Player : Living, IPlayer
     internal HashSet<IPlayer> visiblePlayers = [];
 
     public bool IsDragging { get; set; }
-    public int DragIndex { get; set; } = 2;
+    public List<short> DraggedSlots { get; set; } = [];
     public int TeleportId { get; set; }
 
     // <summary>
