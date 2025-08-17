@@ -73,8 +73,7 @@ public partial class MainEventHandler
         logger.LogTrace("Found Recipe: {recipe}", recipe.Identifier);
 
         var result = recipe.Result.First();
-        container.SetItem(9, result);
-
+        table.SetResult(result);
 
         await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
         {
@@ -104,12 +103,12 @@ public partial class MainEventHandler
                 continue;
 
             int amountTaken = Math.Min(item.Count, amountNeeded);
-            item.Count -= amountTaken;
+            item -= amountTaken;
 
             if (item.Count == 0)
                 container.RemoveItem(i);
 
-            carriedItem.Count += amountTaken;
+            carriedItem += amountTaken;
             amountNeeded -= amountTaken;
 
             if (amountNeeded == 0)
@@ -126,12 +125,12 @@ public partial class MainEventHandler
                     continue;
 
                 int amountTaken = Math.Min(item.Count, amountNeeded);
-                item.Count -= amountTaken;
+                item -= amountTaken;
 
                 if (item.Count == 0)
                     player.Inventory.RemoveItem(i);
 
-                carriedItem.Count += amountTaken;
+                carriedItem += amountTaken;
                 amountNeeded -= amountTaken;
 
                 if (amountNeeded == 0)
@@ -147,7 +146,7 @@ public partial class MainEventHandler
         var clickedSlot = args.ClickedSlot;
         var state = (DraggingState)args.Button;
 
-        if (!player.IsDragging)
+        if (!player.IsDragging && player.CarriedItem != null)
         {
             if (player.DraggedSlots.Count == 0 || state != DraggingState.EndLeft)
                 return;
@@ -203,49 +202,60 @@ public partial class MainEventHandler
         var player = args.Player;
         var button = args.Button;
 
-        if (clickedSlot != OutsideInventory)
+        if (clickedSlot == OutsideInventory)
+            return;
+
+        ThrowItem(player, container, clickedSlot, button);
+    }
+
+    private static void ThrowItem(IPlayer player, BaseContainer container, short clickedSlot, sbyte button, bool forPlayer = false)
+    {
+        ItemStack? removedItem;
+
+        var amountToRemove = button == 0 ? 1 : 64;
+
+        if (forPlayer)
         {
-            ItemStack? removedItem;
-            if (button == 0)
-                container.RemoveItem(clickedSlot, 1, out removedItem);
-            else
-                container.RemoveItem(clickedSlot, 64, out removedItem);
-
-            if (removedItem == null)
-                return;
-
-            var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
-
-            var item = new ItemEntity
-            {
-                EntityId = Server.GetNextEntityId(),
-                Item = removedItem,
-                Glowing = true,
-                World = player.World,
-                Position = loc
-            };
-
-            var lookDir = player.GetLookDirection();
-            var vel = Velocity.FromDirection(loc, lookDir);
-
-            //TODO Get this shooting out from the player properly.
-            player.World.PacketBroadcaster.QueuePacketToWorld(player.World, new AddEntityPacket
-            {
-                EntityId = item.EntityId,
-                Uuid = item.Uuid,
-                Type = EntityType.Item,
-                Position = item.Position,
-                Pitch = 0,
-                Yaw = 0,
-                Data = 1,
-                Velocity = vel
-            });
-            player.World.PacketBroadcaster.QueuePacketToWorld(player.World, new SetEntityDataPacket
-            {
-                EntityId = item.EntityId,
-                Entity = item
-            });
+            player.CarriedItem -= amountToRemove;
+            removedItem = player.CarriedItem;
         }
+        else
+            container.RemoveItem(clickedSlot, amountToRemove, out removedItem);
+
+        if (removedItem == null)
+            return;
+
+        var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
+
+        var item = new ItemEntity
+        {
+            EntityId = Server.GetNextEntityId(),
+            Item = removedItem,
+            Glowing = true,
+            World = player.World,
+            Position = loc
+        };
+
+        var lookDir = player.GetLookDirection();
+        var vel = Velocity.FromDirection(loc, lookDir);
+
+        //TODO Get this shooting out from the player properly.
+        player.World.PacketBroadcaster.QueuePacketToWorld(player.World, new AddEntityPacket
+        {
+            EntityId = item.EntityId,
+            Uuid = item.Uuid,
+            Type = EntityType.Item,
+            Position = item.Position,
+            Pitch = 0,
+            Yaw = 0,
+            Data = 1,
+            Velocity = vel
+        });
+        player.World.PacketBroadcaster.QueuePacketToWorld(player.World, new SetEntityDataPacket
+        {
+            EntityId = item.EntityId,
+            Entity = item
+        });
     }
 
     private static void HandlePickup(ContainerClickEventArgs args)
@@ -258,30 +268,77 @@ public partial class MainEventHandler
 
         if (!player.CarriedItem.IsNullOrAir())
         {
-            switch (button)
+            if (button == 0)
             {
-                case 0:
-                    container.SetItem(clickedSlot, player.CarriedItem);
-                    player.CarriedItem = null;
-                    break;
-                case 1:
-                    var newItem = player.CarriedItem - 1;
-                    player.CarriedItem = newItem;
+                if (clickedSlot == OutsideInventory)
+                {
+                    ThrowItem(player, container, clickedSlot, button, true);
+                    return;
+                }
 
-                    container.SetItem(clickedSlot, new(newItem));
-                    break;
-                default:
-                    break;
+                if (HandlePickupDirectItem(container, clickedSlot, player))
+                    return;
+
+
+                container.SetItem(clickedSlot, player.CarriedItem);
+                player.CarriedItem = clickedItem;
             }
+            else if (button == 1)
+            {
+                if (clickedSlot == OutsideInventory)
+                    return;
 
-            return;
+                ref var itemInSlot = ref container.GetItem(clickedSlot);
+
+                if (itemInSlot.IsNullOrAir())
+                {
+                    container.SetItem(clickedSlot, new(player.CarriedItem, 1));
+                    player.CarriedItem -= 1;
+                }
+                else if (itemInSlot == player.CarriedItem && itemInSlot.Count < itemInSlot.MaxStackSize)
+                {
+                    itemInSlot += 1;
+                    player.CarriedItem -= 1;
+                }
+            }
+        }
+        else if (!clickedItem.IsNullOrAir())
+        {
+            player.CarriedItem = clickedItem;
+            container.RemoveItem(clickedSlot);
+        }
+    }
+
+    /// <summary>
+    /// Handles merging a carried item stack with a stack in a container slot.
+    /// </summary>
+    /// <returns>True if the items were successfully merged, false otherwise.</returns>
+    private static bool HandlePickupDirectItem(BaseContainer container, short clickedSlot, IPlayer player)
+    {
+        ref var clickedItem = ref container.GetItem(clickedSlot);
+        var carriedItem = player.CarriedItem;
+
+        if (clickedItem.IsNullOrAir() || carriedItem.IsNullOrAir() || clickedItem != carriedItem)
+            return false;
+
+        int spaceAvailable = clickedItem.MaxStackSize - clickedItem.Count;
+        if (spaceAvailable <= 0)
+            return false;
+
+        int amountToTransfer = Math.Min(spaceAvailable, carriedItem.Count);
+
+        if (amountToTransfer > 0)
+        {
+            clickedItem += amountToTransfer;
+            carriedItem -= amountToTransfer;
+
+            if (carriedItem.Count <= 0)
+                player.CarriedItem = null;
+
+            return true;
         }
 
-        if (clickedItem.IsNullOrAir())
-            return;
-
-        player.CarriedItem = clickedItem;
-        container.RemoveItem(clickedSlot);
+        return false;
     }
 
     private static void HandleSwap(ContainerClickEventArgs args)

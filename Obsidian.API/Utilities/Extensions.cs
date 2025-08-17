@@ -1,5 +1,6 @@
 ﻿using Obsidian.API.Inventory;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API.Utilities;
 public static partial class Extensions
@@ -10,7 +11,7 @@ public static partial class Extensions
     public static IList<int> ToList(this Vector value) =>
         [value.X, value.Y, value.Z];
 
-    public static bool IsNullOrAir(this ItemStack? item) => item == null || item.IsAir;
+    public static bool IsNullOrAir([NotNullWhen(true)] this ItemStack? item) => item == null || item.IsAir;
 
     public static List<string> GetStateValues(this int[] indexes, Dictionary<string, string[]> valueStores)
     {

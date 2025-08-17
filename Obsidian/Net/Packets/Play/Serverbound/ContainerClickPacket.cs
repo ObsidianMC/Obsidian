@@ -70,7 +70,7 @@ public partial class ContainerClickPacket
     {
         var container = player.OpenedContainer ?? player.Inventory;
 
-        var (slot, forPlayer) = container.GetDifference(ClickedSlot);
+        var (slot, forPlayer) = container.GetSlot(ClickedSlot);
 
         if (this.IsPlayerInventory || forPlayer)
             container = player.Inventory;

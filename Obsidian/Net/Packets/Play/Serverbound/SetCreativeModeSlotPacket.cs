@@ -22,7 +22,7 @@ public partial class SetCreativeModeSlotPacket
     {
         var inventory = player.OpenedContainer ?? player.Inventory;
 
-        var (slot, isForPlayer) = inventory.GetDifference(ClickedSlot);
+        var (slot, isForPlayer) = inventory.GetSlot(ClickedSlot);
 
         if (isForPlayer)
             inventory = player.Inventory;
