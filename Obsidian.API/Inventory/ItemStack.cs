@@ -2,6 +2,7 @@
 using Obsidian.API.Registries;
 using Obsidian.API.Utilities;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace Obsidian.API.Inventory;
 
@@ -76,7 +77,10 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
         return item;
     }
 
-    //TODO: Fix equality check for ItemStack DataComponents
+    public static bool operator ==(ItemStack left, ItemStack right) => left is null ? right is null : left.Equals(right);
+
+    public static bool operator !=(ItemStack left, ItemStack right) => !(left == right);
+
     public override int GetHashCode() => HashCode.Combine(this.Holder, this.InternalStorage);
 
     private void InitializeComponents(params IEnumerable<DataComponent> components)
@@ -86,7 +90,7 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
 
         foreach (var component in components)
         {
-            if(this.ContainsKey(component.Type))
+            if (this.ContainsKey(component.Type))
             {
                 this.InternalStorage[component.Type] = component;
                 continue;

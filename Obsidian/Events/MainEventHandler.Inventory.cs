@@ -34,9 +34,12 @@ public partial class MainEventHandler
             case ClickType.PickupAll:
                 HandlePickupAll(args);
                 break;
-
             case ClickType.QuickMove:
+                HandleQuickMove(args);
+                break;
             case ClickType.Clone:
+                HandleClone(args);
+                break;
             default:
                 break;
         }
@@ -83,11 +86,81 @@ public partial class MainEventHandler
         });
     }
 
+    private static void HandleQuickMove(ContainerClickEventArgs args)
+    {
+        var container = args.Container;
+        var player = args.Player;
+        var clickedSlot = args.ClickedSlot;
+        var clickedItem = args.Item;
+
+        if (clickedItem == null || clickedItem.IsNullOrAir())
+            return;
+
+        if (args.IsPlayerInventory)
+            TryMoveItem(player.Inventory, clickedSlot, container);
+        else
+            TryMoveItem(container, clickedSlot, player.Inventory);
+    }
+
+    private static bool TryMoveItem(BaseContainer from, short fromSlot, BaseContainer to)
+    {
+        var sourceItem = from.GetItem(fromSlot);
+        if (sourceItem == null || sourceItem.IsNullOrAir())
+            return false;
+
+        for (short i = 0; i < to.Size; i++)
+        {
+            var targetItem = to.GetItem(i);
+            if (targetItem == null || targetItem.IsNullOrAir())
+                continue;
+
+            if (targetItem == sourceItem && targetItem.Count < targetItem.MaxStackSize)
+            {
+                int space = targetItem.MaxStackSize - targetItem.Count;
+                int transfer = Math.Min(space, sourceItem.Count);
+
+                targetItem += transfer;
+                sourceItem -= transfer;
+
+                if (sourceItem.Count <= 0)
+                {
+                    from.RemoveItem(fromSlot);
+                    return true;
+                }
+            }
+        }
+
+        for (short i = 0; i < to.Size; i++)
+        {
+            var targetItem = to.GetItem(i);
+            if (targetItem == null || targetItem.IsNullOrAir())
+            {
+                to.SetItem(i, new ItemStack(sourceItem.Holder, sourceItem.Count));
+                from.RemoveItem(fromSlot);
+                return true;
+            }
+        }
+
+        from.SetItem(fromSlot, sourceItem);
+        return false;
+    }
+
+    private static void HandleClone(ContainerClickEventArgs args)
+    {
+        var player = args.Player;
+        var clickedItem = args.Item;
+
+        if (player.Gamemode != Gamemode.Creative || clickedItem.IsNullOrAir())
+            return;
+
+        player.CarriedItem = new ItemStack(clickedItem, clickedItem.MaxStackSize);
+    }
+
     private static void HandlePickupAll(ContainerClickEventArgs args)
     {
         var container = args.Container;
         var player = args.Player;
-        var carriedItem = args.Item;
+        var carriedItem = player.CarriedItem;
 
         if (carriedItem == null || carriedItem.Count >= carriedItem.MaxStackSize)
             return;
@@ -120,7 +193,7 @@ public partial class MainEventHandler
         {
             for (int i = 0; i < player.Inventory.Size; i++)
             {
-                ItemStack? item = player.Inventory[i];
+                var item = player.Inventory.GetItem(i);
                 if (item is null || item != carriedItem)
                     continue;
 
@@ -195,7 +268,7 @@ public partial class MainEventHandler
         }
     }
 
-    private static void HandleThrow(ContainerClickEventArgs args)
+    private static void HandleThrow(ContainerClickEventArgs args, bool test = false)
     {
         var clickedSlot = args.ClickedSlot;
         var container = args.Container;
@@ -205,15 +278,19 @@ public partial class MainEventHandler
         if (clickedSlot == OutsideInventory)
             return;
 
-        ThrowItem(player, container, clickedSlot, button);
+        var thrownItem = ThrowItem(player, container, clickedSlot, button);
+
+        if (test)
+            return;
+
+        SpawnThrownItem(player, thrownItem);
     }
 
-    private static void ThrowItem(IPlayer player, BaseContainer container, short clickedSlot, sbyte button, bool forPlayer = false)
+    private static ItemStack? ThrowItem(IPlayer player, BaseContainer container, short clickedSlot, sbyte button, bool forPlayer = false)
     {
-        ItemStack? removedItem;
-
         var amountToRemove = button == 0 ? 1 : 64;
 
+        ItemStack? removedItem;
         if (forPlayer)
         {
             player.CarriedItem -= amountToRemove;
@@ -222,7 +299,12 @@ public partial class MainEventHandler
         else
             container.RemoveItem(clickedSlot, amountToRemove, out removedItem);
 
-        if (removedItem == null)
+        return removedItem;
+    }
+
+    private static void SpawnThrownItem(IPlayer player, ItemStack? thrownItem)
+    {
+        if (thrownItem == null)
             return;
 
         var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
@@ -230,7 +312,7 @@ public partial class MainEventHandler
         var item = new ItemEntity
         {
             EntityId = Server.GetNextEntityId(),
-            Item = removedItem,
+            Item = thrownItem,
             Glowing = true,
             World = player.World,
             Position = loc
@@ -288,7 +370,7 @@ public partial class MainEventHandler
                 if (clickedSlot == OutsideInventory)
                     return;
 
-                ref var itemInSlot = ref container.GetItem(clickedSlot);
+                var itemInSlot = container.GetItem(clickedSlot);
 
                 if (itemInSlot.IsNullOrAir())
                 {
@@ -315,7 +397,7 @@ public partial class MainEventHandler
     /// <returns>True if the items were successfully merged, false otherwise.</returns>
     private static bool HandlePickupDirectItem(BaseContainer container, short clickedSlot, IPlayer player)
     {
-        ref var clickedItem = ref container.GetItem(clickedSlot);
+        var clickedItem = container.GetItem(clickedSlot);
         var carriedItem = player.CarriedItem;
 
         if (clickedItem.IsNullOrAir() || carriedItem.IsNullOrAir() || clickedItem != carriedItem)
@@ -368,5 +450,35 @@ public partial class MainEventHandler
         container.SetItem(clickedSlot, currentItem);
 
         player.Inventory.RemoveItem(localSlot);
+    }
+
+    internal void OnInventoryClickTest(ContainerClickEventArgs args)
+    {
+        switch (args.ClickType)
+        {
+            case ClickType.Pickup:
+                HandlePickup(args);
+                break;
+            case ClickType.Swap:
+                HandleSwap(args);
+                break;
+            case ClickType.Throw:
+                HandleThrow(args, true);
+                break;
+            case ClickType.QuickCraft:
+                HandleQuickCraft(args);
+                break;
+            case ClickType.PickupAll:
+                HandlePickupAll(args);
+                break;
+            case ClickType.QuickMove:
+                HandleQuickMove(args);
+                break;
+            case ClickType.Clone:
+                HandleClone(args);
+                break;
+            default:
+                break;
+        }
     }
 }

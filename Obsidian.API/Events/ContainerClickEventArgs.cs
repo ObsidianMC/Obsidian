@@ -43,4 +43,23 @@ public sealed class ContainerClickEventArgs : ContainerEventArgs, ICancellable
     {
         IsCancelled = true;
     }
+    internal static ContainerClickEventArgs Create(
+        IPlayer player,
+        IServer server,
+        BaseContainer container,
+        int containerId,
+        short clickedSlot,
+        sbyte button,
+        int stateId,
+        ClickType clickType)
+    {
+        return new ContainerClickEventArgs(player, server, container)
+        {
+            ContainerId = containerId,
+            ClickedSlot = clickedSlot,
+            Button = button,
+            StateId = stateId,
+            ClickType = clickType
+        };
+    }
 }

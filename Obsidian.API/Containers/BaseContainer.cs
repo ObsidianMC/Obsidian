@@ -18,6 +18,7 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     public List<IPlayer> Viewers { get; } = [];
 
     public ItemStack? this[int index] { get => this.items[index]; set => this.items[index] = value; }
+    public ItemStack?[] this[Range range] { get => this.items[range];  }
 
     public BaseContainer(int size) : this(size, InventoryType.Custom) { }
 
@@ -60,7 +61,7 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
 
     public virtual void SetItem(int slot, ItemStack? item) => this.items[slot] = item;
 
-    public virtual ref ItemStack? GetItem(int slot) => ref this.items[slot];
+    public virtual ItemStack? GetItem(int slot) => this.items[slot];
 
     public virtual bool RemoveItem(int slot)
     {
