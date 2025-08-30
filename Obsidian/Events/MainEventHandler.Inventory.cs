@@ -218,7 +218,7 @@ public partial class MainEventHandler
         var clickedSlot = args.ClickedSlot;
         var state = (DraggingState)args.Button;
 
-        if (!player.IsDragging && player.CarriedItem != null)
+        if (!player.IsDragging && !player.CarriedItem.IsNullOrAir())
         {
             if (player.DraggedSlots.Count == 0 || state != DraggingState.EndLeft)
                 return;
@@ -237,7 +237,11 @@ public partial class MainEventHandler
 
                 if (amount > 0)
                 {
-                    container.SetItem(slotIndex, item ?? new(player.CarriedItem, amount));
+                    if (item.IsNullOrAir())
+                        container.SetItem(slotIndex, new(player.CarriedItem, amount));
+                    else
+                        item += amount;
+
                     player.CarriedItem -= amount;
                 }
 
@@ -256,8 +260,19 @@ public partial class MainEventHandler
                     player.DraggedSlots.Add(clickedSlot);
                 break;
             case DraggingState.AddSlotRight:
-                container.SetItem(clickedSlot, player.CarriedItem);
-                player.CarriedItem -= 1;
+                var existingItem = container.GetItem(clickedSlot);
+
+                if (existingItem.IsNullOrAir())
+                {
+                    container.SetItem(clickedSlot, new(player.CarriedItem, 1));
+                    player.CarriedItem -= 1;
+                }
+                else if (existingItem == player.CarriedItem && existingItem.Count < existingItem.MaxStackSize)
+                {
+                    existingItem += 1;
+                    player.CarriedItem -= 1;
+                }
+
                 break;
             case DraggingState.AddSlotMiddle:
                 container.SetItem(clickedSlot, new(player.CarriedItem, player.CarriedItem.MaxStackSize));
