@@ -18,7 +18,7 @@ public sealed class Player
     public void Pickup_ShouldMoveItemToCarried()
     {
         var player = new FakePlayer();
-        var container = new Container(9); // ✅ divisible by 9
+        var container = new Container(9);
         var item = new ItemStack(ItemsRegistry.Stone, 5);
         container.SetItem(0, item);
 
@@ -51,7 +51,7 @@ public sealed class Player
             player,
             server,
             container,
-            containerId: 1, // non-zero = container
+            containerId: 1,
             clickedSlot: 0,
             button: 0,
             stateId: 0,
