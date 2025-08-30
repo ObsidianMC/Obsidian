@@ -383,7 +383,11 @@ public partial class MainEventHandler
             else if (button == 1)
             {
                 if (clickedSlot == OutsideInventory)
+                {
+                    var thrownItem = ThrowItem(player, container, clickedSlot, button, true);
+                    SpawnThrownItem(player, thrownItem);
                     return;
+                }
 
                 var itemInSlot = container.GetItem(clickedSlot);
 
