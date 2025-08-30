@@ -128,7 +128,7 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     /// This method is used to determine the actual slot number for a clicked slot in a container.
     /// </remarks>
     public virtual SlotDifference GetSlot(short clickedSlot) =>
-        clickedSlot > this.Size ? new((short)(clickedSlot - this.Size + 9), true) : new(clickedSlot, false);
+        clickedSlot >= this.Size ? new((short)(clickedSlot - this.Size + 9), true) : new(clickedSlot, false);
 
     public virtual void Resize(int newSize) => Array.Resize(ref this.items, newSize);
 
