@@ -62,6 +62,8 @@ public partial class MainEventHandler
             if (container[9] != null)
                 container.RemoveItem(9);
 
+            table.SetResult(null);
+
             await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
             {
                 Slot = 0,
@@ -93,25 +95,22 @@ public partial class MainEventHandler
         var clickedSlot = args.ClickedSlot;
         var clickedItem = args.Item;
 
-        if (clickedItem == null || clickedItem.IsNullOrAir())
+        if (clickedItem.IsNullOrAir())
             return;
 
-        if (args.IsPlayerInventory)
-            TryMoveItem(player.Inventory, clickedSlot, container);
-        else
-            TryMoveItem(container, clickedSlot, player.Inventory);
+        TryMoveItem(container, clickedSlot, player.OpenedContainer ?? player.Inventory);
     }
 
     private static bool TryMoveItem(BaseContainer from, short fromSlot, BaseContainer to)
     {
         var sourceItem = from.GetItem(fromSlot);
-        if (sourceItem == null || sourceItem.IsNullOrAir())
+        if (sourceItem.IsNullOrAir())
             return false;
 
         for (short i = 0; i < to.Size; i++)
         {
             var targetItem = to.GetItem(i);
-            if (targetItem == null || targetItem.IsNullOrAir())
+            if (targetItem.IsNullOrAir())
                 continue;
 
             if (targetItem == sourceItem && targetItem.Count < targetItem.MaxStackSize)
@@ -133,7 +132,7 @@ public partial class MainEventHandler
         for (short i = 0; i < to.Size; i++)
         {
             var targetItem = to.GetItem(i);
-            if (targetItem == null || targetItem.IsNullOrAir())
+            if (targetItem.IsNullOrAir())
             {
                 to.SetItem(i, new ItemStack(sourceItem.Holder, sourceItem.Count));
                 from.RemoveItem(fromSlot);
@@ -162,7 +161,7 @@ public partial class MainEventHandler
         var player = args.Player;
         var carriedItem = player.CarriedItem;
 
-        if (carriedItem == null || carriedItem.Count >= carriedItem.MaxStackSize)
+        if (carriedItem.IsNullOrAir() || carriedItem.Count >= carriedItem.MaxStackSize)
             return;
 
         int amountNeeded = carriedItem.MaxStackSize - carriedItem.Count;
@@ -172,7 +171,7 @@ public partial class MainEventHandler
         for (int i = 0; i < container.Size; i++)
         {
             ItemStack? item = container[i];
-            if (item is null || item != carriedItem)
+            if (item != carriedItem)
                 continue;
 
             int amountTaken = Math.Min(item.Count, amountNeeded);
@@ -194,7 +193,7 @@ public partial class MainEventHandler
             for (int i = 0; i < player.Inventory.Size; i++)
             {
                 var item = player.Inventory.GetItem(i);
-                if (item is null || item != carriedItem)
+                if (item != carriedItem)
                     continue;
 
                 int amountTaken = Math.Min(item.Count, amountNeeded);
@@ -304,7 +303,7 @@ public partial class MainEventHandler
 
     private static void SpawnThrownItem(IPlayer player, ItemStack? thrownItem)
     {
-        if (thrownItem == null)
+        if (thrownItem.IsNullOrAir())
             return;
 
         var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
@@ -354,7 +353,8 @@ public partial class MainEventHandler
             {
                 if (clickedSlot == OutsideInventory)
                 {
-                    ThrowItem(player, container, clickedSlot, button, true);
+                    var thrownItem = ThrowItem(player, container, clickedSlot, button, true);
+                    SpawnThrownItem(player, thrownItem);
                     return;
                 }
 
@@ -435,9 +435,9 @@ public partial class MainEventHandler
 
         var currentItem = player.Inventory.GetItem(localSlot);
 
-        if (carriedItem != null)
+        if (!carriedItem.IsNullOrAir())
         {
-            if (currentItem.IsAir)
+            if (currentItem.IsNullOrAir())
                 container.RemoveItem(clickedSlot);
             else
                 container.SetItem(clickedSlot, currentItem);
@@ -452,7 +452,7 @@ public partial class MainEventHandler
         player.Inventory.RemoveItem(localSlot);
     }
 
-    internal void OnInventoryClickTest(ContainerClickEventArgs args)
+    internal static void OnInventoryClickTest(ContainerClickEventArgs args)
     {
         switch (args.ClickType)
         {

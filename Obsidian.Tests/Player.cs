@@ -10,8 +10,6 @@ using Xunit;
 namespace Obsidian.Tests;
 public sealed class Player
 {
-    private readonly MainEventHandler _handler = new(null);
-
     private static readonly FakeServer server = new();
 
     [Fact]
@@ -33,7 +31,7 @@ public sealed class Player
             clickType: ClickType.Pickup
         );
 
-        _handler.OnInventoryClickTest(args);
+        MainEventHandler.OnInventoryClickTest(args);
 
         Assert.Equal(item, player.CarriedItem);
         Assert.Null(container.GetItem(0));
@@ -58,7 +56,7 @@ public sealed class Player
             clickType: ClickType.QuickMove
         );
 
-        _handler.OnInventoryClickTest(args);
+        MainEventHandler.OnInventoryClickTest(args);
 
         Assert.Null(container.GetItem(0));
         Assert.Contains(Enumerable.Range(0, player.Inventory.Size).Select(i =>
@@ -84,7 +82,7 @@ public sealed class Player
             clickType: ClickType.Clone
         );
 
-        _handler.OnInventoryClickTest(args);
+        MainEventHandler.OnInventoryClickTest(args);
 
         Assert.NotNull(player.CarriedItem);
         Assert.Equal(player.CarriedItem.MaxStackSize, player.CarriedItem.Count);
@@ -109,7 +107,7 @@ public sealed class Player
             clickType: ClickType.Throw
         );
 
-        _handler.OnInventoryClickTest(args);
+        MainEventHandler.OnInventoryClickTest(args);
 
         var remaining = container.GetItem(0);
         Assert.True(remaining == null || remaining.Count < 5);
@@ -140,7 +138,7 @@ public sealed class Player
             clickType: ClickType.PickupAll
         );
 
-        _handler.OnInventoryClickTest(args);
+        MainEventHandler.OnInventoryClickTest(args);
 
         Assert.True(player.CarriedItem.Count > 10);
         Assert.True(container.GetItem(0) == null || container.GetItem(0).Count < 20);

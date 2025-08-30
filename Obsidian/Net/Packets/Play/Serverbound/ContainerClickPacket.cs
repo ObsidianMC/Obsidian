@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
@@ -68,14 +69,13 @@ public partial class ContainerClickPacket
 
     public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
-        var container = player.OpenedContainer ?? player.Inventory;
+        var baseContainer = player.OpenedContainer ?? player.Inventory;
 
-        var (slot, forPlayer) = container.GetSlot(ClickedSlot);
+        var (slot, forPlayer) = baseContainer.GetSlot(ClickedSlot);
 
-        if (this.IsPlayerInventory || forPlayer)
-            container = player.Inventory;
+        var container = (this.IsPlayerInventory || forPlayer) ? player.Inventory : baseContainer;
 
-        var clickedItem = slot != -999 ? container[slot] : null;
+        var clickedItem = slot != -999 ? container.GetItem(slot) : null;
 
         // Maybe we should have an event called ValidateContainerContentsEventArgs? 
         if (clickedItem != null && this.CarriedItem != null && !this.CarriedItem.Compare(clickedItem))
@@ -88,23 +88,23 @@ public partial class ContainerClickPacket
                 ContainerId = this.ContainerId,
                 Slot = -1,
                 SlotData = clickedItem,
-                StateId = 0,//State id is ignored if slot is set to -1
+                StateId = 0,
             });
         }
 
         var invalidItems = new Dictionary<short, IHashedItemStack>();
         foreach (var (changedSlot, hashedItem) in this.ChangedSlots)
         {
-            var currentContainer = changedSlot > container.Size || forPlayer ? player.Inventory : player.OpenedContainer;
-
-            var checkedItem = currentContainer[changedSlot];
+            var (mappedSlot, isPlayerSlot) = baseContainer.GetSlot(changedSlot);
+            var currentContainer = isPlayerSlot ? player.Inventory : baseContainer;
 
             if (hashedItem == null)
             {
-                currentContainer.RemoveItem(changedSlot);
+                currentContainer.RemoveItem(mappedSlot);
                 continue;
             }
 
+            var checkedItem = currentContainer.GetItem(mappedSlot);
             if (checkedItem != null && !hashedItem.Compare(checkedItem))
                 invalidItems.Add(changedSlot, hashedItem);
         }

@@ -11,7 +11,7 @@ public static partial class Extensions
     public static IList<int> ToList(this Vector value) =>
         [value.X, value.Y, value.Z];
 
-    public static bool IsNullOrAir([NotNullWhen(true)] this ItemStack? item) => item == null || item.IsAir;
+    public static bool IsNullOrAir([NotNullWhen(false)] this ItemStack? item) => item == null || item.IsAir;
 
     public static List<string> GetStateValues(this int[] indexes, Dictionary<string, string[]> valueStores)
     {

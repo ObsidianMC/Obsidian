@@ -18,7 +18,7 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     public List<IPlayer> Viewers { get; } = [];
 
     public ItemStack? this[int index] { get => this.items[index]; set => this.items[index] = value; }
-    public ItemStack?[] this[Range range] { get => this.items[range];  }
+    public ItemStack?[] this[Range range] { get => this.items[range]; }
 
     public BaseContainer(int size) : this(size, InventoryType.Custom) { }
 
@@ -121,7 +121,9 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     /// Gets the slot difference for the given clicked slot.
     /// </summary>
     /// <param name="clickedSlot">The slot that was clicked</param>
-    /// <returns>The actual slot number for the given clicked slot.</returns>
+    /// <returns>
+    /// A SlotDifference containing the resolved slot and whether it maps to the player's inventory.
+    /// </returns>
     /// <remarks>
     /// This method is used to determine the actual slot number for a clicked slot in a container.
     /// </remarks>
@@ -137,14 +139,7 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
 
-public readonly record struct SlotDifference(short Slot, bool ForPlayer)
-{
-    public void Deconstruct(out short slot, out bool forPlayer)
-    {
-        slot = this.Slot;
-        forPlayer = this.ForPlayer;
-    }
-}
+public readonly record struct SlotDifference(short Slot, bool ForPlayer);
 
 public abstract class ResultContainer : BaseContainer
 {
