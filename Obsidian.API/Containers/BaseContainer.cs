@@ -15,9 +15,10 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
 
     public Guid Uuid { get; } = Guid.NewGuid();
 
-    public List<IPlayer> Viewers { get; } = new();
+    public List<IPlayer> Viewers { get; } = [];
 
     public ItemStack? this[int index] { get => this.items[index]; set => this.items[index] = value; }
+    public ItemStack?[] this[Range range] { get => this.items[range]; }
 
     public BaseContainer(int size) : this(size, InventoryType.Custom) { }
 
@@ -28,7 +29,6 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
         this.items = new ItemStack?[size];
     }
 
-    //TODO match item meta
     public virtual int AddItem(ItemStack item)
     {
         ArgumentNullException.ThrowIfNull(item);
@@ -117,8 +117,18 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
         return this.RemoveItem(slot, amount);
     }
 
-    public virtual (short slot, bool forPlayer) GetDifference(short clickedSlot) =>
-        clickedSlot > this.Size ? ((short)(clickedSlot - this.Size + 9), true) : (clickedSlot, false);
+    /// <summary>
+    /// Gets the slot difference for the given clicked slot.
+    /// </summary>
+    /// <param name="clickedSlot">The slot that was clicked</param>
+    /// <returns>
+    /// A SlotDifference containing the resolved slot and whether it maps to the player's inventory.
+    /// </returns>
+    /// <remarks>
+    /// This method is used to determine the actual slot number for a clicked slot in a container.
+    /// </remarks>
+    public virtual SlotDifference GetSlot(short clickedSlot) =>
+        clickedSlot >= this.Size ? new((short)(clickedSlot - this.Size + 9), true) : new(clickedSlot, false);
 
     public virtual void Resize(int newSize) => Array.Resize(ref this.items, newSize);
 
@@ -128,6 +138,8 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
+
+public readonly record struct SlotDifference(short Slot, bool ForPlayer);
 
 public abstract class ResultContainer : BaseContainer
 {
