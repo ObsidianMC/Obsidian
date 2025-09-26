@@ -1,6 +1,4 @@
-﻿using Obsidian.Registries;
-
-namespace Obsidian.ChunkData;
+﻿namespace Obsidian.ChunkData;
 
 public static class Palette
 {
@@ -8,17 +6,17 @@ public static class Palette
     {
         return bitsPerEntry switch
         {
+            0 => new IndirectPalette(0),
             <= 4 => new IndirectPalette(4),
             > 4 and <= 8 => new IndirectPalette(bitsPerEntry),
-            _ => new GlobalBlockStatePalette(BlocksRegistry.GlobalBitsPerBlocks)
+            _ => new GlobalBlockStatePalette()
         };
     }
 
     public static IPalette<Biome> DetermineBiomePalette(this byte bitsPerEntry)
     {
-        if (bitsPerEntry <= 3)
-            return new InternalIndirectPalette<Biome>(bitsPerEntry);
-
-        return new GlobalBiomePalette(CodecRegistry.Biomes.GlobalBitsPerEntry);
+        return bitsPerEntry <= 3
+            ? new InternalIndirectPalette<Biome>(bitsPerEntry)
+            : new GlobalBiomePalette();
     }
 }

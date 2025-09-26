@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.ChunkData.Palettes;
 using Obsidian.ChunkData;
 using Obsidian.Nbt;
 using Obsidian.Utilities.Collections;
@@ -183,17 +184,17 @@ public class Region : IRegion
             if (statesCompound!.TryGetTag("palette", out var palleteArrayTag))
             {
                 var blockStatesPalette = palleteArrayTag as NbtList;
-                foreach (NbtCompound entry in blockStatesPalette!)
+                foreach (NbtCompound entry in blockStatesPalette!.Cast<NbtCompound>())
                 {
                     var id = entry.GetInt("Id");
                     chunkSecPalette.GetOrAddId(BlocksRegistry.Get(id));//TODO PROCESS ADDED PROPERTIES TO GET CORRECT BLOCK STATE
                 }
-
-                section.BlockStateContainer.GrowDataArray();
             }
 
             if (statesCompound.TryGetTag("data", out var dataArrayTag))
             {
+                section.BlockStateContainer.InitializeDataArray();
+
                 var data = dataArrayTag as NbtArray<long>;
                 section.BlockStateContainer.DataArray.storage = data!.GetArray();
             }
@@ -207,12 +208,12 @@ public class Region : IRegion
                     if (Enum.TryParse<Biome>(biome.Value.TrimResourceTag(), true, out var value))
                         biomePalette.GetOrAddId(value);
                 }
-
-                section.BiomeContainer.GrowDataArray();
             }
 
             if (biomesCompound.TryGetTag("data", out var biomeDataArrayTag))
             {
+                section.BiomeContainer.InitializeDataArray();
+
                 var data = biomeDataArrayTag as NbtArray<long>;
                 section.BiomeContainer.DataArray.storage = data!.GetArray();
             }
@@ -285,7 +286,8 @@ public class Region : IRegion
 
                 writer.EndList();
 
-                writer.WriteArray("data", section.BlockStateContainer.DataArray.storage);
+                if (section.BlockStateContainer.DataArray is not null)
+                    writer.WriteArray("data", section.BlockStateContainer.DataArray.storage);
             }
 
             writer.EndCompound();
@@ -305,7 +307,7 @@ public class Region : IRegion
 
                 writer.EndList();
 
-                if (indirectBiomePalette.Values.Length > 1)
+                if (section.BiomeContainer.DataArray is not null)
                     writer.WriteArray("data", section.BiomeContainer.DataArray.storage);
             }
 

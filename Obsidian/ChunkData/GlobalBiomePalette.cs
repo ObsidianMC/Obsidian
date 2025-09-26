@@ -3,14 +3,9 @@
 public class GlobalBiomePalette : IPalette<Biome>
 {
     public int[] Values => throw new NotSupportedException();
-    public int BitCount { get; }
+    public int BitCount { get; } = CodecRegistry.Biomes.GlobalBitsPerEntry;
     public int Count => throw new NotSupportedException();
     public bool IsFull => false;
-
-    public GlobalBiomePalette(int bitCount)
-    {
-        this.BitCount = bitCount;
-    }
 
     public bool TryGetId(Biome biome, out int id)
     {

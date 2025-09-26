@@ -1,8 +1,9 @@
-﻿using Obsidian.Exceptions;
+﻿using Obsidian.API.ChunkData.Palettes;
+using Obsidian.Exceptions;
 
 namespace Obsidian.ChunkData;
 
-public sealed class IndirectPalette : BaseIndirectPalette<IBlock>, IPalette<IBlock>
+public sealed class IndirectPalette : BaseIndirectPalette<IBlock>
 {
     public IndirectPalette(byte bitCount) : base(bitCount)
     {

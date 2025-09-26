@@ -40,7 +40,7 @@ public sealed class Chunk : IChunk
         Sections = new ChunkSection[24];
         for (int i = 0; i < Sections.Length; i++)
         {
-            Sections[i] = new ChunkSection(4, yBase: i - 4);
+            Sections[i] = new ChunkSection(yBase: i - 4);
         }
 
 

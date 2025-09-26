@@ -6,34 +6,12 @@ public sealed class BiomeContainer : DataContainer<Biome>
 
     internal override DataArray DataArray { get; private protected set; }
 
-    internal BiomeContainer(byte bitsPerEntry = 2)
-    {
-        this.Palette = bitsPerEntry.DetermineBiomePalette();
-        this.DataArray = new(bitsPerEntry, 64);
-    }
+    internal BiomeContainer(byte bitsPerEntry = 0) : base(64, bitsPerEntry.DetermineBiomePalette(), Biome.Plains) { }
 
-    private BiomeContainer(IPalette<Biome> palette, DataArray dataArray)
+    private BiomeContainer(IPalette<Biome> palette, DataArray dataArray) : base(64, palette)
     {
         Palette = palette;
         DataArray = dataArray;
-    }
-
-    public override void Set(int x, int y, int z, Biome biome)
-    {
-        var index = this.GetIndex(x, y, z);
-
-        var paletteIndex = this.Palette.GetOrAddId(biome);
-
-        this.GrowDataArray();
-
-        this.DataArray[index] = paletteIndex;
-    }
-
-    public override Biome Get(int x, int y, int z)
-    {
-        var storageId = this.DataArray[this.GetIndex(x, y, z)];
-
-        return this.Palette.GetValueFromIndex(storageId);
     }
 
     public override void WriteTo(INetStreamWriter writer)

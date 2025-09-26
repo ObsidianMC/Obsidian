@@ -21,7 +21,7 @@ public sealed class ChunkSection : IChunkSection
 
     private byte[] blockLight = new byte[2048];
 
-    public ChunkSection(byte bitsPerBlock = 4, byte bitsPerBiome = 2, int? yBase = null)
+    public ChunkSection(byte bitsPerBlock = 0, byte bitsPerBiome = 0, int? yBase = null)
     {
         this.BlockStateContainer = new BlockStateContainer(bitsPerBlock);
         this.BiomeContainer = new BiomeContainer(bitsPerBiome);

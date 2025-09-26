@@ -1,7 +1,9 @@
-﻿using System.Runtime.CompilerServices;
+﻿using Obsidian.API.ChunkData.Palettes;
+using System.Runtime.CompilerServices;
 
 namespace Obsidian.ChunkData;
-internal sealed class InternalIndirectPalette<T> : BaseIndirectPalette<T>, IPalette<T> where T : struct
+
+internal sealed class InternalIndirectPalette<T> : BaseIndirectPalette<T> where T : struct
 {
     public InternalIndirectPalette(byte bitCount) : base(bitCount)
     {

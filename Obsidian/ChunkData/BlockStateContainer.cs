@@ -4,77 +4,31 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
 {
     public override IPalette<IBlock> Palette { get; internal set; }
 
-    public bool IsEmpty => DataArray.storage.Length == 0;
+    public override bool IsEmpty => DataArray.storage.Length == 0;
 
-    internal override DataArray DataArray { get; private protected set; }
+    internal BlockStateContainer(byte bitsPerEntry = 0) : base(4096, bitsPerEntry.DetermineBlockPalette(), BlocksRegistry.Air) { }
 
-
-#if CACHE_VALID_BLOCKS
-    private readonly DirtyCache<short> validBlockCount;
-#endif
-
-    internal BlockStateContainer(byte bitsPerEntry = 4)
-    {
-        DataArray = new DataArray(bitsPerEntry, 4096);
-        Palette = bitsPerEntry.DetermineBlockPalette();
-
-#if CACHE_VALID_BLOCKS
-        validBlockCount = new(GetNonAirBlocks);
-#endif
-    }
-
-    private BlockStateContainer(IPalette<IBlock> palette, DataArray dataArray)
+    private BlockStateContainer(IPalette<IBlock> palette, DataArray dataArray) : base(4096, palette)
     {
         Palette = palette;
         DataArray = dataArray;
-
-#if CACHE_VALID_BLOCKS
-        validBlockCount = new(GetNonAirBlocks);
-#endif
-    }
-
-    public override void Set(int x, int y, int z, IBlock blockState)
-    {
-#if CACHE_VALID_BLOCKS
-        validBlockCount.SetDirty();
-#endif
-        var blockIndex = GetIndex(x, y, z);
-
-        int paletteId = Palette.GetOrAddId(blockState);
-
-        this.GrowDataArray();
-
-        DataArray[blockIndex] = paletteId;
-    }
-
-    public override IBlock Get(int x, int y, int z)
-    {
-        int storageId = DataArray[GetIndex(x, y, z)];
-
-        return Palette.GetValueFromIndex(storageId);
     }
 
     public override void WriteTo(INetStreamWriter writer)
     {
-#if CACHE_VALID_BLOCKS
-        var validBlocks = validBlockCount.GetValue();
-#else
         var validBlocks = GetNonAirBlocks();
-#endif
 
         writer.WriteShort(validBlocks);
         writer.WriteByte(BitsPerEntry);
 
         Palette.WriteTo(writer);
 
-        writer.WriteLongArray(DataArray.storage);
+        if (this.DataArray != null)
+            writer.WriteLongArray(DataArray.storage);
     }
 
     public void Fill(IBlock block)
     {
-#if CACHE_VALID_BLOCKS
-        validBlockCount.SetDirty();
-#endif
         int index = Palette.GetOrAddId(block);
         for (int i = 0; i < 16 * 16 * 16; i++)
         {

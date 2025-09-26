@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace Obsidian.ChunkData;
+namespace Obsidian.API.ChunkData.Palettes;
 
 public abstract class BaseIndirectPalette<T> : IPalette<T>
 {
@@ -81,9 +81,15 @@ public abstract class BaseIndirectPalette<T> : IPalette<T>
 
     public void WriteTo(INetStreamWriter writer)
     {
-        writer.WriteVarInt(Count);
-
         ReadOnlySpan<int> values = GetSpan();
+
+        if (this.BitCount == 0)
+        {
+            writer.WriteVarInt(values[0]);
+            return;
+        }
+
+        writer.WriteVarInt(Count);
 
         for (int i = 0; i < values.Length; ++i)
             writer.WriteVarInt(values[i]);
@@ -95,3 +101,4 @@ public abstract class BaseIndirectPalette<T> : IPalette<T>
         return MemoryMarshal.CreateReadOnlySpan(ref first, Count);
     }
 }
+
