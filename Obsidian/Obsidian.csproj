@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<OutputType>Library</OutputType>
-		<TargetFramework>net9.0</TargetFramework>
+		<TargetFramework>net10.0</TargetFramework>
 		<Nullable>annotations</Nullable>
 		<EnablePreviewFeatures>true</EnablePreviewFeatures>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -50,10 +50,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.6" />
-		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.6" />
-		<PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.6" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.6" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0-rc.1.25451.107" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.0-rc.1.25451.107" />
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.0-rc.1.25451.107" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0-rc.1.25451.107" />
 		<PackageReference Include="NuGet.Versioning" Version="6.14.0" />
 		<PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.12.0" />
 		<PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.12.0" />
@@ -61,7 +61,7 @@
 		<PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.12.0" />
 		<PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.12.0" />
 		<PackageReference Include="SharpNoise" Version="0.12.1.1" />
-		<PackageReference Include="System.IO.Hashing" Version="9.0.5" />
+		<PackageReference Include="System.IO.Hashing" Version="10.0.0-rc.1.25451.107" />
 	</ItemGroup>
 
 	<ItemGroup>
