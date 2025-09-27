@@ -27,15 +27,6 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
             writer.WriteLongArray(DataArray.storage);
     }
 
-    public void Fill(IBlock block)
-    {
-        int index = Palette.GetOrAddId(block);
-        for (int i = 0; i < 16 * 16 * 16; i++)
-        {
-            DataArray[i] = index;
-        }
-    }
-
     private short GetNonAirBlocks()
     {
         int validBlocksCount = 0;
