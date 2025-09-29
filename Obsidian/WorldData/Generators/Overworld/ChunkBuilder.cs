@@ -284,7 +284,7 @@ internal static class ChunkBuilder
                 bool worldSurfaceSet = false;
                 bool motionBlockingSet = false;
                 bool motionBlockingLeavesSet = false;
-                chunk.Heightmaps[HeightmapType.OceanFloor] = chunk.Heightmaps[HeightmapType.WorldSurfaceWG];
+                //chunk.Heightmaps[HeightmapType.OceanFloor] = chunk.Heightmaps[HeightmapType.WorldSurfaceWG];
 
                 for (int y = 319; y >= -64; y--)
                 {
@@ -323,7 +323,7 @@ internal static class ChunkBuilder
                         !TagsRegistry.Block.Leaves.Entries.Contains(b.RegistryId)
                         )
                     {
-                        chunk.Heightmaps[HeightmapType.MotionBlockingNoLeaves].Set(x, z, y);
+                        //chunk.Heightmaps[HeightmapType.MotionBlockingNoLeaves].Set(x, z, y);
                         motionBlockingLeavesSet = true;
                     }
 

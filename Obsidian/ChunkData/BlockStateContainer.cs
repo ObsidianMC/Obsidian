@@ -2,13 +2,14 @@
 
 public sealed class BlockStateContainer : DataContainer<IBlock>
 {
+    private const int MaxEntryCount = 4096;
     public override IPalette<IBlock> Palette { get; internal set; }
 
-    public override bool IsEmpty => DataArray.storage.Length == 0;
+    public override bool IsEmpty => this.Palette.Count == 0;
 
-    internal BlockStateContainer(byte bitsPerEntry = 0) : base(4096, bitsPerEntry.DetermineBlockPalette(), BlocksRegistry.Air) { }
+    internal BlockStateContainer(byte bitsPerEntry = 0) : base(MaxEntryCount, bitsPerEntry.DetermineBlockPalette(), BlocksRegistry.Air) { }
 
-    private BlockStateContainer(IPalette<IBlock> palette, DataArray dataArray) : base(4096, palette)
+    private BlockStateContainer(IPalette<IBlock> palette, DataArray dataArray) : base(MaxEntryCount, palette)
     {
         Palette = palette;
         DataArray = dataArray;
@@ -39,7 +40,7 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
             goto TWO_INDEXES;
 
         // 1 1 1
-        for (int i = 0; i < 16 * 16 * 16; i++)
+        for (int i = 0; i < MaxEntryCount; i++)
         {
             int index = DataArray[i];
             if (index != indexOne && index != indexTwo && index != indexThree)
@@ -69,7 +70,7 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
 
         // 1 0 0
         ONE_INDEX:
-        for (int i = 0; i < 16 * 16 * 16; i++)
+        for (int i = 0; i < MaxEntryCount; i++)
         {
             int index = DataArray[i];
             if (index != indexOne)
@@ -79,7 +80,7 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
 
     // 1 1 0
     TWO_INDEXES:
-        for (int i = 0; i < 16 * 16 * 16; i++)
+        for (int i = 0; i < MaxEntryCount; i++)
         {
             int index = DataArray[i];
             if (index != indexOne && index != indexTwo)

@@ -4,9 +4,9 @@ public enum HeightmapType : int
     WorldSurfaceWG,
     WorldSurface,
 
-    OceanFloorWG,
-    OceanFloor,
+    //OceanFloorWG,
+    //OceanFloor,
 
     MotionBlocking,
-    MotionBlockingNoLeaves,
+    //MotionBlockingNoLeaves,
 }

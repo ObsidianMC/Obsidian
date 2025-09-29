@@ -12,10 +12,6 @@ public sealed class Chunk : IChunk
 
     public ChunkGenStage ChunkStatus { get; private set; } = ChunkGenStage.empty;
 
-    private const int width = 16;
-    private const int worldHeight = 320;
-    private const int worldFloor = -64;
-
     //TODO try and do some temp caching
     public Dictionary<short, BlockMeta> BlockMetaStore { get; private set; } = new Dictionary<short, BlockMeta>();
     public Dictionary<short, IBlockEntity> BlockEntities { get; private set; } = new Dictionary<short, IBlockEntity>();
@@ -31,10 +27,10 @@ public sealed class Chunk : IChunk
         Heightmaps = new Dictionary<HeightmapType, Heightmap>()
         {
             { HeightmapType.MotionBlocking, new Heightmap(HeightmapType.MotionBlocking, this) },
-            { HeightmapType.OceanFloor, new Heightmap(HeightmapType.OceanFloor, this) },
-            { HeightmapType.WorldSurface, new Heightmap(HeightmapType.WorldSurface, this) },
+            //{ HeightmapType.OceanFloor, new Heightmap(HeightmapType.OceanFloor, this) },
+            //{ HeightmapType.WorldSurface, new Heightmap(HeightmapType.WorldSurface, this) },
             { HeightmapType.WorldSurfaceWG, new Heightmap(HeightmapType.WorldSurfaceWG, this) },
-            { HeightmapType.MotionBlockingNoLeaves, new Heightmap(HeightmapType.MotionBlockingNoLeaves, this) }
+            //{ HeightmapType.MotionBlockingNoLeaves, new Heightmap(HeightmapType.MotionBlockingNoLeaves, this) }
         };
 
         Sections = new ChunkSection[24];
@@ -153,26 +149,6 @@ public sealed class Chunk : IChunk
         y = NumericsHelper.Modulo(y, 16);
         z = NumericsHelper.Modulo(z, 16);
         return sec.GetLightLevel(x, y, z, lt);
-    }
-
-    public void CalculateHeightmap()
-    {
-        Heightmap target = Heightmaps[HeightmapType.MotionBlocking];
-        for (int x = 0; x < width; x++)
-        {
-            for (int z = 0; z < width; z++)
-            {
-                for (int y = worldHeight - 1; y >= worldFloor; y--)
-                {
-                    var block = GetBlock(x, y, z);
-                    if (block.Material == Material.Air)
-                        continue;
-
-                    target.Set(x, z, value: y);
-                    break;
-                }
-            }
-        }
     }
 
     public void WriteLightMaskTo(INetStreamWriter writer, LightType lt)

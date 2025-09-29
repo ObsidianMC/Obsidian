@@ -178,8 +178,7 @@ public sealed partial class World : IWorld
     public async ValueTask<int?> GetWorldSurfaceHeightAsync(int x, int z)
     {
         var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
-        return c?.Heightmaps[HeightmapType.WorldSurface]
-        .GetHeight(NumericsHelper.Modulo(x, 16), NumericsHelper.Modulo(z, 16));
+        return c?.Heightmaps[HeightmapType.WorldSurface].GetHeight(NumericsHelper.Modulo(x, 16), NumericsHelper.Modulo(z, 16));
     }
 
     public async ValueTask SetBlockAsync(int x, int y, int z, IBlock block)
