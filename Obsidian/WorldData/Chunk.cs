@@ -28,7 +28,7 @@ public sealed class Chunk : IChunk
         {
             { HeightmapType.MotionBlocking, new Heightmap(HeightmapType.MotionBlocking, this) },
             //{ HeightmapType.OceanFloor, new Heightmap(HeightmapType.OceanFloor, this) },
-            //{ HeightmapType.WorldSurface, new Heightmap(HeightmapType.WorldSurface, this) },
+            { HeightmapType.WorldSurface, new Heightmap(HeightmapType.WorldSurface, this) },
             { HeightmapType.WorldSurfaceWG, new Heightmap(HeightmapType.WorldSurfaceWG, this) },
             //{ HeightmapType.MotionBlockingNoLeaves, new Heightmap(HeightmapType.MotionBlockingNoLeaves, this) }
         };

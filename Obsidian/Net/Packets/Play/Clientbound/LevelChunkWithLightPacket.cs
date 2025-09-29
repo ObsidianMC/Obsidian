@@ -30,7 +30,7 @@ public partial class LevelChunkWithLightPacket(IChunk chunk)
             }
         }
 
-        writer.WriteVarInt((int)sectionBuffer.Size);
+        writer.WriteVarInt(sectionBuffer.Size);
         writer.Write(sectionBuffer);
 
 
