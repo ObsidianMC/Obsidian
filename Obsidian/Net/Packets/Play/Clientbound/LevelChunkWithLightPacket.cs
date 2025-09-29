@@ -11,22 +11,13 @@ public partial class LevelChunkWithLightPacket(IChunk chunk)
         writer.WriteInt(Chunk.X);
         writer.WriteInt(Chunk.Z);
 
-        //Chunk.CalculateHeightmap();
-
+        //Heightmap writing we're only sending motion blocking for now.
         writer.WriteVarInt(1);
-        foreach (var (type, heightmap) in Chunk.Heightmaps)
-            if (type == HeightmapType.MotionBlocking)
-            {
-                var dataArray = heightmap.GetDataArray();
+        var heightmap = Chunk.Heightmaps[HeightmapType.MotionBlocking];
+        var heightmapStorage = heightmap.GetDataArray();
 
-                writer.WriteVarInt(type.GetHashCode());
-                writer.WriteVarInt(dataArray.Length);
-
-                foreach(var height in dataArray)
-                    writer.WriteLong(height);
-
-                break;
-            }
+        writer.WriteVarInt(HeightmapType.MotionBlocking.GetHashCode());
+        writer.WriteLengthPrefixedArray(writer.WriteLong, heightmapStorage);
 
         var sectionBuffer = new NetworkBuffer();
 
