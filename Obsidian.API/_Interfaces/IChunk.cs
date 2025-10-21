@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.ChunkData;
+using Obsidian.API.Registry.Codecs.Biomes;
 using System.ComponentModel;
 
 namespace Obsidian.API;
@@ -19,13 +20,13 @@ public interface IChunk
     public IBlock GetBlock(Vector position) => this.GetBlock(position.X, position.Y, position.Z);
 
     public IBlock GetBlock(int x, int y, int z);
-    public Biome GetBiome(Vector position) => this.GetBiome(position.X, position.Y, position.Z);
+    public BiomeCodec GetBiome(Vector position) => this.GetBiome(position.X, position.Y, position.Z);
 
-    public Biome GetBiome(int x, int y, int z);
+    public BiomeCodec GetBiome(int x, int y, int z);
 
-    public void SetBiome(Vector position, Biome biome) => this.SetBiome(position.X, position.Y, position.Z, biome);
+    public void SetBiome(Vector position, BiomeCodec biome) => this.SetBiome(position.X, position.Y, position.Z, biome);
 
-    public void SetBiome(int x, int y, int z, Biome biome);
+    public void SetBiome(int x, int y, int z, BiomeCodec biome);
 
     public void SetBlock(Vector position, IBlock block) => this.SetBlock(position.X, position.Y, position.Z, block);
 

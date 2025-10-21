@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.BlockStates.Builders;
+using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.WorldData.Features.Trees;
 using Obsidian.WorldData.Generators;
 
@@ -10,7 +11,7 @@ public class ForestDecorator : BaseDecorator
     private static IBlock roseBushUpperState = BlocksRegistry.Get(Material.RoseBush, new RoseBushStateBuilder().WithHalf(BlockHalf.Upper).Build());
     private static IBlock peonyUpperState = BlocksRegistry.Get(Material.RoseBush, new RoseBushStateBuilder().WithHalf(BlockHalf.Upper).Build());
 
-    public ForestDecorator(Biome biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
+    public ForestDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(4, typeof(OakTree)));
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, typeof(BirchTree)));

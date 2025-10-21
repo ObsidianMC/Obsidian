@@ -31,7 +31,7 @@ internal class MojangGenerator : IWorldGenerator
                     // Determine Biome
                     if (x % 4 == 0 && z % 4 == 0) // Biomes are in 4x4x4 blocks. Do a 2D array for now and just copy it vertically.
                     {
-                        var biome = Biome.Plains;
+                        var biome = CodecRegistry.Biomes.Plains;
                         for (int y = -64; y < 320; y += 4)
                         {
                             chunk.SetBiome(x, y, z, biome);

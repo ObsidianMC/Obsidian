@@ -1,8 +1,10 @@
-﻿namespace Obsidian.ChunkData;
+﻿using Obsidian.API.Registry.Codecs.Biomes;
 
-public sealed class BiomeContainer : DataContainer<Biome>
+namespace Obsidian.ChunkData;
+
+public sealed class BiomeContainer : DataContainer<BiomeCodec>
 {
-    public override IPalette<Biome> Palette { get; internal set; }
+    public override IPalette<BiomeCodec> Palette { get; internal set; }
 
     internal override DataArray DataArray { get; private protected set; }
 
@@ -12,13 +14,13 @@ public sealed class BiomeContainer : DataContainer<Biome>
         this.DataArray = new(bitsPerEntry, 64);
     }
 
-    private BiomeContainer(IPalette<Biome> palette, DataArray dataArray)
+    private BiomeContainer(IPalette<BiomeCodec> palette, DataArray dataArray)
     {
         Palette = palette;
         DataArray = dataArray;
     }
 
-    public override void Set(int x, int y, int z, Biome biome)
+    public override void Set(int x, int y, int z, BiomeCodec biome)
     {
         var index = this.GetIndex(x, y, z);
 
@@ -29,7 +31,7 @@ public sealed class BiomeContainer : DataContainer<Biome>
         this.DataArray[index] = paletteIndex;
     }
 
-    public override Biome Get(int x, int y, int z)
+    public override BiomeCodec Get(int x, int y, int z)
     {
         var storageId = this.DataArray[this.GetIndex(x, y, z)];
 

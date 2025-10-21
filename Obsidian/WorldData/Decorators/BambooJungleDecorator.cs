@@ -1,4 +1,5 @@
-﻿using Obsidian.WorldData.Features.Flora;
+﻿using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.WorldData.Features.Flora;
 using Obsidian.WorldData.Features.Trees;
 using Obsidian.WorldData.Generators;
 
@@ -6,7 +7,7 @@ namespace Obsidian.WorldData.Decorators;
 
 public class BambooJungleDecorator : BaseDecorator
 {
-    public BambooJungleDecorator(Biome biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
+    public BambooJungleDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
 
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(4, typeof(JungleTree)));

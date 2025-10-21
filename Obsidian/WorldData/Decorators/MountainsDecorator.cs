@@ -1,8 +1,9 @@
-﻿using Obsidian.WorldData.Generators;
+﻿using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.WorldData.Generators;
 
 namespace Obsidian.WorldData.Decorators;
 
-public class MountainsDecorator(Biome biome, IChunk chunk, Vector surfacePos, GenHelper helper) : BaseDecorator(biome, chunk, surfacePos, helper)
+public class MountainsDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper) : BaseDecorator(biome, chunk, surfacePos, helper)
 {
     public override void Decorate()
     {

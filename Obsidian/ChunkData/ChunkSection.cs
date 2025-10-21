@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using Obsidian.API.Registry.Codecs.Biomes;
+using System.Diagnostics;
 
 namespace Obsidian.ChunkData;
 
@@ -7,7 +8,7 @@ public sealed class ChunkSection : IChunkSection
     public int? YBase { get; }
 
     public DataContainer<IBlock> BlockStateContainer { get; }
-    public DataContainer<Biome> BiomeContainer { get; }
+    public DataContainer<BiomeCodec> BiomeContainer { get; }
 
     public bool HasSkyLight { get; private set; } = false;
     public ReadOnlyMemory<byte> SkyLightArray => skyLight.AsMemory();
@@ -32,7 +33,7 @@ public sealed class ChunkSection : IChunkSection
         Debug.Assert(airIndex == 0);
     }
 
-    private ChunkSection(DataContainer<IBlock> blockContainer, DataContainer<Biome> biomeContainer, int? yBase)
+    private ChunkSection(DataContainer<IBlock> blockContainer, DataContainer<BiomeCodec> biomeContainer, int? yBase)
     {
         BlockStateContainer = blockContainer;
         BiomeContainer = biomeContainer;
@@ -41,7 +42,7 @@ public sealed class ChunkSection : IChunkSection
 
     public IBlock GetBlock(int x, int y, int z) => this.BlockStateContainer.Get(x, y, z);
 
-    public Biome GetBiome(int x, int y, int z) => this.BiomeContainer.Get(x, y, z);
+    public BiomeCodec GetBiome(int x, int y, int z) => this.BiomeContainer.Get(x, y, z);
     public void SetBlock(int x, int y, int z, IBlock block)
     {
         if (block.Material != Material.Air)
@@ -49,7 +50,7 @@ public sealed class ChunkSection : IChunkSection
 
         this.BlockStateContainer.Set(x, y, z, block);
     }
-    public void SetBiome(int x, int y, int z, Biome biome) => this.BiomeContainer.Set(x, y, z, biome);
+    public void SetBiome(int x, int y, int z, BiomeCodec biome) => this.BiomeContainer.Set(x, y, z, biome);
     public void SetLightLevel(int x, int y, int z, LightType lt, int level)
     {
         // each value is 4 bits. So upper 4 bits will be odd, lower even
@@ -92,9 +93,9 @@ public sealed class ChunkSection : IChunkSection
     }
 
     public IBlock GetBlock(Vector position) => this.GetBlock(position.X, position.Y, position.Z);
-    public Biome GetBiome(Vector position) => this.GetBiome(position.X, position.Y, position.Z);
+    public BiomeCodec? GetBiome(Vector position) => this.GetBiome(position.X, position.Y, position.Z);
     public void SetBlock(Vector position, IBlock block) => this.SetBlock(position.X, position.Y, position.Z, block);
-    public void SetBiome(Vector position, Biome biome) => this.SetBiome(position.X, position.Y, position.Z, biome);
+    public void SetBiome(Vector position, BiomeCodec biome) => this.SetBiome(position.X, position.Y, position.Z, biome);
     public void SetLightLevel(Vector position, LightType lt, int level) => this.SetLightLevel(position.X, position.Y, position.Z, lt, level);
     public int GetLightLevel(Vector position, LightType lt) => this.GetLightLevel(position.X, position.Y, position.Z, lt);
 

@@ -1,11 +1,12 @@
-﻿using Obsidian.WorldData.Features.Flora;
+﻿using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.WorldData.Features.Flora;
 using Obsidian.WorldData.Generators;
 
 namespace Obsidian.WorldData.Decorators;
 
 public class GroveDecorator : BaseDecorator
 {
-    public GroveDecorator(Biome biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
+    public GroveDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
         Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(DandelionFlora), 4, 3));
         Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(PoppyFlora), 4, 3));

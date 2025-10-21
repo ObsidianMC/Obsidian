@@ -1,4 +1,5 @@
-﻿using Obsidian.Blocks;
+﻿using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.Blocks;
 using Obsidian.ChunkData;
 
 namespace Obsidian.WorldData;
@@ -66,7 +67,7 @@ public sealed class Chunk : IChunk
         return Sections[i].GetBlock(x, y, z);
     }
 
-    public Biome GetBiome(int x, int y, int z)
+    public BiomeCodec GetBiome(int x, int y, int z)
     {
         var i = SectionIndex(y);
 
@@ -77,7 +78,7 @@ public sealed class Chunk : IChunk
         return Sections[i].GetBiome(x, y, z);
     }
 
-    public void SetBiome(int x, int y, int z, Biome biome)
+    public void SetBiome(int x, int y, int z, BiomeCodec biome)
     {
         int i = SectionIndex(y);
 

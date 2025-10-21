@@ -1,40 +1,42 @@
-﻿using SharpNoise.Modules;
+﻿using Obsidian.API.Registries;
+using Obsidian.API.Registry.Codecs.Biomes;
+using SharpNoise.Modules;
 
 namespace Obsidian.API.Noise;
 
 public class BiomeSelector : Module
 {
     // 3D: 5 heights, 4 temp, 3 humidity
-    private readonly Biome[,,] BiomeLookup = new Biome[5, 4, 3] {
+    private readonly BiomeCodec[,,] BiomeLookup = new BiomeCodec[5, 4, 3] {
         {
-            { Biome.DeepFrozenOcean, Biome.DeepFrozenOcean, Biome.DeepFrozenOcean }, // deep ocean, frozen, low-med-high humidity
-            { Biome.DeepColdOcean, Biome.DeepColdOcean, Biome.DeepColdOcean }, // deep ocean, cold, low-med-high humidity
-            { Biome.DeepLukewarmOcean, Biome.DeepLukewarmOcean, Biome.DeepLukewarmOcean }, // deep ocean, warm, low-med-high humidity
-            { Biome.DeepOcean, Biome.DeepOcean, Biome.DeepOcean }, // deep ocean, hot, low-med-high humidity
+            { CodecRegistry.Biomes.DeepFrozenOcean, CodecRegistry.Biomes.DeepFrozenOcean, CodecRegistry.Biomes.DeepFrozenOcean }, // deep ocean, frozen, low-med-high humidity
+            { CodecRegistry.Biomes.DeepColdOcean, CodecRegistry.Biomes.DeepColdOcean, CodecRegistry.Biomes.DeepColdOcean }, // deep ocean, cold, low-med-high humidity
+            { CodecRegistry.Biomes.DeepLukewarmOcean, CodecRegistry.Biomes.DeepLukewarmOcean, CodecRegistry.Biomes.DeepLukewarmOcean }, // deep ocean, warm, low-med-high humidity
+            { CodecRegistry.Biomes.DeepOcean, CodecRegistry.Biomes.DeepOcean, CodecRegistry.Biomes.DeepOcean }, // deep ocean, hot, low-med-high humidity
         },
         {
-            { Biome.FrozenOcean, Biome.FrozenOcean, Biome.FrozenOcean }, //  ocean, frozen, low-med-high humidity
-            { Biome.ColdOcean, Biome.ColdOcean, Biome.ColdOcean }, //  ocean, cold, low-med-high humidity
-            { Biome.LukewarmOcean, Biome.LukewarmOcean, Biome.LukewarmOcean }, //  ocean, warm, low-med-high humidity
-            { Biome.Ocean, Biome.Ocean, Biome.Ocean }, //  ocean, hot, low-med-high humidity
+            { CodecRegistry.Biomes.FrozenOcean, CodecRegistry.Biomes.FrozenOcean, CodecRegistry.Biomes.FrozenOcean }, //  ocean, frozen, low-med-high humidity
+            { CodecRegistry.Biomes.ColdOcean, CodecRegistry.Biomes.ColdOcean, CodecRegistry.Biomes.ColdOcean }, //  ocean, cold, low-med-high humidity
+            { CodecRegistry.Biomes.LukewarmOcean, CodecRegistry.Biomes.LukewarmOcean, CodecRegistry.Biomes.LukewarmOcean }, //  ocean, warm, low-med-high humidity
+            { CodecRegistry.Biomes.Ocean, CodecRegistry.Biomes.Ocean, CodecRegistry.Biomes.Ocean }, //  ocean, hot, low-med-high humidity
         },
         {
-            { Biome.IceSpikes, Biome.SnowyPlains, Biome.SnowyTaiga }, // flatland, frozen, low-med-high humidity
-            { Biome.Plains, Biome.Plains, Biome.Taiga }, // flatland, cold, low-med-high humidity
-            { Biome.Forest, Biome.Forest, Biome.BambooJungle}, // flatland, warm, low-med-high humidity
-            { Biome.Savanna, Biome.Desert, Biome.Swamp }, // flatland, hot, low-med-high humidity
+            { CodecRegistry.Biomes.IceSpikes, CodecRegistry.Biomes.SnowyPlains, CodecRegistry.Biomes.SnowyTaiga }, // flatland, frozen, low-med-high humidity
+            { CodecRegistry.Biomes.Plains, CodecRegistry.Biomes.Plains, CodecRegistry.Biomes.Taiga }, // flatland, cold, low-med-high humidity
+            { CodecRegistry.Biomes.Forest, CodecRegistry.Biomes.Forest, CodecRegistry.Biomes.BambooJungle}, // flatland, warm, low-med-high humidity
+            { CodecRegistry.Biomes.Savanna, CodecRegistry.Biomes.Desert, CodecRegistry.Biomes.Swamp }, // flatland, hot, low-med-high humidity
         },
         {
-            { Biome.WindsweptForest, Biome.SnowySlopes, Biome.SnowySlopes }, // hills, frozen, low-med-high humidity
-            { Biome.WindsweptHills, Biome.Grove, Biome.Forest }, // hills, cold, low-med-high humidity
-            { Biome.WindsweptGravellyHills, Biome.SunflowerPlains, Biome.Jungle }, // hills, warm, low-med-high humidity
-            { Biome.SavannaPlateau, Biome.Badlands, Biome.MangroveSwamp }, // hills, hot, low-med-high humidity
+            { CodecRegistry.Biomes.WindsweptForest, CodecRegistry.Biomes.SnowySlopes, CodecRegistry.Biomes.SnowySlopes }, // hills, frozen, low-med-high humidity
+            { CodecRegistry.Biomes.WindsweptHills, CodecRegistry.Biomes.Grove, CodecRegistry.Biomes.Forest }, // hills, cold, low-med-high humidity
+            { CodecRegistry.Biomes.WindsweptGravellyHills, CodecRegistry.Biomes.SunflowerPlains, CodecRegistry.Biomes.Jungle }, // hills, warm, low-med-high humidity
+            { CodecRegistry.Biomes.SavannaPlateau, CodecRegistry.Biomes.Badlands, CodecRegistry.Biomes.MangroveSwamp }, // hills, hot, low-med-high humidity
         },
         {
-            { Biome.FrozenPeaks, Biome.FrozenPeaks, Biome.IceSpikes }, // mountains, frozen, low-med-high humidity
-            { Biome.FrozenPeaks, Biome.SnowySlopes, Biome.SnowySlopes }, // mountains, cold, low-med-high humidity
-            { Biome.StonyPeaks, Biome.StonyPeaks, Biome.JaggedPeaks }, // mountains, warm, low-med-high humidity
-            { Biome.WindsweptSavanna, Biome.JaggedPeaks, Biome.JaggedPeaks }, // mountains, hot, low-med-high humidity
+            { CodecRegistry.Biomes.FrozenPeaks, CodecRegistry.Biomes.FrozenPeaks, CodecRegistry.Biomes.IceSpikes }, // mountains, frozen, low-med-high humidity
+            { CodecRegistry.Biomes.FrozenPeaks, CodecRegistry.Biomes.SnowySlopes, CodecRegistry.Biomes.SnowySlopes }, // mountains, cold, low-med-high humidity
+            { CodecRegistry.Biomes.StonyPeaks, CodecRegistry.Biomes.StonyPeaks, CodecRegistry.Biomes.JaggedPeaks }, // mountains, warm, low-med-high humidity
+            { CodecRegistry.Biomes.WindsweptSavanna, CodecRegistry.Biomes.JaggedPeaks, CodecRegistry.Biomes.JaggedPeaks }, // mountains, hot, low-med-high humidity
         }
     };
 
@@ -61,10 +63,10 @@ public class BiomeSelector : Module
             // Check river
             var riverVal = SourceModules[4].GetValue(x, 0, z);
             if (riverVal < 0.04)
-                return tempIndex < 1 ? (double)Biome.FrozenRiver : (double)Biome.River;
+                return tempIndex < 1 ? CodecRegistry.Biomes.FrozenRiver.Id : CodecRegistry.Biomes.River.Id;
         }
         if (height >= -0.1 && height < 0.04) 
-            return tempIndex <= 1 ? (double)Biome.SnowyBeach : (double)Biome.Beach;
+            return tempIndex <= 1 ? CodecRegistry.Biomes.SnowyBeach.Id : CodecRegistry.Biomes.Beach.Id;
 
         if (height > 0.1) // If above ocean, add erosion and rivers
         {
@@ -87,6 +89,6 @@ public class BiomeSelector : Module
         };
 
         //var heightIndex = (int)((heightVal + 1d) * 2.5d);
-        return (double)BiomeLookup[heightIndex, tempIndex, humidityIndex];
+        return BiomeLookup[heightIndex, tempIndex, humidityIndex].Id;
     }
 }

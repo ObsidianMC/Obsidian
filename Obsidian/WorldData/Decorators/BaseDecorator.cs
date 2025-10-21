@@ -1,29 +1,20 @@
-﻿using Obsidian.WorldData.Generators;
+﻿using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.WorldData.Generators;
 using Obsidian.WorldData.Generators.Overworld;
 
 namespace Obsidian.WorldData.Decorators;
 
-public abstract class BaseDecorator : IDecorator
+public abstract class BaseDecorator(BiomeCodec biome, IChunk chunk, Vector pos, GenHelper helper) : IDecorator
 {
-    public DecoratorFeatures Features { get; }
+    public DecoratorFeatures Features { get; } = new DecoratorFeatures();
 
-    protected Biome Biome { get; }
+    protected BiomeCodec Biome { get; } = biome;
 
-    protected IChunk Chunk { get; }
+    protected IChunk Chunk { get; } = chunk;
 
-    protected Vector Position { get; }
+    protected Vector Position { get; } = pos;
 
-    protected OverworldTerrainNoise Noise { get; }
-
-    protected BaseDecorator(Biome biome, IChunk chunk, Vector pos, GenHelper helper)
-    {
-        this.Biome = biome;
-        this.Chunk = chunk;
-        this.Position = pos;
-        this.Noise = helper.Noise;
-
-        Features = new DecoratorFeatures();
-    }
+    protected OverworldTerrainNoise Noise { get; } = helper.Noise;
 
     public abstract void Decorate();
 

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.ChunkData;
 using Obsidian.Nbt;
 using Obsidian.Utilities.Collections;
@@ -204,7 +205,7 @@ public class Region : IRegion
                 var biomePalette = section.BiomeContainer.Palette;
                 foreach (NbtTag<string> biome in biomesPalette!)
                 {
-                    if (Enum.TryParse<Biome>(biome.Value.TrimResourceTag(), true, out var value))
+                    if (CodecRegistry.TryGetBiome(biome.Value, out var value))
                         biomePalette.GetOrAddId(value);
                 }
 
@@ -265,7 +266,7 @@ public class Region : IRegion
 
             writer.WriteCompoundStart("block_states");
 
-            if (section.BlockStateContainer.Palette is IndirectPalette indirect)
+            if (section.BlockStateContainer.Palette is IndirectBlockPalette indirect)
             {
                 writer.WriteListStart("palette", NbtTagType.Compound, indirect.Count);
 
@@ -292,15 +293,15 @@ public class Region : IRegion
 
             writer.WriteCompoundStart("biomes");
 
-            if (section.BiomeContainer.Palette is BaseIndirectPalette<Biome> indirectBiomePalette)
+            if (section.BiomeContainer.Palette is BaseIndirectPalette<BiomeCodec> indirectBiomePalette)
             {
                 writer.WriteListStart("palette", NbtTagType.String, indirectBiomePalette.Count);
 
                 Span<int> span = indirectBiomePalette.Values;
                 for (int i = 0; i < indirectBiomePalette.Count; i++)
                 {
-                    var biome = (Biome)span[i];
-                    writer.WriteString($"minecraft:{biome.ToString().ToLower()}");
+                    var biome = CodecRegistry.GetBiome(span[i]);
+                    writer.WriteString(biome.Name);
                 }
 
                 writer.EndList();
