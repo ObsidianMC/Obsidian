@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Obsidian.API.Registry.Codecs.Biomes;
+﻿using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.Registry.Codecs.Chat;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using System.Diagnostics.CodeAnalysis;
@@ -12,6 +11,9 @@ public static partial class CodecRegistry
 
     public static bool TryGetBiome(string resourceId, [MaybeNullWhen(false)] out BiomeCodec? codec) =>
         Biomes.All.TryGetValue(resourceId, out codec);
+
+    public static BiomeCodec? GetBiome(int registryId) =>
+        Biomes.All.Values.FirstOrDefault(x => x.Id == registryId);
 
     public static bool TryGetDimension(string resourceId, [MaybeNullWhen(false)] out DimensionCodec? codec) =>
         Dimensions.All.TryGetValue(resourceId, out codec);

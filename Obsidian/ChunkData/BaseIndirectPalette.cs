@@ -30,7 +30,8 @@ public abstract class BaseIndirectPalette<T> : IPalette<T>
             ArgumentNullException.ThrowIfNull(value, nameof(value));
         }
 
-        int valueId = value!.GetHashCode();
+        int valueId = this.GetValueId(value);
+
         return TryGetIdImpl(valueId, out id);
     }
 
@@ -56,7 +57,7 @@ public abstract class BaseIndirectPalette<T> : IPalette<T>
         }
 
         // Get
-        int valueId = value!.GetHashCode();
+        int valueId = this.GetValueId(value);
         if (TryGetIdImpl(valueId, out int id))
             return id;
 
@@ -94,4 +95,6 @@ public abstract class BaseIndirectPalette<T> : IPalette<T>
         ref int first = ref MemoryMarshal.GetArrayDataReference(Values);
         return MemoryMarshal.CreateReadOnlySpan(ref first, Count);
     }
+
+    protected abstract int GetValueId(T value);
 }
