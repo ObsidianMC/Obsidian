@@ -1,7 +1,6 @@
 ﻿namespace Obsidian.API.ChunkData;
 public interface IPalette<T>
 {
-    public int[] Values { get; }
     public int Count { get; }
     public int BitCount { get; }
     public bool IsFull { get; }

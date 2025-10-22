@@ -22,7 +22,7 @@ public static class DecoratorFactory
         {
             var name = decorator.Name.Replace("Decorator", string.Empty);
 
-            if (CodecRegistry.TryGetBiome(name, out var biome))
+            if (CodecRegistry.TryGetBiome($"minecraft:{name.ToLower()}", out var biome))
             {
                 var ctor = decorator.GetConstructor(argumentCache);
 

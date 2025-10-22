@@ -8,13 +8,12 @@ public sealed class BiomeContainer : DataContainer<BiomeCodec>
 
     internal override DataArray DataArray { get; private protected set; }
 
-    internal BiomeContainer(byte bitsPerEntry = 2)
+    internal BiomeContainer(byte bitsPerEntry = 0) : base(1, 3, 64, ChunkData.PaletteFactory.DetermineBiomePalette)
     {
-        this.Palette = bitsPerEntry.DetermineBiomePalette();
-        this.DataArray = new(bitsPerEntry, 64);
+        this.Palette = this.PaletteFactory(bitsPerEntry);
     }
 
-    private BiomeContainer(IPalette<BiomeCodec> palette, DataArray dataArray)
+    private BiomeContainer(IPalette<BiomeCodec> palette, DataArray dataArray) : base(1, 3, 64, ChunkData.PaletteFactory.DetermineBiomePalette)
     {
         Palette = palette;
         DataArray = dataArray;
@@ -26,25 +25,21 @@ public sealed class BiomeContainer : DataContainer<BiomeCodec>
 
         var paletteIndex = this.Palette.GetOrAddId(biome);
 
-        this.GrowDataArray();
+        if (this.TryGrow(paletteIndex))
+            paletteIndex = this.Palette.GetOrAddId(biome);
 
-        this.DataArray[index] = paletteIndex;
+        if (!this.IsSingleValued)
+            this.DataArray[index] = paletteIndex;
     }
 
     public override BiomeCodec Get(int x, int y, int z)
     {
+        if (this.Palette is SingleValuePalette<BiomeCodec> singleValuePalette)
+            return singleValuePalette.Value;
+
         var storageId = this.DataArray[this.GetIndex(x, y, z)];
 
         return this.Palette.GetValueFromIndex(storageId);
-    }
-
-    public override void WriteTo(INetStreamWriter writer)
-    {
-        writer.WriteByte(this.BitsPerEntry);
-
-        this.Palette.WriteTo(writer);
-
-        writer.WriteLongArray(this.DataArray.storage);
     }
 
     public override BiomeContainer Clone() => new(Palette.Clone(), DataArray.Clone());

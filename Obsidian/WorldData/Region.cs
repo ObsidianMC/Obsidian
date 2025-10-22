@@ -5,6 +5,7 @@ using Obsidian.Nbt;
 using Obsidian.Utilities.Collections;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace Obsidian.WorldData;
@@ -184,13 +185,15 @@ public class Region : IRegion
             if (statesCompound!.TryGetTag("palette", out var palleteArrayTag))
             {
                 var blockStatesPalette = palleteArrayTag as NbtList;
-                foreach (NbtCompound entry in blockStatesPalette!)
+
+                int addedValueIndex = 0;
+                foreach (var entry in blockStatesPalette!.Cast<NbtCompound>())
                 {
                     var id = entry.GetInt("Id");
-                    chunkSecPalette.GetOrAddId(BlocksRegistry.Get(id));//TODO PROCESS ADDED PROPERTIES TO GET CORRECT BLOCK STATE
+                    addedValueIndex = chunkSecPalette.GetOrAddId(BlocksRegistry.Get(id));//TODO PROCESS ADDED PROPERTIES TO GET CORRECT BLOCK STATE
                 }
 
-                section.BlockStateContainer.GrowDataArray();
+                section.BlockStateContainer.TryGrow(addedValueIndex);
             }
 
             if (statesCompound.TryGetTag("data", out var dataArrayTag))
@@ -203,13 +206,14 @@ public class Region : IRegion
             if (biomesCompound!.TryGetTag<NbtList>("palette", out var biomesPalette))
             {
                 var biomePalette = section.BiomeContainer.Palette;
-                foreach (NbtTag<string> biome in biomesPalette!)
+                var addedValueIndex = 0;
+                foreach (NbtTag<string> biome in biomesPalette!.Cast<NbtTag<string>>())
                 {
                     if (CodecRegistry.TryGetBiome(biome.Value, out var value))
-                        biomePalette.GetOrAddId(value);
+                        addedValueIndex = biomePalette.GetOrAddId(value);
                 }
 
-                section.BiomeContainer.GrowDataArray();
+                section.BiomeContainer.TryGrow(addedValueIndex);
             }
 
             if (biomesCompound.TryGetTag("data", out var biomeDataArrayTag))
@@ -288,6 +292,21 @@ public class Region : IRegion
 
                 writer.WriteArray("data", section.BlockStateContainer.DataArray.storage);
             }
+            else if (section.BlockStateContainer.Palette is SingleValuePalette<IBlock> singleValueBlockPalette)
+            {
+                writer.WriteListStart("palette", NbtTagType.Compound, 1);
+
+                var block = singleValueBlockPalette.GetValueFromIndex(0);
+
+                writer.WriteCompoundStart();
+
+                writer.WriteString("Name", block.UnlocalizedName);
+                writer.WriteInt("Id", block.GetHashCode());
+
+                writer.EndCompound();//TODO INCLUDE PROPERTIES
+
+                writer.EndList();
+            }
 
             writer.EndCompound();
 
@@ -308,6 +327,16 @@ public class Region : IRegion
 
                 if (indirectBiomePalette.Values.Length > 1)
                     writer.WriteArray("data", section.BiomeContainer.DataArray.storage);
+            }
+            else if (section.BiomeContainer.Palette is SingleValuePalette<BiomeCodec> singleValueBiomePalette)
+            {
+                writer.WriteListStart("palette", NbtTagType.String, 1);
+
+                var biome = singleValueBiomePalette.GetValueFromIndex(0);
+
+                writer.WriteString(biome.Name);
+
+                writer.EndList();
             }
 
             writer.EndCompound();

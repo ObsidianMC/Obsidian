@@ -4,26 +4,25 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
 {
     public override IPalette<IBlock> Palette { get; internal set; }
 
-    public bool IsEmpty => DataArray.storage.Length == 0;
+    public override bool IsEmpty => DataArray.storage.Length == 0;
 
-    internal override DataArray DataArray { get; private protected set; }
+    internal override DataArray? DataArray { get; private protected set; }
 
 
 #if CACHE_VALID_BLOCKS
     private readonly DirtyCache<short> validBlockCount;
 #endif
 
-    internal BlockStateContainer(byte bitsPerEntry = 4)
+    internal BlockStateContainer(byte bitsPerEntry = 0) : base(4, 8, 4096, ChunkData.PaletteFactory.DetermineBlockPalette)
     {
-        DataArray = new DataArray(bitsPerEntry, 4096);
-        Palette = bitsPerEntry.DetermineBlockPalette();
+        Palette = this.PaletteFactory(bitsPerEntry);
 
 #if CACHE_VALID_BLOCKS
         validBlockCount = new(GetNonAirBlocks);
 #endif
     }
 
-    private BlockStateContainer(IPalette<IBlock> palette, DataArray dataArray)
+    private BlockStateContainer(IPalette<IBlock> palette, DataArray? dataArray) : base(4, 8, 4096, ChunkData.PaletteFactory.DetermineBlockPalette)
     {
         Palette = palette;
         DataArray = dataArray;
@@ -38,20 +37,7 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
 #if CACHE_VALID_BLOCKS
         validBlockCount.SetDirty();
 #endif
-        var blockIndex = GetIndex(x, y, z);
-
-        int paletteId = Palette.GetOrAddId(blockState);
-
-        this.GrowDataArray();
-
-        DataArray[blockIndex] = paletteId;
-    }
-
-    public override IBlock Get(int x, int y, int z)
-    {
-        int storageId = DataArray[GetIndex(x, y, z)];
-
-        return Palette.GetValueFromIndex(storageId);
+        base.Set(x, y, z, blockState);
     }
 
     public override void WriteTo(INetStreamWriter writer)
@@ -63,27 +49,15 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
 #endif
 
         writer.WriteShort(validBlocks);
-        writer.WriteByte(BitsPerEntry);
 
-        Palette.WriteTo(writer);
-
-        writer.WriteLongArray(DataArray.storage);
-    }
-
-    public void Fill(IBlock block)
-    {
-#if CACHE_VALID_BLOCKS
-        validBlockCount.SetDirty();
-#endif
-        int index = Palette.GetOrAddId(block);
-        for (int i = 0; i < 16 * 16 * 16; i++)
-        {
-            DataArray[i] = index;
-        }
+        base.WriteTo(writer);
     }
 
     private short GetNonAirBlocks()
     {
+        if (this.Palette is SingleValuePalette<IBlock> singleValuePalette)
+            return singleValuePalette.Value.IsAir ? (short)0 : (short)this.MaxEntryCount;
+
         int validBlocksCount = 0;
 
         if (!Palette.TryGetId(BlocksRegistry.Air, out var indexOne))
@@ -94,7 +68,7 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
             goto TWO_INDEXES;
 
         // 1 1 1
-        for (int i = 0; i < 16 * 16 * 16; i++)
+        for (int i = 0; i < this.MaxEntryCount; i++)
         {
             int index = DataArray[i];
             if (index != indexOne && index != indexTwo && index != indexThree)
@@ -124,7 +98,7 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
 
         // 1 0 0
         ONE_INDEX:
-        for (int i = 0; i < 16 * 16 * 16; i++)
+        for (int i = 0; i < this.MaxEntryCount; i++)
         {
             int index = DataArray[i];
             if (index != indexOne)
@@ -134,7 +108,7 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
 
     // 1 1 0
     TWO_INDEXES:
-        for (int i = 0; i < 16 * 16 * 16; i++)
+        for (int i = 0; i < this.MaxEntryCount; i++)
         {
             int index = DataArray[i];
             if (index != indexOne && index != indexTwo)

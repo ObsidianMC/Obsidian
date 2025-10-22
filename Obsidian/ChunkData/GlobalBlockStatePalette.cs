@@ -1,7 +1,4 @@
-﻿using Obsidian.Net;
-using Obsidian.Registries;
-
-namespace Obsidian.ChunkData;
+﻿namespace Obsidian.ChunkData;
 
 public class GlobalBlockStatePalette : IPalette<IBlock>
 {
