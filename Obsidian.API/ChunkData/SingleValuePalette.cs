@@ -12,7 +12,7 @@ public abstract class SingleValuePalette<T> : IPalette<T>
 
     public int BitCount => 0;
 
-    public bool IsFull => true;
+    public bool IsFull => this.initialized;
 
     public abstract IPalette<T> Clone();
 

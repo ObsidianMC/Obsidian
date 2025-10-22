@@ -11,6 +11,7 @@ public sealed class BiomeContainer : DataContainer<BiomeCodec>
     internal BiomeContainer(byte bitsPerEntry = 0) : base(1, 3, 64, ChunkData.PaletteFactory.DetermineBiomePalette)
     {
         this.Palette = this.PaletteFactory(bitsPerEntry);
+        this.Palette.GetOrAddId(CodecRegistry.Biomes.Plains);
     }
 
     private BiomeContainer(IPalette<BiomeCodec> palette, DataArray dataArray) : base(1, 3, 64, ChunkData.PaletteFactory.DetermineBiomePalette)

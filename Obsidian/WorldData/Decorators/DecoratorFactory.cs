@@ -1,6 +1,8 @@
 ﻿using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.WorldData.Generators;
+using System.Diagnostics;
 using System.Linq.Expressions;
+using System.Text.Json;
 
 namespace Obsidian.WorldData.Decorators;
 
@@ -20,9 +22,9 @@ public static class DecoratorFactory
 
         foreach (var decorator in decorators)
         {
-            var name = decorator.Name.Replace("Decorator", string.Empty);
+            var name = JsonNamingPolicy.SnakeCaseLower.ConvertName(decorator.Name.Replace("Decorator", string.Empty));
 
-            if (CodecRegistry.TryGetBiome($"minecraft:{name.ToLower()}", out var biome))
+            if (CodecRegistry.TryGetBiome($"minecraft:{name}", out var biome))
             {
                 var ctor = decorator.GetConstructor(argumentCache);
 
@@ -32,6 +34,9 @@ public static class DecoratorFactory
 
                 decoratorFactory.TryAdd(biome.Id, lambda.Compile());
             }
+
+            if (name == "default")
+                Debugger.Break();
         }
     }
 

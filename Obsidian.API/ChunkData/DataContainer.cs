@@ -1,9 +1,11 @@
 ﻿using Obsidian.API.Utilities;
+using System.Threading;
 
 namespace Obsidian.API.ChunkData;
 
 public abstract class DataContainer<T>(byte minBitsPerEntry, byte maxBitsPerEntry, int maxEntryCount, Func<byte, IPalette<T>> paletteFactory)
 {
+    private readonly Lock dataLock = new();
     public virtual bool IsEmpty { get; }
     public byte BitsPerEntry => (byte)DataArray.BitsPerEntry;
 
@@ -46,25 +48,31 @@ public abstract class DataContainer<T>(byte minBitsPerEntry, byte maxBitsPerEntr
 
     public virtual void Set(int x, int y, int z, T value)
     {
-        var index = GetIndex(x, y, z);
+        lock (dataLock)
+        {
+            var index = GetIndex(x, y, z);
 
-        int paletteId = Palette.GetOrAddId(value);
+            int paletteId = Palette.GetOrAddId(value);
 
-        if (this.TryGrow(paletteId))
-            paletteId = Palette.GetOrAddId(value);
+            if (this.TryGrow(paletteId))
+                paletteId = Palette.GetOrAddId(value);
 
-        if (!this.IsSingleValued)
-            this.DataArray[index] = index;
+            if (!this.IsSingleValued)
+                this.DataArray[index] = paletteId;
+        }
     }
 
     public virtual T Get(int x, int y, int z)
     {
-        if (this.IsSingleValued)
-            return this.Palette.GetValueFromIndex(0);
+        lock (dataLock)
+        {
+            if (this.IsSingleValued)
+                return this.Palette.GetValueFromIndex(0);
 
-        int storageId = DataArray[GetIndex(x, y, z)];
+            int storageId = DataArray[GetIndex(x, y, z)];
 
-        return Palette.GetValueFromIndex(storageId);
+            return Palette.GetValueFromIndex(storageId);
+        }
     }
 
     public virtual void WriteTo(INetStreamWriter writer)
