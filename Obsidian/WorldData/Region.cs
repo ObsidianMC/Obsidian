@@ -325,8 +325,7 @@ public class Region : IRegion
 
                 writer.EndList();
 
-                if (indirectBiomePalette.Values.Length > 1)
-                    writer.WriteArray("data", section.BiomeContainer.DataArray.storage);
+                writer.WriteArray("data", section.BiomeContainer.DataArray.storage);
             }
             else if (section.BiomeContainer.Palette is SingleValuePalette<BiomeCodec> singleValueBiomePalette)
             {
