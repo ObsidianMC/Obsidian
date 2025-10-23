@@ -1,4 +1,5 @@
-﻿using Obsidian.API.Registry.Codecs.Biomes;
+﻿using Obsidian.API;
+using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.Blocks;
 using Obsidian.ChunkData;
 
@@ -268,7 +269,18 @@ public sealed class Chunk : IChunk
         return chunk;
     }
 
-    public void SetChunkStatus(ChunkGenStage status) => this.ChunkStatus = status;
+    public void SetChunkStatus(ChunkGenStage status)
+    {
+        this.ChunkStatus = status;
+
+        if (ChunkStatus == ChunkGenStage.full)
+        {
+            this.Heightmaps[HeightmapType.WorldSurfaceWG] = null;
+            this.Heightmaps[HeightmapType.OceanFloor] = null;
+            this.Heightmaps[HeightmapType.OceanFloorWG] = null;
+            this.Heightmaps[HeightmapType.MotionBlockingNoLeaves] = null;
+        }
+    }
 
     private static int SectionIndex(int y) => (y >> 4) + 4;
 }

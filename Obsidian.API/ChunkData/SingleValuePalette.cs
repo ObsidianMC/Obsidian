@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Registry.Codecs.Biomes;
+using System.Diagnostics;
 
 namespace Obsidian.API.ChunkData;
 
@@ -46,7 +47,9 @@ public abstract class SingleValuePalette<T> : IPalette<T>
 
     public void WriteTo(INetStreamWriter writer)
     {
-        writer.WriteVarInt(this.GetValueId(this.Value));
+        var value = this.GetValueId(this.Value);
+
+        writer.WriteVarInt(value);
     }
 
     protected abstract int GetValueId(T value);

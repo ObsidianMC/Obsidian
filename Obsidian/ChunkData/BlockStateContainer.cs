@@ -4,7 +4,7 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
 {
     public override IPalette<IBlock> Palette { get; internal set; }
 
-    public override bool IsEmpty => DataArray.storage.Length == 0;
+    public override bool IsEmpty => this.IsSingleValued ? !this.Palette.IsFull : DataArray.storage.Length == 0;
 
     internal override DataArray? DataArray { get; private protected set; }
 

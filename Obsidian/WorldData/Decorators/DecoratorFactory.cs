@@ -34,9 +34,6 @@ public static class DecoratorFactory
 
                 decoratorFactory.TryAdd(biome.Id, lambda.Compile());
             }
-
-            if (name == "default")
-                Debugger.Break();
         }
     }
 

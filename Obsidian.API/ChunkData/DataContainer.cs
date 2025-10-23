@@ -7,7 +7,7 @@ public abstract class DataContainer<T>(byte minBitsPerEntry, byte maxBitsPerEntr
 {
     private readonly Lock dataLock = new();
     public virtual bool IsEmpty { get; }
-    public byte BitsPerEntry => (byte)DataArray.BitsPerEntry;
+    public byte BitsPerEntry => (byte)this.Palette.BitCount;
 
     public byte MinBitsPerEntry { get; } = minBitsPerEntry;
     public byte MaxBitsPerEntry { get; } = maxBitsPerEntry;
