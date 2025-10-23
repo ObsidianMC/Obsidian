@@ -1,11 +1,12 @@
-﻿using Obsidian.API.Registry.Codecs.Biomes;
+﻿using Obsidian.API.Registries;
+using Obsidian.API.Registry.Codecs.Biomes;
 using System.Diagnostics;
 
 namespace Obsidian.API.ChunkData;
 
 public abstract class SingleValuePalette<T> : IPalette<T>
 {
-    private bool initialized;
+    protected bool initialized;
 
     public T Value { get; protected set; }
 
@@ -32,22 +33,25 @@ public abstract class SingleValuePalette<T> : IPalette<T>
         return -1;
     }
 
-    public T? GetValueFromIndex(int index) => this.Value;
+    public virtual T? GetValueFromIndex(int index) => this.Value;
+
     public bool TryGetId(T value, out int id)
     {
         var currentValueId = this.GetValueId(this.Value);
         var valueId = this.GetValueId(value);
 
         var isMatch = valueId == currentValueId;
-
         id = isMatch ? currentValueId : -1;
 
-        return valueId == currentValueId;
+        return isMatch;
     }
 
     public void WriteTo(INetStreamWriter writer)
     {
         var value = this.GetValueId(this.Value);
+
+        if (value == 4228)
+            Debugger.Break();
 
         writer.WriteVarInt(value);
     }
@@ -61,7 +65,7 @@ public sealed class SingleBlockValuePalette : SingleValuePalette<IBlock>
 
     public SingleBlockValuePalette(IBlock value)
     {
-        this.Value = value;
+        this.GetOrAddId(value);
     }
 
     public override IPalette<IBlock> Clone() => new SingleBlockValuePalette(this.Value);
@@ -74,7 +78,15 @@ public sealed class SingleBiomeValuePalette : SingleValuePalette<BiomeCodec>
 
     public SingleBiomeValuePalette(BiomeCodec value)
     {
-        this.Value = value;
+        this.GetOrAddId(value);
+    }
+
+    public override BiomeCodec? GetValueFromIndex(int index)
+    {
+        if (!this.initialized)
+            this.GetOrAddId(CodecRegistry.Biomes.Plains);//For some reason some biome containers aren't given default values.
+
+        return base.GetValueFromIndex(index);
     }
 
     public override IPalette<BiomeCodec> Clone() => new SingleBiomeValuePalette(this.Value);

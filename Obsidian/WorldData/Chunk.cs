@@ -273,12 +273,13 @@ public sealed class Chunk : IChunk
     {
         this.ChunkStatus = status;
 
-        if (ChunkStatus == ChunkGenStage.full)
+        if (this.ChunkStatus == ChunkGenStage.full)
         {
-            this.Heightmaps[HeightmapType.WorldSurfaceWG] = null;
-            this.Heightmaps[HeightmapType.OceanFloor] = null;
-            this.Heightmaps[HeightmapType.OceanFloorWG] = null;
-            this.Heightmaps[HeightmapType.MotionBlockingNoLeaves] = null;
+            // Free memory safely by removing optional maps
+            this.Heightmaps.Remove(HeightmapType.WorldSurfaceWG);
+            this.Heightmaps.Remove(HeightmapType.OceanFloor);
+            this.Heightmaps.Remove(HeightmapType.OceanFloorWG); // no-op if absent
+            this.Heightmaps.Remove(HeightmapType.MotionBlockingNoLeaves);
         }
     }
 

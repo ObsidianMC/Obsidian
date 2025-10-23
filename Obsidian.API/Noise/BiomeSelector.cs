@@ -7,7 +7,7 @@ namespace Obsidian.API.Noise;
 public class BiomeSelector : Module
 {
     // 3D: 5 heights, 4 temp, 3 humidity
-    private readonly BiomeCodec[,,] BiomeLookup = new BiomeCodec[5, 4, 3] {
+    private static readonly BiomeCodec[,,] BiomeLookup = new BiomeCodec[5, 4, 3] {
         {
             { CodecRegistry.Biomes.DeepFrozenOcean, CodecRegistry.Biomes.DeepFrozenOcean, CodecRegistry.Biomes.DeepFrozenOcean }, // deep ocean, frozen, low-med-high humidity
             { CodecRegistry.Biomes.DeepColdOcean, CodecRegistry.Biomes.DeepColdOcean, CodecRegistry.Biomes.DeepColdOcean }, // deep ocean, cold, low-med-high humidity

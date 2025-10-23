@@ -9,6 +9,7 @@ public static class PaletteFactory
         return bitsPerEntry switch
         {
             0 => new SingleBlockValuePalette(),
+            <= 3 and > 0 => new IndirectBlockPalette(4),
             >= 4 and <= 8 => new IndirectBlockPalette(bitsPerEntry),
             _ => new GlobalBlockStatePalette(BlocksRegistry.GlobalBitsPerBlocks)
         };

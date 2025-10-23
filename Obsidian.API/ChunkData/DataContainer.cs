@@ -1,25 +1,33 @@
 ﻿using Obsidian.API.Utilities;
+using System.Diagnostics;
 using System.Threading;
 
 namespace Obsidian.API.ChunkData;
 
-public abstract class DataContainer<T>(byte minBitsPerEntry, byte maxBitsPerEntry, int maxEntryCount, Func<byte, IPalette<T>> paletteFactory)
+public abstract class DataContainer<T>
 {
     private readonly Lock dataLock = new();
     public virtual bool IsEmpty { get; }
     public byte BitsPerEntry => (byte)this.Palette.BitCount;
 
-    public byte MinBitsPerEntry { get; } = minBitsPerEntry;
-    public byte MaxBitsPerEntry { get; } = maxBitsPerEntry;
-    public int MaxEntryCount { get; } = maxEntryCount;
-
-    public Func<byte, IPalette<T>> PaletteFactory { get; } = paletteFactory;
+    public byte MinBitsPerEntry { get; }
+    public byte MaxBitsPerEntry { get; }
+    public int MaxEntryCount { get; }
+    public Func<byte, IPalette<T>> PaletteFactory { get; }
 
     public bool IsSingleValued => this.Palette is SingleValuePalette<T>;
 
     public abstract IPalette<T> Palette { get; internal set; }
 
     internal abstract DataArray? DataArray { get; private protected set; }
+
+    public DataContainer(byte minBitsPerEntry, byte maxBitsPerEntry, int maxEntryCount, Func<byte, IPalette<T>> paletteFactory)
+    {
+        this.MinBitsPerEntry = minBitsPerEntry;
+        this.MaxBitsPerEntry = maxBitsPerEntry;
+        this.MaxEntryCount = maxEntryCount;
+        this.PaletteFactory = paletteFactory;
+    }
 
     public virtual int GetIndex(int x, int y, int z) => (y << this.BitsPerEntry | z) << this.BitsPerEntry | x;
 
@@ -37,6 +45,10 @@ public abstract class DataContainer<T>(byte minBitsPerEntry, byte maxBitsPerEntr
 
             return true;
         }
+
+        //This should never happen, but just in case
+        if (this.DataArray is null)
+            throw new UnreachableException("Data array in unintialized.");
 
         if (Palette.BitCount <= DataArray.BitsPerEntry)
             return false;

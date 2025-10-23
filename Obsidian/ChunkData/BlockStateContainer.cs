@@ -17,6 +17,9 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
     {
         Palette = this.PaletteFactory(bitsPerEntry);
 
+        if (!this.IsSingleValued)
+            this.DataArray = new(this.MinBitsPerEntry, this.MaxEntryCount);
+
 #if CACHE_VALID_BLOCKS
         validBlockCount = new(GetNonAirBlocks);
 #endif
@@ -58,63 +61,28 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
         if (this.Palette is SingleValuePalette<IBlock> singleValuePalette)
             return singleValuePalette.Value.IsAir ? (short)0 : (short)this.MaxEntryCount;
 
-        int validBlocksCount = 0;
-
-        if (!Palette.TryGetId(BlocksRegistry.Air, out var indexOne))
-            goto NO_AIR;
-        if (!Palette.TryGetId(BlocksRegistry.CaveAir, out var indexTwo))
-            goto NO_CAVE;
-        if (!Palette.TryGetId(BlocksRegistry.VoidAir, out var indexThree))
-            goto TWO_INDEXES;
-
-        // 1 1 1
-        for (int i = 0; i < this.MaxEntryCount; i++)
-        {
-            int index = DataArray[i];
-            if (index != indexOne && index != indexTwo && index != indexThree)
-                validBlocksCount++;
-        }
-        return (short)validBlocksCount;
-
-    // 0 ? ?
-    NO_AIR:
-        if (!Palette.TryGetId(BlocksRegistry.CaveAir, out indexOne))
-            goto NO_AIR_CAVE;
-        if (!Palette.TryGetId(BlocksRegistry.VoidAir, out indexTwo))
-            goto ONE_INDEX;
-        goto TWO_INDEXES;
-
-    // 1 0 ?
-    NO_CAVE:
-        if (!Palette.TryGetId(BlocksRegistry.VoidAir, out indexTwo))
-            goto ONE_INDEX;
-        goto TWO_INDEXES;
-
-    // 0 0 ?
-    NO_AIR_CAVE:
-        if (!Palette.TryGetId(BlocksRegistry.VoidAir, out indexOne))
+        var data = this.DataArray;
+        if (data is null)
             return 0;
-        // Fall through to ONE_INDEX
 
-        // 1 0 0
-        ONE_INDEX:
+        int airIndex = this.Palette.TryGetId(BlocksRegistry.Air, out var air) ? air : -1;
+        int caveAirIndex = this.Palette.TryGetId(BlocksRegistry.CaveAir, out air) ? air : -1;
+        int voidAirIndex = this.Palette.TryGetId(BlocksRegistry.VoidAir, out air) ? air : -1;
+
+        // If no air variants exist in the palette, then all entries are non-air.
+        if (airIndex < 0 && caveAirIndex < 0 && voidAirIndex < 0)
+            return (short)this.MaxEntryCount;
+
+        int count = 0;
+
         for (int i = 0; i < this.MaxEntryCount; i++)
         {
-            int index = DataArray[i];
-            if (index != indexOne)
-                validBlocksCount++;
+            int index = data[i];
+            if (index != airIndex && index != caveAirIndex && index != voidAirIndex)
+                count++;
         }
-        return (short)validBlocksCount;
 
-    // 1 1 0
-    TWO_INDEXES:
-        for (int i = 0; i < this.MaxEntryCount; i++)
-        {
-            int index = DataArray[i];
-            if (index != indexOne && index != indexTwo)
-                validBlocksCount++;
-        }
-        return (short)validBlocksCount;
+        return (short)count;
     }
 
     public override BlockStateContainer Clone() => new(Palette.Clone(), DataArray.Clone());

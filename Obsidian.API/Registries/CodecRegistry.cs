@@ -12,8 +12,11 @@ public static partial class CodecRegistry
     public static bool TryGetBiome(string resourceId, [MaybeNullWhen(false)] out BiomeCodec? codec) =>
         Biomes.All.TryGetValue(resourceId, out codec);
 
+    public static bool TryGetBiome(int registryId, [MaybeNullWhen(false)] out BiomeCodec? codec) =>
+       Biomes.ById.TryGetValue(registryId, out codec);
+
     public static BiomeCodec? GetBiome(int registryId) =>
-        Biomes.All.Values.FirstOrDefault(x => x.Id == registryId);
+        Biomes.ById.GetValueOrDefault(registryId);
 
     public static bool TryGetDimension(string resourceId, [MaybeNullWhen(false)] out DimensionCodec? codec) =>
         Dimensions.All.TryGetValue(resourceId, out codec);

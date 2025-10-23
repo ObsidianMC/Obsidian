@@ -186,14 +186,16 @@ public class Region : IRegion
             {
                 var blockStatesPalette = palleteArrayTag as NbtList;
 
-                int addedValueIndex = 0;
+                int paletteCount = 0;
                 foreach (var entry in blockStatesPalette!.Cast<NbtCompound>())
                 {
                     var id = entry.GetInt("Id");
-                    addedValueIndex = chunkSecPalette.GetOrAddId(BlocksRegistry.Get(id));//TODO PROCESS ADDED PROPERTIES TO GET CORRECT BLOCK STATE
+                    chunkSecPalette.GetOrAddId(BlocksRegistry.Get(id));//TODO PROCESS ADDED PROPERTIES TO GET CORRECT BLOCK STATE
+                    paletteCount++;
                 }
 
-                section.BlockStateContainer.TryGrow(addedValueIndex);
+                if (paletteCount > 1)
+                    section.BlockStateContainer.TryGrow(-1);
             }
 
             if (statesCompound.TryGetTag("data", out var dataArrayTag))
@@ -206,14 +208,18 @@ public class Region : IRegion
             if (biomesCompound!.TryGetTag<NbtList>("palette", out var biomesPalette))
             {
                 var biomePalette = section.BiomeContainer.Palette;
-                var addedValueIndex = 0;
+                var paletteCount = 0;
                 foreach (NbtTag<string> biome in biomesPalette!.Cast<NbtTag<string>>())
                 {
                     if (CodecRegistry.TryGetBiome(biome.Value, out var value))
-                        addedValueIndex = biomePalette.GetOrAddId(value);
+                    {
+                        biomePalette.GetOrAddId(value);
+                        paletteCount++;
+                    }
                 }
 
-                section.BiomeContainer.TryGrow(addedValueIndex);
+                if (paletteCount > 1)
+                    section.BiomeContainer.TryGrow(-1);
             }
 
             if (biomesCompound.TryGetTag("data", out var biomeDataArrayTag))
@@ -320,7 +326,7 @@ public class Region : IRegion
                 for (int i = 0; i < indirectBiomePalette.Count; i++)
                 {
                     var biome = CodecRegistry.GetBiome(span[i]);
-                    writer.WriteString(biome.Name);
+                    writer.WriteString(biome?.Name ?? "minecraft:plains");
                 }
 
                 writer.EndList();

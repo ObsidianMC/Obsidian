@@ -18,7 +18,9 @@ public sealed class IndirectBlockPalette : BaseIndirectPalette<IBlock>, IPalette
         if ((uint)index >= (uint)Count)
             throw new MissingPaletteEntryException(index);
 
-        return BlocksRegistry.Get(Values[index]);
+        var block = BlocksRegistry.Get(Values[index]);
+
+        return block is null ? throw new MissingPaletteEntryException(index) : block;
     }
 
     public override IPalette<IBlock> Clone()
@@ -47,7 +49,9 @@ public sealed class IndirectBiomePalette : BaseIndirectPalette<BiomeCodec>, IPal
         if ((uint)index >= (uint)Count)
             throw new MissingPaletteEntryException(index);
 
-        return CodecRegistry.GetBiome(Values[index]);
+        var biome = CodecRegistry.GetBiome(Values[index]);
+
+        return biome is null ? throw new MissingPaletteEntryException(index) : biome;
     }
 
     public override IPalette<BiomeCodec> Clone()
