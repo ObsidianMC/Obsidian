@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.AspNetCore.Connections.Features;
+using Microsoft.Extensions.Logging;
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.ChunkData;
 using Obsidian.Nbt;
@@ -180,22 +181,19 @@ public class Region : IRegion
 
             var section = chunk.Sections[secY + 4];
 
-            var chunkSecPalette = section.BlockStateContainer.Palette;
-
             if (statesCompound!.TryGetTag("palette", out var palleteArrayTag))
             {
                 var blockStatesPalette = palleteArrayTag as NbtList;
 
-                int paletteCount = 0;
                 foreach (var entry in blockStatesPalette!.Cast<NbtCompound>())
                 {
                     var id = entry.GetInt("Id");
-                    chunkSecPalette.GetOrAddId(BlocksRegistry.Get(id));//TODO PROCESS ADDED PROPERTIES TO GET CORRECT BLOCK STATE
-                    paletteCount++;
+                    var block = BlocksRegistry.Get(id);
+                    section.BlockStateContainer.Add(block);//TODO PROCESS ADDED PROPERTIES TO GET CORRECT BLOCK STATE
                 }
 
-                if (paletteCount > 1)
-                    section.BlockStateContainer.TryGrow(-1);
+                if (section.BlockStateContainer.Palette.Count == 1 && !section.BlockStateContainer.IsSingleValued)
+                    throw new UnreachableException("Chunk palette has only one entry but chunk container is not single valued.");
             }
 
             if (statesCompound.TryGetTag("data", out var dataArrayTag))
@@ -204,30 +202,27 @@ public class Region : IRegion
                 section.BlockStateContainer.DataArray.storage = data!.GetArray();
             }
 
-            var biomesCompound = sectionCompound["biomes"] as NbtCompound;
-            if (biomesCompound!.TryGetTag<NbtList>("palette", out var biomesPalette))
+            if (sectionCompound.TryGetTag<NbtCompound>("biomes", out var biomesCompound))
             {
-                var biomePalette = section.BiomeContainer.Palette;
-                var paletteCount = 0;
-                foreach (NbtTag<string> biome in biomesPalette!.Cast<NbtTag<string>>())
+                if (biomesCompound.TryGetTag<NbtList>("palette", out var biomesPalette))
                 {
-                    if (CodecRegistry.TryGetBiome(biome.Value, out var value))
+                    foreach (NbtTag<string> biome in biomesPalette!.Cast<NbtTag<string>>())
                     {
-                        biomePalette.GetOrAddId(value);
-                        paletteCount++;
+                        if (CodecRegistry.TryGetBiome(biome.Value, out var value))
+                        {
+                            section.BiomeContainer.Add(value);
+                        }
                     }
+
+                    if(section.BiomeContainer.Palette.Count == 1 && !section.BiomeContainer.IsSingleValued)
+                        throw new UnreachableException("Biome palette has only one entry but biome container is not single valued.");
                 }
 
-                if (paletteCount > 1)
-                    section.BiomeContainer.TryGrow(-1);
+                if (biomesCompound.TryGetTag<NbtArray<long>>("data", out var data))
+                {
+                    section.BiomeContainer.DataArray.storage = data!.GetArray();
+                }
             }
-
-            if (biomesCompound.TryGetTag("data", out var biomeDataArrayTag))
-            {
-                var data = biomeDataArrayTag as NbtArray<long>;
-                section.BiomeContainer.DataArray.storage = data!.GetArray();
-            }
-
 
             if (sectionCompound.TryGetTag("SkyLight", out var skyLightTag))
             {
@@ -298,7 +293,7 @@ public class Region : IRegion
 
                 writer.WriteArray("data", section.BlockStateContainer.DataArray.storage);
             }
-            else if (section.BlockStateContainer.Palette is SingleValuePalette<IBlock> singleValueBlockPalette)
+            else if (section.BlockStateContainer.Palette is SingleValuePalette<IBlock> singleValueBlockPalette && singleValueBlockPalette.IsFull)
             {
                 writer.WriteListStart("palette", NbtTagType.Compound, 1);
 
@@ -316,41 +311,45 @@ public class Region : IRegion
 
             writer.EndCompound();
 
-            writer.WriteCompoundStart("biomes");
-
-            if (section.BiomeContainer.Palette is BaseIndirectPalette<BiomeCodec> indirectBiomePalette)
+            if (section.BiomeContainer.Palette.Count >= 1)
             {
-                writer.WriteListStart("palette", NbtTagType.String, indirectBiomePalette.Count);
+                writer.WriteCompoundStart("biomes");
 
-                Span<int> span = indirectBiomePalette.Values;
-                for (int i = 0; i < indirectBiomePalette.Count; i++)
+                if (section.BiomeContainer.Palette is BaseIndirectPalette<BiomeCodec> indirectBiomePalette)
                 {
-                    var biome = CodecRegistry.GetBiome(span[i]);
-                    writer.WriteString(biome?.Name ?? "minecraft:plains");
+                    writer.WriteListStart("palette", NbtTagType.String, indirectBiomePalette.Count);
+
+                    Span<int> span = indirectBiomePalette.Values;
+                    for (int i = 0; i < indirectBiomePalette.Count; i++)
+                    {
+                        var biome = CodecRegistry.GetBiome(span[i]);
+                        writer.WriteString(biome?.Name);
+                    }
+
+                    writer.EndList();
+
+                    writer.WriteArray("data", section.BiomeContainer.DataArray.storage);
+                }
+                else if (section.BiomeContainer.Palette is SingleValuePalette<BiomeCodec> singleValueBiomePalette && singleValueBiomePalette.IsFull)
+                {
+                    writer.WriteListStart("palette", NbtTagType.String, 1);
+
+                    var biome = singleValueBiomePalette.GetValueFromIndex(0);
+
+                    writer.WriteString(biome.Name);
+
+                    writer.EndList();
                 }
 
-                writer.EndList();
-
-                writer.WriteArray("data", section.BiomeContainer.DataArray.storage);
+                writer.EndCompound();
             }
-            else if (section.BiomeContainer.Palette is SingleValuePalette<BiomeCodec> singleValueBiomePalette)
-            {
-                writer.WriteListStart("palette", NbtTagType.String, 1);
-
-                var biome = singleValueBiomePalette.GetValueFromIndex(0);
-
-                writer.WriteString(biome.Name);
-
-                writer.EndList();
-            }
-
-            writer.EndCompound();
 
             writer.WriteByte("Y", (byte)section.YBase);
             writer.WriteArray("SkyLight", section.SkyLightArray.ToArray());
             writer.WriteArray("BlockLight", section.BlockLightArray.ToArray());
 
             writer.EndCompound();
+
         }
         writer.EndList();
 

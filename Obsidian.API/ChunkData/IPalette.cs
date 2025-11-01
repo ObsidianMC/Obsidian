@@ -5,6 +5,8 @@ public interface IPalette<T>
     public int BitCount { get; }
     public bool IsFull { get; }
 
+    public bool ShouldGrow { get; }
+
     public bool TryGetId(T value, out int id);
     public int GetOrAddId(T value);
     public T? GetValueFromIndex(int index);

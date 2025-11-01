@@ -6,20 +6,13 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
 
     public override bool IsEmpty => this.IsSingleValued ? !this.Palette.IsFull : DataArray.storage.Length == 0;
 
-    internal override DataArray? DataArray { get; private protected set; }
-
 
 #if CACHE_VALID_BLOCKS
     private readonly DirtyCache<short> validBlockCount;
 #endif
 
-    internal BlockStateContainer(byte bitsPerEntry = 0) : base(4, 8, 4096, ChunkData.PaletteFactory.DetermineBlockPalette)
+    internal BlockStateContainer(byte bitsPerEntry = 0) : base(bitsPerEntry, 4, 8, 4096, ChunkData.PaletteFactory.DetermineBlockPalette)
     {
-        Palette = this.PaletteFactory(bitsPerEntry);
-
-        if (!this.IsSingleValued)
-            this.DataArray = new(this.MinBitsPerEntry, this.MaxEntryCount);
-
 #if CACHE_VALID_BLOCKS
         validBlockCount = new(GetNonAirBlocks);
 #endif

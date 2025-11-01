@@ -10,27 +10,33 @@ public abstract class SingleValuePalette<T> : IPalette<T>
 
     public T Value { get; protected set; }
 
-    public int Count => 1;
+    public int Count => this.IsFull ? 1 : 0;
 
     public int BitCount => 0;
 
     public bool IsFull => this.initialized;
 
+    public bool ShouldGrow { get; private set; }
+
     public abstract IPalette<T> Clone();
 
     public int GetOrAddId(T value)
     {
+        var valueId = this.GetValueId(value);
         if (!this.initialized)
         {
             this.initialized = true;
             this.Value = value;
+
+            return valueId;
         }
 
         if (this.TryGetId(value, out var id))
             return id;
 
+        this.ShouldGrow = true;
         //Returns -1 signifying that the palette needs to grow.
-        return -1;
+        return valueId;
     }
 
     public virtual T? GetValueFromIndex(int index) => this.Value;
@@ -49,9 +55,6 @@ public abstract class SingleValuePalette<T> : IPalette<T>
     public void WriteTo(INetStreamWriter writer)
     {
         var value = this.GetValueId(this.Value);
-
-        if (value == 4228)
-            Debugger.Break();
 
         writer.WriteVarInt(value);
     }
@@ -79,14 +82,6 @@ public sealed class SingleBiomeValuePalette : SingleValuePalette<BiomeCodec>
     public SingleBiomeValuePalette(BiomeCodec value)
     {
         this.GetOrAddId(value);
-    }
-
-    public override BiomeCodec? GetValueFromIndex(int index)
-    {
-        if (!this.initialized)
-            this.GetOrAddId(CodecRegistry.Biomes.Plains);//For some reason some biome containers aren't given default values.
-
-        return base.GetValueFromIndex(index);
     }
 
     public override IPalette<BiomeCodec> Clone() => new SingleBiomeValuePalette(this.Value);
