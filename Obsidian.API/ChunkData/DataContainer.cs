@@ -1,6 +1,6 @@
-﻿using Obsidian.API.Crafting.Builders.Interfaces;
-using Obsidian.API.Utilities;
+﻿using Obsidian.API.Utilities;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace Obsidian.API.ChunkData;
@@ -9,13 +9,16 @@ public abstract class DataContainer<T>(byte minBitsPerEntry, byte maxBitsPerEntr
 {
     private readonly Lock dataLock = new();
     public virtual bool IsEmpty { get; }
+
     public byte BitsPerEntry => (byte)this.Palette.BitCount;
 
     public byte MinBitsPerEntry { get; } = minBitsPerEntry;
     public byte MaxBitsPerEntry { get; } = maxBitsPerEntry;
     public int MaxEntryCount { get; } = maxEntryCount;
+
     public Func<byte, IPalette<T>> PaletteFactory { get; } = paletteFactory;
 
+    [MemberNotNullWhen(false, nameof(DataArray))]
     public bool IsSingleValued => this.Palette is SingleValuePalette<T>;
 
     public abstract IPalette<T> Palette { get; internal set; }

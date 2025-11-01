@@ -78,7 +78,7 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
         return (short)count;
     }
 
-    public override BlockStateContainer Clone() => new(Palette.Clone(), DataArray.Clone());
+    public override BlockStateContainer Clone() => new(this.Palette.Clone(), this.IsSingleValued ? null : this.DataArray.Clone());
 
     public override int GetIndex(int x, int y, int z) => (y << 4 | z) << 4 | x;
 }

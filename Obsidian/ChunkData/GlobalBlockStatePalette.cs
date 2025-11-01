@@ -8,7 +8,7 @@ public class GlobalBlockStatePalette : IPalette<IBlock>
 
     public bool IsFull => false;
 
-    public bool ShouldGrow => throw new NotImplementedException();
+    public bool ShouldGrow => false;
 
     public GlobalBlockStatePalette(int bitCount)
     {

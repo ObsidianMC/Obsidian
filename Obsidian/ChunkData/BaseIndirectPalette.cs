@@ -9,7 +9,7 @@ public abstract class BaseIndirectPalette<T> : IPalette<T>
     public int Count { get; protected set; }
     public bool IsFull => Count == Values.Length;
 
-    public bool ShouldGrow => throw new NotImplementedException();
+    public bool ShouldGrow => false;
 
     public BaseIndirectPalette(byte bitCount)
     {

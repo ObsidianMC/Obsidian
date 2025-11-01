@@ -9,7 +9,7 @@ public class GlobalBiomePalette : IPalette<BiomeCodec>
     public int Count => throw new NotSupportedException();
     public bool IsFull => false;
 
-    public bool ShouldGrow => throw new NotImplementedException();
+    public bool ShouldGrow => false;
 
     public GlobalBiomePalette(int bitCount)
     {

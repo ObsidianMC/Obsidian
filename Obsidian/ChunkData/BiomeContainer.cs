@@ -14,7 +14,7 @@ public sealed class BiomeContainer : DataContainer<BiomeCodec>
         DataArray = dataArray;
     }
 
-    public override BiomeContainer Clone() => new(Palette.Clone(), this.IsSingleValued ? null : DataArray!.Clone());
+    public override BiomeContainer Clone() => new(this.Palette.Clone(), this.IsSingleValued ? null : this.DataArray.Clone());
 
     public override int GetIndex(int x, int y, int z) => (y << 2 | z) << 2 | x;
 }
