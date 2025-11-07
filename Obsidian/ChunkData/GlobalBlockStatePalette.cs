@@ -1,7 +1,4 @@
-﻿using Obsidian.Net;
-using Obsidian.Registries;
-
-namespace Obsidian.ChunkData;
+﻿namespace Obsidian.ChunkData;
 
 public class GlobalBlockStatePalette : IPalette<IBlock>
 {
@@ -10,6 +7,8 @@ public class GlobalBlockStatePalette : IPalette<IBlock>
     public int Count => throw new NotSupportedException();
 
     public bool IsFull => false;
+
+    public bool ShouldGrow => false;
 
     public GlobalBlockStatePalette(int bitCount)
     {

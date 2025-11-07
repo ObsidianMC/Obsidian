@@ -1,11 +1,12 @@
-﻿using Obsidian.WorldData.Features.Flora;
+﻿using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.WorldData.Features.Flora;
 using Obsidian.WorldData.Generators;
 
 namespace Obsidian.WorldData.Decorators;
 
 public class SunflowerPlainsDecorator : BaseDecorator
 {
-    public SunflowerPlainsDecorator(Biome biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
+    public SunflowerPlainsDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
         Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(PoppyFlora), 2, 9));
         Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(OxeyeDaisyFlora), 2, 9));

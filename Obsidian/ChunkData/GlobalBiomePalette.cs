@@ -1,28 +1,32 @@
-﻿namespace Obsidian.ChunkData;
+﻿using Obsidian.API.Registry.Codecs.Biomes;
 
-public class GlobalBiomePalette : IPalette<Biome>
+namespace Obsidian.ChunkData;
+
+public class GlobalBiomePalette : IPalette<BiomeCodec>
 {
     public int[] Values => throw new NotSupportedException();
     public int BitCount { get; }
     public int Count => throw new NotSupportedException();
     public bool IsFull => false;
 
+    public bool ShouldGrow => false;
+
     public GlobalBiomePalette(int bitCount)
     {
         this.BitCount = bitCount;
     }
 
-    public bool TryGetId(Biome biome, out int id)
+    public bool TryGetId(BiomeCodec biome, out int id)
     {
-        id = (int)biome;
+        id = biome.Id;
         return true;
     }
 
-    public int GetOrAddId(Biome biome) => (int)biome;
+    public int GetOrAddId(BiomeCodec biome) => biome.Id;
 
-    public Biome GetValueFromIndex(int index) => (Biome)index;
+    public BiomeCodec? GetValueFromIndex(int index) => CodecRegistry.GetBiome(index);
 
-    public IPalette<Biome> Clone() => this;
+    public IPalette<BiomeCodec> Clone() => this;
 
     public void WriteTo(INetStreamWriter writer)
     {

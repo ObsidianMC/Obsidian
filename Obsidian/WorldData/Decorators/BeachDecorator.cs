@@ -1,13 +1,10 @@
-﻿using Obsidian.WorldData.Generators;
+﻿using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.WorldData.Generators;
 
 namespace Obsidian.WorldData.Decorators;
 
-public class BeachDecorator : BaseDecorator
+public class BeachDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper) : BaseDecorator(biome, chunk, surfacePos, helper)
 {
-    public BeachDecorator(Biome biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
-    {
-    }
-
     public override void Decorate()
     {
         if (Position.Y < Noise.WaterLevel)

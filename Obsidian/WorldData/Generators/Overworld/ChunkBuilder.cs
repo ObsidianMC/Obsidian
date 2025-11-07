@@ -1,4 +1,5 @@
-﻿using Obsidian.ChunkData;
+﻿using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.ChunkData;
 using Obsidian.Registries;
 
 namespace Obsidian.WorldData.Generators.Overworld;
@@ -53,7 +54,18 @@ internal static class ChunkBuilder
         BlocksRegistry.DeepslateDiamondOre,
     ];
 
-    private static Biome[] EmeraldBiomes => [Biome.WindsweptHills, Biome.WindsweptGravellyHills, Biome.Meadow, Biome.Grove, Biome.SnowySlopes, Biome.FrozenPeaks, Biome.JaggedPeaks, Biome.StonyPeaks];
+    private static BiomeCodec[] EmeraldBiomes => 
+    [
+        CodecRegistry.Biomes.WindsweptHills, 
+        CodecRegistry.Biomes.WindsweptGravellyHills, 
+        CodecRegistry.Biomes.Meadow, 
+        CodecRegistry.Biomes.Grove, 
+        CodecRegistry.Biomes.SnowySlopes, 
+        CodecRegistry.Biomes.FrozenPeaks, 
+        CodecRegistry.Biomes.JaggedPeaks, 
+        CodecRegistry.Biomes.StonyPeaks
+    ];
+
     private static ReadOnlySpan<OreType> OreTypes => [OreType.Coal, OreType.Iron, OreType.Copper, OreType.Gold, OreType.Lapis, OreType.Redstone, OreType.Emerald, OreType.Diamond];
 
     internal enum OreType : int
@@ -70,7 +82,6 @@ internal static class ChunkBuilder
 
     internal static void Biomes(GenHelper helper, IChunk chunk)
     {
-
         for (int x = 0; x < 16; x++)
         {
             for (int z = 0; z < 16; z++)
@@ -81,7 +92,7 @@ internal static class ChunkBuilder
                 // Determine Biome
                 if (x % 4 == 0 && z % 4 == 0) // Biomes are in 4x4x4 blocks. Do a 2D array for now and just copy it vertically.
                 {
-                    var biome = (Biome)helper.Noise.Biome.GetValue(worldX, 0, worldZ);
+                    var biome = CodecRegistry.GetBiome((int)helper.Noise.Biome.GetValue(worldX, 0, worldZ));
                     for (int y = -64; y < 320; y += 4)
                     {
                         chunk.SetBiome(x, y, z, biome);

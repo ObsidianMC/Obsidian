@@ -1,10 +1,12 @@
-﻿namespace Obsidian.API.ChunkData;
+﻿using Obsidian.API.Registry.Codecs.Biomes;
+
+namespace Obsidian.API.ChunkData;
 public interface IChunkSection
 {
     public int? YBase { get; }
 
     public DataContainer<IBlock> BlockStateContainer { get; }
-    public DataContainer<Biome> BiomeContainer { get; }
+    public DataContainer<BiomeCodec> BiomeContainer { get; }
 
     public bool HasSkyLight { get;  }
     public ReadOnlyMemory<byte> SkyLightArray { get; }
@@ -17,14 +19,14 @@ public interface IChunkSection
     public IBlock GetBlock(Vector position);
     public IBlock GetBlock(int x, int y, int z);
 
-    public Biome GetBiome(Vector position);
-    public Biome GetBiome(int x, int y, int z);
+    public BiomeCodec GetBiome(Vector position);
+    public BiomeCodec GetBiome(int x, int y, int z);
 
     public void SetBlock(Vector position, IBlock block);
     public void SetBlock(int x, int y, int z, IBlock block);
 
-    public void SetBiome(Vector position, Biome biome);
-    public void SetBiome(int x, int y, int z, Biome biome);
+    public void SetBiome(Vector position, BiomeCodec biome);
+    public void SetBiome(int x, int y, int z, BiomeCodec biome);
 
     public void SetLightLevel(Vector position, LightType lt, int level);
     public void SetLightLevel(int x, int y, int z, LightType lt, int level);

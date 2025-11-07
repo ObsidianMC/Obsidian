@@ -17,10 +17,7 @@ public sealed class Heightmap
         this.chunk = chunk;
         data = new DataArray(9, 256);
 
-        if (type == HeightmapType.MotionBlocking)
-            Predicate = (block) => !block.IsAir || !block.IsLiquid;
-        else
-            Predicate = _ => false;
+        Predicate = type == HeightmapType.MotionBlocking ? ((block) => !block.IsAir || !block.IsLiquid) : (_ => false);
     }
 
     private Heightmap(HeightmapType type, IChunk chunk, DataArray data)
@@ -29,10 +26,7 @@ public sealed class Heightmap
         this.chunk = chunk;
         this.data = data;
 
-        if (type == HeightmapType.MotionBlocking)
-            Predicate = (block) => !block.IsAir || !block.IsLiquid;
-        else
-            Predicate = _ => false;
+        Predicate = type == HeightmapType.MotionBlocking ? ((block) => !block.IsAir || !block.IsLiquid) : (_ => false);
     }
 
     public bool Update(int x, int y, int z, IBlock blockState)

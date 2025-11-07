@@ -1,11 +1,12 @@
-﻿using Obsidian.WorldData.Features.Trees;
+﻿using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.WorldData.Features.Trees;
 using Obsidian.WorldData.Generators;
 
 namespace Obsidian.WorldData.Decorators;
 
 public class MushroomFieldsDecorator : BaseDecorator
 {
-    public MushroomFieldsDecorator(Biome biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
+    public MushroomFieldsDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, typeof(OakTree)));
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, typeof(AcaciaTree)));

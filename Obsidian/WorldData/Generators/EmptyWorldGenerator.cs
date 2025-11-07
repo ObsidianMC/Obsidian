@@ -26,8 +26,8 @@ public class EmptyWorldGenerator : IWorldGenerator
                 {
                     for (int y = -64; y < 320; y += 4)
                     {
-                        spawn.SetBiome(x, y, z, Biome.Plains);
-                        empty.SetBiome(x, y, z, Biome.TheVoid);
+                        spawn.SetBiome(x, y, z, CodecRegistry.Biomes.Plains);
+                        empty.SetBiome(x, y, z, CodecRegistry.Biomes.TheVoid);
                     }
                 }
             }

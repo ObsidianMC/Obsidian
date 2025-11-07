@@ -1,4 +1,5 @@
-﻿using Obsidian.WorldData.Decorators;
+﻿using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.WorldData.Decorators;
 using SharpNoise.Modules;
 
 namespace Obsidian.WorldData.Generators;
@@ -9,29 +10,29 @@ public sealed class IslandGenerator : IWorldGenerator
     private GenHelper? helper;
     private Module? noiseGenerator;
     private Random? r;
-    private static readonly Biome[] biomes = [
-        Biome.Badlands,
-        Biome.BambooJungle,
-        Biome.BirchForest,
-        Biome.DarkForest,
-        Biome.Desert,
-        Biome.ErodedBadlands,
-        Biome.FlowerForest,
-        Biome.Forest,
-        Biome.FrozenPeaks,
-        Biome.Grove,
-        Biome.Jungle,
-        Biome.MushroomFields,
-        Biome.OldGrowthBirchForest,
-        Biome.OldGrowthSpruceTaiga,
-        Biome.Plains,
-        Biome.Savanna,
-        Biome.SnowySlopes,
-        Biome.SnowyTaiga,
-        Biome.StonyPeaks,
-        Biome.SunflowerPlains,
-        Biome.Taiga,
-        Biome.WoodedBadlands
+    private static readonly BiomeCodec[] biomes = [
+        CodecRegistry.Biomes.Badlands,
+        CodecRegistry.Biomes.BambooJungle,
+        CodecRegistry.Biomes.BirchForest,
+        CodecRegistry.Biomes.DarkForest,
+        CodecRegistry.Biomes.Desert,
+        CodecRegistry.Biomes.ErodedBadlands,
+        CodecRegistry.Biomes.FlowerForest,
+        CodecRegistry.Biomes.Forest,
+        CodecRegistry.Biomes.FrozenPeaks,
+        CodecRegistry.Biomes.Grove,
+        CodecRegistry.Biomes.Jungle,
+        CodecRegistry.Biomes.MushroomFields,
+        CodecRegistry.Biomes.OldGrowthBirchForest,
+        CodecRegistry.Biomes.OldGrowthSpruceTaiga,
+        CodecRegistry.Biomes.Plains,
+        CodecRegistry.Biomes.Savanna,
+        CodecRegistry.Biomes.SnowySlopes,
+        CodecRegistry.Biomes.SnowyTaiga,
+        CodecRegistry.Biomes.StonyPeaks,
+        CodecRegistry.Biomes.SunflowerPlains,
+        CodecRegistry.Biomes.Taiga,
+        CodecRegistry.Biomes.WoodedBadlands
     ];
     private static readonly IBlock[] hangingBlocks =
     [
@@ -89,7 +90,7 @@ public sealed class IslandGenerator : IWorldGenerator
                     {
                         if (bx % 4 == 0 && bz % 4 == 0 & y % 4 == 0)
                         {
-                            chunk.SetBiome(bx, y, bz, Biome.StonyShore);
+                            chunk.SetBiome(bx, y, bz, CodecRegistry.Biomes.StonyShore);
                         }
                     }
                 }

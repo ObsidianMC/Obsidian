@@ -221,15 +221,7 @@ public partial class Extensions
             builder.Append("} };").Line();
         }
 
-        builder.Line().Statement($"public static FrozenDictionary<string, {codecType}> All {{ get; }} = new Dictionary<string, {codecType}>");
-
-        foreach (var name in codecs.Select(x => x.Name))
-        {
-            var propertyName = name.RemoveNamespace().ToPascalCase();
-            builder.Line($"{{ \"{name}\", {propertyName} }},");
-        }
-
-        builder.EndScope(".ToFrozenDictionary()", true).Line();
+        GenerateCodecDictionaries(builder, codecs, codecType);
 
         builder.EndScope();
     }
@@ -259,6 +251,13 @@ public partial class Extensions
             builder.Append("} };").Line();
         }
 
+        GenerateCodecDictionaries(builder, codecs, codecType);
+
+        builder.EndScope();
+    }
+
+    private static void GenerateCodecDictionaries(CodeBuilder builder, Codec[] codecs, string codecType)
+    {
         builder.Line().Statement($"public static FrozenDictionary<string, {codecType}> All {{ get; }} = new Dictionary<string, {codecType}>");
 
         foreach (var name in codecs.Select(x => x.Name))
@@ -269,6 +268,14 @@ public partial class Extensions
 
         builder.EndScope(".ToFrozenDictionary()", true).Line();
 
-        builder.EndScope();
+        builder.Line().Statement($"public static FrozenDictionary<int, {codecType}> ById {{ get; }} = new Dictionary<int, {codecType}>");
+
+        foreach (var (registryId, name) in codecs.Select(x => (x.RegistryId, x.Name)))
+        {
+            var propertyName = name.RemoveNamespace().ToPascalCase();
+            builder.Line($"{{ {registryId}, {propertyName} }},");
+        }
+
+        builder.EndScope(".ToFrozenDictionary()", true).Line();
     }
 }

@@ -57,7 +57,7 @@ public static class OverworldDecorator
             {
                 int y = chunk.Heightmaps[HeightmapType.WorldSurfaceWG].GetHeight(x, z);
                 var chunkPos = new Vector(x, y, z);
-                var biome = (Biome)helper.Noise.Biome.GetValue((chunk.X << 4) + x, y, (chunk.Z << 4) + z);
+                var biome = CodecRegistry.GetBiome((int)helper.Noise.Biome.GetValue((chunk.X << 4) + x, y, (chunk.Z << 4) + z));
                 var decorator = DecoratorFactory.GetDecorator(biome, chunk, chunkPos, helper);
 
                 decorator.Decorate();

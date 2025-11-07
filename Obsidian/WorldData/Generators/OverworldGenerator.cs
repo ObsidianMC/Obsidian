@@ -59,6 +59,7 @@ public sealed class OverworldGenerator : IWorldGenerator
         }
 
         chunk.SetChunkStatus(ChunkGenStage.full);
+
         return chunk;
     }
 

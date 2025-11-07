@@ -1,4 +1,6 @@
-﻿using Obsidian.Blocks;
+﻿using Obsidian.API;
+using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.Blocks;
 using Obsidian.ChunkData;
 
 namespace Obsidian.WorldData;
@@ -40,10 +42,8 @@ public sealed class Chunk : IChunk
         Sections = new ChunkSection[24];
         for (int i = 0; i < Sections.Length; i++)
         {
-            Sections[i] = new ChunkSection(4, yBase: i - 4);
+            Sections[i] = new ChunkSection(yBase: i - 4);
         }
-
-
     }
 
     private Chunk(int x, int z, IChunkSection[] sections, Dictionary<HeightmapType, Heightmap> heightmaps)
@@ -66,7 +66,7 @@ public sealed class Chunk : IChunk
         return Sections[i].GetBlock(x, y, z);
     }
 
-    public Biome GetBiome(int x, int y, int z)
+    public BiomeCodec GetBiome(int x, int y, int z)
     {
         var i = SectionIndex(y);
 
@@ -77,7 +77,7 @@ public sealed class Chunk : IChunk
         return Sections[i].GetBiome(x, y, z);
     }
 
-    public void SetBiome(int x, int y, int z, Biome biome)
+    public void SetBiome(int x, int y, int z, BiomeCodec biome)
     {
         int i = SectionIndex(y);
 
@@ -269,7 +269,19 @@ public sealed class Chunk : IChunk
         return chunk;
     }
 
-    public void SetChunkStatus(ChunkGenStage status) => this.ChunkStatus = status;
+    public void SetChunkStatus(ChunkGenStage status)
+    {
+        this.ChunkStatus = status;
+
+        if (this.ChunkStatus == ChunkGenStage.full)
+        {
+            // Free memory safely by removing optional maps
+            this.Heightmaps.Remove(HeightmapType.WorldSurfaceWG);
+            this.Heightmaps.Remove(HeightmapType.OceanFloor);
+            this.Heightmaps.Remove(HeightmapType.OceanFloorWG); // no-op if absent
+            this.Heightmaps.Remove(HeightmapType.MotionBlockingNoLeaves);
+        }
+    }
 
     private static int SectionIndex(int y) => (y >> 4) + 4;
 }
