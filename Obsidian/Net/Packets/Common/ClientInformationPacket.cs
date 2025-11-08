@@ -1,5 +1,4 @@
-﻿using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
+﻿using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Common;
 public partial record class ClientInformationPacket
