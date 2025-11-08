@@ -21,7 +21,7 @@ public static class ServerConstants
     }
 #endif
 
-    public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_21_8;
+    public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_21_10;
 
     public static readonly string ProtocolDescription = DefaultProtocol.GetDescription();
 
