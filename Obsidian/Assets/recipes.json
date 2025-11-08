@@ -97,7 +97,7 @@
     "group": "hanging_sign",
     "key": {
       "#": "minecraft:stripped_acacia_log",
-      "X": "minecraft:chain"
+      "X": "minecraft:iron_chain"
     },
     "pattern": [
       "X X",
@@ -134,6 +134,23 @@
     "result": {
       "count": 1,
       "id": "minecraft:acacia_pressure_plate"
+    }
+  },
+  "acacia_shelf": {
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "group": "shelf",
+    "key": {
+      "#": "minecraft:stripped_acacia_log"
+    },
+    "pattern": [
+      "###",
+      "   ",
+      "###"
+    ],
+    "result": {
+      "count": 6,
+      "id": "minecraft:acacia_shelf"
     }
   },
   "acacia_sign": {
@@ -519,7 +536,7 @@
     "group": "hanging_sign",
     "key": {
       "#": "minecraft:stripped_bamboo_block",
-      "X": "minecraft:chain"
+      "X": "minecraft:iron_chain"
     },
     "pattern": [
       "X X",
@@ -617,6 +634,23 @@
     "result": {
       "count": 1,
       "id": "minecraft:bamboo_raft"
+    }
+  },
+  "bamboo_shelf": {
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "group": "shelf",
+    "key": {
+      "#": "minecraft:stripped_bamboo_block"
+    },
+    "pattern": [
+      "###",
+      "   ",
+      "###"
+    ],
+    "result": {
+      "count": 6,
+      "id": "minecraft:bamboo_shelf"
     }
   },
   "bamboo_sign": {
@@ -856,7 +890,7 @@
     "group": "hanging_sign",
     "key": {
       "#": "minecraft:stripped_birch_log",
-      "X": "minecraft:chain"
+      "X": "minecraft:iron_chain"
     },
     "pattern": [
       "X X",
@@ -893,6 +927,23 @@
     "result": {
       "count": 1,
       "id": "minecraft:birch_pressure_plate"
+    }
+  },
+  "birch_shelf": {
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "group": "shelf",
+    "key": {
+      "#": "minecraft:stripped_birch_log"
+    },
+    "pattern": [
+      "###",
+      "   ",
+      "###"
+    ],
+    "result": {
+      "count": 6,
+      "id": "minecraft:birch_shelf"
     }
   },
   "birch_sign": {
@@ -2195,23 +2246,6 @@
       "id": "minecraft:cauldron"
     }
   },
-  "chain": {
-    "type": "minecraft:crafting_shaped",
-    "category": "misc",
-    "key": {
-      "I": "minecraft:iron_ingot",
-      "N": "minecraft:iron_nugget"
-    },
-    "pattern": [
-      "N",
-      "I",
-      "N"
-    ],
-    "result": {
-      "count": 1,
-      "id": "minecraft:chain"
-    }
-  },
   "charcoal": {
     "type": "minecraft:smelting",
     "category": "misc",
@@ -2320,7 +2354,7 @@
     "group": "hanging_sign",
     "key": {
       "#": "minecraft:stripped_cherry_log",
-      "X": "minecraft:chain"
+      "X": "minecraft:iron_chain"
     },
     "pattern": [
       "X X",
@@ -2357,6 +2391,23 @@
     "result": {
       "count": 1,
       "id": "minecraft:cherry_pressure_plate"
+    }
+  },
+  "cherry_shelf": {
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "group": "shelf",
+    "key": {
+      "#": "minecraft:stripped_cherry_log"
+    },
+    "pattern": [
+      "###",
+      "   ",
+      "###"
+    ],
+    "result": {
+      "count": 6,
+      "id": "minecraft:cherry_shelf"
     }
   },
   "cherry_sign": {
@@ -3354,6 +3405,38 @@
       "id": "minecraft:cookie"
     }
   },
+  "copper_axe": {
+    "type": "minecraft:crafting_shaped",
+    "category": "equipment",
+    "key": {
+      "#": "minecraft:stick",
+      "X": "#minecraft:copper_tool_materials"
+    },
+    "pattern": [
+      "XX",
+      "X#",
+      " #"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:copper_axe"
+    }
+  },
+  "copper_bars": {
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "key": {
+      "#": "minecraft:copper_ingot"
+    },
+    "pattern": [
+      "###",
+      "###"
+    ],
+    "result": {
+      "count": 16,
+      "id": "minecraft:copper_bars"
+    }
+  },
   "copper_block": {
     "type": "minecraft:crafting_shaped",
     "category": "building",
@@ -3368,6 +3451,21 @@
     "result": {
       "count": 1,
       "id": "minecraft:copper_block"
+    }
+  },
+  "copper_boots": {
+    "type": "minecraft:crafting_shaped",
+    "category": "equipment",
+    "key": {
+      "X": "minecraft:copper_ingot"
+    },
+    "pattern": [
+      "X X",
+      "X X"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:copper_boots"
     }
   },
   "copper_bulb": {
@@ -3386,6 +3484,56 @@
     "result": {
       "count": 4,
       "id": "minecraft:copper_bulb"
+    }
+  },
+  "copper_chain": {
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "key": {
+      "I": "minecraft:copper_ingot",
+      "N": "minecraft:copper_nugget"
+    },
+    "pattern": [
+      "N",
+      "I",
+      "N"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:copper_chain"
+    }
+  },
+  "copper_chest": {
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "key": {
+      "#": "minecraft:copper_ingot",
+      "X": "minecraft:chest"
+    },
+    "pattern": [
+      "###",
+      "#X#",
+      "###"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:copper_chest"
+    }
+  },
+  "copper_chestplate": {
+    "type": "minecraft:crafting_shaped",
+    "category": "equipment",
+    "key": {
+      "X": "minecraft:copper_ingot"
+    },
+    "pattern": [
+      "X X",
+      "XXX",
+      "XXX"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:copper_chestplate"
     }
   },
   "copper_door": {
@@ -3426,6 +3574,38 @@
     "result": {
       "count": 4,
       "id": "minecraft:copper_grate"
+    }
+  },
+  "copper_helmet": {
+    "type": "minecraft:crafting_shaped",
+    "category": "equipment",
+    "key": {
+      "X": "minecraft:copper_ingot"
+    },
+    "pattern": [
+      "XXX",
+      "X X"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:copper_helmet"
+    }
+  },
+  "copper_hoe": {
+    "type": "minecraft:crafting_shaped",
+    "category": "equipment",
+    "key": {
+      "#": "minecraft:stick",
+      "X": "#minecraft:copper_tool_materials"
+    },
+    "pattern": [
+      "XX",
+      " #",
+      " #"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:copper_hoe"
     }
   },
   "copper_ingot": {
@@ -3470,6 +3650,23 @@
     "group": "copper_ingot",
     "ingredient": "minecraft:raw_copper",
     "result": {
+      "id": "minecraft:copper_ingot"
+    }
+  },
+  "copper_ingot_from_nuggets": {
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "group": "copper_ingot",
+    "key": {
+      "#": "minecraft:copper_nugget"
+    },
+    "pattern": [
+      "###",
+      "###",
+      "###"
+    ],
+    "result": {
+      "count": 1,
       "id": "minecraft:copper_ingot"
     }
   },
@@ -3518,6 +3715,164 @@
       "id": "minecraft:copper_ingot"
     }
   },
+  "copper_lantern": {
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "key": {
+      "#": "minecraft:copper_torch",
+      "X": "minecraft:copper_nugget"
+    },
+    "pattern": [
+      "XXX",
+      "X#X",
+      "XXX"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:copper_lantern"
+    }
+  },
+  "copper_leggings": {
+    "type": "minecraft:crafting_shaped",
+    "category": "equipment",
+    "key": {
+      "X": "minecraft:copper_ingot"
+    },
+    "pattern": [
+      "XXX",
+      "X X",
+      "X X"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:copper_leggings"
+    }
+  },
+  "copper_nugget": {
+    "type": "minecraft:crafting_shapeless",
+    "category": "misc",
+    "ingredients": [
+      "minecraft:copper_ingot"
+    ],
+    "result": {
+      "count": 9,
+      "id": "minecraft:copper_nugget"
+    }
+  },
+  "copper_nugget_from_blasting": {
+    "type": "minecraft:blasting",
+    "category": "misc",
+    "cookingtime": 100,
+    "experience": 0.1,
+    "ingredient": [
+      "minecraft:copper_pickaxe",
+      "minecraft:copper_shovel",
+      "minecraft:copper_axe",
+      "minecraft:copper_hoe",
+      "minecraft:copper_sword",
+      "minecraft:copper_helmet",
+      "minecraft:copper_chestplate",
+      "minecraft:copper_leggings",
+      "minecraft:copper_boots",
+      "minecraft:copper_horse_armor"
+    ],
+    "result": {
+      "id": "minecraft:copper_nugget"
+    }
+  },
+  "copper_nugget_from_smelting": {
+    "type": "minecraft:smelting",
+    "category": "misc",
+    "cookingtime": 200,
+    "experience": 0.1,
+    "ingredient": [
+      "minecraft:copper_pickaxe",
+      "minecraft:copper_shovel",
+      "minecraft:copper_axe",
+      "minecraft:copper_hoe",
+      "minecraft:copper_sword",
+      "minecraft:copper_helmet",
+      "minecraft:copper_chestplate",
+      "minecraft:copper_leggings",
+      "minecraft:copper_boots",
+      "minecraft:copper_horse_armor"
+    ],
+    "result": {
+      "id": "minecraft:copper_nugget"
+    }
+  },
+  "copper_pickaxe": {
+    "type": "minecraft:crafting_shaped",
+    "category": "equipment",
+    "key": {
+      "#": "minecraft:stick",
+      "X": "#minecraft:copper_tool_materials"
+    },
+    "pattern": [
+      "XXX",
+      " # ",
+      " # "
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:copper_pickaxe"
+    }
+  },
+  "copper_shovel": {
+    "type": "minecraft:crafting_shaped",
+    "category": "equipment",
+    "key": {
+      "#": "minecraft:stick",
+      "X": "#minecraft:copper_tool_materials"
+    },
+    "pattern": [
+      "X",
+      "#",
+      "#"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:copper_shovel"
+    }
+  },
+  "copper_sword": {
+    "type": "minecraft:crafting_shaped",
+    "category": "equipment",
+    "key": {
+      "#": "minecraft:stick",
+      "X": "#minecraft:copper_tool_materials"
+    },
+    "pattern": [
+      "X",
+      "X",
+      "#"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:copper_sword"
+    }
+  },
+  "copper_torch": {
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "key": {
+      "#": "minecraft:stick",
+      "C": "minecraft:copper_nugget",
+      "X": [
+        "minecraft:coal",
+        "minecraft:charcoal"
+      ]
+    },
+    "pattern": [
+      "C",
+      "X",
+      "#"
+    ],
+    "result": {
+      "count": 4,
+      "id": "minecraft:copper_torch"
+    }
+  },
   "copper_trapdoor": {
     "type": "minecraft:crafting_shaped",
     "category": "redstone",
@@ -3525,11 +3880,11 @@
       "#": "minecraft:copper_ingot"
     },
     "pattern": [
-      "###",
-      "###"
+      "##",
+      "##"
     ],
     "result": {
-      "count": 2,
+      "count": 1,
       "id": "minecraft:copper_trapdoor"
     }
   },
@@ -3716,7 +4071,7 @@
     "group": "hanging_sign",
     "key": {
       "#": "minecraft:stripped_crimson_stem",
-      "X": "minecraft:chain"
+      "X": "minecraft:iron_chain"
     },
     "pattern": [
       "X X",
@@ -3769,6 +4124,23 @@
     "result": {
       "count": 1,
       "id": "minecraft:crimson_pressure_plate"
+    }
+  },
+  "crimson_shelf": {
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "group": "shelf",
+    "key": {
+      "#": "minecraft:stripped_crimson_stem"
+    },
+    "pattern": [
+      "###",
+      "   ",
+      "###"
+    ],
+    "result": {
+      "count": 6,
+      "id": "minecraft:crimson_shelf"
     }
   },
   "crimson_sign": {
@@ -4371,7 +4743,7 @@
     "group": "hanging_sign",
     "key": {
       "#": "minecraft:stripped_dark_oak_log",
-      "X": "minecraft:chain"
+      "X": "minecraft:iron_chain"
     },
     "pattern": [
       "X X",
@@ -4408,6 +4780,23 @@
     "result": {
       "count": 1,
       "id": "minecraft:dark_oak_pressure_plate"
+    }
+  },
+  "dark_oak_shelf": {
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "group": "shelf",
+    "key": {
+      "#": "minecraft:stripped_dark_oak_log"
+    },
+    "pattern": [
+      "###",
+      "   ",
+      "###"
+    ],
+    "result": {
+      "count": 6,
+      "id": "minecraft:dark_oak_shelf"
     }
   },
   "dark_oak_sign": {
@@ -9081,6 +9470,23 @@
       "id": "minecraft:iron_boots"
     }
   },
+  "iron_chain": {
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "key": {
+      "I": "minecraft:iron_ingot",
+      "N": "minecraft:iron_nugget"
+    },
+    "pattern": [
+      "N",
+      "I",
+      "N"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:iron_chain"
+    }
+  },
   "iron_chestplate": {
     "type": "minecraft:crafting_shaped",
     "category": "equipment",
@@ -9531,7 +9937,7 @@
     "group": "hanging_sign",
     "key": {
       "#": "minecraft:stripped_jungle_log",
-      "X": "minecraft:chain"
+      "X": "minecraft:iron_chain"
     },
     "pattern": [
       "X X",
@@ -9568,6 +9974,23 @@
     "result": {
       "count": 1,
       "id": "minecraft:jungle_pressure_plate"
+    }
+  },
+  "jungle_shelf": {
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "group": "shelf",
+    "key": {
+      "#": "minecraft:stripped_jungle_log"
+    },
+    "pattern": [
+      "###",
+      "   ",
+      "###"
+    ],
+    "result": {
+      "count": 6,
+      "id": "minecraft:jungle_shelf"
     }
   },
   "jungle_sign": {
@@ -11092,7 +11515,7 @@
     "group": "hanging_sign",
     "key": {
       "#": "minecraft:stripped_mangrove_log",
-      "X": "minecraft:chain"
+      "X": "minecraft:iron_chain"
     },
     "pattern": [
       "X X",
@@ -11129,6 +11552,23 @@
     "result": {
       "count": 1,
       "id": "minecraft:mangrove_pressure_plate"
+    }
+  },
+  "mangrove_shelf": {
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "group": "shelf",
+    "key": {
+      "#": "minecraft:stripped_mangrove_log"
+    },
+    "pattern": [
+      "###",
+      "   ",
+      "###"
+    ],
+    "result": {
+      "count": 6,
+      "id": "minecraft:mangrove_shelf"
     }
   },
   "mangrove_sign": {
@@ -12038,7 +12478,7 @@
     "group": "hanging_sign",
     "key": {
       "#": "minecraft:stripped_oak_log",
-      "X": "minecraft:chain"
+      "X": "minecraft:iron_chain"
     },
     "pattern": [
       "X X",
@@ -12075,6 +12515,23 @@
     "result": {
       "count": 1,
       "id": "minecraft:oak_pressure_plate"
+    }
+  },
+  "oak_shelf": {
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "group": "shelf",
+    "key": {
+      "#": "minecraft:stripped_oak_log"
+    },
+    "pattern": [
+      "###",
+      "   ",
+      "###"
+    ],
+    "result": {
+      "count": 6,
+      "id": "minecraft:oak_shelf"
     }
   },
   "oak_sign": {
@@ -12746,7 +13203,7 @@
     "group": "hanging_sign",
     "key": {
       "#": "minecraft:stripped_pale_oak_log",
-      "X": "minecraft:chain"
+      "X": "minecraft:iron_chain"
     },
     "pattern": [
       "X X",
@@ -12783,6 +13240,23 @@
     "result": {
       "count": 1,
       "id": "minecraft:pale_oak_pressure_plate"
+    }
+  },
+  "pale_oak_shelf": {
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "group": "shelf",
+    "key": {
+      "#": "minecraft:stripped_pale_oak_log"
+    },
+    "pattern": [
+      "###",
+      "   ",
+      "###"
+    ],
+    "result": {
+      "count": 6,
+      "id": "minecraft:pale_oak_shelf"
     }
   },
   "pale_oak_sign": {
@@ -16297,7 +16771,7 @@
     "group": "hanging_sign",
     "key": {
       "#": "minecraft:stripped_spruce_log",
-      "X": "minecraft:chain"
+      "X": "minecraft:iron_chain"
     },
     "pattern": [
       "X X",
@@ -16334,6 +16808,23 @@
     "result": {
       "count": 1,
       "id": "minecraft:spruce_pressure_plate"
+    }
+  },
+  "spruce_shelf": {
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "group": "shelf",
+    "key": {
+      "#": "minecraft:stripped_spruce_log"
+    },
+    "pattern": [
+      "###",
+      "   ",
+      "###"
+    ],
+    "result": {
+      "count": 6,
+      "id": "minecraft:spruce_shelf"
     }
   },
   "spruce_sign": {
@@ -17870,7 +18361,7 @@
     "group": "hanging_sign",
     "key": {
       "#": "minecraft:stripped_warped_stem",
-      "X": "minecraft:chain"
+      "X": "minecraft:iron_chain"
     },
     "pattern": [
       "X X",
@@ -17923,6 +18414,23 @@
     "result": {
       "count": 1,
       "id": "minecraft:warped_pressure_plate"
+    }
+  },
+  "warped_shelf": {
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "group": "shelf",
+    "key": {
+      "#": "minecraft:stripped_warped_stem"
+    },
+    "pattern": [
+      "###",
+      "   ",
+      "###"
+    ],
+    "result": {
+      "count": 6,
+      "id": "minecraft:warped_shelf"
     }
   },
   "warped_sign": {
@@ -18036,6 +18544,19 @@
       "id": "minecraft:waxed_chiseled_copper"
     }
   },
+  "waxed_copper_bars_from_honeycomb": {
+    "type": "minecraft:crafting_shapeless",
+    "category": "building",
+    "group": "waxed_copper_bars",
+    "ingredients": [
+      "minecraft:copper_bars",
+      "minecraft:honeycomb"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:waxed_copper_bars"
+    }
+  },
   "waxed_copper_block_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
     "category": "building",
@@ -18080,6 +18601,32 @@
       "id": "minecraft:waxed_copper_bulb"
     }
   },
+  "waxed_copper_chain_from_honeycomb": {
+    "type": "minecraft:crafting_shapeless",
+    "category": "building",
+    "group": "waxed_copper_chain",
+    "ingredients": [
+      "minecraft:copper_chain",
+      "minecraft:honeycomb"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:waxed_copper_chain"
+    }
+  },
+  "waxed_copper_chest_from_honeycomb": {
+    "type": "minecraft:crafting_shapeless",
+    "category": "building",
+    "group": "waxed_copper_chest",
+    "ingredients": [
+      "minecraft:copper_chest",
+      "minecraft:honeycomb"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:waxed_copper_chest"
+    }
+  },
   "waxed_copper_door_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
     "category": "building",
@@ -18091,6 +18638,19 @@
     "result": {
       "count": 1,
       "id": "minecraft:waxed_copper_door"
+    }
+  },
+  "waxed_copper_golem_statue_from_honeycomb": {
+    "type": "minecraft:crafting_shapeless",
+    "category": "building",
+    "group": "waxed_copper_golem_statue",
+    "ingredients": [
+      "minecraft:copper_golem_statue",
+      "minecraft:honeycomb"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:waxed_copper_golem_statue"
     }
   },
   "waxed_copper_grate": {
@@ -18128,6 +18688,19 @@
     "result": {
       "count": 4,
       "id": "minecraft:waxed_copper_grate"
+    }
+  },
+  "waxed_copper_lantern_from_honeycomb": {
+    "type": "minecraft:crafting_shapeless",
+    "category": "building",
+    "group": "waxed_copper_lantern",
+    "ingredients": [
+      "minecraft:copper_lantern",
+      "minecraft:honeycomb"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:waxed_copper_lantern"
     }
   },
   "waxed_copper_trapdoor_from_honeycomb": {
@@ -18315,6 +18888,19 @@
       "id": "minecraft:waxed_exposed_chiseled_copper"
     }
   },
+  "waxed_exposed_copper_bars_from_honeycomb": {
+    "type": "minecraft:crafting_shapeless",
+    "category": "building",
+    "group": "waxed_exposed_copper_bars",
+    "ingredients": [
+      "minecraft:exposed_copper_bars",
+      "minecraft:honeycomb"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:waxed_exposed_copper_bars"
+    }
+  },
   "waxed_exposed_copper_bulb": {
     "type": "minecraft:crafting_shaped",
     "category": "redstone",
@@ -18346,6 +18932,32 @@
       "id": "minecraft:waxed_exposed_copper_bulb"
     }
   },
+  "waxed_exposed_copper_chain_from_honeycomb": {
+    "type": "minecraft:crafting_shapeless",
+    "category": "building",
+    "group": "waxed_exposed_copper_chain",
+    "ingredients": [
+      "minecraft:exposed_copper_chain",
+      "minecraft:honeycomb"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:waxed_exposed_copper_chain"
+    }
+  },
+  "waxed_exposed_copper_chest_from_honeycomb": {
+    "type": "minecraft:crafting_shapeless",
+    "category": "building",
+    "group": "waxed_exposed_copper_chest",
+    "ingredients": [
+      "minecraft:exposed_copper_chest",
+      "minecraft:honeycomb"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:waxed_exposed_copper_chest"
+    }
+  },
   "waxed_exposed_copper_door_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
     "category": "building",
@@ -18370,6 +18982,19 @@
     "result": {
       "count": 1,
       "id": "minecraft:waxed_exposed_copper"
+    }
+  },
+  "waxed_exposed_copper_golem_statue_from_honeycomb": {
+    "type": "minecraft:crafting_shapeless",
+    "category": "building",
+    "group": "waxed_exposed_copper_golem_statue",
+    "ingredients": [
+      "minecraft:exposed_copper_golem_statue",
+      "minecraft:honeycomb"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:waxed_exposed_copper_golem_statue"
     }
   },
   "waxed_exposed_copper_grate": {
@@ -18407,6 +19032,19 @@
     "result": {
       "count": 4,
       "id": "minecraft:waxed_exposed_copper_grate"
+    }
+  },
+  "waxed_exposed_copper_lantern_from_honeycomb": {
+    "type": "minecraft:crafting_shapeless",
+    "category": "building",
+    "group": "waxed_exposed_copper_lantern",
+    "ingredients": [
+      "minecraft:exposed_copper_lantern",
+      "minecraft:honeycomb"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:waxed_exposed_copper_lantern"
     }
   },
   "waxed_exposed_copper_trapdoor_from_honeycomb": {
@@ -18549,6 +19187,32 @@
       "id": "minecraft:waxed_exposed_cut_copper_stairs"
     }
   },
+  "waxed_exposed_lightning_rod_from_honeycomb": {
+    "type": "minecraft:crafting_shapeless",
+    "category": "building",
+    "group": "waxed_exposed_lightning_rod",
+    "ingredients": [
+      "minecraft:exposed_lightning_rod",
+      "minecraft:honeycomb"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:waxed_exposed_lightning_rod"
+    }
+  },
+  "waxed_lightning_rod_from_honeycomb": {
+    "type": "minecraft:crafting_shapeless",
+    "category": "building",
+    "group": "waxed_lightning_rod",
+    "ingredients": [
+      "minecraft:lightning_rod",
+      "minecraft:honeycomb"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:waxed_lightning_rod"
+    }
+  },
   "waxed_oxidized_chiseled_copper": {
     "type": "minecraft:crafting_shaped",
     "category": "building",
@@ -18594,6 +19258,19 @@
       "id": "minecraft:waxed_oxidized_chiseled_copper"
     }
   },
+  "waxed_oxidized_copper_bars_from_honeycomb": {
+    "type": "minecraft:crafting_shapeless",
+    "category": "building",
+    "group": "waxed_oxidized_copper_bars",
+    "ingredients": [
+      "minecraft:oxidized_copper_bars",
+      "minecraft:honeycomb"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:waxed_oxidized_copper_bars"
+    }
+  },
   "waxed_oxidized_copper_bulb": {
     "type": "minecraft:crafting_shaped",
     "category": "redstone",
@@ -18625,6 +19302,32 @@
       "id": "minecraft:waxed_oxidized_copper_bulb"
     }
   },
+  "waxed_oxidized_copper_chain_from_honeycomb": {
+    "type": "minecraft:crafting_shapeless",
+    "category": "building",
+    "group": "waxed_oxidized_copper_chain",
+    "ingredients": [
+      "minecraft:oxidized_copper_chain",
+      "minecraft:honeycomb"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:waxed_oxidized_copper_chain"
+    }
+  },
+  "waxed_oxidized_copper_chest_from_honeycomb": {
+    "type": "minecraft:crafting_shapeless",
+    "category": "building",
+    "group": "waxed_oxidized_copper_chest",
+    "ingredients": [
+      "minecraft:oxidized_copper_chest",
+      "minecraft:honeycomb"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:waxed_oxidized_copper_chest"
+    }
+  },
   "waxed_oxidized_copper_door_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
     "category": "building",
@@ -18649,6 +19352,19 @@
     "result": {
       "count": 1,
       "id": "minecraft:waxed_oxidized_copper"
+    }
+  },
+  "waxed_oxidized_copper_golem_statue_from_honeycomb": {
+    "type": "minecraft:crafting_shapeless",
+    "category": "building",
+    "group": "waxed_oxidized_copper_golem_statue",
+    "ingredients": [
+      "minecraft:oxidized_copper_golem_statue",
+      "minecraft:honeycomb"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:waxed_oxidized_copper_golem_statue"
     }
   },
   "waxed_oxidized_copper_grate": {
@@ -18686,6 +19402,19 @@
     "result": {
       "count": 4,
       "id": "minecraft:waxed_oxidized_copper_grate"
+    }
+  },
+  "waxed_oxidized_copper_lantern_from_honeycomb": {
+    "type": "minecraft:crafting_shapeless",
+    "category": "building",
+    "group": "waxed_oxidized_copper_lantern",
+    "ingredients": [
+      "minecraft:oxidized_copper_lantern",
+      "minecraft:honeycomb"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:waxed_oxidized_copper_lantern"
     }
   },
   "waxed_oxidized_copper_trapdoor_from_honeycomb": {
@@ -18828,6 +19557,19 @@
       "id": "minecraft:waxed_oxidized_cut_copper_stairs"
     }
   },
+  "waxed_oxidized_lightning_rod_from_honeycomb": {
+    "type": "minecraft:crafting_shapeless",
+    "category": "building",
+    "group": "waxed_oxidized_lightning_rod",
+    "ingredients": [
+      "minecraft:oxidized_lightning_rod",
+      "minecraft:honeycomb"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:waxed_oxidized_lightning_rod"
+    }
+  },
   "waxed_weathered_chiseled_copper": {
     "type": "minecraft:crafting_shaped",
     "category": "building",
@@ -18873,6 +19615,19 @@
       "id": "minecraft:waxed_weathered_chiseled_copper"
     }
   },
+  "waxed_weathered_copper_bars_from_honeycomb": {
+    "type": "minecraft:crafting_shapeless",
+    "category": "building",
+    "group": "waxed_weathered_copper_bars",
+    "ingredients": [
+      "minecraft:weathered_copper_bars",
+      "minecraft:honeycomb"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:waxed_weathered_copper_bars"
+    }
+  },
   "waxed_weathered_copper_bulb": {
     "type": "minecraft:crafting_shaped",
     "category": "redstone",
@@ -18904,6 +19659,32 @@
       "id": "minecraft:waxed_weathered_copper_bulb"
     }
   },
+  "waxed_weathered_copper_chain_from_honeycomb": {
+    "type": "minecraft:crafting_shapeless",
+    "category": "building",
+    "group": "waxed_weathered_copper_chain",
+    "ingredients": [
+      "minecraft:weathered_copper_chain",
+      "minecraft:honeycomb"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:waxed_weathered_copper_chain"
+    }
+  },
+  "waxed_weathered_copper_chest_from_honeycomb": {
+    "type": "minecraft:crafting_shapeless",
+    "category": "building",
+    "group": "waxed_weathered_copper_chest",
+    "ingredients": [
+      "minecraft:weathered_copper_chest",
+      "minecraft:honeycomb"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:waxed_weathered_copper_chest"
+    }
+  },
   "waxed_weathered_copper_door_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
     "category": "building",
@@ -18928,6 +19709,19 @@
     "result": {
       "count": 1,
       "id": "minecraft:waxed_weathered_copper"
+    }
+  },
+  "waxed_weathered_copper_golem_statue_from_honeycomb": {
+    "type": "minecraft:crafting_shapeless",
+    "category": "building",
+    "group": "waxed_weathered_copper_golem_statue",
+    "ingredients": [
+      "minecraft:weathered_copper_golem_statue",
+      "minecraft:honeycomb"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:waxed_weathered_copper_golem_statue"
     }
   },
   "waxed_weathered_copper_grate": {
@@ -18965,6 +19759,19 @@
     "result": {
       "count": 4,
       "id": "minecraft:waxed_weathered_copper_grate"
+    }
+  },
+  "waxed_weathered_copper_lantern_from_honeycomb": {
+    "type": "minecraft:crafting_shapeless",
+    "category": "building",
+    "group": "waxed_weathered_copper_lantern",
+    "ingredients": [
+      "minecraft:weathered_copper_lantern",
+      "minecraft:honeycomb"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:waxed_weathered_copper_lantern"
     }
   },
   "waxed_weathered_copper_trapdoor_from_honeycomb": {
@@ -19105,6 +19912,19 @@
     "result": {
       "count": 1,
       "id": "minecraft:waxed_weathered_cut_copper_stairs"
+    }
+  },
+  "waxed_weathered_lightning_rod_from_honeycomb": {
+    "type": "minecraft:crafting_shapeless",
+    "category": "building",
+    "group": "waxed_weathered_lightning_rod",
+    "ingredients": [
+      "minecraft:weathered_lightning_rod",
+      "minecraft:honeycomb"
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:waxed_weathered_lightning_rod"
     }
   },
   "wayfinder_armor_trim_smithing_template": {
