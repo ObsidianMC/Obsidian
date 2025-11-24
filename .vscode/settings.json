@@ -1,0 +1,65 @@
+{
+	// .NET & C# Settings
+	"dotnet.defaultSolution": "Obsidian.sln",
+	"omnisharp.enableEditorConfigSupport": true,
+	"omnisharp.enableRoslynAnalyzers": true,
+	"omnisharp.useModernNet": true,
+	// Editor Settings
+	"editor.formatOnSave": true,
+	"editor.codeActionsOnSave": {
+		"source.organizeImports": "explicit",
+		"source.fixAll": "explicit"
+	},
+	"editor.rulers": [
+		120
+	],
+	"editor.tabSize": 4,
+	"editor.insertSpaces": false,
+	// File Management
+	"files.exclude": {
+		"**/bin": true,
+		"**/obj": true,
+		"**/.vs": true,
+		"**/Generated": true
+	},
+	"files.watcherExclude": {
+		"**/bin/**": true,
+		"**/obj/**": true,
+		"**/.vs/**": true,
+		"**/Generated/**": true,
+		"**/publish/**": true
+	},
+	"search.exclude": {
+		"**/bin": true,
+		"**/obj": true,
+		"**/Generated": true,
+		"**/publish": true
+	},
+	// Terminal Settings
+	"terminal.integrated.defaultProfile.linux": "bash",
+	"terminal.integrated.cwd": "${workspaceFolder}",
+	// Testing
+	"dotnet-test-explorer.testProjectPath": "**/*Tests.csproj",
+	// Git Settings
+	"git.enableSmartCommit": true,
+	"git.confirmSync": false,
+	"git.autofetch": true,
+	// XML Formatting
+	"xml.format.maxLineWidth": 120,
+	"xml.format.splitAttributes": false,
+	// Spell Checker
+	"cSpell.words": [
+		"Obsidian",
+		"Minecraft",
+		"Roslyn",
+		"xunit",
+		"Hashing",
+		"worldgen",
+		"Naamloos",
+		"Craftplacer"
+	],
+	// Docker
+	"docker.showStartPage": false,
+	"dotnet.completion.showCompletionItemsFromUnimportedNamespaces": true,
+	"dotnet.formatting.organizeImportsOnFormat": true
+}
