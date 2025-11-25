@@ -8,6 +8,7 @@ public sealed class IslandGenerator : IWorldGenerator
 {
     public string Id => "islands";
     private GenHelper? helper;
+    private IWorld? world;
     private Module? noiseGenerator;
     private Random? r;
     private static readonly BiomeCodec[] biomes = [
@@ -136,12 +137,16 @@ public sealed class IslandGenerator : IWorldGenerator
         }
 
         WorldLight.InitialFillSkyLight(chunk);
+        await WorldLight.PropagateFromNeighborsAsync(chunk, world!);
+        // After lighting this chunk, update any neighbors that were already generated
+        await WorldLight.PropagateToNeighborsAsync(chunk, world!);
         chunk.SetChunkStatus(ChunkGenStage.full);
         return chunk;
     }
 
     public void Init(IWorld world)
     {
+        this.world = world;
         helper = new GenHelper(world);
         r = new Random(helper.Seed);
         noiseGenerator = new Turbulence()

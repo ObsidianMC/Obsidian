@@ -6,6 +6,7 @@ namespace Obsidian.WorldData.Generators;
 public sealed class OverworldGenerator : IWorldGenerator
 {
     private GenHelper helper;
+    private IWorld world;
 
     public string Id => "overworld";
 
@@ -55,7 +56,10 @@ public sealed class OverworldGenerator : IWorldGenerator
         if (ChunkGenStage.light <= stage && chunk.ChunkStatus < ChunkGenStage.full)
         {
             WorldLight.InitialFillSkyLight(chunk);
+            await WorldLight.PropagateFromNeighborsAsync(chunk, world);
             chunk.SetChunkStatus(ChunkGenStage.light);
+            // After lighting this chunk, update any neighbors that were already generated
+            await WorldLight.PropagateToNeighborsAsync(chunk, world);
         }
 
         chunk.SetChunkStatus(ChunkGenStage.full);
@@ -65,6 +69,7 @@ public sealed class OverworldGenerator : IWorldGenerator
 
     public void Init(IWorld world)
     {
+        this.world = world;
         helper = new GenHelper(world);
     }
 }
