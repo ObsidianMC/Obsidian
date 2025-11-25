@@ -21,7 +21,8 @@
 				"ms-azuretools.vscode-docker",
 				"eamodio.gitlens",
 				"redhat.vscode-xml",
-				"streetsidesoftware.code-spell-checker"
+				"streetsidesoftware.code-spell-checker",
+				"fernandoescolar.vscode-solution-explorer"
 			],
 			"settings": {
 				"dotnet.defaultSolution": "Obsidian.sln",

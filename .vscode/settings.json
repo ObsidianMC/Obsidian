@@ -1,9 +1,4 @@
 {
-	// .NET & C# Settings
-	"dotnet.defaultSolution": "Obsidian.sln",
-	"omnisharp.enableEditorConfigSupport": true,
-	"omnisharp.enableRoslynAnalyzers": true,
-	"omnisharp.useModernNet": true,
 	// Editor Settings
 	"editor.formatOnSave": true,
 	"editor.codeActionsOnSave": {
@@ -38,15 +33,13 @@
 	// Terminal Settings
 	"terminal.integrated.defaultProfile.linux": "bash",
 	"terminal.integrated.cwd": "${workspaceFolder}",
-	// Testing
-	"dotnet-test-explorer.testProjectPath": "**/*Tests.csproj",
 	// Git Settings
 	"git.enableSmartCommit": true,
 	"git.confirmSync": false,
 	"git.autofetch": true,
 	// XML Formatting
 	"xml.format.maxLineWidth": 120,
-	"xml.format.splitAttributes": false,
+	"xml.format.splitAttributes": "preserve",
 	// Spell Checker
 	"cSpell.words": [
 		"Obsidian",
@@ -58,8 +51,6 @@
 		"Naamloos",
 		"Craftplacer"
 	],
-	// Docker
-	"docker.showStartPage": false,
 	"dotnet.completion.showCompletionItemsFromUnimportedNamespaces": true,
 	"dotnet.formatting.organizeImportsOnFormat": true
 }
