@@ -1,0 +1,50 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Launch Obsidian Server",
+			"type": "coreclr",
+			"request": "launch",
+			"preLaunchTask": "build-console-app",
+			"program": "${workspaceFolder}/Obsidian.ConsoleApp/bin/Debug/net10.0/Obsidian.ConsoleApp.dll",
+			"args": [],
+			"cwd": "${workspaceFolder}/Obsidian.ConsoleApp/bin/Debug/net10.0",
+			"console": "integratedTerminal",
+			"stopAtEntry": false,
+			"internalConsoleOptions": "neverOpen"
+		},
+		{
+			"name": "Launch Obsidian Server (Release)",
+			"type": "coreclr",
+			"request": "launch",
+			"preLaunchTask": "build-console-app-release",
+			"program": "${workspaceFolder}/Obsidian.ConsoleApp/bin/Release/net10.0/Obsidian.ConsoleApp.dll",
+			"args": [],
+			"cwd": "${workspaceFolder}/Obsidian.ConsoleApp/bin/Release/net10.0",
+			"console": "integratedTerminal",
+			"stopAtEntry": false,
+			"internalConsoleOptions": "neverOpen"
+		},
+		{
+			"name": "Attach to Process",
+			"type": "coreclr",
+			"request": "attach"
+		},
+		{
+			"name": "Debug Tests",
+			"type": "coreclr",
+			"request": "launch",
+			"preLaunchTask": "build-tests",
+			"program": "dotnet",
+			"args": [
+				"test",
+				"${workspaceFolder}/Obsidian.Tests/Obsidian.Tests.csproj",
+				"--no-build"
+			],
+			"cwd": "${workspaceFolder}",
+			"console": "integratedTerminal",
+			"stopAtEntry": false,
+			"internalConsoleOptions": "neverOpen"
+		}
+	]
+}

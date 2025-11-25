@@ -1,0 +1,70 @@
+{
+	"name": "Obsidian C# Development",
+	"image": "mcr.microsoft.com/devcontainers/dotnet:1-10.0-noble",
+	"features": {
+		"ghcr.io/devcontainers/features/git:1": {
+			"ppa": true,
+			"version": "latest"
+		},
+		"ghcr.io/devcontainers/features/github-cli:1": {
+			"version": "latest"
+		}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-dotnettools.csdevkit",
+				"ms-dotnettools.csharp",
+				"ms-dotnettools.vscode-dotnet-runtime",
+				"github.copilot-chat",
+				"editorconfig.editorconfig",
+				"ms-azuretools.vscode-docker",
+				"eamodio.gitlens",
+				"redhat.vscode-xml",
+				"streetsidesoftware.code-spell-checker",
+				"fernandoescolar.vscode-solution-explorer"
+			],
+			"settings": {
+				"dotnet.defaultSolution": "Obsidian.sln",
+				"omnisharp.enableEditorConfigSupport": true,
+				"omnisharp.enableRoslynAnalyzers": true,
+				"omnisharp.enableImportCompletion": true,
+				"omnisharp.organizeImportsOnFormat": true,
+				"editor.formatOnSave": true,
+				"editor.codeActionsOnSave": {
+					"source.organizeImports": "explicit"
+				},
+				"files.exclude": {
+					"**/bin": true,
+					"**/obj": true,
+					"**/.vs": true
+				},
+				"files.watcherExclude": {
+					"**/bin/**": true,
+					"**/obj/**": true,
+					"**/.vs/**": true,
+					"**/Generated/**": true
+				},
+				"terminal.integrated.defaultProfile.linux": "bash"
+			}
+		}
+	},
+	"postCreateCommand": "dotnet restore Obsidian.sln",
+	"postStartCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}",
+	"forwardPorts": [
+		25565
+	],
+	"portsAttributes": {
+		"25565": {
+			"label": "Minecraft Server",
+			"onAutoForward": "notify"
+		}
+	},
+	"updateContentCommand": "dotnet restore Obsidian.sln",
+	"remoteEnv": {
+		"DOTNET_CLI_TELEMETRY_OPTOUT": "1",
+		"DOTNET_SKIP_FIRST_TIME_EXPERIENCE": "1",
+		"DOTNET_NOLOGO": "1"
+	},
+	"remoteUser": "vscode"
+}
