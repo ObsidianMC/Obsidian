@@ -41,7 +41,7 @@ public sealed partial class FinishConfigurationPacket
             EnableRespawnScreen = true,
         });
 
-        await client.QueuePacketAsync(new SetDefaultSpawnPositionPacket(player.World.LevelData.SpawnPosition, 0));
+        await client.QueuePacketAsync(new SetDefaultSpawnPositionPacket(player.World.LevelData.SpawnPosition, 0, 0));
         await client.QueuePacketAsync(new SetTimePacket(player.World.LevelData.Time, player.World.LevelData.DayTime, true));
         await client.QueuePacketAsync(new GameEventPacket(player.World.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
 
