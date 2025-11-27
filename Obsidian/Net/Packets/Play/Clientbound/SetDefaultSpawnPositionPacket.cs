@@ -2,10 +2,10 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class SetDefaultSpawnPositionPacket(VectorF position, Angle yaw, Angle pitch)
+public partial class SetDefaultSpawnPositionPacket(GlobalPosition position, Angle yaw, Angle pitch)
 {
     [Field(0)]
-    public VectorF Position { get; } = position;
+    public GlobalPosition Position { get; } = position;
 
     [Field(1), DataFormat(typeof(float))]
     public Angle Yaw { get; set; } = yaw;
@@ -15,7 +15,7 @@ public partial class SetDefaultSpawnPositionPacket(VectorF position, Angle yaw, 
 
     public override void Serialize(INetStreamWriter writer)
     {
-        writer.WritePositionF(this.Position);
+        GlobalPosition.Write(this.Position, writer);
         writer.WriteSingle(this.Yaw);
         writer.WriteSingle(this.Pitch);
     }
