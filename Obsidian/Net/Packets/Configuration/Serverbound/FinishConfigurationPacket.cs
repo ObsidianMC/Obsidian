@@ -61,7 +61,6 @@ public sealed partial class FinishConfigurationPacket
             Position = player.Position,
             Yaw = 0,
             Pitch = 0,
-            Flags = PositionFlags.None,
             TeleportId = player.TeleportId
         });
 
