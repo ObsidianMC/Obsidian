@@ -91,7 +91,7 @@ public partial class NetworkBuffer : INetStreamReader
 
         long scaleFactor = firstByte & 3;
 
-        if (HasContinuationBit(scaleFactor))
+        if (HasContinuationBit(firstByte))
             scaleFactor |= (this.ReadVarInt() & 4294967295L) << 2;
 
         var xPacked = packedData >> 3;
