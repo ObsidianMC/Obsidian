@@ -55,11 +55,10 @@ public sealed class OverworldGenerator : IWorldGenerator
 
         if (ChunkGenStage.light <= stage && chunk.ChunkStatus < ChunkGenStage.full)
         {
-            WorldLight.InitialFillSkyLight(chunk);
-            await WorldLight.PropagateFromNeighborsAsync(chunk, world);
+            Lighting.InitialFillSkyLight(chunk);
+            await Lighting.LightFromNeighbors(chunk, world);
             chunk.SetChunkStatus(ChunkGenStage.light);
-            // After lighting this chunk, update any neighbors that were already generated
-            await WorldLight.PropagateToNeighborsAsync(chunk, world);
+            await Lighting.LightToNeighbors(chunk, world);
         }
 
         chunk.SetChunkStatus(ChunkGenStage.full);

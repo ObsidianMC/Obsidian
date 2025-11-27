@@ -54,15 +54,15 @@ internal static class ChunkBuilder
         BlocksRegistry.DeepslateDiamondOre,
     ];
 
-    private static BiomeCodec[] EmeraldBiomes => 
+    private static BiomeCodec[] EmeraldBiomes =>
     [
-        CodecRegistry.Biomes.WindsweptHills, 
-        CodecRegistry.Biomes.WindsweptGravellyHills, 
-        CodecRegistry.Biomes.Meadow, 
-        CodecRegistry.Biomes.Grove, 
-        CodecRegistry.Biomes.SnowySlopes, 
-        CodecRegistry.Biomes.FrozenPeaks, 
-        CodecRegistry.Biomes.JaggedPeaks, 
+        CodecRegistry.Biomes.WindsweptHills,
+        CodecRegistry.Biomes.WindsweptGravellyHills,
+        CodecRegistry.Biomes.Meadow,
+        CodecRegistry.Biomes.Grove,
+        CodecRegistry.Biomes.SnowySlopes,
+        CodecRegistry.Biomes.FrozenPeaks,
+        CodecRegistry.Biomes.JaggedPeaks,
         CodecRegistry.Biomes.StonyPeaks
     ];
 

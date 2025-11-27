@@ -67,11 +67,10 @@ internal class MojangGenerator : IWorldGenerator
 
         if (ChunkGenStage.light <= stage && chunk.ChunkStatus < ChunkGenStage.full)
         {
-            WorldLight.InitialFillSkyLight(chunk);
-            await WorldLight.PropagateFromNeighborsAsync(chunk, _world);
+            Lighting.InitialFillSkyLight(chunk);
+            await Lighting.LightFromNeighbors(chunk, _world);
             chunk.SetChunkStatus(ChunkGenStage.light);
-            // After lighting this chunk, update any neighbors that were already generated
-            await WorldLight.PropagateToNeighborsAsync(chunk, _world);
+            await Lighting.LightToNeighbors(chunk, _world);
         }
 
         chunk.SetChunkStatus(ChunkGenStage.full);

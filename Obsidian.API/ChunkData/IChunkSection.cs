@@ -1,6 +1,7 @@
 ﻿using Obsidian.API.Registry.Codecs.Biomes;
 
 namespace Obsidian.API.ChunkData;
+
 public interface IChunkSection
 {
     public int? YBase { get; }
@@ -8,10 +9,10 @@ public interface IChunkSection
     public DataContainer<IBlock> BlockStateContainer { get; }
     public DataContainer<BiomeCodec> BiomeContainer { get; }
 
-    public bool HasSkyLight { get;  }
+    public bool HasSkyLight { get; }
     public ReadOnlyMemory<byte> SkyLightArray { get; }
 
-    public bool HasBlockLight { get; } 
+    public bool HasBlockLight { get; }
     public ReadOnlyMemory<byte> BlockLightArray { get; }
 
     public bool IsEmpty { get; }
@@ -36,5 +37,6 @@ public interface IChunkSection
 
 
     public void SetLight(byte[] data, LightType lt);
+    public void FillSkyLight();
     public IChunkSection Clone();
 }

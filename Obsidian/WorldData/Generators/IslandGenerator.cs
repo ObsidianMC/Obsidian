@@ -136,10 +136,10 @@ public sealed class IslandGenerator : IWorldGenerator
             }
         }
 
-        WorldLight.InitialFillSkyLight(chunk);
-        await WorldLight.PropagateFromNeighborsAsync(chunk, world!);
-        // After lighting this chunk, update any neighbors that were already generated
-        await WorldLight.PropagateToNeighborsAsync(chunk, world!);
+        Lighting.InitialFillSkyLight(chunk);
+        await Lighting.LightFromNeighbors(chunk, world);
+        chunk.SetChunkStatus(ChunkGenStage.light);
+        await Lighting.LightToNeighbors(chunk, world);
         chunk.SetChunkStatus(ChunkGenStage.full);
         return chunk;
     }
