@@ -50,14 +50,14 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="NuGet.Versioning" Version="6.14.0" />
-		<PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.13.1" />
-		<PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.13.1" />
-		<PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.13.1" />
-		<PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.12.0" />
-		<PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.12.0" />
+		<PackageReference Include="NuGet.Versioning" Version="7.0.1" />
+		<PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.14.0" />
+		<PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.14.0" />
+		<PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.14.0" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.14.0" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.14.0" />
 		<PackageReference Include="SharpNoise" Version="0.12.1.1" />
-		<PackageReference Include="System.IO.Hashing" Version="10.0.0-rc.2.25502.107" />
+		<PackageReference Include="System.IO.Hashing" Version="10.0.0" />
 	</ItemGroup>
 
 	<ItemGroup>
