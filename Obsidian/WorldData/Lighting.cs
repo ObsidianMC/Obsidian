@@ -46,10 +46,9 @@ internal static class Lighting
                     // This is evidenced by a bottom side of a block exposed
                     foreach (Vector dir in EdgeSafeCardinalDirections(x, z))
                     {
-                        scanPos += dir;
-                        if (HasSurfaceAbove(scanPos, chunk))
+                        if (HasSurfaceAbove(scanPos + dir, chunk))
                         {
-                            spreadBlocks[scanPos] = level - 1;
+                            spreadBlocks[scanPos + dir] = level - 1;
                         }
                     }
                 }
