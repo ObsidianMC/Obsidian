@@ -8,6 +8,7 @@ using System.IO;
 using System.Text;
 
 namespace Obsidian.Net;
+
 public partial class NetworkBuffer : INetStreamReader
 {
     private const int ByteSize = sizeof(byte);
@@ -76,7 +77,29 @@ public partial class NetworkBuffer : INetStreamReader
     public Guid? ReadOptionalGuid() => this.ReadBoolean() ? this.ReadGuid() : null;
 
     [ReadMethod]
-    public Velocity ReadVelocity() => new(ReadShort(), ReadShort(), ReadShort());
+    public Velocity ReadVelocity()
+    {
+        var firstByte = this.ReadByte();
+
+        if (firstByte == 0)
+            return Velocity.Zero;
+
+        var secondByte = this.ReadByte();
+        var remainingBytes = this.ReadInt();
+
+        long packedData = remainingBytes << 16 | (secondByte << 8) | firstByte;
+
+        long scaleFactor = firstByte & 3;
+
+        if (HasContinuationBit(firstByte))
+            scaleFactor |= (this.ReadVarInt() & 4294967295L) << 2;
+
+        var xPacked = packedData >> 3;
+        var yPacked = packedData >> 18;
+        var zPacked = packedData >> 33;
+
+        return new(Unpack(xPacked) * scaleFactor, Unpack(yPacked) * scaleFactor, Unpack(zPacked) * scaleFactor);
+    }
 
     public TValue? ReadOptional<TValue>() where TValue : INetworkSerializable<TValue> =>
         this.ReadBoolean() ? TValue.Read(this) : default;
@@ -125,7 +148,7 @@ public partial class NetworkBuffer : INetStreamReader
 
         var item = ItemsRegistry.Get(ReadVarInt());
         var count = this.ReadVarInt();
-      
+
         var itemStack = new HashedItemStack(item, count);
 
         //Might be best to change this
@@ -451,4 +474,8 @@ public partial class NetworkBuffer : INetStreamReader
         if (this.offset >= this.data.Length)
             throw new IndexOutOfRangeException("Reached end of buffer");
     }
+
+    private static double Unpack(long value) => Math.Min((value & short.MaxValue), short.MaxValue - 1) * 2.0 / (short.MaxValue - 1) - 1.0;
+
+    private static bool HasContinuationBit(long value) => (value & 4) == 4;
 }

@@ -3,38 +3,28 @@
 /// <summary>
 /// Represents velocity of an entity in the world.
 /// </summary>
-public struct Velocity
+/// <remarks>
+/// Creates a new instance of <see cref="Velocity"/> with specific values.
+/// </remarks>
+/// <param name="x">Velocity on the X axis.</param>
+/// <param name="y">Velocity on the Y axis.</param>
+/// <param name="z">Velocity on the Z axis.</param>
+public struct Velocity(double x, double y, double z)
 {
     /// <summary>
     /// Velocity on the X axis.
     /// </summary>
-    public short X { get; set; }
+    public double X { get; set; } = x;
     /// <summary>
     /// Velocity on the Y axis.
     /// </summary>
-    public short Y { get; set; }
+    public double Y { get; set; } = y;
     /// <summary>
     /// Velocity on the Z axis.
     /// </summary>
-    public short Z { get; set; }
+    public double Z { get; set; } = z;
 
-    /// <summary>
-    /// Returns the length of this <see cref="Velocity"/>.
-    /// </summary>
-    public float Magnitude => MathF.Sqrt(X * X + Y + Y + Z * Z);
-
-    /// <summary>
-    /// Creates a new instance of <see cref="Velocity"/> with specific values.
-    /// </summary>
-    /// <param name="x">Velocity on the X axis.</param>
-    /// <param name="y">Velocity on the Y axis.</param>
-    /// <param name="z">Velocity on the Z axis.</param>
-    public Velocity(short x, short y, short z)
-    {
-        X = x;
-        Y = y;
-        Z = z;
-    }
+    public static readonly Velocity Zero = new(0, 0, 0);
 
     /// <summary>
     /// Returns <see cref="Velocity"/> expressed as how many blocks on each axis can be travelled in a second.

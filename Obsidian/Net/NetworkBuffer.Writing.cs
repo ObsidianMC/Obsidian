@@ -11,15 +11,18 @@ using Obsidian.API.Registry.Codecs.WolfVariant;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
+using System;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 
 namespace Obsidian.Net;
+
 public partial class NetworkBuffer : INetStreamWriter
 {
     public bool CanWrite { get; set; }
@@ -557,13 +560,40 @@ public partial class NetworkBuffer : INetStreamWriter
         this.WriteOptional(soundEvent.FixedRange);
     }
 
+    private const double MinAbsValue = 3.051944088384301E-5;
 
     [WriteMethod]
     public void WriteVelocity(Velocity value)
     {
-        WriteShort(value.X);
-        WriteShort(value.Y);
-        WriteShort(value.Z);
+        var sanitizedX = Sanitize(value.X);
+        var sanitizedY = Sanitize(value.Y);
+        var sanitizedZ = Sanitize(value.Z);
+
+        var maxAbsValue = NumericsHelper.AbsMax(sanitizedX, NumericsHelper.AbsMax(sanitizedY, sanitizedZ));
+
+        if (maxAbsValue < MinAbsValue)
+        {
+            this.WriteByte(0);
+            return;
+        }
+
+        var scaleFactor = (long)Math.Ceiling(maxAbsValue);
+        var needsExtraBytes = (scaleFactor & ~3L) != 0; // Check if bits beyond the lower 2 are set
+        var adjustedScale = needsExtraBytes ? (scaleFactor & 3L) | 4L : scaleFactor;
+
+        var scale = (double)scaleFactor;
+        var packedX = PackVelocity(sanitizedX / scale) << 3;
+        var packedY = PackVelocity(sanitizedY / scale) << 18;
+        var packedZ = PackVelocity(sanitizedZ / scale) << 33;
+
+        var packedData = adjustedScale | packedX | packedY | packedZ;
+
+        this.WriteByte((byte)packedData);
+        this.WriteByte((byte)(packedData >> 8));
+        this.WriteInt((int)(packedData >> 16));
+
+        if (needsExtraBytes)
+            this.WriteVarInt((int)(scaleFactor >> 2));
     }
 
     #region optionals
@@ -667,4 +697,17 @@ public partial class NetworkBuffer : INetStreamWriter
     #endregion
 
     public byte[] ToArray() => this.Data;
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static long PackVelocity(double value)
+    {
+        const double scale = 0.5;
+        const int maxValue = short.MaxValue - 1;
+        return (long)Math.Round((value * scale + scale) * maxValue);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static double Sanitize(double value) =>
+        double.IsNaN(value) ? 0.0 : Math.Clamp(value, -1.7179869183E10, 1.7179869183E10);
 }

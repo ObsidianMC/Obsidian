@@ -81,4 +81,7 @@ public enum ProtocolVersion
     //Both 1.21.7 and 1.21.8 have the same PVN
     [Description("1.21.8")]
     v1_21_8 = 772,
+
+    [Description("1.21.10")]
+    v1_21_10 = 773,
 }

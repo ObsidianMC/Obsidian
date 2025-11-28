@@ -60,18 +60,14 @@
       "id": 2,
       "element": {
         "monster_spawn_block_light_limit": 0,
-        "monster_spawn_light_level": {
-          "type": "minecraft:uniform",
-          "max_inclusive": 7,
-          "min_inclusive": 0
-        },
+        "monster_spawn_light_level": 15,
         "piglin_safe": false,
         "natural": false,
-        "ambient_light": 0,
+        "ambient_light": 0.25,
         "fixed_time": 6000,
         "infiniburn": "#minecraft:infiniburn_end",
         "respawn_anchor_works": false,
-        "has_skylight": false,
+        "has_skylight": true,
         "bed_works": false,
         "effects": "minecraft:the_end",
         "has_raids": true,
