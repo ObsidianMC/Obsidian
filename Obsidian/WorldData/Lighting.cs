@@ -74,8 +74,7 @@ internal static class Lighting
                 targetChunk: chunk,
                 dir: dir,
                 sourceEdgeX: edgeX,
-                sourceEdgeZ: edgeZ,
-                decreaseLevel: true
+                sourceEdgeZ: edgeZ
             );
         }
     }
@@ -93,8 +92,7 @@ internal static class Lighting
                 targetChunk: neighbor,
                 dir: dir,
                 sourceEdgeX: sourceEdgeX,
-                sourceEdgeZ: sourceEdgeZ,
-                decreaseLevel: false
+                sourceEdgeZ: sourceEdgeZ
             );
         }
     }
@@ -104,8 +102,7 @@ internal static class Lighting
         IChunk targetChunk,
         Vector dir,
         int sourceEdgeX,
-        int sourceEdgeZ,
-        bool decreaseLevel)
+        int sourceEdgeZ)
     {
         if (sourceEdgeX >= 0)
         {
@@ -129,8 +126,7 @@ internal static class Lighting
 
                     foreach (var lt in Enum.GetValues<LightType>())
                     {
-                        var level = sourceChunk.GetLightLevel(sourceEdgeX, y, z, lt);
-                        if (decreaseLevel) level--;
+                        var level = sourceChunk.GetLightLevel(sourceEdgeX, y, z, lt) - 1;
 
                         if (level > targetChunk.GetLightLevel(targetPos, lt))
                         {
@@ -162,8 +158,7 @@ internal static class Lighting
 
                     foreach (var lt in Enum.GetValues<LightType>())
                     {
-                        var level = sourceChunk.GetLightLevel(x, y, sourceEdgeZ, lt);
-                        if (decreaseLevel) level--;
+                        var level = sourceChunk.GetLightLevel(x, y, sourceEdgeZ, lt) - 1;
 
                         if (level > targetChunk.GetLightLevel(targetPos, lt))
                         {
