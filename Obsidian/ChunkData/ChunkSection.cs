@@ -18,6 +18,13 @@ public sealed class ChunkSection : IChunkSection
 
     public bool IsEmpty { get; private set; } = true;
 
+    private static readonly byte[] FullSkyLight = new byte[2048];
+
+    static ChunkSection()
+    {
+        Array.Fill(FullSkyLight, (byte)0xFF); // 0xFF = two 15s packed together
+    }
+
     private byte[] skyLight = new byte[2048];
 
     private byte[] blockLight = new byte[2048];
@@ -90,6 +97,12 @@ public sealed class ChunkSection : IChunkSection
             skyLight = data;
         else
             blockLight = data;
+    }
+
+    public void FillSkyLight()
+    {
+        Array.Copy(FullSkyLight, skyLight, 2048);
+        HasSkyLight = true;
     }
 
     public IBlock GetBlock(Vector position) => this.GetBlock(position.X, position.Y, position.Z);

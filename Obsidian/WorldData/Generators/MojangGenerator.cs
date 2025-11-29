@@ -2,20 +2,22 @@
 
 
 namespace Obsidian.WorldData.Generators;
+
 internal class MojangGenerator : IWorldGenerator
 {
 
     public string Id => "minecraft:mojang_generator";
 
     private ChunkBuilder _builder;
+    private IWorld _world;
 
-    public ValueTask<IChunk> GenerateChunkAsync(int cx, int cz, IChunk? chunk = null, ChunkGenStage stage = ChunkGenStage.full)
+    public async ValueTask<IChunk> GenerateChunkAsync(int cx, int cz, IChunk? chunk = null, ChunkGenStage stage = ChunkGenStage.full)
     {
         chunk ??= new Chunk(cx, cz);
 
         // Sanity checks
         if (chunk.IsGenerated)
-            return ValueTask.FromResult(chunk);
+            return chunk;
 
         chunk.SetChunkStatus(chunk.ChunkStatus == ChunkGenStage.empty ? ChunkGenStage.structure_references : chunk.ChunkStatus);
 
@@ -65,14 +67,18 @@ internal class MojangGenerator : IWorldGenerator
 
         if (ChunkGenStage.light <= stage && chunk.ChunkStatus < ChunkGenStage.full)
         {
-            WorldLight.InitialFillSkyLight(chunk);
+            Lighting.InitialFillSkyLight(chunk);
+            await Lighting.LightFromNeighbors(chunk, _world);
             chunk.SetChunkStatus(ChunkGenStage.light);
+            await Lighting.LightToNeighbors(chunk, _world);
         }
 
         chunk.SetChunkStatus(ChunkGenStage.full);
-        return ValueTask.FromResult(chunk);
+        return chunk;
     }
     public void Init(IWorld world)
     {
+        _world = world;
         _builder = new ChunkBuilder(world, "minecraft:overworld");
-    }}
+    }
+}

@@ -33,6 +33,35 @@
 			}
 		},
 		{
+			"label": "clean-and-build-console-app",
+			"dependsOn": [
+				"clean",
+				"build-console-app"
+			],
+			"dependsOrder": "sequence",
+			"problemMatcher": []
+		},
+		{
+			"label": "delete-world",
+			"type": "shell",
+			"command": "rm",
+			"args": [
+				"-rf",
+				"${workspaceFolder}/Obsidian.ConsoleApp/bin/Debug/net10.0/worlds"
+			],
+			"problemMatcher": []
+		},
+		{
+			"label": "clean-build-and-delete-world",
+			"dependsOn": [
+				"delete-world",
+				"clean",
+				"build-console-app"
+			],
+			"dependsOrder": "sequence",
+			"problemMatcher": []
+		},
+		{
 			"label": "build-console-app-release",
 			"command": "dotnet",
 			"type": "process",
