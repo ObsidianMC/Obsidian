@@ -15,7 +15,7 @@ public sealed class NoiseRouter
 
     public required IDensityFunction FluidLevelSpread { get; set; }
 
-    public required IDensityFunction InitialDensityWithoutJaggedness { get; set; }
+    public required IDensityFunction PreliminarySurfaceLevel { get; set; }
 
     public required IDensityFunction Lava { get; set; }
 

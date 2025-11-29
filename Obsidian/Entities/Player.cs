@@ -253,7 +253,6 @@ public sealed partial class Player : Living, IPlayer
         await Client.QueuePacketAsync(new PlayerPositionPacket
         {
             Position = pos,
-            Flags = PositionFlags.None,
             TeleportId = tid
         });
         TeleportId = tid;
@@ -271,7 +270,6 @@ public sealed partial class Player : Living, IPlayer
         await Client.QueuePacketAsync(new PlayerPositionPacket
         {
             Position = to.Position,
-            Flags = PositionFlags.None,
             TeleportId = TeleportId
         });
     }
@@ -385,7 +383,6 @@ public sealed partial class Player : Living, IPlayer
             Position = Position,
             Yaw = 0,
             Pitch = 0,
-            Flags = PositionFlags.None,
             TeleportId = 0
         });
 
@@ -414,28 +411,28 @@ public sealed partial class Player : Living, IPlayer
     {
         base.Write(writer);
 
-        writer.WriteEntityMetadataType(15, EntityMetadataType.Float);
-        writer.WriteSingle(AdditionalHearts);
-
-        writer.WriteEntityMetadataType(16, EntityMetadataType.VarInt);
-        writer.WriteVarInt(XpTotal);
-
-        writer.WriteEntityMetadataType(17, EntityMetadataType.Byte);
+        writer.WriteEntityMetadataType(15, EntityMetadataType.Byte);
         writer.WriteByte(ClientInformation.DisplayedSkinParts);
 
-        writer.WriteEntityMetadataType(18, EntityMetadataType.Byte);
+        writer.WriteEntityMetadataType(16, EntityMetadataType.Byte);
         writer.WriteByte(ClientInformation.MainHand);
+
+        writer.WriteEntityMetadataType(17, EntityMetadataType.Float);
+        writer.WriteSingle(AdditionalHearts);
+
+        writer.WriteEntityMetadataType(18, EntityMetadataType.VarInt);
+        writer.WriteVarInt(XpTotal);
 
         //TODO fix possibly an extension method?
         if (LeftShoulder is not null)
         {
-            writer.WriteEntityMetadataType(19, EntityMetadataType.CompoundTag);
+            writer.WriteEntityMetadataType(19, EntityMetadataType.OptionalLivingEntityReference);
             writer.WriteNbtCompound([]);
         }
 
         if (RightShoulder is not null)
         {
-            writer.WriteEntityMetadataType(20, EntityMetadataType.CompoundTag);
+            writer.WriteEntityMetadataType(20, EntityMetadataType.OptionalLivingEntityReference);
             writer.WriteNbtCompound([]);
         }
     }

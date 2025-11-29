@@ -17,19 +17,21 @@ public partial class AddEntityPacket
     public VectorF Position { get; init; }
 
     [Field(4)]
-    public Angle Pitch { get; init; }
+    public Velocity Velocity { get; init; }
 
     [Field(5)]
-    public Angle Yaw { get; init; }
+    public Angle Pitch { get; init; }
 
     [Field(6)]
+    public Angle Yaw { get; init; }
+
+    [Field(7)]
     public Angle HeadYaw { get; init; }
 
-    [Field(7), VarLength]
+    [Field(8), VarLength]
     public int Data { get; init; }
 
-    [Field(8)]
-    public Velocity Velocity { get; init; }
+   
 
     public override void Serialize(INetStreamWriter writer)
     {
@@ -37,10 +39,10 @@ public partial class AddEntityPacket
         writer.WriteUuid(Uuid);
         writer.WriteVarInt(Type);
         writer.WriteAbsolutePositionF(Position);
+        writer.WriteVelocity(Velocity);
         writer.WriteByte(Pitch.Value);
         writer.WriteByte(Yaw.Value);
         writer.WriteByte(HeadYaw.Value);
         writer.WriteVarInt(Data);
-        writer.WriteVelocity(Velocity);
     }
 }
