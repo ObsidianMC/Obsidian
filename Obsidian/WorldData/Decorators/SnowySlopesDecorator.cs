@@ -1,5 +1,5 @@
 ﻿using Obsidian.API.Registry.Codecs.Biomes;
-using Obsidian.WorldData.Features.Trees;
+using Obsidian.Registries.ConfiguredFeatures;
 using Obsidian.WorldData.Generators;
 
 namespace Obsidian.WorldData.Decorators;
@@ -8,7 +8,7 @@ public class SnowySlopesDecorator : BaseDecorator
 {
     public SnowySlopesDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(3, typeof(DarkOakTree)));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(3, TreeFeatureRegistry.MinecraftDarkOak));
     }
 
     public override void Decorate()

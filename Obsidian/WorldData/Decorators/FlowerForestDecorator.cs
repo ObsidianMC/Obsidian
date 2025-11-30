@@ -1,6 +1,6 @@
 ﻿using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.Registries.ConfiguredFeatures;
 using Obsidian.WorldData.Features.Flora;
-using Obsidian.WorldData.Features.Trees;
 using Obsidian.WorldData.Generators;
 
 namespace Obsidian.WorldData.Decorators;
@@ -9,8 +9,8 @@ public class FlowerForestDecorator : BaseDecorator
 {
     public FlowerForestDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(3, typeof(OakTree)));
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, typeof(BirchTree)));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(3, TreeFeatureRegistry.MinecraftOak));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, TreeFeatureRegistry.MinecraftBirch));
         Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(AlliumFlora), 4, 3));
         Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(PoppyFlora), 4, 3));
         Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(DandelionFlora), 5, 3));

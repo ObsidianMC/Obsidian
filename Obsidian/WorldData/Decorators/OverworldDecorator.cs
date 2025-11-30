@@ -1,4 +1,5 @@
-﻿using Obsidian.ChunkData;
+﻿using Obsidian.API.World.Features;
+using Obsidian.ChunkData;
 using Obsidian.WorldData.Features.Flora;
 using Obsidian.WorldData.Features.Trees;
 using Obsidian.WorldData.Generators;
@@ -36,7 +37,7 @@ public static class OverworldDecorator
             floraCache.TryAdd(floraType, compiledLamda);
         }
 
-        foreach(var treeType in trees)
+        foreach (var treeType in trees)
         {
             var ctor = treeType.GetConstructor(argumentCache);
 
@@ -69,7 +70,7 @@ public static class OverworldDecorator
 
     internal static async Task GenerateFloraAsync(Vector pos, DecoratorFeatures features, GenHelper helper, IChunk chunk)
     {
-        for(int i = 0; i < features.Flora.Count; i++)
+        for (int i = 0; i < features.Flora.Count; i++)
         {
             var flora = features.Flora[i];
 
@@ -99,17 +100,12 @@ public static class OverworldDecorator
 
     internal static async Task GenerateTreesAsync(Vector pos, DecoratorFeatures features, GenHelper helper, IChunk chunk)
     {
-        for(int i = 0; i < features.Trees.Count; i++)
+        for (int i = 0; i < features.Trees.Count; i++)
         {
             var tree = features.Trees[i];
 
             if (tree.Frequency == 0)
                 continue;
-
-            if (!treeCache.TryGetValue(tree.TreeType, out var treeFactory))
-                throw new UnreachableException();
-
-            var treeInstance = treeFactory(helper, chunk);
 
             // Use a different noisemap for each tree type by setting another Y value.
             var noiseVal = helper.Noise.Decoration.GetValue(pos.X, -45 + (i * 10), pos.Z);
@@ -118,7 +114,29 @@ public static class OverworldDecorator
             if (!isTree) { continue; }
 
             int heightVariance = (int)(((noiseVal - 0.8) * 100) - (freq / 2));
-            await GrowTreeAsync(pos, treeInstance, heightVariance);
+
+            // New data-driven approach using TreeFeature
+            if (tree.Feature != null)
+            {
+                var context = new FeatureContext
+                {
+                    World = helper.World,
+                    Random = new Random(helper.Seed ^ pos.GetHashCode()),
+                    PlacementLocation = pos
+                };
+                await tree.Feature.Place(context);
+            }
+            // Legacy approach using BaseTree (for backward compatibility)
+#pragma warning disable CS0618 // Type or member is obsolete
+            else if (tree.TreeType != null)
+            {
+                if (!treeCache.TryGetValue(tree.TreeType, out var treeFactory))
+                    throw new UnreachableException();
+
+                var treeInstance = treeFactory(helper, chunk);
+                await GrowTreeAsync(pos, treeInstance, heightVariance);
+            }
+#pragma warning restore CS0618
         }
     }
 }

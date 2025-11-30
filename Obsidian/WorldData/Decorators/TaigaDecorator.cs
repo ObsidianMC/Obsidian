@@ -1,5 +1,5 @@
 ﻿using Obsidian.API.Registry.Codecs.Biomes;
-using Obsidian.WorldData.Features.Trees;
+using Obsidian.Registries.ConfiguredFeatures;
 using Obsidian.WorldData.Generators;
 
 namespace Obsidian.WorldData.Decorators;
@@ -8,8 +8,8 @@ public class TaigaDecorator : BaseDecorator
 {
     public TaigaDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(2, typeof(SpruceTree)));
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(3, typeof(LargeSpruceTree)));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(2, TreeFeatureRegistry.MinecraftSpruce));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(3, TreeFeatureRegistry.MinecraftMegaSpruce));
     }
 
     public override void Decorate()

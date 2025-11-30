@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text.Json;
 
 namespace Obsidian.SourceGenerators.Registry;
+
 public partial class WorldgenFeatureRegistryGenerator
 {
     private static readonly string[] numbers = ["Int32", "Single", "Double", "Int64"];
@@ -59,18 +60,21 @@ public partial class WorldgenFeatureRegistryGenerator
                 builder.AppendSimple($"{elementName.ToPascalCase()} = \"{element.GetString()}\", ", newLine);
                 break;
             case JsonValueKind.Number:
-                var members = featureType.GetProperties();
-
-                var member = members.FirstOrDefault(x => x.Name == elementName.ToPascalCase());
-
-                if (member != null)
+                if (featureType.Symbol != null)
                 {
-                    var property = (IPropertySymbol)member;
+                    var members = featureType.GetProperties();
 
-                    if (numbers.Contains(property.Type.Name))
+                    var member = members.FirstOrDefault(x => x.Name == elementName.ToPascalCase());
+
+                    if (member != null)
                     {
-                        AppendNumberProperty(builder, elementName, element, property.Type.Name, newLine);
-                        break;
+                        var property = (IPropertySymbol)member;
+
+                        if (numbers.Contains(property.Type.Name))
+                        {
+                            AppendNumberProperty(builder, elementName, element, property.Type.Name, newLine);
+                            break;
+                        }
                     }
                 }
 

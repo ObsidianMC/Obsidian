@@ -30,6 +30,9 @@
 				"omnisharp.enableRoslynAnalyzers": true,
 				"omnisharp.enableImportCompletion": true,
 				"omnisharp.organizeImportsOnFormat": true,
+				"omnisharp.enableDecompilationSupport": false,
+				"omnisharp.sdkIncludePrereleases": false,
+				"roslyn.sourceGenerators.enable": true,
 				"editor.formatOnSave": true,
 				"editor.codeActionsOnSave": {
 					"source.organizeImports": "explicit"
@@ -49,8 +52,8 @@
 			}
 		}
 	},
-	"postCreateCommand": "dotnet restore Obsidian.sln",
-	"postStartCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}",
+	"postCreateCommand": "dotnet restore Obsidian.sln && dotnet build Obsidian.sln --no-restore",
+	"postStartCommand": "git config --global --add safe.directory ${containerWorkspaceFolder} && dotnet build Obsidian.sln --no-restore",
 	"forwardPorts": [
 		25565
 	],

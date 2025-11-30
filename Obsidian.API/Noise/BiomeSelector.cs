@@ -22,13 +22,13 @@ public class BiomeSelector : Module
         },
         {
             { CodecRegistry.Biomes.IceSpikes, CodecRegistry.Biomes.SnowyPlains, CodecRegistry.Biomes.SnowyTaiga }, // flatland, frozen, low-med-high humidity
-            { CodecRegistry.Biomes.Plains, CodecRegistry.Biomes.Plains, CodecRegistry.Biomes.Taiga }, // flatland, cold, low-med-high humidity
-            { CodecRegistry.Biomes.Forest, CodecRegistry.Biomes.Forest, CodecRegistry.Biomes.BambooJungle}, // flatland, warm, low-med-high humidity
+            { CodecRegistry.Biomes.Meadow, CodecRegistry.Biomes.Plains, CodecRegistry.Biomes.Taiga }, // flatland, cold, low-med-high humidity
+            { CodecRegistry.Biomes.BirchForest, CodecRegistry.Biomes.Forest, CodecRegistry.Biomes.BambooJungle}, // flatland, warm, low-med-high humidity
             { CodecRegistry.Biomes.Savanna, CodecRegistry.Biomes.Desert, CodecRegistry.Biomes.Swamp }, // flatland, hot, low-med-high humidity
         },
         {
             { CodecRegistry.Biomes.WindsweptForest, CodecRegistry.Biomes.SnowySlopes, CodecRegistry.Biomes.SnowySlopes }, // hills, frozen, low-med-high humidity
-            { CodecRegistry.Biomes.WindsweptHills, CodecRegistry.Biomes.Grove, CodecRegistry.Biomes.Forest }, // hills, cold, low-med-high humidity
+            { CodecRegistry.Biomes.WindsweptHills, CodecRegistry.Biomes.Grove, CodecRegistry.Biomes.DarkForest }, // hills, cold, low-med-high humidity
             { CodecRegistry.Biomes.WindsweptGravellyHills, CodecRegistry.Biomes.SunflowerPlains, CodecRegistry.Biomes.Jungle }, // hills, warm, low-med-high humidity
             { CodecRegistry.Biomes.SavannaPlateau, CodecRegistry.Biomes.Badlands, CodecRegistry.Biomes.MangroveSwamp }, // hills, hot, low-med-high humidity
         },
@@ -65,7 +65,7 @@ public class BiomeSelector : Module
             if (riverVal < 0.04)
                 return tempIndex < 1 ? CodecRegistry.Biomes.FrozenRiver.Id : CodecRegistry.Biomes.River.Id;
         }
-        if (height >= -0.1 && height < 0.04) 
+        if (height >= -0.1 && height < 0.04)
             return tempIndex <= 1 ? CodecRegistry.Biomes.SnowyBeach.Id : CodecRegistry.Biomes.Beach.Id;
 
         if (height > 0.1) // If above ocean, add erosion and rivers

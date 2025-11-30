@@ -9,6 +9,9 @@ public sealed class ClampedIntProvider : IIntProvider
 
     public IIntProvider Source { get; init; } = default!;
 
-    //TODO
-    public int Get() => 0;
+    public int Get()
+    {
+        var sourceValue = this.Source.Get();
+        return Math.Clamp(sourceValue, this.Value.MinInclusive, this.Value.MaxInclusive);
+    }
 }

@@ -12,6 +12,8 @@ public class GenHelper
 
     internal OverworldTerrainNoise Noise { get; private set; }
 
+    public IWorld World => this.world;
+
     public GenHelper(IWorld world)
     {
         this.world = world;

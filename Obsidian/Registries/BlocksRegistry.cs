@@ -38,7 +38,7 @@ internal static partial class BlocksRegistry
         var blockName = Names[registryId];
         var resourceId = ResourceIds[registryId];
 
-        if(!blockTypeCache.TryGetValue(blockName, out var type))
+        if (!blockTypeCache.TryGetValue(blockName, out var type))
         {
             var sanitizedBlockName = GetSanitizedName(blockName);
 
@@ -70,18 +70,28 @@ internal static partial class BlocksRegistry
 
     public static IBlock GetFromSimpleState(SimpleBlockState simpleState)
     {
-        IBlockState? state = null;       
-        if(simpleState.Properties.Count > 0)
+        IBlockState? state = null;
+        if (simpleState.Properties.Count > 0)
         {
             var blockName = GetSanitizedName(GetBlockName(simpleState.Name) ??
                 throw new NullReferenceException($"Unable to find block with name: {simpleState.Name}"));
 
-            var stateBuilderType = Type.GetType($"Obsidian.API.BlockStates.Builders.{blockName}StateBuilder") ?? 
-                throw new InvalidOperationException("Failed to find builder for block");
+            var stateBuilderType = Type.GetType($"Obsidian.API.BlockStates.Builders.{blockName}StateBuilder");
 
-            var builder = Activator.CreateInstance(stateBuilderType, simpleState.Properties)!;
-
-            state = (IBlockState)builder.GetType().GetMethod("Build")!.Invoke(builder, null)!;
+            // Only use state builder if one exists, otherwise fall back to default state
+            if (stateBuilderType != null)
+            {
+                try
+                {
+                    var builder = Activator.CreateInstance(stateBuilderType, simpleState.Properties)!;
+                    state = (IBlockState)builder.GetType().GetMethod("Build")!.Invoke(builder, null)!;
+                }
+                catch
+                {
+                    // If state builder fails, fall back to default state
+                    // This can happen for blocks that have properties but no generated state builders yet
+                }
+            }
         }
 
         return Get(simpleState.Name, state);
@@ -132,7 +142,7 @@ internal static partial class BlocksRegistry
 
         if (defaultBlockCache.TryGetValue(materialString, out var value))
             return value;
-        
+
         if (!Names.Contains(materialString))
             throw new InvalidOperationException($"{material} is not a valid block.");
 
