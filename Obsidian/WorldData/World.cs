@@ -199,7 +199,7 @@ public sealed partial class World : IWorld
     private void BroadcastBlockChange(IBlock block, Vector location)
     {
         var packet = new BlockUpdatePacket(location, block.GetHashCode());
-        foreach (Player player in this.PlayersInRange(location))
+        foreach (Player player in PlayersInRange(location).Cast<Player>())
         {
             player.Client.SendPacket(packet);
         }

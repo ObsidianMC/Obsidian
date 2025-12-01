@@ -35,22 +35,21 @@ public partial class PlayerActionPacket
 
         if (Status == PlayerActionStatus.FinishedDigging || (Status == PlayerActionStatus.StartedDigging && player.Gamemode == Gamemode.Creative))
         {
-            await player.World.SetBlockAsync(Position, BlocksRegistry.Air, true);
-            player.Client.SendPacket(new BlockChangedAckPacket
+            var args = new BlockBreakEventArgs(server, player, block, Position)
             {
-                SequenceID = Sequence
-            });
+                Sequence = this.Sequence
+            };
 
-            var args = new BlockBreakEventArgs(server, player, block, Position);
             await server.EventDispatcher.ExecuteEventAsync(args);
+
             if (args.Handled)
                 return;
         }
 
-        this.BroadcastPlayerAction(player, block);
+        this.BroadcastPlayerAction(player);
     }
 
-    private void BroadcastPlayerAction(IPlayer player, IBlock block)
+    private void BroadcastPlayerAction(IPlayer player)
     {
         switch (this.Status)
         {
@@ -66,42 +65,18 @@ public partial class PlayerActionPacket
                 }
             case PlayerActionStatus.StartedDigging:
             case PlayerActionStatus.CancelledDigging:
+                player.Client.SendPacket(new BlockChangedAckPacket
+                {
+                    SequenceID = this.Sequence
+                });
                 break;
             case PlayerActionStatus.FinishedDigging:
                 {
-                    player.World.PacketBroadcaster.QueuePacketToWorld(player.World, 0, new BlockDestructionPacket
-                    {
-                        EntityId = player.EntityId,
-                        Position = this.Position,
-                        DestroyStage = -1
-                    }, player.EntityId);
-
-                    var droppedItem = ItemsRegistry.GetSingleItem(block.Material);
-
-                    if (droppedItem.Type == Material.Air) { break; }
-
-                    var item = new ItemEntity
-                    {
-                        EntityId = Server.GetNextEntityId(),
-                        Item = droppedItem,
-                        World = player.World,
-                        Position = (VectorF)this.Position + 0.5f,
-                    };
-
-                    player.World.TryAddEntity(item);
-
-                    item.SpawnEntity(Velocity.FromBlockPerTick(GetRandDropVelocity(), GetRandDropVelocity(), GetRandDropVelocity()));
+                    
 
                     break;
                 }
         }
-    }
-
-    private static float GetRandDropVelocity()
-    {
-        var f = Globals.Random.NextFloat();
-
-        return f * 0.5f;
     }
 
     private static void DropItem(IPlayer player, sbyte amountToRemove)
@@ -160,7 +135,9 @@ public enum PlayerActionStatus : int
     DropItemStack,
     DropItem,
 
-    ShootArrowOrFinishEating,
+    ReleaseUseItem,
 
-    SwapItemInHand
+    SwapItemInHand,
+
+    Stab
 }
