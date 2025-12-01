@@ -46,7 +46,8 @@ internal class MojangGenerator : IWorldGenerator
 
         if (ChunkGenStage.surface <= stage && chunk.ChunkStatus < ChunkGenStage.surface)
         {
-            _builder.InitialShape(chunk, BlocksRegistry.GrassBlock);
+            // Generate terrain using 3D density sampling
+            _builder.Generate3DTerrain(chunk, BlocksRegistry.Stone);
             chunk.SetChunkStatus(ChunkGenStage.surface);
         }
 
@@ -67,10 +68,10 @@ internal class MojangGenerator : IWorldGenerator
 
         if (ChunkGenStage.light <= stage && chunk.ChunkStatus < ChunkGenStage.full)
         {
-            Lighting.InitialFillSkyLight(chunk);
-            await Lighting.LightFromNeighbors(chunk, _world);
-            chunk.SetChunkStatus(ChunkGenStage.light);
-            await Lighting.LightToNeighbors(chunk, _world);
+            // Lighting.InitialFillSkyLight(chunk);
+            // await Lighting.LightFromNeighbors(chunk, _world);
+            // chunk.SetChunkStatus(ChunkGenStage.light);
+            // await Lighting.LightToNeighbors(chunk, _world);
         }
 
         chunk.SetChunkStatus(ChunkGenStage.full);
@@ -79,6 +80,6 @@ internal class MojangGenerator : IWorldGenerator
     public void Init(IWorld world)
     {
         _world = world;
-        _builder = new ChunkBuilder(world, "minecraft:overworld");
+        _builder = new ChunkBuilder(world, "minecraft:nether");
     }
 }
