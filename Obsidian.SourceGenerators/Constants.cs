@@ -13,8 +13,6 @@ internal static class Constants
     public const string SurfaceConditionAttributeName = "SurfaceConditionAttribute";
     public const string SurfaceConditionCleanedAttributeName = "SurfaceCondition";
 
-    // Use forward slashes for cross-platform compatibility (works on both Windows and Unix)
-    // Note: Assets folder has both density_function and density_functions - we use singular to match Minecraft
     public const string DensityFunction = "density_function/";
     public const string Noise = "noise/";
     public const string NoiseSettings = "noise_settings/";

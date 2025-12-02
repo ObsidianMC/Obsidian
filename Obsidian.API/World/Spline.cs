@@ -2,13 +2,15 @@
 using Obsidian.API.World.Generator.DensityFunctions;
 
 namespace Obsidian.API.World;
+
 public class Spline : ISpline
 {
     public required IDensityFunction Coordinate { get; init; }
 
     public required SplinePoint[] Points { get; init; }
 
-    public double MinValue { 
+    public double MinValue
+    {
         get
         {
             if (!_created)
@@ -17,7 +19,7 @@ public class Spline : ISpline
             }
             return field;
         }
-        private set; 
+        private set;
     }
 
     public double MaxValue
@@ -42,8 +44,8 @@ public class Spline : ISpline
     public void Create()
     {
         _created = true;
-        MaxValue = double.MaxValue;
-        MinValue = double.MinValue;
+        MinValue = double.MaxValue;
+        MaxValue = double.MinValue;
         _locations = Points.Select(x => x.Location).ToList();
         _derivatives = Points.Select(x => x.Derivative).ToList();
         _values = Points.Select(x => x.Value).ToList();
@@ -55,8 +57,8 @@ public class Spline : ISpline
         // Search for min/max spline values
         if (coordMin < _locations[0])
         {
-            var extendedMin = LinearExtend(coordMin, _values[0].MinValue, _lastIndex);
-            var extendedMax = LinearExtend(coordMin, _values[0].MaxValue, _lastIndex);
+            var extendedMin = LinearExtend(coordMin, _values[0].MinValue, 0);
+            var extendedMax = LinearExtend(coordMin, _values[0].MaxValue, 0);
             MinValue = Math.Min(MinValue, Math.Min(extendedMin, extendedMax));
             MaxValue = Math.Max(MaxValue, Math.Max(extendedMin, extendedMax));
         }

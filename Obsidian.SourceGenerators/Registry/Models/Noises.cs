@@ -11,15 +11,13 @@ internal sealed class Noises
 
     public static Noises Get(ImmutableArray<(string name, string json)> files)
     {
-        // Normalize path separators to work on both Windows and Unix systems
-        // Handle both density_function and density_functions (both exist in the assets folder)
         return new()
         {
             Settings = ParseSettings(files.Where(x => x.name.Replace('\\', '/').StartsWith("noise_settings/")).ToImmutableArray()),
             DensityFunctions = ParseSettings(files.Where(x =>
             {
                 var normalized = x.name.Replace('\\', '/');
-                return normalized.StartsWith("density_function/") || normalized.StartsWith("density_functions/");
+                return normalized.StartsWith("density_function/");
             }).ToImmutableArray()),
             Noise = ParseSettings(files.Where(x => x.name.Replace('\\', '/').StartsWith("noise/")).ToImmutableArray())
         };

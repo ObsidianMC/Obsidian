@@ -18,7 +18,6 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
            {
                var index = file.Path.IndexOf("worldgen");
 
-               // Normalize path separators to forward slash for cross-platform compatibility
                var name = file.Path.Substring(index + WorldGenLength + 1)
                    .Replace(".json", "")
                    .Replace('\\', '/');

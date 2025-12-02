@@ -1,4 +1,4 @@
-﻿using Obsidian.API.World.Generator;
+﻿using Obsidian.WorldData.Generators.Mojang;
 
 
 namespace Obsidian.WorldData.Generators;
@@ -23,31 +23,19 @@ internal class MojangGenerator : IWorldGenerator
 
         if (ChunkGenStage.biomes <= stage && chunk.ChunkStatus < ChunkGenStage.biomes)
         {
-            for (int x = 0; x < 16; x++)
-            {
-                for (int z = 0; z < 16; z++)
-                {
-                    int worldX = x + (chunk.X << 4);
-                    int worldZ = z + (chunk.Z << 4);
-
-                    // Determine Biome
-                    if (x % 4 == 0 && z % 4 == 0) // Biomes are in 4x4x4 blocks. Do a 2D array for now and just copy it vertically.
-                    {
-                        var biome = CodecRegistry.Biomes.Plains;
-                        for (int y = -64; y < 320; y += 4)
-                        {
-                            chunk.SetBiome(x, y, z, biome);
-                        }
-                    }
-                }
-            }
+            // Use multi-noise biome selection based on climate parameters
+            _builder.PopulateBiomes(chunk);
             chunk.SetChunkStatus(ChunkGenStage.biomes);
         }
 
         if (ChunkGenStage.surface <= stage && chunk.ChunkStatus < ChunkGenStage.surface)
         {
-            // Generate terrain using 3D density sampling
-            _builder.Generate3DTerrain(chunk, BlocksRegistry.Stone);
+            // Generate terrain using 3D density sampling with aquifer support
+            _builder.Generate3DTerrain(chunk);
+
+            // Apply surface rules to replace stone with grass, dirt, sand, etc.
+            _builder.ApplySurfaceRules(chunk);
+
             chunk.SetChunkStatus(ChunkGenStage.surface);
         }
 
@@ -68,10 +56,10 @@ internal class MojangGenerator : IWorldGenerator
 
         if (ChunkGenStage.light <= stage && chunk.ChunkStatus < ChunkGenStage.full)
         {
-            // Lighting.InitialFillSkyLight(chunk);
-            // await Lighting.LightFromNeighbors(chunk, _world);
-            // chunk.SetChunkStatus(ChunkGenStage.light);
-            // await Lighting.LightToNeighbors(chunk, _world);
+            Lighting.InitialFillSkyLight(chunk);
+            await Lighting.LightFromNeighbors(chunk, _world);
+            chunk.SetChunkStatus(ChunkGenStage.light);
+            await Lighting.LightToNeighbors(chunk, _world);
         }
 
         chunk.SetChunkStatus(ChunkGenStage.full);
@@ -80,6 +68,6 @@ internal class MojangGenerator : IWorldGenerator
     public void Init(IWorld world)
     {
         _world = world;
-        _builder = new ChunkBuilder(world, "minecraft:nether");
+        _builder = new ChunkBuilder(world);
     }
 }
