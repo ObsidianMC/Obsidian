@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 
 namespace Obsidian.SourceGenerators.Registry.Models;
+
 internal sealed class BaseFeature
 {
     public string Name { get; set; } = default!;
@@ -12,9 +13,11 @@ internal sealed class BaseFeatureDictionary
 {
     private readonly Dictionary<string, TypeInformation> heightProviders = [];
     private readonly Dictionary<string, TypeInformation> intProviders = [];
+    private readonly Dictionary<string, TypeInformation> configuredFeatures = [];
 
     public void AddHeightProvider(string key, TypeInformation value) => this.heightProviders.Add(key, value);
     public void AddIntProvider(string key, TypeInformation value) => this.intProviders.Add(key, value);
+    public void AddConfiguredFeature(string key, TypeInformation value) => this.configuredFeatures.Add(key, value);
 
     public bool TryGetValue(string key, out TypeInformation value)
     {
@@ -22,6 +25,9 @@ internal sealed class BaseFeatureDictionary
             return true;
 
         if (this.intProviders.TryGetValue(key, out value))
+            return true;
+
+        if (this.configuredFeatures.TryGetValue(key, out value))
             return true;
 
         return false;
@@ -32,6 +38,8 @@ internal sealed class BaseFeatureDictionary
         if (this.heightProviders.TryGetValue(key, out var value))
             return value;
         if (this.intProviders.TryGetValue(key, out value))
+            return value;
+        if (this.configuredFeatures.TryGetValue(key, out value))
             return value;
 
         return null;

@@ -55,6 +55,15 @@ public sealed class CodeBuilder
         return AppendScoped(signature);
     }
 
+    public CodeBuilder Type(string signature, Action<CodeBuilder> action)
+    {
+        this.AppendScoped(signature);
+
+        action(this);
+
+        return this.EndScope();
+    }
+
     public CodeBuilder Array(string signature) => AppendArrayScoped(signature);
 
     public CodeBuilder Type(INamedTypeSymbol typeSymbol)

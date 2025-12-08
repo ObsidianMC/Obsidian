@@ -1,6 +1,8 @@
-﻿using Microsoft.CodeAnalysis.CSharp;
+﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Obsidian.SourceGenerators.Registry.Models;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.IO;
 
 namespace Obsidian.SourceGenerators.Registry;
@@ -8,8 +10,12 @@ namespace Obsidian.SourceGenerators.Registry;
 [Generator]
 public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGenerator
 {
-    private const string AttributeName = "TreePropertyAttribute";
-    private const string CleanedAttributeName = "TreeProperty";
+    private const string TreePropertyAttributeName = "TreePropertyAttribute";
+    private const string CleanedTreePropertyAttributeName = "TreeProperty";
+
+    private const string ConfiguredFeatureAttributeName = "ConfiguredFeatureAttribute";
+    private const string CleanedConfiguredFeatureAttributeName = "ConfiguredFeature";
+
     private const string IntProviderName = "IIntProvider";
     private const string HeightProviderName = "IHeightProvider";
 
@@ -19,22 +25,39 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
         //    Debugger.Launch();
 
         var jsonFiles = ctx.AdditionalTextsProvider
-           .Where(file => file.Path.Contains("features") && file.Path.EndsWith(".json"))
-           .Select(static (file, ct) => (name: Path.GetFileNameWithoutExtension(file.Path), content: file.GetText(ct)!.ToString()));
+            .Where(file => file.Path.Contains("features") && file.Path.EndsWith(".json"))
+            .Select(static (file, ct) => (name: Path.GetFileNameWithoutExtension(file.Path), content: file.GetText(ct)!.ToString()));
 
-        IncrementalValuesProvider<ClassDeclarationSyntax> classDeclarations = ctx.SyntaxProvider
+        IncrementalValuesProvider<ClassDeclarationSyntax> treePropertyClassDeclarations = ctx.SyntaxProvider
             .CreateSyntaxProvider(
-                static (node, _) => node is ClassDeclarationSyntax syntax,
-                static (context, _) => TransformData(context.Node as ClassDeclarationSyntax, context))
+                static (node, _) => IsClassDeclaration(node),
+                static (context, _) => TransformTreePropertyData(context.Node as ClassDeclarationSyntax, context))
             .Where(static m => m is not null)!;
 
-        var compilation = ctx.CompilationProvider.Combine(classDeclarations.Collect()).Combine(jsonFiles.Collect());
+        IncrementalValuesProvider<ClassDeclarationSyntax> configuredFeatureClassDeclarations = ctx.SyntaxProvider
+            .CreateSyntaxProvider(
+                static (node, _) => IsClassDeclaration(node),
+                static (context, _) => TransformConfiguredFeaturesData(context.Node as ClassDeclarationSyntax, context))
+            .Where(static m => m is not null)!;
 
-        ctx.RegisterSourceOutput(compilation,
-            (spc, src) => this.Generate(spc, src.Left.Left, src.Left.Right, src.Right));
+        var combinedInputs = ctx.CompilationProvider
+            .Combine(configuredFeatureClassDeclarations.Collect())
+            .Combine(treePropertyClassDeclarations.Collect())
+            .Combine(jsonFiles.Collect())
+            .Select(static (src, _) => new PipelineInputs(
+                compilation: src.Left.Left.Left,
+                configuredFeatureClasses: src.Left.Left.Right,
+                treePropertyClasses: src.Left.Right,
+                jsonFiles: src.Right));
+
+        ctx.RegisterSourceOutput(
+            combinedInputs,
+            (spc, inputs) => this.Generate(spc, inputs.Compilation, inputs.TreePropertyClasses, inputs.ConfiguredFeatureClasses, inputs.JsonFiles));
     }
 
-    private static ClassDeclarationSyntax? TransformData(ClassDeclarationSyntax? syntax, GeneratorSyntaxContext ctx)
+
+
+    private static ClassDeclarationSyntax? TransformTreePropertyData(ClassDeclarationSyntax? syntax, GeneratorSyntaxContext ctx)
     {
         if (syntax is null)
             return null;
@@ -44,73 +67,79 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
         if (symbol == null)
             return null;
 
-        if (symbol.GetAttributes().Any(x => x.AttributeClass?.Name == AttributeName))
-        {
+        if (symbol.GetAttributes().Any(x => x.AttributeClass?.Name == TreePropertyAttributeName))
             return syntax;
-        }
 
         return null;
     }
 
-    private void Generate(SourceProductionContext context, Compilation compilation, ImmutableArray<ClassDeclarationSyntax> typeList,
+    private static ClassDeclarationSyntax? TransformConfiguredFeaturesData(ClassDeclarationSyntax? syntax, GeneratorSyntaxContext ctx)
+    {
+        if (syntax is null)
+            return null;
+
+        var symbol = ctx.SemanticModel.GetDeclaredSymbol(ctx.Node);
+
+        if (symbol == null)
+            return null;
+
+        if (symbol.GetAttributes().Any(x => x.AttributeClass?.Name == ConfiguredFeatureAttributeName))
+            return syntax;
+
+        return null;
+    }
+
+    private void Generate(SourceProductionContext context, Compilation compilation, ImmutableArray<ClassDeclarationSyntax> treeProperties,
+        ImmutableArray<ClassDeclarationSyntax> configuredFeatures,
         ImmutableArray<(string name, string json)> files)
     {
         var asm = compilation.AssemblyName;
 
-        var features = Features.Get(files);
-
-        var classes = new List<TypeInformation>();
-
         if (asm != "Obsidian")
             return;
 
-        foreach (var @class in typeList)
-        {
-            var model = compilation.GetSemanticModel(@class.SyntaxTree);
-            var symbol = model.GetDeclaredSymbol(@class);
+        var features = Features.Get(files);
 
-            if (symbol is null)
-                continue;
+        var treePropertyClasses = treeProperties.SelectMany(x => GetTypeInformation(x, compilation, CleanedTreePropertyAttributeName));
+        var configuredFeatureClasses = configuredFeatures.SelectMany(x => GetTypeInformation(x, compilation, CleanedConfiguredFeatureAttributeName));
 
-            var attributes = @class.AttributeLists.SelectMany(x => x.Attributes).Where(x => x.Name.ToString() == CleanedAttributeName);
-
-            if (attributes is null)
-                continue;
-
-            foreach (var attribute in attributes)
-            {
-                var arg = attribute.ArgumentList!.Arguments[0];
-                var expression = arg.Expression;
-                var value = model.GetConstantValue(expression).ToString();
-
-                classes.Add(new TypeInformation(symbol, value));
-            }
-        }
-
-        this.GenerateClasses(classes, context, features);
+        this.GenerateClasses(treePropertyClasses, configuredFeatureClasses, context, features);
     }
 
-    private void GenerateClasses(List<TypeInformation> classes, SourceProductionContext context, Features features)
+    private static List<TypeInformation> GetTypeInformation(ClassDeclarationSyntax @class, Compilation compilation, string attributeName)
     {
-        var builder = new CodeBuilder()
-            .Using("Obsidian.API.World.Features")
-            .Using("Obsidian.API.World.Features.Tree")
-            .Using("Obsidian.Providers.BlockStateProviders")
-            .Using("Obsidian.Providers.IntProviders")
-            .Using("Obsidian.WorldData.Features.Tree")
-            .Using("Obsidian.WorldData.Features.Tree.Placers.Trunk")
-            .Using("Obsidian.WorldData.Features.Tree.Placers.Foliage")
-            .Using("Obsidian.WorldData.Features.Tree.Placers.Root")
-            .Using("Obsidian.WorldData.BlockPredicates")
-            .Using("System.Collections.Frozen")
-            .Namespace("Obsidian.Registries.ConfiguredFeatures")
-            .Line()
-            .Type("public static class TreeFeatureRegistry");
+        var classes = new List<TypeInformation>();
 
-        var treeFeatureTypes = new Dictionary<string, TypeInformation>();
+        var model = compilation.GetSemanticModel(@class.SyntaxTree);
+        var symbol = model.GetDeclaredSymbol(@class);
+
+        if (symbol is null)
+            return classes;
+
+        var attributes = @class.AttributeLists.SelectMany(x => x.Attributes).Where(x => x.Name.ToString() == attributeName);
+
+        if (attributes is null)
+            return classes;
+
+        foreach (var attribute in attributes)
+        {
+            var arg = attribute.ArgumentList!.Arguments[0];
+            var expression = arg.Expression;
+            var value = model.GetConstantValue(expression).ToString();
+
+            classes.Add(new TypeInformation(symbol, value));
+        }
+
+        return classes;
+    }
+
+    private void GenerateClasses(IEnumerable<TypeInformation> treePropertyClasses,
+        IEnumerable<TypeInformation> configuredFeatureClasses, SourceProductionContext context, Features features)
+    {
+        var featureTypes = new Dictionary<string, TypeInformation>();
 
         var baseFeatures = new BaseFeatureDictionary();
-        foreach (var @class in classes)
+        foreach (var @class in treePropertyClasses)
         {
             if (@class.Symbol.Interfaces.Any(x => x.Name == IntProviderName))
             {
@@ -125,13 +154,89 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
                 continue;
             }
 
-            treeFeatureTypes.Add(@class.ResourceLocation, @class);
+            featureTypes.Add(@class.ResourceLocation, @class);
         }
 
-        BuildTreeType(treeFeatureTypes, baseFeatures, features, builder);
+        foreach (var @class in configuredFeatureClasses)
+        {
+            baseFeatures.AddConfiguredFeature(@class.ResourceLocation, @class);
+        }
+
+        var builder = new CodeBuilder()
+            .Using("Obsidian.API.World.Features")
+            .Using("Obsidian.API.World.Features.Flower")
+            .Using("Obsidian.API.World.Features.Tree")
+            .Using("Obsidian.WorldData.Features.Tree.Placers.Trunk")
+            .Using("Obsidian.WorldData.Features.Tree.Placers.Foliage")
+            .Using("Obsidian.WorldData.Features.Tree.Placers.Root")
+            .Using("Obsidian.Providers.BlockStateProviders")
+            .Using("Obsidian.Providers.IntProviders")
+            .Using("Obsidian.WorldData.BlockPredicates")
+            .Using("Obsidian.WorldData.ConfiguredFeatures")
+            .Using("System.Collections.Frozen")
+            .Namespace("Obsidian.Registries")
+            .Line()
+            .Type("public static class ConfiguredFeatures");
+
+        builder.Type("public static class Flowers", (classBuilder) =>
+        {
+            BuildType("FlowerFeature", featureTypes, baseFeatures, features.FlowerFeatures, classBuilder);
+        });
+
+        builder.Type("public static class Trees", (classBuilder) =>
+        {
+            BuildType("TreeFeature", featureTypes, baseFeatures, features.TreeFeatures, classBuilder);
+        });
 
         builder.EndScope();
 
-        context.AddSource("TreesRegistry.g.cs", builder.ToString());
+        context.AddSource("ConfiguredFeatures.g.cs", builder.ToString());
+    }
+
+    private static void BuildType(string name, Dictionary<string, TypeInformation> featureTypes, BaseFeatureDictionary baseFeatureTypes,
+        BaseFeature[] features, CodeBuilder builder)
+    {
+        foreach (var flowerFeature in features)
+        {
+            var sanitizedName = flowerFeature.Name.ToPascalCase().RemoveNamespace();
+            builder.Type($"public static readonly {name} {sanitizedName} = new()");
+
+            builder.Line($"Identifier = {SymbolDisplay.FormatLiteral(flowerFeature.Name, true)}, ");
+
+            foreach (var property in flowerFeature.Properties)
+            {
+                var elementName = property.Name;
+                var element = property.Value;
+
+                ClassBuilder.AppendChildProperty(featureTypes, baseFeatureTypes, default, elementName, element, builder);
+            }
+
+            builder.EndScope(true);
+        }
+
+        builder.Type($"public static readonly FrozenDictionary<string, {name}> All = new Dictionary<string, {name}>()");
+
+        foreach (var feature in features)
+        {
+            var sanitizedName = feature.Name.ToPascalCase().RemoveNamespace();
+
+            builder.Line($"{{ \"{feature.Name}\", {sanitizedName}}}, ");
+        }
+
+        builder.EndScope(".ToFrozenDictionary()", true);
+    }
+
+    private static bool IsClassDeclaration(SyntaxNode node) => node is ClassDeclarationSyntax;
+
+    private readonly struct PipelineInputs(
+        Compilation compilation,
+        ImmutableArray<ClassDeclarationSyntax> configuredFeatureClasses,
+        ImmutableArray<ClassDeclarationSyntax> treePropertyClasses,
+        ImmutableArray<(string name, string json)> jsonFiles)
+    {
+        public Compilation Compilation { get; } = compilation;
+        public ImmutableArray<ClassDeclarationSyntax> ConfiguredFeatureClasses { get; } = configuredFeatureClasses;
+        public ImmutableArray<ClassDeclarationSyntax> TreePropertyClasses { get; } = treePropertyClasses;
+        public ImmutableArray<(string name, string json)> JsonFiles { get; } = jsonFiles;
     }
 }
