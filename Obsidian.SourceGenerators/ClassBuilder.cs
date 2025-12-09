@@ -13,13 +13,6 @@ internal static class ClassBuilder
     public static void AppendChildProperty(Dictionary<string, TypeInformation> featureTypes, BaseFeatureDictionary baseFeatureTypes,
         TypeInformation featureType, string elementName, JsonElement element, CodeBuilder builder)
     {
-        //Temp workaround :weary:
-        if (elementName == "can_grow_through" && element.ValueKind != JsonValueKind.Array)
-        {
-            builder.Line($"{elementName.ToPascalCase()} = {{ {SymbolDisplay.FormatLiteral(element.GetString()!, true)} }}, ");
-            return;
-        }
-
         switch (element.ValueKind)
         {
             case JsonValueKind.String:
@@ -111,11 +104,11 @@ internal static class ClassBuilder
         return false;
     }
 
-    private static bool TryAppendStateProperty(string elementName, JsonElement element, CodeBuilder builder)
+    public static bool TryAppendStateProperty(string elementName, JsonElement element, CodeBuilder builder, bool isDictionary = false)
     {
-        var isState = elementName == "state";
+        var isState = elementName == "state" || elementName is Constants.DefaultBlock or Constants.DefaultFluid or Constants.BlockResult;
 
-        if (isState)
+        if (isState || isDictionary)
         {
             builder.Type($"{elementName.ToPascalCase()} = new()");
 

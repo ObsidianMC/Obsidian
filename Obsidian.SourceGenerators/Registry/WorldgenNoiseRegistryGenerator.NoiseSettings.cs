@@ -1,11 +1,11 @@
-﻿using Obsidian.SourceGenerators.Registry.Models;
+﻿using Microsoft.CodeAnalysis.CSharp;
+using Obsidian.SourceGenerators.Registry.Models;
 using static Obsidian.SourceGenerators.Constants;
 
 namespace Obsidian.SourceGenerators.Registry;
 public partial class WorldgenNoiseRegistryGenerator
 {
-    private static void BuildNoiseSettings(CleanedNoises cleanedNoises,
-        Noises noises, CodeBuilder builder)
+    private static void BuildNoiseSettings(CleanedNoises cleanedNoises, Noises noises, CodeBuilder builder)
     {
         var settings = noises.Settings;
 
@@ -21,7 +21,7 @@ public partial class WorldgenNoiseRegistryGenerator
                 var elementName = property.Name;
                 var element = property.Value;
 
-                AppendChildProperty(cleanedNoises, elementName, element, builder, true, elementName == "noise_router");
+                AppendChildProperty(cleanedNoises, elementName, element, builder, elementName == "noise_router");
             }
 
             builder.EndScope(true);
@@ -34,7 +34,7 @@ public partial class WorldgenNoiseRegistryGenerator
             var cleanedName = setting.Name.Replace(NoiseSettings, string.Empty);
             var sanitizedName = cleanedName.ToPascalCase();
 
-            builder.Line($"{{ \"minecraft:{cleanedName}\", {sanitizedName}}}, ");
+            builder.Line($"{{ {SymbolDisplay.FormatLiteral($"minecraft:{cleanedName}", true)}, {sanitizedName}}}, ");
         }
 
         builder.EndScope(".ToFrozenDictionary()", true);

@@ -8,7 +8,7 @@ public partial class WorldgenNoiseRegistryGenerator
     {
         var densityFunctions = noises.DensityFunctions;
 
-        builder.Type("public static class DensityFunctions");
+        builder.Type("public static class DensityFunction");
 
         var groups = new Dictionary<string, Dictionary<string, List<BaseFeature>>>();
 
@@ -77,7 +77,7 @@ public partial class WorldgenNoiseRegistryGenerator
                         var elementName = property.Name;
                         var element = property.Value;
 
-                        AppendChildProperty(cleanedNoises, elementName, element, builder, true, true, typeInformation);
+                        AppendChildProperty(cleanedNoises, elementName, element, builder, true, typeInformation);
                     }
 
                     builder.EndScope(true);

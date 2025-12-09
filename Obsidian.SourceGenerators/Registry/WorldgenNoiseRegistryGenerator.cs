@@ -127,9 +127,9 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
 
         var cleanedNoises = new CleanedNoises(worldgenProperties, staticDensityFunctions, noiseTypes, surfaceConditions);
 
-        InitSection("Noises", context, (CodeBuilder builder) => BuildNoise(cleanedNoises, noises, builder));
-        InitSection("DensityFunctions", context, (CodeBuilder builder) => BuildDensityFunctions(cleanedNoises, noises, builder));
-        InitSection("Base", context, (CodeBuilder builder) => BuildNoiseSettings(cleanedNoises, noises, builder));
+        InitSection("Noises", context, (builder) => BuildNoise(cleanedNoises, noises, builder));
+        InitSection("DensityFunctions", context, (builder) => BuildDensityFunctions(cleanedNoises, noises, builder));
+        InitSection("Base", context, (builder) => BuildNoiseSettings(cleanedNoises, noises, builder));
     }
 
     private static void InitSection(string sectionName, SourceProductionContext context, Action<CodeBuilder> method)

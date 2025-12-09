@@ -4,6 +4,7 @@ using Obsidian.SourceGenerators.Registry.Models;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
+using System.Text.Json;
 
 namespace Obsidian.SourceGenerators.Registry;
 
@@ -196,17 +197,24 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
     private static void BuildType(string name, Dictionary<string, TypeInformation> featureTypes, BaseFeatureDictionary baseFeatureTypes,
         BaseFeature[] features, CodeBuilder builder)
     {
-        foreach (var flowerFeature in features)
+        foreach (var feature in features)
         {
-            var sanitizedName = flowerFeature.Name.ToPascalCase().RemoveNamespace();
+            var sanitizedName = feature.Name.ToPascalCase().RemoveNamespace();
             builder.Type($"public static readonly {name} {sanitizedName} = new()");
 
-            builder.Line($"Identifier = {SymbolDisplay.FormatLiteral(flowerFeature.Name, true)}, ");
+            builder.Line($"Identifier = {SymbolDisplay.FormatLiteral(feature.Name, true)}, ");
 
-            foreach (var property in flowerFeature.Properties)
+            foreach (var property in feature.Properties)
             {
                 var elementName = property.Name;
                 var element = property.Value;
+
+                //Temp workaround :weary:
+                if (elementName == "can_grow_through" && element.ValueKind != JsonValueKind.Array)
+                {
+                    builder.Line($"{elementName.ToPascalCase()} = {{ {SymbolDisplay.FormatLiteral(element.GetString()!, true)} }}, ");
+                    continue;
+                }
 
                 ClassBuilder.AppendChildProperty(featureTypes, baseFeatureTypes, default, elementName, element, builder);
             }

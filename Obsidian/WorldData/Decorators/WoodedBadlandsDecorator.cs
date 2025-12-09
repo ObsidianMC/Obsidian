@@ -1,5 +1,4 @@
 ﻿using Obsidian.API.Registry.Codecs.Biomes;
-using Obsidian.Registries.ConfiguredFeatures;
 using Obsidian.WorldData.Generators;
 
 namespace Obsidian.WorldData.Decorators;
@@ -8,8 +7,8 @@ public class WoodedBadlandsDecorator : BaseDecorator
 {
     public WoodedBadlandsDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(2, TreeFeatureRegistry.MinecraftOak));
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(7, TreeFeatureRegistry.MinecraftDarkOak));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(2, Registries.ConfiguredFeatures.Trees.MinecraftOak));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(7, Registries.ConfiguredFeatures.Trees.MinecraftDarkOak));
     }
 
     public override void Decorate()

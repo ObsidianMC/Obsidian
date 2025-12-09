@@ -21,7 +21,7 @@ public partial class WorldgenNoiseRegistryGenerator
                 var elementName = property.Name;
                 var element = property.Value;
 
-                AppendChildProperty(cleanedNoises, elementName, element, builder, true);
+                AppendChildProperty(cleanedNoises, elementName, element, builder);
             }
 
             builder.EndScope(true);
