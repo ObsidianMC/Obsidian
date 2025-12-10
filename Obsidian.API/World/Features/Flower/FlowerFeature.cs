@@ -14,7 +14,7 @@ public sealed class FlowerFeature : ConfiguredFeatureBase
     public required IIntProvider XzSpread { get; init; }
     public required IIntProvider YSpread { get; init; }
 
-    public required PlacedFeatureBase Feature { get; init; } 
+    public required PlacementFlowerBlockFeature Feature { get; init; } 
 
     public override ValueTask Place(FeatureContext context) => default;
 }

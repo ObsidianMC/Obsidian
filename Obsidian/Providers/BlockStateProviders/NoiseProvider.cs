@@ -13,7 +13,7 @@ public sealed class NoiseProvider : IBlockStateProvider
 
     public required float Scale { get; set; }
 
-    public List<SimpleBlockState> States { get; } = [];
+    public List<SimpleBlockState> States { get; set; } = [];
 
     //TODO
     public IBlock Get()

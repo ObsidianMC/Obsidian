@@ -82,7 +82,7 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
                 var expression = arg.Expression;
                 var value = model.GetConstantValue(expression).ToString();
 
-                classes.Add(new TypeInformation(symbol, value));
+                classes.Add(new TypeInformation(symbol, value, false));
             }
         }
 

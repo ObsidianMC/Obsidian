@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Obsidian.WorldData.ConfiguredFeatures;
+namespace Obsidian.WorldData.Features;
 
 [ConfiguredFeature("minecraft:simple_block")]
 public sealed class SimpleBlockConfiguredFeature : ConfiguredFeatureBase
@@ -18,5 +18,7 @@ public sealed class SimpleBlockConfiguredFeature : ConfiguredFeatureBase
 public readonly record struct SimpleBlockFeatureConfig
 {
     public required IBlockStateProvider ToPlace { get; init; }
+
+    public bool ScheduleTick { get; init; }
 }
 

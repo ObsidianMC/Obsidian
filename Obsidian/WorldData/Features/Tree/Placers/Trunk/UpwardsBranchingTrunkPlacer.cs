@@ -18,7 +18,7 @@ public sealed class UpwardsBranchingTrunkPlacer : TrunkPlacer
     [Range(0.0, 1.0)]
     public required float PlaceBranchPerLogProbability { get; init; }
 
-    public List<string> CanGrowThrough { get; } = [];
+    public string CanGrowThrough { get; init; }
 
     public override async ValueTask<List<Vector>> Place(FeatureContext context, Vector origin, int treeHeight, IBlock trunkBlock)
     {

@@ -19,9 +19,9 @@ public sealed class NoiseThresholdProvider : IBlockStateProvider
 
     public required SimpleBlockState DefaultState { get; set; }
 
-    public List<SimpleBlockState> LowStates { get; } = [];
+    public List<SimpleBlockState> LowStates { get; set; } = [];
 
-    public List<SimpleBlockState> HighStates { get; } = [];
+    public List<SimpleBlockState> HighStates { get; set; } = [];
 
     public IBlock Get()
     {

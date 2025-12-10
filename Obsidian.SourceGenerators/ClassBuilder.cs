@@ -86,7 +86,8 @@ internal static class ClassBuilder
 
             builder.Type($"{elementName.ToPascalCase()} = new {featureType.Symbol.Name}()");
 
-            builder.Line($"Type = {SymbolDisplay.FormatLiteral(featureType.ResourceLocation, true)},");
+            if (!featureType.IsConfiguredFeature)
+                builder.Line($"Type = {SymbolDisplay.FormatLiteral(featureType.ResourceLocation, true)},");
 
             foreach (var childProperty in element.EnumerateObject().Where(x => x.Name != "type"))
             {

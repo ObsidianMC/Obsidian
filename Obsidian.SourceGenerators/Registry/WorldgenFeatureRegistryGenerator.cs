@@ -128,7 +128,7 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
             var expression = arg.Expression;
             var value = model.GetConstantValue(expression).ToString();
 
-            classes.Add(new TypeInformation(symbol, value));
+            classes.Add(new TypeInformation(symbol, value, false));
         }
 
         return classes;
@@ -160,20 +160,21 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
 
         foreach (var @class in configuredFeatureClasses)
         {
-            baseFeatures.AddConfiguredFeature(@class.ResourceLocation, @class);
+            baseFeatures.AddConfiguredFeature(@class.ResourceLocation, @class with { IsConfiguredFeature = true});
         }
 
         var builder = new CodeBuilder()
             .Using("Obsidian.API.World.Features")
             .Using("Obsidian.API.World.Features.Flower")
             .Using("Obsidian.API.World.Features.Tree")
+            .Using("Obsidian.WorldData.Features.Tree")
             .Using("Obsidian.WorldData.Features.Tree.Placers.Trunk")
             .Using("Obsidian.WorldData.Features.Tree.Placers.Foliage")
             .Using("Obsidian.WorldData.Features.Tree.Placers.Root")
             .Using("Obsidian.Providers.BlockStateProviders")
             .Using("Obsidian.Providers.IntProviders")
             .Using("Obsidian.WorldData.BlockPredicates")
-            .Using("Obsidian.WorldData.ConfiguredFeatures")
+            .Using("Obsidian.WorldData.Features")
             .Using("System.Collections.Frozen")
             .Namespace("Obsidian.Registries")
             .Line()
