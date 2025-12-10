@@ -2,7 +2,7 @@
 
 namespace Obsidian.Providers.BlockStateProviders;
 
-[TreeProperty("minecraft:randomized_int_state_provider")]
+[ConfiguredFeatureProperty("minecraft:randomized_int_state_provider")]
 public sealed class RandomizedIntStateProvider : IBlockStateProvider
 {
     public string Type { get; init; } = "minecraft:randomized_int_state_provider";

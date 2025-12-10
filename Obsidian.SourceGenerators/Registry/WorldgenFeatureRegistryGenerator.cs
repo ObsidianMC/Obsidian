@@ -11,8 +11,8 @@ namespace Obsidian.SourceGenerators.Registry;
 [Generator]
 public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGenerator
 {
-    private const string TreePropertyAttributeName = "TreePropertyAttribute";
-    private const string CleanedTreePropertyAttributeName = "TreeProperty";
+    private const string ConfiguredFeaturePropertyAttributeName = "ConfiguredFeaturePropertyAttribute";
+    private const string CleanedConfiguredFeaturePropertyAttributeName = "ConfiguredFeatureProperty";
 
     private const string ConfiguredFeatureAttributeName = "ConfiguredFeatureAttribute";
     private const string CleanedConfiguredFeatureAttributeName = "ConfiguredFeature";
@@ -32,7 +32,7 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
         IncrementalValuesProvider<ClassDeclarationSyntax> treePropertyClassDeclarations = ctx.SyntaxProvider
             .CreateSyntaxProvider(
                 static (node, _) => IsClassDeclaration(node),
-                static (context, _) => TransformTreePropertyData(context.Node as ClassDeclarationSyntax, context))
+                static (context, _) => TransformPropertyData(context.Node as ClassDeclarationSyntax, context))
             .Where(static m => m is not null)!;
 
         IncrementalValuesProvider<ClassDeclarationSyntax> configuredFeatureClassDeclarations = ctx.SyntaxProvider
@@ -58,7 +58,7 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
 
 
 
-    private static ClassDeclarationSyntax? TransformTreePropertyData(ClassDeclarationSyntax? syntax, GeneratorSyntaxContext ctx)
+    private static ClassDeclarationSyntax? TransformPropertyData(ClassDeclarationSyntax? syntax, GeneratorSyntaxContext ctx)
     {
         if (syntax is null)
             return null;
@@ -68,7 +68,7 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
         if (symbol == null)
             return null;
 
-        if (symbol.GetAttributes().Any(x => x.AttributeClass?.Name == TreePropertyAttributeName))
+        if (symbol.GetAttributes().Any(x => x.AttributeClass?.Name == ConfiguredFeaturePropertyAttributeName))
             return syntax;
 
         return null;
@@ -101,7 +101,7 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
 
         var features = Features.Get(files);
 
-        var treePropertyClasses = treeProperties.SelectMany(x => GetTypeInformation(x, compilation, CleanedTreePropertyAttributeName));
+        var treePropertyClasses = treeProperties.SelectMany(x => GetTypeInformation(x, compilation, CleanedConfiguredFeaturePropertyAttributeName));
         var configuredFeatureClasses = configuredFeatures.SelectMany(x => GetTypeInformation(x, compilation, CleanedConfiguredFeatureAttributeName));
 
         this.GenerateClasses(treePropertyClasses, configuredFeatureClasses, context, features);
@@ -134,13 +134,13 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
         return classes;
     }
 
-    private void GenerateClasses(IEnumerable<TypeInformation> treePropertyClasses,
+    private void GenerateClasses(IEnumerable<TypeInformation> configuredFeaturePropertyClasses,
         IEnumerable<TypeInformation> configuredFeatureClasses, SourceProductionContext context, Features features)
     {
         var featureTypes = new Dictionary<string, TypeInformation>();
 
         var baseFeatures = new BaseFeatureDictionary();
-        foreach (var @class in treePropertyClasses)
+        foreach (var @class in configuredFeaturePropertyClasses)
         {
             if (@class.Symbol.Interfaces.Any(x => x.Name == IntProviderName))
             {

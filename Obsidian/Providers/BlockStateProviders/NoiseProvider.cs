@@ -1,8 +1,6 @@
-﻿using Obsidian.Registries;
+﻿namespace Obsidian.Providers.BlockStateProviders;
 
-namespace Obsidian.Providers.BlockStateProviders;
-
-[TreeProperty("minecraft:noise_provider")]
+[ConfiguredFeatureProperty("minecraft:noise_provider")]
 public sealed class NoiseProvider : IBlockStateProvider
 {
     public string Type { get; init; } = "minecraft:noise_provider";

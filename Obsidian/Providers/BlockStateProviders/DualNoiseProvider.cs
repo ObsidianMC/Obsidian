@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.Providers.BlockStateProviders;
 
-[TreeProperty("minecraft:dual_noise_provider")]
+[ConfiguredFeatureProperty("minecraft:dual_noise_provider")]
 public sealed class DualNoiseProvider : IBlockStateProvider
 {
     public required string Type { get; init; } = "minecraft:dual_noise_provider";
