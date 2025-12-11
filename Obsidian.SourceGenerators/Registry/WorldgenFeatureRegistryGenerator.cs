@@ -1,5 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
+﻿using Microsoft.CodeAnalysis.CSharp;
 using Obsidian.SourceGenerators.Registry.Models;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -11,6 +10,11 @@ namespace Obsidian.SourceGenerators.Registry;
 [Generator]
 public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGenerator
 {
+    private static readonly string[] attributes = [ConfiguredFeaturePropertyAttributeName, TreePropertyAttributeName, ConfiguredFeatureAttributeName];
+
+    private const string TreePropertyAttributeName = "TreePropertyAttribute";
+    private const string CleanedTreePropertyAttributeName = "TreeProperty";
+
     private const string ConfiguredFeaturePropertyAttributeName = "ConfiguredFeaturePropertyAttribute";
     private const string CleanedConfiguredFeaturePropertyAttributeName = "ConfiguredFeatureProperty";
 
@@ -19,12 +23,10 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
 
     private const string IntProviderName = "IIntProvider";
     private const string HeightProviderName = "IHeightProvider";
+    private const string ConfiguredFeatureBaseName = "ConfiguredFeatureBase";
 
     public void Initialize(IncrementalGeneratorInitializationContext ctx)
     {
-        //if (!Debugger.IsAttached)
-        //    Debugger.Launch();
-
         var jsonFiles = ctx.AdditionalTextsProvider
             .Where(file => file.Path.Contains("features") && file.Path.EndsWith(".json"))
             .Select(static (file, ct) => (name: Path.GetFileNameWithoutExtension(file.Path), content: file.GetText(ct)!.ToString()));
@@ -35,28 +37,18 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
                 static (context, _) => TransformPropertyData(context.Node as ClassDeclarationSyntax, context))
             .Where(static m => m is not null)!;
 
-        IncrementalValuesProvider<ClassDeclarationSyntax> configuredFeatureClassDeclarations = ctx.SyntaxProvider
-            .CreateSyntaxProvider(
-                static (node, _) => IsClassDeclaration(node),
-                static (context, _) => TransformConfiguredFeaturesData(context.Node as ClassDeclarationSyntax, context))
-            .Where(static m => m is not null)!;
-
         var combinedInputs = ctx.CompilationProvider
-            .Combine(configuredFeatureClassDeclarations.Collect())
             .Combine(treePropertyClassDeclarations.Collect())
             .Combine(jsonFiles.Collect())
             .Select(static (src, _) => new PipelineInputs(
-                compilation: src.Left.Left.Left,
-                configuredFeatureClasses: src.Left.Left.Right,
-                treePropertyClasses: src.Left.Right,
+                compilation: src.Left.Left,
+                configuredFeatureProperties: src.Left.Right,
                 jsonFiles: src.Right));
 
         ctx.RegisterSourceOutput(
             combinedInputs,
-            (spc, inputs) => this.Generate(spc, inputs.Compilation, inputs.TreePropertyClasses, inputs.ConfiguredFeatureClasses, inputs.JsonFiles));
+            (spc, inputs) => this.Generate(spc, inputs.Compilation, inputs.ConfiguredFeatureProperties, inputs.JsonFiles));
     }
-
-
 
     private static ClassDeclarationSyntax? TransformPropertyData(ClassDeclarationSyntax? syntax, GeneratorSyntaxContext ctx)
     {
@@ -68,31 +60,14 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
         if (symbol == null)
             return null;
 
-        if (symbol.GetAttributes().Any(x => x.AttributeClass?.Name == ConfiguredFeaturePropertyAttributeName))
+        if (symbol.GetAttributes().Any(x => attributes.Contains(x.AttributeClass?.Name)))
             return syntax;
 
         return null;
     }
 
-    private static ClassDeclarationSyntax? TransformConfiguredFeaturesData(ClassDeclarationSyntax? syntax, GeneratorSyntaxContext ctx)
-    {
-        if (syntax is null)
-            return null;
-
-        var symbol = ctx.SemanticModel.GetDeclaredSymbol(ctx.Node);
-
-        if (symbol == null)
-            return null;
-
-        if (symbol.GetAttributes().Any(x => x.AttributeClass?.Name == ConfiguredFeatureAttributeName))
-            return syntax;
-
-        return null;
-    }
-
-    private void Generate(SourceProductionContext context, Compilation compilation, ImmutableArray<ClassDeclarationSyntax> treeProperties,
-        ImmutableArray<ClassDeclarationSyntax> configuredFeatures,
-        ImmutableArray<(string name, string json)> files)
+    private void Generate(SourceProductionContext context, Compilation compilation,
+        ImmutableArray<ClassDeclarationSyntax> configuredFeaturePropertiesDecs, ImmutableArray<(string name, string json)> files)
     {
         var asm = compilation.AssemblyName;
 
@@ -101,13 +76,15 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
 
         var features = Features.Get(files);
 
-        var treePropertyClasses = treeProperties.SelectMany(x => GetTypeInformation(x, compilation, CleanedConfiguredFeaturePropertyAttributeName));
-        var configuredFeatureClasses = configuredFeatures.SelectMany(x => GetTypeInformation(x, compilation, CleanedConfiguredFeatureAttributeName));
+        var configuredFeatureProperties = configuredFeaturePropertiesDecs.SelectMany(x => GetTypeInformation(x, compilation,
+            CleanedConfiguredFeaturePropertyAttributeName,
+            CleanedTreePropertyAttributeName,
+            CleanedConfiguredFeatureAttributeName));
 
-        this.GenerateClasses(treePropertyClasses, configuredFeatureClasses, context, features);
+        this.GenerateClasses(configuredFeatureProperties, context, features);
     }
 
-    private static List<TypeInformation> GetTypeInformation(ClassDeclarationSyntax @class, Compilation compilation, string attributeName)
+    private static List<TypeInformation> GetTypeInformation(ClassDeclarationSyntax @class, Compilation compilation, params string[] attributeNames)
     {
         var classes = new List<TypeInformation>();
 
@@ -117,7 +94,7 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
         if (symbol is null)
             return classes;
 
-        var attributes = @class.AttributeLists.SelectMany(x => x.Attributes).Where(x => x.Name.ToString() == attributeName);
+        var attributes = @class.AttributeLists.SelectMany(x => x.Attributes).Where(x => attributeNames.Contains(x.Name.ToString()));
 
         if (attributes is null)
             return classes;
@@ -134,8 +111,7 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
         return classes;
     }
 
-    private void GenerateClasses(IEnumerable<TypeInformation> configuredFeaturePropertyClasses,
-        IEnumerable<TypeInformation> configuredFeatureClasses, SourceProductionContext context, Features features)
+    private void GenerateClasses(IEnumerable<TypeInformation> configuredFeaturePropertyClasses, SourceProductionContext context, Features features)
     {
         var featureTypes = new Dictionary<string, TypeInformation>();
 
@@ -154,13 +130,14 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
 
                 continue;
             }
+            else if (@class.Symbol.BaseType?.Name == ConfiguredFeatureBaseName)
+            {
+                baseFeatures.AddConfiguredFeature(@class.ResourceLocation, @class with { IsConfiguredFeature = true });
+                continue;
+            }
+
 
             featureTypes.Add(@class.ResourceLocation, @class);
-        }
-
-        foreach (var @class in configuredFeatureClasses)
-        {
-            baseFeatures.AddConfiguredFeature(@class.ResourceLocation, @class with { IsConfiguredFeature = true});
         }
 
         var builder = new CodeBuilder()
@@ -239,13 +216,11 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
 
     private readonly struct PipelineInputs(
         Compilation compilation,
-        ImmutableArray<ClassDeclarationSyntax> configuredFeatureClasses,
-        ImmutableArray<ClassDeclarationSyntax> treePropertyClasses,
+        ImmutableArray<ClassDeclarationSyntax> configuredFeatureProperties,
         ImmutableArray<(string name, string json)> jsonFiles)
     {
         public Compilation Compilation { get; } = compilation;
-        public ImmutableArray<ClassDeclarationSyntax> ConfiguredFeatureClasses { get; } = configuredFeatureClasses;
-        public ImmutableArray<ClassDeclarationSyntax> TreePropertyClasses { get; } = treePropertyClasses;
+        public ImmutableArray<ClassDeclarationSyntax> ConfiguredFeatureProperties { get; } = configuredFeatureProperties;
         public ImmutableArray<(string name, string json)> JsonFiles { get; } = jsonFiles;
     }
 }

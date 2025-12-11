@@ -1,7 +1,7 @@
 ﻿namespace Obsidian.API;
 
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
-public sealed class ConfiguredFeatureProperty(string resourceLocation) : Attribute
+public sealed class ConfiguredFeaturePropertyAttribute(string resourceLocation) : Attribute
 {
     public string ResourceLocation { get; init; } = resourceLocation;
 }
