@@ -206,7 +206,7 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
         {
             var sanitizedName = feature.Name.ToPascalCase().RemoveNamespace();
 
-            builder.Line($"{{ \"{feature.Name}\", {sanitizedName}}}, ");
+            builder.Line($"{{ {SymbolDisplay.FormatLiteral(feature.Name, true)}, {sanitizedName}}}, ");
         }
 
         builder.EndScope(".ToFrozenDictionary()", true);
