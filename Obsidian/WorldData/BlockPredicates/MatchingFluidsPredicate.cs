@@ -1,4 +1,6 @@
 ﻿namespace Obsidian.WorldData.BlockPredicates;
+
+[ConfiguredFeatureProperty("minecraft:matching_fluids")]
 public sealed class MatchingFluidsPredicate : IBlockPredicate
 {
     public string Type { get; init; } = "minecraft:matching_fluids";

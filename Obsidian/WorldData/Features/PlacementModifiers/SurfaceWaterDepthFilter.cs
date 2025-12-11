@@ -5,7 +5,7 @@
 /// return the current position.
 /// Otherwise return
 /// </summary>
-[TreeProperty("minecraft:surface_water_depth_filter")]
+[ConfiguredFeatureProperty("minecraft:surface_water_depth_filter")]
 public sealed class SurfaceWaterDepthFilter : PlacementModifierBase
 {
     public override string Type { get; internal init; } = "minecraft:surface_water_depth_filter";

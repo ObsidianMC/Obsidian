@@ -1,4 +1,6 @@
 ﻿namespace Obsidian.WorldData.BlockPredicates;
+
+[ConfiguredFeatureProperty("minecraft:matching_blocks")]
 public sealed class MatchingBlocksPredicate : IBlockPredicate
 {
     public string Type { get; } = "minecraft:matching_blocks";

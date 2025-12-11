@@ -1,6 +1,4 @@
-﻿using Obsidian.Registries;
-
-namespace Obsidian.Providers.BlockStateProviders;
+﻿namespace Obsidian.Providers.BlockStateProviders;
 
 [ConfiguredFeatureProperty("minecraft:weighted_state_provider")]
 public sealed class WeightedStateProvider : IBlockStateProvider

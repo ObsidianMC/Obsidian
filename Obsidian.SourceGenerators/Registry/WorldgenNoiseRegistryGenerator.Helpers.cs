@@ -1,7 +1,6 @@
 ﻿using Microsoft.CodeAnalysis.CSharp;
 using Obsidian.SourceGenerators.Packets;
 using Obsidian.SourceGenerators.Registry.Models;
-using System.Diagnostics;
 using System.Text.Json;
 
 namespace Obsidian.SourceGenerators.Registry;

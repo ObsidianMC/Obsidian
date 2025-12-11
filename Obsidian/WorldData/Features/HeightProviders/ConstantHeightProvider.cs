@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.WorldData.Features.HeightProviders;
 
-[TreeProperty("minecarft:constant")]
+[ConfiguredFeatureProperty("minecarft:constant")]
 public sealed class ConstantHeightProvider : IHeightProvider
 {
     public required string Type { get; init; } = "minecarft:constant";

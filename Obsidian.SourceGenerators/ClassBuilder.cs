@@ -40,6 +40,12 @@ internal static class ClassBuilder
                 break;
             case JsonValueKind.Array:
                 builder.Line($"{elementName.ToPascalCase()} = [],");
+                //builder.Array($"{elementName.ToPascalCase()} =");
+
+                //foreach (var arrayItem in element.EnumerateArray())
+                //    AppendArrayItem(featureTypes, baseFeatureTypes, arrayItem, builder);
+
+                //builder.EndArrayScope(",", false);
                 break;
             case JsonValueKind.True:
             case JsonValueKind.False:
@@ -70,7 +76,7 @@ internal static class ClassBuilder
         }
     }
 
-    private static bool TryAppendTypeProperty(Dictionary<string, TypeInformation> featureTypes, BaseFeatureDictionary baseFeatureTypes, string elementName,
+    private static bool TryAppendTypeProperty(Dictionary<string, TypeInformation> featureTypes, BaseFeatureDictionary baseFeatureTypes, string? elementName,
         JsonElement element, CodeBuilder builder)
     {
         if (element.ValueKind != JsonValueKind.Object)
@@ -84,7 +90,10 @@ internal static class ClassBuilder
             if (value is not TypeInformation featureType)
                 return false;
 
-            builder.Type($"{elementName.ToPascalCase()} = new {featureType.Symbol.Name}()");
+            if (!string.IsNullOrEmpty(elementName))
+                builder.Type($"{elementName!.ToPascalCase()} = new {featureType.Symbol.Name}()");
+            else
+                builder.Type($"new {featureType.Symbol.Name}()");
 
             if (!featureType.IsConfiguredFeature)
                 builder.Line($"Type = {SymbolDisplay.FormatLiteral(featureType.ResourceLocation, true)},");
@@ -105,13 +114,16 @@ internal static class ClassBuilder
         return false;
     }
 
-    public static bool TryAppendStateProperty(string elementName, JsonElement element, CodeBuilder builder, bool isDictionary = false)
+    public static bool TryAppendStateProperty(string? elementName, JsonElement element, CodeBuilder builder, bool isDictionary = false)
     {
-        var isState = elementName == "state" || elementName is Constants.DefaultBlock or Constants.DefaultFluid or Constants.BlockResult;
+        var isState = elementName is Constants.DefaultBlock or Constants.DefaultFluid or Constants.BlockResult or "state" || element.TryGetProperty("Properties", out _);
 
         if (isState || isDictionary)
         {
-            builder.Type($"{elementName.ToPascalCase()} = new()");
+            if (!string.IsNullOrEmpty(elementName))
+                builder.Type($"{elementName!.ToPascalCase()} = new()");
+            else
+                builder.Type("new()");
 
             builder.Line($"Name = {SymbolDisplay.FormatLiteral(element.GetProperty("Name").ToString(), true)}, ");
 
@@ -135,6 +147,54 @@ internal static class ClassBuilder
 
         return isState;
     }
+
+    private static void AppendArrayItem(Dictionary<string, TypeInformation> featureTypes, BaseFeatureDictionary baseFeatureTypes,
+        JsonElement element, CodeBuilder builder)
+    {
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.String:
+                builder.Line($"{SymbolDisplay.FormatLiteral(element.GetString()!, true)}, ");
+                break;
+            case JsonValueKind.Number:
+                builder.Line($"{element},");
+                break;
+            case JsonValueKind.Array:
+                builder.Array(string.Empty);
+
+                foreach (var arrayItem in element.EnumerateArray())
+                    AppendArrayItem(featureTypes, baseFeatureTypes, arrayItem, builder);
+
+                builder.EndArrayScope(",", false);
+                break;
+            case JsonValueKind.True:
+            case JsonValueKind.False:
+                builder.Line($"{element.GetBoolean().ToString().ToLower()}, ");
+                break;
+            default:
+                {
+                    if (TryAppendTypeProperty(featureTypes, baseFeatureTypes, null, element, builder))
+                        break;
+                    if (TryAppendStateProperty(null, element, builder))
+                        break;
+
+                    builder.Type("new()");
+
+                    foreach (var childProperty in element.EnumerateObject())
+                    {
+                        var childName = childProperty.Name;
+                        var childValue = childProperty.Value;
+
+                        AppendChildProperty(featureTypes, baseFeatureTypes, default, childName, childValue, builder);
+                    }
+
+                    builder.EndScope(", ", false);
+
+                    break;
+                }
+        }
+    }
+
 
     public static void AppendNumberProperty(CodeBuilder builder, string elementName, JsonElement element, string numberType = "Int32")
     {
