@@ -187,13 +187,6 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
                 var elementName = property.Name;
                 var element = property.Value;
 
-                //Temp workaround :weary:
-                if (elementName == "can_grow_through" && element.ValueKind != JsonValueKind.Array)
-                {
-                    builder.Line($"{elementName.ToPascalCase()} = {{ {SymbolDisplay.FormatLiteral(element.GetString()!, true)} }}, ");
-                    continue;
-                }
-
                 ClassBuilder.AppendChildProperty(featureTypes, baseFeatureTypes, default, elementName, element, builder);
             }
 
