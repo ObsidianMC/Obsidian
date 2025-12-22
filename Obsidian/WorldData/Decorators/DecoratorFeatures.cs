@@ -24,28 +24,14 @@ public class DecoratorFeatures
         public int Frequency { get; set; }
 
         /// <summary>
-        /// Which TreeFeature to use (new data-driven approach)
+        /// Which TreeFeature to use
         /// </summary>
         public TreeFeature? Feature { get; set; }
-
-        /// <summary>
-        /// Legacy: Which type of Tree (deprecated, use Feature instead)
-        /// </summary>
-        [Obsolete("Use Feature property instead. This is for backward compatibility only.")]
-        public Type? TreeType { get; set; }
 
         public TreeInfo(int frequency, TreeFeature feature)
         {
             Frequency = frequency;
             Feature = feature;
-        }
-
-        // Legacy constructor for backward compatibility
-        [Obsolete("Use constructor with TreeFeature instead")]
-        public TreeInfo(int frequency, Type treeType)
-        {
-            Frequency = frequency;
-            TreeType = treeType;
         }
     }
 
