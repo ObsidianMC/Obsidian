@@ -64,4 +64,29 @@ internal class ChunkBuilder
     {
         surfaceBuilder.ApplySurfaceRules(chunk);
     }
+
+    /// <summary>
+    /// Updates the WorldSurfaceWG heightmap after terrain generation.
+    /// This heightmap represents the world surface before features are added.
+    /// Scans from top to bottom to find the highest non-air block.
+    /// </summary>
+    public void UpdateWorldSurfaceWGHeightmap(IChunk chunk)
+    {
+        for (int x = 0; x < 16; x++)
+        {
+            for (int z = 0; z < 16; z++)
+            {
+                // Scan from top down to find the highest non-air block
+                for (int y = 319; y >= -64; y--)
+                {
+                    var block = chunk.GetBlock(x, y, z);
+                    if (!block.IsAir)
+                    {
+                        chunk.Heightmaps[HeightmapType.WorldSurfaceWG].Set(x, z, y);
+                        break;
+                    }
+                }
+            }
+        }
+    }
 }

@@ -101,6 +101,11 @@ public class Spline : ISpline
 
     public double Apply(double x, double y, double z)
     {
+        if (!_created)
+        {
+            Create();
+        }
+
         var coordValue = Coordinate.GetValue(x, y, z);
         int intervalIndex = FindIntervalStart(coordValue);
 
