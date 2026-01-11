@@ -51,7 +51,7 @@ internal class ChunkBuilder
                 int worldX = x + (chunk.X << 4);
                 int worldZ = z + (chunk.Z << 4);
 
-                for (int y = -64; y < 320; y += 4)
+                for (int y = settings.Noise.MinY; y < settings.Noise.Height; y += 4)
                 {
                     var biome = biomeSource.GetBiome(worldX, y, worldZ);
                     chunk.SetBiome(x, y, z, biome);
@@ -77,7 +77,7 @@ internal class ChunkBuilder
             for (int z = 0; z < 16; z++)
             {
                 // Scan from top down to find the highest non-air block
-                for (int y = 319; y >= -64; y--)
+                for (int y = settings.Noise.Height; y >= settings.Noise.MinY; y--)
                 {
                     var block = chunk.GetBlock(x, y, z);
                     if (!block.IsAir)

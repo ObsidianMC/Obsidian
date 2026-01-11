@@ -81,7 +81,7 @@ internal class SurfaceBuilder
 
                 // ONLY apply surface rules to the default block (stone)
                 // This matches Mojang's: if (old == this.defaultBlock)
-                if (currentBlock.UnlocalizedName.Contains("stone"))
+                if (currentBlock == settings.DefaultBlock.ToBlock())
                 {
                     var newBlockState = applier.Apply(worldX, y, worldZ, stoneAboveDepth, previousIsAirOrFluid);
 
