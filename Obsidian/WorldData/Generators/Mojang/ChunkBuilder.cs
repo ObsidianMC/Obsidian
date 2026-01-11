@@ -43,6 +43,7 @@ internal class ChunkBuilder
 
     public void PopulateBiomes(IChunk chunk)
     {
+        var lessThanMinY = settings.Noise.MinY + settings.Noise.Height;
         // Biomes are stored in 4x4x4 sections
         for (int x = 0; x < 16; x += 4)
         {
@@ -51,7 +52,7 @@ internal class ChunkBuilder
                 int worldX = x + (chunk.X << 4);
                 int worldZ = z + (chunk.Z << 4);
 
-                for (int y = settings.Noise.MinY; y < settings.Noise.Height; y += 4)
+                for (int y = settings.Noise.MinY; y < lessThanMinY; y += 4)
                 {
                     var biome = biomeSource.GetBiome(worldX, y, worldZ);
                     chunk.SetBiome(x, y, z, biome);
@@ -72,12 +73,13 @@ internal class ChunkBuilder
     /// </summary>
     public void UpdateWorldSurfaceWGHeightmap(IChunk chunk)
     {
+        var val = (settings.Noise.MinY + settings.Noise.Height) - 1;
         for (int x = 0; x < 16; x++)
         {
             for (int z = 0; z < 16; z++)
             {
                 // Scan from top down to find the highest non-air block
-                for (int y = settings.Noise.Height; y >= settings.Noise.MinY; y--)
+                for (int y = val; y >= settings.Noise.MinY; y--)
                 {
                     var block = chunk.GetBlock(x, y, z);
                     if (!block.IsAir)

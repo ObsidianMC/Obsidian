@@ -13,7 +13,7 @@ public static class SimpleBlockStateExtensions
     /// Sets the converter function used to transform SimpleBlockState to IBlock.
     /// This should be set during initialization by the main Obsidian project.
     /// </summary>
-    public static void SetConverter(Func<SimpleBlockState, IBlock> converter)
+    internal static void SetConverter(Func<SimpleBlockState, IBlock> converter)
     {
         _converter = converter;
     }

@@ -13,6 +13,7 @@ internal class SurfaceBuilder
 {
     private readonly NoiseSetting settings;
     private readonly IBiomeSource biomeSource;
+    private IBlock defaultBlock => settings.DefaultBlock.ToBlock();
 
     public SurfaceBuilder(NoiseSetting settings, IBiomeSource biomeSource)
     {
@@ -81,7 +82,7 @@ internal class SurfaceBuilder
 
                 // ONLY apply surface rules to the default block (stone)
                 // This matches Mojang's: if (old == this.defaultBlock)
-                if (currentBlock == settings.DefaultBlock.ToBlock())
+                if (currentBlock == defaultBlock)
                 {
                     var newBlockState = applier.Apply(worldX, y, worldZ, stoneAboveDepth, previousIsAirOrFluid);
 
