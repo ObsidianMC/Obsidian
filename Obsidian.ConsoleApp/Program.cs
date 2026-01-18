@@ -26,7 +26,7 @@ var builder = Host.CreateApplicationBuilder();
 
 builder.ConfigureObsidian();
 
-if(!Directory.Exists("logs"))
+if (!Directory.Exists("logs"))
 {
     Directory.CreateDirectory("logs");
 }
@@ -41,5 +41,11 @@ builder.Services.Configure<HostOptions>(opts =>
 
 var app = builder.Build();
 
-await app.RunAsync();
-Console.CursorVisible = true;
+try
+{
+    await app.RunAsync();
+}
+finally
+{
+    Console.CursorVisible = true;
+}
