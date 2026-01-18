@@ -42,3 +42,4 @@ builder.Services.Configure<HostOptions>(opts =>
 var app = builder.Build();
 
 await app.RunAsync();
+Console.CursorVisible = true;
