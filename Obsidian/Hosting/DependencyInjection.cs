@@ -114,4 +114,75 @@ public static class DependencyInjection
         return builder;
     }
 
+    /// <summary>
+    /// Add GUI Console Support via Terminal.GUI
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="loggingAdd">Add Terminal Logger</param>
+    /// <returns></returns>
+    public static IHostApplicationBuilder AddObsidianWithGui(this IHostApplicationBuilder builder,Func<ILoggingBuilder,ILoggingBuilder> loggingAdd) 
+    {
+        // filename with date,time
+        var logFile = $"logs/{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.log";
+        var logFileStream = new FileStream(logFile, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
+
+        builder.Logging.AddOpenTelemetry(x =>
+        {
+            x.IncludeScopes = true;
+            x.IncludeFormattedMessage = true;
+        });
+        builder.Services.AddLogging(loggingBuilder =>
+        {
+            loggingBuilder.ClearProviders();
+            loggingAdd(loggingBuilder);
+            loggingBuilder.AddProvider(new StreamLoggerProvider(logFileStream));
+        });
+
+        builder.Services.Configure<ServerConfiguration>(builder.Configuration);
+        builder.Services.Configure<WhitelistConfiguration>(builder.Configuration);
+
+        builder.Services.AddSingleton<IServerEnvironment, DefaultServerEnvironment>();
+        builder.Services.AddSingleton<CommandHandler>();
+        //builder.Services.AddSingleton<RconServer>();
+        builder.Services.AddSingleton<WorldManager>();
+        builder.Services.AddSingleton<PacketBroadcaster>();
+        builder.Services.AddSingleton<IServer, Server>();
+        builder.Services.AddSingleton<IUserCache, UserCache>();
+        builder.Services.AddSingleton<EventDispatcher>();
+
+        builder.Services.AddHttpClient();
+
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<PacketBroadcaster>());
+        builder.Services.AddHostedService<ObsidianHostingService>();
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<WorldManager>());
+        builder.Services.AddHostedService<LanBroadcasterService>();
+
+        builder.Services.AddSingleton<IEventDispatcher>(x => x.GetRequiredService<EventDispatcher>());
+        builder.Services.AddSingleton<IWorldManager>(sp => sp.GetRequiredService<WorldManager>());
+        builder.Services.AddSingleton<IPacketBroadcaster>(sp => sp.GetRequiredService<PacketBroadcaster>());
+
+        builder.Services.AddOpenTelemetry()
+            .WithTracing(tracing =>
+            {
+                if(builder.Environment.IsDevelopment())
+                {
+                    tracing.SetSampler<AlwaysOnSampler>();
+                }
+
+                //tracing.AddConsoleExporter();
+                tracing.AddHttpClientInstrumentation();
+            })
+            .WithMetrics(metrics =>
+            {
+                //metrics.AddConsoleExporter();
+
+                metrics.AddRuntimeInstrumentation().AddMeter("Obsidian.Server", "Obsidian.Client", "System.Net.Http");
+            });
+
+        builder.AddOpenTelemetryExporters();
+
+        builder.Services.AddSingleton<ServerMetrics>();
+        return builder;
+    }
+
 }
