@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.Commands.Framework;
 using Obsidian.GuiConsole.Services;
+using Obsidian.GuiConsole.Services.Command;
 using System.Collections.ObjectModel;  
 using System.Collections.Specialized;  
 using Terminal.Gui.Drawing;  

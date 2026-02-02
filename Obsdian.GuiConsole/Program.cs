@@ -3,6 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Obsidian.GuiConsole.Logger;
 using Obsidian.GuiConsole.Services;
+using Obsidian.GuiConsole.Services.Command;
 using Obsidian.GuiConsole.Window;
 using Obsidian.Hosting;
 using Terminal.Gui.App;
