@@ -1,4 +1,6 @@
-using Microsoft.Extensions.Logging;  
+using Microsoft.Extensions.Logging;
+using Obsidian.Commands.Framework;
+using Obsidian.GuiConsole.Services;
 using System.Collections.ObjectModel;  
 using System.Collections.Specialized;  
 using Terminal.Gui.Drawing;  
@@ -14,32 +16,66 @@ public class ObsdianConsole : Terminal.Gui.Views.Window
     private readonly ListView logView;  
     private readonly TextField commandInput;  
     private readonly ObservableCollection<string> logEntries;  
-    private readonly Dictionary<int, LogLevel> logLevels = new();  
+    private readonly Dictionary<int, LogLevel> logLevels = new();
+    private readonly List<(LogLevel level, string message)> originalLogs = new(); // 存储原始日志
+    private int maxLineWidth = 0;
+    
+    private CommandMiddleware? commandMiddleware;
   
     public string GuiTitle => $"Obsidian GUI Console for Minecraft {ServerConstants.DefaultProtocol}";  
   
-    public ListView LogView => logView;  
+    public ListView LogView => logView;
+    
+    public void AddCommandMiddleware(CommandMiddleware? comm)
+    {
+        commandMiddleware = comm;
+        CommandEntered += async (command) =>
+        {
+            if (this.commandMiddleware != null)
+            {
+                AppendLog(LogLevel.Trace, $"> {command}");
+                try
+                {
+                    await this.commandMiddleware.ExecuteCommandFromConsoleAsync(command);
+                }
+                catch (Exception e)
+                {
+                    AppendLog(LogLevel.Error, $"Error: {e.Message}");
+                }
+            }
+        };
+    }
   
     public ObsdianConsole()  
     {  
         Title = GuiTitle;  
           
-        // 初始化日志数据源  
-        logEntries = new ObservableCollection<string>();  
-          
+        // Initial logs source
+        logEntries = new ObservableCollection<string>();
+        
+        FrameChanged += (_, s) =>
+        {
+            var newWidth = s.Value.Width - 4;
+            if (newWidth != maxLineWidth && newWidth > 0)
+            {
+                maxLineWidth = newWidth;
+                RewrapAllLogs();
+            }
+        };
         logView = new ListView  
         {  
             X = 0,  
             Y = 1,  
             Width = Dim.Fill(),  
             Height = Dim.Fill(1),  
-            Source = new ListWrapper<string>(logEntries)  
+            Source = new ListWrapper<string>(logEntries),
+            Arrangement = ViewArrangement.BottomResizable
         };  
   
-        // 添加行渲染事件处理器来实现颜色显示  
+        //Add Color Rendering
         logView.RowRender += OnRowRender;  
   
-        // 监听数据源变化以实现自动滚动  
+        //Auto Scroll Handling
         logEntries.CollectionChanged += OnLogEntriesChanged;  
   
         commandInput = new TextField  
@@ -63,7 +99,7 @@ public class ObsdianConsole : Terminal.Gui.Views.Window
             Normal = new Attribute(Color.DarkGray, Color.Black)  
         });  
           
-        commandInput.KeyDown += (args, x) =>  
+        commandInput.KeyDown += (_, x) =>  
         {  
             if (x == Key.Enter)  
             {  
@@ -93,10 +129,11 @@ public class ObsdianConsole : Terminal.Gui.Views.Window
   
     protected virtual void OnCommandEntered(string command)  
     {  
-        CommandEntered?.Invoke(command);  
+        CommandEntered?.Invoke(command);
+        
     }  
   
-    // 行渲染事件处理器 - 用于设置不同日志级别的颜色  
+    // Add color
     private void OnRowRender(object? sender, ListViewRowEventArgs e)  
     {  
         if (logLevels.TryGetValue(e.Row, out LogLevel level))  
@@ -114,7 +151,7 @@ public class ObsdianConsole : Terminal.Gui.Views.Window
         }  
     }  
   
-    // 数据源变化事件处理器 - 用于自动滚动  
+    //Auto Scroll Handler
     private void OnLogEntriesChanged(object? sender, NotifyCollectionChangedEventArgs e)  
     {  
         if (e.Action == NotifyCollectionChangedAction.Add)  
@@ -123,7 +160,7 @@ public class ObsdianConsole : Terminal.Gui.Views.Window
         }  
     }  
   
-    // 自动滚动到底部  
+    //To bottom 
     private void AutoScrollToBottom()  
     {  
         if (logEntries.Count > 0)  
@@ -134,13 +171,102 @@ public class ObsdianConsole : Terminal.Gui.Views.Window
     }  
   
     public void AppendLog(LogLevel level, string message)  
-    {  
-        var logEntry = $"{DateTime.Now:HH:mm:ss} [{level}] {message}";  
-          
-        // 存储日志级别  
-        logLevels[logEntries.Count] = level;  
-          
-        // 添加到数据源  
-        logEntries.Add(logEntry);  
+    {
+        //keep original log for re-wrapping
+        originalLogs.Add((level, message));
+        
+        var logEntry = $"{DateTime.Now:HH:mm:ss} [{level}] {message}";
+        
+        var wrapWidth = maxLineWidth > 0 ? maxLineWidth : 80;
+        
+        //shift lines if too long
+        if (logEntry.Length > wrapWidth)
+        {
+            var lines = WrapText(logEntry, wrapWidth);
+            foreach (var line in lines)
+            {
+                logLevels[logEntries.Count] = level;
+                logEntries.Add(line);
+            }
+        }
+        else
+        {
+            logLevels[logEntries.Count] = level;  
+            logEntries.Add(logEntry);
+        }
+    }
+    
+    //Wrap text into multiple lines with indentation for wrapped lines
+    private List<string> WrapText(string text, int width)
+    {
+        var result = new List<string>();
+        
+        if (string.IsNullOrEmpty(text) || width <= 0)
+        {
+            result.Add(text ?? string.Empty);
+            return result;
+        }
+        
+        var currentIndex = 0;
+        var isFirstLine = true;
+        
+        while (currentIndex < text.Length)
+        {
+            var remainingLength = text.Length - currentIndex;
+            var takeLength = Math.Min(width, remainingLength);
+            
+            // add line
+            var line = text.Substring(currentIndex, takeLength);
+            if (!isFirstLine)
+            {
+                line = "  " + line.TrimStart();
+            }
+            
+            result.Add(line);
+            currentIndex += takeLength;
+            isFirstLine = false;
+        }
+        
+        return result;
+    }
+    
+    /// <summary>
+    /// Rewrap all logs when windows size changed
+    /// </summary>
+    private void RewrapAllLogs()
+    {
+        if (originalLogs.Count == 0 || maxLineWidth <= 0)
+            return;
+        var wasAtBottom = logEntries.Count > 0 && 
+                          logView.TopItem >= logEntries.Count - logView.Viewport.Height - 5;
+        
+        //clear current logs
+        logEntries.Clear();
+        logLevels.Clear();
+        
+        //Re-add all logs with new wrapping
+        foreach (var (level, message) in originalLogs)
+        {
+            var logEntry = $"{DateTime.Now:HH:mm:ss} [{level}] {message}";
+            
+            if (logEntry.Length > maxLineWidth)
+            {
+                var lines = WrapText(logEntry, maxLineWidth);
+                foreach (var line in lines)
+                {
+                    logLevels[logEntries.Count] = level;
+                    logEntries.Add(line);
+                }
+            }
+            else
+            {
+                logLevels[logEntries.Count] = level;
+                logEntries.Add(logEntry);
+            }
+        }
+        if (wasAtBottom)
+        {
+            AutoScrollToBottom();
+        }
     }  
 }

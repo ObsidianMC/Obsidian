@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Obsidian.GuiConsole.Logger;
+using Obsidian.GuiConsole.Services;
 using Obsidian.GuiConsole.Window;
 using Obsidian.Hosting;
 using Terminal.Gui.App;
@@ -20,7 +21,7 @@ public partial class Program
         ConfigurationManager.Enable(ConfigLocations.All);
         
         //Create console window
-        var console = new ObsdianConsole();
+        
         
         //Normal Obsidian setup
         await GenerateConfigFiles();
@@ -32,6 +33,8 @@ public partial class Program
         }
         
         //Add Obsidian with GUI logger
+        var console = new ObsdianConsole();
+        
         builder.AddObsidianWithGui(x =>
         {
             x.AddProvider(new TerminalGuiLoggerProvider(console, LogLevel.Information));
@@ -43,7 +46,7 @@ public partial class Program
         {
             opts.ShutdownTimeout = TimeSpan.FromSeconds(10);
         });
-
+        builder.Services.AddSingleton<CommandMiddleware>();
         var hostApp = builder.Build();
         
         IApplication? app = null;
@@ -51,7 +54,8 @@ public partial class Program
         {
             //Run the application
             await hostApp.StartAsync();
-            
+            var commandMiddleware = hostApp.Services.GetRequiredService<CommandMiddleware>();
+            console.AddCommandMiddleware(commandMiddleware);
             app = Application.Create().Init();
             app.Run(console);
         }
