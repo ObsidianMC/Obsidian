@@ -9,7 +9,9 @@ using Terminal.Gui.Views;
 using Attribute = Terminal.Gui.Drawing.Attribute;  
   
 namespace Obsidian.GuiConsole.Window;  
-  
+/// <summary>
+/// Render a GUI Console for Obsidian Server
+/// </summary>
 public class ObsidianConsole : Terminal.Gui.Views.Window  
 {  
     private readonly ListView logView;  
@@ -25,6 +27,10 @@ public class ObsidianConsole : Terminal.Gui.Views.Window
   
     public ListView LogView => logView;
     
+    /// <summary>
+    /// Add Command Middleware to handle command input
+    /// </summary>
+    /// <param name="comm">Instance</param>
     public void AddCommandMiddleware(CommandMiddleware? comm)
     {
         commandMiddleware = comm;
@@ -45,6 +51,9 @@ public class ObsidianConsole : Terminal.Gui.Views.Window
         };
     }
   
+    /// <summary>
+    /// Build the GUI Console Window
+    /// </summary>
     public ObsidianConsole()  
     {  
         Title = GuiTitle;  
@@ -123,16 +132,24 @@ public class ObsidianConsole : Terminal.Gui.Views.Window
         };  
         SetScheme(newScheme);  
     }  
-      
+    /// <summary>
+    /// Command Entered Event
+    /// </summary>
     public event Action<string>? CommandEntered;  
-  
+    /// <summary>
+    /// On Command Entered
+    /// </summary>
     protected virtual void OnCommandEntered(string command)  
     {  
         CommandEntered?.Invoke(command);
         
     }  
   
-    // Add color
+    /// <summary>
+    /// Row Render Event for Color Coding
+    /// </summary>
+    /// <param name="sender">nope</param>
+    /// <param name="e">row</param>
     private void OnRowRender(object? sender, ListViewRowEventArgs e)  
     {  
         if (logLevels.TryGetValue(e.Row, out LogLevel level))  
@@ -150,7 +167,11 @@ public class ObsidianConsole : Terminal.Gui.Views.Window
         }  
     }  
   
-    //Auto Scroll Handler
+    /// <summary>
+    /// Auto Scroll to Bottom on New Log Entry
+    /// </summary>
+    /// <param name="sender">nope</param>
+    /// <param name="e">argument</param>
     private void OnLogEntriesChanged(object? sender, NotifyCollectionChangedEventArgs e)  
     {  
         if (e.Action == NotifyCollectionChangedAction.Add)  
@@ -158,8 +179,9 @@ public class ObsidianConsole : Terminal.Gui.Views.Window
             AutoScrollToBottom();   
         }  
     }  
-  
-    //To bottom 
+    /// <summary>
+    /// Auto Scroll to Bottom Implementation
+    /// </summary>
     private void AutoScrollToBottom()  
     {  
         if (logEntries.Count > 0)  
@@ -169,6 +191,11 @@ public class ObsidianConsole : Terminal.Gui.Views.Window
         }  
     }  
   
+    /// <summary>
+    /// Add Log Entry to Console
+    /// </summary>
+    /// <param name="level">Log level</param>
+    /// <param name="message">message</param>
     public void AppendLog(LogLevel level, string message)  
     {
         //keep original log for re-wrapping
@@ -195,7 +222,12 @@ public class ObsidianConsole : Terminal.Gui.Views.Window
         }
     }
     
-    //Wrap text into multiple lines with indentation for wrapped lines
+    /// <summary>
+    /// Wrap text into multiple lines with indentation for wrapped lines
+    /// </summary>
+    /// <param name="text">text content</param>
+    /// <param name="width">console width</param>
+    /// <returns></returns>
     private List<string> WrapText(string text, int width)
     {
         var result = new List<string>();

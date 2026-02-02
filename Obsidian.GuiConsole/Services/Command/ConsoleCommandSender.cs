@@ -4,11 +4,20 @@ using System.Text.RegularExpressions;
 
 namespace Obsidian.GuiConsole.Services.Command;
 
+/// <summary>
+/// Command sender for console input and output
+/// </summary>
+/// <param name="logger">Temp use</param>
 public class ConsoleCommandSender(ILogger<CommandMiddleware> logger): ICommandSender
 {
     public CommandIssuers Issuer { get; } = CommandIssuers.Console;
     public IPlayer? Player { get; } = null;
 
+    /// <summary>
+    /// Implementation of SendMessageAsync for console logging
+    /// </summary>
+    /// <param name="message">data</param>
+    /// <returns></returns>
     public Task SendMessageAsync(ChatMessage message)
     {
         List<string?> messageParts = new();

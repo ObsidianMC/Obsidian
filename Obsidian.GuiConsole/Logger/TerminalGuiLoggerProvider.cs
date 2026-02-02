@@ -1,10 +1,9 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.GuiConsole.Window;
-using Terminal.Gui.Views;
 
 namespace Obsidian.GuiConsole.Logger;
 
-public class TerminalGuiLoggerProvider: ILoggerProvider
+public class TerminalGuiLoggerProvider : ILoggerProvider
 {
     private readonly ObsidianConsole _console;
     private readonly LogLevel _minLevel;
@@ -15,10 +14,12 @@ public class TerminalGuiLoggerProvider: ILoggerProvider
         _minLevel = minLevel;
     }
 
-    public ILogger CreateLogger(string categoryName)
-    {
-        return new TerminalGuiLogger(_console, _minLevel);
-    }
+    /// <summary>
+    /// Create a logger for the specified category
+    /// </summary>
+    /// <param name="categoryName"></param>
+    /// <returns></returns>
+    public ILogger CreateLogger(string categoryName) => new TerminalGuiLogger(_console, _minLevel);
 
     public void Dispose() { }
 }

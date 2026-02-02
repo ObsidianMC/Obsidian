@@ -4,6 +4,9 @@ namespace Obsidian.GuiConsole;
 
 public partial class Program
 {
+    /// <summary>
+    /// release default config files if not exist
+    /// </summary>
     private static async ValueTask GenerateConfigFiles()
     {
         const string path = "config";
@@ -32,6 +35,9 @@ public partial class Program
         }
     }
 
+    /// <summary>
+    /// Logo is cool,but not render well on my machine -- stevesensei
+    /// </summary>
     public static void DrawLogo()
     {
         const string asciilogo =

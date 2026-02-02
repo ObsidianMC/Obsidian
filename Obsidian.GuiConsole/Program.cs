@@ -13,6 +13,10 @@ namespace Obsidian.GuiConsole;
 
 public partial class Program
 {
+    /// <summary>
+    /// entry point
+    /// </summary>
+    /// <param name="args">currently useless</param>
     public static async Task Main(string[] args)
     {
         //Cool logo,but not render well on my machine -- stevesensei
