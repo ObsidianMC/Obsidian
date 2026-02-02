@@ -1,6 +1,4 @@
 using Microsoft.Extensions.Logging;
-using Obsidian.Commands.Framework;
-using Obsidian.GuiConsole.Services;
 using Obsidian.GuiConsole.Services.Command;
 using System.Collections.ObjectModel;  
 using System.Collections.Specialized;  
@@ -12,7 +10,7 @@ using Attribute = Terminal.Gui.Drawing.Attribute;
   
 namespace Obsidian.GuiConsole.Window;  
   
-public class ObsdianConsole : Terminal.Gui.Views.Window  
+public class ObsidianConsole : Terminal.Gui.Views.Window  
 {  
     private readonly ListView logView;  
     private readonly TextField commandInput;  
@@ -47,7 +45,7 @@ public class ObsdianConsole : Terminal.Gui.Views.Window
         };
     }
   
-    public ObsdianConsole()  
+    public ObsidianConsole()  
     {  
         Title = GuiTitle;  
           

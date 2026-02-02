@@ -34,7 +34,7 @@ public partial class Program
         }
         
         //Add Obsidian with GUI logger
-        var console = new ObsdianConsole();
+        var console = new ObsidianConsole();
         
         builder.AddObsidianWithGui(x =>
         {

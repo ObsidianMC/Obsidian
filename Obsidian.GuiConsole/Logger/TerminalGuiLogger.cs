@@ -6,10 +6,10 @@ namespace Obsidian.GuiConsole.Logger;
 
 public class TerminalGuiLogger : ILogger
 {
-    private readonly ObsdianConsole _console;
+    private readonly ObsidianConsole _console;
     private readonly LogLevel _minLevel;
 
-    public TerminalGuiLogger(ObsdianConsole console, LogLevel minLevel)
+    public TerminalGuiLogger(ObsidianConsole console, LogLevel minLevel)
     {
         _console = console;
         _minLevel = minLevel;
