@@ -10,13 +10,16 @@ namespace Obsidian.SourceGenerators.Registry;
 [Generator]
 public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGenerator
 {
-    private static readonly string[] attributes = [ConfiguredFeaturePropertyAttributeName, TreePropertyAttributeName, ConfiguredFeatureAttributeName];
+    private static readonly string[] attributes = [ConfiguredFeaturePropertyAttributeName, TreePropertyAttributeName, ConfiguredFeatureAttributeName, ConfiguredFeatureClassAttributeName];
 
     private const string TreePropertyAttributeName = "TreePropertyAttribute";
     private const string CleanedTreePropertyAttributeName = "TreeProperty";
 
     private const string ConfiguredFeaturePropertyAttributeName = "ConfiguredFeaturePropertyAttribute";
     private const string CleanedConfiguredFeaturePropertyAttributeName = "ConfiguredFeatureProperty";
+
+    private const string ConfiguredFeatureClassAttributeName = "ConfiguredFeatureClassAttribute";
+    private const string CleanedConfiguredFeatureClassAttributeName = "ConfiguredFeatureClass";
 
     private const string ConfiguredFeatureAttributeName = "ConfiguredFeatureAttribute";
     private const string CleanedConfiguredFeatureAttributeName = "ConfiguredFeature";
@@ -79,7 +82,8 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
         var configuredFeatureProperties = configuredFeaturePropertiesDecs.SelectMany(x => GetTypeInformation(x, compilation,
             CleanedConfiguredFeaturePropertyAttributeName,
             CleanedTreePropertyAttributeName,
-            CleanedConfiguredFeatureAttributeName));
+            CleanedConfiguredFeatureAttributeName,
+            CleanedConfiguredFeatureClassAttributeName));
 
         this.GenerateClasses(configuredFeatureProperties, context, features);
     }
@@ -113,8 +117,6 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
 
     private void GenerateClasses(IEnumerable<TypeInformation> configuredFeaturePropertyClasses, SourceProductionContext context, Features features)
     {
-        var featureTypes = new Dictionary<string, TypeInformation>();
-
         var baseFeatures = new BaseFeatureDictionary();
         foreach (var @class in configuredFeaturePropertyClasses)
         {
@@ -132,12 +134,18 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
             }
             else if (@class.Symbol.BaseType?.Name == ConfiguredFeatureBaseName)
             {
+                if(@class.Symbol.GetAttributes().Any(x => x.AttributeClass?.Name == ConfiguredFeatureClassAttributeName))
+                {
+                    baseFeatures.AddFeatureBaseClass(@class.ResourceLocation, @class);
+                    continue;
+                }
+
                 baseFeatures.AddConfiguredFeature(@class.ResourceLocation, @class with { IsConfiguredFeature = true });
                 continue;
             }
 
 
-            featureTypes.Add(@class.ResourceLocation, @class);
+            baseFeatures.AddFeatureType(@class.ResourceLocation, @class);
         }
 
         var builder = new CodeBuilder()
@@ -159,12 +167,12 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
 
         builder.Type("public static class Flowers", (classBuilder) =>
         {
-            BuildType("FlowerFeature", featureTypes, baseFeatures, features.FlowerFeatures, classBuilder);
+            BuildType("FlowerFeature", baseFeatures, features.FlowerFeatures, classBuilder);
         });
 
         builder.Type("public static class Trees", (classBuilder) =>
         {
-            BuildType("TreeFeature", featureTypes, baseFeatures, features.TreeFeatures, classBuilder);
+            BuildType("TreeFeature", baseFeatures, features.TreeFeatures, classBuilder);
         });
 
         builder.EndScope();
@@ -172,8 +180,7 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
         context.AddSource("ConfiguredFeatures.g.cs", builder.ToString());
     }
 
-    private static void BuildType(string name, Dictionary<string, TypeInformation> featureTypes, BaseFeatureDictionary baseFeatureTypes,
-        BaseFeature[] features, CodeBuilder builder)
+    private static void BuildType(string name, BaseFeatureDictionary baseFeatureTypes, BaseFeature[] features, CodeBuilder builder)
     {
         foreach (var feature in features)
         {
@@ -187,7 +194,7 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
                 var elementName = property.Name;
                 var element = property.Value;
 
-                ClassBuilder.AppendChildProperty(featureTypes, baseFeatureTypes, default, elementName, element, builder);
+                ClassBuilder.AppendChildProperty(baseFeatureTypes, default, elementName, element, builder);
             }
 
             builder.EndScope(true);

@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace Obsidian.API.World.Features.Flower;
 
+[ConfiguredFeatureClass("minecraft:flower")]
 public sealed class FlowerFeature : ConfiguredFeatureBase
 {
     [JsonIgnore]

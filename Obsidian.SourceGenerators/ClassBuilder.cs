@@ -10,20 +10,22 @@ internal static class ClassBuilder
 {
     private static readonly string[] numbers = ["Int32", "Single", "Double", "Int64"];
 
-    public static void AppendChildProperty(Dictionary<string, TypeInformation> featureTypes, BaseFeatureDictionary baseFeatureTypes,
-        TypeInformation featureType, string elementName, JsonElement element, CodeBuilder builder)
+    public static void AppendChildProperty(BaseFeatureDictionary baseFeatureTypes,
+        TypeInformation featureType, string elementName, JsonElement element, CodeBuilder builder, INamedTypeSymbol? containingType = null)
     {
+        var propertyName = elementName.ToPascalCase();
+
         switch (element.ValueKind)
         {
             case JsonValueKind.String:
-                builder.Line($"{elementName.ToPascalCase()} = {SymbolDisplay.FormatLiteral(element.GetString()!, true)}, ");
+                builder.Line($"{propertyName} = {SymbolDisplay.FormatLiteral(element.GetString()!, true)}, ");
                 break;
             case JsonValueKind.Number:
                 if (featureType.Symbol != null)
                 {
                     var members = featureType.GetProperties();
 
-                    var member = members.FirstOrDefault(x => x.Name == elementName.ToPascalCase());
+                    var member = members.FirstOrDefault(x => x.Name == propertyName);
 
                     if (member != null)
                     {
@@ -36,37 +38,56 @@ internal static class ClassBuilder
                         }
                     }
                 }
-                builder.Line($"{elementName.ToPascalCase()} = new ConstantIntProvider {{ Type = {SymbolDisplay.FormatLiteral("minecraft:constant", true)}, Value = {GetNumberValue(element)} }},");
+
+                if (containingType != null)
+                {
+                    var members = containingType.GetMembers().Where(x => x.Kind == SymbolKind.Property);
+                    var member = members.FirstOrDefault(x => x.Name == propertyName);
+                    if (member != null)
+                    {
+                        var property = (IPropertySymbol)member;
+                        if (numbers.Contains(property.Type.Name))
+                        {
+                            AppendNumberProperty(builder, elementName, element, property.Type.Name);
+                            break;
+                        }
+                    }
+                }
+
+                builder.Line($"{propertyName} = new ConstantIntProvider {{ Type = {SymbolDisplay.FormatLiteral("minecraft:constant", true)}, Value = {GetNumberValue(element)} }},");
                 break;
             case JsonValueKind.Array:
-                builder.Line($"{elementName.ToPascalCase()} = [],");
-                //builder.Array($"{elementName.ToPascalCase()} =");
+                //builder.Line($"{elementName.ToPascalCase()} = [],");
+                builder.Array($"{propertyName} =");
 
-                //foreach (var arrayItem in element.EnumerateArray())
-                //    AppendArrayItem(featureTypes, baseFeatureTypes, arrayItem, builder);
+                //I wanna get the base type of the array property symbol
+                var arrayElementType = GetArrayElementType(containingType);
 
-                //builder.EndArrayScope(",", false);
+                foreach (var arrayItem in element.EnumerateArray())
+                    AppendArrayItem(baseFeatureTypes, arrayItem, builder, arrayElementType);
+
+                builder.EndArrayScope(",", false);
                 break;
             case JsonValueKind.True:
             case JsonValueKind.False:
-                builder.Line($"{elementName.ToPascalCase()} = {element.GetBoolean().ToString().ToLower()}, ");
+                builder.Line($"{propertyName} = {element.GetBoolean().ToString().ToLower()}, ");
                 break;
             default:
                 {
-                    if (TryAppendTypeProperty(featureTypes, baseFeatureTypes, elementName, element, builder))
+                    if (TryAppendTypeProperty(baseFeatureTypes, elementName, element, builder))
                         break;
 
                     if (TryAppendStateProperty(elementName, element, builder))
                         break;
 
-                    builder.Type($"{elementName.ToPascalCase()} = new()");
+                    builder.Type($"{propertyName} = new()");
 
                     foreach (var childProperty in element.EnumerateObject())
                     {
                         var childName = childProperty.Name;
                         var childValue = childProperty.Value;
 
-                        AppendChildProperty(featureTypes, baseFeatureTypes, featureType, childName, childValue, builder);
+                        AppendChildProperty(baseFeatureTypes, featureType, childName, childValue, builder);
                     }
 
                     builder.EndScope(",", false);
@@ -76,7 +97,7 @@ internal static class ClassBuilder
         }
     }
 
-    private static bool TryAppendTypeProperty(Dictionary<string, TypeInformation> featureTypes, BaseFeatureDictionary baseFeatureTypes, string? elementName,
+    private static bool TryAppendTypeProperty(BaseFeatureDictionary baseFeatureTypes, string? elementName,
         JsonElement element, CodeBuilder builder)
     {
         if (element.ValueKind != JsonValueKind.Object)
@@ -86,9 +107,11 @@ internal static class ClassBuilder
         {
             var typeName = typeElement.GetString()!;
 
-            var value = featureTypes.GetValue(typeName) ?? baseFeatureTypes.GetValue(typeName);
+            var value = baseFeatureTypes.FeatureTypes.GetValue(typeName) ?? baseFeatureTypes.GetValue(typeName);
             if (value is not TypeInformation featureType)
                 return false;
+
+            var properties = featureType.Symbol.GetMembers().Where(x => x.Kind == SymbolKind.Property);
 
             if (!string.IsNullOrEmpty(elementName))
                 builder.Type($"{elementName!.ToPascalCase()} = new {featureType.Symbol.Name}()");
@@ -103,7 +126,7 @@ internal static class ClassBuilder
                 var childName = childProperty.Name;
                 var childValue = childProperty.Value;
 
-                AppendChildProperty(featureTypes, baseFeatureTypes, featureType, childName, childValue, builder);
+                AppendChildProperty(baseFeatureTypes, featureType, childName, childValue, builder, properties.FirstOrDefault(x => x.Name == childName.ToPascalCase()) as INamedTypeSymbol);
             }
 
             builder.EndScope(",", false);
@@ -148,8 +171,7 @@ internal static class ClassBuilder
         return isState;
     }
 
-    private static void AppendArrayItem(Dictionary<string, TypeInformation> featureTypes, BaseFeatureDictionary baseFeatureTypes,
-        JsonElement element, CodeBuilder builder)
+    private static void AppendArrayItem(BaseFeatureDictionary baseFeatureTypes, JsonElement element, CodeBuilder builder, INamedTypeSymbol? arrayType = null)
     {
         switch (element.ValueKind)
         {
@@ -163,7 +185,7 @@ internal static class ClassBuilder
                 builder.Array(string.Empty);
 
                 foreach (var arrayItem in element.EnumerateArray())
-                    AppendArrayItem(featureTypes, baseFeatureTypes, arrayItem, builder);
+                    AppendArrayItem(baseFeatureTypes, arrayItem, builder);
 
                 builder.EndArrayScope(",", false);
                 break;
@@ -173,7 +195,7 @@ internal static class ClassBuilder
                 break;
             default:
                 {
-                    if (TryAppendTypeProperty(featureTypes, baseFeatureTypes, null, element, builder))
+                    if (TryAppendTypeProperty(baseFeatureTypes, null, element, builder))
                         break;
                     if (TryAppendStateProperty(null, element, builder))
                         break;
@@ -185,7 +207,9 @@ internal static class ClassBuilder
                         var childName = childProperty.Name;
                         var childValue = childProperty.Value;
 
-                        AppendChildProperty(featureTypes, baseFeatureTypes, default, childName, childValue, builder);
+                        var namedSymbol = arrayType?.GetMembers().FirstOrDefault(x => x.Name == childName.ToPascalCase());
+
+                        AppendChildProperty(baseFeatureTypes, default, childName, childValue, builder, namedSymbol as INamedTypeSymbol);
                     }
 
                     builder.EndScope(", ", false);
@@ -211,5 +235,35 @@ internal static class ClassBuilder
             return $"{element.GetDouble().ToString(CultureInfo.InvariantCulture)}d,";
 
         return $"{element},";
+    }
+
+    public static ITypeSymbol? GetArrayElementType(ISymbol? symbol)
+    {
+        if (symbol is IPropertySymbol property)
+        {
+            var type = property.Type;
+
+            // Built-in arrays: T[]
+            if (type is IArrayTypeSymbol arrayType)
+            {
+                return arrayType.ElementType;
+            }
+
+            // Generic collections: List<T>, IEnumerable<T>, ICollection<T>, IReadOnlyList<T>, ImmutableArray<T>, etc.
+            if (type is INamedTypeSymbol named)
+            {
+                if (named.TypeArguments.Length == 1)
+                    return named.TypeArguments[0];
+
+                // If it's an interface like IEnumerable<T> via inheritance
+                foreach (var iface in named.AllInterfaces)
+                {
+                    if (iface.Name == "IEnumerable" && iface.TypeArguments.Length == 1)
+                        return iface.TypeArguments[0];
+                }
+            }
+        }
+
+        return null;
     }
 }
