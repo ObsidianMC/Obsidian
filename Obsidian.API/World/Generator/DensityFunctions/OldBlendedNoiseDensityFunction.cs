@@ -50,10 +50,10 @@ public class OldBlendedNoiseDensityFunction : IDensityFunction
         MinLimitNoise = new PerlinNoise(new Random(Seed + 10), minConfig);
 
         var maxConfig = PerlinNoise.CreateConfigFromOctaves(Enumerable.Range(-15, 16).ToList());
-        MaxLimitNoise = new PerlinNoise(new Random(Seed + 11), minConfig);
+        MaxLimitNoise = new PerlinNoise(new Random(Seed + 11), maxConfig);
 
         var mainConfig = PerlinNoise.CreateConfigFromOctaves(Enumerable.Range(-7, 8).ToList());
-        MainNoise = new PerlinNoise(new Random(Seed + 12), minConfig);        
+        MainNoise = new PerlinNoise(new Random(Seed + 12), mainConfig);
 
         XzMultiplier = 684.412 * XzScale;
         YMultiplier = 684.412 * YScale;
@@ -124,6 +124,6 @@ public class OldBlendedNoiseDensityFunction : IDensityFunction
             octaveScale /= 2.0;
         }
         var result = normalizedMainNoise < 0.0 ? minValue / 512.0 : normalizedMainNoise > 1.0 ? maxValue / 512.0 : MathUtils.Lerp(normalizedMainNoise, minValue / 512.0, maxValue / 512.0);
-        return  result / 128.0;
+        return result / 128.0;
     }
 }

@@ -2,6 +2,7 @@
 using static Obsidian.SourceGenerators.Constants;
 
 namespace Obsidian.SourceGenerators.Registry;
+
 public partial class WorldgenNoiseRegistryGenerator
 {
     private static void BuildDensityFunctions(CleanedNoises cleanedNoises, Noises noises, CodeBuilder builder)
@@ -16,21 +17,21 @@ public partial class WorldgenNoiseRegistryGenerator
         {
             var typeName = function.Name.Replace(DensityFunction, string.Empty);
 
-            var split = typeName.Split('\\');
+            var split = typeName.Split('/');
 
             var group = split.Length > 1 ? split[0] : Default;
             var secondGroup = split.Length > 2 ? split[1] : Default;
 
             if (groups.TryGetValue(group, out var dict))
             {
-                if(dict.TryGetValue(secondGroup, out var list))
+                if (dict.TryGetValue(secondGroup, out var list))
                     list.Add(function);
                 else
                     dict[secondGroup] = [function];
             }
             else
                 groups[group] = new() { { secondGroup, new() { function } } };
-            
+
         }
 
         foreach (var group in groups.OrderBy(x => x.Key))
@@ -61,7 +62,7 @@ public partial class WorldgenNoiseRegistryGenerator
                     }
 
                     var typeName = function.Name.Replace(DensityFunction, string.Empty);
-                    var split = typeName.Split('\\');
+                    var split = typeName.Split('/');
 
                     var skipAmount = split.Length > 1 ? split.Length - 1 : 0;
                     var sanitizedName = string.Join(string.Empty, split.Skip(skipAmount)).ToPascalCase();
@@ -95,7 +96,7 @@ public partial class WorldgenNoiseRegistryGenerator
 
         foreach (var function in densityFunctions)
         {
-            var cleanedName = function.Name.Replace(DensityFunction, string.Empty).Replace("\\", "/");
+            var cleanedName = function.Name.Replace(DensityFunction, string.Empty);
 
             var split = cleanedName.Split('/');
 
