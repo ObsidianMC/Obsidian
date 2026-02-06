@@ -369,11 +369,11 @@ public sealed partial class World : IWorld
         //         this.PacketBroadcaster.QueuePacketToWorld(this, new GameEventPacket(LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
         // }
 
-        if (LevelData.Time % (20 * this.Configuration.TimeTickSpeedMultiplier) == 0)
-        {
-            // Update client time every second / 20 ticks
-            this.BroadcastTime();
-        }
+        // if (LevelData.Time % (20 * this.Configuration.TimeTickSpeedMultiplier) == 0)
+        // {
+        //     // Update client time every second / 20 ticks
+        //     this.BroadcastTime();
+        // }
 
         //Tick regions within the world manager
         await Task.WhenAll(this.Regions.Values.Select(r => r.BeginTickAsync()));

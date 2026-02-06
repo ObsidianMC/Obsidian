@@ -2,6 +2,7 @@
 using System.Text.Json;
 
 namespace Obsidian.SourceGenerators.Registry.Models;
+
 internal sealed class Noises
 {
     public BaseFeature[] Settings { get; private set; } = [];
@@ -26,7 +27,7 @@ internal sealed class Noises
         {
             var properties = JsonSerializer.Deserialize<JsonElement>(json)!;
 
-            if(properties.ValueKind == JsonValueKind.Number)
+            if (properties.ValueKind == JsonValueKind.Number)
             {
                 features.Add(new()
                 {

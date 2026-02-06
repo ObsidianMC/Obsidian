@@ -1,4 +1,5 @@
 ﻿namespace Obsidian.SourceGenerators;
+
 internal static class Constants
 {
     public const string Default = "default";

@@ -18,7 +18,9 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
            {
                var index = file.Path.IndexOf("worldgen");
 
-               var name = file.Path.Substring(index + WorldGenLength + 1).Replace(".json", "");
+               var name = file.Path.Substring(index + WorldGenLength + 1)
+                   .Replace(".json", "")
+                   .Replace('\\', '/');
                var content = file.GetText(ct)!.ToString();
 
                return (name, content);
@@ -46,7 +48,7 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
         if (symbol == null)
             return null;
 
-        return symbol.GetAttributes().Any(x => IsAttribute(x.AttributeClass?.Name)) 
+        return symbol.GetAttributes().Any(x => IsAttribute(x.AttributeClass?.Name))
             ? syntax : null;
     }
 
@@ -103,14 +105,15 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
 
         foreach (var func in noises.DensityFunctions)
         {
-            var identifier = $"minecraft:{func.Name.Replace(DensityFunction, string.Empty).Replace("\\", "/")}";
-            var split = func.Name.Split('\\');
+            var cleanedName = func.Name.Replace(DensityFunction, string.Empty);
+            var identifier = $"minecraft:{cleanedName}";
+            var split = cleanedName.Split('/');
             var list = new List<string>();
 
             foreach (var item in split)
                 list.Add(item.ToPascalCase());
 
-            var callableName = string.Join(".", list);
+            var callableName = $"NoiseRegistry.DensityFunctions.{string.Join(".", list)}";
 
             staticDensityFunctions.Add(identifier, callableName);
         }
@@ -120,7 +123,7 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
             var cleanedName = noise.Name.Replace(Noise, string.Empty).ToPascalCase();
             var identifier = $"minecraft:{noise.Name.Replace(Noise, string.Empty)}";
 
-            var callableName = $"Noises.{cleanedName}";
+            var callableName = $"NoiseRegistry.Noises.{cleanedName}";
 
             noiseTypes.Add(identifier, callableName);
         }

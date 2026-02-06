@@ -1,4 +1,5 @@
-﻿using Obsidian.Providers.BlockStateProviders;
+﻿using Obsidian.API.World.Generator;
+using Obsidian.Providers.BlockStateProviders;
 using System.Linq.Expressions;
 
 namespace Obsidian.Registries;
@@ -27,6 +28,8 @@ internal static partial class BlocksRegistry
         }
 
         GlobalBitsPerBlocks = (int)Math.Ceiling(Math.Log2(StateToBase.Length));
+
+        SimpleBlockStateExtensions.SetConverter(GetFromSimpleState);
     }
 
     public static IBlock Get(int stateId)
