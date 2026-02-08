@@ -10,7 +10,7 @@ public sealed class MatchingBlocksPredicate : IBlockPredicate
     /// The blocks that will match. 
     /// Can be a block ID or a block tag, or a list of block IDs.
     /// </summary>
-    public string Blocks { get; init; }
+    public required string Blocks { get; init; }
 
     public bool GetResult(BlockPredicateContext context)
     {

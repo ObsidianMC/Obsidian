@@ -13,9 +13,9 @@ internal sealed class Noises
     {
         return new()
         {
-            Settings = ParseSettings(files.Where(x => x.name.StartsWith(Constants.NoiseSettings.Replace("\\", "/"))).ToImmutableArray()),
-            DensityFunctions = ParseSettings(files.Where(x => x.name.StartsWith(Constants.DensityFunction.Replace("\\", "/"))).ToImmutableArray()),
-            Noise = ParseSettings(files.Where(x => x.name.StartsWith(Constants.Noise.Replace("\\", "/"))).ToImmutableArray())
+            Settings = ParseSettings(files.Where(x => x.name.StartsWith(Constants.CleanedNoiseSettings)).ToImmutableArray()),
+            DensityFunctions = ParseSettings(files.Where(x => x.name.StartsWith(Constants.CleanedDensityFunction)).ToImmutableArray()),
+            Noise = ParseSettings(files.Where(x => x.name.StartsWith(Constants.CleanedNoise)).ToImmutableArray())
         };
     }
 
