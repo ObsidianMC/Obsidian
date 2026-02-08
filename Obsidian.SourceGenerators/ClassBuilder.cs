@@ -63,7 +63,6 @@ internal static class ClassBuilder
                 builder.Line($"{propertyName} = new ConstantIntProvider {{ Type = {SymbolDisplay.FormatLiteral("minecraft:constant", true)}, Value = {GetNumberValue(element)} }},");
                 break;
             case JsonValueKind.Array:
-                //builder.Line($"{elementName.ToPascalCase()} = [],");
                 builder.Array($"{propertyName} =");
 
                 //I wanna get the base type of the array property symbol
