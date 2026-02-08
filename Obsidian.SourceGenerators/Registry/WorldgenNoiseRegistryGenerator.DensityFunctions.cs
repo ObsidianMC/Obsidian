@@ -7,15 +7,16 @@ public partial class WorldgenNoiseRegistryGenerator
 {
     private static void BuildDensityFunctions(CleanedNoises cleanedNoises, Noises noises, CodeBuilder builder)
     {
+        
         var densityFunctions = noises.DensityFunctions;
-
-        builder.Type("public static class DensityFunction");
 
         var groups = new Dictionary<string, Dictionary<string, List<BaseFeature>>>();
 
+        builder.Type("public static class DensityFunctions");
+
         foreach (var function in densityFunctions)
         {
-            var typeName = function.Name.Replace(DensityFunction, string.Empty);
+            var typeName = function.Name.Replace(CleanedDensityFunction, string.Empty);
 
             var split = typeName.Split('/');
 
@@ -96,7 +97,7 @@ public partial class WorldgenNoiseRegistryGenerator
 
         foreach (var function in densityFunctions)
         {
-            var cleanedName = function.Name.Replace(DensityFunction, string.Empty);
+            var cleanedName = function.Name.Replace(CleanedDensityFunction, string.Empty);
 
             var split = cleanedName.Split('/');
 
@@ -111,7 +112,6 @@ public partial class WorldgenNoiseRegistryGenerator
         }
 
         builder.EndScope(".ToFrozenDictionary()", true);
-
         builder.EndScope();
     }
 }

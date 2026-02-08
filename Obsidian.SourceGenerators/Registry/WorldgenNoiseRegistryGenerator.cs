@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis.CSharp;
 using Obsidian.SourceGenerators.Registry.Models;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using static Obsidian.SourceGenerators.Constants;
 
 namespace Obsidian.SourceGenerators.Registry;
@@ -55,6 +56,9 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
     private void Generate(SourceProductionContext context, Compilation compilation, ImmutableArray<TypeDeclarationSyntax> typeList,
         ImmutableArray<(string name, string json)> files)
     {
+        //if(!Debugger.IsAttached)
+        //    Debugger.Launch();
+
         var asm = compilation.AssemblyName;
 
         var noises = Noises.Get(files);
@@ -105,7 +109,7 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
 
         foreach (var func in noises.DensityFunctions)
         {
-            var cleanedName = func.Name.Replace(DensityFunction, string.Empty);
+            var cleanedName = func.Name.Replace(CleanedDensityFunction, string.Empty);
             var identifier = $"minecraft:{cleanedName}";
             var split = cleanedName.Split('/');
             var list = new List<string>();
@@ -120,8 +124,8 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
 
         foreach (var noise in noises.Noise)
         {
-            var cleanedName = noise.Name.Replace(Noise, string.Empty).ToPascalCase();
-            var identifier = $"minecraft:{noise.Name.Replace(Noise, string.Empty)}";
+            var cleanedName = noise.Name.Replace(CleanedNoise, string.Empty).ToPascalCase();
+            var identifier = $"minecraft:{noise.Name.Replace(CleanedNoise, string.Empty)}";
 
             var callableName = $"NoiseRegistry.Noises.{cleanedName}";
 

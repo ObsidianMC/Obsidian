@@ -41,6 +41,12 @@ internal static class ClassBuilder
 
                 if (containingType != null)
                 {
+                    if (IsNumberType(containingType) && numbers.Contains(containingType.Name))
+                    {
+                        AppendNumberProperty(builder, elementName, element, containingType.Name);
+                        break;
+                    }
+
                     var members = containingType.GetMembers().Where(x => x.Kind == SymbolKind.Property);
                     var member = members.FirstOrDefault(x => x.Name == propertyName);
                     if (member != null)
@@ -97,6 +103,15 @@ internal static class ClassBuilder
         }
     }
 
+    private static bool IsNumberType(ITypeSymbol? type)
+    {
+        return type?.SpecialType is
+            SpecialType.System_Int32 or
+            SpecialType.System_Int64 or
+            SpecialType.System_Single or
+            SpecialType.System_Double;
+    }
+
     private static bool TryAppendTypeProperty(BaseFeatureDictionary baseFeatureTypes, string? elementName,
         JsonElement element, CodeBuilder builder)
     {
@@ -125,8 +140,9 @@ internal static class ClassBuilder
             {
                 var childName = childProperty.Name;
                 var childValue = childProperty.Value;
+                var containingType = (properties.FirstOrDefault(x => x.Name == childName.ToPascalCase()) as IPropertySymbol)?.Type as INamedTypeSymbol;
 
-                AppendChildProperty(baseFeatureTypes, featureType, childName, childValue, builder, properties.FirstOrDefault(x => x.Name == childName.ToPascalCase()) as INamedTypeSymbol);
+                AppendChildProperty(baseFeatureTypes, featureType, childName, childValue, builder, containingType);
             }
 
             builder.EndScope(",", false);
@@ -171,7 +187,7 @@ internal static class ClassBuilder
         return isState;
     }
 
-    private static void AppendArrayItem(BaseFeatureDictionary baseFeatureTypes, JsonElement element, CodeBuilder builder, INamedTypeSymbol? arrayType = null)
+    private static void AppendArrayItem(BaseFeatureDictionary baseFeatureTypes, JsonElement element, CodeBuilder builder, ITypeSymbol? arrayType = null)
     {
         switch (element.ValueKind)
         {
@@ -207,7 +223,7 @@ internal static class ClassBuilder
                         var childName = childProperty.Name;
                         var childValue = childProperty.Value;
 
-                        var namedSymbol = arrayType?.GetMembers().FirstOrDefault(x => x.Name == childName.ToPascalCase());
+                        var namedSymbol = (arrayType?.GetMembers().FirstOrDefault(x => x.Name == childName.ToPascalCase()) as IPropertySymbol)?.Type as INamedTypeSymbol;
 
                         AppendChildProperty(baseFeatureTypes, default, childName, childValue, builder, namedSymbol as INamedTypeSymbol);
                     }
@@ -237,30 +253,25 @@ internal static class ClassBuilder
         return $"{element},";
     }
 
-    public static ITypeSymbol? GetArrayElementType(ISymbol? symbol)
+    public static ITypeSymbol? GetArrayElementType(ITypeSymbol? symbol)
     {
-        if (symbol is IPropertySymbol property)
+        if(symbol == null)
+            return null;
+
+        if(symbol is IArrayTypeSymbol arrayType)
+            return arrayType.ElementType;
+
+        // Generic collections: List<T>, IEnumerable<T>, ICollection<T>, IReadOnlyList<T>, ImmutableArray<T>, etc.
+        if (symbol is INamedTypeSymbol named)
         {
-            var type = property.Type;
+            if (named.TypeArguments.Length == 1)
+                return named.TypeArguments[0];
 
-            // Built-in arrays: T[]
-            if (type is IArrayTypeSymbol arrayType)
+            // If it's an interface like IEnumerable<T> via inheritance
+            foreach (var iface in named.AllInterfaces)
             {
-                return arrayType.ElementType;
-            }
-
-            // Generic collections: List<T>, IEnumerable<T>, ICollection<T>, IReadOnlyList<T>, ImmutableArray<T>, etc.
-            if (type is INamedTypeSymbol named)
-            {
-                if (named.TypeArguments.Length == 1)
-                    return named.TypeArguments[0];
-
-                // If it's an interface like IEnumerable<T> via inheritance
-                foreach (var iface in named.AllInterfaces)
-                {
-                    if (iface.Name == "IEnumerable" && iface.TypeArguments.Length == 1)
-                        return iface.TypeArguments[0];
-                }
+                if (iface.Name == "IEnumerable" && iface.TypeArguments.Length == 1)
+                    return iface.TypeArguments[0];
             }
         }
 

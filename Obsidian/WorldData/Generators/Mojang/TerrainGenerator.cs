@@ -1,6 +1,4 @@
-using Obsidian.API.World.Generator.DensityFunctions;
 using Obsidian.API.World.Generator.Noise;
-using System.Diagnostics;
 
 namespace Obsidian.WorldData.Generators.Mojang;
 

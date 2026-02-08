@@ -17,6 +17,10 @@ internal static class Constants
     public const string Noise = "noise\\";
     public const string NoiseSettings = "noise_settings\\";
 
+    public const string CleanedDensityFunction = "density_function/";
+    public const string CleanedNoise = "noise/";
+    public const string CleanedNoiseSettings = "noise_settings/";
+
     public const string DefaultBlock = "default_block";
     public const string DefaultFluid = "default_fluid";
     public const string BlockResult = "result_state";

@@ -13,7 +13,7 @@ public partial class WorldgenNoiseRegistryGenerator
 
         foreach (var setting in settings)
         {
-            var sanitizedName = setting.Name.Replace(NoiseSettings, string.Empty).ToPascalCase();
+            var sanitizedName = setting.Name.Replace(CleanedNoiseSettings, string.Empty).ToPascalCase();
             builder.Type($"public static NoiseSetting {sanitizedName} => new()");
 
             foreach (var property in setting.Properties)
@@ -31,7 +31,7 @@ public partial class WorldgenNoiseRegistryGenerator
 
         foreach (var setting in settings)
         {
-            var cleanedName = setting.Name.Replace(NoiseSettings, string.Empty);
+            var cleanedName = setting.Name.Replace(CleanedNoiseSettings, string.Empty);
             var sanitizedName = cleanedName.ToPascalCase();
 
             builder.Line($"{{ {SymbolDisplay.FormatLiteral($"minecraft:{cleanedName}", true)}, {sanitizedName}}}, ");

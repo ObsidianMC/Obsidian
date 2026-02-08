@@ -13,7 +13,7 @@ public partial class WorldgenNoiseRegistryGenerator
 
         foreach (var value in noise)
         {
-            var sanitizedName = value.Name.Replace(Noise, string.Empty).ToPascalCase();
+            var sanitizedName = value.Name.Replace(CleanedNoise, string.Empty).ToPascalCase();
             builder.Type($"public static BaseNoise {sanitizedName} => new()");
 
             foreach (var property in value.Properties)
@@ -31,7 +31,7 @@ public partial class WorldgenNoiseRegistryGenerator
 
         foreach (var value in noise)
         {
-            var cleanedName = value.Name.Replace(Noise, string.Empty);
+            var cleanedName = value.Name.Replace(CleanedNoise, string.Empty);
             var sanitizedName = cleanedName.ToPascalCase();
 
             builder.Line($"{{ \"minecraft:{cleanedName}\", {sanitizedName}}}, ");
