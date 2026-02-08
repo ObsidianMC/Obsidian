@@ -20,52 +20,23 @@ internal static class ClassBuilder
             case JsonValueKind.String:
                 builder.Line($"{propertyName} = {SymbolDisplay.FormatLiteral(element.GetString()!, true)}, ");
                 break;
+
             case JsonValueKind.Number:
-                if (featureType.Symbol != null)
+            {
+                var numberTypeName = TryGetNumberTypeName(featureType, containingType, propertyName);
+                if (numberTypeName != null)
                 {
-                    var members = featureType.GetProperties();
-
-                    var member = members.FirstOrDefault(x => x.Name == propertyName);
-
-                    if (member != null)
-                    {
-                        var property = (IPropertySymbol)member;
-
-                        if (numbers.Contains(property.Type.Name))
-                        {
-                            AppendNumberProperty(builder, elementName, element, property.Type.Name);
-                            break;
-                        }
-                    }
-                }
-
-                if (containingType != null)
-                {
-                    if (IsNumberType(containingType) && numbers.Contains(containingType.Name))
-                    {
-                        AppendNumberProperty(builder, elementName, element, containingType.Name);
-                        break;
-                    }
-
-                    var members = containingType.GetMembers().Where(x => x.Kind == SymbolKind.Property);
-                    var member = members.FirstOrDefault(x => x.Name == propertyName);
-                    if (member != null)
-                    {
-                        var property = (IPropertySymbol)member;
-                        if (numbers.Contains(property.Type.Name))
-                        {
-                            AppendNumberProperty(builder, elementName, element, property.Type.Name);
-                            break;
-                        }
-                    }
+                    AppendNumberProperty(builder, elementName, element, numberTypeName);
+                    break;
                 }
 
                 builder.Line($"{propertyName} = new ConstantIntProvider {{ Type = {SymbolDisplay.FormatLiteral("minecraft:constant", true)}, Value = {GetNumberValue(element)} }},");
                 break;
+            }
+
             case JsonValueKind.Array:
                 builder.Array($"{propertyName} =");
 
-                //I wanna get the base type of the array property symbol
                 var arrayElementType = GetArrayElementType(containingType);
 
                 foreach (var arrayItem in element.EnumerateArray())
@@ -73,46 +44,57 @@ internal static class ClassBuilder
 
                 builder.EndArrayScope(",", false);
                 break;
+
             case JsonValueKind.True:
             case JsonValueKind.False:
-                builder.Line($"{propertyName} = {element.GetBoolean().ToString().ToLower()}, ");
+                builder.Line($"{propertyName} = {(element.GetBoolean() ? "true" : "false")}, ");
                 break;
+
             default:
-                {
-                    if (TryAppendTypeProperty(baseFeatureTypes, elementName, element, builder))
-                        break;
-
-                    if (TryAppendStateProperty(elementName, element, builder))
-                        break;
-
-                    builder.Type($"{propertyName} = new()");
-
-                    foreach (var childProperty in element.EnumerateObject())
-                    {
-                        var childName = childProperty.Name;
-                        var childValue = childProperty.Value;
-
-                        AppendChildProperty(baseFeatureTypes, featureType, childName, childValue, builder);
-                    }
-
-                    builder.EndScope(",", false);
-
+            {
+                if (TryAppendTypeProperty(baseFeatureTypes, elementName, element, builder))
                     break;
-                }
+
+                if (TryAppendStateProperty(elementName, element, builder))
+                    break;
+
+                builder.Type($"{propertyName} = new()");
+
+                foreach (var childProperty in element.EnumerateObject())
+                    AppendChildProperty(baseFeatureTypes, featureType, childProperty.Name, childProperty.Value, builder);
+
+                builder.EndScope(",", false);
+                break;
+            }
         }
     }
 
-    private static bool IsNumberType(ITypeSymbol? type)
+    private static string? TryGetNumberTypeName(TypeInformation featureType, INamedTypeSymbol? containingType, string propertyName)
     {
-        return type?.SpecialType is
-            SpecialType.System_Int32 or
-            SpecialType.System_Int64 or
-            SpecialType.System_Single or
-            SpecialType.System_Double;
+        // Prefer the feature type's declared property type (if available).
+        if (featureType.Symbol != null)
+        {
+            var member = featureType.GetProperties().FirstOrDefault(x => x.Name == propertyName) as IPropertySymbol;
+            var typeName = member?.Type?.Name;
+            if (typeName != null && numbers.Contains(typeName))
+                return typeName;
+        }
+
+        if (containingType == null)
+            return null;
+
+        // If caller already passed the "value type" (e.g. array element type), it might itself be numeric.
+        if (IsNumberType(containingType) && numbers.Contains(containingType.Name))
+            return containingType.Name;
+
+        // Otherwise, see if the containing type has a property with this name that is numeric.
+        var member2 = containingType.GetMembers().FirstOrDefault(x => x.Kind == SymbolKind.Property && x.Name == propertyName) as IPropertySymbol;
+        var typeName2 = member2?.Type?.Name;
+
+        return typeName2 != null && numbers.Contains(typeName2) ? typeName2 : null;
     }
 
-    private static bool TryAppendTypeProperty(BaseFeatureDictionary baseFeatureTypes, string? elementName,
-        JsonElement element, CodeBuilder builder)
+    private static bool TryAppendTypeProperty(BaseFeatureDictionary baseFeatureTypes, string? elementName, JsonElement element, CodeBuilder builder)
     {
         if (element.ValueKind != JsonValueKind.Object)
             return false;
@@ -224,7 +206,7 @@ internal static class ClassBuilder
 
                         var namedSymbol = (arrayType?.GetMembers().FirstOrDefault(x => x.Name == childName.ToPascalCase()) as IPropertySymbol)?.Type as INamedTypeSymbol;
 
-                        AppendChildProperty(baseFeatureTypes, default, childName, childValue, builder, namedSymbol as INamedTypeSymbol);
+                        AppendChildProperty(baseFeatureTypes, default, childName, childValue, builder, namedSymbol);
                     }
 
                     builder.EndScope(", ", false);
@@ -252,7 +234,7 @@ internal static class ClassBuilder
         return $"{element},";
     }
 
-    public static ITypeSymbol? GetArrayElementType(ITypeSymbol? symbol)
+    private static ITypeSymbol? GetArrayElementType(ITypeSymbol? symbol)
     {
         if(symbol == null)
             return null;
@@ -276,4 +258,14 @@ internal static class ClassBuilder
 
         return null;
     }
+
+    private static bool IsNumberType(ITypeSymbol? type)
+    {
+        return type?.SpecialType is
+            SpecialType.System_Int32 or
+            SpecialType.System_Int64 or
+            SpecialType.System_Single or
+            SpecialType.System_Double;
+    }
+
 }
