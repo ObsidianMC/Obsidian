@@ -4,8 +4,7 @@ using static Obsidian.SourceGenerators.Constants;
 namespace Obsidian.SourceGenerators.Registry;
 public partial class WorldgenNoiseRegistryGenerator
 {
-    private static void BuildNoise(CleanedNoises cleanedNoises,
-       Noises noises, CodeBuilder builder)
+    private static void BuildNoise(CleanedNoises cleanedNoises, Noises noises, CodeBuilder builder)
     {
         var noise = noises.Noise;
 

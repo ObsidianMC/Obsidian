@@ -56,9 +56,6 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
     private void Generate(SourceProductionContext context, Compilation compilation, ImmutableArray<TypeDeclarationSyntax> typeList,
         ImmutableArray<(string name, string json)> files)
     {
-        //if(!Debugger.IsAttached)
-        //    Debugger.Launch();
-
         var asm = compilation.AssemblyName;
 
         var noises = Noises.Get(files);
