@@ -67,7 +67,7 @@ public partial class WorldgenNoiseRegistryGenerator
                 break;
             default:
                 {
-                    if (ClassBuilder.TryAppendStateProperty(elementName, element, builder))
+                    if (builder.TryAppendStateProperty(elementName, element))
                         break;
 
                     if (TryAppendTypeProperty(cleanedNoises, elementName, element, builder))
