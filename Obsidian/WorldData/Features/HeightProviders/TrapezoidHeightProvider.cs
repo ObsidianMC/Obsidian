@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.WorldData.Features.HeightProviders;
 
-[TreeProperty("minecarft:trapezoid")]
+[ConfiguredFeatureProperty("minecarft:trapezoid")]
 public sealed class TrapezoidHeightProvider : IHeightProvider
 {
     public required string Type { get; init; } = "minecarft:trapezoid";

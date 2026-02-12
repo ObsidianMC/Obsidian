@@ -1,7 +1,7 @@
-﻿using Obsidian.SourceGenerators.Packets;
+﻿using Microsoft.CodeAnalysis.CSharp;
+using Obsidian.SourceGenerators.Packets;
 using Obsidian.SourceGenerators.Registry.Models;
 using System.Text.Json;
-using static Obsidian.SourceGenerators.Constants;
 
 namespace Obsidian.SourceGenerators.Registry;
 public partial class WorldgenNoiseRegistryGenerator
@@ -9,17 +9,17 @@ public partial class WorldgenNoiseRegistryGenerator
     private static readonly string[] numbers = ["Int32", "Single", "Double", "Int64"];
 
     private static void AppendChildProperty(CleanedNoises cleanedNoises, string elementName,
-        JsonElement element, CodeBuilder builder, bool newLine = false, bool isDensityFunction = false, TypeInformation? densityFunction = null)
+        JsonElement element, CodeBuilder builder, bool isDensityFunction = false, TypeInformation? densityFunction = null)
     {
         switch (element.ValueKind)
         {
             case JsonValueKind.String:
-                if (TryAppendTypeProperty(cleanedNoises, elementName, element, builder, newLine))
+                if (TryAppendTypeProperty(cleanedNoises, elementName, element, builder))
                     break;
                 if (elementName == "type" && isDensityFunction)
                     break;
 
-                builder.AppendSimple($"{elementName.ToPascalCase()} = \"{element.GetString()}\", ", newLine);
+                builder.Line($"{elementName.ToPascalCase()} = {SymbolDisplay.FormatLiteral(element.GetString()!, true)}, ");
                 break;
             case JsonValueKind.Number:
                 if (isDensityFunction)
@@ -49,28 +49,31 @@ public partial class WorldgenNoiseRegistryGenerator
                 builder.Line($"{elementName.ToPascalCase()} = {element},");
                 break;
             case JsonValueKind.Array:
-                var hasObjects = element.EnumerateArray().FirstOrDefault().ValueKind == JsonValueKind.Object;
+                //var hasObjects = element.EnumerateArray().FirstOrDefault().ValueKind == JsonValueKind.Object;
 
                 builder.Array($"{elementName.ToPascalCase()} =");
 
+                //if (elementName == "spawn_target")
+                //    hasObjects = false;
+
                 foreach (var arrayItem in element.EnumerateArray())
-                    AppendArrayItem(cleanedNoises, arrayItem, builder, hasObjects);
+                    AppendArrayItem(cleanedNoises, arrayItem, builder);
 
                 builder.EndArrayScope(",", false);
                 break;
             case JsonValueKind.True:
             case JsonValueKind.False:
-                builder.AppendSimple($"{elementName.ToPascalCase()} = {element.GetBoolean().ToString().ToLower()}, ", newLine);
+                builder.Line($"{elementName.ToPascalCase()} = {element.GetBoolean().ToString().ToLower()}, ");
                 break;
             default:
                 {
-                    if (TryAppendStateProperty(elementName, element, builder))
+                    if (builder.TryAppendStateProperty(elementName, element))
                         break;
 
-                    if (TryAppendTypeProperty(cleanedNoises, elementName, element, builder, newLine))
+                    if (TryAppendTypeProperty(cleanedNoises, elementName, element, builder))
                         break;
 
-                    if (elementName == "spline" && TryAppendSplineProperty(cleanedNoises, elementName, element, builder, newLine))
+                    if (elementName == "spline" && TryAppendSplineProperty(cleanedNoises, elementName, element, builder))
                         break;
 
                     builder.Type($"{elementName.ToPascalCase()} = new()");
@@ -80,7 +83,7 @@ public partial class WorldgenNoiseRegistryGenerator
                         var childName = childProperty.Name;
                         var childValue = childProperty.Value;
 
-                        AppendChildProperty(cleanedNoises, childName, childValue, builder, newLine, elementName == "noise_router");
+                        AppendChildProperty(cleanedNoises, childName, childValue, builder, elementName == "noise_router");
                     }
 
                     builder.EndScope(", ", false);
@@ -94,25 +97,20 @@ public partial class WorldgenNoiseRegistryGenerator
         switch (element.ValueKind)
         {
             case JsonValueKind.String:
-                builder.Line($"\"{element.GetString()}\", ");
+                builder.Line($"{SymbolDisplay.FormatLiteral(element.GetString()!, true)}, ");
                 break;
             case JsonValueKind.Number:
                 builder.Line($"{element},");
                 break;
             case JsonValueKind.Array:
-                //builder.Append($"[, ");
-
-                //foreach (var arrayItem in element.EnumerateArray())
-                //    AppendArrayItem(cleanedNoises, arrayItem, builder);
-
                 break;
             case JsonValueKind.True:
             case JsonValueKind.False:
-                builder.Append($"{element.GetBoolean().ToString().ToLower()}, ");
+                builder.Line($"{element.GetBoolean().ToString().ToLower()}, ");
                 break;
             default:
                 {
-                    if (TryAppendTypeProperty(cleanedNoises, null, element, builder, hasObjects))
+                    if (TryAppendTypeProperty(cleanedNoises, null, element, builder))
                         break;
 
                     builder.Type("new()");
@@ -132,11 +130,11 @@ public partial class WorldgenNoiseRegistryGenerator
         }
     }
 
-    private static bool TryAppendSplineProperty(CleanedNoises cleanedNoises, string elementName, JsonElement element,
-        CodeBuilder builder, bool newLine = false, bool appendName = true)
+    private static bool TryAppendSplineProperty(CleanedNoises cleanedNoises, string? elementName, JsonElement element,
+        CodeBuilder builder, bool appendName = true)
     {
         if (appendName)
-            builder.Type($"{elementName.ToPascalCase()} = new()");
+            builder.Type($"{elementName!.ToPascalCase()} = new()");
 
         var passed = true;
         foreach (var childProperty in element.EnumerateObject())
@@ -148,7 +146,7 @@ public partial class WorldgenNoiseRegistryGenerator
 
             if (TryGetCallableName(cleanedNoises, typeName, elementName, out var elementCallableName))
             {
-                var name = elementName != null ? $"{propName.ToPascalCase()} = {elementCallableName}," :
+                var name =  !string.IsNullOrEmpty(elementName) ? $"{propName.ToPascalCase()} = {elementCallableName}," :
                     string.Empty;
 
                 builder.Line(name);
@@ -176,14 +174,14 @@ public partial class WorldgenNoiseRegistryGenerator
 
                             builder.Type($"{childName.ToPascalCase()} = new {Vocabulary.Spline}()");
 
-                            TryAppendSplineProperty(cleanedNoises, childName, value, builder, newLine, false);
+                            TryAppendSplineProperty(cleanedNoises, childName, value, builder, false);
 
                             builder.EndScope(",", false);
 
                             continue;
                         }
 
-                        if (value.ValueKind == JsonValueKind.Object && TryAppendSplineProperty(cleanedNoises, childName, value, builder, newLine))
+                        if (value.ValueKind == JsonValueKind.Object && TryAppendSplineProperty(cleanedNoises, childName, value, builder))
                             continue;
 
                         builder.Line($"{childName.ToPascalCase()} = {value},");
@@ -200,14 +198,11 @@ public partial class WorldgenNoiseRegistryGenerator
         if (appendName)
             builder.EndScope(",", false);
 
-        if (newLine)
-            builder.Line();
-
         return passed;
     }
 
     private static bool TryAppendTypeProperty(CleanedNoises cleanedNoises, string? elementName,
-        JsonElement element, CodeBuilder builder, bool newLine = false)
+        JsonElement element, CodeBuilder builder)
     {
         var typeName = element.ValueKind == JsonValueKind.Object &&
             element.TryGetProperty("type", out var typeElement) ? typeElement.GetString()! : string.Empty;
@@ -234,48 +229,14 @@ public partial class WorldgenNoiseRegistryGenerator
                 var childName = childProperty.Name;
                 var childValue = childProperty.Value;
 
-                AppendChildProperty(cleanedNoises, childName, childValue, builder, true, true, featureType);
+                AppendChildProperty(cleanedNoises, childName, childValue, builder, true, featureType);
             }
             builder.EndScope(",", false);
         }
         else
             return false;
 
-        if (newLine)
-            builder.Line();
-
         return true;
-    }
-
-    private static bool TryAppendStateProperty(string elementName, JsonElement element, CodeBuilder builder)
-    {
-        var isState = elementName is defaultBlock or defaultFluid or blockResult;
-
-        if (isState)
-        {
-            builder.Type($"{elementName.ToPascalCase()} = new() ");
-
-            builder.Line($"Name = \"{element.GetProperty("Name")}\", ");
-
-            if (element.TryGetProperty("Properties", out var props))
-            {
-                builder.Type("Properties = new Dictionary<string, string>()");
-
-                foreach (var prop in props.EnumerateObject())
-                {
-                    var childName = prop.Name;
-                    var childValue = prop.Value;
-
-                    builder.Line($" {{ \"{childName}\", \"{childValue.GetString()}\" }}, ");
-                }
-
-                builder.EndScope(false);
-            }
-
-            builder.EndScope(",", false);
-        }
-
-        return isState;
     }
 
 

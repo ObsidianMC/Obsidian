@@ -1,4 +1,6 @@
 ﻿namespace Obsidian.WorldData.BlockPredicates;
+
+[ConfiguredFeatureProperty("minecraft:would_survive")]
 public sealed class WouldSurvivePredicate : IBlockPredicate
 {
     public string Type { get; init; } = "minecraft:would_survive";

@@ -7,7 +7,7 @@ namespace Obsidian.WorldData.Features.PlacementModifiers;
 /// <remarks>
 /// Note that the even though X and Z share the same int provider, they are individually sampled, so a different offset can be applied to X and Z.
 /// </remarks>
-[TreeProperty("minecraft:random_offset")]
+[ConfiguredFeatureProperty("minecraft:random_offset")]
 public sealed class RandomOffsetPlacement : PlacementModifierBase
 {
     public override string Type { get; internal init; } = "minecraft:random_offset";

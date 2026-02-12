@@ -6,7 +6,7 @@
 /// First checks noise(x / 200, z / 200) less than noise_level
 /// If that is true, uses below_noise, otherwise above_noise.
 /// </summary>
-[TreeProperty("minecraft:noise_threshold_count")]
+[ConfiguredFeatureProperty("minecraft:noise_threshold_count")]
 public sealed class NoiseThresholdCountPlacement : PlacementModifierBase
 {
     public override string Type { get; internal init; } = "minecraft:noise_threshold_count";

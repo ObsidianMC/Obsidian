@@ -5,7 +5,7 @@
 /// This is a shortcut for a random_offset modifier with y_spread set to 0 and xz_spread as a uniform int from 0 to 15. 
 /// No additional fields.
 /// </summary>
-[TreeProperty("minecraft:in_square")]
+[ConfiguredFeatureProperty("minecraft:in_square")]
 public sealed class InSquarePlacement : PlacementModifierBase
 {
     public override string Type { get; internal init; } = "minecraft:in_square";

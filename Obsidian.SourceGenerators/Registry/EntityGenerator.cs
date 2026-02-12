@@ -82,7 +82,7 @@ public sealed partial class EntityGenerator : IIncrementalGenerator
             var expression = arg.Expression;
             var value = model.GetConstantValue(expression).ToString();
 
-            classes.Add(new TypeInformation(symbol, value));
+            classes.Add(new TypeInformation(symbol, value, false));
         }
 
         this.GenerateClasses(classes, document, context);

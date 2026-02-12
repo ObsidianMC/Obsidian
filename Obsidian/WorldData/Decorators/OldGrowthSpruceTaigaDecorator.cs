@@ -1,6 +1,5 @@
 ﻿using Obsidian.API.BlockStates.Builders;
 using Obsidian.API.Registry.Codecs.Biomes;
-using Obsidian.Registries.ConfiguredFeatures;
 using Obsidian.WorldData.Generators;
 
 namespace Obsidian.WorldData.Decorators;
@@ -10,8 +9,8 @@ public class OldGrowthSpruceTaigaDecorator : BaseDecorator
     private static readonly IBlock sweetBerryBush = BlocksRegistry.Get(Material.SweetBerryBush, new SweetBerryBushStateBuilder().WithAge(3).Build());
     public OldGrowthSpruceTaigaDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, TreeFeatureRegistry.MinecraftSpruce));
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(4, TreeFeatureRegistry.MinecraftMegaSpruce));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, Registries.ConfiguredFeatures.Trees.MinecraftSpruce));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(4, Registries.ConfiguredFeatures.Trees.MinecraftMegaSpruce));
     }
 
     public override void Decorate()

@@ -9,7 +9,7 @@ namespace Obsidian.WorldData.Features.PlacementModifiers;
 /// whose Y coordinate is one block above this layer at this selected horizontal position. 
 /// Return these selected positions.
 /// </summary>
-[TreeProperty("minecraft:count_on_every_layer")]
+[ConfiguredFeatureProperty("minecraft:count_on_every_layer")]
 public sealed class CountOnEveryLayerPlacement : PlacementModifierBase
 {
     public override string Type { get; internal init; } = "minecraft:count_on_every_layer";

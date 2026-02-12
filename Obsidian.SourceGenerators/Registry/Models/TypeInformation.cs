@@ -1,9 +1,17 @@
 ﻿namespace Obsidian.SourceGenerators.Registry.Models;
-public readonly struct TypeInformation(INamedTypeSymbol symbol, string resourceLocation)
+public record struct TypeInformation
 {
-    public INamedTypeSymbol Symbol { get; } = symbol;
+    public INamedTypeSymbol Symbol { get; }
 
-    public string ResourceLocation { get; } = resourceLocation;
+    public string ResourceLocation { get; }
+    public bool IsConfiguredFeature { get; internal set; }
+
+    public TypeInformation(INamedTypeSymbol symbol, string resourceLocation, bool isConfiguredFeature)
+    {
+        this.Symbol = symbol;
+        this.ResourceLocation = resourceLocation;
+        this.IsConfiguredFeature = isConfiguredFeature;
+    }
 
     public List<ISymbol> GetProperties()
     {

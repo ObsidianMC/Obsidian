@@ -1,4 +1,6 @@
 ﻿namespace Obsidian.WorldData.BlockPredicates;
+
+[ConfiguredFeatureProperty("minecraft:not")]
 public sealed class NotPredicate : IBlockPredicate
 {
     public string Type { get; init; } = "minecraft:not";

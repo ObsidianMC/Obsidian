@@ -1,6 +1,5 @@
 ﻿using Obsidian.API.BlockStates.Builders;
 using Obsidian.API.Registry.Codecs.Biomes;
-using Obsidian.Registries.ConfiguredFeatures;
 using Obsidian.WorldData.Generators;
 
 namespace Obsidian.WorldData.Decorators;
@@ -13,9 +12,9 @@ public class ForestDecorator : BaseDecorator
 
     public ForestDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(4, TreeFeatureRegistry.MinecraftOak));
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, TreeFeatureRegistry.MinecraftBirch));
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(2, TreeFeatureRegistry.MinecraftFancyOak));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(4, Registries.ConfiguredFeatures.Trees.MinecraftOak));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, Registries.ConfiguredFeatures.Trees.MinecraftBirch));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(2, Registries.ConfiguredFeatures.Trees.MinecraftFancyOak));
 
     }
 
