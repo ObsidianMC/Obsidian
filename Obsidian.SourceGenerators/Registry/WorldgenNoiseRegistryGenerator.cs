@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis.CSharp;
 using Obsidian.SourceGenerators.Registry.Models;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using static Obsidian.SourceGenerators.Constants;
 
 namespace Obsidian.SourceGenerators.Registry;
@@ -84,7 +85,7 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
                 var expression = arg.Expression;
                 var value = model.GetConstantValue(expression).ToString();
 
-                classes.Add(new TypeInformation(symbol, value));
+                classes.Add(new TypeInformation(symbol, value, false));
             }
         }
 
@@ -105,7 +106,7 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
 
         foreach (var func in noises.DensityFunctions)
         {
-            var cleanedName = func.Name.Replace(DensityFunction, string.Empty);
+            var cleanedName = func.Name.Replace(CleanedDensityFunction, string.Empty);
             var identifier = $"minecraft:{cleanedName}";
             var split = cleanedName.Split('/');
             var list = new List<string>();
@@ -120,8 +121,8 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
 
         foreach (var noise in noises.Noise)
         {
-            var cleanedName = noise.Name.Replace(Noise, string.Empty).ToPascalCase();
-            var identifier = $"minecraft:{noise.Name.Replace(Noise, string.Empty)}";
+            var cleanedName = noise.Name.Replace(CleanedNoise, string.Empty).ToPascalCase();
+            var identifier = $"minecraft:{noise.Name.Replace(CleanedNoise, string.Empty)}";
 
             var callableName = $"NoiseRegistry.Noises.{cleanedName}";
 
@@ -130,9 +131,9 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
 
         var cleanedNoises = new CleanedNoises(worldgenProperties, staticDensityFunctions, noiseTypes, surfaceConditions);
 
-        InitSection("Noises", context, (CodeBuilder builder) => BuildNoise(cleanedNoises, noises, builder));
-        InitSection("DensityFunctions", context, (CodeBuilder builder) => BuildDensityFunctions(cleanedNoises, noises, builder));
-        InitSection("Base", context, (CodeBuilder builder) => BuildNoiseSettings(cleanedNoises, noises, builder));
+        InitSection("Noises", context, (builder) => BuildNoise(cleanedNoises, noises, builder));
+        InitSection("DensityFunctions", context, (builder) => BuildDensityFunctions(cleanedNoises, noises, builder));
+        InitSection("Base", context, (builder) => BuildNoiseSettings(cleanedNoises, noises, builder));
     }
 
     private static void InitSection(string sectionName, SourceProductionContext context, Action<CodeBuilder> method)

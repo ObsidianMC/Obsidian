@@ -1,6 +1,4 @@
-﻿using Obsidian.API.World.Features;
-using Obsidian.API.World.Features.Tree;
-using Obsidian.Registries;
+﻿using Obsidian.API.World.Features.Tree;
 
 namespace Obsidian.WorldData.Features.Tree.Decorators;
 

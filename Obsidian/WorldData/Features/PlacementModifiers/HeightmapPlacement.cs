@@ -4,7 +4,7 @@
 /// Sets the Y coordinate to one block above the heightmap.
 /// Returns the new position.
 /// </summary>
-[TreeProperty("minecraft:heightmap")]
+[ConfiguredFeatureProperty("minecraft:heightmap")]
 public sealed class HeightmapPlacement : PlacementModifierBase
 {
     public override string Type { get; internal init; } = "minecraft:heightmap";

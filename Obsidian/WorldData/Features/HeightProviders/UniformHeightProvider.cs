@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.WorldData.Features.HeightProviders;
 
-[TreeProperty("minecarft:uniform")]
+[ConfiguredFeatureProperty("minecarft:uniform")]
 public sealed class UniformHeightProvider : IHeightProvider
 {
     public required string Type { get; init; } = "minecarft:uniform";

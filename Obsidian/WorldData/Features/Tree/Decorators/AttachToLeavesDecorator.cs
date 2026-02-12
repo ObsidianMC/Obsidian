@@ -1,5 +1,4 @@
-﻿using Obsidian.API.World.Features;
-using Obsidian.API.World.Features.Tree;
+﻿using Obsidian.API.World.Features.Tree;
 using System.ComponentModel.DataAnnotations;
 
 namespace Obsidian.WorldData.Features.Tree.Decorators;
@@ -14,7 +13,7 @@ public sealed class AttachToLeavesDecorator : DecoratorBase
     public override string Type { get; init; } = "minecraft:attached_to_leaves";
 
     [Range(0, 16)]
-    public required int ExclusionRadiusXZ { get; set; }
+    public required int ExclusionRadiusXz { get; set; }
 
     [Range(0, 16)]
     public required int ExclusionRadiusY { get; set; }
@@ -31,7 +30,7 @@ public sealed class AttachToLeavesDecorator : DecoratorBase
     /// Cannot be empty. 
     /// Must be up, down, north, south, west, or east.
     /// </remarks>
-    public List<string> Directions { get; } = [];
+    public List<string> Directions { get; init; } = [];
 
     public override async ValueTask Place(FeatureContext context, List<Vector> trunkPositions, List<Vector> foliagePositions, List<Vector> rootPositions)
     {
@@ -99,8 +98,8 @@ public sealed class AttachToLeavesDecorator : DecoratorBase
     private void AddExclusionZone(HashSet<Vector> blacklist, Vector center)
     {
         // Create bounding box for exclusion zone
-        var corner1 = center + (-ExclusionRadiusXZ, -ExclusionRadiusY, -ExclusionRadiusXZ);
-        var corner2 = center + (ExclusionRadiusXZ, ExclusionRadiusY, ExclusionRadiusXZ);
+        var corner1 = center + (-ExclusionRadiusXz, -ExclusionRadiusY, -ExclusionRadiusXz);
+        var corner2 = center + (ExclusionRadiusXz, ExclusionRadiusY, ExclusionRadiusXz);
 
         // Add all positions in the box
         for (int x = corner1.X; x <= corner2.X; x++)

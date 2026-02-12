@@ -4,8 +4,7 @@ using static Obsidian.SourceGenerators.Constants;
 namespace Obsidian.SourceGenerators.Registry;
 public partial class WorldgenNoiseRegistryGenerator
 {
-    private static void BuildNoise(CleanedNoises cleanedNoises,
-       Noises noises, CodeBuilder builder)
+    private static void BuildNoise(CleanedNoises cleanedNoises, Noises noises, CodeBuilder builder)
     {
         var noise = noises.Noise;
 
@@ -13,7 +12,7 @@ public partial class WorldgenNoiseRegistryGenerator
 
         foreach (var value in noise)
         {
-            var sanitizedName = value.Name.Replace(Noise, string.Empty).ToPascalCase();
+            var sanitizedName = value.Name.Replace(CleanedNoise, string.Empty).ToPascalCase();
             builder.Type($"public static BaseNoise {sanitizedName} => new()");
 
             foreach (var property in value.Properties)
@@ -21,7 +20,7 @@ public partial class WorldgenNoiseRegistryGenerator
                 var elementName = property.Name;
                 var element = property.Value;
 
-                AppendChildProperty(cleanedNoises, elementName, element, builder, true);
+                AppendChildProperty(cleanedNoises, elementName, element, builder);
             }
 
             builder.EndScope(true);
@@ -31,7 +30,7 @@ public partial class WorldgenNoiseRegistryGenerator
 
         foreach (var value in noise)
         {
-            var cleanedName = value.Name.Replace(Noise, string.Empty);
+            var cleanedName = value.Name.Replace(CleanedNoise, string.Empty);
             var sanitizedName = cleanedName.ToPascalCase();
 
             builder.Line($"{{ \"minecraft:{cleanedName}\", {sanitizedName}}}, ");

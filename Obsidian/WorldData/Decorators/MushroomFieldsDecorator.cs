@@ -1,5 +1,4 @@
 ﻿using Obsidian.API.Registry.Codecs.Biomes;
-using Obsidian.Registries.ConfiguredFeatures;
 using Obsidian.WorldData.Generators;
 
 namespace Obsidian.WorldData.Decorators;
@@ -8,8 +7,8 @@ public class MushroomFieldsDecorator : BaseDecorator
 {
     public MushroomFieldsDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, TreeFeatureRegistry.MinecraftOak));
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, TreeFeatureRegistry.MinecraftAcacia));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, Registries.ConfiguredFeatures.Trees.MinecraftOak));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, Registries.ConfiguredFeatures.Trees.MinecraftAcacia));
     }
 
     public override void Decorate()

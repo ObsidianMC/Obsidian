@@ -1,8 +1,6 @@
-﻿using Obsidian.Registries;
+﻿namespace Obsidian.Providers.BlockStateProviders;
 
-namespace Obsidian.Providers.BlockStateProviders;
-
-[TreeProperty("minecraft:rotated_block_provider")]
+[ConfiguredFeatureProperty("minecraft:rotated_block_provider")]
 public sealed class RotatedBlockProvider : IBlockStateProvider
 {
     public string Type { get; init; } = "minecraft:rotated_block_provider";

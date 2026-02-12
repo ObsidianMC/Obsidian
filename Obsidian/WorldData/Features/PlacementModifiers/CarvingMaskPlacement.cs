@@ -4,7 +4,7 @@
 /// Returns all positions in the current chunk that have been carved out by a carver. 
 /// This does not include blocks carved out by noise caves.
 /// </summary>
-[TreeProperty("minecraft:carving_mask")]
+[ConfiguredFeatureProperty("minecraft:carving_mask")]
 public sealed class CarvingMaskPlacement : PlacementModifierBase
 {
     public override string Type { get; internal init; } = "minecraft:carving_mask";
