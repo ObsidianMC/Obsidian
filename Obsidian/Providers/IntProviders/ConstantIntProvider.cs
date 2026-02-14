@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.Providers.IntProviders;
 
-[TreeProperty(IntProviderTypes.Constant)]
+[ConfiguredFeatureProperty(IntProviderTypes.Constant)]
 public sealed class ConstantIntProvider : IIntProvider
 {
     public required string Type { get; init; } = IntProviderTypes.Constant;

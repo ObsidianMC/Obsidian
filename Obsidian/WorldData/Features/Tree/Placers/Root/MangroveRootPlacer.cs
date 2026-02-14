@@ -185,7 +185,7 @@ public sealed class MangroveRootPlacer : RootPlacer
         [Range(0.0, 1.0)]
         public required float RandomSkewChance { get; set; }
 
-        public List<string> CanGrowThrough { get; set; } = [];
+        public string CanGrowThrough { get; set; }
         public List<string> MuddyRootsIn { get; set; } = [];
 
         public required IBlockStateProvider MuddyRootsProvider { get; set; }

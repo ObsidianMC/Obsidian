@@ -91,7 +91,7 @@ public sealed partial class RegistryGenerator : IIncrementalGenerator
                 continue;
             }
 
-            classes.Add(new TypeInformation(symbol, constantValue.Value!.ToString()));
+            classes.Add(new TypeInformation(symbol, constantValue.Value!.ToString(), false));
         }
 
         this.GenerateClasses(classes, document, context);

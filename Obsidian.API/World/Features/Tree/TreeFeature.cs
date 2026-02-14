@@ -2,6 +2,7 @@
 
 namespace Obsidian.API.World.Features.Tree;
 
+[ConfiguredFeatureClass("minecraft:tree")]
 public sealed class TreeFeature : ConfiguredFeatureBase
 {
     [JsonIgnore]

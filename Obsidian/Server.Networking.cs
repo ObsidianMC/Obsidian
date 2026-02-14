@@ -49,10 +49,17 @@ public partial class Server
 
     private async ValueTask Accept(SocketAsyncEventArgs e)
     {
-        e.AcceptSocket = null;
+        try
+        {
+            e.AcceptSocket = null;
 
-        if (!this.socket.AcceptAsync(e))
-            await this.ProcessAccept(e);
+            if (!this.socket.AcceptAsync(e))
+                await this.ProcessAccept(e);
+        }
+        catch (ObjectDisposedException)
+        {
+            // Socket closed
+        }
     }
 
     private async ValueTask ProcessAccept(SocketAsyncEventArgs e)

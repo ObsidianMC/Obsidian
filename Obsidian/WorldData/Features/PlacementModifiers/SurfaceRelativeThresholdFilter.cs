@@ -4,7 +4,7 @@
 /// Returns the current position if the surface is inside a range. 
 /// Otherwise returns empty.
 /// </summary>
-[TreeProperty("minecraft:surface_relative_threshold_filter")]
+[ConfiguredFeatureProperty("minecraft:surface_relative_threshold_filter")]
 public sealed class SurfaceRelativeThresholdFilter : PlacementModifierBase
 {
     public override string Type { get; internal init; } = "minecraft:surface_relative_threshold_filter";

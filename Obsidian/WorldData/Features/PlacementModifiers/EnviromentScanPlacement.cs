@@ -7,7 +7,7 @@ namespace Obsidian.WorldData.Features.PlacementModifiers;
 /// Returns the block position for which the target condition matches.
 /// If no target can be found within the maximum number of steps, returns empty.
 /// </summary>
-[TreeProperty("minecraft:environment_scan")]
+[ConfiguredFeatureProperty("minecraft:environment_scan")]
 public sealed class EnviromentScanPlacement : PlacementModifierBase
 {
     public override string Type { get; internal init; } = "minecraft:environment_scan";

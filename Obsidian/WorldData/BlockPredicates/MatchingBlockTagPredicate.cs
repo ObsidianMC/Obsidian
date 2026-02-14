@@ -1,4 +1,6 @@
-﻿namespace Obsidian.WorldData.Features.BlocksPredicates;
+﻿namespace Obsidian.WorldData.BlockPredicates;
+
+[ConfiguredFeatureProperty("minecraft:matching_block_tag")]
 public sealed class MatchingBlockTagPredicate : IBlockPredicate
 {
     public string Type { get; init; } = "minecraft:matching_block_tag";
