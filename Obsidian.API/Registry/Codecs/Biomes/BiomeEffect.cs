@@ -15,27 +15,27 @@ public sealed record class BiomeEffect : INbtSerializable
     public BiomeAdditionSound? AdditionsSound { get; set; }
     public BiomeParticle? Particle { get; set; }
 
-    public int SkyColor { get; set; }
-    public int WaterFogColor { get; set; }
-    public int FogColor { get; set; }
-    public int WaterColor { get; set; }
-    public int FoliageColor { get; set; }
-    public int GrassColor { get; set; }
+    public string SkyColor { get; set; }
+    public string WaterFogColor { get; set; }
+    public string FogColor { get; set; }
+    public string WaterColor { get; set; }
+    public string FoliageColor { get; set; }
+    public string GrassColor { get; set; }
 
     public void Write(INbtWriter writer)
     {
         writer.WriteCompoundStart("effects");
 
-        writer.WriteInt("fog_color", this.FogColor);
-        writer.WriteInt("sky_color", this.SkyColor);
-        writer.WriteInt("water_color", this.WaterColor);
-        writer.WriteInt("water_fog_color", this.WaterFogColor);
+        writer.WriteString("fog_color", this.FogColor);
+        writer.WriteString("sky_color", this.SkyColor);
+        writer.WriteString("water_color", this.WaterColor);
+        writer.WriteString("water_fog_color", this.WaterFogColor);
 
-        if (this.FoliageColor > 0)
-            writer.WriteInt("foliage_color", FoliageColor);
+        if (!string.IsNullOrEmpty(this.FoliageColor))
+            writer.WriteString("foliage_color", FoliageColor);
 
-        if (this.GrassColor > 0)
-            writer.WriteInt("grass_color", this.GrassColor);
+        if (!string.IsNullOrEmpty(this.GrassColor))
+            writer.WriteString("grass_color", this.GrassColor);
 
         if (!this.GrassColorModifier.IsNullOrEmpty())
             writer.WriteString("grass_color_modifier", this.GrassColorModifier);
