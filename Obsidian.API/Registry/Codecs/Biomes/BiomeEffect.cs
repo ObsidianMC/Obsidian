@@ -6,13 +6,9 @@ namespace Obsidian.API.Registry.Codecs.Biomes;
 
 public sealed record class BiomeEffect : INbtSerializable
 {
-    public required BiomeMoodSound MoodSound { get; set; }
-
     public string? GrassColorModifier { get; set; }
     public string? AmbientSound { get; set; }
 
-    public BiomeMusicEffectData[]? Music { get; set; }
-    public BiomeAdditionSound? AdditionsSound { get; set; }
     public BiomeParticle? Particle { get; set; }
 
     public string SkyColor { get; set; }
@@ -40,24 +36,24 @@ public sealed record class BiomeEffect : INbtSerializable
         if (!this.GrassColorModifier.IsNullOrEmpty())
             writer.WriteString("grass_color_modifier", this.GrassColorModifier);
 
-        this.AdditionsSound?.Write(writer);
-        this.MoodSound?.Write(writer);
+        //this.AdditionsSound?.Write(writer);
+        //this.MoodSound?.Write(writer);
+        // Not sure if this will be added back, but it was removed in 1.21.11, so I will leave it out for now.
+        //if(this.Music is not null)
+        //{
+        //    writer.WriteListStart("music", NbtTagType.Compound, this.Music.Length);
 
-        if(this.Music is not null)
-        {
-            writer.WriteListStart("music", NbtTagType.Compound, this.Music.Length);
+        //    foreach (var musicData in this.Music)
+        //    {
+        //        writer.WriteCompoundStart();
 
-            foreach (var musicData in this.Music)
-            {
-                writer.WriteCompoundStart();
+        //        musicData.Write(writer);
 
-                musicData.Write(writer);
+        //        writer.EndCompound();
+        //    }
 
-                writer.EndCompound();
-            }
-
-            writer.EndList();
-        }
+        //    writer.EndList();
+        //}
 
         if (!this.AmbientSound.IsNullOrEmpty())
             writer.WriteString("ambient_sound", this.AmbientSound);

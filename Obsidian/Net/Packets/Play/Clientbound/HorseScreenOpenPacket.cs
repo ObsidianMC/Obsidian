@@ -6,12 +6,12 @@ namespace Obsidian.Net.Packets.Play.Clientbound;
 /// Sent to tell the client to open the horse GUI. Opening other GUIs are done via <see cref="OpenScreenPacket"/>.
 /// </summary>
 /// <remarks>
-/// Initializes a new instance of the <see cref="HorseScreenOpenPacket"/> class.
+/// Initializes a new instance of the <see cref="MountScreenOpenPacket"/> class.
 /// </remarks>
 /// <param name="windowId">The identifier of the window to open.</param>
 /// <param name="columnCount">How many columns the horse inventory should have.</param>
 /// <param name="entityId">The owner entity of the window.</param>
-public partial class HorseScreenOpenPacket(int windowId, int columnCount, int entityId)
+public partial class MountScreenOpenPacket(int windowId, int columnCount, int entityId)
 {
     /// <summary>
     /// The identifier of the window to open.
