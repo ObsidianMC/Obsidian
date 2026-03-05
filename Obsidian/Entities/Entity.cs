@@ -258,10 +258,13 @@ public class Entity : IEquatable<Entity>, IEntity
         return mask;
     }
 
+    // TODO: Source generate the metadata types and their indexes for each type to avoid this and potential bugs with index ordering
     public virtual void Write(INetStreamWriter writer)
     {
-        this.WriteEntityMetadataType(writer, EntityMetadataType.Byte);
+        //Reset index for writing metadata, so that it starts from 0 for each entity, might be better to statically assign these indexes for each type, but this works for now
+        this.MetadataIndex = 0;
 
+        this.WriteEntityMetadataType(writer, EntityMetadataType.Byte);
         writer.WriteByte(GenerateBitmask());
 
         this.WriteEntityMetadataType(writer, EntityMetadataType.VarInt);

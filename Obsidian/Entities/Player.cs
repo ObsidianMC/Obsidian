@@ -416,14 +416,17 @@ public sealed partial class Player : Avatar, IPlayer
         writer.WriteVarInt(XpTotal);
 
         //TODO fix possibly an extension method?
-        if (LeftShoulder is not null)
+        if (this.LeftShoulder is not null)
         {
             this.WriteEntityMetadataType(writer, EntityMetadataType.OptionalLivingEntityReference);
             writer.WriteNbtCompound([]);
         }
 
-        if (RightShoulder is not null)
+        if (this.RightShoulder is not null)
         {
+            if (this.LeftShoulder is null)
+                this.MetadataIndex++;
+
             this.WriteEntityMetadataType(writer, EntityMetadataType.OptionalLivingEntityReference);
             writer.WriteNbtCompound([]);
         }
