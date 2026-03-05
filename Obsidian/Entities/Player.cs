@@ -15,7 +15,7 @@ using System.IO;
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:player")]
-public sealed partial class Player : Living, IPlayer
+public sealed partial class Player : Avatar, IPlayer
 {
     public byte CurrentContainerId { get; set; } = 0;
 
@@ -35,8 +35,6 @@ public sealed partial class Player : Living, IPlayer
     public ConcurrentHashSet<long> LoadedChunks { get; internal set; } = [];
 
     public string Username { get; }
-
-    public ClientInformation ClientInformation { get; set; }
 
     public required IServer Server { get; init; }
 
@@ -411,28 +409,22 @@ public sealed partial class Player : Living, IPlayer
     {
         base.Write(writer);
 
-        writer.WriteEntityMetadataType(15, EntityMetadataType.HumanoidArm);
-        writer.WriteVarInt(ClientInformation.MainHand);
-
-        writer.WriteEntityMetadataType(16, EntityMetadataType.Byte);
-        writer.WriteByte(ClientInformation.DisplayedSkinParts);
-
-        writer.WriteEntityMetadataType(17, EntityMetadataType.Float);
+        this.WriteEntityMetadataType(writer, EntityMetadataType.Float);
         writer.WriteSingle(Absorption);
 
-        writer.WriteEntityMetadataType(18, EntityMetadataType.VarInt);
+        this.WriteEntityMetadataType(writer, EntityMetadataType.VarInt);
         writer.WriteVarInt(XpTotal);
 
         //TODO fix possibly an extension method?
         if (LeftShoulder is not null)
         {
-            writer.WriteEntityMetadataType(19, EntityMetadataType.OptionalLivingEntityReference);
+            this.WriteEntityMetadataType(writer, EntityMetadataType.OptionalLivingEntityReference);
             writer.WriteNbtCompound([]);
         }
 
         if (RightShoulder is not null)
         {
-            writer.WriteEntityMetadataType(20, EntityMetadataType.OptionalLivingEntityReference);
+            this.WriteEntityMetadataType(writer, EntityMetadataType.OptionalLivingEntityReference);
             writer.WriteNbtCompound([]);
         }
     }

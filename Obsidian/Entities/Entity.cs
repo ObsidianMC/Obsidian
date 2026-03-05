@@ -8,6 +8,8 @@ public class Entity : IEquatable<Entity>, IEntity
 {
     protected virtual ConcurrentDictionary<string, float> Attributes { get; } = new();
 
+    protected byte MetadataIndex { get; set; }
+
     public required IWorld World { get; set; }
 
     public IPacketBroadcaster PacketBroadcaster => this.World.PacketBroadcaster;
@@ -258,31 +260,34 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public virtual void Write(INetStreamWriter writer)
     {
-        writer.WriteEntityMetadataType(0, EntityMetadataType.Byte);
+        this.WriteEntityMetadataType(writer, EntityMetadataType.Byte);
 
         writer.WriteByte(GenerateBitmask());
 
-        writer.WriteEntityMetadataType(1, EntityMetadataType.VarInt);
+        this.WriteEntityMetadataType(writer, EntityMetadataType.VarInt);
         writer.WriteVarInt(Air);
 
-        writer.WriteEntityMetadataType(2, EntityMetadataType.Boolean);
-        writer.WriteBoolean(CustomNameVisible);
-
-        writer.WriteEntityMetadataType(3, EntityMetadataType.OptionalTextComponent);
+        this.WriteEntityMetadataType(writer, EntityMetadataType.OptionalTextComponent);
         writer.WriteOptional(CustomName);
 
-        writer.WriteEntityMetadataType(4, EntityMetadataType.Boolean);
+        this.WriteEntityMetadataType(writer, EntityMetadataType.Boolean);
+        writer.WriteBoolean(CustomNameVisible);
+
+        this.WriteEntityMetadataType(writer, EntityMetadataType.Boolean);
         writer.WriteBoolean(Silent);
 
-        writer.WriteEntityMetadataType(5, EntityMetadataType.Boolean);
+        this.WriteEntityMetadataType(writer, EntityMetadataType.Boolean);
         writer.WriteBoolean(NoGravity);
 
-        writer.WriteEntityMetadataType(6, EntityMetadataType.Pose);
+        this.WriteEntityMetadataType(writer, EntityMetadataType.Pose);
         writer.WriteVarInt(this.Pose);
 
-        writer.WriteEntityMetadataType(7, EntityMetadataType.VarInt);
+        this.WriteEntityMetadataType(writer, EntityMetadataType.VarInt);
         writer.WriteVarInt(PowderedSnowTicks);
     }
+
+    protected void WriteEntityMetadataType(INetStreamWriter writer, EntityMetadataType type) =>
+        writer.WriteEntityMetadataType(this.MetadataIndex++, type);
 
     public IEnumerable<IEntity> GetEntitiesNear(float distance) => World.GetEntitiesInRange(Position, distance).Where(x => x != this);
 
