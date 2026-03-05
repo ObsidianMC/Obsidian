@@ -6,11 +6,11 @@ namespace Obsidian.API.Registry.Codecs.ZombieNautilusVariant;
 
 public sealed record class ZombieNautilusVariantElement : INbtSerializable
 {
-    public string AssetId { get; set; }
+    public required string AssetId { get; set; }
 
     public string? Model { get; set; }
 
-    public SpawnConditionElement[] SpawnConditions { get; set; }
+    public required SpawnConditionElement[] SpawnConditions { get; set; }
 
     public void Write(INbtWriter writer)
     {
@@ -27,7 +27,11 @@ public sealed record class ZombieNautilusVariantElement : INbtSerializable
 
             foreach (var condition in this.SpawnConditions)
             {
+                writer.WriteCompoundStart();
+
                 condition.Write(writer);
+
+                writer.EndCompound();
             }
 
             writer.EndList();
