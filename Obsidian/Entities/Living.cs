@@ -92,20 +92,20 @@ public class Living : Entity, ILiving
         writer.WriteEntityMetadataType(8, EntityMetadataType.Byte);
         writer.WriteByte(LivingBitMask);
 
-        writer.WriteEntityMetadataType(9, EntityMetadataType.Float);
-        writer.WriteSingle(Health);
-
-        writer.WriteEntityMetadataType(10, EntityMetadataType.Particles);//This is a list of integers?
+        writer.WriteEntityMetadataType(9, EntityMetadataType.Particles);//This is a list of integers?
         writer.WriteVarInt(0);
 
-        writer.WriteEntityMetadataType(11, EntityMetadataType.Boolean);
+        writer.WriteEntityMetadataType(10, EntityMetadataType.Boolean);
         writer.WriteBoolean(AmbientPotionEffect);
-
-        writer.WriteEntityMetadataType(12, EntityMetadataType.VarInt);
+       
+        writer.WriteEntityMetadataType(11, EntityMetadataType.VarInt);
         writer.WriteVarInt(AbsorbedArrows);
 
-        writer.WriteEntityMetadataType(13, EntityMetadataType.VarInt);
+        writer.WriteEntityMetadataType(12, EntityMetadataType.VarInt);
         writer.WriteVarInt(AbsorbedStingers);
+
+        writer.WriteEntityMetadataType(13, EntityMetadataType.Float);
+        writer.WriteSingle(Health);
 
         writer.WriteEntityMetadataType(14, EntityMetadataType.OptionalBlockPos);
         writer.WriteOptional(BedBlockPosition);

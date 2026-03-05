@@ -137,7 +137,7 @@ public sealed partial class Player : Living, IPlayer
 
     public double HeadY { get; private set; }
 
-    public float AdditionalHearts { get; set; } = 0;
+    public float Absorption { get; set; } = 0;
     public float FallDistance { get; set; }
     public float FoodExhaustionLevel { get; set; }
     public float FoodSaturationLevel { get; set; }
@@ -411,14 +411,14 @@ public sealed partial class Player : Living, IPlayer
     {
         base.Write(writer);
 
-        writer.WriteEntityMetadataType(15, EntityMetadataType.Byte);
-        writer.WriteByte(ClientInformation.DisplayedSkinParts);
+        writer.WriteEntityMetadataType(15, EntityMetadataType.HumanoidArm);
+        writer.WriteVarInt(ClientInformation.MainHand);
 
         writer.WriteEntityMetadataType(16, EntityMetadataType.Byte);
-        writer.WriteByte(ClientInformation.MainHand);
+        writer.WriteByte(ClientInformation.DisplayedSkinParts);
 
         writer.WriteEntityMetadataType(17, EntityMetadataType.Float);
-        writer.WriteSingle(AdditionalHearts);
+        writer.WriteSingle(Absorption);
 
         writer.WriteEntityMetadataType(18, EntityMetadataType.VarInt);
         writer.WriteVarInt(XpTotal);

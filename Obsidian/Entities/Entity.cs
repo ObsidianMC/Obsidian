@@ -265,11 +265,11 @@ public class Entity : IEquatable<Entity>, IEntity
         writer.WriteEntityMetadataType(1, EntityMetadataType.VarInt);
         writer.WriteVarInt(Air);
 
-        writer.WriteEntityMetadataType(2, EntityMetadataType.OptionalTextComponent);
-        writer.WriteOptional(CustomName);
-
-        writer.WriteEntityMetadataType(3, EntityMetadataType.Boolean);
+        writer.WriteEntityMetadataType(2, EntityMetadataType.Boolean);
         writer.WriteBoolean(CustomNameVisible);
+
+        writer.WriteEntityMetadataType(3, EntityMetadataType.OptionalTextComponent);
+        writer.WriteOptional(CustomName);
 
         writer.WriteEntityMetadataType(4, EntityMetadataType.Boolean);
         writer.WriteBoolean(Silent);
