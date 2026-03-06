@@ -1840,6 +1840,20 @@
         },
         "trigger": "minecraft:player_killed_entity"
       },
+      "minecraft:camel_husk": {
+        "conditions": {
+          "entity": [
+            {
+              "condition": "minecraft:entity_properties",
+              "entity": "this",
+              "predicate": {
+                "type": "minecraft:camel_husk"
+              }
+            }
+          ]
+        },
+        "trigger": "minecraft:player_killed_entity"
+      },
       "minecraft:cave_spider": {
         "conditions": {
           "entity": [
@@ -2030,6 +2044,20 @@
               "entity": "this",
               "predicate": {
                 "type": "minecraft:magma_cube"
+              }
+            }
+          ]
+        },
+        "trigger": "minecraft:player_killed_entity"
+      },
+      "minecraft:parched": {
+        "conditions": {
+          "entity": [
+            {
+              "condition": "minecraft:entity_properties",
+              "entity": "this",
+              "predicate": {
+                "type": "minecraft:parched"
               }
             }
           ]
@@ -2282,6 +2310,34 @@
               "entity": "this",
               "predicate": {
                 "type": "minecraft:zombie"
+              }
+            }
+          ]
+        },
+        "trigger": "minecraft:player_killed_entity"
+      },
+      "minecraft:zombie_horse": {
+        "conditions": {
+          "entity": [
+            {
+              "condition": "minecraft:entity_properties",
+              "entity": "this",
+              "predicate": {
+                "type": "minecraft:zombie_horse"
+              }
+            }
+          ]
+        },
+        "trigger": "minecraft:player_killed_entity"
+      },
+      "minecraft:zombie_nautilus": {
+        "conditions": {
+          "entity": [
+            {
+              "condition": "minecraft:entity_properties",
+              "entity": "this",
+              "predicate": {
+                "type": "minecraft:zombie_nautilus"
               }
             }
           ]
@@ -2341,6 +2397,9 @@
         "minecraft:breeze"
       ],
       [
+        "minecraft:camel_husk"
+      ],
+      [
         "minecraft:cave_spider"
       ],
       [
@@ -2381,6 +2440,9 @@
       ],
       [
         "minecraft:magma_cube"
+      ],
+      [
+        "minecraft:parched"
       ],
       [
         "minecraft:phantom"
@@ -2440,7 +2502,13 @@
         "minecraft:zombie"
       ],
       [
+        "minecraft:zombie_horse"
+      ],
+      [
         "minecraft:zombified_piglin"
+      ],
+      [
+        "minecraft:zombie_nautilus"
       ]
     ],
     "rewards": {
@@ -2487,6 +2555,20 @@
               "entity": "this",
               "predicate": {
                 "type": "minecraft:breeze"
+              }
+            }
+          ]
+        },
+        "trigger": "minecraft:player_killed_entity"
+      },
+      "minecraft:camel_husk": {
+        "conditions": {
+          "entity": [
+            {
+              "condition": "minecraft:entity_properties",
+              "entity": "this",
+              "predicate": {
+                "type": "minecraft:camel_husk"
               }
             }
           ]
@@ -2683,6 +2765,20 @@
               "entity": "this",
               "predicate": {
                 "type": "minecraft:magma_cube"
+              }
+            }
+          ]
+        },
+        "trigger": "minecraft:player_killed_entity"
+      },
+      "minecraft:parched": {
+        "conditions": {
+          "entity": [
+            {
+              "condition": "minecraft:entity_properties",
+              "entity": "this",
+              "predicate": {
+                "type": "minecraft:parched"
               }
             }
           ]
@@ -2941,6 +3037,34 @@
         },
         "trigger": "minecraft:player_killed_entity"
       },
+      "minecraft:zombie_horse": {
+        "conditions": {
+          "entity": [
+            {
+              "condition": "minecraft:entity_properties",
+              "entity": "this",
+              "predicate": {
+                "type": "minecraft:zombie_horse"
+              }
+            }
+          ]
+        },
+        "trigger": "minecraft:player_killed_entity"
+      },
+      "minecraft:zombie_nautilus": {
+        "conditions": {
+          "entity": [
+            {
+              "condition": "minecraft:entity_properties",
+              "entity": "this",
+              "predicate": {
+                "type": "minecraft:zombie_nautilus"
+              }
+            }
+          ]
+        },
+        "trigger": "minecraft:player_killed_entity"
+      },
       "minecraft:zombie_villager": {
         "conditions": {
           "entity": [
@@ -2987,6 +3111,7 @@
         "minecraft:blaze",
         "minecraft:bogged",
         "minecraft:breeze",
+        "minecraft:camel_husk",
         "minecraft:cave_spider",
         "minecraft:creaking",
         "minecraft:creeper",
@@ -3001,6 +3126,7 @@
         "minecraft:hoglin",
         "minecraft:husk",
         "minecraft:magma_cube",
+        "minecraft:parched",
         "minecraft:phantom",
         "minecraft:piglin",
         "minecraft:piglin_brute",
@@ -3020,7 +3146,9 @@
         "minecraft:zoglin",
         "minecraft:zombie_villager",
         "minecraft:zombie",
-        "minecraft:zombified_piglin"
+        "minecraft:zombie_horse",
+        "minecraft:zombified_piglin",
+        "minecraft:zombie_nautilus"
       ]
     ],
     "sends_telemetry_event": true
@@ -3798,6 +3926,36 @@
     "rewards": {
       "experience": 50
     },
+    "sends_telemetry_event": true
+  },
+  "minecraft:adventure/spear_many_mobs": {
+    "parent": "minecraft:adventure/kill_a_mob",
+    "criteria": {
+      "spear_many_mobs": {
+        "conditions": {
+          "count": 5
+        },
+        "trigger": "minecraft:spear_mobs"
+      }
+    },
+    "display": {
+      "description": {
+        "translate": "advancements.adventure.spear_many_mobs.description"
+      },
+      "frame": "goal",
+      "icon": {
+        "count": 1,
+        "id": "minecraft:iron_spear"
+      },
+      "title": {
+        "translate": "advancements.adventure.spear_many_mobs.title"
+      }
+    },
+    "requirements": [
+      [
+        "spear_many_mobs"
+      ]
+    ],
     "sends_telemetry_event": true
   },
   "minecraft:adventure/spyglass_at_dragon": {
@@ -5928,6 +6086,20 @@
         },
         "trigger": "minecraft:bred_animals"
       },
+      "minecraft:nautilus": {
+        "conditions": {
+          "child": [
+            {
+              "condition": "minecraft:entity_properties",
+              "entity": "this",
+              "predicate": {
+                "type": "minecraft:nautilus"
+              }
+            }
+          ]
+        },
+        "trigger": "minecraft:bred_animals"
+      },
       "minecraft:ocelot": {
         "conditions": {
           "child": [
@@ -6152,6 +6324,9 @@
       ],
       [
         "minecraft:armadillo"
+      ],
+      [
+        "minecraft:nautilus"
       ],
       [
         "minecraft:turtle"
@@ -7782,6 +7957,7 @@
             "minecraft:absorption": {},
             "minecraft:bad_omen": {},
             "minecraft:blindness": {},
+            "minecraft:breath_of_the_nautilus": {},
             "minecraft:conduit_power": {},
             "minecraft:darkness": {},
             "minecraft:dolphins_grace": {},
@@ -25690,38 +25866,6 @@
       ]
     }
   },
-  "minecraft:recipes/building_blocks/waxed_copper_bulb_from_honeycomb": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_copper_bulb": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:copper_bulb"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:waxed_copper_bulb_from_honeycomb"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_copper_bulb"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:waxed_copper_bulb_from_honeycomb"
-      ]
-    }
-  },
   "minecraft:recipes/building_blocks/waxed_copper_chain_from_honeycomb": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -25783,38 +25927,6 @@
     "rewards": {
       "recipes": [
         "minecraft:waxed_copper_chest_from_honeycomb"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/waxed_copper_door_from_honeycomb": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_copper_door": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:copper_door"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:waxed_copper_door_from_honeycomb"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_copper_door"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:waxed_copper_door_from_honeycomb"
       ]
     }
   },
@@ -25975,38 +26087,6 @@
     "rewards": {
       "recipes": [
         "minecraft:waxed_copper_lantern_from_honeycomb"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/waxed_copper_trapdoor_from_honeycomb": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_copper_trapdoor": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:copper_trapdoor"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:waxed_copper_trapdoor_from_honeycomb"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_copper_trapdoor"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:waxed_copper_trapdoor_from_honeycomb"
       ]
     }
   },
@@ -26522,38 +26602,6 @@
       ]
     }
   },
-  "minecraft:recipes/building_blocks/waxed_exposed_copper_bulb_from_honeycomb": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_exposed_copper_bulb": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:exposed_copper_bulb"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:waxed_exposed_copper_bulb_from_honeycomb"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_exposed_copper_bulb"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:waxed_exposed_copper_bulb_from_honeycomb"
-      ]
-    }
-  },
   "minecraft:recipes/building_blocks/waxed_exposed_copper_chain_from_honeycomb": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -26615,38 +26663,6 @@
     "rewards": {
       "recipes": [
         "minecraft:waxed_exposed_copper_chest_from_honeycomb"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/waxed_exposed_copper_door_from_honeycomb": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_exposed_copper_door": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:exposed_copper_door"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:waxed_exposed_copper_door_from_honeycomb"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_exposed_copper_door"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:waxed_exposed_copper_door_from_honeycomb"
       ]
     }
   },
@@ -26839,38 +26855,6 @@
     "rewards": {
       "recipes": [
         "minecraft:waxed_exposed_copper_lantern_from_honeycomb"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/waxed_exposed_copper_trapdoor_from_honeycomb": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_exposed_copper_trapdoor": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:exposed_copper_trapdoor"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:waxed_exposed_copper_trapdoor_from_honeycomb"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_exposed_copper_trapdoor"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:waxed_exposed_copper_trapdoor_from_honeycomb"
       ]
     }
   },
@@ -27450,38 +27434,6 @@
       ]
     }
   },
-  "minecraft:recipes/building_blocks/waxed_oxidized_copper_bulb_from_honeycomb": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_oxidized_copper_bulb": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:oxidized_copper_bulb"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:waxed_oxidized_copper_bulb_from_honeycomb"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_oxidized_copper_bulb"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:waxed_oxidized_copper_bulb_from_honeycomb"
-      ]
-    }
-  },
   "minecraft:recipes/building_blocks/waxed_oxidized_copper_chain_from_honeycomb": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -27543,38 +27495,6 @@
     "rewards": {
       "recipes": [
         "minecraft:waxed_oxidized_copper_chest_from_honeycomb"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/waxed_oxidized_copper_door_from_honeycomb": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_oxidized_copper_door": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:oxidized_copper_door"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:waxed_oxidized_copper_door_from_honeycomb"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_oxidized_copper_door"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:waxed_oxidized_copper_door_from_honeycomb"
       ]
     }
   },
@@ -27767,38 +27687,6 @@
     "rewards": {
       "recipes": [
         "minecraft:waxed_oxidized_copper_lantern_from_honeycomb"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/waxed_oxidized_copper_trapdoor_from_honeycomb": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_oxidized_copper_trapdoor": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:oxidized_copper_trapdoor"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      },
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:waxed_oxidized_copper_trapdoor_from_honeycomb"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_oxidized_copper_trapdoor"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:waxed_oxidized_copper_trapdoor_from_honeycomb"
       ]
     }
   },
@@ -28346,38 +28234,6 @@
       ]
     }
   },
-  "minecraft:recipes/building_blocks/waxed_weathered_copper_bulb_from_honeycomb": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:waxed_weathered_copper_bulb_from_honeycomb"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      },
-      "has_weathered_copper_bulb": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:weathered_copper_bulb"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_weathered_copper_bulb"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:waxed_weathered_copper_bulb_from_honeycomb"
-      ]
-    }
-  },
   "minecraft:recipes/building_blocks/waxed_weathered_copper_chain_from_honeycomb": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -28439,38 +28295,6 @@
     "rewards": {
       "recipes": [
         "minecraft:waxed_weathered_copper_chest_from_honeycomb"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/waxed_weathered_copper_door_from_honeycomb": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:waxed_weathered_copper_door_from_honeycomb"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      },
-      "has_weathered_copper_door": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:weathered_copper_door"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_weathered_copper_door"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:waxed_weathered_copper_door_from_honeycomb"
       ]
     }
   },
@@ -28663,38 +28487,6 @@
     "rewards": {
       "recipes": [
         "minecraft:waxed_weathered_copper_lantern_from_honeycomb"
-      ]
-    }
-  },
-  "minecraft:recipes/building_blocks/waxed_weathered_copper_trapdoor_from_honeycomb": {
-    "parent": "minecraft:recipes/root",
-    "criteria": {
-      "has_the_recipe": {
-        "conditions": {
-          "recipe": "minecraft:waxed_weathered_copper_trapdoor_from_honeycomb"
-        },
-        "trigger": "minecraft:recipe_unlocked"
-      },
-      "has_weathered_copper_trapdoor": {
-        "conditions": {
-          "items": [
-            {
-              "items": "minecraft:weathered_copper_trapdoor"
-            }
-          ]
-        },
-        "trigger": "minecraft:inventory_changed"
-      }
-    },
-    "requirements": [
-      [
-        "has_the_recipe",
-        "has_weathered_copper_trapdoor"
-      ]
-    ],
-    "rewards": {
-      "recipes": [
-        "minecraft:waxed_weathered_copper_trapdoor_from_honeycomb"
       ]
     }
   },
@@ -30043,6 +29835,38 @@
       ]
     }
   },
+  "minecraft:recipes/combat/copper_spear": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_copper_ingot": {
+        "conditions": {
+          "items": [
+            {
+              "items": "#minecraft:copper_tool_materials"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:copper_spear"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_copper_ingot"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:copper_spear"
+      ]
+    }
+  },
   "minecraft:recipes/combat/copper_sword": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -30286,6 +30110,38 @@
     "rewards": {
       "recipes": [
         "minecraft:diamond_leggings"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/diamond_spear": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_diamond": {
+        "conditions": {
+          "items": [
+            {
+              "items": "#minecraft:diamond_tool_materials"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:diamond_spear"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_diamond"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:diamond_spear"
       ]
     }
   },
@@ -30961,6 +30817,38 @@
       ]
     }
   },
+  "minecraft:recipes/combat/golden_spear": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_gold_ingot": {
+        "conditions": {
+          "items": [
+            {
+              "items": "#minecraft:gold_tool_materials"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:golden_spear"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_gold_ingot"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:golden_spear"
+      ]
+    }
+  },
   "minecraft:recipes/combat/golden_sword": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -31182,6 +31070,38 @@
     "rewards": {
       "recipes": [
         "minecraft:iron_leggings"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/iron_spear": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_iron_ingot": {
+        "conditions": {
+          "items": [
+            {
+              "items": "#minecraft:iron_tool_materials"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:iron_spear"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_iron_ingot"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:iron_spear"
       ]
     }
   },
@@ -31612,6 +31532,38 @@
       ]
     }
   },
+  "minecraft:recipes/combat/netherite_horse_armor_smithing": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_netherite_ingot": {
+        "conditions": {
+          "items": [
+            {
+              "items": "#minecraft:netherite_tool_materials"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:netherite_horse_armor_smithing"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_netherite_ingot"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:netherite_horse_armor_smithing"
+      ]
+    }
+  },
   "minecraft:recipes/combat/netherite_leggings_smithing": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -31641,6 +31593,70 @@
     "rewards": {
       "recipes": [
         "minecraft:netherite_leggings_smithing"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/netherite_nautilus_armor_smithing": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_netherite_ingot": {
+        "conditions": {
+          "items": [
+            {
+              "items": "#minecraft:netherite_tool_materials"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:netherite_nautilus_armor_smithing"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_netherite_ingot"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:netherite_nautilus_armor_smithing"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/netherite_spear_smithing": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_netherite_ingot": {
+        "conditions": {
+          "items": [
+            {
+              "items": "#minecraft:netherite_tool_materials"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:netherite_spear_smithing"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_netherite_ingot"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:netherite_spear_smithing"
       ]
     }
   },
@@ -31900,6 +31916,38 @@
       ]
     }
   },
+  "minecraft:recipes/combat/stone_spear": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_cobblestone": {
+        "conditions": {
+          "items": [
+            {
+              "items": "#minecraft:stone_tool_materials"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:stone_spear"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_cobblestone"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:stone_spear"
+      ]
+    }
+  },
   "minecraft:recipes/combat/stone_sword": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -32025,6 +32073,38 @@
     "rewards": {
       "recipes": [
         "minecraft:wolf_armor"
+      ]
+    }
+  },
+  "minecraft:recipes/combat/wooden_spear": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_stick": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:stick"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:wooden_spear"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_stick"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:wooden_spear"
       ]
     }
   },
@@ -45747,6 +45827,16 @@
         },
         "trigger": "minecraft:inventory_changed"
       },
+      "has_copper_nautilus_armor": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:copper_nautilus_armor"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
       "has_copper_pickaxe": {
         "conditions": {
           "items": [
@@ -45762,6 +45852,16 @@
           "items": [
             {
               "items": "minecraft:copper_shovel"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_copper_spear": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:copper_spear"
             }
           ]
         },
@@ -45792,11 +45892,13 @@
         "has_copper_axe",
         "has_copper_hoe",
         "has_copper_sword",
+        "has_copper_spear",
         "has_copper_helmet",
         "has_copper_chestplate",
         "has_copper_leggings",
         "has_copper_boots",
-        "has_copper_horse_armor"
+        "has_copper_horse_armor",
+        "has_copper_nautilus_armor"
       ]
     ],
     "rewards": {
@@ -45878,6 +45980,16 @@
         },
         "trigger": "minecraft:inventory_changed"
       },
+      "has_copper_nautilus_armor": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:copper_nautilus_armor"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
       "has_copper_pickaxe": {
         "conditions": {
           "items": [
@@ -45893,6 +46005,16 @@
           "items": [
             {
               "items": "minecraft:copper_shovel"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_copper_spear": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:copper_spear"
             }
           ]
         },
@@ -45923,11 +46045,13 @@
         "has_copper_axe",
         "has_copper_hoe",
         "has_copper_sword",
+        "has_copper_spear",
         "has_copper_helmet",
         "has_copper_chestplate",
         "has_copper_leggings",
         "has_copper_boots",
-        "has_copper_horse_armor"
+        "has_copper_horse_armor",
+        "has_copper_nautilus_armor"
       ]
     ],
     "rewards": {
@@ -47172,6 +47296,16 @@
         },
         "trigger": "minecraft:inventory_changed"
       },
+      "has_golden_nautilus_armor": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:golden_nautilus_armor"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
       "has_golden_pickaxe": {
         "conditions": {
           "items": [
@@ -47187,6 +47321,16 @@
           "items": [
             {
               "items": "minecraft:golden_shovel"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_golden_spear": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:golden_spear"
             }
           ]
         },
@@ -47217,11 +47361,13 @@
         "has_golden_axe",
         "has_golden_hoe",
         "has_golden_sword",
+        "has_golden_spear",
         "has_golden_helmet",
         "has_golden_chestplate",
         "has_golden_leggings",
         "has_golden_boots",
-        "has_golden_horse_armor"
+        "has_golden_horse_armor",
+        "has_golden_nautilus_armor"
       ]
     ],
     "rewards": {
@@ -47303,6 +47449,16 @@
         },
         "trigger": "minecraft:inventory_changed"
       },
+      "has_golden_nautilus_armor": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:golden_nautilus_armor"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
       "has_golden_pickaxe": {
         "conditions": {
           "items": [
@@ -47318,6 +47474,16 @@
           "items": [
             {
               "items": "minecraft:golden_shovel"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_golden_spear": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:golden_spear"
             }
           ]
         },
@@ -47348,11 +47514,13 @@
         "has_golden_axe",
         "has_golden_hoe",
         "has_golden_sword",
+        "has_golden_spear",
         "has_golden_helmet",
         "has_golden_chestplate",
         "has_golden_leggings",
         "has_golden_boots",
-        "has_golden_horse_armor"
+        "has_golden_horse_armor",
+        "has_golden_nautilus_armor"
       ]
     ],
     "rewards": {
@@ -47933,6 +48101,16 @@
         },
         "trigger": "minecraft:inventory_changed"
       },
+      "has_iron_nautilus_armor": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:iron_nautilus_armor"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
       "has_iron_pickaxe": {
         "conditions": {
           "items": [
@@ -47948,6 +48126,16 @@
           "items": [
             {
               "items": "minecraft:iron_shovel"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_iron_spear": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:iron_spear"
             }
           ]
         },
@@ -47978,6 +48166,7 @@
         "has_iron_axe",
         "has_iron_hoe",
         "has_iron_sword",
+        "has_iron_spear",
         "has_iron_helmet",
         "has_iron_chestplate",
         "has_iron_leggings",
@@ -47986,7 +48175,8 @@
         "has_chainmail_helmet",
         "has_chainmail_chestplate",
         "has_chainmail_leggings",
-        "has_chainmail_boots"
+        "has_chainmail_boots",
+        "has_iron_nautilus_armor"
       ]
     ],
     "rewards": {
@@ -48108,6 +48298,16 @@
         },
         "trigger": "minecraft:inventory_changed"
       },
+      "has_iron_nautilus_armor": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:iron_nautilus_armor"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
       "has_iron_pickaxe": {
         "conditions": {
           "items": [
@@ -48123,6 +48323,16 @@
           "items": [
             {
               "items": "minecraft:iron_shovel"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_iron_spear": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:iron_spear"
             }
           ]
         },
@@ -48153,6 +48363,7 @@
         "has_iron_axe",
         "has_iron_hoe",
         "has_iron_sword",
+        "has_iron_spear",
         "has_iron_helmet",
         "has_iron_chestplate",
         "has_iron_leggings",
@@ -48161,7 +48372,8 @@
         "has_chainmail_helmet",
         "has_chainmail_chestplate",
         "has_chainmail_leggings",
-        "has_chainmail_boots"
+        "has_chainmail_boots",
+        "has_iron_nautilus_armor"
       ]
     ],
     "rewards": {
@@ -54617,6 +54829,102 @@
       ]
     }
   },
+  "minecraft:recipes/redstone/waxed_copper_bulb_from_honeycomb": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_copper_bulb": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:copper_bulb"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:waxed_copper_bulb_from_honeycomb"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_copper_bulb"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:waxed_copper_bulb_from_honeycomb"
+      ]
+    }
+  },
+  "minecraft:recipes/redstone/waxed_copper_door_from_honeycomb": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_copper_door": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:copper_door"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:waxed_copper_door_from_honeycomb"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_copper_door"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:waxed_copper_door_from_honeycomb"
+      ]
+    }
+  },
+  "minecraft:recipes/redstone/waxed_copper_trapdoor_from_honeycomb": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_copper_trapdoor": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:copper_trapdoor"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:waxed_copper_trapdoor_from_honeycomb"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_copper_trapdoor"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:waxed_copper_trapdoor_from_honeycomb"
+      ]
+    }
+  },
   "minecraft:recipes/redstone/waxed_exposed_copper_bulb": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -54646,6 +54954,102 @@
     "rewards": {
       "recipes": [
         "minecraft:waxed_exposed_copper_bulb"
+      ]
+    }
+  },
+  "minecraft:recipes/redstone/waxed_exposed_copper_bulb_from_honeycomb": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_exposed_copper_bulb": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:exposed_copper_bulb"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:waxed_exposed_copper_bulb_from_honeycomb"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_exposed_copper_bulb"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:waxed_exposed_copper_bulb_from_honeycomb"
+      ]
+    }
+  },
+  "minecraft:recipes/redstone/waxed_exposed_copper_door_from_honeycomb": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_exposed_copper_door": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:exposed_copper_door"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:waxed_exposed_copper_door_from_honeycomb"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_exposed_copper_door"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:waxed_exposed_copper_door_from_honeycomb"
+      ]
+    }
+  },
+  "minecraft:recipes/redstone/waxed_exposed_copper_trapdoor_from_honeycomb": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_exposed_copper_trapdoor": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:exposed_copper_trapdoor"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:waxed_exposed_copper_trapdoor_from_honeycomb"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_exposed_copper_trapdoor"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:waxed_exposed_copper_trapdoor_from_honeycomb"
       ]
     }
   },
@@ -54681,6 +55085,102 @@
       ]
     }
   },
+  "minecraft:recipes/redstone/waxed_oxidized_copper_bulb_from_honeycomb": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_oxidized_copper_bulb": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:oxidized_copper_bulb"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:waxed_oxidized_copper_bulb_from_honeycomb"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_oxidized_copper_bulb"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:waxed_oxidized_copper_bulb_from_honeycomb"
+      ]
+    }
+  },
+  "minecraft:recipes/redstone/waxed_oxidized_copper_door_from_honeycomb": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_oxidized_copper_door": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:oxidized_copper_door"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:waxed_oxidized_copper_door_from_honeycomb"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_oxidized_copper_door"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:waxed_oxidized_copper_door_from_honeycomb"
+      ]
+    }
+  },
+  "minecraft:recipes/redstone/waxed_oxidized_copper_trapdoor_from_honeycomb": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_oxidized_copper_trapdoor": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:oxidized_copper_trapdoor"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      },
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:waxed_oxidized_copper_trapdoor_from_honeycomb"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_oxidized_copper_trapdoor"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:waxed_oxidized_copper_trapdoor_from_honeycomb"
+      ]
+    }
+  },
   "minecraft:recipes/redstone/waxed_weathered_copper_bulb": {
     "parent": "minecraft:recipes/root",
     "criteria": {
@@ -54710,6 +55210,102 @@
     "rewards": {
       "recipes": [
         "minecraft:waxed_weathered_copper_bulb"
+      ]
+    }
+  },
+  "minecraft:recipes/redstone/waxed_weathered_copper_bulb_from_honeycomb": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:waxed_weathered_copper_bulb_from_honeycomb"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      },
+      "has_weathered_copper_bulb": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:weathered_copper_bulb"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_weathered_copper_bulb"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:waxed_weathered_copper_bulb_from_honeycomb"
+      ]
+    }
+  },
+  "minecraft:recipes/redstone/waxed_weathered_copper_door_from_honeycomb": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:waxed_weathered_copper_door_from_honeycomb"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      },
+      "has_weathered_copper_door": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:weathered_copper_door"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_weathered_copper_door"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:waxed_weathered_copper_door_from_honeycomb"
+      ]
+    }
+  },
+  "minecraft:recipes/redstone/waxed_weathered_copper_trapdoor_from_honeycomb": {
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+      "has_the_recipe": {
+        "conditions": {
+          "recipe": "minecraft:waxed_weathered_copper_trapdoor_from_honeycomb"
+        },
+        "trigger": "minecraft:recipe_unlocked"
+      },
+      "has_weathered_copper_trapdoor": {
+        "conditions": {
+          "items": [
+            {
+              "items": "minecraft:weathered_copper_trapdoor"
+            }
+          ]
+        },
+        "trigger": "minecraft:inventory_changed"
+      }
+    },
+    "requirements": [
+      [
+        "has_the_recipe",
+        "has_weathered_copper_trapdoor"
+      ]
+    ],
+    "rewards": {
+      "recipes": [
+        "minecraft:waxed_weathered_copper_trapdoor_from_honeycomb"
       ]
     }
   },

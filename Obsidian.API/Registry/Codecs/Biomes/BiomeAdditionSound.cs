@@ -3,6 +3,7 @@ using Obsidian.Nbt.Interfaces;
 
 namespace Obsidian.API.Registry.Codecs.Biomes;
 
+[Obsolete("Not used in 1.21.11+")]
 public sealed record class BiomeAdditionSound : INbtSerializable
 {
     public required string Sound { get; set; }
@@ -20,6 +21,7 @@ public sealed record class BiomeAdditionSound : INbtSerializable
     }
 }
 
+[Obsolete("Not used in 1.21.11+")]
 public sealed record class BiomeMoodSound : INbtSerializable
 {
     public required string Sound { get; set; }

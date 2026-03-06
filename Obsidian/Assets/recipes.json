@@ -3471,6 +3471,7 @@
   "copper_bulb": {
     "type": "minecraft:crafting_shaped",
     "category": "redstone",
+    "group": "copper_bulb",
     "key": {
       "B": "minecraft:blaze_rod",
       "C": "minecraft:copper_block",
@@ -3555,6 +3556,7 @@
   "copper_grate": {
     "type": "minecraft:crafting_shaped",
     "category": "building",
+    "group": "copper_grate",
     "key": {
       "M": "minecraft:copper_block"
     },
@@ -3770,11 +3772,13 @@
       "minecraft:copper_axe",
       "minecraft:copper_hoe",
       "minecraft:copper_sword",
+      "minecraft:copper_spear",
       "minecraft:copper_helmet",
       "minecraft:copper_chestplate",
       "minecraft:copper_leggings",
       "minecraft:copper_boots",
-      "minecraft:copper_horse_armor"
+      "minecraft:copper_horse_armor",
+      "minecraft:copper_nautilus_armor"
     ],
     "result": {
       "id": "minecraft:copper_nugget"
@@ -3791,11 +3795,13 @@
       "minecraft:copper_axe",
       "minecraft:copper_hoe",
       "minecraft:copper_sword",
+      "minecraft:copper_spear",
       "minecraft:copper_helmet",
       "minecraft:copper_chestplate",
       "minecraft:copper_leggings",
       "minecraft:copper_boots",
-      "minecraft:copper_horse_armor"
+      "minecraft:copper_horse_armor",
+      "minecraft:copper_nautilus_armor"
     ],
     "result": {
       "id": "minecraft:copper_nugget"
@@ -3833,6 +3839,23 @@
     "result": {
       "count": 1,
       "id": "minecraft:copper_shovel"
+    }
+  },
+  "copper_spear": {
+    "type": "minecraft:crafting_shaped",
+    "category": "equipment",
+    "key": {
+      "#": "minecraft:stick",
+      "X": "#minecraft:copper_tool_materials"
+    },
+    "pattern": [
+      "  X",
+      " # ",
+      "#  "
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:copper_spear"
     }
   },
   "copper_sword": {
@@ -5537,6 +5560,23 @@
     "result": {
       "count": 1,
       "id": "minecraft:diamond_shovel"
+    }
+  },
+  "diamond_spear": {
+    "type": "minecraft:crafting_shaped",
+    "category": "equipment",
+    "key": {
+      "#": "minecraft:stick",
+      "X": "#minecraft:diamond_tool_materials"
+    },
+    "pattern": [
+      "  X",
+      " # ",
+      "#  "
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:diamond_spear"
     }
   },
   "diamond_sword": {
@@ -7949,6 +7989,7 @@
   "exposed_copper_bulb": {
     "type": "minecraft:crafting_shaped",
     "category": "redstone",
+    "group": "exposed_copper_bulb",
     "key": {
       "B": "minecraft:blaze_rod",
       "C": "minecraft:exposed_copper",
@@ -7967,6 +8008,7 @@
   "exposed_copper_grate": {
     "type": "minecraft:crafting_shaped",
     "category": "building",
+    "group": "exposed_copper_grate",
     "key": {
       "M": "minecraft:exposed_copper"
     },
@@ -8537,6 +8579,23 @@
       "id": "minecraft:golden_shovel"
     }
   },
+  "golden_spear": {
+    "type": "minecraft:crafting_shaped",
+    "category": "equipment",
+    "key": {
+      "#": "minecraft:stick",
+      "X": "#minecraft:gold_tool_materials"
+    },
+    "pattern": [
+      "  X",
+      " # ",
+      "#  "
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:golden_spear"
+    }
+  },
   "golden_sword": {
     "type": "minecraft:crafting_shaped",
     "category": "equipment",
@@ -8709,11 +8768,13 @@
       "minecraft:golden_axe",
       "minecraft:golden_hoe",
       "minecraft:golden_sword",
+      "minecraft:golden_spear",
       "minecraft:golden_helmet",
       "minecraft:golden_chestplate",
       "minecraft:golden_leggings",
       "minecraft:golden_boots",
-      "minecraft:golden_horse_armor"
+      "minecraft:golden_horse_armor",
+      "minecraft:golden_nautilus_armor"
     ],
     "result": {
       "id": "minecraft:gold_nugget"
@@ -8730,11 +8791,13 @@
       "minecraft:golden_axe",
       "minecraft:golden_hoe",
       "minecraft:golden_sword",
+      "minecraft:golden_spear",
       "minecraft:golden_helmet",
       "minecraft:golden_chestplate",
       "minecraft:golden_leggings",
       "minecraft:golden_boots",
-      "minecraft:golden_horse_armor"
+      "minecraft:golden_horse_armor",
+      "minecraft:golden_nautilus_armor"
     ],
     "result": {
       "id": "minecraft:gold_nugget"
@@ -9684,11 +9747,13 @@
       "minecraft:iron_axe",
       "minecraft:iron_hoe",
       "minecraft:iron_sword",
+      "minecraft:iron_spear",
       "minecraft:iron_helmet",
       "minecraft:iron_chestplate",
       "minecraft:iron_leggings",
       "minecraft:iron_boots",
       "minecraft:iron_horse_armor",
+      "minecraft:iron_nautilus_armor",
       "minecraft:chainmail_helmet",
       "minecraft:chainmail_chestplate",
       "minecraft:chainmail_leggings",
@@ -9709,6 +9774,7 @@
       "minecraft:iron_axe",
       "minecraft:iron_hoe",
       "minecraft:iron_sword",
+      "minecraft:iron_spear",
       "minecraft:iron_helmet",
       "minecraft:iron_chestplate",
       "minecraft:iron_leggings",
@@ -9717,7 +9783,8 @@
       "minecraft:chainmail_helmet",
       "minecraft:chainmail_chestplate",
       "minecraft:chainmail_leggings",
-      "minecraft:chainmail_boots"
+      "minecraft:chainmail_boots",
+      "minecraft:iron_nautilus_armor"
     ],
     "result": {
       "id": "minecraft:iron_nugget"
@@ -9755,6 +9822,23 @@
     "result": {
       "count": 1,
       "id": "minecraft:iron_shovel"
+    }
+  },
+  "iron_spear": {
+    "type": "minecraft:crafting_shaped",
+    "category": "equipment",
+    "key": {
+      "#": "minecraft:stick",
+      "X": "#minecraft:iron_tool_materials"
+    },
+    "pattern": [
+      "  X",
+      " # ",
+      "#  "
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:iron_spear"
     }
   },
   "iron_sword": {
@@ -12129,6 +12213,15 @@
     },
     "template": "minecraft:netherite_upgrade_smithing_template"
   },
+  "netherite_horse_armor_smithing": {
+    "type": "minecraft:smithing_transform",
+    "addition": "#minecraft:netherite_tool_materials",
+    "base": "minecraft:diamond_horse_armor",
+    "result": {
+      "id": "minecraft:netherite_horse_armor"
+    },
+    "template": "minecraft:netherite_upgrade_smithing_template"
+  },
   "netherite_ingot": {
     "type": "minecraft:crafting_shapeless",
     "category": "misc",
@@ -12169,6 +12262,15 @@
     },
     "template": "minecraft:netherite_upgrade_smithing_template"
   },
+  "netherite_nautilus_armor_smithing": {
+    "type": "minecraft:smithing_transform",
+    "addition": "#minecraft:netherite_tool_materials",
+    "base": "minecraft:diamond_nautilus_armor",
+    "result": {
+      "id": "minecraft:netherite_nautilus_armor"
+    },
+    "template": "minecraft:netherite_upgrade_smithing_template"
+  },
   "netherite_pickaxe_smithing": {
     "type": "minecraft:smithing_transform",
     "addition": "#minecraft:netherite_tool_materials",
@@ -12204,6 +12306,15 @@
     "base": "minecraft:diamond_shovel",
     "result": {
       "id": "minecraft:netherite_shovel"
+    },
+    "template": "minecraft:netherite_upgrade_smithing_template"
+  },
+  "netherite_spear_smithing": {
+    "type": "minecraft:smithing_transform",
+    "addition": "#minecraft:netherite_tool_materials",
+    "base": "minecraft:diamond_spear",
+    "result": {
+      "id": "minecraft:netherite_spear"
     },
     "template": "minecraft:netherite_upgrade_smithing_template"
   },
@@ -12918,6 +13029,7 @@
   "oxidized_copper_bulb": {
     "type": "minecraft:crafting_shaped",
     "category": "redstone",
+    "group": "oxidized_copper_bulb",
     "key": {
       "B": "minecraft:blaze_rod",
       "C": "minecraft:oxidized_copper",
@@ -12936,6 +13048,7 @@
   "oxidized_copper_grate": {
     "type": "minecraft:crafting_shaped",
     "category": "building",
+    "group": "oxidized_copper_grate",
     "key": {
       "M": "minecraft:oxidized_copper"
     },
@@ -17231,6 +17344,23 @@
       "id": "minecraft:stone_slab"
     }
   },
+  "stone_spear": {
+    "type": "minecraft:crafting_shaped",
+    "category": "equipment",
+    "key": {
+      "#": "minecraft:stick",
+      "X": "#minecraft:stone_tool_materials"
+    },
+    "pattern": [
+      "  X",
+      " # ",
+      "#  "
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:stone_spear"
+    }
+  },
   "stone_stairs": {
     "type": "minecraft:crafting_shaped",
     "category": "building",
@@ -18502,13 +18632,13 @@
   "waxed_chiseled_copper": {
     "type": "minecraft:crafting_shaped",
     "category": "building",
-    "group": "waxed_cut_copper_chiseled",
+    "group": "waxed_chiseled_copper",
     "key": {
-      "#": "minecraft:waxed_cut_copper_slab"
+      "M": "minecraft:waxed_cut_copper_slab"
     },
     "pattern": [
-      "#",
-      "#"
+      " M ",
+      " M "
     ],
     "result": {
       "count": 1,
@@ -18547,7 +18677,7 @@
   "waxed_copper_bars_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
     "category": "building",
-    "group": "waxed_copper_bars",
+    "group": "waxed_copper_bar",
     "ingredients": [
       "minecraft:copper_bars",
       "minecraft:honeycomb"
@@ -18573,6 +18703,7 @@
   "waxed_copper_bulb": {
     "type": "minecraft:crafting_shaped",
     "category": "redstone",
+    "group": "waxed_copper_bulb",
     "key": {
       "B": "minecraft:blaze_rod",
       "C": "minecraft:waxed_copper_block",
@@ -18590,7 +18721,7 @@
   },
   "waxed_copper_bulb_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
-    "category": "building",
+    "category": "redstone",
     "group": "waxed_copper_bulb",
     "ingredients": [
       "minecraft:copper_bulb",
@@ -18629,7 +18760,7 @@
   },
   "waxed_copper_door_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
-    "category": "building",
+    "category": "redstone",
     "group": "waxed_copper_door",
     "ingredients": [
       "minecraft:copper_door",
@@ -18656,6 +18787,7 @@
   "waxed_copper_grate": {
     "type": "minecraft:crafting_shaped",
     "category": "building",
+    "group": "waxed_copper_grate",
     "key": {
       "M": "minecraft:waxed_copper_block"
     },
@@ -18705,7 +18837,7 @@
   },
   "waxed_copper_trapdoor_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
-    "category": "building",
+    "category": "redstone",
     "group": "waxed_copper_trapdoor",
     "ingredients": [
       "minecraft:copper_trapdoor",
@@ -18846,13 +18978,13 @@
   "waxed_exposed_chiseled_copper": {
     "type": "minecraft:crafting_shaped",
     "category": "building",
-    "group": "waxed_exposed_cut_copper_chiseled",
+    "group": "waxed_exposed_chiseled_copper",
     "key": {
-      "#": "minecraft:waxed_exposed_cut_copper_slab"
+      "M": "minecraft:waxed_exposed_cut_copper_slab"
     },
     "pattern": [
-      "#",
-      "#"
+      " M ",
+      " M "
     ],
     "result": {
       "count": 1,
@@ -18891,7 +19023,7 @@
   "waxed_exposed_copper_bars_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
     "category": "building",
-    "group": "waxed_exposed_copper_bars",
+    "group": "waxed_copper_bar",
     "ingredients": [
       "minecraft:exposed_copper_bars",
       "minecraft:honeycomb"
@@ -18904,6 +19036,7 @@
   "waxed_exposed_copper_bulb": {
     "type": "minecraft:crafting_shaped",
     "category": "redstone",
+    "group": "waxed_exposed_copper_bulb",
     "key": {
       "B": "minecraft:blaze_rod",
       "C": "minecraft:waxed_exposed_copper",
@@ -18921,7 +19054,7 @@
   },
   "waxed_exposed_copper_bulb_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
-    "category": "building",
+    "category": "redstone",
     "group": "waxed_exposed_copper_bulb",
     "ingredients": [
       "minecraft:exposed_copper_bulb",
@@ -18935,7 +19068,7 @@
   "waxed_exposed_copper_chain_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
     "category": "building",
-    "group": "waxed_exposed_copper_chain",
+    "group": "waxed_copper_chain",
     "ingredients": [
       "minecraft:exposed_copper_chain",
       "minecraft:honeycomb"
@@ -18948,7 +19081,7 @@
   "waxed_exposed_copper_chest_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
     "category": "building",
-    "group": "waxed_exposed_copper_chest",
+    "group": "waxed_copper_chest",
     "ingredients": [
       "minecraft:exposed_copper_chest",
       "minecraft:honeycomb"
@@ -18960,8 +19093,8 @@
   },
   "waxed_exposed_copper_door_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
-    "category": "building",
-    "group": "waxed_exposed_copper_door",
+    "category": "redstone",
+    "group": "waxed_copper_door",
     "ingredients": [
       "minecraft:exposed_copper_door",
       "minecraft:honeycomb"
@@ -18974,7 +19107,7 @@
   "waxed_exposed_copper_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
     "category": "building",
-    "group": "waxed_exposed_copper",
+    "group": "waxed_copper_block",
     "ingredients": [
       "minecraft:exposed_copper",
       "minecraft:honeycomb"
@@ -18987,7 +19120,7 @@
   "waxed_exposed_copper_golem_statue_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
     "category": "building",
-    "group": "waxed_exposed_copper_golem_statue",
+    "group": "waxed_copper_golem_statue",
     "ingredients": [
       "minecraft:exposed_copper_golem_statue",
       "minecraft:honeycomb"
@@ -19000,6 +19133,7 @@
   "waxed_exposed_copper_grate": {
     "type": "minecraft:crafting_shaped",
     "category": "building",
+    "group": "waxed_exposed_copper_grate",
     "key": {
       "M": "minecraft:waxed_exposed_copper"
     },
@@ -19037,7 +19171,7 @@
   "waxed_exposed_copper_lantern_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
     "category": "building",
-    "group": "waxed_exposed_copper_lantern",
+    "group": "waxed_copper_lantern",
     "ingredients": [
       "minecraft:exposed_copper_lantern",
       "minecraft:honeycomb"
@@ -19049,8 +19183,8 @@
   },
   "waxed_exposed_copper_trapdoor_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
-    "category": "building",
-    "group": "waxed_exposed_copper_trapdoor",
+    "category": "redstone",
+    "group": "waxed_copper_trapdoor",
     "ingredients": [
       "minecraft:exposed_copper_trapdoor",
       "minecraft:honeycomb"
@@ -19190,7 +19324,7 @@
   "waxed_exposed_lightning_rod_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
     "category": "building",
-    "group": "waxed_exposed_lightning_rod",
+    "group": "waxed_lightning_rod",
     "ingredients": [
       "minecraft:exposed_lightning_rod",
       "minecraft:honeycomb"
@@ -19216,13 +19350,13 @@
   "waxed_oxidized_chiseled_copper": {
     "type": "minecraft:crafting_shaped",
     "category": "building",
-    "group": "waxed_oxidized_cut_copper_chiseled",
+    "group": "waxed_oxidized_chiseled_copper",
     "key": {
-      "#": "minecraft:waxed_oxidized_cut_copper_slab"
+      "M": "minecraft:waxed_oxidized_cut_copper_slab"
     },
     "pattern": [
-      "#",
-      "#"
+      " M ",
+      " M "
     ],
     "result": {
       "count": 1,
@@ -19261,7 +19395,7 @@
   "waxed_oxidized_copper_bars_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
     "category": "building",
-    "group": "waxed_oxidized_copper_bars",
+    "group": "waxed_copper_bar",
     "ingredients": [
       "minecraft:oxidized_copper_bars",
       "minecraft:honeycomb"
@@ -19274,6 +19408,7 @@
   "waxed_oxidized_copper_bulb": {
     "type": "minecraft:crafting_shaped",
     "category": "redstone",
+    "group": "waxed_oxidized_copper_bulb",
     "key": {
       "B": "minecraft:blaze_rod",
       "C": "minecraft:waxed_oxidized_copper",
@@ -19291,7 +19426,7 @@
   },
   "waxed_oxidized_copper_bulb_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
-    "category": "building",
+    "category": "redstone",
     "group": "waxed_oxidized_copper_bulb",
     "ingredients": [
       "minecraft:oxidized_copper_bulb",
@@ -19305,7 +19440,7 @@
   "waxed_oxidized_copper_chain_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
     "category": "building",
-    "group": "waxed_oxidized_copper_chain",
+    "group": "waxed_copper_chain",
     "ingredients": [
       "minecraft:oxidized_copper_chain",
       "minecraft:honeycomb"
@@ -19318,7 +19453,7 @@
   "waxed_oxidized_copper_chest_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
     "category": "building",
-    "group": "waxed_oxidized_copper_chest",
+    "group": "waxed_copper_chest",
     "ingredients": [
       "minecraft:oxidized_copper_chest",
       "minecraft:honeycomb"
@@ -19330,8 +19465,8 @@
   },
   "waxed_oxidized_copper_door_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
-    "category": "building",
-    "group": "waxed_oxidized_copper_door",
+    "category": "redstone",
+    "group": "waxed_copper_door",
     "ingredients": [
       "minecraft:oxidized_copper_door",
       "minecraft:honeycomb"
@@ -19344,7 +19479,7 @@
   "waxed_oxidized_copper_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
     "category": "building",
-    "group": "waxed_oxidized_copper",
+    "group": "waxed_copper_block",
     "ingredients": [
       "minecraft:oxidized_copper",
       "minecraft:honeycomb"
@@ -19357,7 +19492,7 @@
   "waxed_oxidized_copper_golem_statue_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
     "category": "building",
-    "group": "waxed_oxidized_copper_golem_statue",
+    "group": "waxed_copper_golem_statue",
     "ingredients": [
       "minecraft:oxidized_copper_golem_statue",
       "minecraft:honeycomb"
@@ -19370,6 +19505,7 @@
   "waxed_oxidized_copper_grate": {
     "type": "minecraft:crafting_shaped",
     "category": "building",
+    "group": "waxed_oxidized_copper_grate",
     "key": {
       "M": "minecraft:waxed_oxidized_copper"
     },
@@ -19407,7 +19543,7 @@
   "waxed_oxidized_copper_lantern_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
     "category": "building",
-    "group": "waxed_oxidized_copper_lantern",
+    "group": "waxed_copper_lantern",
     "ingredients": [
       "minecraft:oxidized_copper_lantern",
       "minecraft:honeycomb"
@@ -19419,8 +19555,8 @@
   },
   "waxed_oxidized_copper_trapdoor_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
-    "category": "building",
-    "group": "waxed_oxidized_copper_trapdoor",
+    "category": "redstone",
+    "group": "waxed_copper_trapdoor",
     "ingredients": [
       "minecraft:oxidized_copper_trapdoor",
       "minecraft:honeycomb"
@@ -19560,7 +19696,7 @@
   "waxed_oxidized_lightning_rod_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
     "category": "building",
-    "group": "waxed_oxidized_lightning_rod",
+    "group": "waxed_lightning_rod",
     "ingredients": [
       "minecraft:oxidized_lightning_rod",
       "minecraft:honeycomb"
@@ -19573,13 +19709,13 @@
   "waxed_weathered_chiseled_copper": {
     "type": "minecraft:crafting_shaped",
     "category": "building",
-    "group": "waxed_weathered_cut_copper_chiseled",
+    "group": "waxed_weathered_chiseled_copper",
     "key": {
-      "#": "minecraft:waxed_weathered_cut_copper_slab"
+      "M": "minecraft:waxed_weathered_cut_copper_slab"
     },
     "pattern": [
-      "#",
-      "#"
+      " M ",
+      " M "
     ],
     "result": {
       "count": 1,
@@ -19618,7 +19754,7 @@
   "waxed_weathered_copper_bars_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
     "category": "building",
-    "group": "waxed_weathered_copper_bars",
+    "group": "waxed_copper_bar",
     "ingredients": [
       "minecraft:weathered_copper_bars",
       "minecraft:honeycomb"
@@ -19631,6 +19767,7 @@
   "waxed_weathered_copper_bulb": {
     "type": "minecraft:crafting_shaped",
     "category": "redstone",
+    "group": "waxed_weathered_copper_bulb",
     "key": {
       "B": "minecraft:blaze_rod",
       "C": "minecraft:waxed_weathered_copper",
@@ -19648,7 +19785,7 @@
   },
   "waxed_weathered_copper_bulb_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
-    "category": "building",
+    "category": "redstone",
     "group": "waxed_weathered_copper_bulb",
     "ingredients": [
       "minecraft:weathered_copper_bulb",
@@ -19662,7 +19799,7 @@
   "waxed_weathered_copper_chain_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
     "category": "building",
-    "group": "waxed_weathered_copper_chain",
+    "group": "waxed_copper_chain",
     "ingredients": [
       "minecraft:weathered_copper_chain",
       "minecraft:honeycomb"
@@ -19675,7 +19812,7 @@
   "waxed_weathered_copper_chest_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
     "category": "building",
-    "group": "waxed_weathered_copper_chest",
+    "group": "waxed_copper_chest",
     "ingredients": [
       "minecraft:weathered_copper_chest",
       "minecraft:honeycomb"
@@ -19687,8 +19824,8 @@
   },
   "waxed_weathered_copper_door_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
-    "category": "building",
-    "group": "waxed_weathered_copper_door",
+    "category": "redstone",
+    "group": "waxed_copper_door",
     "ingredients": [
       "minecraft:weathered_copper_door",
       "minecraft:honeycomb"
@@ -19701,7 +19838,7 @@
   "waxed_weathered_copper_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
     "category": "building",
-    "group": "waxed_weathered_copper",
+    "group": "waxed_copper_block",
     "ingredients": [
       "minecraft:weathered_copper",
       "minecraft:honeycomb"
@@ -19714,7 +19851,7 @@
   "waxed_weathered_copper_golem_statue_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
     "category": "building",
-    "group": "waxed_weathered_copper_golem_statue",
+    "group": "waxed_copper_golem_statue",
     "ingredients": [
       "minecraft:weathered_copper_golem_statue",
       "minecraft:honeycomb"
@@ -19727,6 +19864,7 @@
   "waxed_weathered_copper_grate": {
     "type": "minecraft:crafting_shaped",
     "category": "building",
+    "group": "waxed_weathered_copper_grate",
     "key": {
       "M": "minecraft:waxed_weathered_copper"
     },
@@ -19764,7 +19902,7 @@
   "waxed_weathered_copper_lantern_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
     "category": "building",
-    "group": "waxed_weathered_copper_lantern",
+    "group": "waxed_copper_lantern",
     "ingredients": [
       "minecraft:weathered_copper_lantern",
       "minecraft:honeycomb"
@@ -19776,8 +19914,8 @@
   },
   "waxed_weathered_copper_trapdoor_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
-    "category": "building",
-    "group": "waxed_weathered_copper_trapdoor",
+    "category": "redstone",
+    "group": "waxed_copper_trapdoor",
     "ingredients": [
       "minecraft:weathered_copper_trapdoor",
       "minecraft:honeycomb"
@@ -19917,7 +20055,7 @@
   "waxed_weathered_lightning_rod_from_honeycomb": {
     "type": "minecraft:crafting_shapeless",
     "category": "building",
-    "group": "waxed_weathered_lightning_rod",
+    "group": "waxed_lightning_rod",
     "ingredients": [
       "minecraft:weathered_lightning_rod",
       "minecraft:honeycomb"
@@ -19986,6 +20124,7 @@
   "weathered_copper_bulb": {
     "type": "minecraft:crafting_shaped",
     "category": "redstone",
+    "group": "weathered_copper_bulb",
     "key": {
       "B": "minecraft:blaze_rod",
       "C": "minecraft:weathered_copper",
@@ -20004,6 +20143,7 @@
   "weathered_copper_grate": {
     "type": "minecraft:crafting_shaped",
     "category": "building",
+    "group": "weathered_copper_grate",
     "key": {
       "M": "minecraft:weathered_copper"
     },
@@ -20479,6 +20619,23 @@
     "result": {
       "count": 1,
       "id": "minecraft:wooden_shovel"
+    }
+  },
+  "wooden_spear": {
+    "type": "minecraft:crafting_shaped",
+    "category": "equipment",
+    "key": {
+      "#": "minecraft:stick",
+      "X": "#minecraft:wooden_tool_materials"
+    },
+    "pattern": [
+      "  X",
+      " # ",
+      "#  "
+    ],
+    "result": {
+      "count": 1,
+      "id": "minecraft:wooden_spear"
     }
   },
   "wooden_sword": {

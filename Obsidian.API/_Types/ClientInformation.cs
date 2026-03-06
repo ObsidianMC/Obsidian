@@ -11,7 +11,7 @@ public readonly record struct ClientInformation
 
     public required PlayerBitMask DisplayedSkinParts { get; init; }
 
-    public required MainHand MainHand { get; init; }
+    public required HumanoidArm MainHand { get; init; }
 
     public required bool EnableTextFiltering { get; init; }
 

@@ -672,14 +672,6 @@
     "usable_interface": "IClientboundPacket"
   },
   {
-    "name": "HorseScreenOpen",
-    "resource_id": "horse_screen_open",
-    "namespace": "Clientbound",
-    "state": "Play",
-    "packet_id": 40,
-    "usable_interface": "IClientboundPacket"
-  },
-  {
     "name": "HurtAnimation",
     "resource_id": "hurt_animation",
     "namespace": "Clientbound",
@@ -757,6 +749,14 @@
     "namespace": "Clientbound",
     "state": "Play",
     "packet_id": 50,
+    "usable_interface": "IClientboundPacket"
+  },
+  {
+    "name": "MountScreenOpen",
+    "resource_id": "mount_screen_open",
+    "namespace": "Clientbound",
+    "state": "Play",
+    "packet_id": 40,
     "usable_interface": "IClientboundPacket"
   },
   {

@@ -1,5 +1,5 @@
 ﻿namespace Obsidian.API;
-public enum MainHand
+public enum HumanoidArm
 {
     Left,
     Right
