@@ -12,18 +12,23 @@ public partial class MainEventHandler
         var player = args.Player;
         var sequence = args.Sequence;
         var block = args.Block;
-        var world = args.World;
+        var world = player.World;
         var location = args.Location;
 
-        if (args.IsCancelled)
-            return;
-
-        await world.SetBlockAsync(location, BlocksRegistry.Air, true);
-
-        await player.Client.QueuePacketAsync(new BlockChangedAckPacket
+        player.Client.SendPacket(new BlockChangedAckPacket
         {
             SequenceID = sequence
         });
+
+        if (args.IsCancelled)
+        {
+            player.Client.SendPacket(new BlockUpdatePacket(location, block.GetHashCode()));
+            return;
+        }
+
+        await world.SetBlockAsync(location, BlocksRegistry.Air, true);
+
+        player.Client.SendPacket(new BlockUpdatePacket(location, BlocksRegistry.Air.GetHashCode()));
 
         world.PacketBroadcaster.QueuePacketToWorld(world, 0, new BlockDestructionPacket
         {

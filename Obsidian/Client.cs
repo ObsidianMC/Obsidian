@@ -328,7 +328,10 @@ public sealed partial class Client : IClient
         var removed = this.Server.Connections.Remove(this.Id, out _);
 
         if (this.Player != null)
+        {
+            this.Player.World.TryRemovePlayer(this.Player);
             this.Server.RemovePlayer(this.Player);
+        }
 
         this.Logger.LogInformation("Client {ip} disconnected.", this.Ip);
 
