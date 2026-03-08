@@ -35,7 +35,7 @@ public partial class PlayerActionPacket
 
         if (Status == PlayerActionStatus.FinishedDigging || (Status == PlayerActionStatus.StartedDigging && player.Gamemode == Gamemode.Creative))
         {
-            var args = new BlockBreakEventArgs(server, player, block, Position)
+            var args = new BlockBreakEventArgs(server, player, block, Position, player.World)
             {
                 Sequence = this.Sequence
             };
