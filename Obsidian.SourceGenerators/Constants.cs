@@ -1,4 +1,5 @@
 ﻿namespace Obsidian.SourceGenerators;
+
 internal static class Constants
 {
     public const string Default = "default";
@@ -12,11 +13,15 @@ internal static class Constants
     public const string SurfaceConditionAttributeName = "SurfaceConditionAttribute";
     public const string SurfaceConditionCleanedAttributeName = "SurfaceCondition";
 
-    public const string DensityFunction = "density_functions\\";
+    public const string DensityFunction = "density_function\\";
     public const string Noise = "noise\\";
     public const string NoiseSettings = "noise_settings\\";
 
-    public const string defaultBlock = "default_block";
-    public const string defaultFluid = "default_fluid";
-    public const string blockResult = "result_state";
+    public const string CleanedDensityFunction = "density_function/";
+    public const string CleanedNoise = "noise/";
+    public const string CleanedNoiseSettings = "noise_settings/";
+
+    public const string DefaultBlock = "default_block";
+    public const string DefaultFluid = "default_fluid";
+    public const string BlockResult = "result_state";
 }

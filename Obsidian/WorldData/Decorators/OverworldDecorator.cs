@@ -1,7 +1,6 @@
 ﻿using Obsidian.API.World.Features;
 using Obsidian.ChunkData;
 using Obsidian.WorldData.Features.Flora;
-using Obsidian.WorldData.Features.Trees;
 using Obsidian.WorldData.Generators;
 using System.Diagnostics;
 using System.Linq.Expressions;
@@ -11,7 +10,6 @@ namespace Obsidian.WorldData.Decorators;
 public static class OverworldDecorator
 {
     private static readonly ConcurrentDictionary<Type, Func<GenHelper, IChunk, BaseFlora>> floraCache = new();
-    private static readonly ConcurrentDictionary<Type, Func<GenHelper, IChunk, BaseTree>> treeCache = new();
 
     private static readonly Type[] argumentCache = [typeof(GenHelper), typeof(IChunk)];
     public static readonly ParameterExpression[] expressionParameters = argumentCache.Select((t, i) => Expression.Parameter(t, $"param{i}")).ToArray();
@@ -22,8 +20,6 @@ public static class OverworldDecorator
 
         var floras = asm.GetTypes()
             .Where(t => t.IsClass && !t.IsAbstract && t.IsSubclassOf(typeof(BaseFlora)));
-        var trees = asm.GetTypes()
-            .Where(t => t.IsClass && !t.IsAbstract && t.IsSubclassOf(typeof(BaseTree)));
 
         foreach (var floraType in floras)
         {
@@ -35,18 +31,6 @@ public static class OverworldDecorator
             var compiledLamda = lambda.Compile();
 
             floraCache.TryAdd(floraType, compiledLamda);
-        }
-
-        foreach (var treeType in trees)
-        {
-            var ctor = treeType.GetConstructor(argumentCache);
-
-            var expression = Expression.New(ctor, expressionParameters);
-            var lambda = Expression.Lambda<Func<GenHelper, IChunk, BaseTree>>(expression, expressionParameters);
-
-            var compiledLamda = lambda.Compile();
-
-            treeCache.TryAdd(treeType, compiledLamda);
         }
     }
 
@@ -62,7 +46,7 @@ public static class OverworldDecorator
                 var decorator = DecoratorFactory.GetDecorator(biome, chunk, chunkPos, helper);
 
                 decorator.Decorate();
-                await GenerateTreesAsync(chunkPos + (chunk.X << 4, 0, chunk.Z << 4), decorator.Features, helper, chunk);
+                await GenerateTreesAsync(chunkPos + (chunk.X << 4, 0, chunk.Z << 4), decorator.Features, helper);
                 await GenerateFloraAsync(chunkPos + (chunk.X << 4, 0, chunk.Z << 4), decorator.Features, helper, chunk);
             }
         }
@@ -92,13 +76,7 @@ public static class OverworldDecorator
 
     }
 
-    public static async Task GrowTreeAsync(Vector position, BaseTree tree, int? heightOffset = null)
-    {
-        var offset = heightOffset is null ? Globals.Random.Next(-2, 2) : (int)heightOffset;
-        await tree.TryGenerateTreeAsync(position, offset);
-    }
-
-    internal static async Task GenerateTreesAsync(Vector pos, DecoratorFeatures features, GenHelper helper, IChunk chunk)
+    internal static async Task GenerateTreesAsync(Vector pos, DecoratorFeatures features, GenHelper helper)
     {
         for (int i = 0; i < features.Trees.Count; i++)
         {
@@ -113,9 +91,7 @@ public static class OverworldDecorator
             bool isTree = noiseVal > 0.8 && noiseVal <= freq + 0.8;
             if (!isTree) { continue; }
 
-            int heightVariance = (int)(((noiseVal - 0.8) * 100) - (freq / 2));
-
-            // New data-driven approach using TreeFeature
+            // Data-driven approach using TreeFeature
             if (tree.Feature != null)
             {
                 var context = new FeatureContext
@@ -126,17 +102,6 @@ public static class OverworldDecorator
                 };
                 await tree.Feature.Place(context);
             }
-            // Legacy approach using BaseTree (for backward compatibility)
-#pragma warning disable CS0618 // Type or member is obsolete
-            else if (tree.TreeType != null)
-            {
-                if (!treeCache.TryGetValue(tree.TreeType, out var treeFactory))
-                    throw new UnreachableException();
-
-                var treeInstance = treeFactory(helper, chunk);
-                await GrowTreeAsync(pos, treeInstance, heightVariance);
-            }
-#pragma warning restore CS0618
         }
     }
 }

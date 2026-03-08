@@ -333,47 +333,47 @@ public sealed partial class World : IWorld
         LevelData.Time += this.Configuration.TimeTickSpeedMultiplier;
         LevelData.RainTime -= this.Configuration.TimeTickSpeedMultiplier;
 
-        if (LevelData.RainTime < 1)
-        {
-            // Raintime passed, toggle weather
-            LevelData.Raining = !LevelData.Raining;
+        // if (LevelData.RainTime < 1)
+        // {
+        //     // Raintime passed, toggle weather
+        //     LevelData.Raining = !LevelData.Raining;
 
-            int rainTime;
-            // amount of ticks in a day is 24000
-            if (LevelData.Raining)
-            {
-                rainTime = Globals.Random.Next(12000, 24000); // rain lasts 0.5 - 1 day
-            }
-            else
-            {
-                rainTime = Globals.Random.Next(12000, 180000); // clear lasts 0.5 - 7.5 day
-            }
-            LevelData.RainTime = rainTime;
+        //     int rainTime;
+        //     // amount of ticks in a day is 24000
+        //     if (LevelData.Raining)
+        //     {
+        //         rainTime = Globals.Random.Next(12000, 24000); // rain lasts 0.5 - 1 day
+        //     }
+        //     else
+        //     {
+        //         rainTime = Globals.Random.Next(12000, 180000); // clear lasts 0.5 - 7.5 day
+        //     }
+        //     LevelData.RainTime = rainTime;
 
-            Logger.LogInformation("Toggled rain: {raining} for {rainTime} ticks.", LevelData.Raining, LevelData.RainTime);
-        }
+        //     Logger.LogInformation("Toggled rain: {raining} for {rainTime} ticks.", LevelData.Raining, LevelData.RainTime);
+        // }
 
-        // Gradually increase and decrease rain levels based on
-        // whether value is in range and what weather is active
-        var oldLevel = rainLevel;
-        if (!LevelData.Raining && rainLevel > 0f)
-            rainLevel -= 0.01f;
-        else if (LevelData.Raining && rainLevel < 1f)
-            rainLevel += 0.01f;
+        // // Gradually increase and decrease rain levels based on
+        // // whether value is in range and what weather is active
+        // var oldLevel = rainLevel;
+        // if (!LevelData.Raining && rainLevel > 0f)
+        //     rainLevel -= 0.01f;
+        // else if (LevelData.Raining && rainLevel < 1f)
+        //     rainLevel += 0.01f;
 
-        if (oldLevel != rainLevel)
-        {
-            // send new level if updated
-            this.PacketBroadcaster.QueuePacketToWorld(this, new GameEventPacket(ChangeGameStateReason.RainLevelChange, rainLevel));
-            if (rainLevel < 0.3f && rainLevel > 0.1f)
-                this.PacketBroadcaster.QueuePacketToWorld(this, new GameEventPacket(LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
-        }
+        // if (oldLevel != rainLevel)
+        // {
+        //     // send new level if updated
+        //     this.PacketBroadcaster.QueuePacketToWorld(this, new GameEventPacket(ChangeGameStateReason.RainLevelChange, rainLevel));
+        //     if (rainLevel < 0.3f && rainLevel > 0.1f)
+        //         this.PacketBroadcaster.QueuePacketToWorld(this, new GameEventPacket(LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
+        // }
 
-        if (LevelData.Time % (20 * this.Configuration.TimeTickSpeedMultiplier) == 0)
-        {
-            // Update client time every second / 20 ticks
-            this.BroadcastTime();
-        }
+        // if (LevelData.Time % (20 * this.Configuration.TimeTickSpeedMultiplier) == 0)
+        // {
+        //     // Update client time every second / 20 ticks
+        //     this.BroadcastTime();
+        // }
 
         //Tick regions within the world manager
         await Task.WhenAll(this.Regions.Values.Select(r => r.BeginTickAsync()));

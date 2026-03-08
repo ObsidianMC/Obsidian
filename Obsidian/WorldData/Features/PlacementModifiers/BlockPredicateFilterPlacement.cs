@@ -3,7 +3,7 @@
 /// <summary>
 /// Returns the current position when the predicate is passed, otherwise return empty.
 /// </summary>
-[TreeProperty("minecraft:block_predicate_filter")]
+[ConfiguredFeatureProperty("minecraft:block_predicate_filter")]
 public sealed class BlockPredicateFilterPlacement : PlacementModifierBase
 {
     public override string Type { get; internal init; } = "minecraft:block_predicate_filter";

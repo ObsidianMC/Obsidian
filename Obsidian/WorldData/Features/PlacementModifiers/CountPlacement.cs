@@ -5,7 +5,7 @@ namespace Obsidian.WorldData.Features.PlacementModifiers;
 /// <summary>
 /// Returns multiple copies of the current block position
 /// </summary>
-[TreeProperty("minecraft:count")]
+[ConfiguredFeatureProperty("minecraft:count")]
 public sealed class CountPlacement : PlacementModifierBase
 {
     public override string Type { get; internal init; } = "minecraft:count";

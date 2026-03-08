@@ -19,7 +19,7 @@ public partial record class ClientInformationPacket
     public PlayerBitMask DisplayedSkinParts { get; private set; } // Skin parts that are displayed. Might not be necessary to decode?
 
     [Field(5), ActualType(typeof(int)), VarLength]
-    public MainHand MainHand { get; private set; }
+    public HumanoidArm MainHand { get; private set; }
 
     [Field(6)]
     public bool EnableTextFiltering { get; private set; }
@@ -37,7 +37,7 @@ public partial record class ClientInformationPacket
         ChatVisibility = reader.ReadVarInt<ChatVisibility>();
         ChatColors = reader.ReadBoolean();
         DisplayedSkinParts = reader.ReadUnsignedByte<PlayerBitMask>();
-        MainHand = reader.ReadVarInt<MainHand>();
+        MainHand = reader.ReadVarInt<HumanoidArm>();
         EnableTextFiltering = reader.ReadBoolean();
         AllowServerListings = reader.ReadBoolean();
         ParticleStatus = reader.ReadVarInt<ParticleStatus>();

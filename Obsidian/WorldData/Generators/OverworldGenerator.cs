@@ -47,10 +47,10 @@ public sealed class OverworldGenerator : IWorldGenerator
             chunk.SetChunkStatus(ChunkGenStage.features);
         }
 
-        if (ChunkGenStage.heightmaps <= stage && chunk.ChunkStatus < ChunkGenStage.heightmaps)
+        if (ChunkGenStage.initialize_light <= stage && chunk.ChunkStatus < ChunkGenStage.initialize_light)
         {
             ChunkBuilder.Heightmaps(chunk);
-            chunk.SetChunkStatus(ChunkGenStage.heightmaps);
+            chunk.SetChunkStatus(ChunkGenStage.initialize_light);
         }
 
         if (ChunkGenStage.light <= stage && chunk.ChunkStatus < ChunkGenStage.full)

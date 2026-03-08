@@ -129,7 +129,7 @@ public sealed class IslandGenerator : IWorldGenerator
                         var biome = chunk.GetBiome(pos + Vector.Down);
                         IDecorator decorator = DecoratorFactory.GetDecorator(biome, chunk, worldPos, helper);
                         decorator.Decorate();
-                        await OverworldDecorator.GenerateTreesAsync(worldPos, decorator.Features, helper, chunk);
+                        await OverworldDecorator.GenerateTreesAsync(worldPos, decorator.Features, helper);
                         await OverworldDecorator.GenerateFloraAsync(worldPos, decorator.Features, helper, chunk);
                     }
                 }

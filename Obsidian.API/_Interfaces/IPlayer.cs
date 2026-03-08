@@ -56,7 +56,7 @@ public interface IPlayer : ILiving
 
     public double HeadY { get; }
 
-    public float AdditionalHearts { get; set; }
+    public float Absorption { get; set; }
     public float FallDistance { get; set; }
     public float FoodExhaustionLevel { get; set; }
     public float FoodSaturationLevel { get; set; }

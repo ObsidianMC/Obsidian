@@ -59,7 +59,7 @@ public sealed class FakePlayer : IPlayer
 
     public double HeadY { get; set; }
 
-    public float AdditionalHearts { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+    public float Absorption { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     public float FallDistance { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     public float FoodExhaustionLevel { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     public float FoodSaturationLevel { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }

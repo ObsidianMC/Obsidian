@@ -1,8 +1,6 @@
-﻿using Obsidian.Registries;
+﻿namespace Obsidian.Providers.BlockStateProviders;
 
-namespace Obsidian.Providers.BlockStateProviders;
-
-[TreeProperty("minecraft:simple_state_provider")]
+[ConfiguredFeatureProperty("minecraft:simple_state_provider")]
 public sealed class SimpleStateProvider : IBlockStateProvider
 {
     public string Type { get; init; } = "minecraft:simple_state_provider";

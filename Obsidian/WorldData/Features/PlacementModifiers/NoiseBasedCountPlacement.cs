@@ -6,7 +6,7 @@
 /// When noise value is negative or 0, returns empty. 
 /// The count is calculated by ceil((noise(x / noise_factor, z / noise_factor) + noise_offset) * noise_to_count_ratio).
 /// </summary>
-[TreeProperty("minecraft:noise_based_count")]
+[ConfiguredFeatureProperty("minecraft:noise_based_count")]
 public sealed class NoiseBasedCountPlacement : PlacementModifierBase
 {
     public override string Type { get; internal init; } = "minecraft:noise_based_count";

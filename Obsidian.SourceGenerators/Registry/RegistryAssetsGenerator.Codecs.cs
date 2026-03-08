@@ -29,6 +29,7 @@ public partial class RegistryAssetsGenerator
             .Using("Obsidian.API.Registry.Codecs.WolfVariant")
             .Using("Obsidian.API.Registry.Codecs.WolfSoundVariant")
             .Using("Obsidian.API.Registry.Codecs.PaintingVariant")
+            .Using("Obsidian.API.Registry.Codecs.ZombieNautilusVariant")
             .Using("System.Collections.Frozen")
             .Line()
             .Namespace("Obsidian.API.Registries")
@@ -137,6 +138,8 @@ public partial class RegistryAssetsGenerator
 
         builder.GenerateSimpleCodec(codecs["painting_variant"].ToArray(), "PaintingVariant", "minecraft:painting_variant", "PaintingVariantCodec", ctx);
         builder.GenerateSimpleCodec(codecs["dialogs"].ToArray(), "Dialog", "minecraft:dialog", "DialogCodec", ctx);
+        builder.GenerateSimpleCodec(codecs["zombie_nautilus_variant"].ToArray(), "ZombieNautilusVariant", "minecraft:zombie_nautilus_variant", "ZombieNautilusVariantCodec", ctx);
+
         builder.EndScope();
 
         ctx.AddSource("CodecRegistry.g.cs", builder.ToString());

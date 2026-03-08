@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.WorldData.Features.HeightProviders;
 
-[TreeProperty("minecarft:weighted_list")]
+[ConfiguredFeatureProperty("minecarft:weighted_list")]
 public sealed class WeightedListHeightProvider : IHeightProvider
 {
     public required string Type { get; init; } = "minecarft:weighted_list";

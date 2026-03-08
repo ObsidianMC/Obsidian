@@ -1,6 +1,7 @@
-﻿using Obsidian.API.Utilities;
+﻿namespace Obsidian.WorldData.Features.BlocksPredicates;
 
-namespace Obsidian.WorldData.Features.BlocksPredicates;
+[ConfiguredFeatureProperty("minecraft:all_of")]
+[ConfiguredFeatureProperty("minecraft:any_of")]
 public sealed class AllOrAnyPredicate : IBlockPredicate
 {
     /// <remarks>

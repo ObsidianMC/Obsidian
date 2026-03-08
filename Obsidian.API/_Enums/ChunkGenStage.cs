@@ -1,4 +1,5 @@
 ﻿namespace Obsidian.API;
+
 public enum ChunkGenStage
 {
     empty,
@@ -8,10 +9,9 @@ public enum ChunkGenStage
     noise,
     surface,
     carvers,
-    liquid_carvers,
     features,
+    initialize_light,
     light,
     spawn,
-    heightmaps,
     full
 }

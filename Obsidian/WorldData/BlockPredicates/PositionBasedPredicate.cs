@@ -1,7 +1,6 @@
-﻿using Obsidian.API.Utilities;
+﻿namespace Obsidian.WorldData.BlockPredicates;
 
-namespace Obsidian.WorldData.Features.BlocksPredicates;
-
+[ConfiguredFeatureProperty("minecraft:position_based")]
 public sealed class PositionBasedPredicate : IBlockPredicate
 {
     /// <remarks>

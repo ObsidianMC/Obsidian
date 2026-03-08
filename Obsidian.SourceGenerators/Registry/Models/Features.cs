@@ -5,17 +5,20 @@ namespace Obsidian.SourceGenerators.Registry.Models;
 internal sealed class Features
 {
     public BaseFeature[] TreeFeatures { get; private set; } = [];
+    public BaseFeature[] FlowerFeatures { get; private set; } = [];
 
     public static Features Get(ImmutableArray<(string name, string json)> files)
     {
         var treesJson = files.GetJsonFromArray("trees");
+        var flowersJson = files.GetJsonFromArray("flowers");
         return new()
         {
-            TreeFeatures = ParseTreeFeatures(treesJson)
+            TreeFeatures = ParseFeatures(treesJson),
+            FlowerFeatures = ParseFeatures(flowersJson)
         };
     }
 
-    private static BaseFeature[] ParseTreeFeatures(string json)
+    private static BaseFeature[] ParseFeatures(string json)
     {
          var dictionary = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json)!;
 

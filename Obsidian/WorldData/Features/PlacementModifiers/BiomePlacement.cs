@@ -8,7 +8,7 @@
 /// <remarks>
 /// This modifier type cannot be used in placed features that are referenced from other configured features.
 /// </remarks>
-[TreeProperty("minecraft:biome")]
+[ConfiguredFeatureProperty("minecraft:biome")]
 public sealed class BiomePlacement : PlacementModifierBase
 {
     public override string Type { get; internal init; } = "minecraft:biome";

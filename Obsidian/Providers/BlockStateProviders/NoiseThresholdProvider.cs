@@ -1,8 +1,6 @@
-﻿using Obsidian.Registries;
+﻿namespace Obsidian.Providers.BlockStateProviders;
 
-namespace Obsidian.Providers.BlockStateProviders;
-
-[TreeProperty("minecraft:noise_threshold_provider")]
+[ConfiguredFeatureProperty("minecraft:noise_threshold_provider")]
 public sealed class NoiseThresholdProvider : IBlockStateProvider
 {
     public string Type { get; init; } = "minecraft:noise_threshold_provider";
@@ -19,9 +17,9 @@ public sealed class NoiseThresholdProvider : IBlockStateProvider
 
     public required SimpleBlockState DefaultState { get; set; }
 
-    public List<SimpleBlockState> LowStates { get; } = [];
+    public List<SimpleBlockState> LowStates { get; set; } = [];
 
-    public List<SimpleBlockState> HighStates { get; } = [];
+    public List<SimpleBlockState> HighStates { get; set; } = [];
 
     public IBlock Get()
     {

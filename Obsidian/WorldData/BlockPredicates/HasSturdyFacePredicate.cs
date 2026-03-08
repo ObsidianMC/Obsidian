@@ -1,5 +1,6 @@
 ﻿namespace Obsidian.WorldData.Features.BlocksPredicates;
-//TODO https://minecraft.wiki/w/Hitbox
+
+[ConfiguredFeatureProperty("minecraft:has_sturdy_face")]
 public sealed class HasSturdyFacePredicate : IBlockPredicate
 {
     public string Type { get; init; } = "minecraft:has_sturdy_face";

@@ -1,7 +1,7 @@
 ﻿namespace Obsidian.WorldData.Features.HeightProviders;
 
-[TreeProperty("minecraft:biased_to_bottom")]
-[TreeProperty("minecraft:very_biased_to_bottom")]
+[ConfiguredFeatureProperty("minecraft:biased_to_bottom")]
+[ConfiguredFeatureProperty("minecraft:very_biased_to_bottom")]
 public sealed class BiasedHeightProvider : IHeightProvider
 {
     /// <summary>
