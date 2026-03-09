@@ -42,8 +42,7 @@ public partial class PlayerActionPacket
 
             await server.EventDispatcher.ExecuteEventAsync(args);
 
-            if (args.Handled)
-                return;
+            return;
         }
 
         this.BroadcastPlayerAction(player);
@@ -72,7 +71,7 @@ public partial class PlayerActionPacket
                 break;
             case PlayerActionStatus.FinishedDigging:
                 {
-                    
+
 
                     break;
                 }
