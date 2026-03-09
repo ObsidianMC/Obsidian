@@ -52,7 +52,10 @@ public partial class MainEventHandler
 
         player.World.TryAddEntity(item);
 
-        item.SpawnEntity(Velocity.Zero);
+        var power = GetRandDropVelocity();
+        var direction = Globals.Random.NextFloat() * 6.2f;
+
+        item.SpawnEntity(new Velocity(-Math.Sin(direction) * power, 0.2f, Math.Cos(direction) * power));
     }
 
     private static float GetRandDropVelocity()

@@ -559,15 +559,16 @@ public partial class NetworkBuffer : INetStreamWriter
     }
 
     private const double MinAbsValue = 3.051944088384301E-5;
+    private const double MaxVelocityComponent = 1.7179869183E10;
 
     [WriteMethod]
     public void WriteVelocity(Velocity value)
     {
-        var sanitizedX = Sanitize(value.X);
-        var sanitizedY = Sanitize(value.Y);
-        var sanitizedZ = Sanitize(value.Z);
+        var x = SanitizeVelocityComponent(value.X);
+        var y = SanitizeVelocityComponent(value.Y);
+        var z = SanitizeVelocityComponent(value.Z);
 
-        var maxAbsValue = NumericsHelper.AbsMax(sanitizedX, NumericsHelper.AbsMax(sanitizedY, sanitizedZ));
+        var maxAbsValue = NumericsHelper.AbsMax(x, NumericsHelper.AbsMax(y, z));
 
         if (maxAbsValue < MinAbsValue)
         {
@@ -576,14 +577,14 @@ public partial class NetworkBuffer : INetStreamWriter
         }
 
         var scaleFactor = (long)Math.Ceiling(maxAbsValue);
-        var needsExtraBytes = (scaleFactor & 3L) != scaleFactor; // Check if bits beyond the lower 2 are set
-        var adjustedScale = needsExtraBytes ? scaleFactor & 3L | 4L : scaleFactor;
+        var needsExtraBytes = (scaleFactor & 3L) != scaleFactor;
+        var packedScale = needsExtraBytes ? (scaleFactor & 3L) | 4L : scaleFactor;
 
-        var packedX = PackVelocity(sanitizedX / scaleFactor) << 3;
-        var packedY = PackVelocity(sanitizedY / scaleFactor) << 18;
-        var packedZ = PackVelocity(sanitizedZ / scaleFactor) << 33;
+        var packedX = PackVelocityComponent(x / scaleFactor) << 3;
+        var packedY = PackVelocityComponent(y / scaleFactor) << 18;
+        var packedZ = PackVelocityComponent(z / scaleFactor) << 33;
 
-        var packedData = adjustedScale | packedX | packedY | packedZ;
+        var packedData = packedScale | packedX | packedY | packedZ;
         this.WriteByte((byte)packedData);
         this.WriteByte((byte)(packedData >> 8));
         this.WriteInt((int)(packedData >> 16));
@@ -695,11 +696,12 @@ public partial class NetworkBuffer : INetStreamWriter
     public byte[] ToArray() => this.Data;
 
 
-    private const double scale = 0.5;
-    private const int maxValue = short.MaxValue - 1;
+    private const double VelocityPackingScale = 0.5;
+    private const int VelocityPackingMaxValue = short.MaxValue - 1;
 
-    private static long PackVelocity(double value) => (long)Math.Round((value * scale + scale) * maxValue);
+    private static long PackVelocityComponent(double value) =>
+        (long)Math.Round((value * VelocityPackingScale + VelocityPackingScale) * VelocityPackingMaxValue, MidpointRounding.AwayFromZero);
 
-    private static double Sanitize(double value) =>
-        double.IsNaN(value) ? 0.0 : Math.Clamp(value, -1.7179869183E10, 1.7179869183E10);
+    private static double SanitizeVelocityComponent(double value) =>
+        double.IsNaN(value) ? 0.0 : Math.Clamp(value, -MaxVelocityComponent, MaxVelocityComponent);
 }

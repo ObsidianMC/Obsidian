@@ -306,7 +306,9 @@ public sealed partial class Server : IServer
     {
         this.UsernameToUuidMappings.Remove(player.Username, out _);
 
-        return this.OnlinePlayers.Remove(player.Uuid, out _) && player.World.TryRemovePlayer(player);
+        player.World.TryRemovePlayer(player);
+
+        return this.OnlinePlayers.Remove(player.Uuid, out _);
     }
 
     private async Task ServerSaveAsync()

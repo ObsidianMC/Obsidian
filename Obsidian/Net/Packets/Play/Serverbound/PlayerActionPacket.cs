@@ -86,7 +86,8 @@ public partial class PlayerActionPacket
         if (droppedItem is null or { Type: Material.Air })
             return;
 
-        var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
+        var lookDir = player.GetLookDirection();
+        var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z) + lookDir * 0.3f;
 
         var item = new ItemEntity
         {
@@ -98,9 +99,7 @@ public partial class PlayerActionPacket
 
         player.World.TryAddEntity(item);
 
-        var lookDir = player.GetLookDirection();
-
-        var vel = Velocity.FromDirection(loc, lookDir);//TODO properly shoot the item towards the direction the players looking at
+        var vel = Velocity.FromBlockPerTick(lookDir.X * 0.45f, lookDir.Y * 0.45f + 0.1f, lookDir.Z * 0.45f);
 
         item.SpawnEntity(vel);
 
