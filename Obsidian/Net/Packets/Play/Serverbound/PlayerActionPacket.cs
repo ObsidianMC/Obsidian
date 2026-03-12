@@ -61,9 +61,14 @@ public partial class PlayerActionPacket
                 }
             case PlayerActionStatus.DropItemStack:
                 {
-                    DropItem(player, 64);
+                    var held = player.getHeldItem();
+                    if (held is null or { Type: Material.Air })
+                        break;
+
+                    DropItem(player, (sbyte)held.Count);
                     break;
                 }
+
             case PlayerActionStatus.StartedDigging:
             case PlayerActionStatus.CancelledDigging:
                 break;
@@ -106,12 +111,16 @@ public partial class PlayerActionPacket
 
     private static void DropItem(IPlayer player, sbyte amountToRemove)
     {
-        var droppedItem = player.GetHeldItem();
+        var heldItem = player.GetHeldItem();
 
-        if (droppedItem is null or { Type: Material.Air })
+        if (heldItem is null or { Type: Material.Air })
             return;
 
-        var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
+        var dropCount = Math.Min(heldItem.Count, amountToRemove);
+        if (dropCount <= 0)
+            return;
+
+            var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
 
         var item = new ItemEntity
         {
