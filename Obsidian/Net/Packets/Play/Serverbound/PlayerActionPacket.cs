@@ -120,7 +120,7 @@ public partial class PlayerActionPacket
         if (dropCount <= 0)
             return;
 
-            var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
+        var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
 
         var item = new ItemEntity
         {
