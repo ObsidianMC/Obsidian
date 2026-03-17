@@ -315,8 +315,6 @@ public sealed partial class MainEventHandler(ILogger<MainEventHandler> logger) :
 
         await player.SaveAsync();
 
-        player.World.TryRemovePlayer(player);
-
         packetBroadcaster.Broadcast(new PlayerInfoRemovePacket
         {
             UUIDs = [player.Uuid]

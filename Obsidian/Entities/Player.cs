@@ -116,7 +116,13 @@ public sealed partial class Player : Avatar, IPlayer
 
     public short CurrentHeldItemSlot
     {
-        get => field;
+        get
+        {
+            if (field < 36 || field > 44)
+                field = 36;
+
+            return field;
+        }
         set
         {
             if (value is < 0 or > 8)

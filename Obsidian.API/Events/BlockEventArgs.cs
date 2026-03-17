@@ -1,26 +1,22 @@
 ﻿namespace Obsidian.API.Events;
 
-public abstract class BlockEventArgs : BaseMinecraftEventArgs
+public abstract class BlockEventArgs(IServer server, IBlock block, Vector location, IWorld world) : BaseMinecraftEventArgs(server)
 {
     /// <summary>
     /// The impacted block.
     /// </summary>
-    public IBlock Block { get; }
+    public IBlock Block { get; } = block;
 
     /// <summary>
     /// Location of the impacted block.
     /// </summary>
-    public Vector Location { get; }
+    public Vector Location { get; } = location;
 
     /// <summary>
     /// World where the event took place.
     /// </summary>
-    public IWorld World { get; }
+    public IWorld World { get; } = world;
 
-    protected BlockEventArgs(IServer server, IBlock block, Vector location) : base(server)
-    {
-        Block = block;
-        Location = location;
-        World = server.DefaultWorld;
-    }
+
+    public int Sequence { get; init; }
 }

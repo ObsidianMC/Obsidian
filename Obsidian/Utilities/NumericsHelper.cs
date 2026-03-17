@@ -17,6 +17,5 @@ public static class NumericsHelper
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int Modulo(int x, int mod) => (x % mod + mod) % mod;
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static double AbsMax(double a, double b) => Math.Max(Math.Abs(a), Math.Abs(b));
 }

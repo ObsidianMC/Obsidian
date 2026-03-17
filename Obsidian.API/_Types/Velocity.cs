@@ -34,7 +34,7 @@ public struct Velocity(double x, double y, double z)
     /// <param name="z">How many blocks can be travelled on the Z axis in a second.</param>
     public static Velocity FromBlockPerSecond(float x, float y, float z)
     {
-        return new Velocity((short)(400f * x), (short)(400f * y), (short)(400f * z));
+        return new Velocity(x / 20f, y / 20f, z / 20f);
     }
 
     /// <summary>
@@ -45,7 +45,7 @@ public struct Velocity(double x, double y, double z)
     /// <param name="z">How many blocks can be travelled on the Z axis in a tick (50ms).</param>
     public static Velocity FromBlockPerTick(float x, float y, float z)
     {
-        return new Velocity((short)(8000f * x), (short)(8000f * y), (short)(8000f * z));
+        return new Velocity(x, y, z);
     }
 
     /// <summary>
