@@ -10,5 +10,5 @@ public interface ILevelFactory
     /// <returns>The created world.</returns>
     public IWorld CreateWorld(string name, string generatorId);
 
-    public ILevel CreateDimension(string name, string generatorId);
+    public IDimension CreateDimension(string name, string generatorId);
 }

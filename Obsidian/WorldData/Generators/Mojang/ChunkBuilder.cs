@@ -1,4 +1,5 @@
 using Obsidian.API.Registries;
+using Obsidian.API.World;
 using Obsidian.API.World.Generator.Noise;
 using System.Security.Cryptography;
 using System.Text;
@@ -11,7 +12,7 @@ namespace Obsidian.WorldData.Generators.Mojang;
 /// </summary>
 internal class ChunkBuilder
 {
-    private readonly IWorld world;
+    private readonly ILevel world;
     private readonly NoiseSetting settings;
     private readonly TerrainGenerator terrainGenerator;
     private readonly AquiferSystem aquiferSystem;
@@ -20,7 +21,7 @@ internal class ChunkBuilder
 
     internal int Seed { get; private set; }
 
-    public ChunkBuilder(IWorld world)
+    public ChunkBuilder(ILevel world)
     {
         this.world = world;
 

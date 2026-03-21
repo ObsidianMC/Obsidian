@@ -1,4 +1,5 @@
-﻿using Obsidian.WorldData.Decorators;
+﻿using Obsidian.API.World;
+using Obsidian.WorldData.Decorators;
 using Obsidian.WorldData.Generators.Overworld;
 
 namespace Obsidian.WorldData.Generators;
@@ -6,7 +7,7 @@ namespace Obsidian.WorldData.Generators;
 public sealed class OverworldGenerator : ILevelGenerator
 {
     private GenHelper helper;
-    private IWorld world;
+    private ILevel world;
 
     public string Id => "overworld";
 
@@ -66,7 +67,7 @@ public sealed class OverworldGenerator : ILevelGenerator
         return chunk;
     }
 
-    public void Init(IWorld world)
+    public void Init(ILevel world)
     {
         this.world = world;
         helper = new GenHelper(world);

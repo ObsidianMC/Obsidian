@@ -1,10 +1,12 @@
-﻿namespace Obsidian.WorldData;
+﻿using Obsidian.API.World;
+
+namespace Obsidian.WorldData;
 
 public interface ILevelGenerator
 {
     public string Id { get; }
 
-    public void Init(IWorld world);
+    public void Init(ILevel level);
 
     public ValueTask<IChunk> GenerateChunkAsync(int x, int z, IChunk? chunk = null, ChunkGenStage stage = ChunkGenStage.full);
 }

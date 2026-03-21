@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.API.World;
 using Obsidian.WorldData.Decorators;
 using SharpNoise.Modules;
 
@@ -8,7 +9,7 @@ public sealed class IslandGenerator : ILevelGenerator
 {
     public string Id => "islands";
     private GenHelper? helper;
-    private IWorld? world;
+    private ILevel? world;
     private Module? noiseGenerator;
     private Random? r;
     private static readonly BiomeCodec[] biomes = [
@@ -144,7 +145,7 @@ public sealed class IslandGenerator : ILevelGenerator
         return chunk;
     }
 
-    public void Init(IWorld world)
+    public void Init(ILevel world)
     {
         this.world = world;
         helper = new GenHelper(world);

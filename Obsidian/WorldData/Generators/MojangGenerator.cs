@@ -1,4 +1,5 @@
-﻿using Obsidian.WorldData.Generators.Mojang;
+﻿using Obsidian.API.World;
+using Obsidian.WorldData.Generators.Mojang;
 
 
 namespace Obsidian.WorldData.Generators;
@@ -9,7 +10,7 @@ internal class MojangGenerator : ILevelGenerator
     public string Id => "minecraft:mojang_generator";
 
     private ChunkBuilder _builder;
-    private IWorld _world;
+    private ILevel _world;
 
     public async ValueTask<IChunk> GenerateChunkAsync(int cx, int cz, IChunk? chunk = null, ChunkGenStage stage = ChunkGenStage.full)
     {
@@ -89,7 +90,7 @@ internal class MojangGenerator : ILevelGenerator
         chunk.SetChunkStatus(ChunkGenStage.full);
         return chunk;
     }
-    public void Init(IWorld world)
+    public void Init(ILevel world)
     {
         _world = world;
         _builder = new ChunkBuilder(world);

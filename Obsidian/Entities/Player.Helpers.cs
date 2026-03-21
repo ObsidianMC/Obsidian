@@ -4,7 +4,6 @@ using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.WorldData;
 using System.Buffers;
 using System.IO;
 
@@ -30,8 +29,9 @@ public partial class Player
 
         await using var persistentDataStream = persistentDataFile.Create();
         await using var persistentDataWriter = new NbtWriterStream(persistentDataStream, NbtCompression.GZip, "");
-        
-        persistentDataWriter.WriteString("worldName", World.ParentWorldName ?? World.Name);
+
+        var worldName = World is IDimension dimension ? dimension.ParentWorld.Name ?? World.Name : World.Name;
+        persistentDataWriter.WriteString("worldName", worldName);
         //TODO make sure to save inventory in the right location if has using global data set to true
 
         persistentDataWriter.EndCompound();
