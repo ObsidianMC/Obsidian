@@ -3,7 +3,7 @@
 
 namespace Obsidian.WorldData.Generators;
 
-internal class MojangGenerator : IWorldGenerator
+internal class MojangGenerator : ILevelGenerator
 {
 
     public string Id => "minecraft:mojang_generator";

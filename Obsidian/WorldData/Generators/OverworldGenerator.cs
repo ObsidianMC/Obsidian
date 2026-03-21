@@ -3,7 +3,7 @@ using Obsidian.WorldData.Generators.Overworld;
 
 namespace Obsidian.WorldData.Generators;
 
-public sealed class OverworldGenerator : IWorldGenerator
+public sealed class OverworldGenerator : ILevelGenerator
 {
     private GenHelper helper;
     private IWorld world;

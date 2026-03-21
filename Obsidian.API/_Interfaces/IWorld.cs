@@ -4,7 +4,7 @@ using System.Collections.Concurrent;
 
 namespace Obsidian.API;
 
-public interface IWorld : IAsyncDisposable
+public interface IWorld : ILevel, IAsyncDisposable
 {
     public string Name { get; }
     public string FolderPath { get; }

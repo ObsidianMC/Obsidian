@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.WorldData;
 
-public interface IWorldGenerator
+public interface ILevelGenerator
 {
     public string Id { get; }
 

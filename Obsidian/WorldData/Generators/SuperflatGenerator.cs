@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.WorldData.Generators;
 
-public class SuperflatGenerator : IWorldGenerator
+public class SuperflatGenerator : ILevelGenerator
 {
     private static readonly Chunk model;
 

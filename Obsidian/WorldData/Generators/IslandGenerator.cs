@@ -4,7 +4,7 @@ using SharpNoise.Modules;
 
 namespace Obsidian.WorldData.Generators;
 
-public sealed class IslandGenerator : IWorldGenerator
+public sealed class IslandGenerator : ILevelGenerator
 {
     public string Id => "islands";
     private GenHelper? helper;

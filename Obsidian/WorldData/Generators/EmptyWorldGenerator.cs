@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.WorldData.Generators;
 
-public class EmptyWorldGenerator : IWorldGenerator
+public class EmptyWorldGenerator : ILevelGenerator
 {
     private static readonly Chunk empty;
     private static readonly Chunk spawn;
