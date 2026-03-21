@@ -73,15 +73,13 @@ public abstract class AbstractLevel(ILogger logger, IPacketBroadcaster packetBro
 
     protected ILogger Logger { get; } = logger;
 
-    protected abstract IWorld OwningWorld { get; }
-
     public void InitGenerator() => this.Generator.Init(this);
 
     public ValueTask<bool> DestroyEntityAsync(IEntity entity)
     {
         var destroyed = new RemoveEntitiesPacket(entity.EntityId);
 
-        this.PacketBroadcaster.QueuePacketToLevel(this.OwningWorld, destroyed);
+        this.PacketBroadcaster.QueuePacketToLevel(this, destroyed);
 
         var (chunkX, chunkZ) = entity.Position.ToChunkCoord();
 
@@ -195,8 +193,8 @@ public abstract class AbstractLevel(ILogger logger, IPacketBroadcaster packetBro
     {
         if (doBlockUpdate)
         {
-            await ScheduleBlockUpdateAsync(new BlockUpdate(this.OwningWorld, new Vector(x, y, z), block));
-            await BlockUpdateNeighborsAsync(new BlockUpdate(this.OwningWorld, new Vector(x, y, z), block));
+            await ScheduleBlockUpdateAsync(new BlockUpdate(this, new Vector(x, y, z), block));
+            await BlockUpdateNeighborsAsync(new BlockUpdate(this, new Vector(x, y, z), block));
         }
         var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
         c?.SetBlock(x, y, z, block);
@@ -410,7 +408,7 @@ public abstract class AbstractLevel(ILogger logger, IPacketBroadcaster packetBro
         {
             Type = EntityType.FallingBlock,
             EntityId = Server.GetNextEntityId(),
-            Level = this.OwningWorld,
+            Level = this,
             Block = BlocksRegistry.Get(mat),
         };
 
@@ -619,7 +617,7 @@ public abstract class AbstractLevel(ILogger logger, IPacketBroadcaster packetBro
         return region.Entities.TryAdd(entity.EntityId, entity);
     }
 
-    protected void BroadcastTime() => this.PacketBroadcaster.QueuePacketToLevel(this.OwningWorld, new SetTimePacket(LevelData.Time, LevelData.Time % 24000, true));
+    protected void BroadcastTime() => this.PacketBroadcaster.QueuePacketToLevel(this, new SetTimePacket(LevelData.Time, LevelData.Time % 24000, true));
 
     public async ValueTask DisposeAsync()
     {
@@ -629,7 +627,7 @@ public abstract class AbstractLevel(ILogger logger, IPacketBroadcaster packetBro
         }
     }
 
-    public IEntitySpawner GetNewEntitySpawner() => new EntitySpawner(this.OwningWorld);
+    public IEntitySpawner GetNewEntitySpawner() => new EntitySpawner(this);
     public ValueTask<IChunk?> GetChunkAsync(Vector worldLocation, bool scheduleGeneration = true) =>
         this.GetChunkAsync(worldLocation.X, worldLocation.Z, scheduleGeneration);
 

@@ -1,8 +1,10 @@
-﻿namespace Obsidian;
+﻿using Obsidian.API.World;
+
+namespace Obsidian;
 
 public struct BlockUpdate : IBlockUpdate
 {
-    public IWorld World { get; }
+    public ILevel Level { get; }
     public Vector Position { get; set; }
 
     public int Delay { get; set; }
@@ -33,9 +35,9 @@ public struct BlockUpdate : IBlockUpdate
         }
     }
 
-    public BlockUpdate(IWorld w, Vector pos, IBlock? blk = null)
+    public BlockUpdate(ILevel level, Vector pos, IBlock? blk = null)
     {
-        World = w;
+        Level = level;
         Position = pos;
         Delay = 0;
         DelayCounter = Delay;

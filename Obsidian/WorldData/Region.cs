@@ -149,12 +149,12 @@ public class Region : IRegion
             }
             else
             {
-                bool updateNeighbor = await bu.World.HandleBlockUpdateAsync(bu);
+                bool updateNeighbor = await bu.Level.HandleBlockUpdateAsync(bu);
                 if (updateNeighbor) { neighborUpdates.Add(bu); }
             }
         }
         delayed.ForEach(AddBlockUpdate);
-        neighborUpdates.ForEach(async u => await u.World.BlockUpdateNeighborsAsync(u));
+        neighborUpdates.ForEach(async u => await u.Level.BlockUpdateNeighborsAsync(u));
     }
 
     #region NBT Ops

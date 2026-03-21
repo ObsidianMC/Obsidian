@@ -1,10 +1,11 @@
 ﻿using Obsidian.API.Entities;
+using Obsidian.API.World;
 using Obsidian.WorldData;
 
 namespace Obsidian.Entities.Factories;
-internal class EntitySpawner(IWorld world) : IEntitySpawner
+internal class EntitySpawner(ILevel level) : IEntitySpawner
 {
-    private readonly IWorld world = world;
+    private readonly ILevel level = level;
 
     private EntityType? entityType = null;
 
@@ -80,27 +81,27 @@ internal class EntitySpawner(IWorld world) : IEntitySpawner
         {
             EntityType.Pig => new Pig()
             {
-                Level = world,
+                Level = level,
             },
             EntityType.Horse => new Horse()
             {
-                Level = world,
+                Level = level,
             },
             EntityType.Llama => new Llama()
             {
-                Level = world,
+                Level = level,
             },
             EntityType.Donkey => new Donkey()
             {
-                Level = world
+                Level = level
             },
             EntityType.SkeletonHorse => new SkeletonHorse()
             {
-                Level = world
+                Level = level
             },
             EntityType.ZombieHorse => new ZombieHorse()
             {
-                Level = world
+                Level = level
             },
 
             null => throw new InvalidOperationException("Entity type must be set"),
@@ -108,11 +109,11 @@ internal class EntitySpawner(IWorld world) : IEntitySpawner
             _ => entityType.Value.IsNonLiving() ?
             new Entity()
             {
-                Level = world,
+                Level = level,
             } :
             new Living()
             {
-                Level = world
+                Level = level
             }
         };
 
@@ -137,6 +138,6 @@ internal class EntitySpawner(IWorld world) : IEntitySpawner
         entity.Burning = burning;
         entity.Glowing = glowing;
 
-        return (world as World).SpawnEntity(entity);
+        return (level as World).SpawnEntity(entity);
     }
 }

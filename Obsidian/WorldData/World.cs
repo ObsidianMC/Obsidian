@@ -20,8 +20,6 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
     public string PlayerDataPath { get; private set; } = string.Empty;
     public string LevelDataFilePath { get; private set; } = string.Empty;
 
-    protected override IWorld OwningWorld => this;
-
     internal new void Init(DimensionCodec codec, string? parentWorldName = null)
     {
         base.Init(codec, parentWorldName);
