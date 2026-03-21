@@ -82,7 +82,7 @@ public sealed class WorldManager(ILoggerFactory loggerFactory, IServiceProvider 
                 continue;
             }
 
-            var generator = ActivatorUtilities.CreateInstance<ILevelGenerator>(this.serviceScope.ServiceProvider, generatorType) ?? throw new ArgumentException("Invalid generator type.", nameof(generatorType));
+            var generator = (ILevelGenerator)ActivatorUtilities.CreateInstance(this.serviceScope.ServiceProvider, generatorType) ?? throw new ArgumentException("Invalid generator type.", nameof(generatorType));
             var world = ActivatorUtilities.CreateInstance<World>(this.serviceScope.ServiceProvider, generator, serverWorld);
 
             world.InitGenerator();

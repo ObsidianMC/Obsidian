@@ -4,6 +4,7 @@ using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.WorldData;
 using System.Buffers;
 using System.IO;
 
@@ -13,14 +14,7 @@ public partial class Player
 {
     public async Task SaveAsync()
     {
-        var playerDataFile = new FileInfo(GetPlayerDataPath());
         var persistentDataFile = new FileInfo(PersistentDataFile);
-
-        if (playerDataFile.Exists)
-        {
-            playerDataFile.CopyTo(GetPlayerDataPath(true), true);
-            playerDataFile.Delete();
-        }
 
         if (persistentDataFile.Exists)
         {
@@ -31,12 +25,24 @@ public partial class Player
         await using var persistentDataStream = persistentDataFile.Create();
         await using var persistentDataWriter = new NbtWriterStream(persistentDataStream, NbtCompression.GZip, "");
 
-        var worldName = Level is IDimension dimension ? dimension.ParentWorld.Name ?? Level.Name : Level.Name;
+        var level = this.Level is IDimension dimension ? dimension.ParentWorld : this.Level as IWorld;
+        var worldName = level.Name;
+
         persistentDataWriter.WriteString("worldName", worldName);
         //TODO make sure to save inventory in the right location if has using global data set to true
 
         persistentDataWriter.EndCompound();
         await persistentDataWriter.TryFinishAsync();
+
+        var playerDatPath = level.GetPlayerDataPath(this.Uuid);
+
+        var playerDataFile = new FileInfo(playerDatPath);
+
+        if (playerDataFile.Exists)
+        {
+            playerDataFile.CopyTo(level.GetPlayerDataPath(this.Uuid, true), true);
+            playerDataFile.Delete();
+        }
 
         await using var playerFileStream = playerDataFile.Create();
         await using var writer = new NbtWriterStream(playerFileStream, NbtCompression.GZip, "");
@@ -101,15 +107,16 @@ public partial class Player
             {
                 var worldName = persistentDataCompound.GetString("worldName")!;
 
-                if (loadFromPersistentWorld && this.Server.WorldManager.TryGetWorld<IWorld>(worldName, out var world))
+                if (loadFromPersistentWorld && this.Server.WorldManager.TryGetWorld<IWorld>(worldName, out var resolvedWorld))
                 {
-                    this.Level = world;
+                    this.Level = resolvedWorld;
                 }
             }
         }
 
+        var world = this.Level as IWorld;
         // Then read player data
-        var playerDataFile = new FileInfo(GetPlayerDataPath());
+        var playerDataFile = new FileInfo(world.GetPlayerDataPath(this.Uuid));
 
         await LoadPermsAsync();
 
@@ -319,14 +326,6 @@ public partial class Player
     {
         { Uuid, actions.ToList() }
     };
-
-    private string GetPlayerDataPath(bool isOld = false)
-    {
-        if (this.Level is not IWorld world)
-            return string.Empty;
-
-        return Path.Join(world.PlayerDataPath, isOld ? $"{Uuid}.dat.old" : $"{Uuid}.dat");
-    }
 
     private void InitializePlayer(NbtCompound compound)
     {

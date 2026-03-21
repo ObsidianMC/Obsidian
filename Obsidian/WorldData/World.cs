@@ -7,11 +7,13 @@ using System.IO;
 
 namespace Obsidian.WorldData;
 
-public sealed class World : AbstractLevel, IWorld
+public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPacketBroadcaster packetBroadcaster, IOptionsMonitor<ServerConfiguration> configuration,
+    IEventDispatcher eventDispatcher, ILevelGenerator worldGenerator, ServerWorld serverWorld) : 
+    AbstractLevel(logger, packetBroadcaster, configuration.CurrentValue, eventDispatcher, worldGenerator, serverWorld.Name, serverWorld.Seed), IWorld
 {
     private const int SpawnChunkRadius = 12;
 
-    public IWorldManager WorldManager { get; }
+    public IWorldManager WorldManager { get; } = worldManager;
 
     internal Dictionary<string, IDimension> dimensions = [];
 
@@ -19,13 +21,6 @@ public sealed class World : AbstractLevel, IWorld
     public string LevelDataFilePath { get; private set; } = string.Empty;
 
     protected override IWorld OwningWorld => this;
-
-    internal World(ILogger<World> logger, IWorldManager worldManager, IPacketBroadcaster packetBroadcaster, IOptionsMonitor<ServerConfiguration> configuration,
-        IEventDispatcher eventDispatcher, ILevelGenerator worldGenerator, ServerWorld serverWorld)
-        : base(logger, packetBroadcaster, configuration.CurrentValue, eventDispatcher, worldGenerator, serverWorld.Name, serverWorld.Seed)
-    {
-        this.WorldManager = worldManager;
-    }
 
     internal new void Init(DimensionCodec codec, string? parentWorldName = null)
     {
