@@ -81,7 +81,7 @@ public abstract class AbstractLevel(ILogger logger, IPacketBroadcaster packetBro
     {
         var destroyed = new RemoveEntitiesPacket(entity.EntityId);
 
-        this.PacketBroadcaster.QueuePacketToWorld(this.OwningWorld, destroyed);
+        this.PacketBroadcaster.QueuePacketToLevel(this.OwningWorld, destroyed);
 
         var (chunkX, chunkZ) = entity.Position.ToChunkCoord();
 
@@ -410,7 +410,7 @@ public abstract class AbstractLevel(ILogger logger, IPacketBroadcaster packetBro
         {
             Type = EntityType.FallingBlock,
             EntityId = Server.GetNextEntityId(),
-            World = this.OwningWorld,
+            Level = this.OwningWorld,
             Block = BlocksRegistry.Get(mat),
         };
 
@@ -619,7 +619,7 @@ public abstract class AbstractLevel(ILogger logger, IPacketBroadcaster packetBro
         return region.Entities.TryAdd(entity.EntityId, entity);
     }
 
-    protected void BroadcastTime() => this.PacketBroadcaster.QueuePacketToWorld(this.OwningWorld, new SetTimePacket(LevelData.Time, LevelData.Time % 24000, true));
+    protected void BroadcastTime() => this.PacketBroadcaster.QueuePacketToLevel(this.OwningWorld, new SetTimePacket(LevelData.Time, LevelData.Time % 24000, true));
 
     public async ValueTask DisposeAsync()
     {

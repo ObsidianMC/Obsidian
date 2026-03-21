@@ -33,7 +33,7 @@ public partial class SetCreativeModeSlotPacket
         {
             var heldItem = player.GetHeldItem();
 
-            player.World.PacketBroadcaster.QueuePacketToWorld(player.World, new SetEquipmentPacket
+            player.Level.PacketBroadcaster.QueuePacketToLevel(player.Level, new SetEquipmentPacket
             {
                 EntityId = player.EntityId,
                 Equipment =

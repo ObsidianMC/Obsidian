@@ -4,7 +4,7 @@ namespace Obsidian.API;
 
 public interface IEntity
 {
-    public IWorld World { get; }
+    public ILevel Level { get; }
     public INavigator? Navigator { get; set; }
 
     public IGoalController? GoalController { get; set; }

@@ -44,7 +44,7 @@ public sealed partial class FallingBlock : Entity
         {
             checkedBlocks.Add(upcomingBlockPos);
 
-            var upcomingBlock = await World.GetBlockAsync(upcomingBlockPos);
+            var upcomingBlock = await Level.GetBlockAsync(upcomingBlockPos);
             if (upcomingBlock is IBlock && !TagsRegistry.Block.ReplaceableByLiquid.Entries.Contains(upcomingBlock.RegistryId) && !upcomingBlock.IsLiquid)
             {
                 await ConvertToBlock(upcomingBlockPos + Vector.Up);
@@ -54,8 +54,8 @@ public sealed partial class FallingBlock : Entity
 
     private async Task ConvertToBlock(Vector loc)
     {
-        await World.SetBlockAsync(loc, this.Block);
+        await Level.SetBlockAsync(loc, this.Block);
 
-        await World.DestroyEntityAsync(this);
+        await Level.DestroyEntityAsync(this);
     }
 }

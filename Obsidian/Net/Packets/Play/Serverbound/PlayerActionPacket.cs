@@ -30,12 +30,12 @@ public partial class PlayerActionPacket
 
     public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
-        if (await player.World.GetBlockAsync(Position) is not IBlock block)
+        if (await player.Level.GetBlockAsync(Position) is not IBlock block)
             return;
 
         if (Status == PlayerActionStatus.FinishedDigging || (Status == PlayerActionStatus.StartedDigging && player.Gamemode == Gamemode.Creative))
         {
-            var args = new BlockBreakEventArgs(server, player, block, Position, player.World)
+            var args = new BlockBreakEventArgs(server, player, block, Position, player.Level)
             {
                 Sequence = this.Sequence
             };
@@ -92,11 +92,11 @@ public partial class PlayerActionPacket
         {
             EntityId = Server.GetNextEntityId(),
             Item = droppedItem,
-            World = player.World,
+            Level = player.Level,
             Position = loc
         };
 
-        player.World.TryAddEntity(item);
+        player.Level.TryAddEntity(item);
 
         var vel = Velocity.FromBlockPerTick(lookDir.X * 0.45f, lookDir.Y * 0.45f + 0.1f, lookDir.Z * 0.45f);
 

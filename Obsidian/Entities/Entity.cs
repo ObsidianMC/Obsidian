@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.AI;
+using Obsidian.API.World;
 using Obsidian.Net.Packets.Play.Clientbound;
 using System.Diagnostics.CodeAnalysis;
 
@@ -10,10 +11,10 @@ public class Entity : IEquatable<Entity>, IEntity
 
     protected byte MetadataIndex { get; set; }
 
-    public required IWorld World { get; set; }
+    public required ILevel Level { get; set; }
 
-    public IPacketBroadcaster PacketBroadcaster => this.World.PacketBroadcaster;
-    public IEventDispatcher EventDispatcher => this.World.EventDispatcher;
+    public IPacketBroadcaster PacketBroadcaster => this.Level.PacketBroadcaster;
+    public IEventDispatcher EventDispatcher => this.Level.EventDispatcher;
 
     #region Location properties
     public VectorF LastPosition { get; set; }
@@ -75,7 +76,7 @@ public class Entity : IEquatable<Entity>, IEntity
         {
             var delta = (Vector)((position * 32 - Position * 32) * 128);
 
-            this.PacketBroadcaster.BroadcastToWorldInRange(this.World, position, new MoveEntityPosPacket
+            this.PacketBroadcaster.BroadcastToLevelInRange(this.Level, position, new MoveEntityPosPacket
             {
                 EntityId = EntityId,
 
@@ -99,7 +100,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
             if (isNewRotation)
             {
-                this.PacketBroadcaster.BroadcastToWorldInRange(this.World, position, new MoveEntityPosRotPacket
+                this.PacketBroadcaster.BroadcastToLevelInRange(this.Level, position, new MoveEntityPosRotPacket
                 {
                     EntityId = EntityId,
 
@@ -115,7 +116,7 @@ public class Entity : IEquatable<Entity>, IEntity
             }
             else
             {
-                this.PacketBroadcaster.BroadcastToWorldInRange(this.World, position, new MoveEntityPosPacket
+                this.PacketBroadcaster.BroadcastToLevelInRange(this.Level, position, new MoveEntityPosPacket
                 {
                     EntityId = EntityId,
 
@@ -144,7 +145,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public bool IsInRange(IEntity entity, float distance)
     {
-        if (this.World != entity.World)
+        if (this.Level != entity.Level)
             return false;
 
         var locationDifference = LocationDiff.GetDifference(this.Position, entity.Position);
@@ -156,7 +157,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
 
     public void SetHeadRotation(Angle headYaw) =>
-        this.PacketBroadcaster.BroadcastToWorldInRange(this.World, this.Position, new RotateHeadPacket
+        this.PacketBroadcaster.BroadcastToLevelInRange(this.Level, this.Position, new RotateHeadPacket
         {
             EntityId = EntityId,
             HeadYaw = headYaw
@@ -164,7 +165,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public void SetRotation(Angle yaw, Angle pitch, MovementFlags movementFlags)
     {
-        this.PacketBroadcaster.BroadcastToWorldInRange(this.World, this.Position, new MoveEntityRotPacket
+        this.PacketBroadcaster.BroadcastToLevelInRange(this.Level, this.Position, new MoveEntityRotPacket
         {
             EntityId = EntityId,
             OnGround = movementFlags.HasFlag(MovementFlags.OnGround),
@@ -178,7 +179,7 @@ public class Entity : IEquatable<Entity>, IEntity
     public async Task UpdatePositionAsync(VectorF pos, MovementFlags movementFlags)
     {
         var (x, z) = pos.ToChunkCoord();
-        var chunk = await this.World.GetChunkAsync(x, z, false);
+        var chunk = await this.Level.GetChunkAsync(x, z, false);
         if (chunk != null && chunk.IsGenerated)
         {
             Position = pos;
@@ -193,7 +194,7 @@ public class Entity : IEquatable<Entity>, IEntity
     public async Task UpdatePositionAsync(VectorF pos, Angle yaw, Angle pitch, MovementFlags movementFlags = MovementFlags.OnGround)
     {
         var (x, z) = pos.ToChunkCoord();
-        var chunk = await World.GetChunkAsync(x, z, false);
+        var chunk = await Level.GetChunkAsync(x, z, false);
         if (chunk is { IsGenerated: true })
         {
             Position = pos;
@@ -226,7 +227,7 @@ public class Entity : IEquatable<Entity>, IEntity
         return new(-cosPitch * sinYaw, -sinPitch, cosPitch * cosYaw);
     }
 
-    public async virtual ValueTask RemoveAsync() => await this.World.DestroyEntityAsync(this);
+    public async virtual ValueTask RemoveAsync() => await this.Level.DestroyEntityAsync(this);
 
     protected virtual EntityBitMask GenerateBitmask()
     {
@@ -292,7 +293,7 @@ public class Entity : IEquatable<Entity>, IEntity
     protected void WriteEntityMetadataType(INetStreamWriter writer, EntityMetadataType type) =>
         writer.WriteEntityMetadataType(this.MetadataIndex++, type);
 
-    public IEnumerable<IEntity> GetEntitiesNear(float distance) => World.GetEntitiesInRange(Position, distance).Where(x => x != this);
+    public IEnumerable<IEntity> GetEntitiesNear(float distance) => Level.GetEntitiesInRange(Position, distance).Where(x => x != this);
 
     //TODO GRAVITY
     public virtual ValueTask TickAsync() => default;
@@ -304,7 +305,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
         if (this is ILiving living)
         {
-            this.PacketBroadcaster.QueuePacketToWorld(this.World, new AnimatePacket
+            this.PacketBroadcaster.QueuePacketToLevel(this.Level, new AnimatePacket
             {
                 EntityId = EntityId,
                 Animation = EntityAnimationType.CriticalEffect
@@ -357,12 +358,12 @@ public class Entity : IEquatable<Entity>, IEntity
         if (to is not Entity target)
             return;
 
-        if (to.World != World)
+        if (to.Level != Level)
         {
-            await World.DestroyEntityAsync(this);
+            await Level.DestroyEntityAsync(this);
 
-            World = target.World;
-            World.SpawnEntity(to.Position, Type);
+            Level = target.Level;
+            Level.SpawnEntity(to.Position, Type);
 
             return;
         }
@@ -374,7 +375,7 @@ public class Entity : IEquatable<Entity>, IEntity
     {
         if (VectorF.Distance(Position, pos) > 8)
         {
-            this.PacketBroadcaster.QueuePacketToWorld(this.World, 0, new TeleportEntityPacket
+            this.PacketBroadcaster.QueuePacketToLevel(this.Level, 0, new TeleportEntityPacket
             {
                 EntityId = EntityId,
                 OnGround = MovementFlags.HasFlag(MovementFlags.OnGround),
@@ -388,7 +389,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
         var delta = (Vector)(pos * 32 - Position * 32) * 128;
 
-        this.PacketBroadcaster.QueuePacketToWorld(this.World, 0, new MoveEntityPosRotPacket
+        this.PacketBroadcaster.QueuePacketToLevel(this.Level, 0, new MoveEntityPosRotPacket
         {
             EntityId = EntityId,
             Delta = delta,
@@ -402,7 +403,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public virtual void SpawnEntity(Velocity? velocity = null, int additionalData = 0)
     {
-        this.PacketBroadcaster.QueuePacketToWorldInRange(this.World, this.Position, new BundledPacket
+        this.PacketBroadcaster.QueuePacketToLevelInRange(this.Level, this.Position, new BundledPacket
         (
              [
                 new AddEntityPacket

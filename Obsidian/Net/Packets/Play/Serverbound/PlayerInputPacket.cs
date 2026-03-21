@@ -20,7 +20,7 @@ public partial class PlayerInputPacket
 
         if (player.Sneaking != wasSneaking)
         {
-            player.World.PacketBroadcaster.QueuePacketToWorld(player.World, new SetEntityDataPacket
+            player.Level.PacketBroadcaster.QueuePacketToLevel(player.Level, new SetEntityDataPacket
             {
                 EntityId = player.EntityId,
                 Entity = player

@@ -12,7 +12,6 @@ using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Plugins;
 using Obsidian.Services;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -172,7 +171,7 @@ public sealed partial class Server : IServer
 
     public void BroadcastMessage(IWorld world, ChatMessage message)
     {
-        this.DefaultWorld.PacketBroadcaster.QueuePacketToWorld(world, new SystemChatPacket(message, false));
+        this.DefaultWorld.PacketBroadcaster.QueuePacketToLevel(world, new SystemChatPacket(message, false));
         logger.LogInformation("{message}", message.Text);
     }
 
@@ -306,7 +305,7 @@ public sealed partial class Server : IServer
     {
         this.UsernameToUuidMappings.Remove(player.Username, out _);
 
-        player.World.TryRemovePlayer(player);
+        player.Level.TryRemovePlayer(player);
 
         return this.OnlinePlayers.Remove(player.Uuid, out _);
     }

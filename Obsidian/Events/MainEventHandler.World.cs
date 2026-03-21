@@ -12,7 +12,7 @@ public partial class MainEventHandler
         var player = args.Player;
         var sequence = args.Sequence;
         var block = args.Block;
-        var world = player.World;
+        var world = player.Level;
         var location = args.Location;
 
         player.Client.SendPacket(new BlockChangedAckPacket
@@ -30,7 +30,7 @@ public partial class MainEventHandler
 
         player.Client.SendPacket(new BlockUpdatePacket(location, BlocksRegistry.Air.GetHashCode()));
 
-        world.PacketBroadcaster.QueuePacketToWorld(world, 0, new BlockDestructionPacket
+        world.PacketBroadcaster.QueuePacketToLevel(world, 0, new BlockDestructionPacket
         {
             EntityId = player.EntityId,
             Position = location,
@@ -46,11 +46,11 @@ public partial class MainEventHandler
         {
             EntityId = Server.GetNextEntityId(),
             Item = droppedItem,
-            World = player.World,
+            Level = player.Level,
             Position = (VectorF)location + 0.5f,
         };
 
-        player.World.TryAddEntity(item);
+        player.Level.TryAddEntity(item);
 
         var power = GetRandDropVelocity();
         var direction = Globals.Random.NextFloat() * 6.2f;

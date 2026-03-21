@@ -55,7 +55,7 @@ public sealed partial class MainEventHandler(ILogger<MainEventHandler> logger) :
             return;
 
         var position = blockEntity.BlockPosition;
-        var block = await e.Player.World.GetBlockAsync(position);
+        var block = await e.Player.Level.GetBlockAsync(position);
 
         if (block is null)
             return;
@@ -278,13 +278,13 @@ public sealed partial class MainEventHandler(ILogger<MainEventHandler> logger) :
 
             if (container is IBlockEntity containerTileEntity)
             {
-                var tileEntity = await player.World.GetBlockEntityAsync(blockPosition);
+                var tileEntity = await player.Level.GetBlockEntityAsync(blockPosition);
 
                 if (tileEntity == null)
                 {
                     tileEntity = containerTileEntity.Clone();
 
-                    await player.World.SetBlockEntity(blockPosition, tileEntity);
+                    await player.Level.SetBlockEntity(blockPosition, tileEntity);
                 }
                 else if (tileEntity is BaseContainer tileEntityContainer)
                 {
@@ -311,7 +311,7 @@ public sealed partial class MainEventHandler(ILogger<MainEventHandler> logger) :
         var player = e.Player;
         var server = e.Server;
 
-        var packetBroadcaster = player.World.PacketBroadcaster;
+        var packetBroadcaster = player.Level.PacketBroadcaster;
 
         await player.SaveAsync();
 
@@ -329,10 +329,10 @@ public sealed partial class MainEventHandler(ILogger<MainEventHandler> logger) :
         var joined = e.Player;
         var server = e.Server;
 
-        var packetBroadcaster = joined.World.PacketBroadcaster;
+        var packetBroadcaster = joined.Level.PacketBroadcaster;
 
-        joined!.World.TryAddPlayer(joined);
-        joined!.World.TryAddEntity(joined);
+        joined!.Level.TryAddPlayer(joined);
+        joined!.Level.TryAddEntity(joined);
 
         server!.BroadcastMessage(new ChatMessage
         {

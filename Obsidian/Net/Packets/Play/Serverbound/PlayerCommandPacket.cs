@@ -25,7 +25,7 @@ public partial class PlayerCommandPacket
 
     public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
-        var block = await player.World.GetBlockAsync((int)player.Position.X, (int)player.HeadY, (int)player.Position.Z);
+        var block = await player.Level.GetBlockAsync((int)player.Position.X, (int)player.HeadY, (int)player.Position.Z);
 
         switch (Action)
         {
@@ -56,7 +56,7 @@ public partial class PlayerCommandPacket
                 break;
         }
 
-        player.World.PacketBroadcaster.QueuePacketToWorld(player.World, new SetEntityDataPacket
+        player.Level.PacketBroadcaster.QueuePacketToLevel(player.Level, new SetEntityDataPacket
         {
             EntityId = player.EntityId,
             Entity = player

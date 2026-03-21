@@ -328,7 +328,7 @@ public partial class MainEventHandler
             EntityId = Server.GetNextEntityId(),
             Item = thrownItem,
             Glowing = true,
-            World = player.World,
+            Level = player.Level,
             Position = loc
         };
 
@@ -336,7 +336,7 @@ public partial class MainEventHandler
         var vel = Velocity.FromDirection(loc, lookDir);
 
         //TODO Get this shooting out from the player properly.
-        player.World.PacketBroadcaster.QueuePacketToWorld(player.World, new AddEntityPacket
+        player.Level.PacketBroadcaster.QueuePacketToLevel(player.Level, new AddEntityPacket
         {
             EntityId = item.EntityId,
             Uuid = item.Uuid,
@@ -347,7 +347,7 @@ public partial class MainEventHandler
             Data = 1,
             Velocity = vel
         });
-        player.World.PacketBroadcaster.QueuePacketToWorld(player.World, new SetEntityDataPacket
+        player.Level.PacketBroadcaster.QueuePacketToLevel(player.Level, new SetEntityDataPacket
         {
             EntityId = item.EntityId,
             Entity = item

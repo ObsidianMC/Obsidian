@@ -80,27 +80,27 @@ internal class EntitySpawner(IWorld world) : IEntitySpawner
         {
             EntityType.Pig => new Pig()
             {
-                World = world,
+                Level = world,
             },
             EntityType.Horse => new Horse()
             {
-                World = world,
+                Level = world,
             },
             EntityType.Llama => new Llama()
             {
-                World = world,
+                Level = world,
             },
             EntityType.Donkey => new Donkey()
             {
-                World = world
+                Level = world
             },
             EntityType.SkeletonHorse => new SkeletonHorse()
             {
-                World = world
+                Level = world
             },
             EntityType.ZombieHorse => new ZombieHorse()
             {
-                World = world
+                Level = world
             },
 
             null => throw new InvalidOperationException("Entity type must be set"),
@@ -108,11 +108,11 @@ internal class EntitySpawner(IWorld world) : IEntitySpawner
             _ => entityType.Value.IsNonLiving() ?
             new Entity()
             {
-                World = world,
+                Level = world,
             } :
             new Living()
             {
-                World = world
+                Level = world
             }
         };
 

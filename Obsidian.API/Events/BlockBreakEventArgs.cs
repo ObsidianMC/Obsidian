@@ -10,7 +10,7 @@ public class BlockBreakEventArgs : BlockEventArgs, ICancellable
     /// <inheritdoc/>
     public bool IsCancelled { get; private set; }
 
-    internal BlockBreakEventArgs(IServer server, IPlayer player, IBlock block, Vector location, IWorld world) : base(server, block, location, world)
+    internal BlockBreakEventArgs(IServer server, IPlayer player, IBlock block, Vector location, ILevel level) : base(server, block, location, level)
     {
         Player = player;
     }

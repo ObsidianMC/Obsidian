@@ -177,7 +177,7 @@ public sealed partial class Player : Avatar, IPlayer
             Title = "Ender Chest"
         };
 
-        World = world;
+        Level = world;
         Type = EntityType.Player;
 
         PersistentDataFile = Path.Combine(ServerConstants.PersistentDataPath, $"{Uuid}.dat");
@@ -289,10 +289,10 @@ public sealed partial class Player : Avatar, IPlayer
         // save current world/persistent data 
         await SaveAsync();
 
-        World.TryRemovePlayer(this);
+        Level.TryRemovePlayer(this);
         w.TryAddPlayer(this);
 
-        World = w;
+        Level = w;
 
         // resync player data
         await LoadAsync(false);
@@ -352,20 +352,20 @@ public sealed partial class Player : Avatar, IPlayer
         {
             // if unalive, reset health and set location to world spawn
             Health = 20f;
-            Position = World.LevelData.SpawnPosition;
+            Position = Level.LevelData.SpawnPosition;
         }
 
-        CodecRegistry.TryGetDimension(World.DimensionName, out var codec);
+        CodecRegistry.TryGetDimension(Level.DimensionName, out var codec);
         Debug.Assert(codec is not null); // TODO Handle missing codec
 
-        Logger.LogDebug("Loading into world: {}", World.Name);
+        Logger.LogDebug("Loading into world: {}", Level.Name);
 
         await Client.QueuePacketAsync(new RespawnPacket
         {
             CommonPlayerSpawnInfo = new()
             {
                 DimensionType = codec.Id,
-                DimensionName = World.DimensionName,
+                DimensionName = Level.DimensionName,
                 Gamemode = Gamemode,
                 PreviousGamemode = Gamemode,
                 HashedSeed = 0,
@@ -440,7 +440,7 @@ public sealed partial class Player : Avatar, IPlayer
 
     public async ValueTask SetGamemodeAsync(Gamemode gamemode)
     {
-        this.PacketBroadcaster.QueuePacketToWorld(this.World, new PlayerInfoUpdatePacket(CompilePlayerInfo(new UpdateGamemodeInfoAction(gamemode))));
+        this.PacketBroadcaster.QueuePacketToLevel(this.Level, new PlayerInfoUpdatePacket(CompilePlayerInfo(new UpdateGamemodeInfoAction(gamemode))));
 
         await Client.QueuePacketAsync(new GameEventPacket(gamemode));
 
@@ -449,7 +449,7 @@ public sealed partial class Player : Avatar, IPlayer
 
     public ValueTask UpdateDisplayNameAsync(string newDisplayName)
     {
-        this.PacketBroadcaster.QueuePacketToWorld(this.World, new PlayerInfoUpdatePacket(CompilePlayerInfo(new UpdateDisplayNameInfoAction(newDisplayName))));
+        this.PacketBroadcaster.QueuePacketToLevel(this.Level, new PlayerInfoUpdatePacket(CompilePlayerInfo(new UpdateDisplayNameInfoAction(newDisplayName))));
 
         CustomName = newDisplayName;
 
@@ -690,7 +690,7 @@ public sealed partial class Player : Avatar, IPlayer
         foreach (var value in clientNeededChunks)
         {
             NumericsHelper.LongToInts(value, out var x, out var z);
-            var chunk = await World.GetChunkAsync(x, z);
+            var chunk = await Level.GetChunkAsync(x, z);
             if (chunk is not null && chunk.IsGenerated)
             {
                 await Client.QueuePacketAsync(new LevelChunkWithLightPacket(chunk));

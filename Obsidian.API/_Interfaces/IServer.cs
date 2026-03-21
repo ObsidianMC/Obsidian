@@ -25,6 +25,7 @@ public interface IServer : IDisposable
     public ICommandHandler CommandHandler { get; }
     public IScoreboardManager ScoreboardManager { get; }
     public IEventDispatcher EventDispatcher { get; }
+    public IWorldManager WorldManager { get; }
 
     public Task RunAsync();
 
