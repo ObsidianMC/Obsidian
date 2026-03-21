@@ -16,9 +16,7 @@ public sealed class WorldManager(ILoggerFactory loggerFactory, IServiceProvider 
     IServerEnvironment serverEnvironment) : BackgroundService, IWorldManager
 {
     private readonly ILogger logger = loggerFactory.CreateLogger<WorldManager>();
-    private readonly Dictionary<string, IWorld> worlds = new();
-    private readonly ILoggerFactory loggerFactory = loggerFactory;
-    private readonly IServiceProvider serviceProvider = serviceProvider;
+    private readonly Dictionary<string, IWorld> worlds = [];
     private readonly IOptionsMonitor<ServerConfiguration> configuration = configuration;
     private readonly IServerEnvironment serverEnvironment = serverEnvironment;
     private readonly IServiceScope serviceScope = serviceProvider.CreateScope();
@@ -44,7 +42,7 @@ public sealed class WorldManager(ILoggerFactory loggerFactory, IServiceProvider 
             // If Cancel is called, this method should stop within the configured timeout, otherwise code execution will simply stop here,
             // and server shutdown will not be handled correctly.
             // Load worlds on startup.
-            await this.LoadWorldsAsync();
+            await this.LoadWorldsAsync(stoppingToken);
 
             while (await timer.WaitForNextTickAsync())
             {
@@ -62,7 +60,7 @@ public sealed class WorldManager(ILoggerFactory loggerFactory, IServiceProvider 
     /// Registers new world generator(s) to the server.
     /// </summary>
     /// <param name="entries">A compatible list of entries.</param>
-    public void RegisterGenerator<T>() where T : IWorldGenerator, new()
+    public void RegisterGenerator<T>() where T : ILevelGenerator, new()
     {
         var gen = new T();
         if (string.IsNullOrWhiteSpace(gen.Id))
@@ -72,9 +70,9 @@ public sealed class WorldManager(ILoggerFactory loggerFactory, IServiceProvider 
             this.logger.LogDebug("Registered {generatorId}...", gen.Id);
     }
 
-    public async Task LoadWorldsAsync()
+    public async Task LoadWorldsAsync(CancellationToken cancellationToken = default)
     {
-        var worlds = await LoadServerWorldsAsync();
+        var worlds = await LoadServerWorldsAsync(cancellationToken);
         foreach (var serverWorld in worlds)
         {
             //var server = (Server)this.server;
@@ -84,15 +82,8 @@ public sealed class WorldManager(ILoggerFactory loggerFactory, IServiceProvider 
                 continue;
             }
 
-            //TODO fix
-            var world = new World(this.loggerFactory.CreateLogger($"World [{serverWorld.Name}]"), generatorType, this)
-            {
-                Configuration = this.configuration.CurrentValue,
-                PacketBroadcaster = this.serviceScope.ServiceProvider.GetRequiredService<IPacketBroadcaster>(),
-                EventDispatcher = this.serviceScope.ServiceProvider.GetRequiredService<IEventDispatcher>(),
-                Name = serverWorld.Name,
-                Seed = serverWorld.Seed
-            };
+            var generator = ActivatorUtilities.CreateInstance<ILevelGenerator>(this.serviceScope.ServiceProvider, generatorType) ?? throw new ArgumentException("Invalid generator type.", nameof(generatorType));
+            var world = ActivatorUtilities.CreateInstance<World>(this.serviceScope.ServiceProvider, generator, serverWorld);
 
             world.InitGenerator();
 
@@ -179,14 +170,14 @@ public sealed class WorldManager(ILoggerFactory loggerFactory, IServiceProvider 
         this.RegisterGenerator<MojangGenerator>();
     }
 
-    private static async Task<List<ServerWorld>> LoadServerWorldsAsync()
+    private static async Task<List<ServerWorld>> LoadServerWorldsAsync(CancellationToken cancellationToken = default)
     {
         var worldsFile = new FileInfo(Path.Combine("config", "worlds.json"));
 
         if (worldsFile.Exists)
         {
             await using var worldsFileStream = worldsFile.OpenRead();
-            return await worldsFileStream.FromJsonAsync<List<ServerWorld>>()
+            return await worldsFileStream.FromJsonAsync<List<ServerWorld>>(cancellationToken: cancellationToken)
                 ?? throw new Exception("A worlds file does exist, but is invalid. Is it corrupt?");
         }
 
@@ -204,7 +195,7 @@ public sealed class WorldManager(ILoggerFactory loggerFactory, IServiceProvider 
             };
 
         await using var fileStream = worldsFile.Create();
-        await worlds.ToJsonAsync(fileStream);
+        await worlds.ToJsonAsync(fileStream, cancellationToken: cancellationToken);
 
         return worlds;
     }

@@ -1,4 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Obsidian.API;
 using Obsidian.API.Configuration;
 using Obsidian.API.Entities;
@@ -9,7 +12,6 @@ using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using System.Diagnostics;
 using System.IO;
-using System.Threading;
 
 namespace Obsidian.WorldData;
 
@@ -28,7 +30,7 @@ public sealed partial class World : IWorld
 
     public ConcurrentDictionary<Guid, IPlayer> Players { get; private set; } = [];
 
-    public IWorldGenerator Generator { get; internal set; }
+    public ILevelGenerator Generator { get; internal set; }
 
     public ConcurrentDictionary<long, IRegion> Regions { get; private set; } = [];
 
@@ -82,17 +84,20 @@ public sealed partial class World : IWorld
 
     public string? ParentWorldName { get; private set; }
 
-    private static Semaphore _regionLock;
-
     private ILogger Logger { get; }
+    private IDisposable loggerScope;
 
-    internal World(ILogger logger, Type generatorType, IWorldManager worldManager)
+    internal World(ILogger<World> logger, IWorldManager worldManager, IPacketBroadcaster packetBroadcaster, IOptionsMonitor<ServerConfiguration> configuration,
+        IEventDispatcher eventDispatcher, ILevelGenerator worldGenerator, ServerWorld serverWorld)
     {
-        Logger = logger;
-        Generator = Activator.CreateInstance(generatorType) as IWorldGenerator ?? throw new ArgumentException("Invalid generator type.", nameof(generatorType));
-        _regionLock = new(1, 1);
-
+        this.Logger = logger;
+        this.Generator = worldGenerator;
+        this.PacketBroadcaster = packetBroadcaster;
+        this.EventDispatcher = eventDispatcher;
         this.WorldManager = worldManager;
+        this.Configuration = configuration.CurrentValue;
+        this.Name = serverWorld.Name;
+        this.Seed = serverWorld.Seed;
     }
 
     public void InitGenerator() => this.Generator.Init(this);
@@ -505,26 +510,24 @@ public sealed partial class World : IWorld
 
     public IRegion LoadRegion(int regionX, int regionZ)
     {
-        _regionLock.WaitOne();
         long value = NumericsHelper.IntsToLong(regionX, regionZ);
 
         if (Regions.TryGetValue(value, out var region))
-        {
-            _regionLock.Release();
             return region;
-        }
 
         this.Logger.LogDebug("Trying to add {x}:{z}", regionX, regionZ);
 
-        region = new Region(regionX, regionZ, FolderPath);
+        var newRegion = new Region(regionX, regionZ, FolderPath);
+        region = Regions.GetOrAdd(value, newRegion);
 
-        if (Regions.TryAdd(value, region))
+        if (ReferenceEquals(region, newRegion))
+        {
             this.Logger.LogDebug("Added region {x}:{z}", regionX, regionZ);
 
-        //DOesn't need to be blocking
-        _ = region.InitAsync();
+            //DOesn't need to be blocking
+            _ = region.InitAsync();
+        }
 
-        _regionLock.Release();
         return region;
     }
 
