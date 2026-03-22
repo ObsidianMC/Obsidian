@@ -8,8 +8,8 @@ using System.IO;
 namespace Obsidian.WorldData;
 
 public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPacketBroadcaster packetBroadcaster, IOptionsMonitor<ServerConfiguration> configuration,
-    IEventDispatcher eventDispatcher, ILevelGenerator worldGenerator, ServerWorld serverWorld) : 
-    AbstractLevel(logger, packetBroadcaster, configuration.CurrentValue, eventDispatcher, worldGenerator, serverWorld.Name, serverWorld.Seed), IWorld
+    IEventDispatcher eventDispatcher, ILevelGenerator worldGenerator, string name, string seed) : 
+    AbstractLevel(logger, packetBroadcaster, configuration.CurrentValue, eventDispatcher, worldGenerator, name, seed), IWorld
 {
     private const int SpawnChunkRadius = 12;
 
@@ -18,23 +18,10 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
     internal Dictionary<string, IDimension> dimensions = [];
 
     public string PlayerDataPath { get; private set; } = string.Empty;
-    public string LevelDataFilePath { get; private set; } = string.Empty;
 
-    internal new void Init(DimensionCodec codec, string? parentWorldName = null)
+    public async override Task<bool> LoadAsync(DimensionCodec codec)
     {
-        base.Init(codec, parentWorldName);
-
-        PlayerDataPath = Path.Combine("worlds", Name, "playerdata");
-        LevelDataFilePath = Path.Combine("worlds", Name, "level.dat");
-
-        Directory.CreateDirectory(PlayerDataPath);
-    }
-
-    public async Task<bool> LoadAsync(DimensionCodec codec)
-    {
-        Init(codec);
-
-        var fi = new FileInfo(LevelDataFilePath);
+        var fi = new FileInfo(this.LevelDataFilePath);
         if (!fi.Exists)
             return false;
 
@@ -80,7 +67,7 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
         return true;
     }
 
-    public async Task SaveAsync()
+    public override async Task SaveAsync()
     {
         var worldFile = new FileInfo(LevelDataFilePath);
 
@@ -121,20 +108,31 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
         await player.SaveAsync();
     }
 
-    public void RegisterDimension(DimensionCodec codec, string? worldGeneratorId = null)
+    public void RegisterDimension(DimensionCodec codec, IDimension dimension)
     {
         if (dimensions.ContainsKey(codec.Name))
             throw new ArgumentException($"World already contains dimension with name: {codec.Name}");
 
-        if (!this.WorldManager.WorldGenerators.TryGetValue(worldGeneratorId ?? codec.Name.TrimResourceTag(true), out var generatorType))
-            throw new ArgumentException($"Failed to find generator with id: {worldGeneratorId}.");
-
-        var generator = Activator.CreateInstance(generatorType) as ILevelGenerator ?? throw new ArgumentException("Invalid generator type.", nameof(generatorType));
-        var dimension = new global::Obsidian.WorldData.Dimension(this, Logger, PacketBroadcaster, Configuration, EventDispatcher, generator, codec.Name.TrimResourceTag(true));
-
-        dimension.Init(codec, this.Name);
-        dimension.InitGenerator();
-
         dimensions.Add(codec.Name, dimension);
+    }
+
+    public override void Initialize(DimensionCodec codec)
+    {
+        this.FolderPath = Path.Combine("worlds", Name);
+
+        this.DimensionName = codec.Name;
+
+        this.LevelData = new Level
+        {
+            Time = codec.Element.FixedTime ?? 0,
+            DefaultGamemode = Gamemode.Survival,
+            GeneratorName = Generator.Id
+        };
+
+        this.PlayerDataPath = Path.Combine(this.FolderPath, "playerdata");
+        this.LevelDataFilePath = Path.Combine(this.FolderPath, "level.dat");
+
+        Directory.CreateDirectory(this.PlayerDataPath);
+        Directory.CreateDirectory(this.FolderPath);
     }
 }

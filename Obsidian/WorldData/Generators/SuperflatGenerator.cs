@@ -1,6 +1,4 @@
-﻿using Obsidian.API.World;
-
-namespace Obsidian.WorldData.Generators;
+﻿namespace Obsidian.WorldData.Generators;
 
 public class SuperflatGenerator : ILevelGenerator
 {

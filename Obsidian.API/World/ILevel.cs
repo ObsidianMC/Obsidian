@@ -1,5 +1,6 @@
 ﻿using Obsidian.API.ChunkData;
 using Obsidian.API.Entities;
+using Obsidian.API.Registry.Codecs.Dimensions;
 using System.Collections.Concurrent;
 
 namespace Obsidian.API.World;
@@ -10,6 +11,7 @@ public interface ILevel : IAsyncDisposable
     public string Seed { get; }
     public string FolderPath { get; }
     public string DimensionName { get; }
+    public string LevelDataFilePath { get; }
 
     public bool Loaded { get; }
 
@@ -89,4 +91,8 @@ public interface ILevel : IAsyncDisposable
     public IEnumerable<IPlayer> PlayersInRange(Vector location);
     public Task DoWorldTickAsync();
     public Task FlushRegionsAsync();
+    public Task<bool> LoadAsync(DimensionCodec codec);
+    public Task SaveAsync();
+
+    public void Initialize(DimensionCodec codec);
 }

@@ -1,6 +1,4 @@
-﻿using Obsidian.API.World;
-
-namespace Obsidian.WorldData;
+﻿namespace Obsidian.API.World;
 
 public interface ILevelGenerator
 {

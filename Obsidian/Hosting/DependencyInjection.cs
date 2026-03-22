@@ -57,12 +57,12 @@ public static class DependencyInjection
 
         builder.Services.AddSingleton<IServerEnvironment, DefaultServerEnvironment>();
         builder.Services.AddSingleton<CommandHandler>();
-        //builder.Services.AddSingleton<RconServer>();
         builder.Services.AddSingleton<WorldManager>();
         builder.Services.AddSingleton<PacketBroadcaster>();
         builder.Services.AddSingleton<IServer, Server>();
         builder.Services.AddSingleton<IUserCache, UserCache>();
         builder.Services.AddSingleton<EventDispatcher>();
+        builder.Services.AddSingleton<ILevelFactory, LevelFactory>();
 
         builder.Services.AddHttpClient();
 

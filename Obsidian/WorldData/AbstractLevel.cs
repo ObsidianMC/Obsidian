@@ -2,7 +2,6 @@ using Microsoft.Extensions.Logging;
 using Obsidian.API.Configuration;
 using Obsidian.API.Entities;
 using Obsidian.API.Registry.Codecs.Dimensions;
-using Obsidian.API.World;
 using Obsidian.Entities;
 using Obsidian.Entities.Factories;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -11,8 +10,7 @@ using System.IO;
 
 namespace Obsidian.WorldData;
 
-public abstract class AbstractLevel(ILogger logger, IPacketBroadcaster packetBroadcaster, ServerConfiguration configuration,
-    IEventDispatcher eventDispatcher, ILevelGenerator worldGenerator, string name, string seed) : ILevel
+public abstract class AbstractLevel : ILevel
 {
     private const int SpawnChunkRadius = 12;
 
@@ -23,7 +21,7 @@ public abstract class AbstractLevel(ILogger logger, IPacketBroadcaster packetBro
 
     public ConcurrentDictionary<Guid, IPlayer> Players { get; protected set; } = [];
 
-    public ILevelGenerator Generator { get; internal set; } = worldGenerator;
+    public ILevelGenerator Generator { get; internal set; } 
 
     public ConcurrentDictionary<long, IRegion> Regions { get; protected set; } = [];
 
@@ -33,8 +31,8 @@ public abstract class AbstractLevel(ILogger logger, IPacketBroadcaster packetBro
 
     public ConcurrentHashSet<long> LoadedChunks { get; protected set; } = [];
 
-    public string Name { get; } = name;
-    public string Seed { get; } = seed;
+    public string Name { get; }
+    public string Seed { get; }
     public string FolderPath { get; protected set; } = string.Empty;
 
     public bool Loaded { get; protected set; }
@@ -63,17 +61,30 @@ public abstract class AbstractLevel(ILogger logger, IPacketBroadcaster packetBro
     public int ChunksToGenCount => this.ChunksToGen.Count;
     public int LoadedChunkCount => this.Regions.Values.Sum(x => x.LoadedChunkCount);
 
-    public IPacketBroadcaster PacketBroadcaster { get; } = packetBroadcaster;
-    public IEventDispatcher EventDispatcher { get; } = eventDispatcher;
-    public ServerConfiguration Configuration { get; } = configuration;
-
+    public IPacketBroadcaster PacketBroadcaster { get; }
+    public IEventDispatcher EventDispatcher { get; }
+    public ServerConfiguration Configuration { get; }
     public Gamemode DefaultGamemode => LevelData.DefaultGamemode;
 
     public string DimensionName { get; protected set; } = string.Empty;
 
-    protected ILogger Logger { get; } = logger;
+    public string LevelDataFilePath { get; protected set; } 
 
-    public void InitGenerator() => this.Generator.Init(this);
+    protected ILogger Logger { get; }
+
+    public AbstractLevel(ILogger logger, IPacketBroadcaster packetBroadcaster, ServerConfiguration configuration,
+        IEventDispatcher eventDispatcher, ILevelGenerator worldGenerator, string name, string seed)
+    {
+        this.Logger = logger;
+        this.PacketBroadcaster = packetBroadcaster;
+        this.Configuration = configuration;
+        this.EventDispatcher = eventDispatcher;
+        this.Generator = worldGenerator;
+        this.Name = name;
+        this.Seed = seed;
+
+        this.Generator.Init(this);
+    }
 
     public ValueTask<bool> DestroyEntityAsync(IEntity entity)
     {
@@ -90,6 +101,9 @@ public abstract class AbstractLevel(ILogger logger, IPacketBroadcaster packetBro
 
         return ValueTask.FromResult(region.Entities.TryRemove(entity.EntityId, out _));
     }
+
+    public abstract Task<bool> LoadAsync(DimensionCodec codec);
+    public abstract Task SaveAsync();
 
     public IRegion? GetRegionForLocation(VectorF location)
     {
@@ -485,23 +499,8 @@ public abstract class AbstractLevel(ILogger logger, IPacketBroadcaster packetBro
         }
     }
 
-    internal void Init(DimensionCodec codec, string? parentWorldName = null)
-    {
-        FolderPath = string.IsNullOrWhiteSpace(parentWorldName) ? Path.Combine("worlds", Name) : Path.Combine("worlds", parentWorldName, Name);
+    public abstract void Initialize(DimensionCodec codec);
 
-        DimensionName = codec.Name;
-
-        LevelData = new Level
-        {
-            Time = codec.Element.FixedTime ?? 0,
-            DefaultGamemode = Gamemode.Survival,
-            GeneratorName = Generator.Id
-        };
-
-        Directory.CreateDirectory(FolderPath);
-
-        initialized = true;
-    }
 
     internal async Task GenerateWorldAsync(bool setWorldSpawn = false)
     {
