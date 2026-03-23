@@ -1,9 +1,11 @@
+using Obsidian.API.World.DimensionSettings;
+
 namespace Obsidian.API;
 
 /// <summary>
 /// https://minecraft.wiki/w/Java_Edition_level_format
 /// </summary>
-public sealed class Level
+public sealed class LevelData
 {
     public const int DataVersion = 3337;
 
@@ -186,4 +188,7 @@ public sealed class Level
     /// The amount of ticks until another wandering trader is attempted to spawn
     /// </summary>
     public int WanderingTraderSpawnDelay { get; set; }
+
+    public WorldGenSetting WorldGenSettings { get; set; }
 }
+

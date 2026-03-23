@@ -18,7 +18,7 @@ public interface ILevel : IAsyncDisposable
     public long Time { get; set; }
     public int DayTime { get; set; }
 
-    public Level LevelData { get; }
+    public LevelData LevelData { get; }
 
     public Gamemode DefaultGamemode { get; }
 
@@ -94,5 +94,10 @@ public interface ILevel : IAsyncDisposable
     public Task<bool> LoadAsync(DimensionCodec codec);
     public Task SaveAsync();
 
+    /// <summary>
+    /// Initializes the level with the given dimension codec. 
+    /// This is only used when a new world is being created, otherwise LoadAsync is used.
+    /// </summary>
+    /// <param name="codec">The dimension codec to use for initialization.</param>
     public void Initialize(DimensionCodec codec);
 }

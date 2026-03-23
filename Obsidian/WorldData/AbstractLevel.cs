@@ -6,7 +6,6 @@ using Obsidian.Entities;
 using Obsidian.Entities.Factories;
 using Obsidian.Net.Packets.Play.Clientbound;
 using System.Diagnostics;
-using System.IO;
 
 namespace Obsidian.WorldData;
 
@@ -14,10 +13,7 @@ public abstract class AbstractLevel : ILevel
 {
     private const int SpawnChunkRadius = 12;
 
-    private float rainLevel = 0f;
-    private bool initialized = false;
-
-    public Level LevelData { get; internal set; } = default!;
+    public LevelData LevelData { get; internal set; } = default!;
 
     public ConcurrentDictionary<Guid, IPlayer> Players { get; protected set; } = [];
 
@@ -96,10 +92,7 @@ public abstract class AbstractLevel : ILevel
 
         var region = GetRegionForChunk(chunkX, chunkZ);
 
-        if (region is null)
-            throw new InvalidOperationException("Region is null this wasn't supposed to happen.");
-
-        return ValueTask.FromResult(region.Entities.TryRemove(entity.EntityId, out _));
+        return region is null ? ValueTask.FromResult(false) : ValueTask.FromResult(region.Entities.TryRemove(entity.EntityId, out _));
     }
 
     public abstract Task<bool> LoadAsync(DimensionCodec codec);
@@ -501,23 +494,22 @@ public abstract class AbstractLevel : ILevel
 
     public abstract void Initialize(DimensionCodec codec);
 
-
-    internal async Task GenerateWorldAsync(bool setWorldSpawn = false)
+    /// <summary>
+    /// Starts the initial generation of the world, which includes pregenerating chunks in a square around the spawn and loading their regions,
+    /// as well as setting the world spawn if specified. This should be called after Initialize and before allowing players to join.
+    /// </summary>
+    /// <param name="setWorldSpawn">Whether to set the world spawn after generation.</param>
+    internal async Task GenerateAsync()
     {
-        if (!initialized)
-            throw new InvalidOperationException("World hasn't been initialized please call World.Init() before trying to generate the world.");
-
         Logger.LogInformation("Generating world... (Config pregeneration size is {pregenRange})", this.Configuration.PregenerateChunkRange);
         int pregenerationRange = this.Configuration.PregenerateChunkRange;
 
         int regionPregenRange = (pregenerationRange >> Region.CubicRegionSizeShift) + 1;
 
-        await Parallel.ForEachAsync(Enumerable.Range(-regionPregenRange, regionPregenRange * 2 + 1), (x, _) =>
+        Parallel.ForEach(Enumerable.Range(-regionPregenRange, regionPregenRange * 2 + 1), (x, _) =>
         {
             for (int z = -regionPregenRange; z < regionPregenRange; z++)
                 LoadRegion(x, z);
-
-            return ValueTask.CompletedTask;
         });
 
         for (int x = -pregenerationRange; x < pregenerationRange; x++)
@@ -546,11 +538,11 @@ public abstract class AbstractLevel : ILevel
             }
         }
         Console.WriteLine();
-        await FlushRegionsAsync();
 
-        if (setWorldSpawn)
+        await FlushRegionsAsync();
+        await SetWorldSpawnAsync();
+
         {
-            await SetWorldSpawnAsync();
             var index = 0;
             var (x, z) = LevelData.SpawnPosition.ToChunkCoord();
             for (var cx = x - SpawnChunkRadius; cx < x + SpawnChunkRadius; cx++)
@@ -610,10 +602,7 @@ public abstract class AbstractLevel : ILevel
 
         var region = GetRegionForChunk(chunkX, chunkZ);
 
-        if (region is null)
-            throw new InvalidOperationException("Region is null, this wasn't supposed to happen.");
-
-        return region.Entities.TryAdd(entity.EntityId, entity);
+        return region is not null && region.Entities.TryAdd(entity.EntityId, entity);
     }
 
     protected void BroadcastTime() => this.PacketBroadcaster.QueuePacketToLevel(this, new SetTimePacket(LevelData.Time, LevelData.Time % 24000, true));

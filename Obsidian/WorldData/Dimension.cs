@@ -17,7 +17,7 @@ internal sealed class Dimension(ILogger logger, IPacketBroadcaster packetBroadca
 
         this.DimensionName = codec.Name;
 
-        this.LevelData = new Level
+        this.LevelData = new LevelData
         {
             Time = codec.Element.FixedTime ?? 0,
             DefaultGamemode = Gamemode.Survival,

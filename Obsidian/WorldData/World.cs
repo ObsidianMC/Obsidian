@@ -27,7 +27,7 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
 
         var reader = new NbtReader(fi.OpenRead(), NbtCompression.GZip);
         var levelCompound = (reader.ReadNextTag() as NbtCompound)!;
-        LevelData = new Level()
+        LevelData = new LevelData()
         {
             Hardcore = levelCompound.GetBool("hardcore"),
             MapFeatures = levelCompound.GetBool("MapFeatures"),
@@ -122,7 +122,7 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
 
         this.DimensionName = codec.Name;
 
-        this.LevelData = new Level
+        this.LevelData = new LevelData
         {
             Time = codec.Element.FixedTime ?? 0,
             DefaultGamemode = Gamemode.Survival,
