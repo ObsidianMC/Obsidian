@@ -1,0 +1,3 @@
+[submodule "Obsidian.NBT"]
+	path = Obsidian.NBT
+	url = https://github.com/ObsidianMC/Nbt
