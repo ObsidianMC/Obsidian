@@ -11,6 +11,8 @@ namespace Obsidian.WorldData;
 
 public abstract class AbstractLevel : ILevel
 {
+    private bool generated;
+
     private const int SpawnChunkRadius = 12;
 
     public LevelData LevelData { get; internal set; } = default!;
@@ -499,8 +501,11 @@ public abstract class AbstractLevel : ILevel
     /// as well as setting the world spawn if specified. This should be called after Initialize and before allowing players to join.
     /// </summary>
     /// <param name="setWorldSpawn">Whether to set the world spawn after generation.</param>
-    internal async Task GenerateAsync()
+    public async Task GenerateAsync()
     {
+        if (this.generated)
+            return;
+
         Logger.LogInformation("Generating world... (Config pregeneration size is {pregenRange})", this.Configuration.PregenerateChunkRange);
         int pregenerationRange = this.Configuration.PregenerateChunkRange;
 
@@ -549,6 +554,8 @@ public abstract class AbstractLevel : ILevel
                 for (var cz = z - SpawnChunkRadius; cz < z + SpawnChunkRadius; cz++)
                     SpawnChunks[index++] = NumericsHelper.IntsToLong(cx, cz);
         }
+
+        this.generated = true;
     }
 
     internal async Task SetWorldSpawnAsync()

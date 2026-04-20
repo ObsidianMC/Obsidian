@@ -94,6 +94,8 @@ public interface ILevel : IAsyncDisposable
     public Task<bool> LoadAsync(DimensionCodec codec);
     public Task SaveAsync();
 
+    public Task GenerateAsync();
+
     /// <summary>
     /// Initializes the level with the given dimension codec. 
     /// This is only used when a new world is being created, otherwise LoadAsync is used.

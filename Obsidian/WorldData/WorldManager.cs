@@ -82,15 +82,13 @@ public sealed class WorldManager(ILogger<WorldManager> logger, IServiceProvider 
                     dimension.Initialize(codec);
                     world.RegisterDimension(codec, dimension);
 
-                    await ((AbstractLevel)dimension).GenerateAsync();
-
+                    await dimension.GenerateAsync();
                     await dimension.SaveAsync();
                 }
 
                 // We know its an AbstractLevel because its being called from built in WorldManager
                 // Might be better to just have a GenerateAsync method on the IWorld interface and have it do nothing for dimensions and other custom world types
-                await ((AbstractLevel)world).GenerateAsync();
-
+                await world.GenerateAsync();
                 await world.SaveAsync();
             }
 
@@ -133,8 +131,6 @@ public sealed class WorldManager(ILogger<WorldManager> logger, IServiceProvider 
 
         this.Dispose();
     }
-
-
 
     private static async Task<List<ServerWorld>> LoadServerWorldsAsync(CancellationToken cancellationToken = default)
     {
