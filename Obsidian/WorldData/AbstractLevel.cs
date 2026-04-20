@@ -299,7 +299,7 @@ public abstract class AbstractLevel : ILevel
 
     public bool TryRemovePlayer(IPlayer player) => Players.TryRemove(player.Uuid, out _);
 
-    public async Task DoWorldTickAsync()
+    public async virtual Task DoWorldTickAsync()
     {
         if (LevelData is null)
             return;

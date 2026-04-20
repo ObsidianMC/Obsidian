@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Obsidian.API.World.DimensionSettings;
+﻿namespace Obsidian.API.World.DimensionSettings;
 
 public sealed record class DimensionSetting
 {

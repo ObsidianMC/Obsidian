@@ -81,6 +81,10 @@ public sealed class WorldManager(ILogger<WorldManager> logger, IServiceProvider 
 
                     dimension.Initialize(codec);
                     world.RegisterDimension(codec, dimension);
+
+                    await ((AbstractLevel)dimension).GenerateAsync();
+
+                    await dimension.SaveAsync();
                 }
 
                 // We know its an AbstractLevel because its being called from built in WorldManager
@@ -115,8 +119,8 @@ public sealed class WorldManager(ILogger<WorldManager> logger, IServiceProvider 
         return false;
     }
 
-    public Task TickWorldsAsync() => Task.WhenAll(this.worlds.Select(pair => pair.Value.DoWorldTickAsync()));
-    public Task FlushLoadedWorldsAsync() => Task.WhenAll(this.worlds.Select(pair => pair.Value.FlushRegionsAsync()));
+    public Task TickWorldsAsync() => Task.WhenAll(this.worlds.Values.Select(world => world.DoWorldTickAsync()));
+    public Task FlushLoadedWorldsAsync() => Task.WhenAll(this.worlds.Values.Select(world => world.FlushRegionsAsync()));
 
     public async ValueTask DisposeAsync()
     {

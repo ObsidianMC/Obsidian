@@ -135,4 +135,11 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
         Directory.CreateDirectory(this.PlayerDataPath);
         Directory.CreateDirectory(this.FolderPath);
     }
+
+    public async override Task DoWorldTickAsync()
+    {
+        await base.DoWorldTickAsync();
+
+        await Task.WhenAll(this.dimensions.Values.Select(d => d.DoWorldTickAsync()));
+    }
 }

@@ -1,5 +1,3 @@
-using Obsidian.API.World.DimensionSettings;
-
 namespace Obsidian.API;
 
 /// <summary>
@@ -69,10 +67,7 @@ public sealed class LevelData
     /// </summary>
     public int DayTime
     {
-        get
-        {
-            return (int)(this.Time % 24000); // day time is based on server time
-        }
+        get => (int)(this.Time % 24000); // day time is based on server time
         set
         {
             var startOfDay = this.Time - (this.Time % 24000);
