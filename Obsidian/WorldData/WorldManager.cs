@@ -67,8 +67,6 @@ public sealed class WorldManager(ILogger<WorldManager> logger, IServiceProvider 
             {
                 this.logger.LogInformation("Creating new world: {worldName}...", serverWorld.Name);
 
-                world.Initialize(defaultCodec);
-
                 foreach (var dimensionName in serverWorld.ChildDimensions)
                 {
                     if (!CodecRegistry.TryGetDimension(dimensionName, out var codec))
@@ -86,8 +84,6 @@ public sealed class WorldManager(ILogger<WorldManager> logger, IServiceProvider 
                     await dimension.SaveAsync();
                 }
 
-                // We know its an AbstractLevel because its being called from built in WorldManager
-                // Might be better to just have a GenerateAsync method on the IWorld interface and have it do nothing for dimensions and other custom world types
                 await world.GenerateAsync();
                 await world.SaveAsync();
             }

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Obsidian.API.Configuration;
 using Obsidian.API.Entities;
 using Obsidian.API.Registry.Codecs.Dimensions;
@@ -6,6 +7,7 @@ using Obsidian.Entities;
 using Obsidian.Entities.Factories;
 using Obsidian.Net.Packets.Play.Clientbound;
 using System.Diagnostics;
+using System.Threading;
 
 namespace Obsidian.WorldData;
 
@@ -13,19 +15,17 @@ public abstract class AbstractLevel : ILevel
 {
     private bool generated;
 
-    private const int SpawnChunkRadius = 12;
-
     public LevelData LevelData { get; internal set; } = default!;
 
     public ConcurrentDictionary<Guid, IPlayer> Players { get; protected set; } = [];
 
-    public ILevelGenerator Generator { get; internal set; } 
+    public ILevelGenerator Generator { get; internal set; }
 
     public ConcurrentDictionary<long, IRegion> Regions { get; protected set; } = [];
 
     public ConcurrentQueue<long> ChunksToGen { get; protected set; } = [];
 
-    public long[] SpawnChunks { get; } = new long[SpawnChunkRadius * 48];
+    public long[] SpawnChunks { get; }
 
     public ConcurrentHashSet<long> LoadedChunks { get; protected set; } = [];
 
@@ -61,25 +61,36 @@ public abstract class AbstractLevel : ILevel
 
     public IPacketBroadcaster PacketBroadcaster { get; }
     public IEventDispatcher EventDispatcher { get; }
-    public ServerConfiguration Configuration { get; }
+    public ServerConfiguration Configuration { get; private set; }
     public Gamemode DefaultGamemode => LevelData.DefaultGamemode;
 
     public string DimensionName { get; protected set; } = string.Empty;
 
-    public string LevelDataFilePath { get; protected set; } 
+    public string LevelDataFilePath { get; protected set; }
 
     protected ILogger Logger { get; }
 
-    public AbstractLevel(ILogger logger, IPacketBroadcaster packetBroadcaster, ServerConfiguration configuration,
+    private readonly IDisposable optionsMonitor;
+    private readonly Lock regionLock = new();
+
+    public AbstractLevel(ILogger logger, IPacketBroadcaster packetBroadcaster, IOptionsMonitor<ServerConfiguration> configuration,
         IEventDispatcher eventDispatcher, ILevelGenerator worldGenerator, string name, string seed)
     {
+        this.optionsMonitor = configuration.OnChange(newConfig =>
+        {
+            this.Configuration = newConfig;
+        });
+
         this.Logger = logger;
         this.PacketBroadcaster = packetBroadcaster;
-        this.Configuration = configuration;
+        this.Configuration = configuration.CurrentValue;
         this.EventDispatcher = eventDispatcher;
         this.Generator = worldGenerator;
         this.Name = name;
         this.Seed = seed;
+
+        var spawnChunkCount = 2 * this.Configuration.SpawnChunkRadius + 1;
+        this.SpawnChunks = new long[spawnChunkCount * spawnChunkCount];
 
         this.Generator.Init(this);
     }
@@ -325,18 +336,25 @@ public abstract class AbstractLevel : ILevel
         if (Regions.TryGetValue(value, out var region))
             return region;
 
-        this.Logger.LogDebug("Trying to add {x}:{z}", regionX, regionZ);
-
-        var newRegion = new Region(regionX, regionZ, FolderPath);
-        region = Regions.GetOrAdd(value, newRegion);
-
-        if (ReferenceEquals(region, newRegion))
+        using (regionLock.EnterScope())
         {
-            this.Logger.LogDebug("Added region {x}:{z}", regionX, regionZ);
-            _ = region.InitAsync();
-        }
+            if (Regions.TryGetValue(value, out region))
+                return region;
 
-        return region;
+            region = new Region(regionX, regionZ, FolderPath, logger: this.Logger);
+            this.Logger.LogDebug("Trying to add {x}:{z} to {path}", regionX, regionZ, region.RegionFolder);
+
+            if (this.Regions.TryAdd(value, region))
+                _ = region.InitAsync();
+            else
+            {
+                // Another thread added the region first; discard our copy and return existing
+                this.Logger.LogDebug("Region {x}:{z} already exists, using existing region", regionX, regionZ);
+                region = Regions[value]!;
+            }
+
+            return region;
+        }
     }
 
     public async Task UnloadRegionAsync(int regionX, int regionZ)
@@ -511,11 +529,11 @@ public abstract class AbstractLevel : ILevel
 
         int regionPregenRange = (pregenerationRange >> Region.CubicRegionSizeShift) + 1;
 
-        Parallel.ForEach(Enumerable.Range(-regionPregenRange, regionPregenRange * 2 + 1), (x, _) =>
+        foreach (var x in Enumerable.Range(-regionPregenRange, regionPregenRange * 2 + 1))
         {
             for (int z = -regionPregenRange; z < regionPregenRange; z++)
                 LoadRegion(x, z);
-        });
+        }
 
         for (int x = -pregenerationRange; x < pregenerationRange; x++)
         {
@@ -550,15 +568,15 @@ public abstract class AbstractLevel : ILevel
         {
             var index = 0;
             var (x, z) = LevelData.SpawnPosition.ToChunkCoord();
-            for (var cx = x - SpawnChunkRadius; cx < x + SpawnChunkRadius; cx++)
-                for (var cz = z - SpawnChunkRadius; cz < z + SpawnChunkRadius; cz++)
+            for (var cx = x - this.Configuration.SpawnChunkRadius; cx < x + this.Configuration.SpawnChunkRadius; cx++)
+                for (var cz = z - this.Configuration.SpawnChunkRadius; cz < z + this.Configuration.SpawnChunkRadius; cz++)
                     SpawnChunks[index++] = NumericsHelper.IntsToLong(cx, cz);
         }
 
         this.generated = true;
     }
 
-    internal async Task SetWorldSpawnAsync()
+    private async Task SetWorldSpawnAsync()
     {
         if (LevelData.SpawnPosition.Y != 0)
             return;
@@ -616,6 +634,10 @@ public abstract class AbstractLevel : ILevel
 
     public async ValueTask DisposeAsync()
     {
+        GC.SuppressFinalize(this);
+
+        this.optionsMonitor.Dispose();
+
         foreach (var region in Regions.Values)
         {
             await region.DisposeAsync();

@@ -10,6 +10,7 @@ public sealed class ServerConfiguration
     // Anything lower than 3 will cause weird artifacts on the client.
     private const byte MinimumViewDistance = 3;
     private const byte MinimumSimulationDistance = 5;
+
     /// <summary>
     /// Enabled Remote Console operation.
     /// </summary>
@@ -96,6 +97,8 @@ public sealed class ServerConfiguration
         get => field == 0 ? DefaultEntityBroadcastRangePercentage : field;
         set => field = Math.Max((ushort)10, value);
     }
+
+    public int SpawnChunkRadius { get; set; } = 12;
 
     public int PregenerateChunkRange { get; set; } = 15; // by default, pregenerate range from -15 to 15;
 

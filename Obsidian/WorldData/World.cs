@@ -9,7 +9,7 @@ namespace Obsidian.WorldData;
 
 public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPacketBroadcaster packetBroadcaster, IOptionsMonitor<ServerConfiguration> configuration,
     IEventDispatcher eventDispatcher, ILevelGenerator worldGenerator, string name, string seed) : 
-    AbstractLevel(logger, packetBroadcaster, configuration.CurrentValue, eventDispatcher, worldGenerator, name, seed), IWorld
+    AbstractLevel(logger, packetBroadcaster, configuration, eventDispatcher, worldGenerator, name, seed), IWorld
 {
     private const int SpawnChunkRadius = 12;
 
@@ -21,6 +21,8 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
 
     public async override Task<bool> LoadAsync(DimensionCodec codec)
     {
+        this.Initialize(codec);
+
         var fi = new FileInfo(this.LevelDataFilePath);
         if (!fi.Exists)
             return false;

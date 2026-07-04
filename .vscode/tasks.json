@@ -1,210 +1,188 @@
 {
-	"version": "2.0.0",
-	"tasks": [
-		{
-			"label": "build-solution",
-			"command": "dotnet",
-			"type": "process",
-			"args": [
-				"build",
-				"${workspaceFolder}/Obsidian.sln",
-				"/property:GenerateFullPaths=true",
-				"/consoleloggerparameters:NoSummary"
-			],
-			"problemMatcher": "$msCompile",
-			"group": "build"
-		},
-		{
-			"label": "build-console-app",
-			"command": "dotnet",
-			"type": "process",
-			"args": [
-				"build",
-				"${workspaceFolder}/Obsidian.ConsoleApp/Obsidian.ConsoleApp.csproj",
-				"/property:GenerateFullPaths=true",
-				"/consoleloggerparameters:NoSummary",
-				"-c",
-				"Debug"
-			],
-			"problemMatcher": "$msCompile",
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			}
-		},
-		{
-			"label": "clean-and-build-console-app",
-			"dependsOn": [
-				"clean",
-				"build-console-app"
-			],
-			"dependsOrder": "sequence",
-			"problemMatcher": []
-		},
-		{
-			"label": "delete-world",
-			"type": "shell",
-			"command": "rm",
-			"args": [
-				"-rf",
-				"${workspaceFolder}/Obsidian.ConsoleApp/bin/Debug/net10.0/worlds"
-			],
-			"problemMatcher": []
-		},
-		{
-			"label": "clean-build-and-delete-world",
-			"dependsOn": [
-				"delete-world",
-				"clean",
-				"build-console-app"
-			],
-			"dependsOrder": "sequence",
-			"problemMatcher": []
-		},
-		{
-			"label": "build-console-app-release",
-			"command": "dotnet",
-			"type": "process",
-			"args": [
-				"build",
-				"${workspaceFolder}/Obsidian.ConsoleApp/Obsidian.ConsoleApp.csproj",
-				"/property:GenerateFullPaths=true",
-				"/consoleloggerparameters:NoSummary",
-				"-c",
-				"Release"
-			],
-			"problemMatcher": "$msCompile",
-			"group": "build"
-		},
-		{
-			"label": "build-tests",
-			"command": "dotnet",
-			"type": "process",
-			"args": [
-				"build",
-				"${workspaceFolder}/Obsidian.Tests/Obsidian.Tests.csproj",
-				"/property:GenerateFullPaths=true",
-				"/consoleloggerparameters:NoSummary"
-			],
-			"problemMatcher": "$msCompile",
-			"group": "build"
-		},
-		{
-			"label": "clean",
-			"command": "dotnet",
-			"type": "process",
-			"args": [
-				"clean",
-				"${workspaceFolder}/Obsidian.sln",
-				"/property:GenerateFullPaths=true",
-				"/consoleloggerparameters:NoSummary"
-			],
-			"problemMatcher": "$msCompile"
-		},
-		{
-			"label": "restore",
-			"command": "dotnet",
-			"type": "process",
-			"args": [
-				"restore",
-				"${workspaceFolder}/Obsidian.sln"
-			],
-			"problemMatcher": "$msCompile"
-		},
-		{
-			"label": "test",
-			"command": "dotnet",
-			"type": "process",
-			"args": [
-				"test",
-				"${workspaceFolder}/Obsidian.Tests/Obsidian.Tests.csproj",
-				"--no-build",
-				"--verbosity",
-				"normal"
-			],
-			"problemMatcher": "$msCompile",
-			"group": {
-				"kind": "test",
-				"isDefault": true
-			},
-			"dependsOn": [
-				"build-tests"
-			]
-		},
-		{
-			"label": "test-verbose",
-			"command": "dotnet",
-			"type": "process",
-			"args": [
-				"test",
-				"${workspaceFolder}/Obsidian.Tests/Obsidian.Tests.csproj",
-				"--verbosity",
-				"detailed"
-			],
-			"problemMatcher": "$msCompile",
-			"group": "test"
-		},
-		{
-			"label": "run-server",
-			"command": "dotnet",
-			"type": "process",
-			"args": [
-				"${workspaceFolder}/Obsidian.ConsoleApp/bin/Debug/net10.0/Obsidian.ConsoleApp.dll"
-			],
-			"options": {
-				"cwd": "${workspaceFolder}/Obsidian.ConsoleApp/bin/Debug/net10.0"
-			},
-			"problemMatcher": "$msCompile",
-			"isBackground": true,
-			"presentation": {
-				"reveal": "always",
-				"panel": "new"
-			},
-			"dependsOn": [
-				"build-console-app"
-			]
-		},
-		{
-			"label": "publish-release",
-			"command": "dotnet",
-			"type": "process",
-			"args": [
-				"publish",
-				"${workspaceFolder}/Obsidian.ConsoleApp/Obsidian.ConsoleApp.csproj",
-				"-c",
-				"Release",
-				"-o",
-				"${workspaceFolder}/publish"
-			],
-			"problemMatcher": "$msCompile"
-		},
-		{
-			"label": "docker-build",
-			"command": "docker",
-			"type": "shell",
-			"args": [
-				"build",
-				".",
-				"-t",
-				"obsidian:latest"
-			],
-			"options": {
-				"cwd": "${workspaceFolder}"
-			},
-			"problemMatcher": []
-		},
-		{
-			"label": "docker-compose-up",
-			"command": "docker-compose",
-			"type": "shell",
-			"args": [
-				"up",
-				"-d"
-			],
-			"options": {
-				"cwd": "${workspaceFolder}"
-			},
-			"problemMatcher": []
-		}
-	]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build-solution",
+      "command": "dotnet",
+      "type": "process",
+      "args": [
+        "build",
+        "${workspaceFolder}/Obsidian.slnx",
+        "/property:GenerateFullPaths=true",
+        "/consoleloggerparameters:NoSummary"
+      ],
+      "problemMatcher": "$msCompile",
+      "group": "build"
+    },
+    {
+      "label": "build-console-app",
+      "command": "dotnet",
+      "type": "process",
+      "args": [
+        "build",
+        "${workspaceFolder}/Obsidian.ConsoleApp/Obsidian.ConsoleApp.csproj",
+        "/property:GenerateFullPaths=true",
+        "/consoleloggerparameters:NoSummary",
+        "-c",
+        "Debug"
+      ],
+      "problemMatcher": "$msCompile",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "clean-and-build-console-app",
+      "dependsOn": ["clean", "build-console-app"],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "delete-world",
+      "type": "shell",
+      "command": "rm",
+      "args": [
+        "-rf",
+        "${workspaceFolder}/Obsidian.ConsoleApp/bin/Debug/net10.0/worlds"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "clean-build-and-delete-world",
+      "dependsOn": ["delete-world", "clean", "build-console-app"],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "build-console-app-release",
+      "command": "dotnet",
+      "type": "process",
+      "args": [
+        "build",
+        "${workspaceFolder}/Obsidian.ConsoleApp/Obsidian.ConsoleApp.csproj",
+        "/property:GenerateFullPaths=true",
+        "/consoleloggerparameters:NoSummary",
+        "-c",
+        "Release"
+      ],
+      "problemMatcher": "$msCompile",
+      "group": "build"
+    },
+    {
+      "label": "build-tests",
+      "command": "dotnet",
+      "type": "process",
+      "args": [
+        "build",
+        "${workspaceFolder}/Obsidian.Tests/Obsidian.Tests.csproj",
+        "/property:GenerateFullPaths=true",
+        "/consoleloggerparameters:NoSummary"
+      ],
+      "problemMatcher": "$msCompile",
+      "group": "build"
+    },
+    {
+      "label": "clean",
+      "command": "dotnet",
+      "type": "process",
+      "args": [
+        "clean",
+        "${workspaceFolder}/Obsidian.slnx",
+        "/property:GenerateFullPaths=true",
+        "/consoleloggerparameters:NoSummary"
+      ],
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "restore",
+      "command": "dotnet",
+      "type": "process",
+      "args": ["restore", "${workspaceFolder}/Obsidian.sln"],
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "test",
+      "command": "dotnet",
+      "type": "process",
+      "args": [
+        "test",
+        "${workspaceFolder}/Obsidian.Tests/Obsidian.Tests.csproj",
+        "--no-build",
+        "--verbosity",
+        "normal"
+      ],
+      "problemMatcher": "$msCompile",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "dependsOn": ["build-tests"]
+    },
+    {
+      "label": "test-verbose",
+      "command": "dotnet",
+      "type": "process",
+      "args": [
+        "test",
+        "${workspaceFolder}/Obsidian.Tests/Obsidian.Tests.csproj",
+        "--verbosity",
+        "detailed"
+      ],
+      "problemMatcher": "$msCompile",
+      "group": "test"
+    },
+    {
+      "label": "run-server",
+      "command": "dotnet",
+      "type": "process",
+      "args": [
+        "${workspaceFolder}/Obsidian.ConsoleApp/bin/Debug/net10.0/Obsidian.ConsoleApp.dll"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/Obsidian.ConsoleApp/bin/Debug/net10.0"
+      },
+      "problemMatcher": "$msCompile",
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "dependsOn": ["build-console-app"]
+    },
+    {
+      "label": "publish-release",
+      "command": "dotnet",
+      "type": "process",
+      "args": [
+        "publish",
+        "${workspaceFolder}/Obsidian.ConsoleApp/Obsidian.ConsoleApp.csproj",
+        "-c",
+        "Release",
+        "-o",
+        "${workspaceFolder}/publish"
+      ],
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "docker-build",
+      "command": "docker",
+      "type": "shell",
+      "args": ["build", ".", "-t", "obsidian:latest"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "docker-compose-up",
+      "command": "docker-compose",
+      "type": "shell",
+      "args": ["up", "-d"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ]
 }

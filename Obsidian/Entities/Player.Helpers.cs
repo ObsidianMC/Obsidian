@@ -219,7 +219,6 @@ public partial class Player
 
     private async ValueTask TrySpawnPlayerAsync(VectorF position)
     {
-        //TODO PROPER DISTANCE CALCULATION
         var entityBroadcastDistance = this.Server.Configuration.EntityBroadcastRangePercentage;
 
         foreach (var player in Level.GetPlayersInRange(position, entityBroadcastDistance))

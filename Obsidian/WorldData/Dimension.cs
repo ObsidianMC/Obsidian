@@ -1,11 +1,12 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Obsidian.API.Configuration;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using System.IO;
 
 namespace Obsidian.WorldData;
 
-internal sealed class Dimension(ILogger logger, IPacketBroadcaster packetBroadcaster, ServerConfiguration configuration,
+internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster packetBroadcaster, IOptionsMonitor<ServerConfiguration> configuration,
     IEventDispatcher eventDispatcher, ILevelGenerator worldGenerator, string name, IWorld world) :
     AbstractLevel(logger, packetBroadcaster, configuration, eventDispatcher, worldGenerator, name, world.Seed), IDimension
 {
@@ -13,7 +14,7 @@ internal sealed class Dimension(ILogger logger, IPacketBroadcaster packetBroadca
 
     public override void Initialize(DimensionCodec codec)
     {
-        this.FolderPath = Path.Combine("worlds", ParentWorld.Name, "dimensions", this.Name);
+        this.FolderPath = Path.Combine("worlds", ParentWorld.Name, "dimensions", this.Name.TrimResourceTag(true));
 
         this.DimensionName = codec.Name;
 
