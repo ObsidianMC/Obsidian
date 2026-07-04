@@ -382,15 +382,15 @@ public abstract class AbstractLevel : ILevel
                 chunksToKeep.AddRange(p.LoadedChunks);
             });
 
-            LoadedChunks.Except(chunksToKeep).Except(SpawnChunks).ForEach(async c =>
+            foreach (var chunk in LoadedChunks.Except(chunksToKeep).Except(SpawnChunks))
             {
-                if (LoadedChunks.TryRemove(c))
+                if (LoadedChunks.TryRemove(chunk))
                 {
-                    NumericsHelper.LongToInts(c, out var cx, out var cz);
+                    NumericsHelper.LongToInts(chunk, out var cx, out var cz);
                     var r = GetRegionForChunk(cx, cz);
                     await r.UnloadChunk(cx, cz);
                 }
-            });
+            }
         }
 
         if (ChunksToGen.IsEmpty)

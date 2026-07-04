@@ -7,6 +7,7 @@ using Obsidian.WorldData;
 using System.Threading;
 
 namespace Obsidian.Services;
+
 public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster> logger, IServerEnvironment environment) : BackgroundService, IPacketBroadcaster
 {
     private readonly IServer server = server;
@@ -55,7 +56,7 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
         if (toLevel is not AbstractLevel world)
             return;
 
-        foreach (var player in world.GetPlayersInRange(location, world.Configuration.EntityBroadcastRangePercentage).Cast<Player>())
+        foreach (var player in world.GetPlayersInRange(location, world.Configuration.EntityBroadcastRangePercentage).Cast<Player>().Where(x => !excludedIds.Contains(x.EntityId)))
             player.Client.SendPacket(packet);
     }
 

@@ -8,11 +8,9 @@ using System.IO;
 namespace Obsidian.WorldData;
 
 public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPacketBroadcaster packetBroadcaster, IOptionsMonitor<ServerConfiguration> configuration,
-    IEventDispatcher eventDispatcher, ILevelGenerator worldGenerator, string name, string seed) : 
+    IEventDispatcher eventDispatcher, ILevelGenerator worldGenerator, string name, string seed) :
     AbstractLevel(logger, packetBroadcaster, configuration, eventDispatcher, worldGenerator, name, seed), IWorld
 {
-    private const int SpawnChunkRadius = 12;
-
     public IWorldManager WorldManager { get; } = worldManager;
 
     internal Dictionary<string, IDimension> dimensions = [];
@@ -27,7 +25,9 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
         if (!fi.Exists)
             return false;
 
-        var reader = new NbtReader(fi.OpenRead(), NbtCompression.GZip);
+
+        await using var fs = fi.OpenRead();
+        var reader = new NbtReader(fs, NbtCompression.GZip);
         var levelCompound = (reader.ReadNextTag() as NbtCompound)!;
         LevelData = new LevelData()
         {
@@ -55,8 +55,8 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
 
         var (x, z) = LevelData.SpawnPosition.ToChunkCoord();
         var index = 0;
-        for (var cx = x - SpawnChunkRadius; cx < x + SpawnChunkRadius; cx++)
-            for (var cz = z - SpawnChunkRadius; cz < z + SpawnChunkRadius; cz++)
+        for (var cx = x - this.Configuration.SpawnChunkRadius; cx < x + this.Configuration.SpawnChunkRadius; cx++)
+            for (var cz = z - this.Configuration.SpawnChunkRadius; cz < z + this.Configuration.SpawnChunkRadius; cz++)
                 SpawnChunks[index++] = NumericsHelper.IntsToLong(cx, cz);
 
         await Parallel.ForEachAsync(SpawnChunks, async (c, _) =>

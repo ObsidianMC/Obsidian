@@ -3,6 +3,7 @@ using Obsidian.API.World;
 using Obsidian.WorldData;
 
 namespace Obsidian.Entities.Factories;
+
 internal class EntitySpawner(ILevel level) : IEntitySpawner
 {
     private readonly ILevel level = level;
@@ -138,6 +139,6 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
         entity.Burning = burning;
         entity.Glowing = glowing;
 
-        return (level as World).SpawnEntity(entity);
+        return level.SpawnEntity(entity);
     }
 }

@@ -86,6 +86,7 @@ public interface ILevel : IAsyncDisposable
     public bool TryAddPlayer(IPlayer player);
 
     public IEntity SpawnEntity(VectorF position, EntityType type);
+    public IEntity SpawnEntity(IEntity entity);
     public IEntity SpawnFallingBlock(VectorF position, Material mat);
     public void SpawnExperienceOrbs(VectorF position, short count);
     public IEnumerable<IPlayer> PlayersInRange(Vector location);
