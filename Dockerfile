@@ -1,6 +1,6 @@
 ARG GIT_SHA=v0.1
 
-FROM mcr.microsoft.com/dotnet/sdk:9.0-alpine AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 WORKDIR /src
 COPY . .
 RUN dotnet restore
