@@ -92,7 +92,7 @@ public partial class NetworkBuffer : INetStreamReader
         long scaleFactor = firstByte & ScaleBits;
 
         if ((firstByte & ContinuiationBit) != 0)
-            scaleFactor |= (long)this.ReadVarInt() << 2;
+            scaleFactor |= ((long)(uint)this.ReadVarInt()) << 2;
 
         var scaleFactorDouble = (double)scaleFactor;
 
