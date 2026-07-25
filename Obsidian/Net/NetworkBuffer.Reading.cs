@@ -89,16 +89,18 @@ public partial class NetworkBuffer : INetStreamReader
 
         long packedData = remainingBytes << 16 | (secondByte << 8) | firstByte;
 
-        long scaleFactor = firstByte & 3;
+        long scaleFactor = firstByte & ScaleBits;
 
-        if (HasContinuationBit(firstByte))
-            scaleFactor |= (this.ReadVarInt() & 4294967295L) << 2;
+        if ((firstByte & ContinuiationBit) != 0)
+            scaleFactor |= (long)this.ReadVarInt() << 2;
+
+        var scaleFactorDouble = (double)scaleFactor;
 
         var xPacked = packedData >> 3;
         var yPacked = packedData >> 18;
         var zPacked = packedData >> 33;
 
-        return new(Unpack(xPacked) * scaleFactor, Unpack(yPacked) * scaleFactor, Unpack(zPacked) * scaleFactor);
+        return new(Unpack(xPacked) * scaleFactorDouble, Unpack(yPacked) * scaleFactorDouble, Unpack(zPacked) * scaleFactorDouble);
     }
 
     public TValue? ReadOptional<TValue>() where TValue : INetworkSerializable<TValue> =>
@@ -474,8 +476,4 @@ public partial class NetworkBuffer : INetStreamReader
         if (this.offset >= this.data.Length)
             throw new IndexOutOfRangeException("Reached end of buffer");
     }
-
-    private static double Unpack(long value) => Math.Min((value & short.MaxValue), short.MaxValue - 1) * 2.0 / (short.MaxValue - 1) - 1.0;
-
-    private static bool HasContinuationBit(long value) => (value & 4) == 4;
 }

@@ -558,33 +558,27 @@ public partial class NetworkBuffer : INetStreamWriter
         this.WriteOptional(soundEvent.FixedRange);
     }
 
-    private const double MinAbsValue = 3.051944088384301E-5;
-    private const double MaxVelocityComponent = 1.7179869183E10;
-
+   
     [WriteMethod]
     public void WriteVelocity(Velocity value)
-    {
-        var x = SanitizeVelocityComponent(value.X);
-        var y = SanitizeVelocityComponent(value.Y);
-        var z = SanitizeVelocityComponent(value.Z);
+    {   
+        var maxAbsValue = NumericsHelper.AbsMax(value.X, NumericsHelper.AbsMax(value.Y, value.Z));
 
-        var maxAbsValue = NumericsHelper.AbsMax(x, NumericsHelper.AbsMax(y, z));
-
-        if (maxAbsValue < MinAbsValue)
+        if (double.IsNaN(maxAbsValue) || maxAbsValue < 1.0d / MaxQuantizedValue)
         {
             this.WriteByte(0);
             return;
         }
 
         var scaleFactor = (long)Math.Ceiling(maxAbsValue);
-        var needsExtraBytes = (scaleFactor & 3L) != scaleFactor;
-        var packedScale = needsExtraBytes ? (scaleFactor & 3L) | 4L : scaleFactor;
+        var needsExtraBytes = (scaleFactor & ScaleBits) != scaleFactor;
+        var packedScale = needsExtraBytes ? (scaleFactor & ScaleBits) | ContinuiationBit : scaleFactor;
 
-        var packedX = PackVelocityComponent(x / scaleFactor) << 3;
-        var packedY = PackVelocityComponent(y / scaleFactor) << 18;
-        var packedZ = PackVelocityComponent(z / scaleFactor) << 33;
+        var packedX = Pack(value.X / scaleFactor) << 3;
+        var packedY = Pack(value.Y / scaleFactor) << 18;
+        var packedZ = Pack(value.Z / scaleFactor) << 33;
 
-        var packedData = packedScale | packedX | packedY | packedZ;
+        var packedData = packedZ | packedY | packedX | packedScale;
         this.WriteByte((byte)packedData);
         this.WriteByte((byte)(packedData >> 8));
         this.WriteInt((int)(packedData >> 16));
@@ -695,13 +689,15 @@ public partial class NetworkBuffer : INetStreamWriter
 
     public byte[] ToArray() => this.Data;
 
-
+    private const double MaxVelocityComponent = 1.7179869183E10;
+    private const double MaxQuantizedValue = short.MaxValue - 1;
     private const double VelocityPackingScale = 0.5;
-    private const int VelocityPackingMaxValue = short.MaxValue - 1;
+    private const long ContinuiationBit = 0x04L;
+    private const long ScaleBits = 0x03L;
 
-    private static long PackVelocityComponent(double value) =>
-        (long)Math.Round((value * VelocityPackingScale + VelocityPackingScale) * VelocityPackingMaxValue, MidpointRounding.AwayFromZero);
+    private static long Pack(double value) =>
+      (long)Math.Round((value * VelocityPackingScale + VelocityPackingScale) * MaxQuantizedValue);
 
-    private static double SanitizeVelocityComponent(double value) =>
-        double.IsNaN(value) ? 0.0 : Math.Clamp(value, -MaxVelocityComponent, MaxVelocityComponent);
+    private static double Unpack(long value) =>
+        Math.Min((value & short.MaxValue), MaxQuantizedValue) * 2.0 / MaxQuantizedValue - 1.0;
 }
