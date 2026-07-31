@@ -4,7 +4,7 @@ public interface IBlockUpdate
 {
     public IBlock? Block { get; set; }
 
-    public IWorld World { get; }
+    public ILevel Level { get; }
     public Vector Position { get; set; }
 
     public int Delay { get; set; }

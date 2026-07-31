@@ -1,12 +1,10 @@
-﻿using Microsoft.AspNetCore.Connections.Features;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.ChunkData;
 using Obsidian.Nbt;
 using Obsidian.Utilities.Collections;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace Obsidian.WorldData;
@@ -43,6 +41,8 @@ public class Region : IRegion
         RegionFolder = Path.Join(worldFolderPath, "regions");
         Directory.CreateDirectory(RegionFolder);
         var filePath = Path.Join(RegionFolder, $"r.{X}.{Z}.mca");
+
+        logger?.LogInformation("Loading region file {RegionFile} with compression {Compression}", filePath, chunkCompression);
         regionFile = new RegionFile(filePath, chunkCompression, CubicRegionSize, logger);
         ChunkCompression = chunkCompression;
     }
@@ -149,12 +149,12 @@ public class Region : IRegion
             }
             else
             {
-                bool updateNeighbor = await bu.World.HandleBlockUpdateAsync(bu);
+                bool updateNeighbor = await bu.Level.HandleBlockUpdateAsync(bu);
                 if (updateNeighbor) { neighborUpdates.Add(bu); }
             }
         }
         delayed.ForEach(AddBlockUpdate);
-        neighborUpdates.ForEach(async u => await u.World.BlockUpdateNeighborsAsync(u));
+        neighborUpdates.ForEach(async u => await u.Level.BlockUpdateNeighborsAsync(u));
     }
 
     #region NBT Ops

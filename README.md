@@ -46,7 +46,7 @@ Easy, isn't it?
 You can now run Obsidian using Docker! As of right now, no image is available on DockerHub yet, but it will be sometime soon.
 
 For now, to run Obsidian on Docker you will have to follow the following steps:
-1. Clone Obsidian `git clone https://github.com/ObsidianMC/Obsidian.git`
+1. Clone Obsidian `git clone --recurse-submodules https://github.com/ObsidianMC/Obsidian.git`
 2. Go to Obsidian's cloned directory `cd Obsidian`
 3. Build the docker image `docker build . -t obsidian`
 4. Run the container `docker run -d -p YOUR_HOST_PORT:25565 -v YOUR_SERVERFILES_PATH:/files --name YOUR_CONTAINER_NAME obsidian`
@@ -55,7 +55,7 @@ For now, to run Obsidian on Docker you will have to follow the following steps:
 
 ### Docker Compose
 There's also docker-compose support.
-1. Clone Obsidian `git clone https://github.com/ObsidianMC/Obsidian.git`
+1. Clone Obsidian `git clone --recurse-submodules https://github.com/ObsidianMC/Obsidian.git`
 2. Go to Obsidian's cloned directory `cd Obsidian`
 3. Run `docker-compose up -V` to generate the `config.json`
 4. Edit your `docker-compose.yml` file, along with `files/config.json`

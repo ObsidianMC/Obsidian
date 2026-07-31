@@ -1,4 +1,5 @@
 ﻿using Obsidian.WorldData.Generators.Overworld;
+using Obsidian.API.World;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -6,17 +7,18 @@ namespace Obsidian.WorldData.Generators;
 
 public class GenHelper
 {
-    private readonly IWorld world;
+    private readonly ILevel level;
 
     internal int Seed { get; private set; }
 
     internal OverworldTerrainNoise Noise { get; private set; }
 
-    public IWorld World => this.world;
+    public IWorld World { get; }
 
-    public GenHelper(IWorld world)
+    public GenHelper(ILevel world)
     {
-        this.world = world;
+        this.level = world;
+        this.World = world as IWorld ?? (world as IDimension)?.ParentWorld ?? throw new ArgumentException("Level must be a world or dimension.", nameof(world));
         if (!int.TryParse(world.Seed, out int seedHash))
             seedHash = BitConverter.ToInt32(MD5.HashData(Encoding.UTF8.GetBytes(world.Seed)));
         Seed = seedHash;
@@ -31,15 +33,15 @@ public class GenHelper
         }
         else
         {
-            await world.SetBlockUntrackedAsync(position, block, false);
+            await level.SetBlockUntrackedAsync(position, block, false);
         }
     }
 
     public ValueTask SetBlockAsync(int x, int y, int z, IBlock block, IChunk? chunk) => SetBlockAsync(new Vector(x, y, z), block, chunk);
 
-    public ValueTask SetBlockAsync(int x, int y, int z, IBlock block) => world.SetBlockUntrackedAsync(x, y, z, block, false);
+    public ValueTask SetBlockAsync(int x, int y, int z, IBlock block) => level.SetBlockUntrackedAsync(x, y, z, block, false);
 
-    public ValueTask SetBlockAsync(Vector position, IBlock block) => world.SetBlockUntrackedAsync(position, block, false);
+    public ValueTask SetBlockAsync(Vector position, IBlock block) => level.SetBlockUntrackedAsync(position, block, false);
 
     public async ValueTask<IBlock?> GetBlockAsync(Vector position, IChunk? chunk)
     {
@@ -47,14 +49,14 @@ public class GenHelper
         {
             return c.GetBlock(position);
         }
-        return await world.GetBlockAsync(position);
+        return await level.GetBlockAsync(position);
     }
 
     public ValueTask<IBlock?> GetBlockAsync(int x, int y, int z, IChunk? chunk) => GetBlockAsync(new Vector(x, y, z), chunk);
 
-    public ValueTask<IBlock?> GetBlockAsync(int x, int y, int z) => world.GetBlockAsync(x, y, z);
+    public ValueTask<IBlock?> GetBlockAsync(int x, int y, int z) => level.GetBlockAsync(x, y, z);
 
-    public ValueTask<IBlock?> GetBlockAsync(Vector position) => world.GetBlockAsync(position);
+    public ValueTask<IBlock?> GetBlockAsync(Vector position) => level.GetBlockAsync(position);
 
     public async ValueTask<int?> GetWorldHeightAsync(int x, int z, IChunk? chunk)
     {
@@ -62,6 +64,6 @@ public class GenHelper
         {
             return c.Heightmaps[HeightmapType.MotionBlocking].GetHeight(NumericsHelper.Modulo(x, 16), NumericsHelper.Modulo(z, 16));
         }
-        return await world.GetWorldSurfaceHeightAsync(x, z);
+        return await level.GetWorldSurfaceHeightAsync(x, z);
     }
 }

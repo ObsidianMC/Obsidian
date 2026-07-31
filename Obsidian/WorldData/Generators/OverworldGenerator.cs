@@ -3,10 +3,10 @@ using Obsidian.WorldData.Generators.Overworld;
 
 namespace Obsidian.WorldData.Generators;
 
-public sealed class OverworldGenerator : IWorldGenerator
+public sealed class OverworldGenerator : ILevelGenerator
 {
     private GenHelper helper;
-    private IWorld world;
+    private ILevel world;
 
     public string Id => "overworld";
 
@@ -66,7 +66,7 @@ public sealed class OverworldGenerator : IWorldGenerator
         return chunk;
     }
 
-    public void Init(IWorld world)
+    public void Init(ILevel world)
     {
         this.world = world;
         helper = new GenHelper(world);

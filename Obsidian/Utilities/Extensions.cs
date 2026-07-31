@@ -55,6 +55,8 @@ public static partial class Extensions
                 EntityType.FishingBobber,
                 EntityType.EyeOfEnder];
 
+    public static string GetPlayerDataPath(this IWorld world, Guid uuid, bool isOld = false) => Path.Combine(world.PlayerDataPath, isOld ? $"{uuid}.dat.old" : $"{uuid}.dat");
+
     public static async ValueTask DisconnectPlayerIfConnectedAsync(this IServer server, string username, ChatMessage? reason = null)
     {
         if (!server.TryGetPlayer(username, out var player))

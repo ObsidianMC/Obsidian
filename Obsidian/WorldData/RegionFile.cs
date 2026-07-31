@@ -76,7 +76,7 @@ public sealed class RegionFile : IAsyncDisposable
         {
             using var num = new RentedArray<byte>(4);
 
-            await this.regionFileStream.ReadAsync(num);
+            await regionFileStream.ReadExactlyAsync(num);
 
             this.Locations[index] = BinaryPrimitives.ReadInt32BigEndian(num);
         }
@@ -85,7 +85,7 @@ public sealed class RegionFile : IAsyncDisposable
         {
             using var num = new RentedArray<byte>(4);
 
-            await this.regionFileStream.ReadAsync(num);
+            await regionFileStream.ReadExactlyAsync(num);
 
             this.Timestamps[index] = BinaryPrimitives.ReadInt32BigEndian(num);
         }

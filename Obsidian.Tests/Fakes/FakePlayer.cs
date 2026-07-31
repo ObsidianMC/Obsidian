@@ -3,6 +3,7 @@ using Obsidian.API.AI;
 using Obsidian.API.Effects;
 using Obsidian.API.Inventory;
 using Obsidian.API.Utilities.Concurrency;
+using Obsidian.API.World;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -77,7 +78,7 @@ public sealed class FakePlayer : IPlayer
 
     public IReadOnlyDictionary<int, EffectWithCurrentDuration> ActivePotionEffects => throw new NotImplementedException();
 
-    public IWorld World => throw new NotImplementedException();
+    public ILevel Level => throw new NotImplementedException();
 
     public INavigator Navigator { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     public IGoalController GoalController { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }

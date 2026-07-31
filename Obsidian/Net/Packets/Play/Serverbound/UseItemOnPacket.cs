@@ -44,7 +44,7 @@ public partial class UseItemOnPacket
         var currentItem = player.GetHeldItem() ?? player.GetOffHandItem();
         var position = this.Position;
 
-        var b = await player.World.GetBlockAsync(position);
+        var b = await player.Level.GetBlockAsync(position);
 
         if (b is null)
             return;
@@ -122,20 +122,20 @@ public partial class UseItemOnPacket
 
         if (TagsRegistry.Block.GravityAffected.Entries.Contains(block.RegistryId))
         {
-            if (await player.World.GetBlockAsync(position + Vector.Down) is IBlock below &&
+            if (await player.Level.GetBlockAsync(position + Vector.Down) is IBlock below &&
                 (TagsRegistry.Block.ReplaceableByLiquid.Entries.Contains(below.RegistryId) || below.IsLiquid))
             {
-                await player.World.SetBlockAsync(position, BlocksRegistry.Air, true);
+                await player.Level.SetBlockAsync(position, BlocksRegistry.Air, true);
                 player.Client.SendPacket(new BlockChangedAckPacket
                 {
                     SequenceID = Sequence
                 });
-                player.World.SpawnFallingBlock(position, block.Material);
+                player.Level.SpawnFallingBlock(position, block.Material);
                 return;
             }
         }
 
-        await player.World.SetBlockAsync(position, block, doBlockUpdate: true);
+        await player.Level.SetBlockAsync(position, block, doBlockUpdate: true);
         player.Client.SendPacket(new BlockChangedAckPacket
         {
             SequenceID = Sequence

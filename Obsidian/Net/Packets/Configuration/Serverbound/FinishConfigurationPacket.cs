@@ -22,7 +22,7 @@ public sealed partial class FinishConfigurationPacket
             return;
         }
 
-        if (!CodecRegistry.TryGetDimension(player.World.DimensionName, out var codec) || !CodecRegistry.TryGetDimension("minecraft:overworld", out codec))
+        if (!CodecRegistry.TryGetDimension(player.Level.DimensionName, out var codec) || !CodecRegistry.TryGetDimension("minecraft:overworld", out codec))
             throw new UnreachableException("Failed to retrieve proper dimension for player.");
 
         await client.QueuePacketAsync(new LoginPacket
@@ -44,10 +44,10 @@ public sealed partial class FinishConfigurationPacket
         await client.QueuePacketAsync(new SetDefaultSpawnPositionPacket(new()
         {
             DimensionName = codec.Name,
-            Position = (Vector)player.World.LevelData.SpawnPosition
+            Position = (Vector)player.Level.LevelData.SpawnPosition
         }, 0, 0));
-        await client.QueuePacketAsync(new SetTimePacket(player.World.LevelData.Time, player.World.LevelData.DayTime, true));
-        await client.QueuePacketAsync(new GameEventPacket(player.World.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
+        await client.QueuePacketAsync(new SetTimePacket(player.Level.LevelData.Time, player.Level.LevelData.DayTime, true));
+        await client.QueuePacketAsync(new GameEventPacket(player.Level.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
 
         await client.QueuePacketAsync(CustomPayloadPacket.ClientboundPlay with { Channel = "minecraft:brand", PluginData = server.BrandData });
         await client.QueuePacketAsync(CommandsRegistry.Packet);

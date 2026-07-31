@@ -1,4 +1,6 @@
-﻿namespace Obsidian.WorldData;
+﻿using Obsidian.API.World;
+
+namespace Obsidian.WorldData;
 
 internal static class Lighting
 {
@@ -61,7 +63,7 @@ internal static class Lighting
         }
     }
 
-    public static async Task LightFromNeighbors(IChunk chunk, IWorld world)
+    public static async Task LightFromNeighbors(IChunk chunk, ILevel world)
     {
         foreach (var (dx, dz, dir, edgeX, edgeZ) in FromNeighborOffsets)
         {
@@ -79,7 +81,7 @@ internal static class Lighting
         }
     }
 
-    public static async Task LightToNeighbors(IChunk chunk, IWorld world)
+    public static async Task LightToNeighbors(IChunk chunk, ILevel world)
     {
         foreach (var (dx, dz, dir, sourceEdgeX, sourceEdgeZ) in ToNeighborOffsets)
         {

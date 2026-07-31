@@ -21,6 +21,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v5
+      with:
+        submodules: recursive
     - name: xXx_set_env_variables_xXx
       run: echo "GIT_SHA=${GITHUB_SHA}" >> $GITHUB_ENV
     - name: Setup .NET

@@ -12,8 +12,8 @@ using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Plugins;
 using Obsidian.Services;
-using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 
@@ -138,7 +138,7 @@ public sealed partial class Server : IServer
         return null;
     }
 
-    public bool TryGetPlayer(string username, out IPlayer? player)
+    public bool TryGetPlayer(string username, [NotNullWhen(true)] out IPlayer? player)
     {
         if (this.GetPlayer(username) is IPlayer foundPlayer)
         {
@@ -150,9 +150,10 @@ public sealed partial class Server : IServer
         return false;
     }
 
-    public bool TryGetPlayer(Guid uuid, out IPlayer? player) => this.OnlinePlayers.TryGetValue(uuid, out player);
+    
+    public bool TryGetPlayer(Guid uuid, [NotNullWhen(true)] out IPlayer? player) => this.OnlinePlayers.TryGetValue(uuid, out player);
 
-    public bool TryGetPlayer(int entityId, out IPlayer? player)
+    public bool TryGetPlayer(int entityId, [NotNullWhen(true)] out IPlayer? player)
     {
         if (this.GetPlayer(entityId) is IPlayer foundPlayer)
         {
@@ -172,7 +173,7 @@ public sealed partial class Server : IServer
 
     public void BroadcastMessage(IWorld world, ChatMessage message)
     {
-        this.DefaultWorld.PacketBroadcaster.QueuePacketToWorld(world, new SystemChatPacket(message, false));
+        this.DefaultWorld.PacketBroadcaster.QueuePacketToLevel(world, new SystemChatPacket(message, false));
         logger.LogInformation("{message}", message.Text);
     }
 
@@ -191,7 +192,7 @@ public sealed partial class Server : IServer
         Directory.CreateDirectory(ServerConstants.PermissionPath);
         Directory.CreateDirectory(ServerConstants.PersistentDataPath);
         Directory.CreateDirectory(ServerConstants.AcceptedKeysPath);
-        Directory.CreateDirectory("plugins");
+        Directory.CreateDirectory(ServerConstants.PluginsPath);
 
         StartTime = DateTimeOffset.Now;
         this.Connections = new ConcurrentDictionary<int, IClient>(-1, this.MaxConnections);
@@ -306,7 +307,7 @@ public sealed partial class Server : IServer
     {
         this.UsernameToUuidMappings.Remove(player.Username, out _);
 
-        player.World.TryRemovePlayer(player);
+        player.Level.TryRemovePlayer(player);
 
         return this.OnlinePlayers.Remove(player.Uuid, out _);
     }

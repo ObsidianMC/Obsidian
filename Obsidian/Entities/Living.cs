@@ -57,7 +57,7 @@ public class Living : Entity, ILiving
 
     public void AddPotionEffect(int effectId, int duration, int amplifier = 0, EntityEffectFlags effect = EntityEffectFlags.None)
     {
-        this.PacketBroadcaster.QueuePacketToWorld(this.World, new UpdateMobEffectPacket(EntityId, effectId, duration)
+        this.PacketBroadcaster.QueuePacketToLevel(this.Level, new UpdateMobEffectPacket(EntityId, effectId, duration)
         {
             Amplifier = amplifier,
             Flags = effect
@@ -82,7 +82,7 @@ public class Living : Entity, ILiving
 
     public void RemovePotionEffect(int effectId)
     {
-        this.PacketBroadcaster.QueuePacketToWorld(this.World, new RemoveMobEffectPacket(EntityId, effectId));
+        this.PacketBroadcaster.QueuePacketToLevel(this.Level, new RemoveMobEffectPacket(EntityId, effectId));
         activePotionEffects.TryRemove(effectId, out _);
     }
     public override void Write(INetStreamWriter writer)

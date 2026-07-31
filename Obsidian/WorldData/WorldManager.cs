@@ -4,7 +4,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Obsidian.API.Configuration;
 using Obsidian.Hosting;
-using Obsidian.WorldData.Generators;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -12,15 +11,14 @@ using System.Threading;
 
 namespace Obsidian.WorldData;
 
-public sealed class WorldManager(ILoggerFactory loggerFactory, IServiceProvider serviceProvider, IOptionsMonitor<ServerConfiguration> configuration,
-    IServerEnvironment serverEnvironment) : BackgroundService, IWorldManager
+public sealed class WorldManager(ILogger<WorldManager> logger, IServiceProvider serviceProvider, IOptionsMonitor<ServerConfiguration> configuration,
+    IServerEnvironment serverEnvironment, ILevelFactory levelFactory) : BackgroundService, IWorldManager
 {
-    private readonly ILogger logger = loggerFactory.CreateLogger<WorldManager>();
-    private readonly Dictionary<string, IWorld> worlds = new();
-    private readonly ILoggerFactory loggerFactory = loggerFactory;
-    private readonly IServiceProvider serviceProvider = serviceProvider;
+    private readonly ILogger<WorldManager> logger = logger;
+    private readonly Dictionary<string, IWorld> worlds = [];
     private readonly IOptionsMonitor<ServerConfiguration> configuration = configuration;
     private readonly IServerEnvironment serverEnvironment = serverEnvironment;
+    private readonly ILevelFactory levelFactory = levelFactory;
     private readonly IServiceScope serviceScope = serviceProvider.CreateScope();
 
     public bool ReadyToJoin { get; private set; }
@@ -31,20 +29,15 @@ public sealed class WorldManager(ILoggerFactory loggerFactory, IServiceProvider 
 
     public IWorld DefaultWorld { get; private set; } = default!;
 
-    public Dictionary<string, Type> WorldGenerators { get; } = new();
-
     protected async override Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var timer = new BalancingTimer(20, stoppingToken);
 
         try
         {
-            this.RegisterDefaults();
-            // TODO: This should defenitly accept a cancellation token.
-            // If Cancel is called, this method should stop within the configured timeout, otherwise code execution will simply stop here,
-            // and server shutdown will not be handled correctly.
-            // Load worlds on startup.
-            await this.LoadWorldsAsync();
+            this.levelFactory.Initialize();
+
+            await this.LoadWorldsAsync(stoppingToken);
 
             while (await timer.WaitForNextTickAsync())
             {
@@ -58,43 +51,12 @@ public sealed class WorldManager(ILoggerFactory loggerFactory, IServiceProvider 
 
     }
 
-    /// <summary>
-    /// Registers new world generator(s) to the server.
-    /// </summary>
-    /// <param name="entries">A compatible list of entries.</param>
-    public void RegisterGenerator<T>() where T : IWorldGenerator, new()
+    public async Task LoadWorldsAsync(CancellationToken cancellationToken = default)
     {
-        var gen = new T();
-        if (string.IsNullOrWhiteSpace(gen.Id))
-            throw new InvalidOperationException($"Failed to get id for generator: {gen.Id}");
-
-        if (this.WorldGenerators.TryAdd(gen.Id, typeof(T)))
-            this.logger.LogDebug("Registered {generatorId}...", gen.Id);
-    }
-
-    public async Task LoadWorldsAsync()
-    {
-        var worlds = await LoadServerWorldsAsync();
+        var worlds = await LoadServerWorldsAsync(cancellationToken);
         foreach (var serverWorld in worlds)
         {
-            //var server = (Server)this.server;
-            if (!this.WorldGenerators.TryGetValue(serverWorld.Generator, out var generatorType))
-            {
-                this.logger.LogError("Unknown generator type {generator} for world {worldName}", serverWorld.Generator, serverWorld.Name);
-                continue;
-            }
-
-            //TODO fix
-            var world = new World(this.loggerFactory.CreateLogger($"World [{serverWorld.Name}]"), generatorType, this)
-            {
-                Configuration = this.configuration.CurrentValue,
-                PacketBroadcaster = this.serviceScope.ServiceProvider.GetRequiredService<IPacketBroadcaster>(),
-                EventDispatcher = this.serviceScope.ServiceProvider.GetRequiredService<IEventDispatcher>(),
-                Name = serverWorld.Name,
-                Seed = serverWorld.Seed
-            };
-
-            world.InitGenerator();
+            var world = this.levelFactory.CreateWorld(serverWorld.Name, serverWorld.Seed, serverWorld.Generator);
 
             this.worlds.Add(world.Name, world);
 
@@ -105,9 +67,6 @@ public sealed class WorldManager(ILoggerFactory loggerFactory, IServiceProvider 
             {
                 this.logger.LogInformation("Creating new world: {worldName}...", serverWorld.Name);
 
-                world.Init(defaultCodec);
-
-                //TODO maybe make a method that takes in params
                 foreach (var dimensionName in serverWorld.ChildDimensions)
                 {
                     if (!CodecRegistry.TryGetDimension(dimensionName, out var codec))
@@ -116,13 +75,16 @@ public sealed class WorldManager(ILoggerFactory loggerFactory, IServiceProvider 
                         continue;
                     }
 
-                    // Don't have any dimension generators yet so we'll just stick with overworld
-                    // TODO create dimension generators
-                    world.RegisterDimension(codec, "overworld");
+                    var dimension = this.levelFactory.CreateDimension(world, codec.Name, dimensionName);
+
+                    dimension.Initialize(codec);
+                    world.RegisterDimension(codec, dimension);
+
+                    await dimension.GenerateAsync();
+                    await dimension.SaveAsync();
                 }
 
-                await world.GenerateWorldAsync(true);
-
+                await world.GenerateAsync();
                 await world.SaveAsync();
             }
 
@@ -151,8 +113,8 @@ public sealed class WorldManager(ILoggerFactory loggerFactory, IServiceProvider 
         return false;
     }
 
-    public Task TickWorldsAsync() => Task.WhenAll(this.worlds.Select(pair => pair.Value.DoWorldTickAsync()));
-    public Task FlushLoadedWorldsAsync() => Task.WhenAll(this.worlds.Select(pair => pair.Value.FlushRegionsAsync()));
+    public Task TickWorldsAsync() => Task.WhenAll(this.worlds.Values.Select(world => world.DoWorldTickAsync()));
+    public Task FlushLoadedWorldsAsync() => Task.WhenAll(this.worlds.Values.Select(world => world.FlushRegionsAsync()));
 
     public async ValueTask DisposeAsync()
     {
@@ -166,27 +128,14 @@ public sealed class WorldManager(ILoggerFactory loggerFactory, IServiceProvider 
         this.Dispose();
     }
 
-    /// <summary>
-    /// Registers the "obsidian-vanilla" entities and objects.
-    /// </summary>
-    /// Might be used for more stuff later so I'll leave this here - tides
-    private void RegisterDefaults()
-    {
-        this.RegisterGenerator<SuperflatGenerator>();
-        this.RegisterGenerator<OverworldGenerator>();
-        this.RegisterGenerator<IslandGenerator>();
-        this.RegisterGenerator<EmptyWorldGenerator>();
-        this.RegisterGenerator<MojangGenerator>();
-    }
-
-    private static async Task<List<ServerWorld>> LoadServerWorldsAsync()
+    private static async Task<List<ServerWorld>> LoadServerWorldsAsync(CancellationToken cancellationToken = default)
     {
         var worldsFile = new FileInfo(Path.Combine("config", "worlds.json"));
 
         if (worldsFile.Exists)
         {
             await using var worldsFileStream = worldsFile.OpenRead();
-            return await worldsFileStream.FromJsonAsync<List<ServerWorld>>()
+            return await worldsFileStream.FromJsonAsync<List<ServerWorld>>(cancellationToken: cancellationToken)
                 ?? throw new Exception("A worlds file does exist, but is invalid. Is it corrupt?");
         }
 
@@ -204,7 +153,7 @@ public sealed class WorldManager(ILoggerFactory loggerFactory, IServiceProvider 
             };
 
         await using var fileStream = worldsFile.Create();
-        await worlds.ToJsonAsync(fileStream);
+        await worlds.ToJsonAsync(fileStream, cancellationToken: cancellationToken);
 
         return worlds;
     }

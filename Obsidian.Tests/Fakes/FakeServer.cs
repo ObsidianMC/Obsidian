@@ -40,6 +40,7 @@ public sealed class FakeServer : IServer
     public IScoreboardManager ScoreboardManager => throw new NotImplementedException();
 
     public IEventDispatcher EventDispatcher => throw new NotImplementedException();
+    public IWorldManager WorldManager => throw new NotImplementedException();
 
     public bool AddPlayer(IPlayer player) => throw new NotImplementedException();
     public void BroadcastMessage(ChatMessage message) => throw new NotImplementedException();

@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.WorldData.Generators;
 
-public class SuperflatGenerator : IWorldGenerator
+public class SuperflatGenerator : ILevelGenerator
 {
     private static readonly Chunk model;
 
@@ -45,6 +45,6 @@ public class SuperflatGenerator : IWorldGenerator
     public ValueTask<IChunk> GenerateChunkAsync(int x, int z, IChunk? chunk = null, ChunkGenStage status = ChunkGenStage.full) =>
         chunk is { IsGenerated: true } ? ValueTask.FromResult(chunk) : ValueTask.FromResult(model.Clone(x, z));
 
-    public void Init(IWorld world) { }
+    public void Init(ILevel level) { }
 
 }

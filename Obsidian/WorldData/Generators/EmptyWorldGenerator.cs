@@ -1,6 +1,8 @@
-﻿namespace Obsidian.WorldData.Generators;
+﻿using Obsidian.API.World;
 
-public class EmptyWorldGenerator : IWorldGenerator
+namespace Obsidian.WorldData.Generators;
+
+public class EmptyWorldGenerator : ILevelGenerator
 {
     private static readonly Chunk empty;
     private static readonly Chunk spawn;
@@ -56,5 +58,5 @@ public class EmptyWorldGenerator : IWorldGenerator
         return x == 0 && z == 0 ? ValueTask.FromResult(spawn.Clone(x, z)) : ValueTask.FromResult(empty.Clone(x, z));
     }
 
-    public void Init(IWorld world) { }
+    public void Init(ILevel level) { }
 }

@@ -9,18 +9,12 @@ using System.Buffers;
 using System.IO;
 
 namespace Obsidian.Entities;
+
 public partial class Player
 {
     public async Task SaveAsync()
     {
-        var playerDataFile = new FileInfo(GetPlayerDataPath());
         var persistentDataFile = new FileInfo(PersistentDataFile);
-
-        if (playerDataFile.Exists)
-        {
-            playerDataFile.CopyTo(GetPlayerDataPath(true), true);
-            playerDataFile.Delete();
-        }
 
         if (persistentDataFile.Exists)
         {
@@ -30,12 +24,25 @@ public partial class Player
 
         await using var persistentDataStream = persistentDataFile.Create();
         await using var persistentDataWriter = new NbtWriterStream(persistentDataStream, NbtCompression.GZip, "");
-        
-        persistentDataWriter.WriteString("worldName", World.ParentWorldName ?? World.Name);
+
+        var level = this.Level is IDimension dimension ? dimension.ParentWorld : this.Level as IWorld;
+        var worldName = level.Name;
+
+        persistentDataWriter.WriteString("worldName", worldName);
         //TODO make sure to save inventory in the right location if has using global data set to true
 
         persistentDataWriter.EndCompound();
         await persistentDataWriter.TryFinishAsync();
+
+        var playerDatPath = level.GetPlayerDataPath(this.Uuid);
+
+        var playerDataFile = new FileInfo(playerDatPath);
+
+        if (playerDataFile.Exists)
+        {
+            playerDataFile.CopyTo(level.GetPlayerDataPath(this.Uuid, true), true);
+            playerDataFile.Delete();
+        }
 
         await using var playerFileStream = playerDataFile.Create();
         await using var writer = new NbtWriterStream(playerFileStream, NbtCompression.GZip, "");
@@ -59,7 +66,7 @@ public partial class Player
         writer.WriteFloat("foodExhaustionLevel", FoodExhaustionLevel);
         writer.WriteFloat("foodSaturationLevel", FoodSaturationLevel);
 
-        writer.WriteString("Dimension", World.DimensionName);
+        writer.WriteString("Dimension", Level.DimensionName);
 
         writer.WriteListStart("Pos", NbtTagType.Double, 3);
 
@@ -100,24 +107,22 @@ public partial class Player
             {
                 var worldName = persistentDataCompound.GetString("worldName")!;
 
-                Logger.LogInformation("persistent world: {worldName}", worldName);
-
-                if (loadFromPersistentWorld && this.World.WorldManager.TryGetWorld<IWorld>(worldName, out var world))
+                if (loadFromPersistentWorld && this.Server.WorldManager.TryGetWorld<IWorld>(worldName, out var resolvedWorld))
                 {
-                    World = world;
-                    Logger.LogInformation("Loading from persistent world: {worldName}", worldName);
+                    this.Level = resolvedWorld;
                 }
             }
         }
 
+        var world = this.Level as IWorld;
         // Then read player data
-        var playerDataFile = new FileInfo(GetPlayerDataPath());
+        var playerDataFile = new FileInfo(world.GetPlayerDataPath(this.Uuid));
 
         await LoadPermsAsync();
 
         if (!playerDataFile.Exists)
         {
-            Position = World.LevelData.SpawnPosition;
+            Position = Level.LevelData.SpawnPosition;
             return;
         }
 
@@ -132,7 +137,7 @@ public partial class Player
         catch (Exception ex)
         {
             this.Logger.LogWarning(ex, "Player has invalid saved data.");
-            Position = World.LevelData.SpawnPosition;//Set spawn here cause the data loaded was invalid
+            Position = Level.LevelData.SpawnPosition;//Set spawn here cause the data loaded was invalid
         }
 
         if (!Alive)
@@ -214,10 +219,9 @@ public partial class Player
 
     private async ValueTask TrySpawnPlayerAsync(VectorF position)
     {
-        //TODO PROPER DISTANCE CALCULATION
         var entityBroadcastDistance = this.Server.Configuration.EntityBroadcastRangePercentage;
 
-        foreach (var player in World.GetPlayersInRange(position, entityBroadcastDistance))
+        foreach (var player in Level.GetPlayersInRange(position, entityBroadcastDistance))
         {
             if (player.EntityId == this.EntityId)
                 continue;
@@ -254,7 +258,7 @@ public partial class Player
 
     private async Task PickupNearbyItemsAsync(float distance = 1.5f)
     {
-        foreach (var entity in World.GetNonPlayerEntitiesInRange(Position, distance))
+        foreach (var entity in Level.GetNonPlayerEntitiesInRange(Position, distance))
         {
             if (entity is not ItemEntity itemEntity)
                 continue;
@@ -262,7 +266,7 @@ public partial class Player
             if (!itemEntity.CanPickup)
                 continue;
 
-            this.PacketBroadcaster.QueuePacketToWorld(this.World, new TakeItemEntityPacket
+            this.PacketBroadcaster.QueuePacketToLevel(this.Level, new TakeItemEntityPacket
             {
                 CollectedEntityId = itemEntity.EntityId,
                 CollectorEntityId = EntityId,
@@ -322,8 +326,6 @@ public partial class Player
         { Uuid, actions.ToList() }
     };
 
-    private string GetPlayerDataPath(bool isOld = false) => Path.Join(World.PlayerDataPath, isOld ? $"{Uuid}.dat.old" : $"{Uuid}.dat");
-
     private void InitializePlayer(NbtCompound compound)
     {
         MovementFlags = (MovementFlags)compound.GetByte("MovementFlags");
@@ -353,8 +355,8 @@ public partial class Player
         compound.TryGetTag("Pos", out var posTag);
         Position = (posTag as NbtList) switch
         {
-        [NbtTag<double> a, NbtTag<double> b, NbtTag<double> c, ..] => new VectorF((float)a.Value, (float)b.Value, (float)c.Value),
-            _ => World.LevelData.SpawnPosition
+            [NbtTag<double> a, NbtTag<double> b, NbtTag<double> c, ..] => new VectorF((float)a.Value, (float)b.Value, (float)c.Value),
+            _ => Level.LevelData.SpawnPosition
         };
 
         if (compound.TryGetTag("Rotation", out var rotationTag))

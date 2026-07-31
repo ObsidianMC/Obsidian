@@ -164,7 +164,7 @@ public sealed class MainCommandModule : CommandModuleBase
     [CommandInfo("Save World", "/save")]
     public async Task SaveAsync()
     {
-        if (this.Player?.World is World world)
+        if (this.Player?.Level is World world)
         {
             await world.FlushRegionsAsync();
         }
@@ -363,7 +363,7 @@ public sealed class MainCommandModule : CommandModuleBase
             return;
         }
 
-        var builder = player.World.GetNewEntitySpawner()
+        var builder = player.Level.GetNewEntitySpawner()
             .WithEntityType(type)
             .AtPosition(player.Position)
             .Spawn();
@@ -386,7 +386,7 @@ public sealed class MainCommandModule : CommandModuleBase
             return;
         }
 
-        var frogge = player.World.GetNewEntitySpawner()
+        var frogge = player.Level.GetNewEntitySpawner()
             .WithEntityType(type)
             .AtPosition(player.Position)
             .WithCustomName("Derpy Derp")
@@ -430,7 +430,7 @@ public sealed class MainCommandModule : CommandModuleBase
     {
         if (this.Player is Player player)
         {
-            player.World.LevelData.RainTime = 0;
+            player.Level.LevelData.RainTime = 0;
             await this.Sender.SendMessageAsync("Toggled weather for this world.");
         }
     }
@@ -443,7 +443,7 @@ public sealed class MainCommandModule : CommandModuleBase
 
         if (server.WorldManager.TryGetWorld(worldname, out World? world))
         {
-            if (player.World.Name.EqualsIgnoreCase(worldname))
+            if (player.Level.Name.EqualsIgnoreCase(worldname))
             {
                 await player.SendMessageAsync("You can't switch to a world you're already in!");
                 return;

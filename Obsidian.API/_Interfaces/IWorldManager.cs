@@ -5,8 +5,6 @@ public interface IWorldManager : IAsyncDisposable
 {
     public bool ReadyToJoin { get; }
 
-    public Dictionary<string, Type> WorldGenerators { get; }
-
     public int GeneratingChunkCount { get; }
     public int LoadedChunkCount { get; }
 

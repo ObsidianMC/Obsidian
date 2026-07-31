@@ -14,7 +14,7 @@ internal static class BlockUpdates
     {
         if (blockUpdate.Block is null) { return false; }
 
-        var world = blockUpdate.World;
+        var world = blockUpdate.Level;
         var position = blockUpdate.Position;
         var material = blockUpdate.Block.Material;
         if (await world.GetBlockAsync(position + Vector.Down) is IBlock below &&
@@ -38,7 +38,7 @@ internal static class BlockUpdates
         if (blockUpdate.Block is null) { return false; }
 
         var block = blockUpdate.Block;
-        var world = blockUpdate.World;
+        var world = blockUpdate.Level;
         var position = blockUpdate.Position;
         int liquidLevel = GetLiquidState(block);
         Vector belowPos = position + Vector.Down;

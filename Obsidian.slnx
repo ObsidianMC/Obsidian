@@ -1,11 +1,13 @@
-﻿<Solution>
+<Solution>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
   </Folder>
   <Project Path="Obsidian.API/Obsidian.API.csproj" />
   <Project Path="Obsidian.ConsoleApp/Obsidian.ConsoleApp.csproj" />
-  <Project Path="Obsidian.Nbt/Obsidian.Nbt.csproj" />
+  <Project Path="Obsidian.Nbt/Nbt/Obsidian.Nbt.csproj" />
   <Project Path="Obsidian.SourceGenerators/Obsidian.SourceGenerators.csproj" />
   <Project Path="Obsidian.Tests/Obsidian.Tests.csproj" />
   <Project Path="Obsidian/Obsidian.csproj" />
 </Solution>
+
+

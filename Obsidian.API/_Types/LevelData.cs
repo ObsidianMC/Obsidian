@@ -3,7 +3,7 @@ namespace Obsidian.API;
 /// <summary>
 /// https://minecraft.wiki/w/Java_Edition_level_format
 /// </summary>
-public sealed class Level
+public sealed class LevelData
 {
     public const int DataVersion = 3337;
 
@@ -67,10 +67,7 @@ public sealed class Level
     /// </summary>
     public int DayTime
     {
-        get
-        {
-            return (int)(this.Time % 24000); // day time is based on server time
-        }
+        get => (int)(this.Time % 24000); // day time is based on server time
         set
         {
             var startOfDay = this.Time - (this.Time % 24000);
@@ -186,4 +183,7 @@ public sealed class Level
     /// The amount of ticks until another wandering trader is attempted to spawn
     /// </summary>
     public int WanderingTraderSpawnDelay { get; set; }
+
+    public WorldGenSetting WorldGenSettings { get; set; }
 }
+
