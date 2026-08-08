@@ -7,9 +7,13 @@ public sealed class CubeDensityFunction : IDensityFunction
 
     public required IDensityFunction Argument { get; init; }
 
-    public double MinValue => -MaxValue;
+    public double MinValue => Argument.MinValue * Argument.MinValue * Argument.MinValue;
 
-    public double MaxValue => Math.Pow(Argument.MaxValue, 3);
+    public double MaxValue => Argument.MaxValue * Argument.MaxValue * Argument.MaxValue;
 
-    public double GetValue(double x, double y, double z) => Math.Pow(Argument.GetValue(x, y, z), 3);
+    public double GetValue(double x, double y, double z)
+    {
+        var val = Argument.GetValue(x, y, z);
+        return val * val * val;
+    }
 }

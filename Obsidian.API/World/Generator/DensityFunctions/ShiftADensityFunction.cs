@@ -5,7 +5,8 @@ public sealed class ShiftADensityFunction : IDensityFunction
 {
     public string Type => "minecraft:shift_a";
 
-    public required INoise Argument {
+    public required INoise Argument
+    {
         get;
         init
         {
@@ -14,7 +15,7 @@ public sealed class ShiftADensityFunction : IDensityFunction
         }
     }
 
-    public double MinValue => Argument.MinValue * 4.0;
+    public double MinValue => -MaxValue;
 
     public double MaxValue => Argument.MaxValue * 4.0;
 

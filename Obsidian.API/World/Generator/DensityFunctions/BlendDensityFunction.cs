@@ -7,9 +7,10 @@ public sealed class BlendDensityFunction : IDensityFunction
 
     public required IDensityFunction Argument { get; init; }
 
-    public double MinValue => double.MinValue;
+    public double MinValue => double.NegativeInfinity;
 
-    public double MaxValue => double.MaxValue;
+    public double MaxValue => double.PositiveInfinity;
 
-    public double GetValue(double x, double y, double z) => Argument.GetValue(x, y, z); // No-op
+    // Vanilla delegates to the chunk's Blender, which has no equivalent here, so this stays a no-op.
+    public double GetValue(double x, double y, double z) => Argument.GetValue(x, y, z);
 }

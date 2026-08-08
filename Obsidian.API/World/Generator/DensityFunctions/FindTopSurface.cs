@@ -1,52 +1,39 @@
-﻿namespace Obsidian.API.World.Generator.DensityFunctions;
+﻿using Obsidian.API.Noise;
+
+namespace Obsidian.API.World.Generator.DensityFunctions;
 
 [DensityFunction("minecraft:find_top_surface")]
 public sealed class FindTopSurface : IDensityFunction
 {
-    public double MinValue { get; init; }
+    public string Type => "minecraft:find_top_surface";
 
-    public double MaxValue { get; init; }
+    public required int CellHeight { get; init; }
 
-    public string Type { get; init; }
+    public required IDensityFunction Density { get; init; }
 
-    public int CellHeight { get; init; }
+    // Vanilla declares lower_bound as a literal int; the registry generator hands it to us as a constant.
+    public required IDensityFunction LowerBound { get; init; }
 
-    public IDensityFunction Density { get; init; }
+    public required IDensityFunction UpperBound { get; init; }
 
-    public IDensityFunction LowerBound { get; init; }
+    public double MinValue => LowerBound.MinValue;
 
-    public IDensityFunction UpperBound { get; init; }
+    public double MaxValue => Math.Max(LowerBound.MaxValue, UpperBound.MaxValue);
 
     public double GetValue(double x, double y, double z)
     {
-        // Find the top surface by scanning vertically from upper bound to lower bound
-        // Returns the Y coordinate where the density function crosses from positive to negative
+        var lowerY = LowerBound.GetValue(x, y, z);
+        var topY = MathUtils.Floor(UpperBound.GetValue(x, y, z) / CellHeight) * CellHeight;
 
-        double lowerY = LowerBound.GetValue(x, y, z);
-        double upperY = UpperBound.GetValue(x, y, z);
+        if (topY <= lowerY)
+            return lowerY;
 
-        // Scan downward from upper bound in CellHeight increments
-        int steps = (int)Math.Ceiling((upperY - lowerY) / CellHeight);
-
-        for (int i = 0; i <= steps; i++)
+        for (double blockY = topY; blockY >= lowerY; blockY -= CellHeight)
         {
-            double currentY = upperY - (i * CellHeight);
-            if (currentY < lowerY)
-                currentY = lowerY;
-
-            double density = Density.GetValue(x, currentY, z);
-
-            // Found the surface where density becomes positive (solid)
-            if (density > 0.0)
-            {
-                return currentY;
-            }
-
-            if (currentY <= lowerY)
-                break;
+            if (Density.GetValue(x, blockY, z) > 0.0)
+                return blockY;
         }
 
-        // No surface found, return lower bound
         return lowerY;
     }
 }

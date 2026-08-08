@@ -9,8 +9,9 @@ public sealed class ShiftedNoiseDensityFunction : NoiseDensityFunction
     public required IDensityFunction ShiftY { get; init; }
     public required IDensityFunction ShiftZ { get; init; }
 
-    public override double GetValue(double x, double y, double z) => base.GetValue(
-        x + ShiftX.GetValue(x, y, z),
-        y + ShiftY.GetValue(x, y, z),
-        z + ShiftZ.GetValue(x, y, z));
+    // The scale applies to the coordinate only; the shift is added afterwards and must not be scaled.
+    public override double GetValue(double x, double y, double z) => Noise.GetValue(
+        x * XzScale + ShiftX.GetValue(x, y, z),
+        y * YScale + ShiftY.GetValue(x, y, z),
+        z * XzScale + ShiftZ.GetValue(x, y, z));
 }

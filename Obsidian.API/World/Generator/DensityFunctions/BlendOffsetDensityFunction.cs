@@ -5,9 +5,9 @@ public sealed class BlendOffsetDensityFunction : IDensityFunction
 {
     public string Type => "minecraft:blend_offset";
 
-    public double MinValue => double.MinValue;
+    public double MinValue => 0.0;
 
-    public double MaxValue => double.MaxValue;
+    public double MaxValue => 0.0;
 
-    public double GetValue(double x, double y, double z) => 1.0;
+    public double GetValue(double x, double y, double z) => 0.0;
 }

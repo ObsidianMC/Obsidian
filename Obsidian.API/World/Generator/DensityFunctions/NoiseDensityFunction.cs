@@ -19,7 +19,7 @@ public class NoiseDensityFunction : IDensityFunction
 
     public required double YScale { get; set; }
 
-    public double MinValue => Noise.MinValue;
+    public double MinValue => -this.MaxValue;
 
     public double MaxValue => Noise.MaxValue;
 

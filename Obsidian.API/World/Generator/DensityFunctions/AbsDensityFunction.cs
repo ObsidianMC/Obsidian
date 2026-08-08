@@ -7,9 +7,9 @@ public sealed class AbsDensityFunction : IDensityFunction
 
     public required IDensityFunction Argument { get; init; }
 
-    public double MinValue => 0;
+    public double MinValue => Math.Max(0.0, Argument.MinValue);
 
-    public double MaxValue => Argument.MaxValue;
+    public double MaxValue => Math.Max(Math.Abs(Argument.MinValue), Math.Abs(Argument.MaxValue));
 
     public double GetValue(double x, double y, double z) => Math.Abs(Argument.GetValue(x, y, z));
 }

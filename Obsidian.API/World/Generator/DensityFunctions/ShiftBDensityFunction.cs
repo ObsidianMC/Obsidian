@@ -15,7 +15,7 @@ public sealed class ShiftBDensityFunction : IDensityFunction
         }
     }
 
-    public double MinValue => Argument.MinValue * 4.0;
+    public double MinValue => -MaxValue;
 
     public double MaxValue => Argument.MaxValue * 4.0;
 

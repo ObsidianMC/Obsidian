@@ -3,13 +3,16 @@
 [DensityFunction("minecraft:invert")]
 public sealed class InvertDensityFunction : IDensityFunction
 {
-    public double MinValue { get; init; }
+    public string Type => "minecraft:invert";
 
-    public double MaxValue { get; init; }
+    public required IDensityFunction Argument { get; init; }
 
-    public string Type { get; init; }
+    // When the argument's range straddles zero the reciprocal is unbounded in both directions.
+    public double MinValue => StraddlesZero ? double.NegativeInfinity : 1.0 / Argument.MaxValue;
 
-    public IDensityFunction Argument { get; init; }
+    public double MaxValue => StraddlesZero ? double.PositiveInfinity : 1.0 / Argument.MinValue;
 
-    public double GetValue(double x, double y, double z) => -Argument.GetValue(x, y, z);
+    private bool StraddlesZero => Argument.MinValue < 0.0 && Argument.MaxValue > 0.0;
+
+    public double GetValue(double x, double y, double z) => 1.0 / Argument.GetValue(x, y, z);
 }

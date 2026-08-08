@@ -1,9 +1,12 @@
 ﻿namespace Obsidian.API.World.Generator.DensityFunctions;
 
+/// <summary>
+/// Marker function. Vanilla delegates straight through to the wrapped function; the actual caching
+/// happens in the noise chunk, which has no equivalent here yet.
+/// </summary>
 [DensityFunction("minecraft:flat_cache")]
 public sealed class FlatCacheDensityFunction : IDensityFunction
 {
-    private double? cachedValue;
     public string Type => "minecraft:flat_cache";
 
     public required IDensityFunction Argument { get; init; }
@@ -12,22 +15,5 @@ public sealed class FlatCacheDensityFunction : IDensityFunction
 
     public double MaxValue => Argument.MaxValue;
 
-    public double GetValue(double x, double y, double z)
-    {
-        return this.Argument.GetValue(x, y, z);
-        // cache needs to invalidate when x/y/z delta > 4
-        if (x % 4 == 0 && z % 4 == 0)
-        {
-            if (y == 0 && this.cachedValue.HasValue)
-                return this.cachedValue.Value;
-
-            this.cachedValue = this.Argument.GetValue(x, y, z);
-
-            return this.cachedValue.Value;
-        }
-
-        this.cachedValue ??= this.Argument.GetValue(x, y, z);
-
-        return this.cachedValue.Value;
-    }
+    public double GetValue(double x, double y, double z) => Argument.GetValue(x, y, z);
 }

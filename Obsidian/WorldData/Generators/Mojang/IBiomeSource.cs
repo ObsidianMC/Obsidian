@@ -9,12 +9,12 @@ namespace Obsidian.WorldData.Generators.Mojang;
 /// </summary>
 public interface IBiomeSource
 {
-	/// <summary>
-	/// Gets the biome at the specified world coordinates.
-	/// </summary>
-	/// <param name="x">World X coordinate</param>
-	/// <param name="y">World Y coordinate</param>
-	/// <param name="z">World Z coordinate</param>
-	/// <returns>The biome at this location</returns>
-	BiomeCodec GetBiome(int x, int y, int z);
+    /// <summary>
+    /// Gets the biome at the specified world coordinates.
+    /// </summary>
+    /// <param name="x">World X coordinate</param>
+    /// <param name="y">World Y coordinate</param>
+    /// <param name="z">World Z coordinate</param>
+    /// <returns>The biome at this location</returns>
+    public BiomeCodec GetBiome(int x, int y, int z);
 }

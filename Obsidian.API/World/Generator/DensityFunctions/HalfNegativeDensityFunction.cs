@@ -7,14 +7,12 @@ public sealed class HalfNegativeDensityFunction : IDensityFunction
 
     public required IDensityFunction Argument { get; init; }
 
-    public double MinValue => Argument.MinValue < 0 ? Argument.MinValue/2D : Argument.MinValue;
+    public double MinValue => Transform(Argument.MinValue);
 
-    public double MaxValue => Argument.MaxValue;
+    public double MaxValue => Transform(Argument.MaxValue);
 
-    public double GetValue(double x, double y, double z)
-    {
-        var val = Argument.GetValue(x, y, z);
-        return val < 0 ? val / 2D : val;
-    }
+    public double GetValue(double x, double y, double z) => Transform(Argument.GetValue(x, y, z));
+
+    private static double Transform(double value) => value > 0.0 ? value : value * 0.5;
 }
 
