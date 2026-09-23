@@ -2,9 +2,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Console;
 using Obsidian.API.Configuration;
 using Obsidian.Commands.Framework;
+using Obsidian.Console;
 using Obsidian.Services;
 using Obsidian.WorldData;
 using OpenTelemetry.Logs;
@@ -40,13 +40,7 @@ public static class DependencyInjection
         });
 
         //Console logger can be edited through server.config https://learn.microsoft.com/en-us/dotnet/core/extensions/console-log-formatter
-        builder.Logging.AddSimpleConsole(x =>
-        {
-            x.ColorBehavior = LoggerColorBehavior.Enabled;
-            x.SingleLine = true;
-            x.IncludeScopes = true;
-            x.TimestampFormat = "HH:mm:ss ";
-        });
+        builder.Logging.AddServerConsoleLogging();
 
         builder.Logging.AddProvider(new StreamLoggerProvider(logFileStream));
 
@@ -61,6 +55,9 @@ public static class DependencyInjection
         builder.Services.AddSingleton<IUserCache, UserCache>();
         builder.Services.AddSingleton<EventDispatcher>();
         builder.Services.AddSingleton<ILevelFactory, LevelFactory>();
+
+        builder.Services.AddSingleton<IConsoleCommandHandler, RegistryConsoleCommandHandler>();
+        builder.Services.AddConsoleCommands();
 
         builder.Services.AddHttpClient();
 
