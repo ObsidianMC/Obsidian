@@ -77,60 +77,70 @@ public sealed class Command
             return;
         }
 
-        if (!this.TryFindExecutor(executors, args, context, out var executor))
+        if (!this.TryFindExecutor(executors, args, context, out var executor, out var boundArgs))
         {
             await context.Sender.SendMessageAsync(ChatMessage.Simple($"Correct usage: {Usage}", ChatColor.Red));
             return;
         }
 
-        await this.ExecuteAsync(executor, context, args);
+        await this.ExecuteAsync(executor, context, boundArgs);
     }
 
+    /// <summary>
+    /// Finds the first overload whose parameters accept every argument.
+    /// </summary>
+    /// <param name="boundArgs">The arguments bound to the executor's parameters, one per parameter.</param>
     private bool TryFindExecutor(IEnumerable<IExecutor<CommandContext>> executors, string[] args, CommandContext context,
-        [NotNullWhen(true)] out IExecutor<CommandContext>? executor)
+        [NotNullWhen(true)] out IExecutor<CommandContext>? executor, [NotNullWhen(true)] out string[]? boundArgs)
     {
-        executor = null;
-
-        var success = args.Length == 0 && executors.Any(x => x.GetParameters().Length == 0);
-
-        if (success)
-        {
-            executor = executors.First();
-            return true;
-        }
-
         foreach (var exec in executors)
         {
             var methodParams = exec.GetParameters();
-            for (int i = 0; i < args.Length; i++)
+            var bound = BindArguments(methodParams, args);
+
+            if (bound is null)
+                continue;
+
+            var success = true;
+
+            for (int i = 0; i < bound.Length && success; i++)
             {
-                var param = methodParams[i];
-                var arg = args[i];
+                var paramType = methodParams[i].ParameterType;
 
-                if (!CommandHandler.IsValidArgumentType(param.ParameterType))
-                {
-                    success = false;
-                    continue;
-                }
-
-                var parser = CommandHandler.GetArgumentParser(param.ParameterType);
-                if (parser.TryParseArgument(arg, context, out _))
-                {
-                    success = true;
-                    continue;
-                }
-
-                success = false;
+                success = CommandHandler.IsValidArgumentType(paramType)
+                    && CommandHandler.GetArgumentParser(paramType).TryParseArgument(bound[i], context, out _);
             }
 
             if (success)
             {
                 executor = exec;
+                boundArgs = bound;
                 return true;
             }
         }
 
+        executor = null;
+        boundArgs = null;
         return false;
+    }
+
+    /// <summary>
+    /// Pairs the words of a command with <paramref name="parameters"/>. A trailing parameter marked with
+    /// <see cref="RemainingAttribute"/> receives the rest of the words joined by spaces.
+    /// </summary>
+    /// <returns>One argument per parameter, or <see langword="null"/> if the word count does not fit.</returns>
+    private static string[]? BindArguments(ParameterInfo[] parameters, string[] args)
+    {
+        if (args.Length == parameters.Length)
+            return args;
+
+        if (args.Length < parameters.Length || parameters.Length == 0
+            || parameters[^1].GetCustomAttribute<RemainingAttribute>() is null)
+            return null;
+
+        var last = parameters.Length - 1;
+
+        return [.. args[..last], string.Join(' ', args[last..])];
     }
 
     private async Task ExecuteAsync(IExecutor<CommandContext> commandExecutor, CommandContext context, string[] args)
@@ -148,12 +158,6 @@ public sealed class Command
             var paraminfo = methodparams[i];
 
             var arg = args[i];
-
-            // This can only be true if we get a [Remaining] arg. Sets arg to remaining text.
-            if (args.Length > methodparams.Length && i == methodparams.Length - 1)
-            {
-                arg = string.Join(' ', args.Skip(i));
-            }
 
             // Checks if there is any valid registered command handler
             if (CommandHandler.IsValidArgumentType(paraminfo.ParameterType))
