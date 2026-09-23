@@ -1,18 +1,18 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 ARG GIT_SHA=v0.1
-
-FROM mcr.microsoft.com/dotnet/sdk:9.0-alpine AS build
 WORKDIR /src
 COPY . .
 RUN dotnet restore
 RUN dotnet publish Obsidian.ConsoleApp/ -c Release -o out /p:SourceRevisionId=$GIT_SHA
 
 # RUNNER
-FROM alpine:latest
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine
 WORKDIR /app
 COPY --from=build /src/out .
-RUN apk upgrade --update-cache --available && apk add openssl libstdc++ && rm -rf /var/cache/apk/*
+# Terminal definitions let the interactive console read arrow, Home and End keys when attached.
+RUN apk add --no-cache ncurses-terminfo-base
 
 WORKDIR /files
 # set env variable
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
-ENTRYPOINT ["dotnet", "/app/Obsidian.ConsoleApp"]
+ENTRYPOINT ["dotnet", "/app/Obsidian.ConsoleApp.dll"]
