@@ -7,6 +7,7 @@ public sealed class ConsoleCommands(ILogger<ConsoleCommands> logger) : CommandMo
 {
     [Command("say")]
     [CommandInfo("Writes a message to the server log.", "/say <message>")]
+    [IssuerScope(CommandIssuers.Console)]
     public void Say([Remaining] string message)
     {
         this.CommandContext.Server.BroadcastMessage(message);

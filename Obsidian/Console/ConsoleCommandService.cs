@@ -20,7 +20,10 @@ public sealed class ConsoleCommandService(
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(
             stoppingToken, lifetime.ApplicationStopping);
         CancellationToken token = cancellation.Token;
-        List<Task> commands = [];
+
+        // Commands run one at a time in arrival order, off the reader loop. DispatchAsync never
+        // faults, so each link can await the previous one unconditionally.
+        Task pending = Task.CompletedTask;
 
         try
         {
@@ -57,27 +60,36 @@ public sealed class ConsoleCommandService(
                 if (options.Value.EchoCommands)
                     logger.LogInformation("{Prompt}{CommandLine}", options.Value.Prompt, commandLine);
 
-                if (this.TryHandleBuiltIn(commandLine))
+                if (await this.TryHandleBuiltInAsync(commandLine, pending, token).ConfigureAwait(false))
                     continue;
 
-                commands.RemoveAll(task => task.IsCompleted);
-                commands.Add(Task.Run(() => this.DispatchAsync(commandLine, token), token));
+                Task previous = pending;
+                pending = Task.Run(async () =>
+                {
+                    await previous.ConfigureAwait(false);
+                    await this.DispatchAsync(commandLine, token).ConfigureAwait(false);
+                });
             }
 
-            await Task.WhenAll(commands).WaitAsync(token).ConfigureAwait(false);
+            await pending.WaitAsync(token).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
         {
         }
     }
 
-    private bool TryHandleBuiltIn(string commandLine)
+    private async ValueTask<bool> TryHandleBuiltInAsync(string commandLine, Task pending, CancellationToken token)
     {
         switch (commandLine.ToLowerInvariant())
         {
             case "stop":
             case "exit":
             case "quit":
+                // Redirected input is read ahead of execution. Let earlier commands finish before
+                // StopApplication cancels the token they run with.
+                if (terminal?.IsInteractive != true)
+                    await pending.WaitAsync(token).ConfigureAwait(false);
+
                 logger.LogInformation("Shutdown requested from the console.");
                 lifetime.StopApplication();
 
