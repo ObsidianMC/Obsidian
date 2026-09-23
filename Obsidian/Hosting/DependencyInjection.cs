@@ -30,27 +30,25 @@ public static class DependencyInjection
         var logFile = $"logs/{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.log";
         var logFileStream = new FileStream(logFile, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
 
+        // Clear the host's default providers first; clearing later would also remove OpenTelemetry.
+        builder.Logging.ClearProviders();
+
         builder.Logging.AddOpenTelemetry(x =>
         {
             x.IncludeScopes = true;
             x.IncludeFormattedMessage = true;
         });
 
-        builder.Services.AddLogging(loggingBuilder =>
+        //Console logger can be edited through server.config https://learn.microsoft.com/en-us/dotnet/core/extensions/console-log-formatter
+        builder.Logging.AddSimpleConsole(x =>
         {
-            loggingBuilder.ClearProviders();
-
-            //Console logger can be edited through server.config https://learn.microsoft.com/en-us/dotnet/core/extensions/console-log-formatter
-            loggingBuilder.AddSimpleConsole(x =>
-            {
-                x.ColorBehavior = LoggerColorBehavior.Enabled;
-                x.SingleLine = true;
-                x.IncludeScopes = true;
-                x.TimestampFormat = "HH:mm:ss ";
-            });
-
-            loggingBuilder.AddProvider(new StreamLoggerProvider(logFileStream));
+            x.ColorBehavior = LoggerColorBehavior.Enabled;
+            x.SingleLine = true;
+            x.IncludeScopes = true;
+            x.TimestampFormat = "HH:mm:ss ";
         });
+
+        builder.Logging.AddProvider(new StreamLoggerProvider(logFileStream));
 
         builder.Services.Configure<ServerConfiguration>(builder.Configuration);
         builder.Services.Configure<WhitelistConfiguration>(builder.Configuration);
