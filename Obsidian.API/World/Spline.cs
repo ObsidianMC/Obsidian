@@ -4,7 +4,7 @@
 /// Multipoint cubic spline over a density function coordinate.
 /// </summary>
 /// <remarks>
-/// All math is done in <see cref="float"/> like vanilla's CubicSpline; doing it in double shifts terrain
+/// All math is done in <see cref="float"/> like vanilla's CubicSpline (values are only widened at the API boundary); doing it in double shifts terrain
 /// heights slightly. Points must be sorted by <see cref="SplinePoint.Location"/>.
 /// </remarks>
 public class Spline : ISpline
@@ -13,13 +13,15 @@ public class Spline : ISpline
 
     public required SplinePoint[] Points { get; init; }
 
-    public float MinValue => this.State.MinValue;
+    public double MinValue => this.State.MinValue;
 
-    public float MaxValue => this.State.MaxValue;
+    public double MaxValue => this.State.MaxValue;
 
     private SplineState State => field ??= SplineState.Create(this.Coordinate, this.Points);
 
-    public float Apply(double x, double y, double z)
+    public double Apply(double x, double y, double z) => this.ApplyFloat(x, y, z);
+
+    private float ApplyFloat(double x, double y, double z)
     {
         var state = this.State;
         var locations = state.Locations;
@@ -31,17 +33,17 @@ public class Spline : ISpline
         var lastIndex = locations.Length - 1;
 
         if (index < 0)
-            return LinearExtend(coordinate, locations, values[0].Apply(x, y, z), derivatives, 0);
+            return LinearExtend(coordinate, locations, (float)values[0].Apply(x, y, z), derivatives, 0);
 
         if (index == lastIndex)
-            return LinearExtend(coordinate, locations, values[lastIndex].Apply(x, y, z), derivatives, lastIndex);
+            return LinearExtend(coordinate, locations, (float)values[lastIndex].Apply(x, y, z), derivatives, lastIndex);
 
         var start = locations[index];
         var end = locations[index + 1];
         var t = (coordinate - start) / (end - start);
 
-        var valueStart = values[index].Apply(x, y, z);
-        var valueEnd = values[index + 1].Apply(x, y, z);
+        var valueStart = (float)values[index].Apply(x, y, z);
+        var valueEnd = (float)values[index + 1].Apply(x, y, z);
 
         var slopeStart = derivatives[index] * (end - start) - (valueEnd - valueStart);
         var slopeEnd = -derivatives[index + 1] * (end - start) + (valueEnd - valueStart);
@@ -102,31 +104,31 @@ public class Spline : ISpline
 
             if (coordinateMin < locations[0])
             {
-                var extendedMin = LinearExtend(coordinateMin, locations, values[0].MinValue, derivatives, 0);
-                var extendedMax = LinearExtend(coordinateMin, locations, values[0].MaxValue, derivatives, 0);
+                var extendedMin = LinearExtend(coordinateMin, locations, (float)values[0].MinValue, derivatives, 0);
+                var extendedMax = LinearExtend(coordinateMin, locations, (float)values[0].MaxValue, derivatives, 0);
                 min = Math.Min(min, Math.Min(extendedMin, extendedMax));
                 max = Math.Max(max, Math.Max(extendedMin, extendedMax));
             }
 
             if (coordinateMax > locations[lastIndex])
             {
-                var extendedMin = LinearExtend(coordinateMax, locations, values[lastIndex].MinValue, derivatives, lastIndex);
-                var extendedMax = LinearExtend(coordinateMax, locations, values[lastIndex].MaxValue, derivatives, lastIndex);
+                var extendedMin = LinearExtend(coordinateMax, locations, (float)values[lastIndex].MinValue, derivatives, lastIndex);
+                var extendedMax = LinearExtend(coordinateMax, locations, (float)values[lastIndex].MaxValue, derivatives, lastIndex);
                 min = Math.Min(min, Math.Min(extendedMin, extendedMax));
                 max = Math.Max(max, Math.Max(extendedMin, extendedMax));
             }
 
             foreach (var value in values)
             {
-                min = Math.Min(min, value.MinValue);
-                max = Math.Max(max, value.MaxValue);
+                min = Math.Min(min, (float)value.MinValue);
+                max = Math.Max(max, (float)value.MaxValue);
             }
 
             for (var i = 0; i < lastIndex; i++)
             {
                 var span = locations[i + 1] - locations[i];
-                var (startMin, startMax) = (values[i].MinValue, values[i].MaxValue);
-                var (endMin, endMax) = (values[i + 1].MinValue, values[i + 1].MaxValue);
+                var (startMin, startMax) = ((float)values[i].MinValue, (float)values[i].MaxValue);
+                var (endMin, endMax) = ((float)values[i + 1].MinValue, (float)values[i + 1].MaxValue);
                 var (derivativeStart, derivativeEnd) = (derivatives[i], derivatives[i + 1]);
 
                 if (derivativeStart == 0.0f && derivativeEnd == 0.0f)

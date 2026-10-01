@@ -30,7 +30,7 @@ internal sealed class CarverStep
         this.fluidPicker = Aquifers.CreateGlobalFluidPicker(settings.SeaLevel, BlocksRegistry.GetFromSimpleState(settings.DefaultFluid));
     }
 
-    public void Apply(IChunk chunk)
+    public void Apply(IChunk chunk, ICollection<Vector>? fluidUpdates = null)
     {
         var settings = this.randomState.Settings;
         var noiseChunk = new NoiseChunk(this.randomState, chunk.X, chunk.Z);
@@ -39,7 +39,8 @@ internal sealed class CarverStep
             Chunk = chunk,
             NoiseChunk = noiseChunk,
             Aquifer = Aquifers.Create(noiseChunk, chunk.X, chunk.Z, this.fluidPicker),
-            Biomes = new BiomeManager(this.biomeSource, this.randomState.Seed, settings.Noise.MinY, settings.Noise.Height)
+            Biomes = new BiomeManager(this.biomeSource, this.randomState.Seed, settings.Noise.MinY, settings.Noise.Height),
+            FluidUpdates = fluidUpdates
         };
 
         var random = new WorldgenRandom(new LegacyRandomSource(0L));

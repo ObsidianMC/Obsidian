@@ -28,7 +28,10 @@ internal sealed class ChunkBuilder
         this.carverStep = new CarverStep(this.RandomState, this.surfaceBuilder, this.biomeSource);
     }
 
-    public void Generate3DTerrain(IChunk chunk) => this.terrainGenerator.Generate(chunk);
+    /// <param name="chunk">Chunk to fill.</param>
+    /// <param name="fluidUpdates">Receives fluid positions that need an update once the chunk is complete.</param>
+    public void Generate3DTerrain(IChunk chunk, ICollection<Vector>? fluidUpdates = null) =>
+        this.terrainGenerator.Generate(chunk, fluidUpdates);
 
     /// <summary>
     /// Stores the biome of every 4x4x4 cell of the chunk.
@@ -52,7 +55,17 @@ internal sealed class ChunkBuilder
         }
     }
 
-    public void ApplySurfaceRules(IChunk chunk) => this.surfaceBuilder.BuildSurface(chunk);
+    public void ApplySurfaceRules(IChunk chunk)
+    {
+        this.surfaceBuilder.BuildSurface(chunk);
+        WorldgenHeightmaps.Update(chunk, this.settings.Noise.MinY, this.settings.Noise.Height);
+    }
 
-    public void ApplyCarvers(IChunk chunk) => this.carverStep.Apply(chunk);
+    /// <param name="chunk">Chunk to carve.</param>
+    /// <param name="fluidUpdates">Receives fluid positions that need an update once the chunk is complete.</param>
+    public void ApplyCarvers(IChunk chunk, ICollection<Vector>? fluidUpdates = null)
+    {
+        this.carverStep.Apply(chunk, fluidUpdates);
+        WorldgenHeightmaps.Update(chunk, this.settings.Noise.MinY, this.settings.Noise.Height);
+    }
 }

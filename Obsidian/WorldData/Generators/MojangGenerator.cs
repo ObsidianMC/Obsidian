@@ -12,6 +12,9 @@ internal class MojangGenerator : ILevelGenerator
     private ChunkBuilder builder;
     private ILevel world;
 
+    // Fluids flagged during generation, scheduled once their chunk is complete (vanilla's post-processing).
+    private readonly ConcurrentDictionary<(int X, int Z), List<Vector>> pendingFluidUpdates = new();
+
     public async ValueTask<IChunk> GenerateChunkAsync(int cx, int cz, IChunk? chunk = null, ChunkGenStage stage = ChunkGenStage.full)
     {
         chunk ??= new Chunk(cx, cz);
@@ -44,7 +47,7 @@ internal class MojangGenerator : ILevelGenerator
         if (ChunkGenStage.noise <= stage && chunk.ChunkStatus < ChunkGenStage.noise)
         {
             // Generate terrain using 3D density sampling with aquifer support
-            this.builder.Generate3DTerrain(chunk);
+            this.builder.Generate3DTerrain(chunk, this.GetPendingFluidUpdates(chunk));
             chunk.SetChunkStatus(ChunkGenStage.noise);
         }
 
@@ -58,7 +61,7 @@ internal class MojangGenerator : ILevelGenerator
         if (ChunkGenStage.carvers <= stage && chunk.ChunkStatus < ChunkGenStage.carvers)
         {
             // Carve classic caves and ravines
-            this.builder.ApplyCarvers(chunk);
+            this.builder.ApplyCarvers(chunk, this.GetPendingFluidUpdates(chunk));
             chunk.SetChunkStatus(ChunkGenStage.carvers);
         }
 
@@ -89,7 +92,23 @@ internal class MojangGenerator : ILevelGenerator
         }
 
         chunk.SetChunkStatus(ChunkGenStage.full);
+        await this.ScheduleFluidUpdatesAsync(chunk);
         return chunk;
+    }
+
+    private List<Vector> GetPendingFluidUpdates(IChunk chunk) => this.pendingFluidUpdates.GetOrAdd((chunk.X, chunk.Z), _ => []);
+
+    private async ValueTask ScheduleFluidUpdatesAsync(IChunk chunk)
+    {
+        if (!this.pendingFluidUpdates.TryRemove((chunk.X, chunk.Z), out var positions))
+            return;
+
+        foreach (var position in positions)
+        {
+            var block = chunk.GetBlock(position);
+            if (block.IsLiquid)
+                await this.world.ScheduleBlockUpdateAsync(new BlockUpdate(this.world, position, block));
+        }
     }
     public void Init(ILevel world)
     {

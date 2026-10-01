@@ -20,6 +20,17 @@ public class VanillaWorldGeneration
     [InlineData("Obsidian", 416515707L)] // "Obsidian".hashCode() in Java
     public void ParsesSeedsLikeVanilla(string seed, long expected) => Assert.Equal(expected, RandomState.ParseSeed(seed));
 
+    [Fact]
+    public void UnboundRegistryNoiseSamplesAsSeedZero()
+    {
+        // Registry noises aren't bound to a world; sampling them must bind lazily instead of recursing.
+        var unbound = NoiseRegistry.Noises.Temperature;
+        var seedZero = new RandomState(NoiseRegistry.NoiseSettings.All["minecraft:overworld"], 0L).GetOrCreateNoise("minecraft:temperature");
+
+        Assert.Equal(seedZero.GetValue(12.5, 0.0, -40.0), unbound.GetValue(12.5, 0.0, -40.0));
+        Assert.Equal(seedZero.MaxValue, unbound.MaxValue);
+    }
+
     [Theory]
     // Vanilla: RandomState.create(overworld, 12345).router().<field>().compute(new SinglePointContext(x, y, z)).
     [InlineData(-1000, 40, -1000, 0.4972870927552263, -0.18318753038877283, 0.29439637809991837, 0.016238079376904718, 64.0)]

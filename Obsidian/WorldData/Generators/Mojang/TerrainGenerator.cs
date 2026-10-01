@@ -19,7 +19,10 @@ internal sealed class TerrainGenerator
         this.fluidPicker = Aquifers.CreateGlobalFluidPicker(settings.SeaLevel, BlocksRegistry.GetFromSimpleState(settings.DefaultFluid));
     }
 
-    public void Generate(IChunk chunk)
+    /// <param name="chunk">Chunk to fill.</param>
+    /// <param name="fluidUpdates">Receives fluid positions that need an update to settle (aquifer edges), like
+    /// vanilla's post-processing marks.</param>
+    public void Generate(IChunk chunk, ICollection<Vector>? fluidUpdates = null)
     {
         var settings = this.randomState.Settings;
         var noiseChunk = new NoiseChunk(this.randomState, chunk.X, chunk.Z);
@@ -36,11 +39,11 @@ internal sealed class TerrainGenerator
 
         for (var y = maxY - 1; y >= minY; y--)
         {
-            for (var localZ = 0; localZ < 16; localZ++)
+            for (var localZ = 0; localZ < noiseChunk.FilledWidth; localZ++)
             {
                 var z = noiseChunk.ChunkMinZ + localZ;
 
-                for (var localX = 0; localX < 16; localX++)
+                for (var localX = 0; localX < noiseChunk.FilledWidth; localX++)
                 {
                     var x = noiseChunk.ChunkMinX + localX;
                     var density = noiseChunk.FinalDensity.GetValue(x, y, z);
@@ -54,6 +57,9 @@ internal sealed class TerrainGenerator
 
                     chunk.SetBlock(localX, y, localZ, block);
 
+                    if (fluidUpdates is not null && block.IsLiquid && aquifer.ShouldScheduleFluidUpdate)
+                        fluidUpdates.Add(new Vector(x, y, z));
+
                     var column = localZ * 16 + localX;
                     worldSurface[column] = Math.Max(worldSurface[column], y + 1);
 
@@ -63,16 +69,7 @@ internal sealed class TerrainGenerator
             }
         }
 
-        SetHeightmap(chunk, HeightmapType.WorldSurfaceWG, worldSurface);
-        SetHeightmap(chunk, HeightmapType.OceanFloorWG, oceanFloor);
-    }
-
-    private static void SetHeightmap(IChunk chunk, HeightmapType type, ReadOnlySpan<int> heights)
-    {
-        if (!chunk.Heightmaps.TryGetValue(type, out var heightmap))
-            return;
-
-        for (var column = 0; column < heights.Length; column++)
-            heightmap.Set(column % 16, column / 16, heights[column]);
+        WorldgenHeightmaps.Set(chunk, HeightmapType.WorldSurfaceWG, worldSurface);
+        WorldgenHeightmaps.Set(chunk, HeightmapType.OceanFloorWG, oceanFloor);
     }
 }

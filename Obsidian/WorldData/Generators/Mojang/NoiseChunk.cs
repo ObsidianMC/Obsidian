@@ -36,9 +36,15 @@ internal sealed class NoiseChunk
     public int ChunkMinZ { get; }
 
     /// <summary>
-    /// Number of cells along X and Z.
+    /// Number of whole cells along X and Z. With a cell width that doesn't divide 16, the remaining columns
+    /// aren't filled, matching vanilla.
     /// </summary>
     public int CellCountXZ { get; }
+
+    /// <summary>
+    /// Width in blocks of the area covered by whole cells.
+    /// </summary>
+    public int FilledWidth => this.CellCountXZ * this.CellWidth;
 
     /// <summary>
     /// Number of cells along Y.
@@ -50,9 +56,9 @@ internal sealed class NoiseChunk
     /// </summary>
     public int CellNoiseMinY { get; }
 
-    private int FirstCellX => Math.DivRem(this.ChunkMinX, this.CellWidth).Quotient;
+    private int FirstCellX => (int)Math.Floor((double)this.ChunkMinX / this.CellWidth);
 
-    private int FirstCellZ => Math.DivRem(this.ChunkMinZ, this.CellWidth).Quotient;
+    private int FirstCellZ => (int)Math.Floor((double)this.ChunkMinZ / this.CellWidth);
 
     private int FirstQuartX => this.ChunkMinX >> 2;
 
@@ -242,7 +248,7 @@ internal sealed class NoiseChunk
             var localZ = (int)z - chunk.ChunkMinZ;
             var localY = (int)y - chunk.CellNoiseMinY * chunk.CellHeight;
 
-            if (localX is < 0 or >= 16 || localZ is < 0 or >= 16 || localY < 0 || localY >= chunk.CellCountY * chunk.CellHeight)
+            if (localX < 0 || localX >= chunk.FilledWidth || localZ < 0 || localZ >= chunk.FilledWidth || localY < 0 || localY >= chunk.CellCountY * chunk.CellHeight)
                 return this.argument.GetValue(x, y, z);
 
             var (cellX, inCellX) = Math.DivRem(localX, chunk.CellWidth);

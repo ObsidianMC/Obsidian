@@ -27,16 +27,17 @@ public partial class BaseNoise : INoise
 
     public double MaxValue => this.Noise.MaxValue;
 
+    private NormalNoise? noise;
+
     private NormalNoise Noise
     {
         get
         {
-            if (field is null)
+            if (this.noise is null)
                 this.Create();
 
-            return field!;
+            return this.noise!;
         }
-        set;
     }
 
     /// <summary>
@@ -53,7 +54,7 @@ public partial class BaseNoise : INoise
         Key = this.Key,
         Amplitudes = this.Amplitudes,
         FirstOctave = this.FirstOctave,
-        Noise = noise
+        noise = noise
     };
 
     /// <summary>
@@ -62,7 +63,7 @@ public partial class BaseNoise : INoise
     public BaseNoise Bind(IPositionalRandomFactory worldRandom) => this.Bind(worldRandom.FromHashOf(this.Key));
 
     public void Create() =>
-        this.Noise ??= NormalNoise.Create(new XoroshiroRandomSource(0L).ForkPositional().FromHashOf(this.Key), (int)this.FirstOctave, this.Amplitudes);
+        this.noise ??= NormalNoise.Create(new XoroshiroRandomSource(0L).ForkPositional().FromHashOf(this.Key), (int)this.FirstOctave, this.Amplitudes);
 
     public double GetValue(double x, double y, double z) => this.Noise.GetValue(x, y, z);
 }

@@ -23,6 +23,11 @@ internal sealed class CarvingContext
 
     public CarvingMask Mask { get; }
 
+    /// <summary>
+    /// Receives carved fluid positions that need an update to settle, like vanilla's post-processing marks.
+    /// </summary>
+    public ICollection<Vector>? FluidUpdates { get; init; }
+
     public int MinY { get; }
 
     public int Height { get; }
@@ -153,11 +158,20 @@ internal abstract class WorldCarver<TConfiguration> where TConfiguration : Carve
 
         chunk.SetBlock(localX, y, localZ, carved);
 
+        // Like vanilla, this reads the aquifer's last answer even when the lava level decided the block.
+        if (carved.IsLiquid && context.Aquifer.ShouldScheduleFluidUpdate)
+            context.FluidUpdates?.Add(new Vector(x, y, z));
+
         if (!surfaceReached || y - 1 < context.MinY || chunk.GetBlock(localX, y - 1, localZ).Material != Material.Dirt)
             return;
 
         if (context.TopMaterial(x, y - 1, z, carved.IsLiquid) is IBlock topMaterial)
+        {
             chunk.SetBlock(localX, y - 1, localZ, topMaterial);
+
+            if (topMaterial.IsLiquid)
+                context.FluidUpdates?.Add(new Vector(x, y - 1, z));
+        }
     }
 
     private IBlock? GetCarveState(CarvingContext context, TConfiguration configuration, int x, int y, int z)
