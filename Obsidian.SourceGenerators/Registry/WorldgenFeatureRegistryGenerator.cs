@@ -26,8 +26,13 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
     private static readonly DiagnosticDescriptor unknownType = new("OBSWG001", "Unknown worldgen type",
         "No class is registered for worldgen type '{0}' assignable to {1} (used by {2})", "WorldgenFeatures", DiagnosticSeverity.Warning, true);
 
+    // Errors, since the value would be dropped silently and change the feature's behavior.
     private static readonly DiagnosticDescriptor unknownProperty = new("OBSWG002", "Unknown worldgen property",
-        "{0} has no property '{1}' for JSON key '{2}' (used by {3})", "WorldgenFeatures", DiagnosticSeverity.Warning, true);
+        "{0} has no property '{1}' for JSON key '{2}' (used by {3})", "WorldgenFeatures", DiagnosticSeverity.Error, true);
+
+    // Unlike configured features (which fall back to UnsupportedFeature), nested types have no placeholder.
+    private static readonly DiagnosticDescriptor unsupportedType = new("OBSWG004", "Unsupported worldgen type",
+        "No class is registered for worldgen type '{0}' assignable to {1} (used by {2})", "WorldgenFeatures", DiagnosticSeverity.Error, true);
 
     private static readonly DiagnosticDescriptor unknownReference = new("OBSWG003", "Unknown feature reference",
         "Unknown {0} '{1}' (used by {2})", "WorldgenFeatures", DiagnosticSeverity.Error, true);
@@ -522,12 +527,12 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
                     if (symbol is not null)
                         return this.EmitObject(symbol, json, discriminator, null);
 
-                    this.Report(unknownType, name, target.Name);
+                    this.Report(unsupportedType, name, target.Name);
                     return "default!";
                 }
             }
 
-            this.Report(unknownType, json.ValueKind.ToString(), target.Name);
+            this.Report(unsupportedType, json.ValueKind.ToString(), target.Name);
             return "default!";
         }
 

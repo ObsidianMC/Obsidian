@@ -36,14 +36,15 @@ public sealed class BonusChestFeature : ConfiguredFeatureBase
                 var position = new Vector(x, level.GetHeight(HeightmapType.MotionBlockingNoLeaves, x, z), z);
                 var existing = level.GetBlock(position);
 
-                // Vanilla checks for an empty collision shape; blocks that don't block motion are the ones without one.
-                if (!existing.IsAir && existing.BlocksMotion())
+                if (!existing.HasEmptyCollision())
                     continue;
 
                 level.SetBlock(position, Chest);
 
-                // RandomizableContainer.setBlockEntityLootTable draws the loot table seed.
-                random.NextLong();
+                // RandomizableContainer.setBlockEntityLootTable draws the loot table seed, but only when the chest (and so its
+                // block entity) was actually placed, which isn't the case above the build height.
+                if (!level.IsOutsideBuildHeight(position.Y))
+                    random.NextLong();
 
                 foreach (var face in FeatureHelpers.Horizontal)
                 {

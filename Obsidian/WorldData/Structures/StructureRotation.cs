@@ -22,7 +22,8 @@ public static class StructureRotationExtensions
 
     /// <summary>
     /// Vanilla <c>BlockState.rotate</c> for the properties template blocks use: pillar <c>axis</c> swaps X and Z on quarter
-    /// turns and horizontal <c>facing</c> turns with the structure. Other properties are kept.
+    /// turns, horizontal <c>facing</c> turns with the structure, and so do the horizontal connections of fences, walls, panes,
+    /// vines and the like. Other properties are kept.
     /// </summary>
     public static IBlock Rotate(this StructureRotation rotation, IBlock block)
     {
@@ -36,6 +37,23 @@ public static class StructureRotationExtensions
         var facing = block.GetProperty("facing");
         if (facing is "north" or "east" or "south" or "west")
             block = block.WithProperty("facing", RotateFacing(facing, rotation));
+
+        return RotateConnections(block, rotation);
+    }
+
+    /// <summary>
+    /// Moves each horizontal connection value (<c>north</c>, <c>east</c>, ...) to its rotated side. Chorus plants and fire
+    /// don't override vanilla's <c>rotate</c>, so they keep theirs.
+    /// </summary>
+    private static IBlock RotateConnections(IBlock block, StructureRotation rotation)
+    {
+        string[] sides = ["north", "east", "south", "west"];
+        var values = Array.ConvertAll(sides, block.GetProperty);
+        if (Array.IndexOf(values, null) >= 0 || block.BlockClass() is "ChorusPlantBlock" or "FireBlock")
+            return block;
+
+        for (var i = 0; i < sides.Length; i++)
+            block = block.WithProperty(RotateFacing(sides[i], rotation), values[i]!);
 
         return block;
     }
