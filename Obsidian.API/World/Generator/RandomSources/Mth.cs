@@ -6,6 +6,14 @@ namespace Obsidian.API.World.Generator.RandomSources;
 /// </summary>
 public static class Mth
 {
+    private static readonly float[] sinTable = CreateSinTable();
+
+    /// <summary>Vanilla's table-based sine (65536 steps per turn), used by carvers.</summary>
+    public static float Sin(double value) => sinTable[(int)((long)(value * 10430.378350470453) & 65535L)];
+
+    /// <summary>Vanilla's table-based cosine (65536 steps per turn), used by carvers.</summary>
+    public static float Cos(double value) => sinTable[(int)((long)(value * 10430.378350470453 + 16384.0) & 65535L)];
+
     /// <summary>Vanilla floor. Matches <c>(int)Math.Floor</c> in range; out-of-range values wrap like Java.</summary>
     public static int Floor(double value)
     {
@@ -55,5 +63,15 @@ public static class Mth
             seed = seed * seed * 42317861L + seed * 11L;
             return seed >> 16;
         }
+    }
+
+    private static float[] CreateSinTable()
+    {
+        var table = new float[65536];
+
+        for (var i = 0; i < table.Length; i++)
+            table[i] = (float)Math.Sin(i / 10430.378350470453);
+
+        return table;
     }
 }

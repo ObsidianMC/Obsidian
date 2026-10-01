@@ -68,7 +68,7 @@ internal sealed class SurfaceBuilder
             return;
 
         var context = new SurfaceContext(this, chunk, new NoiseChunk(this.randomState, chunk.X, chunk.Z),
-            new BiomeManager(new ChunkBiomeSource(chunk, this.biomeSource), this.randomState.Seed, this.minY, this.height));
+            new BiomeManager(new ChunkBiomeSource(chunk, this.biomeSource), this.randomState.Seed, this.minY, this.height), trackHeights: true);
 
         var chunkMinX = chunk.X << 4;
         var chunkMinZ = chunk.Z << 4;
@@ -92,6 +92,22 @@ internal sealed class SurfaceBuilder
                     this.FrozenOceanExtension(context, biome, localX, localZ, x, z, startHeight);
             }
         }
+    }
+
+    /// <summary>
+    /// Evaluates the surface rule for a single block as if it were the top of the surface, used by carvers
+    /// to put grass back on dirt they uncover. Returns <c>null</c> when no rule applies.
+    /// </summary>
+    public IBlock? TopMaterial(IChunk chunk, NoiseChunk noiseChunk, BiomeManager biomes, int x, int y, int z, bool fluidAbove)
+    {
+        if (this.rule is null)
+            return null;
+
+        var context = new SurfaceContext(this, chunk, noiseChunk, biomes, trackHeights: false);
+        context.UpdateXZ(x & 15, z & 15, x, z);
+        context.UpdateY(1, 1, fluidAbove ? y + 1 : int.MinValue, y);
+
+        return this.rule(context);
     }
 
     private void BuildColumn(SurfaceContext context, int localX, int localZ, int x, int z)
@@ -434,7 +450,8 @@ internal sealed class SurfaceBuilder
         private readonly NoiseChunk noiseChunk;
 
         // WORLD_SURFACE_WG as "first free Y" per column; kept up to date as surface blocks are placed, like vanilla.
-        private readonly int[] surfaceHeights;
+        // Null when heights are read live from the chunk (one-off evaluations during carving).
+        private readonly int[]? surfaceHeights;
 
         private int localX;
         private int localZ;
@@ -453,13 +470,19 @@ internal sealed class SurfaceBuilder
         public int StoneDepthAbove { get; private set; }
         public int StoneDepthBelow { get; private set; }
 
-        public SurfaceContext(SurfaceBuilder builder, IChunk chunk, NoiseChunk noiseChunk, BiomeManager biomeManager)
+        public SurfaceContext(SurfaceBuilder builder, IChunk chunk, NoiseChunk noiseChunk, BiomeManager biomeManager, bool trackHeights)
         {
             this.builder = builder;
             this.chunk = chunk;
             this.noiseChunk = noiseChunk;
             this.BiomeManager = biomeManager;
-            this.surfaceHeights = CreateSurfaceHeights(chunk, builder.minY, builder.height);
+
+            if (trackHeights)
+            {
+                this.surfaceHeights = new int[256];
+                for (var column = 0; column < this.surfaceHeights.Length; column++)
+                    this.surfaceHeights[column] = this.ScanSurfaceHeight(column % 16, column / 16);
+            }
         }
 
         public BiomeCodec Biome => this.biome ??= this.BiomeManager.GetBiome(this.BlockX, this.BlockY, this.BlockZ);
@@ -497,7 +520,8 @@ internal sealed class SurfaceBuilder
             this.biome = null;
         }
 
-        public int SurfaceHeight(int localX, int localZ) => this.surfaceHeights[localZ * 16 + localX];
+        public int SurfaceHeight(int localX, int localZ) =>
+            this.surfaceHeights?[localZ * 16 + localX] ?? this.ScanSurfaceHeight(localX, localZ);
 
         public IBlock GetBlock(int localX, int y, int localZ) =>
             y < this.builder.minY || y >= this.builder.minY + this.builder.height ? BlocksRegistry.Air : this.chunk.GetBlock(localX, y, localZ);
@@ -510,7 +534,7 @@ internal sealed class SurfaceBuilder
             this.chunk.SetBlock(localX, y, localZ, block);
 
             var column = localZ * 16 + localX;
-            if (!block.IsAir && y >= this.surfaceHeights[column])
+            if (this.surfaceHeights is not null && !block.IsAir && y >= this.surfaceHeights[column])
                 this.surfaceHeights[column] = y + 1;
         }
 
@@ -544,23 +568,13 @@ internal sealed class SurfaceBuilder
             return west >= east + 4;
         }
 
-        private static int[] CreateSurfaceHeights(IChunk chunk, int minY, int height)
+        private int ScanSurfaceHeight(int localX, int localZ)
         {
-            var heights = new int[256];
+            var y = this.builder.minY + this.builder.height - 1;
+            while (y >= this.builder.minY && this.chunk.GetBlock(localX, y, localZ).IsAir)
+                y--;
 
-            for (var localZ = 0; localZ < 16; localZ++)
-            {
-                for (var localX = 0; localX < 16; localX++)
-                {
-                    var y = minY + height - 1;
-                    while (y >= minY && chunk.GetBlock(localX, y, localZ).IsAir)
-                        y--;
-
-                    heights[localZ * 16 + localX] = y + 1;
-                }
-            }
-
-            return heights;
+            return y + 1;
         }
     }
 }

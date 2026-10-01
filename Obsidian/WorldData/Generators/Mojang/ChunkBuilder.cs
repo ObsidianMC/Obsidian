@@ -1,9 +1,10 @@
 using Obsidian.API.World.Generator.Noise;
+using Obsidian.WorldData.Generators.Mojang.Carvers;
 
 namespace Obsidian.WorldData.Generators.Mojang;
 
 /// <summary>
-/// Runs the vanilla overworld generation steps (biomes, noise, surface) for a level.
+/// Runs the vanilla overworld generation steps (biomes, noise, surface, carvers) for a level.
 /// </summary>
 internal sealed class ChunkBuilder
 {
@@ -11,6 +12,7 @@ internal sealed class ChunkBuilder
     private readonly TerrainGenerator terrainGenerator;
     private readonly SurfaceBuilder surfaceBuilder;
     private readonly MultiNoiseBiomeSource biomeSource;
+    private readonly CarverStep carverStep;
 
     public RandomState RandomState { get; }
 
@@ -23,6 +25,7 @@ internal sealed class ChunkBuilder
         this.terrainGenerator = new TerrainGenerator(this.RandomState);
         this.biomeSource = MultiNoiseBiomeSource.Overworld(this.RandomState);
         this.surfaceBuilder = new SurfaceBuilder(this.RandomState, this.biomeSource);
+        this.carverStep = new CarverStep(this.RandomState, this.surfaceBuilder, this.biomeSource);
     }
 
     public void Generate3DTerrain(IChunk chunk) => this.terrainGenerator.Generate(chunk);
@@ -50,4 +53,6 @@ internal sealed class ChunkBuilder
     }
 
     public void ApplySurfaceRules(IChunk chunk) => this.surfaceBuilder.BuildSurface(chunk);
+
+    public void ApplyCarvers(IChunk chunk) => this.carverStep.Apply(chunk);
 }

@@ -57,7 +57,8 @@ internal class MojangGenerator : ILevelGenerator
 
         if (ChunkGenStage.carvers <= stage && chunk.ChunkStatus < ChunkGenStage.carvers)
         {
-            // TODO: Implement carvers (caves)
+            // Carve classic caves and ravines
+            this.builder.ApplyCarvers(chunk);
             chunk.SetChunkStatus(ChunkGenStage.carvers);
         }
 

@@ -64,6 +64,35 @@ public class VanillaWorldGeneration
         builder.Generate3DTerrain(chunk);
         builder.ApplySurfaceRules(chunk);
 
+        var biomes = new StringBuilder();
+        for (var quartY = -16; quartY < 80; quartY++)
+            for (var quartZ = 0; quartZ < 4; quartZ++)
+                for (var quartX = 0; quartX < 4; quartX++)
+                    biomes.Append(chunk.GetBiome(quartX << 2, quartY << 2, quartZ << 2).Name).Append('\n');
+
+        Assert.Equal(expectedBlocks, Sha256(BlockNames(chunk)));
+        Assert.Equal(expectedBiomes, Sha256(biomes.ToString(0, biomes.Length - 1)));
+    }
+
+    [Theory]
+    // SHA-256 of the block names (y, z, x order) after vanilla's carvers step. (-5, -5) starts a canyon.
+    [InlineData(12345L, -5, -5, "d3bd9e5d5a5ff83427d92cd903f9d813c9cc7b0bb22f75f2e5a3e04c894e5a3b")]
+    [InlineData(0L, -7, 12, "600b60ee8b1bb837f681e4d8a9fa817edc3b1e6cdd59ca63acd48608d4e43316")]
+    public void CarvedChunkMatchesVanilla(long seed, int chunkX, int chunkZ, string expectedBlocks)
+    {
+        var builder = new ChunkBuilder(seed);
+        var chunk = new Chunk(chunkX, chunkZ);
+
+        builder.PopulateBiomes(chunk);
+        builder.Generate3DTerrain(chunk);
+        builder.ApplySurfaceRules(chunk);
+        builder.ApplyCarvers(chunk);
+
+        Assert.Equal(expectedBlocks, Sha256(BlockNames(chunk)));
+    }
+
+    private static string BlockNames(Chunk chunk)
+    {
         var blocks = new StringBuilder();
         for (var y = -64; y < 320; y++)
             for (var z = 0; z < 16; z++)
@@ -73,14 +102,7 @@ public class VanillaWorldGeneration
                     blocks.Append(block.IsAir ? "minecraft:air" : block.UnlocalizedName).Append('\n');
                 }
 
-        var biomes = new StringBuilder();
-        for (var quartY = -16; quartY < 80; quartY++)
-            for (var quartZ = 0; quartZ < 4; quartZ++)
-                for (var quartX = 0; quartX < 4; quartX++)
-                    biomes.Append(chunk.GetBiome(quartX << 2, quartY << 2, quartZ << 2).Name).Append('\n');
-
-        Assert.Equal(expectedBlocks, Sha256(blocks.ToString(0, blocks.Length - 1)));
-        Assert.Equal(expectedBiomes, Sha256(biomes.ToString(0, biomes.Length - 1)));
+        return blocks.ToString(0, blocks.Length - 1);
     }
 
     private static string Sha256(string value) => Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
