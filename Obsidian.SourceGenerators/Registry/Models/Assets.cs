@@ -193,52 +193,15 @@ internal sealed class Assets
 
         var taggables = new List<ITaggable>();
 
-        taggables.AddRange(blocks.Where(x => x.Tag is not "minecraft:water" or "minecraft:lava"));
+        taggables.AddRange(blocks);
         taggables.AddRange(items);
         taggables.AddRange(fluids);
 
-        var tags = new List<Tag>();
-        var knownTags = new Dictionary<string, Tag>();
-        var missedTags = new Dictionary<string, List<string>>();
-
         using var document = JsonDocument.Parse(json);
 
-        foreach (JsonProperty property in document.RootElement.EnumerateObject())
-        {
-            tags.Add(Tag.Get(property, taggables, knownTags, missedTags));
-        }
+        var definitions = document.RootElement.EnumerateObject().ToDictionary(property => property.Name, property => property.Value);
+        var resolved = new Dictionary<string, Tag>();
 
-        VerifyTags(knownTags, missedTags, taggables);
-        VerifyTags(knownTags, missedTags, taggables);//I can't think of a better solution :skull:
-
-        return tags.ToArray();
-    }
-
-    private static void VerifyTags(Dictionary<string, Tag> knownTags, Dictionary<string, List<string>> missedTags, List<ITaggable> taggables)
-    {
-        foreach (var missedTag in missedTags)
-        {
-            var propertyName = missedTag.Key;
-            var tagsMissed = missedTag.Value;
-
-            var prop = knownTags[propertyName];
-            foreach (var tagMissed in tagsMissed)
-            {
-                if (knownTags.TryGetValue(tagMissed, out var tag))
-                {
-                    foreach (var value in tag.Values)
-                    {
-                        if (prop.Values.Contains(value))
-                            continue;
-
-                        prop.Values.Add(value);
-                    }
-                }
-                else if (taggables.FirstOrDefault(x => x.Tag == tagMissed && x.Type == prop.Type) is ITaggable taggable && !prop.Values.Contains(taggable))
-                {
-                    prop.Values.Add(taggable);
-                }
-            }
-        }
+        return document.RootElement.EnumerateObject().Select(property => Tag.Get(property.Name, definitions, taggables, resolved)).ToArray();
     }
 }
