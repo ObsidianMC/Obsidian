@@ -72,6 +72,7 @@ internal static class BlockSurvival
         "VineBlock" => VineCanSurvive(block, level, position),
         "WaterlilyBlock" => WaterlilyCanSurvive(level, position),
         "LeafLitterBlock" => Below(level, position).IsFaceSturdy(BlockFace.Up),
+        "TorchBlock" or "RedstoneTorchBlock" => Below(level, position).IsTopCenterSturdy(),
         "StemBlock" or "AttachedStemBlock" or "CropBlock" or "CarrotBlock" or "PotatoBlock" or "BeetrootBlock" =>
             Below(level, position).Material == Material.Farmland,
         _ => true

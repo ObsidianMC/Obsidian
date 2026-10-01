@@ -156,6 +156,85 @@ internal static class FeatureHelpers
     }
 
     /// <summary>
+    /// Vanilla <c>BlockPos.randomBetweenClosed</c>: <paramref name="count"/> random positions in the box, each drawing x, y, z
+    /// with <c>nextInt(size)</c> in that order (lazily, so draws interleave with the caller's use of each position).
+    /// </summary>
+    public static IEnumerable<Vector> RandomBetweenClosed(IRandomSource random, int count, Vector min, Vector max)
+    {
+        var sizeX = max.X - min.X + 1;
+        var sizeY = max.Y - min.Y + 1;
+        var sizeZ = max.Z - min.Z + 1;
+
+        for (var i = 0; i < count; i++)
+        {
+            var x = min.X + random.NextInt(sizeX);
+            var y = min.Y + random.NextInt(sizeY);
+            var z = min.Z + random.NextInt(sizeZ);
+            yield return new Vector(x, y, z);
+        }
+    }
+
+    /// <summary>
+    /// Vanilla <c>BlockPos.withinManhattan</c>: positions within the given per-axis reach, ordered by Manhattan distance
+    /// (x, then y ascending inside each depth; each nonzero z offset is followed by its mirror).
+    /// </summary>
+    public static IEnumerable<Vector> WithinManhattan(Vector center, int reachX, int reachY, int reachZ)
+    {
+        var maxDepth = reachX + reachY + reachZ;
+        var depth = 0;
+        var maxX = 0;
+        var maxY = 0;
+        var x = 0;
+        var y = 0;
+
+        while (true)
+        {
+            int foundX, foundY, foundZ;
+            while (true)
+            {
+                if (y > maxY)
+                {
+                    x++;
+                    if (x > maxX)
+                    {
+                        depth++;
+                        if (depth > maxDepth)
+                            yield break;
+
+                        maxX = Math.Min(reachX, depth);
+                        x = -maxX;
+                    }
+
+                    maxY = Math.Min(reachY, depth - Math.Abs(x));
+                    y = -maxY;
+                }
+
+                var z = depth - Math.Abs(x) - Math.Abs(y);
+                var candidateY = y;
+                y++;
+
+                if (z <= reachZ)
+                {
+                    foundX = x;
+                    foundY = candidateY;
+                    foundZ = z;
+                    break;
+                }
+            }
+
+            yield return center + new Vector(foundX, foundY, foundZ);
+
+            if (foundZ != 0)
+                yield return center + new Vector(foundX, foundY, -foundZ);
+        }
+    }
+
+    /// <summary>
+    /// Vanilla <c>Mth.nextInt(random, min, max)</c>: <paramref name="min"/> without drawing when the range is empty.
+    /// </summary>
+    public static int NextInt(IRandomSource random, int min, int max) => min >= max ? min : random.NextInt(max - min + 1) + min;
+
+    /// <summary>
     /// Vanilla <c>Vec3i.distSqr</c> (computed in doubles).
     /// </summary>
     public static double DistSqr(Vector a, Vector b)
