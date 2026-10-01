@@ -7,13 +7,14 @@ public sealed class QuarterNegativeDensityFunction : IDensityFunction
 
     public required IDensityFunction Argument { get; init; }
 
-    public double MinValue => Argument.MinValue < 0 ? Argument.MinValue / 4D : Argument.MinValue;
+    public double MinValue => Transform(this.Argument.MinValue);
 
-    public double MaxValue => Argument.MaxValue;
+    public double MaxValue => Transform(this.Argument.MaxValue);
 
-    public double GetValue(double x, double y, double z)
-    {
-        var val = Argument.GetValue(x, y, z);
-        return val < 0 ? val / 4D : val;
-    }
+    public double GetValue(double x, double y, double z) => Transform(this.Argument.GetValue(x, y, z));
+
+    public IDensityFunction MapAll(IDensityFunctionVisitor visitor) =>
+        visitor.Apply(new QuarterNegativeDensityFunction { Argument = visitor.Map(this.Argument) });
+
+    private static double Transform(double value) => value > 0.0 ? value : value * 0.25;
 }

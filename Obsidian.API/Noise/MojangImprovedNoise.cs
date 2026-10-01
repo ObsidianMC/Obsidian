@@ -1,128 +1,162 @@
-﻿using System;
-using System.Text;
+﻿using Obsidian.API.World.Generator.RandomSources;
 
 namespace Obsidian.API.Noise;
 
-
+/// <summary>
+/// A single octave of vanilla Perlin noise (<c>ImprovedNoise</c>). Usually used through <see cref="PerlinNoise"/>.
+/// </summary>
 public sealed class ImprovedNoise
 {
-    private const float SHIFT_UP_EPSILON = 1.0e-7f;
-    private readonly byte[] p;
-    public readonly double xo;
-    public readonly double yo;
-    public readonly double zo;
+    /// <summary>Vanilla declares this as a float; the widened value (1.0000000116860974E-7) is what it uses.</summary>
+    private const double ShiftUpEpsilon = 1.0E-7f;
 
-    public ImprovedNoise(Random random)
+    private readonly byte[] p = new byte[256];
+
+    public double Xo { get; }
+
+    public double Yo { get; }
+
+    public double Zo { get; }
+
+    /// <summary>Creates a noise, consuming 3 doubles and 256 bounded ints from <paramref name="random"/>.</summary>
+    public ImprovedNoise(IRandomSource random)
     {
-        xo = random.NextDouble() * 256.0;
-        yo = random.NextDouble() * 256.0;
-        zo = random.NextDouble() * 256.0;
-        p = new byte[256];
+        this.Xo = random.NextDouble() * 256.0;
+        this.Yo = random.NextDouble() * 256.0;
+        this.Zo = random.NextDouble() * 256.0;
 
-        for (int k = 0; k < 256; k++)
+        for (var i = 0; i < 256; i++)
+            this.p[i] = (byte)i;
+
+        for (var i = 0; i < 256; i++)
         {
-            p[k] = (byte)k;
+            var j = i + random.NextInt(256 - i);
+            (this.p[i], this.p[j]) = (this.p[j], this.p[i]);
+        }
+    }
+
+    /// <summary>Samples the noise at (x, y, z). Result is roughly in <c>[-1, 1]</c>.</summary>
+    public double Noise(double x, double y, double z) => this.Noise(x, y, z, 0.0, 0.0);
+
+    /// <summary>
+    /// Legacy sampling with vertical "smearing": the y offset inside the cell is quantized to multiples of
+    /// <paramref name="yScale"/> (bounded by <paramref name="yMax"/>) when computing gradients.
+    /// Used by <see cref="BlendedNoise"/> and <see cref="PerlinNoise.GetValue(double, double, double, double, double, bool)"/>.
+    /// </summary>
+    public double Noise(double x, double y, double z, double yScale, double yMax)
+    {
+        var shiftedX = x + this.Xo;
+        var shiftedY = y + this.Yo;
+        var shiftedZ = z + this.Zo;
+        var cellX = Mth.Floor(shiftedX);
+        var cellY = Mth.Floor(shiftedY);
+        var cellZ = Mth.Floor(shiftedZ);
+        var localX = shiftedX - cellX;
+        var localY = shiftedY - cellY;
+        var localZ = shiftedZ - cellZ;
+
+        var yShift = 0.0;
+        if (yScale != 0.0)
+        {
+            var clampedY = yMax >= 0.0 && yMax < localY ? yMax : localY;
+            yShift = Mth.Floor(clampedY / yScale + ShiftUpEpsilon) * yScale;
         }
 
-        for (int k = 0; k < 256; k++)
-        {
-            int j = random.Next(256 - k);
-            byte temp = p[k];
-            p[k] = p[k + j];
-            p[k + j] = temp;
-        }
+        return this.SampleAndLerp(cellX, cellY, cellZ, localX, localY - yShift, localZ, localY);
     }
 
-    public double Noise(double x, double y, double z)
+    /// <summary>
+    /// Samples the noise at (x, y, z) and adds its partial derivatives to <paramref name="derivatives"/> (length 3).
+    /// </summary>
+    public double NoiseWithDerivative(double x, double y, double z, Span<double> derivatives)
     {
-        return Noise(x, y, z, 0.0, 0.0);
+        var shiftedX = x + this.Xo;
+        var shiftedY = y + this.Yo;
+        var shiftedZ = z + this.Zo;
+        var cellX = Mth.Floor(shiftedX);
+        var cellY = Mth.Floor(shiftedY);
+        var cellZ = Mth.Floor(shiftedZ);
+
+        return this.SampleWithDerivative(cellX, cellY, cellZ, shiftedX - cellX, shiftedY - cellY, shiftedZ - cellZ, derivatives);
     }
 
-    [Obsolete]
-    public double Noise(double x, double y, double z, double delta, double scale)
+    private int P(int index) => this.p[index & 0xFF];
+
+    private static double GradDot(int hash, double x, double y, double z) => SimplexNoise.Dot(hash & 15, x, y, z);
+
+    private double SampleAndLerp(int cellX, int cellY, int cellZ, double x, double y, double z, double yForSmoothing)
     {
-        double nx = x + xo;
-        double ny = y + yo;
-        double nz = z + zo;
+        var a = this.P(cellX);
+        var b = this.P(cellX + 1);
+        var aa = this.P(a + cellY);
+        var ab = this.P(a + cellY + 1);
+        var ba = this.P(b + cellY);
+        var bb = this.P(b + cellY + 1);
 
-        int ix = MathUtils.Floor(nx);
-        int iy = MathUtils.Floor(ny);
-        int iz = MathUtils.Floor(nz);
+        var d000 = GradDot(this.P(aa + cellZ), x, y, z);
+        var d100 = GradDot(this.P(ba + cellZ), x - 1.0, y, z);
+        var d010 = GradDot(this.P(ab + cellZ), x, y - 1.0, z);
+        var d110 = GradDot(this.P(bb + cellZ), x - 1.0, y - 1.0, z);
+        var d001 = GradDot(this.P(aa + cellZ + 1), x, y, z - 1.0);
+        var d101 = GradDot(this.P(ba + cellZ + 1), x - 1.0, y, z - 1.0);
+        var d011 = GradDot(this.P(ab + cellZ + 1), x, y - 1.0, z - 1.0);
+        var d111 = GradDot(this.P(bb + cellZ + 1), x - 1.0, y - 1.0, z - 1.0);
 
-        double fx = nx - ix;
-        double fy = ny - iy;
-        double fz = nz - iz;
-
-        double d6 = 0.0;
-        if (delta != 0.0)
-        {
-            double d7 = scale >= 0.0 && scale < fy ? scale : fy;
-            d6 = Math.Floor(d7 / delta + 1.0000000116860974E-7) * delta;
-        }
-
-        return SampleAndLerp(ix, iy, iz, fx, fy - d6, fz, fy);
+        // The y weight uses the unshifted local y, which is what makes the smeared sampling work.
+        var tx = Mth.Smoothstep(x);
+        var ty = Mth.Smoothstep(yForSmoothing);
+        var tz = Mth.Smoothstep(z);
+        return Mth.Lerp3(tx, ty, tz, d000, d100, d010, d110, d001, d101, d011, d111);
     }
 
-    public double NoiseWithDerivative(double x, double y, double z, double[] derivatives)
+    private double SampleWithDerivative(int cellX, int cellY, int cellZ, double x, double y, double z, Span<double> derivatives)
     {
-        double nx = x + xo;
-        double ny = y + yo;
-        double nz = z + zo;
+        var a = this.P(cellX);
+        var b = this.P(cellX + 1);
+        var aa = this.P(a + cellY);
+        var ab = this.P(a + cellY + 1);
+        var ba = this.P(b + cellY);
+        var bb = this.P(b + cellY + 1);
 
-        int ix = MathUtils.Floor(nx);
-        int iy = MathUtils.Floor(ny);
-        int iz = MathUtils.Floor(nz);
+        var g000 = this.P(aa + cellZ) & 15;
+        var g100 = this.P(ba + cellZ) & 15;
+        var g010 = this.P(ab + cellZ) & 15;
+        var g110 = this.P(bb + cellZ) & 15;
+        var g001 = this.P(aa + cellZ + 1) & 15;
+        var g101 = this.P(ba + cellZ + 1) & 15;
+        var g011 = this.P(ab + cellZ + 1) & 15;
+        var g111 = this.P(bb + cellZ + 1) & 15;
 
-        double fx = nx - ix;
-        double fy = ny - iy;
-        double fz = nz - iz;
+        var d000 = SimplexNoise.Dot(g000, x, y, z);
+        var d100 = SimplexNoise.Dot(g100, x - 1.0, y, z);
+        var d010 = SimplexNoise.Dot(g010, x, y - 1.0, z);
+        var d110 = SimplexNoise.Dot(g110, x - 1.0, y - 1.0, z);
+        var d001 = SimplexNoise.Dot(g001, x, y, z - 1.0);
+        var d101 = SimplexNoise.Dot(g101, x - 1.0, y, z - 1.0);
+        var d011 = SimplexNoise.Dot(g011, x, y - 1.0, z - 1.0);
+        var d111 = SimplexNoise.Dot(g111, x - 1.0, y - 1.0, z - 1.0);
 
-        return SampleWithDerivative(ix, iy, iz, fx, fy, fz, derivatives);
+        var tx = Mth.Smoothstep(x);
+        var ty = Mth.Smoothstep(y);
+        var tz = Mth.Smoothstep(z);
+
+        double LerpGradients(int axis) => Mth.Lerp3(tx, ty, tz,
+            SimplexNoise.GradientComponent(g000, axis), SimplexNoise.GradientComponent(g100, axis),
+            SimplexNoise.GradientComponent(g010, axis), SimplexNoise.GradientComponent(g110, axis),
+            SimplexNoise.GradientComponent(g001, axis), SimplexNoise.GradientComponent(g101, axis),
+            SimplexNoise.GradientComponent(g011, axis), SimplexNoise.GradientComponent(g111, axis));
+
+        var gradientX = LerpGradients(0);
+        var gradientY = LerpGradients(1);
+        var gradientZ = LerpGradients(2);
+        var slopeX = Mth.Lerp2(ty, tz, d100 - d000, d110 - d010, d101 - d001, d111 - d011);
+        var slopeY = Mth.Lerp2(tz, tx, d010 - d000, d011 - d001, d110 - d100, d111 - d101);
+        var slopeZ = Mth.Lerp2(tx, ty, d001 - d000, d101 - d100, d011 - d010, d111 - d110);
+
+        derivatives[0] += gradientX + Mth.SmoothstepDerivative(x) * slopeX;
+        derivatives[1] += gradientY + Mth.SmoothstepDerivative(y) * slopeY;
+        derivatives[2] += gradientZ + Mth.SmoothstepDerivative(z) * slopeZ;
+
+        return Mth.Lerp3(tx, ty, tz, d000, d100, d010, d110, d001, d101, d011, d111);
     }
-
-    private static double GradDot(int hash, double x, double y, double z)
-    {
-        return SimplexNoise.Dot(SimplexNoise.GRADIENT[hash & 15], x, y, z);
-    }
-
-    private int P(int index)
-    {
-        return p[index & 255] & 255;
-    }
-
-    private double SampleAndLerp(int ix, int iy, int iz, double fx, double fy, double fz, double fyOriginal)
-    {
-        int i = P(ix);
-        int j = P(ix + 1);
-        int k = P(i + iy);
-        int l = P(i + iy + 1);
-        int i1 = P(j + iy);
-        int j1 = P(j + iy + 1);
-
-//double[] g = SimplexNoise.GRADIENT;
-
-        double v0 = GradDot(P(k + iz), fx, fy, fz);
-        double v1 = GradDot(P(i1 + iz), fx - 1.0, fy, fz);
-        double v2 = GradDot(P(l + iz), fx, fy - 1.0, fz);
-        double v3 = GradDot(P(j1 + iz), fx - 1.0, fy - 1.0, fz);
-
-        double v4 = GradDot(P(k + iz + 1), fx, fy, fz - 1.0);
-        double v5 = GradDot(P(i1 + iz + 1), fx - 1.0, fy, fz - 1.0);
-        double v6 = GradDot(P(l + iz + 1), fx, fy - 1.0, fz - 1.0);
-        double v7 = GradDot(P(j1 + iz + 1), fx - 1.0, fy - 1.0, fz - 1.0);
-
-        double u = MathUtils.Smoothstep(fx);
-        double v = MathUtils.Smoothstep(fyOriginal);
-        double w = MathUtils.Smoothstep(fz);
-
-        return MathUtils.Lerp3(u, v, w, v0, v1, v2, v3, v4, v5, v6, v7);
-    }
-
-    private double SampleWithDerivative(int ix, int iy, int iz, double fx, double fy, double fz, double[] derivatives)
-    {
-        // Implementation analogous to SampleAndLerp with derivative computation.
-        // Fill in based on translated helper methods as required.
-        throw new NotImplementedException("This method has not been fully translated.");
-    }
-
 }

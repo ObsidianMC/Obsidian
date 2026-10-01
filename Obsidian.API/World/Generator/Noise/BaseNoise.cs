@@ -1,79 +1,68 @@
 ﻿using Obsidian.API.Noise;
+using Obsidian.API.World.Generator.RandomSources;
 
 namespace Obsidian.API.World.Generator.Noise;
+
+/// <summary>
+/// A worldgen noise from the <c>worldgen/noise</c> registry, backed by vanilla's <see cref="NormalNoise"/>.
+/// </summary>
+/// <remarks>
+/// Registry instances are unseeded. World generation binds a seeded copy per world with <see cref="Bind"/>;
+/// sampling an unbound instance lazily binds it as if the world seed were 0.
+/// </remarks>
 public partial class BaseNoise : INoise
 {
     public string Type => "minecraft:base_noise";
+
+    /// <summary>
+    /// Registry key (e.g. <c>minecraft:temperature</c>). Vanilla seeds each noise from a hash of this key.
+    /// </summary>
+    public required string Key { get; init; }
 
     public required double[] Amplitudes { get; init; }
 
     public required double FirstOctave { get; init; }
 
-    public int Seed { get; init; }
+    public double MinValue => -this.MaxValue;
 
-    public double MinValue => -MaxValue;
+    public double MaxValue => this.Noise.MaxValue;
 
-    public double MaxValue { 
+    private NormalNoise Noise
+    {
         get
         {
-            if (!_initialized)
-            {
-                Create();
-            }
-            return field;
+            if (field is null)
+                this.Create();
+
+            return field!;
         }
-        private set; 
+        set;
     }
 
-    private bool _initialized = false;
+    /// <summary>
+    /// Returns a copy of this noise seeded from <paramref name="random"/>.
+    /// </summary>
+    public BaseNoise Bind(IRandomSource random) => this.Bind(NormalNoise.Create(random, (int)this.FirstOctave, this.Amplitudes));
 
-    private const double InputFactor = 1.0181268882175227;
-
-    private double _valueFactor;
-    private PerlinNoise _primaryNoise;
-    private PerlinNoise _secondaryNoise;
-
-
-    private static double ExpectedDeviation(int range)
+    /// <summary>
+    /// Returns a copy of this noise backed by <paramref name="noise"/>. Used for vanilla's legacy special cases,
+    /// where the sampled noise doesn't match the registry parameters.
+    /// </summary>
+    public BaseNoise Bind(NormalNoise noise) => new()
     {
-        return 0.1 * (1.0 + 1.0 / (range + 1.0));
-    }
+        Key = this.Key,
+        Amplitudes = this.Amplitudes,
+        FirstOctave = this.FirstOctave,
+        Noise = noise
+    };
 
-    public void Create()
-    {
-        _primaryNoise = PerlinNoise.Create(new Random(Seed+3), (int)FirstOctave, Amplitudes);
-        _secondaryNoise = PerlinNoise.Create(new Random(Seed+4), (int)FirstOctave, Amplitudes);
+    /// <summary>
+    /// Returns a copy of this noise seeded the way vanilla seeds registry noises for a world.
+    /// </summary>
+    public BaseNoise Bind(IPositionalRandomFactory worldRandom) => this.Bind(worldRandom.FromHashOf(this.Key));
 
-        int minIndex = int.MaxValue;
-        int maxIndex = int.MinValue;
+    public void Create() =>
+        this.Noise ??= NormalNoise.Create(new XoroshiroRandomSource(0L).ForkPositional().FromHashOf(this.Key), (int)this.FirstOctave, this.Amplitudes);
 
-        for (int i = 0; i < Amplitudes.ToList().Count; i++)
-        {
-            if (Amplitudes[i] != 0.0)
-            {
-                minIndex = Math.Min(minIndex, i);
-                maxIndex = Math.Max(maxIndex, i);
-            }
-        }
-        _valueFactor = 0.16666666666666666 / ExpectedDeviation(maxIndex - minIndex);
-        MaxValue = _primaryNoise.MaxValue * _secondaryNoise.MaxValue * _valueFactor;
-        _initialized = true;
-    }
-
-    public double GetValue(double x, double y, double z)
-    {
-        if (!_initialized)
-        {
-            Create();
-        }
-
-        double scaledX = x * InputFactor;
-        double scaledY = y * InputFactor;
-        double scaledZ = z * InputFactor;
-
-        double primaryValue = _primaryNoise.GetValue(x, y, z);
-        double secondaryValue = _secondaryNoise.GetValue(scaledX, scaledY, scaledZ);
-
-        return (primaryValue + secondaryValue) * _valueFactor;
-    }
+    public double GetValue(double x, double y, double z) => this.Noise.GetValue(x, y, z);
 }

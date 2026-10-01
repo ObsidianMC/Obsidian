@@ -7,13 +7,12 @@ public sealed class SplineDensityFunction : IDensityFunction
 
     public required Spline Spline { get; init; }
 
-    public double MinValue => Spline.MinValue;
+    public double MinValue => this.Spline.MinValue;
 
-    public double MaxValue => Spline.MaxValue;
+    public double MaxValue => this.Spline.MaxValue;
 
-    public double GetValue(double x, double y, double z)
-    {
-        Spline.Create();
-        return Spline.Apply(x, y, z);
-    }
+    public double GetValue(double x, double y, double z) => this.Spline.Apply(x, y, z);
+
+    public IDensityFunction MapAll(IDensityFunctionVisitor visitor) =>
+        visitor.Apply(new SplineDensityFunction { Spline = this.Spline.MapAll(visitor) });
 }

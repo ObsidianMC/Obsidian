@@ -3,10 +3,9 @@ public readonly struct SplineConstant : ISpline
 {
     public double Value { get; init; }
 
-    public double MinValue => Value;
+    public float MinValue => (float)Value;
 
-    public double MaxValue => Value;
+    public float MaxValue => (float)Value;
 
-    public double Apply(double x, double y, double z) => Value;
+    public float Apply(double x, double y, double z) => (float)Value;
 }
-
