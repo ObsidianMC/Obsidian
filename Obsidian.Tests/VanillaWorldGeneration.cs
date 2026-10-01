@@ -1,0 +1,87 @@
+using Obsidian.API.Registries;
+using Obsidian.WorldData;
+using Obsidian.WorldData.Generators.Mojang;
+using System;
+using System.Security.Cryptography;
+using System.Text;
+using Xunit;
+
+namespace Obsidian.Tests;
+
+/// <summary>
+/// Parity checks for the Mojang (vanilla) overworld generator.
+/// Expected values come from running vanilla 1.21.11 world generation with the same seeds.
+/// </summary>
+public class VanillaWorldGeneration
+{
+    [Theory]
+    [InlineData("12345", 12345L)]
+    [InlineData(" -4172144997902289642 ", -4172144997902289642L)]
+    [InlineData("Obsidian", 416515707L)] // "Obsidian".hashCode() in Java
+    public void ParsesSeedsLikeVanilla(string seed, long expected) => Assert.Equal(expected, RandomState.ParseSeed(seed));
+
+    [Theory]
+    // Vanilla: RandomState.create(overworld, 12345).router().<field>().compute(new SinglePointContext(x, y, z)).
+    [InlineData(-1000, 40, -1000, 0.4972870927552263, -0.18318753038877283, 0.29439637809991837, 0.016238079376904718, 64.0)]
+    [InlineData(16, 100, -37, -0.34568426279260855, -0.7125518621107382, -0.4050000235438347, -0.4583333333333333, 32.0)]
+    [InlineData(2048, 40, 2048, 0.38879813422973103, -0.003034826869616222, 0.1942829890176654, 0.04138873475516909, 56.0)]
+    public void NoiseRouterMatchesVanilla(int x, int y, int z, double continents, double erosion, double depth,
+        double finalDensity, double preliminarySurfaceLevel)
+    {
+        var router = new RandomState(NoiseRegistry.NoiseSettings.All["minecraft:overworld"], 12345L).Router;
+
+        Assert.Equal(continents, router.Continents.GetValue(x, y, z));
+        Assert.Equal(erosion, router.Erosion.GetValue(x, y, z));
+        Assert.Equal(depth, router.Depth.GetValue(x, y, z));
+        Assert.Equal(finalDensity, router.FinalDensity.GetValue(x, y, z));
+        Assert.Equal(preliminarySurfaceLevel, router.PreliminarySurfaceLevel.GetValue(x, y, z));
+    }
+
+    [Theory]
+    // Vanilla: MultiNoiseBiomeSource (overworld preset).getNoiseBiome(quartX, quartY, quartZ, sampler) for seed 12345.
+    [InlineData(0, -16, 0, "minecraft:lush_caves")]
+    [InlineData(0, 16, 0, "minecraft:ocean")]
+    [InlineData(83, 16, -250, "minecraft:plains")]
+    public void BiomesMatchVanilla(int quartX, int quartY, int quartZ, string expected)
+    {
+        var biomeSource = MultiNoiseBiomeSource.Overworld(new RandomState(NoiseRegistry.NoiseSettings.All["minecraft:overworld"], 12345L));
+
+        Assert.Equal(expected, biomeSource.GetNoiseBiome(quartX, quartY, quartZ).Name);
+    }
+
+    [Theory]
+    // SHA-256 of the block names (y, z, x order) and quart biomes (y, z, x order) of the chunk after vanilla's
+    // biomes, noise and surface steps. Covers aquifers (water, lava), ore veins, bedrock and deepslate gradients.
+    [InlineData(0L, -100, 57, "edaa3b78c8f0b63962e8e5850ed595106962f2433fc804af603b0fde54ad5bc4", "b47a5f72bba911f1784155abcc766f2092694f467c708e011fa46074ad02d524")]
+    [InlineData(0L, 30, 30, "289d8726ffe03a41f6ef4ec0a75959b7114d5cbd63dcab1b2b9bda8b1487b75c", "63f8f426639d6fc2b74953137db6808987d53a5c94876c949daa5ff2c53126cf")]
+    [InlineData(12345L, -100, 57, "c1baf842b304ec003631790b569460e256b68a49905bd7e407ac268d042783db", "9192ce66418d5a40c7fa111038c502d8e5a1ac47201f1a853da58c376168167a")]
+    public void ChunkMatchesVanilla(long seed, int chunkX, int chunkZ, string expectedBlocks, string expectedBiomes)
+    {
+        var builder = new ChunkBuilder(seed);
+        var chunk = new Chunk(chunkX, chunkZ);
+
+        builder.PopulateBiomes(chunk);
+        builder.Generate3DTerrain(chunk);
+        builder.ApplySurfaceRules(chunk);
+
+        var blocks = new StringBuilder();
+        for (var y = -64; y < 320; y++)
+            for (var z = 0; z < 16; z++)
+                for (var x = 0; x < 16; x++)
+                {
+                    var block = chunk.GetBlock(x, y, z);
+                    blocks.Append(block.IsAir ? "minecraft:air" : block.UnlocalizedName).Append('\n');
+                }
+
+        var biomes = new StringBuilder();
+        for (var quartY = -16; quartY < 80; quartY++)
+            for (var quartZ = 0; quartZ < 4; quartZ++)
+                for (var quartX = 0; quartX < 4; quartX++)
+                    biomes.Append(chunk.GetBiome(quartX << 2, quartY << 2, quartZ << 2).Name).Append('\n');
+
+        Assert.Equal(expectedBlocks, Sha256(blocks.ToString(0, blocks.Length - 1)));
+        Assert.Equal(expectedBiomes, Sha256(biomes.ToString(0, biomes.Length - 1)));
+    }
+
+    private static string Sha256(string value) => Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
+}

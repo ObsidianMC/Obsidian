@@ -9,8 +9,8 @@ internal class MojangGenerator : ILevelGenerator
 
     public string Id => "minecraft:mojang_generator";
 
-    private ChunkBuilder _builder;
-    private ILevel _world;
+    private ChunkBuilder builder;
+    private ILevel world;
 
     public async ValueTask<IChunk> GenerateChunkAsync(int cx, int cz, IChunk? chunk = null, ChunkGenStage stage = ChunkGenStage.full)
     {
@@ -37,21 +37,21 @@ internal class MojangGenerator : ILevelGenerator
         if (ChunkGenStage.biomes <= stage && chunk.ChunkStatus < ChunkGenStage.biomes)
         {
             // Use multi-noise biome selection based on climate parameters
-            _builder.PopulateBiomes(chunk);
+            this.builder.PopulateBiomes(chunk);
             chunk.SetChunkStatus(ChunkGenStage.biomes);
         }
 
         if (ChunkGenStage.noise <= stage && chunk.ChunkStatus < ChunkGenStage.noise)
         {
             // Generate terrain using 3D density sampling with aquifer support
-            _builder.Generate3DTerrain(chunk);
+            this.builder.Generate3DTerrain(chunk);
             chunk.SetChunkStatus(ChunkGenStage.noise);
         }
 
         if (ChunkGenStage.surface <= stage && chunk.ChunkStatus < ChunkGenStage.surface)
         {
             // Apply surface rules to replace stone with grass, dirt, sand, etc.
-            _builder.ApplySurfaceRules(chunk);
+            this.builder.ApplySurfaceRules(chunk);
             chunk.SetChunkStatus(ChunkGenStage.surface);
         }
 
@@ -76,9 +76,9 @@ internal class MojangGenerator : ILevelGenerator
         if (ChunkGenStage.light <= stage && chunk.ChunkStatus < ChunkGenStage.light)
         {
             Lighting.InitialFillSkyLight(chunk);
-            await Lighting.LightFromNeighbors(chunk, _world);
+            await Lighting.LightFromNeighbors(chunk, this.world);
             chunk.SetChunkStatus(ChunkGenStage.light);
-            await Lighting.LightToNeighbors(chunk, _world);
+            await Lighting.LightToNeighbors(chunk, this.world);
         }
 
         if (ChunkGenStage.spawn <= stage && chunk.ChunkStatus < ChunkGenStage.spawn)
@@ -92,7 +92,7 @@ internal class MojangGenerator : ILevelGenerator
     }
     public void Init(ILevel world)
     {
-        _world = world;
-        _builder = new ChunkBuilder(world);
+        this.world = world;
+        this.builder = new ChunkBuilder(RandomState.ParseSeed(world.Seed));
     }
 }

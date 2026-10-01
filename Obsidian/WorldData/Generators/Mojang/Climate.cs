@@ -1,65 +1,59 @@
 namespace Obsidian.WorldData.Generators.Mojang;
 
 /// <summary>
-/// Represents a point in 5D climate parameter space used for biome selection.
-/// Each parameter typically ranges from -1.0 to 1.0 but can exceed these bounds.
+/// Climate values are compared as fixed-point longs (value * 10000), like vanilla.
 /// </summary>
-public readonly record struct Climate
+internal static class Climate
 {
-	/// <summary>
-	/// Temperature parameter. Lower values = colder biomes, higher = warmer.
-	/// Sampled from NoiseRouter.Temperature
-	/// </summary>
-	public required double Temperature { get; init; }
+    /// <summary>
+    /// Converts a climate value to fixed point. The float multiply and truncation match vanilla.
+    /// </summary>
+    public static long Quantize(float value) => (long)(value * 10000.0f);
+}
 
-	/// <summary>
-	/// Humidity/Vegetation parameter. Lower = drier, higher = wetter.
-	/// Sampled from NoiseRouter.Vegetation
-	/// </summary>
-	public required double Humidity { get; init; }
+/// <summary>
+/// An inclusive range of quantized climate values.
+/// </summary>
+internal readonly record struct ClimateParameter(long Min, long Max)
+{
+    /// <summary>
+    /// Distance from <paramref name="value"/> to the range; 0 when inside.
+    /// </summary>
+    public long Distance(long value)
+    {
+        var above = value - this.Max;
+        var below = this.Min - value;
+        return above > 0L ? above : Math.Max(below, 0L);
+    }
 
-	/// <summary>
-	/// Continentalness parameter. Lower = ocean, higher = inland/mountains.
-	/// Sampled from NoiseRouter.Continents
-	/// </summary>
-	public required double Continentalness { get; init; }
+    public ClimateParameter Span(ClimateParameter other) => new(Math.Min(this.Min, other.Min), Math.Max(this.Max, other.Max));
 
-	/// <summary>
-	/// Erosion parameter. Lower = flat/valleys, higher = peaks.
-	/// Sampled from NoiseRouter.Erosion
-	/// </summary>
-	public required double Erosion { get; init; }
+    public long Midpoint => (this.Min + this.Max) / 2L;
+}
 
-	/// <summary>
-	/// Weirdness parameter. Controls unusual terrain features and biome variants.
-	/// Sampled from NoiseRouter.Ridges
-	/// </summary>
-	public required double Weirdness { get; init; }
+/// <summary>
+/// Quantized climate sampled at a position.
+/// </summary>
+internal readonly record struct TargetPoint(long Temperature, long Humidity, long Continentalness, long Erosion, long Depth, long Weirdness)
+{
+    /// <summary>
+    /// The point in the 7D search space; the last axis is the biome offset, which targets always have at 0.
+    /// </summary>
+    public long[] ToParameterArray() => [this.Temperature, this.Humidity, this.Continentalness, this.Erosion, this.Depth, this.Weirdness, 0L];
+}
 
-	/// <summary>
-	/// Depth parameter used for vertical biome variation (caves).
-	/// For overworld surface biomes, this is typically 0.
-	/// </summary>
-	public required double Depth { get; init; }
-
-	/// <summary>
-	/// Calculates the squared distance between two climate points in parameter space.
-	/// Used for finding the closest matching biome.
-	/// </summary>
-	public double DistanceSquared(Climate other)
-	{
-		double tempDiff = Temperature - other.Temperature;
-		double humidDiff = Humidity - other.Humidity;
-		double contDiff = Continentalness - other.Continentalness;
-		double erosDiff = Erosion - other.Erosion;
-		double weirdDiff = Weirdness - other.Weirdness;
-		double depthDiff = Depth - other.Depth;
-
-		return tempDiff * tempDiff +
-			   humidDiff * humidDiff +
-			   contDiff * contDiff +
-			   erosDiff * erosDiff +
-			   weirdDiff * weirdDiff +
-			   depthDiff * depthDiff;
-	}
+/// <summary>
+/// Climate ranges a biome occupies, plus an offset that makes it less likely to be chosen.
+/// </summary>
+internal sealed record ParameterPoint(
+    ClimateParameter Temperature,
+    ClimateParameter Humidity,
+    ClimateParameter Continentalness,
+    ClimateParameter Erosion,
+    ClimateParameter Depth,
+    ClimateParameter Weirdness,
+    long Offset)
+{
+    public ClimateParameter[] ParameterSpace() =>
+        [this.Temperature, this.Humidity, this.Continentalness, this.Erosion, this.Depth, this.Weirdness, new(this.Offset, this.Offset)];
 }

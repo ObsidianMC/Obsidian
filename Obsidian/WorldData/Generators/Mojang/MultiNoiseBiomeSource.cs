@@ -1,436 +1,87 @@
-using Obsidian.API.Registries;
 using Obsidian.API.Registry.Codecs.Biomes;
-using Obsidian.API.World.Generator.Noise;
+using System.Reflection;
+using System.Text.Json;
 
 namespace Obsidian.WorldData.Generators.Mojang;
 
 /// <summary>
-/// Multi-noise biome source that selects biomes based on climate parameters.
-/// Single Responsibility: Maps climate parameters to biomes.
-/// Dependency Inversion: Depends on abstractions (NoiseRouter) not concretions.
+/// Picks the biome whose climate ranges are closest to the sampled climate, like vanilla's multi-noise biome source.
 /// </summary>
 internal sealed class MultiNoiseBiomeSource : IBiomeSource
 {
-    private readonly ClimateSampler _climateSampler;
-    private readonly List<BiomeParameterPoint> _biomePoints;
+    private static readonly Lazy<BiomeParameterTree<BiomeCodec>> overworldParameters = new(() => LoadParameters("overworld"));
 
-    public MultiNoiseBiomeSource(NoiseRouter noiseRouter)
-    {
-        _climateSampler = new ClimateSampler(noiseRouter);
-        _biomePoints = BuildOverworldBiomeParameters();
-    }
+    private readonly ClimateSampler climateSampler;
+    private readonly BiomeParameterTree<BiomeCodec> parameters;
 
-    public BiomeCodec GetBiome(int x, int y, int z)
+    private MultiNoiseBiomeSource(ClimateSampler climateSampler, BiomeParameterTree<BiomeCodec> parameters)
     {
-        var targetClimate = _climateSampler.Sample(x, y, z);
-        return FindClosestBiome(targetClimate);
+        this.climateSampler = climateSampler;
+        this.parameters = parameters;
     }
 
     /// <summary>
-    /// Finds the biome with climate parameters closest to the target.
+    /// Creates the source for vanilla's overworld biome layout (the <c>minecraft:overworld</c> parameter list preset).
     /// </summary>
-    private BiomeCodec FindClosestBiome(Climate target)
-    {
-        BiomeCodec? bestBiome = null;
-        double bestDistance = double.MaxValue;
+    public static MultiNoiseBiomeSource Overworld(RandomState randomState) =>
+        new(new ClimateSampler(randomState.Router), overworldParameters.Value);
 
-        foreach (var point in _biomePoints)
+    public BiomeCodec GetNoiseBiome(int quartX, int quartY, int quartZ) =>
+        this.GetNoiseBiome(this.climateSampler, quartX, quartY, quartZ);
+
+    /// <summary>
+    /// Gets the biome using another sampler over the same router, e.g. a <see cref="NoiseChunk"/>'s cached one.
+    /// </summary>
+    public BiomeCodec GetNoiseBiome(ClimateSampler sampler, int quartX, int quartY, int quartZ) =>
+        this.parameters.Search(sampler.Sample(quartX, quartY, quartZ));
+
+    /// <summary>
+    /// Loads a parameter list from <c>Assets/biome_parameters</c>.
+    /// </summary>
+    /// <remarks>
+    /// The files are vanilla's <c>reports/biome_parameters/minecraft/*.json</c>, produced by
+    /// <c>java -DbundlerMainClass=net.minecraft.data.Main -jar server.jar --reports</c>. Entry order matters (it decides ties).
+    /// </remarks>
+    private static BiomeParameterTree<BiomeCodec> LoadParameters(string preset)
+    {
+        using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream($"Obsidian.Assets.biome_parameters.{preset}.json")
+            ?? throw new InvalidOperationException($"Missing biome parameter list '{preset}'.");
+        using var document = JsonDocument.Parse(stream);
+
+        var values = new List<(ParameterPoint, BiomeCodec)>();
+
+        foreach (var entry in document.RootElement.GetProperty("biomes").EnumerateArray())
         {
-            double distance = point.FitnessDistance(target);
-            if (distance < bestDistance)
-            {
-                bestDistance = distance;
-                bestBiome = point.Biome;
-            }
+            var name = entry.GetProperty("biome").GetString()!;
+            if (!CodecRegistry.TryGetBiome(name, out var biome))
+                throw new InvalidOperationException($"Unknown biome '{name}' in parameter list '{preset}'.");
+
+            var parameters = entry.GetProperty("parameters");
+            var point = new ParameterPoint(
+                ReadParameter(parameters.GetProperty("temperature")),
+                ReadParameter(parameters.GetProperty("humidity")),
+                ReadParameter(parameters.GetProperty("continentalness")),
+                ReadParameter(parameters.GetProperty("erosion")),
+                ReadParameter(parameters.GetProperty("depth")),
+                ReadParameter(parameters.GetProperty("weirdness")),
+                Requantize(parameters.GetProperty("offset")));
+
+            values.Add((point, biome!));
         }
 
-        return bestBiome ?? CodecRegistry.Biomes.Plains; // Fallback
+        return new BiomeParameterTree<BiomeCodec>(values);
     }
 
     /// <summary>
-    /// Builds the overworld biome parameter list.
-    /// This approximates Minecraft's multi-noise biome distribution.
-    /// 
-    /// Parameters generally follow:
-    /// - Temperature: -1.0 (frozen) to 1.0 (hot)
-    /// - Humidity: -1.0 (dry) to 1.0 (wet)
-    /// - Continentalness: -1.0 (deep ocean) to 1.0 (inland)
-    /// - Erosion: -1.0 (valleys) to 1.0 (peaks)
-    /// - Weirdness: -1.0 to 1.0 (affects terrain variation)
+    /// Reads a parameter written either as a single value or as <c>[min, max]</c>.
     /// </summary>
-    private static List<BiomeParameterPoint> BuildOverworldBiomeParameters()
-    {
-        var points = new List<BiomeParameterPoint>();
+    private static ClimateParameter ReadParameter(JsonElement element) => element.ValueKind == JsonValueKind.Array
+        ? new(Requantize(element[0]), Requantize(element[1]))
+        : new(Requantize(element), Requantize(element));
 
-        // Ocean biomes - very negative continentalness
-        AddOceanBiomes(points);
-
-        // Coastal/beach biomes - slightly negative continentalness
-        AddCoastalBiomes(points);
-
-        // Plains and flatland biomes - near-zero continentalness, low erosion
-        AddPlainsBiomes(points);
-
-        // Forest biomes - moderate continentalness and humidity
-        AddForestBiomes(points);
-
-        // Mountain biomes - high erosion
-        AddMountainBiomes(points);
-
-        // Desert and arid biomes - low humidity
-        AddDesertBiomes(points);
-
-        // Jungle biomes - high temperature and humidity
-        AddJungleBiomes(points);
-
-        // Snowy biomes - very low temperature
-        AddSnowyBiomes(points);
-
-        // Swamp biomes - high humidity, low erosion
-        AddSwampBiomes(points);
-
-        // Badlands biomes - low humidity, high continentalness
-        AddBadlandsBiomes(points);
-
-        return points;
-    }
-
-    private static void AddOceanBiomes(List<BiomeParameterPoint> points)
-    {
-        // Deep oceans
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.DeepFrozenOcean,
-            Climate = new Climate { Temperature = -0.8, Humidity = 0.0, Continentalness = -0.8, Erosion = 0.0, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.DeepColdOcean,
-            Climate = new Climate { Temperature = -0.3, Humidity = 0.0, Continentalness = -0.8, Erosion = 0.0, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.DeepOcean,
-            Climate = new Climate { Temperature = 0.3, Humidity = 0.0, Continentalness = -0.8, Erosion = 0.0, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.DeepLukewarmOcean,
-            Climate = new Climate { Temperature = 0.6, Humidity = 0.0, Continentalness = -0.8, Erosion = 0.0, Weirdness = 0.0, Depth = 0.0 }
-        });
-
-        // Normal oceans
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.FrozenOcean,
-            Climate = new Climate { Temperature = -0.8, Humidity = 0.0, Continentalness = -0.5, Erosion = 0.0, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.ColdOcean,
-            Climate = new Climate { Temperature = -0.3, Humidity = 0.0, Continentalness = -0.5, Erosion = 0.0, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.Ocean,
-            Climate = new Climate { Temperature = 0.3, Humidity = 0.0, Continentalness = -0.5, Erosion = 0.0, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.LukewarmOcean,
-            Climate = new Climate { Temperature = 0.6, Humidity = 0.0, Continentalness = -0.5, Erosion = 0.0, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.WarmOcean,
-            Climate = new Climate { Temperature = 0.9, Humidity = 0.0, Continentalness = -0.5, Erosion = 0.0, Weirdness = 0.0, Depth = 0.0 }
-        });
-    }
-
-    private static void AddCoastalBiomes(List<BiomeParameterPoint> points)
-    {
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.Beach,
-            Climate = new Climate { Temperature = 0.3, Humidity = 0.0, Continentalness = -0.2, Erosion = -0.3, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.SnowyBeach,
-            Climate = new Climate { Temperature = -0.5, Humidity = 0.0, Continentalness = -0.2, Erosion = -0.3, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.StonyShore,
-            Climate = new Climate { Temperature = 0.0, Humidity = 0.0, Continentalness = -0.2, Erosion = 0.5, Weirdness = 0.0, Depth = 0.0 }
-        });
-
-        // Rivers - Need multiple points with varying continentalness to capture rivers across the landscape
-        // Rivers occur in valleys (high erosion) across various continental settings
-
-        // Rivers in ocean-adjacent areas
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.River,
-            Climate = new Climate { Temperature = 0.2, Humidity = 0.5, Continentalness = -0.15, Erosion = -0.6, Weirdness = 0.0, Depth = 0.0 }
-        });
-
-        // Rivers inland (most common)
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.River,
-            Climate = new Climate { Temperature = 0.2, Humidity = 0.4, Continentalness = 0.0, Erosion = -0.7, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.River,
-            Climate = new Climate { Temperature = 0.3, Humidity = 0.5, Continentalness = 0.15, Erosion = -0.65, Weirdness = 0.0, Depth = 0.0 }
-        });
-
-        // Rivers in continental areas
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.River,
-            Climate = new Climate { Temperature = 0.2, Humidity = 0.5, Continentalness = 0.3, Erosion = -0.7, Weirdness = 0.0, Depth = 0.0 }
-        });
-
-        // Frozen rivers - similar pattern but cold
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.FrozenRiver,
-            Climate = new Climate { Temperature = -0.6, Humidity = 0.5, Continentalness = -0.15, Erosion = -0.6, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.FrozenRiver,
-            Climate = new Climate { Temperature = -0.5, Humidity = 0.4, Continentalness = 0.0, Erosion = -0.7, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.FrozenRiver,
-            Climate = new Climate { Temperature = -0.6, Humidity = 0.5, Continentalness = 0.3, Erosion = -0.7, Weirdness = 0.0, Depth = 0.0 }
-        });
-    }
-
-    private static void AddPlainsBiomes(List<BiomeParameterPoint> points)
-    {
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.Plains,
-            Climate = new Climate { Temperature = 0.3, Humidity = 0.2, Continentalness = 0.0, Erosion = -0.2, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.SunflowerPlains,
-            Climate = new Climate { Temperature = 0.3, Humidity = 0.2, Continentalness = 0.0, Erosion = -0.2, Weirdness = 0.5, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.SnowyPlains,
-            Climate = new Climate { Temperature = -0.6, Humidity = 0.2, Continentalness = 0.0, Erosion = -0.2, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.IceSpikes,
-            Climate = new Climate { Temperature = -0.8, Humidity = 0.1, Continentalness = 0.1, Erosion = -0.2, Weirdness = 0.6, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.MushroomFields,
-            Climate = new Climate { Temperature = 0.4, Humidity = 0.5, Continentalness = -0.1, Erosion = 0.0, Weirdness = 0.8, Depth = 0.0 }
-        });
-    }
-
-    private static void AddForestBiomes(List<BiomeParameterPoint> points)
-    {
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.Forest,
-            Climate = new Climate { Temperature = 0.3, Humidity = 0.6, Continentalness = 0.2, Erosion = 0.0, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.FlowerForest,
-            Climate = new Climate { Temperature = 0.3, Humidity = 0.6, Continentalness = 0.2, Erosion = 0.0, Weirdness = 0.4, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.BirchForest,
-            Climate = new Climate { Temperature = 0.2, Humidity = 0.5, Continentalness = 0.2, Erosion = 0.0, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.OldGrowthBirchForest,
-            Climate = new Climate { Temperature = 0.2, Humidity = 0.5, Continentalness = 0.2, Erosion = 0.1, Weirdness = 0.5, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.DarkForest,
-            Climate = new Climate { Temperature = 0.3, Humidity = 0.7, Continentalness = 0.3, Erosion = 0.2, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.Taiga,
-            Climate = new Climate { Temperature = -0.2, Humidity = 0.5, Continentalness = 0.2, Erosion = 0.0, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.SnowyTaiga,
-            Climate = new Climate { Temperature = -0.6, Humidity = 0.4, Continentalness = 0.2, Erosion = 0.0, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.OldGrowthPineTaiga,
-            Climate = new Climate { Temperature = -0.2, Humidity = 0.5, Continentalness = 0.3, Erosion = 0.2, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.OldGrowthSpruceTaiga,
-            Climate = new Climate { Temperature = -0.3, Humidity = 0.6, Continentalness = 0.3, Erosion = 0.2, Weirdness = 0.0, Depth = 0.0 }
-        });
-    }
-
-    private static void AddMountainBiomes(List<BiomeParameterPoint> points)
-    {
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.WindsweptHills,
-            Climate = new Climate { Temperature = 0.0, Humidity = 0.3, Continentalness = 0.3, Erosion = 0.5, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.WindsweptGravellyHills,
-            Climate = new Climate { Temperature = 0.0, Humidity = 0.2, Continentalness = 0.3, Erosion = 0.6, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.WindsweptForest,
-            Climate = new Climate { Temperature = 0.0, Humidity = 0.5, Continentalness = 0.3, Erosion = 0.5, Weirdness = 0.0, Depth = 0.0 }
-        });
-
-        // High peaks
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.JaggedPeaks,
-            Climate = new Climate { Temperature = -0.4, Humidity = 0.2, Continentalness = 0.4, Erosion = 0.8, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.FrozenPeaks,
-            Climate = new Climate { Temperature = -0.6, Humidity = 0.3, Continentalness = 0.4, Erosion = 0.8, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.StonyPeaks,
-            Climate = new Climate { Temperature = 0.3, Humidity = 0.2, Continentalness = 0.4, Erosion = 0.8, Weirdness = 0.0, Depth = 0.0 }
-        });
-
-        // Mountain slopes and plateaus
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.SnowySlopes,
-            Climate = new Climate { Temperature = -0.5, Humidity = 0.3, Continentalness = 0.3, Erosion = 0.6, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.Grove,
-            Climate = new Climate { Temperature = -0.4, Humidity = 0.5, Continentalness = 0.3, Erosion = 0.5, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.Meadow,
-            Climate = new Climate { Temperature = 0.1, Humidity = 0.6, Continentalness = 0.2, Erosion = 0.3, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.CherryGrove,
-            Climate = new Climate { Temperature = 0.2, Humidity = 0.6, Continentalness = 0.2, Erosion = 0.3, Weirdness = 0.3, Depth = 0.0 }
-        });
-    }
-
-    private static void AddDesertBiomes(List<BiomeParameterPoint> points)
-    {
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.Desert,
-            Climate = new Climate { Temperature = 0.9, Humidity = -0.6, Continentalness = 0.1, Erosion = -0.1, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.Savanna,
-            Climate = new Climate { Temperature = 0.7, Humidity = -0.3, Continentalness = 0.1, Erosion = 0.0, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.SavannaPlateau,
-            Climate = new Climate { Temperature = 0.7, Humidity = -0.3, Continentalness = 0.3, Erosion = 0.3, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.WindsweptSavanna,
-            Climate = new Climate { Temperature = 0.7, Humidity = -0.3, Continentalness = 0.3, Erosion = 0.6, Weirdness = 0.0, Depth = 0.0 }
-        });
-    }
-
-    private static void AddJungleBiomes(List<BiomeParameterPoint> points)
-    {
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.Jungle,
-            Climate = new Climate { Temperature = 0.8, Humidity = 0.8, Continentalness = 0.2, Erosion = 0.0, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.SparseJungle,
-            Climate = new Climate { Temperature = 0.8, Humidity = 0.6, Continentalness = 0.2, Erosion = 0.0, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.BambooJungle,
-            Climate = new Climate { Temperature = 0.8, Humidity = 0.8, Continentalness = 0.2, Erosion = 0.0, Weirdness = 0.5, Depth = 0.0 }
-        });
-    }
-
-    private static void AddSnowyBiomes(List<BiomeParameterPoint> points)
-    {
-        // Already added some in other methods, but ensure coverage
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.SnowyPlains,
-            Climate = new Climate { Temperature = -0.7, Humidity = 0.3, Continentalness = 0.1, Erosion = -0.1, Weirdness = 0.0, Depth = 0.0 }
-        });
-    }
-
-    private static void AddSwampBiomes(List<BiomeParameterPoint> points)
-    {
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.Swamp,
-            Climate = new Climate { Temperature = 0.4, Humidity = 0.8, Continentalness = 0.0, Erosion = -0.3, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.MangroveSwamp,
-            Climate = new Climate { Temperature = 0.6, Humidity = 0.9, Continentalness = -0.1, Erosion = -0.3, Weirdness = 0.0, Depth = 0.0 }
-        });
-    }
-
-    private static void AddBadlandsBiomes(List<BiomeParameterPoint> points)
-    {
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.Badlands,
-            Climate = new Climate { Temperature = 0.9, Humidity = -0.7, Continentalness = 0.4, Erosion = 0.2, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.WoodedBadlands,
-            Climate = new Climate { Temperature = 0.9, Humidity = -0.5, Continentalness = 0.4, Erosion = 0.3, Weirdness = 0.0, Depth = 0.0 }
-        });
-        points.Add(new BiomeParameterPoint
-        {
-            Biome = CodecRegistry.Biomes.ErodedBadlands,
-            Climate = new Climate { Temperature = 0.9, Humidity = -0.7, Continentalness = 0.4, Erosion = 0.5, Weirdness = 0.6, Depth = 0.0 }
-        });
-    }
+    /// <summary>
+    /// Reports store the quantized longs divided by 10000 as floats. Rounding recovers the exact long;
+    /// re-quantizing through float would truncate values like 0.11 down by one.
+    /// </summary>
+    private static long Requantize(JsonElement element) => (long)Math.Round(element.GetDouble() * 10000.0);
 }

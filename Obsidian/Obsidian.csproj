@@ -65,7 +65,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<AdditionalFiles Include="Assets\**\*.json" />
+		<!-- Biome parameter lists are only read at runtime; keep the large file away from the source generators. -->
+		<AdditionalFiles Include="Assets\**\*.json" Exclude="Assets\biome_parameters\**" />
 		<EmbeddedResource Include="Assets\**\*.*" />
 	</ItemGroup>
 
