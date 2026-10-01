@@ -205,6 +205,11 @@ public static class OverworldDecorator
         public BiomeCodec GetBiome(Vector position) =>
             (this.ChunkAt(position) ?? this.chunks.Values.First()).GetBiome(position);
 
+        public void ScheduleFluidTick(Vector position)
+        {
+            // Trees never schedule fluid ticks.
+        }
+
         public void SetBlockEntity(Vector position, IBlockEntity blockEntity) =>
             this.ChunkAt(position)?.SetBlockEntity(position.X, position.Y, position.Z, blockEntity);
 

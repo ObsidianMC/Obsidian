@@ -1,4 +1,4 @@
-using Microsoft.CodeAnalysis.CSharp;
+﻿using Microsoft.CodeAnalysis.CSharp;
 using System.Collections.Immutable;
 using System.Globalization;
 using System.Text;
@@ -30,7 +30,7 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
         "{0} has no property '{1}' for JSON key '{2}' (used by {3})", "WorldgenFeatures", DiagnosticSeverity.Warning, true);
 
     private static readonly DiagnosticDescriptor unknownReference = new("OBSWG003", "Unknown feature reference",
-        "Unknown {0} '{1}' (used by {2})", "WorldgenFeatures", DiagnosticSeverity.Warning, true);
+        "Unknown {0} '{1}' (used by {2})", "WorldgenFeatures", DiagnosticSeverity.Error, true);
 
     public void Initialize(IncrementalGeneratorInitializationContext ctx)
     {

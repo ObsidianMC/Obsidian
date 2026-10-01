@@ -37,7 +37,9 @@ public sealed class NoiseThresholdProvider : IBlockStateProvider
 
     public IBlock GetState(IRandomSource random, Vector position)
     {
-        var noise = this.NoiseInstance.GetValue(position.X * this.Scale, position.Y * this.Scale, position.Z * this.Scale);
+        // Vanilla widens the scale first, so the coordinates are multiplied as doubles.
+        var scale = (double)this.Scale;
+        var noise = this.NoiseInstance.GetValue(position.X * scale, position.Y * scale, position.Z * scale);
 
         if (noise < this.Threshold)
             return this.LowBlocks[random.NextInt(this.LowBlocks.Length)];

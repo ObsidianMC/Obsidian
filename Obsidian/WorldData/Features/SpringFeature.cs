@@ -57,6 +57,7 @@ public sealed class SpringFeature : ConfiguredFeatureBase
             return false;
 
         level.SetBlock(origin, this.LiquidBlock);
+        level.ScheduleFluidTick(origin);
         return true;
     }
 

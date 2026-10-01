@@ -76,12 +76,14 @@ internal sealed class ChunkBuilder
     /// Places the biome features of chunk (<paramref name="chunkX"/>, <paramref name="chunkZ"/>).
     /// </summary>
     /// <param name="area">The chunk and its 8 neighbors, all past the carvers step. Features may write into any of them.</param>
+    /// <param name="scheduleFluidTick">Receives positions where features want a fluid update once generation completes.</param>
     /// <param name="onPlaced">Optional callback for each placed feature (step, global index, feature, placed anything).</param>
     public void Decorate(IReadOnlyDictionary<(int X, int Z), IChunk> area, int chunkX, int chunkZ,
-        Action<int, int, PlacedFeature, bool>? onPlaced = null)
+        Action<Vector>? scheduleFluidTick = null, Action<int, int, PlacedFeature, bool>? onPlaced = null)
     {
         var noise = this.settings.Noise;
-        var region = new WorldGenRegion(area, chunkX, chunkZ, this.RandomState.Seed, noise.MinY, noise.Height, this.settings.SeaLevel, this.biomeSource);
+        var region = new WorldGenRegion(area, chunkX, chunkZ, this.RandomState.Seed, noise.MinY, noise.Height, this.settings.SeaLevel,
+            this.biomeSource, scheduleFluidTick);
 
         // Like vanilla, only the 3x3 chunks around the decorated chunk contribute biomes.
         var neighbors = area.Where(entry => Math.Abs(entry.Key.X - chunkX) <= 1 && Math.Abs(entry.Key.Z - chunkZ) <= 1)
@@ -90,4 +92,10 @@ internal sealed class ChunkBuilder
 
         this.featureDecorator.Decorate(region, neighbors, chunkX, chunkZ, onPlaced);
     }
+
+    /// <summary>
+    /// Writes the final heightmaps into the chunk; call it once every chunk around it is decorated.
+    /// </summary>
+    public void UpdateFinalHeightmaps(IChunk chunk) =>
+        WorldgenHeightmaps.UpdateFinal(chunk, this.settings.Noise.MinY, this.settings.Noise.Height);
 }

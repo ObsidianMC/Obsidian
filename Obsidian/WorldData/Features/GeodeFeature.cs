@@ -117,6 +117,14 @@ public sealed class GeodeFeature : ConfiguredFeatureBase
             if (generateCrack && crack >= crackSize && shell < filling)
             {
                 FeatureHelpers.SafeSetBlock(level, position, Air, canReplace);
+
+                // Fluids next to the crack start flowing into it.
+                foreach (var face in FeatureHelpers.Directions)
+                {
+                    var neighbor = position.Offset(face);
+                    if (level.GetBlock(neighbor).HasFluid())
+                        level.ScheduleFluidTick(neighbor);
+                }
             }
             else if (shell >= filling)
             {

@@ -160,9 +160,7 @@ public abstract class AbstractLevel : ILevel
             return null;
         }
 
-        chunk = new Chunk(chunkX, chunkZ, ChunkGenStage.structure_starts);
-        region.SetChunk(chunk);
-        return chunk;
+        return await region.GetOrAddChunkAsync(x, z, () => new Chunk(chunkX, chunkZ, ChunkGenStage.structure_starts));
     }
 
     public async ValueTask<IBlock?> GetBlockAsync(int x, int y, int z)
@@ -410,12 +408,7 @@ public abstract class AbstractLevel : ILevel
 
             var (x, z) = (NumericsHelper.Modulo(jobX, Region.CubicRegionSize), NumericsHelper.Modulo(jobZ, Region.CubicRegionSize));
 
-            var c = await region.GetChunkAsync(x, z);
-            if (c is null)
-            {
-                c = new Chunk(jobX, jobZ, ChunkGenStage.structure_starts);
-                region.SetChunk(c);
-            }
+            var c = await region.GetOrAddChunkAsync(x, z, () => new Chunk(jobX, jobZ, ChunkGenStage.structure_starts));
             if (!c.IsGenerated)
             {
                 c = await Generator.GenerateChunkAsync(jobX, jobZ, c);

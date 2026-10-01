@@ -1,11 +1,14 @@
 namespace Obsidian.WorldData.Generators.Mojang;
 
 /// <summary>
-/// Maintains the world generation heightmaps (<see cref="HeightmapType.WorldSurfaceWG"/> and
-/// <see cref="HeightmapType.OceanFloorWG"/>) that vanilla keeps up to date while generating.
+/// Maintains the heightmaps vanilla keeps while generating: the world generation ones
+/// (<see cref="HeightmapType.WorldSurfaceWG"/> and <see cref="HeightmapType.OceanFloorWG"/>) and the final ones.
 /// </summary>
 internal static class WorldgenHeightmaps
 {
+    private static readonly HeightmapType[] finalHeightmaps =
+        [HeightmapType.WorldSurface, HeightmapType.OceanFloor, HeightmapType.MotionBlocking, HeightmapType.MotionBlockingNoLeaves];
+
     /// <summary>
     /// Recomputes both heightmaps from the chunk's blocks. Values are the first free Y above the highest
     /// matching block, like vanilla.
@@ -47,6 +50,53 @@ internal static class WorldgenHeightmaps
         Set(chunk, HeightmapType.WorldSurfaceWG, worldSurface);
         Set(chunk, HeightmapType.OceanFloorWG, oceanFloor);
     }
+
+    /// <summary>
+    /// Recomputes the final heightmaps (<see cref="HeightmapType.WorldSurface"/>, <see cref="HeightmapType.OceanFloor"/>,
+    /// <see cref="HeightmapType.MotionBlocking"/> and <see cref="HeightmapType.MotionBlockingNoLeaves"/>) the chunk still has.
+    /// </summary>
+    /// <remarks>
+    /// Features track these heights only while decorating, so they're written back once every feature that can reach the
+    /// chunk has run.
+    /// </remarks>
+    public static void UpdateFinal(IChunk chunk, int minY, int height)
+    {
+        Span<int> heights = stackalloc int[256];
+
+        foreach (var type in finalHeightmaps)
+        {
+            if (!chunk.Heightmaps.ContainsKey(type))
+                continue;
+
+            for (var localZ = 0; localZ < 16; localZ++)
+            {
+                for (var localX = 0; localX < 16; localX++)
+                {
+                    var y = minY + height - 1;
+                    while (y >= minY && !Matches(type, chunk.GetBlock(localX, y, localZ)))
+                        y--;
+
+                    heights[localZ * 16 + localX] = y + 1;
+                }
+            }
+
+            Set(chunk, type, heights);
+        }
+    }
+
+    /// <summary>
+    /// Whether a block counts for a heightmap, using vanilla's Heightmap.Types predicates.
+    /// </summary>
+    public static bool Matches(HeightmapType type, IBlock block) => type switch
+    {
+        HeightmapType.WorldSurface or HeightmapType.WorldSurfaceWG => !block.IsAir,
+        HeightmapType.OceanFloor or HeightmapType.OceanFloorWG => block.BlocksMotion(),
+        HeightmapType.MotionBlocking => block.BlocksMotion() || block.HasFluid(),
+        // Vanilla's LeavesBlock is abstract; the concrete leaves classes all end with its name.
+        HeightmapType.MotionBlockingNoLeaves => (block.BlocksMotion() || block.HasFluid())
+            && !block.BlockClass().EndsWith("LeavesBlock", StringComparison.Ordinal),
+        _ => throw new ArgumentOutOfRangeException(nameof(type))
+    };
 
     public static void Set(IChunk chunk, HeightmapType type, ReadOnlySpan<int> heights)
     {

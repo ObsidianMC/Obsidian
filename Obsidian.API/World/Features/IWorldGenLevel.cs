@@ -46,5 +46,11 @@ public interface IWorldGenLevel
     /// </summary>
     public void SetBlockEntity(Vector position, IBlockEntity blockEntity);
 
+    /// <summary>
+    /// Schedules a fluid update at <paramref name="position"/> for when generation completes, like vanilla's
+    /// <c>scheduleTick</c> with a fluid (springs, geode cracks).
+    /// </summary>
+    public void ScheduleFluidTick(Vector position);
+
     public bool IsOutsideBuildHeight(int y) => y < this.MinY || y >= this.MinY + this.Height;
 }

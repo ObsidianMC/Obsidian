@@ -17,10 +17,6 @@ internal class MojangGenerator : ILevelGenerator
 
     private readonly SemaphoreSlim[] chunkLocks = [.. Enumerable.Range(0, LockStripeCount).Select(_ => new SemaphoreSlim(1, 1))];
 
-    // The single instance of every chunk being generated. Features write into neighboring chunks, so a chunk can be
-    // touched by several jobs before it's complete, and they must all share one instance.
-    private readonly ConcurrentDictionary<(int X, int Z), IChunk> protoChunks = new();
-
     // Fluids flagged during generation, scheduled once their chunk is complete (vanilla's post-processing).
     private readonly ConcurrentDictionary<(int X, int Z), List<Vector>> pendingFluidUpdates = new();
 
@@ -32,10 +28,12 @@ internal class MojangGenerator : ILevelGenerator
         if (chunk.IsGenerated)
             return chunk;
 
-        chunk = this.protoChunks.GetOrAdd((cx, cz), chunk);
-
         using (await this.LockAsync(cx, cz, 0))
+        {
+            // Features of neighboring chunks may have created and written into the stored instance already.
+            chunk = await this.world.GetChunkAsync(cx, cz, scheduleGeneration: false) ?? chunk;
             this.GenerateUpToCarvers(chunk, stage);
+        }
 
         if (ChunkGenStage.features <= stage)
         {
@@ -51,6 +49,9 @@ internal class MojangGenerator : ILevelGenerator
 
         if (ChunkGenStage.initialize_light <= stage && chunk.ChunkStatus < ChunkGenStage.initialize_light)
         {
+            // Every feature that can reach this chunk has run, so its heightmaps are final.
+            this.builder.UpdateFinalHeightmaps(chunk);
+
             // TODO: Implement light initialization
             chunk.SetChunkStatus(ChunkGenStage.initialize_light);
         }
@@ -69,8 +70,10 @@ internal class MojangGenerator : ILevelGenerator
             chunk.SetChunkStatus(ChunkGenStage.spawn);
         }
 
+        if (stage < ChunkGenStage.full)
+            return chunk;
+
         chunk.SetChunkStatus(ChunkGenStage.full);
-        this.protoChunks.TryRemove((cx, cz), out _);
         await this.ScheduleFluidUpdatesAsync(chunk);
         return chunk;
     }
@@ -135,13 +138,13 @@ internal class MojangGenerator : ILevelGenerator
             for (var dz = -1; dz <= 1; dz++)
             {
                 using var chunkLock = await this.LockAsync(cx + dx, cz + dz, 0);
-                this.GenerateUpToCarvers(await this.GetProtoChunkAsync(cx + dx, cz + dz), ChunkGenStage.carvers);
+                this.GenerateUpToCarvers(await this.GetChunkAsync(cx + dx, cz + dz), ChunkGenStage.carvers);
             }
         }
 
         using var locks = await this.LockAsync(cx, cz, 1);
 
-        var chunk = await this.GetProtoChunkAsync(cx, cz);
+        var chunk = await this.GetChunkAsync(cx, cz);
         if (chunk.ChunkStatus >= ChunkGenStage.features)
             return;
 
@@ -149,23 +152,21 @@ internal class MojangGenerator : ILevelGenerator
         for (var dx = -1; dx <= 1; dx++)
         {
             for (var dz = -1; dz <= 1; dz++)
-                area[(cx + dx, cz + dz)] = dx == 0 && dz == 0 ? chunk : await this.GetProtoChunkAsync(cx + dx, cz + dz);
+                area[(cx + dx, cz + dz)] = dx == 0 && dz == 0 ? chunk : await this.GetChunkAsync(cx + dx, cz + dz);
         }
 
-        this.builder.Decorate(area, cx, cz);
+        // The area's chunks are locked, so their pending lists can be written.
+        this.builder.Decorate(area, cx, cz, position => this.GetPendingFluidUpdates(position.X >> 4, position.Z >> 4).Add(position));
         chunk.SetChunkStatus(ChunkGenStage.features);
     }
 
-    private async ValueTask<IChunk> GetProtoChunkAsync(int cx, int cz)
-    {
-        if (this.protoChunks.TryGetValue((cx, cz), out var chunk))
-            return chunk;
-
-        chunk = await this.world.GetChunkAsync(cx, cz, scheduleGeneration: false)
+    /// <summary>
+    /// The stored chunk at (<paramref name="cx"/>, <paramref name="cz"/>), created if it doesn't exist yet.
+    /// The caller must hold the chunk's lock.
+    /// </summary>
+    private async ValueTask<IChunk> GetChunkAsync(int cx, int cz) =>
+        await this.world.GetChunkAsync(cx, cz, scheduleGeneration: false)
             ?? throw new InvalidOperationException($"Chunk ({cx}, {cz}) couldn't be loaded.");
-
-        return chunk.IsGenerated ? chunk : this.protoChunks.GetOrAdd((cx, cz), chunk);
-    }
 
     /// <summary>
     /// Locks every chunk within <paramref name="radius"/> chunks of (<paramref name="cx"/>, <paramref name="cz"/>).
@@ -185,7 +186,9 @@ internal class MojangGenerator : ILevelGenerator
         return new ChunkLocks(this.chunkLocks, stripes);
     }
 
-    private List<Vector> GetPendingFluidUpdates(IChunk chunk) => this.pendingFluidUpdates.GetOrAdd((chunk.X, chunk.Z), _ => []);
+    private List<Vector> GetPendingFluidUpdates(IChunk chunk) => this.GetPendingFluidUpdates(chunk.X, chunk.Z);
+
+    private List<Vector> GetPendingFluidUpdates(int cx, int cz) => this.pendingFluidUpdates.GetOrAdd((cx, cz), _ => []);
 
     private async ValueTask ScheduleFluidUpdatesAsync(IChunk chunk)
     {

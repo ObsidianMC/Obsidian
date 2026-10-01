@@ -33,6 +33,9 @@ public class Region : IRegion
 
     private readonly ConcurrentDictionary<Vector, IBlockUpdate> blockUpdates = new();
 
+    // Serializes filling empty chunk slots, so concurrent callers never end up with different instances of a chunk.
+    private readonly SemaphoreSlim chunkSlotLock = new(1, 1);
+
     internal Region(int x, int z, string worldFolderPath, NbtCompression chunkCompression = NbtCompression.ZLib,
         ILogger? logger = null)
     {
@@ -68,13 +71,43 @@ public class Region : IRegion
     public async ValueTask<IChunk> GetChunkAsync(int x, int z)
     {
         var chunk = loadedChunks[x, z];
-        if (chunk is null)
-        {
-            chunk = await GetChunkFromFileAsync(x, z); // Still might be null but that's okay.
-            loadedChunks[x, z] = chunk!;
-        }
+        if (chunk is not null)
+            return chunk;
 
-        return chunk!;
+        await chunkSlotLock.WaitAsync();
+        try
+        {
+            chunk = loadedChunks[x, z] ?? await GetChunkFromFileAsync(x, z); // Still might be null but that's okay.
+            loadedChunks[x, z] = chunk!;
+            return chunk!;
+        }
+        finally
+        {
+            chunkSlotLock.Release();
+        }
+    }
+
+    /// <summary>
+    /// Gets the chunk at (<paramref name="x"/>, <paramref name="z"/>) in this region, loading it from disk or storing the
+    /// one <paramref name="create"/> makes when there's none. Every caller gets the same instance.
+    /// </summary>
+    public async ValueTask<IChunk> GetOrAddChunkAsync(int x, int z, Func<IChunk> create)
+    {
+        var chunk = loadedChunks[x, z];
+        if (chunk is not null)
+            return chunk;
+
+        await chunkSlotLock.WaitAsync();
+        try
+        {
+            chunk = loadedChunks[x, z] ?? await GetChunkFromFileAsync(x, z) ?? create();
+            loadedChunks[x, z] = chunk;
+            return chunk;
+        }
+        finally
+        {
+            chunkSlotLock.Release();
+        }
     }
 
     public async Task UnloadChunk(int x, int z)
@@ -365,12 +398,25 @@ public class Region : IRegion
         writer.WriteInt("DataVersion", 3337);
         writer.WriteString("Status", chunk.ChunkStatus.ToString());
 
+        // Every heightmap the chunk still has. Chunks that aren't fully generated keep their world generation heightmaps,
+        // which later generation steps read.
         writer.WriteCompoundStart("Heightmaps");
-        writer.WriteArray("MOTION_BLOCKING", chunk.Heightmaps[HeightmapType.MotionBlocking].data.storage);
-        //new NbtArray<long>("OCEAN_FLOOR", chunk.Heightmaps[HeightmapType.OceanFloor].data.Storage),
-        //new NbtArray<long>("WORLD_SURFACE", chunk.Heightmaps[HeightmapType.WorldSurface].data.Storage),
+        foreach (var (type, heightmap) in chunk.Heightmaps)
+            writer.WriteArray(HeightmapName(type), heightmap.data.storage);
         writer.EndCompound();
     }
+
+    // Vanilla's heightmap names; loading strips the underscores to parse them back.
+    private static string HeightmapName(HeightmapType type) => type switch
+    {
+        HeightmapType.WorldSurfaceWG => "WORLD_SURFACE_WG",
+        HeightmapType.WorldSurface => "WORLD_SURFACE",
+        HeightmapType.OceanFloorWG => "OCEAN_FLOOR_WG",
+        HeightmapType.OceanFloor => "OCEAN_FLOOR",
+        HeightmapType.MotionBlocking => "MOTION_BLOCKING",
+        HeightmapType.MotionBlockingNoLeaves => "MOTION_BLOCKING_NO_LEAVES",
+        _ => throw new ArgumentOutOfRangeException(nameof(type))
+    };
     #endregion NBT Ops
 
     public async ValueTask DisposeAsync() => await regionFile.DisposeAsync();

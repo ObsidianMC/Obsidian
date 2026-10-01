@@ -25,18 +25,25 @@ internal sealed class Tag
     /// </summary>
     /// <param name="definitions">Every raw tag definition, keyed by property name (e.g. <c>block/logs</c>).</param>
     /// <param name="resolved">Tags resolved so far; referenced tags are added to it as they're resolved.</param>
+    /// <exception cref="InvalidOperationException">Tags reference each other in a cycle.</exception>
     public static Tag Get(string propertyName, IReadOnlyDictionary<string, JsonElement> definitions, List<ITaggable> taggables,
-        Dictionary<string, Tag> resolved)
+        Dictionary<string, Tag> resolved) => Get(propertyName, definitions, taggables, resolved, []);
+
+    private static Tag Get(string propertyName, IReadOnlyDictionary<string, JsonElement> definitions, List<ITaggable> taggables,
+        Dictionary<string, Tag> resolved, HashSet<string> resolving)
     {
         if (resolved.TryGetValue(propertyName, out var known))
             return known;
+
+        if (!resolving.Add(propertyName))
+            throw new InvalidOperationException($"Tag '{propertyName}' references itself through {string.Join(", ", resolving)}.");
 
         var definition = definitions[propertyName];
         var type = definition.GetProperty("type").GetString()!;
         var name = definition.GetProperty("name").GetString()!;
 
         var tag = new Tag(name, type, []);
-        resolved[propertyName] = tag;
+        var registry = RegistryOf(type);
 
         foreach (var value in definition.GetProperty("values").EnumerateArray())
         {
@@ -44,20 +51,32 @@ internal sealed class Tag
 
             if (valueTag.StartsWith("#"))
             {
-                var reference = type + '/' + valueTag.Substring(valueTag.IndexOf(':') + 1);
+                var reference = registry + '/' + valueTag.Substring(valueTag.IndexOf(':') + 1);
                 if (definitions.ContainsKey(reference))
                 {
-                    foreach (var taggable in Get(reference, definitions, taggables, resolved).Values)
+                    foreach (var taggable in Get(reference, definitions, taggables, resolved, resolving).Values)
                         tag.Add(taggable);
                 }
             }
-            else if (taggables.FirstOrDefault(x => x.Tag == valueTag && x.Type == type) is ITaggable taggable)
+            else if (taggables.FirstOrDefault(x => x.Tag == valueTag && x.Type == registry) is ITaggable taggable)
             {
                 tag.Add(taggable);
             }
         }
 
+        resolving.Remove(propertyName);
+        resolved[propertyName] = tag;
         return tag;
+    }
+
+    /// <summary>
+    /// The registry a tag type belongs to. Tags can sit in subfolders of their registry (<c>block/mineable</c>), and
+    /// references and entries are relative to the registry, not the subfolder.
+    /// </summary>
+    private static string RegistryOf(string type)
+    {
+        var parts = type.Split('/');
+        return parts[0] == "worldgen" && parts.Length > 1 ? parts[0] + '/' + parts[1] : parts[0];
     }
 
     private void Add(ITaggable taggable)

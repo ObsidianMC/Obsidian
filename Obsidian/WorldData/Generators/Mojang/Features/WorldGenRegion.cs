@@ -9,6 +9,7 @@ namespace Obsidian.WorldData.Generators.Mojang.Features;
 /// Writes are limited to the 3x3 chunks around the center. The <c>*_WG</c> heightmaps keep their post-carver values,
 /// while the final heightmaps (<c>OCEAN_FLOOR</c>, <c>WORLD_SURFACE</c>, <c>MOTION_BLOCKING</c>,
 /// <c>MOTION_BLOCKING_NO_LEAVES</c>) follow every write, like vanilla chunks at the carvers status.
+/// Reads outside the given chunks see an empty chunk, like vanilla's chunks that are only at the structure starts status.
 /// Not thread-safe: a region is used by one decoration at a time.
 /// </remarks>
 internal sealed class WorldGenRegion : IWorldGenLevel
@@ -21,6 +22,7 @@ internal sealed class WorldGenRegion : IWorldGenLevel
     private readonly Dictionary<(int X, int Z), IChunk> chunks;
     private readonly Dictionary<(int X, int Z, HeightmapType Type), int[]> heights = [];
     private readonly BiomeManager biomeManager;
+    private readonly Action<Vector>? scheduleFluidTick;
     private readonly int centerX;
     private readonly int centerZ;
 
@@ -36,9 +38,11 @@ internal sealed class WorldGenRegion : IWorldGenLevel
     /// <param name="centerX">X of the chunk being decorated.</param>
     /// <param name="centerZ">Z of the chunk being decorated.</param>
     /// <param name="biomeSource">Source for biomes of chunks outside <paramref name="chunks"/>.</param>
+    /// <param name="scheduleFluidTick">Receives the fluid updates features schedule; they're ignored when null.</param>
     public WorldGenRegion(IReadOnlyDictionary<(int X, int Z), IChunk> chunks, int centerX, int centerZ, long seed,
-        int minY, int height, int seaLevel, IBiomeSource biomeSource)
+        int minY, int height, int seaLevel, IBiomeSource biomeSource, Action<Vector>? scheduleFluidTick = null)
     {
+        this.scheduleFluidTick = scheduleFluidTick;
         this.chunks = new Dictionary<(int X, int Z), IChunk>(chunks);
         this.centerX = centerX;
         this.centerZ = centerZ;
@@ -54,7 +58,9 @@ internal sealed class WorldGenRegion : IWorldGenLevel
         if (this.IsOutsideBuildHeight(position.Y))
             return BlocksRegistry.VoidAir;
 
-        return this.GetChunk(position.X >> 4, position.Z >> 4).GetBlock(position.X, position.Y, position.Z);
+        return this.chunks.TryGetValue((position.X >> 4, position.Z >> 4), out var chunk)
+            ? chunk.GetBlock(position.X, position.Y, position.Z)
+            : BlocksRegistry.Air;
     }
 
     public bool IsOutsideBuildHeight(int y) => y < this.MinY || y >= this.MinY + this.Height;
@@ -91,7 +97,8 @@ internal sealed class WorldGenRegion : IWorldGenLevel
     {
         var chunkX = x >> 4;
         var chunkZ = z >> 4;
-        var chunk = this.GetChunk(chunkX, chunkZ);
+        if (!this.chunks.TryGetValue((chunkX, chunkZ), out var chunk))
+            return this.MinY;
 
         if (type is HeightmapType.WorldSurfaceWG or HeightmapType.OceanFloorWG && chunk.Heightmaps.TryGetValue(type, out var heightmap))
             return heightmap.GetHeight(x & 15, z & 15);
@@ -107,24 +114,16 @@ internal sealed class WorldGenRegion : IWorldGenLevel
             this.GetChunk(position.X >> 4, position.Z >> 4).SetBlockEntity(position.X, position.Y, position.Z, blockEntity);
     }
 
+    public void ScheduleFluidTick(Vector position)
+    {
+        if (this.EnsureCanWrite(position))
+            this.scheduleFluidTick?.Invoke(position);
+    }
+
     private IChunk GetChunk(int chunkX, int chunkZ) =>
         this.chunks.TryGetValue((chunkX, chunkZ), out var chunk)
             ? chunk
             : throw new InvalidOperationException($"Chunk ({chunkX}, {chunkZ}) is outside the generation region.");
-
-    /// <summary>
-    /// Whether a block counts for a heightmap, using vanilla's Heightmap.Types predicates.
-    /// </summary>
-    private static bool Matches(HeightmapType type, IBlock block) => type switch
-    {
-        HeightmapType.WorldSurface or HeightmapType.WorldSurfaceWG => !block.IsAir,
-        HeightmapType.OceanFloor or HeightmapType.OceanFloorWG => block.BlocksMotion(),
-        HeightmapType.MotionBlocking => block.BlocksMotion() || block.HasFluid(),
-        // Vanilla's LeavesBlock is abstract; the concrete leaves classes all end with its name.
-        HeightmapType.MotionBlockingNoLeaves => (block.BlocksMotion() || block.HasFluid())
-            && !block.BlockClass().EndsWith("LeavesBlock", StringComparison.Ordinal),
-        _ => throw new ArgumentOutOfRangeException(nameof(type))
-    };
 
     /// <summary>
     /// Heights (first free Y) for a chunk, computed from its blocks on first use.
@@ -140,7 +139,7 @@ internal sealed class WorldGenRegion : IWorldGenLevel
             for (var localX = 0; localX < 16; localX++)
             {
                 var y = this.MinY + this.Height - 1;
-                while (y >= this.MinY && !Matches(type, chunk.GetBlock(localX, y, localZ)))
+                while (y >= this.MinY && !WorldgenHeightmaps.Matches(type, chunk.GetBlock(localX, y, localZ)))
                     y--;
 
                 values[localZ * 16 + localX] = y + 1;
@@ -165,7 +164,7 @@ internal sealed class WorldGenRegion : IWorldGenLevel
         if (position.Y <= height - 2)
             return;
 
-        if (Matches(type, block))
+        if (WorldgenHeightmaps.Matches(type, block))
         {
             if (position.Y >= height)
                 values[column] = position.Y + 1;
@@ -177,7 +176,7 @@ internal sealed class WorldGenRegion : IWorldGenLevel
             return;
 
         var y = position.Y - 1;
-        while (y >= this.MinY && !Matches(type, chunk.GetBlock(localX, y, localZ)))
+        while (y >= this.MinY && !WorldgenHeightmaps.Matches(type, chunk.GetBlock(localX, y, localZ)))
             y--;
 
         values[column] = y + 1;
