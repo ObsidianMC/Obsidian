@@ -110,6 +110,7 @@ public class VanillaWorldGeneration
     [InlineData(0L, -88, 72, "74981613635a7a2a56b13d40cc76abccc00bf2efa7543916e0157e2175b5690a")] // dark forest
     [InlineData(12345L, -104, 104, "e5f90f049ab61f9282e771850dfdabeb5f9682e791498296ecc13d9cebea8253")] // warm ocean
     [InlineData(12345L, -24, 24, "cc09f17ef2c40975b36a18115957278bf46d7a4c7d2d94090768b829c6e94f65")] // plains
+    [InlineData(12345L, -140, 28, "1c65b8e967b38f9f9eaa03190e123d43aa8e6fa8b39df9ed2e3672bc0cd46939")] // desert with a fossil
     public void DecoratedChunkMatchesVanilla(long seed, int chunkX, int chunkZ, string expectedBlocks)
     {
         var builder = new ChunkBuilder(seed);

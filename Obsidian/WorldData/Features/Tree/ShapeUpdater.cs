@@ -1,14 +1,14 @@
 namespace Obsidian.WorldData.Features.Tree;
 
 /// <summary>
-/// Port of vanilla <c>StructureTemplate.updateShapeAtEdge</c> as run after tree placement: every block on the tree's
-/// surface and the block facing it get a neighbor shape update.
+/// Port of vanilla <c>StructureTemplate.updateShapeAtEdge</c>, run after tree and structure template placement: every
+/// block on the placed shape's surface and the block facing it get a neighbor shape update.
 /// </summary>
 /// <remarks>
 /// Obsidian has no general <c>updateShape</c> implementation, so only the block behaviors that matter around generated
-/// trees are reproduced: vines re-checking their supports, double plants losing their other half, snowy dirt
-/// (<c>snowy</c> from the block above) and hanging moss (<c>tip</c>). Other blocks keep their state, which matches vanilla
-/// for logs, leaves (they only schedule ticks), fluids, roots and most plants.
+/// trees and buried templates are reproduced: vines re-checking their supports, double plants losing their other half,
+/// snowy dirt (<c>snowy</c> from the block above), hanging moss (<c>tip</c>) and liquids scheduling a fluid tick. Other
+/// blocks keep their state, which matches vanilla for logs, leaves (they only schedule ticks), roots and most plants.
 /// </remarks>
 internal static class ShapeUpdater
 {
@@ -46,6 +46,11 @@ internal static class ShapeUpdater
                 return UpdateDoublePlant(level, state, position, direction, neighbor);
             case "HangingMossBlock":
                 return state.WithProperty("tip", level.GetBlock(position + Vector.Down).RegistryId != state.RegistryId);
+            case "LiquidBlock":
+                // LiquidBlock.updateShape only schedules a fluid tick.
+                if (state.IsFluidSource() || neighbor.IsFluidSource())
+                    level.ScheduleFluidTick(position);
+                return state;
         }
 
         // SnowyDirtBlock and its subclasses (grass blocks, mycelium, podzol).

@@ -1,54 +1,42 @@
-﻿using Obsidian.Nbt;
-using System.IO;
+using Obsidian.WorldData.Structures;
+using System.Reflection;
 
 namespace Obsidian.Registries;
+
+/// <summary>
+/// Structure templates embedded under <c>Assets/Structures</c>, by id: <c>minecraft:fossil/spine_1</c> is
+/// <c>Assets/Structures/fossil/spine_1.nbt</c>.
+/// </summary>
 internal static class StructureRegistry
 {
-    public static readonly ConcurrentDictionary<string, Dictionary<Vector, IBlock>> storage = new();
+    private const string ResourcePrefix = "Obsidian.Assets.Structures.";
+    private const string ResourceSuffix = ".nbt";
+
+    private static readonly ConcurrentDictionary<string, StructureTemplate> templates = new();
+
+    /// <summary>Loads every embedded template up front.</summary>
     public static void Initialize()
     {
-        var structDir = "Assets/Structures/";
-        if(!Directory.Exists("Assets/Structures/"))
+        foreach (var resource in Assembly.GetExecutingAssembly().GetManifestResourceNames())
         {
-            Directory.CreateDirectory("Assets/Structures");
-        }
-        var files = Directory.GetFiles(structDir, "*.nbt");
-        foreach (var file in files)
-        {
-            var structureName = Path.GetFileNameWithoutExtension(file);
-            storage[structureName] = new();
-            byte[] nbtData = File.ReadAllBytes(file);
-            using var byteStream = new ReadOnlyStream(nbtData);
-            var nbtReader = new NbtReader(byteStream, NbtCompression.GZip);
-            var baseCompound = nbtReader.ReadNextTag() as NbtCompound;
-
-            // Get palette
-            List<IBlock> paletteBuffer = new();
-            if (baseCompound!.TryGetTag("palette", out var palette))
+            if (resource.StartsWith(ResourcePrefix, StringComparison.Ordinal) && resource.EndsWith(ResourceSuffix, StringComparison.Ordinal))
             {
-                foreach (NbtCompound entry in (palette as NbtList).Cast<NbtCompound>())
-                {
-                    paletteBuffer.Add(entry.ToBlock());
-                }
-            }
-
-            if (baseCompound.TryGetTag("blocks", out var blocks))
-            {
-                foreach (NbtCompound b in (blocks as NbtList).Cast<NbtCompound>())
-                {
-                    IBlock block = paletteBuffer[b!.GetInt("state")];
-                    if (b!.TryGetTag("pos", out var coords))
-                    {
-                        var c = (NbtList)coords;
-                        var offset = new Vector(
-                            ((NbtTag<int>)c[0]).Value,
-                            ((NbtTag<int>)c[1]).Value,
-                            ((NbtTag<int>)c[2]).Value);
-
-                        storage[structureName][offset] = block;
-                    }
-                }
+                var path = resource[ResourcePrefix.Length..^ResourceSuffix.Length].Replace('.', '/');
+                Get("minecraft:" + path);
             }
         }
+    }
+
+    /// <summary>Gets a template by id, loading it on first use.</summary>
+    public static StructureTemplate Get(string id) => templates.GetOrAdd(id, Load);
+
+    private static StructureTemplate Load(string id)
+    {
+        var path = id.StartsWith("minecraft:", StringComparison.Ordinal) ? id["minecraft:".Length..] : id;
+        var resource = ResourcePrefix + path.Replace('/', '.') + ResourceSuffix;
+        using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resource)
+            ?? throw new InvalidOperationException($"Unknown structure template '{id}'.");
+
+        return StructureTemplate.Load(stream);
     }
 }

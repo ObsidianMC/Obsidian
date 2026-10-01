@@ -7,13 +7,13 @@ using System.Text.Json;
 namespace Obsidian.SourceGenerators.Registry;
 
 /// <summary>
-/// Generates the <c>ConfiguredFeatures</c>, <c>PlacedFeatures</c> and <c>BiomeFeatures</c> registries from vanilla's
-/// feature data in <c>Assets/worldgen/features</c>, <c>Assets/worldgen/placed_features</c> and
-/// <c>Assets/worldgen/biome_features.json</c>.
+/// Generates the <c>ConfiguredFeatures</c>, <c>PlacedFeatures</c>, <c>ProcessorLists</c> and <c>BiomeFeatures</c>
+/// registries from vanilla's feature data in <c>Assets/worldgen/features</c>, <c>Assets/worldgen/placed_features</c>,
+/// <c>Assets/worldgen/processor_lists</c> and <c>Assets/worldgen/biome_features.json</c>.
 /// </summary>
 /// <remarks>
 /// Each JSON value is emitted according to the C# type of the property it is assigned to. Polymorphic values
-/// (<c>type</c> or <c>predicate_type</c>) map to the class tagged with that resource location
+/// (<c>type</c>, <c>predicate_type</c> or <c>processor_type</c>) map to the class tagged with that resource location
 /// (<c>[ConfiguredFeatureClass]</c>, <c>[ConfiguredFeatureProperty]</c>, <c>[TreeProperty]</c>) that is assignable to the
 /// property's type. Every registry member is created lazily and shared, so references between features are safe.
 /// </remarks>
@@ -36,7 +36,7 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
     {
         var jsonFiles = ctx.AdditionalTextsProvider
             .Select(static (file, ct) => (path: GetWorldgenPath(file.Path), text: file))
-            .Where(static file => file.path is not null && (file.path.StartsWith("features/") || file.path.StartsWith("placed_features/") || file.path == "biome_features"))
+            .Where(static file => file.path is not null && (file.path.StartsWith("features/") || file.path.StartsWith("placed_features/") || file.path.StartsWith("processor_lists/") || file.path == "biome_features"))
             .Select(static (file, ct) => (path: file.path!, json: file.text.GetText(ct)!.ToString()));
 
         var classDeclarations = ctx.SyntaxProvider
@@ -95,12 +95,16 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
 
         var configured = ParseCategories(files, "features/");
         var placed = ParseCategories(files, "placed_features/");
+        var processorLists = ParseCategories(files, "processor_lists/");
         var biomeFeaturesJson = files.FirstOrDefault(file => file.path == "biome_features").json;
 
-        var emitter = new FeatureEmitter(compilation, types, configured, placed, context);
+        var emitter = new FeatureEmitter(compilation, types, configured, placed, processorLists, context);
 
         context.AddSource("ConfiguredFeatures.g.cs", emitter.EmitConfiguredFeatures());
         context.AddSource("PlacedFeatures.g.cs", emitter.EmitPlacedFeatures());
+
+        if (processorLists.Count > 0)
+            context.AddSource("ProcessorLists.g.cs", emitter.EmitProcessorLists());
 
         if (biomeFeaturesJson is not null)
             context.AddSource("BiomeFeatures.g.cs", emitter.EmitBiomeFeatures(biomeFeaturesJson));
@@ -130,31 +134,36 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
         private readonly Dictionary<string, List<INamedTypeSymbol>> types;
         private readonly List<(string Category, List<(string Id, JsonElement Json)> Entries)> configured;
         private readonly List<(string Category, List<(string Id, JsonElement Json)> Entries)> placed;
+        private readonly List<(string Category, List<(string Id, JsonElement Json)> Entries)> processorLists;
         private readonly Dictionary<string, string> configuredReferences = [];
         private readonly Dictionary<string, string> placedReferences = [];
+        private readonly Dictionary<string, string> processorListReferences = [];
         private readonly SourceProductionContext context;
 
         private readonly INamedTypeSymbol configuredFeatureBase;
         private readonly INamedTypeSymbol placedFeature;
         private readonly INamedTypeSymbol placementModifierBase;
         private readonly INamedTypeSymbol heightProvider;
+        private readonly INamedTypeSymbol? processorList;
 
         private string currentOwner = string.Empty;
 
         public FeatureEmitter(Compilation compilation, Dictionary<string, List<INamedTypeSymbol>> types,
             List<(string, List<(string, JsonElement)>)> configured, List<(string, List<(string, JsonElement)>)> placed,
-            SourceProductionContext context)
+            List<(string, List<(string, JsonElement)>)> processorLists, SourceProductionContext context)
         {
             this.compilation = compilation;
             this.types = types;
             this.configured = configured;
             this.placed = placed;
+            this.processorLists = processorLists;
             this.context = context;
 
             this.configuredFeatureBase = compilation.GetTypeByMetadataName("Obsidian.API.World.Features.ConfiguredFeatureBase")!;
             this.placedFeature = compilation.GetTypeByMetadataName("Obsidian.API.World.Features.PlacedFeature")!;
             this.placementModifierBase = compilation.GetTypeByMetadataName("Obsidian.API.World.Features.PlacementModifierBase")!;
             this.heightProvider = compilation.GetTypeByMetadataName("Obsidian.API.World.Features.IHeightProvider")!;
+            this.processorList = compilation.GetTypeByMetadataName("Obsidian.WorldData.Structures.StructureProcessorList");
 
             foreach (var (category, entries) in configured)
             {
@@ -166,6 +175,12 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
             {
                 foreach (var (id, _) in entries)
                     this.placedReferences[id] = $"global::Obsidian.Registries.PlacedFeatures.{MemberName(category)}.{MemberName(id)}";
+            }
+
+            foreach (var (category, entries) in processorLists)
+            {
+                foreach (var (id, _) in entries)
+                    this.processorListReferences[id] = $"global::Obsidian.Registries.ProcessorLists.{MemberName(category)}.{MemberName(id)}";
             }
         }
 
@@ -228,6 +243,64 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
             AppendAll(builder, "global::Obsidian.API.World.Features.PlacedFeature", this.placedReferences);
             builder.AppendLine("}");
             return builder.ToString();
+        }
+
+        public string EmitProcessorLists()
+        {
+            var builder = Header();
+            builder.AppendLine("/// <summary>");
+            builder.AppendLine("/// Vanilla structure processor lists, generated from <c>Assets/worldgen/processor_lists</c>.");
+            builder.AppendLine("/// </summary>");
+            builder.AppendLine("public static partial class ProcessorLists");
+            builder.AppendLine("{");
+
+            var typeName = FullName(this.processorList!);
+            foreach (var (category, entries) in this.processorLists)
+            {
+                builder.AppendLine($"    public static partial class {MemberName(category)}");
+                builder.AppendLine("    {");
+
+                foreach (var (id, json) in entries)
+                {
+                    this.currentOwner = id;
+                    builder.AppendLine($"        public static {typeName} {MemberName(id)} => {LazyInit}{this.EmitProcessorList(json, id)});");
+                    builder.AppendLine();
+                }
+
+                builder.AppendLine("    }");
+                builder.AppendLine();
+            }
+
+            AppendAll(builder, typeName, this.processorListReferences);
+            builder.AppendLine("}");
+            return builder.ToString();
+        }
+
+        /// <summary>
+        /// Emits a processor list: <c>{"processors": [...]}</c> or, like vanilla's codec allows, a bare processor array.
+        /// </summary>
+        private string EmitProcessorList(JsonElement json, string? identifier)
+        {
+            var extra = identifier is null ? null : $"Identifier = {Literal(identifier)}";
+            if (json.ValueKind != JsonValueKind.Array)
+                return this.EmitObject(this.processorList!, json, null, extra);
+
+            var processors = FindProperty(this.processorList!, "Processors")!.Type;
+            var parts = new List<string>();
+            if (extra is not null)
+                parts.Add(extra);
+
+            parts.Add($"Processors = {this.EmitValue(processors, json)}");
+            return $"new {FullName(this.processorList!)} {{ {string.Join(", ", parts)} }}";
+        }
+
+        private string ProcessorListReference(string id)
+        {
+            if (this.processorListReferences.TryGetValue(id, out var reference))
+                return reference;
+
+            this.Report(unknownReference, "processor list", id);
+            return "default!";
         }
 
         public string EmitBiomeFeatures(string json)
@@ -400,6 +473,11 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
                 return json.ValueKind == JsonValueKind.String ? this.PlacedReference(json.GetString()!) : this.EmitPlacedFeature(json, null);
             }
 
+            if (this.processorList is not null && SymbolEqualityComparer.Default.Equals(target, this.processorList))
+            {
+                return json.ValueKind == JsonValueKind.String ? this.ProcessorListReference(json.GetString()!) : this.EmitProcessorList(json, null);
+            }
+
             if (IsAssignableTo(target, this.configuredFeatureBase))
             {
                 return json.ValueKind == JsonValueKind.String ? this.ConfiguredReference(json.GetString()!) : this.EmitConfiguredFeature(json, null).Expression;
@@ -426,7 +504,10 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
 
             if (json.ValueKind == JsonValueKind.Object)
             {
-                var discriminator = json.TryGetProperty("type", out var type) ? "type" : json.TryGetProperty("predicate_type", out type) ? "predicate_type" : null;
+                var discriminator = json.TryGetProperty("type", out var type) ? "type"
+                    : json.TryGetProperty("predicate_type", out type) ? "predicate_type"
+                    : json.TryGetProperty("processor_type", out type) ? "processor_type"
+                    : null;
 
                 if (discriminator is null && SymbolEqualityComparer.Default.Equals(target, this.heightProvider))
                 {
