@@ -71,34 +71,11 @@ internal static partial class BlocksRegistry
 
     public static string? GetBlockName(string resourceId) => resourceIdToName.GetValueOrDefault(resourceId);
 
-    public static IBlock GetFromSimpleState(SimpleBlockState simpleState)
-    {
-        IBlockState? state = null;
-        if (simpleState.Properties.Count > 0)
-        {
-            var blockName = GetSanitizedName(GetBlockName(simpleState.Name) ??
-                throw new NullReferenceException($"Unable to find block with name: {simpleState.Name}"));
-
-            var stateBuilderType = Type.GetType($"Obsidian.API.BlockStates.Builders.{blockName}StateBuilder");
-
-            // Only use state builder if one exists, otherwise fall back to default state
-            if (stateBuilderType != null)
-            {
-                try
-                {
-                    var builder = Activator.CreateInstance(stateBuilderType, simpleState.Properties)!;
-                    state = (IBlockState)builder.GetType().GetMethod("Build")!.Invoke(builder, null)!;
-                }
-                catch
-                {
-                    // If state builder fails, fall back to default state
-                    // This can happen for blocks that have properties but no generated state builders yet
-                }
-            }
-        }
-
-        return Get(simpleState.Name, state);
-    }
+    /// <summary>
+    /// Gets the exact block state described by a name and properties (unspecified properties use their defaults).
+    /// </summary>
+    public static IBlock GetFromSimpleState(SimpleBlockState simpleState) =>
+        BlockStateProperties.GetState(simpleState.Name, simpleState.Properties);
 
     public static IBlock Get(string resourceId, IBlockState? state = null)
     {

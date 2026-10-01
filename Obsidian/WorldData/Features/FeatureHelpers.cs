@@ -1,0 +1,330 @@
+using Obsidian.API.World.Generator.RandomSources;
+
+namespace Obsidian.WorldData.Features;
+
+/// <summary>
+/// Vanilla helpers shared by the configured features: <c>Feature</c> statics, <c>Direction</c> utilities, Java collection
+/// ordering and Java/<c>Mth</c> numerics that features depend on for output parity.
+/// </summary>
+internal static class FeatureHelpers
+{
+    private static readonly BlockSet dirt = new("#minecraft:dirt");
+    private static readonly BlockSet baseStoneOverworld = new("#minecraft:base_stone_overworld");
+
+    /// <summary>
+    /// <c>Direction.values()</c> order.
+    /// </summary>
+    public static readonly BlockFace[] Directions = [BlockFace.Down, BlockFace.Up, BlockFace.North, BlockFace.South, BlockFace.West, BlockFace.East];
+
+    /// <summary>
+    /// <c>Direction.Plane.HORIZONTAL</c> order (north, east, south, west), which differs from <see cref="BlockFace"/> order.
+    /// </summary>
+    public static readonly BlockFace[] Horizontal = [BlockFace.North, BlockFace.East, BlockFace.South, BlockFace.West];
+
+    /// <summary>
+    /// The position <paramref name="distance"/> blocks toward <paramref name="face"/> (vanilla <c>BlockPos.relative</c>).
+    /// </summary>
+    public static Vector Offset(this Vector position, BlockFace face, int distance = 1) => position + face.ToVector() * distance;
+
+    public static Vector AtY(this Vector position, int y) => new(position.X, y, position.Z);
+
+    public static BlockFace ClockWise(this BlockFace face) => face switch
+    {
+        BlockFace.North => BlockFace.East,
+        BlockFace.East => BlockFace.South,
+        BlockFace.South => BlockFace.West,
+        BlockFace.West => BlockFace.North,
+        _ => throw new ArgumentOutOfRangeException(nameof(face))
+    };
+
+    public static BlockFace CounterClockWise(this BlockFace face) => face switch
+    {
+        BlockFace.North => BlockFace.West,
+        BlockFace.West => BlockFace.South,
+        BlockFace.South => BlockFace.East,
+        BlockFace.East => BlockFace.North,
+        _ => throw new ArgumentOutOfRangeException(nameof(face))
+    };
+
+    public static bool IsVertical(this BlockFace face) => face is BlockFace.Up or BlockFace.Down;
+
+    public static bool SameAxis(BlockFace a, BlockFace b) => a == b || a == b.Opposite();
+
+    /// <summary>
+    /// Block state property name for a face (<c>north</c>, <c>up</c>...), as used by vines and multiface blocks.
+    /// </summary>
+    public static string FaceName(BlockFace face) => face switch
+    {
+        BlockFace.Down => "down",
+        BlockFace.Up => "up",
+        BlockFace.North => "north",
+        BlockFace.South => "south",
+        BlockFace.West => "west",
+        BlockFace.East => "east",
+        _ => throw new ArgumentOutOfRangeException(nameof(face))
+    };
+
+    public static BlockFace ParseFace(string? name) => name switch
+    {
+        "down" => BlockFace.Down,
+        "up" => BlockFace.Up,
+        "north" => BlockFace.North,
+        "south" => BlockFace.South,
+        "west" => BlockFace.West,
+        "east" => BlockFace.East,
+        _ => throw new ArgumentException($"Unknown direction '{name}'.", nameof(name))
+    };
+
+    /// <summary>
+    /// Vanilla <c>Direction.getRandom</c>.
+    /// </summary>
+    public static BlockFace RandomDirection(IRandomSource random) => Directions[random.NextInt(Directions.Length)];
+
+    /// <summary>
+    /// Vanilla <c>Direction.Plane.HORIZONTAL.getRandomDirection</c>.
+    /// </summary>
+    public static BlockFace RandomHorizontal(IRandomSource random) => Horizontal[random.NextInt(Horizontal.Length)];
+
+    /// <summary>
+    /// Vanilla <c>Util.shuffle</c>: Fisher-Yates from the end, one <c>nextInt(i)</c> per step.
+    /// </summary>
+    public static void Shuffle<T>(IList<T> list, IRandomSource random)
+    {
+        for (var i = list.Count; i > 1; i--)
+        {
+            var j = random.NextInt(i);
+            (list[i - 1], list[j]) = (list[j], list[i - 1]);
+        }
+    }
+
+    /// <summary>
+    /// Vanilla <c>Util.shuffledCopy</c>.
+    /// </summary>
+    public static List<T> ShuffledCopy<T>(IEnumerable<T> source, IRandomSource random)
+    {
+        var list = new List<T>(source);
+        Shuffle(list, random);
+        return list;
+    }
+
+    /// <summary>
+    /// Orders positions the way iterating a <c>java.util.HashSet&lt;BlockPos&gt;</c> filled in this order would.
+    /// </summary>
+    /// <remarks>
+    /// Several features consume randomness while iterating such sets, so the order is part of the output. Java buckets
+    /// entries by <c>(h ^ h &gt;&gt;&gt; 16) &amp; (capacity - 1)</c> with <c>h = (y + z * 31) * 31 + x</c>, keeps insertion
+    /// order inside a bucket (resizes preserve it) and doubles the table from 16 while size exceeds 75% of capacity.
+    /// Duplicates keep their first position, like <c>HashSet.add</c>.
+    /// </remarks>
+    public static List<Vector> JavaHashSetOrder(IEnumerable<Vector> insertionOrder)
+    {
+        var seen = new HashSet<Vector>();
+        var distinct = new List<Vector>();
+        foreach (var position in insertionOrder)
+        {
+            if (seen.Add(position))
+                distinct.Add(position);
+        }
+
+        var capacity = 16;
+        while (distinct.Count > capacity * 3 / 4)
+            capacity <<= 1;
+
+        // OrderBy is stable, so same-bucket entries keep insertion order.
+        return [.. distinct.OrderBy(position => Bucket(position, capacity))];
+    }
+
+    private static int Bucket(Vector position, int capacity)
+    {
+        var hash = unchecked((position.Y + position.Z * 31) * 31 + position.X);
+        return (hash ^ (int)((uint)hash >> 16)) & (capacity - 1);
+    }
+
+    /// <summary>
+    /// Vanilla <c>BlockPos.betweenClosed</c>: every position in the box, x fastest, then y, then z.
+    /// </summary>
+    public static IEnumerable<Vector> BetweenClosed(Vector min, Vector max)
+    {
+        for (var z = min.Z; z <= max.Z; z++)
+        {
+            for (var y = min.Y; y <= max.Y; y++)
+            {
+                for (var x = min.X; x <= max.X; x++)
+                    yield return new Vector(x, y, z);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Vanilla <c>Vec3i.distSqr</c> (computed in doubles).
+    /// </summary>
+    public static double DistSqr(Vector a, Vector b)
+    {
+        double dx = a.X - b.X;
+        double dy = a.Y - b.Y;
+        double dz = a.Z - b.Z;
+        return dx * dx + dy * dy + dz * dz;
+    }
+
+    public static int DistManhattan(Vector a, Vector b) => Math.Abs(a.X - b.X) + Math.Abs(a.Y - b.Y) + Math.Abs(a.Z - b.Z);
+
+    // ---- Feature.java statics ----
+
+    /// <summary>
+    /// Vanilla <c>Feature.isStone</c> (<c>#minecraft:base_stone_overworld</c>).
+    /// </summary>
+    public static bool IsStone(IBlock block) => baseStoneOverworld.Contains(block);
+
+    /// <summary>
+    /// Vanilla <c>Feature.isDirt</c> (<c>#minecraft:dirt</c>).
+    /// </summary>
+    public static bool IsDirt(IBlock block) => dirt.Contains(block);
+
+    /// <summary>
+    /// Vanilla <c>Feature.isAdjacentToAir</c>: any of the 6 neighbors is air.
+    /// </summary>
+    public static bool IsAdjacentToAir(IWorldGenLevel level, Vector position)
+    {
+        foreach (var face in Directions)
+        {
+            if (level.GetBlock(position.Offset(face)).IsAir)
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Vanilla <c>Feature.safeSetBlock</c>: sets the block only if the current block passes <paramref name="canReplace"/>.
+    /// </summary>
+    public static void SafeSetBlock(IWorldGenLevel level, Vector position, IBlock block, Func<IBlock, bool> canReplace)
+    {
+        if (canReplace(level.GetBlock(position)))
+            level.SetBlock(position, block);
+    }
+
+    /// <summary>
+    /// Vanilla <c>FluidTags.WATER</c> test (source or flowing water, including waterlogged blocks).
+    /// </summary>
+    public static bool IsWaterFluid(IBlock block) => block.GetFluid() is FluidKind.Water or FluidKind.FlowingWater;
+
+    public static bool IsLavaFluid(IBlock block) => block.GetFluid() is FluidKind.Lava or FluidKind.FlowingLava;
+
+    /// <summary>
+    /// Vanilla <c>BlockState.isSolidRender()</c>, approximated from collision and solidity data.
+    /// </summary>
+    /// <remarks>
+    /// Vanilla needs an opaque full-cube occlusion shape. Obsidian has no occlusion data, so this treats solid full-collision
+    /// cubes as solid render except the see-through classes (leaves, glass, ice, spawners and the like).
+    /// </remarks>
+    public static bool IsSolidRender(IBlock block)
+    {
+        if (!block.IsSolid() || !block.IsCollisionShapeFullBlock())
+            return false;
+
+        return block.BlockClass() switch
+        {
+            "TintedParticleLeavesBlock" or "UntintedParticleLeavesBlock" or "MangroveLeavesBlock" or "TransparentBlock"
+                or "StainedGlassBlock" or "TintedGlassBlock" or "HalfTransparentBlock" or "IceBlock" or "FrostedIceBlock"
+                or "SpawnerBlock" or "TrialSpawnerBlock" or "VaultBlock" or "BeaconBlock" or "SlimeBlock" or "HoneyBlock"
+                or "WaterloggedTransparentBlock" or "WeatheringCopperGrateBlock" or "PowderSnowBlock" => false,
+            _ => true
+        };
+    }
+
+    // ---- Java / Mth numerics ----
+
+    /// <summary>
+    /// Java <c>Math.round(float)</c>: <c>floor(x + 0.5)</c> evaluated exactly.
+    /// </summary>
+    public static int JavaRound(float value) => (int)Math.Floor((double)value + 0.5);
+
+    /// <summary>
+    /// Vanilla <c>Mth.ceil(float)</c>.
+    /// </summary>
+    public static int Ceil(float value)
+    {
+        var truncated = (int)value;
+        return value > truncated ? truncated + 1 : truncated;
+    }
+
+    /// <summary>
+    /// Vanilla <c>Mth.ceil(double)</c>.
+    /// </summary>
+    public static int Ceil(double value)
+    {
+        var truncated = (int)value;
+        return value > truncated ? truncated + 1 : truncated;
+    }
+
+    public static double ClampedLerp(double delta, double start, double end) =>
+        delta < 0.0 ? start : delta > 1.0 ? end : start + delta * (end - start);
+
+    public static float ClampedLerp(float delta, float start, float end) =>
+        delta < 0.0f ? start : delta > 1.0f ? end : start + delta * (end - start);
+
+    /// <summary>
+    /// Vanilla <c>Mth.clampedMap(double...)</c>.
+    /// </summary>
+    public static double ClampedMap(double value, double fromMin, double fromMax, double toMin, double toMax) =>
+        ClampedLerp((value - fromMin) / (fromMax - fromMin), toMin, toMax);
+
+    /// <summary>
+    /// Vanilla <c>Mth.clampedMap(float...)</c>.
+    /// </summary>
+    public static float ClampedMap(float value, float fromMin, float fromMax, float toMin, float toMax) =>
+        ClampedLerp((value - fromMin) / (fromMax - fromMin), toMin, toMax);
+
+    /// <summary>
+    /// Vanilla <c>Mth.randomBetweenInclusive</c>.
+    /// </summary>
+    public static int RandomBetweenInclusive(IRandomSource random, int min, int max) => random.NextInt(max - min + 1) + min;
+
+    /// <summary>
+    /// Vanilla <c>Mth.randomBetween(float)</c>.
+    /// </summary>
+    public static float RandomBetween(IRandomSource random, float min, float max) => random.NextFloat() * (max - min) + min;
+
+    /// <summary>
+    /// Vanilla <c>ClampedNormalFloat.sample(random, mean, deviation, min, max)</c>.
+    /// </summary>
+    public static float ClampedNormal(IRandomSource random, float mean, float deviation, float min, float max) =>
+        Math.Clamp(mean + (float)random.NextGaussian() * deviation, min, max);
+}
+
+/// <summary>
+/// Vanilla <c>Column</c>: the open space found by scanning up and down from a position, with optional floor and ceiling Ys.
+/// </summary>
+internal readonly record struct Column(int? Floor, int? Ceiling)
+{
+    /// <summary>
+    /// Space between floor and ceiling (exclusive), or <c>null</c> unless both exist.
+    /// </summary>
+    public int? Height => this.Floor is int floor && this.Ceiling is int ceiling ? ceiling - floor - 1 : null;
+
+    public bool IsRange => this.Floor.HasValue && this.Ceiling.HasValue;
+
+    /// <summary>
+    /// Vanilla <c>Column.scan</c>: <c>null</c> if the start isn't <paramref name="inside"/>; otherwise walks up to
+    /// <paramref name="searchRange"/> blocks each way and records the first <paramref name="edge"/> block reached.
+    /// </summary>
+    public static Column? Scan(IWorldGenLevel level, Vector position, int searchRange, Func<IBlock, bool> inside, Func<IBlock, bool> edge)
+    {
+        if (!inside(level.GetBlock(position)))
+            return null;
+
+        var ceiling = ScanDirection(level, position, searchRange, inside, edge, 1);
+        var floor = ScanDirection(level, position, searchRange, inside, edge, -1);
+        return new Column(floor, ceiling);
+    }
+
+    private static int? ScanDirection(IWorldGenLevel level, Vector start, int searchRange, Func<IBlock, bool> inside, Func<IBlock, bool> edge,
+        int step)
+    {
+        var position = start;
+        for (var i = 1; i < searchRange && inside(level.GetBlock(position)); i++)
+            position += new Vector(0, step, 0);
+
+        return edge(level.GetBlock(position)) ? position.Y : null;
+    }
+}

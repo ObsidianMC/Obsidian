@@ -1,0 +1,38 @@
+{
+  "minecraft:chorus_plant": {
+    "type": "minecraft:chorus_plant",
+    "config": {}
+  },
+  "minecraft:end_gateway_delayed": {
+    "type": "minecraft:end_gateway",
+    "config": {
+      "exact": false
+    }
+  },
+  "minecraft:end_gateway_return": {
+    "type": "minecraft:end_gateway",
+    "config": {
+      "exact": true,
+      "exit": [
+        100,
+        50,
+        0
+      ]
+    }
+  },
+  "minecraft:end_island": {
+    "type": "minecraft:end_island",
+    "config": {}
+  },
+  "minecraft:end_platform": {
+    "type": "minecraft:end_platform",
+    "config": {}
+  },
+  "minecraft:end_spike": {
+    "type": "minecraft:end_spike",
+    "config": {
+      "crystal_invulnerable": false,
+      "spikes": []
+    }
+  }
+}

@@ -1,10 +1,13 @@
-﻿namespace Obsidian.API.World.Features;
+﻿using Obsidian.API.World.Generator.RandomSources;
+
+namespace Obsidian.API.World.Features;
+
+/// <summary>
+/// Samples a Y level, like vanilla's HeightProvider.
+/// </summary>
 public interface IHeightProvider
 {
     public string Type { get; }
-    public int? Absolute { get; init; }
 
-    public int? AboveBottom { get; init; }
-
-    public int? BelowTop { get; init; }
+    public int Sample(IRandomSource random, WorldGenerationContext context);
 }

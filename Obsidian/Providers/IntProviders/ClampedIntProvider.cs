@@ -1,17 +1,24 @@
-﻿namespace Obsidian.Providers.IntProviders;
+﻿using Obsidian.API.World.Generator.RandomSources;
 
+namespace Obsidian.Providers.IntProviders;
+
+/// <summary>
+/// Another provider's value clamped to <c>[MinInclusive, MaxInclusive]</c>.
+/// </summary>
 [ConfiguredFeatureProperty(IntProviderTypes.Clamped)]
 public sealed class ClampedIntProvider : IIntProvider
 {
-    public required string Type { get; init; } = IntProviderTypes.Clamped;
+    public string Type { get; init; } = IntProviderTypes.Clamped;
 
-    public IntProviderRangeValue Value { get; init; }
+    public required IIntProvider Source { get; init; }
 
-    public IIntProvider Source { get; init; } = default!;
+    public required int MinInclusive { get; init; }
 
-    public int Get()
-    {
-        var sourceValue = this.Source.Get();
-        return Math.Clamp(sourceValue, this.Value.MinInclusive, this.Value.MaxInclusive);
-    }
+    public required int MaxInclusive { get; init; }
+
+    public int MinValue => Math.Max(this.MinInclusive, this.Source.MinValue);
+
+    public int MaxValue => Math.Min(this.MaxInclusive, this.Source.MaxValue);
+
+    public int Sample(IRandomSource random) => Math.Clamp(this.Source.Sample(random), this.MinInclusive, this.MaxInclusive);
 }

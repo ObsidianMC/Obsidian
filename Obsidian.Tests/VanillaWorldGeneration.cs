@@ -1,7 +1,9 @@
+﻿using Obsidian.API;
 using Obsidian.API.Registries;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators.Mojang;
 using System;
+using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 using Xunit;
@@ -102,7 +104,36 @@ public class VanillaWorldGeneration
         Assert.Equal(expectedBlocks, Sha256(BlockNames(chunk)));
     }
 
-    private static string BlockNames(Chunk chunk)
+    [Theory]
+    // SHA-256 of the block names (y, z, x order) after vanilla decorates the chunk, with its neighbors at the carvers step.
+    [InlineData(0L, -80, 16, "88c252b5ad3fd77ecf0e65e40aab206b638a5464416276ac66672b2c4eeccaeb")] // swamp
+    [InlineData(0L, -88, 72, "74981613635a7a2a56b13d40cc76abccc00bf2efa7543916e0157e2175b5690a")] // dark forest
+    [InlineData(12345L, -104, 104, "e5f90f049ab61f9282e771850dfdabeb5f9682e791498296ecc13d9cebea8253")] // warm ocean
+    [InlineData(12345L, -24, 24, "cc09f17ef2c40975b36a18115957278bf46d7a4c7d2d94090768b829c6e94f65")] // plains
+    public void DecoratedChunkMatchesVanilla(long seed, int chunkX, int chunkZ, string expectedBlocks)
+    {
+        var builder = new ChunkBuilder(seed);
+        var area = new Dictionary<(int X, int Z), IChunk>();
+
+        for (var dx = -1; dx <= 1; dx++)
+        {
+            for (var dz = -1; dz <= 1; dz++)
+            {
+                var neighbor = new Chunk(chunkX + dx, chunkZ + dz);
+                builder.PopulateBiomes(neighbor);
+                builder.Generate3DTerrain(neighbor);
+                builder.ApplySurfaceRules(neighbor);
+                builder.ApplyCarvers(neighbor);
+                area[(neighbor.X, neighbor.Z)] = neighbor;
+            }
+        }
+
+        builder.Decorate(area, chunkX, chunkZ);
+
+        Assert.Equal(expectedBlocks, Sha256(BlockNames(area[(chunkX, chunkZ)])));
+    }
+
+    private static string BlockNames(IChunk chunk)
     {
         var blocks = new StringBuilder();
         for (var y = -64; y < 320; y++)

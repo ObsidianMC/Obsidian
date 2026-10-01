@@ -1,0 +1,2568 @@
+{
+  "minecraft:bamboo_no_podzol": {
+    "type": "minecraft:bamboo",
+    "config": {
+      "probability": 0.0
+    }
+  },
+  "minecraft:bamboo_some_podzol": {
+    "type": "minecraft:bamboo",
+    "config": {
+      "probability": 0.2
+    }
+  },
+  "minecraft:bamboo_vegetation": {
+    "type": "minecraft:random_selector",
+    "config": {
+      "default": {
+        "feature": "minecraft:patch_grass_jungle",
+        "placement": []
+      },
+      "features": [
+        {
+          "chance": 0.05,
+          "feature": "minecraft:fancy_oak_checked"
+        },
+        {
+          "chance": 0.15,
+          "feature": "minecraft:jungle_bush"
+        },
+        {
+          "chance": 0.7,
+          "feature": "minecraft:mega_jungle_tree_checked"
+        }
+      ]
+    }
+  },
+  "minecraft:birch_tall": {
+    "type": "minecraft:random_selector",
+    "config": {
+      "default": "minecraft:birch_bees_0002",
+      "features": [
+        {
+          "chance": 0.00625,
+          "feature": "minecraft:fallen_super_birch_tree"
+        },
+        {
+          "chance": 0.5,
+          "feature": "minecraft:super_birch_bees_0002"
+        },
+        {
+          "chance": 0.0125,
+          "feature": "minecraft:fallen_birch_tree"
+        }
+      ]
+    }
+  },
+  "minecraft:dark_forest_vegetation": {
+    "type": "minecraft:random_selector",
+    "config": {
+      "default": "minecraft:oak_leaf_litter",
+      "features": [
+        {
+          "chance": 0.025,
+          "feature": {
+            "feature": "minecraft:huge_brown_mushroom",
+            "placement": []
+          }
+        },
+        {
+          "chance": 0.05,
+          "feature": {
+            "feature": "minecraft:huge_red_mushroom",
+            "placement": []
+          }
+        },
+        {
+          "chance": 0.6666667,
+          "feature": "minecraft:dark_oak_leaf_litter"
+        },
+        {
+          "chance": 0.0025,
+          "feature": "minecraft:fallen_birch_tree"
+        },
+        {
+          "chance": 0.2,
+          "feature": "minecraft:birch_leaf_litter"
+        },
+        {
+          "chance": 0.0125,
+          "feature": "minecraft:fallen_oak_tree"
+        },
+        {
+          "chance": 0.1,
+          "feature": "minecraft:fancy_oak_leaf_litter"
+        }
+      ]
+    }
+  },
+  "minecraft:flower_cherry": {
+    "type": "minecraft:flower",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "to_place": {
+              "type": "minecraft:weighted_state_provider",
+              "entries": [
+                {
+                  "data": {
+                    "Name": "minecraft:pink_petals",
+                    "Properties": {
+                      "facing": "north",
+                      "flower_amount": "1"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:pink_petals",
+                    "Properties": {
+                      "facing": "east",
+                      "flower_amount": "1"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:pink_petals",
+                    "Properties": {
+                      "facing": "south",
+                      "flower_amount": "1"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:pink_petals",
+                    "Properties": {
+                      "facing": "west",
+                      "flower_amount": "1"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:pink_petals",
+                    "Properties": {
+                      "facing": "north",
+                      "flower_amount": "2"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:pink_petals",
+                    "Properties": {
+                      "facing": "east",
+                      "flower_amount": "2"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:pink_petals",
+                    "Properties": {
+                      "facing": "south",
+                      "flower_amount": "2"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:pink_petals",
+                    "Properties": {
+                      "facing": "west",
+                      "flower_amount": "2"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:pink_petals",
+                    "Properties": {
+                      "facing": "north",
+                      "flower_amount": "3"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:pink_petals",
+                    "Properties": {
+                      "facing": "east",
+                      "flower_amount": "3"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:pink_petals",
+                    "Properties": {
+                      "facing": "south",
+                      "flower_amount": "3"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:pink_petals",
+                    "Properties": {
+                      "facing": "west",
+                      "flower_amount": "3"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:pink_petals",
+                    "Properties": {
+                      "facing": "north",
+                      "flower_amount": "4"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:pink_petals",
+                    "Properties": {
+                      "facing": "east",
+                      "flower_amount": "4"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:pink_petals",
+                    "Properties": {
+                      "facing": "south",
+                      "flower_amount": "4"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:pink_petals",
+                    "Properties": {
+                      "facing": "west",
+                      "flower_amount": "4"
+                    }
+                  },
+                  "weight": 1
+                }
+              ]
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:matching_blocks",
+              "blocks": "minecraft:air"
+            }
+          }
+        ]
+      },
+      "tries": 96,
+      "xz_spread": 6,
+      "y_spread": 2
+    }
+  },
+  "minecraft:flower_default": {
+    "type": "minecraft:flower",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "to_place": {
+              "type": "minecraft:weighted_state_provider",
+              "entries": [
+                {
+                  "data": {
+                    "Name": "minecraft:poppy"
+                  },
+                  "weight": 2
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:dandelion"
+                  },
+                  "weight": 1
+                }
+              ]
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:matching_blocks",
+              "blocks": "minecraft:air"
+            }
+          }
+        ]
+      },
+      "tries": 64,
+      "xz_spread": 7,
+      "y_spread": 3
+    }
+  },
+  "minecraft:flower_flower_forest": {
+    "type": "minecraft:flower",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "to_place": {
+              "type": "minecraft:noise_provider",
+              "noise": {
+                "amplitudes": [
+                  1.0
+                ],
+                "firstOctave": 0
+              },
+              "scale": 0.020833334,
+              "seed": 2345,
+              "states": [
+                {
+                  "Name": "minecraft:dandelion"
+                },
+                {
+                  "Name": "minecraft:poppy"
+                },
+                {
+                  "Name": "minecraft:allium"
+                },
+                {
+                  "Name": "minecraft:azure_bluet"
+                },
+                {
+                  "Name": "minecraft:red_tulip"
+                },
+                {
+                  "Name": "minecraft:orange_tulip"
+                },
+                {
+                  "Name": "minecraft:white_tulip"
+                },
+                {
+                  "Name": "minecraft:pink_tulip"
+                },
+                {
+                  "Name": "minecraft:oxeye_daisy"
+                },
+                {
+                  "Name": "minecraft:cornflower"
+                },
+                {
+                  "Name": "minecraft:lily_of_the_valley"
+                }
+              ]
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:matching_blocks",
+              "blocks": "minecraft:air"
+            }
+          }
+        ]
+      },
+      "tries": 96,
+      "xz_spread": 6,
+      "y_spread": 2
+    }
+  },
+  "minecraft:flower_meadow": {
+    "type": "minecraft:flower",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "to_place": {
+              "type": "minecraft:dual_noise_provider",
+              "noise": {
+                "amplitudes": [
+                  1.0
+                ],
+                "firstOctave": -3
+              },
+              "scale": 1.0,
+              "seed": 2345,
+              "slow_noise": {
+                "amplitudes": [
+                  1.0
+                ],
+                "firstOctave": -10
+              },
+              "slow_scale": 1.0,
+              "states": [
+                {
+                  "Name": "minecraft:tall_grass",
+                  "Properties": {
+                    "half": "lower"
+                  }
+                },
+                {
+                  "Name": "minecraft:allium"
+                },
+                {
+                  "Name": "minecraft:poppy"
+                },
+                {
+                  "Name": "minecraft:azure_bluet"
+                },
+                {
+                  "Name": "minecraft:dandelion"
+                },
+                {
+                  "Name": "minecraft:cornflower"
+                },
+                {
+                  "Name": "minecraft:oxeye_daisy"
+                },
+                {
+                  "Name": "minecraft:short_grass"
+                }
+              ],
+              "variety": [
+                1,
+                3
+              ]
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:matching_blocks",
+              "blocks": "minecraft:air"
+            }
+          }
+        ]
+      },
+      "tries": 96,
+      "xz_spread": 6,
+      "y_spread": 2
+    }
+  },
+  "minecraft:flower_pale_garden": {
+    "type": "minecraft:flower",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "schedule_tick": true,
+            "to_place": {
+              "type": "minecraft:simple_state_provider",
+              "state": {
+                "Name": "minecraft:closed_eyeblossom"
+              }
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:matching_blocks",
+              "blocks": "minecraft:air"
+            }
+          }
+        ]
+      },
+      "tries": 1,
+      "xz_spread": 0,
+      "y_spread": 0
+    }
+  },
+  "minecraft:flower_plain": {
+    "type": "minecraft:flower",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "to_place": {
+              "type": "minecraft:noise_threshold_provider",
+              "default_state": {
+                "Name": "minecraft:dandelion"
+              },
+              "high_chance": 0.33333334,
+              "high_states": [
+                {
+                  "Name": "minecraft:poppy"
+                },
+                {
+                  "Name": "minecraft:azure_bluet"
+                },
+                {
+                  "Name": "minecraft:oxeye_daisy"
+                },
+                {
+                  "Name": "minecraft:cornflower"
+                }
+              ],
+              "low_states": [
+                {
+                  "Name": "minecraft:orange_tulip"
+                },
+                {
+                  "Name": "minecraft:red_tulip"
+                },
+                {
+                  "Name": "minecraft:pink_tulip"
+                },
+                {
+                  "Name": "minecraft:white_tulip"
+                }
+              ],
+              "noise": {
+                "amplitudes": [
+                  1.0
+                ],
+                "firstOctave": 0
+              },
+              "scale": 0.005,
+              "seed": 2345,
+              "threshold": -0.8
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:matching_blocks",
+              "blocks": "minecraft:air"
+            }
+          }
+        ]
+      },
+      "tries": 64,
+      "xz_spread": 6,
+      "y_spread": 2
+    }
+  },
+  "minecraft:flower_swamp": {
+    "type": "minecraft:flower",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "to_place": {
+              "type": "minecraft:simple_state_provider",
+              "state": {
+                "Name": "minecraft:blue_orchid"
+              }
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:matching_blocks",
+              "blocks": "minecraft:air"
+            }
+          }
+        ]
+      },
+      "tries": 64,
+      "xz_spread": 6,
+      "y_spread": 2
+    }
+  },
+  "minecraft:forest_flowers": {
+    "type": "minecraft:simple_random_selector",
+    "config": {
+      "features": [
+        {
+          "feature": {
+            "type": "minecraft:random_patch",
+            "config": {
+              "feature": {
+                "feature": {
+                  "type": "minecraft:simple_block",
+                  "config": {
+                    "to_place": {
+                      "type": "minecraft:simple_state_provider",
+                      "state": {
+                        "Name": "minecraft:lilac",
+                        "Properties": {
+                          "half": "lower"
+                        }
+                      }
+                    }
+                  }
+                },
+                "placement": [
+                  {
+                    "type": "minecraft:block_predicate_filter",
+                    "predicate": {
+                      "type": "minecraft:matching_blocks",
+                      "blocks": "minecraft:air"
+                    }
+                  }
+                ]
+              },
+              "tries": 96,
+              "xz_spread": 7,
+              "y_spread": 3
+            }
+          },
+          "placement": []
+        },
+        {
+          "feature": {
+            "type": "minecraft:random_patch",
+            "config": {
+              "feature": {
+                "feature": {
+                  "type": "minecraft:simple_block",
+                  "config": {
+                    "to_place": {
+                      "type": "minecraft:simple_state_provider",
+                      "state": {
+                        "Name": "minecraft:rose_bush",
+                        "Properties": {
+                          "half": "lower"
+                        }
+                      }
+                    }
+                  }
+                },
+                "placement": [
+                  {
+                    "type": "minecraft:block_predicate_filter",
+                    "predicate": {
+                      "type": "minecraft:matching_blocks",
+                      "blocks": "minecraft:air"
+                    }
+                  }
+                ]
+              },
+              "tries": 96,
+              "xz_spread": 7,
+              "y_spread": 3
+            }
+          },
+          "placement": []
+        },
+        {
+          "feature": {
+            "type": "minecraft:random_patch",
+            "config": {
+              "feature": {
+                "feature": {
+                  "type": "minecraft:simple_block",
+                  "config": {
+                    "to_place": {
+                      "type": "minecraft:simple_state_provider",
+                      "state": {
+                        "Name": "minecraft:peony",
+                        "Properties": {
+                          "half": "lower"
+                        }
+                      }
+                    }
+                  }
+                },
+                "placement": [
+                  {
+                    "type": "minecraft:block_predicate_filter",
+                    "predicate": {
+                      "type": "minecraft:matching_blocks",
+                      "blocks": "minecraft:air"
+                    }
+                  }
+                ]
+              },
+              "tries": 96,
+              "xz_spread": 7,
+              "y_spread": 3
+            }
+          },
+          "placement": []
+        },
+        {
+          "feature": {
+            "type": "minecraft:no_bonemeal_flower",
+            "config": {
+              "feature": {
+                "feature": {
+                  "type": "minecraft:simple_block",
+                  "config": {
+                    "to_place": {
+                      "type": "minecraft:simple_state_provider",
+                      "state": {
+                        "Name": "minecraft:lily_of_the_valley"
+                      }
+                    }
+                  }
+                },
+                "placement": [
+                  {
+                    "type": "minecraft:block_predicate_filter",
+                    "predicate": {
+                      "type": "minecraft:matching_blocks",
+                      "blocks": "minecraft:air"
+                    }
+                  }
+                ]
+              },
+              "tries": 96,
+              "xz_spread": 7,
+              "y_spread": 3
+            }
+          },
+          "placement": []
+        }
+      ]
+    }
+  },
+  "minecraft:mangrove_vegetation": {
+    "type": "minecraft:random_selector",
+    "config": {
+      "default": "minecraft:mangrove_checked",
+      "features": [
+        {
+          "chance": 0.85,
+          "feature": "minecraft:tall_mangrove_checked"
+        }
+      ]
+    }
+  },
+  "minecraft:meadow_trees": {
+    "type": "minecraft:random_selector",
+    "config": {
+      "default": "minecraft:super_birch_bees",
+      "features": [
+        {
+          "chance": 0.5,
+          "feature": "minecraft:fancy_oak_bees"
+        }
+      ]
+    }
+  },
+  "minecraft:mushroom_island_vegetation": {
+    "type": "minecraft:random_boolean_selector",
+    "config": {
+      "feature_false": {
+        "feature": "minecraft:huge_brown_mushroom",
+        "placement": []
+      },
+      "feature_true": {
+        "feature": "minecraft:huge_red_mushroom",
+        "placement": []
+      }
+    }
+  },
+  "minecraft:pale_forest_flowers": {
+    "type": "minecraft:random_patch",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "schedule_tick": true,
+            "to_place": {
+              "type": "minecraft:simple_state_provider",
+              "state": {
+                "Name": "minecraft:closed_eyeblossom"
+              }
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:matching_blocks",
+              "blocks": "minecraft:air"
+            }
+          }
+        ]
+      },
+      "tries": 96,
+      "xz_spread": 7,
+      "y_spread": 3
+    }
+  },
+  "minecraft:pale_garden_vegetation": {
+    "type": "minecraft:random_selector",
+    "config": {
+      "default": "minecraft:pale_oak_checked",
+      "features": [
+        {
+          "chance": 0.1,
+          "feature": "minecraft:pale_oak_creaking_checked"
+        },
+        {
+          "chance": 0.9,
+          "feature": "minecraft:pale_oak_checked"
+        }
+      ]
+    }
+  },
+  "minecraft:pale_moss_patch": {
+    "type": "minecraft:vegetation_patch",
+    "config": {
+      "depth": 1,
+      "extra_bottom_block_chance": 0.0,
+      "extra_edge_column_chance": 0.75,
+      "ground_state": {
+        "type": "minecraft:simple_state_provider",
+        "state": {
+          "Name": "minecraft:pale_moss_block"
+        }
+      },
+      "replaceable": "#minecraft:moss_replaceable",
+      "surface": "floor",
+      "vegetation_chance": 0.3,
+      "vegetation_feature": {
+        "feature": "minecraft:pale_moss_vegetation",
+        "placement": []
+      },
+      "vertical_range": 5,
+      "xz_radius": {
+        "type": "minecraft:uniform",
+        "max_inclusive": 4,
+        "min_inclusive": 2
+      }
+    }
+  },
+  "minecraft:pale_moss_patch_bonemeal": {
+    "type": "minecraft:vegetation_patch",
+    "config": {
+      "depth": 1,
+      "extra_bottom_block_chance": 0.0,
+      "extra_edge_column_chance": 0.75,
+      "ground_state": {
+        "type": "minecraft:simple_state_provider",
+        "state": {
+          "Name": "minecraft:pale_moss_block"
+        }
+      },
+      "replaceable": "#minecraft:moss_replaceable",
+      "surface": "floor",
+      "vegetation_chance": 0.6,
+      "vegetation_feature": {
+        "feature": "minecraft:pale_moss_vegetation",
+        "placement": []
+      },
+      "vertical_range": 5,
+      "xz_radius": {
+        "type": "minecraft:uniform",
+        "max_inclusive": 2,
+        "min_inclusive": 1
+      }
+    }
+  },
+  "minecraft:pale_moss_vegetation": {
+    "type": "minecraft:simple_block",
+    "config": {
+      "to_place": {
+        "type": "minecraft:weighted_state_provider",
+        "entries": [
+          {
+            "data": {
+              "Name": "minecraft:pale_moss_carpet",
+              "Properties": {
+                "bottom": "true",
+                "east": "none",
+                "north": "none",
+                "south": "none",
+                "west": "none"
+              }
+            },
+            "weight": 25
+          },
+          {
+            "data": {
+              "Name": "minecraft:short_grass"
+            },
+            "weight": 25
+          },
+          {
+            "data": {
+              "Name": "minecraft:tall_grass",
+              "Properties": {
+                "half": "lower"
+              }
+            },
+            "weight": 10
+          }
+        ]
+      }
+    }
+  },
+  "minecraft:patch_berry_bush": {
+    "type": "minecraft:random_patch",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "to_place": {
+              "type": "minecraft:simple_state_provider",
+              "state": {
+                "Name": "minecraft:sweet_berry_bush",
+                "Properties": {
+                  "age": "3"
+                }
+              }
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:all_of",
+              "predicates": [
+                {
+                  "type": "minecraft:matching_blocks",
+                  "blocks": "minecraft:air"
+                },
+                {
+                  "type": "minecraft:matching_blocks",
+                  "blocks": "minecraft:grass_block",
+                  "offset": [
+                    0,
+                    -1,
+                    0
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "tries": 96,
+      "xz_spread": 7,
+      "y_spread": 3
+    }
+  },
+  "minecraft:patch_brown_mushroom": {
+    "type": "minecraft:random_patch",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "to_place": {
+              "type": "minecraft:simple_state_provider",
+              "state": {
+                "Name": "minecraft:brown_mushroom"
+              }
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:matching_blocks",
+              "blocks": "minecraft:air"
+            }
+          }
+        ]
+      },
+      "tries": 96,
+      "xz_spread": 7,
+      "y_spread": 3
+    }
+  },
+  "minecraft:patch_bush": {
+    "type": "minecraft:random_patch",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "to_place": {
+              "type": "minecraft:simple_state_provider",
+              "state": {
+                "Name": "minecraft:bush"
+              }
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:matching_blocks",
+              "blocks": "minecraft:air"
+            }
+          }
+        ]
+      },
+      "tries": 24,
+      "xz_spread": 5,
+      "y_spread": 3
+    }
+  },
+  "minecraft:patch_cactus": {
+    "type": "minecraft:random_patch",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:block_column",
+          "config": {
+            "allowed_placement": {
+              "type": "minecraft:matching_blocks",
+              "blocks": "minecraft:air"
+            },
+            "direction": "up",
+            "layers": [
+              {
+                "height": {
+                  "type": "minecraft:biased_to_bottom",
+                  "max_inclusive": 3,
+                  "min_inclusive": 1
+                },
+                "provider": {
+                  "type": "minecraft:simple_state_provider",
+                  "state": {
+                    "Name": "minecraft:cactus",
+                    "Properties": {
+                      "age": "0"
+                    }
+                  }
+                }
+              },
+              {
+                "height": {
+                  "type": "minecraft:weighted_list",
+                  "distribution": [
+                    {
+                      "data": 0,
+                      "weight": 3
+                    },
+                    {
+                      "data": 1,
+                      "weight": 1
+                    }
+                  ]
+                },
+                "provider": {
+                  "type": "minecraft:simple_state_provider",
+                  "state": {
+                    "Name": "minecraft:cactus_flower"
+                  }
+                }
+              }
+            ],
+            "prioritize_tip": false
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:all_of",
+              "predicates": [
+                {
+                  "type": "minecraft:matching_blocks",
+                  "blocks": "minecraft:air"
+                },
+                {
+                  "type": "minecraft:would_survive",
+                  "state": {
+                    "Name": "minecraft:cactus",
+                    "Properties": {
+                      "age": "0"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "tries": 10,
+      "xz_spread": 7,
+      "y_spread": 3
+    }
+  },
+  "minecraft:patch_dead_bush": {
+    "type": "minecraft:random_patch",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "to_place": {
+              "type": "minecraft:simple_state_provider",
+              "state": {
+                "Name": "minecraft:dead_bush"
+              }
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:matching_blocks",
+              "blocks": "minecraft:air"
+            }
+          }
+        ]
+      },
+      "tries": 4,
+      "xz_spread": 7,
+      "y_spread": 3
+    }
+  },
+  "minecraft:patch_dry_grass": {
+    "type": "minecraft:random_patch",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "to_place": {
+              "type": "minecraft:weighted_state_provider",
+              "entries": [
+                {
+                  "data": {
+                    "Name": "minecraft:short_dry_grass"
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:tall_dry_grass"
+                  },
+                  "weight": 1
+                }
+              ]
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:matching_blocks",
+              "blocks": "minecraft:air"
+            }
+          }
+        ]
+      },
+      "tries": 64,
+      "xz_spread": 7,
+      "y_spread": 3
+    }
+  },
+  "minecraft:patch_firefly_bush": {
+    "type": "minecraft:random_patch",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "to_place": {
+              "type": "minecraft:simple_state_provider",
+              "state": {
+                "Name": "minecraft:firefly_bush"
+              }
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:matching_blocks",
+              "blocks": "minecraft:air"
+            }
+          }
+        ]
+      },
+      "tries": 20,
+      "xz_spread": 4,
+      "y_spread": 3
+    }
+  },
+  "minecraft:patch_grass": {
+    "type": "minecraft:random_patch",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "to_place": {
+              "type": "minecraft:simple_state_provider",
+              "state": {
+                "Name": "minecraft:short_grass"
+              }
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:matching_blocks",
+              "blocks": "minecraft:air"
+            }
+          }
+        ]
+      },
+      "tries": 32,
+      "xz_spread": 7,
+      "y_spread": 3
+    }
+  },
+  "minecraft:patch_grass_jungle": {
+    "type": "minecraft:random_patch",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "to_place": {
+              "type": "minecraft:weighted_state_provider",
+              "entries": [
+                {
+                  "data": {
+                    "Name": "minecraft:short_grass"
+                  },
+                  "weight": 3
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:fern"
+                  },
+                  "weight": 1
+                }
+              ]
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:all_of",
+              "predicates": [
+                {
+                  "type": "minecraft:matching_blocks",
+                  "blocks": "minecraft:air"
+                },
+                {
+                  "type": "minecraft:not",
+                  "predicate": {
+                    "type": "minecraft:matching_blocks",
+                    "blocks": "minecraft:podzol",
+                    "offset": [
+                      0,
+                      -1,
+                      0
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "tries": 32,
+      "xz_spread": 7,
+      "y_spread": 3
+    }
+  },
+  "minecraft:patch_grass_meadow": {
+    "type": "minecraft:random_patch",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "to_place": {
+              "type": "minecraft:simple_state_provider",
+              "state": {
+                "Name": "minecraft:short_grass"
+              }
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:matching_blocks",
+              "blocks": "minecraft:air"
+            }
+          }
+        ]
+      },
+      "tries": 16,
+      "xz_spread": 7,
+      "y_spread": 3
+    }
+  },
+  "minecraft:patch_large_fern": {
+    "type": "minecraft:random_patch",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "to_place": {
+              "type": "minecraft:simple_state_provider",
+              "state": {
+                "Name": "minecraft:large_fern",
+                "Properties": {
+                  "half": "lower"
+                }
+              }
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:matching_blocks",
+              "blocks": "minecraft:air"
+            }
+          }
+        ]
+      },
+      "tries": 96,
+      "xz_spread": 7,
+      "y_spread": 3
+    }
+  },
+  "minecraft:patch_leaf_litter": {
+    "type": "minecraft:random_patch",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "to_place": {
+              "type": "minecraft:weighted_state_provider",
+              "entries": [
+                {
+                  "data": {
+                    "Name": "minecraft:leaf_litter",
+                    "Properties": {
+                      "facing": "north",
+                      "segment_amount": "1"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:leaf_litter",
+                    "Properties": {
+                      "facing": "east",
+                      "segment_amount": "1"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:leaf_litter",
+                    "Properties": {
+                      "facing": "south",
+                      "segment_amount": "1"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:leaf_litter",
+                    "Properties": {
+                      "facing": "west",
+                      "segment_amount": "1"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:leaf_litter",
+                    "Properties": {
+                      "facing": "north",
+                      "segment_amount": "2"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:leaf_litter",
+                    "Properties": {
+                      "facing": "east",
+                      "segment_amount": "2"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:leaf_litter",
+                    "Properties": {
+                      "facing": "south",
+                      "segment_amount": "2"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:leaf_litter",
+                    "Properties": {
+                      "facing": "west",
+                      "segment_amount": "2"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:leaf_litter",
+                    "Properties": {
+                      "facing": "north",
+                      "segment_amount": "3"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:leaf_litter",
+                    "Properties": {
+                      "facing": "east",
+                      "segment_amount": "3"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:leaf_litter",
+                    "Properties": {
+                      "facing": "south",
+                      "segment_amount": "3"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:leaf_litter",
+                    "Properties": {
+                      "facing": "west",
+                      "segment_amount": "3"
+                    }
+                  },
+                  "weight": 1
+                }
+              ]
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:all_of",
+              "predicates": [
+                {
+                  "type": "minecraft:matching_blocks",
+                  "blocks": "minecraft:air"
+                },
+                {
+                  "type": "minecraft:matching_blocks",
+                  "blocks": "minecraft:grass_block",
+                  "offset": [
+                    0,
+                    -1,
+                    0
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "tries": 32,
+      "xz_spread": 7,
+      "y_spread": 3
+    }
+  },
+  "minecraft:patch_melon": {
+    "type": "minecraft:random_patch",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "to_place": {
+              "type": "minecraft:simple_state_provider",
+              "state": {
+                "Name": "minecraft:melon"
+              }
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:all_of",
+              "predicates": [
+                {
+                  "type": "minecraft:replaceable"
+                },
+                {
+                  "type": "minecraft:matching_fluids",
+                  "fluids": "minecraft:empty"
+                },
+                {
+                  "type": "minecraft:matching_blocks",
+                  "blocks": "minecraft:grass_block",
+                  "offset": [
+                    0,
+                    -1,
+                    0
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "tries": 64,
+      "xz_spread": 7,
+      "y_spread": 3
+    }
+  },
+  "minecraft:patch_pumpkin": {
+    "type": "minecraft:random_patch",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "to_place": {
+              "type": "minecraft:simple_state_provider",
+              "state": {
+                "Name": "minecraft:pumpkin"
+              }
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:all_of",
+              "predicates": [
+                {
+                  "type": "minecraft:matching_blocks",
+                  "blocks": "minecraft:air"
+                },
+                {
+                  "type": "minecraft:matching_blocks",
+                  "blocks": "minecraft:grass_block",
+                  "offset": [
+                    0,
+                    -1,
+                    0
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "tries": 96,
+      "xz_spread": 7,
+      "y_spread": 3
+    }
+  },
+  "minecraft:patch_red_mushroom": {
+    "type": "minecraft:random_patch",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "to_place": {
+              "type": "minecraft:simple_state_provider",
+              "state": {
+                "Name": "minecraft:red_mushroom"
+              }
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:matching_blocks",
+              "blocks": "minecraft:air"
+            }
+          }
+        ]
+      },
+      "tries": 96,
+      "xz_spread": 7,
+      "y_spread": 3
+    }
+  },
+  "minecraft:patch_sugar_cane": {
+    "type": "minecraft:random_patch",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:block_column",
+          "config": {
+            "allowed_placement": {
+              "type": "minecraft:matching_blocks",
+              "blocks": "minecraft:air"
+            },
+            "direction": "up",
+            "layers": [
+              {
+                "height": {
+                  "type": "minecraft:biased_to_bottom",
+                  "max_inclusive": 4,
+                  "min_inclusive": 2
+                },
+                "provider": {
+                  "type": "minecraft:simple_state_provider",
+                  "state": {
+                    "Name": "minecraft:sugar_cane",
+                    "Properties": {
+                      "age": "0"
+                    }
+                  }
+                }
+              }
+            ],
+            "prioritize_tip": false
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:all_of",
+              "predicates": [
+                {
+                  "type": "minecraft:matching_blocks",
+                  "blocks": "minecraft:air"
+                },
+                {
+                  "type": "minecraft:would_survive",
+                  "state": {
+                    "Name": "minecraft:sugar_cane",
+                    "Properties": {
+                      "age": "0"
+                    }
+                  }
+                },
+                {
+                  "type": "minecraft:any_of",
+                  "predicates": [
+                    {
+                      "type": "minecraft:matching_fluids",
+                      "fluids": [
+                        "minecraft:water",
+                        "minecraft:flowing_water"
+                      ],
+                      "offset": [
+                        1,
+                        -1,
+                        0
+                      ]
+                    },
+                    {
+                      "type": "minecraft:matching_fluids",
+                      "fluids": [
+                        "minecraft:water",
+                        "minecraft:flowing_water"
+                      ],
+                      "offset": [
+                        -1,
+                        -1,
+                        0
+                      ]
+                    },
+                    {
+                      "type": "minecraft:matching_fluids",
+                      "fluids": [
+                        "minecraft:water",
+                        "minecraft:flowing_water"
+                      ],
+                      "offset": [
+                        0,
+                        -1,
+                        1
+                      ]
+                    },
+                    {
+                      "type": "minecraft:matching_fluids",
+                      "fluids": [
+                        "minecraft:water",
+                        "minecraft:flowing_water"
+                      ],
+                      "offset": [
+                        0,
+                        -1,
+                        -1
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "tries": 20,
+      "xz_spread": 4,
+      "y_spread": 0
+    }
+  },
+  "minecraft:patch_sunflower": {
+    "type": "minecraft:random_patch",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "to_place": {
+              "type": "minecraft:simple_state_provider",
+              "state": {
+                "Name": "minecraft:sunflower",
+                "Properties": {
+                  "half": "lower"
+                }
+              }
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:matching_blocks",
+              "blocks": "minecraft:air"
+            }
+          }
+        ]
+      },
+      "tries": 96,
+      "xz_spread": 7,
+      "y_spread": 3
+    }
+  },
+  "minecraft:patch_taiga_grass": {
+    "type": "minecraft:random_patch",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "to_place": {
+              "type": "minecraft:weighted_state_provider",
+              "entries": [
+                {
+                  "data": {
+                    "Name": "minecraft:short_grass"
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:fern"
+                  },
+                  "weight": 4
+                }
+              ]
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:matching_blocks",
+              "blocks": "minecraft:air"
+            }
+          }
+        ]
+      },
+      "tries": 32,
+      "xz_spread": 7,
+      "y_spread": 3
+    }
+  },
+  "minecraft:patch_tall_grass": {
+    "type": "minecraft:random_patch",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "to_place": {
+              "type": "minecraft:simple_state_provider",
+              "state": {
+                "Name": "minecraft:tall_grass",
+                "Properties": {
+                  "half": "lower"
+                }
+              }
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:matching_blocks",
+              "blocks": "minecraft:air"
+            }
+          }
+        ]
+      },
+      "tries": 96,
+      "xz_spread": 7,
+      "y_spread": 3
+    }
+  },
+  "minecraft:patch_waterlily": {
+    "type": "minecraft:random_patch",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "to_place": {
+              "type": "minecraft:simple_state_provider",
+              "state": {
+                "Name": "minecraft:lily_pad"
+              }
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:matching_blocks",
+              "blocks": "minecraft:air"
+            }
+          }
+        ]
+      },
+      "tries": 10,
+      "xz_spread": 7,
+      "y_spread": 3
+    }
+  },
+  "minecraft:single_piece_of_grass": {
+    "type": "minecraft:simple_block",
+    "config": {
+      "to_place": {
+        "type": "minecraft:simple_state_provider",
+        "state": {
+          "Name": "minecraft:short_grass"
+        }
+      }
+    }
+  },
+  "minecraft:trees_badlands": {
+    "type": "minecraft:random_selector",
+    "config": {
+      "default": "minecraft:oak_leaf_litter",
+      "features": [
+        {
+          "chance": 0.0125,
+          "feature": "minecraft:fallen_oak_tree"
+        }
+      ]
+    }
+  },
+  "minecraft:trees_birch": {
+    "type": "minecraft:random_selector",
+    "config": {
+      "default": "minecraft:birch_bees_0002",
+      "features": [
+        {
+          "chance": 0.0125,
+          "feature": "minecraft:fallen_birch_tree"
+        }
+      ]
+    }
+  },
+  "minecraft:trees_birch_and_oak_leaf_litter": {
+    "type": "minecraft:random_selector",
+    "config": {
+      "default": "minecraft:oak_bees_0002_leaf_litter",
+      "features": [
+        {
+          "chance": 0.0025,
+          "feature": "minecraft:fallen_birch_tree"
+        },
+        {
+          "chance": 0.2,
+          "feature": "minecraft:birch_bees_0002_leaf_litter"
+        },
+        {
+          "chance": 0.1,
+          "feature": "minecraft:fancy_oak_bees_0002_leaf_litter"
+        },
+        {
+          "chance": 0.0125,
+          "feature": "minecraft:fallen_oak_tree"
+        }
+      ]
+    }
+  },
+  "minecraft:trees_flower_forest": {
+    "type": "minecraft:random_selector",
+    "config": {
+      "default": "minecraft:oak_bees_002",
+      "features": [
+        {
+          "chance": 0.0025,
+          "feature": "minecraft:fallen_birch_tree"
+        },
+        {
+          "chance": 0.2,
+          "feature": "minecraft:birch_bees_002"
+        },
+        {
+          "chance": 0.1,
+          "feature": "minecraft:fancy_oak_bees_002"
+        }
+      ]
+    }
+  },
+  "minecraft:trees_grove": {
+    "type": "minecraft:random_selector",
+    "config": {
+      "default": "minecraft:spruce_on_snow",
+      "features": [
+        {
+          "chance": 0.33333334,
+          "feature": "minecraft:pine_on_snow"
+        }
+      ]
+    }
+  },
+  "minecraft:trees_jungle": {
+    "type": "minecraft:random_selector",
+    "config": {
+      "default": "minecraft:jungle_tree",
+      "features": [
+        {
+          "chance": 0.1,
+          "feature": "minecraft:fancy_oak_checked"
+        },
+        {
+          "chance": 0.5,
+          "feature": "minecraft:jungle_bush"
+        },
+        {
+          "chance": 0.33333334,
+          "feature": "minecraft:mega_jungle_tree_checked"
+        },
+        {
+          "chance": 0.0125,
+          "feature": "minecraft:fallen_jungle_tree"
+        }
+      ]
+    }
+  },
+  "minecraft:trees_old_growth_pine_taiga": {
+    "type": "minecraft:random_selector",
+    "config": {
+      "default": "minecraft:spruce_checked",
+      "features": [
+        {
+          "chance": 0.025641026,
+          "feature": "minecraft:mega_spruce_checked"
+        },
+        {
+          "chance": 0.30769232,
+          "feature": "minecraft:mega_pine_checked"
+        },
+        {
+          "chance": 0.33333334,
+          "feature": "minecraft:pine_checked"
+        },
+        {
+          "chance": 0.0125,
+          "feature": "minecraft:fallen_spruce_tree"
+        }
+      ]
+    }
+  },
+  "minecraft:trees_old_growth_spruce_taiga": {
+    "type": "minecraft:random_selector",
+    "config": {
+      "default": "minecraft:spruce_checked",
+      "features": [
+        {
+          "chance": 0.33333334,
+          "feature": "minecraft:mega_spruce_checked"
+        },
+        {
+          "chance": 0.33333334,
+          "feature": "minecraft:pine_checked"
+        },
+        {
+          "chance": 0.0125,
+          "feature": "minecraft:fallen_spruce_tree"
+        }
+      ]
+    }
+  },
+  "minecraft:trees_plains": {
+    "type": "minecraft:random_selector",
+    "config": {
+      "default": {
+        "feature": "minecraft:oak_bees_005",
+        "placement": []
+      },
+      "features": [
+        {
+          "chance": 0.33333334,
+          "feature": {
+            "feature": "minecraft:fancy_oak_bees_005",
+            "placement": []
+          }
+        },
+        {
+          "chance": 0.0125,
+          "feature": "minecraft:fallen_oak_tree"
+        }
+      ]
+    }
+  },
+  "minecraft:trees_savanna": {
+    "type": "minecraft:random_selector",
+    "config": {
+      "default": "minecraft:oak_checked",
+      "features": [
+        {
+          "chance": 0.8,
+          "feature": "minecraft:acacia_checked"
+        },
+        {
+          "chance": 0.0125,
+          "feature": "minecraft:fallen_oak_tree"
+        }
+      ]
+    }
+  },
+  "minecraft:trees_snowy": {
+    "type": "minecraft:random_selector",
+    "config": {
+      "default": "minecraft:spruce_checked",
+      "features": [
+        {
+          "chance": 0.0125,
+          "feature": "minecraft:fallen_spruce_tree"
+        }
+      ]
+    }
+  },
+  "minecraft:trees_sparse_jungle": {
+    "type": "minecraft:random_selector",
+    "config": {
+      "default": "minecraft:jungle_tree",
+      "features": [
+        {
+          "chance": 0.1,
+          "feature": "minecraft:fancy_oak_checked"
+        },
+        {
+          "chance": 0.5,
+          "feature": "minecraft:jungle_bush"
+        },
+        {
+          "chance": 0.0125,
+          "feature": "minecraft:fallen_jungle_tree"
+        }
+      ]
+    }
+  },
+  "minecraft:trees_taiga": {
+    "type": "minecraft:random_selector",
+    "config": {
+      "default": "minecraft:spruce_checked",
+      "features": [
+        {
+          "chance": 0.33333334,
+          "feature": "minecraft:pine_checked"
+        },
+        {
+          "chance": 0.0125,
+          "feature": "minecraft:fallen_spruce_tree"
+        }
+      ]
+    }
+  },
+  "minecraft:trees_water": {
+    "type": "minecraft:random_selector",
+    "config": {
+      "default": "minecraft:oak_checked",
+      "features": [
+        {
+          "chance": 0.1,
+          "feature": "minecraft:fancy_oak_checked"
+        }
+      ]
+    }
+  },
+  "minecraft:trees_windswept_hills": {
+    "type": "minecraft:random_selector",
+    "config": {
+      "default": "minecraft:oak_checked",
+      "features": [
+        {
+          "chance": 0.008325,
+          "feature": "minecraft:fallen_spruce_tree"
+        },
+        {
+          "chance": 0.666,
+          "feature": "minecraft:spruce_checked"
+        },
+        {
+          "chance": 0.1,
+          "feature": "minecraft:fancy_oak_checked"
+        },
+        {
+          "chance": 0.0125,
+          "feature": "minecraft:fallen_oak_tree"
+        }
+      ]
+    }
+  },
+  "minecraft:vines": {
+    "type": "minecraft:vines",
+    "config": {}
+  },
+  "minecraft:wildflowers_birch_forest": {
+    "type": "minecraft:flower",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "to_place": {
+              "type": "minecraft:weighted_state_provider",
+              "entries": [
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "north",
+                      "flower_amount": "1"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "east",
+                      "flower_amount": "1"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "south",
+                      "flower_amount": "1"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "west",
+                      "flower_amount": "1"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "north",
+                      "flower_amount": "2"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "east",
+                      "flower_amount": "2"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "south",
+                      "flower_amount": "2"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "west",
+                      "flower_amount": "2"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "north",
+                      "flower_amount": "3"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "east",
+                      "flower_amount": "3"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "south",
+                      "flower_amount": "3"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "west",
+                      "flower_amount": "3"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "north",
+                      "flower_amount": "4"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "east",
+                      "flower_amount": "4"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "south",
+                      "flower_amount": "4"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "west",
+                      "flower_amount": "4"
+                    }
+                  },
+                  "weight": 1
+                }
+              ]
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:matching_blocks",
+              "blocks": "minecraft:air"
+            }
+          }
+        ]
+      },
+      "tries": 64,
+      "xz_spread": 6,
+      "y_spread": 2
+    }
+  },
+  "minecraft:wildflowers_meadow": {
+    "type": "minecraft:flower",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "to_place": {
+              "type": "minecraft:weighted_state_provider",
+              "entries": [
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "north",
+                      "flower_amount": "1"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "east",
+                      "flower_amount": "1"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "south",
+                      "flower_amount": "1"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "west",
+                      "flower_amount": "1"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "north",
+                      "flower_amount": "2"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "east",
+                      "flower_amount": "2"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "south",
+                      "flower_amount": "2"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "west",
+                      "flower_amount": "2"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "north",
+                      "flower_amount": "3"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "east",
+                      "flower_amount": "3"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "south",
+                      "flower_amount": "3"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "west",
+                      "flower_amount": "3"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "north",
+                      "flower_amount": "4"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "east",
+                      "flower_amount": "4"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "south",
+                      "flower_amount": "4"
+                    }
+                  },
+                  "weight": 1
+                },
+                {
+                  "data": {
+                    "Name": "minecraft:wildflowers",
+                    "Properties": {
+                      "facing": "west",
+                      "flower_amount": "4"
+                    }
+                  },
+                  "weight": 1
+                }
+              ]
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:matching_blocks",
+              "blocks": "minecraft:air"
+            }
+          }
+        ]
+      },
+      "tries": 8,
+      "xz_spread": 6,
+      "y_spread": 2
+    }
+  }
+}

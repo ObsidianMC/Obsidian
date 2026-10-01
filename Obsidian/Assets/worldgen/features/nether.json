@@ -1,0 +1,450 @@
+{
+  "minecraft:basalt_blobs": {
+    "type": "minecraft:netherrack_replace_blobs",
+    "config": {
+      "radius": {
+        "type": "minecraft:uniform",
+        "max_inclusive": 7,
+        "min_inclusive": 3
+      },
+      "state": {
+        "Name": "minecraft:basalt",
+        "Properties": {
+          "axis": "y"
+        }
+      },
+      "target": {
+        "Name": "minecraft:netherrack"
+      }
+    }
+  },
+  "minecraft:basalt_pillar": {
+    "type": "minecraft:basalt_pillar",
+    "config": {}
+  },
+  "minecraft:blackstone_blobs": {
+    "type": "minecraft:netherrack_replace_blobs",
+    "config": {
+      "radius": {
+        "type": "minecraft:uniform",
+        "max_inclusive": 7,
+        "min_inclusive": 3
+      },
+      "state": {
+        "Name": "minecraft:blackstone"
+      },
+      "target": {
+        "Name": "minecraft:netherrack"
+      }
+    }
+  },
+  "minecraft:crimson_forest_vegetation": {
+    "type": "minecraft:nether_forest_vegetation",
+    "config": {
+      "spread_height": 4,
+      "spread_width": 8,
+      "state_provider": {
+        "type": "minecraft:weighted_state_provider",
+        "entries": [
+          {
+            "data": {
+              "Name": "minecraft:crimson_roots"
+            },
+            "weight": 87
+          },
+          {
+            "data": {
+              "Name": "minecraft:crimson_fungus"
+            },
+            "weight": 11
+          },
+          {
+            "data": {
+              "Name": "minecraft:warped_fungus"
+            },
+            "weight": 1
+          }
+        ]
+      }
+    }
+  },
+  "minecraft:crimson_forest_vegetation_bonemeal": {
+    "type": "minecraft:nether_forest_vegetation",
+    "config": {
+      "spread_height": 1,
+      "spread_width": 3,
+      "state_provider": {
+        "type": "minecraft:weighted_state_provider",
+        "entries": [
+          {
+            "data": {
+              "Name": "minecraft:crimson_roots"
+            },
+            "weight": 87
+          },
+          {
+            "data": {
+              "Name": "minecraft:crimson_fungus"
+            },
+            "weight": 11
+          },
+          {
+            "data": {
+              "Name": "minecraft:warped_fungus"
+            },
+            "weight": 1
+          }
+        ]
+      }
+    }
+  },
+  "minecraft:delta": {
+    "type": "minecraft:delta_feature",
+    "config": {
+      "contents": {
+        "Name": "minecraft:lava",
+        "Properties": {
+          "level": "0"
+        }
+      },
+      "rim": {
+        "Name": "minecraft:magma_block"
+      },
+      "rim_size": {
+        "type": "minecraft:uniform",
+        "max_inclusive": 2,
+        "min_inclusive": 0
+      },
+      "size": {
+        "type": "minecraft:uniform",
+        "max_inclusive": 7,
+        "min_inclusive": 3
+      }
+    }
+  },
+  "minecraft:glowstone_extra": {
+    "type": "minecraft:glowstone_blob",
+    "config": {}
+  },
+  "minecraft:large_basalt_columns": {
+    "type": "minecraft:basalt_columns",
+    "config": {
+      "height": {
+        "type": "minecraft:uniform",
+        "max_inclusive": 10,
+        "min_inclusive": 5
+      },
+      "reach": {
+        "type": "minecraft:uniform",
+        "max_inclusive": 3,
+        "min_inclusive": 2
+      }
+    }
+  },
+  "minecraft:nether_sprouts": {
+    "type": "minecraft:nether_forest_vegetation",
+    "config": {
+      "spread_height": 4,
+      "spread_width": 8,
+      "state_provider": {
+        "type": "minecraft:simple_state_provider",
+        "state": {
+          "Name": "minecraft:nether_sprouts"
+        }
+      }
+    }
+  },
+  "minecraft:nether_sprouts_bonemeal": {
+    "type": "minecraft:nether_forest_vegetation",
+    "config": {
+      "spread_height": 1,
+      "spread_width": 3,
+      "state_provider": {
+        "type": "minecraft:simple_state_provider",
+        "state": {
+          "Name": "minecraft:nether_sprouts"
+        }
+      }
+    }
+  },
+  "minecraft:patch_crimson_roots": {
+    "type": "minecraft:random_patch",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "to_place": {
+              "type": "minecraft:simple_state_provider",
+              "state": {
+                "Name": "minecraft:crimson_roots"
+              }
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:matching_blocks",
+              "blocks": "minecraft:air"
+            }
+          }
+        ]
+      },
+      "tries": 96,
+      "xz_spread": 7,
+      "y_spread": 3
+    }
+  },
+  "minecraft:patch_fire": {
+    "type": "minecraft:random_patch",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "to_place": {
+              "type": "minecraft:simple_state_provider",
+              "state": {
+                "Name": "minecraft:fire",
+                "Properties": {
+                  "age": "0",
+                  "east": "false",
+                  "north": "false",
+                  "south": "false",
+                  "up": "false",
+                  "west": "false"
+                }
+              }
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:all_of",
+              "predicates": [
+                {
+                  "type": "minecraft:matching_blocks",
+                  "blocks": "minecraft:air"
+                },
+                {
+                  "type": "minecraft:matching_blocks",
+                  "blocks": "minecraft:netherrack",
+                  "offset": [
+                    0,
+                    -1,
+                    0
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "tries": 96,
+      "xz_spread": 7,
+      "y_spread": 3
+    }
+  },
+  "minecraft:patch_soul_fire": {
+    "type": "minecraft:random_patch",
+    "config": {
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "config": {
+            "to_place": {
+              "type": "minecraft:simple_state_provider",
+              "state": {
+                "Name": "minecraft:soul_fire"
+              }
+            }
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:block_predicate_filter",
+            "predicate": {
+              "type": "minecraft:all_of",
+              "predicates": [
+                {
+                  "type": "minecraft:matching_blocks",
+                  "blocks": "minecraft:air"
+                },
+                {
+                  "type": "minecraft:matching_blocks",
+                  "blocks": "minecraft:soul_soil",
+                  "offset": [
+                    0,
+                    -1,
+                    0
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "tries": 96,
+      "xz_spread": 7,
+      "y_spread": 3
+    }
+  },
+  "minecraft:small_basalt_columns": {
+    "type": "minecraft:basalt_columns",
+    "config": {
+      "height": {
+        "type": "minecraft:uniform",
+        "max_inclusive": 4,
+        "min_inclusive": 1
+      },
+      "reach": 1
+    }
+  },
+  "minecraft:spring_lava_nether": {
+    "type": "minecraft:spring_feature",
+    "config": {
+      "hole_count": 1,
+      "requires_block_below": true,
+      "rock_count": 4,
+      "state": {
+        "Name": "minecraft:lava",
+        "Properties": {
+          "falling": "true"
+        }
+      },
+      "valid_blocks": [
+        "minecraft:netherrack",
+        "minecraft:soul_sand",
+        "minecraft:gravel",
+        "minecraft:magma_block",
+        "minecraft:blackstone"
+      ]
+    }
+  },
+  "minecraft:spring_nether_closed": {
+    "type": "minecraft:spring_feature",
+    "config": {
+      "hole_count": 0,
+      "requires_block_below": false,
+      "rock_count": 5,
+      "state": {
+        "Name": "minecraft:lava",
+        "Properties": {
+          "falling": "true"
+        }
+      },
+      "valid_blocks": "minecraft:netherrack"
+    }
+  },
+  "minecraft:spring_nether_open": {
+    "type": "minecraft:spring_feature",
+    "config": {
+      "hole_count": 1,
+      "requires_block_below": false,
+      "rock_count": 4,
+      "state": {
+        "Name": "minecraft:lava",
+        "Properties": {
+          "falling": "true"
+        }
+      },
+      "valid_blocks": "minecraft:netherrack"
+    }
+  },
+  "minecraft:twisting_vines": {
+    "type": "minecraft:twisting_vines",
+    "config": {
+      "max_height": 8,
+      "spread_height": 4,
+      "spread_width": 8
+    }
+  },
+  "minecraft:twisting_vines_bonemeal": {
+    "type": "minecraft:twisting_vines",
+    "config": {
+      "max_height": 2,
+      "spread_height": 1,
+      "spread_width": 3
+    }
+  },
+  "minecraft:warped_forest_vegetation": {
+    "type": "minecraft:nether_forest_vegetation",
+    "config": {
+      "spread_height": 4,
+      "spread_width": 8,
+      "state_provider": {
+        "type": "minecraft:weighted_state_provider",
+        "entries": [
+          {
+            "data": {
+              "Name": "minecraft:warped_roots"
+            },
+            "weight": 85
+          },
+          {
+            "data": {
+              "Name": "minecraft:crimson_roots"
+            },
+            "weight": 1
+          },
+          {
+            "data": {
+              "Name": "minecraft:warped_fungus"
+            },
+            "weight": 13
+          },
+          {
+            "data": {
+              "Name": "minecraft:crimson_fungus"
+            },
+            "weight": 1
+          }
+        ]
+      }
+    }
+  },
+  "minecraft:warped_forest_vegetation_bonemeal": {
+    "type": "minecraft:nether_forest_vegetation",
+    "config": {
+      "spread_height": 1,
+      "spread_width": 3,
+      "state_provider": {
+        "type": "minecraft:weighted_state_provider",
+        "entries": [
+          {
+            "data": {
+              "Name": "minecraft:warped_roots"
+            },
+            "weight": 85
+          },
+          {
+            "data": {
+              "Name": "minecraft:crimson_roots"
+            },
+            "weight": 1
+          },
+          {
+            "data": {
+              "Name": "minecraft:warped_fungus"
+            },
+            "weight": 13
+          },
+          {
+            "data": {
+              "Name": "minecraft:crimson_fungus"
+            },
+            "weight": 1
+          }
+        ]
+      }
+    }
+  },
+  "minecraft:weeping_vines": {
+    "type": "minecraft:weeping_vines",
+    "config": {}
+  }
+}

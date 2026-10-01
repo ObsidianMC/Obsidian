@@ -63,7 +63,7 @@ internal sealed class TerrainGenerator
                     var column = localZ * 16 + localX;
                     worldSurface[column] = Math.Max(worldSurface[column], y + 1);
 
-                    if (!block.IsLiquid)
+                    if (block.BlocksMotion())
                         oceanFloor[column] = Math.Max(oceanFloor[column], y + 1);
                 }
             }

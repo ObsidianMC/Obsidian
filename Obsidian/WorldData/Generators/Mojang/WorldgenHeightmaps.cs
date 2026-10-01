@@ -11,8 +11,7 @@ internal static class WorldgenHeightmaps
     /// matching block, like vanilla.
     /// </summary>
     /// <remarks>
-    /// The ocean floor counts every non-air, non-fluid block as motion blocking, which holds for the
-    /// blocks placed by terrain, surface and carver steps.
+    /// The ocean floor stops at the first block that blocks motion, so it passes through fluids.
     /// </remarks>
     public static void Update(IChunk chunk, int minY, int height)
     {
@@ -36,7 +35,7 @@ internal static class WorldgenHeightmaps
                     if (worldSurface[column] == minY)
                         worldSurface[column] = y + 1;
 
-                    if (!block.IsLiquid)
+                    if (block.BlocksMotion())
                     {
                         oceanFloor[column] = y + 1;
                         break;

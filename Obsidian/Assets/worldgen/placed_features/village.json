@@ -1,0 +1,106 @@
+{
+  "minecraft:acacia": {
+    "feature": "minecraft:acacia",
+    "placement": [
+      {
+        "type": "minecraft:block_predicate_filter",
+        "predicate": {
+          "type": "minecraft:would_survive",
+          "state": {
+            "Name": "minecraft:acacia_sapling",
+            "Properties": {
+              "stage": "0"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "minecraft:flower_plain": {
+    "feature": "minecraft:flower_plain",
+    "placement": []
+  },
+  "minecraft:oak": {
+    "feature": "minecraft:oak",
+    "placement": [
+      {
+        "type": "minecraft:block_predicate_filter",
+        "predicate": {
+          "type": "minecraft:would_survive",
+          "state": {
+            "Name": "minecraft:oak_sapling",
+            "Properties": {
+              "stage": "0"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "minecraft:patch_berry_bush": {
+    "feature": "minecraft:patch_berry_bush",
+    "placement": []
+  },
+  "minecraft:patch_cactus": {
+    "feature": "minecraft:patch_cactus",
+    "placement": []
+  },
+  "minecraft:patch_taiga_grass": {
+    "feature": "minecraft:patch_taiga_grass",
+    "placement": []
+  },
+  "minecraft:pile_hay": {
+    "feature": "minecraft:pile_hay",
+    "placement": []
+  },
+  "minecraft:pile_ice": {
+    "feature": "minecraft:pile_ice",
+    "placement": []
+  },
+  "minecraft:pile_melon": {
+    "feature": "minecraft:pile_melon",
+    "placement": []
+  },
+  "minecraft:pile_pumpkin": {
+    "feature": "minecraft:pile_pumpkin",
+    "placement": []
+  },
+  "minecraft:pile_snow": {
+    "feature": "minecraft:pile_snow",
+    "placement": []
+  },
+  "minecraft:pine": {
+    "feature": "minecraft:pine",
+    "placement": [
+      {
+        "type": "minecraft:block_predicate_filter",
+        "predicate": {
+          "type": "minecraft:would_survive",
+          "state": {
+            "Name": "minecraft:spruce_sapling",
+            "Properties": {
+              "stage": "0"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "minecraft:spruce": {
+    "feature": "minecraft:spruce",
+    "placement": [
+      {
+        "type": "minecraft:block_predicate_filter",
+        "predicate": {
+          "type": "minecraft:would_survive",
+          "state": {
+            "Name": "minecraft:spruce_sapling",
+            "Properties": {
+              "stage": "0"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

@@ -1,10 +1,11 @@
 using Obsidian.API.World.Generator.Noise;
 using Obsidian.WorldData.Generators.Mojang.Carvers;
+using Obsidian.WorldData.Generators.Mojang.Features;
 
 namespace Obsidian.WorldData.Generators.Mojang;
 
 /// <summary>
-/// Runs the vanilla overworld generation steps (biomes, noise, surface, carvers) for a level.
+/// Runs the vanilla overworld generation steps (biomes, noise, surface, carvers, features) for a level.
 /// </summary>
 internal sealed class ChunkBuilder
 {
@@ -13,6 +14,7 @@ internal sealed class ChunkBuilder
     private readonly SurfaceBuilder surfaceBuilder;
     private readonly MultiNoiseBiomeSource biomeSource;
     private readonly CarverStep carverStep;
+    private readonly FeatureDecorator featureDecorator;
 
     public RandomState RandomState { get; }
 
@@ -26,6 +28,7 @@ internal sealed class ChunkBuilder
         this.biomeSource = MultiNoiseBiomeSource.Overworld(this.RandomState);
         this.surfaceBuilder = new SurfaceBuilder(this.RandomState, this.biomeSource);
         this.carverStep = new CarverStep(this.RandomState, this.surfaceBuilder, this.biomeSource);
+        this.featureDecorator = new FeatureDecorator(this.biomeSource.PossibleBiomes, BiomeFeatures.All);
     }
 
     /// <param name="chunk">Chunk to fill.</param>
@@ -67,5 +70,24 @@ internal sealed class ChunkBuilder
     {
         this.carverStep.Apply(chunk, fluidUpdates);
         WorldgenHeightmaps.Update(chunk, this.settings.Noise.MinY, this.settings.Noise.Height);
+    }
+
+    /// <summary>
+    /// Places the biome features of chunk (<paramref name="chunkX"/>, <paramref name="chunkZ"/>).
+    /// </summary>
+    /// <param name="area">The chunk and its 8 neighbors, all past the carvers step. Features may write into any of them.</param>
+    /// <param name="onPlaced">Optional callback for each placed feature (step, global index, feature, placed anything).</param>
+    public void Decorate(IReadOnlyDictionary<(int X, int Z), IChunk> area, int chunkX, int chunkZ,
+        Action<int, int, PlacedFeature, bool>? onPlaced = null)
+    {
+        var noise = this.settings.Noise;
+        var region = new WorldGenRegion(area, chunkX, chunkZ, this.RandomState.Seed, noise.MinY, noise.Height, this.settings.SeaLevel, this.biomeSource);
+
+        // Like vanilla, only the 3x3 chunks around the decorated chunk contribute biomes.
+        var neighbors = area.Where(entry => Math.Abs(entry.Key.X - chunkX) <= 1 && Math.Abs(entry.Key.Z - chunkZ) <= 1)
+            .Select(entry => entry.Value)
+            .ToArray();
+
+        this.featureDecorator.Decorate(region, neighbors, chunkX, chunkZ, onPlaced);
     }
 }

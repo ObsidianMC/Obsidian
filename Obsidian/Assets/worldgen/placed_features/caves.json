@@ -1,0 +1,685 @@
+{
+  "minecraft:amethyst_geode": {
+    "feature": "minecraft:amethyst_geode",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 24
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:uniform",
+          "max_inclusive": {
+            "absolute": 30
+          },
+          "min_inclusive": {
+            "above_bottom": 6
+          }
+        }
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:cave_vines": {
+    "feature": "minecraft:cave_vine",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": 188
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:uniform",
+          "max_inclusive": {
+            "absolute": 256
+          },
+          "min_inclusive": {
+            "above_bottom": 0
+          }
+        }
+      },
+      {
+        "type": "minecraft:environment_scan",
+        "allowed_search_condition": {
+          "type": "minecraft:matching_blocks",
+          "blocks": "minecraft:air"
+        },
+        "direction_of_search": "up",
+        "max_steps": 12,
+        "target_condition": {
+          "type": "minecraft:has_sturdy_face",
+          "direction": "down"
+        }
+      },
+      {
+        "type": "minecraft:random_offset",
+        "xz_spread": 0,
+        "y_spread": -1
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:classic_vines_cave_feature": {
+    "feature": "minecraft:vines",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": 256
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:uniform",
+          "max_inclusive": {
+            "absolute": 256
+          },
+          "min_inclusive": {
+            "above_bottom": 0
+          }
+        }
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:dripstone_cluster": {
+    "feature": "minecraft:dripstone_cluster",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:uniform",
+          "max_inclusive": 96,
+          "min_inclusive": 48
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:uniform",
+          "max_inclusive": {
+            "absolute": 256
+          },
+          "min_inclusive": {
+            "above_bottom": 0
+          }
+        }
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:fossil_lower": {
+    "feature": "minecraft:fossil_diamonds",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 64
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:uniform",
+          "max_inclusive": {
+            "absolute": -8
+          },
+          "min_inclusive": {
+            "above_bottom": 0
+          }
+        }
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:fossil_upper": {
+    "feature": "minecraft:fossil_coal",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 64
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:uniform",
+          "max_inclusive": {
+            "below_top": 0
+          },
+          "min_inclusive": {
+            "absolute": 0
+          }
+        }
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:glow_lichen": {
+    "feature": "minecraft:glow_lichen",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:uniform",
+          "max_inclusive": 157,
+          "min_inclusive": 104
+        }
+      },
+      {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:uniform",
+          "max_inclusive": {
+            "absolute": 256
+          },
+          "min_inclusive": {
+            "above_bottom": 0
+          }
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:surface_relative_threshold_filter",
+        "heightmap": "OCEAN_FLOOR_WG",
+        "max_inclusive": -13
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:large_dripstone": {
+    "feature": "minecraft:large_dripstone",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:uniform",
+          "max_inclusive": 48,
+          "min_inclusive": 10
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:uniform",
+          "max_inclusive": {
+            "absolute": 256
+          },
+          "min_inclusive": {
+            "above_bottom": 0
+          }
+        }
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:lush_caves_ceiling_vegetation": {
+    "feature": "minecraft:moss_patch_ceiling",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": 125
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:uniform",
+          "max_inclusive": {
+            "absolute": 256
+          },
+          "min_inclusive": {
+            "above_bottom": 0
+          }
+        }
+      },
+      {
+        "type": "minecraft:environment_scan",
+        "allowed_search_condition": {
+          "type": "minecraft:matching_blocks",
+          "blocks": "minecraft:air"
+        },
+        "direction_of_search": "up",
+        "max_steps": 12,
+        "target_condition": {
+          "type": "minecraft:solid"
+        }
+      },
+      {
+        "type": "minecraft:random_offset",
+        "xz_spread": 0,
+        "y_spread": -1
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:lush_caves_clay": {
+    "feature": "minecraft:lush_caves_clay",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": 62
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:uniform",
+          "max_inclusive": {
+            "absolute": 256
+          },
+          "min_inclusive": {
+            "above_bottom": 0
+          }
+        }
+      },
+      {
+        "type": "minecraft:environment_scan",
+        "allowed_search_condition": {
+          "type": "minecraft:matching_blocks",
+          "blocks": "minecraft:air"
+        },
+        "direction_of_search": "down",
+        "max_steps": 12,
+        "target_condition": {
+          "type": "minecraft:solid"
+        }
+      },
+      {
+        "type": "minecraft:random_offset",
+        "xz_spread": 0,
+        "y_spread": 1
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:lush_caves_vegetation": {
+    "feature": "minecraft:moss_patch",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": 125
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:uniform",
+          "max_inclusive": {
+            "absolute": 256
+          },
+          "min_inclusive": {
+            "above_bottom": 0
+          }
+        }
+      },
+      {
+        "type": "minecraft:environment_scan",
+        "allowed_search_condition": {
+          "type": "minecraft:matching_blocks",
+          "blocks": "minecraft:air"
+        },
+        "direction_of_search": "down",
+        "max_steps": 12,
+        "target_condition": {
+          "type": "minecraft:solid"
+        }
+      },
+      {
+        "type": "minecraft:random_offset",
+        "xz_spread": 0,
+        "y_spread": 1
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:monster_room": {
+    "feature": "minecraft:monster_room",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": 10
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:uniform",
+          "max_inclusive": {
+            "below_top": 0
+          },
+          "min_inclusive": {
+            "absolute": 0
+          }
+        }
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:monster_room_deep": {
+    "feature": "minecraft:monster_room",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": 4
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:uniform",
+          "max_inclusive": {
+            "absolute": -1
+          },
+          "min_inclusive": {
+            "above_bottom": 6
+          }
+        }
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:pointed_dripstone": {
+    "feature": "minecraft:pointed_dripstone",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:uniform",
+          "max_inclusive": 256,
+          "min_inclusive": 192
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:uniform",
+          "max_inclusive": {
+            "absolute": 256
+          },
+          "min_inclusive": {
+            "above_bottom": 0
+          }
+        }
+      },
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:uniform",
+          "max_inclusive": 5,
+          "min_inclusive": 1
+        }
+      },
+      {
+        "type": "minecraft:random_offset",
+        "xz_spread": {
+          "type": "minecraft:clamped_normal",
+          "deviation": 3.0,
+          "max_inclusive": 10,
+          "mean": 0.0,
+          "min_inclusive": -10
+        },
+        "y_spread": {
+          "type": "minecraft:clamped_normal",
+          "deviation": 0.6,
+          "max_inclusive": 2,
+          "mean": 0.0,
+          "min_inclusive": -2
+        }
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:rooted_azalea_tree": {
+    "feature": "minecraft:rooted_azalea_tree",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:uniform",
+          "max_inclusive": 2,
+          "min_inclusive": 1
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:uniform",
+          "max_inclusive": {
+            "absolute": 256
+          },
+          "min_inclusive": {
+            "above_bottom": 0
+          }
+        }
+      },
+      {
+        "type": "minecraft:environment_scan",
+        "allowed_search_condition": {
+          "type": "minecraft:matching_blocks",
+          "blocks": "minecraft:air"
+        },
+        "direction_of_search": "up",
+        "max_steps": 12,
+        "target_condition": {
+          "type": "minecraft:solid"
+        }
+      },
+      {
+        "type": "minecraft:random_offset",
+        "xz_spread": 0,
+        "y_spread": -1
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:sculk_patch_ancient_city": {
+    "feature": "minecraft:sculk_patch_ancient_city",
+    "placement": []
+  },
+  "minecraft:sculk_patch_deep_dark": {
+    "feature": "minecraft:sculk_patch_deep_dark",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": 256
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:uniform",
+          "max_inclusive": {
+            "absolute": 256
+          },
+          "min_inclusive": {
+            "above_bottom": 0
+          }
+        }
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:sculk_vein": {
+    "feature": "minecraft:sculk_vein",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:uniform",
+          "max_inclusive": 250,
+          "min_inclusive": 204
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:uniform",
+          "max_inclusive": {
+            "absolute": 256
+          },
+          "min_inclusive": {
+            "above_bottom": 0
+          }
+        }
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:spore_blossom": {
+    "feature": "minecraft:spore_blossom",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": 25
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:uniform",
+          "max_inclusive": {
+            "absolute": 256
+          },
+          "min_inclusive": {
+            "above_bottom": 0
+          }
+        }
+      },
+      {
+        "type": "minecraft:environment_scan",
+        "allowed_search_condition": {
+          "type": "minecraft:matching_blocks",
+          "blocks": "minecraft:air"
+        },
+        "direction_of_search": "up",
+        "max_steps": 12,
+        "target_condition": {
+          "type": "minecraft:solid"
+        }
+      },
+      {
+        "type": "minecraft:random_offset",
+        "xz_spread": 0,
+        "y_spread": -1
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:underwater_magma": {
+    "feature": "minecraft:underwater_magma",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:uniform",
+          "max_inclusive": 52,
+          "min_inclusive": 44
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:uniform",
+          "max_inclusive": {
+            "absolute": 256
+          },
+          "min_inclusive": {
+            "above_bottom": 0
+          }
+        }
+      },
+      {
+        "type": "minecraft:surface_relative_threshold_filter",
+        "heightmap": "OCEAN_FLOOR_WG",
+        "max_inclusive": -2
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  }
+}

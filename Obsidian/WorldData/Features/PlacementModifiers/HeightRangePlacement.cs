@@ -1,18 +1,17 @@
-﻿namespace Obsidian.WorldData.Features.PlacementModifiers;
+﻿using Obsidian.API.World.Generator.RandomSources;
+
+namespace Obsidian.WorldData.Features.PlacementModifiers;
 
 /// <summary>
-/// Sets the Y coordinate to a value provided by a height provider. 
-/// Returns the new position.
+/// Sets the position's Y from a height provider.
 /// </summary>
 [ConfiguredFeatureProperty("minecraft:height_range")]
 public sealed class HeightRangePlacement : PlacementModifierBase
 {
-    public override string Type { get; internal init; } = "minecraft:height_range";
+    public override string Type => "minecraft:height_range";
 
-    /// <summary>
-    /// The new Y coordinate.
-    /// </summary>
-    public required IHeightProvider HeightProvider { get; init; }
+    public required IHeightProvider Height { get; init; }
 
-    protected override bool ShouldPlace(PlacementContext context) => throw new NotImplementedException();
+    public override IEnumerable<Vector> GetPositions(PlacementContext context, IRandomSource random, Vector position) =>
+        [new Vector(position.X, this.Height.Sample(random, context.Generation), position.Z)];
 }

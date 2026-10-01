@@ -8,3 +8,6 @@ Rule ID | Category | Severity | Notes
 DBG001 | SerializationMethodGeneration | Warning | DiagnosticDescriptors
 DBG002 | SerializationMethodGeneration | Warning | DiagnosticDescriptors
 DBG003 | SerializationMethodGeneration | Warning | DiagnosticDescriptors
+OBSWG001 | WorldgenFeatures | Warning | WorldgenFeatureRegistryGenerator
+OBSWG002 | WorldgenFeatures | Warning | WorldgenFeatureRegistryGenerator
+OBSWG003 | WorldgenFeatures | Warning | WorldgenFeatureRegistryGenerator

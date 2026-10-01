@@ -1,171 +1,50 @@
-﻿using Obsidian.API.World.Features;
-using Obsidian.API.World.Features.Tree;
-using System.ComponentModel.DataAnnotations;
+using Obsidian.API.World.Generator.RandomSources;
 
 namespace Obsidian.WorldData.Features.Tree.Placers.Foliage;
 
 /// <summary>
-/// Foliage placer for cherry trees - creates a rounded canopy with holes and hanging leaves.
+/// Cherry canopy: wide layered rows with random holes and leaves hanging from the two bottom rows.
 /// </summary>
-[TreeProperty("minecraft:cherry_foliage_placer")]
+[ConfiguredFeatureProperty("minecraft:cherry_foliage_placer")]
 public sealed class CherryFoliagePlacer : FoliagePlacer
 {
-    public override required string Type { get; init; }
+    public required IIntProvider Height { get; init; }
 
-    /// <summary>
-    /// Height of the cherry foliage (4-16 blocks).
-    /// </summary>
-    [Range(4, 16)]
-    public required IIntProvider Height { get; set; }
+    public required float WideBottomLayerHoleChance { get; init; }
 
-    /// <summary>
-    /// Chance for holes on the wide bottom layer edges (0.0-1.0).
-    /// </summary>
-    [Range(0.0, 1.0)]
-    public required float WideBottomLayerHoleChance { get; set; }
+    public required float CornerHoleChance { get; init; }
 
-    /// <summary>
-    /// Chance for holes at corners (0.0-1.0).
-    /// </summary>
-    [Range(0.0, 1.0)]
-    public required float CornerHoleChance { get; set; }
+    public required float HangingLeavesChance { get; init; }
 
-    /// <summary>
-    /// Chance for hanging leaves below the canopy (0.0-1.0).
-    /// </summary>
-    [Range(0.0, 1.0)]
-    public required float HangingLeavesChance { get; set; }
+    public required float HangingLeavesExtensionChance { get; init; }
 
-    /// <summary>
-    /// Chance for hanging leaves to extend an additional block down (0.0-1.0).
-    /// </summary>
-    [Range(0.0, 1.0)]
-    public required float HangingLeavesExtensionChance { get; set; }
+    public override int GetFoliageHeight(IRandomSource random, int treeHeight) => this.Height.Sample(random);
 
-    public override int GetFoliageHeight(Random random, int treeHeight)
+    protected override void CreateFoliage(TreeContext tree, int freeTreeHeight, FoliageAttachment attachment, int foliageHeight,
+        int foliageRadius, int offset)
     {
-        return Height.Get();
+        var doubleTrunk = attachment.DoubleTrunk;
+        var center = attachment.Position + (0, offset, 0);
+        var radius = foliageRadius + attachment.RadiusOffset - 1;
+
+        this.PlaceLeavesRow(tree, center, radius - 2, foliageHeight - 3, doubleTrunk);
+        this.PlaceLeavesRow(tree, center, radius - 1, foliageHeight - 4, doubleTrunk);
+        for (var y = foliageHeight - 5; y >= 0; y--)
+            this.PlaceLeavesRow(tree, center, radius, y, doubleTrunk);
+
+        this.PlaceLeavesRowWithHangingLeavesBelow(tree, center, radius, -1, doubleTrunk, this.HangingLeavesChance, this.HangingLeavesExtensionChance);
+        this.PlaceLeavesRowWithHangingLeavesBelow(tree, center, radius - 1, -2, doubleTrunk, this.HangingLeavesChance, this.HangingLeavesExtensionChance);
     }
 
-    public override async ValueTask<List<Vector>> Place(FeatureContext context, List<Vector> trunkPositions, int treeHeight, IBlock foliageBlock)
+    protected override bool ShouldSkipLocation(IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk)
     {
-        var random = context.Random;
-        var placedPositions = new List<Vector>();
+        if (y == -1 && (dx == radius || dz == radius) && random.NextFloat() < this.WideBottomLayerHoleChance)
+            return true;
 
-        foreach (var attachment in trunkPositions)
-        {
-            int leafRadius = FoliageRadius(random, treeHeight);
-            int offset = GetOffset(random);
-            int foliageHeight = GetFoliageHeight(random, treeHeight);
-            bool doubleTrunk = false; // Cherry trees typically have single trunks
-            int radiusOffset = 0; // Can be from attachment if available
+        var isCorner = dx == radius && dz == radius;
+        if (radius > 2)
+            return isCorner || (dx + dz > radius * 2 - 2 && random.NextFloat() < this.CornerHoleChance);
 
-            var foliagePos = attachment + new Vector(0, offset, 0);
-            int currentRadius = leafRadius + radiusOffset - 1;
-
-            // Top layers - smaller radius
-            // Layer at foliageHeight - 3: radius - 2
-            await FoliagePlacerHelper.PlaceLeavesRow(
-                context.World,
-                random,
-                foliageBlock,
-                foliagePos,
-                currentRadius - 2,
-                foliageHeight - 3,
-                doubleTrunk,
-                (r, dx, y, dz, rad, dt) => ShouldSkipLocation(r, dx, y, dz, rad, dt),
-                placedPositions
-            );
-
-            // Layer at foliageHeight - 4: radius - 1
-            await FoliagePlacerHelper.PlaceLeavesRow(
-                context.World,
-                random,
-                foliageBlock,
-                foliagePos,
-                currentRadius - 1,
-                foliageHeight - 4,
-                doubleTrunk,
-                (r, dx, y, dz, rad, dt) => ShouldSkipLocation(r, dx, y, dz, rad, dt),
-                placedPositions
-            );
-
-            // Main body - full radius from foliageHeight - 5 down to 0
-            for (int y = foliageHeight - 5; y >= 0; y--)
-            {
-                await FoliagePlacerHelper.PlaceLeavesRow(
-                    context.World,
-                    random,
-                    foliageBlock,
-                    foliagePos,
-                    currentRadius,
-                    y,
-                    doubleTrunk,
-                    (r, dx, yy, dz, rad, dt) => ShouldSkipLocation(r, dx, yy, dz, rad, dt),
-                    placedPositions
-                );
-            }
-
-            // Bottom layers with hanging leaves
-            // Layer at y=-1: full radius with hanging leaves
-            await FoliagePlacerHelper.PlaceLeavesRowWithHangingLeaves(
-                context.World,
-                random,
-                foliageBlock,
-                foliagePos,
-                currentRadius,
-                -1,
-                doubleTrunk,
-                HangingLeavesChance,
-                HangingLeavesExtensionChance,
-                (r, dx, y, dz, rad, dt) => ShouldSkipLocation(r, dx, y, dz, rad, dt),
-                placedPositions
-            );
-
-            // Layer at y=-2: radius - 1 with hanging leaves
-            await FoliagePlacerHelper.PlaceLeavesRowWithHangingLeaves(
-                context.World,
-                random,
-                foliageBlock,
-                foliagePos,
-                currentRadius - 1,
-                -2,
-                doubleTrunk,
-                HangingLeavesChance,
-                HangingLeavesExtensionChance,
-                (r, dx, y, dz, rad, dt) => ShouldSkipLocation(r, dx, y, dz, rad, dt),
-                placedPositions
-            );
-        }
-
-        return placedPositions;
-    }
-
-    protected override bool ShouldSkipLocation(Random random, int dx, int y, int dz, int currentRadius, bool doubleTrunk)
-    {
-        // Special logic for the wide bottom layer (y == -1)
-        if (y == -1)
-        {
-            // Skip edge positions with probability on the bottom layer
-            if ((dx == currentRadius || dz == currentRadius) && random.NextSingle() < WideBottomLayerHoleChance)
-            {
-                return true;
-            }
-        }
-
-        // Corner logic for all layers
-        bool isCorner = dx == currentRadius && dz == currentRadius;
-        bool isWideLayer = currentRadius > 2;
-
-        if (isWideLayer)
-        {
-            // For wide layers: skip corners OR positions where dx + dz is large
-            return isCorner || (dx + dz > currentRadius * 2 - 2 && random.NextSingle() < CornerHoleChance);
-        }
-        else
-        {
-            // For narrow layers: only skip corners with probability
-            return isCorner && random.NextSingle() < CornerHoleChance;
-        }
+        return isCorner && random.NextFloat() < this.CornerHoleChance;
     }
 }

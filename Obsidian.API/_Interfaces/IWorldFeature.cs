@@ -3,7 +3,8 @@
 namespace Obsidian.API;
 public interface IWorldFeature : IFeature
 {
-    public ValueTask Place(FeatureContext context);
-
-    public bool CanPlace(FeatureContext context);
+    /// <summary>
+    /// Places the feature. Returns whether anything was placed.
+    /// </summary>
+    public bool Place(FeatureContext context);
 }

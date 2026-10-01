@@ -1,90 +1,35 @@
-﻿using Obsidian.API.World.Features;
-using Obsidian.API.World.Features.Tree;
-using System.ComponentModel.DataAnnotations;
+using Obsidian.API.World.Generator.RandomSources;
 
 namespace Obsidian.WorldData.Features.Tree.Placers.Foliage;
 
 /// <summary>
-/// Foliage placer for pine trees - creates a conical shape similar to spruce but with different radius progression.
+/// Pine foliage: a narrow cone, widening downward and pulling in again at the bottom row.
 /// </summary>
-[TreeProperty("minecraft:pine_foliage_placer")]
+[ConfiguredFeatureProperty("minecraft:pine_foliage_placer")]
 public sealed class PineFoliagePlacer : FoliagePlacer
 {
-    public override required string Type { get; init; }
+    public required IIntProvider Height { get; init; }
 
-    /// <summary>
-    /// Height of the pine foliage cone (0-24 blocks).
-    /// </summary>
-    [Range(0, 24)]
-    public required IIntProvider Height { get; set; }
+    public override int GetFoliageHeight(IRandomSource random, int treeHeight) => this.Height.Sample(random);
 
-    public override int GetFoliageHeight(Random random, int treeHeight)
+    /// <summary>Adds a random extra radius of up to the trunk height.</summary>
+    public override int GetFoliageRadius(IRandomSource random, int trunkHeight) =>
+        base.GetFoliageRadius(random, trunkHeight) + random.NextInt(Math.Max(trunkHeight + 1, 1));
+
+    protected override void CreateFoliage(TreeContext tree, int freeTreeHeight, FoliageAttachment attachment, int foliageHeight,
+        int foliageRadius, int offset)
     {
-        return Height.Get();
-    }
-
-    public override int FoliageRadius(Random random, int trunkHeight)
-    {
-        // Pine trees have variable radius based on trunk height
-        // Base radius plus random variation
-        int baseRadius = base.FoliageRadius(random, trunkHeight);
-        return baseRadius + random.Next(Math.Max(trunkHeight + 1, 1));
-    }
-
-    public override async ValueTask<List<Vector>> Place(FeatureContext context, List<Vector> trunkPositions, int treeHeight, IBlock foliageBlock)
-    {
-        var random = context.Random;
-        var placedPositions = new List<Vector>();
-
-        foreach (var attachment in trunkPositions)
+        var radius = 0;
+        for (var y = offset; y >= offset - foliageHeight; y--)
         {
-            int leafRadius = FoliageRadius(random, treeHeight);
-            int offset = GetOffset(random);
-            int foliageHeight = GetFoliageHeight(random, treeHeight);
-            bool doubleTrunk = false; // Pine trees are single trunk
-            int radiusOffset = 0; // Can be from attachment if available
-
-            var foliagePos = attachment;
-
-            // Start with radius 0 at the top
-            int currentRadius = 0;
-
-            // Place layers from top (offset) down to (offset - foliageHeight)
-            for (int yo = offset; yo >= offset - foliageHeight; yo--)
-            {
-                await FoliagePlacerHelper.PlaceLeavesRow(
-                    context.World,
-                    random,
-                    foliageBlock,
-                    foliagePos,
-                    currentRadius,
-                    yo,
-                    doubleTrunk,
-                    ShouldSkipLocation,
-                    placedPositions
-                );
-
-                // Radius progression logic
-                if (currentRadius >= 1 && yo == offset - foliageHeight + 1)
-                {
-                    // Near the bottom, reduce radius by 1 to taper
-                    currentRadius--;
-                }
-                else if (currentRadius < leafRadius + radiusOffset)
-                {
-                    // Otherwise, keep increasing radius
-                    currentRadius++;
-                }
-            }
+            this.PlaceLeavesRow(tree, attachment.Position, radius, y, attachment.DoubleTrunk);
+            if (radius >= 1 && y == offset - foliageHeight + 1)
+                radius--;
+            else if (radius < foliageRadius + attachment.RadiusOffset)
+                radius++;
         }
-
-        return placedPositions;
     }
 
-    protected override bool ShouldSkipLocation(Random random, int dx, int y, int dz, int currentRadius, bool doubleTrunk)
-    {
-        // Skip outermost corners to create diamond cross-section
-        // Same as spruce foliage
-        return dx == currentRadius && dz == currentRadius && currentRadius > 0;
-    }
+    protected override bool ShouldSkipLocation(IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk) =>
+        dx == radius && dz == radius && radius > 0;
 }

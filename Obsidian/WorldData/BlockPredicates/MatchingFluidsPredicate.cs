@@ -1,20 +1,33 @@
 ﻿namespace Obsidian.WorldData.BlockPredicates;
 
+/// <summary>
+/// Matches when the block's fluid is one of <see cref="Fluids"/> (<c>minecraft:empty</c> matches no fluid).
+/// </summary>
 [ConfiguredFeatureProperty("minecraft:matching_fluids")]
 public sealed class MatchingFluidsPredicate : IBlockPredicate
 {
     public string Type { get; init; } = "minecraft:matching_fluids";
 
-    public List<int> Offset { get; init; } = [0, 0, 0];
+    public Vector Offset { get; init; } = Vector.Zero;
+
     /// <summary>
-    /// The blocks that will match. 
-    /// Can be a Fluid ID or a fluid tag, or a list of fluid IDs.
+    /// Fluid ids or fluid tags (<c>#minecraft:water</c>).
     /// </summary>
-    public required List<string> Fluids { get; init; } = [];
+    public required string[] Fluids { get; init; }
 
-    public bool GetResult(BlockPredicateContext context)
+    private HashSet<FluidKind> Kinds => field ??= [.. this.Fluids.SelectMany(Resolve)];
+
+    public bool Test(IWorldGenLevel level, Vector position) => this.Kinds.Contains(level.GetBlock(position + this.Offset).GetFluid());
+
+    private static IEnumerable<FluidKind> Resolve(string fluid) => fluid switch
     {
-
-        return false;
-    }
+        "minecraft:empty" => [FluidKind.Empty],
+        "minecraft:water" => [FluidKind.Water],
+        "minecraft:flowing_water" => [FluidKind.FlowingWater],
+        "minecraft:lava" => [FluidKind.Lava],
+        "minecraft:flowing_lava" => [FluidKind.FlowingLava],
+        "#minecraft:water" => [FluidKind.Water, FluidKind.FlowingWater],
+        "#minecraft:lava" => [FluidKind.Lava, FluidKind.FlowingLava],
+        _ => throw new InvalidOperationException($"Unknown fluid '{fluid}'.")
+    };
 }

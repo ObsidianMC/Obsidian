@@ -1,0 +1,164 @@
+namespace Obsidian.WorldData.Features;
+
+/// <summary>
+/// Cobblestone dungeons with a spawner and up to two chests, like vanilla's MonsterRoomFeature.
+/// </summary>
+/// <remarks>
+/// Obsidian has no chest or spawner block entities yet, so only the blocks are placed. The random draws vanilla makes for
+/// them (the chest loot seed and the spawner mob) are still consumed, keeping later placements in sync.
+/// </remarks>
+[ConfiguredFeatureClass("minecraft:monster_room")]
+public sealed class MonsterRoomFeature : ConfiguredFeatureBase
+{
+    private static readonly BlockSet featuresCannotReplace = new("#minecraft:features_cannot_replace");
+
+    public override string Type => "minecraft:monster_room";
+
+    private static IBlock CaveAir => field ??= BlocksRegistry.Get(Material.CaveAir);
+
+    private static IBlock Cobblestone => field ??= BlocksRegistry.Get(Material.Cobblestone);
+
+    private static IBlock MossyCobblestone => field ??= BlocksRegistry.Get(Material.MossyCobblestone);
+
+    private static IBlock Chest => field ??= BlocksRegistry.Get(Material.Chest);
+
+    private static IBlock Spawner => field ??= BlocksRegistry.Get(Material.Spawner);
+
+    public override bool Place(FeatureContext context)
+    {
+        var level = context.Level;
+        var random = context.Random;
+        var origin = context.Origin;
+        if (!level.EnsureCanWrite(origin))
+            return false;
+
+        Func<IBlock, bool> canReplace = state => !featuresCannotReplace.Contains(state);
+        var radiusX = random.NextInt(2) + 2;
+        var minX = -radiusX - 1;
+        var maxX = radiusX + 1;
+        var radiusZ = random.NextInt(2) + 2;
+        var minZ = -radiusZ - 1;
+        var maxZ = radiusZ + 1;
+
+        var openings = 0;
+        for (var x = minX; x <= maxX; x++)
+        {
+            for (var y = -1; y <= 4; y++)
+            {
+                for (var z = minZ; z <= maxZ; z++)
+                {
+                    var position = origin + new Vector(x, y, z);
+                    var solid = level.GetBlock(position).IsSolid();
+                    if ((y == -1 || y == 4) && !solid)
+                        return false;
+
+                    if ((x == minX || x == maxX || z == minZ || z == maxZ) && y == 0 && level.GetBlock(position).IsAir
+                        && level.GetBlock(position + Vector.Up).IsAir)
+                    {
+                        openings++;
+                    }
+                }
+            }
+        }
+
+        if (openings < 1 || openings > 5)
+            return false;
+
+        for (var x = minX; x <= maxX; x++)
+        {
+            for (var y = 3; y >= -1; y--)
+            {
+                for (var z = minZ; z <= maxZ; z++)
+                {
+                    var position = origin + new Vector(x, y, z);
+                    var existing = level.GetBlock(position);
+
+                    if (x == minX || y == -1 || z == minZ || x == maxX || y == 4 || z == maxZ)
+                    {
+                        if (position.Y >= level.MinY && !level.GetBlock(position + Vector.Down).IsSolid())
+                            level.SetBlock(position, CaveAir);
+                        else if (existing.IsSolid() && existing.Material != Material.Chest)
+                            FeatureHelpers.SafeSetBlock(level, position, y == -1 && random.NextInt(4) != 0 ? MossyCobblestone : Cobblestone, canReplace);
+                    }
+                    else if (existing.Material is not (Material.Chest or Material.Spawner))
+                    {
+                        FeatureHelpers.SafeSetBlock(level, position, CaveAir, canReplace);
+                    }
+                }
+            }
+        }
+
+        for (var chest = 0; chest < 2; chest++)
+        {
+            for (var attempt = 0; attempt < 3; attempt++)
+            {
+                var position = new Vector(origin.X + random.NextInt(radiusX * 2 + 1) - radiusX, origin.Y,
+                    origin.Z + random.NextInt(radiusZ * 2 + 1) - radiusZ);
+                if (!level.GetBlock(position).IsAir)
+                    continue;
+
+                var walls = 0;
+                foreach (var face in FeatureHelpers.Horizontal)
+                {
+                    if (level.GetBlock(position.Offset(face)).IsSolid())
+                        walls++;
+                }
+
+                if (walls != 1)
+                    continue;
+
+                FeatureHelpers.SafeSetBlock(level, position, Reorient(level, position, Chest), canReplace);
+
+                // RandomizableContainer.setBlockEntityLootTable draws the loot table seed.
+                random.NextLong();
+                break;
+            }
+        }
+
+        FeatureHelpers.SafeSetBlock(level, origin, Spawner, canReplace);
+
+        // Spawner mob: skeleton, zombie, zombie or spider.
+        random.NextInt(4);
+        return true;
+    }
+
+    /// <summary>
+    /// Vanilla <c>StructurePiece.reorient</c>: faces the chest away from its single solid neighbor, or rotates it off walls.
+    /// </summary>
+    private static IBlock Reorient(IWorldGenLevel level, Vector position, IBlock chest)
+    {
+        BlockFace? wall = null;
+        foreach (var face in FeatureHelpers.Horizontal)
+        {
+            var neighbor = level.GetBlock(position.Offset(face));
+            if (neighbor.Material == Material.Chest)
+                return chest;
+
+            if (FeatureHelpers.IsSolidRender(neighbor))
+            {
+                if (wall is not null)
+                {
+                    wall = null;
+                    break;
+                }
+
+                wall = face;
+            }
+        }
+
+        if (wall is not null)
+            return chest.WithProperty("facing", FeatureHelpers.FaceName(wall.Value.Opposite()));
+
+        var facing = FeatureHelpers.ParseFace(chest.GetProperty("facing"));
+        if (FeatureHelpers.IsSolidRender(level.GetBlock(position.Offset(facing))))
+            facing = facing.Opposite();
+
+        if (FeatureHelpers.IsSolidRender(level.GetBlock(position.Offset(facing))))
+            facing = facing.ClockWise();
+
+        if (FeatureHelpers.IsSolidRender(level.GetBlock(position.Offset(facing))))
+            facing = facing.Opposite();
+
+        return chest.WithProperty("facing", FeatureHelpers.FaceName(facing));
+    }
+}

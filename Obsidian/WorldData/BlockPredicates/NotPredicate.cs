@@ -5,11 +5,7 @@ public sealed class NotPredicate : IBlockPredicate
 {
     public string Type { get; init; } = "minecraft:not";
 
-    /// <summary>
-    /// The block predicate to invert.
-    /// </summary>
     public required IBlockPredicate Predicate { get; init; }
 
-    public bool GetResult(BlockPredicateContext context) =>
-         !this.Predicate.GetResult(context);
+    public bool Test(IWorldGenLevel level, Vector position) => !this.Predicate.Test(level, position);
 }

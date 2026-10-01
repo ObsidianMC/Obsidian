@@ -1,14 +1,19 @@
-﻿namespace Obsidian.WorldData.Features.PlacementModifiers;
+﻿using Obsidian.API.World.Generator.RandomSources;
+
+namespace Obsidian.WorldData.Features.PlacementModifiers;
 
 /// <summary>
-/// For both X and Z, it adds a random value between 0 and 15 (both inclusive). 
-/// This is a shortcut for a random_offset modifier with y_spread set to 0 and xz_spread as a uniform int from 0 to 15. 
-/// No additional fields.
+/// Moves the position to a random column of its 16x16 area.
 /// </summary>
 [ConfiguredFeatureProperty("minecraft:in_square")]
 public sealed class InSquarePlacement : PlacementModifierBase
 {
-    public override string Type { get; internal init; } = "minecraft:in_square";
+    public override string Type => "minecraft:in_square";
 
-    protected override bool ShouldPlace(PlacementContext context) => throw new NotImplementedException();
+    public override IEnumerable<Vector> GetPositions(PlacementContext context, IRandomSource random, Vector position)
+    {
+        var x = random.NextInt(16) + position.X;
+        var z = random.NextInt(16) + position.Z;
+        return [new Vector(x, position.Y, z)];
+    }
 }

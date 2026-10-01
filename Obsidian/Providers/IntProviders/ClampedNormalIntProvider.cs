@@ -1,24 +1,31 @@
-﻿namespace Obsidian.Providers.IntProviders;
+﻿using Obsidian.API.World.Generator.RandomSources;
 
+namespace Obsidian.Providers.IntProviders;
+
+/// <summary>
+/// Normally distributed int (<c>Mean</c>, <c>Deviation</c>) clamped to <c>[MinInclusive, MaxInclusive]</c>.
+/// </summary>
 [ConfiguredFeatureProperty(IntProviderTypes.ClampedNormal)]
 public sealed class ClampedNormalIntProvider : IIntProvider
 {
-    public required string Type { get; init; } = IntProviderTypes.ClampedNormal;
+    public string Type { get; init; } = IntProviderTypes.ClampedNormal;
 
-    public IntProviderRangeValue Value { get; init; }
+    public required float Mean { get; init; }
 
-    public float Mean { get; init; }
+    public required float Deviation { get; init; }
 
-    public float Deviation { get; init; }
+    public required int MinInclusive { get; init; }
 
-    public int Get()
+    public required int MaxInclusive { get; init; }
+
+    public int MinValue => this.MinInclusive;
+
+    public int MaxValue => this.MaxInclusive;
+
+    // Vanilla clamps the float normal sample to float bounds, then truncates.
+    public int Sample(IRandomSource random)
     {
-        // Generate normal distribution using Box-Muller transform
-        var u1 = 1.0 - Globals.Random.NextDouble(); // Uniform(0,1]
-        var u2 = 1.0 - Globals.Random.NextDouble();
-        var randStdNormal = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2);
-        var randNormal = this.Mean + this.Deviation * randStdNormal;
-        var value = (int)Math.Round(randNormal);
-        return Math.Clamp(value, this.Value.MinInclusive, this.Value.MaxInclusive);
+        var normal = this.Mean + (float)random.NextGaussian() * this.Deviation;
+        return (int)Math.Clamp(normal, (float)this.MinInclusive, (float)this.MaxInclusive);
     }
 }

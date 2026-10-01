@@ -1,20 +1,17 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Obsidian.API.World.Generator.RandomSources;
 
 namespace Obsidian.WorldData.Features.PlacementModifiers;
 
 /// <summary>
-/// Returns multiple copies of the current block position
+/// Repeats the position <see cref="Count"/> times (sampled once).
 /// </summary>
 [ConfiguredFeatureProperty("minecraft:count")]
 public sealed class CountPlacement : PlacementModifierBase
 {
-    public override string Type { get; internal init; } = "minecraft:count";
+    public override string Type => "minecraft:count";
 
-    /// <summary>
-    /// Value between 0 and 256 (inclusive).
-    /// </summary>
-    [Range(0, 256)]
     public required IIntProvider Count { get; init; }
 
-    protected override bool ShouldPlace(PlacementContext context) => throw new NotImplementedException();
+    public override IEnumerable<Vector> GetPositions(PlacementContext context, IRandomSource random, Vector position) =>
+        Enumerable.Repeat(position, this.Count.Sample(random));
 }

@@ -9,22 +9,30 @@ namespace Obsidian.WorldData.Generators.Mojang;
 /// </summary>
 internal sealed class MultiNoiseBiomeSource : IBiomeSource
 {
-    private static readonly Lazy<BiomeParameterTree<BiomeCodec>> overworldParameters = new(() => LoadParameters("overworld"));
+    private static readonly Lazy<(BiomeParameterTree<BiomeCodec> Tree, IReadOnlyList<BiomeCodec> Biomes)> overworldParameters =
+        new(() => LoadParameters("overworld"));
 
     private readonly ClimateSampler climateSampler;
     private readonly BiomeParameterTree<BiomeCodec> parameters;
 
-    private MultiNoiseBiomeSource(ClimateSampler climateSampler, BiomeParameterTree<BiomeCodec> parameters)
+    /// <summary>
+    /// Every biome this source can return, in the order they first appear in the parameter list (vanilla's
+    /// possibleBiomes order, which decides feature ordering).
+    /// </summary>
+    public IReadOnlyList<BiomeCodec> PossibleBiomes { get; }
+
+    private MultiNoiseBiomeSource(ClimateSampler climateSampler, BiomeParameterTree<BiomeCodec> parameters, IReadOnlyList<BiomeCodec> possibleBiomes)
     {
         this.climateSampler = climateSampler;
         this.parameters = parameters;
+        this.PossibleBiomes = possibleBiomes;
     }
 
     /// <summary>
     /// Creates the source for vanilla's overworld biome layout (the <c>minecraft:overworld</c> parameter list preset).
     /// </summary>
     public static MultiNoiseBiomeSource Overworld(RandomState randomState) =>
-        new(new ClimateSampler(randomState.Router), overworldParameters.Value);
+        new(new ClimateSampler(randomState.Router), overworldParameters.Value.Tree, overworldParameters.Value.Biomes);
 
     public BiomeCodec GetNoiseBiome(int quartX, int quartY, int quartZ) =>
         this.GetNoiseBiome(this.climateSampler, quartX, quartY, quartZ);
@@ -42,7 +50,7 @@ internal sealed class MultiNoiseBiomeSource : IBiomeSource
     /// The files are vanilla's <c>reports/biome_parameters/minecraft/*.json</c>, produced by
     /// <c>java -DbundlerMainClass=net.minecraft.data.Main -jar server.jar --reports</c>. Entry order matters (it decides ties).
     /// </remarks>
-    private static BiomeParameterTree<BiomeCodec> LoadParameters(string preset)
+    private static (BiomeParameterTree<BiomeCodec> Tree, IReadOnlyList<BiomeCodec> Biomes) LoadParameters(string preset)
     {
         using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream($"Obsidian.Assets.biome_parameters.{preset}.json")
             ?? throw new InvalidOperationException($"Missing biome parameter list '{preset}'.");
@@ -69,7 +77,8 @@ internal sealed class MultiNoiseBiomeSource : IBiomeSource
             values.Add((point, biome!));
         }
 
-        return new BiomeParameterTree<BiomeCodec>(values);
+        var possibleBiomes = values.Select(value => value.Item2).DistinctBy(biome => biome.Name).ToArray();
+        return (new BiomeParameterTree<BiomeCodec>(values), possibleBiomes);
     }
 
     /// <summary>

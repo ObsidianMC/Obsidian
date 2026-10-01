@@ -1,76 +1,50 @@
-﻿using Obsidian.API.Utilities;
-using Obsidian.API.World.Features;
-using Obsidian.API.World.Features.Tree;
-using Obsidian.Registries;
-using System.ComponentModel.DataAnnotations;
-
 namespace Obsidian.WorldData.Features.Tree.Placers.Trunk;
 
-[TreeProperty("minecraft:bending_trunk_placer")]
+/// <summary>
+/// Azalea trunk: grows up, bends sideways near the top and continues horizontally for <see cref="BendLength"/> blocks.
+/// </summary>
+[ConfiguredFeatureProperty("minecraft:bending_trunk_placer")]
 public sealed class BendingTrunkPlacer : TrunkPlacer
 {
-    public override required string Type { get; init; }
-
-    [Range(1, 64)]
-    public required IIntProvider BendLength { get; init; }
-
+    /// <summary>Trunk blocks from this height up also get foliage.</summary>
     public int MinHeightForLeaves { get; init; } = 1;
 
-    public override async ValueTask<List<Vector>> Place(FeatureContext context, Vector origin, int treeHeight, IBlock trunkBlock)
+    public required IIntProvider BendLength { get; init; }
+
+    public override List<FoliageAttachment> PlaceTrunk(TreeContext tree, int freeTreeHeight, Vector origin)
     {
-        var random = context.Random;
-        var trunkPositions = new List<Vector>();
+        var random = tree.Random;
+        var direction = TreeDirections.RandomHorizontal(random);
+        var step = direction.ToVector();
+        var top = freeTreeHeight - 1;
+        var cursor = origin;
+        SetDirtAt(tree, cursor + Vector.Down);
 
-        // Pick random horizontal direction
-        var cardinalDirs = Vector.CardinalDirs.ToArray();
-        var direction = cardinalDirs[random.Next(cardinalDirs.Length)];
-
-        int logHeight = treeHeight - 1;
-        var pos = origin;
-        var belowPos = pos + Vector.Down;
-
-        // Set dirt below origin
-        await context.World.SetBlockUntrackedAsync(belowPos, BlocksRegistry.Dirt, false);
-
-        // Place vertical trunk with potential lean at top
-        for (int i = 0; i <= logHeight; i++)
+        var attachments = new List<FoliageAttachment>();
+        for (var i = 0; i <= top; i++)
         {
-            // Start moving horizontally near the top
-            if (i + 1 >= logHeight + random.Next(2))
-            {
-                pos += direction;
-            }
+            if (i + 1 >= top + random.NextInt(2))
+                cursor += step;
 
-            var existingBlock = await context.World.GetBlockAsync(pos);
-            if (existingBlock != null && TagsRegistry.Block.Replaceable.Entries.Contains(existingBlock.RegistryId))
-            {
-                await context.World.SetBlockUntrackedAsync(pos, trunkBlock, false);
-            }
+            if (TreeBlocks.ValidTreePos(tree.Level, cursor))
+                this.PlaceLog(tree, cursor);
 
-            // Add foliage attachment points starting at MinHeightForLeaves
-            if (i >= MinHeightForLeaves)
-            {
-                trunkPositions.Add(pos);
-            }
+            if (i >= this.MinHeightForLeaves)
+                attachments.Add(new FoliageAttachment(cursor, 0, false));
 
-            pos += Vector.Up;
+            cursor += Vector.Up;
         }
 
-        // Extend horizontally in the chosen direction
-        int dirLength = BendLength.Get();
-
-        for (int i = 0; i <= dirLength; i++)
+        var bendLength = this.BendLength.Sample(random);
+        for (var i = 0; i <= bendLength; i++)
         {
-            var existingBlock = await context.World.GetBlockAsync(pos);
-            if (existingBlock != null && TagsRegistry.Block.Replaceable.Entries.Contains(existingBlock.RegistryId))
-            {
-                await context.World.SetBlockUntrackedAsync(pos, trunkBlock, false);
-            }
+            if (TreeBlocks.ValidTreePos(tree.Level, cursor))
+                this.PlaceLog(tree, cursor);
 
-            trunkPositions.Add(pos);
-            pos += direction;
+            attachments.Add(new FoliageAttachment(cursor, 0, false));
+            cursor += step;
         }
 
-        return trunkPositions;
+        return attachments;
     }
 }

@@ -16,6 +16,11 @@ internal static class BiomeTemperature
     private static readonly PerlinSimplexNoise frozenTemperatureNoise = new(new WorldgenRandom(new LegacyRandomSource(3456L)), [-2, -1, 0]);
     private static readonly PerlinSimplexNoise biomeInfoNoise = new(new WorldgenRandom(new LegacyRandomSource(2345L)), [0]);
 
+    /// <summary>
+    /// Vanilla's fixed-seed biome info noise, also used by noise-based placement counts.
+    /// </summary>
+    public static PerlinSimplexNoise BiomeInfoNoise => biomeInfoNoise;
+
     public static bool ColdEnoughToSnow(BiomeCodec biome, int x, int y, int z, int seaLevel) =>
         !(GetTemperature(biome, x, y, z, seaLevel) >= 0.15f);
 
