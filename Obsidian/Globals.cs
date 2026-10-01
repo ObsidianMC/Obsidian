@@ -9,7 +9,7 @@ namespace Obsidian;
 public static class Globals
 {
     public static HttpClient HttpClient { get; } = new();
-    public static XorshiftRandom Random { get; } = new();
+    public static Random Random { get; } = System.Random.Shared;
 
     public static readonly JsonSerializerOptions RegistryJsonOptions = new()
     {
