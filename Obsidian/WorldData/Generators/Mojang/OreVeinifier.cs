@@ -31,6 +31,21 @@ internal static class OreVeinifier
     public static int MaxY { get; } = Math.Max(Copper.MaxY, Iron.MaxY);
 
     /// <summary>
+    /// Whether <see cref="Compute(NoiseChunk, int, int, int, double)"/> may give a vein block for any of these toggles:
+    /// it gives none when the toggle is weaker than the threshold, since the edge roundoff only lowers it.
+    /// </summary>
+    public static bool MayHaveVeins(ReadOnlySpan<double> toggles)
+    {
+        foreach (var toggle in toggles)
+        {
+            if (!(Math.Abs(toggle) < VeininessThreshold))
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// Gets the vein block for a solid position, or <c>null</c> to keep the default block.
     /// </summary>
     /// <remarks>

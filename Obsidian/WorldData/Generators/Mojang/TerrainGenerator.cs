@@ -89,7 +89,7 @@ internal sealed class TerrainGenerator : IStructureTerrain
                     var bearded = cellBeardifier != Beardifier.Empty;
 
                     // A solid cell without veins is all default block, since aquifers leave solid positions alone.
-                    if (!bearded && !hasVeins && IsSolid(densities))
+                    if (!bearded && IsSolid(densities) && !(hasVeins && OreVeinifier.MayHaveVeins(veinToggles)))
                     {
                         for (var inCellY = 0; inCellY < cellHeight; inCellY++)
                         {
