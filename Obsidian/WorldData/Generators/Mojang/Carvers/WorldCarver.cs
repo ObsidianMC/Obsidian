@@ -84,12 +84,19 @@ internal abstract class WorldCarver<TConfiguration> where TConfiguration : Carve
     public abstract void Carve(CarvingContext context, TConfiguration configuration, IRandomSource random, int startChunkX, int startChunkZ);
 
     /// <summary>
-    /// Skips positions inside the ellipsoid; arguments are the relative X, Y, Z (in radii) and the block Y.
+    /// Skips positions inside the ellipsoid. A struct, so each carver's ellipsoid loop is specialized for its check.
     /// </summary>
-    protected delegate bool CarveSkipChecker(double relativeX, double relativeY, double relativeZ, int y);
+    protected interface ISkipChecker
+    {
+        /// <param name="relativeX">X relative to the center, in horizontal radii.</param>
+        /// <param name="relativeY">Y relative to the center, in vertical radii.</param>
+        /// <param name="relativeZ">Z relative to the center, in horizontal radii.</param>
+        /// <param name="y">The block Y.</param>
+        public bool ShouldSkip(double relativeX, double relativeY, double relativeZ, int y);
+    }
 
-    protected void CarveEllipsoid(CarvingContext context, TConfiguration configuration, double x, double y, double z,
-        double horizontalRadius, double verticalRadius, CarveSkipChecker skipChecker)
+    protected void CarveEllipsoid<TSkipChecker>(CarvingContext context, TConfiguration configuration, double x, double y, double z,
+        double horizontalRadius, double verticalRadius, TSkipChecker skipChecker) where TSkipChecker : struct, ISkipChecker
     {
         var chunk = context.Chunk;
         var chunkMinX = chunk.X << 4;
@@ -109,6 +116,18 @@ internal abstract class WorldCarver<TConfiguration> where TConfiguration : Carve
         var minLocalZ = Math.Max(Mth.Floor(z - horizontalRadius) - chunkMinZ - 1, 0);
         var maxLocalZ = Math.Min(Mth.Floor(z + horizontalRadius) - chunkMinZ, 15);
 
+        if (maxBlockY <= minBlockY || maxLocalX < minLocalX || maxLocalZ < minLocalZ)
+            return;
+
+        // Each relative coordinate only depends on its own axis, so it's computed once per ellipsoid rather than per block.
+        Span<double> relativeZs = stackalloc double[maxLocalZ - minLocalZ + 1];
+        for (var localZ = minLocalZ; localZ <= maxLocalZ; localZ++)
+            relativeZs[localZ - minLocalZ] = (chunkMinZ + localZ + 0.5 - z) / horizontalRadius;
+
+        Span<double> relativeYs = stackalloc double[maxBlockY - minBlockY];
+        for (var blockY = maxBlockY; blockY > minBlockY; blockY--)
+            relativeYs[maxBlockY - blockY] = (blockY - 0.5 - y) / verticalRadius;
+
         for (var localX = minLocalX; localX <= maxLocalX; localX++)
         {
             var blockX = chunkMinX + localX;
@@ -116,8 +135,7 @@ internal abstract class WorldCarver<TConfiguration> where TConfiguration : Carve
 
             for (var localZ = minLocalZ; localZ <= maxLocalZ; localZ++)
             {
-                var blockZ = chunkMinZ + localZ;
-                var relativeZ = (blockZ + 0.5 - z) / horizontalRadius;
+                var relativeZ = relativeZs[localZ - minLocalZ];
 
                 if (relativeX * relativeX + relativeZ * relativeZ >= 1.0)
                     continue;
@@ -127,9 +145,9 @@ internal abstract class WorldCarver<TConfiguration> where TConfiguration : Carve
 
                 for (var blockY = maxBlockY; blockY > minBlockY; blockY--)
                 {
-                    var relativeY = (blockY - 0.5 - y) / verticalRadius;
+                    var relativeY = relativeYs[maxBlockY - blockY];
 
-                    if (skipChecker(relativeX, relativeY, relativeZ, blockY) || context.Mask.Get(localX, blockY, localZ))
+                    if (skipChecker.ShouldSkip(relativeX, relativeY, relativeZ, blockY) || context.Mask.Get(localX, blockY, localZ))
                         continue;
 
                     context.Mask.Set(localX, blockY, localZ);
@@ -151,7 +169,7 @@ internal abstract class WorldCarver<TConfiguration> where TConfiguration : Carve
         if (block.Material is Material.GrassBlock or Material.Mycelium)
             surfaceReached = true;
 
-        if (!configuration.Replaceable.Contains(block.RegistryId))
+        if (!configuration.CanReplace(block))
             return;
 
         var x = (chunk.X << 4) + localX;

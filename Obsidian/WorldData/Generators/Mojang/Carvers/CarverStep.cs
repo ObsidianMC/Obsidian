@@ -117,13 +117,17 @@ internal sealed class CarverStep
         };
     }
 
-    private static IReadOnlySet<int> ResolveBlockTag(string tag)
+    private static bool[] ResolveBlockTag(string tag)
     {
         var name = tag.TrimStart('#').Replace("minecraft:", string.Empty);
         var match = TagsRegistry.Block.All.FirstOrDefault(blockTag => blockTag.Name == name)
             ?? throw new InvalidOperationException($"Unknown block tag '{tag}'.");
 
-        return match.Entries.ToHashSet();
+        var flags = new bool[match.Entries.DefaultIfEmpty(-1).Max() + 1];
+        foreach (var id in match.Entries)
+            flags[id] = true;
+
+        return flags;
     }
 
     private interface IConfiguredCarver

@@ -33,8 +33,7 @@ internal sealed class CanyonWorldCarver : WorldCarver<CanyonCarverConfiguration>
         var yawChange = 0.0f;
         var pitchChange = 0.0f;
 
-        CarveSkipChecker skipChecker = (relativeX, relativeY, relativeZ, blockY) =>
-            ShouldSkip(context, widthFactors, relativeX, relativeY, relativeZ, blockY);
+        var skipChecker = new SkipChecker(widthFactors, context.MinY);
 
         for (var index = branchIndex; index < branchCount; index++)
         {
@@ -94,6 +93,9 @@ internal sealed class CanyonWorldCarver : WorldCarver<CanyonCarverConfiguration>
         return factor * verticalRadius * (random.NextFloat() * (1.0f - 0.75f) + 0.75f);
     }
 
-    private static bool ShouldSkip(CarvingContext context, float[] widthFactors, double relativeX, double relativeY, double relativeZ, int y) =>
-        (relativeX * relativeX + relativeZ * relativeZ) * widthFactors[y - context.MinY - 1] + relativeY * relativeY / 6.0 >= 1.0;
+    private readonly struct SkipChecker(float[] widthFactors, int minY) : ISkipChecker
+    {
+        public bool ShouldSkip(double relativeX, double relativeY, double relativeZ, int y) =>
+            (relativeX * relativeX + relativeZ * relativeZ) * widthFactors[y - minY - 1] + relativeY * relativeY / 6.0 >= 1.0;
+    }
 }

@@ -33,6 +33,12 @@ internal sealed class NoiseBasedAquifer : IAquifer
     private readonly int gridSizeX;
     private readonly int gridSizeZ;
 
+    // See GetCandidates.
+    private readonly Candidate[] candidates = new Candidate[12];
+    private int candidatesGridX = int.MinValue;
+    private int candidatesGridY;
+    private int candidatesGridZ;
+
     public bool ShouldScheduleFluidUpdate { get; private set; }
 
     public void ResetFluidUpdate() => this.ShouldScheduleFluidUpdate = false;
@@ -96,41 +102,33 @@ internal sealed class NoiseBasedAquifer : IAquifer
         int distance1 = int.MaxValue, distance2 = int.MaxValue, distance3 = int.MaxValue, distance4 = int.MaxValue;
         int index1 = 0, index2 = 0, index3 = 0, index4 = 0;
 
-        for (var offsetX = 0; offsetX <= 1; offsetX++)
+        foreach (var candidate in this.GetCandidates(gridX, gridY, gridZ))
         {
-            for (var offsetY = -1; offsetY <= 1; offsetY++)
+            var index = candidate.Index;
+            var dx = candidate.X - x;
+            var dy = candidate.Y - y;
+            var dz = candidate.Z - z;
+            var distance = dx * dx + dy * dy + dz * dz;
+
+            if (distance1 >= distance)
             {
-                for (var offsetZ = 0; offsetZ <= 1; offsetZ++)
-                {
-                    var index = this.GetIndex(gridX + offsetX, gridY + offsetY, gridZ + offsetZ);
-                    var location = this.GetAquiferLocation(index, gridX + offsetX, gridY + offsetY, gridZ + offsetZ);
-
-                    var dx = location.X - x;
-                    var dy = location.Y - y;
-                    var dz = location.Z - z;
-                    var distance = dx * dx + dy * dy + dz * dz;
-
-                    if (distance1 >= distance)
-                    {
-                        (index4, index3, index2, index1) = (index3, index2, index1, index);
-                        (distance4, distance3, distance2, distance1) = (distance3, distance2, distance1, distance);
-                    }
-                    else if (distance2 >= distance)
-                    {
-                        (index4, index3, index2) = (index3, index2, index);
-                        (distance4, distance3, distance2) = (distance3, distance2, distance);
-                    }
-                    else if (distance3 >= distance)
-                    {
-                        (index4, index3) = (index3, index);
-                        (distance4, distance3) = (distance3, distance);
-                    }
-                    else if (distance4 >= distance)
-                    {
-                        index4 = index;
-                        distance4 = distance;
-                    }
-                }
+                (index4, index3, index2, index1) = (index3, index2, index1, index);
+                (distance4, distance3, distance2, distance1) = (distance3, distance2, distance1, distance);
+            }
+            else if (distance2 >= distance)
+            {
+                (index4, index3, index2) = (index3, index2, index);
+                (distance4, distance3, distance2) = (distance3, distance2, distance);
+            }
+            else if (distance3 >= distance)
+            {
+                (index4, index3) = (index3, index);
+                (distance4, distance3) = (distance3, distance);
+            }
+            else if (distance4 >= distance)
+            {
+                index4 = index;
+                distance4 = distance;
             }
         }
 
@@ -230,6 +228,33 @@ internal sealed class NoiseBasedAquifer : IAquifer
         }
 
         return 2.0 * (barrierValue + pressure);
+    }
+
+    /// <summary>
+    /// The 12 aquifer centers around grid cell (<paramref name="gridX"/>, <paramref name="gridY"/>, <paramref name="gridZ"/>)
+    /// in search order. Neighboring blocks almost always share a cell, so the last cell's centers are kept.
+    /// </summary>
+    private ReadOnlySpan<Candidate> GetCandidates(int gridX, int gridY, int gridZ)
+    {
+        if (gridX == this.candidatesGridX && gridY == this.candidatesGridY && gridZ == this.candidatesGridZ)
+            return this.candidates;
+
+        var i = 0;
+        for (var offsetX = 0; offsetX <= 1; offsetX++)
+        {
+            for (var offsetY = -1; offsetY <= 1; offsetY++)
+            {
+                for (var offsetZ = 0; offsetZ <= 1; offsetZ++)
+                {
+                    var index = this.GetIndex(gridX + offsetX, gridY + offsetY, gridZ + offsetZ);
+                    var (x, y, z) = this.GetAquiferLocation(index, gridX + offsetX, gridY + offsetY, gridZ + offsetZ);
+                    this.candidates[i++] = new Candidate(index, x, y, z);
+                }
+            }
+        }
+
+        (this.candidatesGridX, this.candidatesGridY, this.candidatesGridZ) = (gridX, gridY, gridZ);
+        return this.candidates;
     }
 
     private int GetIndex(int gridX, int gridY, int gridZ) =>
@@ -377,4 +402,9 @@ internal sealed class NoiseBasedAquifer : IAquifer
     private static int GridZ(int z) => z >> 4;
 
     private static int FromGridZ(int gridZ, int offset) => (gridZ << 4) + offset;
+
+    /// <summary>
+    /// An aquifer center and its index in the caches.
+    /// </summary>
+    private readonly record struct Candidate(int Index, int X, int Y, int Z);
 }

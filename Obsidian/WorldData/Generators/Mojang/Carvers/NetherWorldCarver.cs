@@ -17,7 +17,7 @@ internal sealed class NetherWorldCarver : CaveWorldCarver
     protected override void CarveBlock(CarvingContext context, CaveCarverConfiguration configuration, int localX, int y, int localZ,
         ref bool surfaceReached)
     {
-        if (configuration.Replaceable.Contains(context.Chunk.GetBlock(localX, y, localZ).RegistryId))
+        if (configuration.CanReplace(context.Chunk.GetBlock(localX, y, localZ)))
             context.Chunk.SetBlock(localX, y, localZ, y <= context.MinY + 31 ? BlocksRegistry.Lava : BlocksRegistry.CaveAir);
     }
 }

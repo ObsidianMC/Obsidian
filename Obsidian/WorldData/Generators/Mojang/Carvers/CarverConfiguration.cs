@@ -23,9 +23,15 @@ internal class CarverConfiguration
     public required CarverAnchor LavaLevel { get; init; }
 
     /// <summary>
-    /// Registry ids of the blocks this carver may replace.
+    /// Whether this carver may replace a block, by registry id; ids past the end can't be replaced.
     /// </summary>
-    public required IReadOnlySet<int> Replaceable { get; init; }
+    public required bool[] Replaceable { get; init; }
+
+    public bool CanReplace(IBlock block)
+    {
+        var id = block.RegistryId;
+        return (uint)id < (uint)this.Replaceable.Length && this.Replaceable[id];
+    }
 }
 
 internal sealed class CaveCarverConfiguration : CarverConfiguration

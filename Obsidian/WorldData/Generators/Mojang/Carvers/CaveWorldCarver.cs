@@ -34,7 +34,7 @@ internal class CaveWorldCarver : WorldCarver<CaveCarverConfiguration>
             double verticalRadiusMultiplier = configuration.VerticalRadiusMultiplier.Sample(random);
             double floorLevel = configuration.FloorLevel.Sample(random);
 
-            CarveSkipChecker skipChecker = (relativeX, relativeY, relativeZ, _) => ShouldSkip(relativeX, relativeY, relativeZ, floorLevel);
+            var skipChecker = new SkipChecker(floorLevel);
 
             var tunnelCount = 1;
             if (random.NextInt(4) == 0)
@@ -72,7 +72,7 @@ internal class CaveWorldCarver : WorldCarver<CaveCarverConfiguration>
     }
 
     private void CreateRoom(CarvingContext context, CaveCarverConfiguration configuration, double x, double y, double z,
-        float thickness, double yScale, CarveSkipChecker skipChecker)
+        float thickness, double yScale, SkipChecker skipChecker)
     {
         var horizontalRadius = 1.5 + Mth.Sin((float)(Math.PI / 2)) * thickness;
         var verticalRadius = horizontalRadius * yScale;
@@ -82,7 +82,7 @@ internal class CaveWorldCarver : WorldCarver<CaveCarverConfiguration>
 
     private void CreateTunnel(CarvingContext context, CaveCarverConfiguration configuration, long seed, double x, double y, double z,
         double horizontalRadiusMultiplier, double verticalRadiusMultiplier, float thickness, float yaw, float pitch,
-        int branchIndex, int branchCount, double yScale, CarveSkipChecker skipChecker)
+        int branchIndex, int branchCount, double yScale, SkipChecker skipChecker)
     {
         var random = new LegacyRandomSource(seed);
         var splitIndex = random.NextInt(branchCount / 2) + branchCount / 4;
@@ -128,6 +128,9 @@ internal class CaveWorldCarver : WorldCarver<CaveCarverConfiguration>
         }
     }
 
-    private static bool ShouldSkip(double relativeX, double relativeY, double relativeZ, double floorLevel) =>
-        relativeY <= floorLevel || relativeX * relativeX + relativeY * relativeY + relativeZ * relativeZ >= 1.0;
+    private readonly struct SkipChecker(double floorLevel) : ISkipChecker
+    {
+        public bool ShouldSkip(double relativeX, double relativeY, double relativeZ, int y) =>
+            relativeY <= floorLevel || relativeX * relativeX + relativeY * relativeY + relativeZ * relativeZ >= 1.0;
+    }
 }
