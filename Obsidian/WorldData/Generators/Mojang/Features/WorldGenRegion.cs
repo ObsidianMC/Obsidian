@@ -253,6 +253,29 @@ internal sealed class WorldGenRegion : IWorldGenLevel
         return index >= 0 ? this.area[index] : this.chunks.GetValueOrDefault((chunkX, chunkZ));
     }
 
+    /// <summary>
+    /// The biome stored at quart coordinates in a chunk of the region, or <c>null</c> when the region doesn't hold it.
+    /// </summary>
+    private BiomeCodec? FindStoredBiome(int quartX, int quartY, int quartZ)
+    {
+        var index = this.AreaIndex(quartX >> 2, quartZ >> 2);
+        var sectionIndex = ((quartY << 2) - this.MinY) >> 4;
+        if (index >= 0 && (uint)sectionIndex < (uint)this.sectionCount)
+        {
+            var section = this.areaSections[index * this.sectionCount + sectionIndex];
+
+            // A section holding a single biome has it in every cell, and reading it skips the biome storage's lock.
+            if (section is not null)
+            {
+                return section.BiomeContainer.Palette is SingleValuePalette<BiomeCodec> { IsFull: true } single
+                    ? single.Value
+                    : section.GetBiome(quartX & 3, quartY & 3, quartZ & 3);
+            }
+        }
+
+        return this.FindChunk(quartX >> 2, quartZ >> 2)?.GetBiome((quartX & 3) << 2, quartY << 2, (quartZ & 3) << 2);
+    }
+
     private IChunk GetAreaChunk(int index, Vector position) =>
         this.area[index] ?? throw new InvalidOperationException($"Chunk ({position.X >> 4}, {position.Z >> 4}) is outside the generation region.");
 
@@ -306,9 +329,9 @@ internal sealed class WorldGenRegion : IWorldGenLevel
 
         public BiomeCodec GetNoiseBiome(int quartX, int quartY, int quartZ)
         {
-            var chunk = this.region.FindChunk(quartX >> 2, quartZ >> 2);
-            if (chunk is not null)
-                return chunk.GetBiome((quartX & 3) << 2, quartY << 2, (quartZ & 3) << 2);
+            var stored = this.region.FindStoredBiome(quartX, quartY, quartZ);
+            if (stored is not null)
+                return stored;
 
             this.sampled ??= [];
             if (!this.sampled.TryGetValue((quartX, quartY, quartZ), out var biome))
