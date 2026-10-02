@@ -22,7 +22,21 @@ internal interface IAquifer
 /// </summary>
 internal readonly record struct FluidStatus(int FluidLevel, IBlock FluidType)
 {
+    private readonly Material fluidMaterial = FluidType.Material;
+
     public IBlock At(int y) => y < this.FluidLevel ? this.FluidType : BlocksRegistry.Air;
+
+    /// <summary>
+    /// The material of <see cref="At"/>, without the interface call.
+    /// </summary>
+    public Material MaterialAt(int y) => y < this.FluidLevel ? this.fluidMaterial : Material.Air;
+
+    // Blocks are boxed structs, whose default equality compares fields through reflection; the fluid types are
+    // usually the very same instance.
+    public bool Equals(FluidStatus other) => this.FluidLevel == other.FluidLevel
+        && (ReferenceEquals(this.FluidType, other.FluidType) || this.FluidType.Equals(other.FluidType));
+
+    public override int GetHashCode() => HashCode.Combine(this.FluidLevel, this.FluidType);
 }
 
 /// <summary>

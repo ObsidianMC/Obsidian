@@ -80,7 +80,7 @@ internal sealed class NoiseBasedAquifer : IAquifer
             return globalFluid.At(y);
         }
 
-        if (globalFluid.At(y).Material == Material.Lava)
+        if (globalFluid.MaterialAt(y) == Material.Lava)
         {
             this.ShouldScheduleFluidUpdate = false;
             return BlocksRegistry.Lava;
@@ -90,9 +90,9 @@ internal sealed class NoiseBasedAquifer : IAquifer
         var gridY = GridY(y + 1);
         var gridZ = GridZ(z - 5);
 
-        // The four closest aquifer centers, nearest first.
-        Span<int> distances = [int.MaxValue, int.MaxValue, int.MaxValue, int.MaxValue];
-        Span<int> indices = [0, 0, 0, 0];
+        // The four closest aquifer centers, nearest first. Ties move existing entries down, like vanilla's >= comparisons.
+        int distance1 = int.MaxValue, distance2 = int.MaxValue, distance3 = int.MaxValue, distance4 = int.MaxValue;
+        int index1 = 0, index2 = 0, index3 = 0, index4 = 0;
 
         for (var offsetX = 0; offsetX <= 1; offsetX++)
         {
@@ -108,37 +108,41 @@ internal sealed class NoiseBasedAquifer : IAquifer
                     var dz = location.Z - z;
                     var distance = dx * dx + dy * dy + dz * dz;
 
-                    // Ties move existing entries down, like vanilla's >= comparisons.
-                    for (var slot = 0; slot < 4; slot++)
+                    if (distance1 >= distance)
                     {
-                        if (distances[slot] < distance)
-                            continue;
-
-                        for (var shift = 3; shift > slot; shift--)
-                        {
-                            distances[shift] = distances[shift - 1];
-                            indices[shift] = indices[shift - 1];
-                        }
-
-                        distances[slot] = distance;
-                        indices[slot] = index;
-                        break;
+                        (index4, index3, index2, index1) = (index3, index2, index1, index);
+                        (distance4, distance3, distance2, distance1) = (distance3, distance2, distance1, distance);
+                    }
+                    else if (distance2 >= distance)
+                    {
+                        (index4, index3, index2) = (index3, index2, index);
+                        (distance4, distance3, distance2) = (distance3, distance2, distance);
+                    }
+                    else if (distance3 >= distance)
+                    {
+                        (index4, index3) = (index3, index);
+                        (distance4, distance3) = (distance3, distance);
+                    }
+                    else if (distance4 >= distance)
+                    {
+                        index4 = index;
+                        distance4 = distance;
                     }
                 }
             }
         }
 
-        var closest = this.GetAquiferStatus(indices[0]);
-        var similarity12 = Similarity(distances[0], distances[1]);
+        var closest = this.GetAquiferStatus(index1);
+        var similarity12 = Similarity(distance1, distance2);
         var block = closest.At(y);
 
         if (similarity12 <= 0.0)
         {
-            this.ShouldScheduleFluidUpdate = similarity12 >= flowingUpdateSimilarity && closest != this.GetAquiferStatus(indices[1]);
+            this.ShouldScheduleFluidUpdate = similarity12 >= flowingUpdateSimilarity && closest != this.GetAquiferStatus(index2);
             return block;
         }
 
-        if (block.Material == Material.Water && this.globalFluidPicker(x, y - 1, z).At(y - 1).Material == Material.Lava)
+        if (closest.MaterialAt(y) == Material.Water && this.globalFluidPicker(x, y - 1, z).MaterialAt(y - 1) == Material.Lava)
         {
             this.ShouldScheduleFluidUpdate = true;
             return block;
@@ -146,7 +150,7 @@ internal sealed class NoiseBasedAquifer : IAquifer
 
         // The barrier noise is sampled at most once per position and shared by the pressure checks.
         var barrier = double.NaN;
-        var second = this.GetAquiferStatus(indices[1]);
+        var second = this.GetAquiferStatus(index2);
 
         if (density + similarity12 * this.CalculatePressure(x, y, z, ref barrier, closest, second) > 0.0)
         {
@@ -154,8 +158,8 @@ internal sealed class NoiseBasedAquifer : IAquifer
             return null;
         }
 
-        var third = this.GetAquiferStatus(indices[2]);
-        var similarity13 = Similarity(distances[0], distances[2]);
+        var third = this.GetAquiferStatus(index3);
+        var similarity13 = Similarity(distance1, distance3);
 
         if (similarity13 > 0.0 && density + similarity12 * similarity13 * this.CalculatePressure(x, y, z, ref barrier, closest, third) > 0.0)
         {
@@ -163,7 +167,7 @@ internal sealed class NoiseBasedAquifer : IAquifer
             return null;
         }
 
-        var similarity23 = Similarity(distances[1], distances[2]);
+        var similarity23 = Similarity(distance2, distance3);
 
         if (similarity23 > 0.0 && density + similarity12 * similarity23 * this.CalculatePressure(x, y, z, ref barrier, second, third) > 0.0)
         {
@@ -177,8 +181,8 @@ internal sealed class NoiseBasedAquifer : IAquifer
 
         this.ShouldScheduleFluidUpdate = closestDiffersFromSecond || secondDiffersFromThird || closestDiffersFromThird
             || (similarity13 >= flowingUpdateSimilarity
-                && Similarity(distances[0], distances[3]) >= flowingUpdateSimilarity
-                && closest != this.GetAquiferStatus(indices[3]));
+                && Similarity(distance1, distance4) >= flowingUpdateSimilarity
+                && closest != this.GetAquiferStatus(index4));
 
         return block;
     }
@@ -187,8 +191,8 @@ internal sealed class NoiseBasedAquifer : IAquifer
 
     private double CalculatePressure(int x, int y, int z, ref double barrier, FluidStatus first, FluidStatus second)
     {
-        var firstBlock = first.At(y).Material;
-        var secondBlock = second.At(y).Material;
+        var firstBlock = first.MaterialAt(y);
+        var secondBlock = second.MaterialAt(y);
 
         if ((firstBlock == Material.Lava && secondBlock == Material.Water) || (firstBlock == Material.Water && secondBlock == Material.Lava))
             return 2.0;

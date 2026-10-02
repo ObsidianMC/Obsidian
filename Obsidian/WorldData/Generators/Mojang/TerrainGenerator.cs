@@ -1,6 +1,7 @@
 using Obsidian.ChunkData;
 using Obsidian.WorldData.Generators.Mojang.Structures;
 using Obsidian.WorldData.Structures;
+using System.Runtime.InteropServices;
 
 namespace Obsidian.WorldData.Generators.Mojang;
 
@@ -48,7 +49,8 @@ internal sealed class TerrainGenerator : IStructureTerrain
 
         // Blocks are computed a layer of cells at a time, a cell at once, then written from the top down in z, x order.
         // Writing in that order keeps the order of the sections' palettes and of the fluid updates.
-        var blocks = new IBlock?[256 * cellHeight];
+        var palette = new FillPalette(this.defaultBlock);
+        var codes = new byte[256 * cellHeight];
         var scheduled = new bool[256 * cellHeight];
         Span<double> densities = stackalloc double[noiseChunk.CellSize];
         Span<double> veinToggles = stackalloc double[noiseChunk.CellSize];
@@ -66,6 +68,13 @@ internal sealed class TerrainGenerator : IStructureTerrain
                     if (hasVeins)
                         noiseChunk.FillVeinToggle(cellX, cellY, cellZ, veinToggles);
 
+                    var minLocalX = cellX * cellWidth;
+                    var minLocalZ = cellZ * cellWidth;
+                    var cellMinX = noiseChunk.ChunkMinX + minLocalX;
+                    var cellMinZ = noiseChunk.ChunkMinZ + minLocalZ;
+                    var bearded = beardifier.Affects(new BlockBox(new Vector(cellMinX, cellMinY, cellMinZ),
+                        new Vector(cellMinX + cellWidth - 1, cellMinY + cellHeight - 1, cellMinZ + cellWidth - 1)));
+
                     var i = 0;
                     for (var inCellY = 0; inCellY < cellHeight; inCellY++)
                     {
@@ -73,23 +82,25 @@ internal sealed class TerrainGenerator : IStructureTerrain
 
                         for (var inCellZ = 0; inCellZ < cellWidth; inCellZ++)
                         {
-                            var localZ = cellZ * cellWidth + inCellZ;
-                            var z = noiseChunk.ChunkMinZ + localZ;
+                            var z = cellMinZ + inCellZ;
+                            var row = (inCellY * 16 + minLocalZ + inCellZ) * 16 + minLocalX;
 
                             for (var inCellX = 0; inCellX < cellWidth; inCellX++, i++)
                             {
-                                var localX = cellX * cellWidth + inCellX;
-                                var x = noiseChunk.ChunkMinX + localX;
+                                var x = cellMinX + inCellX;
                                 // Like vanilla, the beardifier is added to the final density per block, inside the cell cache.
-                                var density = densities[i] + beardifier.Compute(x, y, z);
+                                var density = densities[i] + (bearded ? beardifier.Compute(x, y, z) : 0.0);
 
-                                var block = aquifer.ComputeSubstance(x, y, z, density)
-                                    ?? (hasVeins ? OreVeinifier.Compute(noiseChunk, x, y, z, veinToggles[i]) : null)
-                                    ?? this.defaultBlock;
+                                byte code;
+                                if (aquifer.ComputeSubstance(x, y, z, density) is { } substance)
+                                    code = palette.CodeOf(substance);
+                                else if (hasVeins && OreVeinifier.Compute(noiseChunk, x, y, z, veinToggles[i]) is { } vein)
+                                    code = palette.CodeOf(vein);
+                                else
+                                    code = FillPalette.DefaultCode;
 
-                                var index = (inCellY * 16 + localZ) * 16 + localX;
-                                blocks[index] = block.IsAir ? null : block;
-                                scheduled[index] = block.IsLiquid && aquifer.ShouldScheduleFluidUpdate;
+                                codes[row + inCellX] = code;
+                                scheduled[row + inCellX] = palette.IsLiquid(code) && aquifer.ShouldScheduleFluidUpdate;
                             }
                         }
                     }
@@ -99,13 +110,13 @@ internal sealed class TerrainGenerator : IStructureTerrain
             for (var inCellY = cellHeight - 1; inCellY >= 0; inCellY--)
             {
                 var y = cellMinY + inCellY;
-                var layer = blocks.AsSpan(inCellY * 256, 256);
-                SetLayer(chunk, y, layer);
+                var layer = codes.AsSpan(inCellY * 256, 256);
+                palette.SetLayer(chunk, y, layer);
 
                 for (var column = 0; column < 256; column++)
                 {
-                    var block = layer[column];
-                    if (block is null)
+                    var code = layer[column];
+                    if (palette.IsAir(code))
                         continue;
 
                     if (fluidUpdates is not null && scheduled[inCellY * 256 + column])
@@ -113,32 +124,14 @@ internal sealed class TerrainGenerator : IStructureTerrain
 
                     worldSurface[column] = Math.Max(worldSurface[column], y + 1);
 
-                    if (oceanFloor[column] < y + 1 && block.BlocksMotion())
-                        oceanFloor[column] = y + 1;
+                    if (palette.BlocksMotion(code))
+                        oceanFloor[column] = Math.Max(oceanFloor[column], y + 1);
                 }
             }
         }
 
         WorldgenHeightmaps.Set(chunk, HeightmapType.WorldSurfaceWG, worldSurface);
         WorldgenHeightmaps.Set(chunk, HeightmapType.OceanFloorWG, oceanFloor);
-    }
-
-    /// <summary>
-    /// Sets the non-null blocks of a layer (indexed <c>z * 16 + x</c>) in index order.
-    /// </summary>
-    private static void SetLayer(IChunk chunk, int y, ReadOnlySpan<IBlock?> layer)
-    {
-        if (chunk.Sections[(y - chunk.MinY) >> 4] is ChunkSection section)
-        {
-            section.SetBlockLayer(y & 15, layer);
-            return;
-        }
-
-        for (var column = 0; column < 256; column++)
-        {
-            if (layer[column] is { } block)
-                chunk.SetBlock(column & 15, y, column >> 4, block);
-        }
     }
 
     public int GetBaseHeight(int x, int z, HeightmapType heightmap) =>
@@ -180,5 +173,75 @@ internal sealed class TerrainGenerator : IStructureTerrain
         }
 
         return null;
+    }
+    /// <summary>
+    /// The distinct blocks of one fill, numbered in order of appearance so the fill can store a byte per block. Air is
+    /// numbered too, but kept as a null block, which layer writes skip.
+    /// </summary>
+    private sealed class FillPalette
+    {
+        /// <summary>
+        /// The code of the settings' default block, which most blocks are.
+        /// </summary>
+        public const byte DefaultCode = 0;
+
+        private readonly List<IBlock> keys = [];
+        private readonly List<IBlock?> blocks = [];
+        private readonly List<(bool IsLiquid, bool BlocksMotion)> flags = [];
+        private IBlock? last;
+        private byte lastCode;
+
+        public FillPalette(IBlock defaultBlock) => this.CodeOf(defaultBlock);
+
+        public byte CodeOf(IBlock block)
+        {
+            if (ReferenceEquals(block, this.last))
+                return this.lastCode;
+
+            var code = 0;
+            while (code < this.keys.Count && !ReferenceEquals(this.keys[code], block))
+                code++;
+
+            if (code == this.keys.Count)
+            {
+                if (this.keys.Count > byte.MaxValue)
+                    throw new InvalidOperationException("Too many distinct blocks in one terrain fill.");
+
+                code = this.keys.Count;
+                this.keys.Add(block);
+                this.blocks.Add(block.IsAir ? null : block);
+                this.flags.Add((block.IsLiquid, block.BlocksMotion()));
+            }
+
+            this.last = block;
+            this.lastCode = (byte)code;
+            return this.lastCode;
+        }
+
+        public bool IsAir(byte code) => this.blocks[code] is null;
+
+        public bool IsLiquid(byte code) => this.flags[code].IsLiquid;
+
+        public bool BlocksMotion(byte code) => this.flags[code].BlocksMotion;
+
+        /// <summary>
+        /// Sets the non-air blocks of a layer (codes indexed <c>z * 16 + x</c>) in index order.
+        /// </summary>
+        public void SetLayer(IChunk chunk, int y, ReadOnlySpan<byte> layer)
+        {
+            var blocks = CollectionsMarshal.AsSpan(this.blocks);
+
+            if (chunk.Sections[(y - chunk.MinY) >> 4] is ChunkSection section)
+            {
+                section.SetBlockLayer(y & 15, layer, blocks);
+                return;
+            }
+
+            for (var column = 0; column < 256; column++)
+            {
+                if (blocks[layer[column]] is { } block)
+                    chunk.SetBlock(column & 15, y, column >> 4, block);
+            }
+        }
     }
 }

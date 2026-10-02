@@ -78,6 +78,11 @@ internal sealed class Beardifier
     }
 
     /// <summary>
+    /// Whether <see cref="Compute"/> can be non-zero anywhere in the box.
+    /// </summary>
+    public bool Affects(BlockBox box) => this.affectedBox is not null && this.affectedBox.Value.Intersects(box);
+
+    /// <summary>
     /// The density to add at a block.
     /// </summary>
     public double Compute(int x, int y, int z)

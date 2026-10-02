@@ -85,34 +85,33 @@ public sealed class ChunkSection : IChunkSection
         this.BlockStateContainer.Set(x, y, z, block);
     }
     /// <summary>
-    /// Sets the non-null blocks of layer <paramref name="y"/>, indexed <c>z * 16 + x</c>, like calling
-    /// <see cref="SetBlock(int, int, int, IBlock)"/> for each of them in index order, but faster.
+    /// Sets the blocks of layer <paramref name="y"/>: entry <c>z * 16 + x</c> of <paramref name="layer"/> indexes
+    /// <paramref name="blocks"/>, where null blocks are skipped. Same as calling <see cref="SetBlock(int, int, int, IBlock)"/>
+    /// for each block in index order, but much faster.
     /// </summary>
-    internal void SetBlockLayer(int y, ReadOnlySpan<IBlock?> blocks)
+    internal void SetBlockLayer(int y, ReadOnlySpan<byte> layer, ReadOnlySpan<IBlock?> blocks)
     {
-        IBlock? last = null;
-        foreach (var block in blocks)
+        if (IsEmpty)
         {
-            if (block is null || ReferenceEquals(block, last))
-                continue;
-
-            last = block;
-            if (block.Material != Material.Air)
+            foreach (var index in layer)
             {
-                IsEmpty = false;
-                break;
+                if (blocks[index] is { } block && block.Material != Material.Air)
+                {
+                    IsEmpty = false;
+                    break;
+                }
             }
         }
 
         if (this.BlockStateContainer is BlockStateContainer container)
         {
-            container.SetLayer(y, blocks);
+            container.SetLayer(y, layer, blocks);
             return;
         }
 
         for (var i = 0; i < 256; i++)
         {
-            if (blocks[i] is { } block)
+            if (blocks[layer[i]] is { } block)
                 this.BlockStateContainer.Set(i & 15, y, i >> 4, block);
         }
     }
