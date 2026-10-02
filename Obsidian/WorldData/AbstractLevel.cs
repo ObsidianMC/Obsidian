@@ -554,13 +554,13 @@ public abstract class AbstractLevel : ILevel
             var completedChunks = startChunks - ChunksToGenCount;
             var cps = completedChunks / (stopwatch.ElapsedMilliseconds / 1000.0);
             int remain = ChunksToGenCount / (int)Math.Max(cps, 1);
-            Console.Write("\r{0} chunks/second - {1}% complete - {2} seconds remaining   ", cps.ToString("###.00"), pctComplete, remain);
+            System.Console.Write("\r{0} chunks/second - {1}% complete - {2} seconds remaining   ", cps.ToString("###.00"), pctComplete, remain);
             if (completedChunks % 1024 == 0)
             {
                 await FlushRegionsAsync();
             }
         }
-        Console.WriteLine();
+        System.Console.WriteLine();
 
         await FlushRegionsAsync();
         await SetWorldSpawnAsync();

@@ -3,3 +3,9 @@
 .gitignore
 .editorconfig
 docker-compose.yml
+.vs
+.vscode
+.idea
+.claude
+**/bin
+**/obj

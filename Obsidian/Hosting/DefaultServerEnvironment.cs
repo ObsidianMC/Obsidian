@@ -1,38 +1,14 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using System.Threading;
+﻿using Microsoft.Extensions.Logging;
 
 namespace Obsidian.Hosting;
 
 /// <summary>
 /// A default <see cref="IServerEnvironment"/> implementation aimed for Console applications.
-/// Loads the server configuration and worlds using the current working directory and
-/// forwards commands from the standard input to the server.
-/// 
-/// Use the <see cref="CreateAsync"/> method to create an instance.
+/// Console commands are read by <see cref="Console.ConsoleCommandService"/>.
 /// </summary>
-internal sealed class DefaultServerEnvironment(IConfiguration configuration, ILogger<DefaultServerEnvironment> logger) : IServerEnvironment
+internal sealed class DefaultServerEnvironment(ILogger<DefaultServerEnvironment> logger) : IServerEnvironment
 {
     private readonly ILogger<DefaultServerEnvironment> logger = logger;
-
-    /// <summary>
-    /// Provide server commands using the Console.
-    /// </summary>
-    /// <param name="server"></param>
-    /// <param name="cToken"></param>
-    /// <returns></returns>
-    public async ValueTask ProvideServerCommandsAsync(Server server, CancellationToken cToken)
-    {
-        if (configuration.GetValue<bool>("DOTNET_RUNNING_IN_CONTAINER"))
-            return;
-
-        while (!cToken.IsCancellationRequested)
-        {
-            var input = Console.ReadLine();
-            if (input == null) continue;
-            await server.ExecuteCommand(input);
-        }
-    }
 
     public ValueTask OnServerStoppedGracefullyAsync()
     {

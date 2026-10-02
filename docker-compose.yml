@@ -2,6 +2,9 @@ services:
   obsidian:
     build: .
     restart: unless-stopped
+    # Keep stdin open with a terminal so console commands work via `docker attach`.
+    stdin_open: true
+    tty: true
     ports:
       - "25565:25565"
     volumes:

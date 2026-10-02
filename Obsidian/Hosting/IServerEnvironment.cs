@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using System.Threading;
 
 namespace Obsidian.Hosting;
 
@@ -10,13 +9,6 @@ namespace Obsidian.Hosting;
 /// </summary>
 public interface IServerEnvironment
 {
-    /// <summary>
-    /// Execute commands on the server. This task will run for the lifetime of the server.
-    /// </summary>
-    /// <param name="cToken"></param>
-    /// <returns></returns>
-    public ValueTask ProvideServerCommandsAsync(Server server, CancellationToken cToken);
-
     /// <summary>
     /// Called when the server succesfuly ran to completion.
     /// </summary>
