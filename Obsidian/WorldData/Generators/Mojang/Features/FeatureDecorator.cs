@@ -64,6 +64,11 @@ internal sealed class FeatureDecorator
         // Vanilla's getWritableArea: the chunk, above the bottom layer.
         var writableArea = BlockBox.Create(origin.X, region.MinY + 1, origin.Z, origin.X + 15, region.MinY + region.Height - 1, origin.Z + 15);
 
+        // Few structures reach a chunk, and looking for the starts of one structure scans as many chunks as looking for
+        // all of them; the others have nothing to place.
+        var reachingStructures = structures?.GetStartsReaching(chunkX, chunkZ).Select(start => start.Structure)
+            .ToHashSet(ReferenceEqualityComparer.Instance) ?? [];
+
         for (var step = 0; step < stepCount; step++)
         {
             if (structures is not null && step < structures.StructuresPerStep.Count)
@@ -71,6 +76,9 @@ internal sealed class FeatureDecorator
                 var stepStructures = structures.StructuresPerStep[step];
                 for (var index = 0; index < stepStructures.Count; index++)
                 {
+                    if (!reachingStructures.Contains(stepStructures[index]))
+                        continue;
+
                     random.SetFeatureSeed(decorationSeed, index, step);
                     var context = new StructurePieceContext(region, random, writableArea, chunkX, chunkZ, default) { Terrain = terrain, Generation = generation };
 
