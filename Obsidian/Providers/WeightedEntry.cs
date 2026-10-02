@@ -15,7 +15,7 @@ public sealed class WeightedEntry<T>
     /// Picks an entry like vanilla's WeightedList.getRandomOrThrow: one <c>nextInt(totalWeight)</c> draw,
     /// walking the cumulative weights in list order.
     /// </summary>
-    public static T Pick(IReadOnlyList<WeightedEntry<T>> entries, IRandomSource random)
+    public static T Pick(ReadOnlySpan<WeightedEntry<T>> entries, IRandomSource random)
     {
         var totalWeight = 0;
         foreach (var entry in entries)
