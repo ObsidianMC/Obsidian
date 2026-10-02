@@ -25,6 +25,9 @@ internal sealed class WorldGenRegion : IWorldGenLevel
 
     private static readonly byte[] writeInfos = CreateWriteInfos();
 
+    private static readonly int airStateId = BlocksRegistry.Air.GetHashCode();
+    private static readonly int voidAirStateId = BlocksRegistry.VoidAir.GetHashCode();
+
     private readonly IReadOnlyDictionary<(int X, int Z), IChunk> chunks;
 
     // The chunks writes may reach (null where the region has none) and their final heightmaps, indexed by AreaIndex.
@@ -116,11 +119,36 @@ internal sealed class WorldGenRegion : IWorldGenLevel
         return chunk is not null ? chunk.GetBlock(position.X, position.Y, position.Z) : BlocksRegistry.Air;
     }
 
+    public int GetStateId(Vector position)
+    {
+        if (this.IsOutsideBuildHeight(position.Y))
+            return voidAirStateId;
+
+        var index = this.AreaIndex(position.X >> 4, position.Z >> 4);
+        if (index >= 0)
+        {
+            var section = this.areaSections[index * this.sectionCount + ((position.Y - this.MinY) >> 4)];
+            if (section is not null)
+                return section.GetStateId(position.X & 15, position.Y & 15, position.Z & 15);
+        }
+
+        var chunk = this.FindChunk(position.X >> 4, position.Z >> 4);
+        return chunk is not null ? chunk.GetBlock(position.X, position.Y, position.Z).GetHashCode() : airStateId;
+    }
+
     public bool IsOutsideBuildHeight(int y) => y < this.MinY || y >= this.MinY + this.Height;
 
     public bool EnsureCanWrite(Vector position) => this.AreaIndex(position.X >> 4, position.Z >> 4) >= 0;
 
-    public bool SetBlock(Vector position, IBlock block)
+    public bool SetBlock(Vector position, IBlock block) => this.Write(position, block.GetHashCode(), block);
+
+    /// <summary>
+    /// Sets a block by its state id, like <see cref="SetBlock"/>.
+    /// </summary>
+    internal bool SetStateId(Vector position, int stateId) => this.Write(position, stateId, null);
+
+    // The block is resolved from the state id only when it's needed and the caller doesn't have it.
+    private bool Write(Vector position, int stateId, IBlock? block)
     {
         var index = this.AreaIndex(position.X >> 4, position.Z >> 4);
         if (index < 0)
@@ -136,19 +164,22 @@ internal sealed class WorldGenRegion : IWorldGenLevel
         // heights.
         var heightmaps = this.GetFinalHeightmaps(index, chunk);
 
+        // A state id outside the registry can only come from a block the caller passed.
+        var knownState = (uint)stateId < (uint)writeInfos.Length;
         var section = this.areaSections[index * this.sectionCount + ((position.Y - this.MinY) >> 4)];
-        if (section is not null)
-            section.SetBlock(position.X & 15, position.Y & 15, position.Z & 15, block);
+        if (section is not null && knownState)
+            section.SetStateId(position.X & 15, position.Y & 15, position.Z & 15, stateId);
+        else if (section is not null)
+            section.SetBlock(position.X & 15, position.Y & 15, position.Z & 15, block!);
         else
-            chunk.SetBlock(position.X, position.Y, position.Z, block);
+            chunk.SetBlock(position.X, position.Y, position.Z, block ??= BlocksRegistry.Get(stateId));
 
-        var stateId = block.GetHashCode();
-        var info = (uint)stateId < (uint)writeInfos.Length ? writeInfos[stateId] : WriteInfo(block);
+        var info = knownState ? writeInfos[stateId] : WriteInfo(block!);
         heightmaps.Update(position.X, position.Y, position.Z, info & HeightmapMask);
 
         // Like DataBlockEntity.ApplyBlockChange, which blocks without a block entity don't need.
         if ((info & BlockEntityBit) != 0)
-            DataBlockEntity.ApplyBlockChange(chunk, position, block);
+            DataBlockEntity.ApplyBlockChange(chunk, position, block ?? BlocksRegistry.Get(stateId));
         else
             chunk.RemoveBlockEntity(position.X, position.Y, position.Z);
 

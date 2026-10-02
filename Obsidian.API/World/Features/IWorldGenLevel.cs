@@ -32,6 +32,12 @@ public interface IWorldGenLevel
     public IBlock GetBlock(Vector position);
 
     /// <summary>
+    /// The state id of the block at <paramref name="position"/>, like <see cref="GetBlock"/>; levels that store state ids
+    /// read it without resolving the block.
+    /// </summary>
+    public int GetStateId(Vector position) => this.GetBlock(position).GetHashCode();
+
+    /// <summary>
     /// Sets a block, updating heightmaps. Returns <c>false</c> when the position can't be written.
     /// </summary>
     public bool SetBlock(Vector position, IBlock block);
