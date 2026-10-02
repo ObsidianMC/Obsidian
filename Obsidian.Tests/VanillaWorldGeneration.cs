@@ -239,6 +239,7 @@ public class VanillaWorldGeneration
     [InlineData(12345L, "minecraft:swamp_hut", -149, -87, "2371b7af33976e6c2fab5f7c429854db45574b6397a85f618ce6f57b581711df")]
     [InlineData(12345L, "minecraft:buried_treasure", 46, 64, "f972eed34b452e4fc6a485e1ed778a07e2398f79a4ceb60ad865a4d18b4de213")]
     [InlineData(12345L, "minecraft:fortress", -86, 39, "a20f4a5fbbef79bf0ca51f23b3173f7ea59b915a420c5f585319e7552edbc3a1", "nether")]
+    [InlineData(12345L, "minecraft:monument", 37, -152, "eeada366bfd75334367e02a3fb1cf81bd1a3b052e0f684e637cac27cd621fa81")]
     public void StructureMatchesVanilla(long seed, string structure, int startX, int startZ, string expectedBlocks, string dimensionName = "overworld")
     {
         var dimension = dimensionName == "nether" ? MojangDimension.Nether : MojangDimension.Overworld;
