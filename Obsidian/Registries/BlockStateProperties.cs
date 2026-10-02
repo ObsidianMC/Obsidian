@@ -33,7 +33,9 @@ internal static class BlockStateProperties
     /// </summary>
     public static IBlock WithProperty(this IBlock block, string property, string value)
     {
-        var id = withPropertyIds.GetOrAdd((block.GetHashCode(), property, value), static (key, block) => FindWithProperty(block, key.Property, key.Value), block);
+        var id = withPropertyIds.GetOrAdd((block.GetHashCode(), property, value),
+            static (key, block) => FindWithProperty(block, key.Property, key.Value), block);
+
         return id < 0 ? block : BlocksRegistry.Get(id);
     }
 
