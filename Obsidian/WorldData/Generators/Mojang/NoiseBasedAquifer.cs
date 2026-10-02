@@ -35,6 +35,10 @@ internal sealed class NoiseBasedAquifer : IAquifer
     private int minGridX;
     private int minGridZ;
 
+    // The chunk served (see MoveTo).
+    private int chunkX = int.MinValue;
+    private int chunkZ = int.MinValue;
+
     // See GetCandidates.
     private readonly Candidate[] candidates = new Candidate[12];
     private int candidatesGridX = int.MinValue;
@@ -71,15 +75,22 @@ internal sealed class NoiseBasedAquifer : IAquifer
         var chunkMinX = chunkX << 4;
         var chunkMinZ = chunkZ << 4;
 
+        // Statuses sample the noise chunk's functions, which may change with its cells even in the same chunk. Center
+        // locations and, when preliminary surface levels don't depend on the noise chunk, the highest level around the
+        // chunk only depend on the chunk: a column's noise chunk moving to another cell of the same chunk keeps them.
+        Array.Clear(this.aquiferCache);
+        this.candidatesGridX = int.MinValue;
+        this.ShouldScheduleFluidUpdate = false;
+
+        if (chunkX == this.chunkX && chunkZ == this.chunkZ && this.noiseChunk.RandomState.HasChunkIndependentPreliminarySurfaceLevels)
+            return;
+
+        (this.chunkX, this.chunkZ) = (chunkX, chunkZ);
         this.minGridX = GridX(chunkMinX - 5);
         var maxGridX = GridX(chunkMinX + 15 - 5) + 1;
         this.minGridZ = GridZ(chunkMinZ - 5);
         var maxGridZ = GridZ(chunkMinZ + 15 - 5) + 1;
-
-        Array.Clear(this.aquiferCache);
         Array.Clear(this.aquiferLocationCache);
-        this.candidatesGridX = int.MinValue;
-        this.ShouldScheduleFluidUpdate = false;
 
         var maxSurfaceLevel = AdjustSurfaceLevel(this.noiseChunk.MaxPreliminarySurfaceLevel(
             FromGridX(this.minGridX, 0), FromGridZ(this.minGridZ, 0), FromGridX(maxGridX, 9), FromGridZ(maxGridZ, 9)));

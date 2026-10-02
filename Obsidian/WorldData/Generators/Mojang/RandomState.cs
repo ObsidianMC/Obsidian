@@ -23,8 +23,10 @@ internal sealed class RandomState
     private readonly ThreadLocal<ClimateSampler> climateSamplers;
     private readonly ConcurrentDictionary<IDensityFunction, bool> yIndependence = new(ReferenceEqualityComparer.Instance);
 
-    // See TryGetPreliminarySurfaceLevel; null when levels depend on the chunk.
-    private readonly ColumnLevel?[]? preliminarySurfaceLevels;
+    // See TryGetPreliminarySurfaceLevel; null when levels depend on the chunk. Each slot packs a column's level with the
+    // rest of its coordinates (see TryGetLevelTag) in one value, which reads and writes atomically: bit 0 is set when the
+    // slot is used, bits 1 to 23 hold the level and the bits above the tag.
+    private readonly long[]? preliminarySurfaceLevels;
 
     public long Seed { get; }
 
@@ -86,7 +88,7 @@ internal sealed class RandomState
         this.climateSamplers = new ThreadLocal<ClimateSampler>(this.CreateClimateSampler);
 
         if (this.IsChunkIndependent(this.Router.PreliminarySurfaceLevel))
-            this.preliminarySurfaceLevels = new ColumnLevel?[64 * 64];
+            this.preliminarySurfaceLevels = new long[64 * 64];
     }
 
     /// <summary>
@@ -121,18 +123,34 @@ internal sealed class RandomState
     /// </remarks>
     public bool TryGetPreliminarySurfaceLevel(int x, int z, out int level)
     {
-        var entry = this.preliminarySurfaceLevels is null ? null : Volatile.Read(ref this.preliminarySurfaceLevels[PreliminarySurfaceSlot(x, z)]);
-        level = entry?.Level ?? 0;
-        return entry is not null && entry.X == x && entry.Z == z;
+        level = 0;
+        if (this.preliminarySurfaceLevels is null || !TryGetLevelTag(x, z, out var tag))
+            return false;
+
+        var entry = Volatile.Read(ref this.preliminarySurfaceLevels[PreliminarySurfaceSlot(x, z)]);
+        if ((entry & 1) == 0 || (ulong)entry >> 24 != tag)
+            return false;
+
+        level = (int)(entry << 40 >> 41);
+        return true;
     }
+
+    /// <summary>
+    /// Whether preliminary surface levels don't depend on the noise chunk computing them (see
+    /// <see cref="TryGetPreliminarySurfaceLevel"/>).
+    /// </summary>
+    public bool HasChunkIndependentPreliminarySurfaceLevels => this.preliminarySurfaceLevels is not null;
 
     /// <summary>
     /// Keeps a preliminary surface level for <see cref="TryGetPreliminarySurfaceLevel"/>.
     /// </summary>
     public void AddPreliminarySurfaceLevel(int x, int z, int level)
     {
-        if (this.preliminarySurfaceLevels is not null)
-            Volatile.Write(ref this.preliminarySurfaceLevels[PreliminarySurfaceSlot(x, z)], new ColumnLevel(x, z, level));
+        if (this.preliminarySurfaceLevels is null || level < -(1 << 22) || level >= 1 << 22 || !TryGetLevelTag(x, z, out var tag))
+            return;
+
+        var entry = (long)(tag << 24) | (long)(level & 0x7FFFFF) << 1 | 1;
+        Volatile.Write(ref this.preliminarySurfaceLevels[PreliminarySurfaceSlot(x, z)], entry);
     }
 
     /// <summary>
@@ -229,6 +247,16 @@ internal sealed class RandomState
     }
 
     private static int PreliminarySurfaceSlot(int x, int z) => ((x >> 2) & 63) | ((z >> 2) & 63) << 6;
+
+    // The bits of a quart column's block coordinates that its slot doesn't stand for, 20 per axis, which covers 2^27 blocks
+    // each way.
+    private static bool TryGetLevelTag(int x, int z, out ulong tag)
+    {
+        var tagX = x >> 8;
+        var tagZ = z >> 8;
+        tag = (ulong)(tagX & 0xFFFFF) | (ulong)(tagZ & 0xFFFFF) << 20;
+        return tagX >= -(1 << 19) && tagX < 1 << 19 && tagZ >= -(1 << 19) && tagZ < 1 << 19;
+    }
 
     private ClimateSampler CreateClimateSampler()
     {
@@ -372,8 +400,6 @@ internal sealed class RandomState
 
         public IDensityFunction Apply(IDensityFunction function) => function;
     }
-
-    private sealed record ColumnLevel(int X, int Z, int Level);
 
     /// <summary>
     /// Counts how often each function of a tree is referenced, visiting shared subtrees once.
