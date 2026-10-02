@@ -19,7 +19,7 @@ public partial class BaseNoise : INoise
     /// </summary>
     public required string Key { get; init; }
 
-    public required double[] Amplitudes { get; init; }
+    public required ImmutableArray<double> Amplitudes { get; init; }
 
     public required double FirstOctave { get; init; }
 
@@ -43,7 +43,7 @@ public partial class BaseNoise : INoise
     /// <summary>
     /// Returns a copy of this noise seeded from <paramref name="random"/>.
     /// </summary>
-    public BaseNoise Bind(IRandomSource random) => this.Bind(NormalNoise.Create(random, (int)this.FirstOctave, this.Amplitudes));
+    public BaseNoise Bind(IRandomSource random) => this.Bind(NormalNoise.Create(random, (int)this.FirstOctave, this.Amplitudes.AsSpan()));
 
     /// <summary>
     /// Returns a copy of this noise backed by <paramref name="noise"/>. Used for vanilla's legacy special cases,
@@ -63,7 +63,7 @@ public partial class BaseNoise : INoise
     public BaseNoise Bind(IPositionalRandomFactory worldRandom) => this.Bind(worldRandom.FromHashOf(this.Key));
 
     public void Create() =>
-        this.noise ??= NormalNoise.Create(new XoroshiroRandomSource(0L).ForkPositional().FromHashOf(this.Key), (int)this.FirstOctave, this.Amplitudes);
+        this.noise ??= NormalNoise.Create(new XoroshiroRandomSource(0L).ForkPositional().FromHashOf(this.Key), (int)this.FirstOctave, this.Amplitudes.AsSpan());
 
     public double GetValue(double x, double y, double z) => this.Noise.GetValue(x, y, z);
 }

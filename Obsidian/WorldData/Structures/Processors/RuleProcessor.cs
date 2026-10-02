@@ -13,7 +13,7 @@ namespace Obsidian.WorldData.Structures.Processors;
 [ConfiguredFeatureProperty("minecraft:rule")]
 public sealed class RuleProcessor : StructureProcessor
 {
-    public required ProcessorRule[] Rules { get; init; }
+    public required ImmutableArray<ProcessorRule> Rules { get; init; }
 
     public override StructureBlockInfo? ProcessBlock(IWorldGenLevel level, Vector origin, Vector pivot, StructureBlockInfo original,
         StructureBlockInfo current, StructurePlaceSettings settings)

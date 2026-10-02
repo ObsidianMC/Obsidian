@@ -11,7 +11,7 @@ public class Spline : ISpline
 {
     public required IDensityFunction Coordinate { get; init; }
 
-    public required SplinePoint[] Points { get; init; }
+    public required ImmutableArray<SplinePoint> Points { get; init; }
 
     public double MinValue => this.State.MinValue;
 
@@ -57,7 +57,7 @@ public class Spline : ISpline
     public Spline MapAll(IDensityFunctionVisitor visitor) => new()
     {
         Coordinate = visitor.Map(this.Coordinate),
-        Points = Array.ConvertAll(this.Points, point => point with { Value = point.Value.MapAll(visitor) })
+        Points = ImmutableArray.CreateRange(this.Points, point => point with { Value = point.Value.MapAll(visitor) })
     };
 
     private static float Lerp(float t, float start, float end) => start + t * (end - start);
@@ -90,11 +90,18 @@ public class Spline : ISpline
 
     private sealed record SplineState(float[] Locations, float[] Derivatives, ISpline[] Values, float MinValue, float MaxValue)
     {
-        public static SplineState Create(IDensityFunction coordinate, SplinePoint[] points)
+        public static SplineState Create(IDensityFunction coordinate, ImmutableArray<SplinePoint> points)
         {
-            var locations = Array.ConvertAll(points, point => (float)point.Location);
-            var derivatives = Array.ConvertAll(points, point => (float)point.Derivative);
-            var values = Array.ConvertAll(points, point => point.Value);
+            var locations = new float[points.Length];
+            var derivatives = new float[points.Length];
+            var values = new ISpline[points.Length];
+            for (var i = 0; i < points.Length; i++)
+            {
+                locations[i] = (float)points[i].Location;
+                derivatives[i] = (float)points[i].Derivative;
+                values[i] = points[i].Value;
+            }
+
             var lastIndex = locations.Length - 1;
 
             var min = float.PositiveInfinity;

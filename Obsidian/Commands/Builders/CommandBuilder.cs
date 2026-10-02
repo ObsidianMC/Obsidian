@@ -127,13 +127,13 @@ public sealed class CommandBuilder
     public Command Build(CommandHandler commandHandler, IPluginContainer? pluginContainer) => new()
     {
         Name = this.Name,
-        Aliases = this.aliases.ToArray(),
+        Aliases = [.. this.aliases],
         Description = this.Description,
         Usage = this.Usage,
         Overloads = new(this.overloads),
         AllowedIssuers = this.Issuers,
         Parent = this.Parent,
-        ExecutionChecks = this.checks.ToArray(),
+        ExecutionChecks = [.. this.checks],
         CommandHandler = commandHandler,
         PluginContainer = pluginContainer,
     };

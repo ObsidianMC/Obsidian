@@ -31,8 +31,8 @@ public sealed class RegionFile : IAsyncDisposable
 
     private bool[] freeSectors = [];
 
-    public int[] Locations { get; private set; } = new int[HeaderTableSize];
-    public int[] Timestamps { get; private set; } = new int[HeaderTableSize];
+    private readonly int[] locations = new int[HeaderTableSize];
+    private readonly int[] timestamps = new int[HeaderTableSize];
 
     public long EndOfFile => this.regionFileStream.Length;
 
@@ -78,7 +78,7 @@ public sealed class RegionFile : IAsyncDisposable
 
             await regionFileStream.ReadExactlyAsync(num);
 
-            this.Locations[index] = BinaryPrimitives.ReadInt32BigEndian(num);
+            this.locations[index] = BinaryPrimitives.ReadInt32BigEndian(num);
         }
 
         for (var index = 0; index < HeaderTableSize; index++)
@@ -87,7 +87,7 @@ public sealed class RegionFile : IAsyncDisposable
 
             await regionFileStream.ReadExactlyAsync(num);
 
-            this.Timestamps[index] = BinaryPrimitives.ReadInt32BigEndian(num);
+            this.timestamps[index] = BinaryPrimitives.ReadInt32BigEndian(num);
         }
 
         this.UpdateFreeSectors();
@@ -199,7 +199,7 @@ public sealed class RegionFile : IAsyncDisposable
     /// <summary>
     /// Whether the region file has data for the chunk at the local coordinates.
     /// </summary>
-    public bool HasChunk(int chunkX, int chunkZ) => this.Locations[this.GetChunkTableIndex(chunkX, chunkZ)] != 0;
+    public bool HasChunk(int chunkX, int chunkZ) => this.locations[this.GetChunkTableIndex(chunkX, chunkZ)] != 0;
 
     public void Flush()
     {
@@ -286,7 +286,7 @@ public sealed class RegionFile : IAsyncDisposable
         {
             using var mem = new RentedArray<byte>(4);
 
-            BinaryPrimitives.WriteInt32BigEndian(mem.Span, this.Locations[index]);
+            BinaryPrimitives.WriteInt32BigEndian(mem.Span, this.locations[index]);
 
             await this.regionFileStream.WriteAsync(mem);
         }
@@ -295,7 +295,7 @@ public sealed class RegionFile : IAsyncDisposable
         {
             using var mem = new RentedArray<byte>(4);
 
-            BinaryPrimitives.WriteInt32BigEndian(mem.Span, this.Timestamps[index]);
+            BinaryPrimitives.WriteInt32BigEndian(mem.Span, this.timestamps[index]);
 
             await this.regionFileStream.WriteAsync(mem);
         }
@@ -369,7 +369,7 @@ public sealed class RegionFile : IAsyncDisposable
 
     private (long offset, int size) GetLocation(int tableIndex)
     {
-        var sector = this.Locations[tableIndex];
+        var sector = this.locations[tableIndex];
 
         var offset = sector >> 8;
         var size = sector & 0xFF;
@@ -381,10 +381,10 @@ public sealed class RegionFile : IAsyncDisposable
         (x & this.op) + (z & this.op) * this.cubicRegionSize;
 
     private void SetTimestamp(int tableIndex, int time) =>
-        this.Timestamps[tableIndex] = time;
+        this.timestamps[tableIndex] = time;
 
     private void SetLocation(int tableIndex, int offset, int size) =>
-         this.Locations[tableIndex] = (offset << 8) | (size & 0xFF);
+         this.locations[tableIndex] = (offset << 8) | (size & 0xFF);
 
     private static int CalculateSectorSize(int length) =>
         (int)Math.Ceiling((length + 5) / (double)SectorSize);
@@ -448,7 +448,7 @@ public sealed class RegionFile : IAsyncDisposable
         public required int Size { get; init; }
 
         /// <summary>
-        /// The index of where the data is located in the <seealso cref="RegionFile.Locations"/> table.
+        /// The index of where the data is located in the <seealso cref="RegionFile.locations"/> table.
         /// </summary>
         public required int TableIndex { get; init; }
 

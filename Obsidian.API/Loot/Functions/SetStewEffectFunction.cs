@@ -11,7 +11,7 @@ namespace Obsidian.API.Loot.Functions;
 [LootType("minecraft:set_stew_effect")]
 public sealed class SetStewEffectFunction : LootFunction
 {
-    public StewEffect[] Effects { get; init; } = [];
+    public ImmutableArray<StewEffect> Effects { get; init; } = [];
 
     protected override ItemStack Run(ItemStack stack, LootContext context)
     {

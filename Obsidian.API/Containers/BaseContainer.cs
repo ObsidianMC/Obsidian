@@ -24,7 +24,7 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     public List<IPlayer> Viewers { get; } = [];
 
     public ItemStack? this[int index] { get => this.items[index]; set => this.items[index] = value; }
-    public ItemStack?[] this[Range range] { get => this.items[range]; }
+    public ReadOnlySpan<ItemStack?> this[Range range] => this.items.AsSpan(range);
 
     public BaseContainer(int size) : this(size, InventoryType.Custom) { }
 

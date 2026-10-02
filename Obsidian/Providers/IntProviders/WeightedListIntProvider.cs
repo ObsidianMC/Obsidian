@@ -10,11 +10,11 @@ public sealed class WeightedListIntProvider : IIntProvider
 {
     public string Type { get; init; } = IntProviderTypes.WeightedList;
 
-    public required WeightedEntry<IIntProvider>[] Distribution { get; init; }
+    public required ImmutableArray<WeightedEntry<IIntProvider>> Distribution { get; init; }
 
     public int MinValue => this.Distribution.Min(entry => entry.Data.MinValue);
 
     public int MaxValue => this.Distribution.Max(entry => entry.Data.MaxValue);
 
-    public int Sample(IRandomSource random) => WeightedEntry<IIntProvider>.Pick(this.Distribution, random).Sample(random);
+    public int Sample(IRandomSource random) => WeightedEntry<IIntProvider>.Pick(this.Distribution.AsSpan(), random).Sample(random);
 }

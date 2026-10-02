@@ -12,7 +12,7 @@ public sealed class SetInstrumentFunction : LootFunction
     /// <summary>
     /// The instruments of an instrument tag, in tag order.
     /// </summary>
-    public required InstrumentDefinition[] Options { get; init; }
+    public required ImmutableArray<InstrumentDefinition> Options { get; init; }
 
     protected override ItemStack Run(ItemStack stack, LootContext context)
     {

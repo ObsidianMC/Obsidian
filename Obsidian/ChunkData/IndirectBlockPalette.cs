@@ -63,7 +63,7 @@ public sealed class IndirectBlockPalette : BaseIndirectPalette<IBlock>, IPalette
     public override IPalette<IBlock> Clone()
     {
         int[] valuesCopy = GC.AllocateUninitializedArray<int>(Values.Length);
-        Array.Copy(Values, valuesCopy, Count);
+        Values[..Count].CopyTo(valuesCopy);
         return new IndirectBlockPalette(valuesCopy, BitCount, Count);
     }
 
@@ -110,7 +110,7 @@ public sealed class IndirectBiomePalette : BaseIndirectPalette<BiomeCodec>, IPal
     public override IPalette<BiomeCodec> Clone()
     {
         int[] valuesCopy = GC.AllocateUninitializedArray<int>(Values.Length);
-        Array.Copy(Values, valuesCopy, Count);
+        Values[..Count].CopyTo(valuesCopy);
         return new IndirectBiomePalette(valuesCopy, BitCount, Count);
     }
 

@@ -134,7 +134,7 @@ public class SinglePoolElement : StructurePoolElement
         if (!keepJigsaws)
             settings.Processors.Add(JigsawReplacementProcessor.Instance);
 
-        settings.Processors.AddRange(this.Processors.Processors);
+        settings.Processors.AddRange(this.Processors.Processors.AsSpan());
         settings.Processors.AddRange(ProjectionProcessors(this.Projection));
         return settings;
     }
@@ -162,7 +162,7 @@ public sealed class LegacySinglePoolElement : SinglePoolElement
 [StructureType("minecraft:list_pool_element")]
 public sealed class ListPoolElement : StructurePoolElement
 {
-    public required StructurePoolElement[] Elements
+    public required ImmutableArray<StructurePoolElement> Elements
     {
         get;
         init
@@ -176,7 +176,12 @@ public sealed class ListPoolElement : StructurePoolElement
     internal override void SetProjection(Projection value)
     {
         base.SetProjection(value);
-        foreach (var element in this.Elements ?? [])
+
+        // The elements aren't set yet when an object initializer sets the projection first.
+        if (this.Elements.IsDefault)
+            return;
+
+        foreach (var element in this.Elements)
             element.SetProjection(value);
     }
 

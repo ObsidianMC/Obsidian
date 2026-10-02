@@ -9,7 +9,7 @@ public sealed class BlockColumnFeature : ConfiguredFeatureBase
 {
     public override string Type => "minecraft:block_column";
 
-    public required BlockColumnLayer[] Layers { get; init; }
+    public required ImmutableArray<BlockColumnLayer> Layers { get; init; }
 
     public required BlockFace Direction { get; init; }
 

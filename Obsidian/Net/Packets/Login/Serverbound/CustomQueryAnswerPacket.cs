@@ -12,7 +12,7 @@ public partial class CustomQueryAnswerPacket
 
     [Field(2)]
     [Condition("Successful")]
-    public byte[] Data { get; private set; } = default!;
+    public ReadOnlyMemory<byte> Data { get; private set; }
 
     public override void Populate(INetStreamReader reader)
     {

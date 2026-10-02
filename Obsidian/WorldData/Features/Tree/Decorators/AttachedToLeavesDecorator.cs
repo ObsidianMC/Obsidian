@@ -18,7 +18,7 @@ public sealed class AttachedToLeavesDecorator : TreeDecorator
     /// <summary>Air blocks required in the attach direction, starting next to the leaf.</summary>
     public required int RequiredEmptyBlocks { get; init; }
 
-    public required BlockFace[] Directions { get; init; }
+    public required ImmutableArray<BlockFace> Directions { get; init; }
 
     public override void Place(TreeDecoratorContext context)
     {

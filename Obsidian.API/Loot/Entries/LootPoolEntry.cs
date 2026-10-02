@@ -10,7 +10,7 @@ public abstract class LootPoolEntry
     /// <summary>
     /// The entry only takes part in a roll when all of these pass.
     /// </summary>
-    public ILootCondition[] Conditions { get; init; } = [];
+    public ImmutableArray<ILootCondition> Conditions { get; init; } = [];
 
     /// <summary>
     /// Passes the entries this one contributes to a roll to <paramref name="output"/>; returns whether it contributed.

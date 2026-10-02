@@ -15,12 +15,12 @@ public sealed class Command
     public required IPluginContainer? PluginContainer { get; init; }
     public required string Name { get; init; }
 
-    public string[] Aliases { get; init; } = [];
+    public ImmutableArray<string> Aliases { get; init; } = [];
     public string? Description { get; init; }
     public string? Usage { get; init; }
 
     public List<IExecutor<CommandContext>> Overloads { get; init; } = [];
-    public BaseExecutionCheckAttribute[] ExecutionChecks { get; init; } = [];
+    public ImmutableArray<BaseExecutionCheckAttribute> ExecutionChecks { get; init; } = [];
 
     public Command? Parent { get; init; }
 

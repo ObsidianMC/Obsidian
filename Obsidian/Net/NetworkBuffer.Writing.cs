@@ -165,7 +165,7 @@ public partial class NetworkBuffer : INetStreamWriter
     public void WriteByteArray(byte[] values) => this.Write(values);
 
     [WriteMethod]
-    public void WriteByteArray(Span<byte> values) => this.Write(values);
+    public void WriteByteArray(ReadOnlySpan<byte> values) => this.Write(values);
 
     #endregion
 
@@ -434,7 +434,7 @@ public partial class NetworkBuffer : INetStreamWriter
             this.WriteVarInt(componentType);
     }
 
-    public void WriteLengthPrefixedArray<TValue>(Action<TValue> write, params TValue[] values)
+    public void WriteLengthPrefixedArray<TValue>(Action<TValue> write, params ReadOnlySpan<TValue> values)
     {
         this.WriteVarInt(values.Length);
 
@@ -701,7 +701,7 @@ public partial class NetworkBuffer : INetStreamWriter
     }
     #endregion
 
-    public byte[] ToArray() => this.Data;
+    public byte[] ToArray() => this.data;
 
     private const double MaxVelocityComponent = 1.7179869183E10;
     private const double MaxQuantizedValue = short.MaxValue - 1;

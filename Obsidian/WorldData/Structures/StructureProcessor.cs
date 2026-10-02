@@ -43,5 +43,5 @@ public sealed class StructureProcessorList
     /// <summary>Registry id (e.g. <c>minecraft:fossil_rot</c>), or empty when defined inline.</summary>
     public string Identifier { get; init; } = string.Empty;
 
-    public StructureProcessor[] Processors { get; init; } = [];
+    public ImmutableArray<StructureProcessor> Processors { get; init; } = [];
 }

@@ -10,7 +10,7 @@ public sealed class AttachedToLogsDecorator : TreeDecorator
 
     public required IBlockStateProvider BlockProvider { get; init; }
 
-    public required BlockFace[] Directions { get; init; }
+    public required ImmutableArray<BlockFace> Directions { get; init; }
 
     public override void Place(TreeDecoratorContext context)
     {

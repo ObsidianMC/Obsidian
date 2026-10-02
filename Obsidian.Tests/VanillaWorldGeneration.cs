@@ -219,7 +219,7 @@ public class VanillaWorldGeneration(WorldgenFixture worldgen)
             }
         }
 
-        var sections = area[(chunkX, chunkZ)].Sections;
+        var sections = area[(chunkX, chunkZ)].Sections.ToArray();
         var light = sections.SelectMany(section => section.SkyLightArray.ToArray())
             .Concat(sections.SelectMany(section => section.BlockLightArray.ToArray()))
             .ToArray();

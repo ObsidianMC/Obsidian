@@ -548,7 +548,7 @@ public class Region : IRegion
                 {
                     writer.WriteListStart("palette", NbtTagType.Compound, indirect.Count);
 
-                    Span<int> span = indirect.Values;
+                    ReadOnlySpan<int> span = indirect.Values;
                     for (int i = 0; i < indirect.Count; i++)
                     {
                         var id = span[i];
@@ -595,7 +595,7 @@ public class Region : IRegion
                     {
                         writer.WriteListStart("palette", NbtTagType.String, indirectBiomePalette.Count);
 
-                        Span<int> span = indirectBiomePalette.Values;
+                        ReadOnlySpan<int> span = indirectBiomePalette.Values;
                         for (int i = 0; i < indirectBiomePalette.Count; i++)
                         {
                             var biome = CodecRegistry.GetBiome(span[i]);

@@ -23,7 +23,7 @@ public sealed class EndSpikeFeature : ConfiguredFeatureBase
     /// <summary>
     /// Explicit spikes; when empty, the spikes are derived from the world seed like vanilla.
     /// </summary>
-    public required EndSpike[] Spikes { get; init; }
+    public required ImmutableArray<EndSpike> Spikes { get; init; }
 
     /// <summary>
     /// Where the crystals' beams point, if anywhere.
@@ -48,7 +48,7 @@ public sealed class EndSpikeFeature : ConfiguredFeatureBase
         if (!level.EnsureCanWrite(origin))
             return false;
 
-        var spikes = this.Spikes.Length > 0 ? this.Spikes : GetSpikesForLevel(level.Seed);
+        ReadOnlySpan<EndSpike> spikes = this.Spikes.Length > 0 ? this.Spikes.AsSpan() : GetSpikesForLevel(level.Seed);
         foreach (var spike in spikes)
         {
             if (origin.X >> 4 == spike.CenterX >> 4 && origin.Z >> 4 == spike.CenterZ >> 4)

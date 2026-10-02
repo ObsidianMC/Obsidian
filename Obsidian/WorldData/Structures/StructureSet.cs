@@ -13,7 +13,7 @@ public sealed class StructureSet
     /// </summary>
     public string Identifier { get; init; } = string.Empty;
 
-    public required StructureSetEntry[] Structures { get; init; }
+    public required ImmutableArray<StructureSetEntry> Structures { get; init; }
 
     public required StructurePlacement Placement { get; init; }
 }

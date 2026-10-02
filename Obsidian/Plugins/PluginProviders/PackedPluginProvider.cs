@@ -3,6 +3,7 @@ using Obsidian.API.Plugins;
 using System.Collections.Frozen;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -71,8 +72,8 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
             Id = pluginId,
             Name = pluginName,
             Version = Version.Parse(pluginVersion),
-            Authors = pluginAuthors.Split(','),
-            Dependencies = dependencies,
+            Authors = ImmutableCollectionsMarshal.AsImmutableArray(pluginAuthors.Split(',')),
+            Dependencies = ImmutableCollectionsMarshal.AsImmutableArray(dependencies),
             Description = pluginDescription,
             ProjectUrl = Uri.TryCreate(projectUrl, UriKind.Absolute, out var uri) ? uri : null,
             AssemblyName = pluginAssembly

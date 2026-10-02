@@ -89,7 +89,7 @@ public sealed class StructurePlaceSettings
     public void SetProcessors(StructureProcessorList list)
     {
         this.Processors.Clear();
-        this.Processors.AddRange(list.Processors);
+        this.Processors.AddRange(list.Processors.AsSpan());
     }
 }
 

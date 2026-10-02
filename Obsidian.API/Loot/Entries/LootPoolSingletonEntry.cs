@@ -20,7 +20,7 @@ public abstract class LootPoolSingletonEntry : LootPoolEntry
     /// <summary>
     /// Applied to every stack this entry generates.
     /// </summary>
-    public LootFunction[] Functions { get; init; } = [];
+    public ImmutableArray<LootFunction> Functions { get; init; } = [];
 
     public override bool Expand(LootContext context, Action<LootPoolSingletonEntry> output)
     {

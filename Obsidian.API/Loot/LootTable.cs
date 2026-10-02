@@ -34,12 +34,12 @@ public sealed class LootTable
     /// </summary>
     public string? RandomSequence { get; init; }
 
-    public LootPool[] Pools { get; init; } = [];
+    public ImmutableArray<LootPool> Pools { get; init; } = [];
 
     /// <summary>
     /// Applied to every stack the table generates, after the pool's functions.
     /// </summary>
-    public LootFunction[] Functions { get; init; } = [];
+    public ImmutableArray<LootFunction> Functions { get; init; } = [];
 
     /// <summary>
     /// Creates the random source vanilla uses for a stored loot table seed: a non-zero seed seeds a fresh

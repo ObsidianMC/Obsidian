@@ -12,7 +12,7 @@ public abstract class LootFunction
     /// <summary>
     /// The function only runs when all of these pass.
     /// </summary>
-    public ILootCondition[] Conditions { get; init; } = [];
+    public ImmutableArray<ILootCondition> Conditions { get; init; } = [];
 
     /// <summary>
     /// Runs the function if its conditions pass and returns the resulting stack, which may be a new instance.
@@ -25,7 +25,7 @@ public abstract class LootFunction
     /// <summary>
     /// Applies <paramref name="functions"/> in order.
     /// </summary>
-    public static ItemStack ApplyAll(LootFunction[] functions, ItemStack stack, LootContext context)
+    public static ItemStack ApplyAll(ImmutableArray<LootFunction> functions, ItemStack stack, LootContext context)
     {
         foreach (var function in functions)
             stack = function.Apply(stack, context);
@@ -36,6 +36,6 @@ public abstract class LootFunction
     /// <summary>
     /// Wraps <paramref name="output"/> so every stack passes through <paramref name="functions"/> first.
     /// </summary>
-    public static Action<ItemStack> Decorate(LootFunction[] functions, Action<ItemStack> output, LootContext context) =>
+    public static Action<ItemStack> Decorate(ImmutableArray<LootFunction> functions, Action<ItemStack> output, LootContext context) =>
         functions.Length == 0 ? output : stack => output(ApplyAll(functions, stack, context));
 }

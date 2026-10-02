@@ -43,7 +43,8 @@ public abstract class AbstractLevel : ILevel
     // from its own (its neighbors' decorations reach theirs), and writes to an unloaded chunk would be lost.
     private readonly ConcurrentDictionary<long, int> generationPins = [];
 
-    public long[] SpawnChunks { get; }
+    // The chunks kept loaded around the spawn, filled in once the spawn is known.
+    protected readonly long[] spawnChunks;
 
     public ConcurrentHashSet<long> LoadedChunks { get; protected set; } = [];
 
@@ -128,7 +129,7 @@ public abstract class AbstractLevel : ILevel
         this.Fluids = new LevelFluids(this);
 
         var spawnChunkCount = 2 * this.Configuration.SpawnChunkRadius + 1;
-        this.SpawnChunks = new long[spawnChunkCount * spawnChunkCount];
+        this.spawnChunks = new long[spawnChunkCount * spawnChunkCount];
 
         this.Generator.Init(this);
     }
@@ -507,7 +508,7 @@ public abstract class AbstractLevel : ILevel
                 chunksToKeep.AddRange(p.LoadedChunks);
             });
 
-            foreach (var chunk in LoadedChunks.Except(chunksToKeep).Except(SpawnChunks).Where(chunk => !this.generationPins.ContainsKey(chunk)))
+            foreach (var chunk in LoadedChunks.Except(chunksToKeep).Except(this.spawnChunks).Where(chunk => !this.generationPins.ContainsKey(chunk)))
             {
                 if (LoadedChunks.TryRemove(chunk))
                 {
@@ -774,7 +775,7 @@ public abstract class AbstractLevel : ILevel
             var (x, z) = LevelData.SpawnPosition.ToChunkCoord();
             for (var cx = x - this.Configuration.SpawnChunkRadius; cx < x + this.Configuration.SpawnChunkRadius; cx++)
                 for (var cz = z - this.Configuration.SpawnChunkRadius; cz < z + this.Configuration.SpawnChunkRadius; cz++)
-                    SpawnChunks[index++] = NumericsHelper.IntsToLong(cx, cz);
+                    this.spawnChunks[index++] = NumericsHelper.IntsToLong(cx, cz);
         }
 
         this.generated = true;

@@ -50,7 +50,7 @@ public sealed class RandomPoolAlias : PoolAliasBinding
 {
     public required string Alias { get; init; }
 
-    public required WeightedPoolId[] Targets { get; init; }
+    public required ImmutableArray<WeightedPoolId> Targets { get; init; }
 
     public override void ForEachResolved(IRandomSource random, Action<string, string> resolved)
     {
@@ -64,12 +64,16 @@ public sealed class RandomPoolAlias : PoolAliasBinding
 [StructureType("minecraft:random_group")]
 public sealed class RandomGroupPoolAlias : PoolAliasBinding
 {
-    public required WeightedAliasGroup[] Groups { get; init; }
+    public required ImmutableArray<WeightedAliasGroup> Groups { get; init; }
 
     public override void ForEachResolved(IRandomSource random, Action<string, string> resolved)
     {
+        // PickWeighted returns a default (uninitialized) array when nothing is picked.
         var group = PickWeighted(random, [.. this.Groups.Select(entry => (entry.Data, entry.Weight))]);
-        foreach (var binding in group ?? [])
+        if (group.IsDefault)
+            return;
+
+        foreach (var binding in group)
             binding.ForEachResolved(random, resolved);
     }
 }
@@ -85,7 +89,7 @@ public sealed class WeightedPoolId
 /// <summary>A group of aliases and its weight.</summary>
 public sealed class WeightedAliasGroup
 {
-    public required PoolAliasBinding[] Data { get; init; }
+    public required ImmutableArray<PoolAliasBinding> Data { get; init; }
 
     public required int Weight { get; init; }
 }
@@ -105,9 +109,9 @@ public sealed class PoolAliasLookup
     /// Vanilla <c>PoolAliasLookup.create</c>: resolves the bindings with a random seeded by the world seed and the start
     /// position.
     /// </summary>
-    public static PoolAliasLookup Create(IReadOnlyList<PoolAliasBinding> bindings, Vector position, long seed)
+    public static PoolAliasLookup Create(ImmutableArray<PoolAliasBinding> bindings, Vector position, long seed)
     {
-        if (bindings.Count == 0)
+        if (bindings.Length == 0)
             return Empty;
 
         var random = new LegacyRandomSource(seed).ForkPositional().At(position.X, position.Y, position.Z);

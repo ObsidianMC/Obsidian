@@ -29,7 +29,7 @@ public sealed class JigsawStructure : Structure
     /// </summary>
     public required int MaxDistanceFromCenter { get; init; }
 
-    public PoolAliasBinding[] PoolAliases { get; init; } = [];
+    public ImmutableArray<PoolAliasBinding> PoolAliases { get; init; } = [];
 
     /// <summary>
     /// Blocks pieces keep from the bottom and top of the world, or <c>null</c> when unset (vanilla's single-number form).

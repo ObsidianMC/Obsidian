@@ -12,7 +12,7 @@ public sealed class EnchantRandomlyFunction : LootFunction
     /// <summary>
     /// The enchantments to pick from; every enchantment when null.
     /// </summary>
-    public EnchantmentDefinition[]? Options { get; init; }
+    public ImmutableArray<EnchantmentDefinition>? Options { get; init; }
 
     /// <summary>
     /// Only picks enchantments that support the item. Books accept any enchantment either way.
@@ -23,7 +23,8 @@ public sealed class EnchantRandomlyFunction : LootFunction
     {
         var isBook = LootItems.Is(stack, Material.Book);
         var onlyCompatible = !isBook && this.OnlyCompatible;
-        var candidates = (this.Options ?? EnchantmentsRegistry.All)
+        IReadOnlyList<EnchantmentDefinition> options = this.Options.HasValue ? this.Options.Value : EnchantmentsRegistry.All;
+        var candidates = options
             .Where(enchantment => !onlyCompatible || enchantment.CanEnchant(stack))
             .ToList();
 

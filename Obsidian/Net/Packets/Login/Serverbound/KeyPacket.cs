@@ -5,10 +5,10 @@ namespace Obsidian.Net.Packets.Login.Serverbound;
 public partial class KeyPacket
 {
     [Field(0)]
-    public byte[] SharedSecret { get; private set; } = default!;
+    public ReadOnlyMemory<byte> SharedSecret { get; private set; }
 
     [Field(1)]
-    public byte[] VerifyToken { get; private set; } = default!;
+    public ReadOnlyMemory<byte> VerifyToken { get; private set; }
 
     public override void Populate(INetStreamReader reader)
     {
@@ -18,9 +18,9 @@ public partial class KeyPacket
 
     public async override ValueTask HandleAsync(IClient client)
     {
-        var decryptedToken = client.SetSharedKeyAndDecodeVerifyToken(this.SharedSecret, this.VerifyToken);
+        var decryptedToken = client.SetSharedKeyAndDecodeVerifyToken(this.SharedSecret.Span, this.VerifyToken.Span);
 
-        if (!decryptedToken.SequenceEqual(client.RandomToken!))
+        if (!decryptedToken.SequenceEqual(client.RandomToken.Span))
         {
             await client.DisconnectAsync("Invalid token...");
             return;

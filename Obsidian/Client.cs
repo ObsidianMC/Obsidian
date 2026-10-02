@@ -50,9 +50,9 @@ public sealed partial class Client : IClient
     private bool disposed;
 
     /// <summary>
-    /// The random token used to encrypt the stream.
+    /// The random token used to encrypt the stream; empty until the encryption request is sent.
     /// </summary>
-    public byte[]? RandomToken { get; private set; }
+    public ReadOnlyMemory<byte> RandomToken { get; private set; }
 
     /// <summary>
     /// The server's token used to encrypt the stream.
@@ -183,7 +183,7 @@ public sealed partial class Client : IClient
         return true;
     }
 
-    public ReadOnlySpan<byte> SetSharedKeyAndDecodeVerifyToken(byte[] secret, byte[] verifyToken)
+    public ReadOnlySpan<byte> SetSharedKeyAndDecodeVerifyToken(ReadOnlySpan<byte> secret, ReadOnlySpan<byte> verifyToken)
     {
         this.sharedKey = packetCryptography.Decrypt(secret);
         return this.packetCryptography.Decrypt(verifyToken);
@@ -276,7 +276,7 @@ public sealed partial class Client : IClient
         if (this.Player is null)
             throw new InvalidOperationException("Received Encryption Response before sending Login Start.");
 
-        if (this.RandomToken is null)
+        if (this.RandomToken.IsEmpty)
             throw new InvalidOperationException("Received Encryption Response before sending Encryption Request.");
     }
 

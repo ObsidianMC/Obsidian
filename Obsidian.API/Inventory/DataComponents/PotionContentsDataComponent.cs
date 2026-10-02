@@ -1,4 +1,6 @@
-﻿namespace Obsidian.API.Inventory.DataComponents;
+﻿using System.Runtime.InteropServices;
+
+namespace Obsidian.API.Inventory.DataComponents;
 public sealed record class PotionContentsDataComponent : DataComponent
 {
     public override DataComponentType Type => DataComponentType.PotionContents;
@@ -15,7 +17,7 @@ public sealed record class PotionContentsDataComponent : DataComponent
     /// <summary>
     /// Effects on top of the potion's own.
     /// </summary>
-    public PotionEffectData[] CustomEffects { get; set; } = [];
+    public ImmutableArray<PotionEffectData> CustomEffects { get; set; } = [];
 
     /// <summary>
     /// Replaces the potion's name in the item name, e.g. <c>water</c> for "Water Bottle".
@@ -26,7 +28,7 @@ public sealed record class PotionContentsDataComponent : DataComponent
     {
         this.Potion = reader.ReadBoolean() ? (Potion)reader.ReadVarInt() : null;
         this.CustomColor = reader.ReadOptionalInt();
-        this.CustomEffects = reader.ReadLengthPrefixedArray(() => PotionEffectData.Read(reader));
+        this.CustomEffects = ImmutableCollectionsMarshal.AsImmutableArray(reader.ReadLengthPrefixedArray(() => PotionEffectData.Read(reader)));
         this.CustomName = reader.ReadOptionalString();
     }
 
@@ -37,7 +39,7 @@ public sealed record class PotionContentsDataComponent : DataComponent
             writer.WriteVarInt((int)this.Potion.Value);
 
         writer.WriteOptional(this.CustomColor);
-        writer.WriteLengthPrefixedArray((effect) => PotionEffectData.Write(effect, writer), this.CustomEffects);
+        writer.WriteLengthPrefixedArray((effect) => PotionEffectData.Write(effect, writer), this.CustomEffects.AsSpan());
         writer.WriteOptional(this.CustomName);
     }
 }

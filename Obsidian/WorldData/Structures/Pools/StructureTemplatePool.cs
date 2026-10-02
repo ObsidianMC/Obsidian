@@ -18,7 +18,7 @@ public sealed class StructureTemplatePool
     /// <summary>The id of the pool used when no piece of this one fits, or at the structure's maximum depth.</summary>
     public required string Fallback { get; init; }
 
-    public required StructurePoolEntry[] Elements { get; init; }
+    public required ImmutableArray<StructurePoolEntry> Elements { get; init; }
 
     /// <summary>The elements, each repeated by its weight, like vanilla's <c>templates</c> list.</summary>
     internal StructurePoolElement[] Templates => field ??= [.. this.Elements.SelectMany(entry => Enumerable.Repeat(entry.Element, entry.Weight))];

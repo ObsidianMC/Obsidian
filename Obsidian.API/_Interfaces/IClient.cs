@@ -24,7 +24,10 @@ public interface IClient : IDisposable
 
     public int Ping { get; set; }
 
-    public byte[]? RandomToken { get; }
+    /// <summary>
+    /// The verify token sent in the encryption request; empty until the request is sent.
+    /// </summary>
+    public ReadOnlyMemory<byte> RandomToken { get; }
 
     /// <summary>
     /// The player that the client is logged in as.
@@ -35,7 +38,7 @@ public interface IClient : IDisposable
 
     public bool SendPacket(IClientboundPacket packet);
 
-    public ReadOnlySpan<byte> SetSharedKeyAndDecodeVerifyToken(byte[] sharedKey, byte[] verifyToken);
+    public ReadOnlySpan<byte> SetSharedKeyAndDecodeVerifyToken(ReadOnlySpan<byte> sharedKey, ReadOnlySpan<byte> verifyToken);
 
     public ValueTask DisconnectAsync(ChatMessage reason);
     public ValueTask QueuePacketAsync(IClientboundPacket packet);

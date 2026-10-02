@@ -33,7 +33,7 @@ public sealed class FakeServer : IServer
 
     public HashSet<string> RegisteredChannels => throw new NotImplementedException();
 
-    public byte[] BrandData => throw new NotImplementedException();
+    public ReadOnlyMemory<byte> BrandData => throw new NotImplementedException();
 
     public ICommandHandler CommandHandler => throw new NotImplementedException();
 

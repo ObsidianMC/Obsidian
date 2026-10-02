@@ -11,7 +11,7 @@ public interface ILootCondition
     /// Tests every condition in order and stops at the first that fails, as vanilla does. Later conditions draw no
     /// random numbers once one fails.
     /// </summary>
-    public static bool TestAll(ILootCondition[] conditions, LootContext context)
+    public static bool TestAll(ImmutableArray<ILootCondition> conditions, LootContext context)
     {
         foreach (var condition in conditions)
         {

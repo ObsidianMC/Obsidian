@@ -18,12 +18,12 @@ public sealed class FossilFeature : ConfiguredFeatureBase
     /// <summary>
     /// Template ids of the bone structures (e.g. <c>minecraft:fossil/spine_1</c>).
     /// </summary>
-    public required string[] FossilStructures { get; init; }
+    public required ImmutableArray<string> FossilStructures { get; init; }
 
     /// <summary>
     /// Template ids of the ore overlays, paired by index with <see cref="FossilStructures"/>.
     /// </summary>
-    public required string[] OverlayStructures { get; init; }
+    public required ImmutableArray<string> OverlayStructures { get; init; }
 
     /// <summary>
     /// Processors applied to the fossil (e.g. <c>minecraft:fossil_rot</c>).
@@ -40,9 +40,9 @@ public sealed class FossilFeature : ConfiguredFeatureBase
     /// </summary>
     public required int MaxEmptyCornersAllowed { get; init; }
 
-    private StructureTemplate[] Fossils => field ??= Array.ConvertAll(this.FossilStructures, StructureRegistry.Get);
+    private StructureTemplate[] Fossils => field ??= [.. this.FossilStructures.Select(StructureRegistry.Get)];
 
-    private StructureTemplate[] Overlays => field ??= Array.ConvertAll(this.OverlayStructures, StructureRegistry.Get);
+    private StructureTemplate[] Overlays => field ??= [.. this.OverlayStructures.Select(StructureRegistry.Get)];
 
     public override bool Place(FeatureContext context)
     {

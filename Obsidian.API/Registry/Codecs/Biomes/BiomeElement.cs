@@ -16,7 +16,7 @@ public sealed record class BiomeElement
     public string? Category { get; set; }
     public string? TemperatureModifier { get; set; }
 
-    public string[][] Features { get; set; } = [];
+    public ImmutableArray<ImmutableArray<string>> Features { get; set; } = [];
     public Dictionary<string, string[]> Carvers { get; set; } = default!;
     public Dictionary<string, SpawnerMob[]> Spawners { get; set; } = default!;
     public Dictionary<string, SpawnCost> SpawnCosts { get; set; } = default!;

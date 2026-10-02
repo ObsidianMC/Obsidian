@@ -10,7 +10,7 @@ public sealed class RuleBasedStateProvider
 {
     public required IBlockStateProvider Fallback { get; init; }
 
-    public Rule[] Rules { get; init; } = [];
+    public ImmutableArray<Rule> Rules { get; init; } = [];
 
     public IBlock GetState(IWorldGenLevel level, IRandomSource random, Vector position)
     {

@@ -61,6 +61,6 @@ public class ItemStackNetwork
     {
         var buffer = new NetworkBuffer();
         buffer.WriteItemStack(stack);
-        return Convert.ToHexStringLower(buffer.Data.AsSpan(0, buffer.Offset));
+        return Convert.ToHexStringLower(buffer.GetBuffer().AsSpan(0, buffer.Offset));
     }
 }

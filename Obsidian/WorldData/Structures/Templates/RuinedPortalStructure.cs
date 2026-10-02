@@ -16,7 +16,7 @@ public sealed class RuinedPortalStructure : Structure
     private static readonly string[] giantPortals = [.. Enumerable.Range(1, 3).Select(index => $"minecraft:ruined_portal/giant_portal_{index}")];
 
     /// <summary>The ways the portal can be placed, picked by weight.</summary>
-    public required RuinedPortalSetup[] Setups { get; init; }
+    public required ImmutableArray<RuinedPortalSetup> Setups { get; init; }
 
     internal override StructureStub? FindGenerationPoint(StructureGenerationContext context)
     {

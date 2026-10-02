@@ -15,7 +15,7 @@ public sealed class OreFeature : ConfiguredFeatureBase
     /// <summary>
     /// Candidate replacements; the first whose rule matches the existing block is used.
     /// </summary>
-    public required OreTarget[] Targets { get; init; }
+    public required ImmutableArray<OreTarget> Targets { get; init; }
 
     public required int Size { get; init; }
 

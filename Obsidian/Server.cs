@@ -28,14 +28,14 @@ public sealed partial class Server : IServer
     internal readonly CancellationTokenSource cancelTokenSource;
     internal readonly ILogger logger;
 
-    public byte[] BrandData
+    public ReadOnlyMemory<byte> BrandData
     {
         get
         {
             var buffer = new NetworkBuffer();
             buffer.WriteString(this.Brand);
 
-            return buffer.Data;
+            return buffer.GetBuffer();
         }
     }
 

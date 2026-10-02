@@ -8,7 +8,7 @@ public sealed class SimpleRandomSelectorFeature : ConfiguredFeatureBase
 {
     public override string Type => "minecraft:simple_random_selector";
 
-    public required PlacedFeature[] Features { get; init; }
+    public required ImmutableArray<PlacedFeature> Features { get; init; }
 
     public override bool Place(FeatureContext context) =>
         context.Level.EnsureCanWrite(context.Origin)

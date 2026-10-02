@@ -8,7 +8,7 @@ public sealed class AllOfPredicate : IBlockPredicate
 {
     public string Type { get; init; } = "minecraft:all_of";
 
-    public required IBlockPredicate[] Predicates { get; init; }
+    public required ImmutableArray<IBlockPredicate> Predicates { get; init; }
 
     public bool Test(IWorldGenLevel level, Vector position) => this.Predicates.All(predicate => predicate.Test(level, position));
 }

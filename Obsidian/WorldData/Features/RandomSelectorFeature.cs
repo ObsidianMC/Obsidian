@@ -8,7 +8,7 @@ public sealed class RandomSelectorFeature : ConfiguredFeatureBase
 {
     public override string Type => "minecraft:random_selector";
 
-    public required WeightedPlacedFeature[] Features { get; init; }
+    public required ImmutableArray<WeightedPlacedFeature> Features { get; init; }
 
     public required PlacedFeature Default { get; init; }
 

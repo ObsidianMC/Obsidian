@@ -18,7 +18,7 @@ public sealed class BlockIgnoreProcessor : StructureProcessor
     public static BlockIgnoreProcessor Air { get; } = Create("minecraft:air");
 
     /// <summary>The blocks to skip; only their block type matters.</summary>
-    public required SimpleBlockState[] Blocks { get; init; }
+    public required ImmutableArray<SimpleBlockState> Blocks { get; init; }
 
     private BlockSet Ignored => field ??= new BlockSet([.. this.Blocks.Select(block => block.Name)]);
 

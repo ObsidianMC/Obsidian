@@ -273,7 +273,7 @@ internal sealed class StructureManager : IStructurePlacementState
     /// <summary>
     /// Picks the set's structures by weight until one starts, dropping each that doesn't.
     /// </summary>
-    private StructureStart? TryGenerateWeighted(StructureSetEntry[] entries, int chunkX, int chunkZ)
+    private StructureStart? TryGenerateWeighted(ImmutableArray<StructureSetEntry> entries, int chunkX, int chunkZ)
     {
         var candidates = entries.ToList();
         var random = new WorldgenRandom(new LegacyRandomSource(0L));

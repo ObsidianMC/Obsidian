@@ -96,7 +96,7 @@ public partial class Client
             try
             {
                 this.receiving = true;
-                this.receiveEvent.SetBuffer(this.receiveBuffer.Data, this.receiveBuffer.Offset, this.receiveBuffer.Capacity);
+                this.receiveEvent.SetBuffer(this.receiveBuffer.GetBuffer(), this.receiveBuffer.Offset, this.receiveBuffer.Capacity);
 
                 var willRaiseEvent = this.Socket.ReceiveAsync(this.receiveEvent);
                 if (!willRaiseEvent)
@@ -142,7 +142,7 @@ public partial class Client
 
             try
             {
-                this.sendEvent.SetBuffer(this.sendBufferFlush.Data, this.sendBufferFlushOffset, this.sendBufferFlush.Offset);
+                this.sendEvent.SetBuffer(this.sendBufferFlush.GetBuffer(), this.sendBufferFlushOffset, this.sendBufferFlush.Offset);
 
                 if (!this.Socket.SendAsync(this.sendEvent))
                     process = this.ProcessSend(this.sendEvent);
@@ -199,7 +199,7 @@ public partial class Client
                     }
                     else if (packetData.Id == 0x01)
                     {
-                        var pong = Net.Packets.Status.Serverbound.PingRequestPacket.Deserialize(packetData.NetworkBuffer.Data);
+                        var pong = Net.Packets.Status.Serverbound.PingRequestPacket.Deserialize(packetData.NetworkBuffer.GetBuffer());
 
                         SendPacket(new PongResponsePacket { Timestamp = pong.Timestamp });
                     }
@@ -209,7 +209,7 @@ public partial class Client
                     if (packetData.Id != 0x00)
                         return;
 
-                    await IntentionPacket.Deserialize(packetData.NetworkBuffer.Data).HandleAsync(this);
+                    await IntentionPacket.Deserialize(packetData.NetworkBuffer.GetBuffer()).HandleAsync(this);
                     break;
 
                 case ClientState.Login:
@@ -218,7 +218,7 @@ public partial class Client
                 case ClientState.Configuration:
                     Debug.Assert(Player is not null);
 
-                    var result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.Server, packetData.Id, packetData.NetworkBuffer.Data));
+                    var result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.Server, packetData.Id, packetData.NetworkBuffer.GetBuffer()));
 
                     if (result == EventResult.Cancelled)
                     {
@@ -232,7 +232,7 @@ public partial class Client
                 case ClientState.Play:
                     Debug.Assert(Player is not null);
 
-                    result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.Server, packetData.Id, packetData.NetworkBuffer.Data));
+                    result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.Server, packetData.Id, packetData.NetworkBuffer.GetBuffer()));
 
                     if (result == EventResult.Cancelled)
                     {

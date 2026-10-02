@@ -12,17 +12,17 @@ namespace Obsidian.API.Loot;
 /// </summary>
 public sealed class LootPool
 {
-    public required LootPoolEntry[] Entries { get; init; }
+    public required ImmutableArray<LootPoolEntry> Entries { get; init; }
 
     /// <summary>
     /// The pool is skipped unless all of these pass.
     /// </summary>
-    public ILootCondition[] Conditions { get; init; } = [];
+    public ImmutableArray<ILootCondition> Conditions { get; init; } = [];
 
     /// <summary>
     /// Applied to every stack the pool generates, after the entry's own functions.
     /// </summary>
-    public LootFunction[] Functions { get; init; } = [];
+    public ImmutableArray<LootFunction> Functions { get; init; } = [];
 
     public required INumberProvider Rolls { get; init; }
 

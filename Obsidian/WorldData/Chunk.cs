@@ -28,7 +28,7 @@ public sealed class Chunk : IChunk
     /// <summary>
     /// The number of block layers in the chunk.
     /// </summary>
-    public int Height => this.Sections.Length << 4;
+    public int Height => this.sections.Length << 4;
 
     //TODO try and do some temp caching
     public Dictionary<short, BlockMeta> BlockMetaStore { get; private set; } = new Dictionary<short, BlockMeta>();
@@ -77,7 +77,9 @@ public sealed class Chunk : IChunk
     /// </summary>
     internal FinalHeightmaps? FinalHeightmaps { get; set; }
 
-    public IChunkSection[] Sections { get; private set; }
+    private readonly IChunkSection[] sections;
+
+    public ReadOnlySpan<IChunkSection> Sections => this.sections;
     public IDictionary<HeightmapType, Heightmap> Heightmaps { get; }
 
     public Chunk(int x, int z, ChunkGenStage status = ChunkGenStage.empty) : this(x, z, -64, 384, status)
@@ -93,10 +95,10 @@ public sealed class Chunk : IChunk
         MinY = minY;
 
         // Sections come first: heightmaps size their entries from the chunk height.
-        Sections = new ChunkSection[height >> 4];
-        for (int i = 0; i < Sections.Length; i++)
+        this.sections = new ChunkSection[height >> 4];
+        for (int i = 0; i < this.sections.Length; i++)
         {
-            Sections[i] = new ChunkSection(yBase: i + (minY >> 4));
+            this.sections[i] = new ChunkSection(yBase: i + (minY >> 4));
         }
 
         Heightmaps = new Dictionary<HeightmapType, Heightmap>()
@@ -117,7 +119,7 @@ public sealed class Chunk : IChunk
         MinY = sections[0].YBase!.Value << 4;
 
         Heightmaps = heightmaps;
-        Sections = sections;
+        this.sections = sections;
     }
 
     public IBlock GetBlock(int x, int y, int z)
@@ -128,7 +130,7 @@ public sealed class Chunk : IChunk
         y = (y & 15);
         z = (z & 15);
 
-        return Sections[i].GetBlock(x, y, z);
+        return this.sections[i].GetBlock(x, y, z);
     }
 
     public BiomeCodec GetBiome(int x, int y, int z)
@@ -139,7 +141,7 @@ public sealed class Chunk : IChunk
         z = (z & 15) >> 2;
         y = (y & 15) >> 2;
 
-        return Sections[i].GetBiome(x, y, z);
+        return this.sections[i].GetBiome(x, y, z);
     }
 
     public void SetBiome(int x, int y, int z, BiomeCodec biome)
@@ -150,7 +152,7 @@ public sealed class Chunk : IChunk
         y = (y & 15) >> 2;
         z = (z & 15) >> 2;
 
-        Sections[i].SetBiome(x, y, z, biome);
+        this.sections[i].SetBiome(x, y, z, biome);
     }
 
     public IBlockEntity GetBlockEntity(int x, int y, int z) => this.BlockEntities.GetValueOrDefault(this.BlockEntityKey(x, y, z));
@@ -177,7 +179,7 @@ public sealed class Chunk : IChunk
         y = (y & 15);
         z = (z & 15);
 
-        Sections[i].SetBlock(x, y, z, block);
+        this.sections[i].SetBlock(x, y, z, block);
     }
 
     public BlockMeta GetBlockMeta(int x, int y, int z)
@@ -202,7 +204,7 @@ public sealed class Chunk : IChunk
 
     public void SetLightLevel(int x, int y, int z, LightType lt, int level)
     {
-        var sec = Sections[SectionIndex(y)];
+        var sec = this.sections[SectionIndex(y)];
         x = (x & 15);
         y = (y & 15);
         z = (z & 15);
@@ -211,7 +213,7 @@ public sealed class Chunk : IChunk
 
     public int GetLightLevel(int x, int y, int z, LightType lt)
     {
-        var sec = Sections[SectionIndex(y)];
+        var sec = this.sections[SectionIndex(y)];
         x = (x & 15);
         y = (y & 15);
         z = (z & 15);
@@ -250,15 +252,15 @@ public sealed class Chunk : IChunk
          * above the max world height (one section above the world). 
          * */
         var bs = new BitSet();
-        for (int i = 0; i < Sections.Length + 2; i++)
+        for (int i = 0; i < this.sections.Length + 2; i++)
         {
-            if (i == 0 || i == Sections.Length + 1)
+            if (i == 0 || i == this.sections.Length + 1)
             {
                 continue;
             }
             else
             {
-                var hasLight = lt == LightType.Sky ? Sections[i - 1].HasSkyLight : Sections[i - 1].HasBlockLight;
+                var hasLight = lt == LightType.Sky ? this.sections[i - 1].HasSkyLight : this.sections[i - 1].HasBlockLight;
                 bs.SetBit(i, hasLight);
             }
         }
@@ -270,15 +272,15 @@ public sealed class Chunk : IChunk
     public void WriteEmptyLightMaskTo(INetStreamWriter writer, LightType lt)
     {
         var bs = new BitSet();
-        for (int i = 0; i < Sections.Length + 2; i++)
+        for (int i = 0; i < this.sections.Length + 2; i++)
         {
-            if (i == 0 || i == Sections.Length + 1)
+            if (i == 0 || i == this.sections.Length + 1)
             {
                 continue;
             }
             else
             {
-                var hasLight = lt == LightType.Sky ? Sections[i - 1].HasSkyLight : Sections[i - 1].HasBlockLight;
+                var hasLight = lt == LightType.Sky ? this.sections[i - 1].HasSkyLight : this.sections[i - 1].HasBlockLight;
                 bs.SetBit(i, !hasLight);
             }
         }
@@ -290,32 +292,32 @@ public sealed class Chunk : IChunk
     public void WriteLightTo(INetStreamWriter writer, LightType lt)
     {
         // Sanity check
-        var litSections = Sections.Count(s => lt == LightType.Sky ? s.HasSkyLight : s.HasBlockLight);
+        var litSections = this.sections.Count(s => lt == LightType.Sky ? s.HasSkyLight : s.HasBlockLight);
         writer.WriteVarInt(litSections);
 
         if (litSections == 0) { return; }
 
-        for (int a = 0; a < Sections.Length; a++)
+        for (int a = 0; a < this.sections.Length; a++)
         {
-            if (lt == LightType.Sky && Sections[a].HasSkyLight)
+            if (lt == LightType.Sky && this.sections[a].HasSkyLight)
             {
-                writer.WriteVarInt(Sections[a].SkyLightArray.Length);
-                writer.WriteByteArray(Sections[a].SkyLightArray.ToArray());
+                writer.WriteVarInt(this.sections[a].SkyLightArray.Length);
+                writer.WriteByteArray(this.sections[a].SkyLightArray.ToArray());
             }
-            else if (lt == LightType.Block && Sections[a].HasBlockLight)
+            else if (lt == LightType.Block && this.sections[a].HasBlockLight)
             {
-                writer.WriteVarInt(Sections[a].BlockLightArray.Length);
-                writer.WriteByteArray(Sections[a].BlockLightArray.ToArray());
+                writer.WriteVarInt(this.sections[a].BlockLightArray.Length);
+                writer.WriteByteArray(this.sections[a].BlockLightArray.ToArray());
             }
         }
     }
 
     public IChunk Clone(int x, int z)
     {
-        var sections = new IChunkSection[Sections.Length];
+        var sections = new IChunkSection[this.sections.Length];
         for (int i = 0; i < sections.Length; i++)
         {
-            sections[i] = Sections[i].Clone();
+            sections[i] = this.sections[i].Clone();
         }
 
         var heightmaps = new Dictionary<HeightmapType, Heightmap>();

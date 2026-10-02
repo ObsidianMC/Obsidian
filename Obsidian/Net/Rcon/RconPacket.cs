@@ -20,16 +20,16 @@ public sealed class RconPacket
     public int Length => 4 + 4 + PayloadBytes.Length + 1; // RequestId (Int32) + Type (Int32) + PayloadBytes (varies) + padding (1)
     public int RequestId { get; set; }
     public RconPacketType Type { get; set; }
-    public byte[] PayloadBytes { get; set; } = [0x00];
+    public ReadOnlyMemory<byte> PayloadBytes { get; set; } = new byte[] { 0x00 };
     public string PayloadText
     {
         get => PayloadBytes.Length > 1
-            ? encoding.GetString(PayloadBytes.Take(PayloadBytes.Length - 1).ToArray())
+            ? encoding.GetString(PayloadBytes.Span[..^1])
             : string.Empty;
         set
         {
             if (string.IsNullOrEmpty(value))
-                PayloadBytes = [0x00];
+                PayloadBytes = new byte[] { 0x00 };
             PayloadBytes = encoding.GetBytes(value).Append((byte)0x00).ToArray();
         }
     }
@@ -104,7 +104,7 @@ public sealed class RconPacket
         BinaryPrimitives.WriteInt32LittleEndian(buf, (int)Type);
         stream.Write(buf);
 
-        stream.Write(PayloadBytes);
+        stream.Write(PayloadBytes.Span);
 
         stream.WriteByte(0x00); // Padding
     }

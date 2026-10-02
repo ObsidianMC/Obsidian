@@ -5,25 +5,31 @@ namespace Obsidian.ChunkData;
 
 public abstract class BaseIndirectPalette<T> : IPalette<T>
 {
-    public int[] Values { get; private set; }
+    private int[] values;
+
+    /// <summary>
+    /// The palette's value ids. Spans the whole backing array, which can be longer than <see cref="Count"/>; growing the
+    /// palette replaces the array, so a span read once stays consistent.
+    /// </summary>
+    public ReadOnlySpan<int> Values => this.values;
     public int BitCount { get; private set; }
     // Reads of the block storage don't lock (see BlockStateContainer.Get): an entry is written before the count that
     // makes it readable.
     private int count;
     public int Count { get => Volatile.Read(ref this.count); protected set => Volatile.Write(ref this.count, value); }
-    public bool IsFull => Count == Values.Length;
+    public bool IsFull => Count == this.values.Length;
 
     public bool ShouldGrow => false;
 
     public BaseIndirectPalette(byte bitCount)
     {
         BitCount = bitCount;
-        Values = GC.AllocateUninitializedArray<int>(1 << bitCount);
+        this.values = GC.AllocateUninitializedArray<int>(1 << bitCount);
     }
 
     protected BaseIndirectPalette(int[] values, int bitCount, int count)
     {
-        Values = values;
+        this.values = values;
         BitCount = bitCount;
         Count = count;
     }
@@ -69,13 +75,13 @@ public abstract class BaseIndirectPalette<T> : IPalette<T>
         {
             BitCount++;
             int[] newArray = GC.AllocateUninitializedArray<int>(1 << BitCount);
-            Array.Copy(Values, newArray, Values.Length);
-            Values = newArray;
+            Array.Copy(this.values, newArray, this.values.Length);
+            this.values = newArray;
         }
 
         // The entry is written before the count publishes it to reads that don't lock.
         var newId = Count;
-        Values[newId] = valueId;
+        this.values[newId] = valueId;
         Count = newId + 1;
         return newId;
     }
@@ -97,7 +103,7 @@ public abstract class BaseIndirectPalette<T> : IPalette<T>
 
     protected ReadOnlySpan<int> GetSpan()
     {
-        ref int first = ref MemoryMarshal.GetArrayDataReference(Values);
+        ref int first = ref MemoryMarshal.GetArrayDataReference(this.values);
         return MemoryMarshal.CreateReadOnlySpan(ref first, Count);
     }
 

@@ -8,7 +8,7 @@ public sealed class AnyOfPredicate : IBlockPredicate
 {
     public string Type { get; init; } = "minecraft:any_of";
 
-    public required IBlockPredicate[] Predicates { get; init; }
+    public required ImmutableArray<IBlockPredicate> Predicates { get; init; }
 
     public bool Test(IWorldGenLevel level, Vector position) => this.Predicates.Any(predicate => predicate.Test(level, position));
 }

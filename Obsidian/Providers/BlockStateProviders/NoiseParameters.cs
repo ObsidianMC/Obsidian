@@ -10,10 +10,10 @@ public sealed class NoiseParameters
 {
     public required int FirstOctave { get; init; }
 
-    public required double[] Amplitudes { get; init; }
+    public required ImmutableArray<double> Amplitudes { get; init; }
 
     /// <summary>
     /// Creates the noise the way noise-based state providers seed it: a legacy random wrapped in a WorldgenRandom.
     /// </summary>
-    public NormalNoise Create(long seed) => NormalNoise.Create(new WorldgenRandom(new LegacyRandomSource(seed)), this.FirstOctave, this.Amplitudes);
+    public NormalNoise Create(long seed) => NormalNoise.Create(new WorldgenRandom(new LegacyRandomSource(seed)), this.FirstOctave, this.Amplitudes.AsSpan());
 }

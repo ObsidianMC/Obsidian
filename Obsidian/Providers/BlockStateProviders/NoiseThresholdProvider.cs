@@ -23,17 +23,17 @@ public sealed class NoiseThresholdProvider : IBlockStateProvider
 
     public required SimpleBlockState DefaultState { get; init; }
 
-    public required SimpleBlockState[] LowStates { get; init; }
+    public required ImmutableArray<SimpleBlockState> LowStates { get; init; }
 
-    public required SimpleBlockState[] HighStates { get; init; }
+    public required ImmutableArray<SimpleBlockState> HighStates { get; init; }
 
     private API.Noise.NormalNoise NoiseInstance => field ??= this.Noise.Create(this.Seed);
 
     private IBlock DefaultBlock => field ??= BlocksRegistry.GetFromSimpleState(this.DefaultState);
 
-    private IBlock[] LowBlocks => field ??= Array.ConvertAll(this.LowStates, BlocksRegistry.GetFromSimpleState);
+    private IBlock[] LowBlocks => field ??= [.. this.LowStates.Select(BlocksRegistry.GetFromSimpleState)];
 
-    private IBlock[] HighBlocks => field ??= Array.ConvertAll(this.HighStates, BlocksRegistry.GetFromSimpleState);
+    private IBlock[] HighBlocks => field ??= [.. this.HighStates.Select(BlocksRegistry.GetFromSimpleState)];
 
     public IBlock GetState(IRandomSource random, Vector position)
     {

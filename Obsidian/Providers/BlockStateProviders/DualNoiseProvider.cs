@@ -13,7 +13,7 @@ public sealed class DualNoiseProvider : NoiseProvider
     /// <summary>
     /// Inclusive range <c>[min, max]</c> of how many states to choose from.
     /// </summary>
-    public required int[] Variety { get; init; }
+    public required ImmutableArray<int> Variety { get; init; }
 
     public required NoiseParameters SlowNoise { get; init; }
 
@@ -26,9 +26,9 @@ public sealed class DualNoiseProvider : NoiseProvider
         var slow = this.GetSlowNoiseValue(position);
         var count = (int)ClampedMap(slow, -1.0, 1.0, this.Variety[0], this.Variety[1] + 1);
 
-        var candidates = new List<IBlock>(count);
+        var candidates = new IBlock[count];
         for (var i = 0; i < count; i++)
-            candidates.Add(GetRandomState(this.Blocks, this.GetSlowNoiseValue(position + new Vector(i * 54545, 0, i * 34234))));
+            candidates[i] = GetRandomState(this.Blocks, this.GetSlowNoiseValue(position + new Vector(i * 54545, 0, i * 34234)));
 
         return this.GetRandomState(candidates, position, this.Scale);
     }

@@ -13,7 +13,7 @@ public sealed class MatchingFluidsPredicate : IBlockPredicate
     /// <summary>
     /// Fluid ids or fluid tags (<c>#minecraft:water</c>).
     /// </summary>
-    public required string[] Fluids { get; init; }
+    public required ImmutableArray<string> Fluids { get; init; }
 
     private HashSet<FluidKind> Kinds => field ??= [.. this.Fluids.SelectMany(Resolve)];
 

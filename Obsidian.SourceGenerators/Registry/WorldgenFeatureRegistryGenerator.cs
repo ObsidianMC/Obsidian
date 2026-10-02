@@ -940,7 +940,7 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
         }
 
         private static bool IsCollection(INamedTypeSymbol type) =>
-            type.Name is "List" or "IReadOnlyList" or "IEnumerable" or "IReadOnlyCollection" or "ICollection" or "IList";
+            type.Name is "ImmutableArray" or "List" or "IReadOnlyList" or "IEnumerable" or "IReadOnlyCollection" or "ICollection" or "IList";
 
         private void Report(DiagnosticDescriptor descriptor, params object[] arguments) =>
             this.context.ReportDiagnostic(Diagnostic.Create(descriptor, Location.None, [.. arguments, this.currentOwner]));

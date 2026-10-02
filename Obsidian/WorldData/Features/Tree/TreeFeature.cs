@@ -24,7 +24,7 @@ public sealed class TreeFeature : ConfiguredFeatureBase
 
     public required FeatureSize MinimumSize { get; init; }
 
-    public TreeDecorator[] Decorators { get; init; } = [];
+    public ImmutableArray<TreeDecorator> Decorators { get; init; } = [];
 
     /// <summary>When <c>false</c>, existing vines in the tree's space block placement.</summary>
     public bool IgnoreVines { get; init; }

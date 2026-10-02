@@ -50,7 +50,7 @@ public sealed class EnchantmentDefinition
     /// <summary>
     /// Ids of the enchantments this one can't be combined with.
     /// </summary>
-    public int[] ExclusiveSet { get; init; } = [];
+    public ImmutableArray<int> ExclusiveSet { get; init; } = [];
 
     /// <summary>
     /// Whether the enchantment can be applied to the stack's item.

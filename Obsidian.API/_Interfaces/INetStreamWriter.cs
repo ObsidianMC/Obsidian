@@ -43,7 +43,7 @@ public interface INetStreamWriter : INetStream
     public void WriteSoundEvent(SoundEvent soundEvent);
     public void WriteSoundEffect(SoundEffect sound);
     public void WriteByteArray(byte[] values);
-    public void WriteByteArray(Span<byte> values);
+    public void WriteByteArray(ReadOnlySpan<byte> values);
     public void WriteUuid(Guid value);
     public void WritePosition(Vector value);
     public void WritePosition(SoundPosition position);
@@ -59,7 +59,7 @@ public interface INetStreamWriter : INetStream
 
     public void WriteLengthPrefixedArray(bool showInTooltips, params Enchantment[] enchantments);
 
-    public void WriteLengthPrefixedArray<TValue>(Action<TValue> write, params TValue[] values);
+    public void WriteLengthPrefixedArray<TValue>(Action<TValue> write, params ReadOnlySpan<TValue> values);
 
     public void WriteAttributeModifier(AttributeModifier attribute);
 

@@ -195,7 +195,7 @@ public sealed class GeodeBlockSettings
     /// <summary>
     /// Crystal bud states attached to the inner layer.
     /// </summary>
-    public required SimpleBlockState[] InnerPlacements { get; init; }
+    public required ImmutableArray<SimpleBlockState> InnerPlacements { get; init; }
 
     public required BlockSet CannotReplace { get; init; }
 

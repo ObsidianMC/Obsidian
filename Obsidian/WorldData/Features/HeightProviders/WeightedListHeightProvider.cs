@@ -11,8 +11,8 @@ public sealed class WeightedListHeightProvider : IHeightProvider
 {
     public string Type { get; init; } = "minecraft:weighted_list";
 
-    public required WeightedEntry<IHeightProvider>[] Distribution { get; init; }
+    public required ImmutableArray<WeightedEntry<IHeightProvider>> Distribution { get; init; }
 
     public int Sample(IRandomSource random, WorldGenerationContext context) =>
-        WeightedEntry<IHeightProvider>.Pick(this.Distribution, random).Sample(random, context);
+        WeightedEntry<IHeightProvider>.Pick(this.Distribution.AsSpan(), random).Sample(random, context);
 }

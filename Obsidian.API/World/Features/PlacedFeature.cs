@@ -21,7 +21,7 @@ public sealed class PlacedFeature : IFeature
     private bool? reusesFeatureContext;
     private bool ReusesFeatureContext => this.reusesFeatureContext ??= this.Feature.GetType().Assembly.GetName().Name is "Obsidian" or "Obsidian.API";
 
-    public PlacementModifierBase[] Placement { get; init; } = [];
+    public ImmutableArray<PlacementModifierBase> Placement { get; init; } = [];
 
     /// <summary>
     /// Runs the placement modifiers from <paramref name="origin"/> and places the feature at every resulting position.

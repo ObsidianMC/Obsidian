@@ -363,7 +363,7 @@ internal sealed class SurfaceBuilder
                 var result = BlocksRegistry.GetFromSimpleState(block.ResultState);
                 return _ => result;
             case SequenceSurfaceRule sequence:
-                var rules = Array.ConvertAll(sequence.Sequence, this.CompileRule);
+                var rules = sequence.Sequence.Select(this.CompileRule).ToArray();
                 return context =>
                 {
                     foreach (var candidate in rules)

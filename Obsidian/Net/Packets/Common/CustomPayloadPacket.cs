@@ -6,11 +6,11 @@ public partial record class CustomPayloadPacket
 {
     public string Channel { get; set; } = default!;
 
-    public byte[] PluginData { get; set; } = default!;
+    public ReadOnlyMemory<byte> PluginData { get; set; }
 
     public CustomPayloadPacket() { }
 
-    public CustomPayloadPacket(string channel, byte[] data)
+    public CustomPayloadPacket(string channel, ReadOnlyMemory<byte> data)
     {
         Channel = channel;
         PluginData = data;
@@ -18,7 +18,7 @@ public partial record class CustomPayloadPacket
 
     public PluginMessageStore? Handle()
     {
-        using var buffer = new NetworkBuffer(PluginData);
+        using var buffer = new NetworkBuffer(PluginData.ToArray());
 
         var result = Channel switch
         {
@@ -30,12 +30,12 @@ public partial record class CustomPayloadPacket
             "minecraft:register" => new PluginMessageStore // Payload should be a list of strings
             {
                 Type = PluginMessageType.Register,
-                Value = Encoding.UTF8.GetString(PluginData)
+                Value = Encoding.UTF8.GetString(PluginData.Span)
             },
             "minecraft:unregister" => new PluginMessageStore
             {
                 Type = PluginMessageType.Unregister,
-                Value = Encoding.UTF8.GetString(PluginData)
+                Value = Encoding.UTF8.GetString(PluginData.Span)
             },
             _ => null
         };
@@ -52,7 +52,7 @@ public partial record class CustomPayloadPacket
     public override void Serialize(INetStreamWriter writer)
     {
         writer.WriteString(this.Channel);
-        writer.WriteByteArray(this.PluginData);
+        writer.WriteByteArray(this.PluginData.Span);
     }
 
     public override ValueTask HandleAsync(IServer server, IPlayer player)

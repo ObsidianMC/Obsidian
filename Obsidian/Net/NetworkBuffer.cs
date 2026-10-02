@@ -17,10 +17,6 @@ public partial class NetworkBuffer
     /// </summary>
     public bool IsEmpty => size == 0;
     /// <summary>
-    /// Bytes memory buffer
-    /// </summary>
-    public byte[] Data => data;
-    /// <summary>
     /// Bytes memory buffer capacity
     /// </summary>
     public int Capacity => data.Length;
@@ -52,6 +48,12 @@ public partial class NetworkBuffer
     }
 
     #region Memory buffer methods
+
+    /// <summary>
+    /// Returns the underlying byte array without copying, like <see cref="System.IO.MemoryStream.GetBuffer"/>. It can be
+    /// longer than <see cref="Size"/> and is replaced when the buffer grows.
+    /// </summary>
+    public byte[] GetBuffer() => data;
 
     /// <summary>
     /// Get a span of bytes from the current buffer

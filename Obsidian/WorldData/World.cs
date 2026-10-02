@@ -65,9 +65,9 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
         var index = 0;
         for (var cx = x - this.Configuration.SpawnChunkRadius; cx < x + this.Configuration.SpawnChunkRadius; cx++)
             for (var cz = z - this.Configuration.SpawnChunkRadius; cz < z + this.Configuration.SpawnChunkRadius; cz++)
-                SpawnChunks[index++] = NumericsHelper.IntsToLong(cx, cz);
+                this.spawnChunks[index++] = NumericsHelper.IntsToLong(cx, cz);
 
-        await Parallel.ForEachAsync(SpawnChunks, async (c, _) =>
+        await Parallel.ForEachAsync(this.spawnChunks, async (c, _) =>
         {
             NumericsHelper.LongToInts(c, out var cx, out var cz);
             await GetChunkAsync(cx, cz);

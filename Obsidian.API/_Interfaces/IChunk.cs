@@ -25,7 +25,10 @@ public interface IChunk
 
     public IDictionary<HeightmapType, Heightmap> Heightmaps { get; }
 
-    public IChunkSection[] Sections { get; }
+    /// <summary>
+    /// The chunk's sections from the bottom up. This is a view of the chunk's own sections, not a copy.
+    /// </summary>
+    public ReadOnlySpan<IChunkSection> Sections { get; }
 
     public IBlock GetBlock(Vector position) => this.GetBlock(position.X, position.Y, position.Z);
 

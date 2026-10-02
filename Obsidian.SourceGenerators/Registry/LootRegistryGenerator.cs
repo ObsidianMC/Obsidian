@@ -444,12 +444,12 @@ public sealed class LootRegistryGenerator : IIncrementalGenerator
         }
 
         /// <summary>
-        /// The element type of an array or list type, or null for other types.
+        /// The element type of an array, immutable array or list type, or null for other types.
         /// </summary>
         private static ITypeSymbol? ElementType(ITypeSymbol type) => type switch
         {
             IArrayTypeSymbol array => array.ElementType,
-            INamedTypeSymbol { Name: "IReadOnlyList" or "List", TypeArguments.Length: 1 } list => list.TypeArguments[0],
+            INamedTypeSymbol { Name: "ImmutableArray" or "IReadOnlyList" or "List", TypeArguments.Length: 1 } list => list.TypeArguments[0],
             _ => null
         };
 

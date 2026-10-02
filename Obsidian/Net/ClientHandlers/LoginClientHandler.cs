@@ -21,7 +21,7 @@ internal sealed class LoginClientHandler : ClientHandler
 
                     try
                     {
-                        await this.HandleLoginStartAsync(buffer.Data);
+                        await this.HandleLoginStartAsync(buffer.GetBuffer());
                     }
                     catch { return false; }
 
@@ -31,7 +31,7 @@ internal sealed class LoginClientHandler : ClientHandler
                 {
                     try
                     {
-                        await this.HandleEncryptionResponseAsync(buffer.Data);
+                        await this.HandleEncryptionResponseAsync(buffer.GetBuffer());
                     }
                     catch { return false; }
 

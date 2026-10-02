@@ -10,10 +10,10 @@ public sealed class WeightedStateProvider : IBlockStateProvider
 {
     public string Type { get; init; } = "minecraft:weighted_state_provider";
 
-    public required WeightedEntry<SimpleBlockState>[] Entries { get; init; }
+    public required ImmutableArray<WeightedEntry<SimpleBlockState>> Entries { get; init; }
 
-    private WeightedEntry<IBlock>[] Blocks => field ??= Array.ConvertAll(this.Entries, entry =>
-        new WeightedEntry<IBlock> { Data = BlocksRegistry.GetFromSimpleState(entry.Data), Weight = entry.Weight });
+    private WeightedEntry<IBlock>[] Blocks => field ??= [.. this.Entries.Select(entry =>
+        new WeightedEntry<IBlock> { Data = BlocksRegistry.GetFromSimpleState(entry.Data), Weight = entry.Weight })];
 
     public IBlock GetState(IRandomSource random, Vector position) => WeightedEntry<IBlock>.Pick(this.Blocks, random);
 }

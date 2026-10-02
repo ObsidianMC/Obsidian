@@ -10,7 +10,7 @@ public sealed class FixedPlacement : PlacementModifierBase
 {
     public override string Type => "minecraft:fixed_placement";
 
-    public required Vector[] Positions { get; init; }
+    public required ImmutableArray<Vector> Positions { get; init; }
 
     public override IEnumerable<Vector> GetPositions(PlacementContext context, IRandomSource random, Vector position)
     {

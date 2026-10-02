@@ -19,9 +19,9 @@ public sealed class FallenTreeFeature : ConfiguredFeatureBase
     /// </summary>
     public required IIntProvider LogLength { get; init; }
 
-    public required FallenTreeDecorator[] StumpDecorators { get; init; }
+    public required ImmutableArray<FallenTreeDecorator> StumpDecorators { get; init; }
 
-    public required FallenTreeDecorator[] LogDecorators { get; init; }
+    public required ImmutableArray<FallenTreeDecorator> LogDecorators { get; init; }
 
     public override bool Place(FeatureContext context)
     {
@@ -104,7 +104,7 @@ public sealed class FallenTreeFeature : ConfiguredFeatureBase
         return position;
     }
 
-    private static void Decorate(IWorldGenLevel level, IRandomSource random, List<Vector> logs, FallenTreeDecorator[] decorators)
+    private static void Decorate(IWorldGenLevel level, IRandomSource random, List<Vector> logs, ImmutableArray<FallenTreeDecorator> decorators)
     {
         if (decorators.Length == 0)
             return;
@@ -151,7 +151,7 @@ public sealed class AttachedToLogsFallenTreeDecorator : FallenTreeDecorator
 
     public required IBlockStateProvider BlockProvider { get; init; }
 
-    public required BlockFace[] Directions { get; init; }
+    public required ImmutableArray<BlockFace> Directions { get; init; }
 
     public override void Place(IWorldGenLevel level, IRandomSource random, IReadOnlyList<Vector> logs)
     {

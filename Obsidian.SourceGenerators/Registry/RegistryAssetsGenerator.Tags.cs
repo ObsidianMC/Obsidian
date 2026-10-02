@@ -33,7 +33,7 @@ public partial class RegistryAssetsGenerator
                 foreach (var tag in groupedTags)
                 {
                     builder.Line($"public static Tag {tag.PropertyName} {{ get; }} = new Tag {{ Name = {SymbolDisplay.FormatLiteral(tag.Identifier, true)}, Type = {SymbolDisplay.FormatLiteral(tag.Type, true)}, " +
-                        $"Entries = new int[] {{ {string.Join(", ", tag.Values.Select(value => value.GetTagValue()))} }} }};");
+                        $"Entries = [{string.Join(", ", tag.Values.Select(value => value.GetTagValue()))}] }};");
                 }
 
                 // After the tags: static initializers run in order, so an earlier All would hold nulls.
@@ -48,7 +48,7 @@ public partial class RegistryAssetsGenerator
                     continue;
 
                 builder.Line($"public static Tag {tag.PropertyName} {{ get; }} = new Tag {{ Name = {SymbolDisplay.FormatLiteral(tag.Identifier, true)}, " +
-                    $"Type = {SymbolDisplay.FormatLiteral(tag.Type, true)}, Entries = new int[] {{ {string.Join(", ", tag.Values.Select(value => value.GetTagValue()))} }} }};");
+                    $"Type = {SymbolDisplay.FormatLiteral(tag.Type, true)}, Entries = [{string.Join(", ", tag.Values.Select(value => value.GetTagValue()))}] }};");
             }
 
             builder.Line($"public static Tag[] All {{ get; }} = new[] {{ {string.Join(", ", childTags.Value.Select(tag => tag.CompileName()))} }};");

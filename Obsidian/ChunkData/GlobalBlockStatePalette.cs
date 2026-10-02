@@ -2,7 +2,6 @@
 
 public class GlobalBlockStatePalette : IPalette<IBlock>
 {
-    public int[] Values => throw new NotSupportedException();
     public int BitCount { get; }
     public int Count => throw new NotSupportedException();
 

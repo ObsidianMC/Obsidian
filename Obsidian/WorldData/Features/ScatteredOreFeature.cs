@@ -12,7 +12,7 @@ public sealed class ScatteredOreFeature : ConfiguredFeatureBase
 
     public override string Type => "minecraft:scattered_ore";
 
-    public required OreTarget[] Targets { get; init; }
+    public required ImmutableArray<OreTarget> Targets { get; init; }
 
     /// <summary>
     /// Up to this many blocks are attempted (the count is <c>nextInt(Size + 1)</c>).

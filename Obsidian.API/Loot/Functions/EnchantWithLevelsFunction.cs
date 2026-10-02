@@ -15,11 +15,12 @@ public sealed class EnchantWithLevelsFunction : LootFunction
     /// <summary>
     /// The enchantments to pick from; every enchantment when null.
     /// </summary>
-    public EnchantmentDefinition[]? Options { get; init; }
+    public ImmutableArray<EnchantmentDefinition>? Options { get; init; }
 
     protected override ItemStack Run(ItemStack stack, LootContext context)
     {
         var levels = this.Levels.GetInt(context);
-        return EnchantmentHelper.EnchantItem(context.Random, stack, levels, this.Options ?? EnchantmentsRegistry.All);
+        IReadOnlyList<EnchantmentDefinition> options = this.Options.HasValue ? this.Options.Value : EnchantmentsRegistry.All;
+        return EnchantmentHelper.EnchantItem(context.Random, stack, levels, options);
     }
 }

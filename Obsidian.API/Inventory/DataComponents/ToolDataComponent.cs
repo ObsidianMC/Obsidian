@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 
 namespace Obsidian.API.Inventory.DataComponents;
 public sealed record class ToolDataComponent : DataComponent
@@ -7,7 +8,7 @@ public sealed record class ToolDataComponent : DataComponent
 
     public override string Identifier => "minecraft:tool";
 
-    public required ToolRule[] Rules { get; set; }
+    public required ImmutableArray<ToolRule> Rules { get; set; }
 
     public required float DefaultMiningSpeed { get; set; }
 
@@ -18,12 +19,12 @@ public sealed record class ToolDataComponent : DataComponent
 
     public override void Read(INetStreamReader reader)
     {
-        this.Rules = reader.ReadLengthPrefixedArray(() => new ToolRule()
+        this.Rules = ImmutableCollectionsMarshal.AsImmutableArray(reader.ReadLengthPrefixedArray(() => new ToolRule()
         {
             Blocks = reader.ReadIdSet(),
             Speed = reader.ReadOptionalFloat(),
             CorrectDropForBlocks = reader.ReadOptionalBoolean()
-        });
+        }));
 
         this.DefaultMiningSpeed = reader.ReadSingle();
         this.DamagePerBlock = reader.ReadVarInt();
@@ -31,7 +32,7 @@ public sealed record class ToolDataComponent : DataComponent
 
     public override void Write(INetStreamWriter writer)
     {
-        writer.WriteLengthPrefixedArray((rule) => ToolRule.Write(rule, writer), this.Rules);
+        writer.WriteLengthPrefixedArray((rule) => ToolRule.Write(rule, writer), this.Rules.AsSpan());
         writer.WriteSingle(this.DefaultMiningSpeed);
         writer.WriteVarInt(this.DamagePerBlock);
     }
@@ -85,7 +86,7 @@ public readonly record struct IdSet : INetworkSerializable<IdSet>
     /// An array of registry IDs. Only present if Type is not 0. 
     /// The size of the array is equal to Type - 1.
     /// </summary>
-    public int[]? Ids { get; init; }
+    public ImmutableArray<int>? Ids { get; init; }
 
     public static IdSet Read(INetStreamReader reader)
     {
@@ -93,7 +94,7 @@ public readonly record struct IdSet : INetworkSerializable<IdSet>
 
         return type == 0
             ? new() { Type = type, TagName = reader.ReadString() }
-            : new() { Type = type, Ids = reader.ReadLengthPrefixedArray(reader.ReadVarInt) };
+            : new() { Type = type, Ids = ImmutableCollectionsMarshal.AsImmutableArray(reader.ReadLengthPrefixedArray(reader.ReadVarInt)) };
     }
 
     public static void Write(IdSet value, INetStreamWriter writer)
@@ -108,12 +109,13 @@ public readonly record struct IdSet : INetworkSerializable<IdSet>
             return;
         }
 
-        if (value.Ids == null)
+        if (!value.Ids.HasValue)
             throw new NullReferenceException("Ids must have a value set if type is anything other than 0.");
 
-        writer.WriteVarInt(value.Ids.Length);
+        var ids = value.Ids.Value;
+        writer.WriteVarInt(ids.Length);
 
-        foreach (var id in value.Ids)
+        foreach (var id in ids)
             writer.WriteVarInt(id);
     }
 }

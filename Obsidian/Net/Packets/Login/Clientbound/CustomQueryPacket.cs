@@ -10,7 +10,7 @@ public sealed partial class CustomQueryPacket
     public required string Channel { get; init; }
 
     [Field(2)]
-    public required byte[] Payload { get; init; }
+    public required ReadOnlyMemory<byte> Payload { get; init; }
 
     public override void Serialize(INetStreamWriter writer)
     {
@@ -18,6 +18,6 @@ public sealed partial class CustomQueryPacket
 
         writer.WriteVarInt(this.MessageId);
         writer.WriteString(this.Channel);
-        writer.WriteByteArray(this.Payload);
+        writer.WriteByteArray(this.Payload.Span);
     }
 }
