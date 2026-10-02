@@ -36,7 +36,12 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
     // Carving and decorating steps in flight, so requests that need the same step share it instead of queueing on its locks.
     private readonly ConcurrentDictionary<(int X, int Z, ChunkGenStage Stage), Lazy<Task>> steps = [];
 
-    public async ValueTask<IChunk> GenerateChunkAsync(int cx, int cz, IChunk? chunk = null, ChunkGenStage stage = ChunkGenStage.full)
+    public ValueTask<IChunk> GenerateChunkAsync(int cx, int cz, IChunk? chunk = null, ChunkGenStage stage = ChunkGenStage.full) =>
+        this.GenerateChunkAsync(cx, cz, chunk, stage, decorateInOrder: false);
+
+    /// <param name="decorateInOrder">Whether the chunk's neighbors are decorated one after another in a fixed order, so the
+    /// blocks they place where their features meet are the same every time (the spawn search), rather than concurrently.</param>
+    private async ValueTask<IChunk> GenerateChunkAsync(int cx, int cz, IChunk? chunk, ChunkGenStage stage, bool decorateInOrder)
     {
         chunk ??= new Chunk(cx, cz, this.Dimension.MinY, this.Dimension.Height);
 
@@ -62,7 +67,12 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
         for (var dx = -radius; dx <= radius; dx++)
         {
             for (var dz = -radius; dz <= radius; dz++)
-                decorations.Add(this.DecorateAsync(cx + dx, cz + dz));
+            {
+                if (decorateInOrder)
+                    await this.DecorateAsync(cx + dx, cz + dz);
+                else
+                    decorations.Add(this.DecorateAsync(cx + dx, cz + dz));
+            }
         }
 
         await Task.WhenAll(decorations);
@@ -118,7 +128,7 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
 
         foreach (var (dx, dz) in SpawnFinder.SpiralOffsets())
         {
-            var chunk = await this.GenerateChunkAsync(spawnChunkX + dx, spawnChunkZ + dz);
+            var chunk = await this.GenerateChunkAsync(spawnChunkX + dx, spawnChunkZ + dz, null, ChunkGenStage.full, decorateInOrder: true);
             var found = SpawnFinder.FindSpawnInChunk(chunk, hasCeiling: false);
             if (found is not null)
             {
