@@ -1,3 +1,5 @@
+using Obsidian.ChunkData;
+
 namespace Obsidian.WorldData.Lighting;
 
 /// <summary>
@@ -119,7 +121,7 @@ internal sealed class LightEngine
         {
             var section = sections[sectionIndex];
             section.SetLight(new byte[2048], LightType.Block);
-            if (section.IsEmpty)
+            if (section.IsEmpty || !MayEmitLight(section))
                 continue;
 
             for (var y = 0; y < 16; y++)
@@ -138,6 +140,30 @@ internal sealed class LightEngine
 
         this.PullFromNeighbors(LightType.Block);
         this.Propagate(LightType.Block);
+    }
+
+    /// <summary>
+    /// Whether the section's palette has a light emitting block, like vanilla's <c>PalettedContainer.maybeHas</c>, so other
+    /// sections are skipped without reading their blocks. A palette may still list blocks that are gone, which only costs
+    /// a scan.
+    /// </summary>
+    private static bool MayEmitLight(IChunkSection section)
+    {
+        switch (section.BlockStateContainer.Palette)
+        {
+            case IndirectBlockPalette indirect:
+                foreach (var stateId in indirect.Values.AsSpan(0, indirect.Count))
+                {
+                    if (BlocksRegistry.Get(stateId).LightEmission() > 0)
+                        return true;
+                }
+
+                return false;
+            case SingleValuePalette<IBlock> single:
+                return single.IsFull && single.Value.LightEmission() > 0;
+            default:
+                return true;
+        }
     }
 
     /// <summary>
