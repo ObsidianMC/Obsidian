@@ -40,7 +40,7 @@ public sealed partial class FallingBlock : Entity
             (int)Math.Floor(Position.Y - 1),
             (int)Math.Floor(Position.Z));
 
-        if (!checkedBlocks.Add(upcomingBlockPos))
+        if (checkedBlocks.Add(upcomingBlockPos))
         {
             var upcomingBlock = await Level.GetBlockAsync(upcomingBlockPos);
             if (upcomingBlock is not null && !upcomingBlock.IsFreeForFallingBlock())
