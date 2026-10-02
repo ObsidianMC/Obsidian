@@ -175,9 +175,18 @@ public abstract class AbstractLevel : ILevel
 
     public async ValueTask<IBlock?> GetBlockAsync(int x, int y, int z)
     {
+        // Like vanilla, everything outside the build range reads as void air.
+        if (this.IsOutsideBuildHeight(y))
+            return BlocksRegistry.Get(Material.VoidAir);
+
         var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
         return c?.GetBlock(x, y, z);
     }
+
+    /// <summary>
+    /// Whether <paramref name="y"/> is outside the dimension's build range, where blocks can't be read or placed.
+    /// </summary>
+    public bool IsOutsideBuildHeight(int y) => y < this.MinY || y >= this.MinY + this.Height;
 
     public async ValueTask<int?> GetWorldSurfaceHeightAsync(int x, int z)
     {
@@ -188,12 +197,18 @@ public abstract class AbstractLevel : ILevel
 
     public async ValueTask SetBlockAsync(int x, int y, int z, IBlock block)
     {
+        if (this.IsOutsideBuildHeight(y))
+            return;
+
         await SetBlockUntrackedAsync(x, y, z, block);
         this.BroadcastBlockChange(block, new(x, y, z));
     }
 
     public async ValueTask SetBlockAsync(int x, int y, int z, IBlock block, bool doBlockUpdate)
     {
+        if (this.IsOutsideBuildHeight(y))
+            return;
+
         await SetBlockUntrackedAsync(x, y, z, block, doBlockUpdate);
         this.BroadcastBlockChange(block, new(x, y, z));
     }
@@ -219,6 +234,9 @@ public abstract class AbstractLevel : ILevel
 
     public async ValueTask SetBlockUntrackedAsync(int x, int y, int z, IBlock block, bool doBlockUpdate = false)
     {
+        if (this.IsOutsideBuildHeight(y))
+            return;
+
         if (doBlockUpdate)
         {
             await ScheduleBlockUpdateAsync(new BlockUpdate(this, new Vector(x, y, z), block));

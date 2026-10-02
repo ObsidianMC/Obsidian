@@ -12,6 +12,7 @@ public sealed class OverworldGenerator : ILevelGenerator
 
     public async ValueTask<IChunk> GenerateChunkAsync(int cx, int cz, IChunk? chunk = null, ChunkGenStage stage = ChunkGenStage.full)
     {
+        OverworldBuildRange.Ensure(chunk, this.Id);
         chunk ??= new Chunk(cx, cz);
 
         // Sanity checks

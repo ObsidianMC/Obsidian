@@ -46,6 +46,7 @@ public sealed class IslandGenerator : ILevelGenerator
 
     public async ValueTask<IChunk> GenerateChunkAsync(int cx, int cz, IChunk? chunk = null, ChunkGenStage status = ChunkGenStage.full)
     {
+        OverworldBuildRange.Ensure(chunk, this.Id);
         chunk ??= new Chunk(cx, cz);
 
         // Sanity checks

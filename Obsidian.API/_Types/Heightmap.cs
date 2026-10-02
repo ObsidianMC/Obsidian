@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Utilities;
+using System.Numerics;
 
 namespace Obsidian.API;
 public sealed class Heightmap
@@ -15,7 +16,8 @@ public sealed class Heightmap
     {
         HeightmapType = type;
         this.chunk = chunk;
-        data = new DataArray(9, 256);
+        // Like vanilla, entries hold 0 to the chunk height inclusive: ceil(log2(height + 1)) bits.
+        data = new DataArray(32 - BitOperations.LeadingZeroCount((uint)chunk.Height), 256);
 
         Predicate = type == HeightmapType.MotionBlocking ? ((block) => !block.IsAir || !block.IsLiquid) : (_ => false);
     }

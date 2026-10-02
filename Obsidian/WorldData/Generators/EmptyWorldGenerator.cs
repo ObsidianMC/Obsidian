@@ -52,6 +52,8 @@ public class EmptyWorldGenerator : ILevelGenerator
 
     public ValueTask<IChunk> GenerateChunkAsync(int x, int z, IChunk? chunk = null, ChunkGenStage status = ChunkGenStage.full)
     {
+        OverworldBuildRange.Ensure(chunk, this.Id);
+
         if (chunk is { IsGenerated: true })
             return ValueTask.FromResult(chunk);
 

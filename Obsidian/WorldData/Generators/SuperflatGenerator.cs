@@ -42,8 +42,12 @@ public class SuperflatGenerator : ILevelGenerator
         model.SetChunkStatus(ChunkGenStage.full);
     }
 
-    public ValueTask<IChunk> GenerateChunkAsync(int x, int z, IChunk? chunk = null, ChunkGenStage status = ChunkGenStage.full) =>
-        chunk is { IsGenerated: true } ? ValueTask.FromResult(chunk) : ValueTask.FromResult(model.Clone(x, z));
+    public ValueTask<IChunk> GenerateChunkAsync(int x, int z, IChunk? chunk = null, ChunkGenStage status = ChunkGenStage.full)
+    {
+        OverworldBuildRange.Ensure(chunk, this.Id);
+
+        return chunk is { IsGenerated: true } ? ValueTask.FromResult(chunk) : ValueTask.FromResult(model.Clone(x, z));
+    }
 
     public void Init(ILevel level) { }
 

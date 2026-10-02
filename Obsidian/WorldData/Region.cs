@@ -3,6 +3,7 @@ using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.ChunkData;
 using Obsidian.Nbt;
 using Obsidian.Utilities.Collections;
+using Obsidian.WorldData.Generators.Mojang;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -204,21 +205,28 @@ public class Region : IRegion
 
         var chunk = new Chunk(x, z, this.minY, this.height);
 
+        // Chunks saved before build ranges were per dimension used the overworld's (min section -4) everywhere.
+        var storedMinSection = chunkCompound.TryGetTagValue<int>("yPos", out var yPos) ? yPos : -4;
+        var minSection = this.minY >> 4;
+
         foreach (var child in (NbtList)chunkCompound["sections"])
         {
             if (child is not NbtCompound sectionCompound)
                 throw new InvalidOperationException("Nbt Tag is not a compound.");
 
-            var secY = (int)sectionCompound.GetByte("Y");
+            var secY = unchecked((sbyte)sectionCompound.GetByte("Y"));
 
-            secY = secY > 20 ? secY - 256 : secY;
+            // Sections outside the dimension's build range (from an older, taller layout) are dropped.
+            var sectionIndex = secY - minSection;
+            if (sectionIndex < 0 || sectionIndex >= chunk.Sections.Length)
+                continue;
 
             if (!sectionCompound.TryGetTag("block_states", out var statesTag))
                 throw new UnreachableException("Unable to find block states from NBT.");
 
             var statesCompound = statesTag as NbtCompound;
 
-            var section = chunk.Sections[secY - (this.minY >> 4)];
+            var section = chunk.Sections[sectionIndex];
 
             if (statesCompound!.TryGetTag("palette", out var palleteArrayTag))
             {
@@ -278,10 +286,19 @@ public class Region : IRegion
             }
         }
 
-        foreach (var (name, heightmap) in (NbtCompound)chunkCompound["Heightmaps"])
+        if (storedMinSection == minSection)
         {
-            var heightmapType = (HeightmapType)Enum.Parse(typeof(HeightmapType), name.Replace("_", ""), true);
-            chunk.Heightmaps[heightmapType].data.storage = ((NbtArray<long>)heightmap).GetArray();
+            foreach (var (name, heightmap) in (NbtCompound)chunkCompound["Heightmaps"])
+            {
+                var heightmapType = (HeightmapType)Enum.Parse(typeof(HeightmapType), name.Replace("_", ""), true);
+                chunk.Heightmaps[heightmapType].data.storage = ((NbtArray<long>)heightmap).GetArray();
+            }
+        }
+        else
+        {
+            // Stored heights are relative to the old min Y, so recompute them from the blocks.
+            WorldgenHeightmaps.Update(chunk, this.minY, this.height);
+            WorldgenHeightmaps.UpdateFinal(chunk, this.minY, this.height);
         }
 
         foreach (var tileEntityNbt in (NbtList)chunkCompound["block_entities"])

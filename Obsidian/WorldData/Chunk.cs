@@ -45,6 +45,13 @@ public sealed class Chunk : IChunk
         Z = z;
         MinY = minY;
 
+        // Sections come first: heightmaps size their entries from the chunk height.
+        Sections = new ChunkSection[height >> 4];
+        for (int i = 0; i < Sections.Length; i++)
+        {
+            Sections[i] = new ChunkSection(yBase: i + (minY >> 4));
+        }
+
         Heightmaps = new Dictionary<HeightmapType, Heightmap>()
         {
             { HeightmapType.MotionBlocking, new Heightmap(HeightmapType.MotionBlocking, this) },
@@ -54,12 +61,6 @@ public sealed class Chunk : IChunk
             { HeightmapType.OceanFloorWG, new Heightmap(HeightmapType.OceanFloorWG, this) },
             { HeightmapType.MotionBlockingNoLeaves, new Heightmap(HeightmapType.MotionBlockingNoLeaves, this) }
         };
-
-        Sections = new ChunkSection[height >> 4];
-        for (int i = 0; i < Sections.Length; i++)
-        {
-            Sections[i] = new ChunkSection(yBase: i + (minY >> 4));
-        }
     }
 
     private Chunk(int x, int z, IChunkSection[] sections, Dictionary<HeightmapType, Heightmap> heightmaps)

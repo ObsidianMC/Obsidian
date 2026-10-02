@@ -10,7 +10,7 @@ internal static class Lighting
 
         // From top down, if the chunk section is empty, just fill it all with sky light
         int cs;
-        for (cs = 23; cs >= 0; cs--)
+        for (cs = chunk.Sections.Length - 1; cs >= 0; cs--)
         {
             if (!chunk.Sections[cs].IsEmpty)
             {
@@ -19,23 +19,29 @@ internal static class Lighting
             chunk.Sections[cs].FillSkyLight();
         }
 
-        int startY = ((cs - 4) << 4) + 15; // 4 sections are negative
+        if (cs < 0)
+            return;
+
+        int startY = chunk.MinY + (cs << 4) + 15;
 
         // Light the remaining sections
         for (int x = 0; x < 16; x++)
         {
             for (int z = 0; z < 16; z++)
             {
-                int level = chunk.GetLightLevel(x, startY + 1, z, LightType.Sky);
-                for (int y = startY; y >= -64; y--)
+                int level = startY + 1 < chunk.MinY + chunk.Height ? chunk.GetLightLevel(x, startY + 1, z, LightType.Sky) : 15;
+                for (int y = startY; y >= chunk.MinY; y--)
                 {
                     var scanPos = new Vector(x, y, z);
                     var b = chunk.GetBlock(scanPos);
                     if (IsOpaque(b))
                     {
                         // Found a non-air, so spread from the air above
-                        chunk.SetLightLevel(scanPos + Vector.Up, LightType.Sky, 0);
-                        spreadBlocks[scanPos + Vector.Up] = level;
+                        if (y + 1 < chunk.MinY + chunk.Height)
+                        {
+                            chunk.SetLightLevel(scanPos + Vector.Up, LightType.Sky, 0);
+                            spreadBlocks[scanPos + Vector.Up] = level;
+                        }
                         break;
                     }
 
@@ -110,10 +116,10 @@ internal static class Lighting
         {
             for (int z = 0; z < 16; z++)
             {
-                for (int y = -64; y < 320; y++)
+                for (int y = targetChunk.MinY; y < targetChunk.MinY + targetChunk.Height; y++)
                 {
                     // Skip empty sections
-                    var secIndex = (y >> 4) + 4;
+                    var secIndex = (y - targetChunk.MinY) >> 4;
                     if (targetChunk.Sections[secIndex].IsEmpty)
                     {
                         y += 15;
@@ -142,10 +148,10 @@ internal static class Lighting
         {
             for (int x = 0; x < 16; x++)
             {
-                for (int y = -64; y < 320; y++)
+                for (int y = targetChunk.MinY; y < targetChunk.MinY + targetChunk.Height; y++)
                 {
                     // Skip empty sections
-                    var secIndex = (y >> 4) + 4;
+                    var secIndex = (y - targetChunk.MinY) >> 4;
                     if (targetChunk.Sections[secIndex].IsEmpty)
                     {
                         y += 15;
@@ -175,10 +181,11 @@ internal static class Lighting
 
     private static void SpreadLight(Vector pos, LightType lt, int level, IChunk chunk)
     {
-        var b = chunk.GetBlock(pos);
-
         // Sanity Checks
         if (level < 1) { return; }
+        if (pos.Y < chunk.MinY || pos.Y >= chunk.MinY + chunk.Height) { return; }
+
+        var b = chunk.GetBlock(pos);
         if (IsOpaque(b)) { return; }
         if (level <= chunk.GetLightLevel(pos, lt)) { return; }
 
@@ -230,7 +237,8 @@ internal static class Lighting
 
     private static bool HasSurfaceBelow(Vector pos, IChunk chunk) => IsOpaque(chunk.GetBlock(pos + Vector.Down)) && !IsOpaque(chunk.GetBlock(pos));
 
-    private static bool HasSurfaceAbove(Vector pos, IChunk chunk) => IsOpaque(chunk.GetBlock(pos + Vector.Up)) && !IsOpaque(chunk.GetBlock(pos));
+    private static bool HasSurfaceAbove(Vector pos, IChunk chunk) =>
+        pos.Y + 1 < chunk.MinY + chunk.Height && IsOpaque(chunk.GetBlock(pos + Vector.Up)) && !IsOpaque(chunk.GetBlock(pos));
 
     private static IEnumerable<Vector> EdgeSafeCardinalDirections(int x, int z)
     {
