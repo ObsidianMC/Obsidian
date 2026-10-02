@@ -1,5 +1,6 @@
 using Obsidian.API.World.Generator.DensityFunctions;
 using Obsidian.API.World.Generator.RandomSources;
+using System.Runtime.Intrinsics;
 
 namespace Obsidian.WorldData.Generators.Mojang;
 
@@ -477,6 +478,12 @@ internal sealed class NoiseChunk
             var n111 = corners[index + strideX + strideZ + 1];
 
             var width = chunk.CellWidth;
+            if (width == 4 && Vector256.IsHardwareAccelerated)
+            {
+                this.FillCellRows(values, n000, n010, n001, n011, n100, n110, n101, n111);
+                return;
+            }
+
             var deltasXZ = chunk.grid.DeltaXZ;
             var deltasY = chunk.grid.DeltaY;
             Span<double> low = stackalloc double[width];
@@ -547,6 +554,51 @@ internal sealed class NoiseChunk
                 }
             }
         }
+
+        /// <summary>
+        /// <see cref="FillCell"/> for cells 4 blocks wide, a row along X at a time: each lane does the scalar arithmetic.
+        /// </summary>
+        private void FillCellRows(Span<double> values, double n000, double n010, double n001, double n011, double n100, double n110,
+            double n101, double n111)
+        {
+            var deltasXZ = this.chunk.grid.DeltaXZ;
+            var deltasY = this.chunk.grid.DeltaY;
+            var deltaX = Vector256.Create(deltasXZ[0], deltasXZ[1], deltasXZ[2], deltasXZ[3]);
+            var i = 0;
+
+            if (this.order == InterpolationOrder.CellCache)
+            {
+                var x00 = LerpLanes(deltaX, Vector256.Create(n000), Vector256.Create(n100));
+                var x10 = LerpLanes(deltaX, Vector256.Create(n010), Vector256.Create(n110));
+                var x01 = LerpLanes(deltaX, Vector256.Create(n001), Vector256.Create(n101));
+                var x11 = LerpLanes(deltaX, Vector256.Create(n011), Vector256.Create(n111));
+
+                for (var y = 0; y < this.chunk.CellHeight; y++)
+                {
+                    var deltaY = Vector256.Create(deltasY[y]);
+                    var low = LerpLanes(deltaY, x00, x10);
+                    var high = LerpLanes(deltaY, x01, x11);
+
+                    for (var z = 0; z < 4; z++, i += 4)
+                        LerpLanes(Vector256.Create(deltasXZ[z]), low, high).CopyTo(values[i..]);
+                }
+
+                return;
+            }
+
+            for (var y = 0; y < this.chunk.CellHeight; y++)
+            {
+                var deltaY = deltasY[y];
+                var low = LerpLanes(deltaX, Vector256.Create(Lerp(deltaY, n000, n010)), Vector256.Create(Lerp(deltaY, n100, n110)));
+                var high = LerpLanes(deltaX, Vector256.Create(Lerp(deltaY, n001, n011)), Vector256.Create(Lerp(deltaY, n101, n111)));
+
+                for (var z = 0; z < 4; z++, i += 4)
+                    LerpLanes(Vector256.Create(deltasXZ[z]), low, high).CopyTo(values[i..]);
+            }
+        }
+
+        private static Vector256<double> LerpLanes(Vector256<double> delta, Vector256<double> start, Vector256<double> end) =>
+            start + delta * (end - start);
 
         private double[] SampleCorners()
         {
