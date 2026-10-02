@@ -13,6 +13,12 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
 
     public ChatMessage Title { get; set; }
 
+    /// <summary>
+    /// The name the container was given (vanilla's <c>CustomName</c>), shown as its <see cref="Title"/> instead of the
+    /// default one; <c>null</c> when it has none.
+    /// </summary>
+    public ChatMessage? CustomName { get; set; }
+
     public Guid Uuid { get; } = Guid.NewGuid();
 
     public List<IPlayer> Viewers { get; } = [];

@@ -8,6 +8,7 @@ using Obsidian.Entities;
 using Obsidian.Entities.Factories;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.WorldData.Generators;
 using System.Diagnostics;
 using System.Threading;
 
@@ -85,8 +86,9 @@ public abstract class AbstractLevel : ILevel
     private readonly IDisposable optionsMonitor;
     private readonly Lock regionLock = new();
 
-    // Entities world generation placed, spawned on the level's tick rather than on generator threads.
-    private readonly ConcurrentQueue<GeneratedEntity> generatedEntities = new();
+    // Chunks whose pending entities (placed by world generation or loaded from disk) spawn on the level's tick rather than
+    // on generator or loading threads.
+    private readonly ConcurrentQueue<Chunk> entitySpawns = new();
 
     public AbstractLevel(ILogger logger, IPacketBroadcaster packetBroadcaster, IOptionsMonitor<ServerConfiguration> configuration,
         IEventDispatcher eventDispatcher, ILevelGenerator worldGenerator, string name, string seed)
@@ -116,7 +118,7 @@ public abstract class AbstractLevel : ILevel
 
         this.PacketBroadcaster.QueuePacketToLevel(this, destroyed);
 
-        var (chunkX, chunkZ) = entity.Position.ToChunkCoord();
+        var (chunkX, chunkZ) = Region.ChunkOf(entity.Position);
 
         var region = GetRegionForChunk(chunkX, chunkZ);
 
@@ -358,7 +360,7 @@ public abstract class AbstractLevel : ILevel
         LevelData.Time += this.Configuration.TimeTickSpeedMultiplier;
         LevelData.RainTime -= this.Configuration.TimeTickSpeedMultiplier;
 
-        this.SpawnGeneratedEntities();
+        this.SpawnPendingEntities();
 
         await Task.WhenAll(this.Regions.Values.Select(r => r.BeginTickAsync()));
     }
@@ -374,72 +376,36 @@ public abstract class AbstractLevel : ILevel
     }
 
     /// <summary>
-    /// Queues entities placed by world generation to spawn on the next tick.
+    /// Queues a complete chunk's pending entities (<see cref="Chunk.PendingEntities"/>) to spawn on the next tick, like
+    /// vanilla when a proto chunk becomes a level chunk or an entity chunk is loaded.
     /// </summary>
-    internal void QueueGeneratedEntities(IEnumerable<GeneratedEntity> entities)
-    {
-        foreach (var entity in entities)
-            this.generatedEntities.Enqueue(entity);
-    }
+    internal void QueueEntitySpawn(Chunk chunk) => this.entitySpawns.Enqueue(chunk);
 
     /// <remarks>
-    /// Besides the type, position and rotation, only the saved fields Obsidian's entities support are applied: an item
-    /// frame's item, facing and item rotation, and a mob's <c>PersistenceRequired</c>.
+    /// Pending entities are loaded like saved ones (see <see cref="EntityNbt.Load"/>), so generated entities get the saved
+    /// fields Obsidian's entities model, and keep the others for when they're saved.
     /// </remarks>
-    private void SpawnGeneratedEntities()
+    private void SpawnPendingEntities()
     {
-        while (this.generatedEntities.TryDequeue(out var generated))
+        while (this.entitySpawns.TryDequeue(out var chunk))
         {
-            // Vanilla ids map to the entity type enum, e.g. minecraft:end_crystal to EndCrystal.
-            var name = generated.Type[(generated.Type.IndexOf(':') + 1)..].Replace("_", string.Empty);
-            if (!Enum.TryParse<EntityType>(name, ignoreCase: true, out var type))
-                continue;
-
-            if (type == EntityType.ItemFrame)
+            // Under the chunk's entity lock, so a save of the chunk finds each entity either pending or spawned.
+            using (chunk.EntityLock.EnterScope())
             {
-                this.SpawnEntity(CreateItemFrame(generated));
-                continue;
+                // An unloaded chunk saved its pending entities; they spawn when it's loaded again.
+                if (chunk.EntitiesUnloaded)
+                    continue;
+
+                foreach (var pending in chunk.PendingEntities)
+                {
+                    if (EntityNbt.Load(EntityNbt.ToNbt(pending), this) is Entity entity)
+                        this.SpawnEntity(entity);
+                }
+
+                chunk.PendingEntities.Clear();
             }
-
-            var entity = this.SpawnEntity(generated.Position, type);
-            entity.Yaw = generated.Yaw;
-            entity.Pitch = generated.Pitch;
-
-            if (entity is Living living)
-                living.PersistenceRequired = ReadFlag(generated.Data, "PersistenceRequired");
         }
     }
-
-    /// <summary>An item frame from vanilla's saved fields (<c>Facing</c>, <c>Item</c>, <c>ItemRotation</c>).</summary>
-    private ItemFrame CreateItemFrame(GeneratedEntity generated)
-    {
-        var data = generated.Data;
-        var frame = new ItemFrame
-        {
-            Level = this,
-            Type = EntityType.ItemFrame,
-            EntityId = Server.GetNextEntityId(),
-            Position = generated.Position,
-            Yaw = generated.Yaw,
-            Pitch = generated.Pitch,
-            Rotation = data.TryGetTag<NbtTag<byte>>("ItemRotation", out var rotation) ? rotation.Value : 0
-        };
-
-        if (data.TryGetTag<NbtTag<byte>>("Facing", out var facing))
-            frame.Facing = ItemFrame.FromFacingId(facing.Value);
-
-        if (data.TryGetTag<NbtCompound>("Item", out var item) && item.TryGetTag<NbtTag<string>>("id", out var id))
-        {
-            var count = item.TryGetTag<NbtTag<int>>("count", out var countTag) ? countTag.Value : 1;
-            frame.Item = new ItemStack(ItemsRegistry.Get(id.Value!), count);
-        }
-
-        return frame;
-    }
-
-    /// <summary>A boolean saved field; booleans read back from disk are bytes.</summary>
-    private static bool ReadFlag(NbtCompound data, string name) =>
-        data.TryGetTag<NbtTag<bool>>(name, out var flag) ? flag.Value : data.TryGetTag<NbtTag<byte>>(name, out var value) && value.Value != 0;
 
     public IRegion LoadRegionByChunk(int chunkX, int chunkZ)
     {
@@ -461,7 +427,9 @@ public abstract class AbstractLevel : ILevel
 
             region = new Region(regionX, regionZ, FolderPath, logger: this.Logger, minY: this.MinY, height: this.Height)
             {
-                LockChunk = this.Generator.LockChunkAsync
+                LockChunk = this.Generator.LockChunkAsync,
+                EntitiesLoaded = this.QueueEntitySpawn,
+                SaveStructureStarts = this.Generator is IStructureStartStorage storage ? storage.SaveStructureStarts : null
             };
             this.Logger.LogDebug("Trying to add {x}:{z} to {path}", regionX, regionZ, region.RegionFolder);
 
@@ -763,7 +731,7 @@ public abstract class AbstractLevel : ILevel
 
     public bool TryAddEntity(IEntity entity)
     {
-        var (chunkX, chunkZ) = entity.Position.ToChunkCoord();
+        var (chunkX, chunkZ) = Region.ChunkOf(entity.Position);
 
         var region = GetRegionForChunk(chunkX, chunkZ);
 

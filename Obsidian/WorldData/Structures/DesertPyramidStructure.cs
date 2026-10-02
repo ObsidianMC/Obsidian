@@ -1,4 +1,5 @@
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.Nbt;
 using Obsidian.WorldData.Features;
 using System.Threading;
 
@@ -91,6 +92,22 @@ public sealed class DesertPyramidPiece : ScatteredFeaturePiece
 
     public DesertPyramidPiece(IRandomSource random, int x, int z) : base(x, 64, z, 21, 15, 21, RandomHorizontalDirection(random))
     {
+    }
+
+    internal override void SaveState(NbtCompound tag)
+    {
+        base.SaveState(tag);
+
+        for (var i = 0; i < this.hasPlacedChest.Length; i++)
+            tag.Add(new NbtTag<bool>($"hasPlacedChest{i}", this.hasPlacedChest[i]));
+    }
+
+    internal override void LoadState(NbtCompound tag)
+    {
+        base.LoadState(tag);
+
+        for (var i = 0; i < this.hasPlacedChest.Length; i++)
+            this.hasPlacedChest[i] = tag.TryGetBool($"hasPlacedChest{i}", out var placed) && placed;
     }
 
     public Vector RandomCollapsedRoofPosition { get; private set; } = Vector.Zero;

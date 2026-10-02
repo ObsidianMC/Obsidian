@@ -1,4 +1,5 @@
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.Nbt;
 using Obsidian.WorldData.Features;
 
 namespace Obsidian.WorldData.Structures;
@@ -70,6 +71,32 @@ public abstract class StructurePiece
     public abstract void PostProcess(StructurePieceContext context);
 
     public virtual void Move(int x, int y, int z) => this.BoundingBox = this.BoundingBox.Move(x, y, z);
+
+    /// <summary>
+    /// Saves what changes as the piece is placed, with vanilla's field names: the bounding box (<c>BB</c>), which some
+    /// pieces move when first placed, and overrides add their flags (chest placed, spawner placed...).
+    /// </summary>
+    /// <remarks>
+    /// Pieces are recomputed from the seed, so only this state needs saving for a restart to place the rest of the piece
+    /// the same way. Called under the start's lock (see <see cref="StructureStart.SaveState"/>).
+    /// </remarks>
+    internal virtual void SaveState(NbtCompound tag)
+    {
+        var box = this.BoundingBox;
+        tag.Add(new NbtArray<int>("BB", [box.MinX, box.MinY, box.MinZ, box.MaxX, box.MaxY, box.MaxZ]));
+    }
+
+    /// <summary>
+    /// Restores what <see cref="SaveState"/> saved, before the piece is placed again.
+    /// </summary>
+    internal virtual void LoadState(NbtCompound tag)
+    {
+        if (tag.TryGetTag<NbtArray<int>>("BB", out var bounds) && bounds.Count == 6)
+        {
+            var box = bounds.GetArray();
+            this.BoundingBox = new BlockBox(new Vector(box[0], box[1], box[2]), new Vector(box[3], box[4], box[5]));
+        }
+    }
 
     /// <summary>
     /// Vanilla <c>isCloseToChunk</c>: whether the box reaches within <paramref name="distance"/> blocks of the chunk.

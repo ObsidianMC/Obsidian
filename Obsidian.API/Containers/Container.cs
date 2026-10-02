@@ -80,6 +80,7 @@ public sealed class Container : BaseContainer, IBlockEntity
     {
         Id = this.Id,
         Title = this.Title,
+        CustomName = this.CustomName,
         BlockPosition = this.BlockPosition,
         Owner = this.Owner,
         items = this.items,

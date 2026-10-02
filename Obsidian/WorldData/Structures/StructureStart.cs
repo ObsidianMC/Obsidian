@@ -1,4 +1,5 @@
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.Nbt;
 using System.Threading;
 
 namespace Obsidian.WorldData.Structures;
@@ -8,6 +9,12 @@ namespace Obsidian.WorldData.Structures;
 /// </summary>
 public sealed class StructureStart
 {
+    // Pieces change as they're placed, and a start is shared by every chunk it reaches, which may be decorated in parallel.
+    // Placing, saving and restoring the pieces' state take this lock, so a save never sees a half-placed piece.
+    private readonly Lock stateLock = new();
+
+    private bool stateRestored;
+
     internal StructureStart(Structure structure, int chunkX, int chunkZ, IReadOnlyList<StructurePiece> pieces)
     {
         this.Structure = structure;
@@ -69,6 +76,8 @@ public sealed class StructureStart
         if (this.Pieces.Count == 0)
             return;
 
+        using var scope = this.stateLock.EnterScope();
+
         // Pieces may orient themselves around the start piece's bottom center.
         var startBox = this.Pieces[0].BoundingBox;
         var center = startBox.Center;
@@ -81,6 +90,72 @@ public sealed class StructureStart
         }
 
         this.Structure.AfterPlace(pivotContext, this.Pieces);
+    }
+
+    /// <summary>
+    /// Whether <see cref="RestoreState"/> ran, so this start's pieces hold the state to save.
+    /// </summary>
+    internal bool IsStateRestored
+    {
+        get
+        {
+            using var scope = this.stateLock.EnterScope();
+            return this.stateRestored;
+        }
+    }
+
+    /// <summary>
+    /// Saves the start like vanilla's <c>StructureStart.createTag</c> (<c>id</c>, <c>ChunkX</c>, <c>ChunkZ</c>,
+    /// <c>Children</c>), with each piece's placement state (see <see cref="StructurePiece.SaveState"/>) rather than the whole
+    /// piece.
+    /// </summary>
+    internal NbtCompound SaveState()
+    {
+        var children = new NbtList(NbtTagType.Compound, "Children");
+
+        using (this.stateLock.EnterScope())
+        {
+            foreach (var piece in this.Pieces)
+            {
+                var child = new NbtCompound();
+                piece.SaveState(child);
+                children.Add(child);
+            }
+        }
+
+        return new NbtCompound(this.Structure.Identifier)
+        {
+            new NbtTag<string>("id", this.Structure.Identifier),
+            new NbtTag<int>("ChunkX", this.ChunkX),
+            new NbtTag<int>("ChunkZ", this.ChunkZ),
+            children
+        };
+    }
+
+    /// <summary>
+    /// Restores the pieces' state from what <see cref="SaveState"/> saved, or from nothing when the start was never saved.
+    /// Only the first call does anything; it must happen before the start is first placed.
+    /// </summary>
+    /// <remarks>
+    /// Saved state for a different set of pieces (from another version of the structure) is ignored.
+    /// </remarks>
+    internal void RestoreState(NbtCompound? saved)
+    {
+        using var scope = this.stateLock.EnterScope();
+
+        if (this.stateRestored)
+            return;
+
+        this.stateRestored = true;
+
+        if (saved is null || !saved.TryGetTag<NbtList>("Children", out var children) || children.Count != this.Pieces.Count)
+            return;
+
+        for (var i = 0; i < children.Count; i++)
+        {
+            if (children[i] is NbtCompound child)
+                this.Pieces[i].LoadState(child);
+        }
     }
 }
 

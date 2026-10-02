@@ -1,4 +1,5 @@
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.Nbt;
 using Obsidian.WorldData.Features;
 
 namespace Obsidian.WorldData.Structures;
@@ -765,6 +766,20 @@ public static class NetherFortressPieces
             this.isNeedingChest = random.NextInt(3) == 0;
         }
 
+        internal override void SaveState(NbtCompound tag)
+        {
+            base.SaveState(tag);
+
+            tag.Add(new NbtTag<bool>("Chest", this.isNeedingChest));
+        }
+
+        internal override void LoadState(NbtCompound tag)
+        {
+            base.LoadState(tag);
+
+            this.isNeedingChest = tag.TryGetBool("Chest", out var needsChest) && needsChest;
+        }
+
         internal static NetherBridgePiece? Create(IStructurePieceAccessor pieces, IRandomSource random, int x, int y, int z, BlockFace direction,
             int genDepth)
         {
@@ -841,6 +856,20 @@ public static class NetherFortressPieces
             : base(genDepth, boundingBox, orientation)
         {
             this.isNeedingChest = random.NextInt(3) == 0;
+        }
+
+        internal override void SaveState(NbtCompound tag)
+        {
+            base.SaveState(tag);
+
+            tag.Add(new NbtTag<bool>("Chest", this.isNeedingChest));
+        }
+
+        internal override void LoadState(NbtCompound tag)
+        {
+            base.LoadState(tag);
+
+            this.isNeedingChest = tag.TryGetBool("Chest", out var needsChest) && needsChest;
         }
 
         internal static NetherBridgePiece? Create(IStructurePieceAccessor pieces, IRandomSource random, int x, int y, int z, BlockFace direction,
@@ -969,6 +998,20 @@ public static class NetherFortressPieces
 
         private MonsterThrone(int genDepth, BlockBox boundingBox, BlockFace orientation) : base(genDepth, boundingBox, orientation)
         {
+        }
+
+        internal override void SaveState(NbtCompound tag)
+        {
+            base.SaveState(tag);
+
+            tag.Add(new NbtTag<bool>("Mob", this.hasPlacedSpawner));
+        }
+
+        internal override void LoadState(NbtCompound tag)
+        {
+            base.LoadState(tag);
+
+            this.hasPlacedSpawner = tag.TryGetBool("Mob", out var placed) && placed;
         }
 
         internal static NetherBridgePiece? Create(IStructurePieceAccessor pieces, IRandomSource random, int x, int y, int z, BlockFace direction,

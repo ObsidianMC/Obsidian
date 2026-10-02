@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.ChunkData;
+using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Utilities.Collections;
 using Obsidian.WorldData.Generators.Mojang;
@@ -32,6 +33,12 @@ public class Region : IRegion
 
     private readonly RegionFile regionFile;
 
+    // Like vanilla, entities of complete chunks are kept in their own region files (entities/r.x.z.mca).
+    private readonly RegionFile entityRegionFile;
+
+    // Reading the region files' headers; every file operation waits for it, since regions are loaded without waiting.
+    private readonly Lazy<Task> initialization;
+
     private readonly ConcurrentDictionary<Vector, IBlockUpdate> blockUpdates = new();
 
     // Serializes filling empty chunk slots, so concurrent callers never end up with different instances of a chunk.
@@ -41,6 +48,18 @@ public class Region : IRegion
     /// Locks a chunk against generation while it's serialized (the level's generator), or <c>null</c> for no locking.
     /// </summary>
     internal Func<int, int, ValueTask<IDisposable?>>? LockChunk { get; init; }
+
+    /// <summary>
+    /// Called with a complete chunk loaded from disk that has entities to spawn (the level queues them).
+    /// </summary>
+    internal Action<Chunk>? EntitiesLoaded { get; init; }
+
+    /// <summary>
+    /// Gives the structure starts to save in a chunk (vanilla's <c>structures.starts</c>), from the chunk's position and
+    /// the starts it was loaded with; <c>null</c> means there are none. Called under the chunk's lock. Without it, the
+    /// loaded starts are saved as they were.
+    /// </summary>
+    internal Func<int, int, NbtCompound?, NbtCompound?>? SaveStructureStarts { get; init; }
 
     // The dimension's build range, which decides the section count of loaded chunks.
     private readonly int minY;
@@ -60,6 +79,12 @@ public class Region : IRegion
         logger?.LogInformation("Loading region file {RegionFile} with compression {Compression}", filePath, chunkCompression);
         regionFile = new RegionFile(filePath, chunkCompression, CubicRegionSize, logger);
         ChunkCompression = chunkCompression;
+
+        var entityFolder = Path.Join(worldFolderPath, "entities");
+        Directory.CreateDirectory(entityFolder);
+        this.entityRegionFile = new RegionFile(Path.Join(entityFolder, $"r.{X}.{Z}.mca"), chunkCompression, CubicRegionSize, logger);
+
+        this.initialization = new(() => Task.WhenAll(this.regionFile.InitializeAsync(), this.entityRegionFile.InitializeAsync()));
     }
 
     public void AddBlockUpdate(IBlockUpdate bu)
@@ -70,14 +95,21 @@ public class Region : IRegion
         }
     }
 
-    public async Task<bool> InitAsync() => await regionFile.InitializeAsync();
+    public async Task<bool> InitAsync()
+    {
+        await this.initialization.Value;
+        return true;
+    }
 
     public async Task FlushAsync(CancellationToken cts = default)
     {
+        await this.initialization.Value;
+
         foreach (Chunk c in loadedChunks.Cast<Chunk>())
             await SerializeChunkAsync(c);
 
         regionFile.Flush();
+        this.entityRegionFile.Flush();
     }
 
     public async ValueTask<IChunk> GetChunkAsync(int x, int z)
@@ -126,21 +158,46 @@ public class Region : IRegion
     {
         var chunk = loadedChunks[x, z];
         if (chunk is null) { return; }
-        await SerializeChunkAsync(chunk);
+        await SerializeChunkAsync(chunk, unloading: true);
         loadedChunks[x, z] = null;
     }
 
     private async Task<Chunk?> GetChunkFromFileAsync(int x, int z)
     {
-        var chunkBuffer = await regionFile.GetChunkBytesAsync(x, z);
-
-        if (chunkBuffer is not Memory<byte> chunkData)
+        if (await ReadCompoundAsync(this.regionFile, x, z) is not NbtCompound chunkCompound)
             return null;
 
-        await using var bytesStream = new ReadOnlyStream(chunkData);
-        var nbtReader = new NbtReader(bytesStream);
+        var chunk = DeserializeChunk(chunkCompound);
 
-        return DeserializeChunk(nbtReader.ReadNextTag() as NbtCompound);
+        // Entities of complete chunks are in the entity region file; they spawn like generated ones.
+        if (chunk.IsGenerated)
+        {
+            if (await ReadCompoundAsync(this.entityRegionFile, x, z) is NbtCompound entityChunk
+                && entityChunk.TryGetTag<NbtList>("Entities", out var entities))
+            {
+                foreach (var entity in entities.OfType<NbtCompound>())
+                {
+                    if (EntityNbt.ToGeneratedEntity(entity) is GeneratedEntity pending)
+                        chunk.PendingEntities.Add(pending);
+                }
+            }
+
+            if (chunk.PendingEntities.Count > 0)
+                this.EntitiesLoaded?.Invoke(chunk);
+        }
+
+        return chunk;
+    }
+
+    private async Task<NbtCompound?> ReadCompoundAsync(RegionFile file, int x, int z)
+    {
+        await this.initialization.Value;
+
+        if (await file.GetChunkBytesAsync(x, z) is not Memory<byte> data)
+            return null;
+
+        await using var bytesStream = new ReadOnlyStream(data);
+        return new NbtReader(bytesStream).ReadNextTag() as NbtCompound;
     }
 
     public IEnumerable<IChunk> GeneratedChunks()
@@ -161,27 +218,115 @@ public class Region : IRegion
         loadedChunks[x, z] = chunk;
     }
 
-    internal async Task SerializeChunkAsync(IChunk chunk)
+    /// <summary>
+    /// Saves a chunk, and once it's complete, its entities to the entity region file.
+    /// </summary>
+    /// <param name="unloading">Whether the chunk is being unloaded: its saved entities are also taken out of the level.</param>
+    internal async Task SerializeChunkAsync(IChunk chunk, bool unloading = false)
     {
+        await this.initialization.Value;
+
         var (x, z) = (NumericsHelper.Modulo(chunk.X, CubicRegionSize), NumericsHelper.Modulo(chunk.Z, CubicRegionSize));
 
         await using MemoryStream strm = new();
         await using NbtWriterStream writer = new(strm, ChunkCompression, "");
 
         // Generation writes chunks (and their neighbors) under its locks, so the snapshot is taken under the chunk's lock.
+        // The entities are taken in the same snapshot, so they agree with the chunk's status.
+        NbtList? entities = null;
         using (this.LockChunk is null ? null : await this.LockChunk(chunk.X, chunk.Z))
-            SerializeChunk(writer, chunk);
+        {
+            var loadedStarts = (chunk as Chunk)?.StructureStarts;
+            var structureStarts = this.SaveStructureStarts is null ? loadedStarts : this.SaveStructureStarts(chunk.X, chunk.Z, loadedStarts);
+
+            SerializeChunk(writer, chunk, structureStarts);
+
+            if (chunk.IsGenerated && chunk is Chunk complete)
+                entities = this.CollectEntities(complete, unloading);
+        }
 
         writer.EndCompound();
 
         await writer.TryFinishAsync();
 
         await regionFile.SetChunkAsync(x, z, strm.ToArray());
+
+        if (entities is not null)
+            await this.WriteEntitiesAsync(chunk.X, chunk.Z, entities);
     }
+
+    /// <summary>
+    /// The entities to save with a complete chunk: those still waiting to spawn, and those of the level in the chunk. When
+    /// unloading, the level's are taken out of it too, and the chunk's pending ones won't spawn anymore.
+    /// </summary>
+    private NbtList CollectEntities(Chunk chunk, bool unloading)
+    {
+        var entities = new NbtList(NbtTagType.Compound, "Entities");
+
+        using (chunk.EntityLock.EnterScope())
+        {
+            foreach (var pending in chunk.PendingEntities)
+                entities.Add(EntityNbt.ToNbt(pending));
+
+            foreach (var entity in this.Entities.Values)
+            {
+                if (entity is not Entity levelEntity || ChunkOf(levelEntity.Position) != (chunk.X, chunk.Z))
+                    continue;
+
+                if (EntityNbt.Save(levelEntity) is not NbtCompound saved)
+                    continue;
+
+                entities.Add(saved);
+                if (unloading)
+                    this.Entities.TryRemove(levelEntity.EntityId, out _);
+            }
+
+            if (unloading)
+                chunk.EntitiesUnloaded = true;
+        }
+
+        return entities;
+    }
+
+    /// <summary>
+    /// Writes a chunk's entities like vanilla's <c>EntityStorage</c>: <c>DataVersion</c>, <c>Position</c> and
+    /// <c>Entities</c>.
+    /// </summary>
+    private async Task WriteEntitiesAsync(int chunkX, int chunkZ, NbtList entities)
+    {
+        var (x, z) = (NumericsHelper.Modulo(chunkX, CubicRegionSize), NumericsHelper.Modulo(chunkZ, CubicRegionSize));
+
+        // Vanilla deletes the entry of a chunk left without entities; region files can't delete entries, so a chunk that had
+        // entities keeps an empty list, and one that never had any gets no entry.
+        if (entities.Count == 0 && !this.entityRegionFile.HasChunk(x, z))
+            return;
+
+        await using MemoryStream strm = new();
+        await using NbtWriterStream writer = new(strm, ChunkCompression, "");
+
+        writer.WriteInt("DataVersion", LevelData.DataVersion);
+        writer.WriteArray("Position", [chunkX, chunkZ]);
+        writer.WriteTag(entities);
+        writer.EndCompound();
+
+        await writer.TryFinishAsync();
+
+        await this.entityRegionFile.SetChunkAsync(x, z, strm.ToArray());
+    }
+
+    /// <summary>
+    /// The chunk an entity at <paramref name="position"/> is in, which decides the region keeping it and the chunk saving it.
+    /// </summary>
+    /// <remarks>
+    /// Unlike <c>VectorF.ToChunkCoord</c>, which truncates, this floors negative coordinates like vanilla.
+    /// </remarks>
+    internal static (int X, int Z) ChunkOf(VectorF position) => ((int)MathF.Floor(position.X) >> 4, (int)MathF.Floor(position.Z) >> 4);
 
     public async Task BeginTickAsync(CancellationToken cts = default)
     {
         await Parallel.ForEachAsync(Entities.Values, cts, async (entity, cts) => await entity.TickAsync());
+
+        this.MoveEntitiesToTheirRegions();
 
         List<IBlockUpdate> neighborUpdates = [];
         List<IBlockUpdate> delayed = [];
@@ -202,6 +347,23 @@ public class Region : IRegion
         }
         delayed.ForEach(AddBlockUpdate);
         neighborUpdates.ForEach(async u => await u.Level.BlockUpdateNeighborsAsync(u));
+    }
+
+    /// <summary>
+    /// Hands entities that moved into another loaded region's chunks over to that region, which saves them with its chunks.
+    /// </summary>
+    private void MoveEntitiesToTheirRegions()
+    {
+        foreach (var entity in this.Entities.Values)
+        {
+            var (chunkX, chunkZ) = ChunkOf(entity.Position);
+            if (chunkX >> CubicRegionSizeShift == this.X && chunkZ >> CubicRegionSizeShift == this.Z)
+                continue;
+
+            if (entity.Level is AbstractLevel level && level.GetRegionForChunk(chunkX, chunkZ) is Region target
+                && target.Entities.TryAdd(entity.EntityId, entity))
+                this.Entities.TryRemove(entity.EntityId, out _);
+        }
     }
 
     #region NBT Ops
@@ -328,14 +490,7 @@ public class Region : IRegion
                 if (position.Y < this.minY || position.Y >= this.minY + this.height)
                     continue;
 
-                var data = new NbtCompound();
-                foreach (var (name, tag) in blockEntityCompound)
-                {
-                    if (name is not ("id" or "x" or "y" or "z" or "keepPacked"))
-                        data.Add(name, tag);
-                }
-
-                chunk.SetBlockEntity(position.X, position.Y, position.Z, new DataBlockEntity { Id = id.Value!, BlockPosition = position, Data = data });
+                chunk.SetBlockEntity(position.X, position.Y, position.Z, BlockEntityNbt.Load(blockEntityCompound, id.Value!, position));
             }
         }
 
@@ -345,40 +500,25 @@ public class Region : IRegion
                 chunk.PostProcessing.Add(new Vector((x << 4) + (packed & 15), this.minY + (packed >> 8), (z << 4) + ((packed >> 4) & 15)));
         }
 
+        // Entities of a chunk that isn't complete yet, like a vanilla proto chunk's "entities".
         if (chunkCompound.TryGetTag<NbtList>("entities", out var entities))
         {
-            foreach (var entityCompound in entities.Cast<NbtCompound>())
+            foreach (var entityCompound in entities.OfType<NbtCompound>())
             {
-                if (!entityCompound.TryGetTag<NbtTag<string>>("id", out var id) || !entityCompound.TryGetTag<NbtList>("Pos", out var pos))
-                    continue;
-
-                var yaw = 0f;
-                var pitch = 0f;
-                if (entityCompound.TryGetTag<NbtList>("Rotation", out var rotation))
-                {
-                    yaw = ((NbtTag<float>)rotation[0]).Value;
-                    pitch = ((NbtTag<float>)rotation[1]).Value;
-                }
-
-                var data = new NbtCompound();
-                foreach (var (name, tag) in entityCompound)
-                {
-                    if (name is not ("id" or "Pos" or "Rotation"))
-                        data.Add(name, tag);
-                }
-
-                var position = new VectorF((float)((NbtTag<double>)pos[0]).Value, (float)((NbtTag<double>)pos[1]).Value,
-                    (float)((NbtTag<double>)pos[2]).Value);
-                chunk.PendingEntities.Add(new GeneratedEntity(id.Value!, position, yaw, pitch) { Data = data });
+                if (EntityNbt.ToGeneratedEntity(entityCompound) is GeneratedEntity pending)
+                    chunk.PendingEntities.Add(pending);
             }
         }
+
+        if (chunkCompound.TryGetTag<NbtCompound>("structures", out var structures) && structures.TryGetTag<NbtCompound>("starts", out var starts))
+            chunk.StructureStarts = starts;
 
         chunk.SetChunkStatus((ChunkGenStage)(Enum.TryParse(typeof(ChunkGenStage), chunkCompound.GetString("Status"), out var status) ? status : ChunkGenStage.empty));
 
         return chunk;
     }
 
-    private static void SerializeChunk(NbtWriterStream writer, IChunk chunk)
+    private static void SerializeChunk(NbtWriterStream writer, IChunk chunk, NbtCompound? structureStarts)
     {
         writer.WriteListStart("sections", NbtTagType.Compound, chunk.Sections.Length);
 
@@ -473,44 +613,32 @@ public class Region : IRegion
         }
         writer.EndList();
 
-        // Only block entities kept as data are saved; container block entities aren't persisted yet.
-        var blockEntities = chunk.GetBlockEntities().OfType<DataBlockEntity>().ToList();
+        // Data block entities and containers; other block entities aren't saved yet.
+        var blockEntities = chunk.GetBlockEntities().Select(blockEntity => BlockEntityNbt.Save(blockEntity, chunk)).OfType<NbtCompound>().ToList();
         writer.WriteListStart("block_entities", NbtTagType.Compound, blockEntities.Count);
         foreach (var blockEntity in blockEntities)
-        {
-            writer.WriteCompoundStart();
-            writer.WriteString("id", blockEntity.Id);
-            writer.WriteInt("x", blockEntity.BlockPosition.X);
-            writer.WriteInt("y", blockEntity.BlockPosition.Y);
-            writer.WriteInt("z", blockEntity.BlockPosition.Z);
-            writer.WriteBool("keepPacked", false);
-            foreach (var (_, tag) in blockEntity.Data)
-                writer.WriteTag(tag);
-            writer.EndCompound();
-        }
+            writer.WriteListTag(blockEntity);
         writer.EndList();
 
-        // Entities placed by world generation that haven't spawned yet, like a vanilla proto chunk's "entities".
-        var pendingEntities = (chunk as Chunk)?.PendingEntities ?? [];
+        // Entities placed by world generation in a chunk that isn't complete yet, like a vanilla proto chunk's "entities".
+        // Complete chunks keep their entities in the entity region file.
+        var pendingEntities = chunk is Chunk { IsGenerated: false } proto ? proto.PendingEntities : [];
         writer.WriteListStart("entities", NbtTagType.Compound, pendingEntities.Count);
         foreach (var entity in pendingEntities)
+            writer.WriteListTag(EntityNbt.ToNbt(entity));
+        writer.EndList();
+
+        // Vanilla's structures.starts. References aren't saved: they follow from the starts, which are recomputed from the
+        // seed, so only the starts' placement state needs saving.
+        if (structureStarts is { Count: > 0 })
         {
-            writer.WriteCompoundStart();
-            writer.WriteString("id", entity.Type);
-            writer.WriteListStart("Pos", NbtTagType.Double, 3);
-            writer.WriteDouble(entity.Position.X);
-            writer.WriteDouble(entity.Position.Y);
-            writer.WriteDouble(entity.Position.Z);
-            writer.EndList();
-            writer.WriteListStart("Rotation", NbtTagType.Float, 2);
-            writer.WriteFloat(entity.Yaw);
-            writer.WriteFloat(entity.Pitch);
-            writer.EndList();
-            foreach (var (_, tag) in entity.Data)
-                writer.WriteTag(tag);
+            writer.WriteCompoundStart("structures");
+            writer.WriteCompoundStart("starts");
+            foreach (var (_, start) in structureStarts)
+                writer.WriteTag(start);
+            writer.EndCompound();
             writer.EndCompound();
         }
-        writer.EndList();
 
         // Post-processing marks, each packed as (x | z << 4 | (y - min Y) << 8) within the chunk.
         if (chunk is Chunk generated)
@@ -547,5 +675,9 @@ public class Region : IRegion
     };
     #endregion NBT Ops
 
-    public async ValueTask DisposeAsync() => await regionFile.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        await regionFile.DisposeAsync();
+        await this.entityRegionFile.DisposeAsync();
+    }
 }

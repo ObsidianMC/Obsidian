@@ -1,5 +1,7 @@
 ﻿using Obsidian.API.World;
+using Obsidian.Nbt;
 using Obsidian.WorldData.Generators.Mojang;
+using Obsidian.WorldData.Generators.Mojang.Structures;
 using Obsidian.WorldData.Lighting;
 using System.Threading;
 
@@ -9,7 +11,7 @@ namespace Obsidian.WorldData.Generators;
 /// <summary>
 /// Vanilla's overworld generator.
 /// </summary>
-internal class MojangGenerator : ILevelGenerator
+internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
 {
     // Chunk locks are striped so their number stays bounded; stripes are always taken in ascending order.
     private const int LockStripeCount = 256;
@@ -75,38 +77,36 @@ internal class MojangGenerator : ILevelGenerator
 
         // Completing the chunk and taking its leftovers happen under its lock, so concurrent requests do it once.
         Vector[] fluids;
-        GeneratedEntity[] entities;
         using (await this.LockAsync(cx, cz, 0))
         {
             if (chunk.ChunkStatus >= ChunkGenStage.full)
                 return chunk;
 
             chunk.SetChunkStatus(ChunkGenStage.full);
-            (fluids, entities) = TakeLeftovers(chunk);
+            fluids = TakeLeftovers(chunk);
         }
 
         await this.ScheduleFluidUpdatesAsync(chunk, fluids);
 
-        // Like vanilla when a proto chunk becomes a level chunk; the level spawns them on its own thread.
-        if (entities.Length > 0 && this.world is AbstractLevel level)
-            level.QueueGeneratedEntities(entities);
+        // Like vanilla when a proto chunk becomes a level chunk; the level spawns the entities generation placed on its own
+        // thread. They stay pending in the chunk until then, so a save in between keeps them.
+        if (chunk is Chunk { PendingEntities.Count: > 0 } complete && this.world is AbstractLevel level)
+            level.QueueEntitySpawn(complete);
 
         return chunk;
     }
 
     /// <summary>
-    /// The fluids left in the chunk's post-processing and the entities generation placed in it, removed from the chunk.
+    /// The fluids left in the chunk's post-processing, removed from the chunk.
     /// </summary>
-    private static (Vector[] Fluids, GeneratedEntity[] Entities) TakeLeftovers(IChunk chunk)
+    private static Vector[] TakeLeftovers(IChunk chunk)
     {
         if (chunk is not Chunk generated)
-            return ([], []);
+            return [];
 
         var fluids = generated.PostProcessing.ToArray();
-        var entities = generated.PendingEntities.ToArray();
         generated.PostProcessing.Clear();
-        generated.PendingEntities.Clear();
-        return (fluids, entities);
+        return fluids;
     }
 
     /// <summary>
@@ -198,22 +198,64 @@ internal class MojangGenerator : ILevelGenerator
             }
         }
 
-        using var locks = await this.LockAsync(cx, cz, 1);
-
-        var chunk = await this.GetChunkAsync(cx, cz);
-        if (chunk.ChunkStatus >= ChunkGenStage.features)
+        // A status never goes back, so a decorated chunk can be skipped without its locks; the check under them decides.
+        if ((await this.GetChunkAsync(cx, cz)).ChunkStatus >= ChunkGenStage.features)
             return;
 
-        var area = new Dictionary<(int X, int Z), IChunk>();
-        for (var dx = -1; dx <= 1; dx++)
+        await this.LoadStructureStartsAsync(cx, cz);
+
+        using (await this.LockAsync(cx, cz, 1))
         {
-            for (var dz = -1; dz <= 1; dz++)
-                area[(cx + dx, cz + dz)] = dx == 0 && dz == 0 ? chunk : await this.GetChunkAsync(cx + dx, cz + dz);
+            var chunk = await this.GetChunkAsync(cx, cz);
+            if (chunk.ChunkStatus >= ChunkGenStage.features)
+                return;
+
+            var area = new Dictionary<(int X, int Z), IChunk>();
+            for (var dx = -1; dx <= 1; dx++)
+            {
+                for (var dz = -1; dz <= 1; dz++)
+                    area[(cx + dx, cz + dz)] = dx == 0 && dz == 0 ? chunk : await this.GetChunkAsync(cx + dx, cz + dz);
+            }
+
+            this.builder.Decorate(area, cx, cz);
+            chunk.SetChunkStatus(ChunkGenStage.features);
         }
 
-        this.builder.Decorate(area, cx, cz);
-        chunk.SetChunkStatus(ChunkGenStage.features);
+        // The pieces placed may have changed, and a start chunk may have been unloaded meanwhile: loading them again keeps
+        // each start's current state in a chunk that will be saved.
+        await this.LoadStructureStartsAsync(cx, cz);
     }
+
+    /// <summary>
+    /// Loads the start chunk of every structure start reaching a chunk, restoring each start's saved state the first time,
+    /// so pieces placed before a restart aren't placed again. Like vanilla, each start lives in its start chunk: start
+    /// chunks are loaded, or created at the structure starts status, so they save the state again.
+    /// </summary>
+    /// <remarks>
+    /// Done without generation locks, since it may read chunks from disk. Every decoration does this before placing
+    /// pieces, and a start is only restored once, so that happens before any of its pieces are placed in this session.
+    /// </remarks>
+    private async ValueTask LoadStructureStartsAsync(int cx, int cz)
+    {
+        if (this.builder.Structures is not StructureManager structures)
+            return;
+
+        foreach (var start in structures.GetStartsReaching(cx, cz))
+        {
+            var startChunk = await this.world.GetChunkAsync(start.ChunkX, start.ChunkZ, scheduleGeneration: false) as Chunk;
+            if (start.IsStateRestored)
+                continue;
+
+            NbtCompound? saved = null;
+            if (startChunk?.StructureStarts is NbtCompound starts && starts.TryGetTag<NbtCompound>(start.Structure.Identifier, out var tag))
+                saved = tag;
+
+            start.RestoreState(saved);
+        }
+    }
+
+    public NbtCompound? SaveStructureStarts(int chunkX, int chunkZ, NbtCompound? loaded) =>
+        this.builder.Structures is StructureManager structures ? structures.SaveStarts(chunkX, chunkZ, loaded) : loaded;
 
     /// <summary>
     /// Every feature that can reach the chunk has run: post-processes its marked blocks (which reads its neighbors), then

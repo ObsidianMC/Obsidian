@@ -290,12 +290,8 @@ public sealed partial class MainEventHandler(ILogger<MainEventHandler> logger) :
                 }
                 else if (tileEntity is BaseContainer tileEntityContainer)
                 {
-                    for(int i = 0; i < tileEntityContainer.Size; i++)
-                    {
-                        var slotItem = tileEntityContainer[i];
-
-                        container.SetItem(i, slotItem);
-                    }
+                    // The stored container itself is opened, so changes reach the block entity that's saved with the chunk.
+                    container = tileEntityContainer;
                 }
                 else if (tileEntity is DataBlockEntity dataBlockEntity)
                 {

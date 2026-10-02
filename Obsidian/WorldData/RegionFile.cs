@@ -215,6 +215,11 @@ public sealed class RegionFile : IAsyncDisposable
         return uncompressedData.ToArray();
     }
 
+    /// <summary>
+    /// Whether the region file has data for the chunk at the local coordinates.
+    /// </summary>
+    public bool HasChunk(int chunkX, int chunkZ) => this.Locations[this.GetChunkTableIndex(chunkX, chunkZ)] != 0;
+
     public void Flush()
     {
         this.semaphore.Wait();

@@ -31,6 +31,22 @@ public sealed class SwampHutPiece : ScatteredFeaturePiece
     {
     }
 
+    internal override void SaveState(NbtCompound tag)
+    {
+        base.SaveState(tag);
+
+        tag.Add(new NbtTag<bool>("Witch", this.spawnedWitch));
+        tag.Add(new NbtTag<bool>("Cat", this.spawnedCat));
+    }
+
+    internal override void LoadState(NbtCompound tag)
+    {
+        base.LoadState(tag);
+
+        this.spawnedWitch = tag.TryGetBool("Witch", out var witch) && witch;
+        this.spawnedCat = tag.TryGetBool("Cat", out var cat) && cat;
+    }
+
     public override void PostProcess(StructurePieceContext context)
     {
         var level = context.Level;

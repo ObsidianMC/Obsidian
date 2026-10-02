@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Effects;
+using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 
 namespace Obsidian.Entities;
@@ -83,6 +84,27 @@ public class Living : Entity, ILiving
         };
 
         activePotionEffects.AddOrUpdate(effectId, _ => data, (_, _) => data);
+    }
+
+    internal override void WriteNbt(NbtCompound tag)
+    {
+        base.WriteNbt(tag);
+
+        tag.Set(new NbtTag<float>("Health", this.Health));
+        tag.Set(new NbtTag<float>("AbsorptionAmount", this.AbsorbtionAmount));
+        tag.Set(new NbtTag<bool>("PersistenceRequired", this.PersistenceRequired));
+    }
+
+    internal override void ReadNbt(NbtCompound tag)
+    {
+        base.ReadNbt(tag);
+
+        if (tag.TryGetTag<NbtTag<float>>("Health", out var health))
+            this.Health = health.Value;
+        if (tag.TryGetTag<NbtTag<float>>("AbsorptionAmount", out var absorption))
+            this.AbsorbtionAmount = (int)absorption.Value;
+
+        this.PersistenceRequired = tag.TryGetBool("PersistenceRequired", out var persistent) && persistent;
     }
 
     public void RemovePotionEffect(int effectId)

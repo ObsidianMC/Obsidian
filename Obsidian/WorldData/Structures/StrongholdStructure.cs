@@ -1,4 +1,5 @@
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.Nbt;
 using Obsidian.WorldData.Features;
 
 namespace Obsidian.WorldData.Structures;
@@ -372,6 +373,20 @@ public static class StrongholdPieces
     {
         // Like vanilla, set by whichever chunk places the chest.
         private bool hasPlacedChest;
+
+        internal override void SaveState(NbtCompound tag)
+        {
+            base.SaveState(tag);
+
+            tag.Add(new NbtTag<bool>("Chest", this.hasPlacedChest));
+        }
+
+        internal override void LoadState(NbtCompound tag)
+        {
+            base.LoadState(tag);
+
+            this.hasPlacedChest = tag.TryGetBool("Chest", out var placed) && placed;
+        }
 
         public ChestCorridor(int genDepth, IRandomSource random, BlockBox boundingBox, BlockFace direction) : base(genDepth, boundingBox)
         {
@@ -793,6 +808,20 @@ public static class StrongholdPieces
     {
         // Like vanilla, set by whichever chunk places the spawner.
         private bool hasPlacedSpawner;
+
+        internal override void SaveState(NbtCompound tag)
+        {
+            base.SaveState(tag);
+
+            tag.Add(new NbtTag<bool>("Mob", this.hasPlacedSpawner));
+        }
+
+        internal override void LoadState(NbtCompound tag)
+        {
+            base.LoadState(tag);
+
+            this.hasPlacedSpawner = tag.TryGetBool("Mob", out var placed) && placed;
+        }
 
         public PortalRoom(int genDepth, BlockBox boundingBox, BlockFace direction) : base(genDepth, boundingBox)
         {

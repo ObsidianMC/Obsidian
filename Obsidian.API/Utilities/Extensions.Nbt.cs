@@ -207,15 +207,4 @@ public partial class Extensions
 
         writer.WriteByteArray(nbtWriter.Data);
     }
-
-    //DESERIALIZE ITEM COMPONENTS
-    public static ItemStack? ItemFromNbt(this NbtCompound? item)
-    {
-        if (item is null)
-            return null;
-
-        var itemStack = ItemsRegistry.GetSingleItem(item.GetString("id"));
-
-        return itemStack;
-    }
 }

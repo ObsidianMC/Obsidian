@@ -1,4 +1,5 @@
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.Nbt;
 using Obsidian.WorldData.Structures;
 using Obsidian.WorldData.Structures.Placement;
 
@@ -9,9 +10,17 @@ namespace Obsidian.WorldData.Generators.Mojang.Structures;
 /// <c>ChunkGenerator</c> (<c>createStructures</c>, <c>createReferences</c>) and <c>StructureManager</c>.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Starts only depend on the seed, the biome source and the noise, so they're computed on demand for any chunk and cached
 /// by chunk position instead of being stored in chunks (vanilla generates the chunks around a chunk to the structure
 /// starts status). Thread-safe.
+/// </para>
+/// <para>
+/// What pieces change as they're placed (a chest or spawner placed, the height a temple settled at) is saved in the start
+/// chunk like vanilla's <c>structures.starts</c> (see <see cref="SaveStarts"/>), and restored into the recomputed start
+/// before it's placed again (see <see cref="StructureStart.RestoreState"/>), so a restart places the rest of a structure
+/// the same way.
+/// </para>
 /// </remarks>
 internal sealed class StructureManager : IStructurePlacementState
 {
@@ -91,6 +100,58 @@ internal sealed class StructureManager : IStructurePlacementState
         }
 
         return references.Count == 0 ? [] : [.. LongHashSetOrder.Order(references).Select(key => byChunk[key])];
+    }
+
+    /// <summary>
+    /// Every start whose box reaches the chunk, of any structure: the starts placed when the chunk is decorated.
+    /// </summary>
+    public IEnumerable<StructureStart> GetStartsReaching(int chunkX, int chunkZ)
+    {
+        var minX = chunkX << 4;
+        var minZ = chunkZ << 4;
+
+        for (var x = chunkX - ReferenceRadius; x <= chunkX + ReferenceRadius; x++)
+        {
+            for (var z = chunkZ - ReferenceRadius; z <= chunkZ + ReferenceRadius; z++)
+            {
+                foreach (var start in this.GetStarts(x, z))
+                {
+                    if (start.BoundingBox.Intersects(minX, minZ, minX + 15, minZ + 15))
+                        yield return start;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// The structure starts to save in their start chunk (vanilla's <c>structures.starts</c>, keyed by structure id): those
+    /// the chunk was loaded with, where starts restored in this session replace theirs with their pieces' current state.
+    /// </summary>
+    /// <remarks>
+    /// A start that wasn't restored hasn't been placed in this session, so what the chunk was loaded with is still current.
+    /// </remarks>
+    public NbtCompound? SaveStarts(int chunkX, int chunkZ, NbtCompound? loaded)
+    {
+        if (!this.starts.TryGetValue((chunkX, chunkZ), out var cached) || !cached.Any(start => start.IsStateRestored))
+            return loaded;
+
+        var result = new NbtCompound("starts");
+        if (loaded is not null)
+        {
+            foreach (var (name, start) in loaded)
+                result.Add(name, start);
+        }
+
+        foreach (var start in cached)
+        {
+            if (!start.IsStateRestored)
+                continue;
+
+            result.Remove(start.Structure.Identifier);
+            result.Add(start.SaveState());
+        }
+
+        return result;
     }
 
     /// <summary>

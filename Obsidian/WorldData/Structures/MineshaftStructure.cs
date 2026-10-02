@@ -354,6 +354,20 @@ public sealed class MineshaftCorridor : MineshaftPiece
     // Like vanilla, set by whichever chunk places the spawner first.
     private bool hasPlacedSpider;
 
+    internal override void SaveState(NbtCompound tag)
+    {
+        base.SaveState(tag);
+
+        tag.Add(new NbtTag<bool>("hps", this.hasPlacedSpider));
+    }
+
+    internal override void LoadState(NbtCompound tag)
+    {
+        base.LoadState(tag);
+
+        this.hasPlacedSpider = tag.TryGetBool("hps", out var placed) && placed;
+    }
+
     public MineshaftCorridor(int genDepth, IRandomSource random, BlockBox boundingBox, BlockFace direction, MineshaftType type)
         : base(genDepth, type, boundingBox)
     {

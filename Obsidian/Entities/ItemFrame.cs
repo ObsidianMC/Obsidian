@@ -1,4 +1,5 @@
 using Obsidian.API.Inventory;
+using Obsidian.Nbt;
 
 namespace Obsidian.Entities;
 
@@ -30,6 +31,30 @@ public partial class ItemFrame : Entity
 
         writer.WriteEntityMetadataType(10, EntityMetadataType.VarInt);
         writer.WriteVarInt(this.Rotation);
+    }
+
+    internal override void WriteNbt(NbtCompound tag)
+    {
+        base.WriteNbt(tag);
+
+        tag.SetOrRemove("Item", this.Item is { IsAir: false } item ? item.ToNbt("Item") : null);
+        tag.Set(new NbtTag<byte>("ItemRotation", (byte)this.Rotation));
+        tag.Set(new NbtTag<byte>("Facing", (byte)FacingId(this.Facing)));
+
+        // The block the frame is in; its position is offset from the block's center towards the block it hangs on.
+        var position = this.Position;
+        tag.Set(new NbtArray<int>("block_pos", [(int)MathF.Floor(position.X), (int)MathF.Floor(position.Y), (int)MathF.Floor(position.Z)]));
+    }
+
+    internal override void ReadNbt(NbtCompound tag)
+    {
+        base.ReadNbt(tag);
+
+        this.Item = tag.TryGetTag<NbtCompound>("Item", out var item) ? item.ItemFromNbt() : null;
+        this.Rotation = tag.TryGetTag<NbtTag<byte>>("ItemRotation", out var rotation) ? rotation.Value : 0;
+
+        // Vanilla's default facing is down.
+        this.Facing = FromFacingId(tag.TryGetTag<NbtTag<byte>>("Facing", out var facing) ? facing.Value : 0);
     }
 
     /// <summary>Vanilla's 3D direction ids: down, up, north, south, west, east.</summary>

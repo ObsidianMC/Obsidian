@@ -2,6 +2,8 @@
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.Blocks;
 using Obsidian.ChunkData;
+using Obsidian.Nbt;
+using System.Threading;
 
 namespace Obsidian.WorldData;
 
@@ -31,9 +33,30 @@ public sealed class Chunk : IChunk
     public Dictionary<int, IBlockEntity> BlockEntities { get; private set; } = new Dictionary<int, IBlockEntity>();
 
     /// <summary>
-    /// Entities placed by world generation that haven't been spawned yet.
+    /// Entities of the chunk that haven't been spawned yet: those world generation placed, and once the chunk is complete,
+    /// those loaded with it. The level spawns them on its tick.
     /// </summary>
+    /// <remarks>
+    /// Once the chunk is complete, only touch these under <see cref="EntityLock"/>.
+    /// </remarks>
     internal List<GeneratedEntity> PendingEntities { get; } = [];
+
+    /// <summary>
+    /// Taken while the chunk's entities move between <see cref="PendingEntities"/> and the level, and while they're saved,
+    /// so a save sees every entity exactly once.
+    /// </summary>
+    internal Lock EntityLock { get; } = new();
+
+    /// <summary>
+    /// Whether the chunk was unloaded, with its entities saved and taken out of the level; its pending entities must not
+    /// spawn anymore. Set under <see cref="EntityLock"/>.
+    /// </summary>
+    internal bool EntitiesUnloaded { get; set; }
+
+    /// <summary>
+    /// The structure starts saved in the chunk (vanilla's <c>structures.starts</c>), as loaded, or <c>null</c>.
+    /// </summary>
+    internal NbtCompound? StructureStarts { get; set; }
 
     /// <summary>
     /// Positions generation marked to check once the chunk is complete: fluids that need a tick and blocks whose state

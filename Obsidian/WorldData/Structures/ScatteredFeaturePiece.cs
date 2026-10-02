@@ -1,3 +1,4 @@
+using Obsidian.Nbt;
 using System.Threading;
 
 namespace Obsidian.WorldData.Structures;
@@ -29,6 +30,27 @@ public abstract class ScatteredFeaturePiece : StructurePiece
     /// The ground height the piece settled on, or -1 before it's placed.
     /// </summary>
     protected int HeightPosition { get; private set; } = -1;
+
+    // The box moves with the height, so both are taken under the height lock.
+    internal override void SaveState(NbtCompound tag)
+    {
+        lock (this.heightLock)
+        {
+            base.SaveState(tag);
+            tag.Add(new NbtTag<int>("HPos", this.HeightPosition));
+        }
+    }
+
+    internal override void LoadState(NbtCompound tag)
+    {
+        lock (this.heightLock)
+        {
+            // The saved box is already moved to this height.
+            base.LoadState(tag);
+            if (tag.TryGetTag<NbtTag<int>>("HPos", out var height))
+                this.HeightPosition = height.Value;
+        }
+    }
 
     /// <summary>
     /// Vanilla <c>updateAverageGroundHeight</c>: on first placement, moves the piece onto the average

@@ -1,5 +1,6 @@
 ﻿using Obsidian.API.AI;
 using Obsidian.API.World;
+using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using System.Diagnostics.CodeAnalysis;
 
@@ -24,6 +25,11 @@ public class Entity : IEquatable<Entity>, IEntity
     public Angle Pitch { get; set; }
 
     public Angle Yaw { get; set; }
+
+    /// <summary>
+    /// The entity's velocity in blocks per tick, saved as vanilla's <c>Motion</c>.
+    /// </summary>
+    public VectorF Motion { get; set; }
     #endregion Location properties
 
     public int EntityId { get; internal set; }
@@ -66,6 +72,75 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public INavigator? Navigator { get; set; }
     public IGoalController? GoalController { get; set; }
+
+    /// <summary>
+    /// Saved fields Obsidian doesn't model (e.g. a shulker's <c>Color</c> or a villager's <c>VillagerData</c>), kept as
+    /// they were loaded so saving the entity again doesn't drop them.
+    /// </summary>
+    internal NbtCompound UnmodeledData { get; set; } = new();
+
+    #region NBT
+    /// <summary>
+    /// Writes the fields vanilla's <c>Entity.saveWithoutId</c> saves that this entity models into <paramref name="tag"/>,
+    /// replacing what's there. Overrides add their own fields.
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="tag"/> starts with <see cref="UnmodeledData"/>, so fields that are only saved when set are removed
+    /// when they aren't.
+    /// </remarks>
+    internal virtual void WriteNbt(NbtCompound tag)
+    {
+        tag.Set(EntityNbt.DoubleList("Pos", this.Position));
+        tag.Set(EntityNbt.DoubleList("Motion", this.Motion));
+        tag.Set(new NbtList(NbtTagType.Float, "Rotation")
+        {
+            new NbtTag<float>(string.Empty, this.Yaw.Degrees),
+            new NbtTag<float>(string.Empty, this.Pitch.Degrees)
+        });
+        tag.Set(new NbtTag<short>("Air", this.Air));
+        tag.Set(new NbtTag<bool>("OnGround", this.MovementFlags.HasFlag(MovementFlags.OnGround)));
+        tag.Set(new NbtArray<int>("UUID", EntityNbt.UuidToInts(this.Uuid)));
+        tag.SetOrRemove("CustomName", this.CustomName?.ToNbt("CustomName"));
+
+        // Like vanilla, these flags are only saved when set.
+        tag.SetFlag("CustomNameVisible", this.CustomNameVisible);
+        tag.SetFlag("Silent", this.Silent);
+        tag.SetFlag("NoGravity", this.NoGravity);
+        tag.SetFlag("Glowing", this.Glowing);
+    }
+
+    /// <summary>
+    /// Reads the fields <see cref="WriteNbt"/> writes, keeping the defaults of missing ones.
+    /// </summary>
+    internal virtual void ReadNbt(NbtCompound tag)
+    {
+        if (EntityNbt.TryReadVector(tag, "Pos", out var position))
+            this.Position = position;
+        if (EntityNbt.TryReadVector(tag, "Motion", out var motion))
+            this.Motion = motion;
+
+        if (tag.TryGetTag<NbtList>("Rotation", out var rotation) && rotation.Count >= 2
+            && rotation[0] is NbtTag<float> yaw && rotation[1] is NbtTag<float> pitch)
+        {
+            this.Yaw = yaw.Value;
+            this.Pitch = pitch.Value;
+        }
+
+        if (tag.TryGetTag<NbtTag<short>>("Air", out var air))
+            this.Air = air.Value;
+        if (tag.TryGetBool("OnGround", out var onGround) && onGround)
+            this.MovementFlags |= MovementFlags.OnGround;
+        if (tag.TryGetTag<NbtArray<int>>("UUID", out var uuid) && uuid.Count == 4)
+            this.Uuid = EntityNbt.UuidFromInts(uuid.GetArray());
+        if (tag.TryGetTag("CustomName", out var customName))
+            this.CustomName = customName.TextFromNbt();
+
+        this.CustomNameVisible = tag.TryGetBool("CustomNameVisible", out var nameVisible) && nameVisible;
+        this.Silent = tag.TryGetBool("Silent", out var silent) && silent;
+        this.NoGravity = tag.TryGetBool("NoGravity", out var noGravity) && noGravity;
+        this.Glowing = tag.TryGetBool("Glowing", out var glowing) && glowing;
+    }
+    #endregion NBT
 
     #region Update methods
     public virtual async ValueTask UpdateAsync(VectorF position, MovementFlags movementFlags)

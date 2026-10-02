@@ -1,4 +1,5 @@
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.Nbt;
 
 namespace Obsidian.WorldData.Structures;
 
@@ -35,6 +36,26 @@ public sealed class JungleTemplePiece : ScatteredFeaturePiece
 
     public JungleTemplePiece(IRandomSource random, int x, int z) : base(x, 64, z, 12, 10, 15, RandomHorizontalDirection(random))
     {
+    }
+
+    internal override void SaveState(NbtCompound tag)
+    {
+        base.SaveState(tag);
+
+        tag.Add(new NbtTag<bool>("placedMainChest", this.placedMainChest));
+        tag.Add(new NbtTag<bool>("placedHiddenChest", this.placedHiddenChest));
+        tag.Add(new NbtTag<bool>("placedTrap1", this.placedTrap1));
+        tag.Add(new NbtTag<bool>("placedTrap2", this.placedTrap2));
+    }
+
+    internal override void LoadState(NbtCompound tag)
+    {
+        base.LoadState(tag);
+
+        this.placedMainChest = tag.TryGetBool("placedMainChest", out var mainChest) && mainChest;
+        this.placedHiddenChest = tag.TryGetBool("placedHiddenChest", out var hiddenChest) && hiddenChest;
+        this.placedTrap1 = tag.TryGetBool("placedTrap1", out var trap1) && trap1;
+        this.placedTrap2 = tag.TryGetBool("placedTrap2", out var trap2) && trap2;
     }
 
     public override void PostProcess(StructurePieceContext context)
