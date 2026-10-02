@@ -525,6 +525,10 @@ public sealed class VanillaBlockPosSet : IEnumerable<Vector>
 
         public static Node?[] RentTable(int length)
         {
+            // Tables longer than the pooled ones are never kept.
+            if (length > MaxTableLength)
+                return new Node?[length];
+
             var pool = tables?[BitOperations.Log2((uint)length)];
             return pool is not null && pool.TryPop(out var table) ? table : new Node?[length];
         }
