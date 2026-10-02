@@ -21,53 +21,56 @@ public static class StructureRotationExtensions
     public static StructureRotation Random(IRandomSource random) => values[random.NextInt(values.Length)];
 
     /// <summary>
-    /// Vanilla <c>BlockState.rotate</c> for the properties template blocks use: pillar <c>axis</c> swaps X and Z on quarter
-    /// turns, horizontal <c>facing</c> turns with the structure, and so do the horizontal connections of fences, walls, panes,
-    /// vines and the like. Other properties are kept.
+    /// Vanilla <c>BlockState.rotate</c>.
     /// </summary>
-    public static IBlock Rotate(this StructureRotation rotation, IBlock block)
-    {
-        if (rotation == StructureRotation.None)
-            return block;
-
-        var axis = block.GetProperty("axis");
-        if (axis is not null && rotation != StructureRotation.Clockwise180)
-            block = block.WithProperty("axis", axis switch { "x" => "z", "z" => "x", _ => axis });
-
-        var facing = block.GetProperty("facing");
-        if (facing is "north" or "east" or "south" or "west")
-            block = block.WithProperty("facing", RotateFacing(facing, rotation));
-
-        return RotateConnections(block, rotation);
-    }
+    public static IBlock Rotate(this StructureRotation rotation, IBlock block) => block.Rotate(rotation);
 
     /// <summary>
-    /// Moves each horizontal connection value (<c>north</c>, <c>east</c>, ...) to its rotated side. Chorus plants and fire
-    /// don't override vanilla's <c>rotate</c>, so they keep theirs.
+    /// Vanilla <c>Rotation.getRotated</c>: this rotation followed by <paramref name="other"/>.
     /// </summary>
-    private static IBlock RotateConnections(IBlock block, StructureRotation rotation)
+    public static StructureRotation GetRotated(this StructureRotation rotation, StructureRotation other) =>
+        (StructureRotation)(((int)rotation + (int)other) & 3);
+
+    /// <summary>
+    /// Vanilla <c>Rotation.rotate(Direction)</c> for horizontal directions; vertical ones are kept.
+    /// </summary>
+    public static BlockFace Rotate(this StructureRotation rotation, BlockFace face)
     {
-        string[] sides = ["north", "east", "south", "west"];
-        var values = Array.ConvertAll(sides, block.GetProperty);
-        if (Array.IndexOf(values, null) >= 0 || block.BlockClass() is "ChorusPlantBlock" or "FireBlock")
-            return block;
+        if (face is BlockFace.Up or BlockFace.Down)
+            return face;
 
-        for (var i = 0; i < sides.Length; i++)
-            block = block.WithProperty(RotateFacing(sides[i], rotation), values[i]!);
-
-        return block;
+        BlockFace[] clockwise = [BlockFace.North, BlockFace.East, BlockFace.South, BlockFace.West];
+        return clockwise[(Array.IndexOf(clockwise, face) + (int)rotation) & 3];
     }
+}
 
-    private static string RotateFacing(string facing, StructureRotation rotation)
+/// <summary>
+/// Mirroring of a structure template, like vanilla's <c>Mirror</c> (same declaration order). <see cref="LeftRight"/>
+/// flips the Z axis and <see cref="FrontBack"/> the X axis.
+/// </summary>
+public enum StructureMirror
+{
+    None,
+    LeftRight,
+    FrontBack
+}
+
+public static class StructureMirrorExtensions
+{
+    /// <summary>
+    /// Vanilla <c>BlockState.mirror</c>.
+    /// </summary>
+    public static IBlock Mirror(this StructureMirror mirror, IBlock block) => block.Mirror(mirror);
+
+    /// <summary>
+    /// Vanilla <c>Mirror.mirror(Direction)</c>: flips the direction along the mirrored axis.
+    /// </summary>
+    public static BlockFace Mirror(this StructureMirror mirror, BlockFace face) => (mirror, face) switch
     {
-        string[] clockwise = ["north", "east", "south", "west"];
-        var turns = rotation switch
-        {
-            StructureRotation.Clockwise90 => 1,
-            StructureRotation.Clockwise180 => 2,
-            _ => 3
-        };
-
-        return clockwise[(Array.IndexOf(clockwise, facing) + turns) % 4];
-    }
+        (StructureMirror.LeftRight, BlockFace.North) => BlockFace.South,
+        (StructureMirror.LeftRight, BlockFace.South) => BlockFace.North,
+        (StructureMirror.FrontBack, BlockFace.East) => BlockFace.West,
+        (StructureMirror.FrontBack, BlockFace.West) => BlockFace.East,
+        _ => face
+    };
 }
