@@ -85,9 +85,9 @@ public sealed class FossilFeature : ConfiguredFeatureBase
             return false;
 
         settings.SetProcessors(this.FossilProcessors);
-        fossil.PlaceInWorld(level, zero, zero, settings);
+        fossil.PlaceInWorld(level, zero, zero, settings, random);
         settings.SetProcessors(this.OverlayProcessors);
-        overlay.PlaceInWorld(level, zero, zero, settings);
+        overlay.PlaceInWorld(level, zero, zero, settings, random);
         return true;
     }
 

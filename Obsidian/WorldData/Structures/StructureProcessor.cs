@@ -15,8 +15,16 @@ public abstract class StructureProcessor
     /// <param name="pivot">World position of the rotation pivot.</param>
     /// <param name="original">The raw template block (template-relative position).</param>
     /// <param name="current">The block so far, at its world position.</param>
-    public abstract StructureBlockInfo? ProcessBlock(IWorldGenLevel level, Vector origin, Vector pivot, StructureBlockInfo original,
-        StructureBlockInfo current, StructurePlaceSettings settings);
+    public virtual StructureBlockInfo? ProcessBlock(IWorldGenLevel level, Vector origin, Vector pivot, StructureBlockInfo original,
+        StructureBlockInfo current, StructurePlaceSettings settings) => current;
+
+    /// <summary>
+    /// Vanilla <c>finalizeProcessing</c>: runs once all blocks went through <see cref="ProcessBlock"/>, with the kept blocks
+    /// (<paramref name="processed"/>) and their template originals at the same indices.
+    /// </summary>
+    /// <returns>The blocks to place.</returns>
+    public virtual List<StructureBlockInfo> FinalizeProcessing(IWorldGenLevel level, Vector origin, Vector pivot,
+        IReadOnlyList<StructureBlockInfo> originals, List<StructureBlockInfo> processed, StructurePlaceSettings settings) => processed;
 }
 
 /// <summary>
