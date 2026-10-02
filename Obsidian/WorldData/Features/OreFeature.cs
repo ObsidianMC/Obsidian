@@ -140,13 +140,13 @@ public sealed class OreFeature : ConfiguredFeatureBase
                 for (var y = fromY; y <= toY; y++)
                 {
                     var relativeY = (y + 0.5 - centerY) / radius;
-                    if (relativeX * relativeX + relativeY * relativeY >= 1.0)
+                    if (relativeX * relativeX + relativeY * relativeY >= 1.0 || level.IsOutsideBuildHeight(y))
                         continue;
 
                     for (var z = fromZ; z <= toZ; z++)
                     {
                         var relativeZ = (z + 0.5 - centerZ) / radius;
-                        if (relativeX * relativeX + relativeY * relativeY + relativeZ * relativeZ >= 1.0 || level.IsOutsideBuildHeight(y))
+                        if (relativeX * relativeX + relativeY * relativeY + relativeZ * relativeZ >= 1.0)
                             continue;
 
                         var index = x - minX + (y - minY) * width + (z - minZ) * width * height;
