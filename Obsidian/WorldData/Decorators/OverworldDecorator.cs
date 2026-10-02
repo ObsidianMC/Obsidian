@@ -220,6 +220,11 @@ public static class OverworldDecorator
             // Trees never add entities.
         }
 
+        public void MarkForPostProcessing(Vector position)
+        {
+            // Trees never mark blocks for post-processing.
+        }
+
         public IBlockEntity? GetBlockEntity(Vector position) =>
             this.IsOutsideBuildHeight(position.Y) ? null : this.ChunkAt(position)?.GetBlockEntity(position.X, position.Y, position.Z);
 

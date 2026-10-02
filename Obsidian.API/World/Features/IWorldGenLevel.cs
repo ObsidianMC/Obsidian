@@ -57,6 +57,12 @@ public interface IWorldGenLevel
     public void AddEntity(GeneratedEntity entity);
 
     /// <summary>
+    /// Marks a block to be checked against its neighbors once its chunk is complete (fence connections, torch support...),
+    /// like vanilla's <c>markPosForPostprocessing</c>.
+    /// </summary>
+    public void MarkForPostProcessing(Vector position);
+
+    /// <summary>
     /// Schedules a fluid update at <paramref name="position"/> for when generation completes, like vanilla's
     /// <c>scheduleTick</c> with a fluid (springs, geode cracks).
     /// </summary>

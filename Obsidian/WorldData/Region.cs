@@ -323,6 +323,12 @@ public class Region : IRegion
             }
         }
 
+        if (chunkCompound.TryGetTag<NbtArray<int>>("PostProcessing", out var postProcessing) && storedMinSection == minSection)
+        {
+            foreach (var packed in postProcessing.GetArray())
+                chunk.PostProcessing.Add(new Vector((x << 4) + (packed & 15), this.minY + (packed >> 8), (z << 4) + ((packed >> 4) & 15)));
+        }
+
         if (chunkCompound.TryGetTag<NbtList>("entities", out var entities))
         {
             foreach (var entityCompound in entities.Cast<NbtCompound>())
@@ -489,6 +495,14 @@ public class Region : IRegion
             writer.EndCompound();
         }
         writer.EndList();
+
+        // Post-processing marks, each packed as (x | z << 4 | (y - min Y) << 8) within the chunk.
+        if (chunk is Chunk generated)
+        {
+            writer.WriteArray("PostProcessing", generated.PostProcessing
+                .Select(position => (position.X & 15) | (position.Z & 15) << 4 | (position.Y - chunk.MinY) << 8)
+                .ToArray());
+        }
 
         writer.WriteInt("xPos", chunk.X);
         writer.WriteInt("zPos", chunk.Z);

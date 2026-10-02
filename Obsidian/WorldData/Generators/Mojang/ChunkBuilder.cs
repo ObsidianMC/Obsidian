@@ -1,5 +1,6 @@
 using Obsidian.API.World.Generator.Noise;
 using Obsidian.WorldData.Generators.Mojang.Carvers;
+using Obsidian.WorldData.Features.Tree;
 using Obsidian.WorldData.Generators.Mojang.Features;
 
 namespace Obsidian.WorldData.Generators.Mojang;
@@ -42,10 +43,10 @@ internal sealed class ChunkBuilder
         this.featureDecorator = new FeatureDecorator(this.biomeSource.PossibleBiomes, BiomeFeatures.All, this.settings.Noise.Height);
     }
 
-    /// <param name="chunk">Chunk to fill.</param>
-    /// <param name="fluidUpdates">Receives fluid positions that need an update once the chunk is complete.</param>
-    public void Generate3DTerrain(IChunk chunk, ICollection<Vector>? fluidUpdates = null) =>
-        this.terrainGenerator.Generate(chunk, fluidUpdates);
+    /// <summary>
+    /// Fills the chunk from the noise. Fluids that need an update are added to the chunk's post-processing.
+    /// </summary>
+    public void Generate3DTerrain(IChunk chunk) => this.terrainGenerator.Generate(chunk, (chunk as Chunk)?.PostProcessing);
 
     /// <summary>
     /// Stores the biome of every 4x4x4 cell of the chunk, over the whole build range like vanilla.
@@ -75,11 +76,12 @@ internal sealed class ChunkBuilder
         WorldgenHeightmaps.Update(chunk, this.dimension.MinY, this.dimension.Height);
     }
 
-    /// <param name="chunk">Chunk to carve.</param>
-    /// <param name="fluidUpdates">Receives fluid positions that need an update once the chunk is complete.</param>
-    public void ApplyCarvers(IChunk chunk, ICollection<Vector>? fluidUpdates = null)
+    /// <summary>
+    /// Carves caves and canyons. Fluids that need an update are added to the chunk's post-processing.
+    /// </summary>
+    public void ApplyCarvers(IChunk chunk)
     {
-        this.carverStep.Apply(chunk, fluidUpdates);
+        this.carverStep.Apply(chunk, (chunk as Chunk)?.PostProcessing);
         WorldgenHeightmaps.Update(chunk, this.dimension.MinY, this.dimension.Height);
     }
 
@@ -87,13 +89,11 @@ internal sealed class ChunkBuilder
     /// Places the biome features of chunk (<paramref name="chunkX"/>, <paramref name="chunkZ"/>).
     /// </summary>
     /// <param name="area">The chunk and its 8 neighbors, all past the carvers step. Features may write into any of them.</param>
-    /// <param name="scheduleFluidTick">Receives positions where features want a fluid update once generation completes.</param>
     /// <param name="onPlaced">Optional callback for each placed feature (step, global index, feature, placed anything).</param>
     public void Decorate(IReadOnlyDictionary<(int X, int Z), IChunk> area, int chunkX, int chunkZ,
-        Action<Vector>? scheduleFluidTick = null, Action<int, int, PlacedFeature, bool>? onPlaced = null)
+        Action<int, int, PlacedFeature, bool>? onPlaced = null)
     {
-        var region = new WorldGenRegion(area, chunkX, chunkZ, this.RandomState.Seed, this.dimension.MinY, this.dimension.Height,
-            this.settings.SeaLevel, this.biomeSource, scheduleFluidTick);
+        var region = this.CreateRegion(area, chunkX, chunkZ);
 
         // Like vanilla, only the 3x3 chunks around the decorated chunk contribute biomes.
         var neighbors = area.Where(entry => Math.Abs(entry.Key.X - chunkX) <= 1 && Math.Abs(entry.Key.Z - chunkZ) <= 1)
@@ -122,6 +122,41 @@ internal sealed class ChunkBuilder
 
         static ClimateParameter Quantize(double[] range) => new(Climate.Quantize((float)range[0]), Climate.Quantize((float)range[1]));
     }
+
+    /// <summary>
+    /// Vanilla's post-processing of a chunk every feature has reached (<c>LevelChunk.postProcessGeneration</c>): marked
+    /// blocks are updated against their neighbors. Marked fluids stay in the chunk's post-processing for their tick.
+    /// </summary>
+    /// <param name="area">The chunk and its 8 neighbors.</param>
+    public void PostProcess(IReadOnlyDictionary<(int X, int Z), IChunk> area, int chunkX, int chunkZ)
+    {
+        if (area[(chunkX, chunkZ)] is not Chunk chunk || chunk.PostProcessing.Count == 0)
+            return;
+
+        var region = this.CreateRegion(area, chunkX, chunkZ);
+        var minY = this.dimension.MinY;
+
+        // Vanilla walks the marks section by section, in the order they were added.
+        var marks = chunk.PostProcessing.OrderBy(position => (position.Y - minY) >> 4).ToList();
+        chunk.PostProcessing.Clear();
+
+        foreach (var position in marks)
+        {
+            var block = region.GetBlock(position);
+            if (block.HasFluid())
+                chunk.PostProcessing.Add(position);
+
+            if (block.IsLiquid)
+                continue;
+
+            var updated = ShapeUpdater.UpdateFromNeighbourShapes(region, block, position);
+            if (!updated.IsSameState(block))
+                region.SetBlock(position, updated);
+        }
+    }
+
+    private WorldGenRegion CreateRegion(IReadOnlyDictionary<(int X, int Z), IChunk> area, int chunkX, int chunkZ) =>
+        new(area, chunkX, chunkZ, this.RandomState.Seed, this.dimension.MinY, this.dimension.Height, this.settings.SeaLevel, this.biomeSource);
 
     /// <summary>
     /// Writes the final heightmaps into the chunk; call it once every chunk around it is decorated.

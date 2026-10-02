@@ -41,6 +41,46 @@ internal static class FeatureHelpers
     }
 
     /// <summary>
+    /// Vanilla <c>StructurePiece.reorient</c>: faces the chest away from its single solid neighbor, or rotates it off walls.
+    /// </summary>
+    public static IBlock Reorient(IWorldGenLevel level, Vector position, IBlock chest)
+    {
+        BlockFace? wall = null;
+        foreach (var face in Horizontal)
+        {
+            var neighbor = level.GetBlock(position.Offset(face));
+            if (neighbor.Material == Material.Chest)
+                return chest;
+
+            if (IsSolidRender(neighbor))
+            {
+                if (wall is not null)
+                {
+                    wall = null;
+                    break;
+                }
+
+                wall = face;
+            }
+        }
+
+        if (wall is not null)
+            return chest.WithProperty("facing", FaceName(wall.Value.Opposite()));
+
+        var facing = ParseFace(chest.GetProperty("facing"));
+        if (IsSolidRender(level.GetBlock(position.Offset(facing))))
+            facing = facing.Opposite();
+
+        if (IsSolidRender(level.GetBlock(position.Offset(facing))))
+            facing = facing.ClockWise();
+
+        if (IsSolidRender(level.GetBlock(position.Offset(facing))))
+            facing = facing.Opposite();
+
+        return chest.WithProperty("facing", FaceName(facing));
+    }
+
+    /// <summary>
     /// Vanilla <c>BrushableBlockEntity.setLootTable</c>: gives the suspicious sand or gravel at <paramref name="position"/>
     /// the loot table its item comes from.
     /// </summary>

@@ -107,7 +107,7 @@ public sealed class MonsterRoomFeature : ConfiguredFeatureBase
                 if (walls != 1)
                     continue;
 
-                FeatureHelpers.SafeSetBlock(level, position, Reorient(level, position, Chest), canReplace);
+                FeatureHelpers.SafeSetBlock(level, position, FeatureHelpers.Reorient(level, position, Chest), canReplace);
                 FeatureHelpers.SetLootTable(level, random, position, "minecraft:chests/simple_dungeon");
                 break;
             }
@@ -116,45 +116,5 @@ public sealed class MonsterRoomFeature : ConfiguredFeatureBase
         FeatureHelpers.SafeSetBlock(level, origin, Spawner, canReplace);
         FeatureHelpers.SetSpawnerEntity(level, origin, mobs[random.NextInt(mobs.Length)]);
         return true;
-    }
-
-    /// <summary>
-    /// Vanilla <c>StructurePiece.reorient</c>: faces the chest away from its single solid neighbor, or rotates it off walls.
-    /// </summary>
-    private static IBlock Reorient(IWorldGenLevel level, Vector position, IBlock chest)
-    {
-        BlockFace? wall = null;
-        foreach (var face in FeatureHelpers.Horizontal)
-        {
-            var neighbor = level.GetBlock(position.Offset(face));
-            if (neighbor.Material == Material.Chest)
-                return chest;
-
-            if (FeatureHelpers.IsSolidRender(neighbor))
-            {
-                if (wall is not null)
-                {
-                    wall = null;
-                    break;
-                }
-
-                wall = face;
-            }
-        }
-
-        if (wall is not null)
-            return chest.WithProperty("facing", FeatureHelpers.FaceName(wall.Value.Opposite()));
-
-        var facing = FeatureHelpers.ParseFace(chest.GetProperty("facing"));
-        if (FeatureHelpers.IsSolidRender(level.GetBlock(position.Offset(facing))))
-            facing = facing.Opposite();
-
-        if (FeatureHelpers.IsSolidRender(level.GetBlock(position.Offset(facing))))
-            facing = facing.ClockWise();
-
-        if (FeatureHelpers.IsSolidRender(level.GetBlock(position.Offset(facing))))
-            facing = facing.Opposite();
-
-        return chest.WithProperty("facing", FeatureHelpers.FaceName(facing));
     }
 }

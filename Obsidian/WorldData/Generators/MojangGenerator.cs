@@ -26,9 +26,6 @@ internal class MojangGenerator : ILevelGenerator
 
     private readonly SemaphoreSlim[] chunkLocks = [.. Enumerable.Range(0, LockStripeCount).Select(_ => new SemaphoreSlim(1, 1))];
 
-    // Fluids flagged during generation, scheduled once their chunk is complete (vanilla's post-processing).
-    private readonly ConcurrentDictionary<(int X, int Z), List<Vector>> pendingFluidUpdates = new();
-
     public async ValueTask<IChunk> GenerateChunkAsync(int cx, int cz, IChunk? chunk = null, ChunkGenStage stage = ChunkGenStage.full)
     {
         chunk ??= new Chunk(cx, cz, this.Dimension.MinY, this.Dimension.Height);
@@ -57,12 +54,7 @@ internal class MojangGenerator : ILevelGenerator
         }
 
         if (ChunkGenStage.initialize_light <= stage && chunk.ChunkStatus < ChunkGenStage.initialize_light)
-        {
-            // Every feature that can reach this chunk has run, so its heightmaps are final. Its sky light sources are
-            // found when it's lit.
-            this.builder.UpdateFinalHeightmaps(chunk);
-            chunk.SetChunkStatus(ChunkGenStage.initialize_light);
-        }
+            await this.FinishBlocksAsync(chunk);
 
         if (ChunkGenStage.light <= stage && chunk.ChunkStatus < ChunkGenStage.light)
             await this.LightAsync(chunk);
@@ -174,7 +166,7 @@ internal class MojangGenerator : ILevelGenerator
         if (ChunkGenStage.noise <= stage && chunk.ChunkStatus < ChunkGenStage.noise)
         {
             // Generate terrain using 3D density sampling with aquifer support
-            this.builder.Generate3DTerrain(chunk, this.GetPendingFluidUpdates(chunk));
+            this.builder.Generate3DTerrain(chunk);
             chunk.SetChunkStatus(ChunkGenStage.noise);
         }
 
@@ -188,7 +180,7 @@ internal class MojangGenerator : ILevelGenerator
         if (ChunkGenStage.carvers <= stage && chunk.ChunkStatus < ChunkGenStage.carvers)
         {
             // Carve classic caves and ravines
-            this.builder.ApplyCarvers(chunk, this.GetPendingFluidUpdates(chunk));
+            this.builder.ApplyCarvers(chunk);
             chunk.SetChunkStatus(ChunkGenStage.carvers);
         }
     }
@@ -221,9 +213,30 @@ internal class MojangGenerator : ILevelGenerator
                 area[(cx + dx, cz + dz)] = dx == 0 && dz == 0 ? chunk : await this.GetChunkAsync(cx + dx, cz + dz);
         }
 
-        // The area's chunks are locked, so their pending lists can be written.
-        this.builder.Decorate(area, cx, cz, position => this.GetPendingFluidUpdates(position.X >> 4, position.Z >> 4).Add(position));
+        this.builder.Decorate(area, cx, cz);
         chunk.SetChunkStatus(ChunkGenStage.features);
+    }
+
+    /// <summary>
+    /// Every feature that can reach the chunk has run: post-processes its marked blocks (which reads its neighbors), then
+    /// stores its final heightmaps. Its sky light sources are found when it's lit.
+    /// </summary>
+    private async ValueTask FinishBlocksAsync(IChunk chunk)
+    {
+        using var locks = await this.LockAsync(chunk.X, chunk.Z, 1);
+        if (chunk.ChunkStatus >= ChunkGenStage.initialize_light)
+            return;
+
+        var area = new Dictionary<(int X, int Z), IChunk>();
+        for (var dx = -1; dx <= 1; dx++)
+        {
+            for (var dz = -1; dz <= 1; dz++)
+                area[(chunk.X + dx, chunk.Z + dz)] = dx == 0 && dz == 0 ? chunk : await this.GetChunkAsync(chunk.X + dx, chunk.Z + dz);
+        }
+
+        this.builder.PostProcess(area, chunk.X, chunk.Z);
+        this.builder.UpdateFinalHeightmaps(chunk);
+        chunk.SetChunkStatus(ChunkGenStage.initialize_light);
     }
 
     /// <summary>
@@ -265,14 +278,16 @@ internal class MojangGenerator : ILevelGenerator
         return new ChunkLocks(this.chunkLocks, stripes);
     }
 
-    private List<Vector> GetPendingFluidUpdates(IChunk chunk) => this.GetPendingFluidUpdates(chunk.X, chunk.Z);
-
-    private List<Vector> GetPendingFluidUpdates(int cx, int cz) => this.pendingFluidUpdates.GetOrAdd((cx, cz), _ => []);
-
+    /// <summary>
+    /// Ticks the fluids left in the chunk's post-processing (vanilla runs their fluid tick when the chunk becomes complete).
+    /// </summary>
     private async ValueTask ScheduleFluidUpdatesAsync(IChunk chunk)
     {
-        if (!this.pendingFluidUpdates.TryRemove((chunk.X, chunk.Z), out var positions))
+        if (chunk is not Chunk generated || generated.PostProcessing.Count == 0)
             return;
+
+        var positions = generated.PostProcessing.ToArray();
+        generated.PostProcessing.Clear();
 
         foreach (var position in positions)
         {

@@ -35,6 +35,12 @@ public sealed class Chunk : IChunk
     /// </summary>
     internal List<GeneratedEntity> PendingEntities { get; } = [];
 
+    /// <summary>
+    /// Positions generation marked to check once the chunk is complete: fluids that need a tick and blocks whose state
+    /// depends on their neighbors (fence connections, torch support...), like vanilla's post-processing list.
+    /// </summary>
+    internal List<Vector> PostProcessing { get; } = [];
+
     public IChunkSection[] Sections { get; private set; }
     public IDictionary<HeightmapType, Heightmap> Heightmaps { get; }
 

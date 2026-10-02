@@ -22,7 +22,6 @@ internal sealed class WorldGenRegion : IWorldGenLevel
     private readonly Dictionary<(int X, int Z), IChunk> chunks;
     private readonly Dictionary<(int X, int Z, HeightmapType Type), int[]> heights = [];
     private readonly BiomeManager biomeManager;
-    private readonly Action<Vector>? scheduleFluidTick;
     private readonly int centerX;
     private readonly int centerZ;
 
@@ -38,11 +37,9 @@ internal sealed class WorldGenRegion : IWorldGenLevel
     /// <param name="centerX">X of the chunk being decorated.</param>
     /// <param name="centerZ">Z of the chunk being decorated.</param>
     /// <param name="biomeSource">Source for biomes of chunks outside <paramref name="chunks"/>.</param>
-    /// <param name="scheduleFluidTick">Receives the fluid updates features schedule; they're ignored when null.</param>
     public WorldGenRegion(IReadOnlyDictionary<(int X, int Z), IChunk> chunks, int centerX, int centerZ, long seed,
-        int minY, int height, int seaLevel, IBiomeSource biomeSource, Action<Vector>? scheduleFluidTick = null)
+        int minY, int height, int seaLevel, IBiomeSource biomeSource)
     {
-        this.scheduleFluidTick = scheduleFluidTick;
         this.chunks = new Dictionary<(int X, int Z), IChunk>(chunks);
         this.centerX = centerX;
         this.centerZ = centerZ;
@@ -129,10 +126,19 @@ internal sealed class WorldGenRegion : IWorldGenLevel
             generated.PendingEntities.Add(entity);
     }
 
+    /// <remarks>
+    /// The tick runs once the chunk is complete, with the chunk's post-processing.
+    /// </remarks>
     public void ScheduleFluidTick(Vector position)
     {
-        if (this.EnsureCanWrite(position))
-            this.scheduleFluidTick?.Invoke(position);
+        if (this.EnsureCanWrite(position) && this.GetChunk(position.X >> 4, position.Z >> 4) is Chunk chunk)
+            chunk.PostProcessing.Add(position);
+    }
+
+    public void MarkForPostProcessing(Vector position)
+    {
+        if (this.chunks.TryGetValue((position.X >> 4, position.Z >> 4), out var chunk) && chunk is Chunk generated)
+            generated.PostProcessing.Add(position);
     }
 
     private IChunk GetChunk(int chunkX, int chunkZ) =>
