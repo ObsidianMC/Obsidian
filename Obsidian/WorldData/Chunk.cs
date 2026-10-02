@@ -117,9 +117,9 @@ public sealed class Chunk : IChunk
     {
         var i = SectionIndex(y);
 
-        x = NumericsHelper.Modulo(x, 16);
-        y = NumericsHelper.Modulo(y, 16);
-        z = NumericsHelper.Modulo(z, 16);
+        x = (x & 15);
+        y = (y & 15);
+        z = (z & 15);
 
         return Sections[i].GetBlock(x, y, z);
     }
@@ -128,9 +128,9 @@ public sealed class Chunk : IChunk
     {
         var i = SectionIndex(y);
 
-        x = NumericsHelper.Modulo(x, 16) >> 2;
-        z = NumericsHelper.Modulo(z, 16) >> 2;
-        y = NumericsHelper.Modulo(y + 64, 16) >> 2;
+        x = (x & 15) >> 2;
+        z = (z & 15) >> 2;
+        y = (y & 15) >> 2;
 
         return Sections[i].GetBiome(x, y, z);
     }
@@ -139,9 +139,9 @@ public sealed class Chunk : IChunk
     {
         int i = SectionIndex(y);
 
-        x = NumericsHelper.Modulo(x, 16) >> 2;
-        y = NumericsHelper.Modulo(y + 64, 16) >> 2;
-        z = NumericsHelper.Modulo(z, 16) >> 2;
+        x = (x & 15) >> 2;
+        y = (y & 15) >> 2;
+        z = (z & 15) >> 2;
 
         Sections[i].SetBiome(x, y, z, biome);
     }
@@ -156,24 +156,24 @@ public sealed class Chunk : IChunk
     public IReadOnlyCollection<IBlockEntity> GetBlockEntities() => this.BlockEntities.Values;
 
     private int BlockEntityKey(int x, int y, int z) =>
-        (y - this.MinY) << 8 | NumericsHelper.Modulo(z, 16) << 4 | NumericsHelper.Modulo(x, 16);
+        (y - this.MinY) << 8 | (z & 15) << 4 | (x & 15);
 
     public void SetBlock(int x, int y, int z, IBlock block)
     {
         int i = SectionIndex(y);
 
-        x = NumericsHelper.Modulo(x, 16);
-        y = NumericsHelper.Modulo(y, 16);
-        z = NumericsHelper.Modulo(z, 16);
+        x = (x & 15);
+        y = (y & 15);
+        z = (z & 15);
 
         Sections[i].SetBlock(x, y, z, block);
     }
 
     public BlockMeta GetBlockMeta(int x, int y, int z)
     {
-        x = NumericsHelper.Modulo(x, 16);
-        y = NumericsHelper.Modulo(y, 16);
-        z = NumericsHelper.Modulo(z, 16);
+        x = (x & 15);
+        y = (y & 15);
+        z = (z & 15);
         var value = (short)((x << 8) | (z << 4) | y);
 
         return BlockMetaStore.GetValueOrDefault(value);
@@ -181,9 +181,9 @@ public sealed class Chunk : IChunk
 
     public void SetBlockMeta(int x, int y, int z, BlockMeta meta)
     {
-        x = NumericsHelper.Modulo(x, 16);
-        y = NumericsHelper.Modulo(y, 16);
-        z = NumericsHelper.Modulo(z, 16);
+        x = (x & 15);
+        y = (y & 15);
+        z = (z & 15);
         var value = (short)((x << 8) | (z << 4) | y);
 
         BlockMetaStore[value] = meta;
@@ -192,18 +192,18 @@ public sealed class Chunk : IChunk
     public void SetLightLevel(int x, int y, int z, LightType lt, int level)
     {
         var sec = Sections[SectionIndex(y)];
-        x = NumericsHelper.Modulo(x, 16);
-        y = NumericsHelper.Modulo(y, 16);
-        z = NumericsHelper.Modulo(z, 16);
+        x = (x & 15);
+        y = (y & 15);
+        z = (z & 15);
         sec.SetLightLevel(x, y, z, lt, level);
     }
 
     public int GetLightLevel(int x, int y, int z, LightType lt)
     {
         var sec = Sections[SectionIndex(y)];
-        x = NumericsHelper.Modulo(x, 16);
-        y = NumericsHelper.Modulo(y, 16);
-        z = NumericsHelper.Modulo(z, 16);
+        x = (x & 15);
+        y = (y & 15);
+        z = (z & 15);
         return sec.GetLightLevel(x, y, z, lt);
     }
 

@@ -36,6 +36,30 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
         base.Set(x, y, z, blockState);
     }
 
+    /// <remarks>
+    /// Reads don't take the container's lock, since generation reads blocks far more than it writes them. Palettes only
+    /// append and data arrays are replaced whole when they grow, so a read racing a write sees the block before or after
+    /// it. The data array is read before the palette: it's set last when a single value palette grows. A read that finds
+    /// them out of step (or a global palette) reads under the lock instead.
+    /// </remarks>
+    public override IBlock Get(int x, int y, int z)
+    {
+        var data = this.DataArray;
+        var palette = this.Palette;
+
+        if (data is not null)
+        {
+            if (palette is IndirectBlockPalette indirect && indirect.TryGetBlock(data[this.GetIndex(x, y, z)], out var block))
+                return block;
+        }
+        else if (palette is SingleBlockValuePalette single && single.IsFull)
+        {
+            return single.Value;
+        }
+
+        return base.Get(x, y, z);
+    }
+
     public override void WriteTo(INetStreamWriter writer)
     {
 #if CACHE_VALID_BLOCKS

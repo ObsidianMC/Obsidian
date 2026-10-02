@@ -1,4 +1,5 @@
 ﻿using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace Obsidian.ChunkData;
 
@@ -6,7 +7,10 @@ public abstract class BaseIndirectPalette<T> : IPalette<T>
 {
     public int[] Values { get; private set; }
     public int BitCount { get; private set; }
-    public int Count { get; protected set; }
+    // Reads of the block storage don't lock (see BlockStateContainer.Get): an entry is written before the count that
+    // makes it readable.
+    private int count;
+    public int Count { get => Volatile.Read(ref this.count); protected set => Volatile.Write(ref this.count, value); }
     public bool IsFull => Count == Values.Length;
 
     public bool ShouldGrow => false;

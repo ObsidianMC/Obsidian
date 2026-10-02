@@ -234,13 +234,13 @@ public sealed partial class Server : IServer
         loadTimeStopwatch.Stop();
         logger.LogInformation("Server loaded in {time}", loadTimeStopwatch.Elapsed);
 
-        //Wait for worlds to load
+        // Wait for worlds to load. Polling with a delay leaves the cores to world generation instead of spinning one.
         while (!this.WorldManager.ReadyToJoin)
         {
             if (this.cancelTokenSource.IsCancellationRequested)
                 return;
 
-            continue;
+            await Task.Delay(50);
         }
 
         ScoreboardManager = new ScoreboardManager(this, this.loggerFactory);
