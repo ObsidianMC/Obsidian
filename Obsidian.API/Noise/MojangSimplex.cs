@@ -48,11 +48,18 @@ public sealed class SimplexNoise
         }
     }
 
+    // The gradient components as doubles, one table per axis, which saves converting them per sample.
+    private static ReadOnlySpan<double> GradientsX => [1, -1, 1, -1, 1, -1, 1, -1, 0, 0, 0, 0, 1, 0, -1, 0];
+
+    private static ReadOnlySpan<double> GradientsY => [1, 1, -1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 1, -1, 1, -1];
+
+    private static ReadOnlySpan<double> GradientsZ => [0, 0, 0, 0, 1, 1, -1, -1, 1, 1, -1, -1, 0, 1, 0, -1];
+
     /// <summary>Dot product of gradient <paramref name="gradient"/> (0-15) with (x, y, z).</summary>
     internal static double Dot(int gradient, double x, double y, double z)
     {
-        var g = Gradients.Slice(gradient * 3, 3);
-        return g[0] * x + g[1] * y + g[2] * z;
+        gradient &= 15;
+        return GradientsX[gradient] * x + GradientsY[gradient] * y + GradientsZ[gradient] * z;
     }
 
     /// <summary>Component <paramref name="axis"/> (0 = x, 1 = y, 2 = z) of gradient <paramref name="gradient"/>.</summary>

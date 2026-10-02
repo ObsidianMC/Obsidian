@@ -15,6 +15,11 @@ public sealed class BlendedNoise
     private readonly PerlinNoise minLimitNoise;
     private readonly PerlinNoise maxLimitNoise;
     private readonly PerlinNoise mainNoise;
+
+    // The octaves of each noise from the highest frequency down, the order Compute walks them in.
+    private readonly ImprovedNoise?[] minLimitOctaves;
+    private readonly ImprovedNoise?[] maxLimitOctaves;
+    private readonly ImprovedNoise?[] mainOctaves;
     private readonly double xzMultiplier;
     private readonly double yMultiplier;
     private readonly double xzFactor;
@@ -33,6 +38,9 @@ public sealed class BlendedNoise
         this.minLimitNoise = PerlinNoise.CreateLegacyForBlendedNoise(random, Enumerable.Range(-15, 16));
         this.maxLimitNoise = PerlinNoise.CreateLegacyForBlendedNoise(random, Enumerable.Range(-15, 16));
         this.mainNoise = PerlinNoise.CreateLegacyForBlendedNoise(random, Enumerable.Range(-7, 8));
+        this.minLimitOctaves = Octaves(this.minLimitNoise, 16);
+        this.maxLimitOctaves = Octaves(this.maxLimitNoise, 16);
+        this.mainOctaves = Octaves(this.mainNoise, 8);
         this.xzScale = xzScale;
         this.yScale = yScale;
         this.xzFactor = xzFactor;
@@ -65,11 +73,12 @@ public sealed class BlendedNoise
         var minLimit = 0.0;
         var maxLimit = 0.0;
         var main = 0.0;
+        // Scales are powers of two, so multiplying by the inverse divides exactly.
         var scale = 1.0;
+        var inverseScale = 1.0;
 
-        for (var i = 0; i < 8; i++)
+        foreach (var noise in this.mainOctaves)
         {
-            var noise = this.mainNoise.GetOctaveNoise(i);
             if (noise is not null)
             {
                 main += noise.Noise(
@@ -77,18 +86,22 @@ public sealed class BlendedNoise
                     PerlinNoise.Wrap(mainY * scale),
                     PerlinNoise.Wrap(mainZ * scale),
                     mainSmear * scale,
-                    mainY * scale) / scale;
+                    mainY * scale) * inverseScale;
             }
 
             scale /= 2.0;
+            inverseScale *= 2.0;
         }
 
         var blend = (main / 10.0 + 1.0) / 2.0;
         var onlyMax = blend >= 1.0;
         var onlyMin = blend <= 0.0;
         scale = 1.0;
+        inverseScale = 1.0;
+        var minLimitOctaves = this.minLimitOctaves;
+        var maxLimitOctaves = this.maxLimitOctaves.AsSpan(0, minLimitOctaves.Length);
 
-        for (var i = 0; i < 16; i++)
+        for (var i = 0; i < minLimitOctaves.Length; i++)
         {
             var x = PerlinNoise.Wrap(limitX * scale);
             var y = PerlinNoise.Wrap(limitY * scale);
@@ -97,21 +110,25 @@ public sealed class BlendedNoise
 
             if (!onlyMax)
             {
-                var minNoise = this.minLimitNoise.GetOctaveNoise(i);
+                var minNoise = minLimitOctaves[i];
                 if (minNoise is not null)
-                    minLimit += minNoise.Noise(x, y, z, smear, limitY * scale) / scale;
+                    minLimit += minNoise.Noise(x, y, z, smear, limitY * scale) * inverseScale;
             }
 
             if (!onlyMin)
             {
-                var maxNoise = this.maxLimitNoise.GetOctaveNoise(i);
+                var maxNoise = maxLimitOctaves[i];
                 if (maxNoise is not null)
-                    maxLimit += maxNoise.Noise(x, y, z, smear, limitY * scale) / scale;
+                    maxLimit += maxNoise.Noise(x, y, z, smear, limitY * scale) * inverseScale;
             }
 
             scale /= 2.0;
+            inverseScale *= 2.0;
         }
 
         return Mth.ClampedLerp(blend, minLimit / 512.0, maxLimit / 512.0) / 128.0;
     }
+
+    private static ImprovedNoise?[] Octaves(PerlinNoise noise, int count) =>
+        Enumerable.Range(0, count).Select(noise.GetOctaveNoise).ToArray();
 }

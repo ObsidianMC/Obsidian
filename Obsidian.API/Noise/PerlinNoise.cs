@@ -102,10 +102,12 @@ public sealed class PerlinNoise
         var value = 0.0;
         var inputFactor = this.lowestFreqInputFactor;
         var valueFactor = this.lowestFreqValueFactor;
+        var noiseLevels = this.noiseLevels;
+        var amplitudes = this.amplitudes.AsSpan(0, noiseLevels.Length);
 
-        for (var i = 0; i < this.noiseLevels.Length; i++)
+        for (var i = 0; i < noiseLevels.Length; i++)
         {
-            var noise = this.noiseLevels[i];
+            var noise = noiseLevels[i];
             if (noise is not null)
             {
                 var sample = noise.Noise(
@@ -114,7 +116,7 @@ public sealed class PerlinNoise
                     Wrap(z * inputFactor),
                     yScale * inputFactor,
                     yMax * inputFactor);
-                value += this.amplitudes[i] * sample * valueFactor;
+                value += amplitudes[i] * sample * valueFactor;
             }
 
             inputFactor *= 2.0;
@@ -134,7 +136,11 @@ public sealed class PerlinNoise
     public ImprovedNoise? GetOctaveNoise(int index) => this.noiseLevels[this.noiseLevels.Length - 1 - index];
 
     /// <summary>Wraps a coordinate into <c>[-2^24, 2^24]</c> to keep precision for far-out samples.</summary>
-    public static double Wrap(double value) => value - Mth.LFloor(value / RoundOff + 0.5) * RoundOff;
+    /// <remarks>
+    /// <see cref="Math.Floor(double)"/> is the same as vanilla's <c>Mth.lfloor</c> widened back to a double for any
+    /// coordinate within <see cref="long"/> range times <see cref="RoundOff"/>, and is a single instruction.
+    /// </remarks>
+    public static double Wrap(double value) => value - Math.Floor(value / RoundOff + 0.5) * RoundOff;
 
     private double EdgeValue(double scale)
     {

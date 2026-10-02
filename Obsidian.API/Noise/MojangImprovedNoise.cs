@@ -1,4 +1,6 @@
 ﻿using Obsidian.API.World.Generator.RandomSources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Obsidian.API.Noise;
 
@@ -82,25 +84,29 @@ public sealed class ImprovedNoise
 
     private int P(int index) => this.p[index & 0xFF];
 
+    // The mask keeps the index inside the 256 entries, so the bounds check can go.
+    private static int P(ref byte p, int index) => Unsafe.Add(ref p, index & 0xFF);
+
     private static double GradDot(int hash, double x, double y, double z) => SimplexNoise.Dot(hash & 15, x, y, z);
 
     private double SampleAndLerp(int cellX, int cellY, int cellZ, double x, double y, double z, double yForSmoothing)
     {
-        var a = this.P(cellX);
-        var b = this.P(cellX + 1);
-        var aa = this.P(a + cellY);
-        var ab = this.P(a + cellY + 1);
-        var ba = this.P(b + cellY);
-        var bb = this.P(b + cellY + 1);
+        ref var p = ref MemoryMarshal.GetArrayDataReference(this.p);
+        var a = P(ref p, cellX);
+        var b = P(ref p, cellX + 1);
+        var aa = P(ref p, a + cellY);
+        var ab = P(ref p, a + cellY + 1);
+        var ba = P(ref p, b + cellY);
+        var bb = P(ref p, b + cellY + 1);
 
-        var d000 = GradDot(this.P(aa + cellZ), x, y, z);
-        var d100 = GradDot(this.P(ba + cellZ), x - 1.0, y, z);
-        var d010 = GradDot(this.P(ab + cellZ), x, y - 1.0, z);
-        var d110 = GradDot(this.P(bb + cellZ), x - 1.0, y - 1.0, z);
-        var d001 = GradDot(this.P(aa + cellZ + 1), x, y, z - 1.0);
-        var d101 = GradDot(this.P(ba + cellZ + 1), x - 1.0, y, z - 1.0);
-        var d011 = GradDot(this.P(ab + cellZ + 1), x, y - 1.0, z - 1.0);
-        var d111 = GradDot(this.P(bb + cellZ + 1), x - 1.0, y - 1.0, z - 1.0);
+        var d000 = GradDot(P(ref p, aa + cellZ), x, y, z);
+        var d100 = GradDot(P(ref p, ba + cellZ), x - 1.0, y, z);
+        var d010 = GradDot(P(ref p, ab + cellZ), x, y - 1.0, z);
+        var d110 = GradDot(P(ref p, bb + cellZ), x - 1.0, y - 1.0, z);
+        var d001 = GradDot(P(ref p, aa + cellZ + 1), x, y, z - 1.0);
+        var d101 = GradDot(P(ref p, ba + cellZ + 1), x - 1.0, y, z - 1.0);
+        var d011 = GradDot(P(ref p, ab + cellZ + 1), x, y - 1.0, z - 1.0);
+        var d111 = GradDot(P(ref p, bb + cellZ + 1), x - 1.0, y - 1.0, z - 1.0);
 
         // The y weight uses the unshifted local y, which is what makes the smeared sampling work.
         var tx = Mth.Smoothstep(x);
