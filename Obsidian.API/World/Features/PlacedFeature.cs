@@ -16,6 +16,11 @@ public sealed class PlacedFeature : IFeature
 
     public required ConfiguredFeatureBase Feature { get; init; }
 
+    // Built-in features don't keep their context once they return, so a placement moves one context from position to
+    // position; features from other assemblies may keep theirs, so they get a new context per position.
+    private bool? reusesFeatureContext;
+    private bool ReusesFeatureContext => this.reusesFeatureContext ??= this.Feature.GetType().Assembly.GetName().Name is "Obsidian" or "Obsidian.API";
+
     public PlacementModifierBase[] Placement { get; init; } = [];
 
     /// <summary>
@@ -51,7 +56,7 @@ public sealed class PlacedFeature : IFeature
     {
         if (modifier == this.Placement.Length)
         {
-            if (featureContext is null)
+            if (featureContext is null || !this.ReusesFeatureContext)
             {
                 featureContext = new FeatureContext
                 {
