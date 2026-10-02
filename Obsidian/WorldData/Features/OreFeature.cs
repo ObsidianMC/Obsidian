@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.World.Generator.RandomSources;
+using System.Runtime.CompilerServices;
 
 namespace Obsidian.WorldData.Features;
 
@@ -58,6 +59,9 @@ public sealed class OreFeature : ConfiguredFeatureBase
         return false;
     }
 
+    // Stack buffers aren't zeroed implicitly: the spheres are written before they're read, and clearing the visited bits
+    // explicitly is much faster.
+    [SkipLocalsInit]
     private bool DoPlace(IWorldGenLevel level, IRandomSource random, double startX, double endX, double startZ, double endZ,
         double startY, double endY, int minX, int minY, int minZ, int width, int height)
     {
