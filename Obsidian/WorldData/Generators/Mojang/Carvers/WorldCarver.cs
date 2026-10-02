@@ -65,7 +65,13 @@ internal sealed class CarvingMask(int minY, int height)
 /// <summary>
 /// Base of the classic tunnel carvers, mirroring vanilla's WorldCarver.
 /// </summary>
-internal abstract class WorldCarver<TConfiguration> where TConfiguration : CarverConfiguration
+/// <remarks>
+/// Vanilla simulates a start chunk's carver again for every chunk within reach. Here a carver first plans what a start
+/// chunk carves (the tunnels' paths and ellipsoids, which don't depend on the carved chunk), and each chunk replays the
+/// plan, stopping tunnels where the simulation for that chunk would stop them. Plans can be kept and reused.
+/// </remarks>
+/// <typeparam name="TPlan">What the carver started in one chunk carves.</typeparam>
+internal abstract class WorldCarver<TConfiguration, TPlan> where TConfiguration : CarverConfiguration
 {
     /// <summary>
     /// Radius in chunks a carver started in one chunk can reach.
@@ -78,10 +84,57 @@ internal abstract class WorldCarver<TConfiguration> where TConfiguration : Carve
     public bool IsStartChunk(TConfiguration configuration, IRandomSource random) => random.NextFloat() <= configuration.Probability;
 
     /// <summary>
-    /// Carves the parts of the carver started in (<paramref name="startChunkX"/>, <paramref name="startChunkZ"/>)
-    /// that fall into the context's chunk.
+    /// Plans the carver started in (<paramref name="startChunkX"/>, <paramref name="startChunkZ"/>), drawing from the random
+    /// that <see cref="IsStartChunk"/> just used.
     /// </summary>
-    public abstract void Carve(CarvingContext context, TConfiguration configuration, IRandomSource random, int startChunkX, int startChunkZ);
+    public abstract TPlan Plan(TConfiguration configuration, IRandomSource random, int startChunkX, int startChunkZ, int minY, int height);
+
+    /// <summary>
+    /// Carves the parts of a plan that fall into the context's chunk, exactly as vanilla's simulation for that chunk does.
+    /// </summary>
+    public abstract void Carve(CarvingContext context, TConfiguration configuration, TPlan plan);
+
+    /// <summary>
+    /// Carves a tunnel's ellipsoids until one from which the tunnel can no longer reach the context's chunk (where
+    /// vanilla's simulation returns), then its branches.
+    /// </summary>
+    protected void CarveTunnel<TSkipChecker>(CarvingContext context, TConfiguration configuration, Tunnel tunnel, TSkipChecker skipChecker)
+        where TSkipChecker : struct, ISkipChecker
+    {
+        foreach (var step in tunnel.Steps)
+        {
+            if (!CanReach(context.Chunk, step.X, step.Z, step.Index, tunnel.BranchCount, tunnel.Thickness))
+                return;
+
+            this.CarveEllipsoid(context, configuration, step.X, step.Y, step.Z, step.HorizontalRadius, step.VerticalRadius, skipChecker);
+        }
+
+        if (tunnel.Branches is { } branches)
+        {
+            this.CarveTunnel(context, configuration, branches.Left, skipChecker);
+            this.CarveTunnel(context, configuration, branches.Right, skipChecker);
+        }
+    }
+
+    /// <summary>
+    /// The ellipsoids a tunnel carves along its path, in order, and the tunnels it splits into after the last one.
+    /// </summary>
+    /// <param name="branchIndex">The index of the tunnel's first step, which sizes <see cref="Steps"/>.</param>
+    internal sealed class Tunnel(int branchIndex, int branchCount, float thickness)
+    {
+        public int BranchCount { get; } = branchCount;
+
+        public float Thickness { get; } = thickness;
+
+        public List<TunnelStep> Steps { get; } = new(Math.Max(branchCount - branchIndex, 0));
+
+        public (Tunnel Left, Tunnel Right)? Branches { get; set; }
+    }
+
+    /// <summary>
+    /// An ellipsoid carved at step <see cref="Index"/> of a tunnel (or as a cave's room).
+    /// </summary>
+    internal readonly record struct TunnelStep(int Index, double X, double Y, double Z, double HorizontalRadius, double VerticalRadius);
 
     /// <summary>
     /// Skips positions inside the ellipsoid. A struct, so each carver's ellipsoid loop is specialized for its check.
@@ -93,6 +146,12 @@ internal abstract class WorldCarver<TConfiguration> where TConfiguration : Carve
         /// <param name="relativeZ">Z relative to the center, in horizontal radii.</param>
         /// <param name="y">The block Y.</param>
         public bool ShouldSkip(double relativeX, double relativeY, double relativeZ, int y);
+
+        /// <summary>
+        /// Bounds on the relative Y of the positions of a column that aren't skipped, given its relative X and Z (whose
+        /// squares sum to less than 1). They may be loose, up to rounding.
+        /// </summary>
+        public (double Min, double Max) RelativeYBounds(double relativeX, double relativeZ);
     }
 
     protected void CarveEllipsoid<TSkipChecker>(CarvingContext context, TConfiguration configuration, double x, double y, double z,
@@ -143,7 +202,12 @@ internal abstract class WorldCarver<TConfiguration> where TConfiguration : Carve
                 // Set once the column passes through grass or mycelium, so exposed dirt below gets a top block.
                 var surfaceReached = false;
 
-                for (var blockY = maxBlockY; blockY > minBlockY; blockY--)
+                // Positions outside the skip check's bounds are skipped anyway; a block to spare on each side covers rounding.
+                var (minRelativeY, maxRelativeY) = skipChecker.RelativeYBounds(relativeX, relativeZ);
+                var top = Math.Min(maxBlockY, Math.Ceiling(y + 0.5 + maxRelativeY * verticalRadius) + 1.0);
+                var bottom = Math.Max(minBlockY, Math.Floor(y + 0.5 + minRelativeY * verticalRadius) - 1.0);
+
+                for (var blockY = (int)top; blockY > bottom; blockY--)
                 {
                     var relativeY = relativeYs[maxBlockY - blockY];
 

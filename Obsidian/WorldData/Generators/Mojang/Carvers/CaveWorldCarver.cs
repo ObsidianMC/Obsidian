@@ -8,7 +8,7 @@ namespace Obsidian.WorldData.Generators.Mojang.Carvers;
 /// <remarks>
 /// The float/double mix is deliberate: vanilla computes angles and offsets in float and positions in double.
 /// </remarks>
-internal class CaveWorldCarver : WorldCarver<CaveCarverConfiguration>
+internal class CaveWorldCarver : WorldCarver<CaveCarverConfiguration, CaveWorldCarver.Cave[]>
 {
     /// <summary>
     /// Bounds the number of caves a start chunk carves.
@@ -20,31 +20,32 @@ internal class CaveWorldCarver : WorldCarver<CaveCarverConfiguration>
     /// </summary>
     protected virtual double YScale => 1.0;
 
-    public override void Carve(CarvingContext context, CaveCarverConfiguration configuration, IRandomSource random, int startChunkX, int startChunkZ)
+    public override Cave[] Plan(CaveCarverConfiguration configuration, IRandomSource random, int startChunkX, int startChunkZ, int minY, int height)
     {
         var maxDistance = (Range * 2 - 1) << 4;
-        var caveCount = random.NextInt(random.NextInt(random.NextInt(this.CaveBound) + 1) + 1);
+        var caves = new Cave[random.NextInt(random.NextInt(random.NextInt(this.CaveBound) + 1) + 1)];
 
-        for (var cave = 0; cave < caveCount; cave++)
+        for (var cave = 0; cave < caves.Length; cave++)
         {
             double x = (startChunkX << 4) + random.NextInt(16);
-            double y = configuration.Y.Sample(random, context.MinY, context.Height);
+            double y = configuration.Y.Sample(random, minY, height);
             double z = (startChunkZ << 4) + random.NextInt(16);
             double horizontalRadiusMultiplier = configuration.HorizontalRadiusMultiplier.Sample(random);
             double verticalRadiusMultiplier = configuration.VerticalRadiusMultiplier.Sample(random);
             double floorLevel = configuration.FloorLevel.Sample(random);
 
-            var skipChecker = new SkipChecker(floorLevel);
-
+            TunnelStep? room = null;
             var tunnelCount = 1;
             if (random.NextInt(4) == 0)
             {
                 double yScale = configuration.YScale.Sample(random);
                 var thickness = 1.0f + random.NextFloat() * 6.0f;
-                this.CreateRoom(context, configuration, x, y, z, thickness, yScale, skipChecker);
+                var horizontalRadius = 1.5 + Mth.Sin((float)(Math.PI / 2)) * thickness;
+                room = new TunnelStep(0, x + 1.0, y, z, horizontalRadius, horizontalRadius * yScale);
                 tunnelCount += random.NextInt(4);
             }
 
+            var tunnels = new Tunnel[tunnelCount];
             for (var tunnel = 0; tunnel < tunnelCount; tunnel++)
             {
                 var yaw = random.NextFloat() * (float)(Math.PI * 2);
@@ -52,9 +53,25 @@ internal class CaveWorldCarver : WorldCarver<CaveCarverConfiguration>
                 var thickness = this.GetThickness(random);
                 var branchCount = maxDistance - random.NextInt(maxDistance / 4);
 
-                this.CreateTunnel(context, configuration, random.NextLong(), x, y, z, horizontalRadiusMultiplier, verticalRadiusMultiplier,
-                    thickness, yaw, pitch, 0, branchCount, this.YScale, skipChecker);
+                tunnels[tunnel] = this.PlanTunnel(random.NextLong(), x, y, z, horizontalRadiusMultiplier, verticalRadiusMultiplier,
+                    thickness, yaw, pitch, 0, branchCount, this.YScale);
             }
+
+            caves[cave] = new Cave(new SkipChecker(floorLevel), room, tunnels);
+        }
+
+        return caves;
+    }
+
+    public override void Carve(CarvingContext context, CaveCarverConfiguration configuration, Cave[] plan)
+    {
+        foreach (var cave in plan)
+        {
+            if (cave.Room is { } room)
+                this.CarveEllipsoid(context, configuration, room.X, room.Y, room.Z, room.HorizontalRadius, room.VerticalRadius, cave.SkipChecker);
+
+            foreach (var tunnel in cave.Tunnels)
+                this.CarveTunnel(context, configuration, tunnel, cave.SkipChecker);
         }
     }
 
@@ -71,19 +88,14 @@ internal class CaveWorldCarver : WorldCarver<CaveCarverConfiguration>
         return thickness;
     }
 
-    private void CreateRoom(CarvingContext context, CaveCarverConfiguration configuration, double x, double y, double z,
-        float thickness, double yScale, SkipChecker skipChecker)
+    /// <summary>
+    /// Follows a tunnel (vanilla's <c>createTunnel</c>) and records its ellipsoids; whether each one reaches a chunk is decided
+    /// when carving.
+    /// </summary>
+    private Tunnel PlanTunnel(long seed, double x, double y, double z, double horizontalRadiusMultiplier, double verticalRadiusMultiplier,
+        float thickness, float yaw, float pitch, int branchIndex, int branchCount, double yScale)
     {
-        var horizontalRadius = 1.5 + Mth.Sin((float)(Math.PI / 2)) * thickness;
-        var verticalRadius = horizontalRadius * yScale;
-
-        this.CarveEllipsoid(context, configuration, x + 1.0, y, z, horizontalRadius, verticalRadius, skipChecker);
-    }
-
-    private void CreateTunnel(CarvingContext context, CaveCarverConfiguration configuration, long seed, double x, double y, double z,
-        double horizontalRadiusMultiplier, double verticalRadiusMultiplier, float thickness, float yaw, float pitch,
-        int branchIndex, int branchCount, double yScale, SkipChecker skipChecker)
-    {
+        var tunnel = new Tunnel(branchIndex, branchCount, thickness);
         var random = new LegacyRandomSource(seed);
         var splitIndex = random.NextInt(branchCount / 2) + branchCount / 4;
         var steep = random.NextInt(6) == 0;
@@ -110,27 +122,37 @@ internal class CaveWorldCarver : WorldCarver<CaveCarverConfiguration>
 
             if (index == splitIndex && thickness > 1.0f)
             {
-                this.CreateTunnel(context, configuration, random.NextLong(), x, y, z, horizontalRadiusMultiplier, verticalRadiusMultiplier,
-                    random.NextFloat() * 0.5f + 0.5f, yaw - (float)(Math.PI / 2), pitch / 3.0f, index, branchCount, 1.0, skipChecker);
-                this.CreateTunnel(context, configuration, random.NextLong(), x, y, z, horizontalRadiusMultiplier, verticalRadiusMultiplier,
-                    random.NextFloat() * 0.5f + 0.5f, yaw + (float)(Math.PI / 2), pitch / 3.0f, index, branchCount, 1.0, skipChecker);
-                return;
+                tunnel.Branches = (
+                    this.PlanTunnel(random.NextLong(), x, y, z, horizontalRadiusMultiplier, verticalRadiusMultiplier,
+                        random.NextFloat() * 0.5f + 0.5f, yaw - (float)(Math.PI / 2), pitch / 3.0f, index, branchCount, 1.0),
+                    this.PlanTunnel(random.NextLong(), x, y, z, horizontalRadiusMultiplier, verticalRadiusMultiplier,
+                        random.NextFloat() * 0.5f + 0.5f, yaw + (float)(Math.PI / 2), pitch / 3.0f, index, branchCount, 1.0));
+                return tunnel;
             }
 
             if (random.NextInt(4) == 0)
                 continue;
 
-            if (!CanReach(context.Chunk, x, z, index, branchCount, thickness))
-                return;
-
-            this.CarveEllipsoid(context, configuration, x, y, z, horizontalRadius * horizontalRadiusMultiplier,
-                verticalRadius * verticalRadiusMultiplier, skipChecker);
+            tunnel.Steps.Add(new TunnelStep(index, x, y, z, horizontalRadius * horizontalRadiusMultiplier, verticalRadius * verticalRadiusMultiplier));
         }
+
+        return tunnel;
     }
 
-    private readonly struct SkipChecker(double floorLevel) : ISkipChecker
+    /// <summary>
+    /// One of a start chunk's caves: its room, if any, and its tunnels, carved in that order.
+    /// </summary>
+    internal sealed record Cave(SkipChecker SkipChecker, TunnelStep? Room, Tunnel[] Tunnels);
+
+    internal readonly struct SkipChecker(double floorLevel) : ISkipChecker
     {
         public bool ShouldSkip(double relativeX, double relativeY, double relativeZ, int y) =>
             relativeY <= floorLevel || relativeX * relativeX + relativeY * relativeY + relativeZ * relativeZ >= 1.0;
+
+        public (double Min, double Max) RelativeYBounds(double relativeX, double relativeZ)
+        {
+            var halfHeight = Math.Sqrt(1.0 - (relativeX * relativeX + relativeZ * relativeZ));
+            return (Math.Max(floorLevel, -halfHeight), halfHeight);
+        }
     }
 }

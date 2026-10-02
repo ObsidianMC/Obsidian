@@ -1,6 +1,7 @@
 using Obsidian.API.World.Generator.RandomSources;
 using System.Reflection;
 using System.Text.Json;
+using System.Threading;
 
 namespace Obsidian.WorldData.Generators.Mojang.Carvers;
 
@@ -11,12 +12,16 @@ internal sealed class CarverStep
 {
     private const int Radius = 8;
 
+    // Kept plans cover this many start chunks along X and Z per carver; see GetPlan.
+    private const int PlanWindow = 64;
+
     private static readonly ConcurrentDictionary<string, IConfiguredCarver> loadedCarvers = new();
 
     private readonly RandomState randomState;
     private readonly SurfaceBuilder surfaceBuilder;
     private readonly IBiomeSource biomeSource;
     private readonly IConfiguredCarver[] carvers;
+    private readonly PlanEntry?[] plans;
 
     /// <param name="carvers">Configured carver names in the biomes' order, which decides each carver's seed.</param>
     public CarverStep(RandomState randomState, SurfaceBuilder surfaceBuilder, IBiomeSource biomeSource, IEnumerable<string> carvers)
@@ -25,6 +30,7 @@ internal sealed class CarverStep
         this.surfaceBuilder = surfaceBuilder;
         this.biomeSource = biomeSource;
         this.carvers = [.. carvers.Select(name => loadedCarvers.GetOrAdd(name, Load))];
+        this.plans = new PlanEntry?[this.carvers.Length * PlanWindow * PlanWindow];
     }
 
     /// <param name="noiseChunk">The chunk's noise chunk when the other steps share it, or <c>null</c> for a new one.</param>
@@ -60,10 +66,32 @@ internal sealed class CarverStep
                     random.SetLargeFeatureSeed(this.randomState.Seed + index, startChunkX, startChunkZ);
 
                     if (carvers[index].IsStartChunk(random))
-                        carvers[index].Carve(context, random, startChunkX, startChunkZ);
+                        carvers[index].Carve(context, this.GetPlan(index, startChunkX, startChunkZ, random));
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// The plan of carver <paramref name="index"/> started in a chunk, made with <paramref name="random"/> if it isn't kept.
+    /// </summary>
+    /// <remarks>
+    /// A start chunk's carvers reach every chunk within 8 chunks, so plans are kept rather than made again for each of them.
+    /// Each carver keeps one plan per start chunk in a 64 by 64 window, which covers the start chunks of the chunks generated
+    /// around a player; a start chunk a window away takes the slot over. Plans don't change once made, so threads can share them.
+    /// </remarks>
+    private object GetPlan(int index, int startChunkX, int startChunkZ, IRandomSource random)
+    {
+        var slot = (index * PlanWindow + (startChunkX & (PlanWindow - 1))) * PlanWindow + (startChunkZ & (PlanWindow - 1));
+        var entry = Volatile.Read(ref this.plans[slot]);
+        if (entry is null || entry.ChunkX != startChunkX || entry.ChunkZ != startChunkZ)
+        {
+            var noise = this.randomState.Settings.Noise;
+            entry = new PlanEntry(startChunkX, startChunkZ, this.carvers[index].Plan(random, startChunkX, startChunkZ, noise.MinY, noise.Height));
+            Volatile.Write(ref this.plans[slot], entry);
+        }
+
+        return entry.Plan;
     }
 
     private static IConfiguredCarver Load(string name)
@@ -96,9 +124,9 @@ internal sealed class CarverStep
 
         return type switch
         {
-            "minecraft:cave" => new ConfiguredCarver<CaveCarverConfiguration>(new CaveWorldCarver(), CaveConfiguration()),
-            "minecraft:nether_cave" => new ConfiguredCarver<CaveCarverConfiguration>(new NetherWorldCarver(), CaveConfiguration()),
-            "minecraft:canyon" => new ConfiguredCarver<CanyonCarverConfiguration>(new CanyonWorldCarver(), new CanyonCarverConfiguration
+            "minecraft:cave" => Configure(new CaveWorldCarver(), CaveConfiguration()),
+            "minecraft:nether_cave" => Configure(new NetherWorldCarver(), CaveConfiguration()),
+            "minecraft:canyon" => Configure(new CanyonWorldCarver(), new CanyonCarverConfiguration
             {
                 Probability = probability,
                 Y = y,
@@ -130,19 +158,25 @@ internal sealed class CarverStep
         return flags;
     }
 
+    private static IConfiguredCarver Configure<TConfiguration, TPlan>(WorldCarver<TConfiguration, TPlan> carver, TConfiguration configuration)
+        where TConfiguration : CarverConfiguration where TPlan : notnull => new ConfiguredCarver<TConfiguration, TPlan>(carver, configuration);
+
     private interface IConfiguredCarver
     {
         public bool IsStartChunk(IRandomSource random);
 
-        public void Carve(CarvingContext context, IRandomSource random, int startChunkX, int startChunkZ);
+        public object Plan(IRandomSource random, int startChunkX, int startChunkZ, int minY, int height);
+
+        public void Carve(CarvingContext context, object plan);
     }
 
-    private sealed class ConfiguredCarver<TConfiguration> : IConfiguredCarver where TConfiguration : CarverConfiguration
+    private sealed class ConfiguredCarver<TConfiguration, TPlan> : IConfiguredCarver
+        where TConfiguration : CarverConfiguration where TPlan : notnull
     {
-        private readonly WorldCarver<TConfiguration> carver;
+        private readonly WorldCarver<TConfiguration, TPlan> carver;
         private readonly TConfiguration configuration;
 
-        public ConfiguredCarver(WorldCarver<TConfiguration> carver, TConfiguration configuration)
+        public ConfiguredCarver(WorldCarver<TConfiguration, TPlan> carver, TConfiguration configuration)
         {
             this.carver = carver;
             this.configuration = configuration;
@@ -150,7 +184,12 @@ internal sealed class CarverStep
 
         public bool IsStartChunk(IRandomSource random) => this.carver.IsStartChunk(this.configuration, random);
 
-        public void Carve(CarvingContext context, IRandomSource random, int startChunkX, int startChunkZ) =>
-            this.carver.Carve(context, this.configuration, random, startChunkX, startChunkZ);
+        public object Plan(IRandomSource random, int startChunkX, int startChunkZ, int minY, int height) =>
+            this.carver.Plan(this.configuration, random, startChunkX, startChunkZ, minY, height);
+
+        public void Carve(CarvingContext context, object plan) => this.carver.Carve(context, this.configuration, (TPlan)plan);
     }
+
+    // A kept plan and the start chunk it belongs to.
+    private sealed record PlanEntry(int ChunkX, int ChunkZ, object Plan);
 }
