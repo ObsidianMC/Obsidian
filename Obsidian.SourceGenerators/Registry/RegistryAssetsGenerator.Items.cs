@@ -20,7 +20,16 @@ public partial class RegistryAssetsGenerator
         {
             var name = item.Name;
 
-            builder.Line($"public static Item {name} {{ get; }} = new Item({item.Id}, \"{item.Tag}\", Material.{name});");
+            var defaults = new List<string>();
+            if (item.MaxStackSize != 64)
+                defaults.Add($"MaxStackSize = {item.MaxStackSize}");
+            if (item.MaxDamage != 0)
+                defaults.Add($"MaxDamage = {item.MaxDamage}");
+            if (item.Enchantable != 0)
+                defaults.Add($"Enchantable = {item.Enchantable}");
+
+            var initializer = defaults.Count == 0 ? string.Empty : $" {{ {string.Join(", ", defaults)} }}";
+            builder.Line($"public static Item {name} {{ get; }} = new Item({item.Id}, \"{item.Tag}\", Material.{name}){initializer};");
         }
 
         builder.Statement("internal static FrozenDictionary<Material, Item> Items = new Dictionary<Material, Item>()");

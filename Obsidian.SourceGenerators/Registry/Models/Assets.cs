@@ -28,7 +28,7 @@ internal sealed class Assets
     {
         Block[] blocks = GetBlocks(files.GetJsonFromArray("blocks"));
         Fluid[] fluids = GetFluids(files.GetJsonFromArray("fluids"));
-        Item[] items = GetItems(files.GetJsonFromArray("items"));
+        Item[] items = GetItems(files.GetJsonFromArray("items"), files.GetJsonFromArray("item_components"));
         Dictionary<string, Codec[]> codecs = GetCodecs(files);
         BiomeEntry[] biomes = [.. codecs["biomes"].Select(biome => new BiomeEntry(biome.Name, biome.RegistryId))];
         Tag[] tags = GetTags(files.GetJsonFromArray("tags"), blocks, items, fluids, biomes);
@@ -171,17 +171,22 @@ internal sealed class Assets
         return blocks.ToArray();
     }
 
-    private static Item[] GetItems(string? json)
+    private static Item[] GetItems(string? json, string? componentsJson)
     {
         if (json is null)
             return [];
 
         var items = new List<Item>();
         using var document = JsonDocument.Parse(json);
+        using var components = componentsJson is null ? null : JsonDocument.Parse(componentsJson);
 
         foreach (JsonProperty property in document.RootElement.EnumerateObject())
         {
-            items.Add(Item.Get(property));
+            var itemComponents = components is not null && components.RootElement.TryGetProperty(property.Name, out var entry)
+                ? entry.GetProperty("components")
+                : default;
+
+            items.Add(Item.Get(property, itemComponents));
         }
 
         return items.ToArray();
