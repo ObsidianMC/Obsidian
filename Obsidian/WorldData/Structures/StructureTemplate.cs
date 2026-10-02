@@ -239,9 +239,28 @@ public sealed class StructureTemplate
         if (blocks.Count == 0 && (settings.IgnoreEntities || this.entities.Count == 0) || this.Size.X < 1 || this.Size.Y < 1 || this.Size.Z < 1)
             return false;
 
+        var buffers = PlacementBuffers.Rent();
+        try
+        {
+            PlaceBlocks(level, position, pivot, settings, random, blocks, buffers);
+        }
+        finally
+        {
+            buffers.Return();
+        }
+
+        if (!settings.IgnoreEntities)
+            this.PlaceEntities(level, position, settings, settings.BoundingBox);
+
+        return true;
+    }
+
+    // The blocks part of PlaceInWorld: processes and places the blocks, waterlogs them and updates their shapes.
+    private static void PlaceBlocks(IWorldGenLevel level, Vector position, Vector pivot, StructurePlaceSettings settings, IRandomSource random,
+        List<StructureBlockInfo> blocks, PlacementBuffers buffers)
+    {
         var box = settings.BoundingBox;
         var applyWaterlogging = settings.ShouldApplyWaterlogging;
-        var buffers = PlacementBuffers.Rent();
         var toWaterlog = buffers.ToWaterlog;
         var placedSources = buffers.PlacedSources;
         var min = new Vector(int.MaxValue, int.MaxValue, int.MaxValue);
@@ -317,13 +336,6 @@ public sealed class StructureTemplate
                 }
             }
         }
-
-        buffers.Return();
-
-        if (!settings.IgnoreEntities)
-            this.PlaceEntities(level, position, settings, box);
-
-        return true;
     }
 
     /// <summary>

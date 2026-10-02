@@ -21,56 +21,59 @@ internal static class LeafDistanceUpdater
         for (var i = 0; i < MaxDistance; i++)
             queues[i] = new VanillaBlockPosSet();
 
-        // Decorations and roots belong to the tree's shape but aren't walked through.
-        FillAll(shape, bounds, decorations);
-        FillAll(shape, bounds, roots);
-
-        queues[0].AddAll(logs);
-        var distance = 0;
-        while (true)
+        try
         {
-            while (distance >= MaxDistance || queues[distance].Count != 0)
+            // Decorations and roots belong to the tree's shape but aren't walked through.
+            FillAll(shape, bounds, decorations);
+            FillAll(shape, bounds, roots);
+
+            queues[0].AddAll(logs);
+            var distance = 0;
+            while (true)
             {
-                if (distance >= MaxDistance)
+                while (distance >= MaxDistance || queues[distance].Count != 0)
                 {
-                    foreach (var queue in queues)
-                        queue.Release();
+                    if (distance >= MaxDistance)
+                        return shape;
 
-                    return shape;
-                }
-
-                var position = queues[distance].RemoveFirst();
-                if (!bounds.IsInside(position))
-                    continue;
-
-                if (distance != 0)
-                    level.SetBlock(position, level.GetBlock(position).WithProperty("distance", distance));
-
-                Fill(shape, bounds, position);
-                foreach (var face in TreeDirections.All)
-                {
-                    var neighbor = position.Offset(face);
-                    if (!bounds.IsInside(neighbor))
+                    var position = queues[distance].RemoveFirst();
+                    if (!bounds.IsInside(position))
                         continue;
 
-                    var local = neighbor - bounds.Min;
-                    if (shape.IsFull(local.X, local.Y, local.Z))
-                        continue;
+                    if (distance != 0)
+                        level.SetBlock(position, level.GetBlock(position).WithProperty("distance", distance));
 
-                    var neighborDistance = TreeBlocks.OptionalLeafDistance(level, neighbor);
-                    if (neighborDistance is null)
-                        continue;
-
-                    var queued = Math.Min(neighborDistance.Value, distance + 1);
-                    if (queued < MaxDistance)
+                    Fill(shape, bounds, position);
+                    foreach (var face in TreeDirections.All)
                     {
-                        queues[queued].Add(neighbor);
-                        distance = Math.Min(distance, queued);
+                        var neighbor = position.Offset(face);
+                        if (!bounds.IsInside(neighbor))
+                            continue;
+
+                        var local = neighbor - bounds.Min;
+                        if (shape.IsFull(local.X, local.Y, local.Z))
+                            continue;
+
+                        var neighborDistance = TreeBlocks.OptionalLeafDistance(level, neighbor);
+                        if (neighborDistance is null)
+                            continue;
+
+                        var queued = Math.Min(neighborDistance.Value, distance + 1);
+                        if (queued < MaxDistance)
+                        {
+                            queues[queued].Add(neighbor);
+                            distance = Math.Min(distance, queued);
+                        }
                     }
                 }
-            }
 
-            distance++;
+                distance++;
+            }
+        }
+        finally
+        {
+            foreach (var queue in queues)
+                queue.Release();
         }
     }
 

@@ -69,43 +69,47 @@ public abstract class VegetationPatchFeatureBase : ConfiguredFeatureBase
         var toward = this.Surface.Direction();
         var away = toward.Opposite();
         var placed = RentPositions();
-
-        for (var dx = -radiusX; dx <= radiusX; dx++)
+        try
         {
-            var edgeX = dx == -radiusX || dx == radiusX;
-
-            for (var dz = -radiusZ; dz <= radiusZ; dz++)
+            for (var dx = -radiusX; dx <= radiusX; dx++)
             {
-                var edgeZ = dz == -radiusZ || dz == radiusZ;
-                var corner = edgeX && edgeZ;
-                var edge = (edgeX || edgeZ) && !corner;
+                var edgeX = dx == -radiusX || dx == radiusX;
 
-                // Corners are skipped; other edge columns survive with ExtraEdgeColumnChance (rolled only for them).
-                if (corner || edge && (this.ExtraEdgeColumnChance == 0.0f || random.NextFloat() > this.ExtraEdgeColumnChance))
-                    continue;
+                for (var dz = -radiusZ; dz <= radiusZ; dz++)
+                {
+                    var edgeZ = dz == -radiusZ || dz == radiusZ;
+                    var corner = edgeX && edgeZ;
+                    var edge = (edgeX || edgeZ) && !corner;
 
-                var position = origin + new Vector(dx, 0, dz);
-                for (var i = 0; level.GetBlock(position).IsAir && i < this.VerticalRange; i++)
-                    position = position.Offset(toward);
+                    // Corners are skipped; other edge columns survive with ExtraEdgeColumnChance (rolled only for them).
+                    if (corner || edge && (this.ExtraEdgeColumnChance == 0.0f || random.NextFloat() > this.ExtraEdgeColumnChance))
+                        continue;
 
-                for (var i = 0; !level.GetBlock(position).IsAir && i < this.VerticalRange; i++)
-                    position = position.Offset(away);
+                    var position = origin + new Vector(dx, 0, dz);
+                    for (var i = 0; level.GetBlock(position).IsAir && i < this.VerticalRange; i++)
+                        position = position.Offset(toward);
 
-                var surface = position.Offset(toward);
-                if (!level.GetBlock(position).IsAir || !level.GetBlock(surface).IsFaceSturdy(away))
-                    continue;
+                    for (var i = 0; !level.GetBlock(position).IsAir && i < this.VerticalRange; i++)
+                        position = position.Offset(away);
 
-                var depth = this.Depth.Sample(random)
-                    + (this.ExtraBottomBlockChance > 0.0f && random.NextFloat() < this.ExtraBottomBlockChance ? 1 : 0);
+                    var surface = position.Offset(toward);
+                    if (!level.GetBlock(position).IsAir || !level.GetBlock(surface).IsFaceSturdy(away))
+                        continue;
 
-                if (this.PlaceGround(level, random, surface, depth))
-                    placed.Add(surface);
+                    var depth = this.Depth.Sample(random)
+                        + (this.ExtraBottomBlockChance > 0.0f && random.NextFloat() < this.ExtraBottomBlockChance ? 1 : 0);
+
+                    if (this.PlaceGround(level, random, surface, depth))
+                        placed.Add(surface);
+                }
             }
-        }
 
-        var ordered = FeatureHelpers.JavaHashSetOrder(placed);
-        ReturnPositions(placed);
-        return ordered;
+            return FeatureHelpers.JavaHashSetOrder(placed);
+        }
+        finally
+        {
+            ReturnPositions(placed);
+        }
     }
 
     /// <summary>

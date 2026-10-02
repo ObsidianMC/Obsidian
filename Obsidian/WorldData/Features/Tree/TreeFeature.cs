@@ -38,9 +38,14 @@ public sealed class TreeFeature : ConfiguredFeatureBase
             return false;
 
         var tree = new TreeContext(this, context.Level, context.Random, context.Generation);
-        var placed = this.Place(tree, context.Origin);
-        tree.Release();
-        return placed;
+        try
+        {
+            return this.Place(tree, context.Origin);
+        }
+        finally
+        {
+            tree.Release();
+        }
     }
 
     private bool Place(TreeContext tree, Vector origin)
