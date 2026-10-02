@@ -1,5 +1,6 @@
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.ChunkData;
 
 namespace Obsidian.WorldData.Generators.Mojang.Features;
 
@@ -23,6 +24,11 @@ internal sealed class WorldGenRegion : IWorldGenLevel
     // The chunks writes may reach (null where the region has none) and their final heightmaps, indexed by AreaIndex.
     private readonly IChunk?[] area = new IChunk?[AreaWidth * AreaWidth];
     private readonly FinalHeightmaps?[] areaHeightmaps = new FinalHeightmaps?[AreaWidth * AreaWidth];
+
+    // The sections of the writable chunks, indexed by AreaIndex * sectionCount + section index, so block reads and writes
+    // skip the chunk; null for chunks of other types or build ranges, which are read through the chunk.
+    private readonly ChunkSection?[] areaSections;
+    private readonly int sectionCount;
 
     // Heights computed from the blocks of a chunk when first needed, for the chunks outside the writable area and the
     // world generation heightmaps a chunk no longer has. They don't follow writes.
@@ -67,10 +73,23 @@ internal sealed class WorldGenRegion : IWorldGenLevel
         this.trackHeightmaps = trackHeightmaps;
         this.biomeManager = new BiomeManager(new RegionBiomeSource(this, biomeSource), seed, minY, height, cacheNoiseBiomes: false);
 
+        this.sectionCount = height >> 4;
+        this.areaSections = new ChunkSection?[AreaWidth * AreaWidth * this.sectionCount];
+
         for (var dx = -WriteRadius; dx <= WriteRadius; dx++)
         {
             for (var dz = -WriteRadius; dz <= WriteRadius; dz++)
-                this.area[this.AreaIndex(centerX + dx, centerZ + dz)] = chunks.GetValueOrDefault((centerX + dx, centerZ + dz));
+            {
+                var index = this.AreaIndex(centerX + dx, centerZ + dz);
+                var chunk = chunks.GetValueOrDefault((centerX + dx, centerZ + dz));
+                this.area[index] = chunk;
+
+                if (chunk is Chunk generated && generated.MinY == minY && generated.Sections.Length == this.sectionCount)
+                {
+                    for (var section = 0; section < this.sectionCount; section++)
+                        this.areaSections[index * this.sectionCount + section] = generated.Sections[section] as ChunkSection;
+                }
+            }
         }
     }
 
@@ -78,6 +97,14 @@ internal sealed class WorldGenRegion : IWorldGenLevel
     {
         if (this.IsOutsideBuildHeight(position.Y))
             return BlocksRegistry.VoidAir;
+
+        var index = this.AreaIndex(position.X >> 4, position.Z >> 4);
+        if (index >= 0)
+        {
+            var section = this.areaSections[index * this.sectionCount + ((position.Y - this.MinY) >> 4)];
+            if (section is not null)
+                return section.GetBlock(position.X & 15, position.Y & 15, position.Z & 15);
+        }
 
         var chunk = this.FindChunk(position.X >> 4, position.Z >> 4);
         return chunk is not null ? chunk.GetBlock(position.X, position.Y, position.Z) : BlocksRegistry.Air;
@@ -102,7 +129,12 @@ internal sealed class WorldGenRegion : IWorldGenLevel
         // Prime the final heightmaps from the blocks before the change, like ProtoChunk.setBlockState.
         var heightmaps = this.GetFinalHeightmaps(index, chunk);
 
-        chunk.SetBlock(position.X, position.Y, position.Z, block);
+        var section = this.areaSections[index * this.sectionCount + ((position.Y - this.MinY) >> 4)];
+        if (section is not null)
+            section.SetBlock(position.X & 15, position.Y & 15, position.Z & 15, block);
+        else
+            chunk.SetBlock(position.X, position.Y, position.Z, block);
+
         heightmaps.Update(position.X, position.Y, position.Z, block);
 
         DataBlockEntity.ApplyBlockChange(chunk, position, block);
