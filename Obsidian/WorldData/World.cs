@@ -2,7 +2,9 @@
 using Microsoft.Extensions.Options;
 using Obsidian.API.Configuration;
 using Obsidian.API.Registry.Codecs.Dimensions;
+using Obsidian.Entities;
 using Obsidian.Nbt;
+using Obsidian.WorldData.Maps;
 using System.IO;
 
 namespace Obsidian.WorldData;
@@ -16,6 +18,11 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
     internal Dictionary<string, IDimension> dimensions = [];
 
     public string PlayerDataPath { get; private set; } = string.Empty;
+
+    /// <summary>
+    /// The maps of the world and its dimensions.
+    /// </summary>
+    internal MapStorage Maps { get; private set; } = default!;
 
     public async override Task<bool> LoadAsync(DimensionCodec codec)
     {
@@ -104,6 +111,8 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
         writer.EndCompound();
 
         await writer.TryFinishAsync();
+
+        await this.Maps.SaveAsync();
     }
 
     public async Task UnloadPlayerAsync(Guid uuid)
@@ -134,6 +143,7 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
         };
 
         this.PlayerDataPath = Path.Combine(this.FolderPath, "playerdata");
+        this.Maps = new MapStorage(this.FolderPath);
         this.LevelDataFilePath = Path.Combine(this.FolderPath, "level.dat");
 
         Directory.CreateDirectory(this.PlayerDataPath);
@@ -145,5 +155,9 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
         await base.DoWorldTickAsync();
 
         await Task.WhenAll(this.dimensions.Values.Select(d => d.DoWorldTickAsync()));
+
+        // Like vanilla's player inventory tick, after the levels ticked.
+        foreach (var player in this.Players.Values.Concat(this.dimensions.Values.SelectMany(dimension => dimension.Players.Values)).Cast<Player>())
+            await this.Maps.TickAsync(player);
     }
 }

@@ -1,4 +1,5 @@
 using Obsidian.API.World.Generator.RandomSources;
+using System.Threading;
 
 namespace Obsidian.WorldData.Structures;
 
@@ -29,6 +30,30 @@ public sealed class StructureStart
     public int ChunkZ { get; }
 
     public IReadOnlyList<StructurePiece> Pieces { get; }
+
+    /// <summary>
+    /// How many times a search for unknown structures found this start (vanilla's <c>references</c>).
+    /// </summary>
+    public int References => this.references;
+
+    private int references;
+
+    /// <summary>
+    /// Vanilla <c>canBeReferenced</c> then <c>addReference</c>: claims the start for a search that skips known structures,
+    /// which each start allows once.
+    /// </summary>
+    internal bool TryAddReference()
+    {
+        while (true)
+        {
+            var current = this.references;
+            if (current >= 1)
+                return false;
+
+            if (Interlocked.CompareExchange(ref this.references, current + 1, current) == current)
+                return true;
+        }
+    }
 
     /// <summary>
     /// The box around every piece, grown by 12 blocks for structures that reshape terrain.

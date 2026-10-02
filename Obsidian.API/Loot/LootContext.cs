@@ -40,6 +40,12 @@ public sealed class LootContext
     public Func<string, LootTable?> ResolveTable { get; init; } = id => LootTables.All.GetValueOrDefault(id);
 
     /// <summary>
+    /// Creates the explorer maps of <c>minecraft:exploration_map</c> functions, or <c>null</c> where the level can't (the map
+    /// is then left as is).
+    /// </summary>
+    public IExplorationMapFactory? ExplorationMaps { get; init; }
+
+    /// <summary>
     /// Marks <paramref name="table"/> as being generated; returns false when it already is, which means tables
     /// reference each other in a loop.
     /// </summary>

@@ -30,6 +30,11 @@ internal sealed class StructureManager : IStructurePlacementState
     public long Seed { get; }
 
     /// <summary>
+    /// The structure sets of the dimension, in registry order.
+    /// </summary>
+    public IReadOnlyList<StructureSet> Sets => this.structureSets;
+
+    /// <summary>
     /// The structures of each decoration step in registry order, which decides their feature seed index.
     /// </summary>
     public IReadOnlyList<IReadOnlyList<Structure>> StructuresPerStep { get; }

@@ -339,6 +339,19 @@ public partial class NetworkBuffer : INetStreamWriter
         this.Write(writer.Data);
     }
 
+    public void WriteNbtCompound(NbtCompound compound)
+    {
+        using var writer = new RawNbtWriter(true);
+
+        foreach (var (_, tag) in compound)
+            writer.WriteTag(tag);
+
+        writer.EndCompound();
+        writer.TryFinish();
+
+        this.Write(writer.Data);
+    }
+
     [WriteMethod]
     public void WriteCodec(ICodec codec)
     {

@@ -1,6 +1,9 @@
 using Obsidian.API;
 using Obsidian.WorldData;
+using Obsidian.Registries;
 using Obsidian.WorldData.Generators.Mojang;
+using Obsidian.WorldData.Generators.Mojang.Structures;
+using Obsidian.WorldData.Maps;
 using Obsidian.WorldData.Structures;
 using Obsidian.WorldData.Structures.Pools;
 using System;
@@ -78,6 +81,21 @@ public class VanillaStructureGeneration(WorldgenFixture worldgen)
         }
 
         Assert.Equal(expected, Convert.ToHexStringLower(SHA256.HashData(ids.ToArray())));
+    }
+
+    [Fact]
+    public void TreasureMapMatchesVanilla()
+    {
+        // Vanilla: /loot spawn 100 64 100 loot minecraft:chests/shipwreck_map, then the colors of the map's saved data.
+        var builder = worldgen.Builder(MojangDimension.Overworld, 12345L);
+        var target = new StructureLocator(builder.Structures!).FindNearest(StructureTags.All["minecraft:on_treasure_maps"], new Vector(100, 64, 100), 50, false);
+        Assert.Equal(new Vector(761, 0, 409), target);
+
+        var map = MapData.CreateFresh(target!.Value.X, target.Value.Z, 1, true, true, "minecraft:overworld");
+        MapRenderer.RenderBiomePreview(map, (x, z) => builder.GetBiome(x, 0, z));
+
+        Assert.Equal((832, 320), (map.CenterX, map.CenterZ));
+        Assert.Equal("98143ccff6247057c83e4d8fa3755e1d9cfc7010a7dcbb4a4daabb2da8d237ff", Convert.ToHexStringLower(SHA256.HashData(map.Colors)));
     }
 
     private static MojangDimension Dimension(string name) => name switch

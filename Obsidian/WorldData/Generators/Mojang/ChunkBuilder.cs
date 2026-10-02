@@ -1,3 +1,4 @@
+using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.World.Generator.Noise;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Generators.Mojang.Carvers;
@@ -24,6 +25,9 @@ internal sealed class ChunkBuilder
     private readonly IPositionalRandomFactory regionRandom;
 
     public RandomState RandomState { get; }
+
+    // Vanilla's level biome lookup (BiomeManager with the obfuscated seed) over the noise biomes.
+    private BiomeManager BiomeManager => field ??= new BiomeManager(this.biomeSource, this.RandomState.Seed, this.dimension.MinY, this.dimension.Height);
 
     /// <summary>
     /// The world's structures, or <c>null</c> when structures aren't generated.
@@ -131,6 +135,11 @@ internal sealed class ChunkBuilder
     /// The block (with Y 0) whose climate best fits the noise settings' spawn target, like vanilla's
     /// <c>Climate.Sampler.findSpawnPosition</c>; the origin when the settings have no target.
     /// </summary>
+    /// <summary>
+    /// The biome at a block, like vanilla's <c>Level.getBiome</c> for chunks that aren't loaded.
+    /// </summary>
+    public BiomeCodec GetBiome(int x, int y, int z) => this.BiomeManager.GetBiome(x, y, z);
+
     public (int X, int Z) FindClimateSpawn()
     {
         var targets = this.settings.SpawnTarget.Select(target => new ParameterPoint(

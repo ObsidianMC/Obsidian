@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Utilities;
+using Obsidian.Nbt;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API.Inventory.DataComponents;
@@ -33,14 +34,15 @@ public sealed record class MapDecorationDataComponent : DataComponent
         }
     }
 
+    // Vanilla doesn't sync this component with a codec of its own, so it goes over the network as NBT: a compound of the
+    // decorations by key.
     public override void Write(INetStreamWriter writer)
     {
-        writer.WriteVarInt(this.Decorations.Count);
+        var compound = new NbtCompound();
         foreach (var (key, value) in this.Decorations)
-        {
-            writer.WriteString(key);
-            MapDecoration.Write(value, writer);
-        }
+            compound.Add(value.ToNbt(key));
+
+        writer.WriteNbtCompound(compound);
     }
 }
 
@@ -60,6 +62,17 @@ public readonly record struct MapDecoration : INetworkSerializable<MapDecoration
         X = reader.ReadDouble(),
         Z = reader.ReadDouble(),
         Rotation = reader.ReadSingle()
+    };
+
+    /// <summary>
+    /// The decoration as vanilla's <c>MapDecorations.Entry</c> NBT.
+    /// </summary>
+    public NbtCompound ToNbt(string name) => new(name)
+    {
+        new NbtTag<string>("type", $"minecraft:{this.Type.ToString().ToSnakeCase()}"),
+        new NbtTag<double>("x", this.X),
+        new NbtTag<double>("z", this.Z),
+        new NbtTag<float>("rotation", this.Rotation)
     };
 
     public static void Write(MapDecoration value, INetStreamWriter writer)

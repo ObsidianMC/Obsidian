@@ -47,7 +47,7 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
             .Where(static file => file.path is not null && (file.path.StartsWith("features/") || file.path.StartsWith("placed_features/")
                 || file.path.StartsWith("processor_lists/") || file.path.StartsWith("structures/") || file.path.StartsWith("structure_sets/")
                 || file.path.StartsWith("template_pools/")
-                || file.path == "biome_features"))
+                || file.path == "biome_features" || file.path == "tags"))
             .Select(static (file, ct) => (path: file.path!, json: file.text.GetText(ct)!.ToString()));
 
         var classDeclarations = ctx.SyntaxProvider
@@ -67,6 +67,11 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
     private static string? GetWorldgenPath(string path)
     {
         var normalized = path.Replace('\\', '/');
+
+        // The tags of every registry; the structure tags are emitted here since structures only exist in this assembly.
+        if (normalized.EndsWith("/Assets/tags.json", StringComparison.Ordinal))
+            return "tags";
+
         var index = normalized.IndexOf("/worldgen/", StringComparison.Ordinal);
         if (index < 0 || !normalized.EndsWith(".json", StringComparison.Ordinal))
             return null;
@@ -131,6 +136,10 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
 
         if (templatePools.Count > 0)
             context.AddSource("TemplatePools.g.cs", emitter.EmitTemplatePools());
+
+        var tagsJson = files.FirstOrDefault(file => file.path == "tags").json;
+        if (structures.Count > 0 && tagsJson is not null)
+            context.AddSource("StructureTags.g.cs", emitter.EmitStructureTags(tagsJson));
     }
 
     /// <summary>
@@ -240,6 +249,62 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
                 foreach (var (id, _) in entries)
                     this.templatePoolReferences[id] = $"global::Obsidian.Registries.TemplatePools.{MemberName(category)}.{MemberName(id)}";
             }
+        }
+
+        /// <summary>
+        /// Emits the structure tags (<c>worldgen/structure</c> in <c>Assets/tags.json</c>) as lists of the structures they hold,
+        /// with nested tags resolved.
+        /// </summary>
+        public string EmitStructureTags(string tagsJson)
+        {
+            using var document = JsonDocument.Parse(tagsJson);
+            const string prefix = "worldgen/structure/";
+            var tags = document.RootElement.EnumerateObject()
+                .Where(tag => tag.Name.StartsWith(prefix, StringComparison.Ordinal))
+                .ToDictionary(tag => "minecraft:" + tag.Name.Substring(prefix.Length),
+                    tag => tag.Value.GetProperty("values").EnumerateArray().Select(value => value.GetString()!).ToList());
+
+            IEnumerable<string> Resolve(string tag, HashSet<string> visited)
+            {
+                if (!visited.Add(tag) || !tags.TryGetValue(tag, out var values))
+                    yield break;
+
+                foreach (var value in values)
+                {
+                    if (!value.StartsWith("#", StringComparison.Ordinal))
+                    {
+                        yield return value;
+                        continue;
+                    }
+
+                    foreach (var nested in Resolve(value.Substring(1), visited))
+                        yield return nested;
+                }
+            }
+
+            var builder = Header();
+            builder.AppendLine("/// <summary>");
+            builder.AppendLine("/// Vanilla structure tags (e.g. <c>minecraft:on_treasure_maps</c>), generated from <c>Assets/tags.json</c>.");
+            builder.AppendLine("/// </summary>");
+            builder.AppendLine("public static partial class StructureTags");
+            builder.AppendLine("{");
+            builder.AppendLine("    /// <summary>");
+            builder.AppendLine("    /// The structures of every tag, keyed by tag id without the <c>#</c>.");
+            builder.AppendLine("    /// </summary>");
+            builder.AppendLine("    public static FrozenDictionary<string, global::Obsidian.WorldData.Structures.Structure[]> All => " + LazyInit
+                + "new global::System.Collections.Generic.Dictionary<string, global::Obsidian.WorldData.Structures.Structure[]>()");
+            builder.AppendLine("    {");
+
+            foreach (var tag in tags.Keys.OrderBy(tag => tag, StringComparer.Ordinal))
+            {
+                this.currentOwner = tag;
+                var members = Resolve(tag, []).Distinct().Select(this.StructureReference);
+                builder.AppendLine($"        {{ {Literal(tag)}, [{string.Join(", ", members)}] }},");
+            }
+
+            builder.AppendLine("    }.ToFrozenDictionary());");
+            builder.AppendLine("}");
+            return builder.ToString();
         }
 
         public string EmitStructures()

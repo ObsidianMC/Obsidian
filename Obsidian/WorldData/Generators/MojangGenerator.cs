@@ -22,6 +22,11 @@ internal class MojangGenerator : ILevelGenerator
     protected virtual MojangDimension Dimension => MojangDimension.Overworld;
 
     private ChunkBuilder builder;
+
+    /// <summary>
+    /// The builder generating the level's chunks, available once <see cref="Init"/> ran.
+    /// </summary>
+    internal ChunkBuilder Builder => this.builder;
     private ILevel world;
 
     private readonly SemaphoreSlim[] chunkLocks = [.. Enumerable.Range(0, LockStripeCount).Select(_ => new SemaphoreSlim(1, 1))];

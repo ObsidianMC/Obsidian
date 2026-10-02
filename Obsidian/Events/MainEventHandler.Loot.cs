@@ -3,6 +3,7 @@ using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators.Mojang;
+using Obsidian.WorldData.Maps;
 using System.Runtime.CompilerServices;
 
 namespace Obsidian.Events;
@@ -38,7 +39,8 @@ public sealed partial class MainEventHandler
         {
             Random = table.CreateRandom(seed, sequences),
             Origin = new VectorF(position.X + 0.5f, position.Y + 0.5f, position.Z + 0.5f),
-            ThisEntity = player
+            ThisEntity = player,
+            ExplorationMaps = ExplorationMaps.For(player.Level)
         });
     }
 }
