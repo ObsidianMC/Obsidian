@@ -5,11 +5,13 @@ namespace Obsidian.API.World.Features;
 /// <summary>
 /// Everything a configured feature needs to place itself, like vanilla's FeaturePlaceContext.
 /// </summary>
-public readonly struct FeatureContext
+public sealed class FeatureContext
 {
+    private Vector origin;
+
     public required IWorldGenLevel Level { get; init; }
 
-    public required Vector Origin { get; init; }
+    public required Vector Origin { get => this.origin; init => this.origin = value; }
 
     public required IRandomSource Random { get; init; }
 
@@ -31,4 +33,10 @@ public readonly struct FeatureContext
         Generation = this.Generation,
         TopFeature = this.TopFeature
     };
+
+    /// <summary>
+    /// Moves the context to another origin, for a placement that places its feature at each of its positions in turn:
+    /// features don't keep their context once they return.
+    /// </summary>
+    internal void MoveTo(Vector origin) => this.origin = origin;
 }

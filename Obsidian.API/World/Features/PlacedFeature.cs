@@ -33,7 +33,11 @@ public sealed class PlacedFeature : IFeature
         this.PlaceWithContext(new PlacementContext { Level = level, Generation = generation, TopFeature = this, BiomeHasFeature = biomeHasFeature },
             random, origin);
 
-    private bool PlaceWithContext(PlacementContext context, IRandomSource random, Vector origin) => this.PlaceFrom(0, context, random, origin);
+    private bool PlaceWithContext(PlacementContext context, IRandomSource random, Vector origin)
+    {
+        FeatureContext? featureContext = null;
+        return this.PlaceFrom(0, context, random, origin, ref featureContext);
+    }
 
     /// <summary>
     /// Runs the modifiers from <paramref name="modifier"/> on a position and places the feature at each resulting position.
@@ -42,27 +46,40 @@ public sealed class PlacedFeature : IFeature
     /// Like vanilla's chained streams, each position goes through the remaining modifiers and gets placed before the
     /// modifier that produced it is asked for the next one, which decides the order random numbers are drawn in.
     /// </remarks>
-    private bool PlaceFrom(int modifier, PlacementContext context, IRandomSource random, Vector position)
+    /// <param name="featureContext">The context the feature was placed with so far, moved to each next position.</param>
+    private bool PlaceFrom(int modifier, PlacementContext context, IRandomSource random, Vector position, ref FeatureContext? featureContext)
     {
         if (modifier == this.Placement.Length)
         {
-            return this.Feature.Place(new FeatureContext
+            if (featureContext is null)
             {
-                Level = context.Level,
-                Origin = position,
-                Random = random,
-                Generation = context.Generation,
-                TopFeature = context.TopFeature
-            });
+                featureContext = new FeatureContext
+                {
+                    Level = context.Level,
+                    Origin = position,
+                    Random = random,
+                    Generation = context.Generation,
+                    TopFeature = context.TopFeature
+                };
+            }
+            else
+            {
+                featureContext.MoveTo(position);
+            }
+
+            return this.Feature.Place(featureContext);
         }
 
         var placement = this.Placement[modifier];
         if (placement is SinglePlacementModifierBase single)
-            return single.GetPosition(context, random, position) is Vector next && this.PlaceFrom(modifier + 1, context, random, next);
+        {
+            return single.GetPosition(context, random, position) is Vector next
+                && this.PlaceFrom(modifier + 1, context, random, next, ref featureContext);
+        }
 
         var placed = false;
         foreach (var next in placement.GetPositions(context, random, position))
-            placed |= this.PlaceFrom(modifier + 1, context, random, next);
+            placed |= this.PlaceFrom(modifier + 1, context, random, next, ref featureContext);
 
         return placed;
     }
