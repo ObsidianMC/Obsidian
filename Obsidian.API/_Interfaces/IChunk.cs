@@ -13,6 +13,16 @@ public interface IChunk
 
     public ChunkGenStage ChunkStatus { get; }
 
+    /// <summary>
+    /// The lowest block Y of the chunk, i.e. its dimension's minimum build height.
+    /// </summary>
+    public int MinY { get; }
+
+    /// <summary>
+    /// The number of block layers in the chunk, i.e. its dimension's build height.
+    /// </summary>
+    public int Height { get; }
+
     public IDictionary<HeightmapType, Heightmap> Heightmaps { get; }
 
     public IChunkSection[] Sections { get; }

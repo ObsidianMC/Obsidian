@@ -122,7 +122,7 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
     {
         this.FolderPath = Path.Combine("worlds", Name);
 
-        this.DimensionName = codec.Name;
+        this.SetDimension(codec);
 
         this.LevelData = new LevelData
         {

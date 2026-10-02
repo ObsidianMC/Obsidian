@@ -36,11 +36,17 @@ public class Region : IRegion
     // Serializes filling empty chunk slots, so concurrent callers never end up with different instances of a chunk.
     private readonly SemaphoreSlim chunkSlotLock = new(1, 1);
 
+    // The dimension's build range, which decides the section count of loaded chunks.
+    private readonly int minY;
+    private readonly int height;
+
     internal Region(int x, int z, string worldFolderPath, NbtCompression chunkCompression = NbtCompression.ZLib,
-        ILogger? logger = null)
+        ILogger? logger = null, int minY = -64, int height = 384)
     {
         X = x;
         Z = z;
+        this.minY = minY;
+        this.height = height;
         RegionFolder = Path.Join(worldFolderPath, "regions");
         Directory.CreateDirectory(RegionFolder);
         var filePath = Path.Join(RegionFolder, $"r.{X}.{Z}.mca");
@@ -191,12 +197,12 @@ public class Region : IRegion
     }
 
     #region NBT Ops
-    private static Chunk DeserializeChunk(NbtCompound chunkCompound)
+    private Chunk DeserializeChunk(NbtCompound chunkCompound)
     {
         int x = chunkCompound.GetInt("xPos");
         int z = chunkCompound.GetInt("zPos");
 
-        var chunk = new Chunk(x, z);
+        var chunk = new Chunk(x, z, this.minY, this.height);
 
         foreach (var child in (NbtList)chunkCompound["sections"])
         {
@@ -212,7 +218,7 @@ public class Region : IRegion
 
             var statesCompound = statesTag as NbtCompound;
 
-            var section = chunk.Sections[secY + 4];
+            var section = chunk.Sections[secY - (this.minY >> 4)];
 
             if (statesCompound!.TryGetTag("palette", out var palleteArrayTag))
             {
@@ -394,7 +400,7 @@ public class Region : IRegion
 
         writer.WriteInt("xPos", chunk.X);
         writer.WriteInt("zPos", chunk.Z);
-        writer.WriteInt("yPos", -4);
+        writer.WriteInt("yPos", chunk.MinY >> 4);
         writer.WriteInt("DataVersion", 3337);
         writer.WriteString("Status", chunk.ChunkStatus.ToString());
 

@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Obsidian.API.Configuration;
 using Obsidian.API.Entities;
@@ -65,6 +65,16 @@ public abstract class AbstractLevel : ILevel
     public Gamemode DefaultGamemode => LevelData.DefaultGamemode;
 
     public string DimensionName { get; protected set; } = string.Empty;
+
+    /// <summary>
+    /// The dimension's lowest block Y.
+    /// </summary>
+    public int MinY { get; private set; } = -64;
+
+    /// <summary>
+    /// The dimension's build height in blocks.
+    /// </summary>
+    public int Height { get; private set; } = 384;
 
     public string LevelDataFilePath { get; protected set; }
 
@@ -160,7 +170,7 @@ public abstract class AbstractLevel : ILevel
             return null;
         }
 
-        return await region.GetOrAddChunkAsync(x, z, () => new Chunk(chunkX, chunkZ, ChunkGenStage.structure_starts));
+        return await region.GetOrAddChunkAsync(x, z, () => new Chunk(chunkX, chunkZ, this.MinY, this.Height, ChunkGenStage.structure_starts));
     }
 
     public async ValueTask<IBlock?> GetBlockAsync(int x, int y, int z)
@@ -339,7 +349,7 @@ public abstract class AbstractLevel : ILevel
             if (Regions.TryGetValue(value, out region))
                 return region;
 
-            region = new Region(regionX, regionZ, FolderPath, logger: this.Logger);
+            region = new Region(regionX, regionZ, FolderPath, logger: this.Logger, minY: this.MinY, height: this.Height);
             this.Logger.LogDebug("Trying to add {x}:{z} to {path}", regionX, regionZ, region.RegionFolder);
 
             if (this.Regions.TryAdd(value, region))
@@ -408,7 +418,7 @@ public abstract class AbstractLevel : ILevel
 
             var (x, z) = (NumericsHelper.Modulo(jobX, Region.CubicRegionSize), NumericsHelper.Modulo(jobZ, Region.CubicRegionSize));
 
-            var c = await region.GetOrAddChunkAsync(x, z, () => new Chunk(jobX, jobZ, ChunkGenStage.structure_starts));
+            var c = await region.GetOrAddChunkAsync(x, z, () => new Chunk(jobX, jobZ, this.MinY, this.Height, ChunkGenStage.structure_starts));
             if (!c.IsGenerated)
             {
                 c = await Generator.GenerateChunkAsync(jobX, jobZ, c);
@@ -506,6 +516,16 @@ public abstract class AbstractLevel : ILevel
     }
 
     public abstract void Initialize(DimensionCodec codec);
+
+    /// <summary>
+    /// Takes the dimension's name and build range from its codec.
+    /// </summary>
+    protected void SetDimension(DimensionCodec codec)
+    {
+        this.DimensionName = codec.Name;
+        this.MinY = codec.Element.MinY;
+        this.Height = codec.Element.Height;
+    }
 
     /// <summary>
     /// Starts the initial generation of the world, which includes pregenerating chunks in a square around the spawn and loading their regions,

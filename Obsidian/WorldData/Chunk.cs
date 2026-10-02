@@ -15,20 +15,35 @@ public sealed class Chunk : IChunk
     public ChunkGenStage ChunkStatus { get; private set; } = ChunkGenStage.empty;
 
     private const int width = 16;
-    private const int worldHeight = 320;
-    private const int worldFloor = -64;
+
+    /// <summary>
+    /// The lowest block Y of the chunk (a multiple of 16).
+    /// </summary>
+    public int MinY { get; }
+
+    /// <summary>
+    /// The number of block layers in the chunk.
+    /// </summary>
+    public int Height => this.Sections.Length << 4;
 
     //TODO try and do some temp caching
     public Dictionary<short, BlockMeta> BlockMetaStore { get; private set; } = new Dictionary<short, BlockMeta>();
     public Dictionary<short, IBlockEntity> BlockEntities { get; private set; } = new Dictionary<short, IBlockEntity>();
 
-    public IChunkSection[] Sections { get; private set; } = new IChunkSection[24];
+    public IChunkSection[] Sections { get; private set; }
     public IDictionary<HeightmapType, Heightmap> Heightmaps { get; }
 
-    public Chunk(int x, int z, ChunkGenStage status = ChunkGenStage.empty)
+    public Chunk(int x, int z, ChunkGenStage status = ChunkGenStage.empty) : this(x, z, -64, 384, status)
+    {
+    }
+
+    /// <param name="minY">The dimension's lowest block Y; must be a multiple of 16.</param>
+    /// <param name="height">The dimension's height in blocks; must be a multiple of 16.</param>
+    public Chunk(int x, int z, int minY, int height, ChunkGenStage status = ChunkGenStage.empty)
     {
         X = x;
         Z = z;
+        MinY = minY;
 
         Heightmaps = new Dictionary<HeightmapType, Heightmap>()
         {
@@ -40,10 +55,10 @@ public sealed class Chunk : IChunk
             { HeightmapType.MotionBlockingNoLeaves, new Heightmap(HeightmapType.MotionBlockingNoLeaves, this) }
         };
 
-        Sections = new ChunkSection[24];
+        Sections = new ChunkSection[height >> 4];
         for (int i = 0; i < Sections.Length; i++)
         {
-            Sections[i] = new ChunkSection(yBase: i - 4);
+            Sections[i] = new ChunkSection(yBase: i + (minY >> 4));
         }
     }
 
@@ -51,6 +66,7 @@ public sealed class Chunk : IChunk
     {
         X = x;
         Z = z;
+        MinY = sections[0].YBase!.Value << 4;
 
         Heightmaps = heightmaps;
         Sections = sections;
@@ -163,7 +179,7 @@ public sealed class Chunk : IChunk
         {
             for (int z = 0; z < width; z++)
             {
-                for (int y = worldHeight - 1; y >= worldFloor; y--)
+                for (int y = this.MinY + this.Height - 1; y >= this.MinY; y--)
                 {
                     var block = GetBlock(x, y, z);
                     if (block.Material == Material.Air)
@@ -284,5 +300,5 @@ public sealed class Chunk : IChunk
         }
     }
 
-    private static int SectionIndex(int y) => (y >> 4) + 4;
+    private int SectionIndex(int y) => (y - this.MinY) >> 4;
 }
