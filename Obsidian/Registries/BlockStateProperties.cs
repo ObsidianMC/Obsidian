@@ -55,11 +55,20 @@ internal static class BlockStateProperties
         if (properties is null || properties.Count == 0)
             return BlocksRegistry.Get(defaultId);
 
-        var merged = new Dictionary<string, string>(data.Properties[defaultId]);
+        // The properties are set one by one from the default state through the WithProperty cache, rather than finding
+        // the state by its full key: a block's states cover every combination of its property values, so this reaches the
+        // same state, and a property the block doesn't have or an invalid value still gives the default state.
+        var stateId = defaultId;
         foreach (var (key, value) in properties)
-            merged[key] = value;
+        {
+            stateId = withPropertyIds.GetOrAdd((stateId, key, value),
+                static key => FindWithProperty(BlocksRegistry.Get(key.State), key.Property, key.Value));
 
-        return data.Ids.TryGetValue(Key(name, merged), out var id) ? BlocksRegistry.Get(id) : BlocksRegistry.Get(defaultId);
+            if (stateId < 0)
+                return BlocksRegistry.Get(defaultId);
+        }
+
+        return BlocksRegistry.Get(stateId);
     }
 
     // The state id WithProperty returns, or -1 for the block itself.
