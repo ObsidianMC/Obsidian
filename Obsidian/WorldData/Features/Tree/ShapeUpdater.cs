@@ -17,6 +17,9 @@ internal static class ShapeUpdater
 {
     private static readonly IBlock air = BlockStateProperties.GetState("minecraft:air");
 
+    // Vanilla's Direction.Plane.HORIZONTAL order, which redstone wire connects its sides in.
+    private static readonly BlockFace[] wireDirections = [BlockFace.North, BlockFace.East, BlockFace.South, BlockFace.West];
+
     private static readonly BlockSet farmland = new("minecraft:farmland");
 
     private static readonly BlockSet fences = new("#minecraft:fences");
@@ -129,6 +132,8 @@ internal static class ShapeUpdater
             case "LanternBlock":
                 ScheduleWaterTick(level, state, position);
                 return UpdateLantern(level, state, position, direction);
+            case "RedStoneWireBlock":
+                return UpdateRedstoneWire(level, state, position, direction, neighbor);
             case "RedstoneTorchBlock":
                 return direction == BlockFace.Down && !level.GetBlock(position + Vector.Down).IsTopCenterSturdy() ? air : state;
             case "RedstoneWallTorchBlock":
@@ -150,6 +155,113 @@ internal static class ShapeUpdater
 
         return state;
     }
+
+    /// <summary>
+    /// Vanilla <c>RedStoneWireBlock.updateShape</c>: the wire drops without support, and reconnects its sides to the wires and
+    /// signal sources around it, climbing blocks unless a conductor covers it.
+    /// </summary>
+    private static IBlock UpdateRedstoneWire(IWorldGenLevel level, IBlock state, Vector position, BlockFace direction, IBlock neighbor)
+    {
+        if (direction == BlockFace.Down)
+            return CanWireSurviveOn(neighbor) ? state : air;
+
+        if (direction == BlockFace.Up)
+            return GetWireConnectionState(level, state, position);
+
+        var side = GetWireConnectingSide(level, position, direction, !level.GetBlock(position + Vector.Up).IsRedstoneConductor());
+        var property = direction.PropertyName();
+        if ((side != "none") == IsWireConnected(state, property) && !IsWireCross(state))
+            return state.WithProperty(property, side);
+
+        var cross = BlocksRegistry.Get(Material.RedstoneWire).WithProperty("power", state.GetProperty("power"));
+        foreach (var face in wireDirections)
+            cross = cross.WithProperty(face.PropertyName(), "side");
+
+        return GetWireConnectionState(level, cross.WithProperty(property, side), position);
+    }
+
+    /// <summary>
+    /// Vanilla <c>getConnectionState</c>: connects every side it can; a wire connected on one axis only extends across it,
+    /// and a dot stays a dot.
+    /// </summary>
+    private static IBlock GetWireConnectionState(IWorldGenLevel level, IBlock state, Vector position)
+    {
+        var wasDot = IsWireDot(state);
+        var canClimb = !level.GetBlock(position + Vector.Up).IsRedstoneConductor();
+        state = BlocksRegistry.Get(Material.RedstoneWire).WithProperty("power", state.GetProperty("power"));
+        foreach (var face in wireDirections)
+            state = state.WithProperty(face.PropertyName(), GetWireConnectingSide(level, position, face, canClimb));
+
+        if (wasDot && IsWireDot(state))
+            return state;
+
+        var north = IsWireConnected(state, "north");
+        var south = IsWireConnected(state, "south");
+        var east = IsWireConnected(state, "east");
+        var west = IsWireConnected(state, "west");
+        var noZ = !north && !south;
+        var noX = !east && !west;
+        if (!west && noZ)
+            state = state.WithProperty("west", "side");
+
+        if (!east && noZ)
+            state = state.WithProperty("east", "side");
+
+        if (!north && noX)
+            state = state.WithProperty("north", "side");
+
+        if (!south && noX)
+            state = state.WithProperty("south", "side");
+
+        return state;
+    }
+
+    /// <summary>
+    /// Vanilla <c>getConnectingSide</c>: <c>up</c> to a wire on top of the neighbor, <c>side</c> to a wire or signal source
+    /// beside or below it, else <c>none</c>.
+    /// </summary>
+    private static string GetWireConnectingSide(IWorldGenLevel level, Vector position, BlockFace direction, bool canClimb)
+    {
+        var neighborPosition = position.Offset(direction);
+        var neighbor = level.GetBlock(neighborPosition);
+        if (canClimb)
+        {
+            var climbable = neighbor.BlockClass() is "TrapDoorBlock" or "WeatheringCopperTrapDoorBlock" || CanWireSurviveOn(neighbor);
+            if (climbable && WireConnectsTo(level.GetBlock(neighborPosition + Vector.Up), null))
+                return neighbor.IsFaceSturdy(direction.Opposite()) ? "up" : "side";
+        }
+
+        return !WireConnectsTo(neighbor, direction)
+            && (neighbor.IsRedstoneConductor() || !WireConnectsTo(level.GetBlock(neighborPosition + Vector.Down), null))
+            ? "none"
+            : "side";
+    }
+
+    /// <summary>
+    /// Vanilla <c>shouldConnectTo</c>: wires always; repeaters along their axis, observers from their face, and other signal
+    /// sources from any side.
+    /// </summary>
+    private static bool WireConnectsTo(IBlock block, BlockFace? direction)
+    {
+        if (block.Material == Material.RedstoneWire)
+            return true;
+
+        if (block.Material == Material.Repeater)
+            return direction is not null && SameAxis(FeatureHelpers.ParseFace(block.GetProperty("facing")), direction.Value);
+
+        if (block.Material == Material.Observer)
+            return direction is not null && FeatureHelpers.ParseFace(block.GetProperty("facing")) == direction.Value;
+
+        return block.IsSignalSource() && direction is not null;
+    }
+
+    private static bool CanWireSurviveOn(IBlock below) => below.IsFaceSturdy(BlockFace.Up) || below.Material == Material.Hopper;
+
+    private static bool IsWireConnected(IBlock wire, string side) => wire.GetProperty(side) != "none";
+
+    private static bool IsWireDot(IBlock wire) => wireDirections.All(face => !IsWireConnected(wire, face.PropertyName()));
+
+    private static bool IsWireCross(IBlock wire) => wireDirections.All(face => IsWireConnected(wire, face.PropertyName()));
 
     /// <summary>Vanilla <c>VineBlock.getUpdatedState</c>; a vine left without faces becomes air.</summary>
     private static IBlock UpdateVine(IWorldGenLevel level, IBlock state, Vector position)

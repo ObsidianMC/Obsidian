@@ -8,7 +8,7 @@ namespace Obsidian.Registries;
 /// </summary>
 /// <remarks>
 /// Loaded from <c>Assets/block_physics.json</c>, which was dumped from vanilla 1.21.11 for every block state, along with
-/// each block's vanilla class and block entity type.
+/// each block's vanilla class, block entity type and whether it's a signal source.
 /// Each state packs its flags into one int:
 /// bit 0 air, 1 blocks motion, 2 solid, 3 replaceable, 4 liquid, 5 fluid source, 6 full collision cube,
 /// 7 sturdy center (up), 8 sturdy rigid (up), 9 redstone conductor, 10 block entity, 11-16 sturdy full faces
@@ -54,6 +54,17 @@ internal static class BlockPhysics
     public static bool HasFullTopCollisionFace(this IBlock block) => Has(block, 29);
 
     public static bool HasBlockEntity(this IBlock block) => Has(block, 10);
+
+    /// <summary>
+    /// Vanilla <c>BlockState.isRedstoneConductor()</c>: redstone power passes through the block.
+    /// </summary>
+    public static bool IsRedstoneConductor(this IBlock block) => Has(block, 9);
+
+    /// <summary>
+    /// Vanilla <c>BlockState.isSignalSource()</c>: levers, buttons, redstone torches, repeaters and the like. It's the same for
+    /// every state of a block.
+    /// </summary>
+    public static bool IsSignalSource(this IBlock block) => data.Value.SignalSources.Contains(block.UnlocalizedName);
 
     /// <summary>
     /// The type of the block entity vanilla creates for the block (e.g. <c>minecraft:mob_spawner</c> for spawners), or
@@ -138,11 +149,12 @@ internal static class BlockPhysics
             root.GetProperty("flags").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
             root.GetProperty("blockClasses").EnumerateObject().ToDictionary(entry => entry.Name, entry => entry.Value.GetString()!),
             root.GetProperty("blockEntityTypes").EnumerateObject().ToDictionary(entry => entry.Name, entry => entry.Value.GetString()!),
-            root.GetProperty("blockEntityTypeIds").EnumerateObject().ToDictionary(entry => entry.Name, entry => entry.Value.GetInt32()));
+            root.GetProperty("blockEntityTypeIds").EnumerateObject().ToDictionary(entry => entry.Name, entry => entry.Value.GetInt32()),
+            root.GetProperty("signalSources").EnumerateArray().Select(entry => entry.GetString()!).ToHashSet());
     }
 
     private sealed record PhysicsData(int[] Flags, Dictionary<string, string> BlockClasses, Dictionary<string, string> BlockEntityTypes,
-        Dictionary<string, int> BlockEntityTypeIds);
+        Dictionary<string, int> BlockEntityTypeIds, HashSet<string> SignalSources);
 }
 
 /// <summary>
