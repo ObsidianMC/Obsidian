@@ -16,8 +16,9 @@ internal sealed class BiomeManager
     private readonly int maxQuartY;
     private readonly Dictionary<(int, int, int), BiomeCodec>? cache;
 
-    // See GetJitter.
-    private CornerJitter[]? jitters;
+    // Jitter only depends on the seed and the corner, so a thread's biome managers share one table (see GetJitter).
+    [ThreadStatic]
+    private static JitterTable? jitterTable;
 
     /// <param name="biomeSource">Source of the stored (quart) biomes.</param>
     /// <param name="seed">World seed.</param>
@@ -47,6 +48,11 @@ internal sealed class BiomeManager
 
         return BinaryPrimitives.ReadInt64LittleEndian(hash);
     }
+
+    /// <summary>
+    /// Forgets the remembered biomes, for when the source's biomes change.
+    /// </summary>
+    public void ClearCache() => this.cache?.Clear();
 
     /// <summary>
     /// Gets the stored biome for quart coordinates, clamping Y to the level like chunk biome storage does.
@@ -84,13 +90,17 @@ internal sealed class BiomeManager
         var closest = 0;
         var closestDistance = double.PositiveInfinity;
 
+        var jitters = jitterTable ??= new JitterTable();
+        if (jitters.Seed != this.zoomSeed)
+            jitters.Reset(this.zoomSeed);
+
         for (var corner = 0; corner < 8; corner++)
         {
             var lowX = (corner & 4) == 0;
             var lowY = (corner & 2) == 0;
             var lowZ = (corner & 1) == 0;
 
-            var jitter = this.GetJitter(lowX ? quartX : quartX + 1, lowY ? quartY : quartY + 1, lowZ ? quartZ : quartZ + 1);
+            var jitter = GetJitter(jitters, lowX ? quartX : quartX + 1, lowY ? quartY : quartY + 1, lowZ ? quartZ : quartZ + 1);
             var distance = Square((lowZ ? fractionZ : fractionZ - 1.0) + jitter.Z) + Square((lowY ? fractionY : fractionY - 1.0) + jitter.Y)
                 + Square((lowX ? fractionX : fractionX - 1.0) + jitter.X);
 
@@ -111,14 +121,13 @@ internal sealed class BiomeManager
     /// The seeded jitter of a quart corner (vanilla's <c>getFiddledDistance</c> without the distance), kept for the
     /// recently used corners: a block measures 8 corners, and a corner serves the 64 blocks around it.
     /// </summary>
-    private (double X, double Y, double Z) GetJitter(int x, int y, int z)
+    private static (double X, double Y, double Z) GetJitter(JitterTable table, int x, int y, int z)
     {
-        // Two corners along X and Z by 128 along Y: the corners a column of blocks measures.
-        this.jitters ??= new CornerJitter[512];
-        ref var entry = ref this.jitters[(x & 1) | (z & 1) << 1 | (y & 127) << 2];
+        ref var entry = ref table.Entries[(x & 1) | (z & 1) << 1 | (y & 127) << 2];
         if (entry.X != x || entry.Y != y || entry.Z != z || !entry.Set)
         {
-            var hash = this.zoomSeed;
+            var zoomSeed = table.Seed;
+            var hash = zoomSeed;
             hash = NextLcg(hash, x);
             hash = NextLcg(hash, y);
             hash = NextLcg(hash, z);
@@ -126,9 +135,9 @@ internal sealed class BiomeManager
             hash = NextLcg(hash, y);
             hash = NextLcg(hash, z);
             var fiddleX = Fiddle(hash);
-            hash = NextLcg(hash, this.zoomSeed);
+            hash = NextLcg(hash, zoomSeed);
             var fiddleY = Fiddle(hash);
-            hash = NextLcg(hash, this.zoomSeed);
+            hash = NextLcg(hash, zoomSeed);
             var fiddleZ = Fiddle(hash);
 
             entry = new CornerJitter(x, y, z, fiddleX, fiddleY, fiddleZ, true);
@@ -151,4 +160,23 @@ internal sealed class BiomeManager
     private static double Square(double value) => value * value;
 
     private readonly record struct CornerJitter(int X, int Y, int Z, double FiddleX, double FiddleY, double FiddleZ, bool Set);
+
+    /// <summary>
+    /// The jitter of recently used corners for one obfuscated seed.
+    /// </summary>
+    private sealed class JitterTable
+    {
+        public long Seed { get; private set; }
+
+        // Two corners along X and Z by 128 along Y: the corners a column of blocks measures.
+        public CornerJitter[] Entries { get; } = new CornerJitter[512];
+
+        public JitterTable() => this.Reset(0L);
+
+        public void Reset(long seed)
+        {
+            this.Seed = seed;
+            Array.Clear(this.Entries);
+        }
+    }
 }
