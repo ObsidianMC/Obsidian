@@ -40,6 +40,9 @@ public sealed class StructureTemplate
     /// <summary>Size of the template before rotation.</summary>
     public Vector Size { get; }
 
+    /// <summary>A template without size or blocks, like vanilla's <c>new StructureTemplate()</c>.</summary>
+    public static StructureTemplate CreateEmpty() => new(Vector.Zero, [], []);
+
     /// <summary>Reads a template from vanilla's gzipped NBT format.</summary>
     public static StructureTemplate Load(Stream stream)
     {

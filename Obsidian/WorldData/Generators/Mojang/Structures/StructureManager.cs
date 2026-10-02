@@ -197,7 +197,9 @@ internal sealed class StructureManager : IStructurePlacementState
             Sampler = new ClimateSampler(this.randomState.Router),
             ValidBiome = structure.Biomes.Contains,
             MinY = this.minY,
-            Height = this.height
+            Height = this.height,
+            Generation = new WorldGenerationContext(Math.Max(this.minY, this.randomState.Settings.Noise.MinY),
+                Math.Min(this.height, this.randomState.Settings.Noise.Height))
         });
     }
 

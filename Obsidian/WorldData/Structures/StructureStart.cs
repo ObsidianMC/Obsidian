@@ -143,4 +143,9 @@ public interface IStructurePieceAccessor
 public sealed record StructurePieceContext(IWorldGenLevel Level, IRandomSource Random, BlockBox Box, int ChunkX, int ChunkZ, Vector Pivot)
 {
     internal IStructureTerrain Terrain { get; init; } = default!;
+
+    /// <summary>
+    /// The vertical range features placed by pieces resolve their anchors in (vanilla's <c>WorldGenerationContext</c>).
+    /// </summary>
+    internal WorldGenerationContext Generation { get; init; }
 }

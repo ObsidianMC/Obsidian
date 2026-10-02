@@ -8,9 +8,10 @@ namespace Obsidian.SourceGenerators.Registry;
 
 /// <summary>
 /// Generates the <c>ConfiguredFeatures</c>, <c>PlacedFeatures</c>, <c>ProcessorLists</c>, <c>BiomeFeatures</c>,
-/// <c>Structures</c> and <c>StructureSets</c> registries from vanilla's data in <c>Assets/worldgen/features</c>,
-/// <c>Assets/worldgen/placed_features</c>, <c>Assets/worldgen/processor_lists</c>, <c>Assets/worldgen/biome_features.json</c>,
-/// <c>Assets/worldgen/structures</c> and <c>Assets/worldgen/structure_sets</c>.
+/// <c>Structures</c>, <c>StructureSets</c> and <c>TemplatePools</c> registries from vanilla's data in
+/// <c>Assets/worldgen/features</c>, <c>Assets/worldgen/placed_features</c>, <c>Assets/worldgen/processor_lists</c>,
+/// <c>Assets/worldgen/biome_features.json</c>, <c>Assets/worldgen/structures</c>, <c>Assets/worldgen/structure_sets</c> and
+/// <c>Assets/worldgen/template_pools</c>.
 /// </summary>
 /// <remarks>
 /// Each JSON value is emitted according to the C# type of the property it is assigned to. Polymorphic values
@@ -45,6 +46,7 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
             .Select(static (file, ct) => (path: GetWorldgenPath(file.Path), text: file))
             .Where(static file => file.path is not null && (file.path.StartsWith("features/") || file.path.StartsWith("placed_features/")
                 || file.path.StartsWith("processor_lists/") || file.path.StartsWith("structures/") || file.path.StartsWith("structure_sets/")
+                || file.path.StartsWith("template_pools/")
                 || file.path == "biome_features"))
             .Select(static (file, ct) => (path: file.path!, json: file.text.GetText(ct)!.ToString()));
 
@@ -107,9 +109,10 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
         var processorLists = ParseCategories(files, "processor_lists/");
         var structures = ParseCategories(files, "structures/");
         var structureSets = ParseCategories(files, "structure_sets/");
+        var templatePools = ParseCategories(files, "template_pools/");
         var biomeFeaturesJson = files.FirstOrDefault(file => file.path == "biome_features").json;
 
-        var emitter = new FeatureEmitter(compilation, types, configured, placed, processorLists, structures, structureSets, context);
+        var emitter = new FeatureEmitter(compilation, types, configured, placed, processorLists, structures, structureSets, templatePools, context);
 
         context.AddSource("ConfiguredFeatures.g.cs", emitter.EmitConfiguredFeatures());
         context.AddSource("PlacedFeatures.g.cs", emitter.EmitPlacedFeatures());
@@ -125,6 +128,9 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
 
         if (structureSets.Count > 0)
             context.AddSource("StructureSets.g.cs", emitter.EmitStructureSets());
+
+        if (templatePools.Count > 0)
+            context.AddSource("TemplatePools.g.cs", emitter.EmitTemplatePools());
     }
 
     /// <summary>
@@ -154,11 +160,13 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
         private readonly List<(string Category, List<(string Id, JsonElement Json)> Entries)> processorLists;
         private readonly List<(string Category, List<(string Id, JsonElement Json)> Entries)> structures;
         private readonly List<(string Category, List<(string Id, JsonElement Json)> Entries)> structureSets;
+        private readonly List<(string Category, List<(string Id, JsonElement Json)> Entries)> templatePools;
         private readonly Dictionary<string, string> configuredReferences = [];
         private readonly Dictionary<string, string> placedReferences = [];
         private readonly Dictionary<string, string> processorListReferences = [];
         private readonly Dictionary<string, string> structureReferences = [];
         private readonly Dictionary<string, string> structureSetReferences = [];
+        private readonly Dictionary<string, string> templatePoolReferences = [];
         private readonly SourceProductionContext context;
 
         private readonly INamedTypeSymbol configuredFeatureBase;
@@ -168,13 +176,15 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
         private readonly INamedTypeSymbol? processorList;
         private readonly INamedTypeSymbol? structureBase;
         private readonly INamedTypeSymbol? structureSet;
+        private readonly INamedTypeSymbol? templatePool;
 
         private string currentOwner = string.Empty;
 
         public FeatureEmitter(Compilation compilation, Dictionary<string, List<INamedTypeSymbol>> types,
             List<(string, List<(string, JsonElement)>)> configured, List<(string, List<(string, JsonElement)>)> placed,
             List<(string, List<(string, JsonElement)>)> processorLists, List<(string, List<(string, JsonElement)>)> structures,
-            List<(string, List<(string, JsonElement)>)> structureSets, SourceProductionContext context)
+            List<(string, List<(string, JsonElement)>)> structureSets, List<(string, List<(string, JsonElement)>)> templatePools,
+            SourceProductionContext context)
         {
             this.compilation = compilation;
             this.types = types;
@@ -183,6 +193,7 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
             this.processorLists = processorLists;
             this.structures = structures;
             this.structureSets = structureSets;
+            this.templatePools = templatePools;
             this.context = context;
 
             this.configuredFeatureBase = compilation.GetTypeByMetadataName("Obsidian.API.World.Features.ConfiguredFeatureBase")!;
@@ -192,6 +203,7 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
             this.processorList = compilation.GetTypeByMetadataName("Obsidian.WorldData.Structures.StructureProcessorList");
             this.structureBase = compilation.GetTypeByMetadataName("Obsidian.WorldData.Structures.Structure");
             this.structureSet = compilation.GetTypeByMetadataName("Obsidian.WorldData.Structures.StructureSet");
+            this.templatePool = compilation.GetTypeByMetadataName("Obsidian.WorldData.Structures.Pools.StructureTemplatePool");
 
             foreach (var (category, entries) in configured)
             {
@@ -221,6 +233,12 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
             {
                 foreach (var (id, _) in entries)
                     this.structureSetReferences[id] = $"global::Obsidian.Registries.StructureSets.{MemberName(category)}.{MemberName(id)}";
+            }
+
+            foreach (var (category, entries) in templatePools)
+            {
+                foreach (var (id, _) in entries)
+                    this.templatePoolReferences[id] = $"global::Obsidian.Registries.TemplatePools.{MemberName(category)}.{MemberName(id)}";
             }
         }
 
@@ -305,6 +323,53 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
             }
 
             return (FullName(symbol), this.EmitObject(symbol, json, "type", extra));
+        }
+
+        /// <summary>
+        /// Emits the template pools. Fallbacks stay ids, since pools may fall back to themselves (<c>minecraft:empty</c>);
+        /// they're checked against the registry here.
+        /// </summary>
+        public string EmitTemplatePools()
+        {
+            var builder = Header();
+            builder.AppendLine("/// <summary>");
+            builder.AppendLine("/// Vanilla jigsaw template pools, generated from <c>Assets/worldgen/template_pools</c>.");
+            builder.AppendLine("/// </summary>");
+            builder.AppendLine("public static partial class TemplatePools");
+            builder.AppendLine("{");
+
+            var typeName = FullName(this.templatePool!);
+            foreach (var (category, entries) in this.templatePools)
+            {
+                builder.AppendLine($"    public static partial class {MemberName(category)}");
+                builder.AppendLine("    {");
+
+                foreach (var (id, json) in entries)
+                {
+                    this.currentOwner = id;
+                    if (json.TryGetProperty("fallback", out var fallback) && !this.templatePoolReferences.ContainsKey(fallback.GetString()!))
+                        this.Report(unknownReference, "template pool", fallback.GetString()!);
+
+                    builder.AppendLine($"        public static {typeName} {MemberName(id)} => {LazyInit}{this.EmitObject(this.templatePool!, json, null, $"Identifier = {Literal(id)}")});");
+                    builder.AppendLine();
+                }
+
+                builder.AppendLine("    }");
+                builder.AppendLine();
+            }
+
+            AppendAll(builder, typeName, this.templatePoolReferences);
+            builder.AppendLine("}");
+            return builder.ToString();
+        }
+
+        private string TemplatePoolReference(string id)
+        {
+            if (this.templatePoolReferences.TryGetValue(id, out var reference))
+                return reference;
+
+            this.Report(unknownReference, "template pool", id);
+            return "default!";
         }
 
         private string StructureReference(string id)
@@ -627,6 +692,11 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
             if (this.structureBase is not null && IsAssignableTo(target, this.structureBase))
             {
                 return json.ValueKind == JsonValueKind.String ? this.StructureReference(json.GetString()!) : this.EmitStructure(json, null).Expression;
+            }
+
+            if (this.templatePool is not null && SymbolEqualityComparer.Default.Equals(target, this.templatePool))
+            {
+                return json.ValueKind == JsonValueKind.String ? this.TemplatePoolReference(json.GetString()!) : this.EmitObject(this.templatePool, json, null, null);
             }
 
             if (this.structureSet is not null && SymbolEqualityComparer.Default.Equals(target, this.structureSet))

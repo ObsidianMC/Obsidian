@@ -72,7 +72,7 @@ internal sealed class FeatureDecorator
                 for (var index = 0; index < stepStructures.Count; index++)
                 {
                     random.SetFeatureSeed(decorationSeed, index, step);
-                    var context = new StructurePieceContext(region, random, writableArea, chunkX, chunkZ, default) { Terrain = terrain };
+                    var context = new StructurePieceContext(region, random, writableArea, chunkX, chunkZ, default) { Terrain = terrain, Generation = generation };
 
                     foreach (var start in structures.GetReferencingStarts(chunkX, chunkZ, stepStructures[index]))
                     {

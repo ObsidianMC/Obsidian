@@ -27,16 +27,17 @@ internal static class StructureRegistry
         }
     }
 
-    /// <summary>Gets a template by id, loading it on first use.</summary>
+    /// <summary>Gets a template by id, loading it on first use; unknown ids get an empty template.</summary>
     public static StructureTemplate Get(string id) => templates.GetOrAdd(id, Load);
 
     private static StructureTemplate Load(string id)
     {
         var path = id.StartsWith("minecraft:", StringComparison.Ordinal) ? id["minecraft:".Length..] : id;
         var resource = ResourcePrefix + path.Replace('/', '.') + ResourceSuffix;
-        using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resource)
-            ?? throw new InvalidOperationException($"Unknown structure template '{id}'.");
+        using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resource);
 
-        return StructureTemplate.Load(stream);
+        // Like vanilla's StructureTemplateManager.getOrCreate, an unknown id is an empty template (one vanilla pool
+        // references a template that doesn't exist).
+        return stream is null ? StructureTemplate.CreateEmpty() : StructureTemplate.Load(stream);
     }
 }

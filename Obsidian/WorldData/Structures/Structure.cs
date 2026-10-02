@@ -179,6 +179,12 @@ internal sealed class StructureGenerationContext
     public required int MinY { get; init; }
 
     public required int Height { get; init; }
+
+    /// <summary>
+    /// Vanilla's <c>WorldGenerationContext</c> for height providers: the build range limited to the generator's noise range
+    /// (128 blocks in the nether).
+    /// </summary>
+    public required WorldGenerationContext Generation { get; init; }
 }
 
 /// <summary>

@@ -53,6 +53,26 @@ public sealed class StructurePlaceSettings
         return palettes[this.GetRandom(position).NextInt(palettes.Count)];
     }
 
+    /// <summary>Vanilla <c>copy</c>: the same settings, with their own processor list.</summary>
+    public StructurePlaceSettings Copy()
+    {
+        var copy = new StructurePlaceSettings
+        {
+            Mirror = this.Mirror,
+            Rotation = this.Rotation,
+            RotationPivot = this.RotationPivot,
+            BoundingBox = this.BoundingBox,
+            Random = this.Random,
+            IgnoreEntities = this.IgnoreEntities,
+            KnownShape = this.KnownShape,
+            FinalizeEntities = this.FinalizeEntities,
+            LiquidSettings = this.LiquidSettings
+        };
+
+        copy.Processors.AddRange(this.Processors);
+        return copy;
+    }
+
     /// <summary>Replaces the processors with <paramref name="list"/>'s.</summary>
     public void SetProcessors(StructureProcessorList list)
     {
