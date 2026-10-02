@@ -26,12 +26,12 @@ internal sealed class NoiseBasedAquifer : IAquifer
     private readonly FluidPicker globalFluidPicker;
     private readonly FluidStatus?[] aquiferCache;
     private readonly (int X, int Y, int Z)?[] aquiferLocationCache;
-    private readonly int skipSamplingAboveY;
-    private readonly int minGridX;
     private readonly int minGridY;
-    private readonly int minGridZ;
     private readonly int gridSizeX;
     private readonly int gridSizeZ;
+    private int skipSamplingAboveY;
+    private int minGridX;
+    private int minGridZ;
 
     // See GetCandidates.
     private readonly Candidate[] candidates = new Candidate[12];
@@ -50,26 +50,36 @@ internal sealed class NoiseBasedAquifer : IAquifer
         this.noiseChunk = noiseChunk;
         this.globalFluidPicker = globalFluidPicker;
 
-        var chunkMinX = chunkX << 4;
-        var chunkMinZ = chunkZ << 4;
-
-        this.minGridX = GridX(chunkMinX - 5);
-        var maxGridX = GridX(chunkMinX + 15 - 5) + 1;
-        this.gridSizeX = maxGridX - this.minGridX + 1;
+        // A chunk spans the same number of grid cells wherever it is.
+        this.gridSizeX = GridX(15 - 5) + 1 - GridX(-5) + 1;
+        this.gridSizeZ = GridZ(15 - 5) + 1 - GridZ(-5) + 1;
 
         this.minGridY = GridY(noiseChunk.MinY + 1) - 1;
         var maxGridY = GridY(noiseChunk.MinY + noiseChunk.Height + 1) + 1;
         var gridSizeY = maxGridY - this.minGridY + 1;
 
-        this.minGridZ = GridZ(chunkMinZ - 5);
-        var maxGridZ = GridZ(chunkMinZ + 15 - 5) + 1;
-        this.gridSizeZ = maxGridZ - this.minGridZ + 1;
-
         var size = this.gridSizeX * gridSizeY * this.gridSizeZ;
         this.aquiferCache = new FluidStatus?[size];
         this.aquiferLocationCache = new (int, int, int)?[size];
+        this.MoveTo(chunkX, chunkZ);
+    }
 
-        var maxSurfaceLevel = AdjustSurfaceLevel(noiseChunk.MaxPreliminarySurfaceLevel(
+    public void MoveTo(int chunkX, int chunkZ)
+    {
+        var chunkMinX = chunkX << 4;
+        var chunkMinZ = chunkZ << 4;
+
+        this.minGridX = GridX(chunkMinX - 5);
+        var maxGridX = GridX(chunkMinX + 15 - 5) + 1;
+        this.minGridZ = GridZ(chunkMinZ - 5);
+        var maxGridZ = GridZ(chunkMinZ + 15 - 5) + 1;
+
+        Array.Clear(this.aquiferCache);
+        Array.Clear(this.aquiferLocationCache);
+        this.candidatesGridX = int.MinValue;
+        this.ShouldScheduleFluidUpdate = false;
+
+        var maxSurfaceLevel = AdjustSurfaceLevel(this.noiseChunk.MaxPreliminarySurfaceLevel(
             FromGridX(this.minGridX, 0), FromGridZ(this.minGridZ, 0), FromGridX(maxGridX, 9), FromGridZ(maxGridZ, 9)));
         this.skipSamplingAboveY = FromGridY(GridY(maxSurfaceLevel + 12) + 1, 11) - 1;
     }

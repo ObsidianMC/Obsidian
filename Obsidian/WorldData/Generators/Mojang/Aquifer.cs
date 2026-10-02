@@ -26,6 +26,12 @@ internal interface IAquifer
     /// nothing.
     /// </summary>
     public int GlobalFluidAboveY { get; }
+
+    /// <summary>
+    /// Makes the aquifer serve chunk (<paramref name="chunkX"/>, <paramref name="chunkZ"/>) as if it were new; its noise
+    /// chunk must have moved there already.
+    /// </summary>
+    public void MoveTo(int chunkX, int chunkZ);
 }
 
 /// <summary>
@@ -88,6 +94,10 @@ internal static class Aquifers
         public DisabledAquifer(FluidPicker fluidPicker) => this.fluidPicker = fluidPicker;
 
         public void ResetFluidUpdate()
+        {
+        }
+
+        public void MoveTo(int chunkX, int chunkZ)
         {
         }
 

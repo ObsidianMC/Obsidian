@@ -15,12 +15,17 @@ namespace Obsidian.WorldData.Generators.Mojang;
 /// <item><c>flat_cache</c> and <c>cache_2d</c> cache per quart column and per block column.</item>
 /// <item><c>cache_once</c> caches the last sampled position.</item>
 /// </list>
-/// Only interpolation changes values; the caches exist for speed. Instances are not thread-safe and
-/// should live for the generation of a single chunk.
+/// Only interpolation changes values; the caches exist for speed. Instances are not thread-safe. An instance serves one
+/// chunk at a time, but can move to another (see <see cref="MoveTo"/>) to reuse its compiled functions and buffers.
 /// </remarks>
 internal sealed class NoiseChunk
 {
     private readonly Dictionary<long, int> preliminarySurfaceLevels = [];
+
+    // The caches in the mapped functions, which MoveTo empties, and the flat caches, which it refills. Flat caches come
+    // after the functions they contain, so refilling them in order never reads a stale cache.
+    private readonly List<IChunkCache> caches = [];
+    private readonly List<FlatCache> flatCaches = [];
     private readonly ChunkVisitor cellCacheMode;
     private readonly ChunkVisitor fillLoopMode;
     private readonly CellGrid grid;
@@ -36,6 +41,9 @@ internal sealed class NoiseChunk
     private CellFiller? finalDensityFiller;
     private CellFiller? veinToggleFiller;
 
+    private IAquifer? aquifer;
+    private bool aquiferMoved;
+
     public RandomState RandomState { get; }
 
     public int CellWidth { get; }
@@ -46,9 +54,9 @@ internal sealed class NoiseChunk
 
     public int Height { get; }
 
-    public int ChunkMinX { get; }
+    public int ChunkMinX { get; private set; }
 
-    public int ChunkMinZ { get; }
+    public int ChunkMinZ { get; private set; }
 
     /// <summary>
     /// Number of whole cells along X and Z. With a cell width that doesn't divide 16, the remaining columns
@@ -136,7 +144,19 @@ internal sealed class NoiseChunk
     /// <summary>
     /// The chunk's aquifer, shared by the steps that use the noise chunk like vanilla's, so its caches carry over.
     /// </summary>
-    public IAquifer Aquifer => field ??= Aquifers.Create(this, this.ChunkMinX >> 4, this.ChunkMinZ >> 4, this.RandomState.GlobalFluidPicker);
+    public IAquifer Aquifer
+    {
+        get
+        {
+            if (this.aquifer is null)
+                this.aquifer = Aquifers.Create(this, this.ChunkMinX >> 4, this.ChunkMinZ >> 4, this.RandomState.GlobalFluidPicker);
+            else if (this.aquiferMoved)
+                this.aquifer.MoveTo(this.ChunkMinX >> 4, this.ChunkMinZ >> 4);
+
+            this.aquiferMoved = false;
+            return this.aquifer;
+        }
+    }
 
     private IDensityFunction PreliminarySurfaceLevelFunction => field ??= this.fillLoopMode.Map(this.RandomState.Router.PreliminarySurfaceLevel);
 
@@ -180,6 +200,25 @@ internal sealed class NoiseChunk
     {
         var cellWidth = randomState.Settings.Noise.SizeHorizontal * 4;
         return new NoiseChunk(randomState, Mth.FloorDiv(x, cellWidth) * cellWidth, Mth.FloorDiv(z, cellWidth) * cellWidth, 1);
+    }
+
+    /// <summary>
+    /// Makes this noise chunk serve chunk (<paramref name="chunkX"/>, <paramref name="chunkZ"/>) as if it were new, keeping
+    /// its mapped and compiled functions and its buffers.
+    /// </summary>
+    /// <remarks>Only for noise chunks covering a whole chunk.</remarks>
+    public void MoveTo(int chunkX, int chunkZ)
+    {
+        this.ChunkMinX = chunkX << 4;
+        this.ChunkMinZ = chunkZ << 4;
+        this.preliminarySurfaceLevels.Clear();
+        this.aquiferMoved = true;
+
+        foreach (var cache in this.caches)
+            cache.Reset();
+
+        foreach (var flatCache in this.flatCaches)
+            flatCache.Fill();
     }
 
     /// <summary>
@@ -241,12 +280,18 @@ internal sealed class NoiseChunk
 
     private int CornerIndex(int cellX, int cellY, int cellZ) => cellX * this.cornerStrideX + cellZ * this.cornerStrideZ + cellY;
 
+    private T Track<T>(T cache) where T : IChunkCache
+    {
+        this.caches.Add(cache);
+        return cache;
+    }
+
     // Biomes are sampled a column of quarts at a time, so functions that don't depend on Y (and aren't flat cached already)
     // remember their last column.
     private IDensityFunction MapForColumns(IDensityFunction routerFunction)
     {
         var mapped = this.fillLoopMode.Map(routerFunction);
-        return mapped is not FlatCache && this.RandomState.IsYIndependent(routerFunction) ? new ColumnCache(mapped) : mapped;
+        return mapped is not FlatCache && this.RandomState.IsYIndependent(routerFunction) ? this.Track(new ColumnCache(mapped)) : mapped;
     }
 
     private CellFiller Compile(IDensityFunction function) => function switch
@@ -377,15 +422,15 @@ internal sealed class NoiseChunk
             {
                 // Interpolators are told which router function they stand for, which keys the shared corners.
                 result = function is InterpolatedDensityFunction interpolated
-                    ? new CellInterpolator(this.chunk, this.Map(interpolated.Argument), this.order, interpolated)
+                    ? this.chunk.Track(new CellInterpolator(this.chunk, this.Map(interpolated.Argument), this.order, interpolated))
                     : function.MapAll(this);
 
                 // Cell corners are sampled a column at a time, so noises that don't depend on Y (like the jagged noise in
                 // sloped cheese) remember their last column, and shared functions their last position.
                 if (function is NoiseDensityFunction or ShiftedNoiseDensityFunction && this.chunk.RandomState.IsYIndependent(function))
-                    result = new ColumnCache(result);
+                    result = this.chunk.Track(new ColumnCache(result));
                 else if (this.chunk.RandomState.SharedFunctions.Contains(function))
-                    result = new CacheOnce(result);
+                    result = this.chunk.Track(new CacheOnce(result));
 
                 this.mapped[function] = result;
             }
@@ -396,8 +441,8 @@ internal sealed class NoiseChunk
         public IDensityFunction Apply(IDensityFunction function) => function switch
         {
             FlatCacheDensityFunction flatCache => new FlatCache(this.chunk, flatCache.Argument),
-            Cache2DDensityFunction cache2D => new Cache2D(cache2D.Argument),
-            CacheOnceDensityFunction cacheOnce => new CacheOnce(cacheOnce.Argument),
+            Cache2DDensityFunction cache2D => this.chunk.Track(new Cache2D(cache2D.Argument)),
+            CacheOnceDensityFunction cacheOnce => this.chunk.Track(new CacheOnce(cacheOnce.Argument)),
             _ => function
         };
     }
@@ -406,13 +451,14 @@ internal sealed class NoiseChunk
     /// Samples its argument at every cell corner of the chunk on first use, then interpolates inside cells.
     /// Positions outside the chunk are evaluated directly.
     /// </summary>
-    private sealed class CellInterpolator : IDensityFunction
+    private sealed class CellInterpolator : IDensityFunction, IChunkCache
     {
         private readonly NoiseChunk chunk;
         private readonly IDensityFunction argument;
         private readonly InterpolationOrder order;
         private readonly InterpolatedDensityFunction routerFunction;
         private double[]? corners;
+        private bool sampled;
 
         public string Type => "minecraft:interpolated";
 
@@ -420,8 +466,20 @@ internal sealed class NoiseChunk
 
         public double MaxValue => this.argument.MaxValue;
 
-        // Corner values, column by column (see CornerIndex).
-        private double[] Corners => this.corners ??= this.SampleCorners();
+        // Corner values, column by column (see CornerIndex), sampled on first use.
+        private double[] Corners
+        {
+            get
+            {
+                if (!this.sampled)
+                {
+                    this.SampleCorners();
+                    this.sampled = true;
+                }
+
+                return this.corners!;
+            }
+        }
 
         /// <param name="routerFunction">The router's function this one stands for.</param>
         public CellInterpolator(NoiseChunk chunk, IDensityFunction argument, InterpolationOrder order, InterpolatedDensityFunction routerFunction)
@@ -431,6 +489,8 @@ internal sealed class NoiseChunk
             this.order = order;
             this.routerFunction = routerFunction;
         }
+
+        public void Reset() => this.sampled = false;
 
         public double GetValue(double x, double y, double z)
         {
@@ -619,10 +679,10 @@ internal sealed class NoiseChunk
         private static Vector256<double> LerpLanes(Vector256<double> delta, Vector256<double> start, Vector256<double> end) =>
             start + delta * (end - start);
 
-        private double[] SampleCorners()
+        private void SampleCorners()
         {
             var chunk = this.chunk;
-            var corners = new double[(chunk.CellCountXZ + 1) * chunk.cornerStrideX];
+            var corners = this.corners ??= new double[(chunk.CellCountXZ + 1) * chunk.cornerStrideX];
             var shared = chunk.RandomState.CornerColumns;
 
             for (var cellX = 0; cellX <= chunk.CellCountXZ; cellX++)
@@ -651,8 +711,6 @@ internal sealed class NoiseChunk
                         shared.Add(this.routerFunction, columnX, columnZ, column);
                 }
             }
-
-            return corners;
         }
     }
 
@@ -680,16 +738,26 @@ internal sealed class NoiseChunk
         {
             this.chunk = chunk;
             this.argument = argument;
-            this.outside = new CacheOnce(argument);
+            this.outside = chunk.Track(new CacheOnce(argument));
 
             this.size = (chunk.CellCountXZ * chunk.CellWidth >> 2) + 1;
             this.values = new double[this.size * this.size];
+            this.Fill();
+            chunk.flatCaches.Add(this);
+        }
+
+        /// <summary>
+        /// Samples every quart column of the chunk.
+        /// </summary>
+        public void Fill()
+        {
+            var chunk = this.chunk;
 
             for (var quartX = 0; quartX < this.size; quartX++)
             {
                 for (var quartZ = 0; quartZ < this.size; quartZ++)
                 {
-                    this.values[quartX + quartZ * this.size] = argument.GetValue(
+                    this.values[quartX + quartZ * this.size] = this.argument.GetValue(
                         (chunk.FirstQuartX + quartX) << 2, 0, (chunk.FirstQuartZ + quartZ) << 2);
                 }
             }
@@ -709,7 +777,7 @@ internal sealed class NoiseChunk
     /// <summary>
     /// Remembers the value of the last block column, ignoring Y, like vanilla's 2D cache.
     /// </summary>
-    private sealed class Cache2D : IDensityFunction
+    private sealed class Cache2D : IDensityFunction, IChunkCache
     {
         private readonly IDensityFunction argument;
         private int lastX = int.MinValue;
@@ -723,6 +791,8 @@ internal sealed class NoiseChunk
         public double MaxValue => this.argument.MaxValue;
 
         public Cache2D(IDensityFunction argument) => this.argument = argument;
+
+        public void Reset() => this.lastX = int.MinValue;
 
         public double GetValue(double x, double y, double z)
         {

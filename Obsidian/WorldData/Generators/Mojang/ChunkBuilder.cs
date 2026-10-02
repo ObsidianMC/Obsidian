@@ -6,6 +6,7 @@ using Obsidian.WorldData.Features.Tree;
 using Obsidian.WorldData.Generators.Mojang.Features;
 using Obsidian.WorldData.Generators.Mojang.Structures;
 using Obsidian.WorldData.Fluids;
+using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -30,6 +31,13 @@ internal sealed class ChunkBuilder
     // Like vanilla's ProtoChunk.getOrCreateNoiseChunk, one noise chunk serves a chunk from the biomes step to the carvers
     // step, so its flat caches, preliminary surface levels and aquifer carry over between steps.
     private readonly ConditionalWeakTable<IChunk, NoiseChunk> noiseChunks = new();
+    private readonly ConditionalWeakTable<IChunk, NoiseChunk>.CreateValueCallback rentNoiseChunk;
+
+    // Noise chunks of chunks past the carvers step, which move to new chunks rather than new ones being built: a new one
+    // maps and compiles the router and allocates its caches. Kept to about one per thread in flight.
+    private readonly ConcurrentBag<NoiseChunk> freeNoiseChunks = [];
+    private readonly int maxFreeNoiseChunks = Environment.ProcessorCount * 2;
+    private int freeNoiseChunkCount;
 
     public RandomState RandomState { get; }
 
@@ -67,6 +75,7 @@ internal sealed class ChunkBuilder
         this.carverStep = new CarverStep(this.RandomState, this.surfaceBuilder, this.biomeSource, dimension.Carvers);
         this.featureDecorator = new FeatureDecorator(this.biomeSource.PossibleBiomes, BiomeFeatures.All, this.settings.Noise.Height);
         this.regionRandom = this.RandomState.Random.FromHashOf("minecraft:worldgen_region_random").ForkPositional();
+        this.rentNoiseChunk = this.RentNoiseChunk;
 
         if (generateStructures)
             this.Structures = new StructureManager(this.RandomState, this.biomeSource, this.terrainGenerator, dimension.MinY, dimension.Height);
@@ -118,13 +127,32 @@ internal sealed class ChunkBuilder
     /// </summary>
     public void ApplyCarvers(IChunk chunk)
     {
-        this.carverStep.Apply(chunk, (chunk as Chunk)?.PostProcessing, this.GetNoiseChunk(chunk));
+        var noiseChunk = this.GetNoiseChunk(chunk);
+        this.carverStep.Apply(chunk, (chunk as Chunk)?.PostProcessing, noiseChunk);
         this.noiseChunks.Remove(chunk);
+        this.ReturnNoiseChunk(noiseChunk);
         WorldgenHeightmaps.Update(chunk, this.dimension.MinY, ChunkColumns.NonAirHeight(chunk, this.dimension.MinY, this.dimension.Height));
     }
 
-    private NoiseChunk GetNoiseChunk(IChunk chunk) =>
-        this.noiseChunks.GetValue(chunk, chunk => new NoiseChunk(this.RandomState, chunk.X, chunk.Z));
+    private NoiseChunk GetNoiseChunk(IChunk chunk) => this.noiseChunks.GetValue(chunk, this.rentNoiseChunk);
+
+    private NoiseChunk RentNoiseChunk(IChunk chunk)
+    {
+        if (!this.freeNoiseChunks.TryTake(out var noiseChunk))
+            return new NoiseChunk(this.RandomState, chunk.X, chunk.Z);
+
+        Interlocked.Decrement(ref this.freeNoiseChunkCount);
+        noiseChunk.MoveTo(chunk.X, chunk.Z);
+        return noiseChunk;
+    }
+
+    private void ReturnNoiseChunk(NoiseChunk noiseChunk)
+    {
+        if (Interlocked.Increment(ref this.freeNoiseChunkCount) <= this.maxFreeNoiseChunks)
+            this.freeNoiseChunks.Add(noiseChunk);
+        else
+            Interlocked.Decrement(ref this.freeNoiseChunkCount);
+    }
 
     /// <summary>
     /// Places the biome features of chunk (<paramref name="chunkX"/>, <paramref name="chunkZ"/>).

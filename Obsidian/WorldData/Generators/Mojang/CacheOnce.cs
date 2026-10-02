@@ -4,7 +4,7 @@ namespace Obsidian.WorldData.Generators.Mojang;
 /// Remembers the value of the last sampled position, like vanilla's cache once. Density functions are pure, so this only
 /// saves work. Not thread-safe.
 /// </summary>
-internal sealed class CacheOnce : IDensityFunction
+internal sealed class CacheOnce : IDensityFunction, IChunkCache
 {
     private readonly IDensityFunction argument;
     private double lastX = double.NaN;
@@ -21,6 +21,8 @@ internal sealed class CacheOnce : IDensityFunction
     public IDensityFunction Argument => this.argument;
 
     public CacheOnce(IDensityFunction argument) => this.argument = argument;
+
+    public void Reset() => this.lastX = double.NaN;
 
     public double GetValue(double x, double y, double z)
     {

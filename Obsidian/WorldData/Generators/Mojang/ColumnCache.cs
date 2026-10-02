@@ -4,7 +4,7 @@ namespace Obsidian.WorldData.Generators.Mojang;
 /// Remembers the value of the last sampled column (X and Z), for functions whose value doesn't depend on Y (see
 /// <see cref="RandomState.IsYIndependent"/>). Not thread-safe.
 /// </summary>
-internal sealed class ColumnCache : IDensityFunction
+internal sealed class ColumnCache : IDensityFunction, IChunkCache
 {
     private readonly IDensityFunction argument;
     private double lastX = double.NaN;
@@ -20,6 +20,8 @@ internal sealed class ColumnCache : IDensityFunction
     public IDensityFunction Argument => this.argument;
 
     public ColumnCache(IDensityFunction argument) => this.argument = argument;
+
+    public void Reset() => this.lastX = double.NaN;
 
     public double GetValue(double x, double y, double z)
     {
