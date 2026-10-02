@@ -18,6 +18,10 @@ internal sealed class CarverStep
     private readonly IBiomeSource biomeSource;
     private readonly IConfiguredCarver[] carvers;
 
+    // A chunk's carving buffers, kept by each thread for its next chunk. Taken while in use.
+    [ThreadStatic]
+    private static CarvingBuffers? freeBuffers;
+
     /// <param name="carvers">Configured carver names in the biomes' order, which decides each carver's seed.</param>
     public CarverStep(RandomState randomState, SurfaceBuilder surfaceBuilder, IBiomeSource biomeSource, IEnumerable<string> carvers)
     {
@@ -32,7 +36,14 @@ internal sealed class CarverStep
     {
         var settings = this.randomState.Settings;
         noiseChunk ??= new NoiseChunk(this.randomState, chunk.X, chunk.Z);
-        var context = new CarvingContext(this.surfaceBuilder, settings.Noise.MinY, settings.Noise.Height)
+
+        var buffers = freeBuffers is not null && freeBuffers.MinY == settings.Noise.MinY && freeBuffers.Height == settings.Noise.Height
+            ? freeBuffers
+            : new CarvingBuffers(settings.Noise.MinY, settings.Noise.Height);
+        freeBuffers = null;
+        buffers.Mask.Clear();
+
+        var context = new CarvingContext(this.surfaceBuilder, settings.Noise.MinY, settings.Noise.Height, buffers)
         {
             Chunk = chunk,
             NoiseChunk = noiseChunk,
@@ -64,6 +75,8 @@ internal sealed class CarverStep
                 }
             }
         }
+
+        freeBuffers = buffers;
     }
 
     private static IConfiguredCarver Load(string name)

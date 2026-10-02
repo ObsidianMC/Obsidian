@@ -28,7 +28,7 @@ internal sealed class CanyonWorldCarver : WorldCarver<CanyonCarverConfiguration>
     private void DoCarve(CarvingContext context, CanyonCarverConfiguration configuration, long seed, double x, double y, double z,
         float thickness, float yaw, float pitch, int branchIndex, int branchCount, double yScale)
     {
-        var random = new LegacyRandomSource(seed);
+        var random = context.Buffers.TunnelRandom(0, seed);
         var widthFactors = InitWidthFactors(context, configuration, random);
         var yawChange = 0.0f;
         var pitchChange = 0.0f;
@@ -71,7 +71,7 @@ internal sealed class CanyonWorldCarver : WorldCarver<CanyonCarverConfiguration>
     /// </summary>
     private static float[] InitWidthFactors(CarvingContext context, CanyonCarverConfiguration configuration, IRandomSource random)
     {
-        var factors = new float[context.Height];
+        var factors = context.Buffers.WidthFactors;
         var factor = 1.0f;
 
         for (var i = 0; i < factors.Length; i++)

@@ -53,7 +53,7 @@ internal class CaveWorldCarver : WorldCarver<CaveCarverConfiguration>
                 var branchCount = maxDistance - random.NextInt(maxDistance / 4);
 
                 this.CreateTunnel(context, configuration, random.NextLong(), x, y, z, horizontalRadiusMultiplier, verticalRadiusMultiplier,
-                    thickness, yaw, pitch, 0, branchCount, this.YScale, skipChecker);
+                    thickness, yaw, pitch, 0, branchCount, this.YScale, skipChecker, 0);
             }
         }
     }
@@ -82,9 +82,9 @@ internal class CaveWorldCarver : WorldCarver<CaveCarverConfiguration>
 
     private void CreateTunnel(CarvingContext context, CaveCarverConfiguration configuration, long seed, double x, double y, double z,
         double horizontalRadiusMultiplier, double verticalRadiusMultiplier, float thickness, float yaw, float pitch,
-        int branchIndex, int branchCount, double yScale, SkipChecker skipChecker)
+        int branchIndex, int branchCount, double yScale, SkipChecker skipChecker, int depth)
     {
-        var random = new LegacyRandomSource(seed);
+        var random = context.Buffers.TunnelRandom(depth, seed);
         var splitIndex = random.NextInt(branchCount / 2) + branchCount / 4;
         var steep = random.NextInt(6) == 0;
         var yawChange = 0.0f;
@@ -111,9 +111,11 @@ internal class CaveWorldCarver : WorldCarver<CaveCarverConfiguration>
             if (index == splitIndex && thickness > 1.0f)
             {
                 this.CreateTunnel(context, configuration, random.NextLong(), x, y, z, horizontalRadiusMultiplier, verticalRadiusMultiplier,
-                    random.NextFloat() * 0.5f + 0.5f, yaw - (float)(Math.PI / 2), pitch / 3.0f, index, branchCount, 1.0, skipChecker);
+                    random.NextFloat() * 0.5f + 0.5f, yaw - (float)(Math.PI / 2), pitch / 3.0f,
+                    index, branchCount, 1.0, skipChecker, depth + 1);
                 this.CreateTunnel(context, configuration, random.NextLong(), x, y, z, horizontalRadiusMultiplier, verticalRadiusMultiplier,
-                    random.NextFloat() * 0.5f + 0.5f, yaw + (float)(Math.PI / 2), pitch / 3.0f, index, branchCount, 1.0, skipChecker);
+                    random.NextFloat() * 0.5f + 0.5f, yaw + (float)(Math.PI / 2), pitch / 3.0f,
+                    index, branchCount, 1.0, skipChecker, depth + 1);
                 return;
             }
 

@@ -21,7 +21,12 @@ internal sealed class CarvingContext
     /// </summary>
     public required BiomeManager Biomes { get; init; }
 
-    public CarvingMask Mask { get; }
+    public CarvingMask Mask => this.Buffers.Mask;
+
+    /// <summary>
+    /// Buffers for the carvers, emptied mask included.
+    /// </summary>
+    public CarvingBuffers Buffers { get; }
 
     /// <summary>
     /// Receives carved fluid positions that need an update to settle, like vanilla's post-processing marks.
@@ -32,12 +37,13 @@ internal sealed class CarvingContext
 
     public int Height { get; }
 
-    public CarvingContext(SurfaceBuilder surfaceBuilder, int minY, int height)
+    /// <param name="buffers">Buffers for the noise's height with a cleared mask.</param>
+    public CarvingContext(SurfaceBuilder surfaceBuilder, int minY, int height, CarvingBuffers buffers)
     {
         this.surfaceBuilder = surfaceBuilder;
         this.MinY = minY;
         this.Height = height;
-        this.Mask = new CarvingMask(minY, height);
+        this.Buffers = buffers;
     }
 
     /// <summary>
@@ -59,7 +65,45 @@ internal sealed class CarvingMask(int minY, int height)
 
     public void Set(int localX, int y, int localZ) => this.mask[this.GetIndex(localX, y, localZ)] = true;
 
+    /// <summary>
+    /// Unmarks every position.
+    /// </summary>
+    public void Clear() => this.mask.SetAll(false);
+
     private int GetIndex(int localX, int y, int localZ) => (localX & 15) | (localZ & 15) << 4 | (y - this.minY) << 8;
+}
+
+/// <summary>
+/// What carving a chunk allocates, kept for the next chunk.
+/// </summary>
+internal sealed class CarvingBuffers(int minY, int height)
+{
+    private readonly List<LegacyRandomSource> tunnelRandoms = [];
+
+    public int MinY { get; } = minY;
+
+    public int Height { get; } = height;
+
+    public CarvingMask Mask { get; } = new(minY, height);
+
+    /// <summary>
+    /// A value per Y of the noise's height.
+    /// </summary>
+    public float[] WidthFactors { get; } = new float[height];
+
+    /// <summary>
+    /// The random of a tunnel <paramref name="depth"/> branches deep, seeded with <paramref name="seed"/>. Tunnels run
+    /// branch after branch, so only one at each depth is going at a time.
+    /// </summary>
+    public LegacyRandomSource TunnelRandom(int depth, long seed)
+    {
+        while (this.tunnelRandoms.Count <= depth)
+            this.tunnelRandoms.Add(new LegacyRandomSource(0L));
+
+        var random = this.tunnelRandoms[depth];
+        random.SetSeed(seed);
+        return random;
+    }
 }
 
 /// <summary>
