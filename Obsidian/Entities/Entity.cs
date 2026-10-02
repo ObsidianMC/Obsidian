@@ -409,7 +409,22 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public virtual void SpawnEntity(Velocity? velocity = null, int additionalData = 0)
     {
-        this.PacketBroadcaster.QueuePacketToLevelInRange(this.Level, this.Position, new BundledPacket
+        var packet = CreateSpawnPacket(velocity, additionalData);
+        var range = Level is Obsidian.WorldData.AbstractLevel level ? level.Configuration.EntityBroadcastRangePercentage : 100;
+        foreach (var player in Level.GetPlayersInRange(Position, range).OfType<Player>())
+        {
+            if (player.EntityId == EntityId)
+                continue;
+            var (x, z) = Position.ToChunkCoord();
+            if (this is not Player && !player.LoadedChunks.Contains(NumericsHelper.IntsToLong(x, z)))
+                continue;
+            PacketBroadcaster.QueuePacketTo(packet, ids: [player.EntityId]);
+            if (this is not Player)
+                player.TrackedEntities[EntityId] = Uuid;
+        }
+    }
+
+    internal virtual IClientboundPacket CreateSpawnPacket(Velocity? velocity = null, int additionalData = 0) => new BundledPacket
         (
              [
                 new AddEntityPacket
@@ -429,8 +444,7 @@ public class Entity : IEquatable<Entity>, IEntity
                     Entity = this
                 }
             ]
-        ), this.EntityId);
-    }
+        );
 
     public bool TryAddAttribute(string attributeResourceName, float value) =>
         Attributes.TryAdd(attributeResourceName, value);

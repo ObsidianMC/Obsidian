@@ -103,13 +103,15 @@ internal sealed class MobTerrain(ILevel level)
         return false;
     }
 
-    private static bool IntersectsSegment(BoundingBox box, VectorF start, VectorF direction)
+    private static bool IntersectsSegment(BoundingBox box, VectorF start, VectorF direction) => RayIntersection(box, start, direction) != null;
+
+    internal static float? RayIntersection(BoundingBox box, VectorF start, VectorF direction)
     {
         var min = 0f;
         var max = 1f;
         return ClipRay(start.X, direction.X, box.Min.X, box.Max.X, ref min, ref max) &&
             ClipRay(start.Y, direction.Y, box.Min.Y, box.Max.Y, ref min, ref max) &&
-            ClipRay(start.Z, direction.Z, box.Min.Z, box.Max.Z, ref min, ref max);
+            ClipRay(start.Z, direction.Z, box.Min.Z, box.Max.Z, ref min, ref max) ? min : null;
     }
 
     private static bool ClipRay(float start, float direction, float lower, float upper, ref float min, ref float max)

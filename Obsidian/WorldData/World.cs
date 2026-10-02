@@ -13,7 +13,7 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
 {
     public IWorldManager WorldManager { get; } = worldManager;
 
-    internal Dictionary<string, IDimension> dimensions = [];
+    internal readonly ConcurrentDictionary<string, IDimension> dimensions = [];
 
     public string PlayerDataPath { get; private set; } = string.Empty;
 
@@ -74,6 +74,7 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
 
     public override async Task SaveAsync()
     {
+        await FlushRegionsAsync();
         var worldFile = new FileInfo(LevelDataFilePath);
 
         if (worldFile.Exists)
@@ -117,10 +118,8 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
 
     public void RegisterDimension(DimensionCodec codec, IDimension dimension)
     {
-        if (dimensions.ContainsKey(codec.Name))
+        if (!dimensions.TryAdd(codec.Name, dimension))
             throw new ArgumentException($"World already contains dimension with name: {codec.Name}");
-
-        dimensions.Add(codec.Name, dimension);
     }
 
     public override void Initialize(DimensionCodec codec)
@@ -148,5 +147,11 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
         await base.DoWorldTickAsync();
 
         await Task.WhenAll(this.dimensions.Values.Select(d => d.DoWorldTickAsync()));
+    }
+
+    public async override Task FlushRegionsAsync()
+    {
+        await base.FlushRegionsAsync();
+        await Task.WhenAll(dimensions.Values.Select(dimension => dimension.FlushRegionsAsync()));
     }
 }

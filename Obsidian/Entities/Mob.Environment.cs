@@ -75,12 +75,16 @@ public partial class Mob
         else if (MovementFlags.HasFlag(MovementFlags.OnGround))
         {
             var damage = MathF.Ceiling(fallDistance - 3);
+            if (this is Creeper creeper)
+                creeper.FuseTicks = Math.Max(0, Math.Min(creeper.Fuse - 5, creeper.FuseTicks + (int)(fallDistance * 1.5f)));
             fallDistance = 0;
-            if (damage > 0)
+            if (damage > 0 && this is not Chicken)
                 await DamageEnvironmentAsync(damage);
         }
         else if (LastPosition.Y > Position.Y)
+        {
             fallDistance += LastPosition.Y - Position.Y;
+        }
 
         var feet = Terrain.GetBlock((Vector)Position.Floor());
         var floor = Terrain.GetBlock((Vector)(Position - new VectorF(0, 0.01f, 0)).Floor());
@@ -96,14 +100,14 @@ public partial class Mob
             await ApplyDamageAsync(this, 1, true);
     }
 
-    private void PlayMobSound(string kind)
+    protected internal void PlayMobSound(string kind)
     {
-        if (Silent || SoundName == null)
+        if (Silent || SoundName == null || kind == "ambient" && this is Creeper or Slime)
             return;
         var baby = this is AgeableMob { IsBaby: true } or Zombie { IsBaby: true };
         PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new Obsidian.Net.Packets.Play.Clientbound.SoundEntityPacket
         {
-            EntityId = EntityId, SoundLocation = $"minecraft:entity.{SoundName}.{kind}", Category = MobSoundCategory,
+            EntityId = EntityId, SoundLocation = $"minecraft:entity.{SoundName}.{kind}{(this is Slime { Size: 1 } ? "_small" : "")}", Category = MobSoundCategory,
             Volume = 1, Pitch = (Random.NextSingle() - Random.NextSingle()) * 0.2f + (baby ? 1.5f : 1), Seed = Random.NextInt64()
         }, EntityId);
     }

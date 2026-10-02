@@ -141,6 +141,12 @@ public partial class Mob
             }, EntityId);
     }
 
+    internal ValueTask SendEquipmentToAsync(Player player) => equipment.Count == 0 ? default : player.Client.QueuePacketAsync(new SetEquipmentPacket
+    {
+        EntityId = EntityId,
+        Equipment = equipment.Select(pair => new Equipment { Slot = pair.Key, Item = pair.Value }).ToList()
+    });
+
     internal bool DamageEquipment(EquipmentSlot slot, int amount)
     {
         var item = GetEquipment(slot);

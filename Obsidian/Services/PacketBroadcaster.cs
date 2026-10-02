@@ -12,16 +12,35 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
 {
     private readonly IServer server = server;
     private readonly IServerEnvironment environment = environment;
-    private readonly PriorityQueue<QueuedPacket, int> priorityQueue = new();
+    private readonly PriorityQueue<QueuedPacket, (int Priority, long Order)> priorityQueue = new();
+    private readonly Lock queueLock = new();
+    private long nextOrder;
+
+    private void Enqueue(QueuedPacket packet, int priority)
+    {
+        lock (queueLock)
+            priorityQueue.Enqueue(packet, (priority, nextOrder++));
+    }
+
+    private QueuedPacket[] TakeBatch()
+    {
+        lock (queueLock)
+        {
+            var batch = new QueuedPacket[priorityQueue.Count];
+            for (var index = 0; index < batch.Length; index++)
+                batch[index] = priorityQueue.Dequeue();
+            return batch;
+        }
+    }
 
     public void QueuePacketTo(IClientboundPacket packet, params int[] ids)
     {
-        this.priorityQueue.Enqueue(new() { Packet = packet, IncludedIds = ids }, 1);
+        Enqueue(new() { Packet = packet, IncludedIds = ids }, 1);
     }
 
     public void QueuePacketTo(IClientboundPacket packet, int priority, params int[] ids)
     {
-        this.priorityQueue.Enqueue(new()
+        Enqueue(new()
         {
             Packet = packet,
             IncludedIds = ids
@@ -29,15 +48,15 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
     }
 
     public void QueuePacket(IClientboundPacket packet, params int[] excludedIds) =>
-         this.priorityQueue.Enqueue(new() { Packet = packet, ExcludedIds = excludedIds }, 1);
+         Enqueue(new() { Packet = packet, ExcludedIds = excludedIds }, 1);
 
     public void QueuePacketToLevel(ILevel level, IClientboundPacket packet, params int[] excludedIds) =>
-        this.priorityQueue.Enqueue(new() { Packet = packet, ToLevel = level, ExcludedIds = excludedIds }, 1);
+        Enqueue(new() { Packet = packet, ToLevel = level, ExcludedIds = excludedIds }, 1);
 
     public void QueuePacketToLevel(ILevel level, int priority, IClientboundPacket packet, params int[] excludedIds) =>
-        this.priorityQueue.Enqueue(new() { Packet = packet, ExcludedIds = excludedIds, ToLevel = level }, priority);
+        Enqueue(new() { Packet = packet, ExcludedIds = excludedIds, ToLevel = level }, priority);
     public void QueuePacket(IClientboundPacket packet, int priority, params int[] excludedIds) =>
-        this.priorityQueue.Enqueue(new() { Packet = packet, ExcludedIds = excludedIds }, priority);
+        Enqueue(new() { Packet = packet, ExcludedIds = excludedIds }, priority);
 
     public void Broadcast(IClientboundPacket packet, params int[] excludedIds)
     {
@@ -74,7 +93,7 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
             .Where(x => !includedIDs.Contains(x)))
             .ToArray();
 
-        this.priorityQueue.Enqueue(new()
+        Enqueue(new()
         {
             Packet = packet,
             ToLevel = world,
@@ -100,24 +119,18 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
         {
             while (await timer.WaitForNextTickAsync(stoppingToken))
             {
-                if (!this.priorityQueue.TryDequeue(out var queuedPacket, out var priority))
-                    continue;
-
-                if (queuedPacket.ToLevel is AbstractLevel toLevel)
+                foreach (var queuedPacket in TakeBatch())
                 {
-                    foreach (var player in toLevel.Players.Values.Where(player => ShouldGetPacket(player, queuedPacket)))
+                    var players = queuedPacket.ToLevel is AbstractLevel toLevel
+                        ? toLevel.Players.Values : this.server.OnlinePlayers.Values;
+                    foreach (var player in players.Where(player => ShouldGetPacket(player, queuedPacket)))
                         await player.Client.QueuePacketAsync(queuedPacket.Packet);
-
-                    continue;
                 }
-
-                foreach (var player in this.server.OnlinePlayers.Values.Where(player => ShouldGetPacket(player, queuedPacket)))
-                    await player.Client.QueuePacketAsync(queuedPacket.Packet);
-
             }
         }
-        catch (Exception e) when (e is not OperationCanceledException or ObjectDisposedException)
+        catch (Exception e) when (e is not OperationCanceledException || !stoppingToken.IsCancellationRequested)
         {
+            logger.LogError(e, "Packet broadcasting failed");
             await this.environment.OnServerCrashAsync(e);
         }
     }

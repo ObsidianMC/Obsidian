@@ -15,7 +15,7 @@ public sealed class WorldManager(ILogger<WorldManager> logger, IServiceProvider 
     IServerEnvironment serverEnvironment, ILevelFactory levelFactory) : BackgroundService, IWorldManager
 {
     private readonly ILogger<WorldManager> logger = logger;
-    private readonly Dictionary<string, IWorld> worlds = [];
+    private readonly ConcurrentDictionary<string, IWorld> worlds = [];
     private readonly IOptionsMonitor<ServerConfiguration> configuration = configuration;
     private readonly IServerEnvironment serverEnvironment = serverEnvironment;
     private readonly ILevelFactory levelFactory = levelFactory;
@@ -58,7 +58,8 @@ public sealed class WorldManager(ILogger<WorldManager> logger, IServiceProvider 
         {
             var world = this.levelFactory.CreateWorld(serverWorld.Name, serverWorld.Seed, serverWorld.Generator);
 
-            this.worlds.Add(world.Name, world);
+            if (!this.worlds.TryAdd(world.Name, world))
+                throw new InvalidOperationException($"World already exists: {world.Name}");
 
             if (!CodecRegistry.TryGetDimension(serverWorld.DefaultDimension, out var defaultCodec) || !CodecRegistry.TryGetDimension("minecraft:overworld", out defaultCodec))
                 throw new UnreachableException("Failed to get default dimension codec.");
@@ -113,7 +114,7 @@ public sealed class WorldManager(ILogger<WorldManager> logger, IServiceProvider 
         return false;
     }
 
-    public Task TickWorldsAsync() => Task.WhenAll(this.worlds.Values.Select(world => world.DoWorldTickAsync()));
+    public Task TickWorldsAsync() => ReadyToJoin ? Task.WhenAll(this.worlds.Values.Select(world => world.DoWorldTickAsync())) : Task.CompletedTask;
     public Task FlushLoadedWorldsAsync() => Task.WhenAll(this.worlds.Values.Select(world => world.FlushRegionsAsync()));
 
     public async ValueTask DisposeAsync()

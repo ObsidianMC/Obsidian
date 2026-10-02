@@ -11,7 +11,7 @@ using System.Threading;
 
 namespace Obsidian.WorldData;
 
-public abstract class AbstractLevel : ILevel
+public abstract partial class AbstractLevel : ILevel
 {
     private bool generated;
 
@@ -73,6 +73,10 @@ public abstract class AbstractLevel : ILevel
     private readonly IDisposable optionsMonitor;
     private readonly Lock regionLock = new();
     private readonly ConcurrentQueue<Func<ValueTask>> entityActions = new();
+    private readonly MobStorage mobStorage;
+    private MobStorage MobStorage => mobStorage;
+    private MobSpawner? mobSpawner;
+    private readonly SemaphoreSlim simulationGate = new(1, 1);
 
     internal void EnqueueEntityAction(Func<ValueTask> action) => entityActions.Enqueue(action);
 
@@ -121,6 +125,7 @@ public abstract class AbstractLevel : ILevel
         this.Generator = worldGenerator;
         this.Name = name;
         this.Seed = seed;
+        mobStorage = new MobStorage(this);
 
         var spawnChunkCount = 2 * this.Configuration.SpawnChunkRadius + 1;
         this.SpawnChunks = new long[spawnChunkCount * spawnChunkCount];
@@ -183,6 +188,8 @@ public abstract class AbstractLevel : ILevel
             }
 
             LoadedChunks.Add(packedXZ);
+            if (chunk.IsGenerated)
+                await MobStorage.LoadChunkAsync(chunkX, chunkZ);
             return chunk;
         }
 
@@ -352,6 +359,21 @@ public abstract class AbstractLevel : ILevel
 
     public async virtual Task DoWorldTickAsync()
     {
+        TickStage = "waiting for simulation gate";
+        await simulationGate.WaitAsync();
+        try
+        {
+            await TickLevelAsync();
+        }
+        finally
+        {
+            simulationGate.Release();
+        }
+    }
+
+    private async Task TickLevelAsync()
+    {
+        TickStage = "starting";
         if (LevelData is null)
             return;
 
@@ -363,7 +385,13 @@ public abstract class AbstractLevel : ILevel
 
         var actionCount = entityActions.Count;
         for (var index = 0; index < actionCount && entityActions.TryDequeue(out var action); index++)
+        {
+            TickStage = $"entity action {index + 1}/{actionCount}";
             await action();
+        }
+
+        TickStage = "natural spawning";
+        (mobSpawner ??= new MobSpawner(this)).Tick();
 
         // Snapshot once so crossing a region boundary cannot tick an entity twice.
         var entities = Regions.Values.SelectMany(region => region.Entities.Values)
@@ -373,15 +401,30 @@ public abstract class AbstractLevel : ILevel
             if (entity is Mob { HasAi: true } or ItemEntity or ExperienceOrb && !IsMobTicking(entity.Position))
                 continue;
             if (GetRegionForLocation(entity.Position)?.Entities.ContainsKey(entity.EntityId) == true)
+            {
+                TickStage = $"entity {entity.EntityId} ({entity.GetType().Name})";
                 await entity.TickAsync();
+            }
         }
 
         foreach (var region in Regions.Values)
         {
             if (region is Region concrete)
+            {
+                TickStage = "block updates";
                 await concrete.TickBlocksAsync();
+            }
         }
+        foreach (var player in Players.Values.OfType<Player>())
+        {
+            TickStage = $"tracking for {player.Username}";
+            await player.SynchronizeTrackedEntitiesAsync();
+        }
+        TickStage = "idle";
     }
+
+    internal string TickStage { get; private set; } = "not started";
+    internal bool SavingEntities { get; private set; }
 
     public IRegion LoadRegionByChunk(int chunkX, int chunkZ)
     {
@@ -448,7 +491,7 @@ public abstract class AbstractLevel : ILevel
                 {
                     NumericsHelper.LongToInts(chunk, out var cx, out var cz);
                     var r = GetRegionForChunk(cx, cz);
-                    await r.UnloadChunk(cx, cz);
+                    await r.UnloadChunk(NumericsHelper.Modulo(cx, Region.CubicRegionSize), NumericsHelper.Modulo(cz, Region.CubicRegionSize));
                 }
             }
         }
@@ -471,6 +514,7 @@ public abstract class AbstractLevel : ILevel
             var (x, z) = (NumericsHelper.Modulo(jobX, Region.CubicRegionSize), NumericsHelper.Modulo(jobZ, Region.CubicRegionSize));
 
             var c = await region.GetChunkAsync(x, z);
+            var populate = c == null;
             if (c is null)
             {
                 c = new Chunk(jobX, jobZ, ChunkGenStage.structure_starts);
@@ -481,10 +525,30 @@ public abstract class AbstractLevel : ILevel
                 c = await Generator.GenerateChunkAsync(jobX, jobZ, c);
             }
             region.SetChunk(c);
+            if (populate && c.IsGenerated)
+                EnqueueEntityAction(() =>
+                {
+                    (mobSpawner ??= new MobSpawner(this)).PopulateChunk(c);
+                    return default;
+                });
         });
     }
 
-    public Task FlushRegionsAsync() => Task.WhenAll(Regions.Select(pair => pair.Value.FlushAsync()));
+    public async virtual Task FlushRegionsAsync()
+    {
+        await simulationGate.WaitAsync();
+        try
+        {
+            SavingEntities = true;
+            await MobStorage.SaveAsync();
+        }
+        finally
+        {
+            SavingEntities = false;
+            simulationGate.Release();
+        }
+        await Task.WhenAll(Regions.Select(pair => pair.Value.FlushAsync()));
+    }
 
     public IEntity SpawnFallingBlock(VectorF position, Material mat)
     {
@@ -536,8 +600,9 @@ public abstract class AbstractLevel : ILevel
     {
         if (entity is Mob mob)
             mob.InitializeAi();
+        if (!TryAddEntity(entity))
+            throw new InvalidOperationException($"Could not register entity {entity.EntityId}.");
         entity.SpawnEntity();
-        TryAddEntity(entity as Entity);
         return entity;
     }
 
@@ -707,6 +772,8 @@ public abstract class AbstractLevel : ILevel
         {
             await region.DisposeAsync();
         }
+        await mobStorage.DisposeAsync();
+        simulationGate.Dispose();
     }
 
     public IEntitySpawner GetNewEntitySpawner() => new EntitySpawner(this);

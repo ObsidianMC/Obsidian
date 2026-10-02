@@ -4,7 +4,7 @@ using Obsidian.Net.Packets.Play.Clientbound;
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:zombie")]
-public sealed partial class Zombie : PathfinderMob
+public partial class Zombie : PathfinderMob
 {
     public Zombie() => Type = EntityType.Zombie;
 
@@ -22,7 +22,7 @@ public sealed partial class Zombie : PathfinderMob
                 navigation.CanOpenDoors = value;
         }
     }
-    public float ReinforcementChance { get; private set; }
+    public float ReinforcementChance { get; internal set; }
     protected override string? SoundName => "zombie";
     protected override SoundCategory MobSoundCategory => SoundCategory.Hostile;
     protected override int GetExperienceReward() => (IsBaby ? 12 : 5) +
@@ -118,7 +118,7 @@ public sealed partial class Zombie : PathfinderMob
             var feet = Terrain.GetBlock(blockPosition);
             var bounds = new EntityDimension { Width = 0.6f, Height = 1.95f }.CreateBBFromPosition(point);
             if (floor == null || feet == null || feet.IsLiquid || floor.IsLiquid ||
-                BlockCollisionShapes.Get(floor.State.Id).Count == 0 || !Terrain.IsFree(bounds) ||
+                BlockCollisionShapes.Get(floor).Count == 0 || !Terrain.IsFree(bounds) ||
                 Level.GetPlayersInRange(point, 7).Any() || Level.GetEntitiesInRange(point, 2)
                     .Any(entity => MobTerrain.Overlaps(bounds, entity.Dimension.CreateBBFromPosition(entity.Position))))
                 continue;
@@ -166,6 +166,6 @@ public sealed partial class Zombie : PathfinderMob
         writer.WriteEntityMetadataType(17, EntityMetadataType.VarInt);
         writer.WriteVarInt(0);
         writer.WriteEntityMetadataType(18, EntityMetadataType.Boolean);
-        writer.WriteBoolean(false);
+        writer.WriteBoolean(this is Husk { ConversionTicks: >= 0 });
     }
 }

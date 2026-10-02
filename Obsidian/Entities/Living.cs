@@ -26,6 +26,7 @@ public class Living : Entity, ILiving
 
     private readonly ConcurrentDictionary<int, EffectWithCurrentDuration> activePotionEffects;
     private int fireTicks;
+    internal int FireTicks { get => fireTicks; set => fireTicks = value; }
 
     public void Ignite(int seconds)
     {
@@ -42,6 +43,15 @@ public class Living : Entity, ILiving
     {
         foreach (var (potion, data) in activePotionEffects)
         {
+            var poisonInterval = Math.Max(1, 25 >> Math.Min(30, data.EffectData.Amplifier));
+            if (potion == (int)PotionEffect.Poison - 1 && data.CurrentDuration % poisonInterval == 0 && Health > 1)
+            {
+                var amount = Math.Min(1, Health - 1);
+                if (this is Mob mob)
+                    await mob.DamageEnvironmentAsync(amount);
+                else
+                    await DamageAsync(this, amount);
+            }
             data.CurrentDuration--;
 
             if (data.CurrentDuration <= 0)
@@ -79,6 +89,16 @@ public class Living : Entity, ILiving
 
     public bool HasPotionEffect(int effectId) => activePotionEffects.ContainsKey(effectId);
 
+    internal void RestorePotionEffect(int id, int duration, int amplifier)
+    {
+        if (duration > 0)
+            activePotionEffects[id] = new()
+            {
+                CurrentDuration = duration,
+                EffectData = new() { Id = id, Duration = duration, Amplifier = amplifier }
+            };
+    }
+
     public void ClearPotionEffects()
     {
         foreach (var (potion, _) in activePotionEffects)
@@ -89,6 +109,9 @@ public class Living : Entity, ILiving
 
     public void AddPotionEffect(int effectId, int duration, int amplifier = 0, EntityEffectFlags effect = EntityEffectFlags.None)
     {
+        if (effectId == (int)PotionEffect.Poison - 1 && Type is EntityType.Zombie or EntityType.Husk or EntityType.Skeleton or EntityType.Stray or EntityType.Bogged or EntityType.Parched ||
+            effectId == (int)PotionEffect.Weakness - 1 && Type == EntityType.Parched)
+            return;
         this.PacketBroadcaster.QueuePacketToLevel(this.Level, new UpdateMobEffectPacket(EntityId, effectId, duration)
         {
             Amplifier = amplifier,

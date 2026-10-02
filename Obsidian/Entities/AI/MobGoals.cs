@@ -155,7 +155,7 @@ public sealed class RandomLookAroundGoal(Mob mob) : Goal
     }
 }
 
-public sealed class TemptGoal(Animal pig, Func<Obsidian.API.Inventory.ItemStack?, bool> food) : NavigationGoal(pig, 1.2f)
+public sealed class TemptGoal(Animal pig, Func<Obsidian.API.Inventory.ItemStack?, bool> food, float speed = 1.2f) : NavigationGoal(pig, speed)
 {
     private IPlayer? player;
     private long cooldownEnd;

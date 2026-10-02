@@ -71,7 +71,8 @@ public class Navigator : INavigator
     {
         if (mob == null || IsPaused || !requested)
         {
-            mob?.MoveControl.Stop();
+            if (mob != null && (IsPaused || !mob.MoveControl.IsStrafing))
+                mob.MoveControl.Stop();
             return;
         }
 

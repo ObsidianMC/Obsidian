@@ -77,7 +77,7 @@ public sealed class ChunkSection : IChunkSection
         var shift = (index & 1) << 2;
         var mask = 0xF << shift;
         index /= 2;
-        return lt == LightType.Sky ? (skyLight[index] & mask) >> shift : (blockLight[index] & mask >> shift);
+        return lt == LightType.Sky ? (skyLight[index] & mask) >> shift : (blockLight[index] & mask) >> shift;
     }
 
     public void SetLight(byte[] data, LightType lt)
@@ -112,5 +112,12 @@ public sealed class ChunkSection : IChunkSection
     public void SetLightLevel(Vector position, LightType lt, int level) => this.SetLightLevel(position.X, position.Y, position.Z, lt, level);
     public int GetLightLevel(Vector position, LightType lt) => this.GetLightLevel(position.X, position.Y, position.Z, lt);
 
-    public IChunkSection Clone() => new ChunkSection(BlockStateContainer.Clone(), BiomeContainer.Clone(), YBase);
+    public IChunkSection Clone()
+    {
+        var clone = new ChunkSection(BlockStateContainer.Clone(), BiomeContainer.Clone(), YBase);
+        clone.SetLight((byte[])skyLight.Clone(), LightType.Sky);
+        clone.SetLight((byte[])blockLight.Clone(), LightType.Block);
+        clone.IsEmpty = IsEmpty;
+        return clone;
+    }
 }

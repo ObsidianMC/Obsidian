@@ -1,10 +1,12 @@
 namespace Obsidian.Entities.AI;
 
-public sealed class MoveControl(Mob mob)
+public class MoveControl(Mob mob)
 {
     private VectorF? wantedPosition;
     private float speedModifier;
+    private VectorF? strafe;
     internal VectorF Acceleration { get; private set; }
+    internal bool IsStrafing => strafe != null;
 
     public void MoveTo(VectorF position, float speed)
     {
@@ -15,8 +17,11 @@ public sealed class MoveControl(Mob mob)
     public void Stop()
     {
         wantedPosition = null;
+        strafe = null;
         Acceleration = VectorF.Zero;
     }
+
+    internal void Strafe(float forward, float sideways) => strafe = new VectorF(sideways, 0, forward);
 
     internal void Ride(float speed)
     {
@@ -27,9 +32,21 @@ public sealed class MoveControl(Mob mob)
         Acceleration = input * (acceleration * 0.98f);
     }
 
-    internal void Tick()
+    internal virtual void Tick()
     {
         Acceleration = VectorF.Zero;
+        if (strafe is VectorF input)
+        {
+            strafe = null;
+            var strafeYaw = mob.Yaw.Degrees * MathF.PI / 180;
+            var movement = new VectorF(input.X * MathF.Cos(strafeYaw) - input.Z * MathF.Sin(strafeYaw), 0,
+                input.Z * MathF.Cos(strafeYaw) + input.X * MathF.Sin(strafeYaw));
+            var next = mob.Position + movement;
+            if (!mob.Terrain.IsFree(mob.Dimension.CreateBBFromPosition(next)))
+                movement = new VectorF(-MathF.Sin(strafeYaw), 0, MathF.Cos(strafeYaw));
+            Acceleration = movement * (mob.MovementSpeed * 0.25f * 0.98f);
+            return;
+        }
         if (wantedPosition is not VectorF target)
             return;
         wantedPosition = null;

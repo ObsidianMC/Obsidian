@@ -156,7 +156,7 @@ public sealed partial class Client : IClient
             { ClientState.Play, new PlayClientHandler { Client = this } }
         }.ToFrozenDictionary();
 
-        packetQueue = Channel.CreateUnbounded<IClientboundPacket>(new() { SingleReader = true, SingleWriter = true });
+        packetQueue = Channel.CreateUnbounded<IClientboundPacket>(new() { SingleReader = true, SingleWriter = false });
     }
 
     public async ValueTask<bool> TrySetCachedProfileAsync(string username)
@@ -246,20 +246,24 @@ public sealed partial class Client : IClient
 
     public async ValueTask QueuePacketAsync(IClientboundPacket packet)
     {
-        if (!this.Connected)
+        if (!this.Connected || this.cancellationSource.IsCancellationRequested)
             return;
-
-        var args = new QueuePacketEventArgs(this.Server, this, packet);
-
-        var result = await this.eventDispatcher.ExecuteEventAsync(args);
-        if (result == EventResult.Cancelled)
+        try
         {
-            Logger.LogDebug("Packet {PacketId} was sent to the queue, however an event handler has cancelled it.", args.Packet.Id);
+            var args = new QueuePacketEventArgs(this.Server, this, packet);
+            var result = await this.eventDispatcher.ExecuteEventAsync(args);
+            if (result == EventResult.Cancelled)
+            {
+                Logger.LogDebug("Packet {PacketId} was sent to the queue, however an event handler has cancelled it.", args.Packet.Id);
+                return;
+            }
 
-            return;
+            await packetQueue.Writer.WriteAsync(packet, this.cancellationSource.Token);
         }
-
-        await packetQueue.Writer.WriteAsync(packet, this.cancellationSource.Token);
+        catch (OperationCanceledException) when (this.cancellationSource.IsCancellationRequested)
+        {
+            // A disconnect cancels this client's send, not the world tick awaiting it.
+        }
     }
 
     public bool SendPacket(IClientboundPacket packet) => this.SendAsync(packet);

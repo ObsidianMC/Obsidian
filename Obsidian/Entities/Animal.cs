@@ -4,9 +4,10 @@ namespace Obsidian.Entities;
 
 public class Animal : AgeableMob
 {
-    public int LoveTicks { get; private set; }
+    public int LoveTicks { get; internal set; }
     internal bool CanBreed => Alive && !IsRemoved && Age == 0 && LoveTicks > 0;
     protected virtual bool CanEat(Obsidian.API.Inventory.ItemStack? item) => false;
+    internal override ValueTask InteractAsync(IPlayer player, Hand hand) => FeedAsync(player, hand);
 
     protected override async ValueTask TickMobAsync()
     {

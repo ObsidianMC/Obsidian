@@ -369,6 +369,35 @@ public sealed class MainCommandModule : CommandModuleBase
             .Spawn();
 
         await player.SendMessageAsync($"Spawning: {type}");
+        if (builder is Mob mob)
+            await SendMobStatusAsync(player, mob);
+    }
+
+    [Command("mobinfo")]
+    [CommandInfo("Shows nearby mob ticking and save eligibility", "/mobinfo")]
+    [IssuerScope(CommandIssuers.Client)]
+    public async Task MobInfoAsync()
+    {
+        if (Player is not IPlayer player)
+            return;
+        var mobs = player.Level.GetNonPlayerEntitiesInRange(player.Position, 32).OfType<Mob>()
+            .OrderBy(mob => (mob.Position - player.Position).MagnitudeSquared()).Take(5).ToArray();
+        if (mobs.Length == 0)
+            await player.SendMessageAsync("No registered mobs within 32 blocks.");
+        foreach (var mob in mobs)
+            await SendMobStatusAsync(player, mob);
+    }
+
+    private async Task SendMobStatusAsync(IPlayer player, Mob mob)
+    {
+        var level = mob.Level as AbstractLevel;
+        var (x, z) = mob.Position.ToChunkCoord();
+        var registered = level?.GetRegionForLocation(mob.Position)?.Entities.ContainsKey(mob.EntityId) == true;
+        await player.SendMessageAsync($"{mob.Type} ({mob.GetType().Name}) id={mob.EntityId}: AI={mob.HasAi}, ticks={mob.AiTick}, " +
+            $"health={mob.Health}, registered={registered}, chunkLoaded={level?.GetLoadedChunk(x, z) != null}, " +
+            $"ticking={level?.IsMobTicking(mob.Position)}, noAI={mob.MobBitMask.HasFlag(MobBitmask.NoAi)}, " +
+            $"saveEligible={mob.HasAi && mob.Alive && !mob.IsRemoved}, worldReady={Server.WorldManager.ReadyToJoin}, time={mob.Level.Time}");
+        await player.SendMessageAsync($"Server tick: {(Server as Obsidian.Server)?.TickStage}; level tick: {level?.TickStage}; saving entities: {level?.SavingEntities}");
     }
 
     [Command("derp")]

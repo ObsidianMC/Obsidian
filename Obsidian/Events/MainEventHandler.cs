@@ -52,11 +52,11 @@ public sealed partial class MainEventHandler(ILogger<MainEventHandler> logger) :
     [EventPriority(Priority = Priority.Internal)]
     public async Task OnEntityInteract(EntityInteractEventArgs e)
     {
-        if (e.IsCancelled || e.TargetPosition != null || e.Entity is not Animal { HasAi: true } animal)
+        if (e.IsCancelled || e.TargetPosition != null || e.Entity is not Mob { HasAi: true } mob)
             return;
 
-        ValueTask Feed() => animal.FeedAsync(e.Player, e.Hand ?? Hand.MainHand);
-        if (animal.Level is Obsidian.WorldData.AbstractLevel level)
+        ValueTask Feed() => mob.InteractAsync(e.Player, e.Hand ?? Hand.MainHand);
+        if (mob.Level is Obsidian.WorldData.AbstractLevel level)
             level.EnqueueEntityAction(Feed);
         else
             await Feed();

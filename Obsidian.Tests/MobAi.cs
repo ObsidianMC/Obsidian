@@ -11,6 +11,54 @@ namespace Obsidian.Tests;
 public sealed class MobAi
 {
     [Fact]
+    public async Task InterruptedEmptyRegionHeadersCanBeCompleted()
+    {
+        var path = System.IO.Path.GetTempFileName();
+        try
+        {
+            await System.IO.File.WriteAllBytesAsync(path, new byte[4096]);
+            await using var region = new Obsidian.WorldData.RegionFile(path, Obsidian.Nbt.NbtCompression.ZLib);
+            Assert.True(await region.InitializeAsync());
+            Assert.Equal(8192L, region.EndOfFile);
+            Assert.Null(await region.GetChunkBytesAsync(0, 0));
+        }
+        finally
+        {
+            System.IO.File.Delete(path);
+        }
+    }
+
+    [Theory]
+    [InlineData("00000000-0000-0000-0000-000000000001")]
+    [InlineData("ffffffff-ffff-ffff-ffff-ffffffffffff")]
+    public void SpawnUuidsAlwaysOccupySixteenBytes(string text)
+    {
+        var uuid = System.Guid.Parse(text);
+        var buffer = new Obsidian.Net.NetworkBuffer();
+        buffer.WriteUuid(uuid);
+        Assert.Equal(16, buffer.Size);
+        Assert.Equal(uuid.ToByteArray(true), buffer.AsSpan(0, buffer.Size).ToArray());
+    }
+
+    [Fact]
+    public void SavedEquipmentComponentsUseTheirProtocolIds()
+    {
+        Assert.IsType<Obsidian.API.Inventory.DataComponents.CanBreakDataComponent>(
+            Obsidian.API.Inventory.DataComponents.ComponentBuilder.ComponentsMap[DataComponentType.CanBreak]());
+        var item = Obsidian.API.Registries.ItemsRegistry.GetSingleItem(Material.Bow);
+        var buffer = new Obsidian.Net.NetworkBuffer();
+        buffer.WriteItemStack(item);
+        var reader = new Obsidian.Net.NetworkBuffer(buffer.AsSpan(0, buffer.Size).ToArray());
+        var restored = reader.ReadItemStack();
+        Assert.NotNull(restored);
+        Assert.Equal(item.Type, restored.Type);
+        Assert.Equal(item.Count, restored.Count);
+        Assert.Equal(item.TotalComponents, restored.TotalComponents);
+        Assert.Equal(0, restored.GetComponent<Obsidian.API.Inventory.DataComponents.SimpleDataComponent<int>>(DataComponentType.RepairCost).Value);
+        Assert.Equal(reader.Size, reader.Offset);
+    }
+
+    [Fact]
     public void WorldsWithoutSavedDifficultyAllowHostileMobs()
     {
         Assert.Equal(Difficulty.Normal, new LevelData().Difficulty);
@@ -90,6 +138,43 @@ public sealed class MobAi
         var stone = Assert.Single(BlockCollisionShapes.Get(BlocksRegistry.Stone));
         Assert.Equal(VectorF.Zero, stone.Min);
         Assert.Equal(new VectorF(1), stone.Max);
+    }
+
+    [Theory]
+    [InlineData(EntityType.Cow)]
+    [InlineData(EntityType.Mooshroom)]
+    [InlineData(EntityType.Chicken)]
+    [InlineData(EntityType.Sheep)]
+    [InlineData(EntityType.Husk)]
+    [InlineData(EntityType.Skeleton)]
+    [InlineData(EntityType.Stray)]
+    [InlineData(EntityType.Bogged)]
+    [InlineData(EntityType.Parched)]
+    [InlineData(EntityType.Creeper)]
+    [InlineData(EntityType.Slime)]
+    public void MobSavesRoundTripIdentityPositionHealthAndNoAi(EntityType type)
+    {
+        var mob = Obsidian.Entities.Factories.EntitySpawner.CreateMob(null!, type)!;
+        mob.Position = new VectorF(-17.5f, 64, 31.5f);
+        mob.InitializeAi(false);
+        mob.Health = 3;
+        mob.PersistenceRequired = true;
+        mob.MobBitMask = MobBitmask.NoAi;
+        using var writer = new Obsidian.Nbt.RawNbtWriter("");
+        writer.WriteListStart("Entities", Obsidian.Nbt.NbtTagType.Compound, 1);
+        mob.WriteSave(writer);
+        writer.EndList();
+        writer.EndCompound();
+        using var stream = new System.IO.MemoryStream(writer.Data.ToArray());
+        var root = (Obsidian.Nbt.NbtCompound)new Obsidian.Nbt.NbtReader(stream).ReadNextTag()!;
+        var saved = Assert.IsType<Obsidian.Nbt.NbtList>(root["Entities"]);
+        var restored = Obsidian.Entities.Factories.EntitySpawner.CreateMob(null!, type)!;
+        restored.ReadSave(Assert.IsType<Obsidian.Nbt.NbtCompound>(Assert.Single(saved)));
+        Assert.Equal(mob.Uuid, restored.Uuid);
+        Assert.Equal(mob.Position, restored.Position);
+        Assert.Equal(3, restored.Health);
+        Assert.True(restored.PersistenceRequired);
+        Assert.Equal(MobBitmask.NoAi, restored.MobBitMask);
     }
 
     private sealed class ProbeGoal(GoalFlags flags) : Goal

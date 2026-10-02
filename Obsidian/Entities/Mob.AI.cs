@@ -23,7 +23,7 @@ public partial class Mob
     internal IEntity? AttackTarget { get; set; }
     internal IEntity? AlertedTarget { get; set; }
     public GoalSelector TargetGoals { get; } = new();
-    public MoveControl MoveControl { get; }
+    public MoveControl MoveControl { get; protected set; }
     public LookControl LookControl { get; }
     public JumpControl JumpControl { get; } = new();
     private readonly GoalSelector goals = new();
@@ -40,6 +40,7 @@ public partial class Mob
     private Angle lastSentPitch;
     private VectorF lastSentPosition;
     private bool hasSentPosition;
+    private int despawnAge;
 
     public Mob()
     {
@@ -47,7 +48,7 @@ public partial class Mob
         LookControl = new LookControl(this);
     }
 
-    internal void InitializeAi()
+    internal void InitializeAi(bool finalizeSpawn = true)
     {
         if (!UsesAi)
             return;
@@ -75,13 +76,67 @@ public partial class Mob
             Navigator ??= new Navigator(pathfinder);
         initialized = true;
         RegisterGoals(goals, TargetGoals);
-        FinalizeSpawn();
+        if (finalizeSpawn)
+            FinalizeSpawn();
     }
 
     protected virtual void RegisterGoals(GoalSelector actionGoals, GoalSelector targetGoals) { }
     protected virtual void FinalizeSpawn() { }
     protected virtual ValueTask TickMobAsync() => default;
     protected virtual ValueTask OnHurtAsync(IEntity source) => default;
+    internal virtual ValueTask InteractAsync(IPlayer player, Hand hand) => default;
+
+    internal async ValueTask<Mob> ConvertToAsync(EntityType type)
+    {
+        var replacement = Obsidian.Entities.Factories.EntitySpawner.CreateMob(Level, type)
+            ?? throw new ArgumentOutOfRangeException(nameof(type));
+        replacement.EntityId = Server.GetNextEntityId();
+        replacement.Position = Position;
+        replacement.InitializeAi(false);
+        replacement.Yaw = Yaw;
+        replacement.Pitch = Pitch;
+        replacement.Motion = Motion;
+        replacement.Health = Math.Min(Health, replacement.GetAttributeValue("minecraft:generic.max_health"));
+        replacement.CustomName = CustomName;
+        replacement.CustomNameVisible = CustomNameVisible;
+        replacement.PersistenceRequired = PersistenceRequired;
+        replacement.CanPickUpLoot = CanPickUpLoot;
+        replacement.MobBitMask = MobBitMask;
+        if (replacement is Zombie zombie && this is Zombie original)
+        {
+            zombie.IsBaby = original.IsBaby;
+            zombie.CanBreakDoors = original.CanBreakDoors;
+        }
+        foreach (var (slot, item) in equipment)
+        {
+            replacement.equipment[slot] = item;
+            replacement.equipmentDropChances[slot] = GetEquipmentDropChance(slot);
+        }
+        replacement.BoundingBox = replacement.Dimension.CreateBBFromPosition(Position);
+        await RemoveAsync();
+        Level.SpawnEntity(replacement);
+        return replacement;
+    }
+
+    protected async ValueTask DamageInteractionToolAsync(IPlayer player, Hand hand, int amount = 1)
+    {
+        if (player.Gamemode == Gamemode.Creative)
+            return;
+        var slot = hand == Hand.OffHand ? 45 : player.CurrentHeldItemSlot;
+        var item = player.Inventory.GetItem(slot);
+        if (item == null || item.Unbreakable)
+            return;
+        var maximum = item.GetComponent<Obsidian.API.Inventory.DataComponents.SimpleDataComponent<int>>(DataComponentType.MaxDamage)?.Value ?? 0;
+        if (maximum <= 0)
+            return;
+        var damage = Obsidian.API.Inventory.DataComponents.ComponentBuilder.Damage;
+        damage.Value = item.Damage + amount;
+        item[DataComponentType.Damage] = damage;
+        if (damage.Value >= maximum)
+            player.Inventory.SetItem(slot, null);
+        await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
+        { ContainerId = 0, Slot = (short)slot, SlotData = player.Inventory.GetItem(slot) });
+    }
     protected internal virtual float AttackDamage => GetAttributeValue("minecraft:generic.attack_damage");
 
     internal void SetAggressive(bool aggressive)
@@ -125,6 +180,18 @@ public partial class Mob
         InitializeAi();
         AiTick++;
         visibility.Clear();
+        if (Alive && this is not Animal && !PersistenceRequired && CustomName == null)
+        {
+            var nearest = Level.GetPlayersInRange(Position, float.MaxValue).Where(player => player.Gamemode != Gamemode.Spectator)
+                .Select(player => (player.Position - Position).MagnitudeSquared()).DefaultIfEmpty(float.MaxValue).Min();
+            if (nearest > 16384 && nearest < float.MaxValue || ++despawnAge > 600 && nearest > 1024 && nearest < float.MaxValue && Random.Next(800) == 0)
+            {
+                await RemoveAsync();
+                return;
+            }
+            if (nearest < 1024)
+                despawnAge = 0;
+        }
         if (!Alive)
         {
             if (++deathTicks >= 20)
@@ -279,6 +346,7 @@ public partial class Mob
         }
 
         lastDamage = incoming;
+        despawnAge = 0;
         if (source is IPlayer)
             lastPlayerHurtTick = AiTick;
         if (!ReferenceEquals(source, this))

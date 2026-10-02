@@ -61,9 +61,16 @@ public sealed class RegionFile : IAsyncDisposable
 
         this.initialized = true;
 
-        if (regionFileStream.Length == 0)
+        if (regionFileStream.Length < HeaderTableSize * 8)
         {
+            // Interrupted creation can leave part of an empty header on disk.
+            var existing = new byte[(int)regionFileStream.Length];
+            await regionFileStream.ReadExactlyAsync(existing);
+            if (existing.Any(value => value != 0))
+                throw new InvalidDataException($"Region file '{filePath}' has a truncated header containing data ({existing.Length} bytes).");
+
             await this.WriteHeadersAsync();
+            await regionFileStream.FlushAsync();
 
             this.Pad();
 
@@ -254,25 +261,14 @@ public sealed class RegionFile : IAsyncDisposable
 
     private async Task WriteHeadersAsync()
     {
+        using var header = new RentedArray<byte>(HeaderTableSize * 8);
+        for (var index = 0; index < HeaderTableSize; index++)
+        {
+            BinaryPrimitives.WriteInt32BigEndian(header.Span.Slice(index * 4, 4), this.Locations[index]);
+            BinaryPrimitives.WriteInt32BigEndian(header.Span.Slice((HeaderTableSize + index) * 4, 4), this.Timestamps[index]);
+        }
         this.regionFileStream.Position = 0;
-
-        for (var index = 0; index < HeaderTableSize; index++)
-        {
-            using var mem = new RentedArray<byte>(4);
-
-            BinaryPrimitives.WriteInt32BigEndian(mem.Span, this.Locations[index]);
-
-            await this.regionFileStream.WriteAsync(mem);
-        }
-
-        for (var index = 0; index < HeaderTableSize; index++)
-        {
-            using var mem = new RentedArray<byte>(4);
-
-            BinaryPrimitives.WriteInt32BigEndian(mem.Span, this.Timestamps[index]);
-
-            await this.regionFileStream.WriteAsync(mem);
-        }
+        await this.regionFileStream.WriteAsync(header.Memory);
     }
 
     private int FindFreeSector(int sectorCount)

@@ -98,16 +98,9 @@ public partial class NetworkBuffer : INetStreamWriter
     [WriteMethod]
     public void WriteUuid(Guid value)
     {
-        if (value == Guid.Empty)
-        {
-            WriteLong(0L);
-            WriteLong(0L);
-        }
-        else
-        {
-            var uuid = System.Numerics.BigInteger.Parse(value.ToString().Replace("-", ""), System.Globalization.NumberStyles.HexNumber);
-            Write(uuid.ToByteArray(false, true));
-        }
+        Span<byte> bytes = stackalloc byte[16];
+        value.TryWriteBytes(bytes, bigEndian: true, out _);
+        Write(bytes);
     }
 
 

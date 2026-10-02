@@ -78,7 +78,7 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
     public IEntity Spawn()
     {
         // This could get sgen'd, same for the entity classes. but for now, this is fine for implementation
-        Entity entity = entityType switch
+        Entity entity = CreateMob(level, entityType) ?? (entityType switch
         {
             EntityType.ExperienceOrb => new ExperienceOrb { Level = level, Value = 1 },
             EntityType.Pig => new Pig()
@@ -121,7 +121,7 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
             {
                 Level = level
             }
-        };
+        });
 
         entity.Type = entityType.Value;
         entity.EntityId = Server.GetNextEntityId();
@@ -149,4 +149,22 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
 
         return level.SpawnEntity(entity);
     }
+
+    internal static Mob? CreateMob(ILevel level, EntityType? type) => type switch
+    {
+        EntityType.Pig => new Pig { Level = level },
+        EntityType.Cow => new Cow { Level = level },
+        EntityType.Mooshroom => new Mooshroom { Level = level },
+        EntityType.Chicken => new Chicken { Level = level },
+        EntityType.Sheep => new Sheep { Level = level },
+        EntityType.Zombie => new Zombie { Level = level },
+        EntityType.Husk => new Husk { Level = level },
+        EntityType.Skeleton => new Skeleton { Level = level },
+        EntityType.Stray => new Stray { Level = level },
+        EntityType.Bogged => new Bogged { Level = level },
+        EntityType.Parched => new Parched { Level = level },
+        EntityType.Creeper => new Creeper { Level = level },
+        EntityType.Slime => new Slime { Level = level },
+        _ => null
+    };
 }

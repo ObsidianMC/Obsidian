@@ -657,6 +657,10 @@ public sealed partial class Player : Avatar, IPlayer
         bool sentAll = true;
         if (unloadAll)
         {
+            var tracked = TrackedEntities.Keys.ToArray();
+            TrackedEntities.Clear();
+            if (!Respawning && tracked.Length > 0)
+                await Client.QueuePacketAsync(new RemoveEntitiesPacket(tracked));
             if (!Respawning)
             {
                 foreach (var value in LoadedChunks)

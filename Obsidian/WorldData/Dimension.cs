@@ -31,5 +31,5 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
     }
 
     public override Task<bool> LoadAsync(DimensionCodec codec) => Task.FromResult(false);
-    public override Task SaveAsync() => Task.CompletedTask;
+    public override Task SaveAsync() => FlushRegionsAsync();
 }

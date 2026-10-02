@@ -48,6 +48,8 @@ public sealed partial class Server : IServer
 
     public ProtocolVersion Protocol => ServerConstants.DefaultProtocol;
     public int Tps { get; private set; }
+
+    internal string TickStage { get; private set; } = "not started";
     public DateTimeOffset StartTime { get; private set; }
 
     public PluginManager PluginManager { get; }
@@ -314,18 +316,25 @@ public sealed partial class Server : IServer
 
     private async Task ServerSaveAsync()
     {
-        var timer = new PeriodicTimer(TimeSpan.FromMinutes(5));
+        using var timer = new PeriodicTimer(TimeSpan.FromMinutes(5));
 
         try
         {
             while (await timer.WaitForNextTickAsync(this.cancelTokenSource.Token))
             {
                 logger.LogInformation("Saving world...");
-                await WorldManager.FlushLoadedWorldsAsync();
-                await this.userCache.SaveAsync();
+                try
+                {
+                    await WorldManager.FlushLoadedWorldsAsync();
+                    await this.userCache.SaveAsync();
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    logger.LogError(ex, "World autosave failed");
+                }
             }
         }
-        catch { }
+        catch (OperationCanceledException) when (cancelTokenSource.IsCancellationRequested) { }
     }
 
     private async Task LoopAsync()
@@ -339,6 +348,7 @@ public sealed partial class Server : IServer
 
         try
         {
+            TickStage = "waiting for timer";
             while (await timer.WaitForNextTickAsync())
             {
                 if (keepAliveInterval != Configuration.Network.KeepAliveInterval / 50)
@@ -349,6 +359,7 @@ public sealed partial class Server : IServer
                 {
                     foreach (var client in this.Connections.Values.Where(x => x.State == ClientState.Play || x.State == ClientState.Configuration))
                     {
+                        TickStage = "keepalive";
                         if (client.State == ClientState.Play)
                             await KeepAlivePacket.ClientboundPlay.HandleAsync(client);
                         else
@@ -358,24 +369,29 @@ public sealed partial class Server : IServer
                     keepAliveTicks = 0;
                 }
 
+                TickStage = "ticking worlds";
                 await this.WorldManager.TickWorldsAsync();
 
                 long elapsedTicks = stopwatch.ElapsedTicks;
                 stopwatch.Restart();
                 tpsMeasure.PushMeasurement(elapsedTicks);
                 Tps = tpsMeasure.Tps;
+                TickStage = "waiting for timer";
             }
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (cancelTokenSource.IsCancellationRequested)
         {
+            TickStage = "cancelled";
             // Just stop looping.
         }
         catch (Exception ex)
         {
+            TickStage = $"failed: {ex.GetType().Name}: {ex.Message}";
             logger.LogError(ex, "The game tick loop failed");
             throw;
         }
 
+        TickStage = "stopped";
         foreach (var client in this.Connections.Values)
         {
             await client.DisconnectAsync("Server closed");

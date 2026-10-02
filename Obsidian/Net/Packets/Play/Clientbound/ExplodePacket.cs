@@ -25,8 +25,33 @@ public partial class ExplodePacket
     [Field(6)]
     public required List<Weighted<ExplosionRecord>> ExplosionParticleInfo { get; init; }
 
-    //TODO someone else can do this it seems like the structure hasn't change but I cba to look through it
-    public override void Serialize(INetStreamWriter writer) => throw new NotImplementedException();
+    public override void Serialize(INetStreamWriter writer)
+    {
+        writer.WriteAbsolutePositionF(Center);
+        writer.WriteSingle(Radius);
+        writer.WriteInt(BlockCount);
+        writer.WriteBoolean(PlayerKnockback != null);
+        if (PlayerKnockback is { } knockback)
+        {
+            writer.WriteDouble(knockback.X);
+            writer.WriteDouble(knockback.Y);
+            writer.WriteDouble(knockback.Z);
+        }
+        writer.WriteVarInt((int)ExplosionParticle.ParticleType);
+        ExplosionParticle.Write(writer);
+        writer.WriteVarInt(0);
+        writer.WriteString(ExplosionSound.SoundId);
+        writer.WriteOptional(ExplosionSound.FixedRange);
+        writer.WriteVarInt(ExplosionParticleInfo.Count);
+        foreach (var entry in ExplosionParticleInfo)
+        {
+            writer.WriteVarInt((int)entry.Value.Particle.ParticleType);
+            entry.Value.Particle.Write(writer);
+            writer.WriteSingle(entry.Value.Scaling);
+            writer.WriteSingle(entry.Value.Speed);
+            writer.WriteVarInt(entry.Weight);
+        }
+    }
 }
 
 public readonly struct ExplosionRecord

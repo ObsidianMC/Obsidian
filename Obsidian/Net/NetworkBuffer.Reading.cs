@@ -132,9 +132,11 @@ public partial class NetworkBuffer : INetStreamReader
 
         for (int i = 0; i < componentsToAdd; i++)
         {
-            var type = this.ReadVarInt();
+            var type = this.ReadVarInt<DataComponentType>();
 
-            itemStack.Add(ComponentBuilder.ComponentsMap[type]());
+            var component = ComponentBuilder.ComponentsMap[type]();
+            component.Read(this);
+            itemStack.Add(component);
         }
 
         for (int i = 0; i < componentsToRemove; i++)
