@@ -132,11 +132,7 @@ internal sealed class SculkSpreader
 
     public static bool IsSculkBehaviour(IBlock block) => block.Material is Material.Sculk or Material.SculkVein;
 
-    private static bool IsSculkBehaviour(int stateId)
-    {
-        var block = BlocksRegistry.RegistryIdOf(stateId);
-        return block == sculkId || block == sculkVeinId;
-    }
+    private static bool IsSculkBehaviourRegistryId(int registryId) => registryId == sculkId || registryId == sculkVeinId;
 
     public void Clear() => this.cursorCount = 0;
 
@@ -300,7 +296,7 @@ internal sealed class SculkSpreader
                 {
                     for (var x = position.X - 4; x <= position.X + 4; x++)
                     {
-                        var block = BlocksRegistry.RegistryIdOf(level.GetStateId(new Vector(x, y, z)));
+                        var block = FeatureHelpers.RegistryIdAt(level, new Vector(x, y, z));
                         if (block == sculkSensorId || block == sculkShriekerId)
                             growths++;
 
@@ -323,12 +319,12 @@ internal sealed class SculkSpreader
             foreach (var offset in offsets)
             {
                 var candidate = position + offset;
-                var state = level.GetStateId(candidate);
-                if (!IsSculkBehaviour(state) || !IsMovementUnobstructed(level, position, candidate))
+                var block = FeatureHelpers.RegistryIdAt(level, candidate);
+                if (!IsSculkBehaviourRegistryId(block) || !IsMovementUnobstructed(level, position, candidate))
                     continue;
 
                 result = candidate;
-                if (HasSubstrateAccess(level, state, candidate))
+                if (block == sculkVeinId && HasSubstrateAccess(level, candidate))
                     break;
             }
 
@@ -426,7 +422,7 @@ internal sealed class SculkSpreader
                 continue;
 
             var target = position.Offset(face);
-            if (!replaceableWorldGen.ContainsState(level.GetStateId(target)))
+            if (!replaceableWorldGen.ContainsRegistryId(FeatureHelpers.RegistryIdAt(level, target)))
                 continue;
 
             level.SetBlock(target, Sculk);
@@ -439,9 +435,8 @@ internal sealed class SculkSpreader
                     continue;
 
                 var neighborPosition = target.Offset(direction);
-                var neighbor = level.GetStateId(neighborPosition);
-                if (BlocksRegistry.RegistryIdOf(neighbor) == sculkVeinId)
-                    OnDischarged(Behaviour.Vein, level, BlocksRegistry.Get(neighbor), neighborPosition);
+                if (FeatureHelpers.RegistryIdAt(level, neighborPosition) == sculkVeinId)
+                    OnDischarged(Behaviour.Vein, level, level.GetBlock(neighborPosition), neighborPosition);
             }
 
             return true;
@@ -458,7 +453,7 @@ internal sealed class SculkSpreader
 
         foreach (var face in FeatureHelpers.Directions)
         {
-            if (MultifaceSpreader.HasFace(state, face) && BlocksRegistry.RegistryIdOf(level.GetStateId(position.Offset(face))) == sculkId)
+            if (MultifaceSpreader.HasFace(state, face) && FeatureHelpers.RegistryIdAt(level, position.Offset(face)) == sculkId)
                 state = state.WithProperty(FeatureHelpers.FaceName(face), false);
         }
 
@@ -468,15 +463,14 @@ internal sealed class SculkSpreader
         level.SetBlock(position, state);
     }
 
-    private static bool HasSubstrateAccess(IWorldGenLevel level, int stateId, Vector position)
+    // Whether the sculk vein at the position has a face on a block sculk can replace.
+    private static bool HasSubstrateAccess(IWorldGenLevel level, Vector position)
     {
-        if (BlocksRegistry.RegistryIdOf(stateId) != sculkVeinId)
-            return false;
-
-        var faces = MultifaceSpreader.Faces(stateId);
+        var stateId = level.GetStateId(position);
+        var faces = FeatureHelpers.IsVanillaState(stateId) ? MultifaceSpreader.Faces(stateId) : MultifaceSpreader.Faces(level.GetBlock(position));
         foreach (var face in FeatureHelpers.Directions)
         {
-            if ((faces >> (int)face & 1) != 0 && sculkReplaceable.ContainsState(level.GetStateId(position.Offset(face))))
+            if ((faces >> (int)face & 1) != 0 && sculkReplaceable.ContainsRegistryId(FeatureHelpers.RegistryIdAt(level, position.Offset(face))))
                 return true;
         }
 

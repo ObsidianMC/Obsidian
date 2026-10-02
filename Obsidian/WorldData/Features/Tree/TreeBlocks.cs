@@ -53,7 +53,15 @@ internal static class TreeBlocks
     /// <summary>Vanilla <c>FluidState.is(FluidTags.WATER)</c>: still or flowing water.</summary>
     public static bool IsWater(IBlock block) => block.GetFluid() is FluidKind.Water or FluidKind.FlowingWater;
 
+    /// <summary><see cref="OptionalLeafDistance(IBlock)"/> of the block at <paramref name="position"/>.</summary>
+    public static int? OptionalLeafDistance(IWorldGenLevel level, Vector position)
+    {
+        var stateId = level.GetStateId(position);
+        return FeatureHelpers.IsVanillaState(stateId) ? OptionalLeafDistance(stateId) : OptionalLeafDistance(level.GetBlock(position));
+    }
+
     /// <inheritdoc cref="OptionalLeafDistance(IBlock)"/>
+    /// <remarks>Only for vanilla state ids (see <see cref="FeatureHelpers.IsVanillaState"/>).</remarks>
     public static int? OptionalLeafDistance(int stateId)
     {
         // Threads racing on an entry store the same value.

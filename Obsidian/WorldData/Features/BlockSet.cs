@@ -27,7 +27,10 @@ public sealed class BlockSet
     /// </summary>
     public bool ContainsState(int stateId) => this.ContainsRegistryId(BlocksRegistry.RegistryIdOf(stateId));
 
-    private bool ContainsRegistryId(int registryId)
+    /// <summary>
+    /// Whether the block with the registry id (any of its states) is in the set.
+    /// </summary>
+    public bool ContainsRegistryId(int registryId)
     {
         var members = this.Members;
         return (uint)registryId < (uint)members.Length && members[registryId];

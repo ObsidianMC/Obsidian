@@ -132,6 +132,26 @@ internal static class FeatureHelpers
     public static readonly BlockFace[] Horizontal = [BlockFace.North, BlockFace.East, BlockFace.South, BlockFace.West];
 
     /// <summary>
+    /// Whether a state id from <see cref="IWorldGenLevel.GetStateId"/> is a vanilla state, which per-state tables cover;
+    /// other levels may hold blocks that aren't, which are checked through the block instead.
+    /// </summary>
+    public static bool IsVanillaState(int stateId) => (uint)stateId < (uint)BlocksRegistry.StateToNumeric.Length;
+
+    /// <summary>The registry id of the block at <paramref name="position"/>, read by state id when possible.</summary>
+    public static int RegistryIdAt(IWorldGenLevel level, Vector position)
+    {
+        var stateId = level.GetStateId(position);
+        return IsVanillaState(stateId) ? BlocksRegistry.RegistryIdOf(stateId) : level.GetBlock(position).RegistryId;
+    }
+
+    /// <summary>Whether the block at <paramref name="position"/> is air, read by state id when possible.</summary>
+    public static bool IsAirAt(IWorldGenLevel level, Vector position)
+    {
+        var stateId = level.GetStateId(position);
+        return IsVanillaState(stateId) ? BlockPhysics.IsAir(stateId) : level.GetBlock(position).IsAir;
+    }
+
+    /// <summary>
     /// The position <paramref name="distance"/> blocks toward <paramref name="face"/> (vanilla <c>BlockPos.relative</c>).
     /// </summary>
     public static Vector Offset(this Vector position, BlockFace face, int distance = 1) => position + faceVectors[(int)face] * distance;

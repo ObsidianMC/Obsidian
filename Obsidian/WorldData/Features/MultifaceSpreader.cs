@@ -141,6 +141,7 @@ internal sealed class MultifaceSpreader
     public static int Faces(IBlock state) => Info(state) & FacesMask;
 
     /// <inheritdoc cref="Faces(IBlock)"/>
+    /// <remarks>Only for vanilla state ids (see <see cref="FeatureHelpers.IsVanillaState"/>).</remarks>
     public static int Faces(int stateId) => Info(stateId) & FacesMask;
 
     private bool SpreadFromFaceTowardDirection(int stateInfo, ref Neighborhood blocks, Vector position, BlockFace fromFace, BlockFace direction)
@@ -351,14 +352,15 @@ internal sealed class MultifaceSpreader
             if (this.infos[index] == 0)
                 this.Read(index, position);
 
-            return BlocksRegistry.Get(this.states[index]);
+            var stateId = this.states[index];
+            return FeatureHelpers.IsVanillaState(stateId) ? BlocksRegistry.Get(stateId) : level.GetBlock(position);
         }
 
         public int Info(Vector position)
         {
             var index = this.Index(position);
             if (index < 0)
-                return MultifaceSpreader.Info(level.GetStateId(position));
+                return this.InfoAt(position);
 
             if (this.infos[index] == 0)
                 this.Read(index, position);
@@ -394,8 +396,14 @@ internal sealed class MultifaceSpreader
         {
             var stateId = level.GetStateId(position);
             this.states[index] = stateId;
-            this.infos[index] = MultifaceSpreader.Info(stateId);
+            this.infos[index] = this.InfoOf(stateId, position);
         }
+
+        private readonly int InfoAt(Vector position) => this.InfoOf(level.GetStateId(position), position);
+
+        // Blocks of other levels that aren't vanilla states are checked through the block.
+        private readonly int InfoOf(int stateId, Vector position) =>
+            FeatureHelpers.IsVanillaState(stateId) ? MultifaceSpreader.Info(stateId) : MultifaceSpreader.Info(level.GetBlock(position));
 
         private readonly int Index(Vector position)
         {

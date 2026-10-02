@@ -180,7 +180,11 @@ public sealed class OreFeature : ConfiguredFeatureBase
 
     private bool CanPlaceOre(IWorldGenLevel level, int existing, IRandomSource random, OreTarget target, Vector position)
     {
-        if (!target.Test(existing, random))
+        var accepted = FeatureHelpers.IsVanillaState(existing)
+            ? target.Test(existing, random)
+            : target.Target.Test(level.GetBlock(position), random);
+
+        if (!accepted)
             return false;
 
         return this.ShouldSkipAirCheck(random) || !IsAdjacentToAir(level, position);
@@ -198,7 +202,7 @@ public sealed class OreFeature : ConfiguredFeatureBase
     {
         foreach (var face in FeatureHelpers.Directions)
         {
-            if (BlockPhysics.IsAir(level.GetStateId(position.Offset(face))))
+            if (FeatureHelpers.IsAirAt(level, position.Offset(face)))
                 return true;
         }
 

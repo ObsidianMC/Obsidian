@@ -57,7 +57,7 @@ internal static class LeafDistanceUpdater
                     if (shape.IsFull(local.X, local.Y, local.Z))
                         continue;
 
-                    var neighborDistance = TreeBlocks.OptionalLeafDistance(level.GetStateId(neighbor));
+                    var neighborDistance = TreeBlocks.OptionalLeafDistance(level, neighbor);
                     if (neighborDistance is null)
                         continue;
 
