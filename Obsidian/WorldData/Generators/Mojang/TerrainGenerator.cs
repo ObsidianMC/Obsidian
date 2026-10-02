@@ -53,7 +53,9 @@ internal sealed class TerrainGenerator : IStructureTerrain
         Span<int> oceanFloor = stackalloc int[256];
         worldSurface.Fill(minY);
         oceanFloor.Fill(minY);
-        var openColumns = 256;
+
+        // Columns the cells don't cover keep their blocks, which the heightmaps then don't count, like air.
+        var openColumns = noiseChunk.FilledWidth * noiseChunk.FilledWidth;
 
         // Blocks are computed a layer of cells at a time, a cell at once, then written from the top down in z, x order.
         // Writing in that order keeps the order of the sections' palettes and of the fluid updates.
@@ -272,19 +274,20 @@ internal sealed class TerrainGenerator : IStructureTerrain
         public FillPalette Palette { get; } = new();
 
         /// <summary>
-        /// A cleared buffer of at least <paramref name="length"/> codes.
+        /// A buffer of at least <paramref name="length"/> codes, all <see cref="FillPalette.SkipCode"/>.
         /// </summary>
         public byte[] Codes(int length)
         {
             if (this.codes.Length < length)
                 this.codes = new byte[length];
-            else
-                Array.Clear(this.codes);
 
+            this.codes.AsSpan().Fill(FillPalette.SkipCode);
             return this.codes;
         }
 
-        /// <inheritdoc cref="Codes"/>
+        /// <summary>
+        /// A cleared buffer of at least <paramref name="length"/> flags.
+        /// </summary>
         public bool[] Scheduled(int length)
         {
             if (this.scheduled.Length < length)
@@ -306,6 +309,12 @@ internal sealed class TerrainGenerator : IStructureTerrain
         /// The code of the settings' default block, which most blocks are.
         /// </summary>
         public const byte DefaultCode = 0;
+
+        /// <summary>
+        /// The code of positions the fill doesn't compute (with cells that don't divide the chunk's width), which stay
+        /// as they are, like air.
+        /// </summary>
+        public const byte SkipCode = byte.MaxValue;
 
         // Indexed by code; a code is a byte.
         private readonly IBlock[] keys = new IBlock[256];
@@ -337,7 +346,7 @@ internal sealed class TerrainGenerator : IStructureTerrain
 
             if (code == this.count)
             {
-                if (this.count == this.keys.Length)
+                if (this.count == SkipCode)
                     throw new InvalidOperationException("Too many distinct blocks in one terrain fill.");
 
                 this.keys[code] = block;
@@ -363,7 +372,8 @@ internal sealed class TerrainGenerator : IStructureTerrain
         /// </summary>
         public void SetLayer(IChunk chunk, int y, ReadOnlySpan<byte> layer)
         {
-            var blocks = this.blocks.AsSpan(0, this.count);
+            // Past the palette's codes the blocks are stale, but only the skip code, whose block is null, is used.
+            var blocks = this.blocks.AsSpan(0, layer.Contains(SkipCode) ? this.blocks.Length : this.count);
 
             if (chunk.Sections[(y - chunk.MinY) >> 4] is ChunkSection section)
             {
