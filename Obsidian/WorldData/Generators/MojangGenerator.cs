@@ -68,47 +68,40 @@ internal class MojangGenerator : ILevelGenerator
         if (stage < ChunkGenStage.full)
             return chunk;
 
-        chunk.SetChunkStatus(ChunkGenStage.full);
-        await this.ScheduleFluidUpdatesAsync(chunk);
-        this.SpawnPendingEntities(chunk);
+        // Completing the chunk and taking its leftovers happen under its lock, so concurrent requests do it once.
+        Vector[] fluids;
+        GeneratedEntity[] entities;
+        using (await this.LockAsync(cx, cz, 0))
+        {
+            if (chunk.ChunkStatus >= ChunkGenStage.full)
+                return chunk;
+
+            chunk.SetChunkStatus(ChunkGenStage.full);
+            (fluids, entities) = TakeLeftovers(chunk);
+        }
+
+        await this.ScheduleFluidUpdatesAsync(chunk, fluids);
+
+        // Like vanilla when a proto chunk becomes a level chunk; the level spawns them on its own thread.
+        if (entities.Length > 0 && this.world is AbstractLevel level)
+            level.QueueGeneratedEntities(entities);
+
         return chunk;
     }
 
     /// <summary>
-    /// Spawns the entities generation placed in a chunk that just became complete, like vanilla when a proto chunk
-    /// becomes a level chunk.
+    /// The fluids left in the chunk's post-processing and the entities generation placed in it, removed from the chunk.
     /// </summary>
-    /// <remarks>
-    /// Only the type, position and rotation are applied; Obsidian's entities don't read vanilla's other saved fields.
-    /// </remarks>
-    private void SpawnPendingEntities(IChunk chunk)
+    private static (Vector[] Fluids, GeneratedEntity[] Entities) TakeLeftovers(IChunk chunk)
     {
-        if (chunk is not Chunk generated || generated.PendingEntities.Count == 0)
-            return;
+        if (chunk is not Chunk generated)
+            return ([], []);
 
-        foreach (var pending in generated.PendingEntities)
-        {
-            if (!TryGetEntityType(pending.Type, out var type))
-                continue;
-
-            var entity = this.world.SpawnEntity(pending.Position, type);
-            if (entity is null)
-                continue;
-
-            entity.Yaw = pending.Yaw;
-            entity.Pitch = pending.Pitch;
-        }
-
+        var fluids = generated.PostProcessing.ToArray();
+        var entities = generated.PendingEntities.ToArray();
+        generated.PostProcessing.Clear();
         generated.PendingEntities.Clear();
-    }
-
-    /// <summary>
-    /// Maps a vanilla entity type id (e.g. <c>minecraft:end_crystal</c>) to Obsidian's <see cref="EntityType"/>.
-    /// </summary>
-    private static bool TryGetEntityType(string id, out EntityType type)
-    {
-        var name = id[(id.IndexOf(':') + 1)..].Replace("_", string.Empty);
-        return Enum.TryParse(name, ignoreCase: true, out type);
+        return (fluids, entities);
     }
 
     /// <summary>
@@ -250,6 +243,20 @@ internal class MojangGenerator : ILevelGenerator
 
         await LightEngine.LightChunkAsync(chunk, this.world, this.Dimension.HasSkyLight);
         chunk.SetChunkStatus(ChunkGenStage.light);
+
+        // Light spreads into lit neighbors, and complete ones may already be on clients.
+        if (this.world is AbstractLevel level)
+        {
+            for (var dx = -1; dx <= 1; dx++)
+            {
+                for (var dz = -1; dz <= 1; dz++)
+                {
+                    var neighbor = await this.world.GetChunkAsync(chunk.X + dx, chunk.Z + dz, scheduleGeneration: false);
+                    if (neighbor is not null && (dx != 0 || dz != 0) && neighbor.IsGenerated)
+                        level.SendLightUpdate(neighbor);
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -281,14 +288,8 @@ internal class MojangGenerator : ILevelGenerator
     /// <summary>
     /// Ticks the fluids left in the chunk's post-processing (vanilla runs their fluid tick when the chunk becomes complete).
     /// </summary>
-    private async ValueTask ScheduleFluidUpdatesAsync(IChunk chunk)
+    private async ValueTask ScheduleFluidUpdatesAsync(IChunk chunk, Vector[] positions)
     {
-        if (chunk is not Chunk generated || generated.PostProcessing.Count == 0)
-            return;
-
-        var positions = generated.PostProcessing.ToArray();
-        generated.PostProcessing.Clear();
-
         foreach (var position in positions)
         {
             var block = chunk.GetBlock(position);
@@ -296,6 +297,8 @@ internal class MojangGenerator : ILevelGenerator
                 await this.world.ScheduleBlockUpdateAsync(new BlockUpdate(this.world, position, block));
         }
     }
+
+    public async ValueTask<IDisposable?> LockChunkAsync(int x, int z) => await this.LockAsync(x, z, 0);
 
     public void Init(ILevel world)
     {

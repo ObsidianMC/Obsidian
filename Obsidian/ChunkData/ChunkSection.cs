@@ -40,11 +40,35 @@ public sealed class ChunkSection : IChunkSection
         Debug.Assert(airIndex == 0);
     }
 
-    private ChunkSection(DataContainer<IBlock> blockContainer, DataContainer<BiomeCodec> biomeContainer, int? yBase)
+    private ChunkSection(DataContainer<IBlock> blockContainer, DataContainer<BiomeCodec> biomeContainer, int? yBase, bool isEmpty)
     {
         BlockStateContainer = blockContainer;
         BiomeContainer = biomeContainer;
         YBase = yBase;
+        IsEmpty = isEmpty;
+    }
+
+    /// <summary>
+    /// Recomputes <see cref="IsEmpty"/> from the blocks, for sections whose block storage was filled directly (loading).
+    /// </summary>
+    public void RecalculateEmpty()
+    {
+        for (var y = 0; y < 16; y++)
+        {
+            for (var z = 0; z < 16; z++)
+            {
+                for (var x = 0; x < 16; x++)
+                {
+                    if (this.GetBlock(x, y, z).Material != Material.Air)
+                    {
+                        this.IsEmpty = false;
+                        return;
+                    }
+                }
+            }
+        }
+
+        this.IsEmpty = true;
     }
 
     public IBlock GetBlock(int x, int y, int z) => this.BlockStateContainer.Get(x, y, z);
@@ -112,5 +136,5 @@ public sealed class ChunkSection : IChunkSection
     public void SetLightLevel(Vector position, LightType lt, int level) => this.SetLightLevel(position.X, position.Y, position.Z, lt, level);
     public int GetLightLevel(Vector position, LightType lt) => this.GetLightLevel(position.X, position.Y, position.Z, lt);
 
-    public IChunkSection Clone() => new ChunkSection(BlockStateContainer.Clone(), BiomeContainer.Clone(), YBase);
+    public IChunkSection Clone() => new ChunkSection(BlockStateContainer.Clone(), BiomeContainer.Clone(), YBase, IsEmpty);
 }

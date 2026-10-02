@@ -83,6 +83,9 @@ public abstract class AbstractLevel : ILevel
     private readonly IDisposable optionsMonitor;
     private readonly Lock regionLock = new();
 
+    // Entities world generation placed, spawned on the level's tick rather than on generator threads.
+    private readonly ConcurrentQueue<GeneratedEntity> generatedEntities = new();
+
     public AbstractLevel(ILogger logger, IPacketBroadcaster packetBroadcaster, IOptionsMonitor<ServerConfiguration> configuration,
         IEventDispatcher eventDispatcher, ILevelGenerator worldGenerator, string name, string seed)
     {
@@ -243,7 +246,14 @@ public abstract class AbstractLevel : ILevel
             await BlockUpdateNeighborsAsync(new BlockUpdate(this, new Vector(x, y, z), block));
         }
         var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
-        c?.SetBlock(x, y, z, block);
+        if (c is null)
+            return;
+
+        c.SetBlock(x, y, z, block);
+
+        // Generated block entity data (e.g. a dungeon chest's loot) doesn't carry over to another block.
+        if (c.GetBlockEntity(x, y, z) is DataBlockEntity data && data.Id != block.BlockEntityType())
+            c.RemoveBlockEntity(x, y, z);
     }
 
     public IEnumerable<IEntity> GetEntitiesInRange(VectorF location, float distance = 10f)
@@ -346,7 +356,46 @@ public abstract class AbstractLevel : ILevel
         LevelData.Time += this.Configuration.TimeTickSpeedMultiplier;
         LevelData.RainTime -= this.Configuration.TimeTickSpeedMultiplier;
 
+        this.SpawnGeneratedEntities();
+
         await Task.WhenAll(this.Regions.Values.Select(r => r.BeginTickAsync()));
+    }
+
+    /// <summary>
+    /// Sends a chunk's light to the players that have the chunk, after it changed.
+    /// </summary>
+    internal void SendLightUpdate(IChunk chunk)
+    {
+        var packet = new LightUpdatePacket(chunk);
+        foreach (Player player in this.GetPlayersInChunkRange(new Vector(chunk.X << 4, 0, chunk.Z << 4)).Cast<Player>())
+            player.Client.SendPacket(packet);
+    }
+
+    /// <summary>
+    /// Queues entities placed by world generation to spawn on the next tick.
+    /// </summary>
+    internal void QueueGeneratedEntities(IEnumerable<GeneratedEntity> entities)
+    {
+        foreach (var entity in entities)
+            this.generatedEntities.Enqueue(entity);
+    }
+
+    /// <remarks>
+    /// Only the type, position and rotation are applied; Obsidian's entities don't read vanilla's other saved fields.
+    /// </remarks>
+    private void SpawnGeneratedEntities()
+    {
+        while (this.generatedEntities.TryDequeue(out var generated))
+        {
+            // Vanilla ids map to the entity type enum, e.g. minecraft:end_crystal to EndCrystal.
+            var name = generated.Type[(generated.Type.IndexOf(':') + 1)..].Replace("_", string.Empty);
+            if (!Enum.TryParse<EntityType>(name, ignoreCase: true, out var type))
+                continue;
+
+            var entity = this.SpawnEntity(generated.Position, type);
+            entity.Yaw = generated.Yaw;
+            entity.Pitch = generated.Pitch;
+        }
     }
 
     public IRegion LoadRegionByChunk(int chunkX, int chunkZ)
@@ -367,7 +416,10 @@ public abstract class AbstractLevel : ILevel
             if (Regions.TryGetValue(value, out region))
                 return region;
 
-            region = new Region(regionX, regionZ, FolderPath, logger: this.Logger, minY: this.MinY, height: this.Height);
+            region = new Region(regionX, regionZ, FolderPath, logger: this.Logger, minY: this.MinY, height: this.Height)
+            {
+                LockChunk = this.Generator.LockChunkAsync
+            };
             this.Logger.LogDebug("Trying to add {x}:{z} to {path}", regionX, regionZ, region.RegionFolder);
 
             if (this.Regions.TryAdd(value, region))

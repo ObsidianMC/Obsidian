@@ -1,5 +1,4 @@
 using Obsidian.Nbt;
-using System.IO;
 
 namespace Obsidian.WorldData;
 
@@ -85,21 +84,38 @@ public sealed class DataBlockEntity : IBlockEntity
     public IBlockEntity Clone() => new DataBlockEntity { Id = this.Id, BlockPosition = this.BlockPosition, Data = Copy(this.Data) };
 
     /// <summary>
-    /// Deep copies a compound by writing and reading it back.
+    /// Deep copies a compound.
     /// </summary>
     private static NbtCompound Copy(NbtCompound compound)
     {
-        using var stream = new MemoryStream();
-        using (var writer = new NbtWriterStream(stream, NbtCompression.None, ""))
+        var copy = new NbtCompound(compound.Name ?? string.Empty);
+        foreach (var (name, tag) in compound)
+            copy.Add(name, Copy(tag));
+
+        return copy;
+    }
+
+    private static INbtTag Copy(INbtTag tag)
+    {
+        switch (tag)
         {
-            foreach (var (_, tag) in compound)
-                writer.WriteTag(tag);
+            case NbtCompound compound:
+                return Copy(compound);
+            case NbtList list:
+                var listCopy = new NbtList(list.ListType, list.Name ?? string.Empty);
+                foreach (var child in list)
+                    listCopy.Add(Copy(child));
 
-            writer.EndCompound();
-            writer.TryFinish();
+                return listCopy;
+            case NbtArray<byte> bytes:
+                return new NbtArray<byte>(bytes.Name, [.. bytes.GetArray()]);
+            case NbtArray<int> ints:
+                return new NbtArray<int>(ints.Name, [.. ints.GetArray()]);
+            case NbtArray<long> longs:
+                return new NbtArray<long>(longs.Name, [.. longs.GetArray()]);
+            default:
+                // Value tags are immutable.
+                return tag;
         }
-
-        stream.Position = 0;
-        return (NbtCompound)new NbtReader(stream, NbtCompression.None).ReadNextTag()!;
     }
 }

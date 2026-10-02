@@ -37,6 +37,11 @@ public class Region : IRegion
     // Serializes filling empty chunk slots, so concurrent callers never end up with different instances of a chunk.
     private readonly SemaphoreSlim chunkSlotLock = new(1, 1);
 
+    /// <summary>
+    /// Locks a chunk against generation while it's serialized (the level's generator), or <c>null</c> for no locking.
+    /// </summary>
+    internal Func<int, int, ValueTask<IDisposable?>>? LockChunk { get; init; }
+
     // The dimension's build range, which decides the section count of loaded chunks.
     private readonly int minY;
     private readonly int height;
@@ -163,7 +168,9 @@ public class Region : IRegion
         await using MemoryStream strm = new();
         await using NbtWriterStream writer = new(strm, ChunkCompression, "");
 
-        SerializeChunk(writer, chunk);
+        // Generation writes chunks (and their neighbors) under its locks, so the snapshot is taken under the chunk's lock.
+        using (this.LockChunk is null ? null : await this.LockChunk(chunk.X, chunk.Z))
+            SerializeChunk(writer, chunk);
 
         writer.EndCompound();
 
@@ -249,6 +256,9 @@ public class Region : IRegion
                 section.BlockStateContainer.DataArray.storage = data!.GetArray();
             }
 
+            // The storage was filled directly, so the section doesn't know whether it holds blocks yet.
+            (section as ChunkSection)?.RecalculateEmpty();
+
             if (sectionCompound.TryGetTag<NbtCompound>("biomes", out var biomesCompound))
             {
                 if (biomesCompound.TryGetTag<NbtList>("palette", out var biomesPalette))
@@ -286,9 +296,16 @@ public class Region : IRegion
             }
         }
 
-        if (storedMinSection == minSection)
+        // Stored heights are relative to the stored min Y and packed for the stored height, so they're only kept when both
+        // match; otherwise they're recomputed from the blocks.
+        var heightmaps = (NbtCompound)chunkCompound["Heightmaps"];
+        var expectedLength = chunk.Heightmaps[HeightmapType.MotionBlocking].data.storage.Length;
+        var heightmapsMatch = storedMinSection == minSection
+            && heightmaps.All(entry => ((NbtArray<long>)entry.Value).Count == expectedLength);
+
+        if (heightmapsMatch)
         {
-            foreach (var (name, heightmap) in (NbtCompound)chunkCompound["Heightmaps"])
+            foreach (var (name, heightmap) in heightmaps)
             {
                 var heightmapType = (HeightmapType)Enum.Parse(typeof(HeightmapType), name.Replace("_", ""), true);
                 chunk.Heightmaps[heightmapType].data.storage = ((NbtArray<long>)heightmap).GetArray();
@@ -296,7 +313,6 @@ public class Region : IRegion
         }
         else
         {
-            // Stored heights are relative to the old min Y, so recompute them from the blocks.
             WorldgenHeightmaps.Update(chunk, this.minY, this.height);
             WorldgenHeightmaps.UpdateFinal(chunk, this.minY, this.height);
         }

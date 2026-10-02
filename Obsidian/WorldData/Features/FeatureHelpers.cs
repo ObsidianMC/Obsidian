@@ -106,14 +106,15 @@ internal static class FeatureHelpers
     /// <summary>
     /// Vanilla <c>SpawnerBlockEntity.setEntityId</c>: sets the mob the spawner at <paramref name="position"/> spawns.
     /// </summary>
-    /// <param name="entityId">The entity type id, e.g. <c>minecraft:zombie</c>.</param>
-    public static void SetSpawnerEntity(IWorldGenLevel level, Vector position, string entityId)
+    /// <param name="pickEntity">Picks the entity type id (e.g. <c>minecraft:zombie</c>); like vanilla, only called (and its
+    /// random drawn) when there's a spawner.</param>
+    public static void SetSpawnerEntity(IWorldGenLevel level, Vector position, Func<string> pickEntity)
     {
         var spawner = level.GetBlockEntity(position) as DataBlockEntity;
         if (spawner?.Id != "minecraft:mob_spawner")
             return;
 
-        spawner.Set(new NbtCompound("SpawnData") { new NbtCompound("entity") { new NbtTag<string>("id", entityId) } });
+        spawner.Set(new NbtCompound("SpawnData") { new NbtCompound("entity") { new NbtTag<string>("id", pickEntity()) } });
     }
 
     /// <summary>

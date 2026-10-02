@@ -17,8 +17,9 @@ namespace Obsidian.WorldData.Lighting;
 /// pass, which takes light away before spreading it again.
 /// </para>
 /// <para>
-/// Light is stored and spread within the build range. Vanilla also keeps light for one section below and one above it,
-/// but light in generated terrain never needs to pass through them to reach the build range.
+/// Light is stored and spread within the build range. Vanilla also keeps light for one section below and one above it;
+/// the only light that matters from them is the sky light above the build range shining down into the top layer, which is
+/// spread from a virtual source above it.
 /// </para>
 /// </remarks>
 internal sealed class LightEngine
@@ -200,6 +201,11 @@ internal sealed class LightEngine
                 var eastSource = x == 15 ? east[z] : lowest[z * 16 + x + 1];
                 var highestNeighborSource = Math.Max(Math.Max(northSource, southSource), Math.Max(westSource, eastSource));
 
+                // A column whose top block stops full sky light has its lowest source above the build range, in vanilla's
+                // light section above it; that source still shines down into the top block.
+                if (source >= top)
+                    this.LightFromAbove(x, z);
+
                 // Sources above every neighboring column's sources have nothing to light.
                 var end = Math.Min(top, source == SkyLightSources.BelowWorld ? highestNeighborSource : Math.Max(highestNeighborSource, source + 1));
                 for (var y = Math.Max(source, this.minY); y < end; y++)
@@ -224,6 +230,23 @@ internal sealed class LightEngine
 
         this.PullFromNeighbors(LightType.Sky);
         this.Propagate(LightType.Sky);
+    }
+
+    /// <summary>
+    /// Spreads full sky light from just above the build range down into the top block of column (<paramref name="x"/>,
+    /// <paramref name="z"/>), like vanilla's sources in the light section above the world.
+    /// </summary>
+    private void LightFromAbove(int x, int z)
+    {
+        var position = Pack(x, this.height - 1, z);
+        var block = this.GetBlock(position);
+        var level = 15 - Math.Max(1, block.LightBlock());
+        if (level <= this.GetLight(position, LightType.Sky) || BlockLight.LightShapesOcclude(BlocksRegistry.Air, block, BlockFace.Down))
+            return;
+
+        this.SetLight(position, LightType.Sky, level);
+        if (level > 1)
+            this.Enqueue(position, level | (AllDirections & ~Bit(BlockFace.Up)));
     }
 
     /// <summary>

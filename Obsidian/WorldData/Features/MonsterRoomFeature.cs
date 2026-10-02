@@ -114,7 +114,7 @@ public sealed class MonsterRoomFeature : ConfiguredFeatureBase
         }
 
         FeatureHelpers.SafeSetBlock(level, origin, Spawner, canReplace);
-        FeatureHelpers.SetSpawnerEntity(level, origin, mobs[random.NextInt(mobs.Length)]);
+        FeatureHelpers.SetSpawnerEntity(level, origin, () => mobs[random.NextInt(mobs.Length)]);
         return true;
     }
 }

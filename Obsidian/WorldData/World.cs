@@ -38,7 +38,8 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
             DefaultGamemode = (Gamemode)levelCompound.GetInt("GameType"),
             GeneratorVersion = levelCompound.GetInt("generatorVersion"),
             RainTime = levelCompound.GetInt("rainTime"),
-            SpawnPosition = new VectorF(levelCompound.GetInt("SpawnX"), levelCompound.GetInt("SpawnY"), levelCompound.GetInt("SpawnZ")),
+            // The spawn is saved as a block; players spawn at its center.
+            SpawnPosition = new VectorF(levelCompound.GetInt("SpawnX") + 0.5f, levelCompound.GetInt("SpawnY"), levelCompound.GetInt("SpawnZ") + 0.5f),
             ThunderTime = levelCompound.GetInt("thunderTime"),
             Version = levelCompound.GetInt("version"),
             LastPlayed = levelCompound.GetLong("LastPlayed"),
@@ -89,9 +90,10 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
         writer.WriteInt("GameType", (int)LevelData.DefaultGamemode);
         writer.WriteInt("generatorVersion", LevelData.GeneratorVersion);
         writer.WriteInt("rainTime", LevelData.RainTime);
-        writer.WriteInt("SpawnX", (int)LevelData.SpawnPosition.X);
-        writer.WriteInt("SpawnY", (int)LevelData.SpawnPosition.Y);
-        writer.WriteInt("SpawnZ", (int)LevelData.SpawnPosition.Z);
+        var spawn = LevelData.SpawnPosition.Floor();
+        writer.WriteInt("SpawnX", (int)spawn.X);
+        writer.WriteInt("SpawnY", (int)spawn.Y);
+        writer.WriteInt("SpawnZ", (int)spawn.Z);
         writer.WriteInt("thunderTime", LevelData.ThunderTime);
         writer.WriteInt("version", LevelData.Version);
         writer.WriteLong("LastPlayed", DateTimeOffset.Now.ToUnixTimeMilliseconds());
