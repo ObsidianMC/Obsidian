@@ -156,15 +156,7 @@ dotnet_code_quality_unused_parameters=all:warning
 # IDE0305: Simplify collection initializers (IDE0305) - See https://github.com/dotnet/roslyn/issues/70656
 dotnet_diagnostic.IDE0305.severity = none
 
-# Performance rules from the recommended set (logging rules CA1848/CA1873 aside), enforced so they stay fixed.
-dotnet_diagnostic.CA1805.severity = warning
-dotnet_diagnostic.CA1806.severity = warning
-dotnet_diagnostic.CA1822.severity = warning
+# Every performance rule is a warning so the code stays clean of them.
+dotnet_analyzer_diagnostic.category-Performance.severity = warning
 # Public members can't be made static without breaking the API or reflection-discovered handlers and commands.
 dotnet_code_quality.CA1822.api_surface = private, internal
-dotnet_diagnostic.CA1829.severity = warning
-dotnet_diagnostic.CA1835.severity = warning
-dotnet_diagnostic.CA1852.severity = warning
-dotnet_diagnostic.CA1855.severity = warning
-dotnet_diagnostic.CA1859.severity = warning
-dotnet_diagnostic.CA1861.severity = warning
