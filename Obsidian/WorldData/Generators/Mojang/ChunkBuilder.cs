@@ -2,6 +2,7 @@ using Obsidian.API.World.Generator.Noise;
 using Obsidian.WorldData.Generators.Mojang.Carvers;
 using Obsidian.WorldData.Features.Tree;
 using Obsidian.WorldData.Generators.Mojang.Features;
+using Obsidian.WorldData.Generators.Mojang.Structures;
 
 namespace Obsidian.WorldData.Generators.Mojang;
 
@@ -21,16 +22,23 @@ internal sealed class ChunkBuilder
     public RandomState RandomState { get; }
 
     /// <summary>
+    /// The world's structures, or <c>null</c> when structures aren't generated.
+    /// </summary>
+    public StructureManager? Structures { get; }
+
+    /// <summary>
     /// Creates a builder for the overworld.
     /// </summary>
     /// <param name="seed">World seed; see <see cref="RandomState.ParseSeed"/> for level seed strings.</param>
-    public ChunkBuilder(long seed) : this(MojangDimension.Overworld, seed)
+    /// <param name="generateStructures">Whether structures generate, like vanilla's <c>generate-structures</c> option.</param>
+    public ChunkBuilder(long seed, bool generateStructures = true) : this(MojangDimension.Overworld, seed, generateStructures)
     {
     }
 
     /// <param name="dimension">The dimension to generate. Chunks passed in must use its build range.</param>
     /// <param name="seed">World seed; see <see cref="RandomState.ParseSeed"/> for level seed strings.</param>
-    public ChunkBuilder(MojangDimension dimension, long seed)
+    /// <param name="generateStructures">Whether structures generate, like vanilla's <c>generate-structures</c> option.</param>
+    public ChunkBuilder(MojangDimension dimension, long seed, bool generateStructures = true)
     {
         this.dimension = dimension;
         this.settings = NoiseRegistry.NoiseSettings.All[dimension.NoiseSettings];
@@ -41,12 +49,23 @@ internal sealed class ChunkBuilder
         this.surfaceBuilder = new SurfaceBuilder(this.RandomState, this.biomeSource);
         this.carverStep = new CarverStep(this.RandomState, this.surfaceBuilder, this.biomeSource, dimension.Carvers);
         this.featureDecorator = new FeatureDecorator(this.biomeSource.PossibleBiomes, BiomeFeatures.All, this.settings.Noise.Height);
+
+        if (generateStructures)
+            this.Structures = new StructureManager(this.RandomState, this.biomeSource, this.terrainGenerator, dimension.MinY, dimension.Height);
     }
 
     /// <summary>
-    /// Fills the chunk from the noise. Fluids that need an update are added to the chunk's post-processing.
+    /// Fills the chunk from the noise, reshaped around nearby structures. Fluids that need an update are added to the chunk's
+    /// post-processing.
     /// </summary>
-    public void Generate3DTerrain(IChunk chunk) => this.terrainGenerator.Generate(chunk, (chunk as Chunk)?.PostProcessing);
+    public void Generate3DTerrain(IChunk chunk)
+    {
+        var beardifier = this.Structures is null
+            ? Beardifier.Empty
+            : Beardifier.ForStructuresInChunk(this.Structures.GetTerrainAdaptingStarts(chunk.X, chunk.Z), chunk.X, chunk.Z);
+
+        this.terrainGenerator.Generate(chunk, (chunk as Chunk)?.PostProcessing, beardifier);
+    }
 
     /// <summary>
     /// Stores the biome of every 4x4x4 cell of the chunk, over the whole build range like vanilla.
@@ -100,7 +119,7 @@ internal sealed class ChunkBuilder
             .Select(entry => entry.Value)
             .ToArray();
 
-        this.featureDecorator.Decorate(region, neighbors, chunkX, chunkZ, onPlaced);
+        this.featureDecorator.Decorate(region, neighbors, chunkX, chunkZ, this.Structures, this.terrainGenerator, onPlaced);
     }
 
     /// <summary>

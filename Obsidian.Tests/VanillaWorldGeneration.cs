@@ -72,7 +72,7 @@ public class VanillaWorldGeneration
     [InlineData(12345L, -100, 57, "c1baf842b304ec003631790b569460e256b68a49905bd7e407ac268d042783db", "9192ce66418d5a40c7fa111038c502d8e5a1ac47201f1a853da58c376168167a")]
     public void ChunkMatchesVanilla(long seed, int chunkX, int chunkZ, string expectedBlocks, string expectedBiomes)
     {
-        var builder = new ChunkBuilder(seed);
+        var builder = new ChunkBuilder(seed, generateStructures: false);
         var chunk = new Chunk(chunkX, chunkZ);
 
         builder.PopulateBiomes(chunk);
@@ -95,7 +95,7 @@ public class VanillaWorldGeneration
     [InlineData(0L, -7, 12, "600b60ee8b1bb837f681e4d8a9fa817edc3b1e6cdd59ca63acd48608d4e43316")]
     public void CarvedChunkMatchesVanilla(long seed, int chunkX, int chunkZ, string expectedBlocks)
     {
-        var builder = new ChunkBuilder(seed);
+        var builder = new ChunkBuilder(seed, generateStructures: false);
         var chunk = new Chunk(chunkX, chunkZ);
 
         builder.PopulateBiomes(chunk);
@@ -115,7 +115,7 @@ public class VanillaWorldGeneration
     [InlineData(12345L, -140, 28, "1c65b8e967b38f9f9eaa03190e123d43aa8e6fa8b39df9ed2e3672bc0cd46939")] // desert with a fossil
     public void DecoratedChunkMatchesVanilla(long seed, int chunkX, int chunkZ, string expectedBlocks)
     {
-        var builder = new ChunkBuilder(seed);
+        var builder = new ChunkBuilder(seed, generateStructures: false);
         var area = new Dictionary<(int X, int Z), IChunk>();
 
         for (var dx = -1; dx <= 1; dx++)
@@ -145,7 +145,7 @@ public class VanillaWorldGeneration
     public void FullChunkMatchesVanilla(string dimensionName, long seed, int chunkX, int chunkZ, string expectedBlocks)
     {
         var dimension = dimensionName == "nether" ? MojangDimension.Nether : MojangDimension.End;
-        var chunks = new FullChunks(new ChunkBuilder(dimension, seed), dimension);
+        var chunks = new FullChunks(new ChunkBuilder(dimension, seed, generateStructures: false), dimension);
 
         Assert.Equal(expectedBlocks, Sha256(BlockNames(chunks.Get(chunkX, chunkZ))));
     }
@@ -156,7 +156,7 @@ public class VanillaWorldGeneration
     [InlineData(-4172144997902289642L, -448, 71, -432)]
     public void SpawnMatchesVanilla(long seed, int x, int y, int z)
     {
-        var builder = new ChunkBuilder(seed);
+        var builder = new ChunkBuilder(seed, generateStructures: false);
         var chunks = new FullChunks(builder, MojangDimension.Overworld);
         var (climateX, climateZ) = builder.FindClimateSpawn();
 
@@ -189,7 +189,7 @@ public class VanillaWorldGeneration
             "end" => MojangDimension.End,
             _ => MojangDimension.Overworld
         };
-        var builder = new ChunkBuilder(dimension, seed);
+        var builder = new ChunkBuilder(dimension, seed, generateStructures: false);
         var area = new Dictionary<(int X, int Z), IChunk>();
 
         for (var dz = -3; dz <= 3; dz++)

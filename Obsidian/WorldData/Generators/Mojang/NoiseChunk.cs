@@ -1,4 +1,5 @@
 using Obsidian.API.World.Generator.DensityFunctions;
+using Obsidian.API.World.Generator.RandomSources;
 
 namespace Obsidian.WorldData.Generators.Mojang;
 
@@ -115,7 +116,14 @@ internal sealed class NoiseChunk
 
     private IDensityFunction PreliminarySurfaceLevelFunction => field ??= this.fillLoopMode.Map(this.RandomState.Router.PreliminarySurfaceLevel);
 
-    public NoiseChunk(RandomState randomState, int chunkX, int chunkZ)
+    public NoiseChunk(RandomState randomState, int chunkX, int chunkZ) : this(randomState, chunkX << 4, chunkZ << 4, null)
+    {
+    }
+
+    /// <param name="minX">X of the first cell; a multiple of the cell width.</param>
+    /// <param name="minZ">Z of the first cell; a multiple of the cell width.</param>
+    /// <param name="cellCountXZ">Cells along X and Z, or <c>null</c> for a whole chunk.</param>
+    private NoiseChunk(RandomState randomState, int minX, int minZ, int? cellCountXZ)
     {
         this.RandomState = randomState;
 
@@ -124,14 +132,24 @@ internal sealed class NoiseChunk
         this.CellHeight = noise.SizeVertical * 4;
         this.MinY = noise.MinY;
         this.Height = noise.Height;
-        this.ChunkMinX = chunkX << 4;
-        this.ChunkMinZ = chunkZ << 4;
-        this.CellCountXZ = 16 / this.CellWidth;
+        this.ChunkMinX = minX;
+        this.ChunkMinZ = minZ;
+        this.CellCountXZ = cellCountXZ ?? 16 / this.CellWidth;
         this.CellCountY = Math.DivRem(this.Height, this.CellHeight).Quotient;
         this.CellNoiseMinY = (int)Math.Floor((double)this.MinY / this.CellHeight);
 
         this.cellCacheMode = new ChunkVisitor(this, InterpolationOrder.CellCache);
         this.fillLoopMode = new ChunkVisitor(this, InterpolationOrder.FillLoop);
+    }
+
+    /// <summary>
+    /// A noise chunk covering only the cell holding the block column (<paramref name="x"/>, <paramref name="z"/>), like the
+    /// one vanilla's <c>iterateNoiseColumn</c> builds.
+    /// </summary>
+    public static NoiseChunk ForColumn(RandomState randomState, int x, int z)
+    {
+        var cellWidth = randomState.Settings.Noise.SizeHorizontal * 4;
+        return new NoiseChunk(randomState, Mth.FloorDiv(x, cellWidth) * cellWidth, Mth.FloorDiv(z, cellWidth) * cellWidth, 1);
     }
 
     /// <summary>

@@ -1,5 +1,7 @@
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.WorldData.Generators.Mojang.Structures;
+using Obsidian.WorldData.Structures;
 
 namespace Obsidian.WorldData.Generators.Mojang.Features;
 
@@ -8,8 +10,8 @@ namespace Obsidian.WorldData.Generators.Mojang.Features;
 /// </summary>
 /// <remarks>
 /// Features come from the biomes of the 3x3 chunks around the chunk being decorated, ordered by
-/// <see cref="FeatureSorter"/>. Each feature gets its own seed from the chunk's decoration seed, its index in the
-/// step and the step. Structures aren't generated yet, so their part of each step is skipped.
+/// <see cref="FeatureSorter"/>. Each step first places the structures reaching the chunk, then the features; each structure
+/// and feature gets its own seed from the chunk's decoration seed, its index in the step and the step.
 /// </remarks>
 internal sealed class FeatureDecorator
 {
@@ -41,9 +43,11 @@ internal sealed class FeatureDecorator
     /// which must hold that chunk and its 8 neighbors.
     /// </summary>
     /// <param name="areaChunks">The 3x3 chunks around the chunk; their biomes decide which features run.</param>
+    /// <param name="structures">The world's structures, or <c>null</c> when structures aren't generated.</param>
+    /// <param name="terrain">The noise terrain, for structure pieces that read it.</param>
     /// <param name="onPlaced">Optional callback with the step, global index, feature and whether it placed anything.</param>
     public void Decorate(WorldGenRegion region, IReadOnlyCollection<IChunk> areaChunks, int chunkX, int chunkZ,
-        Action<int, int, PlacedFeature, bool>? onPlaced = null)
+        StructureManager? structures, IStructureTerrain terrain, Action<int, int, PlacedFeature, bool>? onPlaced = null)
     {
         var origin = new Vector(chunkX << 4, region.MinY, chunkZ << 4);
         // Like vanilla's PlacementContext: the level's min Y, but at most the generator's depth (128 in the nether), so
@@ -57,8 +61,34 @@ internal sealed class FeatureDecorator
         var biomes = this.CollectBiomes(areaChunks, region.MinY, region.Height);
         var stepCount = Math.Max(DecorationStepCount, this.featuresPerStep.Count);
 
+        // Vanilla's getWritableArea: the chunk, above the bottom layer.
+        var writableArea = BlockBox.Create(origin.X, region.MinY + 1, origin.Z, origin.X + 15, region.MinY + region.Height - 1, origin.Z + 15);
+
         for (var step = 0; step < stepCount; step++)
         {
+            if (structures is not null && step < structures.StructuresPerStep.Count)
+            {
+                var stepStructures = structures.StructuresPerStep[step];
+                for (var index = 0; index < stepStructures.Count; index++)
+                {
+                    random.SetFeatureSeed(decorationSeed, index, step);
+                    var context = new StructurePieceContext(region, random, writableArea, chunkX, chunkZ, default) { Terrain = terrain };
+
+                    foreach (var start in structures.GetReferencingStarts(chunkX, chunkZ, stepStructures[index]))
+                    {
+                        try
+                        {
+                            start.PlaceInChunk(context);
+                        }
+                        catch (Exception exception)
+                        {
+                            throw new InvalidOperationException(
+                                $"Failed to place structure '{start.Structure.Identifier}' in chunk ({chunkX}, {chunkZ}).", exception);
+                        }
+                    }
+                }
+            }
+
             if (step >= this.featuresPerStep.Count)
                 continue;
 

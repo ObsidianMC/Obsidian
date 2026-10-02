@@ -7,21 +7,23 @@ using System.Text.Json;
 namespace Obsidian.SourceGenerators.Registry;
 
 /// <summary>
-/// Generates the <c>ConfiguredFeatures</c>, <c>PlacedFeatures</c>, <c>ProcessorLists</c> and <c>BiomeFeatures</c>
-/// registries from vanilla's feature data in <c>Assets/worldgen/features</c>, <c>Assets/worldgen/placed_features</c>,
-/// <c>Assets/worldgen/processor_lists</c> and <c>Assets/worldgen/biome_features.json</c>.
+/// Generates the <c>ConfiguredFeatures</c>, <c>PlacedFeatures</c>, <c>ProcessorLists</c>, <c>BiomeFeatures</c>,
+/// <c>Structures</c> and <c>StructureSets</c> registries from vanilla's data in <c>Assets/worldgen/features</c>,
+/// <c>Assets/worldgen/placed_features</c>, <c>Assets/worldgen/processor_lists</c>, <c>Assets/worldgen/biome_features.json</c>,
+/// <c>Assets/worldgen/structures</c> and <c>Assets/worldgen/structure_sets</c>.
 /// </summary>
 /// <remarks>
 /// Each JSON value is emitted according to the C# type of the property it is assigned to. Polymorphic values
-/// (<c>type</c>, <c>predicate_type</c> or <c>processor_type</c>) map to the class tagged with that resource location
-/// (<c>[ConfiguredFeatureClass]</c>, <c>[ConfiguredFeatureProperty]</c>, <c>[TreeProperty]</c>) that is assignable to the
-/// property's type. Every registry member is created lazily and shared, so references between features are safe.
+/// (<c>type</c>, <c>predicate_type</c>, <c>processor_type</c> or <c>element_type</c>) map to the class tagged with that
+/// resource location (<c>[ConfiguredFeatureClass]</c>, <c>[ConfiguredFeatureProperty]</c>, <c>[TreeProperty]</c>,
+/// <c>[StructureType]</c>) that is assignable to the property's type. Every registry member is created lazily and shared,
+/// so references between entries are safe.
 /// </remarks>
 [Generator]
 public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGenerator
 {
     private static readonly string[] attributeNames =
-        ["ConfiguredFeatureClassAttribute", "ConfiguredFeaturePropertyAttribute", "TreePropertyAttribute", "ConfiguredFeatureAttribute"];
+        ["ConfiguredFeatureClassAttribute", "ConfiguredFeaturePropertyAttribute", "TreePropertyAttribute", "ConfiguredFeatureAttribute", "StructureTypeAttribute"];
 
     private static readonly DiagnosticDescriptor unknownType = new("OBSWG001", "Unknown worldgen type",
         "No class is registered for worldgen type '{0}' assignable to {1} (used by {2})", "WorldgenFeatures", DiagnosticSeverity.Warning, true);
@@ -41,7 +43,9 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
     {
         var jsonFiles = ctx.AdditionalTextsProvider
             .Select(static (file, ct) => (path: GetWorldgenPath(file.Path), text: file))
-            .Where(static file => file.path is not null && (file.path.StartsWith("features/") || file.path.StartsWith("placed_features/") || file.path.StartsWith("processor_lists/") || file.path == "biome_features"))
+            .Where(static file => file.path is not null && (file.path.StartsWith("features/") || file.path.StartsWith("placed_features/")
+                || file.path.StartsWith("processor_lists/") || file.path.StartsWith("structures/") || file.path.StartsWith("structure_sets/")
+                || file.path == "biome_features"))
             .Select(static (file, ct) => (path: file.path!, json: file.text.GetText(ct)!.ToString()));
 
         var classDeclarations = ctx.SyntaxProvider
@@ -101,9 +105,11 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
         var configured = ParseCategories(files, "features/");
         var placed = ParseCategories(files, "placed_features/");
         var processorLists = ParseCategories(files, "processor_lists/");
+        var structures = ParseCategories(files, "structures/");
+        var structureSets = ParseCategories(files, "structure_sets/");
         var biomeFeaturesJson = files.FirstOrDefault(file => file.path == "biome_features").json;
 
-        var emitter = new FeatureEmitter(compilation, types, configured, placed, processorLists, context);
+        var emitter = new FeatureEmitter(compilation, types, configured, placed, processorLists, structures, structureSets, context);
 
         context.AddSource("ConfiguredFeatures.g.cs", emitter.EmitConfiguredFeatures());
         context.AddSource("PlacedFeatures.g.cs", emitter.EmitPlacedFeatures());
@@ -113,6 +119,12 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
 
         if (biomeFeaturesJson is not null)
             context.AddSource("BiomeFeatures.g.cs", emitter.EmitBiomeFeatures(biomeFeaturesJson));
+
+        if (structures.Count > 0)
+            context.AddSource("Structures.g.cs", emitter.EmitStructures());
+
+        if (structureSets.Count > 0)
+            context.AddSource("StructureSets.g.cs", emitter.EmitStructureSets());
     }
 
     /// <summary>
@@ -140,9 +152,13 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
         private readonly List<(string Category, List<(string Id, JsonElement Json)> Entries)> configured;
         private readonly List<(string Category, List<(string Id, JsonElement Json)> Entries)> placed;
         private readonly List<(string Category, List<(string Id, JsonElement Json)> Entries)> processorLists;
+        private readonly List<(string Category, List<(string Id, JsonElement Json)> Entries)> structures;
+        private readonly List<(string Category, List<(string Id, JsonElement Json)> Entries)> structureSets;
         private readonly Dictionary<string, string> configuredReferences = [];
         private readonly Dictionary<string, string> placedReferences = [];
         private readonly Dictionary<string, string> processorListReferences = [];
+        private readonly Dictionary<string, string> structureReferences = [];
+        private readonly Dictionary<string, string> structureSetReferences = [];
         private readonly SourceProductionContext context;
 
         private readonly INamedTypeSymbol configuredFeatureBase;
@@ -150,18 +166,23 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
         private readonly INamedTypeSymbol placementModifierBase;
         private readonly INamedTypeSymbol heightProvider;
         private readonly INamedTypeSymbol? processorList;
+        private readonly INamedTypeSymbol? structureBase;
+        private readonly INamedTypeSymbol? structureSet;
 
         private string currentOwner = string.Empty;
 
         public FeatureEmitter(Compilation compilation, Dictionary<string, List<INamedTypeSymbol>> types,
             List<(string, List<(string, JsonElement)>)> configured, List<(string, List<(string, JsonElement)>)> placed,
-            List<(string, List<(string, JsonElement)>)> processorLists, SourceProductionContext context)
+            List<(string, List<(string, JsonElement)>)> processorLists, List<(string, List<(string, JsonElement)>)> structures,
+            List<(string, List<(string, JsonElement)>)> structureSets, SourceProductionContext context)
         {
             this.compilation = compilation;
             this.types = types;
             this.configured = configured;
             this.placed = placed;
             this.processorLists = processorLists;
+            this.structures = structures;
+            this.structureSets = structureSets;
             this.context = context;
 
             this.configuredFeatureBase = compilation.GetTypeByMetadataName("Obsidian.API.World.Features.ConfiguredFeatureBase")!;
@@ -169,6 +190,8 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
             this.placementModifierBase = compilation.GetTypeByMetadataName("Obsidian.API.World.Features.PlacementModifierBase")!;
             this.heightProvider = compilation.GetTypeByMetadataName("Obsidian.API.World.Features.IHeightProvider")!;
             this.processorList = compilation.GetTypeByMetadataName("Obsidian.WorldData.Structures.StructureProcessorList");
+            this.structureBase = compilation.GetTypeByMetadataName("Obsidian.WorldData.Structures.Structure");
+            this.structureSet = compilation.GetTypeByMetadataName("Obsidian.WorldData.Structures.StructureSet");
 
             foreach (var (category, entries) in configured)
             {
@@ -187,6 +210,119 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
                 foreach (var (id, _) in entries)
                     this.processorListReferences[id] = $"global::Obsidian.Registries.ProcessorLists.{MemberName(category)}.{MemberName(id)}";
             }
+
+            foreach (var (category, entries) in structures)
+            {
+                foreach (var (id, _) in entries)
+                    this.structureReferences[id] = $"global::Obsidian.Registries.Structures.{MemberName(category)}.{MemberName(id)}";
+            }
+
+            foreach (var (category, entries) in structureSets)
+            {
+                foreach (var (id, _) in entries)
+                    this.structureSetReferences[id] = $"global::Obsidian.Registries.StructureSets.{MemberName(category)}.{MemberName(id)}";
+            }
+        }
+
+        public string EmitStructures()
+        {
+            var builder = Header();
+            builder.AppendLine("/// <summary>");
+            builder.AppendLine("/// Vanilla structures, generated from <c>Assets/worldgen/structures</c>.");
+            builder.AppendLine("/// </summary>");
+            builder.AppendLine("public static partial class Structures");
+            builder.AppendLine("{");
+
+            var baseName = FullName(this.structureBase!);
+            foreach (var (category, entries) in this.structures)
+            {
+                builder.AppendLine($"    public static partial class {MemberName(category)}");
+                builder.AppendLine("    {");
+
+                foreach (var (id, json) in entries)
+                {
+                    this.currentOwner = id;
+                    var (typeName, expression) = this.EmitStructure(json, id);
+                    builder.AppendLine($"        public static {typeName} {MemberName(id)} => {LazyInit}{expression});");
+                    builder.AppendLine();
+                }
+
+                builder.AppendLine("    }");
+                builder.AppendLine();
+            }
+
+            AppendAll(builder, baseName, this.structureReferences);
+            builder.AppendLine("}");
+            return builder.ToString();
+        }
+
+        public string EmitStructureSets()
+        {
+            var builder = Header();
+            builder.AppendLine("/// <summary>");
+            builder.AppendLine("/// Vanilla structure sets, generated from <c>Assets/worldgen/structure_sets</c>.");
+            builder.AppendLine("/// </summary>");
+            builder.AppendLine("public static partial class StructureSets");
+            builder.AppendLine("{");
+
+            var typeName = FullName(this.structureSet!);
+            foreach (var (category, entries) in this.structureSets)
+            {
+                builder.AppendLine($"    public static partial class {MemberName(category)}");
+                builder.AppendLine("    {");
+
+                foreach (var (id, json) in entries)
+                {
+                    this.currentOwner = id;
+                    builder.AppendLine($"        public static {typeName} {MemberName(id)} => {LazyInit}{this.EmitObject(this.structureSet!, json, null, $"Identifier = {Literal(id)}")});");
+                    builder.AppendLine();
+                }
+
+                builder.AppendLine("    }");
+                builder.AppendLine();
+            }
+
+            AppendAll(builder, typeName, this.structureSetReferences);
+            builder.AppendLine("}");
+            return builder.ToString();
+        }
+
+        /// <summary>
+        /// Emits a structure (<c>{type, biomes, step, ...}</c>); returns the member type name and the expression. Unknown
+        /// types become an <c>UnsupportedStructure</c> keeping the properties every structure has.
+        /// </summary>
+        private (string TypeName, string Expression) EmitStructure(JsonElement json, string? identifier)
+        {
+            var type = json.GetProperty("type").GetString()!;
+            var extra = identifier is null ? null : $"Identifier = {Literal(identifier)}";
+            var symbol = this.FindType(type, this.structureBase!);
+
+            if (symbol is null)
+            {
+                this.Report(unknownType, type, "Structure");
+                var unsupported = this.compilation.GetTypeByMetadataName("Obsidian.WorldData.Structures.UnsupportedStructure")!;
+                return (FullName(this.structureBase!), this.EmitObject(unsupported, json, "type", extra, ignoreUnknownProperties: true));
+            }
+
+            return (FullName(symbol), this.EmitObject(symbol, json, "type", extra));
+        }
+
+        private string StructureReference(string id)
+        {
+            if (this.structureReferences.TryGetValue(id, out var reference))
+                return reference;
+
+            this.Report(unknownReference, "structure", id);
+            return "default!";
+        }
+
+        private string StructureSetReference(string id)
+        {
+            if (this.structureSetReferences.TryGetValue(id, out var reference))
+                return reference;
+
+            this.Report(unknownReference, "structure set", id);
+            return "default!";
         }
 
         public string EmitConfiguredFeatures()
@@ -464,6 +600,11 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
                         var entries = json.ValueKind == JsonValueKind.Array ? json.EnumerateArray().Select(entry => entry.GetString()!) : [json.GetString()!];
                         return $"new global::Obsidian.WorldData.Features.BlockSet({string.Join(", ", entries.Select(Literal))})";
                     }
+                case "BiomeSet":
+                    {
+                        var entries = json.ValueKind == JsonValueKind.Array ? json.EnumerateArray().Select(entry => entry.GetString()!) : [json.GetString()!];
+                        return $"new global::Obsidian.WorldData.Structures.BiomeSet({string.Join(", ", entries.Select(Literal))})";
+                    }
                 case "Vector":
                     {
                         var values = json.EnumerateArray().Select(value => value.GetInt32().ToString(CultureInfo.InvariantCulture)).ToArray();
@@ -481,6 +622,16 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
             if (this.processorList is not null && SymbolEqualityComparer.Default.Equals(target, this.processorList))
             {
                 return json.ValueKind == JsonValueKind.String ? this.ProcessorListReference(json.GetString()!) : this.EmitProcessorList(json, null);
+            }
+
+            if (this.structureBase is not null && IsAssignableTo(target, this.structureBase))
+            {
+                return json.ValueKind == JsonValueKind.String ? this.StructureReference(json.GetString()!) : this.EmitStructure(json, null).Expression;
+            }
+
+            if (this.structureSet is not null && SymbolEqualityComparer.Default.Equals(target, this.structureSet))
+            {
+                return json.ValueKind == JsonValueKind.String ? this.StructureSetReference(json.GetString()!) : this.EmitObject(this.structureSet, json, null, null);
             }
 
             if (IsAssignableTo(target, this.configuredFeatureBase))
@@ -512,6 +663,7 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
                 var discriminator = json.TryGetProperty("type", out var type) ? "type"
                     : json.TryGetProperty("predicate_type", out type) ? "predicate_type"
                     : json.TryGetProperty("processor_type", out type) ? "processor_type"
+                    : json.TryGetProperty("element_type", out type) ? "element_type"
                     : null;
 
                 if (discriminator is null && SymbolEqualityComparer.Default.Equals(target, this.heightProvider))
@@ -539,7 +691,9 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
         /// <summary>
         /// Emits <c>new Type { Property = value, ... }</c>, mapping JSON keys to PascalCase properties.
         /// </summary>
-        private string EmitObject(INamedTypeSymbol type, JsonElement json, string? discriminator, string? extraAssignment)
+        /// <param name="ignoreUnknownProperties">Skips JSON keys without a matching property instead of reporting them.</param>
+        private string EmitObject(INamedTypeSymbol type, JsonElement json, string? discriminator, string? extraAssignment,
+            bool ignoreUnknownProperties = false)
         {
             var assignments = new List<string>();
             if (extraAssignment is not null)
@@ -560,7 +714,9 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
 
                     if (member is null || member.SetMethod is null)
                     {
-                        this.Report(unknownProperty, type.Name, memberName, property.Name);
+                        if (!ignoreUnknownProperties)
+                            this.Report(unknownProperty, type.Name, memberName, property.Name);
+
                         continue;
                     }
 

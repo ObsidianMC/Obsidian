@@ -31,6 +31,16 @@ public static class Mth
 
     public static double Square(double value) => value * value;
 
+    /// <summary>Java's <c>Math.floorDiv</c>: division rounding towards negative infinity.</summary>
+    public static int FloorDiv(int value, int divisor)
+    {
+        var quotient = value / divisor;
+        return (value % divisor != 0 && (value ^ divisor) < 0) ? quotient - 1 : quotient;
+    }
+
+    /// <summary>Java's <c>Math.floorMod</c>: the remainder with the divisor's sign.</summary>
+    public static int FloorMod(int value, int divisor) => value - FloorDiv(value, divisor) * divisor;
+
     public static double Lerp(double delta, double start, double end) => start + delta * (end - start);
 
     public static double Lerp2(double deltaX, double deltaY, double x0y0, double x1y0, double x0y1, double x1y1) =>
