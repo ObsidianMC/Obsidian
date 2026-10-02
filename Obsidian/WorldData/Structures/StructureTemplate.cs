@@ -150,6 +150,16 @@ public sealed class StructureTemplate
     public BlockBox GetBoundingBox(StructurePlaceSettings settings, Vector position) =>
         this.GetBoundingBox(position, settings.Rotation, settings.RotationPivot, settings.Mirror);
 
+    /// <summary>
+    /// The template's box at <paramref name="position"/> when rotated around its origin without mirroring, like
+    /// <see cref="GetBoundingBox(StructurePlaceSettings, Vector)"/> with default settings besides the rotation.
+    /// </summary>
+    public BlockBox GetBoundingBox(Vector position, StructureRotation rotation) => this.RotatedBoxes[(int)rotation].Move(position);
+
+    // The box of each rotation at the origin: jigsaw assembly asks for them over and over.
+    private BlockBox[] RotatedBoxes => field ??=
+        [.. Enum.GetValues<StructureRotation>().Select(rotation => this.GetBoundingBox(Vector.Zero, rotation, Vector.Zero, StructureMirror.None))];
+
     public BlockBox GetBoundingBox(Vector position, StructureRotation rotation, Vector pivot, StructureMirror mirror)
     {
         var a = Transform(Vector.Zero, mirror, rotation, pivot);
@@ -189,6 +199,9 @@ public sealed class StructureTemplate
         // A single palette is always picked, so the position-seeded pick can be skipped.
         var palette = this.palettes.Count == 1 ? this.palettes[0] : new StructurePlaceSettings().GetRandomPalette(this.palettes, position);
         var rotated = palette.RotatedJigsaws(rotation);
+        if (position == Vector.Zero)
+            return [.. rotated];
+
         var result = new List<JigsawBlockInfo>(rotated.Count);
         foreach (var jigsaw in rotated)
             result.Add(jigsaw with { Info = jigsaw.Info with { Position = jigsaw.Info.Position + position } });

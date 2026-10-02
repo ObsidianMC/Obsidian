@@ -77,12 +77,21 @@ public class SinglePoolElement : StructurePoolElement
         var jigsaws = this.Template.GetJigsaws(position, rotation);
         FeatureHelpers.Shuffle(jigsaws, random);
 
-        // Java's List.sort is stable, like OrderByDescending.
-        return [.. jigsaws.OrderByDescending(jigsaw => jigsaw.SelectionPriority)];
+        // Java's List.sort is stable: an insertion sort by descending selection priority keeps the shuffled order of ties.
+        for (var i = 1; i < jigsaws.Count; i++)
+        {
+            var jigsaw = jigsaws[i];
+            var j = i - 1;
+            for (; j >= 0 && jigsaws[j].SelectionPriority < jigsaw.SelectionPriority; j--)
+                jigsaws[j + 1] = jigsaws[j];
+
+            jigsaws[j + 1] = jigsaw;
+        }
+
+        return jigsaws;
     }
 
-    public override BlockBox GetBoundingBox(Vector position, StructureRotation rotation) =>
-        this.Template.GetBoundingBox(new StructurePlaceSettings { Rotation = rotation }, position);
+    public override BlockBox GetBoundingBox(Vector position, StructureRotation rotation) => this.Template.GetBoundingBox(position, rotation);
 
     public override bool Place(StructurePieceContext context, Vector position, Vector pivot, StructureRotation rotation, BlockBox box,
         IRandomSource random, LiquidSettings liquidSettings, bool keepJigsaws) =>

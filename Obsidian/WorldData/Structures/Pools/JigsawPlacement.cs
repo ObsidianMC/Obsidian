@@ -1,6 +1,7 @@
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Features;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 
 namespace Obsidian.WorldData.Structures.Pools;
 
@@ -122,6 +123,9 @@ internal static class JigsawPlacement
         private readonly IRandomSource random = context.Random;
         private readonly PriorityQueue placing = new();
 
+        // The candidates for the jigsaw being expanded, reused from jigsaw to jigsaw.
+        private readonly List<StructurePoolElement> candidates = [];
+
         public void Run(PoolElementStructurePiece start, FreeSpace free)
         {
             this.TryPlacingChildren(start, free, 0);
@@ -155,11 +159,13 @@ internal static class JigsawPlacement
 
                 var space = box.IsInside(target) ? inside ??= new FreeSpace(box) : free;
 
-                var candidates = new List<StructurePoolElement>();
+                // The pool's templates and then the fallback's, each shuffled like getShuffledTemplates.
+                var candidates = this.candidates;
+                candidates.Clear();
                 if (depth != maxDepth)
-                    candidates.AddRange(pool.GetShuffledTemplates(this.random));
+                    AddShuffled(candidates, pool.Templates, this.random);
 
-                candidates.AddRange(fallback.GetShuffledTemplates(this.random));
+                AddShuffled(candidates, fallback.Templates, this.random);
 
                 foreach (var candidate in candidates)
                 {
@@ -183,7 +189,11 @@ internal static class JigsawPlacement
             var minY = piece.BoundingBox.MinY;
             var jigsawPosition = jigsaw.Info.Position;
 
-            foreach (var rotation in FeatureHelpers.ShuffledCopy(rotations, this.random))
+            Span<StructureRotation> shuffledRotations = stackalloc StructureRotation[rotations.Length];
+            rotations.CopyTo(shuffledRotations);
+            FeatureHelpers.Shuffle(shuffledRotations, this.random);
+
+            foreach (var rotation in shuffledRotations)
             {
                 var candidateJigsaws = candidate.GetShuffledJigsawBlocks(Vector.Zero, rotation, this.random);
                 var candidateBox = candidate.GetBoundingBox(Vector.Zero, rotation);
@@ -262,6 +272,13 @@ internal static class JigsawPlacement
             }
 
             return false;
+        }
+
+        private static void AddShuffled(List<StructurePoolElement> candidates, StructurePoolElement[] templates, IRandomSource random)
+        {
+            var start = candidates.Count;
+            candidates.AddRange(templates);
+            FeatureHelpers.Shuffle(CollectionsMarshal.AsSpan(candidates)[start..], random);
         }
 
         /// <summary>

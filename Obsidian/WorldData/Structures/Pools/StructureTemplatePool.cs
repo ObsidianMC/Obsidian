@@ -1,5 +1,4 @@
 using Obsidian.API.World.Generator.RandomSources;
-using Obsidian.WorldData.Features;
 
 namespace Obsidian.WorldData.Structures.Pools;
 
@@ -22,7 +21,7 @@ public sealed class StructureTemplatePool
     public required StructurePoolEntry[] Elements { get; init; }
 
     /// <summary>The elements, each repeated by its weight, like vanilla's <c>templates</c> list.</summary>
-    private StructurePoolElement[] Templates => field ??= [.. this.Elements.SelectMany(entry => Enumerable.Repeat(entry.Element, entry.Weight))];
+    internal StructurePoolElement[] Templates => field ??= [.. this.Elements.SelectMany(entry => Enumerable.Repeat(entry.Element, entry.Weight))];
 
     /// <summary>The number of weighted entries.</summary>
     public int Size => this.Templates.Length;
@@ -56,14 +55,6 @@ public sealed class StructureTemplatePool
     /// <summary>Vanilla <c>getRandomTemplate</c>: one <c>nextInt</c> over the weighted entries.</summary>
     public StructurePoolElement GetRandomTemplate(IRandomSource random) =>
         this.Templates.Length == 0 ? EmptyPoolElement.Instance : this.Templates[random.NextInt(this.Templates.Length)];
-
-    /// <summary>Vanilla <c>getShuffledTemplates</c>: the weighted entries in a random order.</summary>
-    public List<StructurePoolElement> GetShuffledTemplates(IRandomSource random)
-    {
-        var templates = this.Templates.ToList();
-        FeatureHelpers.Shuffle(templates, random);
-        return templates;
-    }
 
     /// <summary>The registered pool with the id, or <c>null</c>.</summary>
     public static StructureTemplatePool? Get(string id) => TemplatePools.All.GetValueOrDefault(id);
