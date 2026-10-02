@@ -86,6 +86,7 @@ internal sealed class RandomState
         };
 
         this.climateSamplers = new ThreadLocal<ClimateSampler>(this.CreateClimateSampler);
+        this.CornerColumns = new CornerColumnCache(settings.Noise.Height / (settings.Noise.SizeVertical * 4) + 1);
 
         if (this.IsChunkIndependent(this.Router.PreliminarySurfaceLevel))
             this.preliminarySurfaceLevels = new long[64 * 64];
@@ -109,7 +110,7 @@ internal sealed class RandomState
     /// <summary>
     /// Cell corners on chunk borders, shared by the noise chunks on both sides.
     /// </summary>
-    public CornerColumnCache CornerColumns { get; } = new();
+    public CornerColumnCache CornerColumns { get; }
 
     /// <summary>
     /// Gets the preliminary surface level of a quart column (at its corner's block coordinates) that a noise chunk computed
