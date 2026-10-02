@@ -1,4 +1,5 @@
 using System.Collections;
+using BitOperations = System.Numerics.BitOperations;
 
 namespace Obsidian.WorldData.Features.Tree;
 
@@ -41,7 +42,7 @@ public sealed class VanillaBlockPosSet : IEnumerable<Vector>
         var p = tab[i];
         if (p is null)
         {
-            tab[i] = new Node(hash, position, null);
+            tab[i] = Pool.NewNode(hash, position, null);
         }
         else
         {
@@ -61,7 +62,7 @@ public sealed class VanillaBlockPosSet : IEnumerable<Vector>
                     existing = p.Next;
                     if (existing is null)
                     {
-                        p.Next = new Node(hash, position, null);
+                        p.Next = Pool.NewNode(hash, position, null);
                         if (binCount >= TreeifyThreshold - 1)
                             this.TreeifyBin(tab, hash);
                         break;
@@ -104,7 +105,43 @@ public sealed class VanillaBlockPosSet : IEnumerable<Vector>
     {
         var first = this.FirstNode() ?? throw new InvalidOperationException("The set is empty.");
         this.RemoveNode(first.Hash, first.Key, movable: false);
-        return first.Key;
+
+        // Removing the first element ends any enumeration, so nothing refers to the node anymore.
+        var key = first.Key;
+        Pool.ReturnNode(first);
+        return key;
+    }
+
+    /// <summary>
+    /// Empties the set and gives its storage back to a pool of the thread, for sets that aren't used anymore. The set can
+    /// be reused, starting like a new one.
+    /// </summary>
+    public void Release()
+    {
+        var tab = this.table;
+        if (tab is not null)
+        {
+            for (var i = 0; i < tab.Length; i++)
+            {
+                var e = tab[i];
+                tab[i] = null;
+
+                // Tree bins are rare; their nodes are left to the garbage collector.
+                while (e is not null && e is not TreeNode)
+                {
+                    var next = e.Next;
+                    Pool.ReturnNode(e);
+                    e = next;
+                }
+            }
+
+            Pool.ReturnTable(tab);
+        }
+
+        this.table = null;
+        this.threshold = 0;
+        this.Count = 0;
+        this.modCount++;
     }
 
     public Enumerator GetEnumerator() => new(this);
@@ -204,7 +241,7 @@ public sealed class VanillaBlockPosSet : IEnumerable<Vector>
             newThr = (int)(newCap * LoadFactor);
 
         this.threshold = newThr;
-        var newTab = new Node?[newCap];
+        var newTab = Pool.RentTable(newCap);
         this.table = newTab;
 
         if (oldTab is null)
@@ -267,6 +304,8 @@ public sealed class VanillaBlockPosSet : IEnumerable<Vector>
             }
         }
 
+        // Every entry of the old table was cleared while moving it.
+        Pool.ReturnTable(oldTab);
         return newTab;
     }
 
@@ -364,7 +403,7 @@ public sealed class VanillaBlockPosSet : IEnumerable<Vector>
         Node? hd = null, tl = null;
         for (var q = head; q is not null; q = q.Next)
         {
-            var p = new Node(q.Hash, q.Key, null);
+            var p = Pool.NewNode(q.Hash, q.Key, null);
             if (tl is null)
                 hd = p;
             else
@@ -434,9 +473,72 @@ public sealed class VanillaBlockPosSet : IEnumerable<Vector>
 
     private class Node(int hash, Vector key, Node? next)
     {
-        public readonly int Hash = hash;
-        public readonly Vector Key = key;
+        // Settable so pooled nodes can be reused.
+        public int Hash = hash;
+        public Vector Key = key;
         public Node? Next = next;
+    }
+
+    /// <summary>
+    /// Nodes and tables of released sets, kept per thread for the next sets: tree placement builds several sets for every
+    /// tree. Pooled tables are cleared.
+    /// </summary>
+    private static class Pool
+    {
+        private const int MaxNodes = 16384;
+        private const int MaxTablesPerLength = 16;
+        private const int MaxTableLength = 4096;
+
+        [ThreadStatic]
+        private static Node? nodes;
+
+        [ThreadStatic]
+        private static int nodeCount;
+
+        // Pooled tables by the log2 of their length.
+        [ThreadStatic]
+        private static Stack<Node?[]>?[]? tables;
+
+        public static Node NewNode(int hash, Vector key, Node? next)
+        {
+            var node = nodes;
+            if (node is null)
+                return new Node(hash, key, next);
+
+            nodes = node.Next;
+            nodeCount--;
+            node.Hash = hash;
+            node.Key = key;
+            node.Next = next;
+            return node;
+        }
+
+        public static void ReturnNode(Node node)
+        {
+            if (node is TreeNode || nodeCount >= MaxNodes)
+                return;
+
+            node.Next = nodes;
+            nodes = node;
+            nodeCount++;
+        }
+
+        public static Node?[] RentTable(int length)
+        {
+            var pool = tables?[BitOperations.Log2((uint)length)];
+            return pool is not null && pool.TryPop(out var table) ? table : new Node?[length];
+        }
+
+        public static void ReturnTable(Node?[] table)
+        {
+            if (table.Length > MaxTableLength || !BitOperations.IsPow2(table.Length))
+                return;
+
+            tables ??= new Stack<Node?[]>?[BitOperations.Log2(MaxTableLength) + 1];
+            var pool = tables[BitOperations.Log2((uint)table.Length)] ??= new Stack<Node?[]>();
+            if (pool.Count < MaxTablesPerLength)
+                pool.Push(table);
+        }
     }
 
     /// <summary>Port of <c>HashMap.TreeNode</c>: a red-black tree that also keeps a doubly linked bin order.</summary>

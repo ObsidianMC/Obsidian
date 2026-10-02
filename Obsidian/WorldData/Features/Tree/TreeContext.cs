@@ -64,4 +64,13 @@ public sealed class TreeContext
         this.Decorations.Add(position);
         this.Level.SetBlock(position, block);
     }
+
+    /// <summary>Gives the storage of the tree's position sets back to the thread's pool once the tree is done.</summary>
+    internal void Release()
+    {
+        this.Roots.Release();
+        this.Logs.Release();
+        this.Foliage.Release();
+        this.Decorations.Release();
+    }
 }

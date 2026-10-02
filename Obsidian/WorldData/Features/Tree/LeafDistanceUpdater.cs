@@ -32,7 +32,12 @@ internal static class LeafDistanceUpdater
             while (distance >= MaxDistance || queues[distance].Count != 0)
             {
                 if (distance >= MaxDistance)
+                {
+                    foreach (var queue in queues)
+                        queue.Release();
+
                     return shape;
+                }
 
                 var position = queues[distance].RemoveFirst();
                 if (!bounds.IsInside(position))
