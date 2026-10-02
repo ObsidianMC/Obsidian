@@ -90,8 +90,10 @@ public sealed class WorldPersistence(WorldPersistence.RestartedChunk restarted) 
         var hut = restarted.Hut;
 
         // The hut settled on the ground and spawned its witch before the restart, so it's placed at the same height and the
-        // witch isn't spawned again.
+        // witch isn't spawned again. An explorer map found it too, so later searches skip it.
         Assert.Equal(restarted.PlacedHutBox, hut.Pieces[0].BoundingBox);
+        Assert.Equal(1, hut.References);
+        Assert.False(hut.TryAddReference());
 
         Assert.True(hut.SaveState().TryGetTag<NbtList>("Children", out var children));
         var state = Assert.IsType<NbtCompound>(Assert.Single(children));
@@ -104,6 +106,10 @@ public sealed class WorldPersistence(WorldPersistence.RestartedChunk restarted) 
     /// The chunk where a swamp hut starts (seed 12345), saved with entities, containers and the hut's state, then loaded by
     /// a fresh region and structure manager.
     /// </summary>
+    /// <remarks>
+    /// The chunk builders aren't <see cref="WorldgenFixture"/>'s: the hut's state is changed, and the restart needs a structure
+    /// manager that never saw it, while the shared builders' hut is placed by other tests.
+    /// </remarks>
     public sealed class RestartedChunk : IAsyncLifetime
     {
         public const int PlacedHeight = 63;
@@ -169,6 +175,7 @@ public sealed class WorldPersistence(WorldPersistence.RestartedChunk restarted) 
             var box = this.PlacedHutBox;
             return new NbtCompound(hut.Structure.Identifier)
             {
+                new NbtTag<int>("references", 1),
                 new NbtList(NbtTagType.Compound, "Children")
                 {
                     new NbtCompound

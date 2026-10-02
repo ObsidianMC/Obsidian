@@ -49,6 +49,10 @@ public sealed class StructureStart
     /// Vanilla <c>canBeReferenced</c> then <c>addReference</c>: claims the start for a search that skips known structures,
     /// which each start allows once.
     /// </summary>
+    /// <remarks>
+    /// The count is saved with the start's state, so the start must be restored first (see
+    /// <see cref="Generators.Mojang.Structures.StructureManager.LoadStart"/>).
+    /// </remarks>
     internal bool TryAddReference()
     {
         while (true)
@@ -59,6 +63,19 @@ public sealed class StructureStart
 
             if (Interlocked.CompareExchange(ref this.references, current + 1, current) == current)
                 return true;
+        }
+    }
+
+    private static void InterlockedMax(ref int location, int value)
+    {
+        var current = Volatile.Read(ref location);
+        while (current < value)
+        {
+            var previous = Interlocked.CompareExchange(ref location, value, current);
+            if (previous == current)
+                return;
+
+            current = previous;
         }
     }
 
@@ -128,6 +145,7 @@ public sealed class StructureStart
             new NbtTag<string>("id", this.Structure.Identifier),
             new NbtTag<int>("ChunkX", this.ChunkX),
             new NbtTag<int>("ChunkZ", this.ChunkZ),
+            new NbtTag<int>("references", this.References),
             children
         };
     }
@@ -148,7 +166,14 @@ public sealed class StructureStart
 
         this.stateRestored = true;
 
-        if (saved is null || !saved.TryGetTag<NbtList>("Children", out var children) || children.Count != this.Pieces.Count)
+        if (saved is null)
+            return;
+
+        // References only ever grow, so one taken already isn't undone.
+        if (saved.TryGetTag<NbtTag<int>>("references", out var references))
+            InterlockedMax(ref this.references, references.Value);
+
+        if (!saved.TryGetTag<NbtList>("Children", out var children) || children.Count != this.Pieces.Count)
             return;
 
         for (var i = 0; i < children.Count; i++)

@@ -140,8 +140,16 @@ internal sealed class StructureLocator(StructureManager structures)
 
         foreach (var start in structures.GetStarts(chunkX, chunkZ))
         {
-            if (!placed.Contains(start.Structure) || skipKnown && !start.TryAddReference())
+            if (!placed.Contains(start.Structure))
                 continue;
+
+            // References are saved with the start, so its saved state comes first, and its chunk stays loaded to save the new one.
+            if (skipKnown)
+            {
+                structures.LoadStart(start);
+                if (!start.TryAddReference())
+                    continue;
+            }
 
             return new Vector(chunkX << 4, 0, chunkZ << 4) + placement.LocateOffset;
         }

@@ -124,6 +124,32 @@ internal sealed class StructureManager : IStructurePlacementState
     }
 
     /// <summary>
+    /// Loads a start chunk, waiting for it, and returns the structure starts saved in it (or <c>null</c>); set by the
+    /// generator. Without it, starts are restored without saved state.
+    /// </summary>
+    internal Func<int, int, NbtCompound?>? LoadStartChunk { get; set; }
+
+    /// <summary>
+    /// Loads a start's start chunk, restoring the start's saved state the first time, for code that changes the start
+    /// outside of chunk decoration (structure searches taking references). Keeping the chunk loaded saves the change.
+    /// </summary>
+    /// <remarks>
+    /// Like vanilla's structure searches, which load start chunks on the server thread, this waits for the chunk.
+    /// </remarks>
+    public void LoadStart(StructureStart start)
+    {
+        var saved = this.LoadStartChunk?.Invoke(start.ChunkX, start.ChunkZ);
+        RestoreStart(start, saved);
+    }
+
+    /// <summary>
+    /// Restores a start from the structure starts saved in its start chunk (vanilla's <c>structures.starts</c>), unless it
+    /// was restored already.
+    /// </summary>
+    public static void RestoreStart(StructureStart start, NbtCompound? savedStarts) =>
+        start.RestoreState(savedStarts is not null && savedStarts.TryGetTag<NbtCompound>(start.Structure.Identifier, out var saved) ? saved : null);
+
+    /// <summary>
     /// The structure starts to save in their start chunk (vanilla's <c>structures.starts</c>, keyed by structure id): those
     /// the chunk was loaded with, where starts restored in this session replace theirs with their pieces' current state.
     /// </summary>

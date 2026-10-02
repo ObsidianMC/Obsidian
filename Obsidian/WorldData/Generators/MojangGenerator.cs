@@ -243,16 +243,14 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
         foreach (var start in structures.GetStartsReaching(cx, cz))
         {
             var startChunk = await this.world.GetChunkAsync(start.ChunkX, start.ChunkZ, scheduleGeneration: false) as Chunk;
-            if (start.IsStateRestored)
-                continue;
-
-            NbtCompound? saved = null;
-            if (startChunk?.StructureStarts is NbtCompound starts && starts.TryGetTag<NbtCompound>(start.Structure.Identifier, out var tag))
-                saved = tag;
-
-            start.RestoreState(saved);
+            StructureManager.RestoreStart(start, startChunk?.StructureStarts);
         }
     }
+
+    // StructureManager.LoadStartChunk: structure searches run synchronously (explorer maps are made while loot is generated),
+    // like vanilla's, which also wait for start chunks on the server thread. Getting a chunk takes no generation locks.
+    private NbtCompound? LoadStartChunk(int chunkX, int chunkZ) =>
+        (this.world.GetChunkAsync(chunkX, chunkZ, scheduleGeneration: false).AsTask().GetAwaiter().GetResult() as Chunk)?.StructureStarts;
 
     public NbtCompound? SaveStructureStarts(int chunkX, int chunkZ, NbtCompound? loaded) =>
         this.builder.Structures is StructureManager structures ? structures.SaveStarts(chunkX, chunkZ, loaded) : loaded;
@@ -351,6 +349,9 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
     {
         this.world = world;
         this.builder = new ChunkBuilder(this.Dimension, RandomState.ParseSeed(world.Seed));
+
+        if (this.builder.Structures is StructureManager structures)
+            structures.LoadStartChunk = this.LoadStartChunk;
     }
 
     private readonly struct ChunkLocks(SemaphoreSlim[] locks, SortedSet<int> stripes) : IDisposable
