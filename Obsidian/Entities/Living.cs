@@ -7,6 +7,11 @@ public class Living : Entity, ILiving
 {
     public LivingBitMask LivingBitMask { get; set; }
 
+    /// <summary>
+    /// Vanilla's <c>PersistenceRequired</c>: the mob must never despawn (structure mobs such as witches and elder guardians).
+    /// </summary>
+    public bool PersistenceRequired { get; set; }
+
     public uint ActiveEffectColor { get; private set; }
 
     public bool AmbientPotionEffect { get; set; }

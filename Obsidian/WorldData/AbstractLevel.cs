@@ -2,9 +2,11 @@
 using Microsoft.Extensions.Options;
 using Obsidian.API.Configuration;
 using Obsidian.API.Entities;
+using Obsidian.API.Inventory;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.Entities;
 using Obsidian.Entities.Factories;
+using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using System.Diagnostics;
 using System.Threading;
@@ -381,7 +383,8 @@ public abstract class AbstractLevel : ILevel
     }
 
     /// <remarks>
-    /// Only the type, position and rotation are applied; Obsidian's entities don't read vanilla's other saved fields.
+    /// Besides the type, position and rotation, only the saved fields Obsidian's entities support are applied: an item
+    /// frame's item, facing and item rotation, and a mob's <c>PersistenceRequired</c>.
     /// </remarks>
     private void SpawnGeneratedEntities()
     {
@@ -392,11 +395,51 @@ public abstract class AbstractLevel : ILevel
             if (!Enum.TryParse<EntityType>(name, ignoreCase: true, out var type))
                 continue;
 
+            if (type == EntityType.ItemFrame)
+            {
+                this.SpawnEntity(CreateItemFrame(generated));
+                continue;
+            }
+
             var entity = this.SpawnEntity(generated.Position, type);
             entity.Yaw = generated.Yaw;
             entity.Pitch = generated.Pitch;
+
+            if (entity is Living living)
+                living.PersistenceRequired = ReadFlag(generated.Data, "PersistenceRequired");
         }
     }
+
+    /// <summary>An item frame from vanilla's saved fields (<c>Facing</c>, <c>Item</c>, <c>ItemRotation</c>).</summary>
+    private ItemFrame CreateItemFrame(GeneratedEntity generated)
+    {
+        var data = generated.Data;
+        var frame = new ItemFrame
+        {
+            Level = this,
+            Type = EntityType.ItemFrame,
+            EntityId = Server.GetNextEntityId(),
+            Position = generated.Position,
+            Yaw = generated.Yaw,
+            Pitch = generated.Pitch,
+            Rotation = data.TryGetTag<NbtTag<byte>>("ItemRotation", out var rotation) ? rotation.Value : 0
+        };
+
+        if (data.TryGetTag<NbtTag<byte>>("Facing", out var facing))
+            frame.Facing = ItemFrame.FromFacingId(facing.Value);
+
+        if (data.TryGetTag<NbtCompound>("Item", out var item) && item.TryGetTag<NbtTag<string>>("id", out var id))
+        {
+            var count = item.TryGetTag<NbtTag<int>>("count", out var countTag) ? countTag.Value : 1;
+            frame.Item = new ItemStack(ItemsRegistry.Get(id.Value!), count);
+        }
+
+        return frame;
+    }
+
+    /// <summary>A boolean saved field; booleans read back from disk are bytes.</summary>
+    private static bool ReadFlag(NbtCompound data, string name) =>
+        data.TryGetTag<NbtTag<bool>>(name, out var flag) ? flag.Value : data.TryGetTag<NbtTag<byte>>(name, out var value) && value.Value != 0;
 
     public IRegion LoadRegionByChunk(int chunkX, int chunkZ)
     {
