@@ -241,8 +241,9 @@ public sealed class StructureTemplate
 
         var box = settings.BoundingBox;
         var applyWaterlogging = settings.ShouldApplyWaterlogging;
-        var toWaterlog = new List<Vector>();
-        var placedSources = new HashSet<Vector>();
+        var buffers = PlacementBuffers.Rent();
+        var toWaterlog = buffers.ToWaterlog;
+        var placedSources = buffers.PlacedSources;
         var min = new Vector(int.MaxValue, int.MaxValue, int.MaxValue);
         var max = new Vector(int.MinValue, int.MinValue, int.MinValue);
 
@@ -250,8 +251,8 @@ public sealed class StructureTemplate
         // by block with randoms seeded from positions, skipping the blocks outside the box's columns first gives the same
         // result for much less work, since a piece is placed once for every chunk it reaches.
         var clip = box is not null && settings.Random is null && !settings.Processors.Any(processor => processor.ProcessesWholeTemplate) ? box : null;
-        var infos = ProcessBlockInfos(level, position, pivot, settings, blocks, clip);
-        var placed = new List<(Vector Position, NbtCompound? Nbt)>(infos.Count);
+        var infos = ProcessBlockInfos(level, position, pivot, settings, blocks, clip, buffers.Originals, buffers.Processed);
+        var placed = buffers.Placed;
 
         foreach (var info in infos)
         {
@@ -317,6 +318,8 @@ public sealed class StructureTemplate
             }
         }
 
+        buffers.Return();
+
         if (!settings.IgnoreEntities)
             this.PlaceEntities(level, position, settings, box);
 
@@ -334,8 +337,16 @@ public sealed class StructureTemplate
     {
         // A clipped template keeps the blocks of a few columns, often a small part of it.
         var capacity = clip is null ? blocks.Count : 0;
-        var originals = new List<StructureBlockInfo>(capacity);
-        var result = new List<StructureBlockInfo>(capacity);
+        return ProcessBlockInfos(level, origin, pivot, settings, blocks, clip, new List<StructureBlockInfo>(capacity),
+            new List<StructureBlockInfo>(capacity));
+    }
+
+    /// <inheritdoc cref="ProcessBlockInfos(IWorldGenLevel, Vector, Vector, StructurePlaceSettings, IReadOnlyList{StructureBlockInfo}, BlockBox?)"/>
+    /// <param name="originals">Receives the template blocks that were kept; must be empty.</param>
+    /// <param name="result">Receives the processed blocks before the processors finalize them; must be empty.</param>
+    private static List<StructureBlockInfo> ProcessBlockInfos(IWorldGenLevel level, Vector origin, Vector pivot, StructurePlaceSettings settings,
+        IReadOnlyList<StructureBlockInfo> blocks, BlockBox? clip, List<StructureBlockInfo> originals, List<StructureBlockInfo> result)
+    {
         foreach (var original in blocks)
         {
             var target = CalculateRelativePosition(settings, original.Position) + origin;
@@ -967,6 +978,50 @@ public sealed class StructureTemplate
     }
 
     private readonly record struct EntityPosition(double X, double Y, double Z);
+
+    /// <summary>
+    /// The collections a placement works with, borrowed from the thread: a piece is placed once for every chunk it reaches.
+    /// </summary>
+    private sealed class PlacementBuffers
+    {
+        // Buffers grown past this many entries (whole large templates) aren't kept.
+        private const int MaxKeptCapacity = 1 << 16;
+
+        [ThreadStatic]
+        private static PlacementBuffers? free;
+
+        public List<StructureBlockInfo> Originals { get; } = [];
+
+        public List<StructureBlockInfo> Processed { get; } = [];
+
+        public List<(Vector Position, NbtCompound? Nbt)> Placed { get; } = [];
+
+        public List<Vector> ToWaterlog { get; } = [];
+
+        public HashSet<Vector> PlacedSources { get; } = [];
+
+        /// <summary>Takes the thread's buffers, or new ones while they're in use.</summary>
+        public static PlacementBuffers Rent()
+        {
+            var buffers = free ?? new PlacementBuffers();
+            free = null;
+            return buffers;
+        }
+
+        /// <summary>Clears the buffers and gives them back to the thread.</summary>
+        public void Return()
+        {
+            if (this.Originals.Capacity > MaxKeptCapacity || this.Processed.Capacity > MaxKeptCapacity || this.Placed.Capacity > MaxKeptCapacity)
+                return;
+
+            this.Originals.Clear();
+            this.Processed.Clear();
+            this.Placed.Clear();
+            this.ToWaterlog.Clear();
+            this.PlacedSources.Clear();
+            free = this;
+        }
+    }
 
     private sealed record StructureEntityInfo(EntityPosition Position, Vector BlockPosition, NbtCompound Nbt);
 }
