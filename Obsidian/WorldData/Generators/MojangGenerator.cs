@@ -75,38 +75,27 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
         if (stage < ChunkGenStage.full)
             return chunk;
 
-        // Completing the chunk and taking its leftovers happen under its lock, so concurrent requests do it once.
-        Vector[] fluids;
+        // Completing the chunk happens under its lock, so concurrent requests do it once.
         using (await this.LockAsync(cx, cz, 0))
         {
             if (chunk.ChunkStatus >= ChunkGenStage.full)
                 return chunk;
 
             chunk.SetChunkStatus(ChunkGenStage.full);
-            fluids = TakeLeftovers(chunk);
         }
 
-        await this.ScheduleFluidUpdatesAsync(chunk, fluids);
+        if (this.world is AbstractLevel level)
+        {
+            // Like vanilla when a proto chunk becomes a level chunk; the level spawns the entities generation placed on its
+            // own thread. They stay pending in the chunk until then, so a save in between keeps them.
+            if (chunk is Chunk { PendingEntities.Count: > 0 } complete)
+                level.QueueEntitySpawn(complete);
 
-        // Like vanilla when a proto chunk becomes a level chunk; the level spawns the entities generation placed on its own
-        // thread. They stay pending in the chunk until then, so a save in between keeps them.
-        if (chunk is Chunk { PendingEntities.Count: > 0 } complete && this.world is AbstractLevel level)
-            level.QueueEntitySpawn(complete);
+            // Its fluid ticks (from features, and from post-processing it and its neighbors) start counting down.
+            level.Fluids.Track(chunk);
+        }
 
         return chunk;
-    }
-
-    /// <summary>
-    /// The fluids left in the chunk's post-processing, removed from the chunk.
-    /// </summary>
-    private static Vector[] TakeLeftovers(IChunk chunk)
-    {
-        if (chunk is not Chunk generated)
-            return [];
-
-        var fluids = generated.PostProcessing.ToArray();
-        generated.PostProcessing.Clear();
-        return fluids;
     }
 
     /// <summary>
@@ -256,8 +245,8 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
         this.builder.Structures is StructureManager structures ? structures.SaveStarts(chunkX, chunkZ, loaded) : loaded;
 
     /// <summary>
-    /// Every feature that can reach the chunk has run: post-processes its marked blocks (which reads its neighbors), then
-    /// stores its final heightmaps. Its sky light sources are found when it's lit.
+    /// Every feature that can reach the chunk has run: post-processes its marked blocks and fluids (which reads and may
+    /// change its neighbors), then stores its final heightmaps. Its sky light sources are found when it's lit.
     /// </summary>
     private async ValueTask FinishBlocksAsync(IChunk chunk)
     {
@@ -272,7 +261,12 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
                 area[(chunk.X + dx, chunk.Z + dz)] = dx == 0 && dz == 0 ? chunk : await this.GetChunkAsync(chunk.X + dx, chunk.Z + dz);
         }
 
-        this.builder.PostProcess(area, chunk.X, chunk.Z);
+        // Post-processing ticks fluids, which may flow into complete neighbors that the level is ticking.
+        if (this.world is AbstractLevel level)
+            level.Fluids.RunExclusive(() => this.builder.PostProcess(area, chunk.X, chunk.Z, level.Fluids.Rules));
+        else
+            this.builder.PostProcess(area, chunk.X, chunk.Z);
+
         this.builder.UpdateFinalHeightmaps(chunk);
         chunk.SetChunkStatus(ChunkGenStage.initialize_light);
     }
@@ -328,19 +322,6 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
             await this.chunkLocks[stripe].WaitAsync();
 
         return new ChunkLocks(this.chunkLocks, stripes);
-    }
-
-    /// <summary>
-    /// Ticks the fluids left in the chunk's post-processing (vanilla runs their fluid tick when the chunk becomes complete).
-    /// </summary>
-    private async ValueTask ScheduleFluidUpdatesAsync(IChunk chunk, Vector[] positions)
-    {
-        foreach (var position in positions)
-        {
-            var block = chunk.GetBlock(position);
-            if (block.IsLiquid)
-                await this.world.ScheduleBlockUpdateAsync(new BlockUpdate(this.world, position, block));
-        }
     }
 
     public async ValueTask<IDisposable?> LockChunkAsync(int x, int z) => await this.LockAsync(x, z, 0);

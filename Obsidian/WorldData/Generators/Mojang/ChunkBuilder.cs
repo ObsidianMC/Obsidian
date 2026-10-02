@@ -5,6 +5,7 @@ using Obsidian.WorldData.Generators.Mojang.Carvers;
 using Obsidian.WorldData.Features.Tree;
 using Obsidian.WorldData.Generators.Mojang.Features;
 using Obsidian.WorldData.Generators.Mojang.Structures;
+using Obsidian.WorldData.Fluids;
 
 namespace Obsidian.WorldData.Generators.Mojang;
 
@@ -157,11 +158,13 @@ internal sealed class ChunkBuilder
     }
 
     /// <summary>
-    /// Vanilla's post-processing of a chunk every feature has reached (<c>LevelChunk.postProcessGeneration</c>): marked
-    /// blocks are updated against their neighbors. Marked fluids stay in the chunk's post-processing for their tick.
+    /// Vanilla's post-processing of a chunk every feature has reached (<c>LevelChunk.postProcessGeneration</c>): each
+    /// marked fluid ticks right away (spreading into the chunk's neighbors as needed), and marked blocks other than liquids
+    /// are updated against their neighbors. Ticks scheduled meanwhile get their real delays.
     /// </summary>
     /// <param name="area">The chunk and its 8 neighbors.</param>
-    public void PostProcess(IReadOnlyDictionary<(int X, int Z), IChunk> area, int chunkX, int chunkZ)
+    /// <param name="fluidRules">The level's fluid rules; vanilla's defaults for the dimension when <c>null</c>.</param>
+    public void PostProcess(IReadOnlyDictionary<(int X, int Z), IChunk> area, int chunkX, int chunkZ, FluidRules? fluidRules = null)
     {
         if (area[(chunkX, chunkZ)] is not Chunk chunk || chunk.PostProcessing.Count == 0)
             return;
@@ -169,20 +172,25 @@ internal sealed class ChunkBuilder
         var region = this.CreateRegion(area, chunkX, chunkZ);
         var minY = this.dimension.MinY;
 
+        // Vanilla post-processes on the live level, whose random only varies lava's spread delay; any seed will do.
+        var rules = fluidRules ?? FluidRules.ForDimension(this.dimension.DimensionType.Name, this.dimension.DimensionType.Element.Ultrawarm);
+        var fluids = new FluidLevel(new WorldGenFluidAccess(region, rules, new Random(chunkX * 31 + chunkZ)));
+
         // Vanilla walks the marks section by section, in the order they were added.
         var marks = chunk.PostProcessing.OrderBy(position => (position.Y - minY) >> 4).ToList();
         chunk.PostProcessing.Clear();
 
         foreach (var position in marks)
         {
+            // The fluid's tick may change blocks, but the shape update still starts from the block read before it.
             var block = region.GetBlock(position);
             if (block.HasFluid())
-                chunk.PostProcessing.Add(position);
+                fluids.TickFluid(position);
 
-            if (block.IsLiquid)
+            if (block.IsLiquidBlock())
                 continue;
 
-            var updated = ShapeUpdater.UpdateFromNeighbourShapes(region, block, position);
+            var updated = ShapeUpdater.UpdateFromNeighbourShapes(fluids.ShapeView, block, position);
             if (!updated.IsSameState(block))
                 region.SetBlock(position, updated);
         }

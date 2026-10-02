@@ -132,12 +132,23 @@ internal sealed class WorldGenRegion : IWorldGenLevel
     }
 
     /// <remarks>
-    /// The tick runs once the chunk is complete, with the chunk's post-processing.
+    /// The tick is for the fluid at <paramref name="position"/> and goes into its chunk's tick list. Like vanilla's proto
+    /// chunk ticks, it has no delay: it runs on the first level tick once the chunk is complete.
     /// </remarks>
     public void ScheduleFluidTick(Vector position)
     {
-        if (this.EnsureCanWrite(position) && this.GetChunk(position.X >> 4, position.Z >> 4) is Chunk chunk)
-            chunk.PostProcessing.Add(position);
+        var fluid = this.GetBlock(position).GetFluid();
+        if (fluid != FluidKind.Empty)
+            this.ScheduleFluidTick(position, fluid, 0);
+    }
+
+    /// <summary>
+    /// Schedules a tick of <paramref name="fluid"/> in the tick list of the position's chunk, if the region holds it.
+    /// </summary>
+    internal void ScheduleFluidTick(Vector position, FluidKind fluid, int delay)
+    {
+        if (this.chunks.TryGetValue((position.X >> 4, position.Z >> 4), out var chunk) && chunk is Chunk generated)
+            generated.FluidTicks.Schedule(position, fluid, delay);
     }
 
     public void MarkForPostProcessing(Vector position)
