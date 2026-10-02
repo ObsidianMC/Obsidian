@@ -20,6 +20,12 @@ internal interface IAquifer
     /// Clears <see cref="ShouldScheduleFluidUpdate"/>, as if no position had been computed yet.
     /// </summary>
     public void ResetFluidUpdate();
+
+    /// <summary>
+    /// Above this Y, <see cref="ComputeSubstance"/> gives non-solid positions the global fluid picker's block and schedules
+    /// nothing.
+    /// </summary>
+    public int GlobalFluidAboveY { get; }
 }
 
 /// <summary>
@@ -76,6 +82,8 @@ internal static class Aquifers
         private readonly FluidPicker fluidPicker;
 
         public bool ShouldScheduleFluidUpdate => false;
+
+        public int GlobalFluidAboveY => int.MinValue;
 
         public DisabledAquifer(FluidPicker fluidPicker) => this.fluidPicker = fluidPicker;
 

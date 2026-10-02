@@ -32,6 +32,8 @@ internal sealed class TerrainGenerator : IStructureTerrain
         var settings = this.randomState.Settings;
         noiseChunk ??= new NoiseChunk(this.randomState, chunk.X, chunk.Z);
         var aquifer = noiseChunk.Aquifer;
+        var globalFluidAboveY = aquifer.GlobalFluidAboveY;
+        var globalFluid = this.randomState.GlobalFluidPicker;
 
         var cellWidth = noiseChunk.CellWidth;
         var cellHeight = noiseChunk.CellHeight;
@@ -105,10 +107,15 @@ internal sealed class TerrainGenerator : IStructureTerrain
                                 // Like vanilla, the beardifier is added to the final density per block, inside the cell cache.
                                 var density = densities[i] + (bearded ? cellBeardifier.Compute(x, y, z) : 0.0);
 
-                                // Aquifers leave solid positions alone (and don't schedule them), so those skip the call.
+                                // Aquifers leave solid positions alone (and don't schedule them), and above their sampling
+                                // range give the rest the global fluid, so neither needs the call.
                                 byte code;
                                 var scheduleFluidUpdate = false;
-                                if (!(density > 0.0) && aquifer.ComputeSubstance(x, y, z, density) is { } substance)
+                                if (!(density > 0.0) && y > globalFluidAboveY)
+                                {
+                                    code = palette.CodeOf(globalFluid(x, y, z).At(y));
+                                }
+                                else if (!(density > 0.0) && aquifer.ComputeSubstance(x, y, z, density) is { } substance)
                                 {
                                     code = palette.CodeOf(substance);
                                     scheduleFluidUpdate = palette.IsLiquid(code) && aquifer.ShouldScheduleFluidUpdate;
