@@ -337,7 +337,7 @@ internal sealed class StructureManager : IStructurePlacementState
     /// Vanilla <c>ChunkGeneratorStructureState.generateRingPositions</c>: starts spread over rings, each moved to a preferred
     /// biome found within 112 blocks.
     /// </summary>
-    private IReadOnlySet<(int X, int Z)> CreateRingPositions(ConcentricRingsStructurePlacement placement)
+    private HashSet<(int X, int Z)> CreateRingPositions(ConcentricRingsStructurePlacement placement)
     {
         if (placement.Count == 0)
             return new HashSet<(int X, int Z)>();

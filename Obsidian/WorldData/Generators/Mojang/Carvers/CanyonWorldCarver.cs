@@ -69,7 +69,7 @@ internal sealed class CanyonWorldCarver : WorldCarver<CanyonCarverConfiguration>
     /// <summary>
     /// Per-Y width multipliers that give ravine walls their ledges.
     /// </summary>
-    private static float[] InitWidthFactors(CarvingContext context, CanyonCarverConfiguration configuration, IRandomSource random)
+    private static float[] InitWidthFactors(CarvingContext context, CanyonCarverConfiguration configuration, LegacyRandomSource random)
     {
         var factors = context.Buffers.WidthFactors;
         var factor = 1.0f;
@@ -85,7 +85,7 @@ internal sealed class CanyonWorldCarver : WorldCarver<CanyonCarverConfiguration>
         return factors;
     }
 
-    private static double UpdateVerticalRadius(CanyonCarverConfiguration configuration, IRandomSource random, double verticalRadius,
+    private static double UpdateVerticalRadius(CanyonCarverConfiguration configuration, LegacyRandomSource random, double verticalRadius,
         float branchCount, float index)
     {
         var centerFactor = 1.0f - Math.Abs(0.5f - index / branchCount) * 2.0f;

@@ -356,15 +356,15 @@ internal sealed class WoodlandMansionLayout
     private void CreateMansion(Vector origin, StructureRotation rotation, List<WoodlandMansionPiece> pieces)
     {
         var firstFloor = new PlacementData { Position = origin, Rotation = rotation, WallType = "wall_flat" };
-        this.Entrance(pieces, firstFloor);
+        Entrance(pieces, firstFloor);
         var secondFloor = new PlacementData { Position = firstFloor.Position + (0, 8, 0), Rotation = firstFloor.Rotation, WallType = "wall_window" };
 
         this.startX = this.entranceX + 1;
         this.startY = this.entranceY + 1;
         var endX = this.entranceX + 1;
         var endY = this.entranceY;
-        this.TraverseOuterWalls(pieces, firstFloor, this.baseGrid, BlockFace.South, this.startX, this.startY, endX, endY);
-        this.TraverseOuterWalls(pieces, secondFloor, this.baseGrid, BlockFace.South, this.startX, this.startY, endX, endY);
+        TraverseOuterWalls(pieces, firstFloor, this.baseGrid, BlockFace.South, this.startX, this.startY, endX, endY);
+        TraverseOuterWalls(pieces, secondFloor, this.baseGrid, BlockFace.South, this.startX, this.startY, endX, endY);
 
         var thirdFloor = new PlacementData { Position = firstFloor.Position + (0, 19, 0), Rotation = firstFloor.Rotation, WallType = "wall_window" };
         var found = false;
@@ -377,8 +377,8 @@ internal sealed class WoodlandMansionLayout
 
                 thirdFloor.Position = Relative(thirdFloor.Position, rotation.Rotate(BlockFace.South), 8 + (y - this.startY) * 8);
                 thirdFloor.Position = Relative(thirdFloor.Position, rotation.Rotate(BlockFace.East), (x - this.startX) * 8);
-                this.TraverseWallPiece(pieces, thirdFloor);
-                this.TraverseOuterWalls(pieces, thirdFloor, this.thirdFloorGrid, BlockFace.South, x, y, x, y);
+                TraverseWallPiece(pieces, thirdFloor);
+                TraverseOuterWalls(pieces, thirdFloor, this.thirdFloorGrid, BlockFace.South, x, y, x, y);
                 found = true;
             }
         }
@@ -506,14 +506,14 @@ internal sealed class WoodlandMansionLayout
                     }
                     else if (size == Room2x2 && door == BlockFace.Up)
                     {
-                        pieces.Add(new WoodlandMansionPiece(collections[floor].Get2x2Secret(), Relative(position, rotation.Rotate(BlockFace.East), 1), rotation));
+                        pieces.Add(new WoodlandMansionPiece(RoomCollection.Get2x2Secret(), Relative(position, rotation.Rotate(BlockFace.East), 1), rotation));
                     }
                 }
             }
         }
     }
 
-    private void TraverseOuterWalls(List<WoodlandMansionPiece> pieces, PlacementData data, Grid grid, BlockFace direction, int startX, int startY,
+    private static void TraverseOuterWalls(List<WoodlandMansionPiece> pieces, PlacementData data, Grid grid, BlockFace direction, int startX, int startY,
         int endX, int endY)
     {
         var x = startX;
@@ -525,14 +525,14 @@ internal sealed class WoodlandMansionLayout
             var step = direction.ToVector();
             if (!IsHouse(grid, x + step.X, y + step.Z))
             {
-                this.TraverseTurn(pieces, data);
+                TraverseTurn(pieces, data);
                 direction = direction.ClockWise();
                 if (x != endX || y != endY || endDirection != direction)
-                    this.TraverseWallPiece(pieces, data);
+                    TraverseWallPiece(pieces, data);
             }
             else if (IsHouse(grid, x + step.X + direction.CounterClockWise().ToVector().X, y + step.Z + direction.CounterClockWise().ToVector().Z))
             {
-                this.TraverseInnerTurn(data);
+                TraverseInnerTurn(data);
                 x += step.X;
                 y += step.Z;
                 direction = direction.CounterClockWise();
@@ -542,7 +542,7 @@ internal sealed class WoodlandMansionLayout
                 x += step.X;
                 y += step.Z;
                 if (x != endX || y != endY || endDirection != direction)
-                    this.TraverseWallPiece(pieces, data);
+                    TraverseWallPiece(pieces, data);
             }
         }
         while (x != endX || y != endY || endDirection != direction);
@@ -662,19 +662,19 @@ internal sealed class WoodlandMansionLayout
         }
     }
 
-    private void Entrance(List<WoodlandMansionPiece> pieces, PlacementData data)
+    private static void Entrance(List<WoodlandMansionPiece> pieces, PlacementData data)
     {
         pieces.Add(new WoodlandMansionPiece("entrance", Relative(data.Position, data.Rotation.Rotate(BlockFace.West), 9), data.Rotation));
         data.Position = Relative(data.Position, data.Rotation.Rotate(BlockFace.South), 16);
     }
 
-    private void TraverseWallPiece(List<WoodlandMansionPiece> pieces, PlacementData data)
+    private static void TraverseWallPiece(List<WoodlandMansionPiece> pieces, PlacementData data)
     {
         pieces.Add(new WoodlandMansionPiece(data.WallType, Relative(data.Position, data.Rotation.Rotate(BlockFace.East), 7), data.Rotation));
         data.Position = Relative(data.Position, data.Rotation.Rotate(BlockFace.South), 8);
     }
 
-    private void TraverseTurn(List<WoodlandMansionPiece> pieces, PlacementData data)
+    private static void TraverseTurn(List<WoodlandMansionPiece> pieces, PlacementData data)
     {
         data.Position = Relative(data.Position, data.Rotation.Rotate(BlockFace.South), -1);
         pieces.Add(new WoodlandMansionPiece("wall_corner", data.Position, data.Rotation));
@@ -683,7 +683,7 @@ internal sealed class WoodlandMansionLayout
         data.Rotation = data.Rotation.GetRotated(StructureRotation.Clockwise90);
     }
 
-    private void TraverseInnerTurn(PlacementData data)
+    private static void TraverseInnerTurn(PlacementData data)
     {
         data.Position = Relative(data.Position, data.Rotation.Rotate(BlockFace.South), 6);
         data.Position = Relative(data.Position, data.Rotation.Rotate(BlockFace.East), 8);
@@ -703,7 +703,7 @@ internal sealed class WoodlandMansionLayout
             else if (door == BlockFace.South)
                 roomRotation = roomRotation.GetRotated(StructureRotation.Clockwise90);
             else
-                name = rooms.Get1x1Secret(this.random);
+                name = RoomCollection.Get1x1Secret(this.random);
         }
 
         var offset = StructureTemplate.GetZeroPositionWithTransform(new Vector(1, 0, 0), StructureMirror.None, roomRotation, 7, 7);
@@ -904,7 +904,8 @@ internal sealed class WoodlandMansionLayout
 
         public string Get1x1(IRandomSource random) => (this.firstFloor ? "1x1_a" : "1x1_b") + (random.NextInt(5) + 1);
 
-        public string Get1x1Secret(IRandomSource random) => "1x1_as" + (random.NextInt(4) + 1);
+        // The secret rooms are the same on every floor.
+        public static string Get1x1Secret(IRandomSource random) => "1x1_as" + (random.NextInt(4) + 1);
 
         public string Get1x2SideEntrance(IRandomSource random, bool hasStairs)
         {
@@ -926,6 +927,6 @@ internal sealed class WoodlandMansionLayout
 
         public string Get2x2(IRandomSource random) => this.firstFloor ? "2x2_a" + (random.NextInt(4) + 1) : "2x2_b" + (random.NextInt(5) + 1);
 
-        public string Get2x2Secret() => "2x2_s1";
+        public static string Get2x2Secret() => "2x2_s1";
     }
 }

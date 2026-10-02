@@ -436,7 +436,7 @@ public partial class NetworkBuffer : INetStreamWriter
 
     public void WriteLengthPrefixedArray<TValue>(Action<TValue> write, params TValue[] values)
     {
-        this.WriteVarInt(values.Count());
+        this.WriteVarInt(values.Length);
 
         foreach (var value in values)
             write(value);
@@ -444,7 +444,7 @@ public partial class NetworkBuffer : INetStreamWriter
 
     public void WriteLengthPrefixedArray(bool showInTooltips, params Enchantment[] enchantments)
     {
-        this.WriteVarInt(enchantments.Count());
+        this.WriteVarInt(enchantments.Length);
 
         foreach (var enchantment in enchantments)
             this.WriteEnchantment(enchantment);

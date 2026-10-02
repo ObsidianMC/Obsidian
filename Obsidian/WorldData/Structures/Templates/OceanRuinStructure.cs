@@ -212,7 +212,7 @@ public sealed class OceanRuinPiece : TemplateStructurePiece
     }
 
     /// <summary>Vanilla <c>archyRuleProcessor</c>: up to 5 blocks become suspicious blocks with archaeology loot.</summary>
-    private static StructureProcessor ArchaeologyProcessor(string block, string suspicious, string lootTable) => new CappedProcessor
+    private static CappedProcessor ArchaeologyProcessor(string block, string suspicious, string lootTable) => new CappedProcessor
     {
         Type = "minecraft:capped",
         Delegate = new RuleProcessor

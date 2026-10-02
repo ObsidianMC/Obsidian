@@ -3,6 +3,7 @@ using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;
 using Obsidian.Nbt;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API.Utilities;
 
@@ -119,6 +120,7 @@ public partial class Extensions
         };
     }
 
+    [SuppressMessage("Performance", "CA1859", Justification = "Returns many component types; the analyzer only sees the potion contents one.")]
     private static DataComponent? ComponentFromNbt(string name, INbtTag tag)
     {
         switch (name)

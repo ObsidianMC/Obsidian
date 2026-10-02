@@ -8,17 +8,17 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
 {
     private readonly ILevel level = level;
 
-    private EntityType? entityType = null;
+    private EntityType? entityType;
 
     private VectorF position = VectorF.Zero;
-    private bool isBaby = false;
-    private string? customName = null;
-    private bool customNameVisible = false;
-    private bool ambientPotionEffect = false;
-    private int absorbedArrows = 0;
-    private int absorbedStingers = 0;
-    private bool burning = false;
-    private bool glowing = false;
+    private bool isBaby;
+    private string? customName;
+    private bool customNameVisible;
+    private bool ambientPotionEffect;
+    private int absorbedArrows;
+    private int absorbedStingers;
+    private bool burning;
+    private bool glowing;
 
     public IEntitySpawner WithEntityType(EntityType type)
     {

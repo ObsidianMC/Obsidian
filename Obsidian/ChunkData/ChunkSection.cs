@@ -10,10 +10,10 @@ public sealed class ChunkSection : IChunkSection
     public DataContainer<IBlock> BlockStateContainer { get; }
     public DataContainer<BiomeCodec> BiomeContainer { get; }
 
-    public bool HasSkyLight { get; private set; } = false;
+    public bool HasSkyLight { get; private set; }
     public ReadOnlyMemory<byte> SkyLightArray => skyLight.AsMemory();
 
-    public bool HasBlockLight { get; private set; } = false;
+    public bool HasBlockLight { get; private set; }
     public ReadOnlyMemory<byte> BlockLightArray => blockLight.AsMemory();
 
     public bool IsEmpty { get; private set; } = true;

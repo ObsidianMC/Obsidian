@@ -161,7 +161,7 @@ internal sealed class CarverStep
             this.configuration = configuration;
         }
 
-        public bool IsStartChunk(IRandomSource random) => this.carver.IsStartChunk(this.configuration, random);
+        public bool IsStartChunk(IRandomSource random) => WorldCarver<TConfiguration>.IsStartChunk(this.configuration, random);
 
         public void Carve(CarvingContext context, IRandomSource random, int startChunkX, int startChunkZ) =>
             this.carver.Carve(context, this.configuration, random, startChunkX, startChunkZ);

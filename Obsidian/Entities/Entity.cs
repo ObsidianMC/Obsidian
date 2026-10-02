@@ -41,7 +41,7 @@ public class Entity : IEquatable<Entity>, IEntity
     public virtual BoundingBox BoundingBox { get; protected set; } = new(VectorF.Zero, VectorF.Zero);
     public virtual EntityDimension Dimension { get; protected set; } = EntityDimension.Zero;
 
-    public int PowderedSnowTicks { get; set; } = 0;
+    public int PowderedSnowTicks { get; set; }
 
     public EntityType Type { get; set; }
 

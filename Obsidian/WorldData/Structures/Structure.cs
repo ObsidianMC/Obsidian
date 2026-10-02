@@ -43,7 +43,7 @@ public abstract class Structure
     internal StructureStart? Generate(StructureGenerationContext context)
     {
         var stub = this.FindGenerationPoint(context);
-        if (stub is null || !this.IsValidBiome(stub, context))
+        if (stub is null || !IsValidBiome(stub, context))
             return null;
 
         var builder = new StructurePiecesBuilder();
@@ -71,7 +71,7 @@ public abstract class Structure
     /// <summary>
     /// Vanilla <c>isValidBiome</c>: the biome source's biome at the start position must be one of <see cref="Biomes"/>.
     /// </summary>
-    private bool IsValidBiome(StructureStub stub, StructureGenerationContext context)
+    private static bool IsValidBiome(StructureStub stub, StructureGenerationContext context)
     {
         var position = stub.Position;
         var biome = context.BiomeSource.GetNoiseBiome(context.Sampler, position.X >> 2, position.Y >> 2, position.Z >> 2);

@@ -15,12 +15,12 @@ public class SplitScaleBias : Module
     /// <summary>
     /// Value added to Scaled result.
     /// </summary>
-    public double Bias { get; set; } = 0D;
+    public double Bias { get; set; }
 
     /// <summary>
     /// Centerpoint of scaling
     /// </summary>
-    public double Center { get; set; } = 0;
+    public double Center { get; set; }
 
     /// <summary>
     /// Scaling to apply above centerpoint.

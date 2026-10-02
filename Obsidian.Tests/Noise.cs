@@ -17,7 +17,7 @@ public class Noise
 {
     private OverworldTerrainNoise noiseGen = new(0);
 
-    private class TestNoiseModule(int sourceModuleCount) : Module(sourceModuleCount)
+    private sealed class TestNoiseModule(int sourceModuleCount) : Module(sourceModuleCount)
     {
         public override double GetValue(double x, double y, double z) => 1;//NoiseRegistry.NoiseSettings.Overworld.NoiseRouter.Continents.GetValue(x, y, z);
     }

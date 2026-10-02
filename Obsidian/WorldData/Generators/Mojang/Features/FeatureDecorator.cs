@@ -21,7 +21,7 @@ internal sealed class FeatureDecorator
 
     private readonly IReadOnlyList<StepFeatures> featuresPerStep;
     private readonly IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>> biomeFeatures;
-    private readonly IReadOnlyDictionary<string, HashSet<PlacedFeature>> biomeFeatureSets;
+    private readonly Dictionary<string, HashSet<PlacedFeature>> biomeFeatureSets;
 
     // The feature sets of the possible biomes by biome id, with each biome's name to check lookups against: biome filters
     // look them up for nearly every position placed.

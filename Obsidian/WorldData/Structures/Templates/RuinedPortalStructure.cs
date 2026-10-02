@@ -56,7 +56,7 @@ public sealed class RuinedPortalStructure : Structure
     }
 
     /// <summary>Vanilla's setup pick: one <c>nextFloat</c> against the weights, only when there are several setups.</summary>
-    private RuinedPortalSetup PickSetup(IRandomSource random)
+    private RuinedPortalSetup PickSetup(WorldgenRandom random)
     {
         if (this.Setups.Length == 1)
             return this.Setups[0];
@@ -77,13 +77,13 @@ public sealed class RuinedPortalStructure : Structure
     }
 
     /// <summary>Vanilla <c>sample</c>: draws a float only for probabilities other than 0 and 1.</summary>
-    private static bool Sample(IRandomSource random, float probability) =>
+    private static bool Sample(WorldgenRandom random, float probability) =>
         probability != 0f && (probability == 1f || random.NextFloat() < probability);
 
     /// <summary>
     /// Vanilla <c>findSuitableY</c>: a height for the placement, lowered until 3 of the box's corner columns are solid there.
     /// </summary>
-    private static int FindSuitableY(IRandomSource random, StructureGenerationContext context, RuinedPortalPlacement placement, bool airPocket,
+    private static int FindSuitableY(WorldgenRandom random, StructureGenerationContext context, RuinedPortalPlacement placement, bool airPocket,
         int surface, int height, BlockBox box)
     {
         var minY = context.MinY + 15;

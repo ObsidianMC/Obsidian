@@ -35,7 +35,7 @@ public sealed class RandomSpreadStructurePlacement : StructurePlacement
     private protected override bool IsPlacementChunk(IStructurePlacementState state, int chunkX, int chunkZ) =>
         this.GetPotentialStructureChunk(state.Seed, chunkX, chunkZ) == (chunkX, chunkZ);
 
-    private int Evaluate(IRandomSource random, int range) => this.SpreadType == RandomSpreadType.Triangular
+    private int Evaluate(WorldgenRandom random, int range) => this.SpreadType == RandomSpreadType.Triangular
         ? (random.NextInt(range) + random.NextInt(range)) / 2
         : random.NextInt(range);
 }

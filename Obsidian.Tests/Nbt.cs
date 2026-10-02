@@ -8,7 +8,7 @@ namespace Obsidian.Tests;
 
 public class Nbt(ITestOutputHelper output)
 {
-    private Stream stream;
+    private MemoryStream stream;
 
     [Fact]
     public void ReadBigTest()

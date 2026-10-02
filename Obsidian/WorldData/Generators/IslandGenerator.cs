@@ -130,7 +130,7 @@ public sealed class IslandGenerator : ILevelGenerator
                     if (isSurface)
                     {
                         var biome = chunk.GetBiome(pos + Vector.Down);
-                        IDecorator decorator = DecoratorFactory.GetDecorator(biome, chunk, worldPos, helper);
+                        var decorator = DecoratorFactory.GetDecorator(biome, chunk, worldPos, helper);
                         decorator.Decorate();
                         await OverworldDecorator.GenerateTreesAsync(worldPos, decorator.Features, helper);
                         await OverworldDecorator.GenerateFloraAsync(worldPos, decorator.Features, helper, chunk);

@@ -44,7 +44,7 @@ internal static class BlockTransforms
         using var document = JsonDocument.Parse(stream);
 
         var root = document.RootElement;
-        return [.. new[] { "rotateClockwise90", "rotate180", "rotateCounterclockwise90", "mirrorLeftRight", "mirrorFrontBack" }
-            .Select(name => root.GetProperty(name).EnumerateArray().Select(value => value.GetInt32()).ToArray())];
+        string[] transforms = ["rotateClockwise90", "rotate180", "rotateCounterclockwise90", "mirrorLeftRight", "mirrorFrontBack"];
+        return [.. transforms.Select(name => root.GetProperty(name).EnumerateArray().Select(value => value.GetInt32()).ToArray())];
     }
 }

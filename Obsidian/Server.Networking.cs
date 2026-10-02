@@ -86,7 +86,7 @@ public partial class Server
     }
 
 
-    private async ValueTask TryProcessClientAsync(IClient client)
+    private async ValueTask TryProcessClientAsync(Client client)
     {
         if (!client.Connected)
             return;

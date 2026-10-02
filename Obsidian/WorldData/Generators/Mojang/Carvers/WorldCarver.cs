@@ -119,7 +119,7 @@ internal abstract class WorldCarver<TConfiguration> where TConfiguration : Carve
     /// <summary>
     /// Decides whether a chunk starts this carver.
     /// </summary>
-    public bool IsStartChunk(TConfiguration configuration, IRandomSource random) => random.NextFloat() <= configuration.Probability;
+    public static bool IsStartChunk(TConfiguration configuration, IRandomSource random) => random.NextFloat() <= configuration.Probability;
 
     /// <summary>
     /// Carves the parts of the carver started in (<paramref name="startChunkX"/>, <paramref name="startChunkZ"/>)
@@ -218,7 +218,7 @@ internal abstract class WorldCarver<TConfiguration> where TConfiguration : Carve
 
         var x = (chunk.X << 4) + localX;
         var z = (chunk.Z << 4) + localZ;
-        var carved = this.GetCarveState(context, configuration, x, y, z);
+        var carved = GetCarveState(context, configuration, x, y, z);
         if (carved is null)
             return;
 
@@ -240,7 +240,7 @@ internal abstract class WorldCarver<TConfiguration> where TConfiguration : Carve
         }
     }
 
-    private IBlock? GetCarveState(CarvingContext context, TConfiguration configuration, int x, int y, int z)
+    private static IBlock? GetCarveState(CarvingContext context, TConfiguration configuration, int x, int y, int z)
     {
         if (y <= configuration.LavaLevel.Resolve(context.MinY, context.Height))
             return BlocksRegistry.Lava;

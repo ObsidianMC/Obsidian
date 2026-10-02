@@ -21,7 +21,7 @@ namespace Obsidian;
 
 public sealed partial class Server : IServer
 {
-    private static int EntityCounter = 0;
+    private static int EntityCounter;
 
     internal static readonly ConcurrentDictionary<string, DateTimeOffset> throttler = new();
 

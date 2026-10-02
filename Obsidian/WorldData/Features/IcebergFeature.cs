@@ -58,7 +58,7 @@ public sealed class IcebergFeature : ConfiguredFeatureBase
                 {
                     var radius = ellipse ? RadiusEllipse(y, height, width) : RadiusRound(random, y, height, width);
                     if (ellipse || x < radius)
-                        this.GenerateIcebergBlock(level, random, origin, height, x, y, z, radius, extent, ellipse, ellipseC, angle, snowOnTop, state);
+                        GenerateIcebergBlock(level, random, origin, height, x, y, z, radius, extent, ellipse, ellipseC, angle, snowOnTop, state);
                 }
             }
         }
@@ -74,7 +74,7 @@ public sealed class IcebergFeature : ConfiguredFeatureBase
                     var a = ellipse ? FeatureHelpers.Ceil(extent * (1.0f - (float)(y * y) / (depth * 8.0f))) : extent;
                     var radius = RadiusSteep(random, -y, depth, width);
                     if (x < radius)
-                        this.GenerateIcebergBlock(level, random, origin, depth, x, y, z, radius, a, ellipse, ellipseC, angle, snowOnTop, state);
+                        GenerateIcebergBlock(level, random, origin, depth, x, y, z, radius, a, ellipse, ellipseC, angle, snowOnTop, state);
                 }
             }
         }
@@ -152,7 +152,7 @@ public sealed class IcebergFeature : ConfiguredFeatureBase
         }
     }
 
-    private void GenerateIcebergBlock(IWorldGenLevel level, IRandomSource random, Vector origin, int height, int x, int y, int z, int radius,
+    private static void GenerateIcebergBlock(IWorldGenLevel level, IRandomSource random, Vector origin, int height, int x, int y, int z, int radius,
         int a, bool ellipse, int ellipseC, double angle, bool snowOnTop, IBlock state)
     {
         var distance = ellipse

@@ -160,7 +160,7 @@ public static class StrongholdPieces
         return box is not null && box.Value.MinY > 1 ? new FillerCorridor(depth, box.Value, direction) : null;
     }
 
-    private static StructurePiece? GenerateAndAddPiece(StartPiece start, IStructurePieceAccessor pieces, IRandomSource random, int x, int y, int z,
+    private static StrongholdPiece? GenerateAndAddPiece(StartPiece start, IStructurePieceAccessor pieces, IRandomSource random, int x, int y, int z,
         BlockFace direction, int depth)
     {
         if (depth > MaxDepth)

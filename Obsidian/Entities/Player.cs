@@ -17,7 +17,7 @@ namespace Obsidian.Entities;
 [MinecraftEntity("minecraft:player")]
 public sealed partial class Player : Avatar, IPlayer
 {
-    public byte CurrentContainerId { get; set; } = 0;
+    public byte CurrentContainerId { get; set; }
 
     public IClient Client { get; internal set; }
 
@@ -137,11 +137,11 @@ public sealed partial class Player : Avatar, IPlayer
     public int FoodTickTimer { get; set; }
     public int XpLevel { get; set; }
     public int XpTotal { get; set; }
-    public float XpP { get; set; } = 0;
+    public float XpP { get; set; }
 
     public double HeadY { get; private set; }
 
-    public float Absorption { get; set; } = 0;
+    public float Absorption { get; set; }
     public float FallDistance { get; set; }
     public float FoodExhaustionLevel { get; set; }
     public float FoodSaturationLevel { get; set; }

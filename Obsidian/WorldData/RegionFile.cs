@@ -104,7 +104,7 @@ public sealed class RegionFile : IAsyncDisposable
     /// <exception cref="NotSupportedException"></exception>
     public async Task SetChunkAsync(int chunkX, int chunkZ, Memory<byte> chunkData)
     {
-        var chunkSectorSize = this.CalculateSectorSize(chunkData.Length);
+        var chunkSectorSize = CalculateSectorSize(chunkData.Length);
 
         if (chunkSectorSize > MaxSectorSize)
             throw new NotSupportedException($"{nameof(chunkData)} calculated length({chunkSectorSize}) exceeds the max section size({MaxSectorSize}).");
@@ -386,7 +386,7 @@ public sealed class RegionFile : IAsyncDisposable
     private void SetLocation(int tableIndex, int offset, int size) =>
          this.Locations[tableIndex] = (offset << 8) | (size & 0xFF);
 
-    private int CalculateSectorSize(int length) =>
+    private static int CalculateSectorSize(int length) =>
         (int)Math.Ceiling((length + 5) / (double)SectorSize);
 
     private void Pad()

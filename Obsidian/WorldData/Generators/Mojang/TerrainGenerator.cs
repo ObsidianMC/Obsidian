@@ -98,7 +98,7 @@ internal sealed class TerrainGenerator : IStructureTerrain
                             for (var inCellZ = 0; inCellZ < cellWidth; inCellZ++)
                             {
                                 var row = (inCellY * 16 + minLocalZ + inCellZ) * 16 + minLocalX;
-                                codes.AsSpan(row, cellWidth).Fill(FillPalette.DefaultCode);
+                                codes.AsSpan(row, cellWidth).Clear(); // FillPalette.DefaultCode
                                 scheduled.AsSpan(row, cellWidth).Clear();
                             }
                         }

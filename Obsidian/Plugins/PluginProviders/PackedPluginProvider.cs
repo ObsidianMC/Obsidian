@@ -64,7 +64,7 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
 
         var loadContext = new PluginLoadContext(pluginAssembly);
 
-        var entries = await this.InitializeEntriesAsync(reader, fs);
+        var entries = await InitializeEntriesAsync(reader, fs);
 
         var partialContainer = BuildPartialContainer(loadContext, path, entries, isSigValid, new PluginInfo
         {
@@ -189,7 +189,7 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
     /// Steps through the plugin file stream and initializes each file entry found.
     /// </summary>
     /// <returns>A dictionary that contains file entries with the key as the FileName and value as <see cref="PluginFileEntry"/>.</returns>
-    private async Task<Dictionary<string, PluginFileEntry>> InitializeEntriesAsync(BinaryReader reader, FileStream fs)
+    private static async Task<Dictionary<string, PluginFileEntry>> InitializeEntriesAsync(BinaryReader reader, FileStream fs)
     {
         var entryCount = reader.ReadInt32();
         var entries = new Dictionary<string, PluginFileEntry>(entryCount);

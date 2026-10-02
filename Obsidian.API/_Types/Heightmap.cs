@@ -71,13 +71,13 @@ public sealed class Heightmap
         return false;
     }
 
-    public void Set(int x, int z, int value) => this.data[this.GetIndex(x, z)] = value - this.chunk.MinY;
+    public void Set(int x, int z, int value) => this.data[GetIndex(x, z)] = value - this.chunk.MinY;
 
-    public int GetHeight(int x, int z) => this.GetHeight(this.GetIndex(x, z));
+    public int GetHeight(int x, int z) => this.GetHeight(GetIndex(x, z));
 
     private int GetHeight(int value) => this.data[value] + this.chunk.MinY;
 
-    private int GetIndex(int x, int z) => x + z * 16;
+    private static int GetIndex(int x, int z) => x + z * 16;
 
     public long[] GetDataArray() => this.data.storage;
 

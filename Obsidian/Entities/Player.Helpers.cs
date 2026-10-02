@@ -287,7 +287,7 @@ public partial class Player
         }
     }
 
-    private void WriteItems(INbtWriter writer, bool inventory = true)
+    private void WriteItems(NbtWriterStream writer, bool inventory = true)
     {
         var items = inventory ? Inventory.Select((item, slot) => (item, slot)) : EnderInventory.Select((item, slot) => (item, slot));
 
