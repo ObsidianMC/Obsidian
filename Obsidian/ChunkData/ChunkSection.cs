@@ -77,7 +77,7 @@ public sealed class ChunkSection : IChunkSection
         var shift = (index & 1) << 2;
         var mask = 0xF << shift;
         index /= 2;
-        return lt == LightType.Sky ? (skyLight[index] & mask) >> shift : (blockLight[index] & mask >> shift);
+        return ((lt == LightType.Sky ? skyLight : blockLight)[index] & mask) >> shift;
     }
 
     public void SetLight(byte[] data, LightType lt)
