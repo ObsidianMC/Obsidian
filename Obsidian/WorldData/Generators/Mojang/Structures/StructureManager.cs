@@ -80,7 +80,8 @@ internal sealed class StructureManager : IStructurePlacementState
     /// <summary>
     /// The structures that start in a chunk (vanilla's structure starts status), at most one per structure set.
     /// </summary>
-    public StructureStart[] GetStarts(int chunkX, int chunkZ) => this.starts.GetOrAdd((chunkX, chunkZ), key => this.CreateStarts(key.X, key.Z));
+    public StructureStart[] GetStarts(int chunkX, int chunkZ) =>
+        this.starts.GetOrAdd((chunkX, chunkZ), static (key, manager) => manager.CreateStarts(key.X, key.Z), this);
 
     /// <summary>
     /// The starts of <paramref name="structure"/> whose box reaches the chunk, in the order vanilla places them.
