@@ -5,50 +5,39 @@ public sealed record class PotionContentsDataComponent : DataComponent
 
     public override string Identifier => "minecraft:potion_contents";
 
+    /// <summary>
+    /// The potion whose effects the item has, if any.
+    /// </summary>
     public Potion? Potion { get; set; }
 
     public int? CustomColor { get; set; }
 
-    public PotionEffectData[] CustomEffects { get; set; }
+    /// <summary>
+    /// Effects on top of the potion's own.
+    /// </summary>
+    public PotionEffectData[] CustomEffects { get; set; } = [];
 
+    /// <summary>
+    /// Replaces the potion's name in the item name, e.g. <c>water</c> for "Water Bottle".
+    /// </summary>
     public string? CustomName { get; set; }
 
     public override void Read(INetStreamReader reader)
     {
-        var hasPotion = reader.ReadBoolean();
-        if(hasPotion)
-        {
-            this.Potion = new()
-            {
-                Name = reader.ReadString(),
-                Effects = reader.ReadLengthPrefixedArray(reader.ReadPotionEffectData)
-            };
-        }
-
+        this.Potion = reader.ReadBoolean() ? (Potion)reader.ReadVarInt() : null;
         this.CustomColor = reader.ReadOptionalInt();
-        this.CustomEffects = reader.ReadLengthPrefixedArray(reader.ReadPotionEffectData);
+        this.CustomEffects = reader.ReadLengthPrefixedArray(() => PotionEffectData.Read(reader));
         this.CustomName = reader.ReadOptionalString();
     }
 
     public override void Write(INetStreamWriter writer)
     {
-        if (this.Potion is Potion potion)
-        {
-            writer.WriteString(potion.Name);
-
-            writer.WriteLengthPrefixedArray((effect) => PotionEffectData.Write(effect, writer), potion.Effects);
-        }
+        writer.WriteBoolean(this.Potion is not null);
+        if (this.Potion is not null)
+            writer.WriteVarInt((int)this.Potion.Value);
 
         writer.WriteOptional(this.CustomColor);
-
-        writer.WriteLengthPrefixedArray((value) => PotionEffectData.Write(value, writer), this.CustomEffects);
-
+        writer.WriteLengthPrefixedArray((effect) => PotionEffectData.Write(effect, writer), this.CustomEffects);
         writer.WriteOptional(this.CustomName);
     }
-}
-
-public readonly record struct Potion
-{
-    public required string Name { get; init; }
-    public required PotionEffectData[] Effects { get; init; }
 }

@@ -86,7 +86,7 @@ public static class EnchantmentHelper
     public static Enchantment[] GetEnchantments(ItemStack stack)
     {
         var enchantments = LootItems.Is(stack, Material.EnchantedBook)
-            ? stack.GetComponent<TooltipSimpleDataComponent<Enchantment[]>>(DataComponentType.StoredEnchantments)?.Value
+            ? stack.GetComponent<SimpleDataComponent<Enchantment[]>>(DataComponentType.StoredEnchantments)?.Value
             : stack.GetComponent<SimpleDataComponent<Enchantment[]>>(DataComponentType.Enchantments)?.Value;
 
         return enchantments is null ? [] : [.. enchantments];

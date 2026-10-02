@@ -12,6 +12,11 @@ public sealed class InstrumentDefinition
     public required string Identifier { get; init; }
 
     /// <summary>
+    /// Index in vanilla's instrument registry, which is sorted by id; the id clients know the instrument by.
+    /// </summary>
+    public required int Id { get; init; }
+
+    /// <summary>
     /// The sound event id, e.g. <c>minecraft:item.goat_horn.sound.0</c>.
     /// </summary>
     public required string SoundEvent { get; init; }
@@ -33,6 +38,7 @@ public sealed class InstrumentDefinition
     /// </summary>
     public InstrumentData ToInstrumentData() => new()
     {
+        Identifier = this.Identifier,
         SoundEvent = new SoundEvent { ResourceLocation = this.SoundEvent },
         UseDuration = this.UseDuration,
         Range = this.Range,

@@ -215,14 +215,18 @@ public sealed class LootRegistryGenerator : IIncrementalGenerator
             builder.AppendLine("public static class InstrumentsRegistry");
             builder.AppendLine("{");
 
+            // Like the enchantments, vanilla's instrument registry is sorted by id and the index is the network id.
             var chatMessage = this.compilation.GetTypeByMetadataName("Obsidian.API.ChatMessage")!;
-            foreach (var property in this.instruments.EnumerateObject())
+            var ordered = this.instruments.EnumerateObject().OrderBy(property => property.Name, StringComparer.Ordinal).ToList();
+            for (var id = 0; id < ordered.Count; id++)
             {
+                var property = ordered[id];
                 this.currentOwner = property.Name;
                 var json = property.Value;
                 var parts = new[]
                 {
                     $"Identifier = {Literal(property.Name)}",
+                    $"Id = {id}",
                     $"SoundEvent = {Literal(json.GetProperty("sound_event").GetString()!)}",
                     $"UseDuration = {FloatLiteral(json.GetProperty("use_duration"))}",
                     $"Range = {FloatLiteral(json.GetProperty("range"))}",
@@ -233,6 +237,10 @@ public sealed class LootRegistryGenerator : IIncrementalGenerator
                 builder.AppendLine();
             }
 
+            builder.AppendLine("    /// <summary>");
+            builder.AppendLine("    /// Every instrument in registry order, so an instrument's <c>Id</c> is its index.");
+            builder.AppendLine("    /// </summary>");
+            builder.AppendLine($"    public static global::System.Collections.Generic.IReadOnlyList<global::Obsidian.API.Loot.InstrumentDefinition> All {{ get; }} = [{string.Join(", ", ordered.Select(property => MemberName(property.Name)))}];");
             builder.AppendLine("}");
             return builder.ToString();
         }

@@ -4,6 +4,7 @@ using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Loot;
 using Obsidian.API.Registries;
+using Obsidian.API.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -75,13 +76,13 @@ public class VanillaLoot
         if (enchantments is not null && enchantments.Length > 0)
             builder.Append($",enchantments={DescribeEnchantments(enchantments)}");
 
-        var stored = stack.GetComponent<TooltipSimpleDataComponent<Enchantment[]>>(DataComponentType.StoredEnchantments)?.Value;
+        var stored = stack.GetComponent<SimpleDataComponent<Enchantment[]>>(DataComponentType.StoredEnchantments)?.Value;
         if (stored is not null && stored.Length > 0)
             builder.Append($",stored={DescribeEnchantments(stored)}");
 
         var potion = stack.GetComponent<PotionContentsDataComponent>(DataComponentType.PotionContents)?.Potion;
         if (potion is not null)
-            builder.Append($",potion={Strip(potion.Value.Name)}");
+            builder.Append($",potion={potion.Value.ToString().ToSnakeCase()}");
 
         var stew = stack.GetComponent<SimpleDataComponent<SuspiciousStewEffect[]>>(DataComponentType.SuspiciousStewEffects)?.Value;
         if (stew is not null)

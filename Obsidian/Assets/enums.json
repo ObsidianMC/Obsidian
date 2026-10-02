@@ -541,5 +541,145 @@
     "minecraft:wither": {
       "protocol_id": 19
     }
+  },
+  "minecraft:potion": {
+    "minecraft:awkward": {
+      "protocol_id": 3
+    },
+    "minecraft:fire_resistance": {
+      "protocol_id": 11
+    },
+    "minecraft:harming": {
+      "protocol_id": 26
+    },
+    "minecraft:healing": {
+      "protocol_id": 24
+    },
+    "minecraft:infested": {
+      "protocol_id": 45
+    },
+    "minecraft:invisibility": {
+      "protocol_id": 6
+    },
+    "minecraft:leaping": {
+      "protocol_id": 8
+    },
+    "minecraft:long_fire_resistance": {
+      "protocol_id": 12
+    },
+    "minecraft:long_invisibility": {
+      "protocol_id": 7
+    },
+    "minecraft:long_leaping": {
+      "protocol_id": 9
+    },
+    "minecraft:long_night_vision": {
+      "protocol_id": 5
+    },
+    "minecraft:long_poison": {
+      "protocol_id": 29
+    },
+    "minecraft:long_regeneration": {
+      "protocol_id": 32
+    },
+    "minecraft:long_slow_falling": {
+      "protocol_id": 41
+    },
+    "minecraft:long_slowness": {
+      "protocol_id": 17
+    },
+    "minecraft:long_strength": {
+      "protocol_id": 35
+    },
+    "minecraft:long_swiftness": {
+      "protocol_id": 14
+    },
+    "minecraft:long_turtle_master": {
+      "protocol_id": 20
+    },
+    "minecraft:long_water_breathing": {
+      "protocol_id": 23
+    },
+    "minecraft:long_weakness": {
+      "protocol_id": 38
+    },
+    "minecraft:luck": {
+      "protocol_id": 39
+    },
+    "minecraft:mundane": {
+      "protocol_id": 1
+    },
+    "minecraft:night_vision": {
+      "protocol_id": 4
+    },
+    "minecraft:oozing": {
+      "protocol_id": 44
+    },
+    "minecraft:poison": {
+      "protocol_id": 28
+    },
+    "minecraft:regeneration": {
+      "protocol_id": 31
+    },
+    "minecraft:slow_falling": {
+      "protocol_id": 40
+    },
+    "minecraft:slowness": {
+      "protocol_id": 16
+    },
+    "minecraft:strength": {
+      "protocol_id": 34
+    },
+    "minecraft:strong_harming": {
+      "protocol_id": 27
+    },
+    "minecraft:strong_healing": {
+      "protocol_id": 25
+    },
+    "minecraft:strong_leaping": {
+      "protocol_id": 10
+    },
+    "minecraft:strong_poison": {
+      "protocol_id": 30
+    },
+    "minecraft:strong_regeneration": {
+      "protocol_id": 33
+    },
+    "minecraft:strong_slowness": {
+      "protocol_id": 18
+    },
+    "minecraft:strong_strength": {
+      "protocol_id": 36
+    },
+    "minecraft:strong_swiftness": {
+      "protocol_id": 15
+    },
+    "minecraft:strong_turtle_master": {
+      "protocol_id": 21
+    },
+    "minecraft:swiftness": {
+      "protocol_id": 13
+    },
+    "minecraft:thick": {
+      "protocol_id": 2
+    },
+    "minecraft:turtle_master": {
+      "protocol_id": 19
+    },
+    "minecraft:water": {
+      "protocol_id": 0
+    },
+    "minecraft:water_breathing": {
+      "protocol_id": 22
+    },
+    "minecraft:weakness": {
+      "protocol_id": 37
+    },
+    "minecraft:weaving": {
+      "protocol_id": 43
+    },
+    "minecraft:wind_charged": {
+      "protocol_id": 42
+    }
   }
 }

@@ -9,17 +9,12 @@ namespace Obsidian.API.Loot.Functions;
 [LootType("minecraft:set_potion")]
 public sealed class SetPotionFunction : LootFunction
 {
-    /// <summary>
-    /// The potion id, e.g. <c>minecraft:water_breathing</c>.
-    /// </summary>
-    public required string Id { get; init; }
+    public required Potion Id { get; init; }
 
     protected override ItemStack Run(ItemStack stack, LootContext context)
     {
         var contents = stack.GetComponent<PotionContentsDataComponent>(DataComponentType.PotionContents);
-        var potion = new Potion { Name = this.Id, Effects = [] };
-
-        LootItems.Set(stack, contents is null ? new PotionContentsDataComponent { Potion = potion, CustomEffects = [] } : contents with { Potion = potion });
+        LootItems.Set(stack, contents is null ? new PotionContentsDataComponent { Potion = this.Id } : contents with { Potion = this.Id });
         return stack;
     }
 }
