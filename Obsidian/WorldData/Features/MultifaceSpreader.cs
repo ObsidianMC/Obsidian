@@ -260,13 +260,15 @@ internal sealed class MultifaceSpreader
     private static int Info(IBlock state)
     {
         var id = state.GetHashCode();
-        if ((uint)id >= (uint)infos.Length)
-            return ComputeInfo(state);
+        return (uint)id < (uint)infos.Length ? Info(id) : ComputeInfo(state);
+    }
 
+    private static int Info(int stateId)
+    {
         // Threads racing on an entry store the same value.
-        var info = infos[id];
+        var info = infos[stateId];
         if (info == 0)
-            infos[id] = info = ComputeInfo(state);
+            infos[stateId] = info = ComputeInfo(BlocksRegistry.Get(stateId));
 
         return info;
     }
@@ -330,8 +332,8 @@ internal sealed class MultifaceSpreader
     /// </summary>
     private ref struct Neighborhood(IWorldGenLevel level, Vector center)
     {
-        private NeighborhoodBlocks blocks;
-        private NeighborhoodInfos infos;
+        private NeighborhoodInts states;
+        private NeighborhoodInts infos;
 
         // The faces of the center checked for spreading into it, and those the check allowed, until the next write.
         private int checkedCenterFaces;
@@ -346,14 +348,14 @@ internal sealed class MultifaceSpreader
             if (this.infos[index] == 0)
                 this.Read(index, position);
 
-            return this.blocks[index]!;
+            return BlocksRegistry.Get(this.states[index]);
         }
 
         public int Info(Vector position)
         {
             var index = this.Index(position);
             if (index < 0)
-                return MultifaceSpreader.Info(level.GetBlock(position));
+                return MultifaceSpreader.Info(level.GetStateId(position));
 
             if (this.infos[index] == 0)
                 this.Read(index, position);
@@ -387,9 +389,9 @@ internal sealed class MultifaceSpreader
 
         private void Read(int index, Vector position)
         {
-            var block = level.GetBlock(position);
-            this.blocks[index] = block;
-            this.infos[index] = MultifaceSpreader.Info(block);
+            var stateId = level.GetStateId(position);
+            this.states[index] = stateId;
+            this.infos[index] = MultifaceSpreader.Info(stateId);
         }
 
         private readonly int Index(Vector position)
@@ -402,13 +404,7 @@ internal sealed class MultifaceSpreader
     }
 
     [InlineArray(27)]
-    private struct NeighborhoodBlocks
-    {
-        private IBlock? first;
-    }
-
-    [InlineArray(27)]
-    private struct NeighborhoodInfos
+    private struct NeighborhoodInts
     {
         private int first;
     }
