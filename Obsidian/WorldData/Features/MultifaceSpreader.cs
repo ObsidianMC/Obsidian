@@ -166,7 +166,7 @@ internal sealed class MultifaceSpreader
             {
                 SpreadType.SamePosition => (position, direction),
                 SpreadType.SamePlane => (position.Offset(direction), fromFace),
-                _ => (position.Offset(direction).Offset(fromFace), direction.Opposite())
+                _ => (position.Offset(direction).Offset(fromFace), Opposite(direction))
             };
 
             var canSpread = type == SpreadType.SamePosition
@@ -209,7 +209,7 @@ internal sealed class MultifaceSpreader
             if ((blocks.Info(to.Offset(face)) & BlocksVeinsBit) != 0)
                 return false;
 
-            if (FeatureHelpers.DistManhattan(from, to) == 2 && IsFaceSturdy(blocks.Info(from.Offset(face.Opposite())), face))
+            if (FeatureHelpers.DistManhattan(from, to) == 2 && IsFaceSturdy(blocks.Info(from.Offset(Opposite(face))), face))
                 return false;
 
             if ((stateInfo & RejectsVeinsBit) != 0)
@@ -231,7 +231,7 @@ internal sealed class MultifaceSpreader
             return false;
 
         var neighbor = blocks.Info(position.Offset(face));
-        return IsFaceSturdy(neighbor, face.Opposite()) || (neighbor & FullCollisionBit) != 0;
+        return IsFaceSturdy(neighbor, Opposite(face)) || (neighbor & FullCollisionBit) != 0;
     }
 
     private IBlock? GetStateForPlacement(IBlock existing, int existingInfo, ref Neighborhood blocks, Vector position, BlockFace face)
@@ -249,6 +249,9 @@ internal sealed class MultifaceSpreader
 
         return state.WithProperty(FeatureHelpers.FaceName(face), true);
     }
+
+    // BlockFace values come in opposite pairs (down and up, north and south, west and east).
+    private static BlockFace Opposite(BlockFace face) => (BlockFace)((int)face ^ 1);
 
     private static bool HasFace(int info, BlockFace face) => (info >> (int)face & 1) != 0;
 
