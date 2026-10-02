@@ -10,15 +10,17 @@ public sealed record class ChatMessage : INetworkSerializable<ChatMessage>
 
     public HexColor? Color { get; set; }
 
-    public bool Bold { get; set; }
+    // The style flags are inherited from the parent component (or the context, like italic custom item names) when null.
 
-    public bool Italic { get; set; }
+    public bool? Bold { get; set; }
 
-    public bool Underlined { get; set; }
+    public bool? Italic { get; set; }
 
-    public bool Strikethrough { get; set; }
+    public bool? Underlined { get; set; }
 
-    public bool Obfuscated { get; set; }
+    public bool? Strikethrough { get; set; }
+
+    public bool? Obfuscated { get; set; }
 
     public string? Insertion { get; set; }
 

@@ -18,11 +18,17 @@ public partial class Extensions
         if (!chatMessage.Insertion.IsNullOrEmpty())
             writer.WriteString("insertion", chatMessage.Insertion);
 
-        writer.WriteBool("bold", chatMessage.Bold);
-        writer.WriteBool("italic", chatMessage.Italic);
-        writer.WriteBool("underlined", chatMessage.Underlined);
-        writer.WriteBool("strikethrough", chatMessage.Strikethrough);
-        writer.WriteBool("obfuscated", chatMessage.Obfuscated);
+        // Unset flags are left out so they're inherited, as vanilla's text components do.
+        if (chatMessage.Bold is not null)
+            writer.WriteBool("bold", chatMessage.Bold.Value);
+        if (chatMessage.Italic is not null)
+            writer.WriteBool("italic", chatMessage.Italic.Value);
+        if (chatMessage.Underlined is not null)
+            writer.WriteBool("underlined", chatMessage.Underlined.Value);
+        if (chatMessage.Strikethrough is not null)
+            writer.WriteBool("strikethrough", chatMessage.Strikethrough.Value);
+        if (chatMessage.Obfuscated is not null)
+            writer.WriteBool("obfuscated", chatMessage.Obfuscated.Value);
 
         if (chatMessage.ClickEvent != null)
             writer.WriteTag(chatMessage.ClickEvent.ToNbt());
@@ -58,14 +64,18 @@ public partial class Extensions
 
     public static NbtCompound ToNbt(this ChatMessage chatMessage, string name = "")
     {
-        var compound = new NbtCompound(name)
-        {
-            new NbtTag<bool>("bold", chatMessage.Bold),
-            new NbtTag<bool>("italic", chatMessage.Italic),
-            new NbtTag<bool>("underlined", chatMessage.Underlined),
-            new NbtTag<bool>("strikethrough", chatMessage.Strikethrough),
-            new NbtTag<bool>("obfuscated", chatMessage.Obfuscated)
-        };
+        var compound = new NbtCompound(name);
+
+        if (chatMessage.Bold is not null)
+            compound.Add(new NbtTag<bool>("bold", chatMessage.Bold.Value));
+        if (chatMessage.Italic is not null)
+            compound.Add(new NbtTag<bool>("italic", chatMessage.Italic.Value));
+        if (chatMessage.Underlined is not null)
+            compound.Add(new NbtTag<bool>("underlined", chatMessage.Underlined.Value));
+        if (chatMessage.Strikethrough is not null)
+            compound.Add(new NbtTag<bool>("strikethrough", chatMessage.Strikethrough.Value));
+        if (chatMessage.Obfuscated is not null)
+            compound.Add(new NbtTag<bool>("obfuscated", chatMessage.Obfuscated.Value));
 
         if (!chatMessage.Text.IsNullOrEmpty())
             compound.Add(new NbtTag<string>("text", chatMessage.Text!));
@@ -98,11 +108,11 @@ public partial class Extensions
         if (root.TryGetTagValue<string>("insertion", out var insertion))
             chatMessage.Insertion = insertion;
 
-        chatMessage.Bold = root.GetBool("bold");
-        chatMessage.Italic = root.GetBool("italic");
-        chatMessage.Underlined = root.GetBool("underlined");
-        chatMessage.Strikethrough = root.GetBool("strikethrough");
-        chatMessage.Obfuscated = root.GetBool("obfuscated");
+        chatMessage.Bold = root.TryGetTag("bold", out _) ? root.GetBool("bold") : null;
+        chatMessage.Italic = root.TryGetTag("italic", out _) ? root.GetBool("italic") : null;
+        chatMessage.Underlined = root.TryGetTag("underlined", out _) ? root.GetBool("underlined") : null;
+        chatMessage.Strikethrough = root.TryGetTag("strikethrough", out _) ? root.GetBool("strikethrough") : null;
+        chatMessage.Obfuscated = root.TryGetTag("obfuscated", out _) ? root.GetBool("obfuscated") : null;
 
         if (root.TryGetTag<NbtCompound>("click_event", out var clickEventCompound))
             chatMessage.ClickEvent = clickEventCompound.ToClickComponent();
