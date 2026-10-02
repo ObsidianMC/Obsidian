@@ -1,5 +1,6 @@
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Nbt;
+using System.Runtime.InteropServices;
 
 namespace Obsidian.WorldData.Features;
 
@@ -232,7 +233,53 @@ internal static class FeatureHelpers
     /// order inside a bucket (resizes preserve it) and doubles the table from 16 while size exceeds 75% of capacity.
     /// Duplicates keep their first position, like <c>HashSet.add</c>.
     /// </remarks>
-    public static List<Vector> JavaHashSetOrder(IEnumerable<Vector> insertionOrder)
+    public static List<Vector> JavaHashSetOrder(List<Vector> insertionOrder)
+    {
+        // A stable counting sort by bucket. Duplicates share a bucket, so they're dropped from each bucket's run; the table
+        // size depends on how many positions are distinct, so with duplicates it may have to be sorted again.
+        var source = CollectionsMarshal.AsSpan(insertionOrder);
+        var capacity = JavaHashSetCapacity(source.Length);
+
+        Span<int> starts = capacity <= 1024 ? stackalloc int[capacity + 1] : new int[capacity + 1];
+        starts.Clear();
+        foreach (var position in source)
+            starts[Bucket(position, capacity) + 1]++;
+
+        for (var bucket = 1; bucket <= capacity; bucket++)
+            starts[bucket] += starts[bucket - 1];
+
+        var ordered = new List<Vector>(source.Length);
+        CollectionsMarshal.SetCount(ordered, source.Length);
+        var target = CollectionsMarshal.AsSpan(ordered);
+
+        // Each bucket's run ends where the next one starts once the run is filled.
+        Span<int> next = capacity <= 1024 ? stackalloc int[capacity] : new int[capacity];
+        starts[..capacity].CopyTo(next);
+        foreach (var position in source)
+            target[next[Bucket(position, capacity)]++] = position;
+
+        var distinct = 0;
+        for (var bucket = 0; bucket < capacity; bucket++)
+        {
+            var runStart = distinct;
+            for (var i = starts[bucket]; i < starts[bucket + 1]; i++)
+            {
+                if (!target[runStart..distinct].Contains(target[i]))
+                    target[distinct++] = target[i];
+            }
+        }
+
+        if (distinct == source.Length)
+            return ordered;
+
+        if (JavaHashSetCapacity(distinct) != capacity)
+            return JavaHashSetOrderOfDistinct(insertionOrder);
+
+        CollectionsMarshal.SetCount(ordered, distinct);
+        return ordered;
+    }
+
+    private static List<Vector> JavaHashSetOrderOfDistinct(List<Vector> insertionOrder)
     {
         var seen = new HashSet<Vector>();
         var distinct = new List<Vector>();
@@ -242,12 +289,19 @@ internal static class FeatureHelpers
                 distinct.Add(position);
         }
 
-        var capacity = 16;
-        while (distinct.Count > capacity * 3 / 4)
-            capacity <<= 1;
+        var capacity = JavaHashSetCapacity(distinct.Count);
 
         // OrderBy is stable, so same-bucket entries keep insertion order.
         return [.. distinct.OrderBy(position => Bucket(position, capacity))];
+    }
+
+    private static int JavaHashSetCapacity(int count)
+    {
+        var capacity = 16;
+        while (count > capacity * 3 / 4)
+            capacity <<= 1;
+
+        return capacity;
     }
 
     private static int Bucket(Vector position, int capacity)
