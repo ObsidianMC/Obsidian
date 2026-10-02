@@ -252,6 +252,7 @@ internal sealed class NoiseChunk
         RangeChoiceDensityFunction rangeChoice => new RangeChoiceFiller(rangeChoice, this.Compile(rangeChoice.Input),
             this.Compile(rangeChoice.WhenInRange), this.Compile(rangeChoice.WhenOutOfRange), this.CellSize),
         BlendDensityFunction blend => this.Compile(blend.Argument),
+        CacheOnce cacheOnce => this.Compile(cacheOnce.Argument),
         _ => new PointFiller(function)
     };
 
@@ -354,6 +355,9 @@ internal sealed class NoiseChunk
             if (!this.mapped.TryGetValue(function, out var result))
             {
                 result = function.MapAll(this);
+                if (this.chunk.RandomState.SharedFunctions.Contains(function))
+                    result = new CacheOnce(result);
+
                 this.mapped[function] = result;
             }
 
@@ -653,6 +657,8 @@ internal sealed class NoiseChunk
         public double MinValue => this.argument.MinValue;
 
         public double MaxValue => this.argument.MaxValue;
+
+        public IDensityFunction Argument => this.argument;
 
         public CacheOnce(IDensityFunction argument) => this.argument = argument;
 

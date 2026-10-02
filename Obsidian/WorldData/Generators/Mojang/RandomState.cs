@@ -3,6 +3,7 @@ using Obsidian.API.World.Generator.DensityFunctions;
 using Obsidian.API.World.Generator.Noise;
 using Obsidian.API.World.Generator.RandomSources;
 using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 
 namespace Obsidian.WorldData.Generators.Mojang;
 
@@ -72,6 +73,13 @@ internal sealed class RandomState
     }
 
     /// <summary>
+    /// Router functions referenced from more than one place, other than markers and trivial functions. Such a function
+    /// tends to be sampled several times per position (vanilla's overworld sloped cheese up to three times per cell
+    /// corner), so chunks remember its last value.
+    /// </summary>
+    public IReadOnlySet<IDensityFunction> SharedFunctions => field ??= this.FindSharedFunctions();
+
+    /// <summary>
     /// Binds the noises of any density function (e.g. a registry entry) to this world's seed.
     /// </summary>
     public IDensityFunction Bind(IDensityFunction function) => this.wiring.Map(function);
@@ -105,6 +113,28 @@ internal sealed class RandomState
         return hash;
     }
 
+    private HashSet<IDensityFunction> FindSharedFunctions()
+    {
+        var counter = new ReferenceCounter();
+        var router = this.Router;
+        IDensityFunction[] roots =
+        [
+            router.Barrier, router.Continents, router.Depth, router.Erosion, router.FinalDensity, router.FluidLevelFloodedness,
+            router.FluidLevelSpread, router.PreliminarySurfaceLevel, router.Lava, router.Ridges, router.Temperature,
+            router.Vegetation, router.VeinGap, router.VeinRidged, router.VeinToggle
+        ];
+
+        foreach (var root in roots)
+            counter.Map(root);
+
+        return counter.Counts
+            .Where(entry => entry.Value > 1 && entry.Key is not (ConstantDensityFunction or YClampedGradientDensityFunction
+                or BlendAlphaDensityFunction or BlendOffsetDensityFunction or InterpolatedDensityFunction or FlatCacheDensityFunction
+                or Cache2DDensityFunction or CacheOnceDensityFunction))
+            .Select(entry => entry.Key)
+            .ToHashSet<IDensityFunction>(ReferenceEqualityComparer.Instance);
+    }
+
     private sealed class NoiseWiringVisitor : IDensityFunctionVisitor
     {
         private readonly RandomState state;
@@ -112,6 +142,9 @@ internal sealed class RandomState
 
         // Keeps subtrees that are shared in the registry shared in the seeded router.
         private readonly ConcurrentDictionary<IDensityFunction, IDensityFunction> mapped = new(ReferenceEqualityComparer.Instance);
+
+        // Canonical instances by type, argument (by reference) and parameters; see Canonicalize.
+        private readonly ConcurrentDictionary<CanonicalKey, IDensityFunction> canonical = new();
 
         public NoiseWiringVisitor(RandomState state)
         {
@@ -151,7 +184,56 @@ internal sealed class RandomState
                 ? new LegacyRandomSource(this.state.Seed)
                 : this.state.Random.FromHashOf("minecraft:terrain")),
             EndIslandsDensityFunction => EndIslandsDensityFunction.WithSeed(this.state.Seed),
-            _ => function
+            _ => this.Canonicalize(function)
         };
+
+        /// <summary>
+        /// Returns the first seen instance equal to <paramref name="function"/>, for noises and markers over the same
+        /// (already canonical) argument. Registry entries spell out some subtrees twice; vanilla's overworld cave entrances
+        /// sample the same cached rarity noise through two separate <c>cache_once</c> markers. Sharing the instance
+        /// shares the chunk's cache, and these functions are pure, so values don't change.
+        /// </summary>
+        private IDensityFunction Canonicalize(IDensityFunction function)
+        {
+            CanonicalKey? key = function switch
+            {
+                NoiseDensityFunction noise => new CanonicalKey(typeof(NoiseDensityFunction), noise.Noise,
+                    BitConverter.DoubleToInt64Bits(noise.XzScale), BitConverter.DoubleToInt64Bits(noise.YScale)),
+                CacheOnceDensityFunction cacheOnce => new CanonicalKey(typeof(CacheOnceDensityFunction), cacheOnce.Argument, 0L, 0L),
+                Cache2DDensityFunction cache2D => new CanonicalKey(typeof(Cache2DDensityFunction), cache2D.Argument, 0L, 0L),
+                FlatCacheDensityFunction flatCache => new CanonicalKey(typeof(FlatCacheDensityFunction), flatCache.Argument, 0L, 0L),
+                InterpolatedDensityFunction interpolated => new CanonicalKey(typeof(InterpolatedDensityFunction), interpolated.Argument, 0L, 0L),
+                _ => null
+            };
+
+            return key is null ? function : this.canonical.GetOrAdd(key.Value, function);
+        }
+
+        private readonly record struct CanonicalKey(Type Type, object Argument, long First, long Second)
+        {
+            public bool Equals(CanonicalKey other) => this.Type == other.Type && ReferenceEquals(this.Argument, other.Argument)
+                && this.First == other.First && this.Second == other.Second;
+
+            public override int GetHashCode() => HashCode.Combine(this.Type, RuntimeHelpers.GetHashCode(this.Argument), this.First, this.Second);
+        }
+    }
+
+    /// <summary>
+    /// Counts how often each function of a tree is referenced, visiting shared subtrees once.
+    /// </summary>
+    private sealed class ReferenceCounter : IDensityFunctionVisitor
+    {
+        public Dictionary<IDensityFunction, int> Counts { get; } = new(ReferenceEqualityComparer.Instance);
+
+        public IDensityFunction Map(IDensityFunction function)
+        {
+            this.Counts[function] = this.Counts.GetValueOrDefault(function) + 1;
+            if (this.Counts[function] == 1)
+                function.MapAll(this);
+
+            return function;
+        }
+
+        public IDensityFunction Apply(IDensityFunction function) => function;
     }
 }
