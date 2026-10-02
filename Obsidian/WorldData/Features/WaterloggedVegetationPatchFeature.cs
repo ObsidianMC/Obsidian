@@ -18,11 +18,19 @@ public sealed class WaterloggedVegetationPatchFeature : VegetationPatchFeatureBa
         var ground = base.PlaceGroundPatch(level, random, origin, radiusX, radiusZ);
 
         // Exposure is decided for every position before any water is placed.
-        var enclosed = ground.Where(position => !IsExposed(level, position)).ToList();
+        var enclosed = RentPositions();
+        foreach (var position in ground)
+        {
+            if (!IsExposed(level, position))
+                enclosed.Add(position);
+        }
+
         foreach (var position in enclosed)
             level.SetBlock(position, Water);
 
-        return FeatureHelpers.JavaHashSetOrder(enclosed);
+        var ordered = FeatureHelpers.JavaHashSetOrder(enclosed);
+        ReturnPositions(enclosed);
+        return ordered;
     }
 
     protected override bool PlaceVegetation(FeatureContext context, Vector ground)

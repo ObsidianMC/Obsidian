@@ -68,7 +68,7 @@ public abstract class VegetationPatchFeatureBase : ConfiguredFeatureBase
     {
         var toward = this.Surface.Direction();
         var away = toward.Opposite();
-        var placed = new List<Vector>();
+        var placed = RentPositions();
 
         for (var dx = -radiusX; dx <= radiusX; dx++)
         {
@@ -103,8 +103,30 @@ public abstract class VegetationPatchFeatureBase : ConfiguredFeatureBase
             }
         }
 
-        return FeatureHelpers.JavaHashSetOrder(placed);
+        var ordered = FeatureHelpers.JavaHashSetOrder(placed);
+        ReturnPositions(placed);
+        return ordered;
     }
+
+    /// <summary>
+    /// A list for positions collected on the way to <see cref="FeatureHelpers.JavaHashSetOrder"/>, borrowed from the
+    /// thread; give it back with <see cref="ReturnPositions"/>.
+    /// </summary>
+    protected static List<Vector> RentPositions()
+    {
+        var positions = scratchPositions ?? [];
+        scratchPositions = null;
+        return positions;
+    }
+
+    protected static void ReturnPositions(List<Vector> positions)
+    {
+        positions.Clear();
+        scratchPositions = positions;
+    }
+
+    [ThreadStatic]
+    private static List<Vector>? scratchPositions;
 
     /// <summary>
     /// Places the vegetation feature on the open side of a ground position.
