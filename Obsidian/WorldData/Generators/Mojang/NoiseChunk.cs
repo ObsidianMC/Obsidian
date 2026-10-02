@@ -1,5 +1,6 @@
 using Obsidian.API.World.Generator.DensityFunctions;
 using Obsidian.API.World.Generator.RandomSources;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
 namespace Obsidian.WorldData.Generators.Mojang;
@@ -825,37 +826,120 @@ internal sealed class NoiseChunk
             switch (operation)
             {
                 case UnaryOperation.Abs:
-                    for (var i = 0; i < values.Length; i++)
-                        values[i] = Math.Abs(values[i]);
+                    Transform(values, new Abs());
                     break;
                 case UnaryOperation.Square:
-                    for (var i = 0; i < values.Length; i++)
-                        values[i] = SquareDensityFunction.Square(values[i]);
+                    Transform(values, new Square());
                     break;
                 case UnaryOperation.Cube:
-                    for (var i = 0; i < values.Length; i++)
-                        values[i] = CubeDensityFunction.Cube(values[i]);
+                    Transform(values, new Cube());
                     break;
                 case UnaryOperation.HalfNegative:
-                    for (var i = 0; i < values.Length; i++)
-                        values[i] = HalfNegativeDensityFunction.Transform(values[i]);
+                    Transform(values, new ScaleNegative(0.5));
                     break;
                 case UnaryOperation.QuarterNegative:
-                    for (var i = 0; i < values.Length; i++)
-                        values[i] = QuarterNegativeDensityFunction.Transform(values[i]);
+                    Transform(values, new ScaleNegative(0.25));
                     break;
                 case UnaryOperation.Squeeze:
-                    for (var i = 0; i < values.Length; i++)
-                        values[i] = SqueezeDensityFunction.Transform(values[i]);
+                    Transform(values, new Squeeze());
                     break;
                 case UnaryOperation.Invert:
-                    for (var i = 0; i < values.Length; i++)
-                        values[i] = 1.0 / values[i];
+                    Transform(values, new Invert());
                     break;
                 case UnaryOperation.Clamp:
-                    for (var i = 0; i < values.Length; i++)
-                        values[i] = Math.Clamp(values[i], min, max);
+                    Transform(values, new Clamp(min, max));
                     break;
+            }
+        }
+
+        private static void Transform<TOperation>(Span<double> values, TOperation operation) where TOperation : struct, IUnaryOperation
+        {
+            var i = 0;
+            if (Vector256.IsHardwareAccelerated)
+            {
+                foreach (ref var vector in MemoryMarshal.Cast<double, Vector256<double>>(values))
+                    vector = operation.Apply(vector);
+
+                i = values.Length & ~3;
+            }
+
+            for (; i < values.Length; i++)
+                values[i] = operation.Apply(values[i]);
+        }
+
+        /// <summary>
+        /// An operation on one value, and on four at once: each lane does the same arithmetic as the scalar overload.
+        /// </summary>
+        private interface IUnaryOperation
+        {
+            public double Apply(double value);
+
+            public Vector256<double> Apply(Vector256<double> values);
+        }
+
+        private readonly struct Abs : IUnaryOperation
+        {
+            public double Apply(double value) => Math.Abs(value);
+
+            public Vector256<double> Apply(Vector256<double> values) => Vector256.Abs(values);
+        }
+
+        private readonly struct Square : IUnaryOperation
+        {
+            public double Apply(double value) => SquareDensityFunction.Square(value);
+
+            public Vector256<double> Apply(Vector256<double> values) => values * values;
+        }
+
+        private readonly struct Cube : IUnaryOperation
+        {
+            public double Apply(double value) => CubeDensityFunction.Cube(value);
+
+            public Vector256<double> Apply(Vector256<double> values) => values * values * values;
+        }
+
+        /// <summary>
+        /// Half and quarter negative: negative values (and zero) scaled.
+        /// </summary>
+        private readonly struct ScaleNegative(double scale) : IUnaryOperation
+        {
+            public double Apply(double value) => scale == 0.5
+                ? HalfNegativeDensityFunction.Transform(value)
+                : QuarterNegativeDensityFunction.Transform(value);
+
+            public Vector256<double> Apply(Vector256<double> values) =>
+                Vector256.ConditionalSelect(Vector256.GreaterThan(values, Vector256<double>.Zero), values, values * scale);
+        }
+
+        private readonly struct Squeeze : IUnaryOperation
+        {
+            public double Apply(double value) => SqueezeDensityFunction.Transform(value);
+
+            public Vector256<double> Apply(Vector256<double> values)
+            {
+                var clamped = new Clamp(-1.0, 1.0).Apply(values);
+                return clamped / 2.0 - clamped * clamped * clamped / 24.0;
+            }
+        }
+
+        private readonly struct Invert : IUnaryOperation
+        {
+            public double Apply(double value) => 1.0 / value;
+
+            public Vector256<double> Apply(Vector256<double> values) => Vector256<double>.One / values;
+        }
+
+        // Math.Clamp's comparisons, which let NaN through.
+        private readonly struct Clamp(double min, double max) : IUnaryOperation
+        {
+            public double Apply(double value) => Math.Clamp(value, min, max);
+
+            public Vector256<double> Apply(Vector256<double> values)
+            {
+                var minimum = Vector256.Create(min);
+                var maximum = Vector256.Create(max);
+                return Vector256.ConditionalSelect(Vector256.LessThan(values, minimum), minimum,
+                    Vector256.ConditionalSelect(Vector256.GreaterThan(values, maximum), maximum, values));
             }
         }
     }
@@ -890,14 +974,32 @@ internal sealed class NoiseChunk
             var secondValues = this.secondValues.AsSpan(0, values.Length);
             second.Fill(cell, secondValues);
 
+            // Additions and multiplications go four lanes at a time where possible, with the scalar arithmetic per lane.
+            var vectorized = 0;
+            if (Vector256.IsHardwareAccelerated && operation is BinaryOperation.Add or BinaryOperation.Mul)
+            {
+                var vectors = MemoryMarshal.Cast<double, Vector256<double>>(values);
+                var secondVectors = MemoryMarshal.Cast<double, Vector256<double>>(secondValues);
+
+                for (var i = 0; i < vectors.Length; i++)
+                {
+                    vectors[i] = operation == BinaryOperation.Add
+                        ? vectors[i] + secondVectors[i]
+                        : Vector256.ConditionalSelect(Vector256.Equals(vectors[i], Vector256<double>.Zero), Vector256<double>.Zero,
+                            vectors[i] * secondVectors[i]);
+                }
+
+                vectorized = vectors.Length * 4;
+            }
+
             switch (operation)
             {
                 case BinaryOperation.Add:
-                    for (var i = 0; i < values.Length; i++)
+                    for (var i = vectorized; i < values.Length; i++)
                         values[i] += secondValues[i];
                     break;
                 case BinaryOperation.Mul:
-                    for (var i = 0; i < values.Length; i++)
+                    for (var i = vectorized; i < values.Length; i++)
                         values[i] = values[i] == 0.0 ? 0.0 : values[i] * secondValues[i];
                     break;
                 case BinaryOperation.Min:
