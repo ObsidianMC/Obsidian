@@ -8,7 +8,7 @@ namespace Obsidian.WorldData.Generators.Mojang;
 /// </summary>
 internal sealed class TheEndBiomeSource : IClimateBiomeSource
 {
-    private readonly ClimateSampler climateSampler;
+    private readonly RandomState randomState;
     private readonly BiomeCodec end;
     private readonly BiomeCodec highlands;
     private readonly BiomeCodec midlands;
@@ -19,7 +19,7 @@ internal sealed class TheEndBiomeSource : IClimateBiomeSource
 
     public TheEndBiomeSource(RandomState randomState)
     {
-        this.climateSampler = new ClimateSampler(randomState.Router);
+        this.randomState = randomState;
         this.end = GetBiome("minecraft:the_end");
         this.highlands = GetBiome("minecraft:end_highlands");
         this.midlands = GetBiome("minecraft:end_midlands");
@@ -29,7 +29,7 @@ internal sealed class TheEndBiomeSource : IClimateBiomeSource
     }
 
     public BiomeCodec GetNoiseBiome(int quartX, int quartY, int quartZ) =>
-        this.GetNoiseBiome(this.climateSampler, quartX, quartY, quartZ);
+        this.GetNoiseBiome(this.randomState.ClimateSampler, quartX, quartY, quartZ);
 
     public BiomeCodec GetNoiseBiome(ClimateSampler sampler, int quartX, int quartY, int quartZ)
     {

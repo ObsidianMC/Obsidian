@@ -647,40 +647,6 @@ internal sealed class NoiseChunk
     }
 
     /// <summary>
-    /// Remembers the value of the last sampled position, like vanilla's cache once.
-    /// </summary>
-    private sealed class CacheOnce : IDensityFunction
-    {
-        private readonly IDensityFunction argument;
-        private double lastX = double.NaN;
-        private double lastY;
-        private double lastZ;
-        private double lastValue;
-
-        public string Type => "minecraft:cache_once";
-
-        public double MinValue => this.argument.MinValue;
-
-        public double MaxValue => this.argument.MaxValue;
-
-        public IDensityFunction Argument => this.argument;
-
-        public CacheOnce(IDensityFunction argument) => this.argument = argument;
-
-        public double GetValue(double x, double y, double z)
-        {
-            if (x == this.lastX && y == this.lastY && z == this.lastZ)
-                return this.lastValue;
-
-            this.lastX = x;
-            this.lastY = y;
-            this.lastZ = z;
-            this.lastValue = this.argument.GetValue(x, y, z);
-            return this.lastValue;
-        }
-    }
-
-    /// <summary>
     /// The cell a <see cref="CellFiller"/> fills: its index and its lowest block.
     /// </summary>
     private readonly struct Cell(NoiseChunk chunk, int x, int y, int z)

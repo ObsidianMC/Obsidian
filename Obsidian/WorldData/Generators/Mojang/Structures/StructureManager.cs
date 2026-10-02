@@ -286,7 +286,7 @@ internal sealed class StructureManager : IStructurePlacementState
             Random = random,
             Terrain = this.terrain,
             BiomeSource = this.biomeSource,
-            Sampler = new ClimateSampler(this.randomState.Router),
+            Sampler = this.randomState.ClimateSampler,
             ValidBiome = structure.Biomes.Contains,
             MinY = this.minY,
             Height = this.height,
@@ -355,7 +355,7 @@ internal sealed class StructureManager : IStructurePlacementState
     /// </summary>
     private Vector? FindBiomeHorizontal(int x, int y, int z, int radius, BiomeSet biomes, IRandomSource random)
     {
-        var sampler = new ClimateSampler(this.randomState.Router);
+        var sampler = this.randomState.ClimateSampler;
         var quartX = x >> 2;
         var quartZ = z >> 2;
         var quartY = y >> 2;

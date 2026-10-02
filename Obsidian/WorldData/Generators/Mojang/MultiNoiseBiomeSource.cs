@@ -15,7 +15,7 @@ internal sealed class MultiNoiseBiomeSource : IClimateBiomeSource
     private static readonly Lazy<(BiomeParameterTree<BiomeCodec> Tree, IReadOnlyList<BiomeCodec> Biomes)> netherParameters =
         new(() => LoadParameters("nether"));
 
-    private readonly ClimateSampler climateSampler;
+    private readonly RandomState randomState;
     private readonly BiomeParameterTree<BiomeCodec> parameters;
 
     /// <summary>
@@ -23,9 +23,9 @@ internal sealed class MultiNoiseBiomeSource : IClimateBiomeSource
     /// </summary>
     public IReadOnlyList<BiomeCodec> PossibleBiomes { get; }
 
-    private MultiNoiseBiomeSource(ClimateSampler climateSampler, BiomeParameterTree<BiomeCodec> parameters, IReadOnlyList<BiomeCodec> possibleBiomes)
+    private MultiNoiseBiomeSource(RandomState randomState, BiomeParameterTree<BiomeCodec> parameters, IReadOnlyList<BiomeCodec> possibleBiomes)
     {
-        this.climateSampler = climateSampler;
+        this.randomState = randomState;
         this.parameters = parameters;
         this.PossibleBiomes = possibleBiomes;
     }
@@ -34,16 +34,16 @@ internal sealed class MultiNoiseBiomeSource : IClimateBiomeSource
     /// Creates the source for vanilla's overworld biome layout (the <c>minecraft:overworld</c> parameter list preset).
     /// </summary>
     public static MultiNoiseBiomeSource Overworld(RandomState randomState) =>
-        new(new ClimateSampler(randomState.Router), overworldParameters.Value.Tree, overworldParameters.Value.Biomes);
+        new(randomState, overworldParameters.Value.Tree, overworldParameters.Value.Biomes);
 
     /// <summary>
     /// Creates the source for vanilla's nether biome layout (the <c>minecraft:nether</c> parameter list preset).
     /// </summary>
     public static MultiNoiseBiomeSource Nether(RandomState randomState) =>
-        new(new ClimateSampler(randomState.Router), netherParameters.Value.Tree, netherParameters.Value.Biomes);
+        new(randomState, netherParameters.Value.Tree, netherParameters.Value.Biomes);
 
     public BiomeCodec GetNoiseBiome(int quartX, int quartY, int quartZ) =>
-        this.GetNoiseBiome(this.climateSampler, quartX, quartY, quartZ);
+        this.GetNoiseBiome(this.randomState.ClimateSampler, quartX, quartY, quartZ);
 
     public BiomeCodec GetNoiseBiome(ClimateSampler sampler, int quartX, int quartY, int quartZ) =>
         this.parameters.Search(sampler.Sample(quartX, quartY, quartZ));

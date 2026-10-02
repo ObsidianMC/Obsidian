@@ -26,8 +26,12 @@ internal sealed class BiomeParameterTree<T>
 
     public T Search(TargetPoint target)
     {
-        var leaf = this.root.Search(target.ToParameterArray(), this.lastResult.Value);
-        this.lastResult.Value = leaf;
+        ReadOnlySpan<long> point = [target.Temperature, target.Humidity, target.Continentalness, target.Erosion, target.Depth, target.Weirdness, 0L];
+        var last = this.lastResult.Value;
+        var leaf = this.root.Search(point, last);
+        if (!ReferenceEquals(leaf, last))
+            this.lastResult.Value = leaf;
+
         return leaf.Value;
     }
 
@@ -112,50 +116,75 @@ internal sealed class BiomeParameterTree<T>
     private static long Cost(ClimateParameter[] parameterSpace) =>
         parameterSpace.Sum(parameter => Math.Abs(parameter.Max - parameter.Min));
 
+    /// <summary>
+    /// The squared distance from <paramref name="target"/> to a parameter space flattened to min, max pairs, summed like
+    /// <see cref="ClimateParameter.Distance"/> per axis.
+    /// </summary>
+    private static long BoundsDistance(ReadOnlySpan<long> bounds, ReadOnlySpan<long> target)
+    {
+        bounds = bounds[..(Dimensions * 2)];
+        target = target[..Dimensions];
+        var distance = 0L;
+
+        for (var i = 0; i < Dimensions; i++)
+        {
+            var above = target[i] - bounds[i * 2 + 1];
+            var below = bounds[i * 2] - target[i];
+            var axisDistance = above > 0L ? above : Math.Max(below, 0L);
+            distance += axisDistance * axisDistance;
+        }
+
+        return distance;
+    }
+
     private abstract class Node(ClimateParameter[] parameterSpace)
     {
         public ClimateParameter[] ParameterSpace { get; } = parameterSpace;
 
-        public abstract Leaf Search(long[] target, Leaf? candidate);
+        /// <summary>
+        /// <see cref="ParameterSpace"/> flattened to min, max pairs.
+        /// </summary>
+        public long[] Bounds { get; } = [.. parameterSpace.SelectMany(parameter => new[] { parameter.Min, parameter.Max })];
 
-        public long Distance(long[] target)
-        {
-            var distance = 0L;
+        public abstract Leaf Search(ReadOnlySpan<long> target, Leaf? candidate);
 
-            for (var i = 0; i < Dimensions; i++)
-            {
-                var axisDistance = this.ParameterSpace[i].Distance(target[i]);
-                distance += axisDistance * axisDistance;
-            }
-
-            return distance;
-        }
+        public long Distance(ReadOnlySpan<long> target) => BoundsDistance(this.Bounds, target);
     }
 
     private sealed class Leaf(ClimateParameter[] parameterSpace, T value) : Node(parameterSpace)
     {
         public T Value { get; } = value;
 
-        public override Leaf Search(long[] target, Leaf? candidate) => this;
+        public override Leaf Search(ReadOnlySpan<long> target, Leaf? candidate) => this;
     }
 
     private sealed class SubTree(List<Node> children) : Node(BuildParameterSpace(children))
     {
+        // The children's bounds back to back, since the search measures every child of the subtrees it visits.
+        private readonly long[] childBounds = [.. children.SelectMany(child => child.Bounds)];
+
         public Node[] Children { get; } = [.. children];
 
-        public override Leaf Search(long[] target, Leaf? candidate)
+        public override Leaf Search(ReadOnlySpan<long> target, Leaf? candidate)
         {
             var bestDistance = candidate is null ? long.MaxValue : candidate.Distance(target);
             var best = candidate;
+            var children = this.Children;
 
-            foreach (var child in this.Children)
+            for (var i = 0; i < children.Length; i++)
             {
-                var childDistance = child.Distance(target);
+                var childDistance = BoundsDistance(this.childBounds.AsSpan(i * Dimensions * 2), target);
                 if (bestDistance <= childDistance)
                     continue;
 
-                var leaf = child.Search(target, best);
-                var leafDistance = ReferenceEquals(child, leaf) ? childDistance : leaf.Distance(target);
+                // A leaf is its own result, at the distance just measured.
+                var leaf = children[i] as Leaf;
+                var leafDistance = childDistance;
+                if (leaf is null)
+                {
+                    leaf = children[i].Search(target, best);
+                    leafDistance = leaf.Distance(target);
+                }
 
                 if (bestDistance > leafDistance)
                 {

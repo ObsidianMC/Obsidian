@@ -161,7 +161,7 @@ internal sealed class ChunkBuilder
             Quantize(target.Weirdness),
             Climate.Quantize((float)target.Offset))).ToArray();
 
-        return SpawnFinder.FindClimateSpawn(targets, new ClimateSampler(this.RandomState.Router));
+        return SpawnFinder.FindClimateSpawn(targets, this.RandomState.ClimateSampler);
 
         static ClimateParameter Quantize(double[] range) => new(Climate.Quantize((float)range[0]), Climate.Quantize((float)range[1]));
     }

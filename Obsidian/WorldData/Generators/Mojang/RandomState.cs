@@ -4,6 +4,7 @@ using Obsidian.API.World.Generator.Noise;
 using Obsidian.API.World.Generator.RandomSources;
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace Obsidian.WorldData.Generators.Mojang;
 
@@ -19,6 +20,7 @@ internal sealed class RandomState
     private readonly ConcurrentDictionary<string, BaseNoise> noises = new();
     private readonly ConcurrentDictionary<string, IPositionalRandomFactory> positionalRandoms = new();
     private readonly NoiseWiringVisitor wiring;
+    private readonly ThreadLocal<ClimateSampler> climateSamplers;
 
     public long Seed { get; }
 
@@ -76,6 +78,8 @@ internal sealed class RandomState
             VeinRidged = this.wiring.Map(router.VeinRidged),
             VeinToggle = this.wiring.Map(router.VeinToggle)
         };
+
+        this.climateSamplers = new ThreadLocal<ClimateSampler>(this.CreateClimateSampler);
     }
 
     /// <summary>
@@ -84,6 +88,14 @@ internal sealed class RandomState
     /// corner), so chunks remember its last value.
     /// </summary>
     public IReadOnlySet<IDensityFunction> SharedFunctions => field ??= this.FindSharedFunctions();
+
+    /// <summary>
+    /// A climate sampler over the router for the calling thread, like vanilla's <c>RandomState.sampler()</c>. Its markers
+    /// and shared functions remember their last sampled position, since the depth's splines sample continentalness,
+    /// erosion and ridges many times per position and the climate point samples them again. Don't hand it to other
+    /// threads.
+    /// </summary>
+    public ClimateSampler ClimateSampler => this.climateSamplers.Value!;
 
     /// <summary>
     /// Binds the noises of any density function (e.g. a registry entry) to this world's seed.
@@ -117,6 +129,14 @@ internal sealed class RandomState
             hash = unchecked(31 * hash + c);
 
         return hash;
+    }
+
+    private ClimateSampler CreateClimateSampler()
+    {
+        var visitor = new LastPositionCaching(this.SharedFunctions);
+        var router = this.Router;
+        return new ClimateSampler(visitor.Map(router.Temperature), visitor.Map(router.Vegetation), visitor.Map(router.Continents),
+            visitor.Map(router.Erosion), visitor.Map(router.Depth), visitor.Map(router.Ridges));
     }
 
     private HashSet<IDensityFunction> FindSharedFunctions()
@@ -222,6 +242,32 @@ internal sealed class RandomState
 
             public override int GetHashCode() => HashCode.Combine(this.Type, RuntimeHelpers.GetHashCode(this.Argument), this.First, this.Second);
         }
+    }
+
+    /// <summary>
+    /// Copies a tree, putting a <see cref="CacheOnce"/> over its markers (which evaluate their argument directly here) and its
+    /// shared functions.
+    /// </summary>
+    private sealed class LastPositionCaching(IReadOnlySet<IDensityFunction> sharedFunctions) : IDensityFunctionVisitor
+    {
+        private readonly Dictionary<IDensityFunction, IDensityFunction> mapped = new(ReferenceEqualityComparer.Instance);
+
+        public IDensityFunction Map(IDensityFunction function)
+        {
+            if (!this.mapped.TryGetValue(function, out var result))
+            {
+                result = function.MapAll(this);
+                if (sharedFunctions.Contains(function) || function is FlatCacheDensityFunction or Cache2DDensityFunction
+                    or CacheOnceDensityFunction)
+                    result = new CacheOnce(result);
+
+                this.mapped[function] = result;
+            }
+
+            return result;
+        }
+
+        public IDensityFunction Apply(IDensityFunction function) => function;
     }
 
     /// <summary>
