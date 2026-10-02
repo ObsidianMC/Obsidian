@@ -37,6 +37,10 @@ internal sealed class SurfaceBuilder
     private readonly BaseNoise surfaceSecondaryNoise;
     private readonly Func<SurfaceContext, IBlock?>? rule;
 
+    // A build's buffers, kept by each thread for its next build. Taken while in use.
+    [ThreadStatic]
+    private static SurfaceBuffers? freeBuffers;
+
     public SurfaceBuilder(RandomState randomState, IBiomeSource biomeSource)
     {
         this.randomState = randomState;
@@ -68,9 +72,12 @@ internal sealed class SurfaceBuilder
         if (this.rule is null)
             return;
 
+        var buffers = freeBuffers is not null && freeBuffers.Owner == this ? freeBuffers : new SurfaceBuffers(this);
+        freeBuffers = null;
+        buffers.MoveTo(chunk);
+
         var context = new SurfaceContext(this, chunk, noiseChunk ?? new NoiseChunk(this.randomState, chunk.X, chunk.Z),
-            new BiomeManager(new ChunkBiomeSource(chunk, this.biomeSource), this.randomState.Seed, this.minY, this.height, capacity: 256),
-            trackHeights: true);
+            buffers.BiomeManager, buffers.SurfaceHeights, buffers.ColumnKinds);
 
         var chunkMinX = chunk.X << 4;
         var chunkMinZ = chunk.Z << 4;
@@ -94,6 +101,8 @@ internal sealed class SurfaceBuilder
                     this.FrozenOceanExtension(context, biome, localX, localZ, x, z, startHeight);
             }
         }
+
+        freeBuffers = buffers;
     }
 
     /// <summary>
@@ -105,7 +114,7 @@ internal sealed class SurfaceBuilder
         if (this.rule is null)
             return null;
 
-        var context = new SurfaceContext(this, chunk, noiseChunk, biomes, trackHeights: false);
+        var context = new SurfaceContext(this, chunk, noiseChunk, biomes, surfaceHeights: null, columnKinds: null);
         context.UpdateXZ(x & 15, z & 15, x, z);
         context.UpdateY(1, 1, fluidAbove ? y + 1 : int.MinValue, y);
 
@@ -452,19 +461,49 @@ internal sealed class SurfaceBuilder
     /// </summary>
     private sealed class ChunkBiomeSource : IBiomeSource
     {
-        private readonly IChunk chunk;
         private readonly IBiomeSource fallback;
 
-        public ChunkBiomeSource(IChunk chunk, IBiomeSource fallback)
-        {
-            this.chunk = chunk;
-            this.fallback = fallback;
-        }
+        public ChunkBiomeSource(IBiomeSource fallback) => this.fallback = fallback;
+
+        public IChunk? Chunk { get; set; }
 
         public BiomeCodec GetNoiseBiome(int quartX, int quartY, int quartZ) =>
-            quartX >> 2 == this.chunk.X && quartZ >> 2 == this.chunk.Z
-                ? this.chunk.GetBiome((quartX & 3) << 2, quartY << 2, (quartZ & 3) << 2)
+            quartX >> 2 == this.Chunk!.X && quartZ >> 2 == this.Chunk.Z
+                ? this.Chunk.GetBiome((quartX & 3) << 2, quartY << 2, (quartZ & 3) << 2)
                 : this.fallback.GetNoiseBiome(quartX, quartY, quartZ);
+    }
+
+    /// <summary>
+    /// What a surface build allocates, kept by each thread for its next build.
+    /// </summary>
+    private sealed class SurfaceBuffers
+    {
+        private readonly ChunkBiomeSource biomes;
+
+        public SurfaceBuilder Owner { get; }
+
+        public BiomeManager BiomeManager { get; }
+
+        public int[] SurfaceHeights { get; } = new int[256];
+
+        public BlockKind[] ColumnKinds { get; }
+
+        public SurfaceBuffers(SurfaceBuilder owner)
+        {
+            this.Owner = owner;
+            this.biomes = new ChunkBiomeSource(owner.biomeSource);
+            this.BiomeManager = new BiomeManager(this.biomes, owner.randomState.Seed, owner.minY, owner.height, capacity: 256);
+            this.ColumnKinds = new BlockKind[owner.height + 1];
+        }
+
+        /// <summary>
+        /// Prepares the buffers for building the surface of <paramref name="chunk"/>.
+        /// </summary>
+        public void MoveTo(IChunk chunk)
+        {
+            this.biomes.Chunk = chunk;
+            this.BiomeManager.ClearCache();
+        }
     }
 
     /// <summary>
@@ -499,18 +538,23 @@ internal sealed class SurfaceBuilder
         public int StoneDepthAbove { get; private set; }
         public int StoneDepthBelow { get; private set; }
 
-        public SurfaceContext(SurfaceBuilder builder, IChunk chunk, NoiseChunk noiseChunk, BiomeManager biomeManager, bool trackHeights)
+        /// <param name="surfaceHeights">256 heights to track the surface in, or <c>null</c> to read heights live.</param>
+        /// <param name="columnKinds">A buffer for <see cref="ReadColumn"/> of a block more than the noise's height, or
+        /// <c>null</c> for one on first use.</param>
+        public SurfaceContext(SurfaceBuilder builder, IChunk chunk, NoiseChunk noiseChunk, BiomeManager biomeManager, int[]? surfaceHeights,
+            BlockKind[]? columnKinds)
         {
             this.builder = builder;
             this.chunk = chunk;
             this.noiseChunk = noiseChunk;
             this.BiomeManager = biomeManager;
+            this.columnKinds = columnKinds;
 
-            if (trackHeights)
+            if (surfaceHeights is not null)
             {
-                this.surfaceHeights = new int[256];
-                for (var column = 0; column < this.surfaceHeights.Length; column++)
-                    this.surfaceHeights[column] = this.ScanSurfaceHeight(column % 16, column / 16);
+                this.surfaceHeights = surfaceHeights;
+                for (var column = 0; column < surfaceHeights.Length; column++)
+                    surfaceHeights[column] = this.ScanSurfaceHeight(column % 16, column / 16);
             }
         }
 
