@@ -39,6 +39,10 @@ public abstract class AbstractLevel : ILevel
     // A failed background generation job, rethrown by the next ManageChunksAsync so failures still reach the server.
     private Exception? generationFailure;
 
+    // The chunks generation jobs may write, counted per job, which aren't unloaded meanwhile: a job writes up to 2 chunks
+    // from its own (its neighbors' decorations reach theirs), and writes to an unloaded chunk would be lost.
+    private readonly ConcurrentDictionary<long, int> generationPins = [];
+
     public long[] SpawnChunks { get; }
 
     public ConcurrentHashSet<long> LoadedChunks { get; protected set; } = [];
@@ -503,7 +507,7 @@ public abstract class AbstractLevel : ILevel
                 chunksToKeep.AddRange(p.LoadedChunks);
             });
 
-            foreach (var chunk in LoadedChunks.Except(chunksToKeep).Except(SpawnChunks))
+            foreach (var chunk in LoadedChunks.Except(chunksToKeep).Except(SpawnChunks).Where(chunk => !this.generationPins.ContainsKey(chunk)))
             {
                 if (LoadedChunks.TryRemove(chunk))
                 {
@@ -518,9 +522,9 @@ public abstract class AbstractLevel : ILevel
             ExceptionDispatchInfo.Throw(failure);
 
         // Starts queued chunks on free slots without waiting for them, so a slow chunk never holds up the others or the tick.
-        while (!ChunksToGen.IsEmpty && this.generationSlots.Wait(0))
+        while (!this.ChunksToGen.IsEmpty && this.generationSlots.Wait(0))
         {
-            if (ChunksToGen.TryDequeue(out var job))
+            if (this.ChunksToGen.TryDequeue(out var job))
                 _ = this.GenerateQueuedChunkAsync(job);
             else
                 this.generationSlots.Release();
@@ -530,7 +534,20 @@ public abstract class AbstractLevel : ILevel
     private void QueueGeneration(long packedXZ)
     {
         if (this.queuedChunks.TryAdd(packedXZ, 0))
-            ChunksToGen.Enqueue(packedXZ);
+            this.ChunksToGen.Enqueue(packedXZ);
+    }
+
+    private void PinGenerationArea(int chunkX, int chunkZ, int delta)
+    {
+        for (var dx = -2; dx <= 2; dx++)
+        {
+            for (var dz = -2; dz <= 2; dz++)
+            {
+                var key = NumericsHelper.IntsToLong(chunkX + dx, chunkZ + dz);
+                if (this.generationPins.AddOrUpdate(key, delta, (_, count) => count + delta) == 0)
+                    this.generationPins.TryRemove(KeyValuePair.Create(key, 0));
+            }
+        }
     }
 
     /// <summary>
@@ -539,17 +556,18 @@ public abstract class AbstractLevel : ILevel
     /// </summary>
     private async Task GenerateQueuedChunkAsync(long job)
     {
+        NumericsHelper.LongToInts(job, out var jobX, out var jobZ);
+        this.PinGenerationArea(jobX, jobZ, 1);
         try
         {
-            NumericsHelper.LongToInts(job, out var jobX, out var jobZ);
-            var region = GetRegionForChunk(jobX, jobZ) ?? LoadRegionByChunk(jobX, jobZ);
+            var region = this.GetRegionForChunk(jobX, jobZ) ?? this.LoadRegionByChunk(jobX, jobZ);
 
             var (x, z) = (NumericsHelper.Modulo(jobX, Region.CubicRegionSize), NumericsHelper.Modulo(jobZ, Region.CubicRegionSize));
 
             var c = await region.GetOrAddChunkAsync(x, z, () => new Chunk(jobX, jobZ, this.MinY, this.Height, ChunkGenStage.structure_starts));
             if (!c.IsGenerated)
             {
-                c = await Generator.GenerateChunkAsync(jobX, jobZ, c);
+                c = await this.Generator.GenerateChunkAsync(jobX, jobZ, c);
             }
             region.SetChunk(c);
         }
@@ -559,6 +577,7 @@ public abstract class AbstractLevel : ILevel
         }
         finally
         {
+            this.PinGenerationArea(jobX, jobZ, -1);
             this.queuedChunks.TryRemove(job, out _);
             this.generationSlots.Release();
         }
@@ -706,7 +725,7 @@ public abstract class AbstractLevel : ILevel
             }
         }
 
-        var startChunks = ChunksToGenCount;
+        var startChunks = this.ChunksToGenCount;
         var stopwatch = new Stopwatch();
         stopwatch.Start();
         Logger.LogInformation("{startChunks} chunks to generate...", startChunks);
@@ -716,7 +735,7 @@ public abstract class AbstractLevel : ILevel
         var completedChunks = 0;
         var lastPercent = -1;
         var flushedThousands = 0;
-        while (ChunksToGen.TryDequeue(out var job))
+        while (this.ChunksToGen.TryDequeue(out var job))
         {
             await this.generationSlots.WaitAsync();
             jobs.Add(this.GenerateQueuedChunkAsync(job));
@@ -736,7 +755,7 @@ public abstract class AbstractLevel : ILevel
             if (completedChunks / 1024 > flushedThousands)
             {
                 flushedThousands = completedChunks / 1024;
-                await FlushRegionsAsync();
+                await this.FlushRegionsAsync();
             }
         }
 
@@ -822,6 +841,18 @@ public abstract class AbstractLevel : ILevel
         GC.SuppressFinalize(this);
 
         this.optionsMonitor.Dispose();
+
+        // Waits out the generation jobs, holding every slot so no new one starts, and saves what they generated since the
+        // last save.
+        var generating = this.generationSlots.CurrentCount < Environment.ProcessorCount;
+        for (var i = 0; i < Environment.ProcessorCount; i++)
+            await this.generationSlots.WaitAsync();
+
+        if (Interlocked.Exchange(ref this.generationFailure, null) is Exception failure)
+            this.Logger.LogError(failure, "Generating a chunk failed.");
+
+        if (generating)
+            await this.FlushRegionsAsync();
 
         foreach (var region in Regions.Values)
         {

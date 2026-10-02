@@ -66,8 +66,10 @@ public abstract class BaseIndirectPalette<T> : IPalette<T>
             Values = newArray;
         }
 
-        var newId = Count++;
+        // The entry is written before the count publishes it to reads that don't lock.
+        var newId = Count;
         Values[newId] = valueId;
+        Count = newId + 1;
         return newId;
     }
 
