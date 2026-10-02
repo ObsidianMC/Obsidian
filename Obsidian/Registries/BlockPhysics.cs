@@ -247,6 +247,12 @@ internal static class BlockPhysics
     /// <summary>Whether a state has a physics flag (see <see cref="Flags(int)"/>).</summary>
     public static bool Has(int stateId, int bit) => (Flags(stateId) & (1 << bit)) != 0;
 
+    /// <summary><see cref="IBlock.IsAir"/> by state id: air, cave air and void air.</summary>
+    public static bool IsAir(int stateId) => Has(stateId, 0);
+
+    /// <summary><see cref="IsFaceSturdy(IBlock, BlockFace)"/> by state id.</summary>
+    public static bool IsFaceSturdy(int stateId, BlockFace face) => Has(stateId, 11 + (int)face);
+
     private static bool HasFluidBit(IBlock block, int bit) => (FluidFlags(block) & (1 << bit)) != 0;
 
     private static int FluidFlags(IBlock block)

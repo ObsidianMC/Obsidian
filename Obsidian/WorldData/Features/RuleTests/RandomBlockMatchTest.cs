@@ -6,7 +6,7 @@ namespace Obsidian.WorldData.Features.RuleTests;
 /// Matches any state of one block, with a probability (sampled only when the block matches).
 /// </summary>
 [ConfiguredFeatureProperty("minecraft:random_block_match")]
-public sealed class RandomBlockMatchTest : IRuleTest
+public sealed class RandomBlockMatchTest : IStateRuleTest
 {
     public string Type { get; init; } = "minecraft:random_block_match";
 
@@ -17,4 +17,7 @@ public sealed class RandomBlockMatchTest : IRuleTest
     private int RegistryId => field == 0 ? field = BlocksRegistry.Get(this.Block).RegistryId : field;
 
     public bool Test(IBlock block, IRandomSource random) => block.RegistryId == this.RegistryId && random.NextFloat() < this.Probability;
+
+    public bool Test(int stateId, IRandomSource random) =>
+        BlocksRegistry.RegistryIdOf(stateId) == this.RegistryId && random.NextFloat() < this.Probability;
 }

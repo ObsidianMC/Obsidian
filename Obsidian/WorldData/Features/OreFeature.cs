@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.WorldData.Features.RuleTests;
 using System.Runtime.CompilerServices;
 
 namespace Obsidian.WorldData.Features;
@@ -159,7 +160,7 @@ public sealed class OreFeature : ConfiguredFeatureBase
                         if (!level.EnsureCanWrite(position))
                             continue;
 
-                        var existing = level.GetBlock(position);
+                        var existing = level.GetStateId(position);
                         foreach (var target in this.Targets)
                         {
                             if (this.CanPlaceOre(level, existing, random, target, position))
@@ -177,9 +178,9 @@ public sealed class OreFeature : ConfiguredFeatureBase
         return placed > 0;
     }
 
-    private bool CanPlaceOre(IWorldGenLevel level, IBlock existing, IRandomSource random, OreTarget target, Vector position)
+    private bool CanPlaceOre(IWorldGenLevel level, int existing, IRandomSource random, OreTarget target, Vector position)
     {
-        if (!target.Target.Test(existing, random))
+        if (!target.Test(existing, random))
             return false;
 
         return this.ShouldSkipAirCheck(random) || !IsAdjacentToAir(level, position);
@@ -197,7 +198,7 @@ public sealed class OreFeature : ConfiguredFeatureBase
     {
         foreach (var face in FeatureHelpers.Directions)
         {
-            if (level.GetBlock(position.Offset(face)).IsAir)
+            if (BlockPhysics.IsAir(level.GetStateId(position.Offset(face))))
                 return true;
         }
 
@@ -213,6 +214,13 @@ public sealed class OreTarget
     public required IRuleTest Target { get; init; }
 
     public required SimpleBlockState State { get; init; }
+
+    /// <summary>
+    /// Whether <see cref="Target"/> accepts the block with state id <paramref name="stateId"/>.
+    /// </summary>
+    internal bool Test(int stateId, IRandomSource random) => this.Target is IStateRuleTest stateTest
+        ? stateTest.Test(stateId, random)
+        : this.Target.Test(BlocksRegistry.Get(stateId), random);
 
     public IBlock Block => field ??= BlocksRegistry.GetFromSimpleState(this.State);
 }

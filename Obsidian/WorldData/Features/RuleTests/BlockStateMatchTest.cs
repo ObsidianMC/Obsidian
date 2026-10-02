@@ -6,7 +6,7 @@ namespace Obsidian.WorldData.Features.RuleTests;
 /// Matches one exact block state.
 /// </summary>
 [ConfiguredFeatureProperty("minecraft:blockstate_match")]
-public sealed class BlockStateMatchTest : IRuleTest
+public sealed class BlockStateMatchTest : IStateRuleTest
 {
     public string Type { get; init; } = "minecraft:blockstate_match";
 
@@ -15,4 +15,6 @@ public sealed class BlockStateMatchTest : IRuleTest
     private IBlock Expected => field ??= BlocksRegistry.GetFromSimpleState(this.BlockState);
 
     public bool Test(IBlock block, IRandomSource random) => block.IsSameState(this.Expected);
+
+    public bool Test(int stateId, IRandomSource random) => stateId == this.Expected.StateId();
 }

@@ -1,5 +1,3 @@
-using System.Collections.Frozen;
-
 namespace Obsidian.WorldData.Features;
 
 /// <summary>
@@ -16,14 +14,26 @@ public sealed class BlockSet
 
     public IReadOnlyList<string> Entries => this.entries;
 
-    private FrozenSet<int> RegistryIds => field ??= this.Resolve();
+    // Whether each block, by registry id, is in the set.
+    private bool[] Members => field ??= this.Resolve();
 
     /// <summary>
     /// Whether the block's type (any state) is in the set.
     /// </summary>
-    public bool Contains(IBlock block) => this.RegistryIds.Contains(block.RegistryId);
+    public bool Contains(IBlock block) => this.ContainsRegistryId(block.RegistryId);
 
-    private FrozenSet<int> Resolve()
+    /// <summary>
+    /// Whether the block of a state (any of its states) is in the set.
+    /// </summary>
+    public bool ContainsState(int stateId) => this.ContainsRegistryId(BlocksRegistry.RegistryIdOf(stateId));
+
+    private bool ContainsRegistryId(int registryId)
+    {
+        var members = this.Members;
+        return (uint)registryId < (uint)members.Length && members[registryId];
+    }
+
+    private bool[] Resolve()
     {
         var ids = new HashSet<int>();
 
@@ -43,6 +53,10 @@ public sealed class BlockSet
             }
         }
 
-        return ids.ToFrozenSet();
+        var members = new bool[ids.Count == 0 ? 0 : ids.Max() + 1];
+        foreach (var id in ids)
+            members[id] = true;
+
+        return members;
     }
 }

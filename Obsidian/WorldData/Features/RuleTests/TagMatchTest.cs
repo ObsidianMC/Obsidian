@@ -6,7 +6,7 @@ namespace Obsidian.WorldData.Features.RuleTests;
 /// Matches blocks in a block tag.
 /// </summary>
 [ConfiguredFeatureProperty("minecraft:tag_match")]
-public sealed class TagMatchTest : IRuleTest
+public sealed class TagMatchTest : IStateRuleTest
 {
     public string Type { get; init; } = "minecraft:tag_match";
 
@@ -15,4 +15,6 @@ public sealed class TagMatchTest : IRuleTest
     private BlockSet Blocks => field ??= new BlockSet($"#{this.Tag}");
 
     public bool Test(IBlock block, IRandomSource random) => this.Blocks.Contains(block);
+
+    public bool Test(int stateId, IRandomSource random) => this.Blocks.ContainsState(stateId);
 }
