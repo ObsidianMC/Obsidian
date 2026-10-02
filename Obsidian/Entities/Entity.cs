@@ -368,7 +368,7 @@ public class Entity : IEquatable<Entity>, IEntity
     protected void WriteEntityMetadataType(INetStreamWriter writer, EntityMetadataType type) =>
         writer.WriteEntityMetadataType(this.MetadataIndex++, type);
 
-    public IEnumerable<IEntity> GetEntitiesNear(float distance) => Level.GetEntitiesInRange(Position, distance).Where(x => x != this);
+    public IEnumerable<IEntity> GetEntitiesNear(float distance) => Level.GetEntitiesInRange(Position, distance).Where(x => !ReferenceEquals(x, this));
 
     //TODO GRAVITY
     public virtual ValueTask TickAsync() => default;

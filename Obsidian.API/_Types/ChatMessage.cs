@@ -122,7 +122,6 @@ public sealed record class ChatMessage : INetworkSerializable<ChatMessage>
     /// <param name="message">The message which will hold the <see cref="ClickComponent"/>.</param>
     /// <param name="action">The action which will be executed when clicking.</param>
     /// <param name="value">The value which will be executed with the action.</param>
-    /// <param name="translate">The translate value.</param>
     /// <returns>The given <see cref="ChatMessage"/>.</returns>
     public static ChatMessage Click(ChatMessage message, ClickAction action, string value)
     {
@@ -136,7 +135,6 @@ public sealed record class ChatMessage : INetworkSerializable<ChatMessage>
     /// <param name="message">The message which will hold the <see cref="HoverComponent"/>.</param>
     /// <param name="action">The action which will be executed when clicking.</param>
     /// <param name="contents">The contents which will be executed with the action.</param>
-    /// <param name="translate">The translate value.</param>
     /// <returns>The given <see cref="ChatMessage"/>.</returns>
     public static ChatMessage Hover(ChatMessage message, HoverAction action, IHoverContent contents)
     {
@@ -145,7 +143,7 @@ public sealed record class ChatMessage : INetworkSerializable<ChatMessage>
     }
 
     /// <summary>
-    /// Converts all formatting codes which are using '&' to their respective '§' formatting code.
+    /// Converts all formatting codes which are using '&amp;' to their respective '§' formatting code.
     /// </summary>
     /// <param name="originalText">The text to be reformatted.</param>
     /// <returns>The formatted text.</returns>

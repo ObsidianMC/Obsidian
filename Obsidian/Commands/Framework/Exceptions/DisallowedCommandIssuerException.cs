@@ -1,6 +1,4 @@
-﻿using System.Runtime.Serialization;
-
-namespace Obsidian.Commands.Framework.Exceptions;
+﻿namespace Obsidian.Commands.Framework.Exceptions;
 
 public class DisallowedCommandIssuerException : Exception
 {
@@ -19,9 +17,5 @@ public class DisallowedCommandIssuerException : Exception
     public DisallowedCommandIssuerException(string message, Exception innerException, CommandIssuers allowedIssuers) : base(message, innerException)
     {
         AllowedIssuers = allowedIssuers;
-    }
-
-    protected DisallowedCommandIssuerException(SerializationInfo info, StreamingContext context) : base(info, context)
-    {
     }
 }

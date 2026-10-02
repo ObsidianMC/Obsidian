@@ -236,7 +236,7 @@ public sealed class RegionFile : IAsyncDisposable
             var chunk = new RentedArray<byte>(size);
             try
             {
-                await this.regionFileStream.ReadAsync(chunk);
+                await this.regionFileStream.ReadExactlyAsync(chunk);
                 return chunk;
             }
             catch

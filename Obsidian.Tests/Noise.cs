@@ -6,6 +6,7 @@ using SharpNoise;
 using SharpNoise.Builders;
 using SharpNoise.Modules;
 using SharpNoise.Utilities.Imaging;
+using System.Threading.Tasks;
 using Xunit;
 
 
@@ -277,7 +278,7 @@ public class Noise
     }
 
     [Fact(DisplayName = "Humidity")]
-    public async void HumidityAsync()
+    public async Task HumidityAsync()
     {
         var noise = noiseGen.HumidityNoise;
         var map = new NoiseMap();

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Obsidian.API.Entities;
 
 /// <summary>
-/// Can be used to spawn entities. Can be retrieved from <see cref="IWorld.GetNewEntitySpawner"/>.
+/// Can be used to spawn entities. Can be retrieved from <see cref="ILevel.GetNewEntitySpawner"/>.
 /// </summary>
 public interface IEntitySpawner
 {

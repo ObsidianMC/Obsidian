@@ -256,7 +256,7 @@ internal sealed class RandomState
     {
         var tagX = x >> 8;
         var tagZ = z >> 8;
-        tag = (ulong)(tagX & 0xFFFFF) | (ulong)(tagZ & 0xFFFFF) << 20;
+        tag = ((uint)tagX & 0xFFFFFu) | (ulong)((uint)tagZ & 0xFFFFFu) << 20;
         return tagX >= -(1 << 19) && tagX < 1 << 19 && tagZ >= -(1 << 19) && tagZ < 1 << 19;
     }
 

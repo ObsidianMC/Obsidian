@@ -42,6 +42,8 @@ public interface ILevel : IAsyncDisposable
     /// Gets a Chunk from a Region.
     /// If the Chunk doesn't exist, it will be scheduled for generation unless scheduleGeneration is false.
     /// </summary>
+    /// <param name="x">The chunk's X coordinate.</param>
+    /// <param name="z">The chunk's Z coordinate.</param>
     /// <param name="scheduleGeneration">
     /// Whether to enqueue a job to generate the chunk if it doesn't exist and return null.
     /// When set to false, a partial Chunk is returned.</param>
@@ -52,6 +54,7 @@ public interface ILevel : IAsyncDisposable
     /// Gets a Chunk from a Region.
     /// If the Chunk doesn't exist, it will be scheduled for generation unless scheduleGeneration is false.
     /// </summary>
+    /// <param name="worldLocation">The chunk's coordinates; only X and Z are used.</param>
     /// <param name="scheduleGeneration">
     /// Whether to enqueue a job to generate the chunk if it doesn't exist and return null.
     /// When set to false, a partial Chunk is returned.</param>

@@ -51,6 +51,10 @@ public sealed class PlacedFeature : IFeature
     /// Like vanilla's chained streams, each position goes through the remaining modifiers and gets placed before the
     /// modifier that produced it is asked for the next one, which decides the order random numbers are drawn in.
     /// </remarks>
+    /// <param name="modifier">The index of the first placement modifier to run.</param>
+    /// <param name="context">The placement context.</param>
+    /// <param name="random">The random source the modifiers and the feature draw from.</param>
+    /// <param name="position">The position to run the modifiers on.</param>
     /// <param name="featureContext">The context the feature was placed with so far, moved to each next position.</param>
     private bool PlaceFrom(int modifier, PlacementContext context, IRandomSource random, Vector position, ref FeatureContext? featureContext)
     {

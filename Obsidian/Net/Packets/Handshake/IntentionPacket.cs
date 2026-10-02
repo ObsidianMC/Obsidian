@@ -40,7 +40,7 @@ public partial class IntentionPacket
                 await client.DisconnectAsync($"Outdated client! Please use {ServerConstants.DefaultProtocol.GetDescription()}.");
             }
         }
-        else if (nextState is not ClientState.Status or ClientState.Login or ClientState.Handshaking)
+        else if (nextState is not ClientState.Status)
         {
             client.Logger.LogWarning("Client sent unexpected state ({RedText}{ClientState}{WhiteText}), forcing it to disconnect.", ChatColor.Red, nextState, ChatColor.White);
             await client.DisconnectAsync($"Invalid client state! Expected Status or Login, received {nextState}.");

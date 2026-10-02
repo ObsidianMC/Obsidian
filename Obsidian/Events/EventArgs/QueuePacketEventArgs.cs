@@ -5,7 +5,7 @@ namespace Obsidian.Events.EventArgs;
 
 public class QueuePacketEventArgs : BasePacketEventArgs, ICancellable
 {
-    public static new string Name => "QueuePacket";
+    public static string Name => "QueuePacket";
 
     /// <inheritdoc />
     public bool IsCancelled { get; private set; }

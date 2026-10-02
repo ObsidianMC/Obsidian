@@ -7,7 +7,7 @@ namespace Obsidian.API.World.Generator.Noise;
 /// A worldgen noise from the <c>worldgen/noise</c> registry, backed by vanilla's <see cref="NormalNoise"/>.
 /// </summary>
 /// <remarks>
-/// Registry instances are unseeded. World generation binds a seeded copy per world with <see cref="Bind"/>;
+/// Registry instances are unseeded. World generation binds a seeded copy per world with <see cref="Bind(IPositionalRandomFactory)"/>;
 /// sampling an unbound instance lazily binds it as if the world seed were 0.
 /// </remarks>
 public partial class BaseNoise : INoise

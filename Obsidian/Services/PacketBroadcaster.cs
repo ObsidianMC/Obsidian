@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Obsidian.API.World;
 using Obsidian.Entities;
 using Obsidian.Hosting;
@@ -8,7 +7,7 @@ using System.Threading;
 
 namespace Obsidian.Services;
 
-public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster> logger, IServerEnvironment environment) : BackgroundService, IPacketBroadcaster
+public sealed class PacketBroadcaster(IServer server, IServerEnvironment environment) : BackgroundService, IPacketBroadcaster
 {
     private readonly IServer server = server;
     private readonly IServerEnvironment environment = environment;
@@ -123,7 +122,7 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
 
             }
         }
-        catch (Exception e) when (e is not OperationCanceledException or ObjectDisposedException)
+        catch (Exception e) when (e is not (OperationCanceledException or ObjectDisposedException))
         {
             await this.environment.OnServerCrashAsync(e);
         }
