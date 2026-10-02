@@ -9,7 +9,7 @@
 /// <param name="x">Velocity on the X axis.</param>
 /// <param name="y">Velocity on the Y axis.</param>
 /// <param name="z">Velocity on the Z axis.</param>
-public struct Velocity(double x, double y, double z)
+public struct Velocity(double x, double y, double z) : IEquatable<Velocity>
 {
     /// <summary>
     /// Velocity on the X axis.
@@ -25,6 +25,17 @@ public struct Velocity(double x, double y, double z)
     public double Z { get; set; } = z;
 
     public static readonly Velocity Zero = new(0, 0, 0);
+
+    public static bool operator ==(Velocity left, Velocity right) => left.Equals(right);
+
+    public static bool operator !=(Velocity left, Velocity right) => !left.Equals(right);
+
+    public readonly bool Equals(Velocity other) =>
+        this.X.Equals(other.X) && this.Y.Equals(other.Y) && this.Z.Equals(other.Z);
+
+    public readonly override bool Equals(object? obj) => obj is Velocity velocity && this.Equals(velocity);
+
+    public readonly override int GetHashCode() => HashCode.Combine(this.X, this.Y, this.Z);
 
     /// <summary>
     /// Returns <see cref="Velocity"/> expressed as how many blocks on each axis can be travelled in a second.

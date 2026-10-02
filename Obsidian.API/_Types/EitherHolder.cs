@@ -1,5 +1,5 @@
 ﻿namespace Obsidian.API;
-public readonly struct EitherHolder<TValueA, TValueB>
+public readonly record struct EitherHolder<TValueA, TValueB>
 {
     public TValueA? Left { get; init; }
 

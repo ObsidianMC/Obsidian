@@ -118,7 +118,7 @@ public partial class PlayerActionPacket
     }
 }
 
-public readonly struct PlayerActionStore
+public readonly record struct PlayerActionStore
 {
     public required Guid Player { get; init; }
     public required PlayerActionPacket Packet { get; init; }

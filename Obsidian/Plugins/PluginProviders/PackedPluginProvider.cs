@@ -314,28 +314,28 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
 }
 
 
-public readonly struct DotNetDeps
+public readonly record struct DotNetDeps
 {
     public required RuntimeTarget RuntimeTarget { get; init; }
 
     public required Dictionary<string, JsonElement> Targets { get; init; }
 }
 
-public readonly struct DotNetTarget
+public readonly record struct DotNetTarget
 {
     public Dictionary<string, string>? Dependencies { get; init; }
 
     public Dictionary<string, JsonElement>? Runtime { get; init; }
 }
 
-public readonly struct DependencyRuntime
+public readonly record struct DependencyRuntime
 {
     public required string AssemblyVersion { get; init; }
 
     public required string FileVersion { get; init; }
 }
 
-public readonly struct RuntimeTarget
+public readonly record struct RuntimeTarget
 {
     public required string Name { get; init; }
 

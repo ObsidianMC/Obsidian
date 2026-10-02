@@ -7,7 +7,7 @@ namespace Obsidian.Utilities;
 /// An array rented from a <see cref="ArrayPool{T}"/> that will be returned upon dispose
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public readonly struct RentedArray<T> : IDisposable
+public readonly struct RentedArray<T> : IDisposable, IEquatable<RentedArray<T>>
 {
     /// <summary>
     /// Number of <see cref="T"/> elements rented
@@ -37,6 +37,17 @@ public readonly struct RentedArray<T> : IDisposable
     /// Returns the rented array to the pool
     /// </summary>
     public void Dispose() => pool.Return(array);
+
+    // Handle equality: equal when wrapping the same rented array and length, not when contents match.
+    public bool Equals(RentedArray<T> other) => ReferenceEquals(this.array, other.array) && this.Length == other.Length;
+
+    public override bool Equals(object? obj) => obj is RentedArray<T> other && this.Equals(other);
+
+    public override int GetHashCode() => HashCode.Combine(RuntimeHelpers.GetHashCode(this.array), this.Length);
+
+    public static bool operator ==(RentedArray<T> left, RentedArray<T> right) => left.Equals(right);
+
+    public static bool operator !=(RentedArray<T> left, RentedArray<T> right) => !left.Equals(right);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator Span<T>(in RentedArray<T> rentedArray) => rentedArray.Span;

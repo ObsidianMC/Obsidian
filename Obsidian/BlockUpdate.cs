@@ -2,7 +2,7 @@
 
 namespace Obsidian;
 
-public struct BlockUpdate : IBlockUpdate
+public record struct BlockUpdate : IBlockUpdate
 {
     public ILevel Level { get; }
     public Vector Position { get; set; }

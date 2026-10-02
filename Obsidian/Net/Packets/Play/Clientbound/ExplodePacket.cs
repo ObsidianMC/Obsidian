@@ -29,7 +29,7 @@ public partial class ExplodePacket
     public override void Serialize(INetStreamWriter writer) => throw new NotImplementedException();
 }
 
-public readonly struct ExplosionRecord
+public readonly record struct ExplosionRecord
 {
     public required ParticleData Particle { get; init; }
 

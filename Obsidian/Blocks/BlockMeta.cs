@@ -2,7 +2,7 @@
 
 namespace Obsidian.Blocks;
 
-public struct BlockMeta
+public record struct BlockMeta
 {
     public ChatMessage? Name { get; internal set; }
     public IReadOnlyList<ChatMessage> Lore { get; internal set; }

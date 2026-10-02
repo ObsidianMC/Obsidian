@@ -1,5 +1,5 @@
 ﻿namespace Obsidian.API;
-public readonly struct MinecraftTime
+public readonly record struct MinecraftTime
 {
     public int? Day { get; private init; }
 
