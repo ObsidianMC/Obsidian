@@ -48,7 +48,8 @@ internal sealed class RandomState
     public IPositionalRandomFactory OreRandom { get; }
 
     /// <summary>
-    /// The fluid at a position when no aquifer applies: lava deep down, the default fluid up to sea level.
+    /// The fluid at a position when no aquifer applies: lava deep down, the default fluid up to sea level. It only depends
+    /// on Y, like vanilla's.
     /// </summary>
     public FluidPicker GlobalFluidPicker { get; }
 

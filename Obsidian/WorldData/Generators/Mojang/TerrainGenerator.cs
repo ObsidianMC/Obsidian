@@ -106,10 +106,31 @@ internal sealed class TerrainGenerator : IStructureTerrain
                         continue;
                     }
 
+                    // So is a cell above the aquifers' sampling range without solid blocks all global fluid, which only
+                    // depends on Y.
+                    if (!bearded && cellMinY > globalFluidAboveY && IsOpen(densities))
+                    {
+                        for (var inCellY = 0; inCellY < cellHeight; inCellY++)
+                        {
+                            var y = cellMinY + inCellY;
+                            var code = palette.CodeOf(globalFluid(cellMinX, y, cellMinZ).At(y));
+
+                            for (var inCellZ = 0; inCellZ < cellWidth; inCellZ++)
+                            {
+                                var row = (inCellY * 16 + minLocalZ + inCellZ) * 16 + minLocalX;
+                                codes.AsSpan(row, cellWidth).Fill(code);
+                                scheduled.AsSpan(row, cellWidth).Clear();
+                            }
+                        }
+
+                        continue;
+                    }
+
                     var i = 0;
                     for (var inCellY = 0; inCellY < cellHeight; inCellY++)
                     {
                         var y = cellMinY + inCellY;
+                        var globalCode = y > globalFluidAboveY ? palette.CodeOf(globalFluid(cellMinX, y, cellMinZ).At(y)) : default;
 
                         for (var inCellZ = 0; inCellZ < cellWidth; inCellZ++)
                         {
@@ -128,7 +149,7 @@ internal sealed class TerrainGenerator : IStructureTerrain
                                 var scheduleFluidUpdate = false;
                                 if (!(density > 0.0) && y > globalFluidAboveY)
                                 {
-                                    code = palette.CodeOf(globalFluid(x, y, z).At(y));
+                                    code = globalCode;
                                 }
                                 else if (!(density > 0.0) && aquifer.ComputeSubstance(x, y, z, density) is { } substance)
                                 {
@@ -190,6 +211,17 @@ internal sealed class TerrainGenerator : IStructureTerrain
         WorldgenHeightmaps.Set(chunk, HeightmapType.WorldSurfaceWG, worldSurface);
         WorldgenHeightmaps.Set(chunk, HeightmapType.OceanFloorWG, oceanFloor);
         freeBuffers = buffers;
+    }
+
+    private static bool IsOpen(ReadOnlySpan<double> densities)
+    {
+        foreach (var density in densities)
+        {
+            if (density > 0.0)
+                return false;
+        }
+
+        return true;
     }
 
     private static bool IsSolid(ReadOnlySpan<double> densities)
