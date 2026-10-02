@@ -146,6 +146,22 @@ public sealed class ChunkSection : IChunkSection
         HasBlockLight |= lt == LightType.Block;
     }
 
+    /// <summary>
+    /// The section's light levels of a type, two per byte as <see cref="SetLightLevel(int, int, int, LightType, int)"/>
+    /// stores them, for the light engine to read and write directly. Call <see cref="MarkLight"/> after writing.
+    /// </summary>
+    internal byte[] GetLightStorage(LightType lt) => lt == LightType.Sky ? skyLight : blockLight;
+
+    /// <summary>
+    /// Records that light of a type was written into <see cref="GetLightStorage"/>, like
+    /// <see cref="SetLightLevel(int, int, int, LightType, int)"/> does.
+    /// </summary>
+    internal void MarkLight(LightType lt)
+    {
+        HasSkyLight |= lt == LightType.Sky;
+        HasBlockLight |= lt == LightType.Block;
+    }
+
     public int GetLightLevel(int x, int y, int z, LightType lt)
     {
         var index = (y << 8) | (z << 4) | x;

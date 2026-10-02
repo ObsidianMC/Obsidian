@@ -44,6 +44,10 @@ internal sealed class LightEngine
 
     // The lit chunk and its neighbors that may be read and written, indexed (dz + 1) * 3 + (dx + 1).
     private readonly IChunk?[] area = new IChunk?[9];
+
+    // The sections of the area's chunks, indexed by area index times the section count plus the section index.
+    private readonly ChunkSection?[] sections;
+    private readonly int sectionCount;
     private readonly int minY;
     private readonly int height;
     private readonly Queue<long> queue = new();
@@ -62,6 +66,20 @@ internal sealed class LightEngine
                 throw new ArgumentException($"Chunk ({neighbor.X}, {neighbor.Z}) isn't a neighbor of ({chunk.X}, {chunk.Z}).", nameof(litNeighbors));
 
             this.area[(dz + 1) * 3 + dx + 1] = neighbor;
+        }
+
+        var sectionCount = this.sectionCount = chunk.Sections.Length;
+        this.sections = new ChunkSection?[9 * sectionCount];
+        for (var areaIndex = 0; areaIndex < 9; areaIndex++)
+        {
+            if (this.area[areaIndex] is not { } areaChunk)
+                continue;
+
+            for (var sectionIndex = 0; sectionIndex < sectionCount; sectionIndex++)
+            {
+                this.sections[areaIndex * sectionCount + sectionIndex] = areaChunk.Sections[sectionIndex] as ChunkSection
+                    ?? throw new NotSupportedException("The light engine reads light storage of chunk sections directly.");
+            }
         }
     }
 
@@ -121,21 +139,8 @@ internal sealed class LightEngine
         {
             var section = sections[sectionIndex];
             section.SetLight(new byte[2048], LightType.Block);
-            if (section.IsEmpty || !MayEmitLight(section))
-                continue;
-
-            for (var y = 0; y < 16; y++)
-            {
-                for (var z = 0; z < 16; z++)
-                {
-                    for (var x = 0; x < 16; x++)
-                    {
-                        var emission = section.GetBlock(x, y, z).LightEmission();
-                        if (emission > 0)
-                            this.Enqueue(Pack(x, (sectionIndex << 4) + y, z), emission | AllDirections | FromEmission);
-                    }
-                }
-            }
+            if (!section.IsEmpty)
+                this.EnqueueLightSources(section, sectionIndex);
         }
 
         this.PullFromNeighbors(LightType.Block);
@@ -143,26 +148,51 @@ internal sealed class LightEngine
     }
 
     /// <summary>
-    /// Whether the section's palette has a light emitting block, like vanilla's <c>PalettedContainer.maybeHas</c>, so other
-    /// sections are skipped without reading their blocks. A palette may still list blocks that are gone, which only costs
-    /// a scan.
+    /// Queues the light emitting blocks of a section in index order (y, then z, then x). Like vanilla's
+    /// <c>PalettedContainer.maybeHas</c>, the palette is checked first, as most sections have no light source; the others
+    /// are scanned by palette index rather than block by block. A palette may still list blocks that are gone, which only
+    /// costs a scan.
     /// </summary>
-    private static bool MayEmitLight(IChunkSection section)
+    private void EnqueueLightSources(IChunkSection section, int sectionIndex)
     {
-        switch (section.BlockStateContainer.Palette)
+        var container = section.BlockStateContainer;
+        if (container.Palette is IndirectBlockPalette palette && container.DataArray is { } data)
         {
-            case IndirectBlockPalette indirect:
-                foreach (var stateId in indirect.Values.AsSpan(0, indirect.Count))
-                {
-                    if (BlocksRegistry.Get(stateId).LightEmission() > 0)
-                        return true;
-                }
+            Span<int> emissions = stackalloc int[palette.Count];
+            var anyEmission = false;
+            for (var i = 0; i < emissions.Length; i++)
+            {
+                emissions[i] = BlocksRegistry.Get(palette.Values[i]).LightEmission();
+                anyEmission |= emissions[i] > 0;
+            }
 
-                return false;
-            case SingleValuePalette<IBlock> single:
-                return single.IsFull && single.Value.LightEmission() > 0;
-            default:
-                return true;
+            if (!anyEmission)
+                return;
+
+            for (var index = 0; index < 4096; index++)
+            {
+                var emission = emissions[data[index]];
+                if (emission > 0)
+                    this.Enqueue(Pack(index & 15, (sectionIndex << 4) + (index >> 8), (index >> 4) & 15), emission | AllDirections | FromEmission);
+            }
+
+            return;
+        }
+
+        if (container.Palette is SingleValuePalette<IBlock> single && single.IsFull && single.Value.LightEmission() == 0)
+            return;
+
+        for (var y = 0; y < 16; y++)
+        {
+            for (var z = 0; z < 16; z++)
+            {
+                for (var x = 0; x < 16; x++)
+                {
+                    var emission = section.GetBlock(x, y, z).LightEmission();
+                    if (emission > 0)
+                        this.Enqueue(Pack(x, (sectionIndex << 4) + y, z), emission | AllDirections | FromEmission);
+                }
+            }
         }
     }
 
@@ -194,20 +224,38 @@ internal sealed class LightEngine
             east[i] = this.NeighborLowestSourceY(5, 0, i);
         }
 
+        // Below world sources are int.MinValue, so they count as the lowest.
+        var lowestSource = int.MaxValue;
+        var highestSource = int.MinValue;
+        foreach (var source in lowest)
+        {
+            lowestSource = Math.Min(lowestSource, source);
+            highestSource = Math.Max(highestSource, source);
+        }
+
         var sections = chunk.Sections;
         for (var sectionIndex = 0; sectionIndex < sections.Length; sectionIndex++)
         {
             var bottom = this.minY + (sectionIndex << 4);
             var light = new byte[2048];
-            for (var z = 0; z < 16; z++)
+
+            // Sections that every column's sources cover, or that none reach, need no work per column.
+            if (highestSource <= bottom)
             {
-                for (var x = 0; x < 16; x++)
+                light.AsSpan().Fill(0xFF);
+            }
+            else if (lowestSource < bottom + 16)
+            {
+                for (var z = 0; z < 16; z++)
                 {
-                    var source = lowest[z * 16 + x];
-                    for (var y = source == SkyLightSources.BelowWorld ? 0 : Math.Max(source - bottom, 0); y < 16; y++)
+                    for (var x = 0; x < 16; x++)
                     {
-                        var index = (y << 8) | (z << 4) | x;
-                        light[index >> 1] |= (byte)(15 << ((index & 1) << 2));
+                        var source = lowest[z * 16 + x];
+                        for (var y = source == SkyLightSources.BelowWorld ? 0 : Math.Max(source - bottom, 0); y < 16; y++)
+                        {
+                            var index = (y << 8) | (z << 4) | x;
+                            light[index >> 1] |= (byte)(15 << ((index & 1) << 2));
+                        }
                     }
                 }
             }
@@ -399,14 +447,30 @@ internal sealed class LightEngine
     private IBlock GetBlock(int position) =>
         this.GetSection(position).GetBlock(position & 15, (position >> 12) & 15, (position >> 6) & 15);
 
-    private int GetLight(int position, LightType lightType) =>
-        this.GetSection(position).GetLightLevel(position & 15, (position >> 12) & 15, (position >> 6) & 15, lightType);
+    // Light is read and written in the sections' storage the way ChunkSection.GetLightLevel and SetLightLevel do.
+    private int GetLight(int position, LightType lightType)
+    {
+        var index = SectionIndex(position);
+        var shift = (index & 1) << 2;
+        return (this.GetSection(position).GetLightStorage(lightType)[index >> 1] >> shift) & 15;
+    }
 
-    private void SetLight(int position, LightType lightType, int level) =>
-        this.GetSection(position).SetLightLevel(position & 15, (position >> 12) & 15, (position >> 6) & 15, lightType, level);
+    private void SetLight(int position, LightType lightType, int level)
+    {
+        var section = this.GetSection(position);
+        var index = SectionIndex(position);
+        var shift = (index & 1) << 2;
+        ref var stored = ref section.GetLightStorage(lightType)[index >> 1];
+        stored = (byte)((stored & (0xF0 >> shift)) | (level << shift));
+        section.MarkLight(lightType);
+    }
 
     // Offsetting x and z by 16 keeps their low 4 bits the in-chunk coordinate.
-    private IChunkSection GetSection(int position) => this.area[AreaIndex(position)]!.Sections[position >> 16];
+    private ChunkSection GetSection(int position) =>
+        this.sections[AreaIndex(position) * this.sectionCount + (position >> 16)]!;
+
+    // The block's index in its section (y, then z, then x).
+    private static int SectionIndex(int position) => (((position >> 12) & 15) << 8) | (((position >> 6) & 15) << 4) | (position & 15);
 
     private void Enqueue(int position, int flags) => this.queue.Enqueue(((long)position << 32) | (uint)flags);
 
