@@ -8,13 +8,13 @@ namespace Obsidian.WorldData.Generators.Mojang.Carvers;
 /// <remarks>
 /// The float/double mix is deliberate: vanilla computes angles and offsets in float and positions in double.
 /// </remarks>
-internal sealed class CanyonWorldCarver : WorldCarver<CanyonCarverConfiguration, CanyonWorldCarver.Canyon>
+internal sealed class CanyonWorldCarver : WorldCarver<CanyonCarverConfiguration>
 {
-    public override Canyon Plan(CanyonCarverConfiguration configuration, IRandomSource random, int startChunkX, int startChunkZ, int minY, int height)
+    public override void Carve(CarvingContext context, CanyonCarverConfiguration configuration, IRandomSource random, int startChunkX, int startChunkZ)
     {
         var maxDistance = (Range * 2 - 1) * 16;
         double x = (startChunkX << 4) + random.NextInt(16);
-        var y = configuration.Y.Sample(random, minY, height);
+        var y = configuration.Y.Sample(random, context.MinY, context.Height);
         double z = (startChunkZ << 4) + random.NextInt(16);
         var yaw = random.NextFloat() * (float)(Math.PI * 2);
         var pitch = configuration.VerticalRotation.Sample(random);
@@ -22,24 +22,18 @@ internal sealed class CanyonWorldCarver : WorldCarver<CanyonCarverConfiguration,
         var thickness = configuration.Thickness.Sample(random);
         var branchCount = (int)(maxDistance * configuration.DistanceFactor.Sample(random));
 
-        return PlanCanyon(configuration, random.NextLong(), x, y, z, thickness, yaw, pitch, 0, branchCount, yScale, height);
+        this.DoCarve(context, configuration, random.NextLong(), x, y, z, thickness, yaw, pitch, 0, branchCount, yScale);
     }
 
-    public override void Carve(CarvingContext context, CanyonCarverConfiguration configuration, Canyon plan) =>
-        this.CarveTunnel(context, configuration, plan.Tunnel, new SkipChecker(plan.WidthFactors, context.MinY));
-
-    /// <summary>
-    /// Follows the ravine (vanilla's <c>doCarve</c>) and records its ellipsoids; whether each one reaches a chunk is decided
-    /// when carving.
-    /// </summary>
-    private static Canyon PlanCanyon(CanyonCarverConfiguration configuration, long seed, double x, double y, double z,
-        float thickness, float yaw, float pitch, int branchIndex, int branchCount, double yScale, int height)
+    private void DoCarve(CarvingContext context, CanyonCarverConfiguration configuration, long seed, double x, double y, double z,
+        float thickness, float yaw, float pitch, int branchIndex, int branchCount, double yScale)
     {
         var random = new LegacyRandomSource(seed);
-        var widthFactors = InitWidthFactors(height, configuration, random);
-        var tunnel = new Tunnel(branchIndex, branchCount, thickness);
+        var widthFactors = InitWidthFactors(context, configuration, random);
         var yawChange = 0.0f;
         var pitchChange = 0.0f;
+
+        var skipChecker = new SkipChecker(widthFactors, context.MinY);
 
         for (var index = branchIndex; index < branchCount; index++)
         {
@@ -65,18 +59,19 @@ internal sealed class CanyonWorldCarver : WorldCarver<CanyonCarverConfiguration,
             if (random.NextInt(4) == 0)
                 continue;
 
-            tunnel.Steps.Add(new TunnelStep(index, x, y, z, horizontalRadius, verticalRadius));
-        }
+            if (!CanReach(context.Chunk, x, z, index, branchCount, thickness))
+                return;
 
-        return new Canyon(widthFactors, tunnel);
+            this.CarveEllipsoid(context, configuration, x, y, z, horizontalRadius, verticalRadius, skipChecker);
+        }
     }
 
     /// <summary>
     /// Per-Y width multipliers that give ravine walls their ledges.
     /// </summary>
-    private static float[] InitWidthFactors(int height, CanyonCarverConfiguration configuration, IRandomSource random)
+    private static float[] InitWidthFactors(CarvingContext context, CanyonCarverConfiguration configuration, IRandomSource random)
     {
-        var factors = new float[height];
+        var factors = new float[context.Height];
         var factor = 1.0f;
 
         for (var i = 0; i < factors.Length; i++)
@@ -98,21 +93,9 @@ internal sealed class CanyonWorldCarver : WorldCarver<CanyonCarverConfiguration,
         return factor * verticalRadius * (random.NextFloat() * (1.0f - 0.75f) + 0.75f);
     }
 
-    /// <summary>
-    /// A start chunk's ravine: its walls' width factors and its path.
-    /// </summary>
-    internal sealed record Canyon(float[] WidthFactors, Tunnel Tunnel);
-
     private readonly struct SkipChecker(float[] widthFactors, int minY) : ISkipChecker
     {
         public bool ShouldSkip(double relativeX, double relativeY, double relativeZ, int y) =>
             (relativeX * relativeX + relativeZ * relativeZ) * widthFactors[y - minY - 1] + relativeY * relativeY / 6.0 >= 1.0;
-
-        // Width factors are at least 1, so they only narrow the bounds.
-        public (double Min, double Max) RelativeYBounds(double relativeX, double relativeZ)
-        {
-            var halfHeight = Math.Sqrt(6.0 * (1.0 - (relativeX * relativeX + relativeZ * relativeZ)));
-            return (-halfHeight, halfHeight);
-        }
     }
 }
