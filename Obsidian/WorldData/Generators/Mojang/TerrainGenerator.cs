@@ -13,6 +13,10 @@ internal sealed class TerrainGenerator : IStructureTerrain
     private readonly RandomState randomState;
     private readonly IBlock defaultBlock;
 
+    // A fill's buffers, kept by each thread for its next fill. Taken while in use, so a nested fill would get its own.
+    [ThreadStatic]
+    private static FillBuffers? freeBuffers;
+
     public TerrainGenerator(RandomState randomState)
     {
         this.randomState = randomState;
@@ -29,6 +33,7 @@ internal sealed class TerrainGenerator : IStructureTerrain
     public void Generate(IChunk chunk, ICollection<Vector>? fluidUpdates = null, Beardifier? beardifier = null, NoiseChunk? noiseChunk = null)
     {
         beardifier ??= Beardifier.Empty;
+        var cellBeardifierBuffer = beardifier == Beardifier.Empty ? null : beardifier.CreateBuffer();
         var settings = this.randomState.Settings;
         noiseChunk ??= new NoiseChunk(this.randomState, chunk.X, chunk.Z);
         var aquifer = noiseChunk.Aquifer;
@@ -48,9 +53,12 @@ internal sealed class TerrainGenerator : IStructureTerrain
 
         // Blocks are computed a layer of cells at a time, a cell at once, then written from the top down in z, x order.
         // Writing in that order keeps the order of the sections' palettes and of the fluid updates.
-        var palette = new FillPalette(this.defaultBlock);
-        var codes = new byte[256 * cellHeight];
-        var scheduled = new bool[256 * cellHeight];
+        var buffers = freeBuffers ?? new FillBuffers();
+        freeBuffers = null;
+        var palette = buffers.Palette;
+        palette.Reset(this.defaultBlock);
+        var codes = buffers.Codes(256 * cellHeight);
+        var scheduled = buffers.Scheduled(256 * cellHeight);
         Span<double> densities = stackalloc double[noiseChunk.CellSize];
         Span<double> veinToggles = stackalloc double[noiseChunk.CellSize];
 
@@ -71,8 +79,9 @@ internal sealed class TerrainGenerator : IStructureTerrain
                     var minLocalZ = cellZ * cellWidth;
                     var cellMinX = noiseChunk.ChunkMinX + minLocalX;
                     var cellMinZ = noiseChunk.ChunkMinZ + minLocalZ;
-                    var cellBeardifier = beardifier.Within(new BlockBox(new Vector(cellMinX, cellMinY, cellMinZ),
-                        new Vector(cellMinX + cellWidth - 1, cellMinY + cellHeight - 1, cellMinZ + cellWidth - 1)));
+                    var cellBox = new BlockBox(new Vector(cellMinX, cellMinY, cellMinZ),
+                        new Vector(cellMinX + cellWidth - 1, cellMinY + cellHeight - 1, cellMinZ + cellWidth - 1));
+                    var cellBeardifier = beardifier.Within(cellBox, cellBeardifierBuffer);
                     var bearded = cellBeardifier != Beardifier.Empty;
 
                     // A solid cell without veins is all default block, since aquifers leave solid positions alone.
@@ -174,6 +183,7 @@ internal sealed class TerrainGenerator : IStructureTerrain
 
         WorldgenHeightmaps.Set(chunk, HeightmapType.WorldSurfaceWG, worldSurface);
         WorldgenHeightmaps.Set(chunk, HeightmapType.OceanFloorWG, oceanFloor);
+        freeBuffers = buffers;
     }
 
     private static bool IsSolid(ReadOnlySpan<double> densities)
@@ -228,6 +238,41 @@ internal sealed class TerrainGenerator : IStructureTerrain
         return null;
     }
     /// <summary>
+    /// The buffers of a fill: its palette, and the codes and fluid update flags of a layer of cells.
+    /// </summary>
+    private sealed class FillBuffers
+    {
+        private byte[] codes = [];
+        private bool[] scheduled = [];
+
+        public FillPalette Palette { get; } = new();
+
+        /// <summary>
+        /// A cleared buffer of at least <paramref name="length"/> codes.
+        /// </summary>
+        public byte[] Codes(int length)
+        {
+            if (this.codes.Length < length)
+                this.codes = new byte[length];
+            else
+                Array.Clear(this.codes);
+
+            return this.codes;
+        }
+
+        /// <inheritdoc cref="Codes"/>
+        public bool[] Scheduled(int length)
+        {
+            if (this.scheduled.Length < length)
+                this.scheduled = new bool[length];
+            else
+                Array.Clear(this.scheduled);
+
+            return this.scheduled;
+        }
+    }
+
+    /// <summary>
     /// The distinct blocks of one fill, numbered in order of appearance so the fill can store a byte per block. Air is
     /// numbered too, but kept as a null block, which layer writes skip.
     /// </summary>
@@ -247,7 +292,15 @@ internal sealed class TerrainGenerator : IStructureTerrain
         private IBlock? last;
         private byte lastCode;
 
-        public FillPalette(IBlock defaultBlock) => this.CodeOf(defaultBlock);
+        /// <summary>
+        /// Empties the palette for a new fill, whose default block gets <see cref="DefaultCode"/>.
+        /// </summary>
+        public void Reset(IBlock defaultBlock)
+        {
+            this.count = 0;
+            this.last = null;
+            this.CodeOf(defaultBlock);
+        }
 
         public byte CodeOf(IBlock block)
         {

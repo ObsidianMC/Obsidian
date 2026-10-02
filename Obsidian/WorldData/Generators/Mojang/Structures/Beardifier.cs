@@ -78,16 +78,28 @@ internal sealed class Beardifier
     }
 
     /// <summary>
+    /// A beardifier for <see cref="Within"/> to fill, so restricting to many boxes in turn doesn't allocate.
+    /// </summary>
+    public Beardifier CreateBuffer() => new([], [], this.affectedBox);
+
+    /// <summary>
     /// This beardifier with only the pieces and junctions that can add density inside <paramref name="box"/>, or
     /// <see cref="Empty"/> when none can. <see cref="Compute"/> returns the same values inside the box: the others add
     /// exactly 0 there, which doesn't change a sum that starts at 0.
     /// </summary>
-    public Beardifier Within(BlockBox box)
+    /// <param name="buffer">A beardifier from <see cref="CreateBuffer"/> to fill and return, which replaces what the last
+    /// call filled it with; or <c>null</c> for a new one.</param>
+    public Beardifier Within(BlockBox box, Beardifier? buffer = null)
     {
         if (this.affectedBox is null || !this.affectedBox.Value.Intersects(box))
             return Empty;
 
-        var pieces = new List<Rigid>();
+        buffer ??= this.CreateBuffer();
+        var pieces = buffer.pieces;
+        var junctions = buffer.junctions;
+        pieces.Clear();
+        junctions.Clear();
+
         foreach (var piece in this.pieces)
         {
             // Every adjustment's contribution vanishes 12 blocks away from the box and its ground level.
@@ -98,7 +110,6 @@ internal sealed class Beardifier
                 pieces.Add(piece);
         }
 
-        var junctions = new List<JigsawJunction>();
         foreach (var junction in this.junctions)
         {
             var source = new Vector(junction.SourceX, junction.SourceGroundY, junction.SourceZ);
@@ -106,7 +117,7 @@ internal sealed class Beardifier
                 junctions.Add(junction);
         }
 
-        return pieces.Count == 0 && junctions.Count == 0 ? Empty : new Beardifier(pieces, junctions, this.affectedBox);
+        return pieces.Count == 0 && junctions.Count == 0 ? Empty : buffer;
     }
 
     /// <summary>
