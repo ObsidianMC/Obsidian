@@ -126,7 +126,8 @@ internal sealed class WorldGenRegion : IWorldGenLevel
 
         var chunk = this.GetAreaChunk(index, position);
 
-        // Prime the final heightmaps from the blocks before the change, like ProtoChunk.setBlockState.
+        // ProtoChunk.setBlockState primes missing heightmaps after the write; priming before it and updating gives the same
+        // heights.
         var heightmaps = this.GetFinalHeightmaps(index, chunk);
 
         var section = this.areaSections[index * this.sectionCount + ((position.Y - this.MinY) >> 4)];
