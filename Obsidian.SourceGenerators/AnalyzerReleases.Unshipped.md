@@ -12,3 +12,6 @@ OBSWG001 | WorldgenFeatures | Warning | WorldgenFeatureRegistryGenerator
 OBSWG002 | WorldgenFeatures | Error | WorldgenFeatureRegistryGenerator
 OBSWG003 | WorldgenFeatures | Error | WorldgenFeatureRegistryGenerator
 OBSWG004 | WorldgenFeatures | Error | WorldgenFeatureRegistryGenerator
+OBSLT001 | Loot | Error | LootRegistryGenerator
+OBSLT002 | Loot | Error | LootRegistryGenerator
+OBSLT003 | Loot | Error | LootRegistryGenerator

@@ -33,6 +33,12 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
 
     public ItemStack([DisallowNull] ItemStack item, int count = 1) : this(item.Holder, count, item.InternalStorage.Values) { }
 
+    /// <summary>
+    /// Copies this stack, with its count and components, as a stack of <paramref name="holder"/> (vanilla's
+    /// <c>transmuteCopy</c>), e.g. to turn a book into an enchanted book.
+    /// </summary>
+    public ItemStack TransmuteCopy(Item holder) => new(holder, this.Count, this.InternalStorage.Values);
+
     public static ItemStack operator -(ItemStack item, int value)
     {
         if (item.Count <= 0)
