@@ -3,6 +3,7 @@ using Obsidian.Nbt;
 using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Features.Tree;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace Obsidian.WorldData.Structures;
 
@@ -556,39 +557,48 @@ public sealed class StructureTemplate
         // Whether each state is a full cube without a dynamic shape, checked once rather than for every block.
         var fullCubes = states.Select(state => !HasDynamicShape(state) && state.IsCollisionShapeFullBlock()).ToArray();
 
-        var fullBlocks = new List<StructureBlockInfo>();
-        var withNbt = new List<StructureBlockInfo>();
-        var others = new List<StructureBlockInfo>();
-        foreach (var (position, state, blockNbt) in blocks)
-        {
-            var known = state < states.Count;
-            var block = known ? states[state] : BlocksRegistry.Air;
-            var nbt = blockNbt is not null ? NbtCopy.Copy(blockNbt) : null;
-            var info = new StructureBlockInfo(position, block, nbt);
+        // Full cubes first, then other blocks, then blocks with data, each sorted by position: the groups are counted
+        // first so they fill one list.
+        Span<int> groupStarts = stackalloc int[GroupCount + 1];
+        groupStarts.Clear();
+        foreach (var block in blocks)
+            groupStarts[Group(block, states, fullCubes) + 1]++;
 
-            // Air, used for unknown states, isn't a full cube.
-            if (nbt is not null)
-                withNbt.Add(info);
-            else if (known && fullCubes[state])
-                fullBlocks.Add(info);
-            else
-                others.Add(info);
+        for (var group = 1; group <= GroupCount; group++)
+            groupStarts[group] += groupStarts[group - 1];
+
+        var sorted = new List<StructureBlockInfo>(blocks.Count);
+        CollectionsMarshal.SetCount(sorted, blocks.Count);
+        var target = CollectionsMarshal.AsSpan(sorted);
+        Span<int> next = stackalloc int[GroupCount];
+        groupStarts[..GroupCount].CopyTo(next);
+        foreach (var block in blocks)
+        {
+            var info = new StructureBlockInfo(block.Position, block.State < states.Count ? states[block.State] : BlocksRegistry.Air,
+                block.Nbt is not null ? NbtCopy.Copy(block.Nbt) : null);
+            target[next[Group(block, states, fullCubes)]++] = info;
         }
 
-        Comparison<StructureBlockInfo> order = (a, b) =>
-        {
-            var compared = a.Position.Y.CompareTo(b.Position.Y);
-            if (compared == 0)
-                compared = a.Position.X.CompareTo(b.Position.X);
+        // Like List.Sort, which isn't stable, but positions are unique within a palette.
+        for (var group = 0; group < GroupCount; group++)
+            target[groupStarts[group]..groupStarts[group + 1]].Sort(PositionOrder);
 
-            return compared != 0 ? compared : a.Position.Z.CompareTo(b.Position.Z);
-        };
+        return new Palette(sorted);
+    }
 
-        // List.Sort isn't stable, but positions are unique within a palette.
-        fullBlocks.Sort(order);
-        others.Sort(order);
-        withNbt.Sort(order);
-        return new Palette([.. fullBlocks, .. others, .. withNbt]);
+    private const int GroupCount = 3;
+
+    // Air, used for unknown states, isn't a full cube.
+    private static int Group(TemplateBlock block, List<IBlock> states, bool[] fullCubes) =>
+        block.Nbt is not null ? 2 : block.State < states.Count && fullCubes[block.State] ? 0 : 1;
+
+    private static int PositionOrder(StructureBlockInfo a, StructureBlockInfo b)
+    {
+        var compared = a.Position.Y.CompareTo(b.Position.Y);
+        if (compared == 0)
+            compared = a.Position.X.CompareTo(b.Position.X);
+
+        return compared != 0 ? compared : a.Position.Z.CompareTo(b.Position.Z);
     }
 
     /// <summary>
