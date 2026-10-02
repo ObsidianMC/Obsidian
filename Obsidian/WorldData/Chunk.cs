@@ -167,6 +167,10 @@ public sealed class Chunk : IChunk
 
     public void SetBlock(int x, int y, int z, IBlock block)
     {
+        // Generation writes through its regions' sections; any other write (a live edit of an unfinished chunk) leaves the
+        // heights generation keeps stale, so they're computed again.
+        this.FinalHeightmaps = null;
+
         int i = SectionIndex(y);
 
         x = (x & 15);

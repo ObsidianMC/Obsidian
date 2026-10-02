@@ -317,7 +317,7 @@ internal sealed class MultifaceSpreader
 
         public IBlock Get(Vector position)
         {
-            var index = Index(position);
+            var index = this.Index(position);
             if (index < 0)
                 return level.GetBlock(position);
 
@@ -329,7 +329,7 @@ internal sealed class MultifaceSpreader
 
         public int Info(Vector position)
         {
-            var index = Index(position);
+            var index = this.Index(position);
             if (index < 0)
                 return MultifaceSpreader.Info(level.GetBlock(position));
 
@@ -342,7 +342,7 @@ internal sealed class MultifaceSpreader
         public bool Set(Vector position, IBlock block)
         {
             // Read the block again next time: the write may also be refused or ignored.
-            var index = Index(position);
+            var index = this.Index(position);
             if (index >= 0)
                 this.infos[index] = 0;
 
