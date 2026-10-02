@@ -18,6 +18,10 @@
 		<EmbeddedResource Include="Assets\fluid_scenarios.json" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
+	</ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="MartinCostello.Logging.XUnit" Version="0.7.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
