@@ -104,8 +104,6 @@ public sealed class RegionFile : IAsyncDisposable
     /// <exception cref="NotSupportedException"></exception>
     public async Task SetChunkAsync(int chunkX, int chunkZ, Memory<byte> chunkData)
     {
-        await this.semaphore.WaitAsync();
-
         var chunkSectorSize = this.CalculateSectorSize(chunkData.Length);
 
         if (chunkSectorSize > MaxSectorSize)
@@ -114,42 +112,38 @@ public sealed class RegionFile : IAsyncDisposable
         var chunkSectorSizeBytesLength = chunkSectorSize * SectorSize;
         var tableIndex = this.GetChunkTableIndex(chunkX, chunkZ);
 
-        var (offset, size) = this.GetLocation(tableIndex);
-
-        if (offset == 0 && size == 0)
+        // Released even when writing fails, so the file stays usable.
+        await this.semaphore.WaitAsync();
+        try
         {
+            var (offset, size) = this.GetLocation(tableIndex);
+
+            if (offset == 0 && size == 0)
+            {
+                offset = this.EndOfFile;
+            }
+            else if (chunkSectorSizeBytesLength > size)
+            {
+                logger?.LogTrace("Chunk exceeded original size of ({oldSize}). Attempting resize to ({newSize}).", size, chunkSectorSizeBytesLength);
+
+                offset = this.FindFreeSector(chunkSectorSize);
+
+                if (offset == -1)
+                    offset = this.EndOfFile;
+            }
+
             await this.WriteChunkAsync(new()
             {
-                Start = (int)(this.EndOfFile / SectorSize),
+                Start = (int)(offset / SectorSize),
                 Size = chunkSectorSizeBytesLength,
                 TableIndex = tableIndex,
                 ChunkData = chunkData
             });
-
+        }
+        finally
+        {
             this.semaphore.Release();
-
-            return;
         }
-
-        if (chunkSectorSizeBytesLength > size)
-        {
-            logger?.LogTrace("Chunk exceeded original size of ({oldSize}). Attempting resize to ({newSize}).", size, chunkSectorSizeBytesLength);
-
-            offset = this.FindFreeSector(chunkSectorSize);
-
-            if (offset == -1)
-                offset = this.EndOfFile;
-        }
-
-        await this.WriteChunkAsync(new()
-        {
-            Start = (int)(offset / SectorSize),
-            Size = chunkSectorSizeBytesLength,
-            TableIndex = tableIndex,
-            ChunkData = chunkData
-        });
-
-        this.semaphore.Release();
     }
 
     /// <summary>
@@ -160,31 +154,18 @@ public sealed class RegionFile : IAsyncDisposable
     /// <returns>The uncompressed nbt chunk data, or null if no chunk was found at the specified coordinate.</returns>
     public async Task<Memory<byte>?> GetChunkBytesAsync(int chunkX, int chunkZ)
     {
-        await this.semaphore.WaitAsync();
-
         var tableIndex = this.GetChunkTableIndex(chunkX, chunkZ);
-
-        var (offset, size) = this.GetLocation(tableIndex);
-
-        if (offset == 0 && size == 0)
-        {
-            this.semaphore.Release();
-
+        var sectors = await this.ReadChunkSectorsAsync(tableIndex);
+        if (sectors is null)
             return null;
-        }
 
-        this.regionFileStream.Position = offset;
+        using var chunk = sectors.Value;
 
-        using var chunk = new RentedArray<byte>(size);
-
-        await this.regionFileStream.ReadAsync(chunk);
-
+        var size = chunk.Length;
         var length = BinaryPrimitives.ReadInt32BigEndian(chunk.Span[..4]);
 
         if (length == 0)
             throw new UnreachableException("Chunk size header value returned 0.");
-
-        this.semaphore.Release();
 
         if (length > size)
             throw new UnreachableException($"{length} > {size}");
@@ -223,11 +204,51 @@ public sealed class RegionFile : IAsyncDisposable
     public void Flush()
     {
         this.semaphore.Wait();
-        this.Pad();
-        // Using Flush with true forces C# to dump to disk.
-        // It otherwise wouldn't
-        this.regionFileStream.Flush(true);
-        this.semaphore.Release();
+        try
+        {
+            this.Pad();
+            // Using Flush with true forces C# to dump to disk.
+            // It otherwise wouldn't
+            this.regionFileStream.Flush(true);
+        }
+        finally
+        {
+            this.semaphore.Release();
+        }
+    }
+
+    /// <summary>
+    /// Reads the sectors a chunk occupies, or <c>null</c> when the file has no data for it. The file is only locked while
+    /// reading, and released even when reading fails.
+    /// </summary>
+    private async Task<RentedArray<byte>?> ReadChunkSectorsAsync(int tableIndex)
+    {
+        await this.semaphore.WaitAsync();
+        try
+        {
+            var (offset, size) = this.GetLocation(tableIndex);
+
+            if (offset == 0 && size == 0)
+                return null;
+
+            this.regionFileStream.Position = offset;
+
+            var chunk = new RentedArray<byte>(size);
+            try
+            {
+                await this.regionFileStream.ReadAsync(chunk);
+                return chunk;
+            }
+            catch
+            {
+                chunk.Dispose();
+                throw;
+            }
+        }
+        finally
+        {
+            this.semaphore.Release();
+        }
     }
 
     private async Task WriteChunkAsync(Sector sector)
