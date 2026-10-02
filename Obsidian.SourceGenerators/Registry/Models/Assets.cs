@@ -29,10 +29,11 @@ internal sealed class Assets
         Block[] blocks = GetBlocks(files.GetJsonFromArray("blocks"));
         Fluid[] fluids = GetFluids(files.GetJsonFromArray("fluids"));
         Item[] items = GetItems(files.GetJsonFromArray("items"));
-        Tag[] tags = GetTags(files.GetJsonFromArray("tags"), blocks, items, fluids);
+        Dictionary<string, Codec[]> codecs = GetCodecs(files);
+        BiomeEntry[] biomes = [.. codecs["biomes"].Select(biome => new BiomeEntry(biome.Name, biome.RegistryId))];
+        Tag[] tags = GetTags(files.GetJsonFromArray("tags"), blocks, items, fluids, biomes);
 
         IDictionary<string, List<Sound>> sounds = GetSounds(files.GetJsonFromArray("sounds"));
-        Dictionary<string, Codec[]> codecs = GetCodecs(files);
 
         return new Assets(blocks, tags, items, codecs, sounds);
     }
@@ -186,7 +187,7 @@ internal sealed class Assets
         return items.ToArray();
     }
 
-    public static Tag[] GetTags(string? json, Block[] blocks, Item[] items, Fluid[] fluids)
+    public static Tag[] GetTags(string? json, Block[] blocks, Item[] items, Fluid[] fluids, BiomeEntry[] biomes)
     {
         if (json is null)
             return [];
@@ -196,6 +197,7 @@ internal sealed class Assets
         taggables.AddRange(blocks);
         taggables.AddRange(items);
         taggables.AddRange(fluids);
+        taggables.AddRange(biomes);
 
         using var document = JsonDocument.Parse(json);
 
