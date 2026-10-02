@@ -216,7 +216,6 @@ public sealed class StructureTemplate
         var applyWaterlogging = settings.ShouldApplyWaterlogging;
         var toWaterlog = new List<Vector>();
         var placedSources = new HashSet<Vector>();
-        var placed = new List<(Vector Position, NbtCompound? Nbt)>(blocks.Count);
         var min = new Vector(int.MaxValue, int.MaxValue, int.MaxValue);
         var max = new Vector(int.MinValue, int.MinValue, int.MinValue);
 
@@ -224,8 +223,10 @@ public sealed class StructureTemplate
         // by block with randoms seeded from positions, skipping the blocks outside the box's columns first gives the same
         // result for much less work, since a piece is placed once for every chunk it reaches.
         var clip = box is not null && settings.Random is null && !settings.Processors.Any(processor => processor.ProcessesWholeTemplate) ? box : null;
+        var infos = ProcessBlockInfos(level, position, pivot, settings, blocks, clip);
+        var placed = new List<(Vector Position, NbtCompound? Nbt)>(infos.Count);
 
-        foreach (var info in ProcessBlockInfos(level, position, pivot, settings, blocks, clip))
+        foreach (var info in infos)
         {
             var target = info.Position;
             if (box is not null && !box.Value.IsInside(target))
@@ -304,8 +305,10 @@ public sealed class StructureTemplate
     public static List<StructureBlockInfo> ProcessBlockInfos(IWorldGenLevel level, Vector origin, Vector pivot, StructurePlaceSettings settings,
         IReadOnlyList<StructureBlockInfo> blocks, BlockBox? clip = null)
     {
-        var originals = new List<StructureBlockInfo>(blocks.Count);
-        var result = new List<StructureBlockInfo>(blocks.Count);
+        // A clipped template keeps the blocks of a few columns, often a small part of it.
+        var capacity = clip is null ? blocks.Count : 0;
+        var originals = new List<StructureBlockInfo>(capacity);
+        var result = new List<StructureBlockInfo>(capacity);
         foreach (var original in blocks)
         {
             var target = CalculateRelativePosition(settings, original.Position) + origin;
