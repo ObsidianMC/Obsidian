@@ -124,10 +124,17 @@ public sealed class StructureTemplate
     /// Vanilla <c>getZeroPositionWithTransform</c>: the origin to place at so the transformed template covers the same
     /// area as the untransformed one placed at <paramref name="position"/>.
     /// </summary>
-    public Vector GetZeroPositionWithTransform(Vector position, StructureMirror mirror, StructureRotation rotation)
+    public Vector GetZeroPositionWithTransform(Vector position, StructureMirror mirror, StructureRotation rotation) =>
+        GetZeroPositionWithTransform(position, mirror, rotation, this.Size.X, this.Size.Z);
+
+    public Vector GetZeroPositionWithTransform(Vector position, StructureRotation rotation) =>
+        this.GetZeroPositionWithTransform(position, StructureMirror.None, rotation);
+
+    /// <summary>Vanilla's static <c>getZeroPositionWithTransform</c> for a template of the given width and depth.</summary>
+    public static Vector GetZeroPositionWithTransform(Vector position, StructureMirror mirror, StructureRotation rotation, int sizeX, int sizeZ)
     {
-        var maxX = this.Size.X - 1;
-        var maxZ = this.Size.Z - 1;
+        var maxX = sizeX - 1;
+        var maxZ = sizeZ - 1;
         var mirrorX = mirror == StructureMirror.FrontBack ? maxX : 0;
         var mirrorZ = mirror == StructureMirror.LeftRight ? maxZ : 0;
         return rotation switch
@@ -138,9 +145,6 @@ public sealed class StructureTemplate
             _ => position + (mirrorX, 0, mirrorZ)
         };
     }
-
-    public Vector GetZeroPositionWithTransform(Vector position, StructureRotation rotation) =>
-        this.GetZeroPositionWithTransform(position, StructureMirror.None, rotation);
 
     /// <summary>Vanilla <c>getBoundingBox(settings, pos)</c>: the world box the template covers when placed at <paramref name="position"/>.</summary>
     public BlockBox GetBoundingBox(StructurePlaceSettings settings, Vector position) =>
