@@ -220,7 +220,12 @@ public sealed class StructureTemplate
         var min = new Vector(int.MaxValue, int.MaxValue, int.MaxValue);
         var max = new Vector(int.MinValue, int.MinValue, int.MinValue);
 
-        foreach (var info in ProcessBlockInfos(level, position, pivot, settings, blocks))
+        // Vanilla processes every block of the template, then drops those outside the box. When every processor works block
+        // by block with randoms seeded from positions, skipping the blocks outside the box's columns first gives the same
+        // result for much less work, since a piece is placed once for every chunk it reaches.
+        var clip = box is not null && settings.Random is null && !settings.Processors.Any(processor => processor.ProcessesWholeTemplate) ? box : null;
+
+        foreach (var info in ProcessBlockInfos(level, position, pivot, settings, blocks, clip))
         {
             var target = info.Position;
             if (box is not null && !box.Value.IsInside(target))
@@ -294,14 +299,19 @@ public sealed class StructureTemplate
     /// Vanilla <c>processBlockInfos</c>: moves each block to its world position and runs the processors in order,
     /// dropping blocks a processor rejects, then lets each processor finalize the whole list.
     /// </summary>
+    /// <param name="clip">Skips blocks whose world column is outside this box; only for processors that don't depend on the
+    /// other blocks (processors may move blocks vertically, never horizontally).</param>
     public static List<StructureBlockInfo> ProcessBlockInfos(IWorldGenLevel level, Vector origin, Vector pivot, StructurePlaceSettings settings,
-        IReadOnlyList<StructureBlockInfo> blocks)
+        IReadOnlyList<StructureBlockInfo> blocks, BlockBox? clip = null)
     {
         var originals = new List<StructureBlockInfo>(blocks.Count);
         var result = new List<StructureBlockInfo>(blocks.Count);
         foreach (var original in blocks)
         {
             var target = CalculateRelativePosition(settings, original.Position) + origin;
+            if (clip is not null && !clip.Value.Intersects(target.X, target.Z, target.X, target.Z))
+                continue;
+
             StructureBlockInfo? current = original with { Position = target };
 
             foreach (var processor in settings.Processors)

@@ -13,6 +13,8 @@ public sealed class CappedProcessor : StructureProcessor
 
     public required IIntProvider Limit { get; init; }
 
+    public override bool ProcessesWholeTemplate => true;
+
     public override List<StructureBlockInfo> FinalizeProcessing(IWorldGenLevel level, Vector origin, Vector pivot,
         IReadOnlyList<StructureBlockInfo> originals, List<StructureBlockInfo> processed, StructurePlaceSettings settings)
     {

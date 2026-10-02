@@ -9,6 +9,13 @@ public abstract class StructureProcessor
     public string Type { get; init; } = string.Empty;
 
     /// <summary>
+    /// Whether the processor's result for a block depends on the template's other blocks (it uses
+    /// <see cref="FinalizeProcessing"/> or a random shared between blocks), so the whole template must be processed even
+    /// when only part of it is placed.
+    /// </summary>
+    public virtual bool ProcessesWholeTemplate => false;
+
+    /// <summary>
     /// Returns the block to place for <paramref name="current"/>, or <c>null</c> to skip it.
     /// </summary>
     /// <param name="origin">World position of the template's origin.</param>
