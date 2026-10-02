@@ -169,7 +169,11 @@ internal sealed class MultifaceSpreader
                 _ => (position.Offset(direction).Offset(fromFace), direction.Opposite())
             };
 
-            if (this.CanSpreadInto(ref blocks, position, target.Item1, target.Item2))
+            var canSpread = type == SpreadType.SamePosition
+                ? this.CanSpreadIntoCenter(ref blocks, position, direction)
+                : this.CanSpreadInto(ref blocks, position, target.Item1, target.Item2);
+
+            if (canSpread)
                 return target;
         }
 
@@ -180,6 +184,17 @@ internal sealed class MultifaceSpreader
 
     // SculkVeinSpreaderConfig.isOtherBlockValidAsSource: anything but a sculk vein can seed veins.
     private bool IsOtherBlockValidAsSource(int stateInfo) => this.sculkVein && (stateInfo & SculkVeinBit) == 0;
+
+    // CanSpreadInto for the face of the spread's own position, which the spread checks again from each of its faces.
+    private bool CanSpreadIntoCenter(ref Neighborhood blocks, Vector position, BlockFace face)
+    {
+        if (blocks.TryGetCenterCheck(face, out var canSpread))
+            return canSpread;
+
+        canSpread = this.CanSpreadInto(ref blocks, position, position, face);
+        blocks.SetCenterCheck(face, canSpread);
+        return canSpread;
+    }
 
     private bool CanSpreadInto(ref Neighborhood blocks, Vector from, Vector to, BlockFace face)
     {
@@ -315,6 +330,10 @@ internal sealed class MultifaceSpreader
         private NeighborhoodBlocks blocks;
         private NeighborhoodInfos infos;
 
+        // The faces of the center checked for spreading into it, and those the check allowed, until the next write.
+        private int checkedCenterFaces;
+        private int spreadableCenterFaces;
+
         public IBlock Get(Vector position)
         {
             var index = this.Index(position);
@@ -346,7 +365,21 @@ internal sealed class MultifaceSpreader
             if (index >= 0)
                 this.infos[index] = 0;
 
+            this.checkedCenterFaces = 0;
             return level.SetBlock(position, block);
+        }
+
+        public readonly bool TryGetCenterCheck(BlockFace face, out bool canSpread)
+        {
+            canSpread = (this.spreadableCenterFaces >> (int)face & 1) != 0;
+            return (this.checkedCenterFaces >> (int)face & 1) != 0;
+        }
+
+        public void SetCenterCheck(BlockFace face, bool canSpread)
+        {
+            var bit = 1 << (int)face;
+            this.checkedCenterFaces |= bit;
+            this.spreadableCenterFaces = canSpread ? this.spreadableCenterFaces | bit : this.spreadableCenterFaces & ~bit;
         }
 
         private void Read(int index, Vector position)
