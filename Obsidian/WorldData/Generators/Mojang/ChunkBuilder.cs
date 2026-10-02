@@ -107,7 +107,7 @@ internal sealed class ChunkBuilder
     public void ApplySurfaceRules(IChunk chunk)
     {
         this.surfaceBuilder.BuildSurface(chunk, this.GetNoiseChunk(chunk));
-        WorldgenHeightmaps.Update(chunk, this.dimension.MinY, this.dimension.Height);
+        WorldgenHeightmaps.Update(chunk, this.dimension.MinY, ChunkColumns.NonAirHeight(chunk, this.dimension.MinY, this.dimension.Height));
     }
 
     /// <summary>
@@ -117,7 +117,7 @@ internal sealed class ChunkBuilder
     {
         this.carverStep.Apply(chunk, (chunk as Chunk)?.PostProcessing, this.GetNoiseChunk(chunk));
         this.noiseChunks.Remove(chunk);
-        WorldgenHeightmaps.Update(chunk, this.dimension.MinY, this.dimension.Height);
+        WorldgenHeightmaps.Update(chunk, this.dimension.MinY, ChunkColumns.NonAirHeight(chunk, this.dimension.MinY, this.dimension.Height));
     }
 
     private NoiseChunk GetNoiseChunk(IChunk chunk) =>

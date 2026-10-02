@@ -571,7 +571,7 @@ internal sealed class SurfaceBuilder
 
         private int ScanSurfaceHeight(int localX, int localZ)
         {
-            var y = this.builder.minY + this.builder.height - 1;
+            var y = Math.Min(this.builder.minY + this.builder.height - 1, ChunkColumns.HighestNonAirY(this.chunk));
             while (y >= this.builder.minY && this.chunk.GetBlock(localX, y, localZ).IsAir)
                 y--;
 
