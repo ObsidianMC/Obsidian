@@ -74,7 +74,8 @@ public sealed class DataBlockEntity : IBlockEntity
     /// </summary>
     internal static void ApplyBlockChange(IChunk chunk, Vector position, IBlock block)
     {
-        var type = block.BlockEntityType();
+        // The flag is much cheaper than the type lookup, and blocks without it have no type.
+        var type = block.HasBlockEntity() ? block.BlockEntityType() : null;
         if (type is null)
             chunk.RemoveBlockEntity(position.X, position.Y, position.Z);
         else if (chunk.GetBlockEntity(position.X, position.Y, position.Z)?.Id != type)

@@ -1,5 +1,4 @@
 ﻿using Obsidian.API.World.Generator.RandomSources;
-using System.Collections;
 
 namespace Obsidian.WorldData.Features;
 
@@ -63,9 +62,13 @@ public sealed class OreFeature : ConfiguredFeatureBase
         double startY, double endY, int minX, int minY, int minZ, int width, int height)
     {
         var placed = 0;
-        var visited = new BitArray(width * height * width);
         var size = this.Size;
-        var spheres = new double[size * 4];
+
+        // Vanilla's sizes keep both buffers small enough for the stack.
+        var visitedWords = (width * height * width + 63) >> 6;
+        Span<ulong> visited = visitedWords <= 1024 ? stackalloc ulong[visitedWords] : new ulong[visitedWords];
+        visited.Clear();
+        Span<double> spheres = size <= 128 ? stackalloc double[size * 4] : new double[size * 4];
 
         for (var i = 0; i < size; i++)
         {
@@ -143,10 +146,11 @@ public sealed class OreFeature : ConfiguredFeatureBase
                             continue;
 
                         var index = x - minX + (y - minY) * width + (z - minZ) * width * height;
-                        if (visited[index])
+                        var bit = 1UL << index;
+                        if ((visited[index >> 6] & bit) != 0)
                             continue;
 
-                        visited[index] = true;
+                        visited[index >> 6] |= bit;
                         var position = new Vector(x, y, z);
                         if (!level.EnsureCanWrite(position))
                             continue;
@@ -187,9 +191,9 @@ public sealed class OreFeature : ConfiguredFeatureBase
 
     private static bool IsAdjacentToAir(IWorldGenLevel level, Vector position)
     {
-        foreach (var face in Enum.GetValues<BlockFace>())
+        foreach (var face in FeatureHelpers.Directions)
         {
-            if (level.GetBlock(position + face.ToVector()).IsAir)
+            if (level.GetBlock(position.Offset(face)).IsAir)
                 return true;
         }
 
