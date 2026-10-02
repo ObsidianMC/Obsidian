@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Obsidian.Nbt;
+﻿using Obsidian.Nbt;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.ComponentModel.DataAnnotations;
@@ -15,8 +14,6 @@ public sealed class RegionFile : IAsyncDisposable
     private const int HeaderTableSize = 1024;
     private const int SectorSize = 4096;
     private const int MaxSectorSize = 256;
-
-    private readonly ILogger? logger;
 
     private readonly string filePath;
 
@@ -41,7 +38,7 @@ public sealed class RegionFile : IAsyncDisposable
     /// <summary>
     /// Reference Material: <see href="https://wiki.vg/Region_Files#Structure">Region File Structure</see>
     /// </summary>
-    public RegionFile(string filePath, NbtCompression compression, int cubicRegionSize = 32, ILogger? logger = null)
+    public RegionFile(string filePath, NbtCompression compression, int cubicRegionSize = 32)
     {
         this.filePath = filePath;
         this.cubicRegionSize = cubicRegionSize;
@@ -49,7 +46,6 @@ public sealed class RegionFile : IAsyncDisposable
         this.op = cubicRegionSize - 1;
 
         this.regionFileStream = new(this.filePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-        this.logger = logger;
 
         this.Compression = compression;
     }
@@ -124,8 +120,6 @@ public sealed class RegionFile : IAsyncDisposable
             }
             else if (chunkSectorSizeBytesLength > size)
             {
-                logger?.LogTrace("Chunk exceeded original size of ({oldSize}). Attempting resize to ({newSize}).", size, chunkSectorSizeBytesLength);
-
                 offset = this.FindFreeSector(chunkSectorSize);
 
                 if (offset == -1)

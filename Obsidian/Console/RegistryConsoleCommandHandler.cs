@@ -10,7 +10,7 @@ namespace Obsidian.Console;
 /// <summary>
 /// Runs a console line through the server's command handler, as a player's slash command runs; replies land in the log.
 /// </summary>
-public sealed class RegistryConsoleCommandHandler(IServer server, ILogger<RegistryConsoleCommandHandler> logger)
+public sealed partial class RegistryConsoleCommandHandler(IServer server, ILogger<RegistryConsoleCommandHandler> logger)
     : IConsoleCommandHandler
 {
     private readonly ConsoleCommandSender sender = new(logger);
@@ -83,9 +83,15 @@ public sealed class RegistryConsoleCommandHandler(IServer server, ILogger<Regist
         }
         catch (DisallowedCommandIssuerException ex)
         {
-            logger.LogWarning("{Message}", ex.Message);
+            Log.DisallowedIssuer(logger, ex.Message);
         }
 
         return true;
+    }
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Warning, Message = "{Message}")]
+        public static partial void DisallowedIssuer(ILogger logger, string message);
     }
 }

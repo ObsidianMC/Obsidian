@@ -9,7 +9,7 @@ using System.IO;
 
 namespace Obsidian.WorldData;
 
-public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPacketBroadcaster packetBroadcaster, IOptionsMonitor<ServerConfiguration> configuration,
+public sealed partial class World(ILogger<World> logger, IWorldManager worldManager, IPacketBroadcaster packetBroadcaster, IOptionsMonitor<ServerConfiguration> configuration,
     IEventDispatcher eventDispatcher, ILevelGenerator worldGenerator, string name, string seed) :
     AbstractLevel(logger, packetBroadcaster, configuration, eventDispatcher, worldGenerator, name, seed), IWorld
 {
@@ -56,7 +56,7 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
             LevelName = levelCompound.GetString("LevelName")
         };
 
-        Logger.LogInformation("Loading spawn chunks into memory...");
+        Log.Loading(this.Logger, this.Name);
         for (int rx = -1; rx < 1; rx++)
             for (int rz = -1; rz < 1; rz++)
                 LoadRegion(rx, rz);
@@ -159,5 +159,11 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
         // Like vanilla's player inventory tick, after the levels ticked.
         foreach (var player in this.Players.Values.Concat(this.dimensions.Values.SelectMany(dimension => dimension.Players.Values)).Cast<Player>())
             await this.Maps.TickAsync(player);
+    }
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Information, Message = "Loading world {WorldName}")]
+        public static partial void Loading(ILogger logger, string worldName);
     }
 }

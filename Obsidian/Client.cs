@@ -220,8 +220,6 @@ public sealed partial class Client : IClient
         {
             SkinProperties = this.Player.SkinProperties,
         });
-
-        this.Logger.LogDebug("Sent Login success to user {Username} {UUID}", this.Player.Username, this.Player.Uuid);
     }
 
     public async ValueTask DisconnectAsync(ChatMessage reason)
@@ -253,11 +251,7 @@ public sealed partial class Client : IClient
 
         var result = await this.eventDispatcher.ExecuteEventAsync(args);
         if (result == EventResult.Cancelled)
-        {
-            Logger.LogDebug("Packet {PacketId} was sent to the queue, however an event handler has cancelled it.", args.Packet.Id);
-
             return;
-        }
 
         await packetQueue.Writer.WriteAsync(packet, this.cancellationSource.Token);
     }
@@ -304,7 +298,7 @@ public sealed partial class Client : IClient
     {
         if (await this.HasJoinedAsync() is not MojangProfile user)
         {
-            this.Logger.LogWarning("Failed to auth {Username}", this.Player?.Username);
+            Log.AuthenticationFailed(this.Logger, this.Player?.Username);
             await this.DisconnectAsync("Unable to authenticate...");
             return false;
         }
@@ -330,7 +324,7 @@ public sealed partial class Client : IClient
         if (this.Player != null)
             this.Server.RemovePlayer(this.Player);
 
-        this.Logger.LogInformation("Client {ip} disconnected.", this.Ip);
+        Log.Disconnected(this.Logger, this.Ip);
 
         try
         {
@@ -367,23 +361,12 @@ public sealed partial class Client : IClient
                 if (packet == null)
                     continue;
 
-                string name = "";
-
-                if (this.State == ClientState.Login)
-                    PacketsRegistry.Login.ClientboundNames.TryGetValue(packet.Id, out name);
-                else if (this.State == ClientState.Configuration)
-                    PacketsRegistry.Configuration.ClientboundNames.TryGetValue(packet.Id, out name);
-                else if (this.State == ClientState.Play)
-                    PacketsRegistry.Play.ClientboundNames.TryGetValue(packet.Id, out name);
-
-                this.Logger.LogTrace("Sending packet({name})", name);
-
                 this.SendPacket(packet);
             }
         }
         catch (Exception ex) when (ex is OperationCanceledException or TaskCanceledException)
         {
-            this.Logger.LogDebug("Client({id}) packet queue was cancelled", this.Id);
+            // The client disconnected.
         }
     }
 
@@ -396,7 +379,7 @@ public sealed partial class Client : IClient
         }
         catch (Exception ex)
         {
-            this.Logger.LogDebug(ex, "An error has occured handling packet");
+            Log.PacketHandlingFailed(this.Logger, ex, packetData.Id, this.State);
         }
 
         return false;
@@ -417,4 +400,19 @@ public sealed partial class Client : IClient
     {
         Server = this.serviceProvider.GetRequiredService<IServer>()
     };
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Failed to authenticate {Username}")]
+        public static partial void AuthenticationFailed(ILogger logger, string? username);
+
+        [LoggerMessage(Level = LogLevel.Debug, Message = "Client {Ip} disconnected")]
+        public static partial void Disconnected(ILogger logger, string? ip);
+
+        [LoggerMessage(Level = LogLevel.Debug, Message = "Handling packet {PacketId} in state {State} failed")]
+        public static partial void PacketHandlingFailed(ILogger logger, Exception exception, int packetId, ClientState state);
+
+        [LoggerMessage(Level = LogLevel.Debug, Message = "Disconnecting client after socket error {SocketError}")]
+        public static partial void SocketFailed(ILogger logger, SocketError socketError);
+    }
 }

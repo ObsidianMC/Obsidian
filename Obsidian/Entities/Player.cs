@@ -358,7 +358,7 @@ public sealed partial class Player : Avatar, IPlayer
         CodecRegistry.TryGetDimension(Level.DimensionName, out var codec);
         Debug.Assert(codec is not null); // TODO Handle missing codec
 
-        Logger.LogDebug("Loading into world: {}", Level.Name);
+        Log.ChangingLevel(this.Logger, this.Username, this.Level.Name);
 
         await Client.QueuePacketAsync(new RespawnPacket
         {
@@ -704,5 +704,14 @@ public sealed partial class Player : Avatar, IPlayer
         }
 
         return sentAll;
+    }
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Debug, Message = "Moving {Username} to {LevelName}")]
+        public static partial void ChangingLevel(ILogger logger, string username, string levelName);
+
+        [LoggerMessage(Level = LogLevel.Warning, Message = "{Username} has invalid saved data; spawning them at the world spawn")]
+        public static partial void InvalidSavedData(ILogger logger, Exception exception, string username);
     }
 }

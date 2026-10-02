@@ -16,7 +16,7 @@ using System.Threading;
 
 namespace Obsidian.WorldData;
 
-public abstract class AbstractLevel : ILevel
+public abstract partial class AbstractLevel : ILevel
 {
     private bool generated;
 
@@ -462,20 +462,18 @@ public abstract class AbstractLevel : ILevel
             if (Regions.TryGetValue(value, out region))
                 return region;
 
-            region = new Region(regionX, regionZ, FolderPath, logger: this.Logger, minY: this.MinY, height: this.Height)
+            region = new Region(regionX, regionZ, FolderPath, minY: this.MinY, height: this.Height)
             {
                 LockChunk = this.Generator.LockChunkAsync,
                 EntitiesLoaded = this.QueueEntitySpawn,
                 SaveStructureStarts = this.Generator is IStructureStartStorage storage ? storage.SaveStructureStarts : null
             };
-            this.Logger.LogDebug("Trying to add {x}:{z} to {path}", regionX, regionZ, region.RegionFolder);
 
             if (this.Regions.TryAdd(value, region))
                 _ = region.InitAsync();
             else
             {
                 // Another thread added the region first; discard our copy and return existing
-                this.Logger.LogDebug("Region {x}:{z} already exists, using existing region", regionX, regionZ);
                 region = Regions[value]!;
             }
 
@@ -693,7 +691,6 @@ public abstract class AbstractLevel : ILevel
         if (this.generated)
             return;
 
-        Logger.LogInformation("Generating world... (Config pregeneration size is {pregenRange})", this.Configuration.PregenerateChunkRange);
         int pregenerationRange = this.Configuration.PregenerateChunkRange;
 
         // Generators that know where players spawn pick it first, so pregeneration surrounds the spawn.
@@ -703,7 +700,7 @@ public abstract class AbstractLevel : ILevel
             if (spawn is not null)
             {
                 LevelData.SpawnPosition = spawn.Value;
-                Logger.LogInformation("World Spawn set to {worldPos}", spawn.Value);
+                Log.SpawnSet(this.Logger, this.Name, spawn.Value);
             }
         }
 
@@ -729,7 +726,7 @@ public abstract class AbstractLevel : ILevel
         var startChunks = this.ChunksToGenCount;
         var stopwatch = new Stopwatch();
         stopwatch.Start();
-        Logger.LogInformation("{startChunks} chunks to generate...", startChunks);
+        Log.Generating(this.Logger, startChunks, this.Name);
 
         // A window of jobs in queue order: a new job starts as soon as one finishes.
         var jobs = new List<Task>(startChunks);
@@ -809,7 +806,7 @@ public abstract class AbstractLevel : ILevel
 
                     var worldPos = new VectorF(bx + 0.5f + (chunk.X * 16), by + 1, bz + 0.5f + (chunk.Z * 16));
                     LevelData.SpawnPosition = worldPos;
-                    Logger.LogInformation("World Spawn set to {worldPos}", worldPos);
+                    Log.SpawnSet(this.Logger, this.Name, worldPos);
 
                     for (int x = chunk.X - pregenRange; x < chunk.X + pregenRange; x++)
                     {
@@ -823,7 +820,7 @@ public abstract class AbstractLevel : ILevel
                 }
             }
         }
-        Logger.LogWarning("Failed to set World Spawn.");
+        Log.SpawnNotFound(this.Logger, this.Name);
     }
 
     public bool TryAddEntity(IEntity entity)
@@ -850,7 +847,7 @@ public abstract class AbstractLevel : ILevel
             await this.generationSlots.WaitAsync();
 
         if (Interlocked.Exchange(ref this.generationFailure, null) is Exception failure)
-            this.Logger.LogError(failure, "Generating a chunk failed.");
+            Log.ChunkGenerationFailed(this.Logger, failure);
 
         if (generating)
             await this.FlushRegionsAsync();
@@ -868,4 +865,19 @@ public abstract class AbstractLevel : ILevel
     public ValueTask<IBlock?> GetBlockAsync(Vector location) => this.GetBlockAsync(location.X, location.Y, location.Z);
     public ValueTask SetBlockAsync(Vector location, IBlock block) => this.SetBlockAsync(location.X, location.Y, location.Z, block);
     public ValueTask SetBlockAsync(Vector location, IBlock block, bool doBlockUpdate) => this.SetBlockAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Information, Message = "Generating {ChunkCount} chunks for {LevelName}")]
+        public static partial void Generating(ILogger logger, int chunkCount, string levelName);
+
+        [LoggerMessage(Level = LogLevel.Debug, Message = "Spawn of {LevelName} set to {Position}")]
+        public static partial void SpawnSet(ILogger logger, string levelName, VectorF position);
+
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Failed to find a spawn position for {LevelName}")]
+        public static partial void SpawnNotFound(ILogger logger, string levelName);
+
+        [LoggerMessage(Level = LogLevel.Error, Message = "Generating a chunk failed")]
+        public static partial void ChunkGenerationFailed(ILogger logger, Exception exception);
+    }
 }

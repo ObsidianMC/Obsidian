@@ -136,7 +136,7 @@ public partial class Player
         }
         catch (Exception ex)
         {
-            this.Logger.LogWarning(ex, "Player has invalid saved data.");
+            Log.InvalidSavedData(this.Logger, ex, this.Username);
             Position = Level.LevelData.SpawnPosition;//Set spawn here cause the data loaded was invalid
         }
 

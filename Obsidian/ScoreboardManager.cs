@@ -2,7 +2,7 @@
 
 namespace Obsidian;
 
-public sealed class ScoreboardManager : IScoreboardManager
+public sealed partial class ScoreboardManager : IScoreboardManager
 {
     private readonly IServer server;
     private readonly ILogger logger;
@@ -22,9 +22,15 @@ public sealed class ScoreboardManager : IScoreboardManager
     public IScoreboard CreateScoreboard(string name)
     {
         if (!this.scoreboards.Add(name))
-            this.logger.LogWarning("Scoreboard with the name: {name} already exists. This might cause some issues and override already existing scoreboards displaying on clients.", name);
+            Log.DuplicateScoreboard(this.logger, name);
 
         return new Scoreboard(name, this.server.DefaultWorld.PacketBroadcaster, this.server);
+    }
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Scoreboard {Name} already exists; clients may show the new one in its place")]
+        public static partial void DuplicateScoreboard(ILogger logger, string name);
     }
 }
 

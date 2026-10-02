@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Obsidian.API.Events;
+﻿using Obsidian.API.Events;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Handshake.Serverbound;
 using Obsidian.Net.Packets.Login.Clientbound;
@@ -56,16 +55,6 @@ public partial class Client
         if (!this.Connected)
             return false;
 
-        string name = "";
-
-        if (this.State == ClientState.Login)
-            PacketsRegistry.Login.ClientboundNames.TryGetValue(packet.Id, out name);
-        else if (this.State == ClientState.Configuration)
-            PacketsRegistry.Configuration.ClientboundNames.TryGetValue(packet.Id, out name);
-        else if (this.State == ClientState.Play)
-            PacketsRegistry.Play.ClientboundNames.TryGetValue(packet.Id, out name);
-
-        this.Logger.LogDebug("Sending packet({name})", name);
         lock (this.sendLock)
         {
             this.sendBufferMain.WritePacket(packet);
@@ -221,11 +210,7 @@ public partial class Client
                     var result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.Server, packetData.Id, packetData.NetworkBuffer.GetBuffer()));
 
                     if (result == EventResult.Cancelled)
-                    {
-                        this.Logger.LogDebug("configuration packet({id}) {name} was cancelled and is not being processed.",
-                            packetData.Id, PacketsRegistry.Configuration.ServerboundNames[packetData.Id]);
                         return;
-                    }
 
                     await this.HandlePacketAsync(packetData);
                     break;
@@ -235,11 +220,7 @@ public partial class Client
                     result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.Server, packetData.Id, packetData.NetworkBuffer.GetBuffer()));
 
                     if (result == EventResult.Cancelled)
-                    {
-                        this.Logger.LogDebug("play packet({id}) {name} was cancelled and is not being processed.",
-                            packetData.Id, PacketsRegistry.Play.ServerboundNames[packetData.Id]);
                         return;
-                    }
 
                     await this.HandlePacketAsync(packetData);
 
@@ -262,8 +243,6 @@ public partial class Client
             {
                 SkinProperties = this.Player.SkinProperties,
             });
-
-            this.Logger.LogDebug("Sent Login success to user {Username} {UUID}", this.Player.Username, this.Player.Uuid);
 
             this.loginPending = false;
         }
@@ -308,7 +287,7 @@ public partial class Client
         }
         else
         {
-            this.Logger.LogError("An error has occurred: {error}", e.SocketError);
+            Log.SocketFailed(this.Logger, e.SocketError);
             this.Disconnect();
         }
 

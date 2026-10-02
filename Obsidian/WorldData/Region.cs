@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Obsidian.API.Registry.Codecs.Biomes;
+﻿using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Nbt;
@@ -66,7 +65,7 @@ public class Region : IRegion
     private readonly int height;
 
     internal Region(int x, int z, string worldFolderPath, NbtCompression chunkCompression = NbtCompression.ZLib,
-        ILogger? logger = null, int minY = -64, int height = 384)
+        int minY = -64, int height = 384)
     {
         X = x;
         Z = z;
@@ -76,13 +75,12 @@ public class Region : IRegion
         Directory.CreateDirectory(RegionFolder);
         var filePath = Path.Join(RegionFolder, $"r.{X}.{Z}.mca");
 
-        logger?.LogInformation("Loading region file {RegionFile} with compression {Compression}", filePath, chunkCompression);
-        regionFile = new RegionFile(filePath, chunkCompression, CubicRegionSize, logger);
+        regionFile = new RegionFile(filePath, chunkCompression, CubicRegionSize);
         ChunkCompression = chunkCompression;
 
         var entityFolder = Path.Join(worldFolderPath, "entities");
         Directory.CreateDirectory(entityFolder);
-        this.entityRegionFile = new RegionFile(Path.Join(entityFolder, $"r.{X}.{Z}.mca"), chunkCompression, CubicRegionSize, logger);
+        this.entityRegionFile = new RegionFile(Path.Join(entityFolder, $"r.{X}.{Z}.mca"), chunkCompression, CubicRegionSize);
 
         this.initialization = new(() => Task.WhenAll(this.regionFile.InitializeAsync(), this.entityRegionFile.InitializeAsync()));
     }

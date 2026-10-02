@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Obsidian.API.Containers;
+﻿using Obsidian.API.Containers;
 using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Net.Actions.PlayerInfo;
@@ -7,7 +6,7 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
 
 namespace Obsidian.Events;
-public sealed partial class MainEventHandler(ILogger<MainEventHandler> logger) : MinecraftEventHandler
+public sealed partial class MainEventHandler : MinecraftEventHandler
 {
     [EventPriority(Priority = Priority.Internal)]
     public Task OnIncomingChatMessage(IncomingChatMessageEventArgs e)

@@ -37,8 +37,6 @@ public partial record class KeepAlivePacket
             return;
         }
 
-        client.Logger.LogDebug("Doing KeepAlive ({keepAliveId}) with {Username} ({Uuid})", keepAliveId, player.Username, player.Uuid);
-
         this.KeepAliveId = keepAliveId;
 
         client.SendPacket(this);
@@ -54,7 +52,7 @@ public partial record class KeepAlivePacket
 
         if (this.KeepAliveId != client.LastKeepAliveId)
         {
-            client.Logger.LogWarning("Received invalid KeepAlive from {Username}?? Naughty???? ({Uuid})", player.Username, player.Uuid);
+            Log.InvalidKeepAlive(client.Logger, player.Username);
             await client.DisconnectAsync("Kicked for invalid KeepAlive.");
             return;
         }
@@ -65,9 +63,14 @@ public partial record class KeepAlivePacket
         ping = Math.Max(0, ping); // negative ping is impossible.
 
         client.Ping = (int)ping;
-        client.Logger.LogDebug("Valid KeepAlive ({KeepAliveId}) handled from {Username} ({Uuid})", this.KeepAliveId, player.Username, player.Uuid);
         // KeepAlive is handled.
 
         client.LastKeepAliveId = null;
+    }
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Disconnecting {Username}: invalid keep-alive")]
+        public static partial void InvalidKeepAlive(ILogger logger, string username);
     }
 }

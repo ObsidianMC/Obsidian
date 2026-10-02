@@ -168,13 +168,13 @@ public sealed partial class Server : IServer
     public void BroadcastMessage(ChatMessage message)
     {
         this.DefaultWorld.PacketBroadcaster.QueuePacket(new SystemChatPacket(message, false));
-        logger.LogInformation("{message}", message.Text);
+        Log.Broadcast(this.logger, message.Text);
     }
 
     public void BroadcastMessage(IWorld world, ChatMessage message)
     {
         this.DefaultWorld.PacketBroadcaster.QueuePacketToLevel(world, new SystemChatPacket(message, false));
-        logger.LogInformation("{message}", message.Text);
+        Log.Broadcast(this.logger, message.Text);
     }
 
     /// <summary>
@@ -182,9 +182,7 @@ public sealed partial class Server : IServer
     /// </summary>
     public async Task RunAsync()
     {
-        this.logger.LogInformation("SHA / Version: {VERSION}", ServerConstants.VERSION);
-
-        this.logger.LogDebug("Registering events & commands...");
+        Log.Starting(this.logger, this.Version);
 
         this.CommandHandler.RegisterCommands();
         this.EventDispatcher.RegisterEvents();
@@ -197,13 +195,12 @@ public sealed partial class Server : IServer
         StartTime = DateTimeOffset.Now;
         this.Connections = new ConcurrentDictionary<int, IClient>(-1, this.MaxConnections);
 
-        logger.LogInformation("Launching Obsidian Server v{Version}", this.Version);
         var loadTimeStopwatch = Stopwatch.StartNew();
 
         // Check if MPDM and OM are enabled, if so, we can't handle connections
         if (Configuration.Network.MulitplayerDebugMode && Configuration.OnlineMode)
         {
-            logger.LogError("Incompatible Config: Multiplayer debug mode can't be enabled at the same time as online mode since usernames will be overwritten");
+            Log.IncompatibleDebugMode(this.logger);
             await StopAsync();
             return;
         }
@@ -212,16 +209,12 @@ public sealed partial class Server : IServer
 
         await this.userCache.LoadAsync(this.cancelTokenSource.Token);
 
-        logger.LogInformation("Loading properties...");
-
         await (Operators as OperatorList).InitializeAsync();
-
-        logger.LogInformation("Loading plugins...");
 
         await PluginManager.LoadPluginsAsync();
 
         if (!Configuration.OnlineMode)
-            logger.LogInformation("Starting in offline mode...");
+            Log.OfflineMode(this.logger);
 
         CommandsRegistry.Register(this);
 
@@ -230,9 +223,6 @@ public sealed partial class Server : IServer
             LoopAsync(),
             ServerSaveAsync()
         };
-
-        loadTimeStopwatch.Stop();
-        logger.LogInformation("Server loaded in {time}", loadTimeStopwatch.Elapsed);
 
         // Wait for worlds to load. Polling with a delay leaves the cores to world generation instead of spinning one.
         while (!this.WorldManager.ReadyToJoin)
@@ -247,24 +237,21 @@ public sealed partial class Server : IServer
 
         await this.PluginManager.OnServerReadyAsync();
 
-        logger.LogInformation("Listening for new clients...");
+        loadTimeStopwatch.Stop();
+        Log.Ready(this.logger, loadTimeStopwatch.Elapsed, this.Port);
 
         await this.StartAsync(this.Port);
 
+        // A failure here reaches the host, which reports the crash.
         try
         {
             await Task.WhenAll(serverTasks);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "An error has occurred");
-            throw;
         }
         finally
         {
             // Try to shut the server down gracefully.
             await this.StopAsync();
-            logger.LogInformation("The server has been shut down");
+            Log.Stopped(this.logger);
         }
     }
 
@@ -283,8 +270,6 @@ public sealed partial class Server : IServer
         cancelTokenSource.Cancel();
 
         this.socket.Close();
-
-        logger.LogDebug("Saving worlds..");
 
         await WorldManager.FlushLoadedWorldsAsync();
         await WorldManager.DisposeAsync();
@@ -317,7 +302,7 @@ public sealed partial class Server : IServer
         {
             while (await timer.WaitForNextTickAsync(this.cancelTokenSource.Token))
             {
-                logger.LogInformation("Saving world...");
+                Log.SavingWorlds(this.logger);
                 await WorldManager.FlushLoadedWorldsAsync();
                 await this.userCache.SaveAsync();
             }
@@ -376,7 +361,6 @@ public sealed partial class Server : IServer
             await client.DisconnectAsync("Server closed");
         }
 
-        logger.LogInformation("The game loop has been stopped");
         await WorldManager.FlushLoadedWorldsAsync();
     }
 
@@ -400,11 +384,44 @@ public sealed partial class Server : IServer
 
         if (DateTimeOffset.UtcNow < timeLeft)
         {
-            this.logger.LogDebug("{ip} has been throttled for reconnecting too fast.", client.Ip!);
+            Log.Throttled(this.logger, client.Ip!);
             await client.DisconnectAsync("Connection Throttled! Please wait before reconnecting.");
             return true;
         }
 
         return false;
+    }
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Information, Message = "Starting Obsidian {Version}")]
+        public static partial void Starting(ILogger logger, string version);
+
+        [LoggerMessage(Level = LogLevel.Error, Message = "Multiplayer debug mode can't be enabled together with online mode, since it overwrites usernames")]
+        public static partial void IncompatibleDebugMode(ILogger logger);
+
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Running in offline mode; player identities are not verified")]
+        public static partial void OfflineMode(ILogger logger);
+
+        [LoggerMessage(Level = LogLevel.Information, Message = "Server ready in {Elapsed}, listening on port {Port}")]
+        public static partial void Ready(ILogger logger, TimeSpan elapsed, int port);
+
+        [LoggerMessage(Level = LogLevel.Information, Message = "Server stopped")]
+        public static partial void Stopped(ILogger logger);
+
+        [LoggerMessage(Level = LogLevel.Information, Message = "{Message}")]
+        public static partial void Broadcast(ILogger logger, string message);
+
+        [LoggerMessage(Level = LogLevel.Debug, Message = "Saving worlds")]
+        public static partial void SavingWorlds(ILogger logger);
+
+        [LoggerMessage(Level = LogLevel.Debug, Message = "Throttled {Ip} for reconnecting too quickly")]
+        public static partial void Throttled(ILogger logger, string ip);
+
+        [LoggerMessage(Level = LogLevel.Error, Message = "Accepting a connection failed with socket error {SocketError}")]
+        public static partial void AcceptFailed(ILogger logger, System.Net.Sockets.SocketError socketError);
+
+        [LoggerMessage(Level = LogLevel.Information, Message = "Rejected {Ip}: not whitelisted")]
+        public static partial void NotWhitelisted(ILogger logger, string ip);
     }
 }

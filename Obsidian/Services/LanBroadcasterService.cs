@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading;
 
 namespace Obsidian.Services;
-public sealed class LanBroadcasterService : BackgroundService
+public sealed partial class LanBroadcasterService : BackgroundService
 {
     private readonly IDisposable optionsChanged;
     private readonly ILogger<LanBroadcasterService> logger;
@@ -48,7 +48,7 @@ public sealed class LanBroadcasterService : BackgroundService
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            this.logger.LogError(ex, "An error occurred while broadcasting LAN information.");
+            Log.BroadcastFailed(this.logger, ex);
         }
     }
 
@@ -56,5 +56,11 @@ public sealed class LanBroadcasterService : BackgroundService
     {
         this.optionsChanged.Dispose();
         base.Dispose();
+    }
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Error, Message = "Broadcasting to the LAN failed")]
+        public static partial void BroadcastFailed(ILogger logger, Exception exception);
     }
 }

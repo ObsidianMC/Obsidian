@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Obsidian.Utilities.Collections;
 using System.Net;
 using System.Net.Sockets;
@@ -80,7 +79,7 @@ public partial class Server
             await this.TryProcessClientAsync(client);
         }
         else
-            this.logger.LogError("An error has occurred on a socket with the error {error}.", e.SocketError);
+            Log.AcceptFailed(this.logger, e.SocketError);
 
         await this.Accept(e);
     }
@@ -94,7 +93,7 @@ public partial class Server
         var ip = client.Ip;
         if (Configuration.Whitelist && !WhitelistConfiguration.CurrentValue.WhitelistedIps.Contains(ip))
         {
-            logger.LogInformation("{ip} is not whitelisted. Closing connection", ip);
+            Log.NotWhitelisted(this.logger, ip);
             await client.DisconnectAsync("Not whitelisted.");
             return;
         }
@@ -102,10 +101,7 @@ public partial class Server
         if (this.Configuration.Network.ShouldThrottle)
         {
             if (throttler.TryGetValue(ip, out var time) && time <= DateTimeOffset.UtcNow)
-            {
                 throttler.Remove(ip, out _);
-                logger.LogDebug("Removed {ip} from throttler", ip);
-            }
         }
 
         this.Connections.TryAdd(client.Id, client);
