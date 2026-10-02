@@ -41,13 +41,24 @@ public sealed class MultifaceGrowthFeature : ConfiguredFeatureBase
         if (!level.EnsureCanWrite(origin) || !IsAirOrWater(level.GetBlock(origin)))
             return false;
 
-        var directions = FeatureHelpers.ShuffledCopy(this.ValidDirections, random);
+        var validDirections = this.ValidDirections;
+        Span<BlockFace> directions = stackalloc BlockFace[validDirections.Length];
+        validDirections.CopyTo(directions);
+        FeatureHelpers.Shuffle(directions, random);
         if (this.PlaceGrowthIfPossible(level, origin, level.GetBlock(origin), random, directions))
             return true;
 
+        Span<BlockFace> others = stackalloc BlockFace[validDirections.Length];
         foreach (var direction in directions)
         {
-            var others = FeatureHelpers.ShuffledCopy(this.ValidDirections.Where(face => face != direction.Opposite()), random);
+            var otherCount = 0;
+            foreach (var face in validDirections)
+            {
+                if (face != direction.Opposite())
+                    others[otherCount++] = face;
+            }
+
+            FeatureHelpers.Shuffle(others[..otherCount], random);
 
             for (var i = 0; i < this.SearchRange; i++)
             {
@@ -57,7 +68,7 @@ public sealed class MultifaceGrowthFeature : ConfiguredFeatureBase
                 if (!IsAirOrWater(state) && state.RegistryId != this.Spreader.Block.RegistryId)
                     break;
 
-                if (this.PlaceGrowthIfPossible(level, position, state, random, others))
+                if (this.PlaceGrowthIfPossible(level, position, state, random, others[..otherCount]))
                     return true;
             }
         }
@@ -65,7 +76,7 @@ public sealed class MultifaceGrowthFeature : ConfiguredFeatureBase
         return false;
     }
 
-    private bool PlaceGrowthIfPossible(IWorldGenLevel level, Vector position, IBlock state, IRandomSource random, List<BlockFace> directions)
+    private bool PlaceGrowthIfPossible(IWorldGenLevel level, Vector position, IBlock state, IRandomSource random, ReadOnlySpan<BlockFace> directions)
     {
         foreach (var direction in directions)
         {
