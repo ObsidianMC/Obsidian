@@ -59,7 +59,6 @@ public static class StrongholdPieces
     private static readonly IBlock cobblestone = BlocksRegistry.Get(Material.Cobblestone);
     private static readonly IBlock lava = BlocksRegistry.Get(Material.Lava);
     private static readonly IBlock wallTorch = BlocksRegistry.Get(Material.WallTorch);
-    private static readonly SmoothStoneSelector smoothStoneSelector = new();
 
     internal enum PieceKind
     {
@@ -206,6 +205,9 @@ public static class StrongholdPieces
     /// <summary>
     /// Vanilla's <c>SmoothStoneSelector</c>: stone bricks, partly cracked, mossy or infested, around cave air.
     /// </summary>
+    /// <remarks>
+    /// It holds the block it picked, so each placement makes its own: pieces are placed from several chunks at once.
+    /// </remarks>
     private sealed class SmoothStoneSelector : StructurePiece.BlockSelector
     {
         private static readonly IBlock cracked = BlocksRegistry.Get(Material.CrackedStoneBricks);
@@ -389,6 +391,7 @@ public static class StrongholdPieces
 
         public override void PostProcess(StructurePieceContext context)
         {
+            var smoothStoneSelector = new SmoothStoneSelector();
             var level = context.Level;
             var box = context.Box;
             var random = context.Random;
@@ -524,6 +527,7 @@ public static class StrongholdPieces
 
         public override void PostProcess(StructurePieceContext context)
         {
+            var smoothStoneSelector = new SmoothStoneSelector();
             var level = context.Level;
             var box = context.Box;
             var random = context.Random;
@@ -591,6 +595,7 @@ public static class StrongholdPieces
 
         public override void PostProcess(StructurePieceContext context)
         {
+            var smoothStoneSelector = new SmoothStoneSelector();
             var level = context.Level;
             var box = context.Box;
             this.GenerateBox(level, box, 0, 0, 0, 4, 4, 4, true, context.Random, smoothStoneSelector);
@@ -633,6 +638,7 @@ public static class StrongholdPieces
 
         public override void PostProcess(StructurePieceContext context)
         {
+            var smoothStoneSelector = new SmoothStoneSelector();
             var level = context.Level;
             var box = context.Box;
             this.GenerateBox(level, box, 0, 0, 0, 4, 4, 4, true, context.Random, smoothStoneSelector);
@@ -674,6 +680,7 @@ public static class StrongholdPieces
 
         public override void PostProcess(StructurePieceContext context)
         {
+            var smoothStoneSelector = new SmoothStoneSelector();
             var level = context.Level;
             var box = context.Box;
             var random = context.Random;
@@ -803,6 +810,7 @@ public static class StrongholdPieces
 
         public override void PostProcess(StructurePieceContext context)
         {
+            var smoothStoneSelector = new SmoothStoneSelector();
             var level = context.Level;
             var box = context.Box;
             var random = context.Random;
@@ -910,6 +918,7 @@ public static class StrongholdPieces
 
         public override void PostProcess(StructurePieceContext context)
         {
+            var smoothStoneSelector = new SmoothStoneSelector();
             var level = context.Level;
             var box = context.Box;
             var random = context.Random;
@@ -975,6 +984,7 @@ public static class StrongholdPieces
 
         public override void PostProcess(StructurePieceContext context)
         {
+            var smoothStoneSelector = new SmoothStoneSelector();
             var level = context.Level;
             var box = context.Box;
             var random = context.Random;
@@ -1119,6 +1129,7 @@ public static class StrongholdPieces
 
         public override void PostProcess(StructurePieceContext context)
         {
+            var smoothStoneSelector = new SmoothStoneSelector();
             var level = context.Level;
             var box = context.Box;
             this.GenerateBox(level, box, 0, 0, 0, 4, 10, 4, true, context.Random, smoothStoneSelector);
@@ -1226,6 +1237,7 @@ public static class StrongholdPieces
 
         public override void PostProcess(StructurePieceContext context)
         {
+            var smoothStoneSelector = new SmoothStoneSelector();
             var level = context.Level;
             var box = context.Box;
             var random = context.Random;
@@ -1269,6 +1281,7 @@ public static class StrongholdPieces
 
         public override void PostProcess(StructurePieceContext context)
         {
+            var smoothStoneSelector = new SmoothStoneSelector();
             var level = context.Level;
             var box = context.Box;
             this.GenerateBox(level, box, 0, 0, 0, 4, 10, 7, true, context.Random, smoothStoneSelector);

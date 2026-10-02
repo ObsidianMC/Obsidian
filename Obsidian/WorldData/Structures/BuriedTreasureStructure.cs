@@ -41,16 +41,16 @@ public sealed class BuriedTreasurePiece(Vector position) : StructurePiece(0, new
                 continue;
             }
 
-            var cover = !block.IsAir && !IsDefaultLiquid(block) ? block : BlocksRegistry.Get(Material.Sand);
+            var cover = !block.IsAir && !IsLiquid(block) ? block : BlocksRegistry.Get(Material.Sand);
             foreach (var face in FeatureHelpers.Directions)
             {
                 var neighbor = position.Offset(face);
                 var neighborBlock = level.GetBlock(neighbor);
-                if (!neighborBlock.IsAir && !IsDefaultLiquid(neighborBlock))
+                if (!neighborBlock.IsAir && !IsLiquid(neighborBlock))
                     continue;
 
                 var underNeighbor = level.GetBlock(neighbor + Vector.Down);
-                level.SetBlock(neighbor, (underNeighbor.IsAir || IsDefaultLiquid(underNeighbor)) && face != BlockFace.Up ? below : cover);
+                level.SetBlock(neighbor, (underNeighbor.IsAir || IsLiquid(underNeighbor)) && face != BlockFace.Up ? below : cover);
             }
 
             // Like vanilla, the piece shrinks to the chest.
@@ -60,6 +60,6 @@ public sealed class BuriedTreasurePiece(Vector position) : StructurePiece(0, new
         }
     }
 
-    private static bool IsDefaultLiquid(IBlock block) =>
-        block.IsSameState(BlocksRegistry.Get(Material.Water)) || block.IsSameState(BlocksRegistry.Get(Material.Lava));
+    // Vanilla checks the block, so flowing water and lava count too.
+    private static bool IsLiquid(IBlock block) => block.Material is Material.Water or Material.Lava;
 }
