@@ -69,8 +69,9 @@ internal sealed class TerrainGenerator : IStructureTerrain
                     var minLocalZ = cellZ * cellWidth;
                     var cellMinX = noiseChunk.ChunkMinX + minLocalX;
                     var cellMinZ = noiseChunk.ChunkMinZ + minLocalZ;
-                    var bearded = beardifier.Affects(new BlockBox(new Vector(cellMinX, cellMinY, cellMinZ),
+                    var cellBeardifier = beardifier.Within(new BlockBox(new Vector(cellMinX, cellMinY, cellMinZ),
                         new Vector(cellMinX + cellWidth - 1, cellMinY + cellHeight - 1, cellMinZ + cellWidth - 1)));
+                    var bearded = cellBeardifier != Beardifier.Empty;
 
                     var i = 0;
                     for (var inCellY = 0; inCellY < cellHeight; inCellY++)
@@ -86,18 +87,27 @@ internal sealed class TerrainGenerator : IStructureTerrain
                             {
                                 var x = cellMinX + inCellX;
                                 // Like vanilla, the beardifier is added to the final density per block, inside the cell cache.
-                                var density = densities[i] + (bearded ? beardifier.Compute(x, y, z) : 0.0);
+                                var density = densities[i] + (bearded ? cellBeardifier.Compute(x, y, z) : 0.0);
 
+                                // Aquifers leave solid positions alone (and don't schedule them), so those skip the call.
                                 byte code;
-                                if (aquifer.ComputeSubstance(x, y, z, density) is { } substance)
+                                var scheduleFluidUpdate = false;
+                                if (!(density > 0.0) && aquifer.ComputeSubstance(x, y, z, density) is { } substance)
+                                {
                                     code = palette.CodeOf(substance);
+                                    scheduleFluidUpdate = palette.IsLiquid(code) && aquifer.ShouldScheduleFluidUpdate;
+                                }
                                 else if (hasVeins && OreVeinifier.Compute(noiseChunk, x, y, z, veinToggles[i]) is { } vein)
+                                {
                                     code = palette.CodeOf(vein);
+                                }
                                 else
+                                {
                                     code = FillPalette.DefaultCode;
+                                }
 
                                 codes[row + inCellX] = code;
-                                scheduled[row + inCellX] = palette.IsLiquid(code) && aquifer.ShouldScheduleFluidUpdate;
+                                scheduled[row + inCellX] = scheduleFluidUpdate;
                             }
                         }
                     }

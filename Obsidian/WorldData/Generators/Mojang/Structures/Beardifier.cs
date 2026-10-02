@@ -78,9 +78,36 @@ internal sealed class Beardifier
     }
 
     /// <summary>
-    /// Whether <see cref="Compute"/> can be non-zero anywhere in the box.
+    /// This beardifier with only the pieces and junctions that can add density inside <paramref name="box"/>, or
+    /// <see cref="Empty"/> when none can. <see cref="Compute"/> returns the same values inside the box: the others add
+    /// exactly 0 there, which doesn't change a sum that starts at 0.
     /// </summary>
-    public bool Affects(BlockBox box) => this.affectedBox is not null && this.affectedBox.Value.Intersects(box);
+    public Beardifier Within(BlockBox box)
+    {
+        if (this.affectedBox is null || !this.affectedBox.Value.Intersects(box))
+            return Empty;
+
+        var pieces = new List<Rigid>();
+        foreach (var piece in this.pieces)
+        {
+            // Every adjustment's contribution vanishes 12 blocks away from the box and its ground level.
+            var groundY = piece.Box.MinY + piece.GroundLevelDelta;
+            var reach = new BlockBox(new Vector(piece.Box.MinX, Math.Min(piece.Box.MinY, groundY), piece.Box.MinZ),
+                new Vector(piece.Box.MaxX, Math.Max(piece.Box.MaxY, groundY), piece.Box.MaxZ)).InflatedBy(KernelRadius);
+            if (reach.Intersects(box))
+                pieces.Add(piece);
+        }
+
+        var junctions = new List<JigsawJunction>();
+        foreach (var junction in this.junctions)
+        {
+            var source = new Vector(junction.SourceX, junction.SourceGroundY, junction.SourceZ);
+            if (new BlockBox(source, source).InflatedBy(KernelRadius).Intersects(box))
+                junctions.Add(junction);
+        }
+
+        return pieces.Count == 0 && junctions.Count == 0 ? Empty : new Beardifier(pieces, junctions, this.affectedBox);
+    }
 
     /// <summary>
     /// The density to add at a block.
