@@ -45,7 +45,7 @@ public sealed partial class FallingBlock : Entity
             checkedBlocks.Add(upcomingBlockPos);
 
             var upcomingBlock = await Level.GetBlockAsync(upcomingBlockPos);
-            if (upcomingBlock is IBlock && !TagsRegistry.Block.ReplaceableByLiquid.Entries.Contains(upcomingBlock.RegistryId) && !upcomingBlock.IsLiquid)
+            if (upcomingBlock is IBlock && !upcomingBlock.IsFreeForFallingBlock())
             {
                 await ConvertToBlock(upcomingBlockPos + Vector.Up);
             }

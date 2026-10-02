@@ -113,6 +113,20 @@ internal static class BlockPhysics
     public static bool IsFallingBlock(this IBlock block) =>
         block.BlockClass() is "ColoredFallingBlock" or "SandBlock" or "ConcretePowderBlock" or "AnvilBlock" or "DragonEggBlock";
 
+    /// <summary>
+    /// Whether the block falls when there's nothing below it: a vanilla <c>FallingBlock</c> or a <c>BrushableBlock</c>
+    /// (suspicious sand and gravel).
+    /// </summary>
+    public static bool IsGravityAffected(this IBlock block) => block.IsFallingBlock() || block.BlockClass() == "BrushableBlock";
+
+    /// <summary>
+    /// Vanilla <c>FallingBlock.isFree</c>: a falling block can fall into the block.
+    /// </summary>
+    /// <remarks>
+    /// Vanilla also checks for air, fire and liquids, but those blocks are all replaceable.
+    /// </remarks>
+    public static bool IsFreeForFallingBlock(this IBlock block) => block.CanBeReplaced();
+
     public static int LightEmission(this IBlock block) => (Flags(block) >> 17) & 15;
 
     public static FluidKind GetFluid(this IBlock block) => (FluidKind)((Flags(block) >> 25) & 7);

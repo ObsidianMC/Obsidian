@@ -19,7 +19,7 @@ internal static class BlockUpdates
         var position = blockUpdate.Position;
         var material = blockUpdate.Block.Material;
         if (await world.GetBlockAsync(position + Vector.Down) is IBlock below &&
-            (TagsRegistry.Block.ReplaceableByLiquid.Entries.Contains(below.RegistryId) || below.IsLiquid))
+            below.IsFreeForFallingBlock())
         {
             await world.SetBlockAsync(position, BlocksRegistry.Air);
             world.SpawnFallingBlock(position, material);

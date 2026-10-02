@@ -17,7 +17,7 @@ public struct BlockUpdate : IBlockUpdate
         {
             field = value;
             // Only falling blocks wait; fluids run through their own scheduled ticks (see LevelFluids).
-            if (value is not null && TagsRegistry.Block.GravityAffected.Entries.Contains(value.RegistryId))
+            if (value is not null && value.IsGravityAffected())
             {
                 Delay = 1;
             }

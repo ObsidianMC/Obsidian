@@ -6,6 +6,14 @@ namespace Obsidian.Net.Packets.Play.Serverbound;
 
 public partial class UseItemOnPacket
 {
+    // Blocks whose screen opens through the interact event when used without sneaking. Vanilla has no tag for these.
+    private static readonly HashSet<Material> interactableBlocks =
+    [
+        Material.Chest, Material.EnderChest, Material.TrappedChest, Material.Anvil, Material.ChippedAnvil,
+        Material.DamagedAnvil, Material.Hopper, Material.Smoker, Material.Furnace, Material.CraftingTable,
+        Material.Barrel, Material.BlastFurnace, Material.Grindstone, Material.BrewingStand
+    ];
+
     [Field(0), ActualType(typeof(int)), VarLength]
     public Hand Hand { get; private set; } // Hand it was placed from. 0 = Main, 1 = Off
 
@@ -49,7 +57,7 @@ public partial class UseItemOnPacket
         if (b is null)
             return;
 
-        if (TagsRegistry.Block.PlayersCanInteract.Entries.Contains(b.RegistryId) && !player.Sneaking)
+        if (interactableBlocks.Contains(b.Material) && !player.Sneaking)
         {
             await server.EventDispatcher.ExecuteEventAsync(new PlayerInteractEventArgs(player, server)
             {
@@ -120,10 +128,10 @@ public partial class UseItemOnPacket
                 break;
         }
 
-        if (TagsRegistry.Block.GravityAffected.Entries.Contains(block.RegistryId))
+        if (block.IsGravityAffected())
         {
             if (await player.Level.GetBlockAsync(position + Vector.Down) is IBlock below &&
-                (TagsRegistry.Block.ReplaceableByLiquid.Entries.Contains(below.RegistryId) || below.IsLiquid))
+                below.IsFreeForFallingBlock())
             {
                 await player.Level.SetBlockAsync(position, BlocksRegistry.Air, true);
                 player.Client.SendPacket(new BlockChangedAckPacket

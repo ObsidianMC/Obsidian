@@ -651,7 +651,7 @@ public abstract class AbstractLevel : ILevel
             return false;
 
         // Fluids react to block changes through their scheduled ticks instead (see LevelFluids).
-        if (TagsRegistry.Block.GravityAffected.Entries.Contains(block.RegistryId))
+        if (block.IsGravityAffected())
             return await BlockUpdates.HandleFallingBlock(update);
 
         return false;
