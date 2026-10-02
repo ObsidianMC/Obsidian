@@ -17,6 +17,8 @@ internal sealed class ColumnCache : IDensityFunction
 
     public double MaxValue => this.argument.MaxValue;
 
+    public IDensityFunction Argument => this.argument;
+
     public ColumnCache(IDensityFunction argument) => this.argument = argument;
 
     public double GetValue(double x, double y, double z)

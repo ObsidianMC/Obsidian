@@ -268,6 +268,7 @@ internal sealed class NoiseChunk
             this.Compile(rangeChoice.WhenInRange), this.Compile(rangeChoice.WhenOutOfRange), this.CellSize),
         BlendDensityFunction blend => this.Compile(blend.Argument),
         CacheOnce cacheOnce => this.Compile(cacheOnce.Argument),
+        ColumnCache columnCache => this.Compile(columnCache.Argument),
         _ => new PointFiller(function)
     };
 
@@ -374,7 +375,11 @@ internal sealed class NoiseChunk
                     ? new CellInterpolator(this.chunk, this.Map(interpolated.Argument), this.order, interpolated)
                     : function.MapAll(this);
 
-                if (this.chunk.RandomState.SharedFunctions.Contains(function))
+                // Cell corners are sampled a column at a time, so noises that don't depend on Y (like the jagged noise in
+                // sloped cheese) remember their last column, and shared functions their last position.
+                if (function is NoiseDensityFunction or ShiftedNoiseDensityFunction && this.chunk.RandomState.IsYIndependent(function))
+                    result = new ColumnCache(result);
+                else if (this.chunk.RandomState.SharedFunctions.Contains(function))
                     result = new CacheOnce(result);
 
                 this.mapped[function] = result;
