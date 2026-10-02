@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Obsidian.API.Configuration;
 using Obsidian.Hosting;
 using System.Diagnostics;
@@ -11,12 +10,11 @@ using System.Threading;
 
 namespace Obsidian.WorldData;
 
-public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceProvider serviceProvider, IOptionsMonitor<ServerConfiguration> configuration,
+public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceProvider serviceProvider,
     IServerEnvironment serverEnvironment, ILevelFactory levelFactory) : BackgroundService, IWorldManager
 {
     private readonly ILogger<WorldManager> logger = logger;
     private readonly Dictionary<string, IWorld> worlds = [];
-    private readonly IOptionsMonitor<ServerConfiguration> configuration = configuration;
     private readonly IServerEnvironment serverEnvironment = serverEnvironment;
     private readonly ILevelFactory levelFactory = levelFactory;
     private readonly IServiceScope serviceScope = serviceProvider.CreateScope();

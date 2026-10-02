@@ -1,5 +1,6 @@
 using Obsidian.API.World.Generator;
 using Obsidian.Providers.BlockStateProviders;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.Registries;
 
@@ -13,6 +14,8 @@ internal static partial class BlocksRegistry
     private static readonly Material[] registryMaterials;
 
     public static int GlobalBitsPerBlocks { get; private set; }
+
+    [SuppressMessage("Performance", "CA1810", Justification = "Reads the generated tables (Names, StateToNumeric) of other parts of this class, and the order of initializers across parts is unspecified.")]
     static BlocksRegistry()
     {
         defaultBlocks = new IBlock[Names.Length];

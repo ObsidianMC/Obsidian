@@ -291,15 +291,15 @@ public partial class NetworkBuffer : INetStreamWriter
         foreach (var criteria in advancement.Criteria)
             this.WriteString(criteria.Identifier);
 
-        var reqired = advancement.Criteria.Where(x => x.Required);
+        var reqired = advancement.Criteria.Where(x => x.Required).ToList();
 
         //For some reason this takes a array of an array??
-        if (reqired.Any())
+        if (reqired.Count > 0)
         {
             //Always gonna be 1 for now
             this.WriteVarInt(1);
 
-            this.WriteVarInt(reqired.Count());
+            this.WriteVarInt(reqired.Count);
 
             foreach (var criteria in reqired)
                 this.WriteString(criteria.Identifier);
@@ -703,7 +703,6 @@ public partial class NetworkBuffer : INetStreamWriter
 
     public byte[] ToArray() => this.data;
 
-    private const double MaxVelocityComponent = 1.7179869183E10;
     private const double MaxQuantizedValue = short.MaxValue - 1;
     private const double VelocityPackingScale = 0.5;
     private const long ContinuiationBit = 0x04L;

@@ -597,7 +597,7 @@ public sealed partial class Player : Avatar, IPlayer
 
     public bool HasAnyPermission(IEnumerable<string> permissions) => permissions.Any(x => HasPermission(x));
 
-    public bool HasAllPermissions(IEnumerable<string> permissions) => permissions.Count(x => HasPermission(x)) == permissions.Count();
+    public bool HasAllPermissions(IEnumerable<string> permissions) => permissions.All(x => HasPermission(x));
 
     public byte GetNextContainerId()
     {

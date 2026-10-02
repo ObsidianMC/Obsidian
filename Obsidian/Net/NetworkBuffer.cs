@@ -6,8 +6,6 @@ namespace Obsidian.Net;
 /// </summary>
 public partial class NetworkBuffer
 {
-    private const int DefaultInitialCapacity = 64;
-
     protected byte[] data;
     protected int size;
     protected int offset;

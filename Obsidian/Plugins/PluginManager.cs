@@ -67,7 +67,7 @@ public sealed partial class PluginManager : IAsyncDisposable
         this.logger = logger;
         this.configuration = configuration;
         this.serverProvider = serverProvider;
-        this.pluginRegistry = new PluginRegistry(this, eventDispatcher, commandHandler, logger);
+        this.pluginRegistry = new PluginRegistry(this, eventDispatcher, commandHandler);
 
         packedPluginProvider = new(this, logger);
 

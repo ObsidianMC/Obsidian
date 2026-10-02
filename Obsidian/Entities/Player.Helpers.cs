@@ -291,9 +291,9 @@ public partial class Player
     {
         var items = inventory ? Inventory.Select((item, slot) => (item, slot)) : EnderInventory.Select((item, slot) => (item, slot));
 
-        var nonNullItems = items.Where(x => x.item != null);
+        var nonNullItems = items.Where(x => x.item != null).ToList();
 
-        writer.WriteListStart(inventory ? "Inventory" : "EnderItems", NbtTagType.Compound, nonNullItems.Count());
+        writer.WriteListStart(inventory ? "Inventory" : "EnderItems", NbtTagType.Compound, nonNullItems.Count);
 
         foreach (var (item, slot) in nonNullItems)
         {
@@ -315,7 +315,7 @@ public partial class Player
             writer.EndCompound();
         }
 
-        if (!nonNullItems.Any())
+        if (nonNullItems.Count == 0)
             writer.Write(NbtTagType.End);
 
         writer.EndList();

@@ -847,7 +847,8 @@ internal sealed class WoodlandMansionLayout
     /// <summary>A grid of cells with a value for cells outside it, like vanilla's <c>SimpleGrid</c>.</summary>
     private sealed class Grid(int width, int height, int valueIfOutside)
     {
-        private readonly int[,] cells = new int[width, height];
+        // Row-major: cell (x, y) is at y * Width + x.
+        private readonly int[] cells = new int[width * height];
 
         public int Width { get; } = width;
 
@@ -856,7 +857,7 @@ internal sealed class WoodlandMansionLayout
         public void Set(int x, int y, int value)
         {
             if (x >= 0 && x < this.Width && y >= 0 && y < this.Height)
-                this.cells[x, y] = value;
+                this.cells[y * this.Width + x] = value;
         }
 
         public void Set(int minX, int minY, int maxX, int maxY, int value)
@@ -868,7 +869,7 @@ internal sealed class WoodlandMansionLayout
             }
         }
 
-        public int Get(int x, int y) => x >= 0 && x < this.Width && y >= 0 && y < this.Height ? this.cells[x, y] : valueIfOutside;
+        public int Get(int x, int y) => x >= 0 && x < this.Width && y >= 0 && y < this.Height ? this.cells[y * this.Width + x] : valueIfOutside;
 
         public void SetIf(int x, int y, int expected, int value)
         {

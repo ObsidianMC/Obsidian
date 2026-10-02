@@ -267,7 +267,7 @@ public sealed partial class Server : IServer
 
     public async Task StopAsync()
     {
-        cancelTokenSource.Cancel();
+        await cancelTokenSource.CancelAsync();
 
         this.socket.Close();
 

@@ -50,7 +50,7 @@ public static class OverworldDecorator
                 var decorator = DecoratorFactory.GetDecorator(biome, chunk, chunkPos, helper);
 
                 decorator.Decorate();
-                GenerateTrees(chunkPos + (chunk.X << 4, 0, chunk.Z << 4), decorator.Features, helper, treeLevel);
+                PlaceTrees(chunkPos + (chunk.X << 4, 0, chunk.Z << 4), decorator.Features, helper, treeLevel);
                 await GenerateFloraAsync(chunkPos + (chunk.X << 4, 0, chunk.Z << 4), decorator.Features, helper, chunk);
             }
         }
@@ -81,7 +81,7 @@ public static class OverworldDecorator
     }
 
     /// <summary>
-    /// Like <see cref="GenerateTrees"/>, over the already loaded chunks around <paramref name="pos"/>.
+    /// Like <see cref="PlaceTrees"/>, over the already loaded chunks around <paramref name="pos"/>.
     /// </summary>
     internal static async Task GenerateTreesAsync(Vector pos, DecoratorFeatures features, GenHelper helper)
     {
@@ -89,14 +89,15 @@ public static class OverworldDecorator
             return;
 
         var level = await LegacyTreeLevel.CreateAsync(pos.X >> 4, pos.Z >> 4, helper, center: null);
-        GenerateTrees(pos, features, helper, level);
+        PlaceTrees(pos, features, helper, level);
     }
 
     /// <summary>
     /// Places the biome's trees on the surface block at <paramref name="pos"/> (world coordinates) using the
-    /// synchronous feature API over <paramref name="level"/>.
+    /// synchronous feature API over <paramref name="level"/>. <see cref="DecorateAsync"/> shares one level across a
+    /// chunk's columns rather than building one per column as <see cref="GenerateTreesAsync"/> does.
     /// </summary>
-    internal static void GenerateTrees(Vector pos, DecoratorFeatures features, GenHelper helper, IWorldGenLevel level)
+    internal static void PlaceTrees(Vector pos, DecoratorFeatures features, GenHelper helper, IWorldGenLevel level)
     {
         for (int i = 0; i < features.Trees.Count; i++)
         {

@@ -24,7 +24,7 @@ public sealed partial class ScoreboardManager : IScoreboardManager
         if (!this.scoreboards.Add(name))
             Log.DuplicateScoreboard(this.logger, name);
 
-        return new Scoreboard(name, this.server.DefaultWorld.PacketBroadcaster, this.server);
+        return new Scoreboard(name, this.server.DefaultWorld.PacketBroadcaster);
     }
 
     private static partial class Log
