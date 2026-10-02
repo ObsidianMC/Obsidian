@@ -55,15 +55,15 @@ public sealed class TreeDecoratorContext
     /// Vanilla <c>TreeFeature.getLowestTrunkOrRootOfTree</c>: the logs, the roots, or both when the lowest root and the
     /// lowest log share a Y level.
     /// </summary>
-    public List<Vector> GetLowestTrunkOrRoot()
+    public IReadOnlyList<Vector> GetLowestTrunkOrRoot()
     {
         if (this.Roots.Count == 0)
-            return [.. this.Logs];
+            return this.Logs;
 
         if (this.Logs.Count > 0 && this.Roots[0].Y == this.Logs[0].Y)
             return [.. this.Logs, .. this.Roots];
 
-        return [.. this.Roots];
+        return this.Roots;
     }
 
     /// <summary>Vanilla <c>Util.shuffle</c> (Fisher-Yates from the end).</summary>

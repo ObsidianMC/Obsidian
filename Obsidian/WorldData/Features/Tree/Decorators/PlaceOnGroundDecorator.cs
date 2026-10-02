@@ -24,8 +24,9 @@ public sealed class PlaceOnGroundDecorator : TreeDecorator
         var first = lowest[0];
         var y = first.Y;
         int minX = first.X, maxX = first.X, minZ = first.Z, maxZ = first.Z;
-        foreach (var position in lowest)
+        for (var i = 0; i < lowest.Count; i++)
         {
+            var position = lowest[i];
             if (position.Y != y)
                 continue;
 

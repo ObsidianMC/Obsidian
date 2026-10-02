@@ -15,8 +15,9 @@ public sealed class AlterGroundDecorator : TreeDecorator
             return;
 
         var baseY = lowest[0].Y;
-        foreach (var position in lowest)
+        for (var index = 0; index < lowest.Count; index++)
         {
+            var position = lowest[index];
             if (position.Y != baseY)
                 continue;
 
