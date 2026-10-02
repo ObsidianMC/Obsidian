@@ -21,6 +21,10 @@ internal sealed class FeatureDecorator
     private readonly IReadOnlyList<StepFeatures> featuresPerStep;
     private readonly IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>> biomeFeatures;
     private readonly IReadOnlyDictionary<string, HashSet<PlacedFeature>> biomeFeatureSets;
+
+    // The feature sets of the possible biomes by biome id, with each biome's name to check lookups against: biome filters
+    // look them up for nearly every position placed.
+    private readonly (string? Name, HashSet<PlacedFeature>? Features)[] featureSetsById;
     private readonly HashSet<string> possibleBiomes;
     private readonly int generationDepth;
 
@@ -36,6 +40,13 @@ internal sealed class FeatureDecorator
         this.featuresPerStep = FeatureSorter.Build(possibleBiomes, biome => this.GetSteps(biome.Name));
         this.biomeFeatureSets = biomeFeatures.ToDictionary(entry => entry.Key,
             entry => entry.Value.SelectMany(step => step).ToHashSet());
+
+        this.featureSetsById = new (string?, HashSet<PlacedFeature>?)[possibleBiomes.Count == 0 ? 0 : possibleBiomes.Max(biome => biome.Id) + 1];
+        foreach (var biome in possibleBiomes)
+        {
+            if (biome.Id >= 0)
+                this.featureSetsById[biome.Id] = (biome.Name, this.biomeFeatureSets.GetValueOrDefault(biome.Name));
+        }
     }
 
     /// <summary>
@@ -132,8 +143,18 @@ internal sealed class FeatureDecorator
         }
     }
 
-    private bool BiomeHasFeature(BiomeCodec biome, PlacedFeature feature) =>
-        this.biomeFeatureSets.TryGetValue(biome.Name, out var features) && features.Contains(feature);
+    private bool BiomeHasFeature(BiomeCodec biome, PlacedFeature feature)
+    {
+        var id = biome.Id;
+        if ((uint)id < (uint)this.featureSetsById.Length)
+        {
+            var (name, features) = this.featureSetsById[id];
+            if (name == biome.Name)
+                return features is not null && features.Contains(feature);
+        }
+
+        return this.biomeFeatureSets.TryGetValue(biome.Name, out var set) && set.Contains(feature);
+    }
 
     private IReadOnlyList<IReadOnlyList<PlacedFeature>> GetSteps(string biome) =>
         this.biomeFeatures.TryGetValue(biome, out var steps) ? steps : [];
@@ -145,6 +166,8 @@ internal sealed class FeatureDecorator
     {
         var biomes = new HashSet<string>();
 
+        BiomeCodec? previous = null;
+
         foreach (var chunk in chunks)
         {
             for (var quartY = minY >> 2; quartY < (minY + height) >> 2; quartY++)
@@ -152,7 +175,14 @@ internal sealed class FeatureDecorator
                 for (var quartZ = 0; quartZ < 4; quartZ++)
                 {
                     for (var quartX = 0; quartX < 4; quartX++)
-                        biomes.Add(chunk.GetBiome(quartX << 2, quartY << 2, quartZ << 2).Name);
+                    {
+                        // Neighboring cells mostly share their biome, which is then already in the set.
+                        var biome = chunk.GetBiome(quartX << 2, quartY << 2, quartZ << 2);
+                        if (!ReferenceEquals(biome, previous))
+                            biomes.Add(biome.Name);
+
+                        previous = biome;
+                    }
                 }
             }
         }
