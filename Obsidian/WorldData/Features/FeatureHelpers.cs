@@ -123,6 +123,9 @@ internal static class FeatureHelpers
     /// </summary>
     public static readonly BlockFace[] Directions = [BlockFace.Down, BlockFace.Up, BlockFace.North, BlockFace.South, BlockFace.West, BlockFace.East];
 
+    // ToVector of each BlockFace value, indexed by the value: offsets are on the hottest paths of many features.
+    private static readonly Vector[] faceVectors = [.. Enum.GetValues<BlockFace>().Select(face => face.ToVector())];
+
     /// <summary>
     /// <c>Direction.Plane.HORIZONTAL</c> order (north, east, south, west), which differs from <see cref="BlockFace"/> order.
     /// </summary>
@@ -131,7 +134,7 @@ internal static class FeatureHelpers
     /// <summary>
     /// The position <paramref name="distance"/> blocks toward <paramref name="face"/> (vanilla <c>BlockPos.relative</c>).
     /// </summary>
-    public static Vector Offset(this Vector position, BlockFace face, int distance = 1) => position + face.ToVector() * distance;
+    public static Vector Offset(this Vector position, BlockFace face, int distance = 1) => position + faceVectors[(int)face] * distance;
 
     public static Vector AtY(this Vector position, int y) => new(position.X, y, position.Z);
 
