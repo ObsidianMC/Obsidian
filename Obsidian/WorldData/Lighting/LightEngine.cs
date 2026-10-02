@@ -46,7 +46,11 @@ internal sealed class LightEngine
     private readonly IChunk?[] area = new IChunk?[9];
 
     // The sections of the area's chunks, indexed by area index times the section count plus the section index.
-    private readonly ChunkSection?[] sections;
+    private readonly IChunkSection?[] sections;
+
+    // The same sections when they're all ChunkSections, whose light storage is read and written directly; otherwise null,
+    // and light goes through the IChunkSection methods.
+    private readonly ChunkSection?[]? storageSections;
     private readonly int sectionCount;
     private readonly int minY;
     private readonly int height;
@@ -74,7 +78,8 @@ internal sealed class LightEngine
         }
 
         var sectionCount = this.sectionCount = chunk.Sections.Length;
-        this.sections = new ChunkSection?[9 * sectionCount];
+        this.sections = new IChunkSection?[9 * sectionCount];
+        this.storageSections = new ChunkSection?[9 * sectionCount];
         for (var areaIndex = 0; areaIndex < 9; areaIndex++)
         {
             if (this.area[areaIndex] is not { } areaChunk)
@@ -82,8 +87,13 @@ internal sealed class LightEngine
 
             for (var sectionIndex = 0; sectionIndex < sectionCount; sectionIndex++)
             {
-                this.sections[areaIndex * sectionCount + sectionIndex] = areaChunk.Sections[sectionIndex] as ChunkSection
-                    ?? throw new NotSupportedException("The light engine reads light storage of chunk sections directly.");
+                var section = areaChunk.Sections[sectionIndex];
+                this.sections[areaIndex * sectionCount + sectionIndex] = section;
+
+                if (section is ChunkSection storageSection && this.storageSections is not null)
+                    this.storageSections[areaIndex * sectionCount + sectionIndex] = storageSection;
+                else
+                    this.storageSections = null;
             }
         }
     }
@@ -149,7 +159,11 @@ internal sealed class LightEngine
         for (var sectionIndex = 0; sectionIndex < sections.Length; sectionIndex++)
         {
             var section = sections[sectionIndex];
-            Array.Clear(this.sections[4 * this.sectionCount + sectionIndex]!.GetLightStorage(LightType.Block));
+            if (this.storageSections is not null)
+                Array.Clear(this.storageSections[4 * this.sectionCount + sectionIndex]!.GetLightStorage(LightType.Block));
+            else
+                section.SetLight(new byte[2048], LightType.Block);
+
             if (!section.IsEmpty)
                 this.EnqueueLightSources(section, sectionIndex);
         }
@@ -248,7 +262,9 @@ internal sealed class LightEngine
         {
             var bottom = this.minY + (sectionIndex << 4);
             var section = this.sections[4 * this.sectionCount + sectionIndex]!;
-            var light = section.GetLightStorage(LightType.Sky);
+            var light = this.storageSections is null
+                ? new byte[2048]
+                : this.storageSections[4 * this.sectionCount + sectionIndex]!.GetLightStorage(LightType.Sky);
 
             // Sections that every column's sources cover, or that none reach, need no work per column.
             if (highestSource <= bottom)
@@ -461,20 +477,38 @@ internal sealed class LightEngine
         return inside && this.area[AreaIndex(next)] is not null;
     }
 
-    private IBlock GetBlock(int position) =>
-        this.GetSection(position).GetBlock(position & 15, (position >> 12) & 15, (position >> 6) & 15);
+    private IBlock GetBlock(int position)
+    {
+        var (x, y, z) = (position & 15, (position >> 12) & 15, (position >> 6) & 15);
+        return this.storageSections is not null
+            ? this.storageSections[this.SectionSlot(position)]!.GetBlock(x, y, z)
+            : this.sections[this.SectionSlot(position)]!.GetBlock(x, y, z);
+    }
 
     // Light is read and written in the sections' storage the way ChunkSection.GetLightLevel and SetLightLevel do.
     private int GetLight(int position, LightType lightType)
     {
+        if (this.storageSections is null)
+        {
+            var (x, y, z) = (position & 15, (position >> 12) & 15, (position >> 6) & 15);
+            return this.sections[this.SectionSlot(position)]!.GetLightLevel(x, y, z, lightType);
+        }
+
         var index = SectionIndex(position);
         var shift = (index & 1) << 2;
-        return (this.GetSection(position).GetLightStorage(lightType)[index >> 1] >> shift) & 15;
+        return (this.storageSections[this.SectionSlot(position)]!.GetLightStorage(lightType)[index >> 1] >> shift) & 15;
     }
 
     private void SetLight(int position, LightType lightType, int level)
     {
-        var section = this.GetSection(position);
+        if (this.storageSections is null)
+        {
+            var (x, y, z) = (position & 15, (position >> 12) & 15, (position >> 6) & 15);
+            this.sections[this.SectionSlot(position)]!.SetLightLevel(x, y, z, lightType, level);
+            return;
+        }
+
+        var section = this.storageSections[this.SectionSlot(position)]!;
         var index = SectionIndex(position);
         var shift = (index & 1) << 2;
         ref var stored = ref section.GetLightStorage(lightType)[index >> 1];
@@ -482,9 +516,9 @@ internal sealed class LightEngine
         section.MarkLight(lightType);
     }
 
-    // Offsetting x and z by 16 keeps their low 4 bits the in-chunk coordinate.
-    private ChunkSection GetSection(int position) =>
-        this.sections[AreaIndex(position) * this.sectionCount + (position >> 16)]!;
+    // The index of a position's section in the section arrays. Offsetting x and z by 16 keeps their low 4 bits the
+    // in-chunk coordinate.
+    private int SectionSlot(int position) => AreaIndex(position) * this.sectionCount + (position >> 16);
 
     // The block's index in its section (y, then z, then x).
     private static int SectionIndex(int position) => (((position >> 12) & 15) << 8) | (((position >> 6) & 15) << 4) | (position & 15);
