@@ -10,6 +10,7 @@ internal static partial class BlocksRegistry
     private static readonly IBlock[] defaultBlocks;
     private static readonly IBlock[] stateBlocks;
     private static readonly IBlock?[] materialBlocks;
+    private static readonly Material[] registryMaterials;
 
     public static int GlobalBitsPerBlocks { get; private set; }
     static BlocksRegistry()
@@ -21,6 +22,8 @@ internal static partial class BlocksRegistry
             defaultBlocks[i] = CreateDefault(i);
             defaultBlockCache.TryAdd(Names[i], defaultBlocks[i]);
         }
+
+        registryMaterials = [.. defaultBlocks.Select(block => block.Material)];
 
         // Materials name items too, so only some have a block.
         materialBlocks = new IBlock?[Enum.GetValues<Material>().Max(material => (int)material) + 1];
@@ -49,7 +52,7 @@ internal static partial class BlocksRegistry
     public static int RegistryIdOf(int stateId) => StateToNumeric[stateId];
 
     /// <summary>The material of the block a state belongs to.</summary>
-    public static Material MaterialOf(int stateId) => stateBlocks[stateId].Material;
+    public static Material MaterialOf(int stateId) => registryMaterials[StateToNumeric[stateId]];
 
     public static string? GetBlockName(string resourceId) => resourceIdToName.GetValueOrDefault(resourceId);
 
