@@ -123,8 +123,11 @@ internal static class JigsawPlacement
         private readonly IRandomSource random = context.Random;
         private readonly PriorityQueue placing = new();
 
-        // The candidates for the jigsaw being expanded, reused from jigsaw to jigsaw.
+        // Reused lists: the jigsaws of the piece being expanded, the candidates for its jigsaw being expanded, and the
+        // jigsaws of the candidate being tried.
+        private readonly List<JigsawBlockInfo> jigsaws = [];
         private readonly List<StructurePoolElement> candidates = [];
+        private readonly List<JigsawBlockInfo> candidateJigsaws = [];
 
         public void Run(PoolElementStructurePiece start, FreeSpace free)
         {
@@ -141,7 +144,8 @@ internal static class JigsawPlacement
             var box = piece.BoundingBox;
             var minY = box.MinY;
 
-            foreach (var jigsaw in element.GetShuffledJigsawBlocks(piece.Position, piece.ElementRotation, this.random))
+            element.GetShuffledJigsawBlocks(piece.Position, piece.ElementRotation, this.random, this.jigsaws);
+            foreach (var jigsaw in this.jigsaws)
             {
                 var facing = jigsaw.FrontFacing;
                 var jigsawPosition = jigsaw.Info.Position;
@@ -195,7 +199,8 @@ internal static class JigsawPlacement
 
             foreach (var rotation in shuffledRotations)
             {
-                var candidateJigsaws = candidate.GetShuffledJigsawBlocks(Vector.Zero, rotation, this.random);
+                var candidateJigsaws = this.candidateJigsaws;
+                candidate.GetShuffledJigsawBlocks(Vector.Zero, rotation, this.random, candidateJigsaws);
                 var candidateBox = candidate.GetBoundingBox(Vector.Zero, rotation);
                 var expansion = useExpansionHack && candidateBox.YSpan <= 16 ? this.ExpansionHeight(candidateJigsaws, candidateBox) : 0;
 

@@ -191,22 +191,22 @@ public sealed class StructureTemplate
     /// <summary>
     /// Vanilla <c>getJigsaws</c>: the jigsaw blocks of a random palette at world positions, rotated.
     /// </summary>
-    public List<JigsawBlockInfo> GetJigsaws(Vector position, StructureRotation rotation)
+    public void AddJigsaws(List<JigsawBlockInfo> destination, Vector position, StructureRotation rotation)
     {
         if (this.palettes.Count == 0)
-            return [];
+            return;
 
         // A single palette is always picked, so the position-seeded pick can be skipped.
         var palette = this.palettes.Count == 1 ? this.palettes[0] : new StructurePlaceSettings().GetRandomPalette(this.palettes, position);
         var rotated = palette.RotatedJigsaws(rotation);
         if (position == Vector.Zero)
-            return [.. rotated];
+        {
+            destination.AddRange(rotated);
+            return;
+        }
 
-        var result = new List<JigsawBlockInfo>(rotated.Count);
         foreach (var jigsaw in rotated)
-            result.Add(jigsaw with { Info = jigsaw.Info with { Position = jigsaw.Info.Position + position } });
-
-        return result;
+            destination.Add(jigsaw with { Info = jigsaw.Info with { Position = jigsaw.Info.Position + position } });
     }
 
     /// <summary>

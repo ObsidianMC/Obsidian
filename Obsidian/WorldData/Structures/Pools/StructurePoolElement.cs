@@ -2,6 +2,7 @@ using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Nbt;
 using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Structures.Processors;
+using System.Runtime.InteropServices;
 
 namespace Obsidian.WorldData.Structures.Pools;
 
@@ -32,6 +33,16 @@ public abstract class StructurePoolElement
     /// order, highest selection priority first.
     /// </summary>
     public abstract List<JigsawBlockInfo> GetShuffledJigsawBlocks(Vector position, StructureRotation rotation, IRandomSource random);
+
+    /// <summary>
+    /// <see cref="GetShuffledJigsawBlocks(Vector, StructureRotation, IRandomSource)"/> into <paramref name="destination"/>,
+    /// replacing its contents, for callers that reuse a list.
+    /// </summary>
+    public virtual void GetShuffledJigsawBlocks(Vector position, StructureRotation rotation, IRandomSource random, List<JigsawBlockInfo> destination)
+    {
+        destination.Clear();
+        destination.AddRange(this.GetShuffledJigsawBlocks(position, rotation, random));
+    }
 
     public abstract BlockBox GetBoundingBox(Vector position, StructureRotation rotation);
 
@@ -74,11 +85,20 @@ public class SinglePoolElement : StructurePoolElement
 
     public override List<JigsawBlockInfo> GetShuffledJigsawBlocks(Vector position, StructureRotation rotation, IRandomSource random)
     {
-        var jigsaws = this.Template.GetJigsaws(position, rotation);
+        var jigsaws = new List<JigsawBlockInfo>();
+        this.GetShuffledJigsawBlocks(position, rotation, random, jigsaws);
+        return jigsaws;
+    }
+
+    public override void GetShuffledJigsawBlocks(Vector position, StructureRotation rotation, IRandomSource random, List<JigsawBlockInfo> destination)
+    {
+        destination.Clear();
+        this.Template.AddJigsaws(destination, position, rotation);
+        var jigsaws = CollectionsMarshal.AsSpan(destination);
         FeatureHelpers.Shuffle(jigsaws, random);
 
         // Java's List.sort is stable: an insertion sort by descending selection priority keeps the shuffled order of ties.
-        for (var i = 1; i < jigsaws.Count; i++)
+        for (var i = 1; i < jigsaws.Length; i++)
         {
             var jigsaw = jigsaws[i];
             var j = i - 1;
@@ -87,8 +107,6 @@ public class SinglePoolElement : StructurePoolElement
 
             jigsaws[j + 1] = jigsaw;
         }
-
-        return jigsaws;
     }
 
     public override BlockBox GetBoundingBox(Vector position, StructureRotation rotation) => this.Template.GetBoundingBox(position, rotation);
@@ -176,6 +194,9 @@ public sealed class ListPoolElement : StructurePoolElement
 
     public override List<JigsawBlockInfo> GetShuffledJigsawBlocks(Vector position, StructureRotation rotation, IRandomSource random) =>
         this.Elements[0].GetShuffledJigsawBlocks(position, rotation, random);
+
+    public override void GetShuffledJigsawBlocks(Vector position, StructureRotation rotation, IRandomSource random, List<JigsawBlockInfo> destination) =>
+        this.Elements[0].GetShuffledJigsawBlocks(position, rotation, random, destination);
 
     public override BlockBox GetBoundingBox(Vector position, StructureRotation rotation) =>
         BlockBox.Encapsulating(this.Elements.Where(element => element is not EmptyPoolElement).Select(element => element.GetBoundingBox(position, rotation)))
