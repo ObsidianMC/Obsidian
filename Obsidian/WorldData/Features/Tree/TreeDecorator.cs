@@ -28,9 +28,6 @@ public sealed class TreeDecoratorContext
     internal TreeDecoratorContext(TreeContext tree)
     {
         this.tree = tree;
-        this.Roots = SortedByY(tree.Roots);
-        this.Logs = SortedByY(tree.Logs);
-        this.Leaves = SortedByY(tree.Foliage);
     }
 
     public IWorldGenLevel Level => this.tree.Level;
@@ -39,11 +36,12 @@ public sealed class TreeDecoratorContext
 
     public WorldGenerationContext Generation => this.tree.Generation;
 
-    public IReadOnlyList<Vector> Logs { get; }
+    // Sorted on first use: decorators only add decorations, so the tree's logs, leaves and roots don't change meanwhile.
+    public IReadOnlyList<Vector> Logs => field ??= SortedByY(this.tree.Logs);
 
-    public IReadOnlyList<Vector> Leaves { get; }
+    public IReadOnlyList<Vector> Leaves => field ??= SortedByY(this.tree.Foliage);
 
-    public IReadOnlyList<Vector> Roots { get; }
+    public IReadOnlyList<Vector> Roots => field ??= SortedByY(this.tree.Roots);
 
     /// <summary>Places a decoration block; positions are tracked so the leaf/shape update pass treats them as part of the tree.</summary>
     public void SetBlock(Vector position, IBlock block) => this.tree.SetDecoration(position, block);
@@ -78,6 +76,19 @@ public sealed class TreeDecoratorContext
         }
     }
 
-    // LINQ OrderBy is a stable sort, like fastutil's ObjectArrayList.sort used by vanilla.
-    private static Vector[] SortedByY(VanillaBlockPosSet positions) => [.. positions.OrderBy(position => position.Y)];
+    // A stable sort by Y, like fastutil's ObjectArrayList.sort used by vanilla: the keys put the set's order after Y.
+    private static Vector[] SortedByY(VanillaBlockPosSet positions)
+    {
+        var sorted = new Vector[positions.Count];
+        var keys = new long[sorted.Length];
+        var index = 0;
+        foreach (var position in positions)
+        {
+            keys[index] = (long)position.Y << 32 | (uint)index;
+            sorted[index++] = position;
+        }
+
+        Array.Sort(keys, sorted);
+        return sorted;
+    }
 }
