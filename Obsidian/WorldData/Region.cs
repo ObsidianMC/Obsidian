@@ -500,6 +500,9 @@ public class Region : IRegion
                 chunk.PostProcessing.Add(new Vector((x << 4) + (packed & 15), this.minY + (packed >> 8), (z << 4) + ((packed >> 4) & 15)));
         }
 
+        if (chunkCompound.TryGetTag<NbtList>("fluid_ticks", out var fluidTicks))
+            chunk.FluidTicks.Read(fluidTicks, x, z);
+
         // Entities of a chunk that isn't complete yet, like a vanilla proto chunk's "entities".
         if (chunkCompound.TryGetTag<NbtList>("entities", out var entities))
         {
@@ -646,6 +649,9 @@ public class Region : IRegion
             writer.WriteArray("PostProcessing", generated.PostProcessing
                 .Select(position => (position.X & 15) | (position.Z & 15) << 4 | (position.Y - chunk.MinY) << 8)
                 .ToArray());
+
+            // Scheduled fluid ticks, like vanilla's "fluid_ticks".
+            generated.FluidTicks.Write(writer);
         }
 
         writer.WriteInt("xPos", chunk.X);

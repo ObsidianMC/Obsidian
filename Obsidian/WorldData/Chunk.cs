@@ -3,6 +3,7 @@ using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Nbt;
+using Obsidian.WorldData.Fluids;
 using System.Threading;
 
 namespace Obsidian.WorldData;
@@ -59,10 +60,15 @@ public sealed class Chunk : IChunk
     internal NbtCompound? StructureStarts { get; set; }
 
     /// <summary>
-    /// Positions generation marked to check once the chunk is complete: fluids that need a tick and blocks whose state
+    /// Positions generation marked to check once the chunk is complete: fluids that tick right away and blocks whose state
     /// depends on their neighbors (fence connections, torch support...), like vanilla's post-processing list.
     /// </summary>
     internal List<Vector> PostProcessing { get; } = [];
+
+    /// <summary>
+    /// The chunk's scheduled fluid ticks, like vanilla's <c>fluid_ticks</c>.
+    /// </summary>
+    internal ChunkFluidTicks FluidTicks { get; } = new();
 
     public IChunkSection[] Sections { get; private set; }
     public IDictionary<HeightmapType, Heightmap> Heightmaps { get; }

@@ -14,6 +14,10 @@ namespace Obsidian.Registries;
 /// 7 sturdy center (up), 8 sturdy rigid (up), 9 redstone conductor, 10 block entity, 11-16 sturdy full faces
 /// (one bit per <see cref="BlockFace"/>), 17-20 light emission, 21-24 fluid amount, 25-27 fluid kind, 28 empty collision,
 /// 29 full top collision face, 30 solid render, 31 sturdy center (down).
+/// Fluid physics pack into a second int per state: bit 0 collision shape is vanilla's full block shape, 1 collision shape
+/// is the empty shape, 2 <c>LiquidBlockContainer</c>, 3 <c>FlowingFluid.canHoldAnyFluid</c>, 4-7
+/// <c>FlowingFluid.canHoldSpecificFluid</c> for water, flowing water, lava and flowing lava, 16-31 the collision face set
+/// (an index into <c>collisionFaceSets</c>, whose six entries per <see cref="BlockFace"/> index <c>collisionFaces</c>).
 /// </remarks>
 internal static class BlockPhysics
 {
@@ -129,7 +133,109 @@ internal static class BlockPhysics
     /// </summary>
     public static bool IsSameState(this IBlock block, IBlock other) => block.GetHashCode() == other.GetHashCode();
 
+    /// <summary>
+    /// Vanilla <c>getCollisionShape(...) == Shapes.block()</c>: the collision shape is the full block instance.
+    /// </summary>
+    public static bool HasBlockCollisionShape(this IBlock block) => HasFluidBit(block, 0);
+
+    /// <summary>
+    /// Vanilla <c>getCollisionShape(...) == Shapes.empty()</c>: the collision shape is the empty instance.
+    /// </summary>
+    public static bool HasEmptyCollisionShape(this IBlock block) => HasFluidBit(block, 1);
+
+    /// <summary>
+    /// Whether the block is a vanilla <c>LiquidBlockContainer</c> (waterloggable blocks, kelp and seagrass), which takes
+    /// fluids through <c>placeLiquid</c> instead of being replaced.
+    /// </summary>
+    public static bool IsLiquidBlockContainer(this IBlock block) => HasFluidBit(block, 2);
+
+    /// <summary>
+    /// Vanilla <c>FlowingFluid.canHoldAnyFluid</c>: fluids may flow into the block (destroying it unless it's a container).
+    /// </summary>
+    public static bool CanHoldAnyFluid(this IBlock block) => HasFluidBit(block, 3);
+
+    /// <summary>
+    /// Vanilla <c>FlowingFluid.canHoldSpecificFluid</c>: containers only take the fluids their <c>canPlaceLiquid</c>
+    /// accepts (a water source for waterloggable blocks); every other block takes any fluid.
+    /// </summary>
+    public static bool CanHoldSpecificFluid(this IBlock block, FluidKind fluid) =>
+        fluid == FluidKind.Empty ? !block.IsLiquidBlockContainer() : HasFluidBit(block, 3 + (int)fluid);
+
+    /// <summary>
+    /// Vanilla <c>Shapes.mergedFaceOccludes</c> for collision shapes: together, the face of <paramref name="from"/>
+    /// toward <paramref name="direction"/> and the opposite face of <paramref name="to"/> cover the whole face between
+    /// them, so fluids can't pass.
+    /// </summary>
+    public static bool MergedFaceOccludes(IBlock from, IBlock to, BlockFace direction)
+    {
+        if (from.HasBlockCollisionShape() || to.HasBlockCollisionShape())
+            return true;
+
+        return data.Value.FaceOcclusion.GetOrAdd((from.StateId(), to.StateId(), direction),
+            key => CoversFace(CollisionFace(from, key.Direction), CollisionFace(to, key.Direction.Opposite())));
+    }
+
+    // The boxes (min and max on each of the face's two axes) where the collision shape touches the given face.
+    private static double[][] CollisionFace(IBlock block, BlockFace face)
+    {
+        var physics = data.Value;
+        var set = (int)((uint)FluidFlags(block) >> 16);
+        return physics.CollisionFaces[physics.CollisionFaceSets[set][(int)face]];
+    }
+
+    // Whether the union of two faces' boxes covers the unit square, checked on the grid their edges make.
+    private static bool CoversFace(double[][] first, double[][] second)
+    {
+        if (first.Length == 0 && second.Length == 0)
+            return false;
+
+        double[][] boxes = [.. first, .. second];
+        var us = Edges(boxes, 0);
+        var vs = Edges(boxes, 1);
+        for (var i = 0; i < us.Count - 1; i++)
+        {
+            var u = (us[i] + us[i + 1]) / 2;
+            for (var j = 0; j < vs.Count - 1; j++)
+            {
+                var v = (vs[j] + vs[j + 1]) / 2;
+                if (!boxes.Any(box => box[0] <= u && u <= box[2] && box[1] <= v && v <= box[3]))
+                    return false;
+            }
+        }
+
+        return true;
+
+        static List<double> Edges(double[][] boxes, int axis)
+        {
+            var edges = new List<double> { 0, 1 };
+            foreach (var box in boxes)
+            {
+                edges.Add(Math.Clamp(box[axis], 0, 1));
+                edges.Add(Math.Clamp(box[axis + 2], 0, 1));
+            }
+
+            edges.Sort();
+            var distinct = new List<double>();
+            foreach (var edge in edges)
+            {
+                if (distinct.Count == 0 || edge - distinct[^1] > 1.0E-7)
+                    distinct.Add(edge);
+            }
+
+            return distinct;
+        }
+    }
+
     private static bool Has(IBlock block, int bit) => (Flags(block) & (1 << bit)) != 0;
+
+    private static bool HasFluidBit(IBlock block, int bit) => (FluidFlags(block) & (1 << bit)) != 0;
+
+    private static int FluidFlags(IBlock block)
+    {
+        var flags = data.Value.FluidFlags;
+        var id = block.GetHashCode();
+        return (uint)id < (uint)flags.Length ? flags[id] : 0;
+    }
 
     private static int Flags(IBlock block)
     {
@@ -150,15 +256,27 @@ internal static class BlockPhysics
             root.GetProperty("blockClasses").EnumerateObject().ToDictionary(entry => entry.Name, entry => entry.Value.GetString()!),
             root.GetProperty("blockEntityTypes").EnumerateObject().ToDictionary(entry => entry.Name, entry => entry.Value.GetString()!),
             root.GetProperty("blockEntityTypeIds").EnumerateObject().ToDictionary(entry => entry.Name, entry => entry.Value.GetInt32()),
-            root.GetProperty("signalSources").EnumerateArray().Select(entry => entry.GetString()!).ToHashSet());
+            root.GetProperty("signalSources").EnumerateArray().Select(entry => entry.GetString()!).ToHashSet(),
+            root.GetProperty("fluidFlags").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
+            root.GetProperty("collisionFaceSets").EnumerateArray()
+                .Select(set => set.EnumerateArray().Select(face => face.GetInt32()).ToArray()).ToArray(),
+            root.GetProperty("collisionFaces").EnumerateArray()
+                .Select(face => face.EnumerateArray().Select(box => box.EnumerateArray().Select(value => value.GetDouble()).ToArray()).ToArray())
+                .ToArray());
     }
 
     private sealed record PhysicsData(int[] Flags, Dictionary<string, string> BlockClasses, Dictionary<string, string> BlockEntityTypes,
-        Dictionary<string, int> BlockEntityTypeIds, HashSet<string> SignalSources);
+        Dictionary<string, int> BlockEntityTypeIds, HashSet<string> SignalSources, int[] FluidFlags, int[][] CollisionFaceSets,
+        double[][][] CollisionFaces)
+    {
+        // Like vanilla's occlusion cache in FlowingFluid: the same pairs of partial blocks come up again and again.
+        public ConcurrentDictionary<(int From, int To, BlockFace Direction), bool> FaceOcclusion { get; } = new();
+    }
 }
 
 /// <summary>
-/// Fluid carried by a block state, in vanilla's fluid registry terms.
+/// Fluid carried by a block state, in vanilla's fluid registry terms (the values are vanilla's fluid registry ids, which
+/// <see cref="BlockPhysics.CanHoldSpecificFluid"/> relies on).
 /// </summary>
 internal enum FluidKind
 {

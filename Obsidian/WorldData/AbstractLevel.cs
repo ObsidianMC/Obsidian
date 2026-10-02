@@ -8,6 +8,7 @@ using Obsidian.Entities;
 using Obsidian.Entities.Factories;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.WorldData.Fluids;
 using Obsidian.WorldData.Generators;
 using System.Diagnostics;
 using System.Threading;
@@ -83,6 +84,11 @@ public abstract class AbstractLevel : ILevel
 
     protected ILogger Logger { get; }
 
+    /// <summary>
+    /// The level's fluids and their scheduled ticks.
+    /// </summary>
+    internal LevelFluids Fluids { get; }
+
     private readonly IDisposable optionsMonitor;
     private readonly Lock regionLock = new();
 
@@ -105,6 +111,7 @@ public abstract class AbstractLevel : ILevel
         this.Generator = worldGenerator;
         this.Name = name;
         this.Seed = seed;
+        this.Fluids = new LevelFluids(this);
 
         var spawnChunkCount = 2 * this.Configuration.SpawnChunkRadius + 1;
         this.SpawnChunks = new long[spawnChunkCount * spawnChunkCount];
@@ -167,6 +174,7 @@ public abstract class AbstractLevel : ILevel
             }
 
             LoadedChunks.Add(packedXZ);
+            this.Fluids.Track(chunk);
             return chunk;
         }
 
@@ -220,13 +228,23 @@ public abstract class AbstractLevel : ILevel
         this.BroadcastBlockChange(block, new(x, y, z));
     }
 
-    private void BroadcastBlockChange(IBlock block, Vector location)
+    internal void BroadcastBlockChange(IBlock block, Vector location)
     {
         var packet = new BlockUpdatePacket(location, block.GetHashCode());
         foreach (Player player in PlayersInRange(location).Cast<Player>())
         {
             player.Client.SendPacket(packet);
         }
+    }
+
+    /// <summary>
+    /// Sends a level event (a sound or particle effect, like lava fizzing) to the players that have its chunk.
+    /// </summary>
+    internal void BroadcastLevelEvent(int type, Vector location, int data)
+    {
+        var packet = new LevelEventPacket(type, location, data);
+        foreach (Player player in PlayersInRange(location).Cast<Player>())
+            player.Client.SendPacket(packet);
     }
 
     public IEnumerable<IPlayer> PlayersInRange(Vector location)
@@ -258,6 +276,9 @@ public abstract class AbstractLevel : ILevel
         // Generated block entity data (e.g. a dungeon chest's loot) doesn't carry over to another block.
         if (c.GetBlockEntity(x, y, z) is DataBlockEntity data && data.Id != block.BlockEntityType())
             c.RemoveBlockEntity(x, y, z);
+
+        if (doBlockUpdate)
+            this.Fluids.OnBlockChanged(new Vector(x, y, z), block);
     }
 
     public IEnumerable<IEntity> GetEntitiesInRange(VectorF location, float distance = 10f)
@@ -361,6 +382,9 @@ public abstract class AbstractLevel : ILevel
         LevelData.RainTime -= this.Configuration.TimeTickSpeedMultiplier;
 
         this.SpawnPendingEntities();
+
+        // Like vanilla, fluid ticks run before entities tick.
+        this.Fluids.Tick();
 
         await Task.WhenAll(this.Regions.Values.Select(r => r.BeginTickAsync()));
     }
@@ -575,11 +599,9 @@ public abstract class AbstractLevel : ILevel
         if (update.Block is not IBlock block)
             return false;
 
+        // Fluids react to block changes through their scheduled ticks instead (see LevelFluids).
         if (TagsRegistry.Block.GravityAffected.Entries.Contains(block.RegistryId))
             return await BlockUpdates.HandleFallingBlock(update);
-
-        if (block.IsLiquid)
-            return await BlockUpdates.HandleLiquidPhysicsAsync(update);
 
         return false;
     }
@@ -606,6 +628,7 @@ public abstract class AbstractLevel : ILevel
         this.DimensionName = codec.Name;
         this.MinY = codec.Element.MinY;
         this.Height = codec.Element.Height;
+        this.Fluids.Rules = FluidRules.ForDimension(codec.Name, codec.Element.Ultrawarm);
     }
 
     /// <summary>

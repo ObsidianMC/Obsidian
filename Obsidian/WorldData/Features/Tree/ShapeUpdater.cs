@@ -67,18 +67,21 @@ internal static class ShapeUpdater
         });
     }
 
-    /// <summary>The state of <paramref name="state"/> after its neighbor in <paramref name="direction"/> became <paramref name="neighbor"/>.</summary>
-    private static IBlock UpdateShape(IWorldGenLevel level, IBlock state, Vector position, BlockFace direction, IBlock neighbor)
+    /// <summary>
+    /// Vanilla <c>updateShape</c>: the state of <paramref name="state"/> after its neighbor in <paramref name="direction"/>
+    /// became <paramref name="neighbor"/>, scheduling the fluid tick vanilla schedules there.
+    /// </summary>
+    internal static IBlock UpdateShape(IWorldGenLevel level, IBlock state, Vector position, BlockFace direction, IBlock neighbor)
     {
+        ScheduleFluidTick(level, state, position, neighbor);
+
         switch (state.BlockClass())
         {
             case "FenceBlock":
-                ScheduleWaterTick(level, state, position);
                 return IsHorizontal(direction)
                     ? state.WithProperty(direction.PropertyName(), FenceConnectsTo(state, neighbor, direction.Opposite()))
                     : state;
             case "IronBarsBlock" or "StainedGlassPaneBlock" or "WeatheringCopperBarsBlock":
-                ScheduleWaterTick(level, state, position);
                 return IsHorizontal(direction)
                     ? state.WithProperty(direction.PropertyName(), BarsAttachTo(neighbor, neighbor.IsFaceSturdy(direction.Opposite())))
                     : state;
@@ -87,30 +90,18 @@ internal static class ShapeUpdater
             case "WallTorchBlock":
                 return IsUnsupportedWallBlock(level, state, position, direction) ? air : state;
             case "LadderBlock":
-                if (IsUnsupportedWallBlock(level, state, position, direction))
-                    return air;
-
-                ScheduleWaterTick(level, state, position);
-                return state;
+                return IsUnsupportedWallBlock(level, state, position, direction) ? air : state;
             case "VineBlock":
                 return direction == BlockFace.Down ? state : UpdateVine(level, state, position);
             case "DoublePlantBlock" or "TallFlowerBlock":
                 return UpdateDoublePlant(level, state, position, direction, neighbor);
             case "HangingMossBlock":
                 return state.WithProperty("tip", level.GetBlock(position + Vector.Down).RegistryId != state.RegistryId);
-            case "LiquidBlock":
-                // LiquidBlock.updateShape only schedules a fluid tick.
-                if (state.IsFluidSource() || neighbor.IsFluidSource())
-                    level.ScheduleFluidTick(position);
-                return state;
             case "StairBlock" or "WeatheringCopperStairBlock":
-                ScheduleWaterTick(level, state, position);
                 return IsHorizontal(direction) ? state.WithProperty("shape", GetStairsShape(level, state, position)) : state;
             case "ChestBlock" or "TrappedChestBlock":
-                ScheduleWaterTick(level, state, position);
                 return UpdateChest(state, direction, neighbor);
             case "WallBlock":
-                ScheduleWaterTick(level, state, position);
                 return UpdateWall(level, state, position, direction, neighbor);
             case "DoorBlock" or "WeatheringCopperDoorBlock":
                 return UpdateDoor(level, state, position, direction, neighbor);
@@ -130,7 +121,6 @@ internal static class ShapeUpdater
             case "LeverBlock" or "ButtonBlock":
                 return UpdateFaceAttached(level, state, position, direction);
             case "LanternBlock":
-                ScheduleWaterTick(level, state, position);
                 return UpdateLantern(level, state, position, direction);
             case "RedStoneWireBlock":
                 return UpdateRedstoneWire(level, state, position, direction, neighbor);
@@ -138,9 +128,6 @@ internal static class ShapeUpdater
                 return direction == BlockFace.Down && !level.GetBlock(position + Vector.Down).IsTopCenterSturdy() ? air : state;
             case "RedstoneWallTorchBlock":
                 return IsUnsupportedWallBlock(level, state, position, direction) ? air : state;
-            case "SlabBlock" or "WeatheringCopperSlabBlock" or "TrapDoorBlock" or "WeatheringCopperTrapDoorBlock" or "EnderChestBlock":
-                ScheduleWaterTick(level, state, position);
-                return state;
             case "CarpetBlock" or "WoolCarpetBlock" or "FlowerBlock" or "TallGrassBlock" or "SweetBerryBushBlock" or "BushBlock"
                 or "SaplingBlock" or "CropBlock" or "CarrotBlock" or "PotatoBlock" or "BeetrootBlock" or "StemBlock" or "MushroomBlock"
                 or "WaterlilyBlock" or "FlowerBedBlock" or "FireflyBushBlock" or "DryVegetationBlock" or "ShortDryGrassBlock"
@@ -324,10 +311,21 @@ internal static class ShapeUpdater
 
     private static bool IsHorizontal(BlockFace face) => face is not (BlockFace.Up or BlockFace.Down);
 
-    private static void ScheduleWaterTick(IWorldGenLevel level, IBlock state, Vector position)
+    /// <summary>
+    /// The fluid tick vanilla's <c>updateShape</c> schedules: liquids when they or the changed neighbor are a source, every
+    /// waterlogged block, and seagrass, kelp and bubble columns (always full of water).
+    /// </summary>
+    private static void ScheduleFluidTick(IWorldGenLevel level, IBlock state, Vector position, IBlock neighbor)
     {
-        if (state.GetProperty("waterlogged") == "true")
+        if (state.IsLiquidBlock())
+        {
+            if (state.IsFluidSource() || neighbor.IsFluidSource())
+                level.ScheduleFluidTick(position);
+        }
+        else if (state.GetProperty("waterlogged") == "true" || state.Material is Material.Seagrass or Material.Kelp or Material.BubbleColumn)
+        {
             level.ScheduleFluidTick(position);
+        }
     }
 
     /// <summary>

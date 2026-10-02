@@ -16,20 +16,10 @@ public struct BlockUpdate : IBlockUpdate
         set
         {
             field = value;
-            if (value is not null)
+            // Only falling blocks wait; fluids run through their own scheduled ticks (see LevelFluids).
+            if (value is not null && TagsRegistry.Block.GravityAffected.Entries.Contains(value.RegistryId))
             {
-                if (TagsRegistry.Block.GravityAffected.Entries.Contains(value.RegistryId))
-                {
-                    Delay = 1;
-                }
-                else if (value.Material == Material.Lava)
-                {
-                    Delay = 40;
-                }
-                else if (value.Material == Material.Water)
-                {
-                    Delay = 5;
-                }
+                Delay = 1;
             }
             DelayCounter = Delay;
         }
