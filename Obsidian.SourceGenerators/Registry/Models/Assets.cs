@@ -31,7 +31,8 @@ internal sealed class Assets
         Item[] items = GetItems(files.GetJsonFromArray("items"), files.GetJsonFromArray("item_components"));
         Dictionary<string, Codec[]> codecs = GetCodecs(files);
         BiomeEntry[] biomes = [.. codecs["biomes"].Select(biome => new BiomeEntry(biome.Name, biome.RegistryId))];
-        Tag[] tags = GetTags(files.GetJsonFromArray("tags"), blocks, items, fluids, biomes);
+        EnchantmentEntry[] enchantments = GetEnchantments(files.GetJsonFromArray("enchantments"));
+        Tag[] tags = GetTags(files.GetJsonFromArray("tags"), blocks, items, fluids, biomes, enchantments);
 
         IDictionary<string, List<Sound>> sounds = GetSounds(files.GetJsonFromArray("sounds"));
 
@@ -139,6 +140,20 @@ internal sealed class Assets
         return fluids.ToArray();
     }
 
+    public static EnchantmentEntry[] GetEnchantments(string? json)
+    {
+        if (json is null)
+            return [];
+
+        using var document = JsonDocument.Parse(json);
+
+        // Vanilla's enchantment registry is sorted by id; the index is the network id (as in EnchantmentsRegistry).
+        return [.. document.RootElement.EnumerateObject()
+            .Select(property => property.Name)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .Select((name, id) => new EnchantmentEntry(name, id))];
+    }
+
     public static Block[] GetBlocks(string? json)
     {
         if (json is null)
@@ -192,7 +207,8 @@ internal sealed class Assets
         return items.ToArray();
     }
 
-    public static Tag[] GetTags(string? json, Block[] blocks, Item[] items, Fluid[] fluids, BiomeEntry[] biomes)
+    public static Tag[] GetTags(string? json, Block[] blocks, Item[] items, Fluid[] fluids, BiomeEntry[] biomes,
+        EnchantmentEntry[] enchantments)
     {
         if (json is null)
             return [];
@@ -203,6 +219,7 @@ internal sealed class Assets
         taggables.AddRange(items);
         taggables.AddRange(fluids);
         taggables.AddRange(biomes);
+        taggables.AddRange(enchantments);
 
         using var document = JsonDocument.Parse(json);
 
