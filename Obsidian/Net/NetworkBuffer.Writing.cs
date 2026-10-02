@@ -336,9 +336,6 @@ public partial class NetworkBuffer : INetStreamWriter
         writer.EndCompound();
         writer.TryFinish();
 
-        Directory.CreateDirectory("chat");
-        File.WriteAllBytes($"chat/{Path.GetRandomFileName()}.nbt", writer.Data);
-
         this.Write(writer.Data);
     }
 
@@ -406,10 +403,14 @@ public partial class NetworkBuffer : INetStreamWriter
             return;
 
         WriteVarInt(item.Id);
-        WriteVarInt(value.TotalComponents);
+
+        // Like vanilla's DataComponentPatch: only the components set on the stack. The client knows the item's defaults,
+        // and Obsidian's placeholders for them (e.g. a max stack size of 64) would override them.
+        var components = value.Patch.ToList();
+        WriteVarInt(components.Count);
         WriteVarInt(value.RemoveComponents.Count);
 
-        foreach (var component in value)
+        foreach (var component in components)
         {
             this.WriteVarInt(component.Type);
 

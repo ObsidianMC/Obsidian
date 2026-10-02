@@ -31,13 +31,13 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
         this.InitializeComponents(components);
     }
 
-    public ItemStack([DisallowNull] ItemStack item, int count = 1) : this(item.Holder, count, item.InternalStorage.Values) { }
+    public ItemStack([DisallowNull] ItemStack item, int count = 1) : this(item.Holder, count, item.Patch) { }
 
     /// <summary>
-    /// Copies this stack, with its count and components, as a stack of <paramref name="holder"/> (vanilla's
+    /// Copies this stack, with its count and the components set on it, as a stack of <paramref name="holder"/> (vanilla's
     /// <c>transmuteCopy</c>), e.g. to turn a book into an enchanted book.
     /// </summary>
-    public ItemStack TransmuteCopy(Item holder) => new(holder, this.Count, this.InternalStorage.Values);
+    public ItemStack TransmuteCopy(Item holder) => new(holder, this.Count, this.Patch);
 
     public static ItemStack operator -(ItemStack item, int value)
     {
@@ -90,18 +90,13 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
     private void InitializeComponents(params IEnumerable<DataComponent> components)
     {
         foreach (var defaultComponent in ComponentBuilder.DefaultItemComponents)
+        {
             this.Add(defaultComponent);
+            this.PlaceholderTypes.Add(defaultComponent.Type);
+        }
 
         foreach (var component in components)
-        {
-            if (this.ContainsKey(component.Type))
-            {
-                this.InternalStorage[component.Type] = component;
-                continue;
-            }
-
-            this.Add(component);
-        }
+            this[component.Type] = component;
     }
 
     public override string ToString() => $"{this.Holder.UnlocalizedName}";
