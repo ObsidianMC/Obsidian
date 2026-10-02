@@ -16,6 +16,9 @@ internal sealed class BiomeManager
     private readonly int maxQuartY;
     private readonly Dictionary<(int, int, int), BiomeCodec>? cache;
 
+    // See GetJitter.
+    private CornerJitter[]? jitters;
+
     /// <param name="biomeSource">Source of the stored (quart) biomes.</param>
     /// <param name="seed">World seed.</param>
     /// <param name="minY">Lowest block Y of the level; quart lookups are clamped to the level height like chunk storage.</param>
@@ -86,9 +89,9 @@ internal sealed class BiomeManager
             var lowY = (corner & 2) == 0;
             var lowZ = (corner & 1) == 0;
 
-            var distance = FiddledDistance(this.zoomSeed,
-                lowX ? quartX : quartX + 1, lowY ? quartY : quartY + 1, lowZ ? quartZ : quartZ + 1,
-                lowX ? fractionX : fractionX - 1.0, lowY ? fractionY : fractionY - 1.0, lowZ ? fractionZ : fractionZ - 1.0);
+            var jitter = this.GetJitter(lowX ? quartX : quartX + 1, lowY ? quartY : quartY + 1, lowZ ? quartZ : quartZ + 1);
+            var distance = Square((lowZ ? fractionZ : fractionZ - 1.0) + jitter.Z) + Square((lowY ? fractionY : fractionY - 1.0) + jitter.Y)
+                + Square((lowX ? fractionX : fractionX - 1.0) + jitter.X);
 
             if (closestDistance > distance)
             {
@@ -103,22 +106,34 @@ internal sealed class BiomeManager
             (closest & 1) == 0 ? quartZ : quartZ + 1);
     }
 
-    private static double FiddledDistance(long seed, int x, int y, int z, double fractionX, double fractionY, double fractionZ)
+    /// <summary>
+    /// The seeded jitter of a quart corner (vanilla's <c>getFiddledDistance</c> without the distance), kept for the
+    /// recently used corners: a block measures 8 corners, and a corner serves the 64 blocks around it.
+    /// </summary>
+    private (double X, double Y, double Z) GetJitter(int x, int y, int z)
     {
-        var hash = seed;
-        hash = NextLcg(hash, x);
-        hash = NextLcg(hash, y);
-        hash = NextLcg(hash, z);
-        hash = NextLcg(hash, x);
-        hash = NextLcg(hash, y);
-        hash = NextLcg(hash, z);
-        var fiddleX = Fiddle(hash);
-        hash = NextLcg(hash, seed);
-        var fiddleY = Fiddle(hash);
-        hash = NextLcg(hash, seed);
-        var fiddleZ = Fiddle(hash);
+        // Two corners along X and Z by 128 along Y: the corners a column of blocks measures.
+        this.jitters ??= new CornerJitter[512];
+        ref var entry = ref this.jitters[(x & 1) | (z & 1) << 1 | (y & 127) << 2];
+        if (entry.X != x || entry.Y != y || entry.Z != z || !entry.Set)
+        {
+            var hash = this.zoomSeed;
+            hash = NextLcg(hash, x);
+            hash = NextLcg(hash, y);
+            hash = NextLcg(hash, z);
+            hash = NextLcg(hash, x);
+            hash = NextLcg(hash, y);
+            hash = NextLcg(hash, z);
+            var fiddleX = Fiddle(hash);
+            hash = NextLcg(hash, this.zoomSeed);
+            var fiddleY = Fiddle(hash);
+            hash = NextLcg(hash, this.zoomSeed);
+            var fiddleZ = Fiddle(hash);
 
-        return Square(fractionZ + fiddleZ) + Square(fractionY + fiddleY) + Square(fractionX + fiddleX);
+            entry = new CornerJitter(x, y, z, fiddleX, fiddleY, fiddleZ, true);
+        }
+
+        return (entry.FiddleX, entry.FiddleY, entry.FiddleZ);
     }
 
     private static double Fiddle(long hash)
@@ -133,4 +148,6 @@ internal sealed class BiomeManager
     private static long MathMod(long value, long modulus) => ((value % modulus) + modulus) % modulus;
 
     private static double Square(double value) => value * value;
+
+    private readonly record struct CornerJitter(int X, int Y, int Z, double FiddleX, double FiddleY, double FiddleZ, bool Set);
 }
