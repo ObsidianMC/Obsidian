@@ -45,7 +45,7 @@ public abstract class PlacementFilterBase : SinglePlacementModifierBase
 /// <summary>
 /// State shared by the placement modifiers of one placed feature.
 /// </summary>
-public sealed class PlacementContext
+public readonly struct PlacementContext
 {
     public required IWorldGenLevel Level { get; init; }
 

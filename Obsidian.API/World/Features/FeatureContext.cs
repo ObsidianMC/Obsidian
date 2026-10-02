@@ -5,7 +5,7 @@ namespace Obsidian.API.World.Features;
 /// <summary>
 /// Everything a configured feature needs to place itself, like vanilla's FeaturePlaceContext.
 /// </summary>
-public sealed class FeatureContext
+public readonly struct FeatureContext
 {
     public required IWorldGenLevel Level { get; init; }
 
