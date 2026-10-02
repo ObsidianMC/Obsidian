@@ -33,7 +33,22 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
 #if CACHE_VALID_BLOCKS
         validBlockCount.SetDirty();
 #endif
-        base.Set(x, y, z, blockState);
+        lock (this.dataLock)
+        {
+            // The common case, an indirect palette, without the general path's checks.
+            var data = this.DataArray;
+            if (data is not null && this.Palette is IndirectBlockPalette palette)
+            {
+                var id = palette.GetOrAddId(blockState);
+                if (palette.BitCount > data.BitsPerEntry)
+                    this.DataArray = data = data.Grow(palette.BitCount);
+
+                data[this.GetIndex(x, y, z)] = id;
+                return;
+            }
+
+            base.Set(x, y, z, blockState);
+        }
     }
 
     /// <remarks>

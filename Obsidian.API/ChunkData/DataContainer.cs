@@ -7,7 +7,7 @@ namespace Obsidian.API.ChunkData;
 
 public abstract class DataContainer<T>(byte minBitsPerEntry, byte maxBitsPerEntry, int maxEntryCount, Func<byte, IPalette<T>> paletteFactory)
 {
-    private readonly Lock dataLock = new();
+    private protected readonly Lock dataLock = new();
     public virtual bool IsEmpty { get; }
 
     public byte BitsPerEntry => (byte)this.Palette.BitCount;

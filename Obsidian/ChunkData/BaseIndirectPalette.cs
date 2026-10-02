@@ -32,10 +32,9 @@ public abstract class BaseIndirectPalette<T> : IPalette<T>
 
     public bool TryGetId(T value, out int id)
     {
-        if (!typeof(T).IsValueType)
-        {
-            ArgumentNullException.ThrowIfNull(value, nameof(value));
-        }
+        // A null check rather than typeof(T).IsValueType, which shared generic code can't fold away.
+        if (value is null)
+            throw new ArgumentNullException(nameof(value));
 
         int valueId = this.GetValueId(value);
 
@@ -44,24 +43,14 @@ public abstract class BaseIndirectPalette<T> : IPalette<T>
 
     private bool TryGetIdImpl(int valueId, out int id)
     {
-        ReadOnlySpan<int> valueIds = GetSpan();
-        for (id = 0; id < valueIds.Length; id++)
-        {
-            if (valueIds[id] == valueId)
-            {
-                return true;
-            }
-        }
-
-        return false;
+        id = GetSpan().IndexOf(valueId);
+        return id >= 0;
     }
 
     public int GetOrAddId(T value)
     {
-        if (!typeof(T).IsValueType)
-        {
-            ArgumentNullException.ThrowIfNull(value, nameof(value));
-        }
+        if (value is null)
+            throw new ArgumentNullException(nameof(value));
 
         // Get
         int valueId = this.GetValueId(value);
