@@ -7,17 +7,19 @@ namespace Obsidian.WorldData.Generators.Mojang;
 /// <summary>
 /// Picks the biome whose climate ranges are closest to the sampled climate, like vanilla's multi-noise biome source.
 /// </summary>
-internal sealed class MultiNoiseBiomeSource : IBiomeSource
+internal sealed class MultiNoiseBiomeSource : IClimateBiomeSource
 {
     private static readonly Lazy<(BiomeParameterTree<BiomeCodec> Tree, IReadOnlyList<BiomeCodec> Biomes)> overworldParameters =
         new(() => LoadParameters("overworld"));
+
+    private static readonly Lazy<(BiomeParameterTree<BiomeCodec> Tree, IReadOnlyList<BiomeCodec> Biomes)> netherParameters =
+        new(() => LoadParameters("nether"));
 
     private readonly ClimateSampler climateSampler;
     private readonly BiomeParameterTree<BiomeCodec> parameters;
 
     /// <summary>
-    /// Every biome this source can return, in the order they first appear in the parameter list (vanilla's
-    /// possibleBiomes order, which decides feature ordering).
+    /// Every biome this source can return, in the order they first appear in the parameter list.
     /// </summary>
     public IReadOnlyList<BiomeCodec> PossibleBiomes { get; }
 
@@ -34,12 +36,15 @@ internal sealed class MultiNoiseBiomeSource : IBiomeSource
     public static MultiNoiseBiomeSource Overworld(RandomState randomState) =>
         new(new ClimateSampler(randomState.Router), overworldParameters.Value.Tree, overworldParameters.Value.Biomes);
 
+    /// <summary>
+    /// Creates the source for vanilla's nether biome layout (the <c>minecraft:nether</c> parameter list preset).
+    /// </summary>
+    public static MultiNoiseBiomeSource Nether(RandomState randomState) =>
+        new(new ClimateSampler(randomState.Router), netherParameters.Value.Tree, netherParameters.Value.Biomes);
+
     public BiomeCodec GetNoiseBiome(int quartX, int quartY, int quartZ) =>
         this.GetNoiseBiome(this.climateSampler, quartX, quartY, quartZ);
 
-    /// <summary>
-    /// Gets the biome using another sampler over the same router, e.g. a <see cref="NoiseChunk"/>'s cached one.
-    /// </summary>
     public BiomeCodec GetNoiseBiome(ClimateSampler sampler, int quartX, int quartY, int quartZ) =>
         this.parameters.Search(sampler.Sample(quartX, quartY, quartZ));
 

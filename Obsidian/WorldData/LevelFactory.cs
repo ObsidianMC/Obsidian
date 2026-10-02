@@ -68,6 +68,8 @@ public sealed class LevelFactory(ILogger<LevelFactory> logger, IServiceScopeFact
         this.RegisterGenerator<IslandGenerator>();
         this.RegisterGenerator<EmptyWorldGenerator>();
         this.RegisterGenerator<MojangGenerator>();
+        this.RegisterGenerator<MojangNetherGenerator>();
+        this.RegisterGenerator<MojangEndGenerator>();
     }
 
     /// <summary>

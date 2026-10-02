@@ -11,20 +11,21 @@ internal sealed class CarverStep
 {
     private const int Radius = 8;
 
-    // Every vanilla overworld biome uses these carvers in this order (the order decides each carver's seed).
-    private static readonly Lazy<IReadOnlyList<IConfiguredCarver>> overworldCarvers =
-        new(() => [Load("cave"), Load("cave_extra_underground"), Load("canyon")]);
+    private static readonly ConcurrentDictionary<string, IConfiguredCarver> loadedCarvers = new();
 
     private readonly RandomState randomState;
     private readonly SurfaceBuilder surfaceBuilder;
     private readonly IBiomeSource biomeSource;
     private readonly FluidPicker fluidPicker;
+    private readonly IConfiguredCarver[] carvers;
 
-    public CarverStep(RandomState randomState, SurfaceBuilder surfaceBuilder, IBiomeSource biomeSource)
+    /// <param name="carvers">Configured carver names in the biomes' order, which decides each carver's seed.</param>
+    public CarverStep(RandomState randomState, SurfaceBuilder surfaceBuilder, IBiomeSource biomeSource, IEnumerable<string> carvers)
     {
         this.randomState = randomState;
         this.surfaceBuilder = surfaceBuilder;
         this.biomeSource = biomeSource;
+        this.carvers = [.. carvers.Select(name => loadedCarvers.GetOrAdd(name, Load))];
 
         var settings = randomState.Settings;
         this.fluidPicker = Aquifers.CreateGlobalFluidPicker(settings.SeaLevel, BlocksRegistry.GetFromSimpleState(settings.DefaultFluid));
@@ -44,7 +45,7 @@ internal sealed class CarverStep
         };
 
         var random = new WorldgenRandom(new LegacyRandomSource(0L));
-        var carvers = overworldCarvers.Value;
+        var carvers = this.carvers;
 
         for (var offsetX = -Radius; offsetX <= Radius; offsetX++)
         {
@@ -53,7 +54,7 @@ internal sealed class CarverStep
                 var startChunkX = chunk.X + offsetX;
                 var startChunkZ = chunk.Z + offsetZ;
 
-                for (var index = 0; index < carvers.Count; index++)
+                for (var index = 0; index < carvers.Length; index++)
                 {
                     random.SetLargeFeatureSeed(this.randomState.Seed + index, startChunkX, startChunkZ);
 
@@ -80,19 +81,22 @@ internal sealed class CarverStep
         var lavaLevel = CarverAnchor.Parse(config.GetProperty("lava_level"));
         var replaceable = ResolveBlockTag(config.GetProperty("replaceable").GetString()!);
 
+        CaveCarverConfiguration CaveConfiguration() => new()
+        {
+            Probability = probability,
+            Y = y,
+            YScale = yScale,
+            LavaLevel = lavaLevel,
+            Replaceable = replaceable,
+            HorizontalRadiusMultiplier = FloatProvider.Parse(config.GetProperty("horizontal_radius_multiplier")),
+            VerticalRadiusMultiplier = FloatProvider.Parse(config.GetProperty("vertical_radius_multiplier")),
+            FloorLevel = FloatProvider.Parse(config.GetProperty("floor_level"))
+        };
+
         return type switch
         {
-            "minecraft:cave" => new ConfiguredCarver<CaveCarverConfiguration>(new CaveWorldCarver(), new CaveCarverConfiguration
-            {
-                Probability = probability,
-                Y = y,
-                YScale = yScale,
-                LavaLevel = lavaLevel,
-                Replaceable = replaceable,
-                HorizontalRadiusMultiplier = FloatProvider.Parse(config.GetProperty("horizontal_radius_multiplier")),
-                VerticalRadiusMultiplier = FloatProvider.Parse(config.GetProperty("vertical_radius_multiplier")),
-                FloorLevel = FloatProvider.Parse(config.GetProperty("floor_level"))
-            }),
+            "minecraft:cave" => new ConfiguredCarver<CaveCarverConfiguration>(new CaveWorldCarver(), CaveConfiguration()),
+            "minecraft:nether_cave" => new ConfiguredCarver<CaveCarverConfiguration>(new NetherWorldCarver(), CaveConfiguration()),
             "minecraft:canyon" => new ConfiguredCarver<CanyonCarverConfiguration>(new CanyonWorldCarver(), new CanyonCarverConfiguration
             {
                 Probability = probability,

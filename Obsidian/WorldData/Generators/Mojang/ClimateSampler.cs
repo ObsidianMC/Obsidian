@@ -25,6 +25,11 @@ internal sealed class ClimateSampler
         this.weirdness = weirdness;
     }
 
+    /// <summary>
+    /// The erosion function, which the end's biome source samples directly at block positions.
+    /// </summary>
+    public IDensityFunction Erosion => this.erosion;
+
     public ClimateSampler(NoiseRouter router)
         : this(router.Temperature, router.Vegetation, router.Continents, router.Erosion, router.Depth, router.Ridges)
     {

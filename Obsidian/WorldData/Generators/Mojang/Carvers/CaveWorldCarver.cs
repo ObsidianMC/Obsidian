@@ -8,15 +8,22 @@ namespace Obsidian.WorldData.Generators.Mojang.Carvers;
 /// <remarks>
 /// The float/double mix is deliberate: vanilla computes angles and offsets in float and positions in double.
 /// </remarks>
-internal sealed class CaveWorldCarver : WorldCarver<CaveCarverConfiguration>
+internal class CaveWorldCarver : WorldCarver<CaveCarverConfiguration>
 {
-    private const int CaveBound = 15;
-    private const double YScaleMultiplier = 1.0;
+    /// <summary>
+    /// Bounds the number of caves a start chunk carves.
+    /// </summary>
+    protected virtual int CaveBound => 15;
+
+    /// <summary>
+    /// Vertical stretch of the tunnels.
+    /// </summary>
+    protected virtual double YScale => 1.0;
 
     public override void Carve(CarvingContext context, CaveCarverConfiguration configuration, IRandomSource random, int startChunkX, int startChunkZ)
     {
         var maxDistance = (Range * 2 - 1) << 4;
-        var caveCount = random.NextInt(random.NextInt(random.NextInt(CaveBound) + 1) + 1);
+        var caveCount = random.NextInt(random.NextInt(random.NextInt(this.CaveBound) + 1) + 1);
 
         for (var cave = 0; cave < caveCount; cave++)
         {
@@ -42,16 +49,19 @@ internal sealed class CaveWorldCarver : WorldCarver<CaveCarverConfiguration>
             {
                 var yaw = random.NextFloat() * (float)(Math.PI * 2);
                 var pitch = (random.NextFloat() - 0.5f) / 4.0f;
-                var thickness = GetThickness(random);
+                var thickness = this.GetThickness(random);
                 var branchCount = maxDistance - random.NextInt(maxDistance / 4);
 
                 this.CreateTunnel(context, configuration, random.NextLong(), x, y, z, horizontalRadiusMultiplier, verticalRadiusMultiplier,
-                    thickness, yaw, pitch, 0, branchCount, YScaleMultiplier, skipChecker);
+                    thickness, yaw, pitch, 0, branchCount, this.YScale, skipChecker);
             }
         }
     }
 
-    private static float GetThickness(IRandomSource random)
+    /// <summary>
+    /// Draws a tunnel's thickness.
+    /// </summary>
+    protected virtual float GetThickness(IRandomSource random)
     {
         var thickness = random.NextFloat() * 2.0f + random.NextFloat();
 

@@ -12,3 +12,19 @@ public interface IBiomeSource
     /// </summary>
     public BiomeCodec GetNoiseBiome(int quartX, int quartY, int quartZ);
 }
+
+/// <summary>
+/// A biome source that reads the noise router's climate, like vanilla's <c>BiomeSource</c>.
+/// </summary>
+internal interface IClimateBiomeSource : IBiomeSource
+{
+    /// <summary>
+    /// Every biome this source can return, in vanilla's possibleBiomes order (which decides feature ordering).
+    /// </summary>
+    public IReadOnlyList<BiomeCodec> PossibleBiomes { get; }
+
+    /// <summary>
+    /// Gets the biome using another sampler over the same router, e.g. a <see cref="NoiseChunk"/>'s cached one.
+    /// </summary>
+    public BiomeCodec GetNoiseBiome(ClimateSampler sampler, int quartX, int quartY, int quartZ);
+}

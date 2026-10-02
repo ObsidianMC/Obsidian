@@ -139,7 +139,11 @@ internal abstract class WorldCarver<TConfiguration> where TConfiguration : Carve
         }
     }
 
-    private void CarveBlock(CarvingContext context, TConfiguration configuration, int localX, int y, int localZ, ref bool surfaceReached)
+    /// <summary>
+    /// Carves one block inside the ellipsoid.
+    /// </summary>
+    /// <param name="surfaceReached">Set once the column passes through grass or mycelium.</param>
+    protected virtual void CarveBlock(CarvingContext context, TConfiguration configuration, int localX, int y, int localZ, ref bool surfaceReached)
     {
         var chunk = context.Chunk;
         var block = chunk.GetBlock(localX, y, localZ);

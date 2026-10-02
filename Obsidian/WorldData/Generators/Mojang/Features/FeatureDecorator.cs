@@ -20,12 +20,16 @@ internal sealed class FeatureDecorator
     private readonly IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>> biomeFeatures;
     private readonly IReadOnlyDictionary<string, HashSet<PlacedFeature>> biomeFeatureSets;
     private readonly HashSet<string> possibleBiomes;
+    private readonly int generationDepth;
 
     /// <param name="possibleBiomes">Biomes the biome source can produce, in vanilla's possibleBiomes order.</param>
     /// <param name="biomeFeatures">Decoration steps of each biome, keyed by biome id.</param>
-    public FeatureDecorator(IReadOnlyList<BiomeCodec> possibleBiomes, IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>> biomeFeatures)
+    /// <param name="generationDepth">The noise settings' height, which caps the height placements see.</param>
+    public FeatureDecorator(IReadOnlyList<BiomeCodec> possibleBiomes, IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>> biomeFeatures,
+        int generationDepth)
     {
         this.biomeFeatures = biomeFeatures;
+        this.generationDepth = generationDepth;
         this.possibleBiomes = possibleBiomes.Select(biome => biome.Name).ToHashSet();
         this.featuresPerStep = FeatureSorter.Build(possibleBiomes, biome => this.GetSteps(biome.Name));
         this.biomeFeatureSets = biomeFeatures.ToDictionary(entry => entry.Key,
@@ -42,7 +46,9 @@ internal sealed class FeatureDecorator
         Action<int, int, PlacedFeature, bool>? onPlaced = null)
     {
         var origin = new Vector(chunkX << 4, region.MinY, chunkZ << 4);
-        var generation = new WorldGenerationContext(region.MinY, region.Height);
+        // Like vanilla's PlacementContext: the level's min Y, but at most the generator's depth (128 in the nether), so
+        // anchors such as "below top" resolve against the noise range.
+        var generation = new WorldGenerationContext(region.MinY, Math.Min(region.Height, this.generationDepth));
 
         // The initial seed doesn't matter: the decoration seed replaces it.
         var random = new WorldgenRandom(new XoroshiroRandomSource(0L));

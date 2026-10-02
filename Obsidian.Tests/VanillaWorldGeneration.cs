@@ -134,10 +134,52 @@ public class VanillaWorldGeneration
         Assert.Equal(expectedBlocks, Sha256(BlockNames(area[(chunkX, chunkZ)])));
     }
 
+    [Theory]
+    // SHA-256 of the block names (y, z, x order) of a full chunk in a vanilla server world with structures disabled.
+    // Neighbors are carved in a 5x5 and decorated in a 3x3, like a full chunk; these chunks don't depend on the order
+    // neighbors are decorated in.
+    [InlineData("nether", 12345L, 0, 0, "0d67d2e72363035b58dae710879f79f6d01a6e3142697ac8bd88685081cb38ae")]
+    [InlineData("end", 12345L, 2, -2, "2df6a200c97c9d1a52f59344ccfdfceea0f48a5868836d9ce4f56b42f4253038")] // guarded spike
+    [InlineData("end", 12345L, 83, 0, "b566d9162bd39f686d2b94814b7327a766a65c62d6415432201b692aebf19dda")] // outer islands
+    public void FullChunkMatchesVanilla(string dimensionName, long seed, int chunkX, int chunkZ, string expectedBlocks)
+    {
+        var dimension = dimensionName == "nether" ? MojangDimension.Nether : MojangDimension.End;
+        var builder = new ChunkBuilder(dimension, seed);
+        var carved = new Dictionary<(int X, int Z), IChunk>();
+
+        for (var dx = -2; dx <= 2; dx++)
+        {
+            for (var dz = -2; dz <= 2; dz++)
+            {
+                var chunk = new Chunk(chunkX + dx, chunkZ + dz, dimension.MinY, dimension.Height);
+                builder.PopulateBiomes(chunk);
+                builder.Generate3DTerrain(chunk);
+                builder.ApplySurfaceRules(chunk);
+                builder.ApplyCarvers(chunk);
+                carved[(chunk.X, chunk.Z)] = chunk;
+            }
+        }
+
+        for (var dx = -1; dx <= 1; dx++)
+        {
+            for (var dz = -1; dz <= 1; dz++)
+            {
+                var area = new Dictionary<(int X, int Z), IChunk>();
+                for (var ax = -1; ax <= 1; ax++)
+                    for (var az = -1; az <= 1; az++)
+                        area[(chunkX + dx + ax, chunkZ + dz + az)] = carved[(chunkX + dx + ax, chunkZ + dz + az)];
+
+                builder.Decorate(area, chunkX + dx, chunkZ + dz);
+            }
+        }
+
+        Assert.Equal(expectedBlocks, Sha256(BlockNames(carved[(chunkX, chunkZ)])));
+    }
+
     private static string BlockNames(IChunk chunk)
     {
         var blocks = new StringBuilder();
-        for (var y = -64; y < 320; y++)
+        for (var y = chunk.MinY; y < chunk.MinY + chunk.Height; y++)
             for (var z = 0; z < 16; z++)
                 for (var x = 0; x < 16; x++)
                 {

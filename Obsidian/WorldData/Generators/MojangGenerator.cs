@@ -5,12 +5,20 @@ using System.Threading;
 
 namespace Obsidian.WorldData.Generators;
 
+/// <summary>
+/// Vanilla's overworld generator.
+/// </summary>
 internal class MojangGenerator : ILevelGenerator
 {
     // Chunk locks are striped so their number stays bounded; stripes are always taken in ascending order.
     private const int LockStripeCount = 256;
 
-    public string Id => "minecraft:mojang_generator";
+    public virtual string Id => "minecraft:mojang_generator";
+
+    /// <summary>
+    /// The dimension this generator builds; levels using it must have the dimension's build range.
+    /// </summary>
+    protected virtual MojangDimension Dimension => MojangDimension.Overworld;
 
     private ChunkBuilder builder;
     private ILevel world;
@@ -22,7 +30,7 @@ internal class MojangGenerator : ILevelGenerator
 
     public async ValueTask<IChunk> GenerateChunkAsync(int cx, int cz, IChunk? chunk = null, ChunkGenStage stage = ChunkGenStage.full)
     {
-        chunk ??= new Chunk(cx, cz);
+        chunk ??= new Chunk(cx, cz, this.Dimension.MinY, this.Dimension.Height);
 
         // Sanity checks
         if (chunk.IsGenerated)
@@ -206,7 +214,7 @@ internal class MojangGenerator : ILevelGenerator
     public void Init(ILevel world)
     {
         this.world = world;
-        this.builder = new ChunkBuilder(RandomState.ParseSeed(world.Seed));
+        this.builder = new ChunkBuilder(this.Dimension, RandomState.ParseSeed(world.Seed));
     }
 
     private readonly struct ChunkLocks(SemaphoreSlim[] locks, SortedSet<int> stripes) : IDisposable
@@ -217,4 +225,24 @@ internal class MojangGenerator : ILevelGenerator
                 locks[stripe].Release();
         }
     }
+}
+
+/// <summary>
+/// Vanilla's nether generator, used by the <c>minecraft:the_nether</c> dimension.
+/// </summary>
+internal sealed class MojangNetherGenerator : MojangGenerator
+{
+    public override string Id => "minecraft:the_nether";
+
+    protected override MojangDimension Dimension => MojangDimension.Nether;
+}
+
+/// <summary>
+/// Vanilla's end generator, used by the <c>minecraft:the_end</c> dimension.
+/// </summary>
+internal sealed class MojangEndGenerator : MojangGenerator
+{
+    public override string Id => "minecraft:the_end";
+
+    protected override MojangDimension Dimension => MojangDimension.End;
 }

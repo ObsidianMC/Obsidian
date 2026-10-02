@@ -5,30 +5,41 @@ using Obsidian.WorldData.Generators.Mojang.Features;
 namespace Obsidian.WorldData.Generators.Mojang;
 
 /// <summary>
-/// Runs the vanilla overworld generation steps (biomes, noise, surface, carvers, features) for a level.
+/// Runs the vanilla generation steps (biomes, noise, surface, carvers, features) of a dimension for a level.
 /// </summary>
 internal sealed class ChunkBuilder
 {
+    private readonly MojangDimension dimension;
     private readonly NoiseSetting settings;
     private readonly TerrainGenerator terrainGenerator;
     private readonly SurfaceBuilder surfaceBuilder;
-    private readonly MultiNoiseBiomeSource biomeSource;
+    private readonly IClimateBiomeSource biomeSource;
     private readonly CarverStep carverStep;
     private readonly FeatureDecorator featureDecorator;
 
     public RandomState RandomState { get; }
 
+    /// <summary>
+    /// Creates a builder for the overworld.
+    /// </summary>
     /// <param name="seed">World seed; see <see cref="RandomState.ParseSeed"/> for level seed strings.</param>
-    public ChunkBuilder(long seed)
+    public ChunkBuilder(long seed) : this(MojangDimension.Overworld, seed)
     {
-        this.settings = NoiseRegistry.NoiseSettings.All["minecraft:overworld"];
+    }
+
+    /// <param name="dimension">The dimension to generate. Chunks passed in must use its build range.</param>
+    /// <param name="seed">World seed; see <see cref="RandomState.ParseSeed"/> for level seed strings.</param>
+    public ChunkBuilder(MojangDimension dimension, long seed)
+    {
+        this.dimension = dimension;
+        this.settings = NoiseRegistry.NoiseSettings.All[dimension.NoiseSettings];
         this.RandomState = new RandomState(this.settings, seed);
 
         this.terrainGenerator = new TerrainGenerator(this.RandomState);
-        this.biomeSource = MultiNoiseBiomeSource.Overworld(this.RandomState);
+        this.biomeSource = dimension.CreateBiomeSource(this.RandomState);
         this.surfaceBuilder = new SurfaceBuilder(this.RandomState, this.biomeSource);
-        this.carverStep = new CarverStep(this.RandomState, this.surfaceBuilder, this.biomeSource);
-        this.featureDecorator = new FeatureDecorator(this.biomeSource.PossibleBiomes, BiomeFeatures.All);
+        this.carverStep = new CarverStep(this.RandomState, this.surfaceBuilder, this.biomeSource, dimension.Carvers);
+        this.featureDecorator = new FeatureDecorator(this.biomeSource.PossibleBiomes, BiomeFeatures.All, this.settings.Noise.Height);
     }
 
     /// <param name="chunk">Chunk to fill.</param>
@@ -37,13 +48,13 @@ internal sealed class ChunkBuilder
         this.terrainGenerator.Generate(chunk, fluidUpdates);
 
     /// <summary>
-    /// Stores the biome of every 4x4x4 cell of the chunk.
+    /// Stores the biome of every 4x4x4 cell of the chunk, over the whole build range like vanilla.
     /// </summary>
     public void PopulateBiomes(IChunk chunk)
     {
         var sampler = new NoiseChunk(this.RandomState, chunk.X, chunk.Z).ClimateSampler;
-        var minQuartY = this.settings.Noise.MinY >> 2;
-        var maxQuartY = minQuartY + (this.settings.Noise.Height >> 2);
+        var minQuartY = this.dimension.MinY >> 2;
+        var maxQuartY = minQuartY + (this.dimension.Height >> 2);
 
         for (var quartX = 0; quartX < 4; quartX++)
         {
@@ -61,7 +72,7 @@ internal sealed class ChunkBuilder
     public void ApplySurfaceRules(IChunk chunk)
     {
         this.surfaceBuilder.BuildSurface(chunk);
-        WorldgenHeightmaps.Update(chunk, this.settings.Noise.MinY, this.settings.Noise.Height);
+        WorldgenHeightmaps.Update(chunk, this.dimension.MinY, this.dimension.Height);
     }
 
     /// <param name="chunk">Chunk to carve.</param>
@@ -69,7 +80,7 @@ internal sealed class ChunkBuilder
     public void ApplyCarvers(IChunk chunk, ICollection<Vector>? fluidUpdates = null)
     {
         this.carverStep.Apply(chunk, fluidUpdates);
-        WorldgenHeightmaps.Update(chunk, this.settings.Noise.MinY, this.settings.Noise.Height);
+        WorldgenHeightmaps.Update(chunk, this.dimension.MinY, this.dimension.Height);
     }
 
     /// <summary>
@@ -81,9 +92,8 @@ internal sealed class ChunkBuilder
     public void Decorate(IReadOnlyDictionary<(int X, int Z), IChunk> area, int chunkX, int chunkZ,
         Action<Vector>? scheduleFluidTick = null, Action<int, int, PlacedFeature, bool>? onPlaced = null)
     {
-        var noise = this.settings.Noise;
-        var region = new WorldGenRegion(area, chunkX, chunkZ, this.RandomState.Seed, noise.MinY, noise.Height, this.settings.SeaLevel,
-            this.biomeSource, scheduleFluidTick);
+        var region = new WorldGenRegion(area, chunkX, chunkZ, this.RandomState.Seed, this.dimension.MinY, this.dimension.Height,
+            this.settings.SeaLevel, this.biomeSource, scheduleFluidTick);
 
         // Like vanilla, only the 3x3 chunks around the decorated chunk contribute biomes.
         var neighbors = area.Where(entry => Math.Abs(entry.Key.X - chunkX) <= 1 && Math.Abs(entry.Key.Z - chunkZ) <= 1)
@@ -97,5 +107,5 @@ internal sealed class ChunkBuilder
     /// Writes the final heightmaps into the chunk; call it once every chunk around it is decorated.
     /// </summary>
     public void UpdateFinalHeightmaps(IChunk chunk) =>
-        WorldgenHeightmaps.UpdateFinal(chunk, this.settings.Noise.MinY, this.settings.Noise.Height);
+        WorldgenHeightmaps.UpdateFinal(chunk, this.dimension.MinY, this.dimension.Height);
 }
