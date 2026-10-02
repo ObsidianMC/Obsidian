@@ -38,36 +38,40 @@ internal sealed class TreeVoxelShape
         for (var x = 0; x < this.SizeX; x++)
         {
             for (var y = 0; y < this.SizeY; y++)
-                this.ScanRun(this.SizeZ, z => this.IsFull(x, y, z), z => consumer(BlockFace.North, x, y, z), z => consumer(BlockFace.South, x, y, z));
+                this.ScanRun(consumer, BlockFace.North, BlockFace.South, x, y, 0, 0, 0, 1, this.SizeZ);
         }
 
         // Y faces: z outer, x middle, y inner.
         for (var z = 0; z < this.SizeZ; z++)
         {
             for (var x = 0; x < this.SizeX; x++)
-                this.ScanRun(this.SizeY, y => this.IsFull(x, y, z), y => consumer(BlockFace.Down, x, y, z), y => consumer(BlockFace.Up, x, y, z));
+                this.ScanRun(consumer, BlockFace.Down, BlockFace.Up, x, 0, z, 0, 1, 0, this.SizeY);
         }
 
         // X faces: y outer, z middle, x inner.
         for (var y = 0; y < this.SizeY; y++)
         {
             for (var z = 0; z < this.SizeZ; z++)
-                this.ScanRun(this.SizeX, x => this.IsFull(x, y, z), x => consumer(BlockFace.West, x, y, z), x => consumer(BlockFace.East, x, y, z));
+                this.ScanRun(consumer, BlockFace.West, BlockFace.East, 0, y, z, 1, 0, 0, this.SizeX);
         }
     }
 
-    /// <summary>Reports where runs of filled cells start (negative face) and end (positive face) along one line.</summary>
-    private void ScanRun(int size, Func<int, bool> isFull, Action<int> negativeFace, Action<int> positiveFace)
+    /// <summary>
+    /// Reports where runs of filled cells start (negative face) and end (positive face) along the line from (x, y, z) in
+    /// steps of (dx, dy, dz).
+    /// </summary>
+    private void ScanRun(Action<BlockFace, int, int, int> consumer, BlockFace negativeFace, BlockFace positiveFace,
+        int x, int y, int z, int dx, int dy, int dz, int size)
     {
         var previous = false;
         for (var i = 0; i <= size; i++)
         {
-            var current = i != size && isFull(i);
+            var current = i != size && this.IsFull(x + i * dx, y + i * dy, z + i * dz);
             if (!previous && current)
-                negativeFace(i);
+                consumer(negativeFace, x + i * dx, y + i * dy, z + i * dz);
 
             if (previous && !current)
-                positiveFace(i - 1);
+                consumer(positiveFace, x + (i - 1) * dx, y + (i - 1) * dy, z + (i - 1) * dz);
 
             previous = current;
         }
