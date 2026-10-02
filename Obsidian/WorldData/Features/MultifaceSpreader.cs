@@ -140,6 +140,9 @@ internal sealed class MultifaceSpreader
     /// </summary>
     public static int Faces(IBlock state) => Info(state) & FacesMask;
 
+    /// <inheritdoc cref="Faces(IBlock)"/>
+    public static int Faces(int stateId) => Info(stateId) & FacesMask;
+
     private bool SpreadFromFaceTowardDirection(int stateInfo, ref Neighborhood blocks, Vector position, BlockFace fromFace, BlockFace direction)
     {
         var target = this.GetSpreadPosition(stateInfo, ref blocks, position, fromFace, direction);

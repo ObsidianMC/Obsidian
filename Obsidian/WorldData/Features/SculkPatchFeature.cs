@@ -105,6 +105,12 @@ internal sealed class SculkSpreader
     private static readonly BlockSet replaceableWorldGen = new("#minecraft:sculk_replaceable_world_gen");
     private static readonly BlockSet sculkReplaceable = new("#minecraft:sculk_replaceable");
 
+    // Registry ids of the blocks the cursors check by state id.
+    private static readonly int sculkId = BlocksRegistry.Get(Material.Sculk).RegistryId;
+    private static readonly int sculkVeinId = BlocksRegistry.Get(Material.SculkVein).RegistryId;
+    private static readonly int sculkSensorId = BlocksRegistry.Get(Material.SculkSensor).RegistryId;
+    private static readonly int sculkShriekerId = BlocksRegistry.Get(Material.SculkShrieker).RegistryId;
+
     // BlockPos.betweenClosed(-1..1) without corners and the center, in iteration order.
     private static readonly Vector[] nonCornerNeighbours = [.. FeatureHelpers.BetweenClosed(new Vector(-1), new Vector(1))
         .Where(offset => (offset.X == 0 || offset.Y == 0 || offset.Z == 0) && offset != Vector.Zero)];
@@ -125,6 +131,12 @@ internal sealed class SculkSpreader
     private int cursorCount;
 
     public static bool IsSculkBehaviour(IBlock block) => block.Material is Material.Sculk or Material.SculkVein;
+
+    private static bool IsSculkBehaviour(int stateId)
+    {
+        var block = BlocksRegistry.RegistryIdOf(stateId);
+        return block == sculkId || block == sculkVeinId;
+    }
 
     public void Clear() => this.cursorCount = 0;
 
@@ -288,7 +300,8 @@ internal sealed class SculkSpreader
                 {
                     for (var x = position.X - 4; x <= position.X + 4; x++)
                     {
-                        if (level.GetBlock(new Vector(x, y, z)).Material is Material.SculkSensor or Material.SculkShrieker)
+                        var block = BlocksRegistry.RegistryIdOf(level.GetStateId(new Vector(x, y, z)));
+                        if (block == sculkSensorId || block == sculkShriekerId)
                             growths++;
 
                         if (growths > 2)
@@ -310,7 +323,7 @@ internal sealed class SculkSpreader
             foreach (var offset in offsets)
             {
                 var candidate = position + offset;
-                var state = level.GetBlock(candidate);
+                var state = level.GetStateId(candidate);
                 if (!IsSculkBehaviour(state) || !IsMovementUnobstructed(level, position, candidate))
                     continue;
 
@@ -341,7 +354,7 @@ internal sealed class SculkSpreader
         }
 
         private static bool IsUnobstructed(IWorldGenLevel level, Vector position, BlockFace face) =>
-            !level.GetBlock(position.Offset(face)).IsFaceSturdy(face.Opposite());
+            !BlockPhysics.IsFaceSturdy(level.GetStateId(position.Offset(face)), face.Opposite());
     }
 
     private enum Behaviour
@@ -455,14 +468,15 @@ internal sealed class SculkSpreader
         level.SetBlock(position, state);
     }
 
-    private static bool HasSubstrateAccess(IWorldGenLevel level, IBlock state, Vector position)
+    private static bool HasSubstrateAccess(IWorldGenLevel level, int stateId, Vector position)
     {
-        if (state.Material != Material.SculkVein)
+        if (BlocksRegistry.RegistryIdOf(stateId) != sculkVeinId)
             return false;
 
+        var faces = MultifaceSpreader.Faces(stateId);
         foreach (var face in FeatureHelpers.Directions)
         {
-            if (MultifaceSpreader.HasFace(state, face) && sculkReplaceable.Contains(level.GetBlock(position.Offset(face))))
+            if ((faces >> (int)face & 1) != 0 && sculkReplaceable.ContainsState(level.GetStateId(position.Offset(face))))
                 return true;
         }
 
