@@ -1,7 +1,6 @@
 using Obsidian.ChunkData;
 using Obsidian.WorldData.Generators.Mojang.Structures;
 using Obsidian.WorldData.Structures;
-using System.Runtime.InteropServices;
 
 namespace Obsidian.WorldData.Generators.Mojang;
 
@@ -43,6 +42,7 @@ internal sealed class TerrainGenerator : IStructureTerrain
         Span<int> oceanFloor = stackalloc int[256];
         worldSurface.Fill(minY);
         oceanFloor.Fill(minY);
+        var openColumns = 256;
 
         // Blocks are computed a layer of cells at a time, a cell at once, then written from the top down in z, x order.
         // Writing in that order keeps the order of the sections' palettes and of the fluid updates.
@@ -136,19 +136,31 @@ internal sealed class TerrainGenerator : IStructureTerrain
                 var layer = codes.AsSpan(inCellY * 256, 256);
                 palette.SetLayer(chunk, y, layer);
 
+                var layerScheduled = fluidUpdates is not null && scheduled.AsSpan(inCellY * 256, 256).Contains(true);
+                if (openColumns == 0 && !layerScheduled)
+                    continue;
+
                 for (var column = 0; column < 256; column++)
                 {
                     var code = layer[column];
                     if (palette.IsAir(code))
                         continue;
 
-                    if (fluidUpdates is not null && scheduled[inCellY * 256 + column])
-                        fluidUpdates.Add(new Vector(noiseChunk.ChunkMinX + (column & 15), y, noiseChunk.ChunkMinZ + (column >> 4)));
+                    if (layerScheduled && scheduled[inCellY * 256 + column])
+                        fluidUpdates!.Add(new Vector(noiseChunk.ChunkMinX + (column & 15), y, noiseChunk.ChunkMinZ + (column >> 4)));
+
+                    // Blocks below a column's first motion blocking block (which is at or below its first non-air one) change
+                    // neither height.
+                    if (oceanFloor[column] != minY)
+                        continue;
 
                     worldSurface[column] = Math.Max(worldSurface[column], y + 1);
 
                     if (palette.BlocksMotion(code))
-                        oceanFloor[column] = Math.Max(oceanFloor[column], y + 1);
+                    {
+                        oceanFloor[column] = y + 1;
+                        openColumns--;
+                    }
                 }
             }
         }
@@ -219,9 +231,12 @@ internal sealed class TerrainGenerator : IStructureTerrain
         /// </summary>
         public const byte DefaultCode = 0;
 
-        private readonly List<IBlock> keys = [];
-        private readonly List<IBlock?> blocks = [];
-        private readonly List<(bool IsLiquid, bool BlocksMotion)> flags = [];
+        // Indexed by code; a code is a byte.
+        private readonly IBlock[] keys = new IBlock[256];
+        private readonly IBlock?[] blocks = new IBlock?[256];
+        private readonly bool[] liquid = new bool[256];
+        private readonly bool[] blocksMotion = new bool[256];
+        private int count;
         private IBlock? last;
         private byte lastCode;
 
@@ -233,18 +248,19 @@ internal sealed class TerrainGenerator : IStructureTerrain
                 return this.lastCode;
 
             var code = 0;
-            while (code < this.keys.Count && !ReferenceEquals(this.keys[code], block))
+            while (code < this.count && !ReferenceEquals(this.keys[code], block))
                 code++;
 
-            if (code == this.keys.Count)
+            if (code == this.count)
             {
-                if (this.keys.Count > byte.MaxValue)
+                if (this.count == this.keys.Length)
                     throw new InvalidOperationException("Too many distinct blocks in one terrain fill.");
 
-                code = this.keys.Count;
-                this.keys.Add(block);
-                this.blocks.Add(block.IsAir ? null : block);
-                this.flags.Add((block.IsLiquid, block.BlocksMotion()));
+                this.keys[code] = block;
+                this.blocks[code] = block.IsAir ? null : block;
+                this.liquid[code] = block.IsLiquid;
+                this.blocksMotion[code] = block.BlocksMotion();
+                this.count++;
             }
 
             this.last = block;
@@ -254,16 +270,16 @@ internal sealed class TerrainGenerator : IStructureTerrain
 
         public bool IsAir(byte code) => this.blocks[code] is null;
 
-        public bool IsLiquid(byte code) => this.flags[code].IsLiquid;
+        public bool IsLiquid(byte code) => this.liquid[code];
 
-        public bool BlocksMotion(byte code) => this.flags[code].BlocksMotion;
+        public bool BlocksMotion(byte code) => this.blocksMotion[code];
 
         /// <summary>
         /// Sets the non-air blocks of a layer (codes indexed <c>z * 16 + x</c>) in index order.
         /// </summary>
         public void SetLayer(IChunk chunk, int y, ReadOnlySpan<byte> layer)
         {
-            var blocks = CollectionsMarshal.AsSpan(this.blocks);
+            var blocks = this.blocks.AsSpan(0, this.count);
 
             if (chunk.Sections[(y - chunk.MinY) >> 4] is ChunkSection section)
             {
