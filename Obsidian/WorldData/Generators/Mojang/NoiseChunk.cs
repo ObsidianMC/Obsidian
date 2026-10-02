@@ -207,10 +207,25 @@ internal sealed class NoiseChunk
     /// its mapped and compiled functions and its buffers.
     /// </summary>
     /// <remarks>Only for noise chunks covering a whole chunk.</remarks>
-    public void MoveTo(int chunkX, int chunkZ)
+    public void MoveTo(int chunkX, int chunkZ) => this.MoveToCells(chunkX << 4, chunkZ << 4);
+
+    /// <summary>
+    /// Makes a noise chunk from <see cref="ForColumn"/> serve the cell holding column (<paramref name="x"/>,
+    /// <paramref name="z"/>) as if it were new. Staying in the same cell keeps everything computed so far.
+    /// </summary>
+    public void MoveToColumn(int x, int z)
     {
-        this.ChunkMinX = chunkX << 4;
-        this.ChunkMinZ = chunkZ << 4;
+        var minX = Mth.FloorDiv(x, this.CellWidth) * this.CellWidth;
+        var minZ = Mth.FloorDiv(z, this.CellWidth) * this.CellWidth;
+
+        if (minX != this.ChunkMinX || minZ != this.ChunkMinZ)
+            this.MoveToCells(minX, minZ);
+    }
+
+    private void MoveToCells(int minX, int minZ)
+    {
+        this.ChunkMinX = minX;
+        this.ChunkMinZ = minZ;
         this.preliminarySurfaceLevels.Clear();
         this.aquiferMoved = true;
 
@@ -460,6 +475,9 @@ internal sealed class NoiseChunk
         private double[]? corners;
         private bool sampled;
 
+        // For a column's noise chunk: the lowest corner Y index sampled so far (see GetColumnCorners).
+        private int sampledFromY = int.MaxValue;
+
         public string Type => "minecraft:interpolated";
 
         public double MinValue => this.argument.MinValue;
@@ -490,7 +508,11 @@ internal sealed class NoiseChunk
             this.routerFunction = routerFunction;
         }
 
-        public void Reset() => this.sampled = false;
+        public void Reset()
+        {
+            this.sampled = false;
+            this.sampledFromY = int.MaxValue;
+        }
 
         public double GetValue(double x, double y, double z)
         {
@@ -504,8 +526,9 @@ internal sealed class NoiseChunk
                 return this.argument.GetValue(x, y, z);
 
             var grid = chunk.grid;
-            var corners = this.Corners;
-            var index = chunk.CornerIndex(grid.CellOfXZ[localX], grid.CellOfY[localY], grid.CellOfXZ[localZ]);
+            var cellY = grid.CellOfY[localY];
+            var corners = chunk.CellCountXZ == 1 ? this.GetColumnCorners(cellY) : this.Corners;
+            var index = chunk.CornerIndex(grid.CellOfXZ[localX], cellY, grid.CellOfXZ[localZ]);
             var strideX = chunk.cornerStrideX;
             var strideZ = chunk.cornerStrideZ;
 
@@ -678,6 +701,37 @@ internal sealed class NoiseChunk
 
         private static Vector256<double> LerpLanes(Vector256<double> delta, Vector256<double> start, Vector256<double> end) =>
             start + delta * (end - start);
+
+        /// <summary>
+        /// The corners for a cell of a column's noise chunk, sampled down to the cell. Columns are mostly walked from the top
+        /// until a block matches, so the corners below are often never needed.
+        /// </summary>
+        private double[] GetColumnCorners(int cellY)
+        {
+            if (this.sampled || cellY >= this.sampledFromY)
+                return this.corners!;
+
+            var chunk = this.chunk;
+            var corners = this.corners ??= new double[2 * chunk.cornerStrideX];
+            var top = Math.Min(this.sampledFromY, chunk.CellCountY + 1);
+
+            for (var cellX = 0; cellX <= 1; cellX++)
+            {
+                var blockX = (chunk.FirstCellX + cellX) * chunk.CellWidth;
+
+                for (var cellZ = 0; cellZ <= 1; cellZ++)
+                {
+                    var blockZ = (chunk.FirstCellZ + cellZ) * chunk.CellWidth;
+                    var column = corners.AsSpan(chunk.CornerIndex(cellX, 0, cellZ), chunk.cornerStrideZ);
+
+                    for (var cornerY = cellY; cornerY < top; cornerY++)
+                        column[cornerY] = this.argument.GetValue(blockX, (chunk.CellNoiseMinY + cornerY) * chunk.CellHeight, blockZ);
+                }
+            }
+
+            this.sampledFromY = cellY;
+            return corners;
+        }
 
         private void SampleCorners()
         {

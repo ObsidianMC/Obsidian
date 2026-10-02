@@ -1,6 +1,7 @@
 using Obsidian.ChunkData;
 using Obsidian.WorldData.Generators.Mojang.Structures;
 using Obsidian.WorldData.Structures;
+using System.Threading;
 
 namespace Obsidian.WorldData.Generators.Mojang;
 
@@ -16,6 +17,9 @@ internal sealed class TerrainGenerator : IStructureTerrain
     // A fill's buffers, kept by each thread for its next fill. Taken while in use, so a nested fill would get its own.
     [ThreadStatic]
     private static FillBuffers? freeBuffers;
+
+    // See IterateColumn.
+    private readonly ThreadLocal<NoiseChunk?> columnNoiseChunks = new();
 
     public TerrainGenerator(RandomState randomState)
     {
@@ -216,7 +220,27 @@ internal sealed class TerrainGenerator : IStructureTerrain
     /// <param name="blocks">Receives every block, indexed from the noise's min Y.</param>
     private int? IterateColumn(int x, int z, Predicate<IBlock>? stopAt, IBlock[]? blocks)
     {
-        var noiseChunk = NoiseChunk.ForColumn(this.randomState, x, z);
+        // Each thread keeps its column noise chunk for the next column, which saves mapping the router again, and when the
+        // column is in the same cell, sampling its corners again. Taken while in use.
+        var noiseChunk = this.columnNoiseChunks.Value;
+        this.columnNoiseChunks.Value = null;
+        if (noiseChunk is null)
+            noiseChunk = NoiseChunk.ForColumn(this.randomState, x, z);
+        else
+            noiseChunk.MoveToColumn(x, z);
+
+        try
+        {
+            return this.IterateColumn(noiseChunk, x, z, stopAt, blocks);
+        }
+        finally
+        {
+            this.columnNoiseChunks.Value = noiseChunk;
+        }
+    }
+
+    private int? IterateColumn(NoiseChunk noiseChunk, int x, int z, Predicate<IBlock>? stopAt, IBlock[]? blocks)
+    {
         var aquifer = noiseChunk.Aquifer;
         var settings = this.randomState.Settings;
         var minY = noiseChunk.CellNoiseMinY * noiseChunk.CellHeight;
