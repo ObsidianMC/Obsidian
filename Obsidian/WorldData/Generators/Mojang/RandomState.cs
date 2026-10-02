@@ -21,6 +21,7 @@ internal sealed class RandomState
     private readonly ConcurrentDictionary<string, IPositionalRandomFactory> positionalRandoms = new();
     private readonly NoiseWiringVisitor wiring;
     private readonly ThreadLocal<ClimateSampler> climateSamplers;
+    private readonly ConcurrentDictionary<IDensityFunction, bool> yIndependence = new(ReferenceEqualityComparer.Instance);
 
     public long Seed { get; }
 
@@ -136,12 +137,60 @@ internal sealed class RandomState
         return hash;
     }
 
+    /// <summary>
+    /// Whether a router function's value never depends on Y (at finite positions), judged from its parts. Unknown
+    /// functions count as depending on it.
+    /// </summary>
+    /// <remarks>
+    /// A noise with a Y scale of 0 samples Y = ±0 plus at most a value that doesn't depend on Y, and both zeros give the same
+    /// noise value, since octaves add their offset to Y first.
+    /// </remarks>
+    public bool IsYIndependent(IDensityFunction function) => this.yIndependence.GetOrAdd(function, function => function switch
+    {
+        ConstantDensityFunction or BlendAlphaDensityFunction or BlendOffsetDensityFunction => true,
+        ShiftADensityFunction or ShiftBDensityFunction => true,
+        NoiseDensityFunction noise => noise.YScale == 0.0,
+        ShiftedNoiseDensityFunction shifted => shifted.YScale == 0.0 && this.IsYIndependent(shifted.ShiftX)
+            && this.IsYIndependent(shifted.ShiftY) && this.IsYIndependent(shifted.ShiftZ),
+        FlatCacheDensityFunction flatCache => this.IsYIndependent(flatCache.Argument),
+        Cache2DDensityFunction cache2D => this.IsYIndependent(cache2D.Argument),
+        CacheOnceDensityFunction cacheOnce => this.IsYIndependent(cacheOnce.Argument),
+        BlendDensityFunction blend => this.IsYIndependent(blend.Argument),
+        AddDensityFunction add => this.IsYIndependent(add.Argument1) && this.IsYIndependent(add.Argument2),
+        MulDensityFunction mul => this.IsYIndependent(mul.Argument1) && this.IsYIndependent(mul.Argument2),
+        MinDensityFunction min => this.IsYIndependent(min.Argument1) && this.IsYIndependent(min.Argument2),
+        MaxDensityFunction max => this.IsYIndependent(max.Argument1) && this.IsYIndependent(max.Argument2),
+        AbsDensityFunction abs => this.IsYIndependent(abs.Argument),
+        SquareDensityFunction square => this.IsYIndependent(square.Argument),
+        CubeDensityFunction cube => this.IsYIndependent(cube.Argument),
+        HalfNegativeDensityFunction halfNegative => this.IsYIndependent(halfNegative.Argument),
+        QuarterNegativeDensityFunction quarterNegative => this.IsYIndependent(quarterNegative.Argument),
+        SqueezeDensityFunction squeeze => this.IsYIndependent(squeeze.Argument),
+        InvertDensityFunction invert => this.IsYIndependent(invert.Argument),
+        ClampDensityFunction clamp => this.IsYIndependent(clamp.Input),
+        RangeChoiceDensityFunction rangeChoice => this.IsYIndependent(rangeChoice.Input)
+            && this.IsYIndependent(rangeChoice.WhenInRange) && this.IsYIndependent(rangeChoice.WhenOutOfRange),
+        SplineDensityFunction spline => this.IsYIndependent(spline.Spline),
+        _ => false
+    });
+
+    private bool IsYIndependent(ISpline spline) => spline switch
+    {
+        SplineConstant => true,
+        Spline curve => this.IsYIndependent(curve.Coordinate) && curve.Points.All(point => this.IsYIndependent(point.Value)),
+        _ => false
+    };
+
     private ClimateSampler CreateClimateSampler()
     {
         var visitor = new LastPositionCaching(this.SharedFunctions);
         var router = this.Router;
-        return new ClimateSampler(visitor.Map(router.Temperature), visitor.Map(router.Vegetation), visitor.Map(router.Continents),
+        return new ClimateSampler(MapForColumns(router.Temperature), MapForColumns(router.Vegetation), visitor.Map(router.Continents),
             visitor.Map(router.Erosion), visitor.Map(router.Depth), visitor.Map(router.Ridges));
+
+        // Biome lookups often go down a column, so functions that don't depend on Y remember their last column.
+        IDensityFunction MapForColumns(IDensityFunction function) =>
+            this.IsYIndependent(function) ? new ColumnCache(visitor.Map(function)) : visitor.Map(function);
     }
 
     private HashSet<IDensityFunction> FindSharedFunctions()

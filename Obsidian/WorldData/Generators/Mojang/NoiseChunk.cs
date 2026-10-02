@@ -126,12 +126,12 @@ internal sealed class NoiseChunk
     /// Biome positions are quart aligned, so the caches return the same values as direct sampling.
     /// </summary>
     public ClimateSampler ClimateSampler => field ??= new ClimateSampler(
-        this.fillLoopMode.Map(this.RandomState.Router.Temperature),
-        this.fillLoopMode.Map(this.RandomState.Router.Vegetation),
-        this.fillLoopMode.Map(this.RandomState.Router.Continents),
+        this.MapForColumns(this.RandomState.Router.Temperature),
+        this.MapForColumns(this.RandomState.Router.Vegetation),
+        this.MapForColumns(this.RandomState.Router.Continents),
         this.Erosion,
         this.Depth,
-        this.fillLoopMode.Map(this.RandomState.Router.Ridges));
+        this.MapForColumns(this.RandomState.Router.Ridges));
 
     /// <summary>
     /// The chunk's aquifer, shared by the steps that use the noise chunk like vanilla's, so its caches carry over.
@@ -235,6 +235,14 @@ internal sealed class NoiseChunk
     }
 
     private int CornerIndex(int cellX, int cellY, int cellZ) => cellX * this.cornerStrideX + cellZ * this.cornerStrideZ + cellY;
+
+    // Biomes are sampled a column of quarts at a time, so functions that don't depend on Y (and aren't flat cached already)
+    // remember their last column.
+    private IDensityFunction MapForColumns(IDensityFunction routerFunction)
+    {
+        var mapped = this.fillLoopMode.Map(routerFunction);
+        return mapped is not FlatCache && this.RandomState.IsYIndependent(routerFunction) ? new ColumnCache(mapped) : mapped;
+    }
 
     private CellFiller Compile(IDensityFunction function) => function switch
     {
