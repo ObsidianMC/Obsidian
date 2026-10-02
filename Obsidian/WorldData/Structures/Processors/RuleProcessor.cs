@@ -19,7 +19,7 @@ public sealed class RuleProcessor : StructureProcessor
         StructureBlockInfo current, StructurePlaceSettings settings)
     {
         var position = current.Position;
-        var random = new LegacyRandomSource(Mth.GetSeed(position.X, position.Y, position.Z));
+        var random = PositionalRandom.At(position);
         var existing = level.GetBlock(position);
 
         foreach (var rule in this.Rules)
