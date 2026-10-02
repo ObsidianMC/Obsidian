@@ -1,3 +1,4 @@
+using Obsidian.ChunkData;
 using System.Numerics;
 
 namespace Obsidian.WorldData.Generators.Mojang.Features;
@@ -72,11 +73,15 @@ internal sealed class FinalHeightmaps
     private int FindHeight(int x, int startY, int z, int bit)
     {
         var y = startY;
-        while (y >= this.minY && (WorldgenHeightmaps.Mask(this.chunk.GetBlock(x, y, z)) & bit) == 0)
+        while (y >= this.minY && (this.MaskAt(x, y, z) & bit) == 0)
             y--;
 
         return y + 1;
     }
+
+    private int MaskAt(int x, int y, int z) => this.chunk.Sections[(y - this.chunk.MinY) >> 4] is ChunkSection section
+        ? WorldgenHeightmaps.Mask(section.GetStateId(x & 15, y & 15, z & 15))
+        : WorldgenHeightmaps.Mask(this.chunk.GetBlock(x, y, z));
 
     // Scans every column from the top for all four heightmaps at once, skipping sections of a single block that
     // matches nothing.
@@ -104,11 +109,15 @@ internal sealed class FinalHeightmaps
                 continue;
             }
 
+            var chunkSection = section as ChunkSection;
             for (var column = 0; column < 256; column++)
             {
                 for (var localY = 15; localY >= 0 && remaining[column] != 0; localY--)
                 {
-                    var mask = WorldgenHeightmaps.Mask(section.GetBlock(column & 15, localY, column >> 4));
+                    var mask = chunkSection is not null
+                        ? WorldgenHeightmaps.Mask(chunkSection.GetStateId(column & 15, localY, column >> 4))
+                        : WorldgenHeightmaps.Mask(section.GetBlock(column & 15, localY, column >> 4));
+
                     this.Resolve(remaining, column, mask, baseY + localY, ref unresolved);
                 }
             }

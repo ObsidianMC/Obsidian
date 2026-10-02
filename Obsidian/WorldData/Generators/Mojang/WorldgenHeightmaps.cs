@@ -115,6 +115,12 @@ internal static class WorldgenHeightmaps
     }
 
     /// <summary>
+    /// <see cref="Mask(IBlock)"/> by state id.
+    /// </summary>
+    public static int Mask(int stateId) =>
+        (uint)stateId < (uint)masks.Length ? masks[stateId] : ComputeMask(BlocksRegistry.Get(stateId));
+
+    /// <summary>
     /// The <see cref="Mask"/> bit of a heightmap.
     /// </summary>
     public static int Bit(HeightmapType type) => type switch
