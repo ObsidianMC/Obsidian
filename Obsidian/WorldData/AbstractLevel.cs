@@ -749,7 +749,7 @@ public abstract class AbstractLevel : ILevel
                 lastPercent = pctComplete;
                 var cps = completedChunks / Math.Max(stopwatch.Elapsed.TotalSeconds, 0.001);
                 var remain = (startChunks - completedChunks) / (int)Math.Max(cps, 1);
-                Console.Write("\r{0} chunks/second - {1}% complete - {2} seconds remaining   ", cps.ToString("###.00"), pctComplete, remain);
+                System.Console.Write("\r{0} chunks/second - {1}% complete - {2} seconds remaining   ", cps.ToString("###.00"), pctComplete, remain);
             }
 
             if (completedChunks / 1024 > flushedThousands)
@@ -763,8 +763,8 @@ public abstract class AbstractLevel : ILevel
         if (Interlocked.Exchange(ref this.generationFailure, null) is Exception failure)
             ExceptionDispatchInfo.Throw(failure);
 
-        Console.Write("\r{0} chunks/second - 100% complete - 0 seconds remaining   ", (startChunks / stopwatch.Elapsed.TotalSeconds).ToString("###.00"));
-        Console.WriteLine();
+        System.Console.Write("\r{0} chunks/second - 100% complete - 0 seconds remaining   ", (startChunks / stopwatch.Elapsed.TotalSeconds).ToString("###.00"));
+        System.Console.WriteLine();
 
         await FlushRegionsAsync();
         await SetWorldSpawnAsync();

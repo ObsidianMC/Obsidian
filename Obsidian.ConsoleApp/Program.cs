@@ -16,7 +16,6 @@ const string asciilogo =
 Console.Title = $"Obsidian for {ServerConstants.DefaultProtocol} ({ServerConstants.VERSION})";
 Console.BackgroundColor = ConsoleColor.White;
 Console.ForegroundColor = ConsoleColor.Black;
-Console.CursorVisible = false;
 Console.WriteLine(asciilogo);
 Console.ResetColor();
 
@@ -41,11 +40,4 @@ builder.Services.Configure<HostOptions>(opts =>
 
 var app = builder.Build();
 
-try
-{
-    await app.RunAsync();
-}
-finally
-{
-    Console.CursorVisible = true;
-}
+await app.RunAsync();
