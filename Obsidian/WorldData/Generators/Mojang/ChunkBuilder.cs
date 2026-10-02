@@ -34,9 +34,9 @@ internal sealed class ChunkBuilder
     private readonly ConditionalWeakTable<IChunk, NoiseChunk>.CreateValueCallback rentNoiseChunk;
 
     // Noise chunks of chunks past the carvers step, which move to new chunks rather than new ones being built: a new one
-    // maps and compiles the router and allocates its caches. Kept to about one per thread in flight.
+    // maps and compiles the router and allocates its caches. At most one per processor is kept (a few hundred KB each).
     private readonly ConcurrentBag<NoiseChunk> freeNoiseChunks = [];
-    private readonly int maxFreeNoiseChunks = Environment.ProcessorCount * 2;
+    private readonly int maxFreeNoiseChunks = Environment.ProcessorCount;
     private int freeNoiseChunkCount;
 
     public RandomState RandomState { get; }

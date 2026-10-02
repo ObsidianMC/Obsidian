@@ -3,6 +3,7 @@ using Obsidian.API.World.Generator.Noise;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.API.World.Generator.SurfaceConditions;
 using Obsidian.API.World.Generator.SurfaceRules;
+using System.Threading;
 using VerticalAnchor = Obsidian.API.World.Generator.SurfaceConditions.VerticalAnchor;
 
 namespace Obsidian.WorldData.Generators.Mojang;
@@ -37,9 +38,9 @@ internal sealed class SurfaceBuilder
     private readonly BaseNoise surfaceSecondaryNoise;
     private readonly Func<SurfaceContext, IBlock?>? rule;
 
-    // A build's buffers, kept by each thread for its next build. Taken while in use.
-    [ThreadStatic]
-    private static SurfaceBuffers? freeBuffers;
+    // A build's buffers, kept by each thread for its next build. Taken while in use. They don't reference the builder, so
+    // idle threads don't keep it alive.
+    private readonly ThreadLocal<SurfaceBuffers?> freeBuffers = new();
 
     public SurfaceBuilder(RandomState randomState, IBiomeSource biomeSource)
     {
@@ -72,8 +73,8 @@ internal sealed class SurfaceBuilder
         if (this.rule is null)
             return;
 
-        var buffers = freeBuffers is not null && freeBuffers.Owner == this ? freeBuffers : new SurfaceBuffers(this);
-        freeBuffers = null;
+        var buffers = this.freeBuffers.Value ?? new SurfaceBuffers(this.biomeSource, this.randomState.Seed, this.minY, this.height);
+        this.freeBuffers.Value = null;
         buffers.MoveTo(chunk);
 
         var context = new SurfaceContext(this, chunk, noiseChunk ?? new NoiseChunk(this.randomState, chunk.X, chunk.Z),
@@ -102,7 +103,8 @@ internal sealed class SurfaceBuilder
             }
         }
 
-        freeBuffers = buffers;
+        buffers.MoveTo(null);
+        this.freeBuffers.Value = buffers;
     }
 
     /// <summary>
@@ -480,26 +482,23 @@ internal sealed class SurfaceBuilder
     {
         private readonly ChunkBiomeSource biomes;
 
-        public SurfaceBuilder Owner { get; }
-
         public BiomeManager BiomeManager { get; }
 
         public int[] SurfaceHeights { get; } = new int[256];
 
         public BlockKind[] ColumnKinds { get; }
 
-        public SurfaceBuffers(SurfaceBuilder owner)
+        public SurfaceBuffers(IBiomeSource biomeSource, long seed, int minY, int height)
         {
-            this.Owner = owner;
-            this.biomes = new ChunkBiomeSource(owner.biomeSource);
-            this.BiomeManager = new BiomeManager(this.biomes, owner.randomState.Seed, owner.minY, owner.height, capacity: 256);
-            this.ColumnKinds = new BlockKind[owner.height + 1];
+            this.biomes = new ChunkBiomeSource(biomeSource);
+            this.BiomeManager = new BiomeManager(this.biomes, seed, minY, height, capacity: 256);
+            this.ColumnKinds = new BlockKind[height + 1];
         }
 
         /// <summary>
-        /// Prepares the buffers for building the surface of <paramref name="chunk"/>.
+        /// Prepares the buffers for building the surface of <paramref name="chunk"/>, or lets go of the last chunk.
         /// </summary>
-        public void MoveTo(IChunk chunk)
+        public void MoveTo(IChunk? chunk)
         {
             this.biomes.Chunk = chunk;
             this.BiomeManager.ClearCache();

@@ -2,6 +2,7 @@ using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Nbt;
 using Obsidian.WorldData.Structures;
 using Obsidian.WorldData.Structures.Placement;
+using System.Threading;
 
 namespace Obsidian.WorldData.Generators.Mojang.Structures;
 
@@ -39,9 +40,8 @@ internal sealed class StructureManager : IStructurePlacementState
     // The structures the beardifier reshapes terrain for, in the order it goes through them.
     private readonly Structure[] terrainAdaptingStructures;
 
-    // See GetReachingStarts.
-    [ThreadStatic]
-    private static ReachingStarts? lastReachingStarts;
+    // See GetReachingStarts. Per manager, and its values don't reference the manager, so idle threads don't keep it alive.
+    private readonly ThreadLocal<ReachingStarts?> lastReachingStarts = new();
 
     public long Seed { get; }
 
@@ -113,8 +113,8 @@ internal sealed class StructureManager : IStructurePlacementState
     /// </remarks>
     private List<(long Key, StructureStart Start)> GetReachingStarts(int chunkX, int chunkZ)
     {
-        var last = lastReachingStarts;
-        if (last is not null && last.Owner == this && last.ChunkX == chunkX && last.ChunkZ == chunkZ)
+        var last = this.lastReachingStarts.Value;
+        if (last is not null && last.ChunkX == chunkX && last.ChunkZ == chunkZ)
             return last.Starts;
 
         var minX = chunkX << 4;
@@ -133,7 +133,7 @@ internal sealed class StructureManager : IStructurePlacementState
             }
         }
 
-        lastReachingStarts = new ReachingStarts(this, chunkX, chunkZ, reaching);
+        this.lastReachingStarts.Value = new ReachingStarts(chunkX, chunkZ, reaching);
         return reaching;
     }
 
@@ -416,5 +416,5 @@ internal sealed class StructureManager : IStructurePlacementState
     /// <summary>Vanilla <c>ChunkPos.asLong</c>.</summary>
     private static long ChunkKey(int chunkX, int chunkZ) => (chunkX & 0xFFFFFFFFL) | (chunkZ & 0xFFFFFFFFL) << 32;
 
-    private sealed record ReachingStarts(StructureManager Owner, int ChunkX, int ChunkZ, List<(long Key, StructureStart Start)> Starts);
+    private sealed record ReachingStarts(int ChunkX, int ChunkZ, List<(long Key, StructureStart Start)> Starts);
 }
