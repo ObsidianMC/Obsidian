@@ -73,6 +73,22 @@ internal sealed class TerrainGenerator : IStructureTerrain
                         new Vector(cellMinX + cellWidth - 1, cellMinY + cellHeight - 1, cellMinZ + cellWidth - 1)));
                     var bearded = cellBeardifier != Beardifier.Empty;
 
+                    // A solid cell without veins is all default block, since aquifers leave solid positions alone.
+                    if (!bearded && !hasVeins && IsSolid(densities))
+                    {
+                        for (var inCellY = 0; inCellY < cellHeight; inCellY++)
+                        {
+                            for (var inCellZ = 0; inCellZ < cellWidth; inCellZ++)
+                            {
+                                var row = (inCellY * 16 + minLocalZ + inCellZ) * 16 + minLocalX;
+                                codes.AsSpan(row, cellWidth).Fill(FillPalette.DefaultCode);
+                                scheduled.AsSpan(row, cellWidth).Clear();
+                            }
+                        }
+
+                        continue;
+                    }
+
                     var i = 0;
                     for (var inCellY = 0; inCellY < cellHeight; inCellY++)
                     {
@@ -139,6 +155,17 @@ internal sealed class TerrainGenerator : IStructureTerrain
 
         WorldgenHeightmaps.Set(chunk, HeightmapType.WorldSurfaceWG, worldSurface);
         WorldgenHeightmaps.Set(chunk, HeightmapType.OceanFloorWG, oceanFloor);
+    }
+
+    private static bool IsSolid(ReadOnlySpan<double> densities)
+    {
+        foreach (var density in densities)
+        {
+            if (!(density > 0.0))
+                return false;
+        }
+
+        return true;
     }
 
     public int GetBaseHeight(int x, int z, HeightmapType heightmap) =>
