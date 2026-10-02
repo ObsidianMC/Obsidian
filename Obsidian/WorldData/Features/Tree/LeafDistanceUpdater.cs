@@ -44,7 +44,7 @@ internal static class LeafDistanceUpdater
                 Fill(shape, bounds, position);
                 foreach (var face in TreeDirections.All)
                 {
-                    var neighbor = position + face.ToVector();
+                    var neighbor = position.Offset(face);
                     if (!bounds.IsInside(neighbor))
                         continue;
 

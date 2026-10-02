@@ -43,7 +43,7 @@ internal static class ShapeUpdater
     public static IBlock UpdateFromNeighbourShapes(IWorldGenLevel level, IBlock state, Vector position)
     {
         foreach (var direction in updateShapeOrder)
-            state = UpdateShape(level, state, position, direction, level.GetBlock(position + direction.ToVector()));
+            state = UpdateShape(level, state, position, direction, level.GetBlock(position.Offset(direction)));
 
         return state;
     }
@@ -53,7 +53,7 @@ internal static class ShapeUpdater
         shape.ForAllFaces((face, x, y, z) =>
         {
             var position = origin + (x, y, z);
-            var neighborPosition = position + face.ToVector();
+            var neighborPosition = position.Offset(face);
             var state = level.GetBlock(position);
             var neighbor = level.GetBlock(neighborPosition);
 
@@ -264,7 +264,7 @@ internal static class ShapeUpdater
             if (state.GetProperty(property) != "true")
                 continue;
 
-            var supported = CanAttachTo(level.GetBlock(position + face.ToVector()), face);
+            var supported = CanAttachTo(level.GetBlock(position.Offset(face)), face);
             if (!supported)
             {
                 // Hanging from a vine above with the same face.
