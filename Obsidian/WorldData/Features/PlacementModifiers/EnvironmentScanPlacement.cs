@@ -7,7 +7,7 @@ namespace Obsidian.WorldData.Features.PlacementModifiers;
 /// while <see cref="AllowedSearchCondition"/> holds, for at most <see cref="MaxSteps"/> steps.
 /// </summary>
 [ConfiguredFeatureProperty("minecraft:environment_scan")]
-public sealed class EnvironmentScanPlacement : PlacementModifierBase
+public sealed class EnvironmentScanPlacement : SinglePlacementModifierBase
 {
     public override string Type => "minecraft:environment_scan";
 
@@ -19,28 +19,28 @@ public sealed class EnvironmentScanPlacement : PlacementModifierBase
 
     public required int MaxSteps { get; init; }
 
-    public override IEnumerable<Vector> GetPositions(PlacementContext context, IRandomSource random, Vector position)
+    public override Vector? GetPosition(PlacementContext context, IRandomSource random, Vector position)
     {
         var level = context.Level;
         var step = this.DirectionOfSearch.ToVector();
         var current = position;
 
         if (!this.AllowedSearchCondition.Test(level, current))
-            return [];
+            return null;
 
         for (var i = 0; i < this.MaxSteps; i++)
         {
             if (this.TargetCondition.Test(level, current))
-                return [current];
+                return current;
 
             current += step;
             if (level.IsOutsideBuildHeight(current.Y))
-                return [];
+                return null;
 
             if (!this.AllowedSearchCondition.Test(level, current))
                 break;
         }
 
-        return this.TargetCondition.Test(level, current) ? [current] : [];
+        return this.TargetCondition.Test(level, current) ? current : null;
     }
 }

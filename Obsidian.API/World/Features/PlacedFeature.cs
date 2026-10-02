@@ -33,30 +33,36 @@ public sealed class PlacedFeature : IFeature
         this.PlaceWithContext(new PlacementContext { Level = level, Generation = generation, TopFeature = this, BiomeHasFeature = biomeHasFeature },
             random, origin);
 
-    private bool PlaceWithContext(PlacementContext context, IRandomSource random, Vector origin)
+    private bool PlaceWithContext(PlacementContext context, IRandomSource random, Vector origin) => this.PlaceFrom(0, context, random, origin);
+
+    /// <summary>
+    /// Runs the modifiers from <paramref name="modifier"/> on a position and places the feature at each resulting position.
+    /// </summary>
+    /// <remarks>
+    /// Like vanilla's chained streams, each position goes through the remaining modifiers and gets placed before the
+    /// modifier that produced it is asked for the next one, which decides the order random numbers are drawn in.
+    /// </remarks>
+    private bool PlaceFrom(int modifier, PlacementContext context, IRandomSource random, Vector position)
     {
-        IEnumerable<Vector> positions = [origin];
-
-        foreach (var modifier in this.Placement)
+        if (modifier == this.Placement.Length)
         {
-            var current = positions;
-            positions = current.SelectMany(position => modifier.GetPositions(context, random, position));
-        }
-
-        var placed = false;
-        foreach (var position in positions)
-        {
-            var featureContext = new FeatureContext
+            return this.Feature.Place(new FeatureContext
             {
                 Level = context.Level,
                 Origin = position,
                 Random = random,
                 Generation = context.Generation,
                 TopFeature = context.TopFeature
-            };
-
-            placed |= this.Feature.Place(featureContext);
+            });
         }
+
+        var placement = this.Placement[modifier];
+        if (placement is SinglePlacementModifierBase single)
+            return single.GetPosition(context, random, position) is Vector next && this.PlaceFrom(modifier + 1, context, random, next);
+
+        var placed = false;
+        foreach (var next in placement.GetPositions(context, random, position))
+            placed |= this.PlaceFrom(modifier + 1, context, random, next);
 
         return placed;
     }
