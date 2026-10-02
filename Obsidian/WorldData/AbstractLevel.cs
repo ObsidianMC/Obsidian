@@ -540,17 +540,31 @@ public abstract class AbstractLevel : ILevel
         Logger.LogInformation("Generating world... (Config pregeneration size is {pregenRange})", this.Configuration.PregenerateChunkRange);
         int pregenerationRange = this.Configuration.PregenerateChunkRange;
 
-        int regionPregenRange = (pregenerationRange >> Region.CubicRegionSizeShift) + 1;
-
-        foreach (var x in Enumerable.Range(-regionPregenRange, regionPregenRange * 2 + 1))
+        // Generators that know where players spawn pick it first, so pregeneration surrounds the spawn.
+        if (LevelData.SpawnPosition.Y == 0)
         {
-            for (int z = -regionPregenRange; z < regionPregenRange; z++)
+            var spawn = await Generator.FindSpawnPointAsync();
+            if (spawn is not null)
+            {
+                LevelData.SpawnPosition = spawn.Value;
+                Logger.LogInformation("World Spawn set to {worldPos}", spawn.Value);
+            }
+        }
+
+        var (centerX, centerZ) = LevelData.SpawnPosition.ToChunkCoord();
+        int regionPregenRange = (pregenerationRange >> Region.CubicRegionSizeShift) + 1;
+        int centerRegionX = centerX >> Region.CubicRegionSizeShift;
+        int centerRegionZ = centerZ >> Region.CubicRegionSizeShift;
+
+        foreach (var x in Enumerable.Range(centerRegionX - regionPregenRange, regionPregenRange * 2 + 1))
+        {
+            for (int z = centerRegionZ - regionPregenRange; z < centerRegionZ + regionPregenRange; z++)
                 LoadRegion(x, z);
         }
 
-        for (int x = -pregenerationRange; x < pregenerationRange; x++)
+        for (int x = centerX - pregenerationRange; x < centerX + pregenerationRange; x++)
         {
-            for (int z = -pregenerationRange; z < pregenerationRange; z++)
+            for (int z = centerZ - pregenerationRange; z < centerZ + pregenerationRange; z++)
             {
                 ChunksToGen.Enqueue(NumericsHelper.IntsToLong(x, z));
             }

@@ -104,6 +104,26 @@ internal sealed class ChunkBuilder
     }
 
     /// <summary>
+    /// The block (with Y 0) whose climate best fits the noise settings' spawn target, like vanilla's
+    /// <c>Climate.Sampler.findSpawnPosition</c>; the origin when the settings have no target.
+    /// </summary>
+    public (int X, int Z) FindClimateSpawn()
+    {
+        var targets = this.settings.SpawnTarget.Select(target => new ParameterPoint(
+            Quantize(target.Temperature),
+            Quantize(target.Humidity),
+            Quantize(target.Continentalness),
+            Quantize(target.Erosion),
+            new ClimateParameter(Climate.Quantize((float)target.Depth), Climate.Quantize((float)target.Depth)),
+            Quantize(target.Weirdness),
+            Climate.Quantize((float)target.Offset))).ToArray();
+
+        return SpawnFinder.FindClimateSpawn(targets, new ClimateSampler(this.RandomState.Router));
+
+        static ClimateParameter Quantize(double[] range) => new(Climate.Quantize((float)range[0]), Climate.Quantize((float)range[1]));
+    }
+
+    /// <summary>
     /// Writes the final heightmaps into the chunk; call it once every chunk around it is decorated.
     /// </summary>
     public void UpdateFinalHeightmaps(IChunk chunk) =>

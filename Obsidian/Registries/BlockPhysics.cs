@@ -11,7 +11,8 @@ namespace Obsidian.Registries;
 /// Each state packs its flags into one int:
 /// bit 0 air, 1 blocks motion, 2 solid, 3 replaceable, 4 liquid, 5 fluid source, 6 full collision cube,
 /// 7 sturdy center (up), 8 sturdy rigid (up), 9 redstone conductor, 10 block entity, 11-16 sturdy full faces
-/// (one bit per <see cref="BlockFace"/>), 17-20 light emission, 21-24 fluid amount, 25-27 fluid kind, 28 empty collision.
+/// (one bit per <see cref="BlockFace"/>), 17-20 light emission, 21-24 fluid amount, 25-27 fluid kind, 28 empty collision,
+/// 29 full top collision face.
 /// </remarks>
 internal static class BlockPhysics
 {
@@ -39,6 +40,12 @@ internal static class BlockPhysics
     /// <see cref="BlocksMotion"/>, low blocks such as carpets and thicker snow layers do have a collision shape.
     /// </summary>
     public static bool HasEmptyCollision(this IBlock block) => Has(block, 28);
+
+    /// <summary>
+    /// Vanilla <c>Block.isFaceFull(getCollisionShape(...), UP)</c>: the top of the collision shape covers the whole block,
+    /// so players can stand on it (used to find the world spawn).
+    /// </summary>
+    public static bool HasFullTopCollisionFace(this IBlock block) => Has(block, 29);
 
     public static bool HasBlockEntity(this IBlock block) => Has(block, 10);
 

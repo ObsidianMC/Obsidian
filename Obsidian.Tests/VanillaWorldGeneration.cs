@@ -136,44 +136,37 @@ public class VanillaWorldGeneration
 
     [Theory]
     // SHA-256 of the block names (y, z, x order) of a full chunk in a vanilla server world with structures disabled.
-    // Neighbors are carved in a 5x5 and decorated in a 3x3, like a full chunk; these chunks don't depend on the order
-    // neighbors are decorated in.
+    // These chunks don't depend on the order their neighbors are decorated in.
     [InlineData("nether", 12345L, 0, 0, "0d67d2e72363035b58dae710879f79f6d01a6e3142697ac8bd88685081cb38ae")]
     [InlineData("end", 12345L, 2, -2, "2df6a200c97c9d1a52f59344ccfdfceea0f48a5868836d9ce4f56b42f4253038")] // guarded spike
     [InlineData("end", 12345L, 83, 0, "b566d9162bd39f686d2b94814b7327a766a65c62d6415432201b692aebf19dda")] // outer islands
     public void FullChunkMatchesVanilla(string dimensionName, long seed, int chunkX, int chunkZ, string expectedBlocks)
     {
         var dimension = dimensionName == "nether" ? MojangDimension.Nether : MojangDimension.End;
-        var builder = new ChunkBuilder(dimension, seed);
-        var carved = new Dictionary<(int X, int Z), IChunk>();
+        var chunks = new FullChunks(new ChunkBuilder(dimension, seed), dimension);
 
-        for (var dx = -2; dx <= 2; dx++)
+        Assert.Equal(expectedBlocks, Sha256(BlockNames(chunks.Get(chunkX, chunkZ))));
+    }
+
+    [Theory]
+    // Vanilla: the spawn in level.dat of a new server world with structures disabled.
+    [InlineData(12345L, 96, 136, -32)]
+    [InlineData(-4172144997902289642L, -448, 71, -432)]
+    public void SpawnMatchesVanilla(long seed, int x, int y, int z)
+    {
+        var builder = new ChunkBuilder(seed);
+        var chunks = new FullChunks(builder, MojangDimension.Overworld);
+        var (climateX, climateZ) = builder.FindClimateSpawn();
+
+        Vector? spawn = null;
+        foreach (var (dx, dz) in SpawnFinder.SpiralOffsets())
         {
-            for (var dz = -2; dz <= 2; dz++)
-            {
-                var chunk = new Chunk(chunkX + dx, chunkZ + dz, dimension.MinY, dimension.Height);
-                builder.PopulateBiomes(chunk);
-                builder.Generate3DTerrain(chunk);
-                builder.ApplySurfaceRules(chunk);
-                builder.ApplyCarvers(chunk);
-                carved[(chunk.X, chunk.Z)] = chunk;
-            }
+            spawn = SpawnFinder.FindSpawnInChunk(chunks.Get((climateX >> 4) + dx, (climateZ >> 4) + dz), hasCeiling: false);
+            if (spawn is not null)
+                break;
         }
 
-        for (var dx = -1; dx <= 1; dx++)
-        {
-            for (var dz = -1; dz <= 1; dz++)
-            {
-                var area = new Dictionary<(int X, int Z), IChunk>();
-                for (var ax = -1; ax <= 1; ax++)
-                    for (var az = -1; az <= 1; az++)
-                        area[(chunkX + dx + ax, chunkZ + dz + az)] = carved[(chunkX + dx + ax, chunkZ + dz + az)];
-
-                builder.Decorate(area, chunkX + dx, chunkZ + dz);
-            }
-        }
-
-        Assert.Equal(expectedBlocks, Sha256(BlockNames(carved[(chunkX, chunkZ)])));
+        Assert.Equal(new Vector(x, y, z), spawn);
     }
 
     private static string BlockNames(IChunk chunk)
@@ -191,4 +184,55 @@ public class VanillaWorldGeneration
     }
 
     private static string Sha256(string value) => Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
+
+    /// <summary>
+    /// Generates full chunks on demand like a server: chunks are carved, then decorated once all their neighbors are.
+    /// </summary>
+    private sealed class FullChunks(ChunkBuilder builder, MojangDimension dimension)
+    {
+        private readonly Dictionary<(int X, int Z), IChunk> carved = [];
+        private readonly HashSet<(int X, int Z)> decorated = [];
+
+        public IChunk Get(int chunkX, int chunkZ)
+        {
+            for (var dx = -1; dx <= 1; dx++)
+            {
+                for (var dz = -1; dz <= 1; dz++)
+                    this.Decorate(chunkX + dx, chunkZ + dz);
+            }
+
+            var chunk = this.Carve(chunkX, chunkZ);
+            builder.UpdateFinalHeightmaps(chunk);
+            return chunk;
+        }
+
+        private void Decorate(int chunkX, int chunkZ)
+        {
+            if (!this.decorated.Add((chunkX, chunkZ)))
+                return;
+
+            var area = new Dictionary<(int X, int Z), IChunk>();
+            for (var dx = -1; dx <= 1; dx++)
+            {
+                for (var dz = -1; dz <= 1; dz++)
+                    area[(chunkX + dx, chunkZ + dz)] = this.Carve(chunkX + dx, chunkZ + dz);
+            }
+
+            builder.Decorate(area, chunkX, chunkZ);
+        }
+
+        private IChunk Carve(int chunkX, int chunkZ)
+        {
+            if (this.carved.TryGetValue((chunkX, chunkZ), out var chunk))
+                return chunk;
+
+            chunk = new Chunk(chunkX, chunkZ, dimension.MinY, dimension.Height);
+            builder.PopulateBiomes(chunk);
+            builder.Generate3DTerrain(chunk);
+            builder.ApplySurfaceRules(chunk);
+            builder.ApplyCarvers(chunk);
+            this.carved[(chunkX, chunkZ)] = chunk;
+            return chunk;
+        }
+    }
 }

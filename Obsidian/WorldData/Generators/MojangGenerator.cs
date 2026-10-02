@@ -87,6 +87,31 @@ internal class MojangGenerator : ILevelGenerator
     }
 
     /// <summary>
+    /// Vanilla's initial spawn: the climate spawn chunk at the default spawn height, moved onto the first standable block
+    /// found in the chunks spiraling out from it.
+    /// </summary>
+    public virtual async ValueTask<VectorF?> FindSpawnPointAsync()
+    {
+        var (x, z) = this.builder.FindClimateSpawn();
+        var spawnChunkX = x >> 4;
+        var spawnChunkZ = z >> 4;
+        var spawn = new Vector((spawnChunkX << 4) + 8, SpawnFinder.DefaultSpawnHeight, (spawnChunkZ << 4) + 8);
+
+        foreach (var (dx, dz) in SpawnFinder.SpiralOffsets())
+        {
+            var chunk = await this.GenerateChunkAsync(spawnChunkX + dx, spawnChunkZ + dz);
+            var found = SpawnFinder.FindSpawnInChunk(chunk, hasCeiling: false);
+            if (found is not null)
+            {
+                spawn = found.Value;
+                break;
+            }
+        }
+
+        return new VectorF(spawn.X + 0.5f, spawn.Y, spawn.Z + 0.5f);
+    }
+
+    /// <summary>
     /// Runs the stages up to and including carvers that <paramref name="stage"/> asks for.
     /// The caller must hold the chunk's lock.
     /// </summary>
@@ -235,6 +260,9 @@ internal sealed class MojangNetherGenerator : MojangGenerator
     public override string Id => "minecraft:the_nether";
 
     protected override MojangDimension Dimension => MojangDimension.Nether;
+
+    // Vanilla only searches a spawn in the overworld.
+    public override ValueTask<VectorF?> FindSpawnPointAsync() => ValueTask.FromResult<VectorF?>(null);
 }
 
 /// <summary>
@@ -245,4 +273,7 @@ internal sealed class MojangEndGenerator : MojangGenerator
     public override string Id => "minecraft:the_end";
 
     protected override MojangDimension Dimension => MojangDimension.End;
+
+    // Vanilla's ServerLevel.END_SPAWN_POINT, on the obsidian platform.
+    public override ValueTask<VectorF?> FindSpawnPointAsync() => ValueTask.FromResult<VectorF?>(new VectorF(100.5f, 50, 0.5f));
 }

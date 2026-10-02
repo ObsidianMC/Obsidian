@@ -54,6 +54,20 @@ internal sealed record ParameterPoint(
     ClimateParameter Weirdness,
     long Offset)
 {
+    /// <summary>
+    /// Squared distance from a sampled climate to these ranges, used to rank spawn positions.
+    /// </summary>
+    public long Fitness(TargetPoint point) =>
+        Square(this.Temperature.Distance(point.Temperature))
+        + Square(this.Humidity.Distance(point.Humidity))
+        + Square(this.Continentalness.Distance(point.Continentalness))
+        + Square(this.Erosion.Distance(point.Erosion))
+        + Square(this.Depth.Distance(point.Depth))
+        + Square(this.Weirdness.Distance(point.Weirdness))
+        + Square(this.Offset);
+
     public ClimateParameter[] ParameterSpace() =>
         [this.Temperature, this.Humidity, this.Continentalness, this.Erosion, this.Depth, this.Weirdness, new(this.Offset, this.Offset)];
+
+    private static long Square(long value) => value * value;
 }
