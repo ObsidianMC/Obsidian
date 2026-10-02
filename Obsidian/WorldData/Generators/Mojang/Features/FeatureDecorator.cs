@@ -193,6 +193,20 @@ internal sealed class FeatureDecorator
 
         foreach (var chunk in chunks)
         {
+            // A section that holds a single biome has it in every cell.
+            if (chunk.Sections.Length == height >> 4 && chunk.MinY == minY)
+            {
+                foreach (var section in chunk.Sections)
+                {
+                    if (section.BiomeContainer.Palette is SingleValuePalette<BiomeCodec> { IsFull: true } single)
+                        biomes.Add(single.Value.Name);
+                    else
+                        AddSectionBiomes(biomes, section, ref previous);
+                }
+
+                continue;
+            }
+
             for (var quartY = minY >> 2; quartY < (minY + height) >> 2; quartY++)
             {
                 for (var quartZ = 0; quartZ < 4; quartZ++)
@@ -212,5 +226,24 @@ internal sealed class FeatureDecorator
 
         biomes.IntersectWith(this.possibleBiomes);
         return biomes;
+    }
+
+    private static void AddSectionBiomes(HashSet<string> biomes, IChunkSection section, ref BiomeCodec? previous)
+    {
+        for (var y = 0; y < 4; y++)
+        {
+            for (var z = 0; z < 4; z++)
+            {
+                for (var x = 0; x < 4; x++)
+                {
+                    // Neighboring cells mostly share their biome, which is then already in the set.
+                    var biome = section.GetBiome(x, y, z);
+                    if (!ReferenceEquals(biome, previous))
+                        biomes.Add(biome.Name);
+
+                    previous = biome;
+                }
+            }
+        }
     }
 }
