@@ -5,10 +5,11 @@ public abstract class DataComponentsStorage
     protected Dictionary<DataComponentType, int> HashedStorage { get; } = [];
 
     /// <summary>
-    /// Types whose component only stands in for the item's own default (see <see cref="ComponentBuilder.DefaultItemComponents"/>)
-    /// and isn't part of <see cref="Patch"/>. Setting or removing a component of the type clears it.
+    /// Components that only stand in for the item's own defaults (see <see cref="ComponentBuilder.DefaultItemComponents"/>),
+    /// as they were when added. A placeholder isn't part of <see cref="Patch"/> until its value changes; setting or
+    /// removing a component of the type drops it.
     /// </summary>
-    protected HashSet<DataComponentType> PlaceholderTypes { get; } = [];
+    protected Dictionary<DataComponentType, DataComponent> Placeholders { get; } = [];
 
     public List<DataComponentType> RemoveComponents { get; } = [];
 
@@ -18,7 +19,8 @@ public abstract class DataComponentsStorage
     /// The components that were set on this storage, as opposed to placeholders for the item's defaults. Like vanilla's
     /// <c>DataComponentPatch</c>, this is what goes over the network.
     /// </summary>
-    public IEnumerable<DataComponent> Patch => this.InternalStorage.Values.Where(component => !this.PlaceholderTypes.Contains(component.Type));
+    public IEnumerable<DataComponent> Patch => this.InternalStorage.Values.Where(component =>
+        !this.Placeholders.TryGetValue(component.Type, out var placeholder) || !component.Equals(placeholder));
 
     public DataComponent this[DataComponentType type]
     {
@@ -26,7 +28,7 @@ public abstract class DataComponentsStorage
         set
         {
             this.InternalStorage[type] = value;
-            this.PlaceholderTypes.Remove(type);
+            this.Placeholders.Remove(type);
         }
     }
 
@@ -50,7 +52,7 @@ public abstract class DataComponentsStorage
 
     public bool Remove(DataComponentType type)
     {
-        this.PlaceholderTypes.Remove(type);
+        this.Placeholders.Remove(type);
         return this.InternalStorage.Remove(type);
     }
 

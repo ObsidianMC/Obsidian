@@ -29,11 +29,11 @@ public sealed record class InstrumentData : INetworkSerializable<InstrumentData>
         if (holder > 0)
             return FromRegistry(InstrumentsRegistry.All[holder - 1].Identifier);
 
-        // Sound events are holders too: 0 means the sound event follows.
+        // Sound events are holders too: 0 means the sound event follows, else it's the registry id + 1.
         var soundHolder = reader.ReadVarInt();
         return new()
         {
-            SoundEvent = soundHolder == 0 ? reader.ReadSoundEvent() : new SoundEvent { ResourceLocation = string.Empty },
+            SoundEvent = soundHolder == 0 ? reader.ReadSoundEvent() : new SoundEvent { ResourceLocation = string.Empty, RegistryId = soundHolder - 1 },
             UseDuration = reader.ReadSingle(),
             Range = reader.ReadSingle(),
             Description = reader.ReadChat()
@@ -52,8 +52,16 @@ public sealed record class InstrumentData : INetworkSerializable<InstrumentData>
         }
 
         writer.WriteVarInt(0);
-        writer.WriteVarInt(0);
-        writer.WriteSoundEvent(value.SoundEvent);
+        if (value.SoundEvent.RegistryId is not null)
+        {
+            writer.WriteVarInt(value.SoundEvent.RegistryId.Value + 1);
+        }
+        else
+        {
+            writer.WriteVarInt(0);
+            writer.WriteSoundEvent(value.SoundEvent);
+        }
+
         writer.WriteSingle(value.UseDuration);
         writer.WriteSingle(value.Range);
         writer.WriteChat(value.Description);
