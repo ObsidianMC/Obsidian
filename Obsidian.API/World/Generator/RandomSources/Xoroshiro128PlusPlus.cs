@@ -7,6 +7,9 @@ namespace Obsidian.API.World.Generator.RandomSources;
 /// </summary>
 internal struct Xoroshiro128PlusPlus
 {
+    private const float FloatUnit = 1.0f / (1 << 24);
+    private const double DoubleUnit = 1.0 / (1L << 53);
+
     private ulong seedLo;
     private ulong seedHi;
 
@@ -35,4 +38,31 @@ internal struct Xoroshiro128PlusPlus
 
         return unchecked((long)result);
     }
+
+    public int NextInt() => unchecked((int)this.NextLong());
+
+    /// <summary>
+    /// A value from 0 up to <paramref name="bound"/>, which must be positive.
+    /// </summary>
+    public int NextInt(int bound)
+    {
+        // Lemire's nearly divisionless bounded random, as in vanilla.
+        var product = (ulong)(uint)this.NextInt() * (uint)bound;
+        var low = (uint)product;
+        if (low < (uint)bound)
+        {
+            var threshold = unchecked((uint)-bound) % (uint)bound;
+            while (low < threshold)
+            {
+                product = (ulong)(uint)this.NextInt() * (uint)bound;
+                low = (uint)product;
+            }
+        }
+
+        return (int)(product >> 32);
+    }
+
+    public float NextFloat() => (this.NextLong() >>> 40) * FloatUnit;
+
+    public double NextDouble() => (this.NextLong() >>> 11) * DoubleUnit;
 }

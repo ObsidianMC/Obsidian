@@ -183,7 +183,7 @@ internal sealed class SurfaceBuilder
     private int GetSurfaceDepth(int x, int z)
     {
         var noise = this.surfaceNoise.GetValue(x, 0.0, z);
-        return (int)(noise * 2.75 + 3.0 + this.randomState.Random.At(x, 0, z).NextDouble() * 0.25);
+        return (int)(noise * 2.75 + 3.0 + new PositionalRandom(this.randomState.Random, x, 0, z).NextDouble() * 0.25);
     }
 
     private double GetSurfaceSecondary(int x, int z) => this.surfaceSecondaryNoise.GetValue(x, 0.0, z);
@@ -251,7 +251,7 @@ internal sealed class SurfaceBuilder
             bottom = 0.0;
         }
 
-        var random = this.randomState.Random.At(x, 0, z);
+        var random = new PositionalRandom(this.randomState.Random, x, 0, z);
         var maxSnowDepth = 2 + random.NextInt(4);
         var minSnowY = this.seaLevel + 18 + random.NextInt(10);
         var snowDepth = 0;
@@ -409,7 +409,7 @@ internal sealed class SurfaceBuilder
                         return false;
 
                     var chance = 1.0 + (double)(y - trueAtAndBelow) / (falseAtAndAbove - trueAtAndBelow) * (0.0 - 1.0);
-                    return gradientRandom.At(context.BlockX, y, context.BlockZ).NextFloat() < chance;
+                    return new PositionalRandom(gradientRandom, context.BlockX, y, context.BlockZ).NextFloat() < chance;
                 };
             case YAboveSurfaceCondition yAbove:
                 var anchorY = this.ResolveY(yAbove.Anchor);

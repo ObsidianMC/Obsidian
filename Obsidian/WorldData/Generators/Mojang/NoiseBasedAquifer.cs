@@ -1,3 +1,5 @@
+using Obsidian.API.World.Generator.RandomSources;
+
 namespace Obsidian.WorldData.Generators.Mojang;
 
 /// <summary>
@@ -277,7 +279,7 @@ internal sealed class NoiseBasedAquifer : IAquifer
         if (this.aquiferLocationCache[index] is { } cached)
             return cached;
 
-        var random = this.noiseChunk.RandomState.AquiferRandom.At(gridX, gridY, gridZ);
+        var random = new PositionalRandom(this.noiseChunk.RandomState.AquiferRandom, gridX, gridY, gridZ);
         var location = (FromGridX(gridX, random.NextInt(XRange)), FromGridY(gridY, random.NextInt(YRange)), FromGridZ(gridZ, random.NextInt(ZRange)));
 
         this.aquiferLocationCache[index] = location;

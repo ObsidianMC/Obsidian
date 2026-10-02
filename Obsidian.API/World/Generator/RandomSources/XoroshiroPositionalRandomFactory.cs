@@ -16,6 +16,11 @@ public sealed class XoroshiroPositionalRandomFactory : IPositionalRandomFactory
 
     public IRandomSource At(int x, int y, int z) => new XoroshiroRandomSource(Mth.GetSeed(x, y, z) ^ this.seedLo, this.seedHi);
 
+    /// <summary>
+    /// The state of the random <see cref="At"/> creates, without the allocation.
+    /// </summary>
+    internal Xoroshiro128PlusPlus StateAt(int x, int y, int z) => new(Mth.GetSeed(x, y, z) ^ this.seedLo, this.seedHi);
+
     public IRandomSource FromHashOf(string name) =>
         new XoroshiroRandomSource(RandomSupport.SeedFromHashOf(name).Xor(this.seedLo, this.seedHi));
 

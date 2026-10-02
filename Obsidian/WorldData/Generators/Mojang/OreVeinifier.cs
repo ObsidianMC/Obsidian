@@ -1,3 +1,5 @@
+using Obsidian.API.World.Generator.RandomSources;
+
 namespace Obsidian.WorldData.Generators.Mojang;
 
 /// <summary>
@@ -54,7 +56,7 @@ internal static class OreVeinifier
         if (veininess + edgeRoundoff < VeininessThreshold)
             return null;
 
-        var random = noiseChunk.RandomState.OreRandom.At(x, y, z);
+        var random = new PositionalRandom(noiseChunk.RandomState.OreRandom, x, y, z);
         if (random.NextFloat() > VeinSolidness || noiseChunk.VeinRidged.GetValue(x, y, z) >= 0.0)
             return null;
 

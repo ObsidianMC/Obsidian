@@ -5,9 +5,6 @@ namespace Obsidian.API.World.Generator.RandomSources;
 /// </summary>
 public sealed class XoroshiroRandomSource : IRandomSource
 {
-    private const float FloatUnit = 1.0f / (1 << 24);
-    private const double DoubleUnit = 1.0 / (1L << 53);
-
     private Xoroshiro128PlusPlus state;
     private MarsagliaPolarGaussian gaussian;
 
@@ -44,26 +41,12 @@ public sealed class XoroshiroRandomSource : IRandomSource
         this.gaussian.Reset();
     }
 
-    public int NextInt() => unchecked((int)this.state.NextLong());
+    public int NextInt() => this.state.NextInt();
 
     public int NextInt(int bound)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bound);
-
-        // Lemire's nearly divisionless bounded random, as in vanilla.
-        var product = (ulong)(uint)this.NextInt() * (uint)bound;
-        var low = (uint)product;
-        if (low < (uint)bound)
-        {
-            var threshold = unchecked((uint)-bound) % (uint)bound;
-            while (low < threshold)
-            {
-                product = (ulong)(uint)this.NextInt() * (uint)bound;
-                low = (uint)product;
-            }
-        }
-
-        return (int)(product >> 32);
+        return this.state.NextInt(bound);
     }
 
     public int NextInt(int origin, int bound)
@@ -80,9 +63,9 @@ public sealed class XoroshiroRandomSource : IRandomSource
 
     public bool NextBoolean() => (this.state.NextLong() & 1L) != 0L;
 
-    public float NextFloat() => this.NextBits(24) * FloatUnit;
+    public float NextFloat() => this.state.NextFloat();
 
-    public double NextDouble() => this.NextBits(53) * DoubleUnit;
+    public double NextDouble() => this.state.NextDouble();
 
     public double NextGaussian() => this.gaussian.Next(this);
 
@@ -95,6 +78,4 @@ public sealed class XoroshiroRandomSource : IRandomSource
         for (var i = 0; i < count; i++)
             this.state.NextLong();
     }
-
-    private long NextBits(int bits) => this.state.NextLong() >>> (64 - bits);
 }
