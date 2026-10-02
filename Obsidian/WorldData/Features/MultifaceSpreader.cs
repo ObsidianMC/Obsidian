@@ -1,4 +1,5 @@
 using Obsidian.API.World.Generator.RandomSources;
+using System.Runtime.CompilerServices;
 
 namespace Obsidian.WorldData.Features;
 
@@ -13,6 +14,9 @@ namespace Obsidian.WorldData.Features;
 internal sealed class MultifaceSpreader
 {
     private static readonly BlockSet fire = new("#minecraft:fire");
+
+    // Faces of each block state (see Faces), indexed by state id and computed on first use; -1 until then.
+    private static readonly sbyte[] faceMasks = CreateFaceMasks();
 
     private readonly IBlock block;
     private readonly SpreadType[] spreadTypes;
@@ -52,9 +56,14 @@ internal sealed class MultifaceSpreader
     /// </summary>
     public bool SpreadFromFaceTowardRandomDirection(IBlock state, IWorldGenLevel level, Vector position, BlockFace fromFace, IRandomSource random)
     {
-        foreach (var direction in FeatureHelpers.ShuffledCopy(FeatureHelpers.Directions, random))
+        Span<BlockFace> directions = stackalloc BlockFace[FeatureHelpers.Directions.Length];
+        FeatureHelpers.Directions.CopyTo(directions);
+        FeatureHelpers.Shuffle(directions, random);
+
+        var blocks = new Neighborhood(level, position);
+        foreach (var direction in directions)
         {
-            if (this.SpreadFromFaceTowardDirection(state, level, position, fromFace, direction))
+            if (this.SpreadFromFaceTowardDirection(state, ref blocks, position, fromFace, direction))
                 return true;
         }
 
@@ -66,6 +75,7 @@ internal sealed class MultifaceSpreader
     /// </summary>
     public long SpreadAll(IBlock state, IWorldGenLevel level, Vector position)
     {
+        var blocks = new Neighborhood(level, position);
         long count = 0;
         foreach (var face in FeatureHelpers.Directions)
         {
@@ -74,7 +84,7 @@ internal sealed class MultifaceSpreader
 
             foreach (var direction in FeatureHelpers.Directions)
             {
-                if (this.SpreadFromFaceTowardDirection(state, level, position, face, direction))
+                if (this.SpreadFromFaceTowardDirection(state, ref blocks, position, face, direction))
                     count++;
             }
         }
@@ -82,18 +92,28 @@ internal sealed class MultifaceSpreader
         return count;
     }
 
-    private bool SpreadFromFaceTowardDirection(IBlock state, IWorldGenLevel level, Vector position, BlockFace fromFace, BlockFace direction)
+    /// <summary>
+    /// Vanilla <c>MultifaceBlock.getStateForPlacement(state, level, pos, face)</c>: adds <paramref name="face"/> to the existing
+    /// multiface block, or creates one (waterlogged in a water source); <c>null</c> when the face can't be placed.
+    /// </summary>
+    public IBlock? GetStateForPlacement(IBlock existing, IWorldGenLevel level, Vector position, BlockFace face)
     {
-        var target = this.GetSpreadPosition(state, level, position, fromFace, direction);
+        var blocks = new Neighborhood(level, position);
+        return this.GetStateForPlacement(existing, ref blocks, position, face);
+    }
+
+    private bool SpreadFromFaceTowardDirection(IBlock state, ref Neighborhood blocks, Vector position, BlockFace fromFace, BlockFace direction)
+    {
+        var target = this.GetSpreadPosition(state, ref blocks, position, fromFace, direction);
         if (target is null)
             return false;
 
         var (targetPosition, targetFace) = target.Value;
-        var newState = this.GetStateForPlacement(level.GetBlock(targetPosition), level, targetPosition, targetFace);
-        return newState is not null && level.SetBlock(targetPosition, newState);
+        var newState = this.GetStateForPlacement(blocks.Get(targetPosition), ref blocks, targetPosition, targetFace);
+        return newState is not null && blocks.Set(targetPosition, newState);
     }
 
-    private (Vector Position, BlockFace Face)? GetSpreadPosition(IBlock state, IWorldGenLevel level, Vector position, BlockFace fromFace,
+    private (Vector Position, BlockFace Face)? GetSpreadPosition(IBlock state, ref Neighborhood blocks, Vector position, BlockFace fromFace,
         BlockFace direction)
     {
         if (FeatureHelpers.SameAxis(direction, fromFace))
@@ -111,7 +131,7 @@ internal sealed class MultifaceSpreader
                 _ => (position.Offset(direction).Offset(fromFace), direction.Opposite())
             };
 
-            if (this.CanSpreadInto(level, position, target.Item1, target.Item2))
+            if (this.CanSpreadInto(ref blocks, position, target.Item1, target.Item2))
                 return target;
         }
 
@@ -123,21 +143,21 @@ internal sealed class MultifaceSpreader
     // SculkVeinSpreaderConfig.isOtherBlockValidAsSource: anything but a sculk vein can seed veins.
     private bool IsOtherBlockValidAsSource(IBlock state) => this.sculkVein && state.Material != Material.SculkVein;
 
-    private bool CanSpreadInto(IWorldGenLevel level, Vector from, Vector to, BlockFace face)
+    private bool CanSpreadInto(ref Neighborhood blocks, Vector from, Vector to, BlockFace face)
     {
-        var state = level.GetBlock(to);
-        return this.StateCanBeReplaced(level, from, to, face, state) && this.IsValidStateForPlacement(level, state, to, face);
+        var state = blocks.Get(to);
+        return this.StateCanBeReplaced(ref blocks, from, to, face, state) && this.IsValidStateForPlacement(ref blocks, state, to, face);
     }
 
-    private bool StateCanBeReplaced(IWorldGenLevel level, Vector from, Vector to, BlockFace face, IBlock state)
+    private bool StateCanBeReplaced(ref Neighborhood blocks, Vector from, Vector to, BlockFace face, IBlock state)
     {
         if (this.sculkVein)
         {
-            var neighbor = level.GetBlock(to.Offset(face));
+            var neighbor = blocks.Get(to.Offset(face));
             if (neighbor.Material is Material.Sculk or Material.SculkCatalyst or Material.MovingPiston)
                 return false;
 
-            if (FeatureHelpers.DistManhattan(from, to) == 2 && level.GetBlock(from.Offset(face.Opposite())).IsFaceSturdy(face))
+            if (FeatureHelpers.DistManhattan(from, to) == 2 && blocks.Get(from.Offset(face.Opposite())).IsFaceSturdy(face))
                 return false;
 
             var fluid = state.GetFluid();
@@ -155,24 +175,18 @@ internal sealed class MultifaceSpreader
         return state.IsAir || state.RegistryId == this.block.RegistryId || state.Material == Material.Water && state.IsFluidSource();
     }
 
-    /// <summary>
-    /// Vanilla <c>MultifaceBlock.isValidStateForPlacement</c>: the face is free and the neighbor in that direction supports it.
-    /// </summary>
-    public bool IsValidStateForPlacement(IWorldGenLevel level, IBlock state, Vector position, BlockFace face)
+    // Vanilla MultifaceBlock.isValidStateForPlacement: the face is free and the neighbor in that direction supports it.
+    private bool IsValidStateForPlacement(ref Neighborhood blocks, IBlock state, Vector position, BlockFace face)
     {
         if (state.RegistryId == this.block.RegistryId && HasFace(state, face))
             return false;
 
-        return BlockSurvival.CanAttachTo(level.GetBlock(position.Offset(face)), face);
+        return BlockSurvival.CanAttachTo(blocks.Get(position.Offset(face)), face);
     }
 
-    /// <summary>
-    /// Vanilla <c>MultifaceBlock.getStateForPlacement(state, level, pos, face)</c>: adds <paramref name="face"/> to the existing
-    /// multiface block, or creates one (waterlogged in a water source); <c>null</c> when the face can't be placed.
-    /// </summary>
-    public IBlock? GetStateForPlacement(IBlock existing, IWorldGenLevel level, Vector position, BlockFace face)
+    private IBlock? GetStateForPlacement(IBlock existing, ref Neighborhood blocks, Vector position, BlockFace face)
     {
-        if (!this.IsValidStateForPlacement(level, existing, position, face))
+        if (!this.IsValidStateForPlacement(ref blocks, existing, position, face))
             return null;
 
         IBlock state;
@@ -189,13 +203,90 @@ internal sealed class MultifaceSpreader
     /// <summary>
     /// Vanilla <c>MultifaceBlock.hasFace</c>; non-multiface blocks have no faces.
     /// </summary>
-    public static bool HasFace(IBlock state, BlockFace face) => state.GetProperty(FeatureHelpers.FaceName(face)) == "true"
-        && state.BlockClass() is "MultifaceBlock" or "GlowLichenBlock" or "SculkVeinBlock";
+    public static bool HasFace(IBlock state, BlockFace face) => (Faces(state) >> (int)face & 1) != 0;
+
+    /// <summary>
+    /// The faces of a multiface block state, one bit per <see cref="BlockFace"/> value; none for other blocks.
+    /// </summary>
+    public static int Faces(IBlock state)
+    {
+        var id = state.GetHashCode();
+        if ((uint)id >= (uint)faceMasks.Length)
+            return ComputeFaces(state);
+
+        // Threads racing on an entry store the same value.
+        var faces = faceMasks[id];
+        if (faces < 0)
+            faceMasks[id] = faces = (sbyte)ComputeFaces(state);
+
+        return faces;
+    }
+
+    private static sbyte[] CreateFaceMasks()
+    {
+        var masks = new sbyte[BlocksRegistry.StateToNumeric.Length];
+        Array.Fill(masks, (sbyte)-1);
+        return masks;
+    }
+
+    private static int ComputeFaces(IBlock state)
+    {
+        if (state.BlockClass() is not ("MultifaceBlock" or "GlowLichenBlock" or "SculkVeinBlock"))
+            return 0;
+
+        var faces = 0;
+        foreach (var face in FeatureHelpers.Directions)
+        {
+            if (state.GetProperty(FeatureHelpers.FaceName(face)) == "true")
+                faces |= 1 << (int)face;
+        }
+
+        return faces;
+    }
 
     public enum SpreadType
     {
         SamePosition,
         SamePlane,
         WrapAround
+    }
+
+    /// <summary>
+    /// The level as a spread sees it, remembering the blocks it read around its position until it writes them: a spread
+    /// checks the same few blocks many times, and only reads and writes within one block of its position.
+    /// </summary>
+    private ref struct Neighborhood(IWorldGenLevel level, Vector center)
+    {
+        private NeighborhoodBlocks blocks;
+
+        public IBlock Get(Vector position)
+        {
+            var index = Index(position);
+            return index < 0 ? level.GetBlock(position) : this.blocks[index] ??= level.GetBlock(position);
+        }
+
+        public bool Set(Vector position, IBlock block)
+        {
+            // Read the block again next time: the write may also be refused or ignored.
+            var index = Index(position);
+            if (index >= 0)
+                this.blocks[index] = null;
+
+            return level.SetBlock(position, block);
+        }
+
+        private readonly int Index(Vector position)
+        {
+            var dx = position.X - center.X + 1;
+            var dy = position.Y - center.Y + 1;
+            var dz = position.Z - center.Z + 1;
+            return (uint)dx < 3 && (uint)dy < 3 && (uint)dz < 3 ? (dy * 3 + dz) * 3 + dx : -1;
+        }
+    }
+
+    [InlineArray(27)]
+    private struct NeighborhoodBlocks
+    {
+        private IBlock? first;
     }
 }

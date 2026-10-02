@@ -203,6 +203,16 @@ internal static class FeatureHelpers
         }
     }
 
+    /// <inheritdoc cref="Shuffle{T}(IList{T}, IRandomSource)"/>
+    public static void Shuffle<T>(Span<T> span, IRandomSource random)
+    {
+        for (var i = span.Length; i > 1; i--)
+        {
+            var j = random.NextInt(i);
+            (span[i - 1], span[j]) = (span[j], span[i - 1]);
+        }
+    }
+
     /// <summary>
     /// Vanilla <c>Util.shuffledCopy</c>.
     /// </summary>
