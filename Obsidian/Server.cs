@@ -355,7 +355,10 @@ public sealed partial class Server : IServer
                     keepAliveTicks = 0;
                 }
 
-                await this.WorldManager.TickWorldsAsync();
+                // Like vanilla, worlds tick once they're loaded: ticking chunks while the rest generate (fluids in complete
+                // chunks) would change them before the world is ready.
+                if (this.WorldManager.ReadyToJoin)
+                    await this.WorldManager.TickWorldsAsync();
 
                 long elapsedTicks = stopwatch.ElapsedTicks;
                 stopwatch.Restart();

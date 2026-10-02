@@ -41,6 +41,11 @@ public abstract class DataContainer<T>(byte minBitsPerEntry, byte maxBitsPerEntr
 
     public virtual int GetIndex(int x, int y, int z) => (y << this.BitsPerEntry | z) << this.BitsPerEntry | x;
 
+    /// <summary>
+    /// Holds the container's lock, so its palette and data can be read together while nothing writes them (saving).
+    /// </summary>
+    internal Lock.Scope EnterScope() => this.dataLock.EnterScope();
+
     public bool TryGrow()
     {
         if (this.Palette is SingleValuePalette<T> singleValuePalette)

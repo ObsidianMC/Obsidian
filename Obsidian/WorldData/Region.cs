@@ -539,79 +539,86 @@ public class Region : IRegion
 
             writer.WriteCompoundStart();
 
-            writer.WriteCompoundStart("block_states");
-
-            if (section.BlockStateContainer.Palette is IndirectBlockPalette indirect)
+            // The containers are locked while they're written: live writes (fluid ticks, players) may grow a palette meanwhile.
+            using (section.BlockStateContainer.EnterScope())
             {
-                writer.WriteListStart("palette", NbtTagType.Compound, indirect.Count);
+                writer.WriteCompoundStart("block_states");
 
-                Span<int> span = indirect.Values;
-                for (int i = 0; i < indirect.Count; i++)
+                if (section.BlockStateContainer.Palette is IndirectBlockPalette indirect)
                 {
-                    var id = span[i];
-                    var block = BlocksRegistry.Get(id);
+                    writer.WriteListStart("palette", NbtTagType.Compound, indirect.Count);
 
-                    writer.WriteCompoundStart();
-
-                    writer.WriteString("Name", block.UnlocalizedName);
-                    writer.WriteInt("Id", id);
-
-                    writer.EndCompound();//TODO INCLUDE PROPERTIES
-                }
-
-                writer.EndList();
-
-                writer.WriteArray("data", section.BlockStateContainer.DataArray.storage);
-            }
-            else if (section.BlockStateContainer.Palette is SingleValuePalette<IBlock> singleValueBlockPalette && singleValueBlockPalette.IsFull)
-            {
-                writer.WriteListStart("palette", NbtTagType.Compound, 1);
-
-                var block = singleValueBlockPalette.GetValueFromIndex(0);
-
-                writer.WriteCompoundStart();
-
-                writer.WriteString("Name", block.UnlocalizedName);
-                writer.WriteInt("Id", block.GetHashCode());
-
-                writer.EndCompound();//TODO INCLUDE PROPERTIES
-
-                writer.EndList();
-            }
-
-            writer.EndCompound();
-
-            if (section.BiomeContainer.Palette.Count >= 1)
-            {
-                writer.WriteCompoundStart("biomes");
-
-                if (section.BiomeContainer.Palette is BaseIndirectPalette<BiomeCodec> indirectBiomePalette)
-                {
-                    writer.WriteListStart("palette", NbtTagType.String, indirectBiomePalette.Count);
-
-                    Span<int> span = indirectBiomePalette.Values;
-                    for (int i = 0; i < indirectBiomePalette.Count; i++)
+                    Span<int> span = indirect.Values;
+                    for (int i = 0; i < indirect.Count; i++)
                     {
-                        var biome = CodecRegistry.GetBiome(span[i]);
-                        writer.WriteString(biome?.Name);
+                        var id = span[i];
+                        var block = BlocksRegistry.Get(id);
+
+                        writer.WriteCompoundStart();
+
+                        writer.WriteString("Name", block.UnlocalizedName);
+                        writer.WriteInt("Id", id);
+
+                        writer.EndCompound();//TODO INCLUDE PROPERTIES
                     }
 
                     writer.EndList();
 
-                    writer.WriteArray("data", section.BiomeContainer.DataArray.storage);
+                    writer.WriteArray("data", section.BlockStateContainer.DataArray.storage);
                 }
-                else if (section.BiomeContainer.Palette is SingleValuePalette<BiomeCodec> singleValueBiomePalette && singleValueBiomePalette.IsFull)
+                else if (section.BlockStateContainer.Palette is SingleValuePalette<IBlock> singleValueBlockPalette && singleValueBlockPalette.IsFull)
                 {
-                    writer.WriteListStart("palette", NbtTagType.String, 1);
+                    writer.WriteListStart("palette", NbtTagType.Compound, 1);
 
-                    var biome = singleValueBiomePalette.GetValueFromIndex(0);
+                    var block = singleValueBlockPalette.GetValueFromIndex(0);
 
-                    writer.WriteString(biome.Name);
+                    writer.WriteCompoundStart();
+
+                    writer.WriteString("Name", block.UnlocalizedName);
+                    writer.WriteInt("Id", block.GetHashCode());
+
+                    writer.EndCompound();//TODO INCLUDE PROPERTIES
 
                     writer.EndList();
                 }
 
                 writer.EndCompound();
+            }
+
+            using (section.BiomeContainer.EnterScope())
+            {
+                if (section.BiomeContainer.Palette.Count >= 1)
+                {
+                    writer.WriteCompoundStart("biomes");
+
+                    if (section.BiomeContainer.Palette is BaseIndirectPalette<BiomeCodec> indirectBiomePalette)
+                    {
+                        writer.WriteListStart("palette", NbtTagType.String, indirectBiomePalette.Count);
+
+                        Span<int> span = indirectBiomePalette.Values;
+                        for (int i = 0; i < indirectBiomePalette.Count; i++)
+                        {
+                            var biome = CodecRegistry.GetBiome(span[i]);
+                            writer.WriteString(biome?.Name);
+                        }
+
+                        writer.EndList();
+
+                        writer.WriteArray("data", section.BiomeContainer.DataArray.storage);
+                    }
+                    else if (section.BiomeContainer.Palette is SingleValuePalette<BiomeCodec> singleValueBiomePalette && singleValueBiomePalette.IsFull)
+                    {
+                        writer.WriteListStart("palette", NbtTagType.String, 1);
+
+                        var biome = singleValueBiomePalette.GetValueFromIndex(0);
+
+                        writer.WriteString(biome.Name);
+
+                        writer.EndList();
+                    }
+
+                    writer.EndCompound();
+                }
             }
 
             writer.WriteByte("Y", (byte)section.YBase);
