@@ -144,6 +144,8 @@ public static class OverworldDecorator
 
         public int SeaLevel => 63;
 
+        public IRandomSource Random => field ??= new XoroshiroRandomSource(this.Seed);
+
         /// <summary>Preloads the 3x3 chunks around <paramref name="center"/> without scheduling generation.</summary>
         public static Task<LegacyTreeLevel> CreateAsync(IChunk center, GenHelper helper) => CreateAsync(center.X, center.Z, helper, center);
 

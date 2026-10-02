@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.API.World.Generator.RandomSources;
 
 namespace Obsidian.API.World.Features;
 
@@ -21,6 +22,12 @@ public interface IWorldGenLevel
     public int Height { get; }
 
     public int SeaLevel { get; }
+
+    /// <summary>
+    /// The level's own random, like vanilla's <c>WorldGenRegion.getRandom</c>: seeded from the world seed and the chunk
+    /// being decorated, and separate from the random of the feature or structure being placed.
+    /// </summary>
+    public IRandomSource Random { get; }
 
     public IBlock GetBlock(Vector position);
 

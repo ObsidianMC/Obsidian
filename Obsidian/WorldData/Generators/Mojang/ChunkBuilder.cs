@@ -1,4 +1,5 @@
 using Obsidian.API.World.Generator.Noise;
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Generators.Mojang.Carvers;
 using Obsidian.WorldData.Features.Tree;
 using Obsidian.WorldData.Generators.Mojang.Features;
@@ -18,6 +19,9 @@ internal sealed class ChunkBuilder
     private readonly IClimateBiomeSource biomeSource;
     private readonly CarverStep carverStep;
     private readonly FeatureDecorator featureDecorator;
+
+    // Vanilla's WorldGenRegion random factory (RandomState.getOrCreateRandomFactory("worldgen_region_random")).
+    private readonly IPositionalRandomFactory regionRandom;
 
     public RandomState RandomState { get; }
 
@@ -49,6 +53,7 @@ internal sealed class ChunkBuilder
         this.surfaceBuilder = new SurfaceBuilder(this.RandomState, this.biomeSource);
         this.carverStep = new CarverStep(this.RandomState, this.surfaceBuilder, this.biomeSource, dimension.Carvers);
         this.featureDecorator = new FeatureDecorator(this.biomeSource.PossibleBiomes, BiomeFeatures.All, this.settings.Noise.Height);
+        this.regionRandom = this.RandomState.Random.FromHashOf("minecraft:worldgen_region_random").ForkPositional();
 
         if (generateStructures)
             this.Structures = new StructureManager(this.RandomState, this.biomeSource, this.terrainGenerator, dimension.MinY, dimension.Height);
@@ -175,7 +180,8 @@ internal sealed class ChunkBuilder
     }
 
     private WorldGenRegion CreateRegion(IReadOnlyDictionary<(int X, int Z), IChunk> area, int chunkX, int chunkZ) =>
-        new(area, chunkX, chunkZ, this.RandomState.Seed, this.dimension.MinY, this.dimension.Height, this.settings.SeaLevel, this.biomeSource);
+        new(area, chunkX, chunkZ, this.RandomState.Seed, this.dimension.MinY, this.dimension.Height, this.settings.SeaLevel, this.biomeSource,
+            this.regionRandom.At(chunkX << 4, 0, chunkZ << 4));
 
     /// <summary>
     /// Writes the final heightmaps into the chunk; call it once every chunk around it is decorated.

@@ -2,6 +2,7 @@
 using Obsidian.API.Registries;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators.Mojang;
+using Obsidian.WorldData.Structures;
 using Obsidian.WorldData.Lighting;
 using System;
 using System.Collections.Generic;
@@ -230,6 +231,42 @@ public class VanillaWorldGeneration
             .ToArray();
 
         Assert.Equal(expectedLight, Convert.ToHexStringLower(SHA256.HashData(light)));
+    }
+
+    [Theory]
+    // SHA-256 of the block names (y, z, x order) inside a structure in a vanilla server world, over its box once placed.
+    [InlineData(0L, "minecraft:desert_pyramid", 0, -188, "33e24d9c2ea08d96ddf92390572f70104be38e9973342bfc522d2f5eec990f5b")]
+    [InlineData(12345L, "minecraft:swamp_hut", -149, -87, "2371b7af33976e6c2fab5f7c429854db45574b6397a85f618ce6f57b581711df")]
+    [InlineData(12345L, "minecraft:buried_treasure", 46, 64, "f972eed34b452e4fc6a485e1ed778a07e2398f79a4ceb60ad865a4d18b4de213")]
+    public void StructureMatchesVanilla(long seed, string structure, int startX, int startZ, string expectedBlocks)
+    {
+        var builder = new ChunkBuilder(seed);
+        var chunks = new FullChunks(builder, MojangDimension.Overworld);
+        var start = builder.Structures!.GetStarts(startX, startZ).Single(start => start.Structure.Identifier == structure);
+
+        // Placing the pieces settles them on the ground, so the box is read once every chunk they reach is complete.
+        var box = start.BoundingBox;
+        for (var x = box.MinX >> 4; x <= box.MaxX >> 4; x++)
+        {
+            for (var z = box.MinZ >> 4; z <= box.MaxZ >> 4; z++)
+                chunks.Get(x, z);
+        }
+
+        box = BlockBox.Encapsulating(start.Pieces.Select(piece => piece.BoundingBox))!.Value;
+        var blocks = new StringBuilder();
+        for (var y = box.MinY; y <= box.MaxY; y++)
+        {
+            for (var z = box.MinZ; z <= box.MaxZ; z++)
+            {
+                for (var x = box.MinX; x <= box.MaxX; x++)
+                {
+                    var block = chunks.Get(x >> 4, z >> 4).GetBlock(x, y, z);
+                    blocks.Append(block.IsAir ? "minecraft:air" : block.UnlocalizedName).Append('\n');
+                }
+            }
+        }
+
+        Assert.Equal(expectedBlocks, Sha256(blocks.ToString(0, blocks.Length - 1)));
     }
 
     private static string BlockNames(IChunk chunk)

@@ -1,4 +1,5 @@
 using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.API.World.Generator.RandomSources;
 
 namespace Obsidian.WorldData.Generators.Mojang.Features;
 
@@ -33,13 +34,17 @@ internal sealed class WorldGenRegion : IWorldGenLevel
 
     public int SeaLevel { get; }
 
+    public IRandomSource Random { get; }
+
     /// <param name="chunks">The center chunk and (at least) its 8 neighbors, keyed by chunk coordinates.</param>
     /// <param name="centerX">X of the chunk being decorated.</param>
     /// <param name="centerZ">Z of the chunk being decorated.</param>
     /// <param name="biomeSource">Source for biomes of chunks outside <paramref name="chunks"/>.</param>
+    /// <param name="random">The region's own random (see <see cref="IWorldGenLevel.Random"/>).</param>
     public WorldGenRegion(IReadOnlyDictionary<(int X, int Z), IChunk> chunks, int centerX, int centerZ, long seed,
-        int minY, int height, int seaLevel, IBiomeSource biomeSource)
+        int minY, int height, int seaLevel, IBiomeSource biomeSource, IRandomSource random)
     {
+        this.Random = random;
         this.chunks = new Dictionary<(int X, int Z), IChunk>(chunks);
         this.centerX = centerX;
         this.centerZ = centerZ;
