@@ -118,6 +118,12 @@ public class Region : IRegion
         if (chunk is not null)
             return chunk;
 
+        // A chunk the file doesn't have can't be loaded, so there's no read to serialize. The file only gains chunks that
+        // were loaded, which are found above.
+        await this.initialization.Value;
+        if (!this.regionFile.HasChunk(x, z))
+            return null!;
+
         await chunkSlotLock.WaitAsync();
         try
         {
@@ -141,10 +147,11 @@ public class Region : IRegion
         if (chunk is not null)
             return chunk;
 
+        await this.initialization.Value;
         await chunkSlotLock.WaitAsync();
         try
         {
-            chunk = loadedChunks[x, z] ?? await GetChunkFromFileAsync(x, z) ?? create();
+            chunk = loadedChunks[x, z] ?? (this.regionFile.HasChunk(x, z) ? await GetChunkFromFileAsync(x, z) : null) ?? create();
             loadedChunks[x, z] = chunk;
             return chunk;
         }

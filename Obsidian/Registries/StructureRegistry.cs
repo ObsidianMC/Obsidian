@@ -1,4 +1,7 @@
 using Obsidian.WorldData.Structures;
+using Obsidian.Nbt;
+using System.IO;
+using System.IO.Compression;
 using System.Reflection;
 
 namespace Obsidian.Registries;
@@ -13,10 +16,11 @@ internal static class StructureRegistry
     private const string ResourcePrefix = "Obsidian.Assets.Structures.";
     private const string ResourceSuffix = ".nbt";
 
-    private static readonly ConcurrentDictionary<string, StructureTemplate> templates = new();
+    // Lazy, so chunks generating in parallel that need the same template load it once.
+    private static readonly ConcurrentDictionary<string, Lazy<StructureTemplate>> templates = new();
 
     /// <summary>Gets a template by id, loading it on first use; unknown ids get an empty template.</summary>
-    public static StructureTemplate Get(string id) => templates.GetOrAdd(id, Load);
+    public static StructureTemplate Get(string id) => templates.GetOrAdd(id, key => new Lazy<StructureTemplate>(() => Load(key))).Value;
 
     private static StructureTemplate Load(string id)
     {
@@ -26,6 +30,15 @@ internal static class StructureRegistry
 
         // Like vanilla's StructureTemplateManager.getOrCreate, an unknown id is an empty template (one vanilla pool
         // references a template that doesn't exist).
-        return stream is null ? StructureTemplate.CreateEmpty() : StructureTemplate.Load(stream);
+        if (stream is null)
+            return StructureTemplate.CreateEmpty();
+
+        // Decompressed whole first: the reader reads a few bytes at a time, and each read of a gzip stream calls into zlib.
+        using var decompressed = new MemoryStream();
+        using (var gzip = new GZipStream(stream, CompressionMode.Decompress))
+            gzip.CopyTo(decompressed);
+
+        decompressed.Position = 0;
+        return StructureTemplate.Load(decompressed, NbtCompression.None);
     }
 }

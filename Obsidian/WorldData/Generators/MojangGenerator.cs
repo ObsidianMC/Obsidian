@@ -14,7 +14,7 @@ namespace Obsidian.WorldData.Generators;
 internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
 {
     // Chunk locks are striped so their number stays bounded; stripes are always taken in ascending order.
-    private const int LockStripeCount = 256;
+    private const int LockStripeCount = 4096;
 
     public virtual string Id => "minecraft:mojang_generator";
 
@@ -33,6 +33,9 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
 
     private readonly SemaphoreSlim[] chunkLocks = [.. Enumerable.Range(0, LockStripeCount).Select(_ => new SemaphoreSlim(1, 1))];
 
+    // Carving and decorating steps in flight, so requests that need the same step share it instead of queueing on its locks.
+    private readonly ConcurrentDictionary<(int X, int Z, ChunkGenStage Stage), Lazy<Task>> steps = [];
+
     public async ValueTask<IChunk> GenerateChunkAsync(int cx, int cz, IChunk? chunk = null, ChunkGenStage stage = ChunkGenStage.full)
     {
         chunk ??= new Chunk(cx, cz, this.Dimension.MinY, this.Dimension.Height);
@@ -41,24 +44,28 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
         if (chunk.IsGenerated)
             return chunk;
 
-        using (await this.LockAsync(cx, cz, 0))
+        // Features of neighboring chunks may have created and written into the stored instance already.
+        chunk = await this.world.GetChunkAsync(cx, cz, scheduleGeneration: false) ?? chunk;
+
+        if (stage < ChunkGenStage.features)
         {
-            // Features of neighboring chunks may have created and written into the stored instance already.
-            chunk = await this.world.GetChunkAsync(cx, cz, scheduleGeneration: false) ?? chunk;
-            this.GenerateUpToCarvers(chunk, stage);
+            using (await this.LockAsync(cx, cz, 0))
+                this.GenerateUpToCarvers(chunk, stage);
+
+            return chunk;
         }
 
-        if (ChunkGenStage.features <= stage)
+        // Like vanilla, a chunk is only complete once its neighbors are decorated too, since their features can reach into
+        // it. The decorations run concurrently; those whose areas overlap wait on each other's locks.
+        var radius = ChunkGenStage.features < stage ? 1 : 0;
+        var decorations = new List<Task>((2 * radius + 1) * (2 * radius + 1));
+        for (var dx = -radius; dx <= radius; dx++)
         {
-            // Like vanilla, a chunk is only complete once its neighbors are decorated too, since their features can
-            // reach into it.
-            var radius = ChunkGenStage.features < stage ? 1 : 0;
-            for (var dx = -radius; dx <= radius; dx++)
-            {
-                for (var dz = -radius; dz <= radius; dz++)
-                    await this.DecorateAsync(cx + dx, cz + dz);
-            }
+            for (var dz = -radius; dz <= radius; dz++)
+                decorations.Add(this.DecorateAsync(cx + dx, cz + dz));
         }
+
+        await Task.WhenAll(decorations);
 
         if (ChunkGenStage.initialize_light <= stage && chunk.ChunkStatus < ChunkGenStage.initialize_light)
             await this.FinishBlocksAsync(chunk);
@@ -175,22 +182,25 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// <summary>
     /// Places the features of a chunk (trees, ores, etc.), carving its neighbors first since features write into them.
     /// </summary>
-    private async ValueTask DecorateAsync(int cx, int cz)
+    private async Task DecorateAsync(int cx, int cz)
     {
-        // Carve the area one chunk lock at a time first, so other jobs aren't blocked on the whole area during terrain generation.
-        for (var dx = -1; dx <= 1; dx++)
-        {
-            for (var dz = -1; dz <= 1; dz++)
-            {
-                using var chunkLock = await this.LockAsync(cx + dx, cz + dz, 0);
-                this.GenerateUpToCarvers(await this.GetChunkAsync(cx + dx, cz + dz), ChunkGenStage.carvers);
-            }
-        }
-
         // A status never goes back, so a decorated chunk can be skipped without its locks; the check under them decides.
         if ((await this.GetChunkAsync(cx, cz)).ChunkStatus >= ChunkGenStage.features)
             return;
 
+        // On the thread pool, so a caller starting several decorations doesn't run them one after another.
+        await this.RunStepAsync(cx, cz, ChunkGenStage.features, () => Task.Run(() => this.DecorateStepAsync(cx, cz)));
+    }
+
+    private async Task DecorateStepAsync(int cx, int cz)
+    {
+        // Carve the area first, each chunk under its own lock and in parallel, so other jobs aren't blocked on the whole area
+        // during terrain generation.
+        var carving = new Task[9];
+        for (var i = 0; i < carving.Length; i++)
+            carving[i] = this.CarveAsync(cx + i / 3 - 1, cz + i % 3 - 1);
+
+        await Task.WhenAll(carving);
         await this.LoadStructureStartsAsync(cx, cz);
 
         using (await this.LockAsync(cx, cz, 1))
@@ -213,6 +223,40 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
         // The pieces placed may have changed, and a start chunk may have been unloaded meanwhile: loading them again keeps
         // each start's current state in a chunk that will be saved.
         await this.LoadStructureStartsAsync(cx, cz);
+    }
+
+    /// <summary>
+    /// Generates a chunk up to its carvers, on the thread pool, unless that's done.
+    /// </summary>
+    private async Task CarveAsync(int cx, int cz)
+    {
+        if ((await this.GetChunkAsync(cx, cz)).ChunkStatus >= ChunkGenStage.carvers)
+            return;
+
+        await this.RunStepAsync(cx, cz, ChunkGenStage.carvers, () => Task.Run(async () =>
+        {
+            using var chunkLock = await this.LockAsync(cx, cz, 0);
+            this.GenerateUpToCarvers(await this.GetChunkAsync(cx, cz), ChunkGenStage.carvers);
+        }));
+    }
+
+    /// <summary>
+    /// Runs a chunk's step once for every request made while it runs; requests after it ended find the chunk's status.
+    /// </summary>
+    private Task RunStepAsync(int cx, int cz, ChunkGenStage stage, Func<Task> step)
+    {
+        var key = (cx, cz, stage);
+        return this.steps.GetOrAdd(key, newKey => new Lazy<Task>(async () =>
+        {
+            try
+            {
+                await step();
+            }
+            finally
+            {
+                this.steps.TryRemove(key, out _);
+            }
+        })).Value;
     }
 
     /// <summary>

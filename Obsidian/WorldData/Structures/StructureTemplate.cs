@@ -43,10 +43,10 @@ public sealed class StructureTemplate
     /// <summary>A template without size or blocks, like vanilla's <c>new StructureTemplate()</c>.</summary>
     public static StructureTemplate CreateEmpty() => new(Vector.Zero, [], []);
 
-    /// <summary>Reads a template from vanilla's gzipped NBT format.</summary>
-    public static StructureTemplate Load(Stream stream)
+    /// <summary>Reads a template from vanilla's NBT format, gzipped unless <paramref name="compression"/> says otherwise.</summary>
+    public static StructureTemplate Load(Stream stream, NbtCompression compression = NbtCompression.GZip)
     {
-        var reader = new NbtReader(stream, NbtCompression.GZip);
+        var reader = new NbtReader(stream, compression);
         var root = (NbtCompound)reader.ReadNextTag()!;
 
         var size = root.TryGetTag<NbtList>("size", out var sizeList) ? ReadVector(sizeList) : Vector.Zero;

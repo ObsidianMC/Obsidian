@@ -8,6 +8,7 @@ public partial class BlocksGenerator
     private static void GenerateBlocks(Block[] blocks, SourceProductionContext ctx)
     {
         var blocksBuilder = new CodeBuilder()
+            .Line("#nullable enable")
             .Using("Obsidian.Blocks")
             .Line()
             .Namespace("Obsidian.Registries")

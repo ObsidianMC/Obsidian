@@ -11,6 +11,7 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData.Fluids;
 using Obsidian.WorldData.Generators;
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 
 namespace Obsidian.WorldData;
@@ -28,6 +29,15 @@ public abstract class AbstractLevel : ILevel
     public ConcurrentDictionary<long, IRegion> Regions { get; protected set; } = [];
 
     public ConcurrentQueue<long> ChunksToGen { get; protected set; } = [];
+
+    // The chunks queued or generating, so a chunk is queued once however often it's asked for.
+    private readonly ConcurrentDictionary<long, byte> queuedChunks = [];
+
+    // Generation jobs run in the background, at most one per core: each job fans out over its neighbors' steps itself.
+    private readonly SemaphoreSlim generationSlots = new(Environment.ProcessorCount);
+
+    // A failed background generation job, rethrown by the next ManageChunksAsync so failures still reach the server.
+    private Exception? generationFailure;
 
     public long[] SpawnChunks { get; }
 
@@ -168,8 +178,7 @@ public abstract class AbstractLevel : ILevel
         {
             if (!chunk.IsGenerated && scheduleGeneration)
             {
-                if (!ChunksToGen.Contains(packedXZ))
-                    ChunksToGen.Enqueue(packedXZ);
+                this.QueueGeneration(packedXZ);
                 return null;
             }
 
@@ -180,8 +189,7 @@ public abstract class AbstractLevel : ILevel
 
         if (scheduleGeneration)
         {
-            if (!ChunksToGen.Contains(packedXZ))
-                ChunksToGen.Enqueue(packedXZ);
+            this.QueueGeneration(packedXZ);
             return null;
         }
 
@@ -506,17 +514,32 @@ public abstract class AbstractLevel : ILevel
             }
         }
 
-        if (ChunksToGen.IsEmpty)
-            return;
+        if (Interlocked.Exchange(ref this.generationFailure, null) is Exception failure)
+            ExceptionDispatchInfo.Throw(failure);
 
-        var jobs = new List<long>();
-        for (int a = 0; a < Environment.ProcessorCount; a++)
+        // Starts queued chunks on free slots without waiting for them, so a slow chunk never holds up the others or the tick.
+        while (!ChunksToGen.IsEmpty && this.generationSlots.Wait(0))
         {
             if (ChunksToGen.TryDequeue(out var job))
-                jobs.Add(job);
+                _ = this.GenerateQueuedChunkAsync(job);
+            else
+                this.generationSlots.Release();
         }
+    }
 
-        await Parallel.ForEachAsync(jobs, async (job, _) =>
+    private void QueueGeneration(long packedXZ)
+    {
+        if (this.queuedChunks.TryAdd(packedXZ, 0))
+            ChunksToGen.Enqueue(packedXZ);
+    }
+
+    /// <summary>
+    /// Generates a dequeued chunk on one of the generation slots, which it releases when done. Failures are kept for the
+    /// next <see cref="ManageChunksAsync"/> to rethrow.
+    /// </summary>
+    private async Task GenerateQueuedChunkAsync(long job)
+    {
+        try
         {
             NumericsHelper.LongToInts(job, out var jobX, out var jobZ);
             var region = GetRegionForChunk(jobX, jobZ) ?? LoadRegionByChunk(jobX, jobZ);
@@ -529,7 +552,16 @@ public abstract class AbstractLevel : ILevel
                 c = await Generator.GenerateChunkAsync(jobX, jobZ, c);
             }
             region.SetChunk(c);
-        });
+        }
+        catch (Exception ex)
+        {
+            Interlocked.CompareExchange(ref this.generationFailure, ex, null);
+        }
+        finally
+        {
+            this.queuedChunks.TryRemove(job, out _);
+            this.generationSlots.Release();
+        }
     }
 
     public Task FlushRegionsAsync() => Task.WhenAll(Regions.Select(pair => pair.Value.FlushAsync()));
@@ -670,27 +702,49 @@ public abstract class AbstractLevel : ILevel
         {
             for (int z = centerZ - pregenerationRange; z < centerZ + pregenerationRange; z++)
             {
-                ChunksToGen.Enqueue(NumericsHelper.IntsToLong(x, z));
+                this.QueueGeneration(NumericsHelper.IntsToLong(x, z));
             }
         }
 
-        float startChunks = ChunksToGenCount;
+        var startChunks = ChunksToGenCount;
         var stopwatch = new Stopwatch();
         stopwatch.Start();
         Logger.LogInformation("{startChunks} chunks to generate...", startChunks);
-        while (!ChunksToGen.IsEmpty)
+
+        // A window of jobs in queue order: a new job starts as soon as one finishes.
+        var jobs = new List<Task>(startChunks);
+        var completedChunks = 0;
+        var lastPercent = -1;
+        var flushedThousands = 0;
+        while (ChunksToGen.TryDequeue(out var job))
         {
-            await ManageChunksAsync();
-            var pctComplete = (int)((1.0 - ChunksToGenCount / startChunks) * 100);
-            var completedChunks = startChunks - ChunksToGenCount;
-            var cps = completedChunks / (stopwatch.ElapsedMilliseconds / 1000.0);
-            int remain = ChunksToGenCount / (int)Math.Max(cps, 1);
-            Console.Write("\r{0} chunks/second - {1}% complete - {2} seconds remaining   ", cps.ToString("###.00"), pctComplete, remain);
-            if (completedChunks % 1024 == 0)
+            await this.generationSlots.WaitAsync();
+            jobs.Add(this.GenerateQueuedChunkAsync(job));
+
+            while (completedChunks < jobs.Count && jobs[completedChunks].IsCompleted)
+                completedChunks++;
+
+            var pctComplete = completedChunks * 100 / startChunks;
+            if (pctComplete != lastPercent)
             {
+                lastPercent = pctComplete;
+                var cps = completedChunks / Math.Max(stopwatch.Elapsed.TotalSeconds, 0.001);
+                var remain = (startChunks - completedChunks) / (int)Math.Max(cps, 1);
+                Console.Write("\r{0} chunks/second - {1}% complete - {2} seconds remaining   ", cps.ToString("###.00"), pctComplete, remain);
+            }
+
+            if (completedChunks / 1024 > flushedThousands)
+            {
+                flushedThousands = completedChunks / 1024;
                 await FlushRegionsAsync();
             }
         }
+
+        await Task.WhenAll(jobs);
+        if (Interlocked.Exchange(ref this.generationFailure, null) is Exception failure)
+            ExceptionDispatchInfo.Throw(failure);
+
+        Console.Write("\r{0} chunks/second - 100% complete - 0 seconds remaining   ", (startChunks / stopwatch.Elapsed.TotalSeconds).ToString("###.00"));
         Console.WriteLine();
 
         await FlushRegionsAsync();
