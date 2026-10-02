@@ -7,6 +7,7 @@ using Obsidian.WorldData.Generators.Mojang.Features;
 using Obsidian.WorldData.Generators.Mojang.Structures;
 using Obsidian.WorldData.Fluids;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace Obsidian.WorldData.Generators.Mojang;
 
@@ -32,7 +33,9 @@ internal sealed class ChunkBuilder
 
     public RandomState RandomState { get; }
 
-    // Vanilla's level biome lookup (BiomeManager with the obfuscated seed) over the noise biomes.
+    // Vanilla's level biome lookup (BiomeManager with the obfuscated seed) over the noise biomes. It caches, so it's used
+    // under its lock: explorer maps can be made on several threads at once.
+    private readonly Lock biomeLock = new();
     private BiomeManager BiomeManager => field ??= new BiomeManager(this.biomeSource, this.RandomState.Seed, this.dimension.MinY, this.dimension.Height);
 
     /// <summary>
@@ -148,7 +151,11 @@ internal sealed class ChunkBuilder
     /// <summary>
     /// The biome at a block, like vanilla's <c>Level.getBiome</c> for chunks that aren't loaded.
     /// </summary>
-    public BiomeCodec GetBiome(int x, int y, int z) => this.BiomeManager.GetBiome(x, y, z);
+    public BiomeCodec GetBiome(int x, int y, int z)
+    {
+        lock (this.biomeLock)
+            return this.BiomeManager.GetBiome(x, y, z);
+    }
 
     public (int X, int Z) FindClimateSpawn()
     {
