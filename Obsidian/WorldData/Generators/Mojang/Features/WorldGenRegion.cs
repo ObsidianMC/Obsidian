@@ -65,7 +65,7 @@ internal sealed class WorldGenRegion : IWorldGenLevel
         this.Height = height;
         this.SeaLevel = seaLevel;
         this.trackHeightmaps = trackHeightmaps;
-        this.biomeManager = new BiomeManager(new RegionBiomeSource(this, biomeSource), seed, minY, height);
+        this.biomeManager = new BiomeManager(new RegionBiomeSource(this, biomeSource), seed, minY, height, cacheNoiseBiomes: false);
 
         for (var dx = -WriteRadius; dx <= WriteRadius; dx++)
         {
@@ -231,10 +231,14 @@ internal sealed class WorldGenRegion : IWorldGenLevel
     /// <summary>
     /// Reads stored biomes of region chunks and samples the biome source elsewhere, like WorldGenRegion.getNoiseBiome.
     /// </summary>
+    /// <remarks>
+    /// Only sampled biomes are cached: stored ones are cheaper to read again.
+    /// </remarks>
     private sealed class RegionBiomeSource : IBiomeSource
     {
         private readonly WorldGenRegion region;
         private readonly IBiomeSource fallback;
+        private Dictionary<(int X, int Y, int Z), BiomeCodec>? sampled;
 
         public RegionBiomeSource(WorldGenRegion region, IBiomeSource fallback)
         {
@@ -245,9 +249,14 @@ internal sealed class WorldGenRegion : IWorldGenLevel
         public BiomeCodec GetNoiseBiome(int quartX, int quartY, int quartZ)
         {
             var chunk = this.region.FindChunk(quartX >> 2, quartZ >> 2);
-            return chunk is not null
-                ? chunk.GetBiome((quartX & 3) << 2, quartY << 2, (quartZ & 3) << 2)
-                : this.fallback.GetNoiseBiome(quartX, quartY, quartZ);
+            if (chunk is not null)
+                return chunk.GetBiome((quartX & 3) << 2, quartY << 2, (quartZ & 3) << 2);
+
+            this.sampled ??= [];
+            if (!this.sampled.TryGetValue((quartX, quartY, quartZ), out var biome))
+                this.sampled[(quartX, quartY, quartZ)] = biome = this.fallback.GetNoiseBiome(quartX, quartY, quartZ);
+
+            return biome;
         }
     }
 }

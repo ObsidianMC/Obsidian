@@ -14,18 +14,20 @@ internal sealed class BiomeManager
     private readonly IBiomeSource biomeSource;
     private readonly int minQuartY;
     private readonly int maxQuartY;
-    private readonly Dictionary<(int, int, int), BiomeCodec> cache = [];
+    private readonly Dictionary<(int, int, int), BiomeCodec>? cache;
 
     /// <param name="biomeSource">Source of the stored (quart) biomes.</param>
     /// <param name="seed">World seed.</param>
     /// <param name="minY">Lowest block Y of the level; quart lookups are clamped to the level height like chunk storage.</param>
     /// <param name="height">Level height in blocks.</param>
-    public BiomeManager(IBiomeSource biomeSource, long seed, int minY, int height)
+    /// <param name="cacheNoiseBiomes">Whether to remember the source's biomes; sources that are cheap to ask don't need it.</param>
+    public BiomeManager(IBiomeSource biomeSource, long seed, int minY, int height, bool cacheNoiseBiomes = true)
     {
         this.biomeSource = biomeSource;
         this.zoomSeed = ObfuscateSeed(seed);
         this.minQuartY = minY >> 2;
         this.maxQuartY = this.minQuartY + (height >> 2) - 1;
+        this.cache = cacheNoiseBiomes ? [] : null;
     }
 
     /// <summary>
@@ -48,6 +50,8 @@ internal sealed class BiomeManager
     public BiomeCodec GetNoiseBiome(int quartX, int quartY, int quartZ)
     {
         var key = (quartX, Math.Clamp(quartY, this.minQuartY, this.maxQuartY), quartZ);
+        if (this.cache is null)
+            return this.biomeSource.GetNoiseBiome(key.quartX, key.Item2, key.quartZ);
 
         if (!this.cache.TryGetValue(key, out var biome))
         {
