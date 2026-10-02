@@ -16,6 +16,10 @@ internal static class BlockStateProperties
 {
     private static readonly Lazy<Table> table = new(Load);
 
+    // WithProperty results by state id, property and value: generation sets the same few properties over and over, and
+    // finding a state by its properties is slow.
+    private static readonly ConcurrentDictionary<(int State, string Property, string Value), int> withPropertyIds = new();
+
     /// <summary>
     /// Gets a property value, or <c>null</c> if the block doesn't have the property.
     /// </summary>
@@ -29,12 +33,8 @@ internal static class BlockStateProperties
     /// </summary>
     public static IBlock WithProperty(this IBlock block, string property, string value)
     {
-        var current = table.Value.Properties.GetValueOrDefault(block.GetHashCode());
-        if (current is null || !current.ContainsKey(property))
-            return block;
-
-        var properties = new Dictionary<string, string>(current) { [property] = value };
-        return table.Value.Ids.TryGetValue(Key(block.UnlocalizedName, properties), out var id) ? BlocksRegistry.Get(id) : block;
+        var id = withPropertyIds.GetOrAdd((block.GetHashCode(), property, value), static (key, block) => FindWithProperty(block, key.Property, key.Value), block);
+        return id < 0 ? block : BlocksRegistry.Get(id);
     }
 
     public static IBlock WithProperty(this IBlock block, string property, bool value) => block.WithProperty(property, value ? "true" : "false");
@@ -58,6 +58,17 @@ internal static class BlockStateProperties
             merged[key] = value;
 
         return data.Ids.TryGetValue(Key(name, merged), out var id) ? BlocksRegistry.Get(id) : BlocksRegistry.Get(defaultId);
+    }
+
+    // The state id WithProperty returns, or -1 for the block itself.
+    private static int FindWithProperty(IBlock block, string property, string value)
+    {
+        var current = table.Value.Properties.GetValueOrDefault(block.GetHashCode());
+        if (current is null || !current.ContainsKey(property))
+            return -1;
+
+        var properties = new Dictionary<string, string>(current) { [property] = value };
+        return table.Value.Ids.TryGetValue(Key(block.UnlocalizedName, properties), out var id) ? id : -1;
     }
 
     private static string Key(string name, IReadOnlyDictionary<string, string> properties) =>
