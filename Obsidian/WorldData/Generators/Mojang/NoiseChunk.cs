@@ -131,6 +131,11 @@ internal sealed class NoiseChunk
         this.Depth,
         this.fillLoopMode.Map(this.RandomState.Router.Ridges));
 
+    /// <summary>
+    /// The chunk's aquifer, shared by the steps that use the noise chunk like vanilla's, so its caches carry over.
+    /// </summary>
+    public IAquifer Aquifer => field ??= Aquifers.Create(this, this.ChunkMinX >> 4, this.ChunkMinZ >> 4, this.RandomState.GlobalFluidPicker);
+
     private IDensityFunction PreliminarySurfaceLevelFunction => field ??= this.fillLoopMode.Map(this.RandomState.Router.PreliminarySurfaceLevel);
 
     public NoiseChunk(RandomState randomState, int chunkX, int chunkZ) : this(randomState, chunkX << 4, chunkZ << 4, null)

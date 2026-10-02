@@ -62,12 +62,13 @@ internal sealed class SurfaceBuilder
         this.rule = settings.SurfaceRule is null ? null : this.CompileRule(settings.SurfaceRule);
     }
 
-    public void BuildSurface(IChunk chunk)
+    /// <param name="noiseChunk">The chunk's noise chunk when the other steps share it, or <c>null</c> for a new one.</param>
+    public void BuildSurface(IChunk chunk, NoiseChunk? noiseChunk = null)
     {
         if (this.rule is null)
             return;
 
-        var context = new SurfaceContext(this, chunk, new NoiseChunk(this.randomState, chunk.X, chunk.Z),
+        var context = new SurfaceContext(this, chunk, noiseChunk ?? new NoiseChunk(this.randomState, chunk.X, chunk.Z),
             new BiomeManager(new ChunkBiomeSource(chunk, this.biomeSource), this.randomState.Seed, this.minY, this.height), trackHeights: true);
 
         var chunkMinX = chunk.X << 4;

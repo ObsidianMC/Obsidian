@@ -12,16 +12,12 @@ namespace Obsidian.WorldData.Generators.Mojang;
 internal sealed class TerrainGenerator : IStructureTerrain
 {
     private readonly RandomState randomState;
-    private readonly FluidPicker fluidPicker;
     private readonly IBlock defaultBlock;
 
     public TerrainGenerator(RandomState randomState)
     {
         this.randomState = randomState;
-
-        var settings = randomState.Settings;
-        this.defaultBlock = BlocksRegistry.GetFromSimpleState(settings.DefaultBlock);
-        this.fluidPicker = Aquifers.CreateGlobalFluidPicker(settings.SeaLevel, BlocksRegistry.GetFromSimpleState(settings.DefaultFluid));
+        this.defaultBlock = BlocksRegistry.GetFromSimpleState(randomState.Settings.DefaultBlock);
     }
 
     public int SeaLevel => this.randomState.Settings.SeaLevel;
@@ -30,12 +26,13 @@ internal sealed class TerrainGenerator : IStructureTerrain
     /// <param name="fluidUpdates">Receives fluid positions that need an update to settle (aquifer edges), like
     /// vanilla's post-processing marks.</param>
     /// <param name="beardifier">Density added around nearby structures, or <c>null</c> for none.</param>
-    public void Generate(IChunk chunk, ICollection<Vector>? fluidUpdates = null, Beardifier? beardifier = null)
+    /// <param name="noiseChunk">The chunk's noise chunk when the other steps share it, or <c>null</c> for a new one.</param>
+    public void Generate(IChunk chunk, ICollection<Vector>? fluidUpdates = null, Beardifier? beardifier = null, NoiseChunk? noiseChunk = null)
     {
         beardifier ??= Beardifier.Empty;
         var settings = this.randomState.Settings;
-        var noiseChunk = new NoiseChunk(this.randomState, chunk.X, chunk.Z);
-        var aquifer = Aquifers.Create(noiseChunk, chunk.X, chunk.Z, this.fluidPicker);
+        noiseChunk ??= new NoiseChunk(this.randomState, chunk.X, chunk.Z);
+        var aquifer = noiseChunk.Aquifer;
 
         var cellWidth = noiseChunk.CellWidth;
         var cellHeight = noiseChunk.CellHeight;
@@ -154,7 +151,7 @@ internal sealed class TerrainGenerator : IStructureTerrain
     private int? IterateColumn(int x, int z, Predicate<IBlock>? stopAt, IBlock[]? blocks)
     {
         var noiseChunk = NoiseChunk.ForColumn(this.randomState, x, z);
-        var aquifer = Aquifers.Create(noiseChunk, noiseChunk.ChunkMinX >> 4, noiseChunk.ChunkMinZ >> 4, this.fluidPicker);
+        var aquifer = noiseChunk.Aquifer;
         var settings = this.randomState.Settings;
         var minY = noiseChunk.CellNoiseMinY * noiseChunk.CellHeight;
 

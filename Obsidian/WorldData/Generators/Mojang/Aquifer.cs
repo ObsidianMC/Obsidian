@@ -15,6 +15,11 @@ internal interface IAquifer
     /// Whether the last <see cref="ComputeSubstance"/> call produced a fluid that needs a tick to settle.
     /// </summary>
     public bool ShouldScheduleFluidUpdate { get; }
+
+    /// <summary>
+    /// Clears <see cref="ShouldScheduleFluidUpdate"/>, as if no position had been computed yet.
+    /// </summary>
+    public void ResetFluidUpdate();
 }
 
 /// <summary>
@@ -73,6 +78,10 @@ internal static class Aquifers
         public bool ShouldScheduleFluidUpdate => false;
 
         public DisabledAquifer(FluidPicker fluidPicker) => this.fluidPicker = fluidPicker;
+
+        public void ResetFluidUpdate()
+        {
+        }
 
         public IBlock? ComputeSubstance(int x, int y, int z, double density) =>
             density > 0.0 ? null : this.fluidPicker(x, y, z).At(y);

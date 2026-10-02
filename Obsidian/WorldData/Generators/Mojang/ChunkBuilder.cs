@@ -6,6 +6,7 @@ using Obsidian.WorldData.Features.Tree;
 using Obsidian.WorldData.Generators.Mojang.Features;
 using Obsidian.WorldData.Generators.Mojang.Structures;
 using Obsidian.WorldData.Fluids;
+using System.Runtime.CompilerServices;
 
 namespace Obsidian.WorldData.Generators.Mojang;
 
@@ -24,6 +25,10 @@ internal sealed class ChunkBuilder
 
     // Vanilla's WorldGenRegion random factory (RandomState.getOrCreateRandomFactory("worldgen_region_random")).
     private readonly IPositionalRandomFactory regionRandom;
+
+    // Like vanilla's ProtoChunk.getOrCreateNoiseChunk, one noise chunk serves a chunk from the biomes step to the carvers
+    // step, so its flat caches, preliminary surface levels and aquifer carry over between steps.
+    private readonly ConditionalWeakTable<IChunk, NoiseChunk> noiseChunks = new();
 
     public RandomState RandomState { get; }
 
@@ -74,7 +79,7 @@ internal sealed class ChunkBuilder
             ? Beardifier.Empty
             : Beardifier.ForStructuresInChunk(this.Structures.GetTerrainAdaptingStarts(chunk.X, chunk.Z), chunk.X, chunk.Z);
 
-        this.terrainGenerator.Generate(chunk, (chunk as Chunk)?.PostProcessing, beardifier);
+        this.terrainGenerator.Generate(chunk, (chunk as Chunk)?.PostProcessing, beardifier, this.GetNoiseChunk(chunk));
     }
 
     /// <summary>
@@ -82,7 +87,7 @@ internal sealed class ChunkBuilder
     /// </summary>
     public void PopulateBiomes(IChunk chunk)
     {
-        var sampler = new NoiseChunk(this.RandomState, chunk.X, chunk.Z).ClimateSampler;
+        var sampler = this.GetNoiseChunk(chunk).ClimateSampler;
         var minQuartY = this.dimension.MinY >> 2;
         var maxQuartY = minQuartY + (this.dimension.Height >> 2);
 
@@ -101,7 +106,7 @@ internal sealed class ChunkBuilder
 
     public void ApplySurfaceRules(IChunk chunk)
     {
-        this.surfaceBuilder.BuildSurface(chunk);
+        this.surfaceBuilder.BuildSurface(chunk, this.GetNoiseChunk(chunk));
         WorldgenHeightmaps.Update(chunk, this.dimension.MinY, this.dimension.Height);
     }
 
@@ -110,9 +115,13 @@ internal sealed class ChunkBuilder
     /// </summary>
     public void ApplyCarvers(IChunk chunk)
     {
-        this.carverStep.Apply(chunk, (chunk as Chunk)?.PostProcessing);
+        this.carverStep.Apply(chunk, (chunk as Chunk)?.PostProcessing, this.GetNoiseChunk(chunk));
+        this.noiseChunks.Remove(chunk);
         WorldgenHeightmaps.Update(chunk, this.dimension.MinY, this.dimension.Height);
     }
+
+    private NoiseChunk GetNoiseChunk(IChunk chunk) =>
+        this.noiseChunks.GetValue(chunk, chunk => new NoiseChunk(this.RandomState, chunk.X, chunk.Z));
 
     /// <summary>
     /// Places the biome features of chunk (<paramref name="chunkX"/>, <paramref name="chunkZ"/>).

@@ -35,6 +35,8 @@ internal sealed class NoiseBasedAquifer : IAquifer
 
     public bool ShouldScheduleFluidUpdate { get; private set; }
 
+    public void ResetFluidUpdate() => this.ShouldScheduleFluidUpdate = false;
+
     public NoiseBasedAquifer(NoiseChunk noiseChunk, int chunkX, int chunkZ, FluidPicker globalFluidPicker)
     {
         this.noiseChunk = noiseChunk;

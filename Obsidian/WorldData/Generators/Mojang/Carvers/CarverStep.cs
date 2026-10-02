@@ -16,7 +16,6 @@ internal sealed class CarverStep
     private readonly RandomState randomState;
     private readonly SurfaceBuilder surfaceBuilder;
     private readonly IBiomeSource biomeSource;
-    private readonly FluidPicker fluidPicker;
     private readonly IConfiguredCarver[] carvers;
 
     /// <param name="carvers">Configured carver names in the biomes' order, which decides each carver's seed.</param>
@@ -26,23 +25,25 @@ internal sealed class CarverStep
         this.surfaceBuilder = surfaceBuilder;
         this.biomeSource = biomeSource;
         this.carvers = [.. carvers.Select(name => loadedCarvers.GetOrAdd(name, Load))];
-
-        var settings = randomState.Settings;
-        this.fluidPicker = Aquifers.CreateGlobalFluidPicker(settings.SeaLevel, BlocksRegistry.GetFromSimpleState(settings.DefaultFluid));
     }
 
-    public void Apply(IChunk chunk, ICollection<Vector>? fluidUpdates = null)
+    /// <param name="noiseChunk">The chunk's noise chunk when the other steps share it, or <c>null</c> for a new one.</param>
+    public void Apply(IChunk chunk, ICollection<Vector>? fluidUpdates = null, NoiseChunk? noiseChunk = null)
     {
         var settings = this.randomState.Settings;
-        var noiseChunk = new NoiseChunk(this.randomState, chunk.X, chunk.Z);
+        noiseChunk ??= new NoiseChunk(this.randomState, chunk.X, chunk.Z);
         var context = new CarvingContext(this.surfaceBuilder, settings.Noise.MinY, settings.Noise.Height)
         {
             Chunk = chunk,
             NoiseChunk = noiseChunk,
-            Aquifer = Aquifers.Create(noiseChunk, chunk.X, chunk.Z, this.fluidPicker),
+            Aquifer = noiseChunk.Aquifer,
             Biomes = new BiomeManager(this.biomeSource, this.randomState.Seed, settings.Noise.MinY, settings.Noise.Height),
             FluidUpdates = fluidUpdates
         };
+
+        // Carvers read the aquifer's last answer even where the lava level picks the block (see WorldCarver.CarveBlock),
+        // so they start from a cleared one rather than the terrain fill's.
+        context.Aquifer.ResetFluidUpdate();
 
         var random = new WorldgenRandom(new LegacyRandomSource(0L));
         var carvers = this.carvers;

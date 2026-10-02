@@ -39,6 +39,11 @@ internal sealed class RandomState
 
     public IPositionalRandomFactory OreRandom { get; }
 
+    /// <summary>
+    /// The fluid at a position when no aquifer applies: lava deep down, the default fluid up to sea level.
+    /// </summary>
+    public FluidPicker GlobalFluidPicker { get; }
+
     public RandomState(NoiseSetting settings, long seed)
     {
         this.Seed = seed;
@@ -48,6 +53,7 @@ internal sealed class RandomState
         this.Random = worldRandom.ForkPositional();
         this.AquiferRandom = this.Random.FromHashOf("minecraft:aquifer").ForkPositional();
         this.OreRandom = this.Random.FromHashOf("minecraft:ore").ForkPositional();
+        this.GlobalFluidPicker = Aquifers.CreateGlobalFluidPicker(settings.SeaLevel, BlocksRegistry.GetFromSimpleState(settings.DefaultFluid));
 
         this.wiring = new NoiseWiringVisitor(this);
         var router = settings.NoiseRouter;
