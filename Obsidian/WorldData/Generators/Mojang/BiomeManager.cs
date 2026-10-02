@@ -24,13 +24,14 @@ internal sealed class BiomeManager
     /// <param name="minY">Lowest block Y of the level; quart lookups are clamped to the level height like chunk storage.</param>
     /// <param name="height">Level height in blocks.</param>
     /// <param name="cacheNoiseBiomes">Whether to remember the source's biomes; sources that are cheap to ask don't need it.</param>
-    public BiomeManager(IBiomeSource biomeSource, long seed, int minY, int height, bool cacheNoiseBiomes = true)
+    /// <param name="capacity">How many quart biomes to make room for in the cache up front.</param>
+    public BiomeManager(IBiomeSource biomeSource, long seed, int minY, int height, bool cacheNoiseBiomes = true, int capacity = 0)
     {
         this.biomeSource = biomeSource;
         this.zoomSeed = ObfuscateSeed(seed);
         this.minQuartY = minY >> 2;
         this.maxQuartY = this.minQuartY + (height >> 2) - 1;
-        this.cache = cacheNoiseBiomes ? [] : null;
+        this.cache = cacheNoiseBiomes ? new(capacity) : null;
     }
 
     /// <summary>

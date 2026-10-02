@@ -69,7 +69,8 @@ internal sealed class SurfaceBuilder
             return;
 
         var context = new SurfaceContext(this, chunk, noiseChunk ?? new NoiseChunk(this.randomState, chunk.X, chunk.Z),
-            new BiomeManager(new ChunkBiomeSource(chunk, this.biomeSource), this.randomState.Seed, this.minY, this.height), trackHeights: true);
+            new BiomeManager(new ChunkBiomeSource(chunk, this.biomeSource), this.randomState.Seed, this.minY, this.height, capacity: 256),
+            trackHeights: true);
 
         var chunkMinX = chunk.X << 4;
         var chunkMinZ = chunk.Z << 4;
