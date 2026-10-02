@@ -117,18 +117,23 @@ internal sealed class SurfaceBuilder
         var waterHeight = int.MinValue;
         var nextCeilingStoneY = int.MaxValue;
 
-        for (var y = context.SurfaceHeight(localX, localZ); y >= this.minY; y--)
-        {
-            var block = context.GetBlock(localX, y, localZ);
+        // The column's blocks are read once (the stone ceiling search reads ahead of the loop) and sorted by reference, as
+        // most of them are the same few blocks.
+        var surfaceHeight = context.SurfaceHeight(localX, localZ);
+        var kinds = context.ReadColumn(localX, localZ, surfaceHeight, this.defaultBlock);
 
-            if (block.IsAir)
+        for (var y = surfaceHeight; y >= this.minY; y--)
+        {
+            var kind = kinds[y - this.minY];
+
+            if (kind == BlockKind.Air)
             {
                 stoneDepthAbove = 0;
                 waterHeight = int.MinValue;
                 continue;
             }
 
-            if (block.IsLiquid)
+            if (kind == BlockKind.Liquid)
             {
                 if (waterHeight == int.MinValue)
                     waterHeight = y + 1;
@@ -140,9 +145,10 @@ internal sealed class SurfaceBuilder
             {
                 nextCeilingStoneY = WayBelowMinY;
 
+                // Below the noise's range reads as air, which isn't stone.
                 for (var below = y - 1; below >= this.minY - 1; below--)
                 {
-                    if (!IsStone(context.GetBlock(localX, below, localZ)))
+                    if (below < this.minY || kinds[below - this.minY] is BlockKind.Air or BlockKind.Liquid)
                     {
                         nextCeilingStoneY = below + 1;
                         break;
@@ -153,9 +159,24 @@ internal sealed class SurfaceBuilder
             stoneDepthAbove++;
             context.UpdateY(stoneDepthAbove, y - nextCeilingStoneY + 1, waterHeight, y);
 
-            if (IsSameBlock(block, this.defaultBlock) && this.rule!(context) is IBlock replacement)
+            if (kind == BlockKind.Default && this.rule!(context) is IBlock replacement)
                 context.SetBlock(localX, y, localZ, replacement);
         }
+    }
+
+    /// <summary>
+    /// What <see cref="BuildColumn"/> needs to know about a block.
+    /// </summary>
+    private enum BlockKind : byte
+    {
+        Air,
+        Liquid,
+
+        /// <summary>
+        /// The settings' default block, which the surface rule may replace.
+        /// </summary>
+        Default,
+        Other
     }
 
     private int GetSurfaceDepth(int x, int z)
@@ -304,8 +325,6 @@ internal sealed class SurfaceBuilder
         }
     }
 
-    private static bool IsStone(IBlock block) => !block.IsAir && !block.IsLiquid;
-
     // Block instances aren't canonical (they're cached per state id and per name), so compare by value.
     private static bool IsSameBlock(IBlock a, IBlock b) =>
         a.Material == b.Material && (a.State is null || b.State is null || a.State.Id == b.State.Id);
@@ -359,8 +378,14 @@ internal sealed class SurfaceBuilder
         switch (condition)
         {
             case BiomeSurfaceCondition biome:
-                var biomes = biome.BiomeIs.ToHashSet();
-                return context => biomes.Contains(context.Biome.Name);
+                // Matches by registered biome id, which stands for the name, so blocks don't hash a string each.
+                var names = biome.BiomeIs.ToHashSet();
+                var registered = CodecRegistry.Biomes.All.Values;
+                var matches = new bool[registered.Max(codec => codec.Id) + 1];
+                foreach (var codec in registered)
+                    matches[codec.Id] = names.Contains(codec.Name);
+
+                return context => matches[context.Biome.Id];
             case NoiseThresholdSurfaceCondition noiseThreshold:
                 var noise = this.randomState.GetOrCreateNoise(((BaseNoise)noiseThreshold.Noise).Key);
                 return context =>
@@ -454,6 +479,8 @@ internal sealed class SurfaceBuilder
         // Null when heights are read live from the chunk (one-off evaluations during carving).
         private readonly int[]? surfaceHeights;
 
+        private BlockKind[]? columnKinds;
+
         private int localX;
         private int localZ;
         private BiomeCodec? biome;
@@ -526,6 +553,35 @@ internal sealed class SurfaceBuilder
 
         public IBlock GetBlock(int localX, int y, int localZ) =>
             y < this.builder.minY || y >= this.builder.minY + this.builder.height ? BlocksRegistry.Air : this.chunk.GetBlock(localX, y, localZ);
+
+        /// <summary>
+        /// The kinds of a column's blocks from the bottom of the noise's range up to <paramref name="top"/>, indexed from the
+        /// bottom. Only valid until the next call.
+        /// </summary>
+        public ReadOnlySpan<BlockKind> ReadColumn(int localX, int localZ, int top, IBlock defaultBlock)
+        {
+            var minY = this.builder.minY;
+            this.columnKinds ??= new BlockKind[this.builder.height + 1];
+            IBlock? last = null;
+            var lastKind = BlockKind.Air;
+
+            for (var y = minY; y <= top; y++)
+            {
+                var block = this.GetBlock(localX, y, localZ);
+                if (!ReferenceEquals(block, last))
+                {
+                    last = block;
+                    lastKind = block.IsAir ? BlockKind.Air
+                        : block.IsLiquid ? BlockKind.Liquid
+                        : IsSameBlock(block, defaultBlock) ? BlockKind.Default
+                        : BlockKind.Other;
+                }
+
+                this.columnKinds[y - minY] = lastKind;
+            }
+
+            return this.columnKinds;
+        }
 
         public void SetBlock(int localX, int y, int localZ, IBlock block)
         {
