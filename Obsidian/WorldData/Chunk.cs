@@ -4,6 +4,7 @@ using Obsidian.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Nbt;
 using Obsidian.WorldData.Fluids;
+using Obsidian.WorldData.Generators.Mojang.Features;
 using System.Threading;
 
 namespace Obsidian.WorldData;
@@ -69,6 +70,12 @@ public sealed class Chunk : IChunk
     /// The chunk's scheduled fluid ticks, like vanilla's <c>fluid_ticks</c>.
     /// </summary>
     internal ChunkFluidTicks FluidTicks { get; } = new();
+
+    /// <summary>
+    /// The final heightmaps world generation keeps in step with its block changes, from the chunk's first decoration until
+    /// its final heightmaps are stored; <c>null</c> otherwise. Only generation may change the chunk's blocks meanwhile.
+    /// </summary>
+    internal FinalHeightmaps? FinalHeightmaps { get; set; }
 
     public IChunkSection[] Sections { get; private set; }
     public IDictionary<HeightmapType, Heightmap> Heightmaps { get; }

@@ -16,12 +16,19 @@ namespace Obsidian.WorldData.Generators.Mojang.Features;
 internal sealed class WorldGenRegion : IWorldGenLevel
 {
     private const int WriteRadius = 1;
+    private const int AreaWidth = 2 * WriteRadius + 1;
 
-    private static readonly HeightmapType[] finalHeightmaps =
-        [HeightmapType.OceanFloor, HeightmapType.WorldSurface, HeightmapType.MotionBlocking, HeightmapType.MotionBlockingNoLeaves];
+    private readonly IReadOnlyDictionary<(int X, int Z), IChunk> chunks;
 
-    private readonly Dictionary<(int X, int Z), IChunk> chunks;
-    private readonly Dictionary<(int X, int Z, HeightmapType Type), int[]> heights = [];
+    // The chunks writes may reach (null where the region has none) and their final heightmaps, indexed by AreaIndex.
+    private readonly IChunk?[] area = new IChunk?[AreaWidth * AreaWidth];
+    private readonly FinalHeightmaps?[] areaHeightmaps = new FinalHeightmaps?[AreaWidth * AreaWidth];
+
+    // Heights computed from the blocks of a chunk when first needed, for the chunks outside the writable area and the
+    // world generation heightmaps a chunk no longer has. They don't follow writes.
+    private readonly Dictionary<(int X, int Z), FinalHeightmaps> snapshots = [];
+
+    private readonly bool trackHeightmaps;
     private readonly BiomeManager biomeManager;
     private readonly int centerX;
     private readonly int centerZ;
@@ -41,18 +48,30 @@ internal sealed class WorldGenRegion : IWorldGenLevel
     /// <param name="centerZ">Z of the chunk being decorated.</param>
     /// <param name="biomeSource">Source for biomes of chunks outside <paramref name="chunks"/>.</param>
     /// <param name="random">The region's own random (see <see cref="IWorldGenLevel.Random"/>).</param>
+    /// <param name="trackHeightmaps">
+    /// Whether the writable chunks keep the final heightmaps the region computes for them (see
+    /// <see cref="Chunk.FinalHeightmaps"/>), so later regions don't compute them again. Only for chunks that nothing but
+    /// generation writes to until their final heightmaps are stored, like the chunks around a chunk being decorated.
+    /// </param>
     public WorldGenRegion(IReadOnlyDictionary<(int X, int Z), IChunk> chunks, int centerX, int centerZ, long seed,
-        int minY, int height, int seaLevel, IBiomeSource biomeSource, IRandomSource random)
+        int minY, int height, int seaLevel, IBiomeSource biomeSource, IRandomSource random, bool trackHeightmaps)
     {
         this.Random = random;
-        this.chunks = new Dictionary<(int X, int Z), IChunk>(chunks);
+        this.chunks = chunks;
         this.centerX = centerX;
         this.centerZ = centerZ;
         this.Seed = seed;
         this.MinY = minY;
         this.Height = height;
         this.SeaLevel = seaLevel;
+        this.trackHeightmaps = trackHeightmaps;
         this.biomeManager = new BiomeManager(new RegionBiomeSource(this, biomeSource), seed, minY, height);
+
+        for (var dx = -WriteRadius; dx <= WriteRadius; dx++)
+        {
+            for (var dz = -WriteRadius; dz <= WriteRadius; dz++)
+                this.area[this.AreaIndex(centerX + dx, centerZ + dz)] = chunks.GetValueOrDefault((centerX + dx, centerZ + dz));
+        }
     }
 
     public IBlock GetBlock(Vector position)
@@ -60,37 +79,31 @@ internal sealed class WorldGenRegion : IWorldGenLevel
         if (this.IsOutsideBuildHeight(position.Y))
             return BlocksRegistry.VoidAir;
 
-        return this.chunks.TryGetValue((position.X >> 4, position.Z >> 4), out var chunk)
-            ? chunk.GetBlock(position.X, position.Y, position.Z)
-            : BlocksRegistry.Air;
+        var chunk = this.FindChunk(position.X >> 4, position.Z >> 4);
+        return chunk is not null ? chunk.GetBlock(position.X, position.Y, position.Z) : BlocksRegistry.Air;
     }
 
     public bool IsOutsideBuildHeight(int y) => y < this.MinY || y >= this.MinY + this.Height;
 
-    public bool EnsureCanWrite(Vector position) =>
-        Math.Abs((position.X >> 4) - this.centerX) <= WriteRadius && Math.Abs((position.Z >> 4) - this.centerZ) <= WriteRadius;
+    public bool EnsureCanWrite(Vector position) => this.AreaIndex(position.X >> 4, position.Z >> 4) >= 0;
 
     public bool SetBlock(Vector position, IBlock block)
     {
-        if (!this.EnsureCanWrite(position))
+        var index = this.AreaIndex(position.X >> 4, position.Z >> 4);
+        if (index < 0)
             return false;
 
         // Like a proto chunk, writes outside the build height are ignored.
         if (this.IsOutsideBuildHeight(position.Y))
             return true;
 
-        var chunkX = position.X >> 4;
-        var chunkZ = position.Z >> 4;
-        var chunk = this.GetChunk(chunkX, chunkZ);
+        var chunk = this.GetAreaChunk(index, position);
 
         // Prime the final heightmaps from the blocks before the change, like ProtoChunk.setBlockState.
-        foreach (var type in finalHeightmaps)
-            this.GetHeights(chunk, chunkX, chunkZ, type);
+        var heightmaps = this.GetFinalHeightmaps(index, chunk);
 
         chunk.SetBlock(position.X, position.Y, position.Z, block);
-
-        foreach (var type in finalHeightmaps)
-            this.UpdateHeight(chunk, chunkX, chunkZ, type, position, block);
+        heightmaps.Update(position.X, position.Y, position.Z, block);
 
         DataBlockEntity.ApplyBlockChange(chunk, position, block);
         return true;
@@ -100,34 +113,45 @@ internal sealed class WorldGenRegion : IWorldGenLevel
     {
         var chunkX = x >> 4;
         var chunkZ = z >> 4;
-        if (!this.chunks.TryGetValue((chunkX, chunkZ), out var chunk))
+        var index = this.AreaIndex(chunkX, chunkZ);
+        var chunk = index >= 0 ? this.area[index] : this.chunks.GetValueOrDefault((chunkX, chunkZ));
+        if (chunk is null)
             return this.MinY;
 
-        if (type is HeightmapType.WorldSurfaceWG or HeightmapType.OceanFloorWG && chunk.Heightmaps.TryGetValue(type, out var heightmap))
-            return heightmap.GetHeight(x & 15, z & 15);
+        if (type is HeightmapType.WorldSurfaceWG or HeightmapType.OceanFloorWG)
+        {
+            return chunk.Heightmaps.TryGetValue(type, out var heightmap)
+                ? heightmap.GetHeight(x & 15, z & 15)
+                : this.GetSnapshot(chunk, chunkX, chunkZ).GetHeight(type, x, z);
+        }
 
-        return this.GetHeights(chunk, chunkX, chunkZ, type)[(z & 15) * 16 + (x & 15)];
+        var heightmaps = index >= 0 ? this.GetFinalHeightmaps(index, chunk) : this.GetSnapshot(chunk, chunkX, chunkZ);
+        return heightmaps.GetHeight(type, x, z);
     }
 
     public BiomeCodec GetBiome(Vector position) => this.biomeManager.GetBiome(position.X, position.Y, position.Z);
 
     public void SetBlockEntity(Vector position, IBlockEntity blockEntity)
     {
-        if (this.EnsureCanWrite(position) && !this.IsOutsideBuildHeight(position.Y))
-            this.GetChunk(position.X >> 4, position.Z >> 4).SetBlockEntity(position.X, position.Y, position.Z, blockEntity);
+        var index = this.AreaIndex(position.X >> 4, position.Z >> 4);
+        if (index >= 0 && !this.IsOutsideBuildHeight(position.Y))
+            this.GetAreaChunk(index, position).SetBlockEntity(position.X, position.Y, position.Z, blockEntity);
     }
 
-    public IBlockEntity? GetBlockEntity(Vector position) =>
-        !this.IsOutsideBuildHeight(position.Y) && this.chunks.TryGetValue((position.X >> 4, position.Z >> 4), out var chunk)
-            ? chunk.GetBlockEntity(position.X, position.Y, position.Z)
-            : null;
+    public IBlockEntity? GetBlockEntity(Vector position)
+    {
+        if (this.IsOutsideBuildHeight(position.Y))
+            return null;
+
+        return this.FindChunk(position.X >> 4, position.Z >> 4)?.GetBlockEntity(position.X, position.Y, position.Z);
+    }
 
     public void AddEntity(GeneratedEntity entity)
     {
         // Like vanilla's addFreshEntity, any chunk of the region can take entities, not only writable ones.
         var chunkX = (int)Math.Floor(entity.Position.X) >> 4;
         var chunkZ = (int)Math.Floor(entity.Position.Z) >> 4;
-        if (this.chunks.TryGetValue((chunkX, chunkZ), out var chunk) && chunk is Chunk generated)
+        if (this.FindChunk(chunkX, chunkZ) is Chunk generated)
             generated.PendingEntities.Add(entity);
     }
 
@@ -147,76 +171,61 @@ internal sealed class WorldGenRegion : IWorldGenLevel
     /// </summary>
     internal void ScheduleFluidTick(Vector position, FluidKind fluid, int delay)
     {
-        if (this.chunks.TryGetValue((position.X >> 4, position.Z >> 4), out var chunk) && chunk is Chunk generated)
+        if (this.FindChunk(position.X >> 4, position.Z >> 4) is Chunk generated)
             generated.FluidTicks.Schedule(position, fluid, delay);
     }
 
     public void MarkForPostProcessing(Vector position)
     {
-        if (this.chunks.TryGetValue((position.X >> 4, position.Z >> 4), out var chunk) && chunk is Chunk generated)
+        if (this.FindChunk(position.X >> 4, position.Z >> 4) is Chunk generated)
             generated.PostProcessing.Add(position);
     }
 
-    private IChunk GetChunk(int chunkX, int chunkZ) =>
-        this.chunks.TryGetValue((chunkX, chunkZ), out var chunk)
-            ? chunk
-            : throw new InvalidOperationException($"Chunk ({chunkX}, {chunkZ}) is outside the generation region.");
-
-    /// <summary>
-    /// Heights (first free Y) for a chunk, computed from its blocks on first use.
-    /// </summary>
-    private int[] GetHeights(IChunk chunk, int chunkX, int chunkZ, HeightmapType type)
+    // The index of a chunk of the writable area, or -1 for chunks outside it.
+    private int AreaIndex(int chunkX, int chunkZ)
     {
-        if (this.heights.TryGetValue((chunkX, chunkZ, type), out var values))
-            return values;
-
-        values = new int[256];
-        for (var localZ = 0; localZ < 16; localZ++)
-        {
-            for (var localX = 0; localX < 16; localX++)
-            {
-                var y = this.MinY + this.Height - 1;
-                while (y >= this.MinY && !WorldgenHeightmaps.Matches(type, chunk.GetBlock(localX, y, localZ)))
-                    y--;
-
-                values[localZ * 16 + localX] = y + 1;
-            }
-        }
-
-        this.heights[(chunkX, chunkZ, type)] = values;
-        return values;
+        var dx = chunkX - this.centerX + WriteRadius;
+        var dz = chunkZ - this.centerZ + WriteRadius;
+        return (uint)dx < AreaWidth && (uint)dz < AreaWidth ? dx * AreaWidth + dz : -1;
     }
 
-    /// <summary>
-    /// Updates a height after a block change, like vanilla's Heightmap.update.
-    /// </summary>
-    private void UpdateHeight(IChunk chunk, int chunkX, int chunkZ, HeightmapType type, Vector position, IBlock block)
+    private IChunk? FindChunk(int chunkX, int chunkZ)
     {
-        var values = this.heights[(chunkX, chunkZ, type)];
-        var localX = position.X & 15;
-        var localZ = position.Z & 15;
-        var column = localZ * 16 + localX;
-        var height = values[column];
+        var index = this.AreaIndex(chunkX, chunkZ);
+        return index >= 0 ? this.area[index] : this.chunks.GetValueOrDefault((chunkX, chunkZ));
+    }
 
-        if (position.Y <= height - 2)
-            return;
+    private IChunk GetAreaChunk(int index, Vector position) =>
+        this.area[index] ?? throw new InvalidOperationException($"Chunk ({position.X >> 4}, {position.Z >> 4}) is outside the generation region.");
 
-        if (WorldgenHeightmaps.Matches(type, block))
+    /// <summary>
+    /// The final heightmaps of a writable chunk, following the region's writes: the ones the chunk keeps, or else computed
+    /// from its blocks on first use.
+    /// </summary>
+    private FinalHeightmaps GetFinalHeightmaps(int index, IChunk chunk)
+    {
+        var heightmaps = this.areaHeightmaps[index];
+        if (heightmaps is not null)
+            return heightmaps;
+
+        var generated = chunk as Chunk;
+        heightmaps = generated?.FinalHeightmaps;
+        if (heightmaps is null)
         {
-            if (position.Y >= height)
-                values[column] = position.Y + 1;
-
-            return;
+            heightmaps = new FinalHeightmaps(chunk, this.MinY, this.Height);
+            if (this.trackHeightmaps && generated is not null)
+                generated.FinalHeightmaps = heightmaps;
         }
 
-        if (height - 1 != position.Y)
-            return;
+        return this.areaHeightmaps[index] = heightmaps;
+    }
 
-        var y = position.Y - 1;
-        while (y >= this.MinY && !WorldgenHeightmaps.Matches(type, chunk.GetBlock(localX, y, localZ)))
-            y--;
+    private FinalHeightmaps GetSnapshot(IChunk chunk, int chunkX, int chunkZ)
+    {
+        if (!this.snapshots.TryGetValue((chunkX, chunkZ), out var heightmaps))
+            this.snapshots[(chunkX, chunkZ)] = heightmaps = new FinalHeightmaps(chunk, this.MinY, this.Height);
 
-        values[column] = y + 1;
+        return heightmaps;
     }
 
     /// <summary>
@@ -233,9 +242,12 @@ internal sealed class WorldGenRegion : IWorldGenLevel
             this.fallback = fallback;
         }
 
-        public BiomeCodec GetNoiseBiome(int quartX, int quartY, int quartZ) =>
-            this.region.chunks.TryGetValue((quartX >> 2, quartZ >> 2), out var chunk)
+        public BiomeCodec GetNoiseBiome(int quartX, int quartY, int quartZ)
+        {
+            var chunk = this.region.FindChunk(quartX >> 2, quartZ >> 2);
+            return chunk is not null
                 ? chunk.GetBiome((quartX & 3) << 2, quartY << 2, (quartZ & 3) << 2)
                 : this.fallback.GetNoiseBiome(quartX, quartY, quartZ);
+        }
     }
 }

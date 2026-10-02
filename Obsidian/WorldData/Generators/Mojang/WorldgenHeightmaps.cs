@@ -1,3 +1,5 @@
+using Obsidian.WorldData.Generators.Mojang.Features;
+
 namespace Obsidian.WorldData.Generators.Mojang;
 
 /// <summary>
@@ -6,8 +8,31 @@ namespace Obsidian.WorldData.Generators.Mojang;
 /// </summary>
 internal static class WorldgenHeightmaps
 {
+    /// <summary>
+    /// <see cref="Mask"/> bit of <see cref="HeightmapType.OceanFloor"/> and <see cref="HeightmapType.OceanFloorWG"/>.
+    /// </summary>
+    public const int OceanFloorBit = 1;
+
+    /// <summary>
+    /// <see cref="Mask"/> bit of <see cref="HeightmapType.WorldSurface"/> and <see cref="HeightmapType.WorldSurfaceWG"/>.
+    /// </summary>
+    public const int WorldSurfaceBit = 2;
+
+    /// <summary>
+    /// <see cref="Mask"/> bit of <see cref="HeightmapType.MotionBlocking"/>.
+    /// </summary>
+    public const int MotionBlockingBit = 4;
+
+    /// <summary>
+    /// <see cref="Mask"/> bit of <see cref="HeightmapType.MotionBlockingNoLeaves"/>.
+    /// </summary>
+    public const int MotionBlockingNoLeavesBit = 8;
+
     private static readonly HeightmapType[] finalHeightmaps =
         [HeightmapType.WorldSurface, HeightmapType.OceanFloor, HeightmapType.MotionBlocking, HeightmapType.MotionBlockingNoLeaves];
+
+    // The mask of every block state, indexed by state id: generation checks the predicates for every block it writes.
+    private static readonly byte[] masks = BuildMasks();
 
     /// <summary>
     /// Recomputes both heightmaps from the chunk's blocks. Values are the first free Y above the highest
@@ -52,8 +77,9 @@ internal static class WorldgenHeightmaps
     }
 
     /// <summary>
-    /// Recomputes the final heightmaps (<see cref="HeightmapType.WorldSurface"/>, <see cref="HeightmapType.OceanFloor"/>,
-    /// <see cref="HeightmapType.MotionBlocking"/> and <see cref="HeightmapType.MotionBlockingNoLeaves"/>) the chunk still has.
+    /// Writes the final heightmaps (<see cref="HeightmapType.WorldSurface"/>, <see cref="HeightmapType.OceanFloor"/>,
+    /// <see cref="HeightmapType.MotionBlocking"/> and <see cref="HeightmapType.MotionBlockingNoLeaves"/>) the chunk still has:
+    /// the heights generation tracked (<see cref="Chunk.FinalHeightmaps"/>), or else heights computed from its blocks.
     /// </summary>
     /// <remarks>
     /// Features track these heights only while decorating, so they're written back once every feature that can reach the
@@ -61,40 +87,42 @@ internal static class WorldgenHeightmaps
     /// </remarks>
     public static void UpdateFinal(IChunk chunk, int minY, int height)
     {
-        Span<int> heights = stackalloc int[256];
+        var heights = (chunk as Chunk)?.FinalHeightmaps ?? new FinalHeightmaps(chunk, minY, height);
+        Span<int> values = stackalloc int[256];
 
         foreach (var type in finalHeightmaps)
         {
             if (!chunk.Heightmaps.ContainsKey(type))
                 continue;
 
-            for (var localZ = 0; localZ < 16; localZ++)
-            {
-                for (var localX = 0; localX < 16; localX++)
-                {
-                    var y = minY + height - 1;
-                    while (y >= minY && !Matches(type, chunk.GetBlock(localX, y, localZ)))
-                        y--;
-
-                    heights[localZ * 16 + localX] = y + 1;
-                }
-            }
-
-            Set(chunk, type, heights);
+            heights.CopyTo(type, values);
+            Set(chunk, type, values);
         }
     }
 
     /// <summary>
     /// Whether a block counts for a heightmap, using vanilla's Heightmap.Types predicates.
     /// </summary>
-    public static bool Matches(HeightmapType type, IBlock block) => type switch
+    public static bool Matches(HeightmapType type, IBlock block) => (Mask(block) & Bit(type)) != 0;
+
+    /// <summary>
+    /// The heightmaps a block counts for, as a combination of the <c>*Bit</c> constants.
+    /// </summary>
+    public static int Mask(IBlock block)
     {
-        HeightmapType.WorldSurface or HeightmapType.WorldSurfaceWG => !block.IsAir,
-        HeightmapType.OceanFloor or HeightmapType.OceanFloorWG => block.BlocksMotion(),
-        HeightmapType.MotionBlocking => block.BlocksMotion() || block.HasFluid(),
-        // Vanilla's LeavesBlock is abstract; the concrete leaves classes all end with its name.
-        HeightmapType.MotionBlockingNoLeaves => (block.BlocksMotion() || block.HasFluid())
-            && !block.BlockClass().EndsWith("LeavesBlock", StringComparison.Ordinal),
+        var id = block.GetHashCode();
+        return (uint)id < (uint)masks.Length ? masks[id] : ComputeMask(block);
+    }
+
+    /// <summary>
+    /// The <see cref="Mask"/> bit of a heightmap.
+    /// </summary>
+    public static int Bit(HeightmapType type) => type switch
+    {
+        HeightmapType.WorldSurface or HeightmapType.WorldSurfaceWG => WorldSurfaceBit,
+        HeightmapType.OceanFloor or HeightmapType.OceanFloorWG => OceanFloorBit,
+        HeightmapType.MotionBlocking => MotionBlockingBit,
+        HeightmapType.MotionBlockingNoLeaves => MotionBlockingNoLeavesBit,
         _ => throw new ArgumentOutOfRangeException(nameof(type))
     };
 
@@ -105,5 +133,36 @@ internal static class WorldgenHeightmaps
 
         for (var column = 0; column < heights.Length; column++)
             heightmap.Set(column % 16, column / 16, heights[column]);
+    }
+
+    private static byte[] BuildMasks()
+    {
+        var values = new byte[BlocksRegistry.StateToNumeric.Length];
+        for (var stateId = 0; stateId < values.Length; stateId++)
+            values[stateId] = (byte)ComputeMask(BlocksRegistry.Get(stateId));
+
+        return values;
+    }
+
+    // Vanilla's Heightmap.Types predicates.
+    private static int ComputeMask(IBlock block)
+    {
+        var mask = 0;
+        if (!block.IsAir)
+            mask |= WorldSurfaceBit;
+
+        if (block.BlocksMotion())
+            mask |= OceanFloorBit;
+
+        if (block.BlocksMotion() || block.HasFluid())
+        {
+            mask |= MotionBlockingBit;
+
+            // Vanilla's LeavesBlock is abstract; the concrete leaves classes all end with its name.
+            if (!block.BlockClass().EndsWith("LeavesBlock", StringComparison.Ordinal))
+                mask |= MotionBlockingNoLeavesBit;
+        }
+
+        return mask;
     }
 }

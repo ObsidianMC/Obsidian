@@ -122,7 +122,7 @@ internal sealed class ChunkBuilder
     public void Decorate(IReadOnlyDictionary<(int X, int Z), IChunk> area, int chunkX, int chunkZ,
         Action<int, int, PlacedFeature, bool>? onPlaced = null)
     {
-        var region = this.CreateRegion(area, chunkX, chunkZ);
+        var region = this.CreateRegion(area, chunkX, chunkZ, trackHeightmaps: true);
 
         // Like vanilla, only the 3x3 chunks around the decorated chunk contribute biomes.
         var neighbors = area.Where(entry => Math.Abs(entry.Key.X - chunkX) <= 1 && Math.Abs(entry.Key.Z - chunkZ) <= 1)
@@ -169,7 +169,7 @@ internal sealed class ChunkBuilder
         if (area[(chunkX, chunkZ)] is not Chunk chunk || chunk.PostProcessing.Count == 0)
             return;
 
-        var region = this.CreateRegion(area, chunkX, chunkZ);
+        var region = this.CreateRegion(area, chunkX, chunkZ, trackHeightmaps: false);
         var minY = this.dimension.MinY;
 
         // Vanilla post-processes on the live level, whose random only varies lava's spread delay; any seed will do.
@@ -196,13 +196,23 @@ internal sealed class ChunkBuilder
         }
     }
 
-    private WorldGenRegion CreateRegion(IReadOnlyDictionary<(int X, int Z), IChunk> area, int chunkX, int chunkZ) =>
+    /// <param name="trackHeightmaps">
+    /// Whether the chunks written keep their final heightmaps (see <see cref="Chunk.FinalHeightmaps"/>). Decorations only
+    /// write into chunks that are still generating, but post-processing may spread fluids into complete ones.
+    /// </param>
+    private WorldGenRegion CreateRegion(IReadOnlyDictionary<(int X, int Z), IChunk> area, int chunkX, int chunkZ, bool trackHeightmaps) =>
         new(area, chunkX, chunkZ, this.RandomState.Seed, this.dimension.MinY, this.dimension.Height, this.settings.SeaLevel, this.biomeSource,
-            this.regionRandom.At(chunkX << 4, 0, chunkZ << 4));
+            this.regionRandom.At(chunkX << 4, 0, chunkZ << 4), trackHeightmaps);
 
     /// <summary>
-    /// Writes the final heightmaps into the chunk; call it once every chunk around it is decorated.
+    /// Writes the final heightmaps into the chunk; call it once every chunk around it is decorated and it's post-processed.
     /// </summary>
-    public void UpdateFinalHeightmaps(IChunk chunk) =>
+    public void UpdateFinalHeightmaps(IChunk chunk)
+    {
         WorldgenHeightmaps.UpdateFinal(chunk, this.dimension.MinY, this.dimension.Height);
+
+        // From now on the level may change the chunk's blocks, which the tracked heights wouldn't follow.
+        if (chunk is Chunk generated)
+            generated.FinalHeightmaps = null;
+    }
 }
