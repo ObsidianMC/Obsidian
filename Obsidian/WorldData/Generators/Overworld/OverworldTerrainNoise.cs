@@ -1,5 +1,6 @@
 ﻿using Obsidian.API.Noise;
 using SharpNoise.Modules;
+using System.Threading;
 
 namespace Obsidian.WorldData.Generators.Overworld;
 
@@ -23,6 +24,11 @@ public sealed class OverworldTerrainNoise
     public List<Perlin> OreNoises { get; } = new();
     public List<Perlin> StoneNoises { get; } = new();
 
+    // Chunks generate in parallel, so the noise lists only grow under this lock, and lookups read a snapshot of them.
+    private readonly Lock noiseLock = new();
+    private Perlin[] oreSnapshot = [];
+    private Perlin[] stoneSnapshot = [];
+
     public OverworldTerrainNoise(int seed)
     {
         this.seed = seed + 765; // add offset
@@ -42,6 +48,9 @@ public sealed class OverworldTerrainNoise
             Quality = SharpNoise.NoiseQuality.Fast,
             Seed = seed + 200
         });
+
+        this.oreSnapshot = [.. OreNoises];
+        this.stoneSnapshot = [.. StoneNoises];
 
         RiverNoise = new Cache
         {
@@ -210,38 +219,38 @@ public sealed class OverworldTerrainNoise
         }
     };
 
-    public Module Ore(int index)
+    public Module Ore(int index) => this.GetNoise(OreNoises, ref this.oreSnapshot, index);
+
+    public Module Stone(int index) => this.GetNoise(StoneNoises, ref this.stoneSnapshot, index);
+
+    /// <summary>
+    /// The noise at <paramref name="index"/>, adding the missing ones after the first noise's settings.
+    /// </summary>
+    private Perlin GetNoise(List<Perlin> noises, ref Perlin[] snapshot, int index)
     {
-        var noisesToAdd = index + 1 - OreNoises.Count;
-        for (int i = 0; i < noisesToAdd; i++)
+        var current = Volatile.Read(ref snapshot);
+        if (index < current.Length)
+            return current[index];
+
+        lock (this.noiseLock)
         {
-            OreNoises.Add(new Perlin()
+            // The seeds follow the list's count as noises are added, as they always have, so existing worlds keep their
+            // ores and stone variants.
+            var noisesToAdd = index + 1 - noises.Count;
+            for (int i = 0; i < noisesToAdd; i++)
             {
-                Frequency = OreNoises[0].Frequency,
-                OctaveCount = OreNoises[0].OctaveCount,
-                Quality = OreNoises[0].Quality,
-                Seed = OreNoises[0].Seed + i + OreNoises.Count
-            });
+                noises.Add(new Perlin()
+                {
+                    Frequency = noises[0].Frequency,
+                    OctaveCount = noises[0].OctaveCount,
+                    Quality = noises[0].Quality,
+                    Seed = noises[0].Seed + i + noises.Count
+                });
+            }
+
+            Volatile.Write(ref snapshot, [.. noises]);
+            return noises[index];
         }
-
-        return OreNoises[index];
-    }
-
-    public Module Stone(int index)
-    {
-        var noisesToAdd = index + 1 - StoneNoises.Count;
-        for (int i = 0; i < noisesToAdd; i++)
-        {
-            StoneNoises.Add(new Perlin()
-            {
-                Frequency = StoneNoises[0].Frequency,
-                OctaveCount = StoneNoises[0].OctaveCount,
-                Quality = StoneNoises[0].Quality,
-                Seed = StoneNoises[0].Seed + i + StoneNoises.Count
-            });
-        }
-
-        return StoneNoises[index];
     }
 
     public Module Decoration => new Multiply
