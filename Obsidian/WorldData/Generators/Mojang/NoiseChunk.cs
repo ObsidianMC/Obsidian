@@ -211,7 +211,12 @@ internal sealed class NoiseChunk
 
         if (!this.preliminarySurfaceLevels.TryGetValue(key, out var level))
         {
-            level = (int)Math.Floor(this.PreliminarySurfaceLevelFunction.GetValue(quartX, 0, quartZ));
+            if (!this.RandomState.TryGetPreliminarySurfaceLevel(quartX, quartZ, out level))
+            {
+                level = (int)Math.Floor(this.PreliminarySurfaceLevelFunction.GetValue(quartX, 0, quartZ));
+                this.RandomState.AddPreliminarySurfaceLevel(quartX, quartZ, level);
+            }
+
             this.preliminarySurfaceLevels[key] = level;
         }
 

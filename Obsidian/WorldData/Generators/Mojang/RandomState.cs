@@ -23,6 +23,9 @@ internal sealed class RandomState
     private readonly ThreadLocal<ClimateSampler> climateSamplers;
     private readonly ConcurrentDictionary<IDensityFunction, bool> yIndependence = new(ReferenceEqualityComparer.Instance);
 
+    // See TryGetPreliminarySurfaceLevel; null when levels depend on the chunk.
+    private readonly ColumnLevel?[]? preliminarySurfaceLevels;
+
     public long Seed { get; }
 
     public NoiseSetting Settings { get; }
@@ -81,6 +84,9 @@ internal sealed class RandomState
         };
 
         this.climateSamplers = new ThreadLocal<ClimateSampler>(this.CreateClimateSampler);
+
+        if (this.IsChunkIndependent(this.Router.PreliminarySurfaceLevel))
+            this.preliminarySurfaceLevels = new ColumnLevel?[64 * 64];
     }
 
     /// <summary>
@@ -102,6 +108,32 @@ internal sealed class RandomState
     /// Cell corners on chunk borders, shared by the noise chunks on both sides.
     /// </summary>
     public CornerColumnCache CornerColumns { get; } = new();
+
+    /// <summary>
+    /// Gets the preliminary surface level of a quart column (at its corner's block coordinates) that a noise chunk computed
+    /// recently, if levels don't depend on the chunk computing them.
+    /// </summary>
+    /// <remarks>
+    /// Aquifers look at the levels of about 200 columns around their chunk, mostly the same ones as their neighbors. The
+    /// levels match between chunks when the function has no interpolation and every flat cache's argument is independent
+    /// of Y: a chunk reads flat caches inside it at Y 0 and samples them directly outside. One level is kept per column of a
+    /// 64 by 64 column window.
+    /// </remarks>
+    public bool TryGetPreliminarySurfaceLevel(int x, int z, out int level)
+    {
+        var entry = this.preliminarySurfaceLevels is null ? null : Volatile.Read(ref this.preliminarySurfaceLevels[PreliminarySurfaceSlot(x, z)]);
+        level = entry?.Level ?? 0;
+        return entry is not null && entry.X == x && entry.Z == z;
+    }
+
+    /// <summary>
+    /// Keeps a preliminary surface level for <see cref="TryGetPreliminarySurfaceLevel"/>.
+    /// </summary>
+    public void AddPreliminarySurfaceLevel(int x, int z, int level)
+    {
+        if (this.preliminarySurfaceLevels is not null)
+            Volatile.Write(ref this.preliminarySurfaceLevels[PreliminarySurfaceSlot(x, z)], new ColumnLevel(x, z, level));
+    }
 
     /// <summary>
     /// Binds the noises of any density function (e.g. a registry entry) to this world's seed.
@@ -180,6 +212,23 @@ internal sealed class RandomState
         Spline curve => this.IsYIndependent(curve.Coordinate) && curve.Points.All(point => this.IsYIndependent(point.Value)),
         _ => false
     };
+
+    // Whether a function sampled at quart column corners gives the same values in every noise chunk; see
+    // TryGetPreliminarySurfaceLevel.
+    private bool IsChunkIndependent(IDensityFunction function)
+    {
+        var parts = new ReferenceCounter();
+        parts.Map(function);
+
+        return parts.Counts.Keys.All(part => part switch
+        {
+            InterpolatedDensityFunction => false,
+            FlatCacheDensityFunction flatCache => this.IsYIndependent(flatCache.Argument),
+            _ => true
+        });
+    }
+
+    private static int PreliminarySurfaceSlot(int x, int z) => ((x >> 2) & 63) | ((z >> 2) & 63) << 6;
 
     private ClimateSampler CreateClimateSampler()
     {
@@ -323,6 +372,8 @@ internal sealed class RandomState
 
         public IDensityFunction Apply(IDensityFunction function) => function;
     }
+
+    private sealed record ColumnLevel(int X, int Z, int Level);
 
     /// <summary>
     /// Counts how often each function of a tree is referenced, visiting shared subtrees once.
