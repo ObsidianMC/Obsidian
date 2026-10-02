@@ -2,6 +2,7 @@ using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Generators.Mojang.Structures;
 using Obsidian.WorldData.Structures;
+using BitOperations = System.Numerics.BitOperations;
 
 namespace Obsidian.WorldData.Generators.Mojang.Features;
 
@@ -26,6 +27,12 @@ internal sealed class FeatureDecorator
     // look them up for nearly every position placed.
     private readonly (string? Name, HashSet<PlacedFeature>? Features)[] featureSetsById;
     private readonly HashSet<string> possibleBiomes;
+
+    // For each possible biome, the indices of its features in each step's sorted features.
+    private readonly Dictionary<string, int[][]> stepIndices = [];
+
+    private readonly Func<BiomeCodec, PlacedFeature, bool> biomeHasFeature;
+    private readonly int maxStepWords;
     private readonly int generationDepth;
 
     /// <param name="possibleBiomes">Biomes the biome source can produce, in vanilla's possibleBiomes order.</param>
@@ -40,6 +47,15 @@ internal sealed class FeatureDecorator
         this.featuresPerStep = FeatureSorter.Build(possibleBiomes, biome => this.GetSteps(biome.Name));
         this.biomeFeatureSets = biomeFeatures.ToDictionary(entry => entry.Key,
             entry => entry.Value.SelectMany(step => step).ToHashSet());
+        this.biomeHasFeature = this.BiomeHasFeature;
+        this.maxStepWords = this.featuresPerStep.Count == 0 ? 0 : (this.featuresPerStep.Max(step => step.Features.Count) + 63) >> 6;
+
+        foreach (var biome in this.possibleBiomes)
+        {
+            var steps = this.GetSteps(biome);
+            this.stepIndices[biome] = [.. steps.Take(this.featuresPerStep.Count)
+                .Select((features, step) => features.Select(this.featuresPerStep[step].IndexOf).ToArray())];
+        }
 
         this.featureSetsById = new (string?, HashSet<PlacedFeature>?)[possibleBiomes.Count == 0 ? 0 : possibleBiomes.Max(biome => biome.Id) + 1];
         foreach (var biome in possibleBiomes)
@@ -80,6 +96,9 @@ internal sealed class FeatureDecorator
         var reachingStructures = structures?.GetStartsReaching(chunkX, chunkZ).Select(start => start.Structure)
             .ToHashSet(ReferenceEqualityComparer.Instance) ?? [];
 
+        // The features of the area's biomes in a step, one bit per index in the step's features.
+        Span<ulong> chosen = stackalloc ulong[this.maxStepWords];
+
         for (var step = 0; step < stepCount; step++)
         {
             if (structures is not null && step < structures.StructuresPerStep.Count)
@@ -112,32 +131,36 @@ internal sealed class FeatureDecorator
                 continue;
 
             var stepFeatures = this.featuresPerStep[step];
-            var indices = new SortedSet<int>();
-
+            chosen.Clear();
             foreach (var biome in biomes)
             {
-                var steps = this.GetSteps(biome);
-                if (step < steps.Count)
+                var steps = this.stepIndices[biome];
+                if (step < steps.Length)
                 {
-                    foreach (var feature in steps[step])
-                        indices.Add(stepFeatures.IndexOf(feature));
+                    foreach (var index in steps[step])
+                        chosen[index >> 6] |= 1UL << index;
                 }
             }
 
-            foreach (var index in indices)
+            // Placed in index order.
+            for (var word = 0; word < chosen.Length; word++)
             {
-                var feature = stepFeatures.Features[index];
-                random.SetFeatureSeed(decorationSeed, index, step);
+                for (var bits = chosen[word]; bits != 0; bits &= bits - 1)
+                {
+                    var index = (word << 6) + BitOperations.TrailingZeroCount(bits);
+                    var feature = stepFeatures.Features[index];
+                    random.SetFeatureSeed(decorationSeed, index, step);
 
-                try
-                {
-                    var placed = feature.PlaceWithBiomeCheck(region, generation, random, origin, this.BiomeHasFeature);
-                    onPlaced?.Invoke(step, index, feature, placed);
-                }
-                catch (Exception exception)
-                {
-                    throw new InvalidOperationException(
-                        $"Failed to place feature '{feature.Identifier}' in chunk ({chunkX}, {chunkZ}) (decoration seed {decorationSeed}).", exception);
+                    try
+                    {
+                        var placed = feature.PlaceWithBiomeCheck(region, generation, random, origin, this.biomeHasFeature);
+                        onPlaced?.Invoke(step, index, feature, placed);
+                    }
+                    catch (Exception exception)
+                    {
+                        throw new InvalidOperationException(
+                            $"Failed to place feature '{feature.Identifier}' in chunk ({chunkX}, {chunkZ}) (decoration seed {decorationSeed}).", exception);
+                    }
                 }
             }
         }
