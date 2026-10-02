@@ -426,7 +426,7 @@ internal sealed class SculkSpreader
                 continue;
 
             var target = position.Offset(face);
-            if (!replaceableWorldGen.Contains(level.GetBlock(target)))
+            if (!replaceableWorldGen.ContainsState(level.GetStateId(target)))
                 continue;
 
             level.SetBlock(target, Sculk);
@@ -439,9 +439,9 @@ internal sealed class SculkSpreader
                     continue;
 
                 var neighborPosition = target.Offset(direction);
-                var neighbor = level.GetBlock(neighborPosition);
-                if (neighbor.Material == Material.SculkVein)
-                    OnDischarged(Behaviour.Vein, level, neighbor, neighborPosition);
+                var neighbor = level.GetStateId(neighborPosition);
+                if (BlocksRegistry.RegistryIdOf(neighbor) == sculkVeinId)
+                    OnDischarged(Behaviour.Vein, level, BlocksRegistry.Get(neighbor), neighborPosition);
             }
 
             return true;
@@ -458,7 +458,7 @@ internal sealed class SculkSpreader
 
         foreach (var face in FeatureHelpers.Directions)
         {
-            if (MultifaceSpreader.HasFace(state, face) && level.GetBlock(position.Offset(face)).Material == Material.Sculk)
+            if (MultifaceSpreader.HasFace(state, face) && BlocksRegistry.RegistryIdOf(level.GetStateId(position.Offset(face))) == sculkId)
                 state = state.WithProperty(FeatureHelpers.FaceName(face), false);
         }
 
