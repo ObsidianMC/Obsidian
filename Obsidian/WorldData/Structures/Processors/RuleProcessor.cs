@@ -19,16 +19,22 @@ public sealed class RuleProcessor : StructureProcessor
         StructureBlockInfo current, StructurePlaceSettings settings)
     {
         var position = current.Position;
-        var random = PositionalRandom.At(position);
-        var existing = level.GetBlock(position);
-
-        foreach (var rule in this.Rules)
+        var random = PositionalRandom.Rent(position);
+        try
         {
-            if (rule.Test(current.Block, existing, original.Position, position, pivot, random))
-                return new StructureBlockInfo(position, rule.OutputBlock, rule.BlockEntityModifier.Apply(random, current.Nbt));
-        }
+            var existing = level.GetBlock(position);
+            foreach (var rule in this.Rules)
+            {
+                if (rule.Test(current.Block, existing, original.Position, position, pivot, random))
+                    return new StructureBlockInfo(position, rule.OutputBlock, rule.BlockEntityModifier.Apply(random, current.Nbt));
+            }
 
-        return current;
+            return current;
+        }
+        finally
+        {
+            PositionalRandom.Return(random);
+        }
     }
 }
 

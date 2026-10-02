@@ -42,8 +42,19 @@ public sealed class StructurePlaceSettings
     public bool ShouldApplyWaterlogging => this.LiquidSettings == LiquidSettings.ApplyWaterlogging;
 
     /// <summary>Vanilla <c>getRandom(pos)</c>.</summary>
-    /// <remarks>Without <see cref="Random"/>, the random is only valid until the next call on the thread (see <see cref="PositionalRandom"/>).</remarks>
-    public IRandomSource GetRandom(Vector position) => this.Random ?? PositionalRandom.At(position);
+    public IRandomSource GetRandom(Vector position) => this.Random ?? new LegacyRandomSource(Mth.GetSeed(position.X, position.Y, position.Z));
+
+    /// <summary>
+    /// <see cref="GetRandom"/> for a moment, with a rented positional random (see <see cref="PositionalRandom"/>); give it
+    /// back with <see cref="ReturnRandom"/>.
+    /// </summary>
+    internal IRandomSource RentRandom(Vector position) => this.Random ?? PositionalRandom.Rent(position);
+
+    internal void ReturnRandom(IRandomSource random)
+    {
+        if (this.Random is null)
+            PositionalRandom.Return((LegacyRandomSource)random);
+    }
 
     /// <summary>Vanilla <c>getRandomPalette</c>: always draws <c>nextInt(count)</c>, even for a single palette.</summary>
     public T GetRandomPalette<T>(IReadOnlyList<T> palettes, Vector position)

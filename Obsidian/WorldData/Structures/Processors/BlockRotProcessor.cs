@@ -17,8 +17,15 @@ public sealed class BlockRotProcessor : StructureProcessor
     public override StructureBlockInfo? ProcessBlock(IWorldGenLevel level, Vector origin, Vector pivot, StructureBlockInfo original,
         StructureBlockInfo current, StructurePlaceSettings settings)
     {
-        var random = settings.GetRandom(current.Position);
-        var canRot = this.RottableBlocks is null || this.RottableBlocks.Contains(original.Block);
-        return canRot && !(random.NextFloat() <= this.Integrity) ? null : current;
+        var random = settings.RentRandom(current.Position);
+        try
+        {
+            var canRot = this.RottableBlocks is null || this.RottableBlocks.Contains(original.Block);
+            return canRot && !(random.NextFloat() <= this.Integrity) ? null : current;
+        }
+        finally
+        {
+            settings.ReturnRandom(random);
+        }
     }
 }

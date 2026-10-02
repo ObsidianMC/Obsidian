@@ -28,22 +28,29 @@ public sealed class BlockAgeProcessor : StructureProcessor
     public override StructureBlockInfo? ProcessBlock(IWorldGenLevel level, Vector origin, Vector pivot, StructureBlockInfo original,
         StructureBlockInfo current, StructurePlaceSettings settings)
     {
-        var random = settings.GetRandom(current.Position);
-        var block = current.Block;
-        IBlock? replacement = null;
+        var random = settings.RentRandom(current.Position);
+        try
+        {
+            var block = current.Block;
+            IBlock? replacement = null;
 
-        if (fullStone.Contains(block))
-            replacement = this.MaybeReplaceFullStoneBlock(random);
-        else if (stairs.Contains(block))
-            replacement = this.MaybeReplaceStairs(block, random);
-        else if (slabs.Contains(block))
-            replacement = random.NextFloat() < this.Mossiness ? WithPropertiesOf("minecraft:mossy_stone_brick_slab", block) : null;
-        else if (walls.Contains(block))
-            replacement = random.NextFloat() < this.Mossiness ? WithPropertiesOf("minecraft:mossy_stone_brick_wall", block) : null;
-        else if (block.Material == Material.Obsidian)
-            replacement = random.NextFloat() < 0.15f ? BlockStateProperties.GetState("minecraft:crying_obsidian") : null;
+            if (fullStone.Contains(block))
+                replacement = this.MaybeReplaceFullStoneBlock(random);
+            else if (stairs.Contains(block))
+                replacement = this.MaybeReplaceStairs(block, random);
+            else if (slabs.Contains(block))
+                replacement = random.NextFloat() < this.Mossiness ? WithPropertiesOf("minecraft:mossy_stone_brick_slab", block) : null;
+            else if (walls.Contains(block))
+                replacement = random.NextFloat() < this.Mossiness ? WithPropertiesOf("minecraft:mossy_stone_brick_wall", block) : null;
+            else if (block.Material == Material.Obsidian)
+                replacement = random.NextFloat() < 0.15f ? BlockStateProperties.GetState("minecraft:crying_obsidian") : null;
 
-        return replacement is null ? current : current with { Block = replacement };
+            return replacement is null ? current : current with { Block = replacement };
+        }
+        finally
+        {
+            settings.ReturnRandom(random);
+        }
     }
 
     private IBlock? MaybeReplaceFullStoneBlock(IRandomSource random)
