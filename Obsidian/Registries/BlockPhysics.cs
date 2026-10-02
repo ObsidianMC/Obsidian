@@ -13,7 +13,7 @@ namespace Obsidian.Registries;
 /// bit 0 air, 1 blocks motion, 2 solid, 3 replaceable, 4 liquid, 5 fluid source, 6 full collision cube,
 /// 7 sturdy center (up), 8 sturdy rigid (up), 9 redstone conductor, 10 block entity, 11-16 sturdy full faces
 /// (one bit per <see cref="BlockFace"/>), 17-20 light emission, 21-24 fluid amount, 25-27 fluid kind, 28 empty collision,
-/// 29 full top collision face.
+/// 29 full top collision face, 30 solid render, 31 sturdy center (down).
 /// </remarks>
 internal static class BlockPhysics
 {
@@ -33,6 +33,11 @@ internal static class BlockPhysics
     /// Vanilla <c>BlockState.canBeReplaced()</c>: air, fluids, short grass, snow layers and the like.
     /// </summary>
     public static bool CanBeReplaced(this IBlock block) => Has(block, 3);
+
+    /// <summary>
+    /// Vanilla <c>BlockState.liquid()</c>: water and lava blocks.
+    /// </summary>
+    public static bool IsLiquidBlock(this IBlock block) => Has(block, 4);
 
     public static bool IsCollisionShapeFullBlock(this IBlock block) => Has(block, 6);
 
@@ -70,6 +75,22 @@ internal static class BlockPhysics
     /// Vanilla <c>isFaceSturdy(..., UP, SupportType.CENTER)</c>.
     /// </summary>
     public static bool IsTopCenterSturdy(this IBlock block) => Has(block, 7);
+
+    /// <summary>
+    /// Vanilla <c>Block.canSupportCenter(..., DOWN)</c>: something can hang from the center of the bottom face.
+    /// </summary>
+    public static bool IsBottomCenterSturdy(this IBlock block) => Has(block, 31);
+
+    /// <summary>
+    /// Vanilla <c>BlockState.isSolidRender()</c>: an opaque full cube.
+    /// </summary>
+    public static bool IsSolidRender(this IBlock block) => Has(block, 30);
+
+    /// <summary>
+    /// Whether the block is a vanilla <c>FallingBlock</c> (sand, gravel, concrete powder, anvils, dragon eggs).
+    /// </summary>
+    public static bool IsFallingBlock(this IBlock block) =>
+        block.BlockClass() is "ColoredFallingBlock" or "SandBlock" or "ConcretePowderBlock" or "AnvilBlock" or "DragonEggBlock";
 
     public static int LightEmission(this IBlock block) => (Flags(block) >> 17) & 15;
 

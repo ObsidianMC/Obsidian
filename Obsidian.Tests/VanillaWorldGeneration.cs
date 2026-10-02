@@ -269,6 +269,25 @@ public class VanillaWorldGeneration
         Assert.Equal(expectedBlocks, Sha256(blocks.ToString(0, blocks.Length - 1)));
     }
 
+    [Theory]
+    // SHA-256 of vanilla's pieces for a structure start: one "type box orientation genDepth" line per piece, in order.
+    [InlineData(12345L, "minecraft:mineshaft", -3, 10, "5af12ad6be35a55d49e0ab229c60a5b54be27c08be4420e08fcd3d80e7e402d3")]
+    [InlineData(12345L, "minecraft:mineshaft_mesa", -168, 110, "a40507154fe61789d0f25a7cfa25fe27da190df8fb06beb0741ebc72d0a9cf1e")]
+    public void StructurePiecesMatchVanilla(long seed, string structure, int startX, int startZ, string expectedPieces)
+    {
+        var builder = new ChunkBuilder(seed);
+        var start = builder.Structures!.GetStarts(startX, startZ).Single(start => start.Structure.Identifier == structure);
+
+        var pieces = start.Pieces.Select(piece =>
+        {
+            var box = piece.BoundingBox;
+            var orientation = piece.Orientation?.ToString().ToLowerInvariant() ?? "none";
+            return $"{piece.GetType().Name.ToLowerInvariant()} {box.MinX},{box.MinY},{box.MinZ},{box.MaxX},{box.MaxY},{box.MaxZ} {orientation} {piece.GenDepth}";
+        });
+
+        Assert.Equal(expectedPieces, Sha256(string.Join('\n', pieces)));
+    }
+
     private static string BlockNames(IChunk chunk)
     {
         var blocks = new StringBuilder();

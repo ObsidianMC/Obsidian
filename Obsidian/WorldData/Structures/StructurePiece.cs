@@ -69,7 +69,7 @@ public abstract class StructurePiece
     /// </summary>
     public abstract void PostProcess(StructurePieceContext context);
 
-    public void Move(int x, int y, int z) => this.BoundingBox = this.BoundingBox.Move(x, y, z);
+    public virtual void Move(int x, int y, int z) => this.BoundingBox = this.BoundingBox.Move(x, y, z);
 
     /// <summary>
     /// Vanilla <c>isCloseToChunk</c>: whether the box reaches within <paramref name="distance"/> blocks of the chunk.
