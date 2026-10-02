@@ -160,7 +160,7 @@ internal sealed class StructureGenerationContext
     /// <summary>
     /// Seeded with vanilla's large feature seed for the chunk.
     /// </summary>
-    public required IRandomSource Random { get; init; }
+    public required WorldgenRandom Random { get; init; }
 
     public required IStructureTerrain Terrain { get; init; }
 
