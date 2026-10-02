@@ -1,5 +1,6 @@
 ﻿using Obsidian.WorldData.Decorators;
 using Obsidian.WorldData.Generators.Overworld;
+using Obsidian.WorldData.Lighting;
 
 namespace Obsidian.WorldData.Generators;
 
@@ -56,10 +57,8 @@ public sealed class OverworldGenerator : ILevelGenerator
 
         if (ChunkGenStage.light <= stage && chunk.ChunkStatus < ChunkGenStage.full)
         {
-            Lighting.InitialFillSkyLight(chunk);
-            await Lighting.LightFromNeighbors(chunk, world);
+            await LightEngine.LightChunkAsync(chunk, world);
             chunk.SetChunkStatus(ChunkGenStage.light);
-            await Lighting.LightToNeighbors(chunk, world);
         }
 
         chunk.SetChunkStatus(ChunkGenStage.full);

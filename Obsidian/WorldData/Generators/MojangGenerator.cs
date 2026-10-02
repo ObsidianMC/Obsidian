@@ -1,5 +1,6 @@
 ﻿using Obsidian.API.World;
 using Obsidian.WorldData.Generators.Mojang;
+using Obsidian.WorldData.Lighting;
 using System.Threading;
 
 
@@ -57,20 +58,14 @@ internal class MojangGenerator : ILevelGenerator
 
         if (ChunkGenStage.initialize_light <= stage && chunk.ChunkStatus < ChunkGenStage.initialize_light)
         {
-            // Every feature that can reach this chunk has run, so its heightmaps are final.
+            // Every feature that can reach this chunk has run, so its heightmaps are final. Its sky light sources are
+            // found when it's lit.
             this.builder.UpdateFinalHeightmaps(chunk);
-
-            // TODO: Implement light initialization
             chunk.SetChunkStatus(ChunkGenStage.initialize_light);
         }
 
         if (ChunkGenStage.light <= stage && chunk.ChunkStatus < ChunkGenStage.light)
-        {
-            Lighting.InitialFillSkyLight(chunk);
-            await Lighting.LightFromNeighbors(chunk, this.world);
-            chunk.SetChunkStatus(ChunkGenStage.light);
-            await Lighting.LightToNeighbors(chunk, this.world);
-        }
+            await this.LightAsync(chunk);
 
         if (ChunkGenStage.spawn <= stage && chunk.ChunkStatus < ChunkGenStage.spawn)
         {
@@ -191,6 +186,20 @@ internal class MojangGenerator : ILevelGenerator
         // The area's chunks are locked, so their pending lists can be written.
         this.builder.Decorate(area, cx, cz, position => this.GetPendingFluidUpdates(position.X >> 4, position.Z >> 4).Add(position));
         chunk.SetChunkStatus(ChunkGenStage.features);
+    }
+
+    /// <summary>
+    /// Lights a chunk whose blocks are final, spreading light between it and its lit neighbors, whose locks it holds.
+    /// </summary>
+    private async ValueTask LightAsync(IChunk chunk)
+    {
+        using var locks = await this.LockAsync(chunk.X, chunk.Z, 1);
+        if (chunk.ChunkStatus >= ChunkGenStage.light)
+            return;
+
+        var hasSkyLight = !CodecRegistry.TryGetDimension(this.world.DimensionName, out var dimension) || dimension.Element.HasSkylight;
+        await LightEngine.LightChunkAsync(chunk, this.world, hasSkyLight);
+        chunk.SetChunkStatus(ChunkGenStage.light);
     }
 
     /// <summary>

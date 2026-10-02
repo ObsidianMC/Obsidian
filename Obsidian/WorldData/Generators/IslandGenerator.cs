@@ -1,6 +1,7 @@
 ﻿using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.World;
 using Obsidian.WorldData.Decorators;
+using Obsidian.WorldData.Lighting;
 using SharpNoise.Modules;
 
 namespace Obsidian.WorldData.Generators;
@@ -138,10 +139,8 @@ public sealed class IslandGenerator : ILevelGenerator
             }
         }
 
-        Lighting.InitialFillSkyLight(chunk);
-        await Lighting.LightFromNeighbors(chunk, world);
+        await LightEngine.LightChunkAsync(chunk, world);
         chunk.SetChunkStatus(ChunkGenStage.light);
-        await Lighting.LightToNeighbors(chunk, world);
         chunk.SetChunkStatus(ChunkGenStage.full);
         return chunk;
     }
