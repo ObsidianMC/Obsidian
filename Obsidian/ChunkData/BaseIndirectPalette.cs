@@ -52,8 +52,15 @@ public abstract class BaseIndirectPalette<T> : IPalette<T>
         if (value is null)
             throw new ArgumentNullException(nameof(value));
 
+        return this.GetOrAddValueId(this.GetValueId(value));
+    }
+
+    /// <summary>
+    /// The palette index of a value by its id (a block's state id, a biome's id), added when it's missing.
+    /// </summary>
+    public int GetOrAddValueId(int valueId)
+    {
         // Get
-        int valueId = this.GetValueId(value);
         if (TryGetIdImpl(valueId, out int id))
             return id;
 

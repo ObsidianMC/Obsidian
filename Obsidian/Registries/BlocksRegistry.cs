@@ -45,6 +45,12 @@ internal static partial class BlocksRegistry
 
     public static IBlock Get(int stateId) => stateBlocks[stateId];
 
+    /// <summary>The registry id of the block a state belongs to.</summary>
+    public static int RegistryIdOf(int stateId) => StateToNumeric[stateId];
+
+    /// <summary>The material of the block a state belongs to.</summary>
+    public static Material MaterialOf(int stateId) => stateBlocks[stateId].Material;
+
     public static string? GetBlockName(string resourceId) => resourceIdToName.GetValueOrDefault(resourceId);
 
     /// <summary>

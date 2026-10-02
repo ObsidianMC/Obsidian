@@ -23,6 +23,12 @@ internal static class BlockPhysics
 {
     private static readonly Lazy<PhysicsData> data = new(Load);
 
+    // The per-state tables, loaded with the data on first use, without a Lazy check on every lookup.
+    private static class Tables
+    {
+        public static readonly int[] Flags = data.Value.Flags;
+    }
+
     /// <summary>
     /// Vanilla <c>BlockState.blocksMotion()</c>: the block has collision (leaves and logs do, plants and snow layers don't).
     /// </summary>
@@ -228,6 +234,19 @@ internal static class BlockPhysics
 
     private static bool Has(IBlock block, int bit) => (Flags(block) & (1 << bit)) != 0;
 
+    /// <summary>
+    /// The physics flags of a state, by state id: what the <see cref="IBlock"/> extensions here read, for code that works
+    /// with state ids.
+    /// </summary>
+    public static int Flags(int stateId)
+    {
+        var flags = Tables.Flags;
+        return (uint)stateId < (uint)flags.Length ? flags[stateId] : 0;
+    }
+
+    /// <summary>Whether a state has a physics flag (see <see cref="Flags(int)"/>).</summary>
+    public static bool Has(int stateId, int bit) => (Flags(stateId) & (1 << bit)) != 0;
+
     private static bool HasFluidBit(IBlock block, int bit) => (FluidFlags(block) & (1 << bit)) != 0;
 
     private static int FluidFlags(IBlock block)
@@ -237,12 +256,7 @@ internal static class BlockPhysics
         return (uint)id < (uint)flags.Length ? flags[id] : 0;
     }
 
-    private static int Flags(IBlock block)
-    {
-        var flags = data.Value.Flags;
-        var id = block.GetHashCode();
-        return (uint)id < (uint)flags.Length ? flags[id] : 0;
-    }
+    private static int Flags(IBlock block) => Flags(block.GetHashCode());
 
     private static PhysicsData Load()
     {

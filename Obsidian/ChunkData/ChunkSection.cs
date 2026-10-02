@@ -20,6 +20,9 @@ public sealed class ChunkSection : IChunkSection
 
     private static readonly byte[] FullSkyLight = new byte[2048];
 
+    // SetBlock counts a section empty until it holds a block other than air (only plain air).
+    private static readonly int airStateId = BlocksRegistry.Air.GetHashCode();
+
     static ChunkSection()
     {
         Array.Fill(FullSkyLight, (byte)0xFF); // 0xFF = two 15s packed together
@@ -82,6 +85,22 @@ public sealed class ChunkSection : IChunkSection
         this.BlockStateContainer.Set(x, y, z, block);
     }
     public void SetBiome(int x, int y, int z, BiomeCodec biome) => this.BiomeContainer.Set(x, y, z, biome);
+
+    /// <summary>
+    /// The state id of the block at the section's local position, without resolving the block.
+    /// </summary>
+    public int GetStateId(int x, int y, int z) => ((BlockStateContainer)this.BlockStateContainer).GetStateId(x, y, z);
+
+    /// <summary>
+    /// Sets the block at the section's local position by its state id, like <see cref="SetBlock(int, int, int, IBlock)"/>.
+    /// </summary>
+    public void SetStateId(int x, int y, int z, int stateId)
+    {
+        if (stateId != airStateId)
+            IsEmpty = false;
+
+        ((BlockStateContainer)this.BlockStateContainer).SetStateId(x, y, z, stateId);
+    }
     public void SetLightLevel(int x, int y, int z, LightType lt, int level)
     {
         // each value is 4 bits. So upper 4 bits will be odd, lower even

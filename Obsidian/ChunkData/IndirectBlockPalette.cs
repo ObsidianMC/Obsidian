@@ -44,6 +44,22 @@ public sealed class IndirectBlockPalette : BaseIndirectPalette<IBlock>, IPalette
         return false;
     }
 
+    /// <summary>
+    /// The state id at a palette index, for reads that don't lock; see <see cref="TryGetBlock"/>.
+    /// </summary>
+    public bool TryGetStateId(int index, out int stateId)
+    {
+        var values = this.Values;
+        if ((uint)index < (uint)this.Count && (uint)index < (uint)values.Length)
+        {
+            stateId = values[index];
+            return true;
+        }
+
+        stateId = 0;
+        return false;
+    }
+
     public override IPalette<IBlock> Clone()
     {
         int[] valuesCopy = GC.AllocateUninitializedArray<int>(Values.Length);
@@ -73,6 +89,22 @@ public sealed class IndirectBiomePalette : BaseIndirectPalette<BiomeCodec>, IPal
         var biome = CodecRegistry.GetBiome(Values[index]);
 
         return biome is null ? throw new MissingPaletteEntryException(index) : biome;
+    }
+
+    /// <summary>
+    /// The biome at a palette index, for reads that don't lock; see <see cref="IndirectBlockPalette.TryGetBlock"/>.
+    /// </summary>
+    public bool TryGetBiome(int index, [NotNullWhen(true)] out BiomeCodec? biome)
+    {
+        var values = this.Values;
+        if ((uint)index < (uint)this.Count && (uint)index < (uint)values.Length)
+        {
+            biome = CodecRegistry.GetBiome(values[index]);
+            return biome is not null;
+        }
+
+        biome = null;
+        return false;
     }
 
     public override IPalette<BiomeCodec> Clone()

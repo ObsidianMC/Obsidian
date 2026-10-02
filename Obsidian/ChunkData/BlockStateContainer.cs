@@ -75,6 +75,52 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
         return base.Get(x, y, z);
     }
 
+    /// <summary>
+    /// The state id of a block, read like <see cref="Get"/> without resolving the block.
+    /// </summary>
+    public int GetStateId(int x, int y, int z)
+    {
+        var data = this.DataArray;
+        var palette = this.Palette;
+
+        if (data is not null)
+        {
+            if (palette is IndirectBlockPalette indirect && indirect.TryGetStateId(data[this.GetIndex(x, y, z)], out var stateId))
+                return stateId;
+        }
+        else if (palette is SingleBlockValuePalette single && single.IsFull)
+        {
+            return single.Value.GetHashCode();
+        }
+
+        return base.Get(x, y, z).GetHashCode();
+    }
+
+    /// <summary>
+    /// Sets a block by its state id, like <see cref="Set"/>.
+    /// </summary>
+    public void SetStateId(int x, int y, int z, int stateId)
+    {
+#if CACHE_VALID_BLOCKS
+        validBlockCount.SetDirty();
+#endif
+        lock (this.dataLock)
+        {
+            var data = this.DataArray;
+            if (data is not null && this.Palette is IndirectBlockPalette palette)
+            {
+                var id = palette.GetOrAddValueId(stateId);
+                if (palette.BitCount > data.BitsPerEntry)
+                    this.DataArray = data = data.Grow(palette.BitCount);
+
+                data[this.GetIndex(x, y, z)] = id;
+                return;
+            }
+
+            base.Set(x, y, z, BlocksRegistry.Get(stateId));
+        }
+    }
+
     public override void WriteTo(INetStreamWriter writer)
     {
 #if CACHE_VALID_BLOCKS
