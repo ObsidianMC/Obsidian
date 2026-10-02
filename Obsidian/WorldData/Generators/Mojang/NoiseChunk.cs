@@ -578,6 +578,10 @@ internal sealed class NoiseChunk
         private readonly double[] values;
         private readonly int size;
 
+        // Positions outside the chunk are sampled directly; splines ask for the same one several times in a row (the
+        // aquifers' and surface rules' preliminary surface levels look around the chunk).
+        private readonly CacheOnce outside;
+
         public string Type => "minecraft:flat_cache";
 
         public double MinValue => this.argument.MinValue;
@@ -588,6 +592,7 @@ internal sealed class NoiseChunk
         {
             this.chunk = chunk;
             this.argument = argument;
+            this.outside = new CacheOnce(argument);
 
             this.size = (chunk.CellCountXZ * chunk.CellWidth >> 2) + 1;
             this.values = new double[this.size * this.size];
@@ -609,7 +614,7 @@ internal sealed class NoiseChunk
 
             return quartX >= 0 && quartZ >= 0 && quartX < this.size && quartZ < this.size
                 ? this.values[quartX + quartZ * this.size]
-                : this.argument.GetValue(x, y, z);
+                : this.outside.GetValue(x, y, z);
         }
     }
 
