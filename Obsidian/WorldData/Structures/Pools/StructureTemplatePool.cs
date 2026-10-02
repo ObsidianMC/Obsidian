@@ -11,6 +11,8 @@ public sealed class StructureTemplatePool
 {
     public const string EmptyId = "minecraft:empty";
 
+    private int maxSize = -1;
+
     /// <summary>The registry id, e.g. <c>minecraft:village/plains/houses</c>.</summary>
     public string Identifier { get; init; } = string.Empty;
 
@@ -47,8 +49,6 @@ public sealed class StructureTemplatePool
             return value;
         }
     }
-
-    private int maxSize = -1;
 
     /// <summary>The fallback pool, or <c>null</c> when its id isn't registered.</summary>
     public StructureTemplatePool? FallbackPool => Get(this.Fallback);
