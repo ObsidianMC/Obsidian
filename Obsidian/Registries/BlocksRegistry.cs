@@ -9,6 +9,7 @@ internal static partial class BlocksRegistry
     // array lookups.
     private static readonly IBlock[] defaultBlocks;
     private static readonly IBlock[] stateBlocks;
+    private static readonly IBlock?[] materialBlocks;
 
     public static int GlobalBitsPerBlocks { get; private set; }
     static BlocksRegistry()
@@ -19,6 +20,14 @@ internal static partial class BlocksRegistry
             resourceIdToName.TryAdd(ResourceIds[i], Names[i]);
             defaultBlocks[i] = CreateDefault(i);
             defaultBlockCache.TryAdd(Names[i], defaultBlocks[i]);
+        }
+
+        // Materials name items too, so only some have a block.
+        materialBlocks = new IBlock?[Enum.GetValues<Material>().Max(material => (int)material) + 1];
+        for (int i = 0; i < Names.Length; i++)
+        {
+            if (Enum.TryParse<Material>(Names[i], out var material))
+                materialBlocks[(int)material] = defaultBlocks[i];
         }
 
         // Blocks without properties have one state, which is their default block.
@@ -60,9 +69,8 @@ internal static partial class BlocksRegistry
         if (state != null)
             return Get(state.Id);
 
-        if (!defaultBlockCache.TryGetValue(material.ToString(), out var block))
-            throw new InvalidOperationException($"{material} is not a valid block.");
-
-        return block;
+        return (uint)material < (uint)materialBlocks.Length && materialBlocks[(int)material] is IBlock block
+            ? block
+            : throw new InvalidOperationException($"{material} is not a valid block.");
     }
 }
