@@ -1,12 +1,9 @@
 namespace Obsidian.WorldData.Features;
 
 /// <summary>
-/// The optional spawn bonus chest with torches around it, like vanilla's BonusChestFeature.
+/// The optional spawn bonus chest (with the <c>spawn_bonus_chest</c> loot table) with torches around it, like vanilla's
+/// BonusChestFeature.
 /// </summary>
-/// <remarks>
-/// Vanilla fills the chest with the <c>spawn_bonus_chest</c> loot table through its block entity; Obsidian has no chest block
-/// entity yet, so only the chest and torches are placed. The loot seed is still drawn.
-/// </remarks>
 [ConfiguredFeatureClass("minecraft:bonus_chest")]
 public sealed class BonusChestFeature : ConfiguredFeatureBase
 {

@@ -1,25 +1,37 @@
+using Obsidian.API.Registry.Codecs.Dimensions;
+
 namespace Obsidian.WorldData.Generators.Mojang;
 
 /// <summary>
-/// What vanilla's world preset generates in a dimension: its noise settings, build range, biome source and carvers.
+/// What vanilla's world preset generates in a dimension: its dimension type, noise settings, biome source and carvers.
 /// </summary>
 internal sealed class MojangDimension
 {
     /// <summary>
     /// The overworld (dimension type <c>minecraft:overworld</c>, noise settings <c>minecraft:overworld</c>).
     /// </summary>
-    public static MojangDimension Overworld { get; } = new("minecraft:overworld", -64, 384, true, MultiNoiseBiomeSource.Overworld,
+    public static MojangDimension Overworld { get; } = new("minecraft:overworld", "minecraft:overworld", MultiNoiseBiomeSource.Overworld,
         ["cave", "cave_extra_underground", "canyon"]);
 
     /// <summary>
     /// The nether (dimension type <c>minecraft:the_nether</c>, noise settings <c>minecraft:nether</c>).
     /// </summary>
-    public static MojangDimension Nether { get; } = new("minecraft:nether", 0, 256, false, MultiNoiseBiomeSource.Nether, ["nether_cave"]);
+    public static MojangDimension Nether { get; } = new("minecraft:the_nether", "minecraft:nether", MultiNoiseBiomeSource.Nether,
+        ["nether_cave"]);
 
     /// <summary>
     /// The end (dimension type <c>minecraft:the_end</c>, noise settings <c>minecraft:end</c>).
     /// </summary>
-    public static MojangDimension End { get; } = new("minecraft:end", 0, 256, true, randomState => new TheEndBiomeSource(randomState), []);
+    public static MojangDimension End { get; } = new("minecraft:the_end", "minecraft:end", randomState => new TheEndBiomeSource(randomState), []);
+
+    private readonly string dimensionType;
+
+    /// <summary>
+    /// The dimension type's codec, which decides the build range and sky light.
+    /// </summary>
+    public DimensionCodec DimensionType => field ??= CodecRegistry.TryGetDimension(this.dimensionType, out var codec)
+        ? codec!
+        : throw new InvalidOperationException($"Unknown dimension type '{this.dimensionType}'.");
 
     /// <summary>
     /// The noise settings key.
@@ -29,17 +41,17 @@ internal sealed class MojangDimension
     /// <summary>
     /// The dimension type's lowest block Y.
     /// </summary>
-    public int MinY { get; }
+    public int MinY => this.DimensionType.Element.MinY;
 
     /// <summary>
     /// The dimension type's build height in blocks.
     /// </summary>
-    public int Height { get; }
+    public int Height => this.DimensionType.Element.Height;
 
     /// <summary>
     /// Whether the dimension type has sky light (the nether doesn't).
     /// </summary>
-    public bool HasSkyLight { get; }
+    public bool HasSkyLight => this.DimensionType.Element.HasSkylight;
 
     /// <summary>
     /// Creates the dimension's biome source for a world.
@@ -55,13 +67,11 @@ internal sealed class MojangDimension
     /// </remarks>
     public IReadOnlyList<string> Carvers { get; }
 
-    private MojangDimension(string noiseSettings, int minY, int height, bool hasSkyLight,
-        Func<RandomState, IClimateBiomeSource> createBiomeSource, IReadOnlyList<string> carvers)
+    private MojangDimension(string dimensionType, string noiseSettings, Func<RandomState, IClimateBiomeSource> createBiomeSource,
+        IReadOnlyList<string> carvers)
     {
+        this.dimensionType = dimensionType;
         this.NoiseSettings = noiseSettings;
-        this.MinY = minY;
-        this.Height = height;
-        this.HasSkyLight = hasSkyLight;
         this.CreateBiomeSource = createBiomeSource;
         this.Carvers = carvers;
     }
