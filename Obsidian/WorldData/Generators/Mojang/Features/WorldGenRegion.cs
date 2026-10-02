@@ -19,6 +19,12 @@ internal sealed class WorldGenRegion : IWorldGenLevel
     private const int WriteRadius = 1;
     private const int AreaWidth = 2 * WriteRadius + 1;
 
+    // What a write needs to know about a block (see WriteInfo): its heightmap mask, and whether it has a block entity.
+    private const int HeightmapMask = 0xF;
+    private const int BlockEntityBit = 1 << 4;
+
+    private static readonly byte[] writeInfos = CreateWriteInfos();
+
     private readonly IReadOnlyDictionary<(int X, int Z), IChunk> chunks;
 
     // The chunks writes may reach (null where the region has none) and their final heightmaps, indexed by AreaIndex.
@@ -136,9 +142,16 @@ internal sealed class WorldGenRegion : IWorldGenLevel
         else
             chunk.SetBlock(position.X, position.Y, position.Z, block);
 
-        heightmaps.Update(position.X, position.Y, position.Z, block);
+        var stateId = block.GetHashCode();
+        var info = (uint)stateId < (uint)writeInfos.Length ? writeInfos[stateId] : WriteInfo(block);
+        heightmaps.Update(position.X, position.Y, position.Z, info & HeightmapMask);
 
-        DataBlockEntity.ApplyBlockChange(chunk, position, block);
+        // Like DataBlockEntity.ApplyBlockChange, which blocks without a block entity don't need.
+        if ((info & BlockEntityBit) != 0)
+            DataBlockEntity.ApplyBlockChange(chunk, position, block);
+        else
+            chunk.RemoveBlockEntity(position.X, position.Y, position.Z);
+
         return true;
     }
 
@@ -213,6 +226,18 @@ internal sealed class WorldGenRegion : IWorldGenLevel
         if (this.FindChunk(position.X >> 4, position.Z >> 4) is Chunk generated)
             generated.PostProcessing.Add(position);
     }
+
+    private static byte[] CreateWriteInfos()
+    {
+        var infos = new byte[BlocksRegistry.StateToNumeric.Length];
+        for (var stateId = 0; stateId < infos.Length; stateId++)
+            infos[stateId] = (byte)WriteInfo(BlocksRegistry.Get(stateId));
+
+        return infos;
+    }
+
+    private static int WriteInfo(IBlock block) =>
+        WorldgenHeightmaps.Mask(block) | (block.HasBlockEntity() ? BlockEntityBit : 0);
 
     // The index of a chunk of the writable area, or -1 for chunks outside it.
     private int AreaIndex(int chunkX, int chunkZ)

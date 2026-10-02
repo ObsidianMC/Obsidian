@@ -42,12 +42,12 @@ internal sealed class FinalHeightmaps
     public void CopyTo(HeightmapType type, Span<int> destination) => this.heights.AsSpan(Layer(type) << 8, 256).CopyTo(destination);
 
     /// <summary>
-    /// Updates the heights after <paramref name="block"/> was written at (<paramref name="x"/>, <paramref name="y"/>,
-    /// <paramref name="z"/>), like vanilla's <c>Heightmap.update</c> for each heightmap.
+    /// Updates the heights after a block was written at (<paramref name="x"/>, <paramref name="y"/>, <paramref name="z"/>),
+    /// like vanilla's <c>Heightmap.update</c> for each heightmap.
     /// </summary>
-    public void Update(int x, int y, int z, IBlock block)
+    /// <param name="mask">The block's <see cref="WorldgenHeightmaps.Mask"/>.</param>
+    public void Update(int x, int y, int z, int mask)
     {
-        var mask = WorldgenHeightmaps.Mask(block);
         var column = (z & 15) << 4 | (x & 15);
 
         for (var layer = 0; layer < LayerCount; layer++)
