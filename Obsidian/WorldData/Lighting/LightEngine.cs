@@ -50,10 +50,15 @@ internal sealed class LightEngine
     private readonly int sectionCount;
     private readonly int minY;
     private readonly int height;
-    private readonly Queue<long> queue = new();
+    private readonly Queue<long> queue;
 
-    private LightEngine(IChunk chunk, IEnumerable<IChunk> litNeighbors)
+    // An emptied queue for the thread's next engine. Taken while in use.
+    [ThreadStatic]
+    private static Queue<long>? freeQueue;
+
+    private LightEngine(IChunk chunk, IEnumerable<IChunk> litNeighbors, Queue<long> queue)
     {
+        this.queue = queue;
         this.area[4] = chunk;
         this.minY = chunk.MinY;
         this.height = chunk.Height;
@@ -96,11 +101,17 @@ internal sealed class LightEngine
     /// <param name="hasSkyLight">Whether the dimension has sky light. Without it, the chunk's sky light is left alone.</param>
     public static void LightChunk(IChunk chunk, IEnumerable<IChunk> litNeighbors, bool hasSkyLight)
     {
-        var engine = new LightEngine(chunk, litNeighbors);
+        var queue = freeQueue ?? new Queue<long>();
+        freeQueue = null;
+
+        var engine = new LightEngine(chunk, litNeighbors, queue);
         engine.LightBlocks();
 
         if (hasSkyLight)
             engine.LightSky();
+
+        // Propagating empties the queue.
+        freeQueue = queue;
     }
 
     /// <summary>
@@ -138,7 +149,7 @@ internal sealed class LightEngine
         for (var sectionIndex = 0; sectionIndex < sections.Length; sectionIndex++)
         {
             var section = sections[sectionIndex];
-            section.SetLight(new byte[2048], LightType.Block);
+            Array.Clear(this.sections[4 * this.sectionCount + sectionIndex]!.GetLightStorage(LightType.Block));
             if (!section.IsEmpty)
                 this.EnqueueLightSources(section, sectionIndex);
         }
@@ -233,18 +244,23 @@ internal sealed class LightEngine
             highestSource = Math.Max(highestSource, source);
         }
 
-        var sections = chunk.Sections;
-        for (var sectionIndex = 0; sectionIndex < sections.Length; sectionIndex++)
+        for (var sectionIndex = 0; sectionIndex < this.sectionCount; sectionIndex++)
         {
             var bottom = this.minY + (sectionIndex << 4);
-            var light = new byte[2048];
+            var section = this.sections[4 * this.sectionCount + sectionIndex]!;
+            var light = section.GetLightStorage(LightType.Sky);
 
             // Sections that every column's sources cover, or that none reach, need no work per column.
             if (highestSource <= bottom)
             {
                 light.AsSpan().Fill(0xFF);
             }
-            else if (lowestSource < bottom + 16)
+            else
+            {
+                Array.Clear(light);
+            }
+
+            if (highestSource > bottom && lowestSource < bottom + 16)
             {
                 for (var z = 0; z < 16; z++)
                 {
@@ -260,7 +276,8 @@ internal sealed class LightEngine
                 }
             }
 
-            sections[sectionIndex].SetLight(light, LightType.Sky);
+            // Records that the section has sky light if any is set, like for a new array.
+            section.SetLight(light, LightType.Sky);
         }
 
         var top = this.minY + this.height;
