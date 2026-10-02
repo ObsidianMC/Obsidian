@@ -1,4 +1,3 @@
-using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Nbt;
 using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Structures.Processors;
@@ -49,7 +48,7 @@ public sealed class WoodlandMansionStructure : Structure
                 {
                     position = position with { Y = y };
                     var block = level.GetBlock(position);
-                    if (!block.IsAir && !block.IsLiquid)
+                    if (!block.IsAir && !block.IsLiquidBlock())
                         break;
 
                     level.SetBlock(position, cobblestone);
@@ -105,9 +104,7 @@ public sealed class WoodlandMansionPiece : TemplateStructurePiece
                 break;
             case "Group of Allays":
                 type = "minecraft:allay";
-                // Vanilla draws the count from the region's random, whose state depends on what used it before; a random
-                // seeded by the world seed and the marker stands in for it.
-                count = new LegacyRandomSource(level.Seed).ForkPositional().At(position.X, position.Y, position.Z).NextInt(3) + 1;
+                count = level.Random.NextInt(3) + 1;
                 break;
             default:
                 return;

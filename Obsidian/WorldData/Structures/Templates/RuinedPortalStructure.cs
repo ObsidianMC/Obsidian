@@ -260,7 +260,8 @@ public sealed class RuinedPortalPiece : TemplateStructurePiece
 
         var direction = RandomHorizontalDirection(random);
         var neighborPosition = position.Offset(direction);
-        if (!level.GetBlock(neighborPosition).IsAir || !block.IsFaceSturdy(direction))
+        // Vanilla checks the collision shape's face; full cubes (leaves included) and sturdy faces cover it.
+        if (!level.GetBlock(neighborPosition).IsAir || !block.IsCollisionShapeFullBlock() && !block.IsFaceSturdy(direction))
             return;
 
         level.SetBlock(neighborPosition, BlocksRegistry.Get(Material.Vine).WithProperty(FeatureHelpers.FaceName(direction.Opposite()), true));

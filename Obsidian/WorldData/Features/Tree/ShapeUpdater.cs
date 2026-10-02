@@ -6,10 +6,12 @@ namespace Obsidian.WorldData.Features.Tree;
 /// </summary>
 /// <remarks>
 /// Obsidian has no general <c>updateShape</c> implementation, so only the block behaviors that matter for generated
-/// blocks are reproduced: vines re-checking their supports, double plants losing their other half, snowy dirt
-/// (<c>snowy</c> from the block above), hanging moss (<c>tip</c>), liquids scheduling a fluid tick, fence and bar
-/// connections, and torches and ladders dropping without support. Other blocks keep their state, which matches vanilla for
-/// logs, leaves (they only schedule ticks), roots and most plants.
+/// blocks and structure templates are reproduced: vines re-checking their supports, double plants, doors and beds losing
+/// their other half, snowy dirt (<c>snowy</c> from the block above), hanging moss (<c>tip</c>), liquids and waterlogged
+/// blocks scheduling a fluid tick, fence, bar, wall and double chest connections, stair shapes, fence gates in walls, and
+/// torches, ladders, lanterns, levers, wall signs and banners, vegetation and carpets dropping without support. Other
+/// blocks keep their state, which matches vanilla for logs, leaves (they only schedule ticks), roots and most others;
+/// redstone wire connections aren't updated.
 /// </remarks>
 internal static class ShapeUpdater
 {
