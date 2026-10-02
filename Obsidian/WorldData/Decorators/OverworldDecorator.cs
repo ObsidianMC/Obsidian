@@ -181,7 +181,9 @@ public static class OverworldDecorator
             if (!this.EnsureCanWrite(position))
                 return false;
 
-            this.ChunkAt(position)!.SetBlock(position, block);
+            var chunk = this.ChunkAt(position)!;
+            chunk.SetBlock(position, block);
+            DataBlockEntity.ApplyBlockChange(chunk, position, block);
             return true;
         }
 
@@ -212,6 +214,14 @@ public static class OverworldDecorator
 
         public void SetBlockEntity(Vector position, IBlockEntity blockEntity) =>
             this.ChunkAt(position)?.SetBlockEntity(position.X, position.Y, position.Z, blockEntity);
+
+        public void AddEntity(GeneratedEntity entity)
+        {
+            // Trees never add entities.
+        }
+
+        public IBlockEntity? GetBlockEntity(Vector position) =>
+            this.IsOutsideBuildHeight(position.Y) ? null : this.ChunkAt(position)?.GetBlockEntity(position.X, position.Y, position.Z);
 
         private IChunk? ChunkAt(Vector position) => this.chunks.GetValueOrDefault((position.X >> 4, position.Z >> 4));
 

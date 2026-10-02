@@ -40,11 +40,7 @@ public sealed class BonusChestFeature : ConfiguredFeatureBase
                     continue;
 
                 level.SetBlock(position, Chest);
-
-                // RandomizableContainer.setBlockEntityLootTable draws the loot table seed, but only when the chest (and so its
-                // block entity) was actually placed, which isn't the case above the build height.
-                if (!level.IsOutsideBuildHeight(position.Y))
-                    random.NextLong();
+                FeatureHelpers.SetLootTable(level, random, position, "minecraft:chests/spawn_bonus_chest");
 
                 foreach (var face in FeatureHelpers.Horizontal)
                 {

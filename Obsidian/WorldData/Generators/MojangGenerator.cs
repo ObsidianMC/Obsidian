@@ -78,7 +78,45 @@ internal class MojangGenerator : ILevelGenerator
 
         chunk.SetChunkStatus(ChunkGenStage.full);
         await this.ScheduleFluidUpdatesAsync(chunk);
+        this.SpawnPendingEntities(chunk);
         return chunk;
+    }
+
+    /// <summary>
+    /// Spawns the entities generation placed in a chunk that just became complete, like vanilla when a proto chunk
+    /// becomes a level chunk.
+    /// </summary>
+    /// <remarks>
+    /// Only the type, position and rotation are applied; Obsidian's entities don't read vanilla's other saved fields.
+    /// </remarks>
+    private void SpawnPendingEntities(IChunk chunk)
+    {
+        if (chunk is not Chunk generated || generated.PendingEntities.Count == 0)
+            return;
+
+        foreach (var pending in generated.PendingEntities)
+        {
+            if (!TryGetEntityType(pending.Type, out var type))
+                continue;
+
+            var entity = this.world.SpawnEntity(pending.Position, type);
+            if (entity is null)
+                continue;
+
+            entity.Yaw = pending.Yaw;
+            entity.Pitch = pending.Pitch;
+        }
+
+        generated.PendingEntities.Clear();
+    }
+
+    /// <summary>
+    /// Maps a vanilla entity type id (e.g. <c>minecraft:end_crystal</c>) to Obsidian's <see cref="EntityType"/>.
+    /// </summary>
+    private static bool TryGetEntityType(string id, out EntityType type)
+    {
+        var name = id[(id.IndexOf(':') + 1)..].Replace("_", string.Empty);
+        return Enum.TryParse(name, ignoreCase: true, out type);
     }
 
     /// <summary>
@@ -197,8 +235,7 @@ internal class MojangGenerator : ILevelGenerator
         if (chunk.ChunkStatus >= ChunkGenStage.light)
             return;
 
-        var hasSkyLight = !CodecRegistry.TryGetDimension(this.world.DimensionName, out var dimension) || dimension.Element.HasSkylight;
-        await LightEngine.LightChunkAsync(chunk, this.world, hasSkyLight);
+        await LightEngine.LightChunkAsync(chunk, this.world, this.Dimension.HasSkyLight);
         chunk.SetChunkStatus(ChunkGenStage.light);
     }
 

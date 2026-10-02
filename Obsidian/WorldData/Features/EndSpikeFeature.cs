@@ -1,15 +1,12 @@
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.Nbt;
 
 namespace Obsidian.WorldData.Features;
 
 /// <summary>
-/// The obsidian pillars around the main end island, some caged in iron bars, each topped with bedrock and fire, like vanilla's
-/// SpikeFeature.
+/// The obsidian pillars around the main end island, some caged in iron bars, each topped with an end crystal on bedrock
+/// in fire, like vanilla's SpikeFeature.
 /// </summary>
-/// <remarks>
-/// Vanilla also spawns an end crystal on each pillar; Obsidian can't add entities during world generation yet, so only the
-/// blocks under and at the crystal are placed. The crystal's random yaw is still drawn.
-/// </remarks>
 [ConfiguredFeatureClass("minecraft:end_spike")]
 public sealed class EndSpikeFeature : ConfiguredFeatureBase
 {
@@ -55,7 +52,7 @@ public sealed class EndSpikeFeature : ConfiguredFeatureBase
         foreach (var spike in spikes)
         {
             if (origin.X >> 4 == spike.CenterX >> 4 && origin.Z >> 4 == spike.CenterZ >> 4)
-                PlaceSpike(level, random, spike);
+                this.PlaceSpike(level, random, spike);
         }
 
         return true;
@@ -87,7 +84,7 @@ public sealed class EndSpikeFeature : ConfiguredFeatureBase
         return spikes;
     }
 
-    private static void PlaceSpike(IWorldGenLevel level, IRandomSource random, EndSpike spike)
+    private void PlaceSpike(IWorldGenLevel level, IRandomSource random, EndSpike spike)
     {
         var radius = spike.Radius;
         var min = new Vector(spike.CenterX - radius, level.MinY, spike.CenterZ - radius);
@@ -130,9 +127,16 @@ public sealed class EndSpikeFeature : ConfiguredFeatureBase
             }
         }
 
-        // End crystal: its yaw is the only random draw; the crystal stands on bedrock in a fire block.
-        random.NextFloat();
+        // The crystal stands on bedrock in a fire block; its yaw is the only random draw.
         var crystal = new Vector(spike.CenterX, spike.Height + 1, spike.CenterZ);
+        var data = new NbtCompound();
+        if (this.CrystalBeamTarget is not null)
+            data.Add(new NbtArray<int>("beam_target", [this.CrystalBeamTarget.Value.X, this.CrystalBeamTarget.Value.Y, this.CrystalBeamTarget.Value.Z]));
+        if (this.CrystalInvulnerable)
+            data.Add(new NbtTag<bool>("Invulnerable", true));
+
+        level.AddEntity(new GeneratedEntity("minecraft:end_crystal", new VectorF(crystal.X + 0.5f, crystal.Y, crystal.Z + 0.5f),
+            random.NextFloat() * 360.0f) { Data = data });
         level.SetBlock(crystal + Vector.Down, Bedrock);
         level.SetBlock(crystal, Fire);
     }

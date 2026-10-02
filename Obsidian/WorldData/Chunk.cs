@@ -28,7 +28,12 @@ public sealed class Chunk : IChunk
 
     //TODO try and do some temp caching
     public Dictionary<short, BlockMeta> BlockMetaStore { get; private set; } = new Dictionary<short, BlockMeta>();
-    public Dictionary<short, IBlockEntity> BlockEntities { get; private set; } = new Dictionary<short, IBlockEntity>();
+    public Dictionary<int, IBlockEntity> BlockEntities { get; private set; } = new Dictionary<int, IBlockEntity>();
+
+    /// <summary>
+    /// Entities placed by world generation that haven't been spawned yet.
+    /// </summary>
+    internal List<GeneratedEntity> PendingEntities { get; } = [];
 
     public IChunkSection[] Sections { get; private set; }
     public IDictionary<HeightmapType, Heightmap> Heightmaps { get; }
@@ -106,23 +111,17 @@ public sealed class Chunk : IChunk
         Sections[i].SetBiome(x, y, z, biome);
     }
 
-    public IBlockEntity GetBlockEntity(int x, int y, int z)
-    {
-        x = NumericsHelper.Modulo(x, 16);
-        z = NumericsHelper.Modulo(z, 16);
-        var value = (short)((x << 8) | (z << 4) | y);
+    public IBlockEntity GetBlockEntity(int x, int y, int z) => this.BlockEntities.GetValueOrDefault(this.BlockEntityKey(x, y, z));
 
-        return this.BlockEntities.GetValueOrDefault(value);
-    }
+    public void SetBlockEntity(int x, int y, int z, IBlockEntity tileEntityData) =>
+        this.BlockEntities[this.BlockEntityKey(x, y, z)] = tileEntityData;
 
-    public void SetBlockEntity(int x, int y, int z, IBlockEntity tileEntityData)
-    {
-        x = NumericsHelper.Modulo(x, 16);
-        z = NumericsHelper.Modulo(z, 16);
-        var value = (short)((x << 8) | (z << 4) | y);
+    public void RemoveBlockEntity(int x, int y, int z) => this.BlockEntities.Remove(this.BlockEntityKey(x, y, z));
 
-        this.BlockEntities[value] = tileEntityData;
-    }
+    public IReadOnlyCollection<IBlockEntity> GetBlockEntities() => this.BlockEntities.Values;
+
+    private int BlockEntityKey(int x, int y, int z) =>
+        (y - this.MinY) << 8 | NumericsHelper.Modulo(z, 16) << 4 | NumericsHelper.Modulo(x, 16);
 
     public void SetBlock(int x, int y, int z, IBlock block)
     {

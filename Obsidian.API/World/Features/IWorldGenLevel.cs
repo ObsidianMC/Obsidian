@@ -47,6 +47,16 @@ public interface IWorldGenLevel
     public void SetBlockEntity(Vector position, IBlockEntity blockEntity);
 
     /// <summary>
+    /// Gets the block entity at <paramref name="position"/>, or <c>null</c> when there's none.
+    /// </summary>
+    public IBlockEntity? GetBlockEntity(Vector position);
+
+    /// <summary>
+    /// Adds an entity to the chunk at its position; it spawns once that chunk is complete.
+    /// </summary>
+    public void AddEntity(GeneratedEntity entity);
+
+    /// <summary>
     /// Schedules a fluid update at <paramref name="position"/> for when generation completes, like vanilla's
     /// <c>scheduleTick</c> with a fluid (springs, geode cracks).
     /// </summary>

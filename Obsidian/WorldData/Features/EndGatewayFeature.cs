@@ -1,12 +1,10 @@
+using Obsidian.Nbt;
+
 namespace Obsidian.WorldData.Features;
 
 /// <summary>
-/// An end gateway in its bedrock frame, like vanilla's EndGatewayFeature.
+/// An end gateway in its bedrock frame, with <see cref="Exit"/> stored in its block entity, like vanilla's EndGatewayFeature.
 /// </summary>
-/// <remarks>
-/// Vanilla also stores <see cref="Exit"/> in the gateway's block entity; Obsidian has no end gateway block entity yet, so only the
-/// blocks are placed (vanilla draws no randomness here).
-/// </remarks>
 [ConfiguredFeatureClass("minecraft:end_gateway")]
 public sealed class EndGatewayFeature : ConfiguredFeatureBase
 {
@@ -55,8 +53,25 @@ public sealed class EndGatewayFeature : ConfiguredFeatureBase
                 block = Air;
 
             level.SetBlock(position, block);
+
+            if (block == Gateway && this.Exit is not null)
+                SetExit(level, position, this.Exit.Value, this.Exact);
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Vanilla <c>TheEndGatewayBlockEntity.setExitPosition</c>.
+    /// </summary>
+    private static void SetExit(IWorldGenLevel level, Vector position, Vector exit, bool exact)
+    {
+        var gateway = level.GetBlockEntity(position) as DataBlockEntity;
+        if (gateway?.Id != "minecraft:end_gateway")
+            return;
+
+        gateway.Set(new NbtArray<int>("exit_portal", [exit.X, exit.Y, exit.Z]));
+        if (exact)
+            gateway.Set("ExactTeleport", true);
     }
 }

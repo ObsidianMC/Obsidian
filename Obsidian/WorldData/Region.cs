@@ -206,7 +206,7 @@ public class Region : IRegion
         var chunk = new Chunk(x, z, this.minY, this.height);
 
         // Chunks saved before build ranges were per dimension used the overworld's (min section -4) everywhere.
-        var storedMinSection = chunkCompound.TryGetTagValue<int>("yPos", out var yPos) ? yPos : -4;
+        var storedMinSection = chunkCompound.TryGetTag<NbtTag<int>>("yPos", out var yPos) ? yPos.Value : -4;
         var minSection = this.minY >> 4;
 
         foreach (var child in (NbtList)chunkCompound["sections"])
@@ -301,12 +301,54 @@ public class Region : IRegion
             WorldgenHeightmaps.UpdateFinal(chunk, this.minY, this.height);
         }
 
-        foreach (var tileEntityNbt in (NbtList)chunkCompound["block_entities"])
+        if (chunkCompound.TryGetTag<NbtList>("block_entities", out var blockEntities))
         {
-            //TODO convert nbt tile entity to its respective type
-            //var tileEntityCompound = tileEntityNbt as NbtCompound;
+            foreach (var blockEntityCompound in blockEntities.Cast<NbtCompound>())
+            {
+                if (!blockEntityCompound.TryGetTag<NbtTag<string>>("id", out var id))
+                    continue;
 
-            //chunk.SetBlockEntity(tileEntityCompound.GetInt("x"), tileEntityCompound.GetInt("y"), tileEntityCompound.GetInt("z"), tileEntityCompound);
+                var position = new Vector(blockEntityCompound.GetInt("x"), blockEntityCompound.GetInt("y"), blockEntityCompound.GetInt("z"));
+                if (position.Y < this.minY || position.Y >= this.minY + this.height)
+                    continue;
+
+                var data = new NbtCompound();
+                foreach (var (name, tag) in blockEntityCompound)
+                {
+                    if (name is not ("id" or "x" or "y" or "z" or "keepPacked"))
+                        data.Add(name, tag);
+                }
+
+                chunk.SetBlockEntity(position.X, position.Y, position.Z, new DataBlockEntity { Id = id.Value!, BlockPosition = position, Data = data });
+            }
+        }
+
+        if (chunkCompound.TryGetTag<NbtList>("entities", out var entities))
+        {
+            foreach (var entityCompound in entities.Cast<NbtCompound>())
+            {
+                if (!entityCompound.TryGetTag<NbtTag<string>>("id", out var id) || !entityCompound.TryGetTag<NbtList>("Pos", out var pos))
+                    continue;
+
+                var yaw = 0f;
+                var pitch = 0f;
+                if (entityCompound.TryGetTag<NbtList>("Rotation", out var rotation))
+                {
+                    yaw = ((NbtTag<float>)rotation[0]).Value;
+                    pitch = ((NbtTag<float>)rotation[1]).Value;
+                }
+
+                var data = new NbtCompound();
+                foreach (var (name, tag) in entityCompound)
+                {
+                    if (name is not ("id" or "Pos" or "Rotation"))
+                        data.Add(name, tag);
+                }
+
+                var position = new VectorF((float)((NbtTag<double>)pos[0]).Value, (float)((NbtTag<double>)pos[1]).Value,
+                    (float)((NbtTag<double>)pos[2]).Value);
+                chunk.PendingEntities.Add(new GeneratedEntity(id.Value!, position, yaw, pitch) { Data = data });
+            }
         }
 
         chunk.SetChunkStatus((ChunkGenStage)(Enum.TryParse(typeof(ChunkGenStage), chunkCompound.GetString("Status"), out var status) ? status : ChunkGenStage.empty));
@@ -409,10 +451,43 @@ public class Region : IRegion
         }
         writer.EndList();
 
-        //TODO COME BACK TO THIS
-        writer.WriteListStart("block_entities", NbtTagType.Compound, 0);
-        //foreach (var (_, blockEntity) in chunk.BlockEntities)//
-        //    writer.WriteTag(blockEntity);
+        // Only block entities kept as data are saved; container block entities aren't persisted yet.
+        var blockEntities = chunk.GetBlockEntities().OfType<DataBlockEntity>().ToList();
+        writer.WriteListStart("block_entities", NbtTagType.Compound, blockEntities.Count);
+        foreach (var blockEntity in blockEntities)
+        {
+            writer.WriteCompoundStart();
+            writer.WriteString("id", blockEntity.Id);
+            writer.WriteInt("x", blockEntity.BlockPosition.X);
+            writer.WriteInt("y", blockEntity.BlockPosition.Y);
+            writer.WriteInt("z", blockEntity.BlockPosition.Z);
+            writer.WriteBool("keepPacked", false);
+            foreach (var (_, tag) in blockEntity.Data)
+                writer.WriteTag(tag);
+            writer.EndCompound();
+        }
+        writer.EndList();
+
+        // Entities placed by world generation that haven't spawned yet, like a vanilla proto chunk's "entities".
+        var pendingEntities = (chunk as Chunk)?.PendingEntities ?? [];
+        writer.WriteListStart("entities", NbtTagType.Compound, pendingEntities.Count);
+        foreach (var entity in pendingEntities)
+        {
+            writer.WriteCompoundStart();
+            writer.WriteString("id", entity.Type);
+            writer.WriteListStart("Pos", NbtTagType.Double, 3);
+            writer.WriteDouble(entity.Position.X);
+            writer.WriteDouble(entity.Position.Y);
+            writer.WriteDouble(entity.Position.Z);
+            writer.EndList();
+            writer.WriteListStart("Rotation", NbtTagType.Float, 2);
+            writer.WriteFloat(entity.Yaw);
+            writer.WriteFloat(entity.Pitch);
+            writer.EndList();
+            foreach (var (_, tag) in entity.Data)
+                writer.WriteTag(tag);
+            writer.EndCompound();
+        }
         writer.EndList();
 
         writer.WriteInt("xPos", chunk.X);

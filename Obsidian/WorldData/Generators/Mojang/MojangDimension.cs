@@ -8,18 +8,18 @@ internal sealed class MojangDimension
     /// <summary>
     /// The overworld (dimension type <c>minecraft:overworld</c>, noise settings <c>minecraft:overworld</c>).
     /// </summary>
-    public static MojangDimension Overworld { get; } = new("minecraft:overworld", -64, 384, MultiNoiseBiomeSource.Overworld,
+    public static MojangDimension Overworld { get; } = new("minecraft:overworld", -64, 384, true, MultiNoiseBiomeSource.Overworld,
         ["cave", "cave_extra_underground", "canyon"]);
 
     /// <summary>
     /// The nether (dimension type <c>minecraft:the_nether</c>, noise settings <c>minecraft:nether</c>).
     /// </summary>
-    public static MojangDimension Nether { get; } = new("minecraft:nether", 0, 256, MultiNoiseBiomeSource.Nether, ["nether_cave"]);
+    public static MojangDimension Nether { get; } = new("minecraft:nether", 0, 256, false, MultiNoiseBiomeSource.Nether, ["nether_cave"]);
 
     /// <summary>
     /// The end (dimension type <c>minecraft:the_end</c>, noise settings <c>minecraft:end</c>).
     /// </summary>
-    public static MojangDimension End { get; } = new("minecraft:end", 0, 256, randomState => new TheEndBiomeSource(randomState), []);
+    public static MojangDimension End { get; } = new("minecraft:end", 0, 256, true, randomState => new TheEndBiomeSource(randomState), []);
 
     /// <summary>
     /// The noise settings key.
@@ -37,6 +37,11 @@ internal sealed class MojangDimension
     public int Height { get; }
 
     /// <summary>
+    /// Whether the dimension type has sky light (the nether doesn't).
+    /// </summary>
+    public bool HasSkyLight { get; }
+
+    /// <summary>
     /// Creates the dimension's biome source for a world.
     /// </summary>
     public Func<RandomState, IClimateBiomeSource> CreateBiomeSource { get; }
@@ -50,12 +55,13 @@ internal sealed class MojangDimension
     /// </remarks>
     public IReadOnlyList<string> Carvers { get; }
 
-    private MojangDimension(string noiseSettings, int minY, int height, Func<RandomState, IClimateBiomeSource> createBiomeSource,
-        IReadOnlyList<string> carvers)
+    private MojangDimension(string noiseSettings, int minY, int height, bool hasSkyLight,
+        Func<RandomState, IClimateBiomeSource> createBiomeSource, IReadOnlyList<string> carvers)
     {
         this.NoiseSettings = noiseSettings;
         this.MinY = minY;
         this.Height = height;
+        this.HasSkyLight = hasSkyLight;
         this.CreateBiomeSource = createBiomeSource;
         this.Carvers = carvers;
     }

@@ -1,12 +1,10 @@
+using Obsidian.Nbt;
+
 namespace Obsidian.WorldData.Features.Tree.Decorators;
 
 /// <summary>
-/// With <see cref="Probability"/>, attaches a bee nest (facing south) to the trunk just below the leaves.
+/// With <see cref="Probability"/>, attaches a bee nest (facing south) with 2-3 bees to the trunk just below the leaves.
 /// </summary>
-/// <remarks>
-/// Vanilla also fills the nest's block entity with 2-3 bees. Obsidian has no beehive block entity yet, so only the
-/// block is placed, but the random values vanilla draws for the bees are still consumed to keep later placements in sync.
-/// </remarks>
 [ConfiguredFeatureProperty("minecraft:beehive")]
 public sealed class BeehiveDecorator : TreeDecorator
 {
@@ -53,13 +51,24 @@ public sealed class BeehiveDecorator : TreeDecorator
 
             context.SetBlock(candidate, beeNest);
 
-            // Vanilla only finds the block entity (and draws the occupants: 2-3 bees with random ticks in the hive)
-            // if the nest was actually written.
-            if (context.Level.GetBlock(candidate).RegistryId == beeNest.RegistryId)
+            // Like vanilla, the bees (and their draws) only go into a nest that was actually written.
+            var hive = context.Level.GetBlockEntity(candidate) as DataBlockEntity;
+            if (hive?.Id == "minecraft:beehive")
             {
-                var bees = 2 + random.NextInt(2);
-                for (var i = 0; i < bees; i++)
-                    random.NextInt(599);
+                var beeCount = 2 + random.NextInt(2);
+                var bees = new NbtList(NbtTagType.Compound, "bees");
+                for (var i = 0; i < beeCount; i++)
+                {
+                    // BeehiveBlockEntity.Occupant.create: a fresh bee that has been in the hive for a random time.
+                    bees.Add(new NbtCompound
+                    {
+                        new NbtCompound("entity_data") { new NbtTag<string>("id", "minecraft:bee") },
+                        new NbtTag<int>("ticks_in_hive", random.NextInt(599)),
+                        new NbtTag<int>("min_ticks_in_hive", 600)
+                    });
+                }
+
+                hive.Set(bees);
             }
 
             return;

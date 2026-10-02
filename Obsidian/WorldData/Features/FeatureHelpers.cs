@@ -1,4 +1,5 @@
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.Nbt;
 
 namespace Obsidian.WorldData.Features;
 
@@ -10,6 +11,70 @@ internal static class FeatureHelpers
 {
     private static readonly BlockSet dirt = new("#minecraft:dirt");
     private static readonly BlockSet baseStoneOverworld = new("#minecraft:base_stone_overworld");
+
+    // Block entity types of vanilla's RandomizableContainer implementations.
+    private static readonly HashSet<string> randomizableContainers =
+    [
+        "minecraft:chest", "minecraft:trapped_chest", "minecraft:barrel", "minecraft:dispenser", "minecraft:dropper", "minecraft:hopper",
+        "minecraft:shulker_box", "minecraft:crafter", "minecraft:decorated_pot"
+    ];
+
+    /// <summary>
+    /// Vanilla <c>RandomizableContainer.setBlockEntityLootTable</c>: gives the container at <paramref name="position"/> a loot
+    /// table and a seed for it. The seed is only drawn when there's such a container.
+    /// </summary>
+    /// <param name="lootTable">The loot table id, e.g. <c>minecraft:chests/simple_dungeon</c>.</param>
+    public static void SetLootTable(IWorldGenLevel level, IRandomSource random, Vector position, string lootTable)
+    {
+        var container = level.GetBlockEntity(position) as DataBlockEntity;
+        if (container is null || !randomizableContainers.Contains(container.Id))
+            return;
+
+        container.Set("LootTable", lootTable);
+
+        // Like vanilla, a zero seed isn't saved.
+        var seed = random.NextLong();
+        if (seed != 0L)
+            container.Set("LootTableSeed", seed);
+        else
+            container.Data.Remove("LootTableSeed");
+    }
+
+    /// <summary>
+    /// Vanilla <c>BrushableBlockEntity.setLootTable</c>: gives the suspicious sand or gravel at <paramref name="position"/>
+    /// the loot table its item comes from.
+    /// </summary>
+    public static void SetBrushableLootTable(IWorldGenLevel level, Vector position, string lootTable, long seed)
+    {
+        var brushable = level.GetBlockEntity(position) as DataBlockEntity;
+        if (brushable?.Id != "minecraft:brushable_block")
+            return;
+
+        brushable.Set("LootTable", lootTable);
+        if (seed != 0L)
+            brushable.Set("LootTableSeed", seed);
+        else
+            brushable.Data.Remove("LootTableSeed");
+    }
+
+    /// <summary>
+    /// Vanilla <c>BlockPos.asLong</c>: the position packed into a long (26 bits X, 26 bits Z, 12 bits Y).
+    /// </summary>
+    public static long AsLong(Vector position) =>
+        (position.X & 0x3FFFFFFL) << 38 | (position.Z & 0x3FFFFFFL) << 12 | (position.Y & 0xFFFL);
+
+    /// <summary>
+    /// Vanilla <c>SpawnerBlockEntity.setEntityId</c>: sets the mob the spawner at <paramref name="position"/> spawns.
+    /// </summary>
+    /// <param name="entityId">The entity type id, e.g. <c>minecraft:zombie</c>.</param>
+    public static void SetSpawnerEntity(IWorldGenLevel level, Vector position, string entityId)
+    {
+        var spawner = level.GetBlockEntity(position) as DataBlockEntity;
+        if (spawner?.Id != "minecraft:mob_spawner")
+            return;
+
+        spawner.Set(new NbtCompound("SpawnData") { new NbtCompound("entity") { new NbtTag<string>("id", entityId) } });
+    }
 
     /// <summary>
     /// <c>Direction.values()</c> order.

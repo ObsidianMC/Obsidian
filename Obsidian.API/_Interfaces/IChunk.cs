@@ -49,6 +49,12 @@ public interface IChunk
 
     public IBlockEntity GetBlockEntity(int x, int y, int z);
     public void SetBlockEntity(int x, int y, int z, IBlockEntity tileEntityData);
+    public void RemoveBlockEntity(int x, int y, int z);
+
+    /// <summary>
+    /// Every block entity in the chunk.
+    /// </summary>
+    public IReadOnlyCollection<IBlockEntity> GetBlockEntities();
 
     [EditorBrowsable(EditorBrowsableState.Never)]
     public void SetChunkStatus(ChunkGenStage status);

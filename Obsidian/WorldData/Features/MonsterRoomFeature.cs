@@ -1,16 +1,16 @@
 namespace Obsidian.WorldData.Features;
 
 /// <summary>
-/// Cobblestone dungeons with a spawner and up to two chests, like vanilla's MonsterRoomFeature.
+/// Cobblestone dungeons with a spawner and up to two chests with the <c>simple_dungeon</c> loot table, like vanilla's
+/// MonsterRoomFeature.
 /// </summary>
-/// <remarks>
-/// Obsidian has no chest or spawner block entities yet, so only the blocks are placed. The random draws vanilla makes for
-/// them (the chest loot seed and the spawner mob) are still consumed, keeping later placements in sync.
-/// </remarks>
 [ConfiguredFeatureClass("minecraft:monster_room")]
 public sealed class MonsterRoomFeature : ConfiguredFeatureBase
 {
     private static readonly BlockSet featuresCannotReplace = new("#minecraft:features_cannot_replace");
+
+    // Vanilla's MonsterRoomFeature.MOBS: zombies are twice as likely.
+    private static readonly string[] mobs = ["minecraft:skeleton", "minecraft:zombie", "minecraft:zombie", "minecraft:spider"];
 
     public override string Type => "minecraft:monster_room";
 
@@ -108,17 +108,13 @@ public sealed class MonsterRoomFeature : ConfiguredFeatureBase
                     continue;
 
                 FeatureHelpers.SafeSetBlock(level, position, Reorient(level, position, Chest), canReplace);
-
-                // RandomizableContainer.setBlockEntityLootTable draws the loot table seed.
-                random.NextLong();
+                FeatureHelpers.SetLootTable(level, random, position, "minecraft:chests/simple_dungeon");
                 break;
             }
         }
 
         FeatureHelpers.SafeSetBlock(level, origin, Spawner, canReplace);
-
-        // Spawner mob: skeleton, zombie, zombie or spider.
-        random.NextInt(4);
+        FeatureHelpers.SetSpawnerEntity(level, origin, mobs[random.NextInt(mobs.Length)]);
         return true;
     }
 

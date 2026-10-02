@@ -1,12 +1,9 @@
 namespace Obsidian.WorldData.Features;
 
 /// <summary>
-/// The sandstone desert well with two suspicious sand blocks under its water, like vanilla's DesertWellFeature.
+/// The sandstone desert well with two suspicious sand blocks (with the <c>archaeology/desert_well</c> loot table) under its
+/// water, like vanilla's DesertWellFeature.
 /// </summary>
-/// <remarks>
-/// Vanilla also gives the suspicious sand an archaeology loot table block entity; Obsidian has no brushable block entity yet,
-/// so only the blocks are placed.
-/// </remarks>
 [ConfiguredFeatureClass("minecraft:desert_well")]
 public sealed class DesertWellFeature : ConfiguredFeatureBase
 {
@@ -93,8 +90,14 @@ public sealed class DesertWellFeature : ConfiguredFeatureBase
         // Center, east, south, west, north; one pick for each suspicious sand depth.
         ReadOnlySpan<Vector> candidates = [origin, origin + Vector.East, origin + Vector.South, origin + Vector.West, origin + Vector.North];
         var random = context.Random;
-        level.SetBlock(candidates[random.NextInt(candidates.Length)] + Vector.Down, SuspiciousSand);
-        level.SetBlock(candidates[random.NextInt(candidates.Length)] + new Vector(0, -2, 0), SuspiciousSand);
+        PlaceSuspiciousSand(level, candidates[random.NextInt(candidates.Length)] + Vector.Down);
+        PlaceSuspiciousSand(level, candidates[random.NextInt(candidates.Length)] + new Vector(0, -2, 0));
         return true;
+    }
+
+    private static void PlaceSuspiciousSand(IWorldGenLevel level, Vector position)
+    {
+        level.SetBlock(position, SuspiciousSand);
+        FeatureHelpers.SetBrushableLootTable(level, position, "minecraft:archaeology/desert_well", FeatureHelpers.AsLong(position));
     }
 }

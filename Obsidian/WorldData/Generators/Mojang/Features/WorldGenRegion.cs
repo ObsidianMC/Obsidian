@@ -90,6 +90,7 @@ internal sealed class WorldGenRegion : IWorldGenLevel
         foreach (var type in finalHeightmaps)
             this.UpdateHeight(chunk, chunkX, chunkZ, type, position, block);
 
+        DataBlockEntity.ApplyBlockChange(chunk, position, block);
         return true;
     }
 
@@ -110,8 +111,22 @@ internal sealed class WorldGenRegion : IWorldGenLevel
 
     public void SetBlockEntity(Vector position, IBlockEntity blockEntity)
     {
-        if (this.EnsureCanWrite(position))
+        if (this.EnsureCanWrite(position) && !this.IsOutsideBuildHeight(position.Y))
             this.GetChunk(position.X >> 4, position.Z >> 4).SetBlockEntity(position.X, position.Y, position.Z, blockEntity);
+    }
+
+    public IBlockEntity? GetBlockEntity(Vector position) =>
+        !this.IsOutsideBuildHeight(position.Y) && this.chunks.TryGetValue((position.X >> 4, position.Z >> 4), out var chunk)
+            ? chunk.GetBlockEntity(position.X, position.Y, position.Z)
+            : null;
+
+    public void AddEntity(GeneratedEntity entity)
+    {
+        // Like vanilla's addFreshEntity, any chunk of the region can take entities, not only writable ones.
+        var chunkX = (int)Math.Floor(entity.Position.X) >> 4;
+        var chunkZ = (int)Math.Floor(entity.Position.Z) >> 4;
+        if (this.chunks.TryGetValue((chunkX, chunkZ), out var chunk) && chunk is Chunk generated)
+            generated.PendingEntities.Add(entity);
     }
 
     public void ScheduleFluidTick(Vector position)
