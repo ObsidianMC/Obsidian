@@ -359,7 +359,11 @@ internal sealed class NoiseChunk
         {
             if (!this.mapped.TryGetValue(function, out var result))
             {
-                result = function.MapAll(this);
+                // Interpolators are told which router function they stand for, which keys the shared corners.
+                result = function is InterpolatedDensityFunction interpolated
+                    ? new CellInterpolator(this.chunk, this.Map(interpolated.Argument), this.order, interpolated)
+                    : function.MapAll(this);
+
                 if (this.chunk.RandomState.SharedFunctions.Contains(function))
                     result = new CacheOnce(result);
 
@@ -371,7 +375,6 @@ internal sealed class NoiseChunk
 
         public IDensityFunction Apply(IDensityFunction function) => function switch
         {
-            InterpolatedDensityFunction interpolated => new CellInterpolator(this.chunk, interpolated.Argument, this.order),
             FlatCacheDensityFunction flatCache => new FlatCache(this.chunk, flatCache.Argument),
             Cache2DDensityFunction cache2D => new Cache2D(cache2D.Argument),
             CacheOnceDensityFunction cacheOnce => new CacheOnce(cacheOnce.Argument),
@@ -388,6 +391,7 @@ internal sealed class NoiseChunk
         private readonly NoiseChunk chunk;
         private readonly IDensityFunction argument;
         private readonly InterpolationOrder order;
+        private readonly InterpolatedDensityFunction routerFunction;
         private double[]? corners;
 
         public string Type => "minecraft:interpolated";
@@ -399,11 +403,13 @@ internal sealed class NoiseChunk
         // Corner values, column by column (see CornerIndex).
         private double[] Corners => this.corners ??= this.SampleCorners();
 
-        public CellInterpolator(NoiseChunk chunk, IDensityFunction argument, InterpolationOrder order)
+        /// <param name="routerFunction">The router's function this one stands for.</param>
+        public CellInterpolator(NoiseChunk chunk, IDensityFunction argument, InterpolationOrder order, InterpolatedDensityFunction routerFunction)
         {
             this.chunk = chunk;
             this.argument = argument;
             this.order = order;
+            this.routerFunction = routerFunction;
         }
 
         public double GetValue(double x, double y, double z)
@@ -546,21 +552,32 @@ internal sealed class NoiseChunk
         {
             var chunk = this.chunk;
             var corners = new double[(chunk.CellCountXZ + 1) * chunk.cornerStrideX];
-            var index = 0;
+            var shared = chunk.RandomState.CornerColumns;
 
             for (var cellX = 0; cellX <= chunk.CellCountXZ; cellX++)
             {
-                var blockX = (chunk.FirstCellX + cellX) * chunk.CellWidth;
+                var columnX = chunk.FirstCellX + cellX;
+                var blockX = columnX * chunk.CellWidth;
 
                 for (var cellZ = 0; cellZ <= chunk.CellCountXZ; cellZ++)
                 {
-                    var blockZ = (chunk.FirstCellZ + cellZ) * chunk.CellWidth;
+                    var columnZ = chunk.FirstCellZ + cellZ;
+                    var blockZ = columnZ * chunk.CellWidth;
+                    var column = corners.AsSpan(chunk.CornerIndex(cellX, 0, cellZ), chunk.cornerStrideZ);
+
+                    // Border columns are also the neighboring chunks' borders.
+                    var border = cellX == 0 || cellZ == 0 || cellX == chunk.CellCountXZ || cellZ == chunk.CellCountXZ;
+                    if (border && shared.TryGet(this.routerFunction, columnX, columnZ, column))
+                        continue;
 
                     for (var cellY = 0; cellY <= chunk.CellCountY; cellY++)
                     {
                         var blockY = (chunk.CellNoiseMinY + cellY) * chunk.CellHeight;
-                        corners[index++] = this.argument.GetValue(blockX, blockY, blockZ);
+                        column[cellY] = this.argument.GetValue(blockX, blockY, blockZ);
                     }
+
+                    if (border)
+                        shared.Add(this.routerFunction, columnX, columnZ, column);
                 }
             }
 

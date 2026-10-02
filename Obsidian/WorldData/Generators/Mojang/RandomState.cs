@@ -98,6 +98,11 @@ internal sealed class RandomState
     public ClimateSampler ClimateSampler => this.climateSamplers.Value!;
 
     /// <summary>
+    /// Cell corners on chunk borders, shared by the noise chunks on both sides.
+    /// </summary>
+    public CornerColumnCache CornerColumns { get; } = new();
+
+    /// <summary>
     /// Binds the noises of any density function (e.g. a registry entry) to this world's seed.
     /// </summary>
     public IDensityFunction Bind(IDensityFunction function) => this.wiring.Map(function);
