@@ -16,5 +16,5 @@ public sealed class HalfNegativeDensityFunction : IDensityFunction
     public IDensityFunction MapAll(IDensityFunctionVisitor visitor) =>
         visitor.Apply(new HalfNegativeDensityFunction { Argument = visitor.Map(this.Argument) });
 
-    private static double Transform(double value) => value > 0.0 ? value : value * 0.5;
+    internal static double Transform(double value) => value > 0.0 ? value : value * 0.5;
 }

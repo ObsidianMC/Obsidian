@@ -51,6 +51,45 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
         }
     }
 
+    /// <summary>
+    /// Sets the non-null blocks of layer <paramref name="y"/>, indexed <c>z * 16 + x</c>, in index order. The result is the
+    /// same as calling <see cref="Set"/> for each of them (palette order included), but runs of the same block are cheap.
+    /// </summary>
+    internal void SetLayer(int y, ReadOnlySpan<IBlock?> blocks)
+    {
+#if CACHE_VALID_BLOCKS
+        validBlockCount.SetDirty();
+#endif
+        lock (this.dataLock)
+        {
+            var offset = y << 8;
+            IBlock? last = null;
+            var lastId = 0;
+            DataArray? data = null;
+
+            for (var i = 0; i < 256; i++)
+            {
+                var block = blocks[i];
+                if (block is null)
+                    continue;
+
+                if (ReferenceEquals(block, last))
+                {
+                    data![offset + i] = lastId;
+                    continue;
+                }
+
+                // A new block goes through the general path, which grows the palette and data array as needed. Its id can
+                // be reused for the same block until the next new one, as indirect palettes only append.
+                this.Set(i & 15, y, i >> 4, block);
+                data = this.DataArray;
+                last = data is not null && this.Palette is IndirectBlockPalette ? block : null;
+                if (last is not null)
+                    lastId = data![offset + i];
+            }
+        }
+    }
+
     /// <remarks>
     /// Reads don't take the container's lock, since generation reads blocks far more than it writes them. Palettes only
     /// append and data arrays are replaced whole when they grow, so a read racing a write sees the block before or after

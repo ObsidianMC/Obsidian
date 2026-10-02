@@ -19,14 +19,28 @@ internal static class OreVeinifier
     private static readonly VeinType Iron = new(BlocksRegistry.DeepslateIronOre, BlocksRegistry.RawIronBlock, BlocksRegistry.Tuff, -60, -8);
 
     /// <summary>
+    /// Lowest Y with veins.
+    /// </summary>
+    public static int MinY { get; } = Math.Min(Copper.MinY, Iron.MinY);
+
+    /// <summary>
+    /// Highest Y with veins.
+    /// </summary>
+    public static int MaxY { get; } = Math.Max(Copper.MaxY, Iron.MaxY);
+
+    /// <summary>
     /// Gets the vein block for a solid position, or <c>null</c> to keep the default block.
     /// </summary>
     /// <remarks>
     /// The thresholds are floats compared against doubles on purpose; vanilla widens them the same way.
     /// </remarks>
-    public static IBlock? Compute(NoiseChunk noiseChunk, int x, int y, int z)
+    public static IBlock? Compute(NoiseChunk noiseChunk, int x, int y, int z) =>
+        Compute(noiseChunk, x, y, z, noiseChunk.VeinToggle.GetValue(x, y, z));
+
+    /// <inheritdoc cref="Compute(NoiseChunk, int, int, int)"/>
+    /// <param name="toggle">The chunk's <see cref="NoiseChunk.VeinToggle"/> at the position.</param>
+    public static IBlock? Compute(NoiseChunk noiseChunk, int x, int y, int z, double toggle)
     {
-        var toggle = noiseChunk.VeinToggle.GetValue(x, y, z);
         var vein = toggle > 0.0 ? Copper : Iron;
         var veininess = Math.Abs(toggle);
 

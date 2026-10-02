@@ -19,5 +19,5 @@ public sealed class SquareDensityFunction : IDensityFunction
     public IDensityFunction MapAll(IDensityFunctionVisitor visitor) =>
         visitor.Apply(new SquareDensityFunction { Argument = visitor.Map(this.Argument) });
 
-    private static double Square(double value) => value * value;
+    internal static double Square(double value) => value * value;
 }

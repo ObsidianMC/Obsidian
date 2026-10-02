@@ -16,7 +16,7 @@ public sealed class SqueezeDensityFunction : IDensityFunction
     public IDensityFunction MapAll(IDensityFunctionVisitor visitor) =>
         visitor.Apply(new SqueezeDensityFunction { Argument = visitor.Map(this.Argument) });
 
-    private static double Transform(double value)
+    internal static double Transform(double value)
     {
         var clamped = Math.Clamp(value, -1.0, 1.0);
         return clamped / 2.0 - clamped * clamped * clamped / 24.0;

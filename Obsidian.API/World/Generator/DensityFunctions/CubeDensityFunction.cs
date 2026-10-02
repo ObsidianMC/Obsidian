@@ -17,5 +17,5 @@ public sealed class CubeDensityFunction : IDensityFunction
         visitor.Apply(new CubeDensityFunction { Argument = visitor.Map(this.Argument) });
 
     // Math.Pow can differ from plain multiplication in the last bit.
-    private static double Cube(double value) => value * value * value;
+    internal static double Cube(double value) => value * value * value;
 }

@@ -16,5 +16,5 @@ public sealed class QuarterNegativeDensityFunction : IDensityFunction
     public IDensityFunction MapAll(IDensityFunctionVisitor visitor) =>
         visitor.Apply(new QuarterNegativeDensityFunction { Argument = visitor.Map(this.Argument) });
 
-    private static double Transform(double value) => value > 0.0 ? value : value * 0.25;
+    internal static double Transform(double value) => value > 0.0 ? value : value * 0.25;
 }
