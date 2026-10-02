@@ -2,8 +2,10 @@
 using Obsidian.API.Registries;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators.Mojang;
+using Obsidian.WorldData.Lighting;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using Xunit;
@@ -167,6 +169,67 @@ public class VanillaWorldGeneration
         }
 
         Assert.Equal(new Vector(x, y, z), spawn);
+    }
+
+    [Theory]
+    // SHA-256 of the chunk's sky light arrays, then its block light arrays (one per section, bottom up, in vanilla's nibble
+    // layout), once vanilla has lit the chunk and its neighbors. The 7x7 chunks around it are carved and the 5x5 around
+    // it decorated first, z then x ascending, so the 3x3 around it has its final blocks. Overworld values come from vanilla
+    // generating and lighting the same area in that order; nether and end values from a vanilla server world with
+    // structures disabled, whose 3x3 around these chunks doesn't depend on the order chunks are decorated in.
+    [InlineData("overworld", 0L, 0, 0, "c5a236f2535dabb2bffaabe001eed61884158ae8d2a7be44968c8e9bde0f94d2")] // leaves, water, lava
+    [InlineData("overworld", 12345L, 48, -48, "40d33e7ea46e2663acc8bf12c53a0ab5b5720af0f56a1253cf36cf54bfe394fd")] // snow layers
+    [InlineData("nether", 12345L, 0, 0, "9e57c3150eb6c9d57c511818120f60b44f8e3c1f82f4b2c85b0cfd9071ce79c1")] // no sky light
+    [InlineData("end", 12345L, 83, 0, "84a492595a3a63173ee97654affe5e04dee7e4101e870b2eecda1e421fd09dff")] // islands over the void
+    public void LitChunkMatchesVanilla(string dimensionName, long seed, int chunkX, int chunkZ, string expectedLight)
+    {
+        var dimension = dimensionName switch
+        {
+            "nether" => MojangDimension.Nether,
+            "end" => MojangDimension.End,
+            _ => MojangDimension.Overworld
+        };
+        var builder = new ChunkBuilder(dimension, seed);
+        var area = new Dictionary<(int X, int Z), IChunk>();
+
+        for (var dz = -3; dz <= 3; dz++)
+        {
+            for (var dx = -3; dx <= 3; dx++)
+            {
+                var chunk = new Chunk(chunkX + dx, chunkZ + dz, dimension.MinY, dimension.Height);
+                builder.PopulateBiomes(chunk);
+                builder.Generate3DTerrain(chunk);
+                builder.ApplySurfaceRules(chunk);
+                builder.ApplyCarvers(chunk);
+                area[(chunk.X, chunk.Z)] = chunk;
+            }
+        }
+
+        for (var dz = -2; dz <= 2; dz++)
+        {
+            for (var dx = -2; dx <= 2; dx++)
+                builder.Decorate(area, chunkX + dx, chunkZ + dz);
+        }
+
+        // The order chunks are lit in doesn't change the result; the center is lit halfway through.
+        var lit = new List<IChunk>();
+        for (var dz = -1; dz <= 1; dz++)
+        {
+            for (var dx = -1; dx <= 1; dx++)
+            {
+                var chunk = area[(chunkX + dx, chunkZ + dz)];
+                LightEngine.LightChunk(chunk, lit.Where(other => Math.Abs(other.X - chunk.X) <= 1 && Math.Abs(other.Z - chunk.Z) <= 1),
+                    hasSkyLight: dimension != MojangDimension.Nether);
+                lit.Add(chunk);
+            }
+        }
+
+        var sections = area[(chunkX, chunkZ)].Sections;
+        var light = sections.SelectMany(section => section.SkyLightArray.ToArray())
+            .Concat(sections.SelectMany(section => section.BlockLightArray.ToArray()))
+            .ToArray();
+
+        Assert.Equal(expectedLight, Convert.ToHexStringLower(SHA256.HashData(light)));
     }
 
     private static string BlockNames(IChunk chunk)
