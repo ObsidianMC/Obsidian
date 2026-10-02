@@ -19,6 +19,9 @@ internal static class TreeBlocks
 
     private static readonly BlockSet vine = new("minecraft:vine");
 
+    // OptionalLeafDistance of each state plus 2 (1 for none), indexed by state id and computed on first use; 0 until then.
+    private static readonly byte[] leafDistances = new byte[BlocksRegistry.StateToNumeric.Length];
+
     /// <summary>Vanilla <c>TreeFeature.validTreePos</c>: air or <c>#replaceable_by_trees</c>.</summary>
     public static bool ValidTreePos(IWorldGenLevel level, Vector position)
     {
@@ -49,6 +52,17 @@ internal static class TreeBlocks
 
     /// <summary>Vanilla <c>FluidState.is(FluidTags.WATER)</c>: still or flowing water.</summary>
     public static bool IsWater(IBlock block) => block.GetFluid() is FluidKind.Water or FluidKind.FlowingWater;
+
+    /// <inheritdoc cref="OptionalLeafDistance(IBlock)"/>
+    public static int? OptionalLeafDistance(int stateId)
+    {
+        // Threads racing on an entry store the same value.
+        var entry = leafDistances[stateId];
+        if (entry == 0)
+            leafDistances[stateId] = entry = (byte)((OptionalLeafDistance(BlocksRegistry.Get(stateId)) ?? -1) + 2);
+
+        return entry == 1 ? null : entry - 2;
+    }
 
     /// <summary>Vanilla <c>LeavesBlock.getOptionalDistanceAt</c>: 0 for logs, the <c>distance</c> of leaves, otherwise none.</summary>
     public static int? OptionalLeafDistance(IBlock block)
