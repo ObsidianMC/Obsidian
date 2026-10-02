@@ -186,17 +186,12 @@ public sealed class StructureTemplate
         if (this.palettes.Count == 0)
             return [];
 
-        var settings = new StructurePlaceSettings { Rotation = rotation };
-        var jigsaws = settings.GetRandomPalette(this.palettes, position).Jigsaws;
-        var result = new List<JigsawBlockInfo>(jigsaws.Count);
-        foreach (var jigsaw in jigsaws)
-        {
-            var info = jigsaw.Info;
-            result.Add(jigsaw with
-            {
-                Info = new StructureBlockInfo(CalculateRelativePosition(settings, info.Position) + position, info.Block.Rotate(rotation), info.Nbt)
-            });
-        }
+        // A single palette is always picked, so the position-seeded pick can be skipped.
+        var palette = this.palettes.Count == 1 ? this.palettes[0] : new StructurePlaceSettings().GetRandomPalette(this.palettes, position);
+        var rotated = palette.RotatedJigsaws(rotation);
+        var result = new List<JigsawBlockInfo>(rotated.Count);
+        foreach (var jigsaw in rotated)
+            result.Add(jigsaw with { Info = jigsaw.Info with { Position = jigsaw.Info.Position + position } });
 
         return result;
     }
@@ -565,7 +560,16 @@ public sealed class StructureTemplate
 
         public List<StructureBlockInfo> Blocks { get; } = blocks;
 
+        private readonly IReadOnlyList<JigsawBlockInfo>?[] rotatedJigsaws = new IReadOnlyList<JigsawBlockInfo>?[4];
+
         public IReadOnlyList<JigsawBlockInfo> Jigsaws => field ??= [.. this.BlocksOf(Material.Jigsaw).Select(JigsawBlockInfo.Of)];
+
+        /// <summary>The jigsaws rotated around the template's origin, built once per rotation.</summary>
+        public IReadOnlyList<JigsawBlockInfo> RotatedJigsaws(StructureRotation rotation) =>
+            this.rotatedJigsaws[(int)rotation] ??= [.. this.Jigsaws.Select(jigsaw => jigsaw with
+            {
+                Info = new StructureBlockInfo(Transform(jigsaw.Info.Position, rotation, Vector.Zero), jigsaw.Info.Block.Rotate(rotation), jigsaw.Info.Nbt)
+            })];
 
         public List<StructureBlockInfo> BlocksOf(Material material) =>
             this.byMaterial.GetOrAdd(material, key => this.Blocks.Where(info => info.Block.Material == key).ToList());
@@ -601,13 +605,16 @@ public sealed record JigsawBlockInfo(StructureBlockInfo Info, JigsawJointType Jo
 {
     public const string EmptyId = "minecraft:empty";
 
+    // The front and top directions of each jigsaw orientation, by state id.
+    private static readonly Dictionary<int, (BlockFace Front, BlockFace Top)> orientations = CreateOrientations();
+
     /// <summary>The direction the jigsaw faces (the first half of its <c>orientation</c>).</summary>
-    public BlockFace FrontFacing => GetFrontFacing(this.Info.Block);
+    public BlockFace FrontFacing => orientations[this.Info.Block.StateId()].Front;
 
     /// <summary>The jigsaw's top direction (the second half of its <c>orientation</c>).</summary>
-    public BlockFace TopFacing => ParseFace(this.Info.Block.GetProperty("orientation")!.Split('_')[1]);
+    public BlockFace TopFacing => orientations[this.Info.Block.StateId()].Top;
 
-    public static BlockFace GetFrontFacing(IBlock jigsaw) => ParseFace(jigsaw.GetProperty("orientation")!.Split('_')[0]);
+    public static BlockFace GetFrontFacing(IBlock jigsaw) => orientations[jigsaw.StateId()].Front;
 
     /// <summary>
     /// Vanilla <c>JigsawBlock.canAttach</c>: the jigsaws face each other, their tops line up unless this one is rollable,
@@ -629,6 +636,20 @@ public sealed record JigsawBlockInfo(StructureBlockInfo Info, JigsawJointType Jo
         return new JigsawBlockInfo(info, joint, ReadId(nbt, "name"), ReadId(nbt, "pool"), ReadId(nbt, "target"),
             nbt.TryGetTag<NbtTag<int>>("placement_priority", out var placement) ? placement.Value : 0,
             nbt.TryGetTag<NbtTag<int>>("selection_priority", out var selection) ? selection.Value : 0);
+    }
+
+    private static Dictionary<int, (BlockFace Front, BlockFace Top)> CreateOrientations()
+    {
+        var result = new Dictionary<int, (BlockFace Front, BlockFace Top)>();
+        foreach (var orientation in (ReadOnlySpan<string>)["down_east", "down_north", "down_south", "down_west", "up_east", "up_north", "up_south",
+            "up_west", "west_up", "east_up", "north_up", "south_up"])
+        {
+            var state = BlockStateProperties.GetState("minecraft:jigsaw", new Dictionary<string, string> { ["orientation"] = orientation });
+            var parts = orientation.Split('_');
+            result[state.StateId()] = (ParseFace(parts[0]), ParseFace(parts[1]));
+        }
+
+        return result;
     }
 
     private static string ReadId(NbtCompound nbt, string name)
