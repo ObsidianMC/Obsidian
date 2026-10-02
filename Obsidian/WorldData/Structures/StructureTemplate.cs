@@ -75,7 +75,7 @@ public sealed class StructureTemplate
                     ? new EntityPosition(DoubleAt(pos, 0), DoubleAt(pos, 1), DoubleAt(pos, 2))
                     : default;
                 var blockPosition = entity.TryGetTag<NbtList>("blockPos", out var blockPos) ? ReadVector(blockPos) : Vector.Zero;
-                entities.Add(new StructureEntityInfo(position, blockPosition, nbt));
+                entities.Add(new StructureEntityInfo(position, blockPosition, NbtCopy.Copy(nbt)));
             }
         }
 
@@ -516,7 +516,7 @@ public sealed class StructureTemplate
         {
             var state = entry.TryGetTag<NbtTag<int>>("state", out var stateTag) ? stateTag.Value : 0;
             var block = state < states.Count ? states[state] : BlocksRegistry.Air;
-            var nbt = entry.TryGetTag<NbtCompound>("nbt", out var nbtTag) ? nbtTag : null;
+            var nbt = entry.TryGetTag<NbtCompound>("nbt", out var nbtTag) ? NbtCopy.Copy(nbtTag) : null;
             var info = new StructureBlockInfo(ReadVector((NbtList)entry["pos"]), block, nbt);
 
             if (nbt is not null)

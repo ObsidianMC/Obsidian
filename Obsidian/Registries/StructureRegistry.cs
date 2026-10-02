@@ -7,25 +7,13 @@ namespace Obsidian.Registries;
 /// Structure templates embedded under <c>Assets/Structures</c>, by id: <c>minecraft:fossil/spine_1</c> is
 /// <c>Assets/Structures/fossil/spine_1.nbt</c>.
 /// </summary>
+/// <remarks>Templates load on first use, since most worlds only ever need part of them.</remarks>
 internal static class StructureRegistry
 {
     private const string ResourcePrefix = "Obsidian.Assets.Structures.";
     private const string ResourceSuffix = ".nbt";
 
     private static readonly ConcurrentDictionary<string, StructureTemplate> templates = new();
-
-    /// <summary>Loads every embedded template up front.</summary>
-    public static void Initialize()
-    {
-        foreach (var resource in Assembly.GetExecutingAssembly().GetManifestResourceNames())
-        {
-            if (resource.StartsWith(ResourcePrefix, StringComparison.Ordinal) && resource.EndsWith(ResourceSuffix, StringComparison.Ordinal))
-            {
-                var path = resource[ResourcePrefix.Length..^ResourceSuffix.Length].Replace('.', '/');
-                Get("minecraft:" + path);
-            }
-        }
-    }
 
     /// <summary>Gets a template by id, loading it on first use; unknown ids get an empty template.</summary>
     public static StructureTemplate Get(string id) => templates.GetOrAdd(id, Load);
