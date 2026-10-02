@@ -370,6 +370,11 @@ public sealed partial class Server : IServer
         {
             // Just stop looping.
         }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "The game tick loop failed");
+            throw;
+        }
 
         foreach (var client in this.Connections.Values)
         {

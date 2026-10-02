@@ -27,6 +27,15 @@ public class Region : IRegion
 
     public int LoadedChunkCount => loadedChunks.Count(c => c.IsGenerated);
 
+    internal void TickInhabitedTime(AbstractLevel level)
+    {
+        foreach (var chunk in loadedChunks.OfType<Chunk>())
+        {
+            if (level.IsMobTicking(new VectorF(chunk.X * 16 + 8, 0, chunk.Z * 16 + 8)))
+                chunk.InhabitedTime++;
+        }
+    }
+
     private DenseCollection<IChunk> loadedChunks { get; } = new(CubicRegionSize, CubicRegionSize);
 
     private readonly RegionFile regionFile;
@@ -85,6 +94,8 @@ public class Region : IRegion
         loadedChunks[x, z] = null;
     }
 
+    internal IChunk? GetLoadedChunk(int x, int z) => loadedChunks[x, z] is { IsGenerated: true } chunk ? chunk : null;
+
     private async Task<Chunk?> GetChunkFromFileAsync(int x, int z)
     {
         var chunkBuffer = await regionFile.GetChunkBytesAsync(x, z);
@@ -134,7 +145,16 @@ public class Region : IRegion
 
     public async Task BeginTickAsync(CancellationToken cts = default)
     {
-        await Parallel.ForEachAsync(Entities.Values, cts, async (entity, cts) => await entity.TickAsync());
+        foreach (var entity in Entities.Values.OrderBy(entity => entity.EntityId).ToArray())
+        {
+            cts.ThrowIfCancellationRequested();
+            await entity.TickAsync();
+        }
+        await TickBlocksAsync();
+    }
+
+    internal async Task TickBlocksAsync()
+    {
 
         List<IBlockUpdate> neighborUpdates = [];
         List<IBlockUpdate> delayed = [];
@@ -164,6 +184,8 @@ public class Region : IRegion
         int z = chunkCompound.GetInt("zPos");
 
         var chunk = new Chunk(x, z);
+        if (chunkCompound.TryGetTagValue<long>("InhabitedTime", out var inhabitedTime))
+            chunk.InhabitedTime = inhabitedTime;
 
         foreach (var child in (NbtList)chunkCompound["sections"])
         {
@@ -260,6 +282,7 @@ public class Region : IRegion
 
     private static void SerializeChunk(NbtWriterStream writer, IChunk chunk)
     {
+        writer.WriteLong("InhabitedTime", chunk is Chunk concrete ? concrete.InhabitedTime : 0);
         writer.WriteListStart("sections", NbtTagType.Compound, chunk.Sections.Length);
 
         foreach (var section in chunk.Sections)

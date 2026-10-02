@@ -1,5 +1,6 @@
 ﻿using Obsidian.API.Effects;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Entities.AI;
 
 namespace Obsidian.Entities;
 
@@ -24,13 +25,20 @@ public class Living : Entity, ILiving
     public IReadOnlyDictionary<int, EffectWithCurrentDuration> ActivePotionEffects => activePotionEffects.AsReadOnly();
 
     private readonly ConcurrentDictionary<int, EffectWithCurrentDuration> activePotionEffects;
+    private int fireTicks;
+
+    public void Ignite(int seconds)
+    {
+        if (!IsFireImmune && seconds > 0)
+            fireTicks = Math.Max(fireTicks, checked(seconds * 20));
+    }
 
     public Living()
     {
         activePotionEffects = new ConcurrentDictionary<int, EffectWithCurrentDuration>();
     }
 
-    public override ValueTask TickAsync()
+    public override async ValueTask TickAsync()
     {
         foreach (var (potion, data) in activePotionEffects)
         {
@@ -42,7 +50,31 @@ public class Living : Entity, ILiving
             }
         }
 
-        return default;
+        if (!Alive || this is not Player and not Mob { HasAi: true })
+            return;
+        var terrain = new MobTerrain(Level);
+        var feet = (Vector)(Position + new VectorF(0, 0.1f, 0)).Floor();
+        if (Burning && fireTicks == 0)
+            fireTicks = 160;
+        if (IsFireImmune || terrain.GetBlock(feet)?.Material == Material.Water ||
+            Level.LevelData.Raining && terrain.GetSkyLight(feet) == 15)
+            fireTicks = 0;
+        if (fireTicks > 0)
+        {
+            if (fireTicks % 20 == 0)
+            {
+                if (this is Mob mob)
+                    await mob.DamageEnvironmentAsync(1);
+                else
+                    await DamageAsync(this, 1);
+            }
+            fireTicks--;
+        }
+        if (Burning != fireTicks > 0)
+        {
+            Burning = fireTicks > 0;
+            PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new SetEntityDataPacket { EntityId = EntityId, Entity = this }, EntityId);
+        }
     }
 
     public bool HasPotionEffect(int effectId) => activePotionEffects.ContainsKey(effectId);

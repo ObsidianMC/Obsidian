@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.Entities;
 
-public class Mob : Living
+public partial class Mob : Living
 {
     public MobBitmask MobBitMask { get; set; } = MobBitmask.None;
 

@@ -14,5 +14,7 @@ public enum EquipmentSlot : int
     Boots,
     Leggings,
     Chestplate,
-    Helmet
+    Helmet,
+    Body,
+    Saddle
 }

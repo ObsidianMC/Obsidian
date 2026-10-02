@@ -36,6 +36,9 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
             Raining = levelCompound.GetBool("raining"),
             Thundering = levelCompound.GetBool("thundering"),
             DefaultGamemode = (Gamemode)levelCompound.GetInt("GameType"),
+            Difficulty = levelCompound.TryGetTagValue<byte>("Difficulty", out var difficulty)
+                ? (Difficulty)difficulty : Difficulty.Normal,
+            DifficultyLocked = levelCompound.GetBool("DifficultyLocked"),
             GeneratorVersion = levelCompound.GetInt("generatorVersion"),
             RainTime = levelCompound.GetInt("rainTime"),
             SpawnPosition = new VectorF(levelCompound.GetInt("SpawnX"), levelCompound.GetInt("SpawnY"), levelCompound.GetInt("SpawnZ")),
@@ -87,6 +90,8 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
         writer.WriteBool("raining", LevelData.Raining);
         writer.WriteBool("thundering", LevelData.Thundering);
         writer.WriteInt("GameType", (int)LevelData.DefaultGamemode);
+        writer.WriteByte("Difficulty", (byte)LevelData.Difficulty);
+        writer.WriteBool("DifficultyLocked", LevelData.DifficultyLocked);
         writer.WriteInt("generatorVersion", LevelData.GeneratorVersion);
         writer.WriteInt("rainTime", LevelData.RainTime);
         writer.WriteInt("SpawnX", (int)LevelData.SpawnPosition.X);

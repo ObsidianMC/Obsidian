@@ -80,7 +80,12 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
         // This could get sgen'd, same for the entity classes. but for now, this is fine for implementation
         Entity entity = entityType switch
         {
+            EntityType.ExperienceOrb => new ExperienceOrb { Level = level, Value = 1 },
             EntityType.Pig => new Pig()
+            {
+                Level = level,
+            },
+            EntityType.Zombie => new Zombie()
             {
                 Level = level,
             },
@@ -135,6 +140,9 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
         {
             ageable.IsBaby = isBaby;
         }
+
+        if (entity is Zombie zombie && isBaby)
+            zombie.IsBaby = true;
 
         entity.Burning = burning;
         entity.Glowing = glowing;

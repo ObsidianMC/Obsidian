@@ -29,4 +29,10 @@ public class EntityInteractEventArgs : EntityEventArgs
         this.Hand = hand;
         this.TargetPosition = targetPosition;
     }
+
+    public EntityInteractEventArgs(IPlayer player, IEntity entity, IServer server, Hand hand, bool sneaking = false)
+        : this(player, entity, server, sneaking)
+    {
+        this.Hand = hand;
+    }
 }

@@ -9,6 +9,7 @@ public sealed class Chunk : IChunk
 {
     public int X { get; }
     public int Z { get; }
+    public long InhabitedTime { get; internal set; }
 
     public bool IsGenerated => ChunkStatus == ChunkGenStage.full;
 
@@ -265,6 +266,7 @@ public sealed class Chunk : IChunk
         }
 
         chunk.SetChunkStatus(ChunkStatus);
+        chunk.InhabitedTime = InhabitedTime;
 
         return chunk;
     }

@@ -20,6 +20,7 @@ public class Entity : IEquatable<Entity>, IEntity
     public VectorF LastPosition { get; set; }
 
     public VectorF Position { get; set; }
+    internal VectorF Motion { get; set; }
 
     public Angle Pitch { get; set; }
 
@@ -34,6 +35,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public virtual BoundingBox BoundingBox { get; protected set; } = new(VectorF.Zero, VectorF.Zero);
     public virtual EntityDimension Dimension { get; protected set; } = EntityDimension.Zero;
+    protected virtual float DimensionScale => 1;
 
     public int PowderedSnowTicks { get; set; } = 0;
 
@@ -299,16 +301,20 @@ public class Entity : IEquatable<Entity>, IEntity
     public virtual ValueTask TickAsync() => default;
 
     //TODO check for other entities and handle accordingly 
-    public async ValueTask DamageAsync(IEntity source, float amount = 1.0f)
+    public virtual async ValueTask DamageAsync(IEntity source, float amount = 1.0f)
     {
+        if (!float.IsFinite(amount) || amount <= 0 || Health <= 0 || source.Level != Level ||
+            this is IPlayer immune && immune.Gamemode is Gamemode.Creative or Gamemode.Spectator)
+            return;
+
         Health -= amount;
 
         if (this is ILiving living)
         {
-            this.PacketBroadcaster.QueuePacketToLevel(this.Level, new AnimatePacket
+            this.PacketBroadcaster.QueuePacketToLevel(this.Level, new HurtAnimationPacket
             {
                 EntityId = EntityId,
-                Animation = EntityAnimationType.CriticalEffect
+                Yaw = MathF.Atan2(source.Position.Z - Position.Z, source.Position.X - Position.X) * 180 / MathF.PI - Yaw.Degrees
             });
 
             if (living is Player player)

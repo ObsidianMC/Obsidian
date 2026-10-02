@@ -39,6 +39,8 @@ public sealed partial class Player : Avatar, IPlayer
     public required IServer Server { get; init; }
 
     public PlayerInput Input { get; set; }
+    internal Mob? Vehicle { get; set; }
+    internal long LastExperiencePickupTick { get; set; } = -2;
 
     public override bool Sneaking
     {
@@ -139,7 +141,7 @@ public sealed partial class Player : Avatar, IPlayer
     public int XpTotal { get; set; }
     public float XpP { get; set; } = 0;
 
-    public double HeadY { get; private set; }
+    public double HeadY { get; internal set; }
 
     public float Absorption { get; set; } = 0;
     public float FallDistance { get; set; }
@@ -239,6 +241,7 @@ public sealed partial class Player : Avatar, IPlayer
 
     public async override ValueTask TeleportAsync(VectorF pos)
     {
+        Vehicle?.Dismount();
         LastPosition = Position;
         Position = pos;
         await UpdateChunksAsync(true, 2);
@@ -610,6 +613,8 @@ public sealed partial class Player : Avatar, IPlayer
 
     public async override ValueTask UpdateAsync(VectorF position, MovementFlags movementFlags)
     {
+        if (Vehicle != null)
+            position = Position;
         await base.UpdateAsync(position, movementFlags);
 
         HeadY = position.Y + 1.62f;
@@ -621,6 +626,8 @@ public sealed partial class Player : Avatar, IPlayer
 
     public async override ValueTask UpdateAsync(VectorF position, Angle yaw, Angle pitch, MovementFlags movementFlags)
     {
+        if (Vehicle != null)
+            position = Position;
         await base.UpdateAsync(position, yaw, pitch, movementFlags);
 
         HeadY = position.Y + 1.62f;

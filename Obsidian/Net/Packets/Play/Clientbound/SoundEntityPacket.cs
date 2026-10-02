@@ -27,6 +27,7 @@ public partial class SoundEntityPacket
 
     public override void Serialize(INetStreamWriter writer)
     {
+        writer.WriteVarInt(0);
         writer.WriteString(this.SoundLocation);
 
         writer.WriteOptional(this.FixedRange);

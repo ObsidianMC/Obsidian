@@ -72,6 +72,39 @@ public abstract class AbstractLevel : ILevel
 
     private readonly IDisposable optionsMonitor;
     private readonly Lock regionLock = new();
+    private readonly ConcurrentQueue<Func<ValueTask>> entityActions = new();
+
+    internal void EnqueueEntityAction(Func<ValueTask> action) => entityActions.Enqueue(action);
+
+    internal bool IsMobTicking(VectorF position)
+    {
+        var (x, z) = position.ToChunkCoord();
+        if (GetLoadedChunk(x, z) == null)
+            return false;
+
+        // ponytail: player proximity covers normal ticking; use chunk tickets for forced entity ticking.
+        return Players.Values.Any(player => player.Gamemode != Gamemode.Spectator &&
+            Math.Abs(player.Position.ToChunkCoord().x - x) <= Configuration.SimulationDistance &&
+            Math.Abs(player.Position.ToChunkCoord().z - z) <= Configuration.SimulationDistance);
+    }
+
+    internal IChunk? GetLoadedChunk(int chunkX, int chunkZ) => GetRegionForChunk(chunkX, chunkZ) is Region region
+        ? region.GetLoadedChunk(NumericsHelper.Modulo(chunkX, 32), NumericsHelper.Modulo(chunkZ, 32))
+        : null;
+
+    internal bool TryMoveEntity(IEntity entity, VectorF from, VectorF to)
+    {
+        var destination = GetRegionForLocation(to);
+        var origin = GetRegionForLocation(from);
+        if (destination == null)
+            return false;
+        if (ReferenceEquals(origin, destination))
+            return true;
+        if (!destination.Entities.TryAdd(entity.EntityId, entity))
+            return false;
+        origin?.Entities.TryRemove(entity.EntityId, out _);
+        return true;
+    }
 
     public AbstractLevel(ILogger logger, IPacketBroadcaster packetBroadcaster, IOptionsMonitor<ServerConfiguration> configuration,
         IEventDispatcher eventDispatcher, ILevelGenerator worldGenerator, string name, string seed)
@@ -243,13 +276,18 @@ public abstract class AbstractLevel : ILevel
         (int left, int top) = (location - new VectorF(distance)).ToChunkCoord();
         (int right, int bottom) = (location + new VectorF(distance)).ToChunkCoord();
 
+        left >>= Region.CubicRegionSizeShift;
+        right >>= Region.CubicRegionSizeShift;
+        top >>= Region.CubicRegionSizeShift;
+        bottom >>= Region.CubicRegionSizeShift;
+
         distance *= distance;
 
-        for (int x = left; x <= right; x += Region.CubicRegionSize)
+        for (int x = left; x <= right; x++)
         {
-            for (int z = top; z >= bottom; z -= Region.CubicRegionSize)
+            for (int z = top; z <= bottom; z++)
             {
-                if (GetRegionForChunk(x, z) is not Region region)
+                if (GetRegionForChunk(x << Region.CubicRegionSizeShift, z << Region.CubicRegionSizeShift) is not Region region)
                     continue;
 
                 foreach (var entity in region.Entities.Values)
@@ -320,7 +358,29 @@ public abstract class AbstractLevel : ILevel
         LevelData.Time += this.Configuration.TimeTickSpeedMultiplier;
         LevelData.RainTime -= this.Configuration.TimeTickSpeedMultiplier;
 
-        await Task.WhenAll(this.Regions.Values.Select(r => r.BeginTickAsync()));
+        foreach (var region in Regions.Values.OfType<Region>())
+            region.TickInhabitedTime(this);
+
+        var actionCount = entityActions.Count;
+        for (var index = 0; index < actionCount && entityActions.TryDequeue(out var action); index++)
+            await action();
+
+        // Snapshot once so crossing a region boundary cannot tick an entity twice.
+        var entities = Regions.Values.SelectMany(region => region.Entities.Values)
+            .DistinctBy(entity => entity.EntityId).OrderBy(entity => entity.EntityId).ToArray();
+        foreach (var entity in entities)
+        {
+            if (entity is Mob { HasAi: true } or ItemEntity or ExperienceOrb && !IsMobTicking(entity.Position))
+                continue;
+            if (GetRegionForLocation(entity.Position)?.Entities.ContainsKey(entity.EntityId) == true)
+                await entity.TickAsync();
+        }
+
+        foreach (var region in Regions.Values)
+        {
+            if (region is Region concrete)
+                await concrete.TickBlocksAsync();
+        }
     }
 
     public IRegion LoadRegionByChunk(int chunkX, int chunkZ)
@@ -463,9 +523,6 @@ public abstract class AbstractLevel : ILevel
 
     public IEntity SpawnEntity(VectorF position, EntityType type)
     {
-        if (type == EntityType.ExperienceOrb)
-            throw new NotImplementedException($"EntityType {type} is not supported.");
-
         if (type == EntityType.FallingBlock)
             return SpawnFallingBlock(position + (0, 20, 0), Material.Sand);
 
@@ -477,6 +534,8 @@ public abstract class AbstractLevel : ILevel
 
     public IEntity SpawnEntity(IEntity entity)
     {
+        if (entity is Mob mob)
+            mob.InitializeAi();
         entity.SpawnEntity();
         TryAddEntity(entity as Entity);
         return entity;
@@ -484,6 +543,12 @@ public abstract class AbstractLevel : ILevel
 
     public void SpawnExperienceOrbs(VectorF position, short count = 1)
     {
+        while (count > 0)
+        {
+            var value = ExperienceOrb.SplitValue(count);
+            SpawnEntity(new ExperienceOrb { Level = this, EntityId = Server.GetNextEntityId(), Position = position, Value = value });
+            count -= (short)value;
+        }
     }
 
     public async ValueTask<bool> HandleBlockUpdateAsync(IBlockUpdate update)
