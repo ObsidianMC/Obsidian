@@ -36,6 +36,13 @@ internal sealed class StructureManager : IStructurePlacementState
     private readonly ConcurrentDictionary<(int X, int Z), StructureStart[]> starts = new();
     private readonly ConcurrentDictionary<ConcentricRingsStructurePlacement, Lazy<IReadOnlySet<(int X, int Z)>>> ringPositions = new();
 
+    // The structures the beardifier reshapes terrain for, in the order it goes through them.
+    private readonly Structure[] terrainAdaptingStructures;
+
+    // See GetReachingStarts.
+    [ThreadStatic]
+    private static ReachingStarts? lastReachingStarts;
+
     public long Seed { get; }
 
     /// <summary>
@@ -65,6 +72,9 @@ internal sealed class StructureManager : IStructurePlacementState
         var structures = Obsidian.Registries.Structures.All.Values.OrderBy(structure => structure.Identifier, StringComparer.Ordinal).ToList();
         this.StructuresPerStep = [.. Enum.GetValues<DecorationStep>()
             .Select(step => (IReadOnlyList<Structure>)[.. structures.Where(structure => structure.Step == step)])];
+        this.terrainAdaptingStructures = [.. this.StructuresPerStep.SelectMany(step => step)
+            .OrderBy(structure => structure.Identifier, StringComparer.Ordinal)
+            .Where(structure => structure.TerrainAdaptation != TerrainAdjustment.None)];
     }
 
     /// <summary>
@@ -78,10 +88,37 @@ internal sealed class StructureManager : IStructurePlacementState
     public List<StructureStart> GetReferencingStarts(int chunkX, int chunkZ, Structure structure)
     {
         // Vanilla adds the reference chunks to a LongOpenHashSet in this order and places the starts in the set's order.
+        List<long>? references = null;
+        Dictionary<long, StructureStart>? byChunk = null;
+
+        foreach (var (key, start) in this.GetReachingStarts(chunkX, chunkZ))
+        {
+            if (start.Structure != structure)
+                continue;
+
+            (references ??= []).Add(key);
+            (byChunk ??= [])[key] = start;
+        }
+
+        return references is null ? [] : [.. LongHashSetOrder.Order(references).Select(key => byChunk![key])];
+    }
+
+    /// <summary>
+    /// The starts whose box reaches the chunk with their start chunk's key, start chunk by start chunk (X, then Z).
+    /// </summary>
+    /// <remarks>
+    /// Decorating a chunk asks for the starts of every structure in turn, so each thread keeps the last chunk's starts.
+    /// Starts don't change once created.
+    /// </remarks>
+    private List<(long Key, StructureStart Start)> GetReachingStarts(int chunkX, int chunkZ)
+    {
+        var last = lastReachingStarts;
+        if (last is not null && last.Owner == this && last.ChunkX == chunkX && last.ChunkZ == chunkZ)
+            return last.Starts;
+
         var minX = chunkX << 4;
         var minZ = chunkZ << 4;
-        var references = new List<long>();
-        var byChunk = new Dictionary<long, StructureStart>();
+        var reaching = new List<(long, StructureStart)>();
 
         for (var x = chunkX - ReferenceRadius; x <= chunkX + ReferenceRadius; x++)
         {
@@ -89,17 +126,14 @@ internal sealed class StructureManager : IStructurePlacementState
             {
                 foreach (var start in this.GetStarts(x, z))
                 {
-                    if (start.Structure != structure || !start.BoundingBox.Intersects(minX, minZ, minX + 15, minZ + 15))
-                        continue;
-
-                    var key = ChunkKey(x, z);
-                    references.Add(key);
-                    byChunk[key] = start;
+                    if (start.BoundingBox.Intersects(minX, minZ, minX + 15, minZ + 15))
+                        reaching.Add((ChunkKey(x, z), start));
                 }
             }
         }
 
-        return references.Count == 0 ? [] : [.. LongHashSetOrder.Order(references).Select(key => byChunk[key])];
+        lastReachingStarts = new ReachingStarts(this, chunkX, chunkZ, reaching);
+        return reaching;
     }
 
     /// <summary>
@@ -188,11 +222,8 @@ internal sealed class StructureManager : IStructurePlacementState
     /// </remarks>
     public IEnumerable<StructureStart> GetTerrainAdaptingStarts(int chunkX, int chunkZ)
     {
-        foreach (var structure in this.StructuresPerStep.SelectMany(step => step).OrderBy(structure => structure.Identifier, StringComparer.Ordinal))
+        foreach (var structure in this.terrainAdaptingStructures)
         {
-            if (structure.TerrainAdaptation == TerrainAdjustment.None)
-                continue;
-
             foreach (var start in this.GetReferencingStarts(chunkX, chunkZ, structure))
                 yield return start;
         }
@@ -383,4 +414,6 @@ internal sealed class StructureManager : IStructurePlacementState
 
     /// <summary>Vanilla <c>ChunkPos.asLong</c>.</summary>
     private static long ChunkKey(int chunkX, int chunkZ) => (chunkX & 0xFFFFFFFFL) | (chunkZ & 0xFFFFFFFFL) << 32;
+
+    private sealed record ReachingStarts(StructureManager Owner, int ChunkX, int ChunkZ, List<(long Key, StructureStart Start)> Starts);
 }
