@@ -63,7 +63,7 @@ public sealed partial class FinishConfigurationPacket
         });
 
         await client.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
-        await player.UpdateChunksAsync(distance: 7);
+        await player.UpdateChunksAsync();
         await server.EventDispatcher.ExecuteEventAsync(new PlayerJoinEventArgs(player, server, DateTimeOffset.Now));
     }
 

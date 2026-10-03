@@ -33,6 +33,11 @@ public abstract partial class AbstractLevel : ILevel
     // The chunks queued or generating, so a chunk is queued once however often it's asked for.
     private readonly ConcurrentDictionary<long, byte> queuedChunks = [];
 
+    // The chunks queued while the level runs, taken from ChunksToGen and started nearest to a player first (see
+    // TryTakeNearestJob), so chunks players wait for don't queue behind ones they've moved away from. Locked on itself.
+    private readonly List<long> waitingJobs = [];
+    private readonly List<(int X, int Z)> playerChunks = [];
+
     // Generation jobs run in the background, at most one per core: each job fans out over its neighbors' steps itself.
     private readonly SemaphoreSlim generationSlots = new(Environment.ProcessorCount);
 
@@ -82,7 +87,7 @@ public abstract partial class AbstractLevel : ILevel
     }
 
     public int RegionCount => this.Regions.Count;
-    public int ChunksToGenCount => this.ChunksToGen.Count;
+    public int ChunksToGenCount => this.ChunksToGen.Count + this.waitingJobs.Count;
     public int LoadedChunkCount => this.Regions.Values.Sum(x => x.LoadedChunkCount);
 
     public IPacketBroadcaster PacketBroadcaster { get; }
@@ -466,6 +471,13 @@ public abstract partial class AbstractLevel : ILevel
 
         this.SpawnPendingEntities();
 
+        // Chunks players are waiting for go out once they're generated.
+        foreach (var player in this.Players.Values)
+        {
+            if (player is Player waiting)
+                await waiting.SendPendingChunksAsync();
+        }
+
         // Like vanilla, fluid ticks run before entities tick.
         this.Fluids.Tick();
 
@@ -655,13 +667,70 @@ public abstract partial class AbstractLevel : ILevel
         if (Interlocked.Exchange(ref this.generationFailure, null) is Exception failure)
             ExceptionDispatchInfo.Throw(failure);
 
-        // Starts queued chunks on free slots without waiting for them, so a slow chunk never holds up the others or the tick.
-        while (!this.ChunksToGen.IsEmpty && this.generationSlots.Wait(0))
+        this.StartQueuedJobs();
+    }
+
+    /// <summary>
+    /// Starts queued chunks on free slots without waiting for them, so a slow chunk never holds up the others or the tick.
+    /// Each job starts the next when it finishes, so free slots don't wait for the next tick.
+    /// </summary>
+    private void StartQueuedJobs()
+    {
+        // Disposal takes every slot as jobs finish, which new jobs would keep it from.
+        while (Volatile.Read(ref this.disposed) == 0 && this.generationSlots.Wait(0))
         {
-            if (this.ChunksToGen.TryDequeue(out var job))
-                _ = this.GenerateQueuedChunkAsync(job);
-            else
+            if (!this.TryTakeNearestJob(out var job))
+            {
                 this.generationSlots.Release();
+                return;
+            }
+
+            // On the thread pool, so a job that finishes at once doesn't start the next one inside it, or run on the tick.
+            _ = Task.Run(() => this.GenerateQueuedChunkAsync(job, startNext: true));
+        }
+    }
+
+    /// <summary>
+    /// Takes the queued chunk nearest to a player, or the oldest one when no player is in the level.
+    /// </summary>
+    private bool TryTakeNearestJob(out long job)
+    {
+        lock (this.waitingJobs)
+        {
+            while (this.ChunksToGen.TryDequeue(out var queued))
+                this.waitingJobs.Add(queued);
+
+            if (this.waitingJobs.Count == 0)
+            {
+                job = 0;
+                return false;
+            }
+
+            this.playerChunks.Clear();
+            foreach (var player in this.Players.Values)
+                this.playerChunks.Add(player.Position.ToChunkCoord());
+
+            // The first of the nearest, so chunks at the same distance go in the order they were asked for.
+            var nearest = 0;
+            if (this.playerChunks.Count > 0)
+            {
+                var nearestDistance = long.MaxValue;
+                for (var i = 0; i < this.waitingJobs.Count; i++)
+                {
+                    NumericsHelper.LongToInts(this.waitingJobs[i], out var x, out var z);
+                    foreach (var (playerX, playerZ) in this.playerChunks)
+                    {
+                        long dx = x - playerX, dz = z - playerZ;
+                        var distance = dx * dx + dz * dz;
+                        if (distance < nearestDistance)
+                            (nearest, nearestDistance) = (i, distance);
+                    }
+                }
+            }
+
+            job = this.waitingJobs[nearest];
+            this.waitingJobs.RemoveAt(nearest);
+            return true;
         }
     }
 
@@ -688,7 +757,8 @@ public abstract partial class AbstractLevel : ILevel
     /// Generates a dequeued chunk on one of the generation slots, which it releases when done. Failures are kept for the
     /// next <see cref="ManageChunksAsync"/> to rethrow.
     /// </summary>
-    private async Task GenerateQueuedChunkAsync(long job)
+    /// <param name="startNext">Whether the next queued chunk starts once this one is done (see <see cref="StartQueuedJobs"/>).</param>
+    private async Task GenerateQueuedChunkAsync(long job, bool startNext = false)
     {
         NumericsHelper.LongToInts(job, out var jobX, out var jobZ);
         this.PinGenerationArea(jobX, jobZ, 1);
@@ -720,6 +790,9 @@ public abstract partial class AbstractLevel : ILevel
             this.queuedChunks.TryRemove(job, out _);
             Interlocked.Increment(ref this.jobsSinceFlush);
             this.generationSlots.Release();
+
+            if (startNext)
+                this.StartQueuedJobs();
         }
     }
 

@@ -11,6 +11,7 @@ using Obsidian.WorldData;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Threading;
 
 namespace Obsidian.Entities;
 
@@ -33,6 +34,14 @@ public sealed partial class Player : Avatar, IPlayer
     /// Which chunks the player should have loaded around them.
     /// </summary>
     public ConcurrentHashSet<long> LoadedChunks { get; internal set; } = [];
+
+    // The chunks in view that weren't generated when they were asked for, sent once they are, and the center and view
+    // distance last sent to the client. Guarded by chunkUpdates, which keeps packet handlers and the level tick from
+    // updating the client's chunks at the same time.
+    private readonly HashSet<long> pendingChunks = [];
+    private readonly SemaphoreSlim chunkUpdates = new(1, 1);
+    private (int X, int Z)? chunkCacheCenter;
+    private int chunkViewDistance;
 
     public string Username { get; }
 
@@ -246,7 +255,7 @@ public sealed partial class Player : Avatar, IPlayer
         Vehicle?.Dismount();
         LastPosition = Position;
         Position = pos;
-        await UpdateChunksAsync(true, 2);
+        await UpdateChunksAsync();
 
         var tid = Globals.Random.Next(0, 999);
 
@@ -272,7 +281,7 @@ public sealed partial class Player : Avatar, IPlayer
         LastPosition = Position;
         Position = to.Position;
 
-        await UpdateChunksAsync(true, 2);
+        await UpdateChunksAsync();
 
         TeleportId = Globals.Random.Next(0, 999);
 
@@ -303,12 +312,9 @@ public sealed partial class Player : Avatar, IPlayer
         await LoadAsync(false);
 
         // reload world stuff and send rest of the info
-        await UpdateChunksAsync(true, 2);
+        await UpdateChunksAsync(true);
 
         await SendPlayerInfoAsync();
-
-        var (chunkX, chunkZ) = Position.ToChunkCoord();
-        await Client.QueuePacketAsync(new SetChunkCacheCenterPacket(chunkX, chunkZ));
     }
 
     public ValueTask SendMessageAsync(ChatMessage message, Guid sender, SecureMessageSignature messageSignature) =>
@@ -442,6 +448,8 @@ public sealed partial class Player : Avatar, IPlayer
         visiblePlayers.Clear();
 
         TeleportId = 0;
+
+        await UpdateChunksAsync(true);
 
         await Client.QueuePacketAsync(new PlayerPositionPacket
         {
@@ -713,74 +721,146 @@ public sealed partial class Player : Avatar, IPlayer
     public async ValueTask DisconnectAsync(ChatMessage reason) => await this.Client.DisconnectAsync(reason);
 
     /// <summary>
-    /// Updates client chunks. Only send <paramref name="distance"/> when sending initial chunks.
+    /// Updates the chunks the client has to its view around the player, like vanilla's chunk tracking: the client learns
+    /// the new center, chunks out of view are forgotten, and chunks in view are sent nearest first. Chunks that aren't
+    /// generated yet are queued for generation and sent once they are (see <see cref="SendPendingChunksAsync"/>).
     /// </summary>
-    /// <param name="unloadAll"></param>
-    /// <param name="distance"></param>
-    /// <returns>Whether all chunks have been sent.</returns>
+    /// <param name="unloadAll">Whether the client starts over without chunks (it changed level or respawned).</param>
+    /// <param name="distance">The view distance, instead of the client's.</param>
+    /// <returns>Whether every chunk in view has been sent.</returns>
     public async Task<bool> UpdateChunksAsync(bool unloadAll = false, int distance = 0)
     {
-        bool sentAll = true;
-        if (unloadAll)
+        await this.chunkUpdates.WaitAsync();
+        try
         {
             var tracked = TrackedEntities.Keys.ToArray();
             TrackedEntities.Clear();
             if (!Respawning && tracked.Length > 0)
                 await Client.QueuePacketAsync(new RemoveEntitiesPacket(tracked));
-            if (!Respawning)
+            if (unloadAll)
             {
-                foreach (var value in LoadedChunks)
+                if (!Respawning)
                 {
-                    NumericsHelper.LongToInts(value, out var x, out var z);
-                    await UnloadChunkAsync(x, z);
+                    foreach (var value in LoadedChunks)
+                    {
+                        NumericsHelper.LongToInts(value, out var x, out var z);
+                        await UnloadChunkAsync(x, z);
+                    }
+                }
+
+                LoadedChunks.Clear();
+                this.pendingChunks.Clear();
+                this.chunkCacheCenter = null;
+            }
+
+            var (centerX, centerZ) = Position.ToChunkCoord();
+
+            // The client drops chunks outside the range around its center, so the center goes first.
+            if (this.chunkCacheCenter != (centerX, centerZ))
+            {
+                this.chunkCacheCenter = (centerX, centerZ);
+                await Client.QueuePacketAsync(new SetChunkCacheCenterPacket(centerX, centerZ));
+            }
+
+            // Like vanilla, at least 2.
+            this.chunkViewDistance = Math.Max(2, distance < 1 ? ClientInformation.ViewDistance : distance);
+
+            foreach (var value in LoadedChunks)
+            {
+                NumericsHelper.LongToInts(value, out var x, out var z);
+                if (!this.IsInView(x, z) && LoadedChunks.TryRemove(value))
+                    await Client.QueuePacketAsync(new ForgetLevelChunkPacket(x, z));
+            }
+
+            this.pendingChunks.RemoveWhere(value =>
+            {
+                NumericsHelper.LongToInts(value, out var x, out var z);
+                return !this.IsInView(x, z);
+            });
+
+            for (var x = centerX - this.chunkViewDistance - 1; x <= centerX + this.chunkViewDistance + 1; x++)
+            {
+                for (var z = centerZ - this.chunkViewDistance - 1; z <= centerZ + this.chunkViewDistance + 1; z++)
+                {
+                    var value = NumericsHelper.IntsToLong(x, z);
+                    if (this.IsInView(x, z) && !LoadedChunks.Contains(value))
+                        this.pendingChunks.Add(value);
                 }
             }
 
-            LoadedChunks.Clear();
+            return await this.SendReadyChunksAsync();
+        }
+        finally
+        {
+            this.chunkUpdates.Release();
+        }
+    }
+
+    /// <summary>
+    /// Sends the chunks in view that weren't generated when they were last asked for and are now. The level calls it every
+    /// tick; it skips the tick while the chunks are being updated.
+    /// </summary>
+    internal async Task SendPendingChunksAsync()
+    {
+        if (this.pendingChunks.Count == 0 || !await this.chunkUpdates.WaitAsync(0))
+            return;
+
+        try
+        {
+            await this.SendReadyChunksAsync();
+        }
+        catch (OperationCanceledException)
+        {
+            // The client disconnected while chunks were queued for it, which shouldn't reach the level's tick: the server
+            // loop takes a cancellation for its own shutdown.
+        }
+        finally
+        {
+            this.chunkUpdates.Release();
+        }
+    }
+
+    // Sends the pending chunks that are generated, nearest to the center first, and asks for the others again (generation
+    // only queues them once). Returns whether none are left. Called under chunkUpdates.
+    private async Task<bool> SendReadyChunksAsync()
+    {
+        if (this.pendingChunks.Count == 0 || this.chunkCacheCenter is not var (centerX, centerZ))
+            return this.pendingChunks.Count == 0;
+
+        var chunks = this.pendingChunks.ToArray();
+        var distances = new int[chunks.Length];
+        for (var i = 0; i < chunks.Length; i++)
+        {
+            NumericsHelper.LongToInts(chunks[i], out var x, out var z);
+            distances[i] = (x - centerX) * (x - centerX) + (z - centerZ) * (z - centerZ);
         }
 
-        List<long> clientNeededChunks = [];
-        List<long> clientUnneededChunks = new(LoadedChunks);
+        Array.Sort(distances, chunks);
 
-        (int playerChunkX, int playerChunkZ) = Position.ToChunkCoord();
-
-        int dist = distance < 1 ? ClientInformation.ViewDistance : distance;
-        for (int x = playerChunkX + dist; x > playerChunkX - dist; x--)
-            for (int z = playerChunkZ + dist; z > playerChunkZ - dist; z--)
-                clientNeededChunks.Add(NumericsHelper.IntsToLong(x, z));
-
-        clientUnneededChunks = clientUnneededChunks.Except(clientNeededChunks).ToList();
-        clientNeededChunks = clientNeededChunks.Except(LoadedChunks).ToList();
-        clientNeededChunks.Sort((chunk1, chunk2) =>
-        {
-            NumericsHelper.LongToInts(chunk1, out var chunk1X, out var chunk1Z);
-            NumericsHelper.LongToInts(chunk2, out var chunk2X, out var chunk2Z);
-
-            return Math.Abs(playerChunkX - chunk1X) +
-            Math.Abs(playerChunkZ - chunk1Z) <
-            Math.Abs(playerChunkX - chunk2X) +
-            Math.Abs(playerChunkZ - chunk2Z) ? -1 : 1;
-        });
-
-        clientUnneededChunks.ForEach(c => LoadedChunks.TryRemove(c));
-
-        foreach (var value in clientNeededChunks)
+        foreach (var value in chunks)
         {
             NumericsHelper.LongToInts(value, out var x, out var z);
-            var chunk = await Level.GetChunkAsync(x, z);
-            if (chunk is not null && chunk.IsGenerated)
-            {
-                await Client.QueuePacketAsync(new LevelChunkWithLightPacket(chunk));
+            if (await Level.GetChunkAsync(x, z) is not IChunk chunk || !chunk.IsGenerated)
+                continue;
 
-                LoadedChunks.Add(NumericsHelper.IntsToLong(chunk.X, chunk.Z));
-            }
-            else
-            {
-                sentAll = false;
-            }
+            await Client.QueuePacketAsync(new LevelChunkWithLightPacket(chunk));
+            LoadedChunks.Add(value);
+            this.pendingChunks.Remove(value);
         }
 
-        return sentAll;
+        return this.pendingChunks.Count == 0;
+    }
+
+    // Vanilla's ChunkTrackingView.contains, which counts the neighbors the client needs to render the edge: a cylinder
+    // around the center that reaches one chunk past the view distance along the axes.
+    private bool IsInView(int chunkX, int chunkZ)
+    {
+        if (this.chunkCacheCenter is not var (centerX, centerZ))
+            return false;
+
+        long dx = Math.Max(0, Math.Abs(chunkX - centerX) - 2);
+        long dz = Math.Max(0, Math.Abs(chunkZ - centerZ) - 2);
+        return dx * dx + dz * dz < (long)this.chunkViewDistance * this.chunkViewDistance;
     }
 
     private static partial class Log
