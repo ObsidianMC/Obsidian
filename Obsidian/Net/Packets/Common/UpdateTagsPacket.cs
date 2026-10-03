@@ -22,7 +22,11 @@ public partial record class UpdateTagsPacket
 
             foreach (var tag in tags)
             {
-                writer.WriteString(tag.Name);
+                // Tags in a subfolder of their registry (type item/enchantable) go by their path in it (enchantable/armor).
+                var folderStart = tag.Type.IndexOf('/');
+                var name = folderStart < 0 ? tag.Name : $"{tag.Type[(folderStart + 1)..]}/{tag.Name}";
+
+                writer.WriteString(name);
                 writer.WriteVarInt(tag.Count);
                 for (int i = 0; i < tag.Entries.Length; i++)
                 {

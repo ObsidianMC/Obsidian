@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 
 namespace Obsidian.API.Inventory.DataComponents;
 public sealed record class FireworksDataComponent : DataComponent
@@ -9,7 +10,7 @@ public sealed record class FireworksDataComponent : DataComponent
 
     public required int FlightDuration { get; set; }
 
-    public required FireworkExplosion[] Explosions { get; set; }
+    public required ImmutableArray<FireworkExplosion> Explosions { get; set; }
 
     [SetsRequiredMembers]
     internal FireworksDataComponent() { }
@@ -17,11 +18,11 @@ public sealed record class FireworksDataComponent : DataComponent
     public override void Read(INetStreamReader reader)
     {
         this.FlightDuration = reader.ReadVarInt();
-        this.Explosions = reader.ReadLengthPrefixedArray(() => FireworkExplosion.Read(reader));
+        this.Explosions = ImmutableCollectionsMarshal.AsImmutableArray(reader.ReadLengthPrefixedArray(() => FireworkExplosion.Read(reader)));
     }
     public override void Write(INetStreamWriter writer)
     {
         writer.WriteVarInt(this.FlightDuration);
-        writer.WriteLengthPrefixedArray((value) => FireworkExplosion.Write(value, writer), this.Explosions);
+        writer.WriteLengthPrefixedArray((value) => FireworkExplosion.Write(value, writer), this.Explosions.AsSpan());
     }
 }

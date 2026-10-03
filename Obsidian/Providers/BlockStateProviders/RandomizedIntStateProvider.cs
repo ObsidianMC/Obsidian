@@ -1,42 +1,26 @@
-﻿using Obsidian.Providers.IntProviders;
+﻿using Obsidian.API.World.Generator.RandomSources;
 
 namespace Obsidian.Providers.BlockStateProviders;
 
+/// <summary>
+/// Another provider's state with an int property set to a random value (e.g. cave vine <c>age</c>).
+/// </summary>
 [ConfiguredFeatureProperty("minecraft:randomized_int_state_provider")]
 public sealed class RandomizedIntStateProvider : IBlockStateProvider
 {
     public string Type { get; init; } = "minecraft:randomized_int_state_provider";
 
-    public string Property { get; set; } = default!;
+    public required IBlockStateProvider Source { get; init; }
 
-    public IIntProvider Values { get; set; } = default!;
+    public required string Property { get; init; }
 
-    public IBlockStateProvider Source { get; set; } = default!;
+    public required IIntProvider Values { get; init; }
 
-    public IBlock Get()
+    public IBlock GetState(IRandomSource random, Vector position)
     {
-        var simpleState = this.Source.GetSimple();
-        if (this.Values is RangedIntProvider rangedIntProvider)
-        {
+        var block = this.Source.GetState(random, position);
 
-            simpleState.Properties[this.Property] = rangedIntProvider.Type == IntProviderTypes.Uniform
-                ? Globals.Random.Next(rangedIntProvider.MinInclusive, rangedIntProvider.MaxInclusive).ToString()
-                : Math.Min(Globals.Random.Next(rangedIntProvider.MinInclusive, rangedIntProvider.MaxInclusive), rangedIntProvider.MinInclusive).ToString();//Not sure if this is right
-        }
-
-        return BlocksRegistry.GetFromSimpleState(simpleState);
-    }
-
-    public SimpleBlockState GetSimple()
-    {
-        var simpleState = this.Source.GetSimple();
-        if (this.Values is RangedIntProvider rangedIntProvider)
-        {
-            simpleState.Properties[this.Property] = rangedIntProvider.Type == IntProviderTypes.Uniform
-                ? Globals.Random.Next(rangedIntProvider.MinInclusive, rangedIntProvider.MaxInclusive).ToString()
-                : Math.Min(Globals.Random.Next(rangedIntProvider.MinInclusive, rangedIntProvider.MaxInclusive), rangedIntProvider.MinInclusive).ToString();
-        }
-
-        return simpleState;
+        // Like vanilla, the value is only sampled when the state has the property.
+        return block.HasProperty(this.Property) ? block.WithProperty(this.Property, this.Values.Sample(random)) : block;
     }
 }

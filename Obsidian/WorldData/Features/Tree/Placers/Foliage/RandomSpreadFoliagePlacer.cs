@@ -1,70 +1,32 @@
-﻿using Obsidian.API.World.Features;
-using Obsidian.API.World.Features.Tree;
-using System.ComponentModel.DataAnnotations;
+using Obsidian.API.World.Generator.RandomSources;
 
 namespace Obsidian.WorldData.Features.Tree.Placers.Foliage;
 
 /// <summary>
-/// Foliage placer for azalea trees - randomly places leaves in a scattered pattern.
-/// Creates a natural, irregular canopy by placing individual leaf blocks randomly.
+/// Scattered foliage (azalea, mangrove): tries <see cref="LeafPlacementAttempts"/> random spots around the attachment.
 /// </summary>
-[TreeProperty("minecraft:random_spread_foliage_placer")]
+[ConfiguredFeatureProperty("minecraft:random_spread_foliage_placer")]
 public sealed class RandomSpreadFoliagePlacer : FoliagePlacer
 {
-    public override required string Type { get; init; }
+    public required IIntProvider FoliageHeight { get; init; }
 
-    /// <summary>
-    /// Height range for random leaf placement (1-512 blocks).
-    /// </summary>
-    [Range(1, 512)]
-    public required IIntProvider FoliageHeight { get; set; }
+    public required int LeafPlacementAttempts { get; init; }
 
-    /// <summary>
-    /// Number of attempts to place individual leaf blocks (0-256).
-    /// Higher values create denser foliage.
-    /// </summary>
-    [Range(0, 256)]
-    public required int LeafPlacementAttempts { get; set; }
+    public override int GetFoliageHeight(IRandomSource random, int treeHeight) => this.FoliageHeight.Sample(random);
 
-    public override int GetFoliageHeight(Random random, int treeHeight)
+    protected override void CreateFoliage(TreeContext tree, int freeTreeHeight, FoliageAttachment attachment, int foliageHeight,
+        int foliageRadius, int offset)
     {
-        return FoliageHeight.Get();
-    }
-
-    public override async ValueTask<List<Vector>> Place(FeatureContext context, List<Vector> trunkPositions, int treeHeight, IBlock foliageBlock)
-    {
-        var random = context.Random;
-        var placedPositions = new List<Vector>();
-
-        foreach (var origin in trunkPositions)
+        var random = tree.Random;
+        for (var i = 0; i < this.LeafPlacementAttempts; i++)
         {
-            int leafRadius = FoliageRadius(random, treeHeight);
-            int foliageHeight = GetFoliageHeight(random, treeHeight);
-
-            // Place leaves randomly within a box around the origin
-            for (int i = 0; i < LeafPlacementAttempts; i++)
-            {
-                // Calculate random offset in each direction
-                // Uses: random.nextInt(leafRadius) - random.nextInt(leafRadius)
-                // This creates a range of [-leafRadius+1, leafRadius-1] with bias toward center
-                int xOffset = random.Next(leafRadius) - random.Next(leafRadius);
-                int yOffset = random.Next(foliageHeight) - random.Next(foliageHeight);
-                int zOffset = random.Next(leafRadius) - random.Next(leafRadius);
-
-                var pos = origin + new Vector(xOffset, yOffset, zOffset);
-
-                // Try to place a leaf at this random position
-                await FoliagePlacerHelper.TryPlaceLeaf(context.World, pos, foliageBlock, placedPositions);
-            }
+            // Triangular offsets; arguments are evaluated left to right, matching vanilla's call order.
+            var dx = random.NextInt(foliageRadius) - random.NextInt(foliageRadius);
+            var dy = random.NextInt(foliageHeight) - random.NextInt(foliageHeight);
+            var dz = random.NextInt(foliageRadius) - random.NextInt(foliageRadius);
+            TryPlaceLeaf(tree, attachment.Position + (dx, dy, dz));
         }
-
-        return placedPositions;
     }
 
-    protected override bool ShouldSkipLocation(Random random, int dx, int y, int dz, int currentRadius, bool doubleTrunk)
-    {
-        // Random spread doesn't use structured layers, so never skip in the helper
-        // (This method is not used by this placer since we place leaves individually)
-        return false;
-    }
+    protected override bool ShouldSkipLocation(IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk) => false;
 }

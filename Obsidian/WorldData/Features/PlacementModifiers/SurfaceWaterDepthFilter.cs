@@ -1,19 +1,21 @@
-﻿namespace Obsidian.WorldData.Features.PlacementModifiers;
+﻿using Obsidian.API.World.Generator.RandomSources;
+
+namespace Obsidian.WorldData.Features.PlacementModifiers;
 
 /// <summary>
-/// If the number of blocks of a motion blocking material under the surface (the top non-air block) is less than the specified depth,
-/// return the current position.
-/// Otherwise return
+/// Keeps the position when the water above the ocean floor is at most <see cref="MaxWaterDepth"/> deep.
 /// </summary>
 [ConfiguredFeatureProperty("minecraft:surface_water_depth_filter")]
-public sealed class SurfaceWaterDepthFilter : PlacementModifierBase
+public sealed class SurfaceWaterDepthFilter : PlacementFilterBase
 {
-    public override string Type { get; internal init; } = "minecraft:surface_water_depth_filter";
+    public override string Type => "minecraft:surface_water_depth_filter";
 
-    /// <summary>
-    /// The maximum allowed depth.
-    /// </summary>
     public required int MaxWaterDepth { get; init; }
 
-    protected override bool ShouldPlace(PlacementContext context) => throw new NotImplementedException();
+    protected override bool ShouldPlace(PlacementContext context, IRandomSource random, Vector position)
+    {
+        var oceanFloor = context.Level.GetHeight(HeightmapType.OceanFloor, position.X, position.Z);
+        var surface = context.Level.GetHeight(HeightmapType.WorldSurface, position.X, position.Z);
+        return surface - oceanFloor <= this.MaxWaterDepth;
+    }
 }

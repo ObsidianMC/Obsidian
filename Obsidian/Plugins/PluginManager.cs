@@ -19,7 +19,7 @@ using System.Security.Cryptography;
 
 namespace Obsidian.Plugins;
 
-public sealed class PluginManager : IAsyncDisposable
+public sealed partial class PluginManager : IAsyncDisposable
 {
     internal readonly ILogger logger;
     private readonly IConfiguration configuration;
@@ -67,7 +67,7 @@ public sealed class PluginManager : IAsyncDisposable
         this.logger = logger;
         this.configuration = configuration;
         this.serverProvider = serverProvider;
-        this.pluginRegistry = new PluginRegistry(this, eventDispatcher, commandHandler, logger);
+        this.pluginRegistry = new PluginRegistry(this, eventDispatcher, commandHandler);
 
         packedPluginProvider = new(this, logger);
 
@@ -118,7 +118,7 @@ public sealed class PluginManager : IAsyncDisposable
         foreach (var canLoad in waitingForDepend)
         {
             packedPluginProvider.InitializePlugin(canLoad);
-            packedPluginProvider.HandlePlugin(canLoad, canLoad.PluginAssembly);
+            PackedPluginProvider.HandlePlugin(canLoad, canLoad.PluginAssembly);
 
             var depends = canLoad.Info.Dependencies.Select(x => x.Id).SelectMany(x => this.Plugins.Where(p => p.Info.Id == x));
             foreach (var depend in depends)
@@ -159,7 +159,7 @@ public sealed class PluginManager : IAsyncDisposable
         }
         catch (Exception ex)
         {
-            this.logger.LogError(ex, "Failed to load plugin.");//TODO DEFAULT LOGGER DOES NOT SUPPORT EXCEPTIONS
+            Log.LoadFailed(this.logger, ex, path);
 
             throw;
         }
@@ -170,8 +170,6 @@ public sealed class PluginManager : IAsyncDisposable
     /// </summary>
     public async Task UnloadPluginAsync(PluginContainer pluginContainer)
     {
-        this.logger.LogInformation("Unloading plugin...");
-
         this.commandHandler.UnregisterPluginCommands(pluginContainer);
 
         var stopwatch = Stopwatch.StartNew();
@@ -184,7 +182,7 @@ public sealed class PluginManager : IAsyncDisposable
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Unhandled exception occured when disposing {pluginName}", pluginContainer.Info.Name);
+            Log.DisposeFailed(this.logger, ex, pluginContainer.Info.Name);
         }
 
         var loadContext = pluginContainer.LoadContext;
@@ -194,7 +192,7 @@ public sealed class PluginManager : IAsyncDisposable
 
         stopwatch.Stop();
 
-        loadContext.Unloading += _ => logger.LogInformation("Finished unloading {pluginName} plugin in  {timer}ms", pluginContainer.Info.Name, stopwatch.ElapsedMilliseconds);
+        loadContext.Unloading += _ => Log.Unloaded(this.logger, pluginContainer.Info.Name, stopwatch.ElapsedMilliseconds);
         loadContext.Unload();
     }
 
@@ -292,7 +290,7 @@ public sealed class PluginManager : IAsyncDisposable
                 stagedPlugins.Add(pluginContainer);
             }
 
-            logger.LogWarning("Plugin {name} staged, missing dependencies.", pluginContainer.Info.Name);
+            Log.Staged(this.logger, pluginContainer.Info.Name);
 
             return pluginContainer;
         }
@@ -324,7 +322,7 @@ public sealed class PluginManager : IAsyncDisposable
             }
         }
 
-        logger.LogInformation("Loaded {name}.", pluginContainer.Info.Name);
+        Log.Loaded(this.logger, pluginContainer.Info.Name, pluginContainer.Info.Version);
 
         return pluginContainer;
     }
@@ -348,6 +346,24 @@ public sealed class PluginManager : IAsyncDisposable
         await this.UnloadPluginsAsync();
 
         this.DirectoryWatcher.Dispose();
+    }
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Information, Message = "Loaded plugin {PluginName} {Version}")]
+        public static partial void Loaded(ILogger logger, string pluginName, Version version);
+
+        [LoggerMessage(Level = LogLevel.Error, Message = "Failed to load plugin {Path}")]
+        public static partial void LoadFailed(ILogger logger, Exception exception, string path);
+
+        [LoggerMessage(Level = LogLevel.Debug, Message = "Plugin {PluginName} waits for its dependencies to load")]
+        public static partial void Staged(ILogger logger, string pluginName);
+
+        [LoggerMessage(Level = LogLevel.Information, Message = "Unloaded plugin {PluginName} in {ElapsedMilliseconds}ms")]
+        public static partial void Unloaded(ILogger logger, string pluginName, long elapsedMilliseconds);
+
+        [LoggerMessage(Level = LogLevel.Error, Message = "Disposing plugin {PluginName} failed")]
+        public static partial void DisposeFailed(ILogger logger, Exception exception, string pluginName);
     }
 }
 

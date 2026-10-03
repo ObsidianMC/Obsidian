@@ -1,54 +1,52 @@
-﻿using Obsidian.Nbt;
+using Obsidian.WorldData.Structures;
+using Obsidian.Nbt;
 using System.IO;
+using System.IO.Compression;
 
 namespace Obsidian.Registries;
+
+/// <summary>
+/// Vanilla's structure templates by id, read from the directory <see cref="VanillaServerJar"/> extracted them to:
+/// <c>minecraft:fossil/spine_1</c> is <c>fossil/spine_1.nbt</c> there.
+/// </summary>
+/// <remarks>
+/// Templates aren't shipped with Obsidian, since Mojang's EULA doesn't allow redistributing them. They load on first use,
+/// since most worlds only ever need part of them.
+/// </remarks>
 internal static class StructureRegistry
 {
-    public static readonly ConcurrentDictionary<string, Dictionary<Vector, IBlock>> storage = new();
-    public static void Initialize()
+    private const string FileSuffix = ".nbt";
+
+    // Lazy, so chunks generating in parallel that need the same template load it once.
+    private static readonly ConcurrentDictionary<string, Lazy<StructureTemplate>> templates = new();
+
+    private static string? directory;
+
+    /// <summary>
+    /// Sets the directory templates are read from, before any template is used.
+    /// </summary>
+    public static void Initialize(string structureDirectory) => directory = structureDirectory;
+
+    /// <summary>Gets a template by id, loading it on first use; unknown ids get an empty template.</summary>
+    public static StructureTemplate Get(string id) => templates.GetOrAdd(id, key => new Lazy<StructureTemplate>(() => Load(key))).Value;
+
+    private static StructureTemplate Load(string id)
     {
-        var structDir = "Assets/Structures/";
-        if(!Directory.Exists("Assets/Structures/"))
-        {
-            Directory.CreateDirectory("Assets/Structures");
-        }
-        var files = Directory.GetFiles(structDir, "*.nbt");
-        foreach (var file in files)
-        {
-            var structureName = Path.GetFileNameWithoutExtension(file);
-            storage[structureName] = new();
-            byte[] nbtData = File.ReadAllBytes(file);
-            using var byteStream = new ReadOnlyStream(nbtData);
-            var nbtReader = new NbtReader(byteStream, NbtCompression.GZip);
-            var baseCompound = nbtReader.ReadNextTag() as NbtCompound;
+        var root = directory ?? throw new InvalidOperationException("Structure templates are used before StructureRegistry.Initialize.");
+        var path = id.StartsWith("minecraft:", StringComparison.Ordinal) ? id["minecraft:".Length..] : id;
+        var file = Path.Combine(root, path + FileSuffix);
 
-            // Get palette
-            List<IBlock> paletteBuffer = new();
-            if (baseCompound!.TryGetTag("palette", out var palette))
-            {
-                foreach (NbtCompound entry in (palette as NbtList).Cast<NbtCompound>())
-                {
-                    paletteBuffer.Add(entry.ToBlock());
-                }
-            }
+        // Like vanilla's StructureTemplateManager.getOrCreate, an unknown id is an empty template (one vanilla pool
+        // references a template that doesn't exist).
+        if (!File.Exists(file))
+            return StructureTemplate.CreateEmpty();
 
-            if (baseCompound.TryGetTag("blocks", out var blocks))
-            {
-                foreach (NbtCompound b in (blocks as NbtList).Cast<NbtCompound>())
-                {
-                    IBlock block = paletteBuffer[b!.GetInt("state")];
-                    if (b!.TryGetTag("pos", out var coords))
-                    {
-                        var c = (NbtList)coords;
-                        var offset = new Vector(
-                            ((NbtTag<int>)c[0]).Value,
-                            ((NbtTag<int>)c[1]).Value,
-                            ((NbtTag<int>)c[2]).Value);
+        // Decompressed whole first: the reader reads a few bytes at a time, and each read of a gzip stream calls into zlib.
+        using var decompressed = new MemoryStream();
+        using (var gzip = new GZipStream(File.OpenRead(file), CompressionMode.Decompress))
+            gzip.CopyTo(decompressed);
 
-                        storage[structureName][offset] = block;
-                    }
-                }
-            }
-        }
+        decompressed.Position = 0;
+        return StructureTemplate.Load(decompressed, NbtCompression.None);
     }
 }

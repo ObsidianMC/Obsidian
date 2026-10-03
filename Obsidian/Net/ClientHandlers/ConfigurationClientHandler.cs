@@ -2,7 +2,7 @@
 using Obsidian.Net.Packets.Common;
 
 namespace Obsidian.Net.ClientHandlers;
-internal sealed class ConfigurationClientHandler : ClientHandler
+internal sealed partial class ConfigurationClientHandler : ClientHandler
 {
     public async override ValueTask<bool> HandleAsync(PacketData packetData)
     {
@@ -21,10 +21,16 @@ internal sealed class ConfigurationClientHandler : ClientHandler
             case 6:
                 return await HandleFromPoolAsync<ResourcePackPacket>(buffer);
             default:
-                this.Client.Logger.LogWarning("Configuration Packet({id}) {name} is not being handled.", id, PacketsRegistry.Configuration.ServerboundNames[id]);
+                Log.UnhandledPacket(this.Logger, id);
                 break;
         }
 
         return false;
+    }
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Debug, Message = "Configuration packet {PacketId} is not handled")]
+        public static partial void UnhandledPacket(ILogger logger, int packetId);
     }
 }

@@ -32,12 +32,18 @@ public interface INetStreamWriter : INetStream
     public void WriteEntity(IEntity entity);
     public void WriteBitSet(BitSet bitset, bool isFixed = false);
     public void WriteChat(ChatMessage chatMessage);
+
+    /// <summary>
+    /// Writes a compound as network NBT (no root name), the encoding of components vanilla doesn't sync with a dedicated
+    /// codec, such as <c>minecraft:map_decorations</c>.
+    /// </summary>
+    public void WriteNbtCompound(Obsidian.Nbt.NbtCompound compound);
     public void WriteItemStack(ItemStack? itemStack);
     public void WriteDateTimeOffset(DateTimeOffset date);
     public void WriteSoundEvent(SoundEvent soundEvent);
     public void WriteSoundEffect(SoundEffect sound);
     public void WriteByteArray(byte[] values);
-    public void WriteByteArray(Span<byte> values);
+    public void WriteByteArray(ReadOnlySpan<byte> values);
     public void WriteUuid(Guid value);
     public void WritePosition(Vector value);
     public void WritePosition(SoundPosition position);
@@ -53,7 +59,7 @@ public interface INetStreamWriter : INetStream
 
     public void WriteLengthPrefixedArray(bool showInTooltips, params Enchantment[] enchantments);
 
-    public void WriteLengthPrefixedArray<TValue>(Action<TValue> write, params TValue[] values);
+    public void WriteLengthPrefixedArray<TValue>(Action<TValue> write, params ReadOnlySpan<TValue> values);
 
     public void WriteAttributeModifier(AttributeModifier attribute);
 

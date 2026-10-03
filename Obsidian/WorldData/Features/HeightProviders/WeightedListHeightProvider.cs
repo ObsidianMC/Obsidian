@@ -1,20 +1,18 @@
-﻿namespace Obsidian.WorldData.Features.HeightProviders;
+﻿using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.Providers;
 
-[ConfiguredFeatureProperty("minecarft:weighted_list")]
+namespace Obsidian.WorldData.Features.HeightProviders;
+
+/// <summary>
+/// Picks one of several height providers by weight, then samples it.
+/// </summary>
+[ConfiguredFeatureProperty("minecraft:weighted_list")]
 public sealed class WeightedListHeightProvider : IHeightProvider
 {
-    public required string Type { get; init; } = "minecarft:weighted_list";
+    public string Type { get; init; } = "minecraft:weighted_list";
 
-    public int? Absolute { get; init; }
-    public int? AboveBottom { get; init; }
-    public int? BelowTop { get; init; }
+    public required ImmutableArray<WeightedEntry<IHeightProvider>> Distribution { get; init; }
 
-    public List<Entry> Distribution { get; } = [];
-
-    public readonly struct Entry
-    {
-        public required IHeightProvider Data { get; init; }
-
-        public required int Weight { get; init; }
-    }
+    public int Sample(IRandomSource random, WorldGenerationContext context) =>
+        WeightedEntry<IHeightProvider>.Pick(this.Distribution.AsSpan(), random).Sample(random, context);
 }

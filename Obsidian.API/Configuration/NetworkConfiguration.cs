@@ -23,5 +23,5 @@ public sealed record class NetworkConfiguration
     /// <summary>
     /// If true, each login/client gets a random username where multiple connections from the same host will be allowed.
     /// </summary>
-    public bool MulitplayerDebugMode { get; set; } = false;
+    public bool MulitplayerDebugMode { get; set; }
 }

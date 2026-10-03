@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Obsidian.API.World;
 using Obsidian.Entities;
 using Obsidian.Hosting;
@@ -8,36 +7,31 @@ using System.Threading;
 
 namespace Obsidian.Services;
 
-public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster> logger, IServerEnvironment environment) : BackgroundService, IPacketBroadcaster
+public sealed class PacketBroadcaster(IServer server, IServerEnvironment environment) : BackgroundService, IPacketBroadcaster
 {
     private readonly IServer server = server;
     private readonly IServerEnvironment environment = environment;
     private readonly PriorityQueue<QueuedPacket, int> priorityQueue = new();
 
-    public void QueuePacketTo(IClientboundPacket packet, params int[] ids)
-    {
-        this.priorityQueue.Enqueue(new() { Packet = packet, IncludedIds = ids }, 1);
-    }
+    // Packets are queued from many threads (players, level ticks, world generation), but PriorityQueue isn't thread-safe.
+    private readonly Lock queueLock = new();
 
-    public void QueuePacketTo(IClientboundPacket packet, int priority, params int[] ids)
-    {
-        this.priorityQueue.Enqueue(new()
-        {
-            Packet = packet,
-            IncludedIds = ids
-        }, priority);
-    }
+    public void QueuePacketTo(IClientboundPacket packet, params int[] ids) =>
+        this.Enqueue(new() { Packet = packet, IncludedIds = ids }, 1);
+
+    public void QueuePacketTo(IClientboundPacket packet, int priority, params int[] ids) =>
+        this.Enqueue(new() { Packet = packet, IncludedIds = ids }, priority);
 
     public void QueuePacket(IClientboundPacket packet, params int[] excludedIds) =>
-         this.priorityQueue.Enqueue(new() { Packet = packet, ExcludedIds = excludedIds }, 1);
+         this.Enqueue(new() { Packet = packet, ExcludedIds = excludedIds }, 1);
 
     public void QueuePacketToLevel(ILevel level, IClientboundPacket packet, params int[] excludedIds) =>
-        this.priorityQueue.Enqueue(new() { Packet = packet, ToLevel = level, ExcludedIds = excludedIds }, 1);
+        this.Enqueue(new() { Packet = packet, ToLevel = level, ExcludedIds = excludedIds }, 1);
 
     public void QueuePacketToLevel(ILevel level, int priority, IClientboundPacket packet, params int[] excludedIds) =>
-        this.priorityQueue.Enqueue(new() { Packet = packet, ExcludedIds = excludedIds, ToLevel = level }, priority);
+        this.Enqueue(new() { Packet = packet, ExcludedIds = excludedIds, ToLevel = level }, priority);
     public void QueuePacket(IClientboundPacket packet, int priority, params int[] excludedIds) =>
-        this.priorityQueue.Enqueue(new() { Packet = packet, ExcludedIds = excludedIds }, priority);
+        this.Enqueue(new() { Packet = packet, ExcludedIds = excludedIds }, priority);
 
     public void Broadcast(IClientboundPacket packet, params int[] excludedIds)
     {
@@ -74,12 +68,24 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
             .Where(x => !includedIDs.Contains(x)))
             .ToArray();
 
-        this.priorityQueue.Enqueue(new()
+        this.Enqueue(new()
         {
             Packet = packet,
             ToLevel = world,
             ExcludedIds = excludedIds,
         }, 1);
+    }
+
+    private void Enqueue(QueuedPacket packet, int priority)
+    {
+        lock (this.queueLock)
+            this.priorityQueue.Enqueue(packet, priority);
+    }
+
+    private bool TryDequeue(out QueuedPacket packet)
+    {
+        lock (this.queueLock)
+            return this.priorityQueue.TryDequeue(out packet, out _);
     }
 
 
@@ -100,7 +106,7 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
         {
             while (await timer.WaitForNextTickAsync(stoppingToken))
             {
-                if (!this.priorityQueue.TryDequeue(out var queuedPacket, out var priority))
+                if (!this.TryDequeue(out var queuedPacket))
                     continue;
 
                 if (queuedPacket.ToLevel is AbstractLevel toLevel)
@@ -116,7 +122,7 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
 
             }
         }
-        catch (Exception e) when (e is not OperationCanceledException or ObjectDisposedException)
+        catch (Exception e) when (e is not (OperationCanceledException or ObjectDisposedException))
         {
             await this.environment.OnServerCrashAsync(e);
         }

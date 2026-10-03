@@ -1,17 +1,22 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Obsidian.API.Configuration;
 using Obsidian.API.Entities;
+using Obsidian.API.Inventory;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.Entities;
 using Obsidian.Entities.Factories;
+using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.WorldData.Fluids;
+using Obsidian.WorldData.Generators;
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 
 namespace Obsidian.WorldData;
 
-public abstract class AbstractLevel : ILevel
+public abstract partial class AbstractLevel : ILevel
 {
     private bool generated;
 
@@ -25,7 +30,33 @@ public abstract class AbstractLevel : ILevel
 
     public ConcurrentQueue<long> ChunksToGen { get; protected set; } = [];
 
-    public long[] SpawnChunks { get; }
+    // The chunks queued or generating, so a chunk is queued once however often it's asked for.
+    private readonly ConcurrentDictionary<long, byte> queuedChunks = [];
+
+    // The chunks queued while the level runs, taken from ChunksToGen and started nearest to a player first (see
+    // TryTakeNearestJob), so chunks players wait for don't queue behind ones they've moved away from. Locked on itself.
+    private readonly List<long> waitingJobs = [];
+    private readonly List<(int X, int Z)> playerChunks = [];
+
+    // Generation jobs run in the background, at most one per core: each job fans out over its neighbors' steps itself.
+    private readonly SemaphoreSlim generationSlots = new(Environment.ProcessorCount);
+
+    // A failed background generation job, rethrown by the next ManageChunksAsync so failures still reach the server.
+    private Exception? generationFailure;
+
+    // The generation jobs finished since the last FlushRegionsAsync started, so disposal knows whether to save again.
+    private int jobsSinceFlush;
+
+    // The chunks generation jobs may write, counted per job, which aren't unloaded meanwhile: a job writes up to 2 chunks
+    // from its own (its neighbors' decorations reach theirs), and writes to an unloaded chunk would be lost.
+    private readonly ConcurrentDictionary<long, int> generationPins = [];
+
+    // Set once DisposeAsync starts. A level can be disposed twice (by the server's shutdown and again by the host's
+    // container), and the second call would wait forever on the generation slots the first one keeps.
+    private int disposed;
+
+    // The chunks kept loaded around the spawn, filled in once the spawn is known.
+    protected readonly long[] spawnChunks;
 
     public ConcurrentHashSet<long> LoadedChunks { get; protected set; } = [];
 
@@ -56,7 +87,7 @@ public abstract class AbstractLevel : ILevel
     }
 
     public int RegionCount => this.Regions.Count;
-    public int ChunksToGenCount => this.ChunksToGen.Count;
+    public int ChunksToGenCount => this.ChunksToGen.Count + this.waitingJobs.Count;
     public int LoadedChunkCount => this.Regions.Values.Sum(x => x.LoadedChunkCount);
 
     public IPacketBroadcaster PacketBroadcaster { get; }
@@ -66,12 +97,31 @@ public abstract class AbstractLevel : ILevel
 
     public string DimensionName { get; protected set; } = string.Empty;
 
+    /// <summary>
+    /// The dimension's lowest block Y.
+    /// </summary>
+    public int MinY { get; private set; } = -64;
+
+    /// <summary>
+    /// The dimension's build height in blocks.
+    /// </summary>
+    public int Height { get; private set; } = 384;
+
     public string LevelDataFilePath { get; protected set; }
 
     protected ILogger Logger { get; }
 
+    /// <summary>
+    /// The level's fluids and their scheduled ticks.
+    /// </summary>
+    internal LevelFluids Fluids { get; }
+
     private readonly IDisposable optionsMonitor;
     private readonly Lock regionLock = new();
+
+    // Chunks whose pending entities (placed by world generation or loaded from disk) spawn on the level's tick rather than
+    // on generator or loading threads.
+    private readonly ConcurrentQueue<Chunk> entitySpawns = new();
 
     public AbstractLevel(ILogger logger, IPacketBroadcaster packetBroadcaster, IOptionsMonitor<ServerConfiguration> configuration,
         IEventDispatcher eventDispatcher, ILevelGenerator worldGenerator, string name, string seed)
@@ -88,9 +138,10 @@ public abstract class AbstractLevel : ILevel
         this.Generator = worldGenerator;
         this.Name = name;
         this.Seed = seed;
+        this.Fluids = new LevelFluids(this);
 
         var spawnChunkCount = 2 * this.Configuration.SpawnChunkRadius + 1;
-        this.SpawnChunks = new long[spawnChunkCount * spawnChunkCount];
+        this.spawnChunks = new long[spawnChunkCount * spawnChunkCount];
 
         this.Generator.Init(this);
     }
@@ -101,7 +152,7 @@ public abstract class AbstractLevel : ILevel
 
         this.PacketBroadcaster.QueuePacketToLevel(this, destroyed);
 
-        var (chunkX, chunkZ) = entity.Position.ToChunkCoord();
+        var (chunkX, chunkZ) = Region.ChunkOf(entity.Position);
 
         var region = GetRegionForChunk(chunkX, chunkZ);
 
@@ -144,32 +195,38 @@ public abstract class AbstractLevel : ILevel
         {
             if (!chunk.IsGenerated && scheduleGeneration)
             {
-                if (!ChunksToGen.Contains(packedXZ))
-                    ChunksToGen.Enqueue(packedXZ);
+                this.QueueGeneration(packedXZ);
                 return null;
             }
 
             LoadedChunks.Add(packedXZ);
+            this.Fluids.Track(chunk);
             return chunk;
         }
 
         if (scheduleGeneration)
         {
-            if (!ChunksToGen.Contains(packedXZ))
-                ChunksToGen.Enqueue(packedXZ);
+            this.QueueGeneration(packedXZ);
             return null;
         }
 
-        chunk = new Chunk(chunkX, chunkZ, ChunkGenStage.structure_starts);
-        region.SetChunk(chunk);
-        return chunk;
+        return await region.GetOrAddChunkAsync(x, z, () => new Chunk(chunkX, chunkZ, this.MinY, this.Height, ChunkGenStage.structure_starts));
     }
 
     public async ValueTask<IBlock?> GetBlockAsync(int x, int y, int z)
     {
+        // Like vanilla, everything outside the build range reads as void air.
+        if (this.IsOutsideBuildHeight(y))
+            return BlocksRegistry.Get(Material.VoidAir);
+
         var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
         return c?.GetBlock(x, y, z);
     }
+
+    /// <summary>
+    /// Whether <paramref name="y"/> is outside the dimension's build range, where blocks can't be read or placed.
+    /// </summary>
+    public bool IsOutsideBuildHeight(int y) => y < this.MinY || y >= this.MinY + this.Height;
 
     public async ValueTask<int?> GetWorldSurfaceHeightAsync(int x, int z)
     {
@@ -180,23 +237,39 @@ public abstract class AbstractLevel : ILevel
 
     public async ValueTask SetBlockAsync(int x, int y, int z, IBlock block)
     {
+        if (this.IsOutsideBuildHeight(y))
+            return;
+
         await SetBlockUntrackedAsync(x, y, z, block);
         this.BroadcastBlockChange(block, new(x, y, z));
     }
 
     public async ValueTask SetBlockAsync(int x, int y, int z, IBlock block, bool doBlockUpdate)
     {
+        if (this.IsOutsideBuildHeight(y))
+            return;
+
         await SetBlockUntrackedAsync(x, y, z, block, doBlockUpdate);
         this.BroadcastBlockChange(block, new(x, y, z));
     }
 
-    private void BroadcastBlockChange(IBlock block, Vector location)
+    internal void BroadcastBlockChange(IBlock block, Vector location)
     {
         var packet = new BlockUpdatePacket(location, block.GetHashCode());
         foreach (Player player in PlayersInRange(location).Cast<Player>())
         {
             player.Client.SendPacket(packet);
         }
+    }
+
+    /// <summary>
+    /// Sends a level event (a sound or particle effect, like lava fizzing) to the players that have its chunk.
+    /// </summary>
+    internal void BroadcastLevelEvent(int type, Vector location, int data)
+    {
+        var packet = new LevelEventPacket(type, location, data);
+        foreach (Player player in PlayersInRange(location).Cast<Player>())
+            player.Client.SendPacket(packet);
     }
 
     public IEnumerable<IPlayer> PlayersInRange(Vector location)
@@ -211,13 +284,26 @@ public abstract class AbstractLevel : ILevel
 
     public async ValueTask SetBlockUntrackedAsync(int x, int y, int z, IBlock block, bool doBlockUpdate = false)
     {
+        if (this.IsOutsideBuildHeight(y))
+            return;
+
         if (doBlockUpdate)
         {
             await ScheduleBlockUpdateAsync(new BlockUpdate(this, new Vector(x, y, z), block));
             await BlockUpdateNeighborsAsync(new BlockUpdate(this, new Vector(x, y, z), block));
         }
         var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
-        c?.SetBlock(x, y, z, block);
+        if (c is null)
+            return;
+
+        c.SetBlock(x, y, z, block);
+
+        // Generated block entity data (e.g. a dungeon chest's loot) doesn't carry over to another block.
+        if (c.GetBlockEntity(x, y, z) is DataBlockEntity data && data.Id != block.BlockEntityType())
+            c.RemoveBlockEntity(x, y, z);
+
+        if (doBlockUpdate)
+            this.Fluids.OnBlockChanged(new Vector(x, y, z), block);
     }
 
     public IEnumerable<IEntity> GetEntitiesInRange(VectorF location, float distance = 10f)
@@ -320,7 +406,61 @@ public abstract class AbstractLevel : ILevel
         LevelData.Time += this.Configuration.TimeTickSpeedMultiplier;
         LevelData.RainTime -= this.Configuration.TimeTickSpeedMultiplier;
 
+        this.SpawnPendingEntities();
+
+        // Chunks players are waiting for go out once they're generated.
+        foreach (var player in this.Players.Values)
+        {
+            if (player is Player waiting)
+                await waiting.SendPendingChunksAsync();
+        }
+
+        // Like vanilla, fluid ticks run before entities tick.
+        this.Fluids.Tick();
+
         await Task.WhenAll(this.Regions.Values.Select(r => r.BeginTickAsync()));
+    }
+
+    /// <summary>
+    /// Sends a chunk's light to the players that have the chunk, after it changed.
+    /// </summary>
+    internal void SendLightUpdate(IChunk chunk)
+    {
+        var packet = new LightUpdatePacket(chunk);
+        foreach (Player player in this.GetPlayersInChunkRange(new Vector(chunk.X << 4, 0, chunk.Z << 4)).Cast<Player>())
+            player.Client.SendPacket(packet);
+    }
+
+    /// <summary>
+    /// Queues a complete chunk's pending entities (<see cref="Chunk.PendingEntities"/>) to spawn on the next tick, like
+    /// vanilla when a proto chunk becomes a level chunk or an entity chunk is loaded.
+    /// </summary>
+    internal void QueueEntitySpawn(Chunk chunk) => this.entitySpawns.Enqueue(chunk);
+
+    /// <remarks>
+    /// Pending entities are loaded like saved ones (see <see cref="EntityNbt.Load"/>), so generated entities get the saved
+    /// fields Obsidian's entities model, and keep the others for when they're saved.
+    /// </remarks>
+    private void SpawnPendingEntities()
+    {
+        while (this.entitySpawns.TryDequeue(out var chunk))
+        {
+            // Under the chunk's entity lock, so a save of the chunk finds each entity either pending or spawned.
+            using (chunk.EntityLock.EnterScope())
+            {
+                // An unloaded chunk saved its pending entities; they spawn when it's loaded again.
+                if (chunk.EntitiesUnloaded)
+                    continue;
+
+                foreach (var pending in chunk.PendingEntities)
+                {
+                    if (EntityNbt.Load(EntityNbt.ToNbt(pending), this) is Entity entity)
+                        this.SpawnEntity(entity);
+                }
+
+                chunk.PendingEntities.Clear();
+            }
+        }
     }
 
     public IRegion LoadRegionByChunk(int chunkX, int chunkZ)
@@ -341,15 +481,19 @@ public abstract class AbstractLevel : ILevel
             if (Regions.TryGetValue(value, out region))
                 return region;
 
-            region = new Region(regionX, regionZ, FolderPath, logger: this.Logger);
-            this.Logger.LogDebug("Trying to add {x}:{z} to {path}", regionX, regionZ, region.RegionFolder);
+            region = new Region(regionX, regionZ, FolderPath, minY: this.MinY, height: this.Height)
+            {
+                LockChunk = this.Generator.LockChunkAsync,
+                FluidTickLock = this.Fluids.TickLock,
+                EntitiesLoaded = this.QueueEntitySpawn,
+                SaveStructureStarts = this.Generator is IStructureStartStorage storage ? storage.SaveStructureStarts : null
+            };
 
             if (this.Regions.TryAdd(value, region))
                 _ = region.InitAsync();
             else
             {
                 // Another thread added the region first; discard our copy and return existing
-                this.Logger.LogDebug("Region {x}:{z} already exists, using existing region", regionX, regionZ);
                 region = Regions[value]!;
             }
 
@@ -382,7 +526,7 @@ public abstract class AbstractLevel : ILevel
                 chunksToKeep.AddRange(p.LoadedChunks);
             });
 
-            foreach (var chunk in LoadedChunks.Except(chunksToKeep).Except(SpawnChunks))
+            foreach (var chunk in LoadedChunks.Except(chunksToKeep).Except(this.spawnChunks).Where(chunk => !this.generationPins.ContainsKey(chunk)))
             {
                 if (LoadedChunks.TryRemove(chunk))
                 {
@@ -393,38 +537,138 @@ public abstract class AbstractLevel : ILevel
             }
         }
 
-        if (ChunksToGen.IsEmpty)
-            return;
+        if (Interlocked.Exchange(ref this.generationFailure, null) is Exception failure)
+            ExceptionDispatchInfo.Throw(failure);
 
-        var jobs = new List<long>();
-        for (int a = 0; a < Environment.ProcessorCount; a++)
+        this.StartQueuedJobs();
+    }
+
+    /// <summary>
+    /// Starts queued chunks on free slots without waiting for them, so a slow chunk never holds up the others or the tick.
+    /// Each job starts the next when it finishes, so free slots don't wait for the next tick.
+    /// </summary>
+    private void StartQueuedJobs()
+    {
+        // Disposal takes every slot as jobs finish, which new jobs would keep it from.
+        while (Volatile.Read(ref this.disposed) == 0 && this.generationSlots.Wait(0))
         {
-            if (ChunksToGen.TryDequeue(out var job))
-                jobs.Add(job);
+            if (!this.TryTakeNearestJob(out var job))
+            {
+                this.generationSlots.Release();
+                return;
+            }
+
+            // On the thread pool, so a job that finishes at once doesn't start the next one inside it, or run on the tick.
+            _ = Task.Run(() => this.GenerateQueuedChunkAsync(job, startNext: true));
         }
+    }
 
-        await Parallel.ForEachAsync(jobs, async (job, _) =>
+    /// <summary>
+    /// Takes the queued chunk nearest to a player, or the oldest one when no player is in the level.
+    /// </summary>
+    private bool TryTakeNearestJob(out long job)
+    {
+        lock (this.waitingJobs)
         {
-            NumericsHelper.LongToInts(job, out var jobX, out var jobZ);
-            var region = GetRegionForChunk(jobX, jobZ) ?? LoadRegionByChunk(jobX, jobZ);
+            while (this.ChunksToGen.TryDequeue(out var queued))
+                this.waitingJobs.Add(queued);
+
+            if (this.waitingJobs.Count == 0)
+            {
+                job = 0;
+                return false;
+            }
+
+            this.playerChunks.Clear();
+            foreach (var player in this.Players.Values)
+                this.playerChunks.Add(player.Position.ToChunkCoord());
+
+            // The first of the nearest, so chunks at the same distance go in the order they were asked for.
+            var nearest = 0;
+            if (this.playerChunks.Count > 0)
+            {
+                var nearestDistance = long.MaxValue;
+                for (var i = 0; i < this.waitingJobs.Count; i++)
+                {
+                    NumericsHelper.LongToInts(this.waitingJobs[i], out var x, out var z);
+                    foreach (var (playerX, playerZ) in this.playerChunks)
+                    {
+                        long dx = x - playerX, dz = z - playerZ;
+                        var distance = dx * dx + dz * dz;
+                        if (distance < nearestDistance)
+                            (nearest, nearestDistance) = (i, distance);
+                    }
+                }
+            }
+
+            job = this.waitingJobs[nearest];
+            this.waitingJobs.RemoveAt(nearest);
+            return true;
+        }
+    }
+
+    private void QueueGeneration(long packedXZ)
+    {
+        if (this.queuedChunks.TryAdd(packedXZ, 0))
+            this.ChunksToGen.Enqueue(packedXZ);
+    }
+
+    private void PinGenerationArea(int chunkX, int chunkZ, int delta)
+    {
+        for (var dx = -2; dx <= 2; dx++)
+        {
+            for (var dz = -2; dz <= 2; dz++)
+            {
+                var key = NumericsHelper.IntsToLong(chunkX + dx, chunkZ + dz);
+                if (this.generationPins.AddOrUpdate(key, delta, (_, count) => count + delta) == 0)
+                    this.generationPins.TryRemove(KeyValuePair.Create(key, 0));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Generates a dequeued chunk on one of the generation slots, which it releases when done. Failures are kept for the
+    /// next <see cref="ManageChunksAsync"/> to rethrow.
+    /// </summary>
+    /// <param name="startNext">Whether the next queued chunk starts once this one is done (see <see cref="StartQueuedJobs"/>).</param>
+    private async Task GenerateQueuedChunkAsync(long job, bool startNext = false)
+    {
+        NumericsHelper.LongToInts(job, out var jobX, out var jobZ);
+        this.PinGenerationArea(jobX, jobZ, 1);
+        try
+        {
+            var region = this.GetRegionForChunk(jobX, jobZ) ?? this.LoadRegionByChunk(jobX, jobZ);
 
             var (x, z) = (NumericsHelper.Modulo(jobX, Region.CubicRegionSize), NumericsHelper.Modulo(jobZ, Region.CubicRegionSize));
 
-            var c = await region.GetChunkAsync(x, z);
-            if (c is null)
-            {
-                c = new Chunk(jobX, jobZ, ChunkGenStage.structure_starts);
-                region.SetChunk(c);
-            }
+            var c = await region.GetOrAddChunkAsync(x, z, () => new Chunk(jobX, jobZ, this.MinY, this.Height, ChunkGenStage.structure_starts));
             if (!c.IsGenerated)
             {
-                c = await Generator.GenerateChunkAsync(jobX, jobZ, c);
+                c = await this.Generator.GenerateChunkAsync(jobX, jobZ, c);
             }
             region.SetChunk(c);
-        });
+        }
+        catch (Exception ex)
+        {
+            Interlocked.CompareExchange(ref this.generationFailure, ex, null);
+        }
+        finally
+        {
+            this.PinGenerationArea(jobX, jobZ, -1);
+            this.queuedChunks.TryRemove(job, out _);
+            Interlocked.Increment(ref this.jobsSinceFlush);
+            this.generationSlots.Release();
+
+            if (startNext)
+                this.StartQueuedJobs();
+        }
     }
 
-    public Task FlushRegionsAsync() => Task.WhenAll(Regions.Select(pair => pair.Value.FlushAsync()));
+    public Task FlushRegionsAsync()
+    {
+        Interlocked.Exchange(ref this.jobsSinceFlush, 0);
+        return Task.WhenAll(Regions.Select(pair => pair.Value.FlushAsync()));
+    }
 
     public IEntity SpawnFallingBlock(VectorF position, Material mat)
     {
@@ -491,11 +735,9 @@ public abstract class AbstractLevel : ILevel
         if (update.Block is not IBlock block)
             return false;
 
-        if (TagsRegistry.Block.GravityAffected.Entries.Contains(block.RegistryId))
+        // Fluids react to block changes through their scheduled ticks instead (see LevelFluids).
+        if (block.IsGravityAffected())
             return await BlockUpdates.HandleFallingBlock(update);
-
-        if (block.IsLiquid)
-            return await BlockUpdates.HandleLiquidPhysicsAsync(update);
 
         return false;
     }
@@ -515,6 +757,17 @@ public abstract class AbstractLevel : ILevel
     public abstract void Initialize(DimensionCodec codec);
 
     /// <summary>
+    /// Takes the dimension's name and build range from its codec.
+    /// </summary>
+    protected void SetDimension(DimensionCodec codec)
+    {
+        this.DimensionName = codec.Name;
+        this.MinY = codec.Element.MinY;
+        this.Height = codec.Element.Height;
+        this.Fluids.Rules = FluidRules.ForDimension(codec.Name, codec.Element.Ultrawarm);
+    }
+
+    /// <summary>
     /// Starts the initial generation of the world, which includes pregenerating chunks in a square around the spawn and loading their regions,
     /// as well as setting the world spawn if specified. This should be called after Initialize and before allowing players to join.
     /// </summary>
@@ -524,42 +777,77 @@ public abstract class AbstractLevel : ILevel
         if (this.generated)
             return;
 
-        Logger.LogInformation("Generating world... (Config pregeneration size is {pregenRange})", this.Configuration.PregenerateChunkRange);
         int pregenerationRange = this.Configuration.PregenerateChunkRange;
 
-        int regionPregenRange = (pregenerationRange >> Region.CubicRegionSizeShift) + 1;
-
-        foreach (var x in Enumerable.Range(-regionPregenRange, regionPregenRange * 2 + 1))
+        // Generators that know where players spawn pick it first, so pregeneration surrounds the spawn.
+        if (LevelData.SpawnPosition.Y == 0)
         {
-            for (int z = -regionPregenRange; z < regionPregenRange; z++)
+            var spawn = await Generator.FindSpawnPointAsync();
+            if (spawn is not null)
+            {
+                LevelData.SpawnPosition = spawn.Value;
+                Log.SpawnSet(this.Logger, this.Name, spawn.Value);
+            }
+        }
+
+        var (centerX, centerZ) = LevelData.SpawnPosition.ToChunkCoord();
+        int regionPregenRange = (pregenerationRange >> Region.CubicRegionSizeShift) + 1;
+        int centerRegionX = centerX >> Region.CubicRegionSizeShift;
+        int centerRegionZ = centerZ >> Region.CubicRegionSizeShift;
+
+        foreach (var x in Enumerable.Range(centerRegionX - regionPregenRange, regionPregenRange * 2 + 1))
+        {
+            for (int z = centerRegionZ - regionPregenRange; z < centerRegionZ + regionPregenRange; z++)
                 LoadRegion(x, z);
         }
 
-        for (int x = -pregenerationRange; x < pregenerationRange; x++)
+        for (int x = centerX - pregenerationRange; x < centerX + pregenerationRange; x++)
         {
-            for (int z = -pregenerationRange; z < pregenerationRange; z++)
+            for (int z = centerZ - pregenerationRange; z < centerZ + pregenerationRange; z++)
             {
-                ChunksToGen.Enqueue(NumericsHelper.IntsToLong(x, z));
+                this.QueueGeneration(NumericsHelper.IntsToLong(x, z));
             }
         }
 
-        float startChunks = ChunksToGenCount;
+        var startChunks = this.ChunksToGenCount;
         var stopwatch = new Stopwatch();
         stopwatch.Start();
-        Logger.LogInformation("{startChunks} chunks to generate...", startChunks);
-        while (!ChunksToGen.IsEmpty)
+        Log.Generating(this.Logger, startChunks, this.Name);
+
+        // A window of jobs in queue order: a new job starts as soon as one finishes.
+        var jobs = new List<Task>(startChunks);
+        var completedChunks = 0;
+        var lastPercent = -1;
+        var flushedThousands = 0;
+        while (this.ChunksToGen.TryDequeue(out var job))
         {
-            await ManageChunksAsync();
-            var pctComplete = (int)((1.0 - ChunksToGenCount / startChunks) * 100);
-            var completedChunks = startChunks - ChunksToGenCount;
-            var cps = completedChunks / (stopwatch.ElapsedMilliseconds / 1000.0);
-            int remain = ChunksToGenCount / (int)Math.Max(cps, 1);
-            System.Console.Write("\r{0} chunks/second - {1}% complete - {2} seconds remaining   ", cps.ToString("###.00"), pctComplete, remain);
-            if (completedChunks % 1024 == 0)
+            await this.generationSlots.WaitAsync();
+            jobs.Add(this.GenerateQueuedChunkAsync(job));
+
+            while (completedChunks < jobs.Count && jobs[completedChunks].IsCompleted)
+                completedChunks++;
+
+            var pctComplete = completedChunks * 100 / startChunks;
+            if (pctComplete != lastPercent)
             {
-                await FlushRegionsAsync();
+                lastPercent = pctComplete;
+                var cps = completedChunks / Math.Max(stopwatch.Elapsed.TotalSeconds, 0.001);
+                var remain = (startChunks - completedChunks) / (int)Math.Max(cps, 1);
+                System.Console.Write("\r{0} chunks/second - {1}% complete - {2} seconds remaining   ", cps.ToString("###.00"), pctComplete, remain);
+            }
+
+            if (completedChunks / 1024 > flushedThousands)
+            {
+                flushedThousands = completedChunks / 1024;
+                await this.FlushRegionsAsync();
             }
         }
+
+        await Task.WhenAll(jobs);
+        if (Interlocked.Exchange(ref this.generationFailure, null) is Exception failure)
+            ExceptionDispatchInfo.Throw(failure);
+
+        System.Console.Write("\r{0} chunks/second - 100% complete - 0 seconds remaining   ", (startChunks / stopwatch.Elapsed.TotalSeconds).ToString("###.00"));
         System.Console.WriteLine();
 
         await FlushRegionsAsync();
@@ -570,7 +858,7 @@ public abstract class AbstractLevel : ILevel
             var (x, z) = LevelData.SpawnPosition.ToChunkCoord();
             for (var cx = x - this.Configuration.SpawnChunkRadius; cx < x + this.Configuration.SpawnChunkRadius; cx++)
                 for (var cz = z - this.Configuration.SpawnChunkRadius; cz < z + this.Configuration.SpawnChunkRadius; cz++)
-                    SpawnChunks[index++] = NumericsHelper.IntsToLong(cx, cz);
+                    this.spawnChunks[index++] = NumericsHelper.IntsToLong(cx, cz);
         }
 
         this.generated = true;
@@ -604,7 +892,7 @@ public abstract class AbstractLevel : ILevel
 
                     var worldPos = new VectorF(bx + 0.5f + (chunk.X * 16), by + 1, bz + 0.5f + (chunk.Z * 16));
                     LevelData.SpawnPosition = worldPos;
-                    Logger.LogInformation("World Spawn set to {worldPos}", worldPos);
+                    Log.SpawnSet(this.Logger, this.Name, worldPos);
 
                     for (int x = chunk.X - pregenRange; x < chunk.X + pregenRange; x++)
                     {
@@ -618,12 +906,12 @@ public abstract class AbstractLevel : ILevel
                 }
             }
         }
-        Logger.LogWarning("Failed to set World Spawn.");
+        Log.SpawnNotFound(this.Logger, this.Name);
     }
 
     public bool TryAddEntity(IEntity entity)
     {
-        var (chunkX, chunkZ) = entity.Position.ToChunkCoord();
+        var (chunkX, chunkZ) = Region.ChunkOf(entity.Position);
 
         var region = GetRegionForChunk(chunkX, chunkZ);
 
@@ -634,9 +922,23 @@ public abstract class AbstractLevel : ILevel
 
     public async ValueTask DisposeAsync()
     {
+        if (Interlocked.Exchange(ref this.disposed, 1) != 0)
+            return;
+
         GC.SuppressFinalize(this);
 
         this.optionsMonitor.Dispose();
+
+        // Waits out the generation jobs, holding every slot so no new one starts, and saves what jobs finished since the
+        // last save started, including jobs that were still running during the server's save on stop.
+        for (var i = 0; i < Environment.ProcessorCount; i++)
+            await this.generationSlots.WaitAsync();
+
+        if (Interlocked.Exchange(ref this.generationFailure, null) is Exception failure)
+            Log.ChunkGenerationFailed(this.Logger, failure);
+
+        if (Volatile.Read(ref this.jobsSinceFlush) != 0)
+            await this.FlushRegionsAsync();
 
         foreach (var region in Regions.Values)
         {
@@ -651,4 +953,19 @@ public abstract class AbstractLevel : ILevel
     public ValueTask<IBlock?> GetBlockAsync(Vector location) => this.GetBlockAsync(location.X, location.Y, location.Z);
     public ValueTask SetBlockAsync(Vector location, IBlock block) => this.SetBlockAsync(location.X, location.Y, location.Z, block);
     public ValueTask SetBlockAsync(Vector location, IBlock block, bool doBlockUpdate) => this.SetBlockAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Information, Message = "Generating {ChunkCount} chunks for {LevelName}")]
+        public static partial void Generating(ILogger logger, int chunkCount, string levelName);
+
+        [LoggerMessage(Level = LogLevel.Debug, Message = "Spawn of {LevelName} set to {Position}")]
+        public static partial void SpawnSet(ILogger logger, string levelName, VectorF position);
+
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Failed to find a spawn position for {LevelName}")]
+        public static partial void SpawnNotFound(ILogger logger, string levelName);
+
+        [LoggerMessage(Level = LogLevel.Error, Message = "Generating a chunk failed")]
+        public static partial void ChunkGenerationFailed(ILogger logger, Exception exception);
+    }
 }

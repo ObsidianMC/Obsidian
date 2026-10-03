@@ -136,14 +136,14 @@ csharp_style_pattern_matching_over_as_with_null_check = true:suggestion
 
 #Style - qualification options
 
-#prefer events not to be prefaced with this. or Me. in Visual Basic
-dotnet_style_qualification_for_event = false:suggestion
-#prefer fields not to be prefaced with this. or Me. in Visual Basic
-dotnet_style_qualification_for_field = false:suggestion
-#prefer methods not to be prefaced with this. or Me. in Visual Basic
-dotnet_style_qualification_for_method = false:suggestion
-#prefer properties not to be prefaced with this. or Me. in Visual Basic
-dotnet_style_qualification_for_property = false:suggestion
+#prefer events to be prefaced with this. or Me. in Visual Basic
+dotnet_style_qualification_for_event = true:suggestion
+#prefer fields to be prefaced with this. or Me. in Visual Basic
+dotnet_style_qualification_for_field = true:suggestion
+#prefer methods to be prefaced with this. or Me. in Visual Basic
+dotnet_style_qualification_for_method = true:suggestion
+#prefer properties to be prefaced with this. or Me. in Visual Basic
+dotnet_style_qualification_for_property = true:suggestion
 csharp_style_namespace_declarations=file_scoped:silent
 insert_final_newline=true
 
@@ -155,3 +155,8 @@ dotnet_code_quality_unused_parameters=all:warning
 
 # IDE0305: Simplify collection initializers (IDE0305) - See https://github.com/dotnet/roslyn/issues/70656
 dotnet_diagnostic.IDE0305.severity = none
+
+# Every performance rule is a warning so the code stays clean of them.
+dotnet_analyzer_diagnostic.category-Performance.severity = warning
+# Public members can't be made static without breaking the API or reflection-discovered handlers and commands.
+dotnet_code_quality.CA1822.api_surface = private, internal

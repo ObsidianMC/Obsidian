@@ -31,6 +31,9 @@ public partial class IntentionPacket
 
         if (nextState == ClientState.Login)
         {
+            if (this.Version != ServerConstants.DefaultProtocol)
+                Log.ProtocolMismatch(client.Logger, (int)this.Version, (int)ServerConstants.DefaultProtocol);
+
             if ((int)this.Version > (int)ServerConstants.DefaultProtocol)
             {
                 await client.DisconnectAsync($"Outdated server! I'm still on {ServerConstants.DefaultProtocol.GetDescription()}.");
@@ -40,18 +43,26 @@ public partial class IntentionPacket
                 await client.DisconnectAsync($"Outdated client! Please use {ServerConstants.DefaultProtocol.GetDescription()}.");
             }
         }
-        else if (nextState is not ClientState.Status or ClientState.Login or ClientState.Handshaking)
+        else if (nextState is not ClientState.Status)
         {
-            client.Logger.LogWarning("Client sent unexpected state ({RedText}{ClientState}{WhiteText}), forcing it to disconnect.", ChatColor.Red, nextState, ChatColor.White);
+            Log.UnexpectedState(client.Logger, nextState);
             await client.DisconnectAsync($"Invalid client state! Expected Status or Login, received {nextState}.");
         }
 
         client.SetState(nextState);
 
-        var versionDesc = this.Version.GetDescription();
-        if (versionDesc is null)
-            return;//No need to log if version description is null
+        Log.Handshake(client.Logger, (int)this.Version, this.ServerAddress, this.ServerPort, nextState);
+    }
 
-        client.Logger.LogInformation("Handshaking with client (protocol: {YellowText}{VersionDescription}{WhiteText} [{YellowText}{Version}{WhiteText}], server: {YellowText}{ServerAddress}:{ServerPort}{WhiteText})", ChatColor.Yellow, versionDesc, ChatColor.White, ChatColor.Yellow, this.Version, ChatColor.White, ChatColor.Yellow, this.ServerAddress, this.ServerPort, ChatColor.White);
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Disconnecting client with protocol {ClientProtocol}; the server uses protocol {ServerProtocol}")]
+        public static partial void ProtocolMismatch(ILogger logger, int clientProtocol, int serverProtocol);
+
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Disconnecting client that requested unexpected state {ClientState}")]
+        public static partial void UnexpectedState(ILogger logger, ClientState clientState);
+
+        [LoggerMessage(Level = LogLevel.Debug, Message = "Handshake with protocol {Protocol} to {ServerAddress}:{ServerPort}, next state {NextState}")]
+        public static partial void Handshake(ILogger logger, int protocol, string serverAddress, ushort serverPort, ClientState nextState);
     }
 }

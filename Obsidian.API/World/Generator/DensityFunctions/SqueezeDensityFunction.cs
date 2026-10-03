@@ -7,14 +7,18 @@ public sealed class SqueezeDensityFunction : IDensityFunction
 
     public required IDensityFunction Argument { get; init; }
 
-    public double MinValue => -0.45832;
+    public double MinValue => Transform(this.Argument.MinValue);
 
-    public double MaxValue => 0.45834;
+    public double MaxValue => Transform(this.Argument.MaxValue);
 
-    public double GetValue(double x, double y, double z)
+    public double GetValue(double x, double y, double z) => Transform(this.Argument.GetValue(x, y, z));
+
+    public IDensityFunction MapAll(IDensityFunctionVisitor visitor) =>
+        visitor.Apply(new SqueezeDensityFunction { Argument = visitor.Map(this.Argument) });
+
+    internal static double Transform(double value)
     {
-        double val = Argument.GetValue(x, y, z);
-        val = Math.Clamp(val, -1f, 1f);
-        return (val / 2D) - (val * val * val / 24D);
+        var clamped = Math.Clamp(value, -1.0, 1.0);
+        return clamped / 2.0 - clamped * clamped * clamped / 24.0;
     }
 }

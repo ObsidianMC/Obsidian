@@ -29,7 +29,7 @@ public sealed record class DimensionElement : INbtSerializable
     /// <remarks>
     /// Can be 0.0 to 1.0.
     /// </remarks>
-    public float AmbientLight { get; set; } = 0.0f;
+    public float AmbientLight { get; set; }
 
     /// <summary>
     /// the time of the day is the specified value.

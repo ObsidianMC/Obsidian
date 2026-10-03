@@ -5,6 +5,7 @@ using Obsidian.Nbt;
 using Obsidian.Serialization.Attributes;
 using System.Buffers.Binary;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Obsidian.Net;
@@ -410,7 +411,7 @@ public partial class NetworkBuffer : INetStreamReader
     {
         var type = this.ReadVarInt();
         string? tagName = type == 0 ? tagName = this.ReadString() : null;
-        var ids = type != 0 ? this.ReadLengthPrefixedArray(this.ReadVarInt) : null;
+        ImmutableArray<int>? ids = type != 0 ? ImmutableCollectionsMarshal.AsImmutableArray(this.ReadLengthPrefixedArray(this.ReadVarInt)) : null;
 
         return new() { Type = type, Ids = ids, TagName = tagName };
     }

@@ -1,30 +1,47 @@
-﻿using Obsidian.API.World.Generator;
+using Obsidian.API.World.Generator;
 using Obsidian.Providers.BlockStateProviders;
-using System.Linq.Expressions;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.Registries;
 
 internal static partial class BlocksRegistry
 {
-    private static string[] illegalBlockNames = ["Obsidian", "TrialSpawner", "Vault", "CreakingHeart"];
+    // Every block, built once from the generated factories: block reads are on generation's hottest paths, so they're
+    // array lookups.
+    private static readonly IBlock[] defaultBlocks;
+    private static readonly IBlock[] stateBlocks;
+    private static readonly IBlock?[] materialBlocks;
+    private static readonly Material[] registryMaterials;
 
     public static int GlobalBitsPerBlocks { get; private set; }
+
+    [SuppressMessage("Performance", "CA1810", Justification = "Reads the generated tables (Names, StateToNumeric) of other parts of this class, and the order of initializers across parts is unspecified.")]
     static BlocksRegistry()
     {
-        //Lets cache everything first
-        for (int i = 0; i < ResourceIds.Length; i++)
+        defaultBlocks = new IBlock[Names.Length];
+        for (int i = 0; i < Names.Length; i++)
         {
             resourceIdToName.TryAdd(ResourceIds[i], Names[i]);
+            defaultBlocks[i] = CreateDefault(i);
+            defaultBlockCache.TryAdd(Names[i], defaultBlocks[i]);
         }
 
-        foreach (var resourceId in ResourceIds)
+        registryMaterials = [.. defaultBlocks.Select(block => block.Material)];
+
+        // Materials name items too, so only some have a block.
+        materialBlocks = new IBlock?[Enum.GetValues<Material>().Max(material => (int)material) + 1];
+        for (int i = 0; i < Names.Length; i++)
         {
-            Get(resourceId);
+            if (Enum.TryParse<Material>(Names[i], out var material))
+                materialBlocks[(int)material] = defaultBlocks[i];
         }
 
-        for (int i = 0; i < AllStates.Length; i++)
+        // Blocks without properties have one state, which is their default block.
+        stateBlocks = new IBlock[StateToNumeric.Length];
+        for (int stateId = 0; stateId < stateBlocks.Length; stateId++)
         {
-            Get(AllStates[i]);
+            var registryId = StateToNumeric[stateId];
+            stateBlocks[stateId] = CreateState(registryId, stateId) ?? defaultBlocks[registryId];
         }
 
         GlobalBitsPerBlocks = (int)Math.Ceiling(Math.Log2(StateToBase.Length));
@@ -32,73 +49,21 @@ internal static partial class BlocksRegistry
         SimpleBlockStateExtensions.SetConverter(GetFromSimpleState);
     }
 
-    public static IBlock Get(int stateId)
-    {
-        if (blockWithStateCache.TryGetValue(stateId, out var value))
-            return value;
+    public static IBlock Get(int stateId) => stateBlocks[stateId];
 
-        var registryId = StateToNumeric[stateId];
-        var blockName = Names[registryId];
-        var resourceId = ResourceIds[registryId];
+    /// <summary>The registry id of the block a state belongs to.</summary>
+    public static int RegistryIdOf(int stateId) => StateToNumeric[stateId];
 
-        if (!blockTypeCache.TryGetValue(blockName, out var type))
-        {
-            var sanitizedBlockName = GetSanitizedName(blockName);
-
-            type = Type.GetType($"Obsidian.Blocks.{sanitizedBlockName}");
-
-            blockTypeCache.TryAdd(blockName, type);
-        }
-
-        var ctorWithState = type!.GetConstructor(stateIdParameters);
-
-        if (ctorWithState is null)
-            return Get(resourceId);
-
-        var expressionWithState = Expression.New(ctorWithState, stateIdParameterExpressions);
-
-        var conversionWithState = Expression.Convert(expressionWithState, blockType);
-        var lambdaWithState = Expression.Lambda<Func<int, IBlock>>(conversionWithState, stateIdParameterExpressions);
-
-        var compiledLamdbaWithState = lambdaWithState.Compile();
-
-        var block = compiledLamdbaWithState(stateId);
-
-        blockWithStateCache.TryAdd(stateId, block);
-
-        return block;
-    }
+    /// <summary>The material of the block a state belongs to.</summary>
+    public static Material MaterialOf(int stateId) => registryMaterials[StateToNumeric[stateId]];
 
     public static string? GetBlockName(string resourceId) => resourceIdToName.GetValueOrDefault(resourceId);
 
-    public static IBlock GetFromSimpleState(SimpleBlockState simpleState)
-    {
-        IBlockState? state = null;
-        if (simpleState.Properties.Count > 0)
-        {
-            var blockName = GetSanitizedName(GetBlockName(simpleState.Name) ??
-                throw new NullReferenceException($"Unable to find block with name: {simpleState.Name}"));
-
-            var stateBuilderType = Type.GetType($"Obsidian.API.BlockStates.Builders.{blockName}StateBuilder");
-
-            // Only use state builder if one exists, otherwise fall back to default state
-            if (stateBuilderType != null)
-            {
-                try
-                {
-                    var builder = Activator.CreateInstance(stateBuilderType, simpleState.Properties)!;
-                    state = (IBlockState)builder.GetType().GetMethod("Build")!.Invoke(builder, null)!;
-                }
-                catch
-                {
-                    // If state builder fails, fall back to default state
-                    // This can happen for blocks that have properties but no generated state builders yet
-                }
-            }
-        }
-
-        return Get(simpleState.Name, state);
-    }
+    /// <summary>
+    /// Gets the exact block state described by a name and properties (unspecified properties use their defaults).
+    /// </summary>
+    public static IBlock GetFromSimpleState(SimpleBlockState simpleState) =>
+        BlockStateProperties.GetState(simpleState.Name, simpleState.Properties);
 
     public static IBlock Get(string resourceId, IBlockState? state = null)
     {
@@ -108,32 +73,7 @@ internal static partial class BlocksRegistry
         if (!resourceIdToName.TryGetValue(resourceId, out var blockName))
             throw new InvalidOperationException($"{resourceId} is not a valid block.");
 
-        if (defaultBlockCache.TryGetValue(blockName, out var value))
-            return value;
-
-        if (!blockTypeCache.TryGetValue(blockName, out var type))
-        {
-            var sanitizedBlockName = GetSanitizedName(blockName);
-
-            type = Type.GetType($"Obsidian.Blocks.{sanitizedBlockName}");
-
-            blockTypeCache.TryAdd(blockName, type!);
-        }
-
-        var ctor = type!.GetConstructor(Type.EmptyTypes)!;
-
-        var expression = Expression.New(ctor);
-
-        var conversion = Expression.Convert(expression, blockType);
-        var lambda = Expression.Lambda<Func<IBlock>>(conversion);
-
-        var compiledLamdba = lambda.Compile();
-
-        var block = compiledLamdba();
-
-        defaultBlockCache.TryAdd(blockName, block);
-
-        return block;
+        return defaultBlockCache[blockName];
     }
 
     public static IBlock Get(Material material, IBlockState? state = null)
@@ -141,38 +81,8 @@ internal static partial class BlocksRegistry
         if (state != null)
             return Get(state.Id);
 
-        var materialString = material.ToString();
-
-        if (defaultBlockCache.TryGetValue(materialString, out var value))
-            return value;
-
-        if (!Names.Contains(materialString))
-            throw new InvalidOperationException($"{material} is not a valid block.");
-
-        if (!blockTypeCache.TryGetValue(materialString, out var type))
-        {
-            var sanitizedBlockName = GetSanitizedName(materialString);
-
-            type = Type.GetType($"Obsidian.Blocks.{sanitizedBlockName}");
-
-            blockTypeCache.TryAdd(materialString, type!);
-        }
-
-        var ctor = type!.GetConstructor(Type.EmptyTypes);
-
-        var expression = Expression.New(ctor);
-
-        var conversion = Expression.Convert(expression, blockType);
-        var lambda = Expression.Lambda<Func<IBlock>>(conversion);
-
-        var compiledLamdba = lambda.Compile();
-        var block = compiledLamdba();
-
-        defaultBlockCache.TryAdd(materialString, block);
-
-        return block;
+        return (uint)material < (uint)materialBlocks.Length && materialBlocks[(int)material] is IBlock block
+            ? block
+            : throw new InvalidOperationException($"{material} is not a valid block.");
     }
-
-    private static string GetSanitizedName(string value) =>
-        illegalBlockNames.Contains(value) ? $"{value}Block" : value;
 }

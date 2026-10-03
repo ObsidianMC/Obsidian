@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Obsidian.Nbt;
+﻿using Obsidian.Nbt;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.ComponentModel.DataAnnotations;
@@ -16,8 +15,6 @@ public sealed class RegionFile : IAsyncDisposable
     private const int SectorSize = 4096;
     private const int MaxSectorSize = 256;
 
-    private readonly ILogger? logger;
-
     private readonly string filePath;
 
     private readonly int cubicRegionSize;
@@ -31,8 +28,8 @@ public sealed class RegionFile : IAsyncDisposable
 
     private bool[] freeSectors = [];
 
-    public int[] Locations { get; private set; } = new int[HeaderTableSize];
-    public int[] Timestamps { get; private set; } = new int[HeaderTableSize];
+    private readonly int[] locations = new int[HeaderTableSize];
+    private readonly int[] timestamps = new int[HeaderTableSize];
 
     public long EndOfFile => this.regionFileStream.Length;
 
@@ -41,7 +38,7 @@ public sealed class RegionFile : IAsyncDisposable
     /// <summary>
     /// Reference Material: <see href="https://wiki.vg/Region_Files#Structure">Region File Structure</see>
     /// </summary>
-    public RegionFile(string filePath, NbtCompression compression, int cubicRegionSize = 32, ILogger? logger = null)
+    public RegionFile(string filePath, NbtCompression compression, int cubicRegionSize = 32)
     {
         this.filePath = filePath;
         this.cubicRegionSize = cubicRegionSize;
@@ -49,7 +46,6 @@ public sealed class RegionFile : IAsyncDisposable
         this.op = cubicRegionSize - 1;
 
         this.regionFileStream = new(this.filePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-        this.logger = logger;
 
         this.Compression = compression;
     }
@@ -78,7 +74,7 @@ public sealed class RegionFile : IAsyncDisposable
 
             await regionFileStream.ReadExactlyAsync(num);
 
-            this.Locations[index] = BinaryPrimitives.ReadInt32BigEndian(num);
+            this.locations[index] = BinaryPrimitives.ReadInt32BigEndian(num);
         }
 
         for (var index = 0; index < HeaderTableSize; index++)
@@ -87,7 +83,7 @@ public sealed class RegionFile : IAsyncDisposable
 
             await regionFileStream.ReadExactlyAsync(num);
 
-            this.Timestamps[index] = BinaryPrimitives.ReadInt32BigEndian(num);
+            this.timestamps[index] = BinaryPrimitives.ReadInt32BigEndian(num);
         }
 
         this.UpdateFreeSectors();
@@ -104,9 +100,7 @@ public sealed class RegionFile : IAsyncDisposable
     /// <exception cref="NotSupportedException"></exception>
     public async Task SetChunkAsync(int chunkX, int chunkZ, Memory<byte> chunkData)
     {
-        await this.semaphore.WaitAsync();
-
-        var chunkSectorSize = this.CalculateSectorSize(chunkData.Length);
+        var chunkSectorSize = CalculateSectorSize(chunkData.Length);
 
         if (chunkSectorSize > MaxSectorSize)
             throw new NotSupportedException($"{nameof(chunkData)} calculated length({chunkSectorSize}) exceeds the max section size({MaxSectorSize}).");
@@ -114,42 +108,36 @@ public sealed class RegionFile : IAsyncDisposable
         var chunkSectorSizeBytesLength = chunkSectorSize * SectorSize;
         var tableIndex = this.GetChunkTableIndex(chunkX, chunkZ);
 
-        var (offset, size) = this.GetLocation(tableIndex);
-
-        if (offset == 0 && size == 0)
+        // Released even when writing fails, so the file stays usable.
+        await this.semaphore.WaitAsync();
+        try
         {
+            var (offset, size) = this.GetLocation(tableIndex);
+
+            if (offset == 0 && size == 0)
+            {
+                offset = this.EndOfFile;
+            }
+            else if (chunkSectorSizeBytesLength > size)
+            {
+                offset = this.FindFreeSector(chunkSectorSize);
+
+                if (offset == -1)
+                    offset = this.EndOfFile;
+            }
+
             await this.WriteChunkAsync(new()
             {
-                Start = (int)(this.EndOfFile / SectorSize),
+                Start = (int)(offset / SectorSize),
                 Size = chunkSectorSizeBytesLength,
                 TableIndex = tableIndex,
                 ChunkData = chunkData
             });
-
+        }
+        finally
+        {
             this.semaphore.Release();
-
-            return;
         }
-
-        if (chunkSectorSizeBytesLength > size)
-        {
-            logger?.LogTrace("Chunk exceeded original size of ({oldSize}). Attempting resize to ({newSize}).", size, chunkSectorSizeBytesLength);
-
-            offset = this.FindFreeSector(chunkSectorSize);
-
-            if (offset == -1)
-                offset = this.EndOfFile;
-        }
-
-        await this.WriteChunkAsync(new()
-        {
-            Start = (int)(offset / SectorSize),
-            Size = chunkSectorSizeBytesLength,
-            TableIndex = tableIndex,
-            ChunkData = chunkData
-        });
-
-        this.semaphore.Release();
     }
 
     /// <summary>
@@ -160,31 +148,18 @@ public sealed class RegionFile : IAsyncDisposable
     /// <returns>The uncompressed nbt chunk data, or null if no chunk was found at the specified coordinate.</returns>
     public async Task<Memory<byte>?> GetChunkBytesAsync(int chunkX, int chunkZ)
     {
-        await this.semaphore.WaitAsync();
-
         var tableIndex = this.GetChunkTableIndex(chunkX, chunkZ);
-
-        var (offset, size) = this.GetLocation(tableIndex);
-
-        if (offset == 0 && size == 0)
-        {
-            this.semaphore.Release();
-
+        var sectors = await this.ReadChunkSectorsAsync(tableIndex);
+        if (sectors is null)
             return null;
-        }
 
-        this.regionFileStream.Position = offset;
+        using var chunk = sectors.Value;
 
-        using var chunk = new RentedArray<byte>(size);
-
-        await this.regionFileStream.ReadAsync(chunk);
-
+        var size = chunk.Length;
         var length = BinaryPrimitives.ReadInt32BigEndian(chunk.Span[..4]);
 
         if (length == 0)
             throw new UnreachableException("Chunk size header value returned 0.");
-
-        this.semaphore.Release();
 
         if (length > size)
             throw new UnreachableException($"{length} > {size}");
@@ -215,14 +190,59 @@ public sealed class RegionFile : IAsyncDisposable
         return uncompressedData.ToArray();
     }
 
+    /// <summary>
+    /// Whether the region file has data for the chunk at the local coordinates.
+    /// </summary>
+    public bool HasChunk(int chunkX, int chunkZ) => this.locations[this.GetChunkTableIndex(chunkX, chunkZ)] != 0;
+
     public void Flush()
     {
         this.semaphore.Wait();
-        this.Pad();
-        // Using Flush with true forces C# to dump to disk.
-        // It otherwise wouldn't
-        this.regionFileStream.Flush(true);
-        this.semaphore.Release();
+        try
+        {
+            this.Pad();
+            // Using Flush with true forces C# to dump to disk.
+            // It otherwise wouldn't
+            this.regionFileStream.Flush(true);
+        }
+        finally
+        {
+            this.semaphore.Release();
+        }
+    }
+
+    /// <summary>
+    /// Reads the sectors a chunk occupies, or <c>null</c> when the file has no data for it. The file is only locked while
+    /// reading, and released even when reading fails.
+    /// </summary>
+    private async Task<RentedArray<byte>?> ReadChunkSectorsAsync(int tableIndex)
+    {
+        await this.semaphore.WaitAsync();
+        try
+        {
+            var (offset, size) = this.GetLocation(tableIndex);
+
+            if (offset == 0 && size == 0)
+                return null;
+
+            this.regionFileStream.Position = offset;
+
+            var chunk = new RentedArray<byte>(size);
+            try
+            {
+                await this.regionFileStream.ReadExactlyAsync(chunk);
+                return chunk;
+            }
+            catch
+            {
+                chunk.Dispose();
+                throw;
+            }
+        }
+        finally
+        {
+            this.semaphore.Release();
+        }
     }
 
     private async Task WriteChunkAsync(Sector sector)
@@ -260,7 +280,7 @@ public sealed class RegionFile : IAsyncDisposable
         {
             using var mem = new RentedArray<byte>(4);
 
-            BinaryPrimitives.WriteInt32BigEndian(mem.Span, this.Locations[index]);
+            BinaryPrimitives.WriteInt32BigEndian(mem.Span, this.locations[index]);
 
             await this.regionFileStream.WriteAsync(mem);
         }
@@ -269,7 +289,7 @@ public sealed class RegionFile : IAsyncDisposable
         {
             using var mem = new RentedArray<byte>(4);
 
-            BinaryPrimitives.WriteInt32BigEndian(mem.Span, this.Timestamps[index]);
+            BinaryPrimitives.WriteInt32BigEndian(mem.Span, this.timestamps[index]);
 
             await this.regionFileStream.WriteAsync(mem);
         }
@@ -343,7 +363,7 @@ public sealed class RegionFile : IAsyncDisposable
 
     private (long offset, int size) GetLocation(int tableIndex)
     {
-        var sector = this.Locations[tableIndex];
+        var sector = this.locations[tableIndex];
 
         var offset = sector >> 8;
         var size = sector & 0xFF;
@@ -355,12 +375,12 @@ public sealed class RegionFile : IAsyncDisposable
         (x & this.op) + (z & this.op) * this.cubicRegionSize;
 
     private void SetTimestamp(int tableIndex, int time) =>
-        this.Timestamps[tableIndex] = time;
+        this.timestamps[tableIndex] = time;
 
     private void SetLocation(int tableIndex, int offset, int size) =>
-         this.Locations[tableIndex] = (offset << 8) | (size & 0xFF);
+         this.locations[tableIndex] = (offset << 8) | (size & 0xFF);
 
-    private int CalculateSectorSize(int length) =>
+    private static int CalculateSectorSize(int length) =>
         (int)Math.Ceiling((length + 5) / (double)SectorSize);
 
     private void Pad()
@@ -422,7 +442,7 @@ public sealed class RegionFile : IAsyncDisposable
         public required int Size { get; init; }
 
         /// <summary>
-        /// The index of where the data is located in the <seealso cref="RegionFile.Locations"/> table.
+        /// The index of where the data is located in the <seealso cref="RegionFile.locations"/> table.
         /// </summary>
         public required int TableIndex { get; init; }
 

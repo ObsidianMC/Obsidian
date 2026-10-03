@@ -105,7 +105,7 @@ public sealed class ServerConfiguration
     public ServerListQuery ServerListQuery { get; set; } = ServerListQuery.Full;
 
     /// <summary>
-    /// The speed at which world time & rain time go by.
+    /// The speed at which world time and rain time go by.
     /// </summary>
     public int TimeTickSpeedMultiplier { get; set; } = 1;
 }

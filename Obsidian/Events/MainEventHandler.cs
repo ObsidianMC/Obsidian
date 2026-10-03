@@ -1,12 +1,12 @@
-﻿using Microsoft.Extensions.Logging;
-using Obsidian.API.Containers;
+﻿using Obsidian.API.Containers;
 using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.WorldData;
 
 namespace Obsidian.Events;
-public sealed partial class MainEventHandler(ILogger<MainEventHandler> logger) : MinecraftEventHandler
+public sealed partial class MainEventHandler : MinecraftEventHandler
 {
     [EventPriority(Priority = Priority.Internal)]
     public Task OnIncomingChatMessage(IncomingChatMessageEventArgs e)
@@ -63,6 +63,7 @@ public sealed partial class MainEventHandler(ILogger<MainEventHandler> logger) :
         switch (block.Material)
         {
             case Material.Chest:
+            case Material.TrappedChest:
                 {
                     await player.Client.QueuePacketAsync(new BlockEventPacket
                     {
@@ -178,7 +179,7 @@ public sealed partial class MainEventHandler(ILogger<MainEventHandler> logger) :
                 _ => null
             };
             //TODO check if container is cached if so get that container
-            if (type == Material.Chest) // TODO check if chest its next to another single chest
+            if (type is Material.Chest or Material.TrappedChest) // TODO check if chest its next to another single chest
             {
                 container = new Container
                 {
@@ -188,7 +189,7 @@ public sealed partial class MainEventHandler(ILogger<MainEventHandler> logger) :
                     Id = "chest"
                 };
 
-                await player.OpenInventoryAsync(container);
+                // The inventory opens below, once the chest's contents (and loot) are in place.
                 await player.Client.QueuePacketAsync(new BlockEventPacket
                 {
                     Position = blockPosition,
@@ -288,12 +289,27 @@ public sealed partial class MainEventHandler(ILogger<MainEventHandler> logger) :
                 }
                 else if (tileEntity is BaseContainer tileEntityContainer)
                 {
-                    for(int i = 0; i < tileEntityContainer.Size; i++)
+                    // The stored container itself is opened, so changes reach the block entity that's saved with the chunk.
+                    container = tileEntityContainer;
+                }
+                else if (tileEntity is DataBlockEntity dataBlockEntity)
+                {
+                    // A container from world generation: fill it once, then keep it as the block entity. Players opening it
+                    // before it's stored get the first one's container, so its loot isn't generated twice.
+                    lock (generatedContainers)
                     {
-                        var slotItem = tileEntityContainer[i];
-
-                        container.SetItem(i, slotItem);
+                        if (generatedContainers.TryGetValue(dataBlockEntity, out var generated))
+                        {
+                            container = generated;
+                        }
+                        else
+                        {
+                            FillGeneratedContainer(dataBlockEntity, container, player);
+                            generatedContainers.Add(dataBlockEntity, container);
+                        }
                     }
+
+                    await player.Level.SetBlockEntity(blockPosition, (IBlockEntity)container);
                 }
             }
 

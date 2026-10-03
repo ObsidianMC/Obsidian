@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Utilities;
+using System.Numerics;
 
 namespace Obsidian.API;
 public sealed class Heightmap
@@ -15,7 +16,8 @@ public sealed class Heightmap
     {
         HeightmapType = type;
         this.chunk = chunk;
-        data = new DataArray(9, 256);
+        // Like vanilla, entries hold 0 to the chunk height inclusive: ceil(log2(height + 1)) bits.
+        data = new DataArray(32 - BitOperations.LeadingZeroCount((uint)chunk.Height), 256);
 
         Predicate = type == HeightmapType.MotionBlocking ? ((block) => !block.IsAir || !block.IsLiquid) : (_ => false);
     }
@@ -48,7 +50,7 @@ public sealed class Heightmap
         {
             Vector pos;
 
-            for (int i = y - 1; i >= 0; --i)
+            for (int i = y - 1; i >= this.chunk.MinY; --i)
             {
                 pos = new Vector(x, i, z);
                 var otherBlock = this.chunk.GetBlock(pos);
@@ -61,7 +63,7 @@ public sealed class Heightmap
                 }
             }
 
-            this.Set(x, z, 0);
+            this.Set(x, z, this.chunk.MinY);
 
             return true;
         }
@@ -69,13 +71,13 @@ public sealed class Heightmap
         return false;
     }
 
-    public void Set(int x, int z, int value) => this.data[this.GetIndex(x, z)] = value - -64;
+    public void Set(int x, int z, int value) => this.data[GetIndex(x, z)] = value - this.chunk.MinY;
 
-    public int GetHeight(int x, int z) => this.GetHeight(this.GetIndex(x, z));
+    public int GetHeight(int x, int z) => this.GetHeight(GetIndex(x, z));
 
-    private int GetHeight(int value) => this.data[value] + -64;
+    private int GetHeight(int value) => this.data[value] + this.chunk.MinY;
 
-    private int GetIndex(int x, int z) => x + z * 16;
+    private static int GetIndex(int x, int z) => x + z * 16;
 
     public long[] GetDataArray() => this.data.storage;
 

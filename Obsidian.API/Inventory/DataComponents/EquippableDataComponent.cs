@@ -1,5 +1,6 @@
 ﻿using Obsidian.API.Utilities;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 
 namespace Obsidian.API.Inventory.DataComponents;
 public sealed record class EquippableDataComponent : DataComponent
@@ -16,7 +17,7 @@ public sealed record class EquippableDataComponent : DataComponent
 
     public string? CameraOverlay { get; set; }
 
-    public int[]? AllowedEntities { get; set; }
+    public ImmutableArray<int>? AllowedEntities { get; set; }
 
     public bool Dispensable { get; set; }
     public bool Swappable { get; set; }
@@ -34,7 +35,7 @@ public sealed record class EquippableDataComponent : DataComponent
 
         var hasEntities = reader.ReadBoolean();
         if (hasEntities)
-            this.AllowedEntities = reader.ReadLengthPrefixedArray(reader.ReadVarInt);
+            this.AllowedEntities = ImmutableCollectionsMarshal.AsImmutableArray(reader.ReadLengthPrefixedArray(reader.ReadVarInt));
 
         this.Dispensable = reader.ReadBoolean();
         this.Swappable = reader.ReadBoolean();
@@ -48,11 +49,11 @@ public sealed record class EquippableDataComponent : DataComponent
         writer.WriteOptional(this.AssetId.HasValue ? this.AssetId.Value.ToString().ToSnakeCase() : null);
         writer.WriteOptional(this.CameraOverlay);
 
-        var hasEntities = this.AllowedEntities != null;
+        var hasEntities = this.AllowedEntities.HasValue;
         writer.WriteBoolean(hasEntities);
 
         if (hasEntities)
-            writer.WriteLengthPrefixedArray(writer.WriteVarInt, this.AllowedEntities);
+            writer.WriteLengthPrefixedArray(writer.WriteVarInt, this.AllowedEntities.Value.AsSpan());
 
         writer.WriteBoolean(this.Dispensable);
         writer.WriteBoolean(this.Swappable);

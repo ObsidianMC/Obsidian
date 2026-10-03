@@ -1,29 +1,25 @@
-﻿namespace Obsidian.WorldData.Features.PlacementModifiers;
+﻿using Obsidian.API.World.Generator.RandomSources;
+
+namespace Obsidian.WorldData.Features.PlacementModifiers;
 
 /// <summary>
-/// Returns the current position if the surface is inside a range. 
-/// Otherwise returns empty.
+/// Keeps the position when its Y is within <c>[MinInclusive, MaxInclusive]</c> of the heightmap.
 /// </summary>
 [ConfiguredFeatureProperty("minecraft:surface_relative_threshold_filter")]
-public sealed class SurfaceRelativeThresholdFilter : PlacementModifierBase
+public sealed class SurfaceRelativeThresholdFilter : PlacementFilterBase
 {
-    public override string Type { get; internal init; } = "minecraft:surface_relative_threshold_filter";
+    public override string Type => "minecraft:surface_relative_threshold_filter";
 
-    /// <summary>
-    /// The heightmap to use. One of MOTION_BLOCKING, MOTION_BLOCKING_NO_LEAVES, OCEAN_FLOOR, OCEAN_FLOOR_WG, 
-    /// WORLD_SURFACE or WORLD_SURFACE_WG.
-    /// </summary>
-    public required string Heightmap { get; init; }
+    public required HeightmapType Heightmap { get; init; }
 
-    /// <summary>
-    /// The minimum relative height from the surface to current position.
-    /// </summary>
-    public required int MinInclusive { get; init; }
+    public int MinInclusive { get; init; } = int.MinValue;
 
-    /// <summary>
-    /// The maximum relative height from the surface to current position.
-    /// </summary>
-    public required int MaxInclusive { get; init; }
+    public int MaxInclusive { get; init; } = int.MaxValue;
 
-    protected override bool ShouldPlace(PlacementContext context) => throw new NotImplementedException();
+    // Long math like vanilla, so the open-ended defaults don't overflow.
+    protected override bool ShouldPlace(PlacementContext context, IRandomSource random, Vector position)
+    {
+        long height = context.Level.GetHeight(this.Heightmap, position.X, position.Z);
+        return height + this.MinInclusive <= position.Y && position.Y <= height + this.MaxInclusive;
+    }
 }

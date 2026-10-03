@@ -1,5 +1,3 @@
-﻿using Obsidian.API.World.Features.Tree;
-
 namespace Obsidian.WorldData.Decorators;
 
 public class DecoratorFeatures
@@ -24,11 +22,11 @@ public class DecoratorFeatures
         public int Frequency { get; set; }
 
         /// <summary>
-        /// Which TreeFeature to use
+        /// The configured tree feature to place (usually a <c>minecraft:tree</c>).
         /// </summary>
-        public TreeFeature? Feature { get; set; }
+        public ConfiguredFeatureBase? Feature { get; set; }
 
-        public TreeInfo(int frequency, TreeFeature feature)
+        public TreeInfo(int frequency, ConfiguredFeatureBase feature)
         {
             Frequency = frequency;
             Feature = feature;

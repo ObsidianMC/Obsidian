@@ -13,9 +13,22 @@ public interface IChunk
 
     public ChunkGenStage ChunkStatus { get; }
 
+    /// <summary>
+    /// The lowest block Y of the chunk, i.e. its dimension's minimum build height.
+    /// </summary>
+    public int MinY { get; }
+
+    /// <summary>
+    /// The number of block layers in the chunk, i.e. its dimension's build height.
+    /// </summary>
+    public int Height { get; }
+
     public IDictionary<HeightmapType, Heightmap> Heightmaps { get; }
 
-    public IChunkSection[] Sections { get; }
+    /// <summary>
+    /// The chunk's sections from the bottom up. This is a view of the chunk's own sections, not a copy.
+    /// </summary>
+    public ReadOnlySpan<IChunkSection> Sections { get; }
 
     public IBlock GetBlock(Vector position) => this.GetBlock(position.X, position.Y, position.Z);
 
@@ -39,6 +52,12 @@ public interface IChunk
 
     public IBlockEntity GetBlockEntity(int x, int y, int z);
     public void SetBlockEntity(int x, int y, int z, IBlockEntity tileEntityData);
+    public void RemoveBlockEntity(int x, int y, int z);
+
+    /// <summary>
+    /// Every block entity in the chunk.
+    /// </summary>
+    public IReadOnlyCollection<IBlockEntity> GetBlockEntities();
 
     [EditorBrowsable(EditorBrowsableState.Never)]
     public void SetChunkStatus(ChunkGenStage status);

@@ -27,12 +27,12 @@ public class PacketDebugStream : Stream
 
     public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
     {
-        await MemoryStream.WriteAsync(buffer, offset, count, cancellationToken);
+        await MemoryStream.WriteAsync(buffer.AsMemory(offset, count), cancellationToken);
 
         await PacketDebug.AppendAsync("", MemoryStream.ToArray());
         MemoryStream = new MemoryStream();
 
-        await BaseStream.WriteAsync(buffer, offset, count, cancellationToken);
+        await BaseStream.WriteAsync(buffer.AsMemory(offset, count), cancellationToken);
     }
 
     #region Unchanged

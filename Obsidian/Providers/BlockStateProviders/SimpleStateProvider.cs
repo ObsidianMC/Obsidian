@@ -1,5 +1,10 @@
-﻿namespace Obsidian.Providers.BlockStateProviders;
+﻿using Obsidian.API.World.Generator.RandomSources;
 
+namespace Obsidian.Providers.BlockStateProviders;
+
+/// <summary>
+/// Always the same block state.
+/// </summary>
 [ConfiguredFeatureProperty("minecraft:simple_state_provider")]
 public sealed class SimpleStateProvider : IBlockStateProvider
 {
@@ -7,6 +12,7 @@ public sealed class SimpleStateProvider : IBlockStateProvider
 
     public required SimpleBlockState State { get; init; }
 
-    public IBlock Get() => BlocksRegistry.GetFromSimpleState(this.State);
-    public SimpleBlockState GetSimple() => this.State;
+    private IBlock Block => field ??= BlocksRegistry.GetFromSimpleState(this.State);
+
+    public IBlock GetState(IRandomSource random, Vector position) => this.Block;
 }

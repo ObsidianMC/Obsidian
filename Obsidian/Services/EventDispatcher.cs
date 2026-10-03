@@ -11,7 +11,7 @@ using System.Reflection;
 
 namespace Obsidian.Services;
 
-public sealed class EventDispatcher : IEventDispatcher
+public sealed partial class EventDispatcher : IEventDispatcher
 {
     private static readonly Type eventPriorityAttributeType = typeof(EventPriorityAttribute);
     private static readonly Type baseMinecraftEventArgsType = typeof(BaseMinecraftEventArgs);
@@ -187,7 +187,7 @@ public sealed class EventDispatcher : IEventDispatcher
             catch (OperationCanceledException) { }//IGNORE this exception 
             catch (Exception ex)
             {
-                this.logger.LogCritical(ex, "failed to execute event.");
+                Log.HandlerFailed(this.logger, ex, eventType.Name);
 
                 return EventResult.Failed;
             }
@@ -202,5 +202,11 @@ public sealed class EventDispatcher : IEventDispatcher
         {
             values.Clear();
         }
+    }
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Error, Message = "An event handler for {EventName} failed")]
+        public static partial void HandlerFailed(ILogger logger, Exception exception, string eventName);
     }
 }

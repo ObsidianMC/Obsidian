@@ -10,13 +10,13 @@ internal class AStarPath
 
     public int EntityHeight { get; set; } = 2;
 
-    public bool EntityCanFly { get; set; } = false;
+    public bool EntityCanFly { get; set; }
 
-    public bool EntityCanSwim { get; set; } = false;
+    public bool EntityCanSwim { get; set; }
 
-    public bool EntityCanClimbWalls { get; set; } = false;
+    public bool EntityCanClimbWalls { get; set; }
 
-    public bool EntityCanClimbLadders { get; set; } = false;
+    public bool EntityCanClimbLadders { get; set; }
 
     private readonly IWorld world;
 
@@ -133,7 +133,7 @@ internal class AStarPath
         return [];
     }
 
-    private bool IsValidMove(Vector curPos, Vector nextPos)
+    private static bool IsValidMove(Vector curPos, Vector nextPos)
     {
         // Does the entity fit?
         /*for (int y = curPos.Y; y < Math.Max(curPos.Y, nextPos.Y) + EntityHeight; y++)
@@ -178,11 +178,11 @@ internal class AStarPath
 
         public Vector Position { get; }
 
-        public double f = 0;
+        public double f;
 
-        public double g = 0;
+        public double g;
 
-        public double h = 0;
+        public double h;
 
 
         public Node(Node? parent, Vector position)

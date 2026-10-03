@@ -6,7 +6,7 @@ using Obsidian.Net.Packets.Login.Serverbound;
 using Obsidian.WorldData;
 
 namespace Obsidian.Net.ClientHandlers;
-internal sealed class LoginClientHandler : ClientHandler
+internal sealed partial class LoginClientHandler : ClientHandler
 {
     public async override ValueTask<bool> HandleAsync(PacketData packetData)
     {
@@ -21,7 +21,7 @@ internal sealed class LoginClientHandler : ClientHandler
 
                     try
                     {
-                        await this.HandleLoginStartAsync(buffer.Data);
+                        await this.HandleLoginStartAsync(buffer.GetBuffer());
                     }
                     catch { return false; }
 
@@ -31,7 +31,7 @@ internal sealed class LoginClientHandler : ClientHandler
                 {
                     try
                     {
-                        await this.HandleEncryptionResponseAsync(buffer.Data);
+                        await this.HandleEncryptionResponseAsync(buffer.GetBuffer());
                     }
                     catch { return false; }
 
@@ -41,8 +41,6 @@ internal sealed class LoginClientHandler : ClientHandler
                 break;
             case 0x03:
                 {
-                    this.Logger.LogDebug("Login Acknowledged switching to configuration state.");
-
                     this.Client.SetState(ClientState.Configuration);
 
                     this.Configure();
@@ -50,7 +48,7 @@ internal sealed class LoginClientHandler : ClientHandler
                     return true;
                 }
             default:
-                this.Logger.LogError("Client in state Login tried to send an unimplemented packet. Forcing it to disconnect.");
+                Log.UnknownPacket(this.Logger, id);
                 await this.Client.DisconnectAsync("Unknown Packet Id.");
                 break;
         }
@@ -89,6 +87,10 @@ internal sealed class LoginClientHandler : ClientHandler
         this.SendPacket(new RegistryDataPacket(CodecRegistry.WolfSoundVariant.CodecKey, CodecRegistry.WolfSoundVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.PaintingVariant.CodecKey, CodecRegistry.PaintingVariant.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
 
+        // Item components refer to these by network id (the index of the entry sent here), e.g. an item's enchantments.
+        this.SendPacket(new RegistryDataPacket("minecraft:enchantment", EnchantmentsRegistry.All.Select(enchantment => enchantment.Identifier)));
+        this.SendPacket(new RegistryDataPacket("minecraft:instrument", InstrumentsRegistry.All.Select(instrument => instrument.Identifier)));
+
         this.SendPacket(UpdateTagsPacket.ClientboundConfiguration with { Tags = TagsRegistry.Categories });
 
         this.SendPacket(FinishConfigurationPacket.Default);
@@ -101,7 +103,7 @@ internal sealed class LoginClientHandler : ClientHandler
         var username = this.Server.Configuration.Network.MulitplayerDebugMode ? $"Player{Globals.Random.Next(1, 999)}" : loginStart.Username;
         var world = this.Server.DefaultWorld;
 
-        this.Logger.LogDebug("Received login request from user {Username}", username);
+        Log.LoginRequest(this.Logger, username);
         await this.Server.DisconnectPlayerIfConnectedAsync(username);
 
         if (this.Server.Configuration.OnlineMode && await this.Client.TrySetCachedProfileAsync(username))
@@ -127,5 +129,14 @@ internal sealed class LoginClientHandler : ClientHandler
 
         // Decrypt the shared secret and verify the token
         await KeyPacket.Deserialize(data).HandleAsync(this.Client);
+    }
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Disconnecting client that sent unknown login packet {PacketId}")]
+        public static partial void UnknownPacket(ILogger logger, int packetId);
+
+        [LoggerMessage(Level = LogLevel.Debug, Message = "Login request from {Username}")]
+        public static partial void LoginRequest(ILogger logger, string username);
     }
 }

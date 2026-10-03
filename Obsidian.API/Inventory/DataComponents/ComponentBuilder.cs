@@ -17,9 +17,10 @@ public static partial class ComponentBuilder
         (writer, value) => writer.WriteVarInt(value),
         (reader) => reader.ReadVarInt());
 
+    // A marker: vanilla sends no data, the component being present is what makes the item unbreakable.
     public static SimpleDataComponent<bool> Unbreakable => BuildSimpleComponent(DataComponentType.Unbreakable, "minecraft:unbreakable",
-        (writer, value) => writer.WriteBoolean(value),
-        (reader) => reader.ReadBoolean());
+        (writer, value) => { },
+        (reader) => true);
 
     public static SimpleDataComponent<ChatMessage> CustomName => BuildSimpleComponent(DataComponentType.CustomName, "minecraft:custom_name",
         (writer, value) => writer.WriteChat(value),
@@ -119,7 +120,7 @@ public static partial class ComponentBuilder
           return effect;
       }));
 
-    public static TooltipSimpleDataComponent<Enchantment[]> StoredEnchantments => BuildTooltipSimpleDataComponent(DataComponentType.StoredEnchantments, "minecraft:stored_enchantments",
+    public static SimpleDataComponent<Enchantment[]> StoredEnchantments => BuildSimpleComponent(DataComponentType.StoredEnchantments, "minecraft:stored_enchantments",
         (writer, values) => writer.WriteLengthPrefixedArray(writer.WriteEnchantment, values),
         reader => reader.ReadLengthPrefixedArray(reader.ReadEnchantment));
 
@@ -232,10 +233,6 @@ public static partial class ComponentBuilder
     ];
 
     public static SimpleDataComponent<TValue> BuildSimpleComponent<TValue>(DataComponentType type, string identifier,
-        Action<INetStreamWriter, TValue> writer,
-        Func<INetStreamReader, TValue> reader) => new(type, identifier, writer, reader);
-
-    public static TooltipSimpleDataComponent<TValue> BuildTooltipSimpleDataComponent<TValue>(DataComponentType type, string identifier,
         Action<INetStreamWriter, TValue> writer,
         Func<INetStreamReader, TValue> reader) => new(type, identifier, writer, reader);
 }

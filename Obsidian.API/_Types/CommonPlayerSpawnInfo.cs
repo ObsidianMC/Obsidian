@@ -1,5 +1,5 @@
 ﻿namespace Obsidian.API;
-public readonly struct CommonPlayerSpawnInfo : INetworkSerializable<CommonPlayerSpawnInfo>
+public readonly record struct CommonPlayerSpawnInfo : INetworkSerializable<CommonPlayerSpawnInfo>
 {
     public required int DimensionType { get; init; }
 

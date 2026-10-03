@@ -1,20 +1,20 @@
-﻿namespace Obsidian.WorldData.Features.PlacementModifiers;
+﻿using Obsidian.API.World.Generator.RandomSources;
+
+namespace Obsidian.WorldData.Features.PlacementModifiers;
 
 /// <summary>
-/// Sets the Y coordinate to one block above the heightmap.
-/// Returns the new position.
+/// Moves the position onto the given heightmap, dropping it when the column is empty.
 /// </summary>
 [ConfiguredFeatureProperty("minecraft:heightmap")]
-public sealed class HeightmapPlacement : PlacementModifierBase
+public sealed class HeightmapPlacement : SinglePlacementModifierBase
 {
-    public override string Type { get; internal init; } = "minecraft:heightmap";
+    public override string Type => "minecraft:heightmap";
 
-    /// <summary>
-    /// The heightmap to use. 
-    /// One of MOTION_BLOCKING, MOTION_BLOCKING_NO_LEAVES, 
-    /// OCEAN_FLOOR, OCEAN_FLOOR_WG, WORLD_SURFACE or WORLD_SURFACE_WG.
-    /// </summary>
-    public required string Heightmap { get; init; }
+    public required HeightmapType Heightmap { get; init; }
 
-    protected override bool ShouldPlace(PlacementContext context) => throw new NotImplementedException();
+    public override Vector? GetPosition(PlacementContext context, IRandomSource random, Vector position)
+    {
+        var height = context.Level.GetHeight(this.Heightmap, position.X, position.Z);
+        return height > context.Level.MinY ? new Vector(position.X, height, position.Z) : null;
+    }
 }

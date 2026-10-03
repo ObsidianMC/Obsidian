@@ -65,7 +65,7 @@ public class Commands
 
     public class Command : CommandModuleBase
     {
-        public static int arg1out = 0;
+        public static int arg1out;
         public static string arg2out = "";
 
         [Command("ping")]

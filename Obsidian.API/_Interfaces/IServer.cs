@@ -20,7 +20,7 @@ public interface IServer : IDisposable
     public ConcurrentDictionary<int, IClient> Connections { get; }
     public HashSet<string> RegisteredChannels { get; }
 
-    public byte[] BrandData { get; }
+    public ReadOnlyMemory<byte> BrandData { get; }
 
     public ICommandHandler CommandHandler { get; }
     public IScoreboardManager ScoreboardManager { get; }

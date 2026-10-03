@@ -1,5 +1,6 @@
 ﻿using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.ChunkData;
+using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.Registries;
 
 namespace Obsidian.WorldData.Generators.Overworld;
@@ -313,26 +314,13 @@ internal static class ChunkBuilder
                         worldSurfaceSet = true;
                     }
 
-                    if (!motionBlockingSet &&
-                        !TagsRegistry.Block.ReplaceableByLiquid.Entries.Contains(b.RegistryId) &&
-                        !TagsRegistry.Block.Saplings.Entries.Contains(b.RegistryId) &&
-                        !TagsRegistry.Block.Crops.Entries.Contains(b.RegistryId) &&
-                        !TagsRegistry.Block.Flowers.Entries.Contains(b.RegistryId) &&
-                        !TagsRegistry.Fluid.Water.Entries.Contains(b.RegistryId)
-                        )
+                    if (!motionBlockingSet && WorldgenHeightmaps.Matches(HeightmapType.MotionBlocking, b))
                     {
                         chunk.Heightmaps[HeightmapType.MotionBlocking].Set(x, z, y);
                         motionBlockingSet = true;
                     }
 
-                    if (!motionBlockingLeavesSet &&
-                        !TagsRegistry.Block.ReplaceableByLiquid.Entries.Contains(b.RegistryId) &&
-                        !TagsRegistry.Block.Saplings.Entries.Contains(b.RegistryId) &&
-                        !TagsRegistry.Block.Crops.Entries.Contains(b.RegistryId) &&
-                        !TagsRegistry.Block.Flowers.Entries.Contains(b.RegistryId) &&
-                        !TagsRegistry.Fluid.Water.Entries.Contains(b.RegistryId) &&
-                        !TagsRegistry.Block.Leaves.Entries.Contains(b.RegistryId)
-                        )
+                    if (!motionBlockingLeavesSet && WorldgenHeightmaps.Matches(HeightmapType.MotionBlockingNoLeaves, b))
                     {
                         chunk.Heightmaps[HeightmapType.MotionBlockingNoLeaves].Set(x, z, y);
                         motionBlockingLeavesSet = true;

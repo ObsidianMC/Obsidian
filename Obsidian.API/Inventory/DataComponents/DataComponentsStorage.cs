@@ -4,11 +4,33 @@ public abstract class DataComponentsStorage
     protected Dictionary<DataComponentType, DataComponent> InternalStorage { get; } = [];
     protected Dictionary<DataComponentType, int> HashedStorage { get; } = [];
 
+    /// <summary>
+    /// Components that only stand in for the item's own defaults (see <see cref="ComponentBuilder.DefaultItemComponents"/>),
+    /// as they were when added. A placeholder isn't part of <see cref="Patch"/> until its value changes; setting or
+    /// removing a component of the type drops it.
+    /// </summary>
+    protected Dictionary<DataComponentType, DataComponent> Placeholders { get; } = [];
+
     public List<DataComponentType> RemoveComponents { get; } = [];
 
     public int TotalComponents => this.InternalStorage.Count;
 
-    public DataComponent this[DataComponentType type] { get => this.InternalStorage[type]; set => this.InternalStorage[type] = value; }
+    /// <summary>
+    /// The components that were set on this storage, as opposed to placeholders for the item's defaults. Like vanilla's
+    /// <c>DataComponentPatch</c>, this is what goes over the network.
+    /// </summary>
+    public IEnumerable<DataComponent> Patch => this.InternalStorage.Values.Where(component =>
+        !this.Placeholders.TryGetValue(component.Type, out var placeholder) || !component.Equals(placeholder));
+
+    public DataComponent this[DataComponentType type]
+    {
+        get => this.InternalStorage[type];
+        set
+        {
+            this.InternalStorage[type] = value;
+            this.Placeholders.Remove(type);
+        }
+    }
 
     public bool Add(DataComponent component) => this.InternalStorage.TryAdd(component.Type, component);
 
@@ -28,7 +50,11 @@ public abstract class DataComponentsStorage
     public bool CompareComponentHash(DataComponentType type, int hash) =>
         this.HashedStorage.TryGetValue(type, out var value) && value == hash;
 
-    public bool Remove(DataComponentType type) => this.InternalStorage.Remove(type);
+    public bool Remove(DataComponentType type)
+    {
+        this.Placeholders.Remove(type);
+        return this.InternalStorage.Remove(type);
+    }
 
     public TComponent? GetComponent<TComponent>(DataComponentType type) where TComponent : DataComponent =>
         (TComponent)this.InternalStorage.GetValueOrDefault(type);

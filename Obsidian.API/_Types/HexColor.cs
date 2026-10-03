@@ -4,7 +4,7 @@ using System.Drawing;
 namespace Obsidian.API;
 
 [DebuggerDisplay("{ToString(),nq}")]
-public readonly struct HexColor
+public readonly record struct HexColor
 {
     private readonly string hexColor;
 

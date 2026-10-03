@@ -12,8 +12,12 @@ public partial class WorldgenNoiseRegistryGenerator
 
         foreach (var value in noise)
         {
-            var sanitizedName = value.Name.Replace(CleanedNoise, string.Empty).ToPascalCase();
+            var cleanedName = value.Name.Replace(CleanedNoise, string.Empty);
+            var sanitizedName = cleanedName.ToPascalCase();
             builder.Type($"public static BaseNoise {sanitizedName} => new()");
+
+            // Noises are seeded by hashing their registry key, so every instance needs to know it.
+            builder.Line($"Key = \"minecraft:{cleanedName}\",");
 
             foreach (var property in value.Properties)
             {

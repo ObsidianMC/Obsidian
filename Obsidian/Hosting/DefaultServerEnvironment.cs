@@ -6,15 +6,12 @@ namespace Obsidian.Hosting;
 /// A default <see cref="IServerEnvironment"/> implementation aimed for Console applications.
 /// Console commands are read by <see cref="Console.ConsoleCommandService"/>.
 /// </summary>
-internal sealed class DefaultServerEnvironment(ILogger<DefaultServerEnvironment> logger) : IServerEnvironment
+internal sealed partial class DefaultServerEnvironment(ILogger<DefaultServerEnvironment> logger) : IServerEnvironment
 {
     private readonly ILogger<DefaultServerEnvironment> logger = logger;
 
-    public ValueTask OnServerStoppedGracefullyAsync()
-    {
-        logger.LogInformation("Goodbye!");
-        return default;
-    }
+    // The server logs its own shutdown.
+    public ValueTask OnServerStoppedGracefullyAsync() => default;
 
     public ValueTask OnServerCrashAsync(Exception e)
     {
@@ -32,11 +29,15 @@ internal sealed class DefaultServerEnvironment(ILogger<DefaultServerEnvironment>
             "I blame Craftplacer for this one..."
         };
 
-        logger.LogCritical("Obsidian has crashed!");
-        logger.LogCritical("{message}", byeMessages[new Random().Next(byeMessages.Length)]);
-        logger.LogCritical(e, "Reason: {reason}", e.Message);
-        logger.LogCritical("{}", e.StackTrace);
+        var byeMessage = byeMessages[Random.Shared.Next(byeMessages.Length)];
+        Log.Crashed(this.logger, e, byeMessage);
         return default;
+    }
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Critical, Message = "Obsidian has crashed! {ByeMessage}")]
+        public static partial void Crashed(ILogger logger, Exception exception, string byeMessage);
     }
 }
 

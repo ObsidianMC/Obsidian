@@ -10,10 +10,16 @@
 
 	<ItemGroup>
 		<None Remove="Assets\bigtest.nbt" />
+		<None Remove="Assets\fluid_scenarios.json" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<EmbeddedResource Include="Assets\bigtest.nbt" />
+		<EmbeddedResource Include="Assets\fluid_scenarios.json" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
 	</ItemGroup>
 
   <ItemGroup>

@@ -1,58 +1,30 @@
-using Obsidian.API.World.Features;
-using Obsidian.API.World.Features.Tree;
-
 namespace Obsidian.WorldData.Features.Tree.Placers.Trunk;
 
-[TreeProperty("minecraft:giant_trunk_placer")]
-public sealed class GiantTrunkPlacer : TrunkPlacer
+/// <summary>
+/// A 2x2 trunk (mega spruce/pine); the top block only uses the origin column.
+/// </summary>
+[ConfiguredFeatureProperty("minecraft:giant_trunk_placer")]
+public class GiantTrunkPlacer : TrunkPlacer
 {
-    public override required string Type { get; init; }
-
-    public override async ValueTask<List<Vector>> Place(FeatureContext context, Vector origin, int treeHeight, IBlock trunkBlock)
+    public override List<FoliageAttachment> PlaceTrunk(TreeContext tree, int freeTreeHeight, Vector origin)
     {
-        var trunkPositions = new List<Vector>();
+        var below = origin + Vector.Down;
+        SetDirtAt(tree, below);
+        SetDirtAt(tree, below + Vector.East);
+        SetDirtAt(tree, below + Vector.South);
+        SetDirtAt(tree, below + Vector.South + Vector.East);
 
-        // Set dirt at the 2x2 base
-        var below = origin + (0, -1, 0);
-        await context.World.SetBlockUntrackedAsync(below, BlocksRegistry.Dirt, false);
-        await context.World.SetBlockUntrackedAsync(below + (1, 0, 0), BlocksRegistry.Dirt, false);
-        await context.World.SetBlockUntrackedAsync(below + (0, 0, 1), BlocksRegistry.Dirt, false);
-        await context.World.SetBlockUntrackedAsync(below + (1, 0, 1), BlocksRegistry.Dirt, false);
-
-        // Place 2x2 trunk (don't add to trunk positions - we'll add attachment point separately)
-        for (int hh = 0; hh < treeHeight; hh++)
+        for (var y = 0; y < freeTreeHeight; y++)
         {
-            // Place all four logs at this height
-            await PlaceLogIfFree(context, origin, 0, hh, 0, trunkBlock);
-
-            // Only place the other 3 logs if not at the top
-            if (hh < treeHeight - 1)
+            this.PlaceLogIfFree(tree, origin + (0, y, 0));
+            if (y < freeTreeHeight - 1)
             {
-                await PlaceLogIfFree(context, origin, 1, hh, 0, trunkBlock);
-                await PlaceLogIfFree(context, origin, 1, hh, 1, trunkBlock);
-                await PlaceLogIfFree(context, origin, 0, hh, 1, trunkBlock);
+                this.PlaceLogIfFree(tree, origin + (1, y, 0));
+                this.PlaceLogIfFree(tree, origin + (1, y, 1));
+                this.PlaceLogIfFree(tree, origin + (0, y, 1));
             }
         }
 
-        // Return ONLY the foliage attachment point at the top center
-        return [origin + (0, treeHeight, 0)];
-    }
-
-    private async ValueTask PlaceLogIfFree(
-        FeatureContext context,
-        Vector treePos,
-        int x,
-        int y,
-        int z,
-        IBlock trunkBlock)
-    {
-        var pos = treePos + (x, y, z);
-
-        // Check if position is replaceable
-        var existingBlock = await context.World.GetBlockAsync(pos);
-        if (existingBlock != null && TagsRegistry.Block.Replaceable.Entries.Contains(existingBlock.RegistryId))
-        {
-            await context.World.SetBlockUntrackedAsync(pos, trunkBlock, false);
-        }
+        return [new FoliageAttachment(origin + (0, freeTreeHeight, 0), 0, true)];
     }
 }

@@ -1,18 +1,27 @@
-﻿using System.ComponentModel.DataAnnotations;
-
 namespace Obsidian.WorldData.Features.Tree;
 
-[TreeProperty("minecraft:three_layers_feature_size")]
-public class ThreeLayersFeatureSize : TwoLayersFeatureSize
+/// <summary>
+/// Free radius <see cref="LowerSize"/> below <see cref="Limit"/>, <see cref="UpperSize"/> in the top
+/// <see cref="UpperLimit"/> blocks and <see cref="MiddleSize"/> in between.
+/// </summary>
+[ConfiguredFeatureProperty("minecraft:three_layers_feature_size")]
+public sealed class ThreeLayersFeatureSize : FeatureSize
 {
-    public override string Type { get; init; } = "minecraft:three_layers_feature_size";
+    public int Limit { get; init; } = 1;
 
-    [Range(0, 80)]
-    public override int Limit { get; set; } = 1;
+    public int UpperLimit { get; init; } = 1;
 
-    [Range(0, 80)]
-    public int UpperLimit { get; set; } = 1;
+    public int LowerSize { get; init; }
 
-    [Range(0, 16)]
-    public int MiddleSize { get; set; } = 1;
+    public int MiddleSize { get; init; } = 1;
+
+    public int UpperSize { get; init; } = 1;
+
+    public override int GetSizeAtHeight(int height, int y)
+    {
+        if (y < this.Limit)
+            return this.LowerSize;
+
+        return y >= height - this.UpperLimit ? this.UpperSize : this.MiddleSize;
+    }
 }

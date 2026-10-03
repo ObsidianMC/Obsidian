@@ -80,7 +80,7 @@ public partial class ContainerClickPacket
         // Maybe we should have an event called ValidateContainerContentsEventArgs? 
         if (clickedItem != null && this.CarriedItem != null && !this.CarriedItem.Compare(clickedItem))
         {
-            player.Client.Logger.LogWarning("Item being carried does not match the one that was picked up from the inventory.");
+            Log.CarriedItemMismatch(player.Client.Logger, player.Username);
 
             //The items don't match sync the client back.
             await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
@@ -111,7 +111,7 @@ public partial class ContainerClickPacket
 
         if (invalidItems.Count > 0)
         {
-            player.Client.Logger.LogWarning("Out of sync inventory. Contained {count} items that were out of sync.", invalidItems.Count);
+            Log.InventoryOutOfSync(player.Client.Logger, player.Username, invalidItems.Count);
 
             await player.Client.QueuePacketAsync(new ContainerSetContentPacket(this.ContainerId, container.ToList())
             {
@@ -134,5 +134,14 @@ public partial class ContainerClickPacket
     }
 
     private static readonly sbyte[] DraggingButtons = [0, 4, 8];
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Debug, Message = "Resyncing {Username}: carried item does not match the clicked item")]
+        public static partial void CarriedItemMismatch(ILogger logger, string username);
+
+        [LoggerMessage(Level = LogLevel.Debug, Message = "Resyncing {Username}: {Count} inventory slots were out of sync")]
+        public static partial void InventoryOutOfSync(ILogger logger, string username, int count);
+    }
 }
 

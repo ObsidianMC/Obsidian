@@ -20,16 +20,16 @@ public sealed class RconPacket
     public int Length => 4 + 4 + PayloadBytes.Length + 1; // RequestId (Int32) + Type (Int32) + PayloadBytes (varies) + padding (1)
     public int RequestId { get; set; }
     public RconPacketType Type { get; set; }
-    public byte[] PayloadBytes { get; set; } = [0x00];
+    public ReadOnlyMemory<byte> PayloadBytes { get; set; } = new byte[] { 0x00 };
     public string PayloadText
     {
         get => PayloadBytes.Length > 1
-            ? encoding.GetString(PayloadBytes.Take(PayloadBytes.Length - 1).ToArray())
+            ? encoding.GetString(PayloadBytes.Span[..^1])
             : string.Empty;
         set
         {
             if (string.IsNullOrEmpty(value))
-                PayloadBytes = [0x00];
+                PayloadBytes = new byte[] { 0x00 };
             PayloadBytes = encoding.GetBytes(value).Append((byte)0x00).ToArray();
         }
     }
@@ -40,19 +40,19 @@ public sealed class RconPacket
 
         Span<byte> buf = stackalloc byte[4];
 
-        stream.Read(buf);
+        stream.ReadExactly(buf);
         var payloadSize = BinaryPrimitives.ReadInt32LittleEndian(buf) - 9;
 
-        stream.Read(buf);
+        stream.ReadExactly(buf);
         packet.RequestId = BinaryPrimitives.ReadInt32LittleEndian(buf);
 
-        stream.Read(buf);
+        stream.ReadExactly(buf);
         packet.Type = (RconPacketType)BinaryPrimitives.ReadInt32LittleEndian(buf);
 
         if (payloadSize > 0)
         {
             buf = payloadSize > 512 ? new byte[payloadSize] : stackalloc byte[payloadSize]; // Don't allocate more than 512 bytes on the stack
-            stream.Read(buf);
+            stream.ReadExactly(buf);
             packet.PayloadBytes = buf.ToArray();
         }
 
@@ -67,25 +67,26 @@ public sealed class RconPacket
 
         var buf = new byte[4];
 
-        await stream.ReadAsync(buf, ct);
-        if (buf.All(x => x == 0x00)) return null;
+        // The connection closing before a packet starts isn't an error.
+        if (await stream.ReadAtLeastAsync(buf, buf.Length, throwOnEndOfStream: false, ct) < buf.Length || buf.All(x => x == 0x00))
+            return null;
         var payloadSize = BinaryPrimitives.ReadInt32LittleEndian(buf) - 9;
 
-        await stream.ReadAsync(buf, ct);
+        await stream.ReadExactlyAsync(buf, ct);
         packet.RequestId = BinaryPrimitives.ReadInt32LittleEndian(buf);
 
-        await stream.ReadAsync(buf, ct);
+        await stream.ReadExactlyAsync(buf, ct);
         packet.Type = (RconPacketType)BinaryPrimitives.ReadInt32LittleEndian(buf);
 
         if (payloadSize > 0)
         {
             buf = new byte[payloadSize];
-            await stream.ReadAsync(buf, ct);
+            await stream.ReadExactlyAsync(buf, ct);
             packet.PayloadBytes = buf.ToArray();
         }
 
         buf = new byte[1];
-        await stream.ReadAsync(buf, ct);
+        await stream.ReadExactlyAsync(buf, ct);
 
         return packet;
     }
@@ -103,7 +104,7 @@ public sealed class RconPacket
         BinaryPrimitives.WriteInt32LittleEndian(buf, (int)Type);
         stream.Write(buf);
 
-        stream.Write(PayloadBytes);
+        stream.Write(PayloadBytes.Span);
 
         stream.WriteByte(0x00); // Padding
     }

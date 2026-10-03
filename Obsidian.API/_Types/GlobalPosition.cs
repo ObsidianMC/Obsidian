@@ -1,5 +1,5 @@
 ﻿namespace Obsidian.API;
-public readonly struct GlobalPosition : INetworkSerializable<GlobalPosition>
+public readonly record struct GlobalPosition : INetworkSerializable<GlobalPosition>
 {
     public required string DimensionName { get; init; }
 

@@ -72,7 +72,9 @@ public partial class WorldgenNoiseRegistryGenerator
                     if (!cleanedNoises.WorldgenProperties.TryGetValue(functionTypeName, out var typeInformation))
                         continue;
 
-                    builder.Type($"public static IDensityFunction {sanitizedName} => new {typeInformation.Symbol.Name}()");
+                    // Created once and shared, like vanilla's registry holders, so references to the same
+                    // function stay one node and its caches are shared.
+                    builder.Type($"public static IDensityFunction {sanitizedName} => field ??= new {typeInformation.Symbol.Name}()");
 
                     foreach (var property in function.Properties)
                     {

@@ -65,7 +65,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<AdditionalFiles Include="Assets\**\*.json" />
+		<!-- Biome parameter lists, configured carvers and block physics are only read at runtime; keep them away from the source generators. -->
+		<AdditionalFiles Include="Assets\**\*.json" Exclude="Assets\biome_parameters\**;Assets\configured_carver\**;Assets\block_physics.json" />
 		<EmbeddedResource Include="Assets\**\*.*" />
 	</ItemGroup>
 

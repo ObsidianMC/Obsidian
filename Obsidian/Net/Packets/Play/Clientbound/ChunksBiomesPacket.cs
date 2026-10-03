@@ -16,16 +16,16 @@ public partial class ChunksBiomesPacket
             writer.WriteInt(chunkBiome.Z);
 
             writer.WriteVarInt(chunkBiome.Data.Length);
-            writer.WriteByteArray(chunkBiome.Data);
+            writer.WriteByteArray(chunkBiome.Data.Span);
         }
     }
 }
 
-public readonly struct ChunkBiome
+public readonly record struct ChunkBiome
 {
     public required int X { get; init; }
 
     public required int Z { get; init; }
 
-    public required byte[] Data { get; init; }
+    public required ReadOnlyMemory<byte> Data { get; init; }
 }

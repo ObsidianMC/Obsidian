@@ -1,22 +1,21 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Obsidian.API.Configuration;
 using Obsidian.Hosting;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Net.Http;
 using System.Threading;
 
 namespace Obsidian.WorldData;
 
-public sealed class WorldManager(ILogger<WorldManager> logger, IServiceProvider serviceProvider, IOptionsMonitor<ServerConfiguration> configuration,
-    IServerEnvironment serverEnvironment, ILevelFactory levelFactory) : BackgroundService, IWorldManager
+public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceProvider serviceProvider,
+    IServerEnvironment serverEnvironment, ILevelFactory levelFactory, IHttpClientFactory httpClientFactory) : BackgroundService, IWorldManager
 {
     private readonly ILogger<WorldManager> logger = logger;
     private readonly Dictionary<string, IWorld> worlds = [];
-    private readonly IOptionsMonitor<ServerConfiguration> configuration = configuration;
     private readonly IServerEnvironment serverEnvironment = serverEnvironment;
     private readonly ILevelFactory levelFactory = levelFactory;
     private readonly IServiceScope serviceScope = serviceProvider.CreateScope();
@@ -36,6 +35,10 @@ public sealed class WorldManager(ILogger<WorldManager> logger, IServiceProvider 
         try
         {
             this.levelFactory.Initialize();
+
+            // Structure templates come from Mojang's server jar, which Obsidian can't ship.
+            StructureRegistry.Initialize(await VanillaServerJar.ExtractStructuresAsync(httpClientFactory.CreateClient(),
+                ServerConstants.VanillaCachePath, ServerConstants.ProtocolDescription, this.logger, stoppingToken));
 
             await this.LoadWorldsAsync(stoppingToken);
 
@@ -65,13 +68,13 @@ public sealed class WorldManager(ILogger<WorldManager> logger, IServiceProvider 
 
             if (!await world.LoadAsync(defaultCodec))
             {
-                this.logger.LogInformation("Creating new world: {worldName}...", serverWorld.Name);
+                Log.CreatingWorld(this.logger, serverWorld.Name);
 
                 foreach (var dimensionName in serverWorld.ChildDimensions)
                 {
                     if (!CodecRegistry.TryGetDimension(dimensionName, out var codec))
                     {
-                        this.logger.LogWarning("Failed to find dimension with the name {dimensionName}", dimensionName);
+                        Log.UnknownDimension(this.logger, dimensionName, serverWorld.Name);
                         continue;
                     }
 
@@ -156,5 +159,14 @@ public sealed class WorldManager(ILogger<WorldManager> logger, IServiceProvider 
         await worlds.ToJsonAsync(fileStream, cancellationToken: cancellationToken);
 
         return worlds;
+    }
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Information, Message = "Creating world {WorldName}")]
+        public static partial void CreatingWorld(ILogger logger, string worldName);
+
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Skipping unknown dimension {DimensionName} in world {WorldName}")]
+        public static partial void UnknownDimension(ILogger logger, string dimensionName, string worldName);
     }
 }

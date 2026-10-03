@@ -10,9 +10,12 @@ public sealed class ClampDensityFunction : IDensityFunction
     public required double Min { get; init; }
     public required double Max { get; init; }
 
-    public double MinValue => Min;
+    public double MinValue => this.Min;
 
-    public double MaxValue => Max;
+    public double MaxValue => this.Max;
 
-    public double GetValue(double x, double y, double z) => Math.Clamp(Input.GetValue(x, y, z), Min, Max);
+    public double GetValue(double x, double y, double z) => Math.Clamp(this.Input.GetValue(x, y, z), this.Min, this.Max);
+
+    public IDensityFunction MapAll(IDensityFunctionVisitor visitor) =>
+        visitor.Apply(new ClampDensityFunction { Input = visitor.Map(this.Input), Min = this.Min, Max = this.Max });
 }

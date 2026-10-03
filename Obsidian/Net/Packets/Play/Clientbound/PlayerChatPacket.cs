@@ -14,7 +14,7 @@ public partial class PlayerChatPacket
 
     [Field(2)]
     //This needs to be read up on more
-    public required byte[] MessageSignature { get; init; }
+    public required ReadOnlyMemory<byte> MessageSignature { get; init; }
 
     [Field(3)]
     public required ChatMessage UnsignedContent { get; init; } 
@@ -30,6 +30,6 @@ public partial class PlayerChatPacket
         writer.WriteUuid(this.Sender);
         writer.WriteVarInt(this.Index);
 
-        writer.WriteByteArray(this.MessageSignature);
+        writer.WriteByteArray(this.MessageSignature.Span);
     }
 }

@@ -6,7 +6,7 @@ namespace Obsidian.Console;
 /// <summary>
 /// The console as a command sender: replies are written to the log as plain text, with '§' formatting codes removed.
 /// </summary>
-internal sealed class ConsoleCommandSender(ILogger logger) : ICommandSender
+internal sealed partial class ConsoleCommandSender(ILogger logger) : ICommandSender
 {
     public CommandIssuers Issuer => CommandIssuers.Console;
 
@@ -14,7 +14,11 @@ internal sealed class ConsoleCommandSender(ILogger logger) : ICommandSender
 
     public Task SendMessageAsync(ChatMessage message)
     {
-        logger.LogInformation("{Message}", ToPlainText(message));
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            var text = ToPlainText(message);
+            Log.Reply(logger, text);
+        }
 
         return Task.CompletedTask;
     }
@@ -53,5 +57,11 @@ internal sealed class ConsoleCommandSender(ILogger logger) : ICommandSender
             else
                 builder.Append(text[i]);
         }
+    }
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Information, Message = "{Message}")]
+        public static partial void Reply(ILogger logger, string message);
     }
 }

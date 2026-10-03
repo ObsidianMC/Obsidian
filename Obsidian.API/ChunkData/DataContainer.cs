@@ -7,7 +7,7 @@ namespace Obsidian.API.ChunkData;
 
 public abstract class DataContainer<T>(byte minBitsPerEntry, byte maxBitsPerEntry, int maxEntryCount, Func<byte, IPalette<T>> paletteFactory)
 {
-    private readonly Lock dataLock = new();
+    private protected readonly Lock dataLock = new();
     public virtual bool IsEmpty { get; }
 
     public byte BitsPerEntry => (byte)this.Palette.BitCount;
@@ -40,6 +40,11 @@ public abstract class DataContainer<T>(byte minBitsPerEntry, byte maxBitsPerEntr
     }
 
     public virtual int GetIndex(int x, int y, int z) => (y << this.BitsPerEntry | z) << this.BitsPerEntry | x;
+
+    /// <summary>
+    /// Holds the container's lock, so its palette and data can be read together while nothing writes them (saving).
+    /// </summary>
+    internal Lock.Scope EnterScope() => this.dataLock.EnterScope();
 
     public bool TryGrow()
     {

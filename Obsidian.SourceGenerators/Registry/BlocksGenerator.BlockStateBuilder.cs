@@ -28,7 +28,8 @@ public partial class BlocksGenerator
 
         stateBuilder.Append("];").Line();
 
-        stateBuilder.Indent().Append("private static int[][] StatePropertyIndexes => [");
+        // A field, not an expression-bodied property: the table would otherwise be built again on every access.
+        stateBuilder.Indent().Append("private static readonly int[][] StatePropertyIndexes = [");
 
         foreach (var values in stateValues.Values)
         {

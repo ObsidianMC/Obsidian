@@ -1,101 +1,33 @@
-﻿using Obsidian.API.World.Features;
-using Obsidian.API.World.Features.Tree;
-using System.ComponentModel.DataAnnotations;
+using Obsidian.API.World.Generator.RandomSources;
 
 namespace Obsidian.WorldData.Features.Tree.Placers.Foliage;
 
 /// <summary>
-/// Foliage placer for mega/large pine trees - creates a wide conical crown with jagged edges.
+/// Mega spruce/pine crown: round rows widening toward the bottom of the crown.
 /// </summary>
-[TreeProperty("minecraft:mega_pine_foliage_placer")]
+[ConfiguredFeatureProperty("minecraft:mega_pine_foliage_placer")]
 public sealed class MegaPineFoliagePlacer : FoliagePlacer
 {
-    public override required string Type { get; init; }
+    public required IIntProvider CrownHeight { get; init; }
 
-    /// <summary>
-    /// Height of the crown/foliage section (0-24 blocks).
-    /// </summary>
-    [Range(0, 24)]
-    public required IIntProvider CrownHeight { get; set; }
+    public override int GetFoliageHeight(IRandomSource random, int treeHeight) => this.CrownHeight.Sample(random);
 
-    public override int GetFoliageHeight(Random random, int treeHeight)
+    protected override void CreateFoliage(TreeContext tree, int freeTreeHeight, FoliageAttachment attachment, int foliageHeight,
+        int foliageRadius, int offset)
     {
-        return CrownHeight.Get();
-    }
-
-    public override int FoliageRadius(Random random, int trunkHeight)
-    {
-        // Mega pine needs a base radius for the formula to work correctly
-        // The actual radius grows with the formula in Place()
-        return 1;
-    }
-
-    public override async ValueTask<List<Vector>> Place(FeatureContext context, List<Vector> trunkPositions, int treeHeight, IBlock foliageBlock)
-    {
-        var random = context.Random;
-        var placedPositions = new List<Vector>();
-
-        foreach (var attachment in trunkPositions)
+        var center = attachment.Position;
+        var previousRadius = 0;
+        for (var y = center.Y - foliageHeight + offset; y <= center.Y + offset; y++)
         {
-            int leafRadius = FoliageRadius(random, treeHeight);
-            int offset = GetOffset(random);
-            int foliageHeight = GetFoliageHeight(random, treeHeight);
-            bool doubleTrunk = true; // MegaPine uses GiantTrunkPlacer which creates 2x2 trunks
-            int radiusOffset = 0; // Can be from attachment
+            var depth = center.Y - y;
+            var radius = foliageRadius + attachment.RadiusOffset + Mth.Floor((float)depth / foliageHeight * 3.5f);
+            var rowRadius = depth > 0 && radius == previousRadius && (y & 1) == 0 ? radius + 1 : radius;
 
-            var foliagePos = attachment;
-            int prevRadius = 0;
-
-            // Place layers from bottom to top (yo represents distance from foliagePos)
-            for (int yy = foliagePos.Y - foliageHeight + offset; yy <= foliagePos.Y + offset; yy++)
-            {
-                int yo = foliagePos.Y - yy; // Distance below the attachment point
-
-                // Calculate smooth radius based on vertical position
-                // Formula: radius increases as we go up (yo decreases)
-                float smoothRadiusCalc = leafRadius + radiusOffset + MathF.Floor((float)yo / foliageHeight * 3.5f);
-                int smoothRadius = (int)smoothRadiusCalc;
-
-                // Add jagged variation - every other layer alternates if radius stays the same
-                int jaggedRadius;
-                if (yo > 0 && smoothRadius == prevRadius && (yy & 1) == 0)
-                {
-                    jaggedRadius = smoothRadius + 1;
-                }
-                else
-                {
-                    jaggedRadius = smoothRadius;
-                }
-
-                // Place leaves at this layer
-                var layerPos = new Vector(foliagePos.X, yy, foliagePos.Z);
-                await FoliagePlacerHelper.PlaceLeavesRow(
-                    context.World,
-                    random,
-                    foliageBlock,
-                    layerPos,
-                    jaggedRadius,
-                    0, // y offset is already in layerPos
-                    doubleTrunk,
-                    ShouldSkipLocation,
-                    placedPositions
-                );
-
-                prevRadius = smoothRadius;
-            }
+            this.PlaceLeavesRow(tree, new Vector(center.X, y, center.Z), rowRadius, 0, attachment.DoubleTrunk);
+            previousRadius = radius;
         }
-
-        return placedPositions;
     }
 
-    protected override bool ShouldSkipLocation(Random random, int dx, int y, int dz, int currentRadius, bool doubleTrunk)
-    {
-        // Skip if too far from center (creates circular shape)
-        // Also skip if dx + dz >= 7 (cuts off far corners for mega trees)
-        if (dx + dz >= 7)
-            return true;
-
-        // Use circular distance check
-        return dx * dx + dz * dz > currentRadius * currentRadius;
-    }
+    protected override bool ShouldSkipLocation(IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk) =>
+        dx + dz >= 7 || dx * dx + dz * dz > radius * radius;
 }

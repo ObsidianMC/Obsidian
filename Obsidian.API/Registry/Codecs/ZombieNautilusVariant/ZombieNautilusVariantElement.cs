@@ -10,7 +10,7 @@ public sealed record class ZombieNautilusVariantElement : INbtSerializable
 
     public string? Model { get; set; }
 
-    public required SpawnConditionElement[] SpawnConditions { get; set; }
+    public required ImmutableArray<SpawnConditionElement> SpawnConditions { get; set; }
 
     public void Write(INbtWriter writer)
     {

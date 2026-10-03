@@ -1,6 +1,7 @@
 ﻿using Obsidian.API.Configuration;
 using Obsidian.API.Utilities;
 using System.IO;
+using System.Runtime.CompilerServices;
 
 namespace Obsidian.API;
 public sealed class ServerStatus
@@ -58,7 +59,7 @@ public sealed class ServerStatus
     }
 }
 
-public readonly struct ServerVersion
+public readonly record struct ServerVersion
 {
     public required string Name { get; init; }
     public required ProtocolVersion Protocol { get; init; }
@@ -93,9 +94,22 @@ public sealed class ServerPlayers
     });
 }
 
-public readonly struct ServerDescription(ServerConfiguration config)
+public readonly struct ServerDescription(ServerConfiguration config) : IEquatable<ServerDescription>
 {
-    public string Text => FormatText(config.Motd);
+    private readonly ServerConfiguration config = config;
+
+    public string Text => FormatText(this.config.Motd);
+
+    public static bool operator ==(ServerDescription left, ServerDescription right) => left.Equals(right);
+
+    public static bool operator !=(ServerDescription left, ServerDescription right) => !left.Equals(right);
+
+    // Text is derived from the configuration, so describing the same configuration instance means equal.
+    public bool Equals(ServerDescription other) => ReferenceEquals(this.config, other.config);
+
+    public override bool Equals(object? obj) => obj is ServerDescription description && this.Equals(description);
+
+    public override int GetHashCode() => RuntimeHelpers.GetHashCode(this.config);
 
     private static string FormatText(string text) => text.Replace('&', '§');
 }

@@ -1,0 +1,2312 @@
+{
+  "minecraft:bamboo": {
+    "feature": "minecraft:bamboo_some_podzol",
+    "placement": [
+      {
+        "type": "minecraft:noise_based_count",
+        "noise_factor": 80.0,
+        "noise_offset": 0.3,
+        "noise_to_count_ratio": 160
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "WORLD_SURFACE_WG"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:bamboo_light": {
+    "feature": "minecraft:bamboo_no_podzol",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 4
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:bamboo_vegetation": {
+    "feature": "minecraft:bamboo_vegetation",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:weighted_list",
+          "distribution": [
+            {
+              "data": 30,
+              "weight": 9
+            },
+            {
+              "data": 31,
+              "weight": 1
+            }
+          ]
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:surface_water_depth_filter",
+        "max_water_depth": 0
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "OCEAN_FLOOR"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:birch_tall": {
+    "feature": "minecraft:birch_tall",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:weighted_list",
+          "distribution": [
+            {
+              "data": 10,
+              "weight": 9
+            },
+            {
+              "data": 11,
+              "weight": 1
+            }
+          ]
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:surface_water_depth_filter",
+        "max_water_depth": 0
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "OCEAN_FLOOR"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:brown_mushroom_nether": {
+    "feature": "minecraft:patch_brown_mushroom",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 2
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:uniform",
+          "max_inclusive": {
+            "below_top": 0
+          },
+          "min_inclusive": {
+            "above_bottom": 0
+          }
+        }
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:brown_mushroom_normal": {
+    "feature": "minecraft:patch_brown_mushroom",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 256
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:brown_mushroom_old_growth": {
+    "feature": "minecraft:patch_brown_mushroom",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": 3
+      },
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 4
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:brown_mushroom_swamp": {
+    "feature": "minecraft:patch_brown_mushroom",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": 2
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:brown_mushroom_taiga": {
+    "feature": "minecraft:patch_brown_mushroom",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 4
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:dark_forest_vegetation": {
+    "feature": "minecraft:dark_forest_vegetation",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": 16
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:surface_water_depth_filter",
+        "max_water_depth": 0
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "OCEAN_FLOOR"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:flower_cherry": {
+    "feature": "minecraft:flower_cherry",
+    "placement": [
+      {
+        "type": "minecraft:noise_threshold_count",
+        "above_noise": 10,
+        "below_noise": 5,
+        "noise_level": -0.8
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:flower_default": {
+    "feature": "minecraft:flower_default",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 32
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:flower_flower_forest": {
+    "feature": "minecraft:flower_flower_forest",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": 3
+      },
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 2
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:flower_forest_flowers": {
+    "feature": "minecraft:forest_flowers",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 7
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:clamped",
+          "max_inclusive": 3,
+          "min_inclusive": 0,
+          "source": {
+            "type": "minecraft:uniform",
+            "max_inclusive": 3,
+            "min_inclusive": -1
+          }
+        }
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:flower_meadow": {
+    "feature": "minecraft:flower_meadow",
+    "placement": [
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:flower_pale_garden": {
+    "feature": "minecraft:flower_pale_garden",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 32
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:flower_plains": {
+    "feature": "minecraft:flower_plain",
+    "placement": [
+      {
+        "type": "minecraft:noise_threshold_count",
+        "above_noise": 4,
+        "below_noise": 15,
+        "noise_level": -0.8
+      },
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 32
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:flower_swamp": {
+    "feature": "minecraft:flower_swamp",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 32
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:flower_warm": {
+    "feature": "minecraft:flower_default",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 16
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:forest_flowers": {
+    "feature": "minecraft:forest_flowers",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 7
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:clamped",
+          "max_inclusive": 1,
+          "min_inclusive": 0,
+          "source": {
+            "type": "minecraft:uniform",
+            "max_inclusive": 1,
+            "min_inclusive": -3
+          }
+        }
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:grass_bonemeal": {
+    "feature": "minecraft:single_piece_of_grass",
+    "placement": [
+      {
+        "type": "minecraft:block_predicate_filter",
+        "predicate": {
+          "type": "minecraft:matching_blocks",
+          "blocks": "minecraft:air"
+        }
+      }
+    ]
+  },
+  "minecraft:mushroom_island_vegetation": {
+    "feature": "minecraft:mushroom_island_vegetation",
+    "placement": [
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:pale_garden_flowers": {
+    "feature": "minecraft:pale_forest_flowers",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 8
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING_NO_LEAVES"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:pale_garden_vegetation": {
+    "feature": "minecraft:pale_garden_vegetation",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": 16
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:surface_water_depth_filter",
+        "max_water_depth": 0
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "OCEAN_FLOOR"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:pale_moss_patch": {
+    "feature": "minecraft:pale_moss_patch",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": 1
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING_NO_LEAVES"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_berry_common": {
+    "feature": "minecraft:patch_berry_bush",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 32
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "WORLD_SURFACE_WG"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_berry_rare": {
+    "feature": "minecraft:patch_berry_bush",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 384
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "WORLD_SURFACE_WG"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_bush": {
+    "feature": "minecraft:patch_bush",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 4
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_cactus_decorated": {
+    "feature": "minecraft:patch_cactus",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 13
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_cactus_desert": {
+    "feature": "minecraft:patch_cactus",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 6
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_dead_bush": {
+    "feature": "minecraft:patch_dead_bush",
+    "placement": [
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "WORLD_SURFACE_WG"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_dead_bush_2": {
+    "feature": "minecraft:patch_dead_bush",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": 2
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "WORLD_SURFACE_WG"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_dead_bush_badlands": {
+    "feature": "minecraft:patch_dead_bush",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": 20
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "WORLD_SURFACE_WG"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_dry_grass_badlands": {
+    "feature": "minecraft:patch_dry_grass",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 6
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_dry_grass_desert": {
+    "feature": "minecraft:patch_dry_grass",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 3
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_firefly_bush_near_water": {
+    "feature": "minecraft:patch_firefly_bush",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": 2
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING_NO_LEAVES"
+      },
+      {
+        "type": "minecraft:biome"
+      },
+      {
+        "type": "minecraft:block_predicate_filter",
+        "predicate": {
+          "type": "minecraft:all_of",
+          "predicates": [
+            {
+              "type": "minecraft:matching_blocks",
+              "blocks": "minecraft:air"
+            },
+            {
+              "type": "minecraft:would_survive",
+              "state": {
+                "Name": "minecraft:firefly_bush"
+              }
+            },
+            {
+              "type": "minecraft:any_of",
+              "predicates": [
+                {
+                  "type": "minecraft:matching_fluids",
+                  "fluids": [
+                    "minecraft:water",
+                    "minecraft:flowing_water"
+                  ],
+                  "offset": [
+                    1,
+                    -1,
+                    0
+                  ]
+                },
+                {
+                  "type": "minecraft:matching_fluids",
+                  "fluids": [
+                    "minecraft:water",
+                    "minecraft:flowing_water"
+                  ],
+                  "offset": [
+                    -1,
+                    -1,
+                    0
+                  ]
+                },
+                {
+                  "type": "minecraft:matching_fluids",
+                  "fluids": [
+                    "minecraft:water",
+                    "minecraft:flowing_water"
+                  ],
+                  "offset": [
+                    0,
+                    -1,
+                    1
+                  ]
+                },
+                {
+                  "type": "minecraft:matching_fluids",
+                  "fluids": [
+                    "minecraft:water",
+                    "minecraft:flowing_water"
+                  ],
+                  "offset": [
+                    0,
+                    -1,
+                    -1
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "minecraft:patch_firefly_bush_near_water_swamp": {
+    "feature": "minecraft:patch_firefly_bush",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": 3
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      },
+      {
+        "type": "minecraft:block_predicate_filter",
+        "predicate": {
+          "type": "minecraft:all_of",
+          "predicates": [
+            {
+              "type": "minecraft:matching_blocks",
+              "blocks": "minecraft:air"
+            },
+            {
+              "type": "minecraft:would_survive",
+              "state": {
+                "Name": "minecraft:firefly_bush"
+              }
+            },
+            {
+              "type": "minecraft:any_of",
+              "predicates": [
+                {
+                  "type": "minecraft:matching_fluids",
+                  "fluids": [
+                    "minecraft:water",
+                    "minecraft:flowing_water"
+                  ],
+                  "offset": [
+                    1,
+                    -1,
+                    0
+                  ]
+                },
+                {
+                  "type": "minecraft:matching_fluids",
+                  "fluids": [
+                    "minecraft:water",
+                    "minecraft:flowing_water"
+                  ],
+                  "offset": [
+                    -1,
+                    -1,
+                    0
+                  ]
+                },
+                {
+                  "type": "minecraft:matching_fluids",
+                  "fluids": [
+                    "minecraft:water",
+                    "minecraft:flowing_water"
+                  ],
+                  "offset": [
+                    0,
+                    -1,
+                    1
+                  ]
+                },
+                {
+                  "type": "minecraft:matching_fluids",
+                  "fluids": [
+                    "minecraft:water",
+                    "minecraft:flowing_water"
+                  ],
+                  "offset": [
+                    0,
+                    -1,
+                    -1
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "minecraft:patch_firefly_bush_swamp": {
+    "feature": "minecraft:patch_firefly_bush",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 8
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_grass_badlands": {
+    "feature": "minecraft:patch_grass",
+    "placement": [
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "WORLD_SURFACE_WG"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_grass_forest": {
+    "feature": "minecraft:patch_grass",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": 2
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "WORLD_SURFACE_WG"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_grass_jungle": {
+    "feature": "minecraft:patch_grass_jungle",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": 25
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "WORLD_SURFACE_WG"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_grass_meadow": {
+    "feature": "minecraft:patch_grass_meadow",
+    "placement": [
+      {
+        "type": "minecraft:noise_threshold_count",
+        "above_noise": 10,
+        "below_noise": 5,
+        "noise_level": -0.8
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "WORLD_SURFACE_WG"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_grass_normal": {
+    "feature": "minecraft:patch_grass",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": 5
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "WORLD_SURFACE_WG"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_grass_plain": {
+    "feature": "minecraft:patch_grass",
+    "placement": [
+      {
+        "type": "minecraft:noise_threshold_count",
+        "above_noise": 10,
+        "below_noise": 5,
+        "noise_level": -0.8
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "WORLD_SURFACE_WG"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_grass_savanna": {
+    "feature": "minecraft:patch_grass",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": 20
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "WORLD_SURFACE_WG"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_grass_taiga": {
+    "feature": "minecraft:patch_taiga_grass",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": 7
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "WORLD_SURFACE_WG"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_grass_taiga_2": {
+    "feature": "minecraft:patch_taiga_grass",
+    "placement": [
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "WORLD_SURFACE_WG"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_large_fern": {
+    "feature": "minecraft:patch_large_fern",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 5
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_leaf_litter": {
+    "feature": "minecraft:patch_leaf_litter",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": 2
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "WORLD_SURFACE_WG"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_melon": {
+    "feature": "minecraft:patch_melon",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 6
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_melon_sparse": {
+    "feature": "minecraft:patch_melon",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 64
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_pumpkin": {
+    "feature": "minecraft:patch_pumpkin",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 300
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_sugar_cane": {
+    "feature": "minecraft:patch_sugar_cane",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 6
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_sugar_cane_badlands": {
+    "feature": "minecraft:patch_sugar_cane",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 5
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_sugar_cane_desert": {
+    "feature": "minecraft:patch_sugar_cane",
+    "placement": [
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_sugar_cane_swamp": {
+    "feature": "minecraft:patch_sugar_cane",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 3
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_sunflower": {
+    "feature": "minecraft:patch_sunflower",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 3
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_tall_grass": {
+    "feature": "minecraft:patch_tall_grass",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 5
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_tall_grass_2": {
+    "feature": "minecraft:patch_tall_grass",
+    "placement": [
+      {
+        "type": "minecraft:noise_threshold_count",
+        "above_noise": 7,
+        "below_noise": 0,
+        "noise_level": -0.8
+      },
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 32
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:patch_waterlily": {
+    "feature": "minecraft:patch_waterlily",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": 4
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "WORLD_SURFACE_WG"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:red_mushroom_nether": {
+    "feature": "minecraft:patch_red_mushroom",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 2
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:uniform",
+          "max_inclusive": {
+            "below_top": 0
+          },
+          "min_inclusive": {
+            "above_bottom": 0
+          }
+        }
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:red_mushroom_normal": {
+    "feature": "minecraft:patch_red_mushroom",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 512
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:red_mushroom_old_growth": {
+    "feature": "minecraft:patch_red_mushroom",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 171
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:red_mushroom_swamp": {
+    "feature": "minecraft:patch_red_mushroom",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 64
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:red_mushroom_taiga": {
+    "feature": "minecraft:patch_red_mushroom",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 256
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:trees_badlands": {
+    "feature": "minecraft:trees_badlands",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:weighted_list",
+          "distribution": [
+            {
+              "data": 5,
+              "weight": 9
+            },
+            {
+              "data": 6,
+              "weight": 1
+            }
+          ]
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:surface_water_depth_filter",
+        "max_water_depth": 0
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "OCEAN_FLOOR"
+      },
+      {
+        "type": "minecraft:biome"
+      },
+      {
+        "type": "minecraft:block_predicate_filter",
+        "predicate": {
+          "type": "minecraft:would_survive",
+          "state": {
+            "Name": "minecraft:oak_sapling",
+            "Properties": {
+              "stage": "0"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "minecraft:trees_birch": {
+    "feature": "minecraft:trees_birch",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:weighted_list",
+          "distribution": [
+            {
+              "data": 10,
+              "weight": 9
+            },
+            {
+              "data": 11,
+              "weight": 1
+            }
+          ]
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:surface_water_depth_filter",
+        "max_water_depth": 0
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "OCEAN_FLOOR"
+      },
+      {
+        "type": "minecraft:biome"
+      },
+      {
+        "type": "minecraft:block_predicate_filter",
+        "predicate": {
+          "type": "minecraft:would_survive",
+          "state": {
+            "Name": "minecraft:birch_sapling",
+            "Properties": {
+              "stage": "0"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "minecraft:trees_birch_and_oak_leaf_litter": {
+    "feature": "minecraft:trees_birch_and_oak_leaf_litter",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:weighted_list",
+          "distribution": [
+            {
+              "data": 10,
+              "weight": 9
+            },
+            {
+              "data": 11,
+              "weight": 1
+            }
+          ]
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:surface_water_depth_filter",
+        "max_water_depth": 0
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "OCEAN_FLOOR"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:trees_cherry": {
+    "feature": "minecraft:cherry_bees_005",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:weighted_list",
+          "distribution": [
+            {
+              "data": 10,
+              "weight": 9
+            },
+            {
+              "data": 11,
+              "weight": 1
+            }
+          ]
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:surface_water_depth_filter",
+        "max_water_depth": 0
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "OCEAN_FLOOR"
+      },
+      {
+        "type": "minecraft:biome"
+      },
+      {
+        "type": "minecraft:block_predicate_filter",
+        "predicate": {
+          "type": "minecraft:would_survive",
+          "state": {
+            "Name": "minecraft:cherry_sapling",
+            "Properties": {
+              "stage": "0"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "minecraft:trees_flower_forest": {
+    "feature": "minecraft:trees_flower_forest",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:weighted_list",
+          "distribution": [
+            {
+              "data": 6,
+              "weight": 9
+            },
+            {
+              "data": 7,
+              "weight": 1
+            }
+          ]
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:surface_water_depth_filter",
+        "max_water_depth": 0
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "OCEAN_FLOOR"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:trees_grove": {
+    "feature": "minecraft:trees_grove",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:weighted_list",
+          "distribution": [
+            {
+              "data": 10,
+              "weight": 9
+            },
+            {
+              "data": 11,
+              "weight": 1
+            }
+          ]
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:surface_water_depth_filter",
+        "max_water_depth": 0
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "OCEAN_FLOOR"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:trees_jungle": {
+    "feature": "minecraft:trees_jungle",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:weighted_list",
+          "distribution": [
+            {
+              "data": 50,
+              "weight": 9
+            },
+            {
+              "data": 51,
+              "weight": 1
+            }
+          ]
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:surface_water_depth_filter",
+        "max_water_depth": 0
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "OCEAN_FLOOR"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:trees_mangrove": {
+    "feature": "minecraft:mangrove_vegetation",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": 25
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:surface_water_depth_filter",
+        "max_water_depth": 5
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "OCEAN_FLOOR"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:trees_meadow": {
+    "feature": "minecraft:meadow_trees",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 100
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:surface_water_depth_filter",
+        "max_water_depth": 0
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "OCEAN_FLOOR"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:trees_old_growth_pine_taiga": {
+    "feature": "minecraft:trees_old_growth_pine_taiga",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:weighted_list",
+          "distribution": [
+            {
+              "data": 10,
+              "weight": 9
+            },
+            {
+              "data": 11,
+              "weight": 1
+            }
+          ]
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:surface_water_depth_filter",
+        "max_water_depth": 0
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "OCEAN_FLOOR"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:trees_old_growth_spruce_taiga": {
+    "feature": "minecraft:trees_old_growth_spruce_taiga",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:weighted_list",
+          "distribution": [
+            {
+              "data": 10,
+              "weight": 9
+            },
+            {
+              "data": 11,
+              "weight": 1
+            }
+          ]
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:surface_water_depth_filter",
+        "max_water_depth": 0
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "OCEAN_FLOOR"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:trees_plains": {
+    "feature": "minecraft:trees_plains",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:weighted_list",
+          "distribution": [
+            {
+              "data": 0,
+              "weight": 19
+            },
+            {
+              "data": 1,
+              "weight": 1
+            }
+          ]
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:surface_water_depth_filter",
+        "max_water_depth": 0
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "OCEAN_FLOOR"
+      },
+      {
+        "type": "minecraft:block_predicate_filter",
+        "predicate": {
+          "type": "minecraft:would_survive",
+          "state": {
+            "Name": "minecraft:oak_sapling",
+            "Properties": {
+              "stage": "0"
+            }
+          }
+        }
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:trees_savanna": {
+    "feature": "minecraft:trees_savanna",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:weighted_list",
+          "distribution": [
+            {
+              "data": 1,
+              "weight": 9
+            },
+            {
+              "data": 2,
+              "weight": 1
+            }
+          ]
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:surface_water_depth_filter",
+        "max_water_depth": 0
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "OCEAN_FLOOR"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:trees_snowy": {
+    "feature": "minecraft:trees_snowy",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:weighted_list",
+          "distribution": [
+            {
+              "data": 0,
+              "weight": 9
+            },
+            {
+              "data": 1,
+              "weight": 1
+            }
+          ]
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:surface_water_depth_filter",
+        "max_water_depth": 0
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "OCEAN_FLOOR"
+      },
+      {
+        "type": "minecraft:biome"
+      },
+      {
+        "type": "minecraft:block_predicate_filter",
+        "predicate": {
+          "type": "minecraft:would_survive",
+          "state": {
+            "Name": "minecraft:spruce_sapling",
+            "Properties": {
+              "stage": "0"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "minecraft:trees_sparse_jungle": {
+    "feature": "minecraft:trees_sparse_jungle",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:weighted_list",
+          "distribution": [
+            {
+              "data": 2,
+              "weight": 9
+            },
+            {
+              "data": 3,
+              "weight": 1
+            }
+          ]
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:surface_water_depth_filter",
+        "max_water_depth": 0
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "OCEAN_FLOOR"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:trees_swamp": {
+    "feature": "minecraft:swamp_oak",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:weighted_list",
+          "distribution": [
+            {
+              "data": 2,
+              "weight": 9
+            },
+            {
+              "data": 3,
+              "weight": 1
+            }
+          ]
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:surface_water_depth_filter",
+        "max_water_depth": 2
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "OCEAN_FLOOR"
+      },
+      {
+        "type": "minecraft:biome"
+      },
+      {
+        "type": "minecraft:block_predicate_filter",
+        "predicate": {
+          "type": "minecraft:would_survive",
+          "state": {
+            "Name": "minecraft:oak_sapling",
+            "Properties": {
+              "stage": "0"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "minecraft:trees_taiga": {
+    "feature": "minecraft:trees_taiga",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:weighted_list",
+          "distribution": [
+            {
+              "data": 10,
+              "weight": 9
+            },
+            {
+              "data": 11,
+              "weight": 1
+            }
+          ]
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:surface_water_depth_filter",
+        "max_water_depth": 0
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "OCEAN_FLOOR"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:trees_water": {
+    "feature": "minecraft:trees_water",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:weighted_list",
+          "distribution": [
+            {
+              "data": 0,
+              "weight": 9
+            },
+            {
+              "data": 1,
+              "weight": 1
+            }
+          ]
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:surface_water_depth_filter",
+        "max_water_depth": 0
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "OCEAN_FLOOR"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:trees_windswept_forest": {
+    "feature": "minecraft:trees_windswept_hills",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:weighted_list",
+          "distribution": [
+            {
+              "data": 3,
+              "weight": 9
+            },
+            {
+              "data": 4,
+              "weight": 1
+            }
+          ]
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:surface_water_depth_filter",
+        "max_water_depth": 0
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "OCEAN_FLOOR"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:trees_windswept_hills": {
+    "feature": "minecraft:trees_windswept_hills",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:weighted_list",
+          "distribution": [
+            {
+              "data": 0,
+              "weight": 9
+            },
+            {
+              "data": 1,
+              "weight": 1
+            }
+          ]
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:surface_water_depth_filter",
+        "max_water_depth": 0
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "OCEAN_FLOOR"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:trees_windswept_savanna": {
+    "feature": "minecraft:trees_savanna",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:weighted_list",
+          "distribution": [
+            {
+              "data": 2,
+              "weight": 9
+            },
+            {
+              "data": 3,
+              "weight": 1
+            }
+          ]
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:surface_water_depth_filter",
+        "max_water_depth": 0
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "OCEAN_FLOOR"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:vines": {
+    "feature": "minecraft:vines",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": 127
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:uniform",
+          "max_inclusive": {
+            "absolute": 100
+          },
+          "min_inclusive": {
+            "absolute": 64
+          }
+        }
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:wildflowers_birch_forest": {
+    "feature": "minecraft:wildflowers_birch_forest",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": 3
+      },
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 2
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:wildflowers_meadow": {
+    "feature": "minecraft:wildflowers_meadow",
+    "placement": [
+      {
+        "type": "minecraft:noise_threshold_count",
+        "above_noise": 10,
+        "below_noise": 5,
+        "noise_level": -0.8
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  }
+}

@@ -14,7 +14,7 @@ public sealed class BalancingTimer
     private readonly Stopwatch stopwatch = new();
     private readonly long ticksInterval; // Number of Stopwatch ticks equal to the interval
 
-    private long delay = 0;  // Measured in ticks
+    private long delay;  // Measured in ticks
 
     public BalancingTimer(int intervalInMilliseconds) : this(intervalInMilliseconds, CancellationToken.None)
     {

@@ -5,5 +5,5 @@ public sealed record class BiomeSurfaceCondition : ISurfaceCondition
 {
     public string Type => "minecraft:biome";
 
-    public required string[] BiomeIs { get; init; }
+    public required ImmutableArray<string> BiomeIs { get; init; }
 }

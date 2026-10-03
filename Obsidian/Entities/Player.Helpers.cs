@@ -136,7 +136,7 @@ public partial class Player
         }
         catch (Exception ex)
         {
-            this.Logger.LogWarning(ex, "Player has invalid saved data.");
+            Log.InvalidSavedData(this.Logger, ex, this.Username);
             Position = Level.LevelData.SpawnPosition;//Set spawn here cause the data loaded was invalid
         }
 
@@ -287,13 +287,13 @@ public partial class Player
         }
     }
 
-    private void WriteItems(INbtWriter writer, bool inventory = true)
+    private void WriteItems(NbtWriterStream writer, bool inventory = true)
     {
         var items = inventory ? Inventory.Select((item, slot) => (item, slot)) : EnderInventory.Select((item, slot) => (item, slot));
 
-        var nonNullItems = items.Where(x => x.item != null);
+        var nonNullItems = items.Where(x => x.item != null).ToList();
 
-        writer.WriteListStart(inventory ? "Inventory" : "EnderItems", NbtTagType.Compound, nonNullItems.Count());
+        writer.WriteListStart(inventory ? "Inventory" : "EnderItems", NbtTagType.Compound, nonNullItems.Count);
 
         foreach (var (item, slot) in nonNullItems)
         {
@@ -315,7 +315,7 @@ public partial class Player
             writer.EndCompound();
         }
 
-        if (!nonNullItems.Any())
+        if (nonNullItems.Count == 0)
             writer.Write(NbtTagType.End);
 
         writer.EndList();

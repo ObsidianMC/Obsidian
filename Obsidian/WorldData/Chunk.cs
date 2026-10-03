@@ -2,6 +2,10 @@
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.Blocks;
 using Obsidian.ChunkData;
+using Obsidian.Nbt;
+using Obsidian.WorldData.Fluids;
+using Obsidian.WorldData.Generators.Mojang.Features;
+using System.Threading;
 
 namespace Obsidian.WorldData;
 
@@ -15,20 +19,87 @@ public sealed class Chunk : IChunk
     public ChunkGenStage ChunkStatus { get; private set; } = ChunkGenStage.empty;
 
     private const int width = 16;
-    private const int worldHeight = 320;
-    private const int worldFloor = -64;
+
+    /// <summary>
+    /// The lowest block Y of the chunk (a multiple of 16).
+    /// </summary>
+    public int MinY { get; }
+
+    /// <summary>
+    /// The number of block layers in the chunk.
+    /// </summary>
+    public int Height => this.sections.Length << 4;
 
     //TODO try and do some temp caching
     public Dictionary<short, BlockMeta> BlockMetaStore { get; private set; } = new Dictionary<short, BlockMeta>();
-    public Dictionary<short, IBlockEntity> BlockEntities { get; private set; } = new Dictionary<short, IBlockEntity>();
+    public Dictionary<int, IBlockEntity> BlockEntities { get; private set; } = new Dictionary<int, IBlockEntity>();
 
-    public IChunkSection[] Sections { get; private set; } = new IChunkSection[24];
+    /// <summary>
+    /// Entities of the chunk that haven't been spawned yet: those world generation placed, and once the chunk is complete,
+    /// those loaded with it. The level spawns them on its tick.
+    /// </summary>
+    /// <remarks>
+    /// Once the chunk is complete, only touch these under <see cref="EntityLock"/>.
+    /// </remarks>
+    internal List<GeneratedEntity> PendingEntities { get; } = [];
+
+    /// <summary>
+    /// Taken while the chunk's entities move between <see cref="PendingEntities"/> and the level, and while they're saved,
+    /// so a save sees every entity exactly once.
+    /// </summary>
+    internal Lock EntityLock { get; } = new();
+
+    /// <summary>
+    /// Whether the chunk was unloaded, with its entities saved and taken out of the level; its pending entities must not
+    /// spawn anymore. Set under <see cref="EntityLock"/>.
+    /// </summary>
+    internal bool EntitiesUnloaded { get; set; }
+
+    /// <summary>
+    /// The structure starts saved in the chunk (vanilla's <c>structures.starts</c>), as loaded, or <c>null</c>.
+    /// </summary>
+    internal NbtCompound? StructureStarts { get; set; }
+
+    /// <summary>
+    /// Positions generation marked to check once the chunk is complete: fluids that tick right away and blocks whose state
+    /// depends on their neighbors (fence connections, torch support...), like vanilla's post-processing list.
+    /// </summary>
+    internal List<Vector> PostProcessing { get; } = [];
+
+    /// <summary>
+    /// The chunk's scheduled fluid ticks, like vanilla's <c>fluid_ticks</c>.
+    /// </summary>
+    internal ChunkFluidTicks FluidTicks { get; } = new();
+
+    /// <summary>
+    /// The final heightmaps world generation keeps in step with its block changes, from the chunk's first decoration until
+    /// its final heightmaps are stored; <c>null</c> otherwise. Only generation may change the chunk's blocks meanwhile.
+    /// </summary>
+    internal FinalHeightmaps? FinalHeightmaps { get; set; }
+
+    private readonly IChunkSection[] sections;
+
+    public ReadOnlySpan<IChunkSection> Sections => this.sections;
     public IDictionary<HeightmapType, Heightmap> Heightmaps { get; }
 
-    public Chunk(int x, int z, ChunkGenStage status = ChunkGenStage.empty)
+    public Chunk(int x, int z, ChunkGenStage status = ChunkGenStage.empty) : this(x, z, -64, 384, status)
+    {
+    }
+
+    /// <param name="minY">The dimension's lowest block Y; must be a multiple of 16.</param>
+    /// <param name="height">The dimension's height in blocks; must be a multiple of 16.</param>
+    public Chunk(int x, int z, int minY, int height, ChunkGenStage status = ChunkGenStage.empty)
     {
         X = x;
         Z = z;
+        MinY = minY;
+
+        // Sections come first: heightmaps size their entries from the chunk height.
+        this.sections = new ChunkSection[height >> 4];
+        for (int i = 0; i < this.sections.Length; i++)
+        {
+            this.sections[i] = new ChunkSection(yBase: i + (minY >> 4));
+        }
 
         Heightmaps = new Dictionary<HeightmapType, Heightmap>()
         {
@@ -36,92 +107,86 @@ public sealed class Chunk : IChunk
             { HeightmapType.OceanFloor, new Heightmap(HeightmapType.OceanFloor, this) },
             { HeightmapType.WorldSurface, new Heightmap(HeightmapType.WorldSurface, this) },
             { HeightmapType.WorldSurfaceWG, new Heightmap(HeightmapType.WorldSurfaceWG, this) },
+            { HeightmapType.OceanFloorWG, new Heightmap(HeightmapType.OceanFloorWG, this) },
             { HeightmapType.MotionBlockingNoLeaves, new Heightmap(HeightmapType.MotionBlockingNoLeaves, this) }
         };
-
-        Sections = new ChunkSection[24];
-        for (int i = 0; i < Sections.Length; i++)
-        {
-            Sections[i] = new ChunkSection(yBase: i - 4);
-        }
     }
 
     private Chunk(int x, int z, IChunkSection[] sections, Dictionary<HeightmapType, Heightmap> heightmaps)
     {
         X = x;
         Z = z;
+        MinY = sections[0].YBase!.Value << 4;
 
         Heightmaps = heightmaps;
-        Sections = sections;
+        this.sections = sections;
     }
 
     public IBlock GetBlock(int x, int y, int z)
     {
         var i = SectionIndex(y);
 
-        x = NumericsHelper.Modulo(x, 16);
-        y = NumericsHelper.Modulo(y, 16);
-        z = NumericsHelper.Modulo(z, 16);
+        x = (x & 15);
+        y = (y & 15);
+        z = (z & 15);
 
-        return Sections[i].GetBlock(x, y, z);
+        return this.sections[i].GetBlock(x, y, z);
     }
 
     public BiomeCodec GetBiome(int x, int y, int z)
     {
         var i = SectionIndex(y);
 
-        x = NumericsHelper.Modulo(x, 16) >> 2;
-        z = NumericsHelper.Modulo(z, 16) >> 2;
-        y = NumericsHelper.Modulo(y + 64, 16) >> 2;
+        x = (x & 15) >> 2;
+        z = (z & 15) >> 2;
+        y = (y & 15) >> 2;
 
-        return Sections[i].GetBiome(x, y, z);
+        return this.sections[i].GetBiome(x, y, z);
     }
 
     public void SetBiome(int x, int y, int z, BiomeCodec biome)
     {
         int i = SectionIndex(y);
 
-        x = NumericsHelper.Modulo(x, 16) >> 2;
-        y = NumericsHelper.Modulo(y + 64, 16) >> 2;
-        z = NumericsHelper.Modulo(z, 16) >> 2;
+        x = (x & 15) >> 2;
+        y = (y & 15) >> 2;
+        z = (z & 15) >> 2;
 
-        Sections[i].SetBiome(x, y, z, biome);
+        this.sections[i].SetBiome(x, y, z, biome);
     }
 
-    public IBlockEntity GetBlockEntity(int x, int y, int z)
-    {
-        x = NumericsHelper.Modulo(x, 16);
-        z = NumericsHelper.Modulo(z, 16);
-        var value = (short)((x << 8) | (z << 4) | y);
+    public IBlockEntity GetBlockEntity(int x, int y, int z) => this.BlockEntities.GetValueOrDefault(this.BlockEntityKey(x, y, z));
 
-        return this.BlockEntities.GetValueOrDefault(value);
-    }
+    public void SetBlockEntity(int x, int y, int z, IBlockEntity tileEntityData) =>
+        this.BlockEntities[this.BlockEntityKey(x, y, z)] = tileEntityData;
 
-    public void SetBlockEntity(int x, int y, int z, IBlockEntity tileEntityData)
-    {
-        x = NumericsHelper.Modulo(x, 16);
-        z = NumericsHelper.Modulo(z, 16);
-        var value = (short)((x << 8) | (z << 4) | y);
+    public void RemoveBlockEntity(int x, int y, int z) => this.BlockEntities.Remove(this.BlockEntityKey(x, y, z));
 
-        this.BlockEntities[value] = tileEntityData;
-    }
+    public IReadOnlyCollection<IBlockEntity> GetBlockEntities() => this.BlockEntities.Values;
+
+    private int BlockEntityKey(int x, int y, int z) =>
+        (y - this.MinY) << 8 | (z & 15) << 4 | (x & 15);
 
     public void SetBlock(int x, int y, int z, IBlock block)
     {
+        // Generation writes through its regions' sections; any other write (a live edit of an unfinished chunk) leaves the
+        // heights generation keeps stale, so they're computed again.
+        this.FinalHeightmaps = null;
+
         int i = SectionIndex(y);
 
-        x = NumericsHelper.Modulo(x, 16);
-        y = NumericsHelper.Modulo(y, 16);
-        z = NumericsHelper.Modulo(z, 16);
+        x = (x & 15);
+        y = (y & 15);
+        z = (z & 15);
 
-        Sections[i].SetBlock(x, y, z, block);
+        this.sections[i].SetBlock(x, y, z, block);
     }
 
     public BlockMeta GetBlockMeta(int x, int y, int z)
     {
-        x = NumericsHelper.Modulo(x, 16);
-        y = NumericsHelper.Modulo(y, 16);
-        z = NumericsHelper.Modulo(z, 16);
+        x = (x & 15);
+        y = (y & 15);
+        z = (z & 15);
         var value = (short)((x << 8) | (z << 4) | y);
 
         return BlockMetaStore.GetValueOrDefault(value);
@@ -129,9 +194,9 @@ public sealed class Chunk : IChunk
 
     public void SetBlockMeta(int x, int y, int z, BlockMeta meta)
     {
-        x = NumericsHelper.Modulo(x, 16);
-        y = NumericsHelper.Modulo(y, 16);
-        z = NumericsHelper.Modulo(z, 16);
+        x = (x & 15);
+        y = (y & 15);
+        z = (z & 15);
         var value = (short)((x << 8) | (z << 4) | y);
 
         BlockMetaStore[value] = meta;
@@ -139,19 +204,19 @@ public sealed class Chunk : IChunk
 
     public void SetLightLevel(int x, int y, int z, LightType lt, int level)
     {
-        var sec = Sections[SectionIndex(y)];
-        x = NumericsHelper.Modulo(x, 16);
-        y = NumericsHelper.Modulo(y, 16);
-        z = NumericsHelper.Modulo(z, 16);
+        var sec = this.sections[SectionIndex(y)];
+        x = (x & 15);
+        y = (y & 15);
+        z = (z & 15);
         sec.SetLightLevel(x, y, z, lt, level);
     }
 
     public int GetLightLevel(int x, int y, int z, LightType lt)
     {
-        var sec = Sections[SectionIndex(y)];
-        x = NumericsHelper.Modulo(x, 16);
-        y = NumericsHelper.Modulo(y, 16);
-        z = NumericsHelper.Modulo(z, 16);
+        var sec = this.sections[SectionIndex(y)];
+        x = (x & 15);
+        y = (y & 15);
+        z = (z & 15);
         return sec.GetLightLevel(x, y, z, lt);
     }
 
@@ -162,7 +227,7 @@ public sealed class Chunk : IChunk
         {
             for (int z = 0; z < width; z++)
             {
-                for (int y = worldHeight - 1; y >= worldFloor; y--)
+                for (int y = this.MinY + this.Height - 1; y >= this.MinY; y--)
                 {
                     var block = GetBlock(x, y, z);
                     if (block.Material == Material.Air)
@@ -187,15 +252,15 @@ public sealed class Chunk : IChunk
          * above the max world height (one section above the world). 
          * */
         var bs = new BitSet();
-        for (int i = 0; i < Sections.Length + 2; i++)
+        for (int i = 0; i < this.sections.Length + 2; i++)
         {
-            if (i == 0 || i == Sections.Length + 1)
+            if (i == 0 || i == this.sections.Length + 1)
             {
                 continue;
             }
             else
             {
-                var hasLight = lt == LightType.Sky ? Sections[i - 1].HasSkyLight : Sections[i - 1].HasBlockLight;
+                var hasLight = lt == LightType.Sky ? this.sections[i - 1].HasSkyLight : this.sections[i - 1].HasBlockLight;
                 bs.SetBit(i, hasLight);
             }
         }
@@ -207,15 +272,15 @@ public sealed class Chunk : IChunk
     public void WriteEmptyLightMaskTo(INetStreamWriter writer, LightType lt)
     {
         var bs = new BitSet();
-        for (int i = 0; i < Sections.Length + 2; i++)
+        for (int i = 0; i < this.sections.Length + 2; i++)
         {
-            if (i == 0 || i == Sections.Length + 1)
+            if (i == 0 || i == this.sections.Length + 1)
             {
                 continue;
             }
             else
             {
-                var hasLight = lt == LightType.Sky ? Sections[i - 1].HasSkyLight : Sections[i - 1].HasBlockLight;
+                var hasLight = lt == LightType.Sky ? this.sections[i - 1].HasSkyLight : this.sections[i - 1].HasBlockLight;
                 bs.SetBit(i, !hasLight);
             }
         }
@@ -227,32 +292,32 @@ public sealed class Chunk : IChunk
     public void WriteLightTo(INetStreamWriter writer, LightType lt)
     {
         // Sanity check
-        var litSections = Sections.Count(s => lt == LightType.Sky ? s.HasSkyLight : s.HasBlockLight);
+        var litSections = this.sections.Count(s => lt == LightType.Sky ? s.HasSkyLight : s.HasBlockLight);
         writer.WriteVarInt(litSections);
 
         if (litSections == 0) { return; }
 
-        for (int a = 0; a < Sections.Length; a++)
+        for (int a = 0; a < this.sections.Length; a++)
         {
-            if (lt == LightType.Sky && Sections[a].HasSkyLight)
+            if (lt == LightType.Sky && this.sections[a].HasSkyLight)
             {
-                writer.WriteVarInt(Sections[a].SkyLightArray.Length);
-                writer.WriteByteArray(Sections[a].SkyLightArray.ToArray());
+                writer.WriteVarInt(this.sections[a].SkyLightArray.Length);
+                writer.WriteByteArray(this.sections[a].SkyLightArray.ToArray());
             }
-            else if (lt == LightType.Block && Sections[a].HasBlockLight)
+            else if (lt == LightType.Block && this.sections[a].HasBlockLight)
             {
-                writer.WriteVarInt(Sections[a].BlockLightArray.Length);
-                writer.WriteByteArray(Sections[a].BlockLightArray.ToArray());
+                writer.WriteVarInt(this.sections[a].BlockLightArray.Length);
+                writer.WriteByteArray(this.sections[a].BlockLightArray.ToArray());
             }
         }
     }
 
     public IChunk Clone(int x, int z)
     {
-        var sections = new IChunkSection[Sections.Length];
+        var sections = new IChunkSection[this.sections.Length];
         for (int i = 0; i < sections.Length; i++)
         {
-            sections[i] = Sections[i].Clone();
+            sections[i] = this.sections[i].Clone();
         }
 
         var heightmaps = new Dictionary<HeightmapType, Heightmap>();
@@ -283,5 +348,5 @@ public sealed class Chunk : IChunk
         }
     }
 
-    private static int SectionIndex(int y) => (y >> 4) + 4;
+    private int SectionIndex(int y) => (y - this.MinY) >> 4;
 }

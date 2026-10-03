@@ -5,5 +5,5 @@ public sealed class SequenceSurfaceRule : ISurfaceRule
 {
     public string Type => "minecraft:sequence";
 
-    public required ISurfaceRule[] Sequence { get; init; }
+    public required ImmutableArray<ISurfaceRule> Sequence { get; init; }
 }

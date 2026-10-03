@@ -15,7 +15,7 @@ public sealed partial class FallingBlock : Entity
 
     private readonly float windResFactor = 0.98F;
 
-    private HashSet<Vector> checkedBlocks = new();
+    private readonly HashSet<Vector> checkedBlocks = [];
 
     public FallingBlock(VectorF position) : base()
     {
@@ -40,12 +40,10 @@ public sealed partial class FallingBlock : Entity
             (int)Math.Floor(Position.Y - 1),
             (int)Math.Floor(Position.Z));
 
-        if (!checkedBlocks.Contains(upcomingBlockPos))
+        if (checkedBlocks.Add(upcomingBlockPos))
         {
-            checkedBlocks.Add(upcomingBlockPos);
-
             var upcomingBlock = await Level.GetBlockAsync(upcomingBlockPos);
-            if (upcomingBlock is IBlock && !TagsRegistry.Block.ReplaceableByLiquid.Entries.Contains(upcomingBlock.RegistryId) && !upcomingBlock.IsLiquid)
+            if (upcomingBlock is not null && !upcomingBlock.IsFreeForFallingBlock())
             {
                 await ConvertToBlock(upcomingBlockPos + Vector.Up);
             }

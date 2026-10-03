@@ -4,7 +4,7 @@ using System.Reflection;
 
 namespace Obsidian.Plugins.ServiceProviders;
 
-public static class PluginServiceHandler
+public static partial class PluginServiceHandler
 {
     public static void InjectServices(IServiceProvider provider, PluginContainer container, ILogger logger) =>
         InjectServices(provider, container.Plugin, logger);
@@ -30,7 +30,13 @@ public static class PluginServiceHandler
         }
         catch(Exception ex)
         {
-            logger.LogWarning(ex, "Failed to inject service into plugin property.");//Not as important
+            Log.InjectionFailed(logger, ex, property.PropertyType.Name, property.Name);
         }
+    }
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Failed to inject {ServiceType} into plugin property {PropertyName}")]
+        public static partial void InjectionFailed(ILogger logger, Exception exception, string serviceType, string propertyName);
     }
 }

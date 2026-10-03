@@ -265,8 +265,6 @@ public struct VectorF : IEquatable<VectorF>
     public readonly override string ToString() => $"{X:0.0}:{Y:0.0}:{Z:0.0}";
 
     #region Constants
-    private static readonly VectorF ChunkSize = new(15f, 255f, 15f);
-
     /// <summary>
     /// A read-only field that represents <see cref="VectorF"/> with coordinates <c>(0, 0, 0)</c>.
     /// </summary>

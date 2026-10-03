@@ -1,172 +1,98 @@
-﻿using Obsidian.API.Utilities;
-using Obsidian.API.World.Features;
-using Obsidian.API.World.Features.Tree;
-using Obsidian.Registries;
-using System.ComponentModel.DataAnnotations;
+using Obsidian.Providers.IntProviders;
 
 namespace Obsidian.WorldData.Features.Tree.Placers.Trunk;
 
-[TreeProperty("minecraft:cherry_trunk_placer")]
+/// <summary>
+/// Cherry trunk: a short trunk with one to three branches (two opposite branches, optionally the trunk itself) that
+/// wander outward and upward toward their foliage.
+/// </summary>
+[ConfiguredFeatureProperty("minecraft:cherry_trunk_placer")]
 public sealed class CherryTrunkPlacer : TrunkPlacer
 {
-    public override required string Type { get; init; }
-
-    [Range(1, 3)]
     public required IIntProvider BranchCount { get; init; }
 
-    [Range(2, 16)]
     public required IIntProvider BranchHorizontalLength { get; init; }
 
-    [Range(-16, 0)]
-    public required IntProviderRangeValue BranchStartOffsetFromTop { get; init; }
+    /// <summary>Always a plain uniform range in vanilla (the JSON has no <c>type</c>).</summary>
+    public required UniformIntProvider BranchStartOffsetFromTop { get; init; }
 
-    [Range(-16, 16)]
     public required IIntProvider BranchEndOffsetFromTop { get; init; }
 
-    public override async ValueTask<List<Vector>> Place(FeatureContext context, Vector origin, int treeHeight, IBlock trunkBlock)
+    public override List<FoliageAttachment> PlaceTrunk(TreeContext tree, int freeTreeHeight, Vector origin)
     {
-        var random = context.Random;
-        var trunkPositions = new List<Vector>();
+        var random = tree.Random;
+        SetDirtAt(tree, origin + Vector.Down);
 
-        // Set dirt below origin
-        await context.World.SetBlockUntrackedAsync(origin + Vector.Down, BlocksRegistry.Dirt, false);
+        var firstBranchStart = Math.Max(0, freeTreeHeight - 1 + this.BranchStartOffsetFromTop.Sample(random));
 
-        // Calculate branch offsets from origin
-        int firstBranchOffsetFromOrigin = Math.Max(0, treeHeight - 1 + random.Next(BranchStartOffsetFromTop.MaxInclusive - BranchStartOffsetFromTop.MinInclusive + 1) + BranchStartOffsetFromTop.MinInclusive);
+        // The second branch samples one block less of the range and skips over the first branch's start.
+        var start = this.BranchStartOffsetFromTop;
+        var secondOffset = random.NextInt(start.MaxInclusive - 1 - start.MinInclusive + 1) + start.MinInclusive;
+        var secondBranchStart = Math.Max(0, freeTreeHeight - 1 + secondOffset);
+        if (secondBranchStart >= firstBranchStart)
+            secondBranchStart++;
 
-        // Second branch uses same min but max-1 to ensure variation
-        int secondBranchMin = BranchStartOffsetFromTop.MinInclusive;
-        int secondBranchMax = BranchStartOffsetFromTop.MaxInclusive - 1;
-        int secondBranchOffsetFromOrigin = Math.Max(0, treeHeight - 1 + random.Next(secondBranchMax - secondBranchMin + 1) + secondBranchMin);
-
-        if (secondBranchOffsetFromOrigin >= firstBranchOffsetFromOrigin)
-        {
-            secondBranchOffsetFromOrigin++;
-        }
-
-        int branchCount = BranchCount.Get();
-        bool hasMiddleBranch = branchCount == 3;
-        bool hasBothSideBranches = branchCount >= 2;
-
+        var branchCount = this.BranchCount.Sample(random);
+        var hasMiddleBranch = branchCount == 3;
+        var hasSecondBranch = branchCount >= 2;
         int trunkHeight;
         if (hasMiddleBranch)
-        {
-            trunkHeight = treeHeight;
-        }
-        else if (hasBothSideBranches)
-        {
-            trunkHeight = Math.Max(firstBranchOffsetFromOrigin, secondBranchOffsetFromOrigin) + 1;
-        }
+            trunkHeight = freeTreeHeight;
+        else if (hasSecondBranch)
+            trunkHeight = Math.Max(firstBranchStart, secondBranchStart) + 1;
         else
-        {
-            trunkHeight = firstBranchOffsetFromOrigin + 1;
-        }
+            trunkHeight = firstBranchStart + 1;
 
-        // Place main trunk
-        for (int y = 0; y < trunkHeight; y++)
-        {
-            var pos = origin + new Vector(0, y, 0);
-            var existingBlock = await context.World.GetBlockAsync(pos);
-            if (existingBlock != null && TagsRegistry.Block.Replaceable.Entries.Contains(existingBlock.RegistryId))
-            {
-                await context.World.SetBlockUntrackedAsync(pos, trunkBlock, false);
-            }
-        }
+        for (var y = 0; y < trunkHeight; y++)
+            this.PlaceLog(tree, origin + (0, y, 0));
 
-        // Add middle branch attachment if present
+        var attachments = new List<FoliageAttachment>();
         if (hasMiddleBranch)
+            attachments.Add(new FoliageAttachment(origin + (0, trunkHeight, 0), 0, false));
+
+        var direction = TreeDirections.RandomHorizontal(random);
+        var horizontalLog = WithAxis(AxisOf(direction));
+        attachments.Add(this.GenerateBranch(tree, freeTreeHeight, origin, horizontalLog, direction, firstBranchStart,
+            firstBranchStart < trunkHeight - 1));
+        if (hasSecondBranch)
         {
-            trunkPositions.Add(origin + new Vector(0, trunkHeight, 0));
+            attachments.Add(this.GenerateBranch(tree, freeTreeHeight, origin, horizontalLog, direction.Opposite(), secondBranchStart,
+                secondBranchStart < trunkHeight - 1));
         }
 
-        // Generate first branch
-        var cardinalDirs = Vector.CardinalDirs.ToArray();
-        var branchDirection = cardinalDirs[random.Next(cardinalDirs.Length)];
-
-        var firstBranchAttachment = await GenerateBranch(
-            context,
-            random,
-            treeHeight,
-            origin,
-            trunkBlock,
-            branchDirection,
-            firstBranchOffsetFromOrigin,
-            firstBranchOffsetFromOrigin < trunkHeight - 1
-        );
-        trunkPositions.Add(firstBranchAttachment);
-
-        // Generate second branch if needed
-        if (hasBothSideBranches)
-        {
-            var secondBranchAttachment = await GenerateBranch(
-                context,
-                random,
-                treeHeight,
-                origin,
-                trunkBlock,
-                -branchDirection, // Opposite direction
-                secondBranchOffsetFromOrigin,
-                secondBranchOffsetFromOrigin < trunkHeight - 1
-            );
-            trunkPositions.Add(secondBranchAttachment);
-        }
-
-        return trunkPositions;
+        return attachments;
     }
 
-    private async ValueTask<Vector> GenerateBranch(
-        FeatureContext context,
-        Random random,
-        int treeHeight,
-        Vector origin,
-        IBlock trunkBlock,
-        Vector branchDirection,
-        int offsetFromOrigin,
-        bool middleContinuesUpwards
-    )
+    private FoliageAttachment GenerateBranch(TreeContext tree, int freeTreeHeight, Vector origin, Func<IBlock, IBlock> horizontalLog,
+        BlockFace direction, int branchStart, bool middleContinuesAbove)
     {
-        var logPos = origin + new Vector(0, offsetFromOrigin, 0);
-        int branchEndPosOffsetFromOrigin = treeHeight - 1 + BranchEndOffsetFromTop.Get();
-        bool extendBranchAwayFromTrunk = middleContinuesUpwards || branchEndPosOffsetFromOrigin < offsetFromOrigin;
-        int distanceToTrunk = BranchHorizontalLength.Get() + (extendBranchAwayFromTrunk ? 1 : 0);
+        var random = tree.Random;
+        var cursor = origin + (0, branchStart, 0);
+        var endY = freeTreeHeight - 1 + this.BranchEndOffsetFromTop.Sample(random);
+        var extendedStart = middleContinuesAbove || endY < branchStart;
+        var horizontalLength = this.BranchHorizontalLength.Sample(random) + (extendedStart ? 1 : 0);
+        var step = direction.ToVector();
+        var end = origin + step * horizontalLength + (0, endY, 0);
 
-        var branchEndPos = origin + (branchDirection * distanceToTrunk) + new Vector(0, branchEndPosOffsetFromOrigin, 0);
-        int stepsHorizontally = extendBranchAwayFromTrunk ? 2 : 1;
-
-        // Place initial horizontal logs
-        for (int i = 0; i < stepsHorizontally; i++)
+        var startLogs = extendedStart ? 2 : 1;
+        for (var i = 0; i < startLogs; i++)
         {
-            logPos += branchDirection;
-            var existingBlock = await context.World.GetBlockAsync(logPos);
-            if (existingBlock != null && TagsRegistry.Block.Replaceable.Entries.Contains(existingBlock.RegistryId))
-            {
-                // Note: In Minecraft, these logs would have axis set based on direction
-                // For now, we place without axis rotation
-                await context.World.SetBlockUntrackedAsync(logPos, trunkBlock, false);
-            }
+            cursor += step;
+            this.PlaceLog(tree, cursor, horizontalLog);
         }
 
-        // Grow branch toward end position using Manhattan distance probability
-        var verticalDirection = branchEndPos.Y > logPos.Y ? Vector.Up : Vector.Down;
-
+        var vertical = end.Y > cursor.Y ? Vector.Up : Vector.Down;
         while (true)
         {
-            int distance = Math.Abs(branchEndPos.X - logPos.X) + Math.Abs(branchEndPos.Y - logPos.Y) + Math.Abs(branchEndPos.Z - logPos.Z);
+            var distance = TreeDirections.DistManhattan(cursor, end);
             if (distance == 0)
-            {
-                return branchEndPos + Vector.Up;
-            }
+                return new FoliageAttachment(end + Vector.Up, 0, false);
 
-            float chanceToGrowVertically = (float)Math.Abs(branchEndPos.Y - logPos.Y) / distance;
-            bool growVertically = random.NextDouble() < chanceToGrowVertically;
-
-            logPos += growVertically ? verticalDirection : branchDirection;
-
-            var existingBlock = await context.World.GetBlockAsync(logPos);
-            if (existingBlock != null && TagsRegistry.Block.Replaceable.Entries.Contains(existingBlock.RegistryId))
-            {
-                await context.World.SetBlockUntrackedAsync(logPos, trunkBlock, false);
-            }
+            // Move vertically with probability proportional to the remaining vertical distance.
+            var verticalChance = (float)Math.Abs(end.Y - cursor.Y) / distance;
+            var moveVertically = random.NextFloat() < verticalChance;
+            cursor += moveVertically ? vertical : step;
+            this.PlaceLog(tree, cursor, moveVertically ? null : horizontalLog);
         }
     }
 }

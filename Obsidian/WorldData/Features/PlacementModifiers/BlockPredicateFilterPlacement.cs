@@ -1,17 +1,17 @@
-﻿namespace Obsidian.WorldData.Features.PlacementModifiers;
+﻿using Obsidian.API.World.Generator.RandomSources;
+
+namespace Obsidian.WorldData.Features.PlacementModifiers;
 
 /// <summary>
-/// Returns the current position when the predicate is passed, otherwise return empty.
+/// Keeps the position when the block predicate matches.
 /// </summary>
 [ConfiguredFeatureProperty("minecraft:block_predicate_filter")]
-public sealed class BlockPredicateFilterPlacement : PlacementModifierBase
+public sealed class BlockPredicateFilterPlacement : PlacementFilterBase
 {
-    public override string Type { get; internal init; } = "minecraft:block_predicate_filter";
+    public override string Type => "minecraft:block_predicate_filter";
 
-    /// <summary>
-    /// The block predicate to test.
-    /// </summary>
     public required IBlockPredicate Predicate { get; init; }
 
-    protected override bool ShouldPlace(PlacementContext context) => throw new NotImplementedException();
+    protected override bool ShouldPlace(PlacementContext context, IRandomSource random, Vector position) =>
+        this.Predicate.Test(context.Level, position);
 }

@@ -31,7 +31,7 @@ public partial class AwardStatsPacket
     }
 }
 
-public readonly struct Statistic
+public readonly record struct Statistic
 {
     public CategoryIds CategoryId { get; }
 

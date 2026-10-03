@@ -3,10 +3,9 @@ using Obsidian.Net.Scoreboard;
 
 namespace Obsidian;
 
-public class Scoreboard(string name, IPacketBroadcaster packetBroadcaster, IServer server) : IScoreboard
+public class Scoreboard(string name, IPacketBroadcaster packetBroadcaster) : IScoreboard
 {
     private readonly IPacketBroadcaster packetBroadcaster = packetBroadcaster;
-    private readonly IServer server = server;
 
     internal readonly string name = name;
     internal readonly Dictionary<string, Score> scores = [];

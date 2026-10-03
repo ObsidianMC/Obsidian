@@ -21,7 +21,7 @@ public class VarLong
         var actualBytes = buffer.Read(bytes.Length);
 
         Assert.InRange(actualBytes.Size, 1, 10);
-        Assert.Equal(bytes, actualBytes.Data);
+        Assert.Equal(bytes, actualBytes.GetBuffer());
     }
 
     [MemberData(nameof(VarLongData))]

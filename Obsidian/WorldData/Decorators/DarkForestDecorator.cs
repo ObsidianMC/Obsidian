@@ -7,7 +7,7 @@ public class DarkForestDecorator : BaseDecorator
 {
     public DarkForestDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(5, Registries.ConfiguredFeatures.Trees.MinecraftDarkOak));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(5, Registries.ConfiguredFeatures.Trees.DarkOak));
     }
 
     public override void Decorate()

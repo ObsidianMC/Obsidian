@@ -1,10 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Obsidian.WorldData.Generators;
 
 namespace Obsidian.WorldData;
 
-public sealed class LevelFactory(ILogger<LevelFactory> logger, IServiceScopeFactory serviceScopeFactory) : ILevelFactory
+public sealed class LevelFactory(IServiceScopeFactory serviceScopeFactory) : ILevelFactory
 {
     private static readonly Type[] worldArgTypes = [typeof(ILevelGenerator), typeof(string), typeof(string)];
     private static readonly Type[] dimensionArgTypes = [typeof(ILevelGenerator), typeof(string), typeof(IWorld)];
@@ -12,7 +11,6 @@ public sealed class LevelFactory(ILogger<LevelFactory> logger, IServiceScopeFact
     private ObjectFactory<World> worldFactory;
     private ObjectFactory<Dimension> dimensionFactory;
 
-    private readonly ILogger<LevelFactory> logger = logger;
     private readonly IServiceScopeFactory serviceScopeFactory = serviceScopeFactory;
 
     public Dictionary<string, Type> LevelGenerators { get; } = [];
@@ -68,6 +66,8 @@ public sealed class LevelFactory(ILogger<LevelFactory> logger, IServiceScopeFact
         this.RegisterGenerator<IslandGenerator>();
         this.RegisterGenerator<EmptyWorldGenerator>();
         this.RegisterGenerator<MojangGenerator>();
+        this.RegisterGenerator<MojangNetherGenerator>();
+        this.RegisterGenerator<MojangEndGenerator>();
     }
 
     /// <summary>
@@ -80,7 +80,6 @@ public sealed class LevelFactory(ILogger<LevelFactory> logger, IServiceScopeFact
         if (string.IsNullOrWhiteSpace(gen.Id))
             throw new InvalidOperationException($"Failed to get id for generator: {gen.Id}");
 
-        if (this.LevelGenerators.TryAdd(gen.Id, typeof(T)))
-            this.logger.LogDebug("Registered {generatorId}...", gen.Id);
+        this.LevelGenerators.TryAdd(gen.Id, typeof(T));
     }
 }

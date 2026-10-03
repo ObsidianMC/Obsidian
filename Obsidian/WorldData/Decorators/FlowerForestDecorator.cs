@@ -8,8 +8,8 @@ public class FlowerForestDecorator : BaseDecorator
 {
     public FlowerForestDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(3, Registries.ConfiguredFeatures.Trees.MinecraftOak));
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, Registries.ConfiguredFeatures.Trees.MinecraftBirch));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(3, Registries.ConfiguredFeatures.Trees.Oak));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, Registries.ConfiguredFeatures.Trees.Birch));
         Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(AlliumFlora), 4, 3));
         Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(PoppyFlora), 4, 3));
         Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(DandelionFlora), 5, 3));

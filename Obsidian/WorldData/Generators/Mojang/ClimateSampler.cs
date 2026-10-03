@@ -3,45 +3,54 @@ using Obsidian.API.World.Generator.Noise;
 namespace Obsidian.WorldData.Generators.Mojang;
 
 /// <summary>
-/// Samples climate parameters from density functions in the noise router.
-/// Single Responsibility: Convert world coordinates to climate parameter space.
+/// Samples the router's climate functions at quart positions, mirroring vanilla's Climate.Sampler.
 /// </summary>
 internal sealed class ClimateSampler
 {
-	private readonly NoiseRouter _noiseRouter;
+    private readonly IDensityFunction temperature;
+    private readonly IDensityFunction humidity;
+    private readonly IDensityFunction continentalness;
+    private readonly IDensityFunction erosion;
+    private readonly IDensityFunction depth;
+    private readonly IDensityFunction weirdness;
 
-	public ClimateSampler(NoiseRouter noiseRouter)
-	{
-		_noiseRouter = noiseRouter ?? throw new ArgumentNullException(nameof(noiseRouter));
-	}
+    public ClimateSampler(IDensityFunction temperature, IDensityFunction humidity, IDensityFunction continentalness,
+        IDensityFunction erosion, IDensityFunction depth, IDensityFunction weirdness)
+    {
+        this.temperature = temperature;
+        this.humidity = humidity;
+        this.continentalness = continentalness;
+        this.erosion = erosion;
+        this.depth = depth;
+        this.weirdness = weirdness;
+    }
 
-	/// <summary>
-	/// Samples all climate parameters at the given world coordinates.
-	/// </summary>
-	/// <param name="x">World X coordinate</param>
-	/// <param name="y">World Y coordinate (for depth calculation)</param>
-	/// <param name="z">World Z coordinate</param>
-	/// <returns>Climate parameters at this location</returns>
-	public Climate Sample(int x, int y, int z)
-	{
-		return new Climate
-		{
-			Temperature = _noiseRouter.Temperature.GetValue(x, y, z),
-			Humidity = _noiseRouter.Vegetation.GetValue(x, y, z),
-			Continentalness = _noiseRouter.Continents.GetValue(x, y, z),
-			Erosion = _noiseRouter.Erosion.GetValue(x, y, z),
-			Weirdness = _noiseRouter.Ridges.GetValue(x, y, z),
-			Depth = CalculateDepth(y)
-		};
-	}
+    /// <summary>
+    /// The erosion function, which the end's biome source samples directly at block positions.
+    /// </summary>
+    public IDensityFunction Erosion => this.erosion;
 
-	/// <summary>
-	/// Calculates the depth parameter based on Y coordinate.
-	/// Surface (Y=63) = 0, deeper is negative, higher is positive.
-	/// </summary>
-	private static double CalculateDepth(int y)
-	{
-		const int seaLevel = 63;
-		return (y - seaLevel) / 64.0; // Normalize to roughly -1 to 1 range
-	}
+    public ClimateSampler(NoiseRouter router)
+        : this(router.Temperature, router.Vegetation, router.Continents, router.Erosion, router.Depth, router.Ridges)
+    {
+    }
+
+    /// <summary>
+    /// Samples climate at the block position of the given quart (4x4x4) coordinates.
+    /// </summary>
+    public TargetPoint Sample(int quartX, int quartY, int quartZ)
+    {
+        var x = quartX << 2;
+        var y = quartY << 2;
+        var z = quartZ << 2;
+
+        // Narrowing to float before quantizing matches vanilla.
+        return new TargetPoint(
+            Climate.Quantize((float)this.temperature.GetValue(x, y, z)),
+            Climate.Quantize((float)this.humidity.GetValue(x, y, z)),
+            Climate.Quantize((float)this.continentalness.GetValue(x, y, z)),
+            Climate.Quantize((float)this.erosion.GetValue(x, y, z)),
+            Climate.Quantize((float)this.depth.GetValue(x, y, z)),
+            Climate.Quantize((float)this.weirdness.GetValue(x, y, z)));
+    }
 }
