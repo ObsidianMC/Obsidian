@@ -55,18 +55,9 @@ public partial class Mob
             Ignite(15);
             await DamageEnvironmentAsync(4);
         }
-        if (Terrain.GetBlock((Vector)EyePosition.Floor())?.Material == Material.Water &&
-            !TagsRegistry.EntityType.CanBreatheUnderWater.Entries.Contains((int)Type))
-        {
-            Air--;
-            if (Air == -20)
-            {
-                Air = 0;
-                await DamageEnvironmentAsync(2);
-            }
-        }
-        else
-            Air = (short)Math.Min(300, Air + 4);
+        await TickAirSupplyAsync();
+        if (WaterSensitive && (InWater || Terrain.IsRainingAt((Vector)Position.Floor())))
+            await DamageEnvironmentAsync(1);
 
         if (Position.Y < -128)
             await DamageEnvironmentAsync(4);
@@ -78,13 +69,11 @@ public partial class Mob
             if (this is Creeper creeper)
                 creeper.FuseTicks = Math.Max(0, Math.Min(creeper.Fuse - 5, creeper.FuseTicks + (int)(fallDistance * 1.5f)));
             fallDistance = 0;
-            if (damage > 0 && this is not Chicken)
+            if (damage > 0 && TakesFallDamage && this is not Chicken)
                 await DamageEnvironmentAsync(damage);
         }
         else if (LastPosition.Y > Position.Y)
-        {
             fallDistance += LastPosition.Y - Position.Y;
-        }
 
         var feet = Terrain.GetBlock((Vector)Position.Floor());
         var floor = Terrain.GetBlock((Vector)(Position - new VectorF(0, 0.01f, 0)).Floor());
@@ -100,6 +89,23 @@ public partial class Mob
             await ApplyDamageAsync(this, 1, true);
     }
 
+    protected virtual async ValueTask TickAirSupplyAsync()
+    {
+        if (Terrain.GetBlock((Vector)EyePosition.Floor())?.Material == Material.Water &&
+            !TagsRegistry.EntityType.CanBreatheUnderWater.Entries.Contains((int)Type))
+        {
+            Air--;
+            if (Air == -20)
+            {
+                Air = 0;
+                await DamageEnvironmentAsync(2);
+            }
+        }
+        else
+            Air = (short)Math.Min(300, Air + 4);
+
+    }
+
     protected internal void PlayMobSound(string kind)
     {
         if (Silent || SoundName == null || kind == "ambient" && this is Creeper or Slime)
@@ -107,7 +113,7 @@ public partial class Mob
         var baby = this is AgeableMob { IsBaby: true } or Zombie { IsBaby: true };
         PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new Obsidian.Net.Packets.Play.Clientbound.SoundEntityPacket
         {
-            EntityId = EntityId, SoundLocation = $"minecraft:entity.{SoundName}.{kind}{(this is Slime { Size: 1 } ? "_small" : "")}", Category = MobSoundCategory,
+            EntityId = EntityId, SoundLocation = $"minecraft:entity.{(this is Wolf && kind == "shake" ? "wolf" : SoundName)}.{kind}{(this is Slime { Size: 1 } && (this is not MagmaCube || kind != "jump") ? "_small" : "")}", Category = MobSoundCategory,
             Volume = 1, Pitch = (Random.NextSingle() - Random.NextSingle()) * 0.2f + (baby ? 1.5f : 1), Seed = Random.NextInt64()
         }, EntityId);
     }

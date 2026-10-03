@@ -46,7 +46,7 @@ public partial class Cow : FarmAnimal
         if (Type == EntityType.Cow)
         {
             writer.WriteEntityMetadataType(17, EntityMetadataType.CowVariant);
-            writer.WriteVarInt(Variant + 1);
+            writer.WriteVarInt(Variant);
         }
     }
 }

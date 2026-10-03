@@ -17,7 +17,7 @@ public partial class Mob
         "Sheared", "sheared", "Size", "powered", "ignited", "Fuse", "ExplosionRadius", "ObsidianEffects", "InWaterTime",
         "DrownedConversionTime", "StrayConversionTime", "ObsidianPowderSnowTicks", "ObsidianStewEffect", "CanBreakDoors", "ObsidianReinforcementChance",
         "Tame", "Temper", "Owner", "EatingHaystack", "Bred", "Variant", "PlayerCreated", "Trusting", "Sitting", "variant",
-        "CollarColor", "LastPoseTick", "ObsidianDashCooldown"];
+        "CollarColor", "LastPoseTick", "ObsidianDashCooldown", "AngerTime", "Pumpkin", "ObsidianCarriedBlock", "sound_variant", "AngryAt", "carriedBlockState"];
     internal void WriteSave(INbtWriter writer, bool writeCompound = true)
     {
         if (writeCompound)
@@ -100,6 +100,33 @@ public partial class Mob
             if (horse is Horse normalHorse)
                 writer.WriteInt("Variant", normalHorse.Variant);
         }
+        if (this is Wolf wolf)
+        {
+            WriteOwner(writer, wolf.Owner);
+            writer.WriteBool("Sitting", wolf.OrderedToSit);
+            writer.WriteString("variant", $"minecraft:{Wolf.VariantNames[wolf.Variant]}");
+            writer.WriteString("sound_variant", $"minecraft:{Wolf.SoundVariantNames[wolf.SoundVariant]}");
+            writer.WriteString("CollarColor", Cat.DyeNames[wolf.CollarColor]);
+            writer.WriteInt("AngerTime", (int)wolf.AngerTicks);
+            WriteReference(writer, "AngryAt", wolf.AngryAt);
+        }
+        if (this is Enderman enderman)
+        {
+            writer.WriteInt("AngerTime", (int)enderman.AngerTicks);
+            WriteReference(writer, "AngryAt", enderman.AngryAt);
+            if (enderman.CarriedBlock is { } carried)
+            {
+                writer.WriteCompoundStart("carriedBlockState");
+                writer.WriteString("Name", carried.UnlocalizedName);
+                writer.WriteCompoundStart("Properties");
+                foreach (var property in BlockStateProperties.GetProperties(carried))
+                    writer.WriteString(property.Key, property.Value);
+                writer.EndCompound();
+                writer.EndCompound();
+            }
+        }
+        if (this is SnowGolem snowGolem)
+            writer.WriteBool("Pumpkin", snowGolem.Pumpkin);
         if (this is Ocelot ocelot)
             writer.WriteBool("Trusting", ocelot.Trusting);
         if (this is Cat cat)
@@ -241,6 +268,51 @@ public partial class Mob
             if (horse is Horse normalHorse && tag.TryGetTagValue<int>("Variant", out var horseVariant))
                 normalHorse.Variant = horseVariant;
         }
+        if (this is Wolf wolf)
+        {
+            wolf.Owner = ReadOwner(tag);
+            wolf.AngryAt = ReadReference(tag, "AngryAt");
+            PersistenceRequired |= wolf.Tamed;
+            wolf.OrderedToSit = wolf.Tamed && ReadFlag(tag, "Sitting");
+            wolf.IsSitting = wolf.OrderedToSit;
+            if (tag.TryGetTagValue<int>("AngerTime", out var anger)) wolf.AngerTicks = Math.Max(0, anger);
+            if (tag.TryGetTagValue<string>("variant", out var wolfVariant))
+            {
+                var index = Array.IndexOf(Wolf.VariantNames, wolfVariant.Replace("minecraft:", ""));
+                if (index >= 0) wolf.Variant = index;
+            }
+            if (tag.TryGetTagValue<string>("sound_variant", out var soundVariant))
+            {
+                var index = Array.IndexOf(Wolf.SoundVariantNames, soundVariant.Replace("minecraft:", ""));
+                if (index >= 0) wolf.SoundVariant = index;
+            }
+            if (tag.TryGetTagValue<string>("CollarColor", out var collar))
+            {
+                var index = Array.IndexOf(Cat.DyeNames, collar);
+                if (index >= 0) wolf.CollarColor = (byte)index;
+            }
+            else if (tag.TryGetTagValue<byte>("CollarColor", out var legacyCollar)) wolf.CollarColor = (byte)(legacyCollar & 15);
+        }
+        if (this is Enderman enderman)
+        {
+            enderman.AngryAt = ReadReference(tag, "AngryAt");
+            if (tag.TryGetTagValue<int>("AngerTime", out var anger)) enderman.AngerTicks = Math.Max(0, anger);
+            if (tag.TryGetTag<NbtCompound>("carriedBlockState", out var state) && state.TryGetTagValue<string>("Name", out var blockName))
+            {
+                var properties = state.TryGetTag<NbtCompound>("Properties", out var savedProperties)
+                    ? savedProperties.Where(entry => entry.Value is NbtTag<string>).ToDictionary(entry => entry.Key, entry => ((NbtTag<string>)entry.Value).Value)
+                    : new Dictionary<string, string>();
+                enderman.CarriedBlock = Obsidian.WorldData.Structures.BlockStateParser.TryParse(
+                    $"{blockName}[{string.Join(',', properties.Select(entry => $"{entry.Key}={entry.Value}"))}]");
+            }
+            else if (tag.TryGetTagValue<string>("ObsidianCarriedBlock", out var carried))
+                enderman.CarriedBlock = Obsidian.WorldData.Structures.BlockStateParser.TryParse(carried);
+        }
+        if (this is SnowGolem snowGolem)
+        {
+            if (tag.HasTag("Pumpkin")) snowGolem.Pumpkin = ReadFlag(tag, "Pumpkin");
+            PersistenceRequired = true;
+        }
         if (this is Ocelot ocelot)
         {
             ocelot.Trusting = ReadFlag(tag, "Trusting");
@@ -327,7 +399,9 @@ public partial class Mob
 
     private static bool ReadFlag(NbtCompound tag, string name) => tag.TryGetBool(name, out var value) && value;
 
-    private static void WriteOwner(INbtWriter writer, Guid owner)
+    private static void WriteOwner(INbtWriter writer, Guid owner) => WriteReference(writer, "Owner", owner);
+
+    private static void WriteReference(INbtWriter writer, string name, Guid owner)
     {
         if (owner == Guid.Empty)
             return;
@@ -335,19 +409,21 @@ public partial class Mob
         var value = new int[4];
         for (var index = 0; index < value.Length; index++)
             value[index] = BinaryPrimitives.ReadInt32BigEndian(bytes.AsSpan(index * sizeof(int), sizeof(int)));
-        writer.WriteArray("Owner", value);
+        writer.WriteArray(name, value);
     }
 
-    private static Guid ReadOwner(NbtCompound tag)
+    private static Guid ReadOwner(NbtCompound tag) => ReadReference(tag, "Owner");
+
+    private static Guid ReadReference(NbtCompound tag, string name)
     {
-        if (tag.TryGetTag<NbtArray<int>>("Owner", out var owner) && owner.Count == 4)
+        if (tag.TryGetTag<NbtArray<int>>(name, out var owner) && owner.Count == 4)
         {
             Span<byte> bytes = stackalloc byte[16];
             for (var index = 0; index < owner.Count; index++)
                 BinaryPrimitives.WriteInt32BigEndian(bytes.Slice(index * sizeof(int), sizeof(int)), owner[index]);
             return new Guid(bytes, true);
         }
-        return tag.TryGetTagValue<string>("Owner", out var text) && Guid.TryParse(text, out var uuid) ? uuid : Guid.Empty;
+        return tag.TryGetTagValue<string>(name, out var text) && Guid.TryParse(text, out var uuid) ? uuid : Guid.Empty;
     }
 
     internal static void WriteVector(INbtWriter writer, string name, VectorF value)

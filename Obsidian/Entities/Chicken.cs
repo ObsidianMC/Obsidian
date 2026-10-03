@@ -51,6 +51,6 @@ public sealed partial class Chicken : FarmAnimal
     {
         base.Write(writer);
         writer.WriteEntityMetadataType(17, EntityMetadataType.ChickenVariant);
-        writer.WriteVarInt(Variant + 1);
+        writer.WriteVarInt(Variant);
     }
 }

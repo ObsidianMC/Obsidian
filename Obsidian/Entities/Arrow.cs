@@ -53,13 +53,18 @@ public partial class Arrow : Entity
         IEntity? target = null;
         foreach (var candidate in Level.GetEntitiesInRange(Position, Motion.Magnitude + 2))
         {
-            if (candidate is not Living || ReferenceEquals(candidate, Owner) || candidate.Health <= 0 ||
+            if (candidate is not Living and not MobProjectile { Type: EntityType.Fireball } || ReferenceEquals(candidate, Owner) || candidate.Health <= 0 ||
                 candidate is IPlayer player && player.Gamemode is Gamemode.Creative or Gamemode.Spectator)
                 continue;
             var targetBounds = candidate.Dimension.CreateBBFromPosition(candidate.Position);
             targetBounds = new BoundingBox(targetBounds.Min - new VectorF(0.3f), targetBounds.Max + new VectorF(0.3f));
             if (MobTerrain.RayIntersection(targetBounds, Position, Motion) is float hit && hit < fraction)
             {
+                if (candidate is Enderman enderman)
+                {
+                    enderman.TryAvoidProjectile();
+                    continue;
+                }
                 fraction = hit;
                 target = candidate;
             }
@@ -71,11 +76,14 @@ public partial class Arrow : Entity
         Yaw = MathF.Atan2(Motion.X, Motion.Z) * 180 / MathF.PI;
         Pitch = MathF.Atan2(Motion.Y, MathF.Sqrt(Motion.X * Motion.X + Motion.Z * Motion.Z)) * 180 / MathF.PI;
         PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new TeleportEntityPacket
-        { EntityId = EntityId, Position = Position, Yaw = Yaw, Pitch = Pitch, OnGround = false });
+        { EntityId = EntityId, Position = Position, Delta = Motion, Yaw = Yaw, Pitch = Pitch, OnGround = false });
         if (target != null)
         {
             var health = target.Health;
-            await target.DamageAsync(Owner ?? this, MathF.Ceiling(Motion.Magnitude * Damage));
+            if (target is MobProjectile fireball)
+                fireball.Deflect(Owner ?? this, Motion);
+            else
+                await target.DamageAsync(Owner ?? this, MathF.Ceiling(Motion.Magnitude * Damage));
             if (target.Health < health && Effect >= 0 && target is Living living)
                 living.AddPotionEffect(Effect, EffectDuration, 0);
             await RemoveAsync();

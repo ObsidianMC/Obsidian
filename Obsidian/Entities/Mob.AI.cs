@@ -20,6 +20,10 @@ public partial class Mob
     internal VectorF EyePosition => Position + new VectorF(0, EyeHeight, 0);
     internal virtual float MovementSpeed => GetAttributeValue("minecraft:generic.movement_speed");
     internal virtual float JumpPower => 0.42f;
+    protected virtual bool TakesFallDamage => true;
+    protected virtual bool WaterSensitive => false;
+    internal virtual bool Hostile => false;
+    protected virtual VectorF Travel() => EntityMovement.Move(this);
     internal float FollowRange => GetAttributeValue("minecraft:generic.follow_range");
     internal IEntity? AttackTarget { get; set; }
     internal IEntity? AlertedTarget { get; set; }
@@ -191,6 +195,11 @@ public partial class Mob
         InitializeAi();
         AiTick++;
         visibility.Clear();
+        if (Hostile && Level.LevelData.Difficulty == Difficulty.Peaceful)
+        {
+            await RemoveAsync();
+            return;
+        }
         if (Alive && this is not Animal && !PersistenceRequired && CustomName == null)
         {
             var nearest = Level.GetPlayersInRange(Position, float.MaxValue).Where(player => player.Gamemode != Gamemode.Spectator)
@@ -243,7 +252,7 @@ public partial class Mob
         TickRidden();
 
         var oldPosition = Position;
-        var position = EntityMovement.Move(this);
+        var position = Travel();
         LastPosition = oldPosition;
         if (Level is AbstractLevel level && !level.TryMoveEntity(this, oldPosition, position))
         {
@@ -275,7 +284,7 @@ public partial class Mob
             {
                 PacketBroadcaster.BroadcastToLevelInRange(Level, Position, new TeleportEntityPacket
                 {
-                    EntityId = EntityId, Position = Position, Yaw = Yaw, Pitch = Pitch,
+                    EntityId = EntityId, Position = Position, Delta = Motion, Yaw = Yaw, Pitch = Pitch,
                     OnGround = MovementFlags.HasFlag(MovementFlags.OnGround)
                 }, EntityId);
                 lastSentPosition = Position;
@@ -322,6 +331,29 @@ public partial class Mob
     internal bool IsValidTarget(IEntity entity) => entity.Level == Level && entity.Health > 0 &&
         !ReferenceEquals(entity, this) && (entity is not Mob other || !other.IsRemoved) &&
         (entity is not IPlayer player || player.Gamemode is not Gamemode.Creative and not Gamemode.Spectator);
+
+    // Call after the destination has been checked and the entity moved between region collections.
+    internal void CompleteTeleport(VectorF position)
+    {
+        Position = LastPosition = position;
+        BoundingBox = Dimension.CreateBBFromPosition(position);
+        Motion = VectorF.Zero;
+        fallDistance = 0;
+        MovementFlags = MovementFlags.OnGround;
+        (Navigator as Navigator)?.Stop();
+        SynchronizeTeleport();
+    }
+
+    internal void SynchronizeTeleport()
+    {
+        lastSentPosition = Position;
+        hasSentPosition = true;
+        lastSentYaw = Yaw;
+        lastSentPitch = Pitch;
+        PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new TeleportEntityPacket
+        { EntityId = EntityId, Position = Position, Delta = Motion, Yaw = Yaw, Pitch = Pitch,
+            OnGround = MovementFlags.HasFlag(MovementFlags.OnGround) }, EntityId);
+    }
 
     internal void SynchronizeMetadata() => PacketBroadcaster.QueuePacketToLevelInRange(Level, Position,
         new SetEntityDataPacket { EntityId = EntityId, Entity = this }, EntityId);

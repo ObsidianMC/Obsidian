@@ -37,7 +37,25 @@ public partial class MainEventHandler
             DestroyStage = -1
         }, player.EntityId);
 
-        var droppedItem = ItemsRegistry.GetSingleItem(block.Material);
+        var droppedMaterial = block.Material;
+        if (block.UnlocalizedName.StartsWith("minecraft:infested_", StringComparison.Ordinal))
+        {
+            if (player.Gamemode == Gamemode.Creative)
+                return;
+            var silkTouch = player.GetHeldItem() is { } tool && Obsidian.API.Loot.EnchantmentHelper.GetEnchantments(tool).Any(enchantment =>
+                enchantment.Id == Obsidian.API.Registries.EnchantmentsRegistry.SilkTouch.Id && enchantment.Level > 0);
+            if (!silkTouch)
+            {
+                if (world is Obsidian.WorldData.AbstractLevel level)
+                    level.EnqueueEntityAction(() => { Silverfish.SpawnFromBlock(world, location); return default; });
+                else
+                    Silverfish.SpawnFromBlock(world, location);
+                return;
+            }
+            if (Obsidian.WorldData.Structures.BlockStateParser.TryParse(block.UnlocalizedName.Replace("infested_", "", StringComparison.Ordinal)) is { } normal)
+                droppedMaterial = normal.Material;
+        }
+        var droppedItem = ItemsRegistry.GetSingleItem(droppedMaterial);
 
         if (droppedItem.Type == Material.Air)
             return;

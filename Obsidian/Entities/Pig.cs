@@ -136,6 +136,6 @@ public sealed partial class Pig : Animal
         writer.WriteEntityMetadataType(17, EntityMetadataType.VarInt);
         writer.WriteVarInt(TotalTimeBoost);
         writer.WriteEntityMetadataType(18, EntityMetadataType.PigVariant);
-        writer.WriteVarInt(Variant + 1);
+        writer.WriteVarInt(Variant);
     }
 }

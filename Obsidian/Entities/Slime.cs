@@ -3,7 +3,7 @@ using Obsidian.Entities.AI;
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:slime")]
-public sealed partial class Slime : PathfinderMob
+public partial class Slime : PathfinderMob
 {
     private int size = 1;
     private long nextAttack;
@@ -12,7 +12,7 @@ public sealed partial class Slime : PathfinderMob
         Type = EntityType.Slime;
         MoveControl = new SlimeMoveControl(this);
     }
-    public int Size
+    public virtual int Size
     {
         get => size;
         set
@@ -24,6 +24,9 @@ public sealed partial class Slime : PathfinderMob
         }
     }
     protected override bool UsesAi => true;
+    internal override bool Hostile => true;
+    protected virtual bool CanDamageOnContact => Size > 1;
+    internal virtual int JumpDelayMultiplier => 1;
     protected override float DimensionScale => Size * 0.52f / 2.04f;
     protected override string? SoundName => "slime";
     protected override SoundCategory MobSoundCategory => SoundCategory.Hostile;
@@ -49,7 +52,7 @@ public sealed partial class Slime : PathfinderMob
             await RemoveAsync();
             return;
         }
-        if (Size > 1 && AiTick >= nextAttack && AttackTarget is { } target && IsValidTarget(target) && CanSee(target) &&
+        if (CanDamageOnContact && AiTick >= nextAttack && AttackTarget is { } target && IsValidTarget(target) && CanSee(target) &&
             (target.Position - Position).MagnitudeSquared() < MathF.Pow(0.6f * Size, 2) &&
             MobTerrain.Overlaps(Dimension.CreateBBFromPosition(Position), target.Dimension.CreateBBFromPosition(target.Position)))
         {
@@ -60,14 +63,17 @@ public sealed partial class Slime : PathfinderMob
     protected override ValueTask OnDeathAsync(IEntity source)
     {
         if (Size == 1)
-            DropItem(Material.SlimeBall, Random.Next(3));
+            DropSmallLoot();
         else
         {
             var count = Random.Next(2, 5);
             for (var index = 0; index < count; index++)
             {
                 var position = Position + new VectorF((index % 2 - 0.5f) * Size / 4, 0.5f, (index / 2 - 0.5f) * Size / 4);
-                var child = new Slime { Level = Level, EntityId = Server.GetNextEntityId(), Position = position };
+                var child = CreateSplitChild();
+                child.Level = Level;
+                child.EntityId = Server.GetNextEntityId();
+                child.Position = position;
                 child.InitializeAi(false);
                 child.Size = Size / 2;
                 child.Health = child.Size * child.Size;
@@ -78,6 +84,9 @@ public sealed partial class Slime : PathfinderMob
         }
         return default;
     }
+    protected virtual Slime CreateSplitChild() => new Slime { Level = Level };
+    protected virtual void DropSmallLoot() => DropItem(Material.SlimeBall, Random.Next(3));
+
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
@@ -105,7 +114,7 @@ internal sealed class SlimeMoveControl(Slime slime) : MoveControl(slime)
         {
             if (--jumpDelay > 0)
                 return;
-            jumpDelay = slime.Random.Next(10, 30);
+            jumpDelay = slime.Random.Next(10, 30) * slime.JumpDelayMultiplier;
             if (slime.AttackTarget != null)
                 jumpDelay /= 3;
             slime.JumpControl.Jump();

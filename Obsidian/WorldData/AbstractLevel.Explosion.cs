@@ -18,8 +18,9 @@ public abstract partial class AbstractLevel
         return JsonSerializer.Deserialize<Dictionary<string, float>>(stream)!;
     }
 
-    internal async ValueTask ExplodeAsync(Creeper source, float radius)
+    internal async ValueTask ExplodeAsync(Entity source, float radius, IEntity? owner = null)
     {
+        var random = source is Mob mob ? mob.Random : Random.Shared;
         var terrain = new MobTerrain(this);
         var destroyed = new HashSet<Vector>();
         for (var x = 0; x < 16; x++)
@@ -31,7 +32,7 @@ public abstract partial class AbstractLevel
             var direction = new VectorF(x / 15f * 2 - 1, y / 15f * 2 - 1, z / 15f * 2 - 1);
             direction /= direction.Magnitude;
             var point = source.Position;
-            var strength = radius * (0.7f + source.Random.NextSingle() * 0.6f);
+            var strength = radius * (0.7f + random.NextSingle() * 0.6f);
             while (strength > 0)
             {
                 var position = (Vector)point.Floor();
@@ -74,7 +75,7 @@ public abstract partial class AbstractLevel
                     visible++;
             }
             var exposure = (1 - distance) * visible / Math.Max(1, total);
-            await target.DamageAsync(source, MathF.Floor((exposure * exposure + exposure) / 2 * 7 * diameter + 1));
+            await target.DamageAsync(owner ?? source, MathF.Floor((exposure * exposure + exposure) / 2 * 7 * diameter + 1));
             var knockback = direction * exposure;
             target.Motion += knockback;
             if (target is IPlayer)
@@ -84,7 +85,7 @@ public abstract partial class AbstractLevel
         {
             var block = terrain.GetBlock(position)!;
             await SetBlockAsync(position, BlocksRegistry.Air, true);
-            if (source.Random.NextSingle() <= 1 / radius)
+            if (random.NextSingle() <= 1 / radius)
             {
                 if (ItemsRegistry.TryGet(block.Material, out var holder))
                 {
@@ -94,7 +95,7 @@ public abstract partial class AbstractLevel
             }
         }
         var sound = new SoundEffect { SoundId = "minecraft:entity.generic.explode", SoundCategory = SoundCategory.Blocks,
-            Volume = 4, Pitch = 1, Seed = source.Random.NextInt64() };
+            Volume = 4, Pitch = 1, Seed = random.NextInt64() };
         foreach (var player in GetPlayersInRange(source.Position, 64))
         {
             var knockback = knockbacks.GetValueOrDefault(player.EntityId);

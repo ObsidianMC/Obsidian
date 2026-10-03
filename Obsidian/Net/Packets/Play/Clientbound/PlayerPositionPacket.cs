@@ -21,7 +21,7 @@ public partial class PlayerPositionPacket
     public Angle Pitch { get; init; }
 
     [Field(4)]
-    public PositionFlags Flags { get; init; } = PositionFlags.X | PositionFlags.Y | PositionFlags.Z;
+    public PositionFlags Flags { get; init; }
 
     public override void Serialize(INetStreamWriter writer)
     {

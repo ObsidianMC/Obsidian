@@ -276,6 +276,7 @@ public abstract partial class AbstractLevel : ILevel
 
         await SetBlockUntrackedAsync(x, y, z, block);
         this.BroadcastBlockChange(block, new(x, y, z));
+        CheckSnowGolem(new Vector(x, y, z), block);
     }
 
     public async ValueTask SetBlockAsync(int x, int y, int z, IBlock block, bool doBlockUpdate)
@@ -285,6 +286,7 @@ public abstract partial class AbstractLevel : ILevel
 
         await SetBlockUntrackedAsync(x, y, z, block, doBlockUpdate);
         this.BroadcastBlockChange(block, new(x, y, z));
+        CheckSnowGolem(new Vector(x, y, z), block);
     }
 
     internal void BroadcastBlockChange(IBlock block, Vector location)

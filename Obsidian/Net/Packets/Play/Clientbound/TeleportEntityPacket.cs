@@ -10,14 +10,17 @@ public partial class TeleportEntityPacket
     [Field(1), DataFormat(typeof(double))]
     public VectorF Position { get; init; }
 
-    [Field(2)]
-    public Angle Yaw { get; init; }
+    [Field(2), DataFormat(typeof(double))]
+    public VectorF Delta { get; init; }
 
     [Field(3)]
+    public Angle Yaw { get; init; }
+
+    [Field(4)]
     public Angle Pitch { get; init; }
 
     [Field(5)]
-    public PositionFlags Flags { get; init; } = PositionFlags.X | PositionFlags.Y | PositionFlags.Z;
+    public PositionFlags Flags { get; init; }
 
     [Field(6)]
     public bool OnGround { get; init; }
@@ -27,6 +30,7 @@ public partial class TeleportEntityPacket
         writer.WriteVarInt(this.EntityId);
 
         writer.WriteAbsolutePositionF(this.Position);
+        writer.WriteAbsolutePositionF(this.Delta);
 
         writer.WriteSingle(this.Yaw);
         writer.WriteSingle(this.Pitch);

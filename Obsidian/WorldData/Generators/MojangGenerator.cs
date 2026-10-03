@@ -297,6 +297,17 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
     private NbtCompound? LoadStartChunk(int chunkX, int chunkZ) =>
         (this.world.GetChunkAsync(chunkX, chunkZ, scheduleGeneration: false).AsTask().GetAwaiter().GetResult() as Chunk)?.StructureStarts;
 
+    internal bool IsInsideFortress(Vector position)
+    {
+        if (this.builder.Structures is not StructureManager manager)
+            return false;
+        var fortress = manager.StructuresPerStep.SelectMany(step => step).FirstOrDefault(structure => structure.Identifier == "minecraft:fortress");
+        return fortress != null && manager.GetReferencingStarts(position.X >> 4, position.Z >> 4, fortress).Any(start =>
+            start.Pieces.Any(piece => piece.BoundingBox.IsInside(position)) ||
+            start.BoundingBox.IsInside(position) && this.world is AbstractLevel level &&
+            level.GetLoadedChunk(position.X >> 4, position.Z >> 4)?.GetBlock(position.X, position.Y - 1, position.Z).Material == Material.NetherBricks);
+    }
+
     public NbtCompound? SaveStructureStarts(int chunkX, int chunkZ, NbtCompound? loaded) =>
         this.builder.Structures is StructureManager structures ? structures.SaveStarts(chunkX, chunkZ, loaded) : loaded;
 

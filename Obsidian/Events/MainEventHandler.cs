@@ -33,13 +33,17 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         var entity = e.Entity;
         var attacker = e.Attacker;
 
-        if (entity is IPlayer || entity is Mob { HasAi: true })
+        if (entity is IPlayer || entity is Mob { HasAi: true } || entity is MobProjectile { Type: EntityType.Fireball })
         {
             async ValueTask Damage()
             {
                 if (entity.Level == attacker.Level && entity.IsInRange(attacker, 4) &&
                     (entity is not Mob mob || mob.CanSee(attacker)))
+                {
                     await entity.DamageAsync(attacker, e.Damage > 0 ? e.Damage : 1);
+                    if (entity is Living && attacker is IPlayer owner)
+                        Wolf.AlertOwnedWolves(owner, entity);
+                }
             }
 
             if (entity.Level is Obsidian.WorldData.AbstractLevel level)

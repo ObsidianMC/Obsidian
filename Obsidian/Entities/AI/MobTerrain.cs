@@ -7,6 +7,23 @@ internal sealed class MobTerrain(ILevel level)
     public int GetSkyLight(Vector position) => level is AbstractLevel concrete && !concrete.IsOutsideBuildHeight(position.Y) ?
         concrete.GetLoadedChunk(position.X >> 4, position.Z >> 4)?.GetLightLevel(position.X, position.Y, position.Z, LightType.Sky) ?? 0 : 0;
 
+    public int GetBlockLight(Vector position) => level is AbstractLevel concrete && !concrete.IsOutsideBuildHeight(position.Y) ?
+        concrete.GetLoadedChunk(position.X >> 4, position.Z >> 4)?.GetLightLevel(position.X, position.Y, position.Z, LightType.Block) ?? 0 : 0;
+
+    public float GetTemperature(Vector position)
+    {
+        if (level is not AbstractLevel concrete || concrete.GetLoadedChunk(position.X >> 4, position.Z >> 4) is not { } chunk)
+            return 0.5f;
+        var seaLevel = concrete.Generator is Obsidian.WorldData.Generators.MojangGenerator generator
+            ? generator.Builder.RandomState.Settings.SeaLevel : 63;
+        return Obsidian.WorldData.Generators.Mojang.BiomeTemperature.GetTemperature(
+            chunk.GetBiome(position.X, position.Y, position.Z), position.X, position.Y, position.Z, seaLevel);
+    }
+
+    public bool IsRainingAt(Vector position) => level.LevelData.Raining && GetSkyLight(position) == 15 &&
+        level is AbstractLevel concrete && concrete.GetLoadedChunk(position.X >> 4, position.Z >> 4) is { } chunk &&
+        chunk.GetBiome(position.X, position.Y, position.Z).Element.HasPrecipitation && GetTemperature(position) >= 0.15f;
+
     public float GetFriction(VectorF position) => GetBlock((Vector)(position - new VectorF(0, 0.500001f, 0)).Floor())?.Material switch
     {
         Material.Ice or Material.PackedIce or Material.FrostedIce => 0.98f,
