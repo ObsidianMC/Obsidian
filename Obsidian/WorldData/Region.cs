@@ -60,6 +60,12 @@ public class Region : IRegion
     /// </summary>
     internal Func<int, int, NbtCompound?, NbtCompound?>? SaveStructureStarts { get; init; }
 
+    /// <summary>
+    /// The lock fluid ticks run under (the level's <see cref="Fluids.LevelFluids.TickLock"/>), held while a chunk is
+    /// serialized so its blocks and fluid ticks are saved as of the same moment.
+    /// </summary>
+    internal Lock FluidTickLock { get; init; } = new();
+
     // The dimension's build range, which decides the section count of loaded chunks.
     private readonly int minY;
     private readonly int height;
@@ -237,17 +243,21 @@ public class Region : IRegion
         await using NbtWriterStream writer = new(strm, ChunkCompression, "");
 
         // Generation writes chunks (and their neighbors) under its locks, so the snapshot is taken under the chunk's lock.
+        // A fluid tick takes its tick from the chunk before it changes blocks, so the snapshot also waits out fluid ticks.
         // The entities are taken in the same snapshot, so they agree with the chunk's status.
         NbtList? entities = null;
         using (this.LockChunk is null ? null : await this.LockChunk(chunk.X, chunk.Z))
         {
-            var loadedStarts = (chunk as Chunk)?.StructureStarts;
-            var structureStarts = this.SaveStructureStarts is null ? loadedStarts : this.SaveStructureStarts(chunk.X, chunk.Z, loadedStarts);
+            lock (this.FluidTickLock)
+            {
+                var loadedStarts = (chunk as Chunk)?.StructureStarts;
+                var structureStarts = this.SaveStructureStarts is null ? loadedStarts : this.SaveStructureStarts(chunk.X, chunk.Z, loadedStarts);
 
-            SerializeChunk(writer, chunk, structureStarts);
+                SerializeChunk(writer, chunk, structureStarts);
 
-            if (chunk.IsGenerated && chunk is Chunk complete)
-                entities = this.CollectEntities(complete, unloading);
+                if (chunk.IsGenerated && chunk is Chunk complete)
+                    entities = this.CollectEntities(complete, unloading);
+            }
         }
 
         writer.EndCompound();

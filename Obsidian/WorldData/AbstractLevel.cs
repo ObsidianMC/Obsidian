@@ -472,6 +472,7 @@ public abstract partial class AbstractLevel : ILevel
             region = new Region(regionX, regionZ, FolderPath, minY: this.MinY, height: this.Height)
             {
                 LockChunk = this.Generator.LockChunkAsync,
+                FluidTickLock = this.Fluids.TickLock,
                 EntitiesLoaded = this.QueueEntitySpawn,
                 SaveStructureStarts = this.Generator is IStructureStartStorage storage ? storage.SaveStructureStarts : null
             };
