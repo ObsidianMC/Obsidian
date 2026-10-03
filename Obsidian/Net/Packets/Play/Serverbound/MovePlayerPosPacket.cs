@@ -21,11 +21,7 @@ public partial class MovePlayerPosPacket
     {
         await player.UpdateAsync(Position, this.MovementFlags);
         if (player.Position.ToChunkCoord() != player.LastPosition.ToChunkCoord())
-        {
-            await player.UpdateChunksAsync(distance: player.ClientInformation.ViewDistance);
-            (int cx, int cz) = player.Position.ToChunkCoord();
-            await player.Client.QueuePacketAsync(new SetChunkCacheCenterPacket(cx, cz));
-        }
+            await player.UpdateChunksAsync();
 
         player.LastPosition = player.Position;
     }

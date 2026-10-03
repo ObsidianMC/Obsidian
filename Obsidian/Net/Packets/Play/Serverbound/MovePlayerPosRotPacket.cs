@@ -33,10 +33,7 @@ public partial class MovePlayerPosRotPacket
 
         await player.UpdateAsync(Position, Yaw, Pitch, this.MovementFlags);
         if (player.Position.ToChunkCoord() != player.LastPosition.ToChunkCoord())
-        {
-            (int cx, int cz) = player.Position.ToChunkCoord();
-            await player.Client.QueuePacketAsync(new SetChunkCacheCenterPacket(cx, cz));
-        }
+            await player.UpdateChunksAsync();
 
         player.LastPosition = player.Position;
     }
