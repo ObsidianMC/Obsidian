@@ -40,6 +40,7 @@ Very early development builds are available over at the [GitHub Actions](https:/
 - Find the latest `.NET Build` [action](https://github.com/ObsidianMC/Obsidian/actions?query=branch%3Amaster) and scroll to the bottom of the page to find the artifacts.
 - Unzip the artifact and run `dotnet ObsidianApp.dll` to start the server.
 - On first run, a config file is generated. Fill this file with your preferenced values and run the previous command again.
+- The first start needs internet access: Obsidian downloads the vanilla server jar from Mojang to extract the structure templates it can't ship, and caches them in `cache/`.
 Easy, isn't it?
 
 ## 🐟 Docker
