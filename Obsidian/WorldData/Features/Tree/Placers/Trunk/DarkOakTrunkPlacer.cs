@@ -1,95 +1,66 @@
-using Obsidian.API.Utilities;
-using Obsidian.API.World.Features;
-using Obsidian.API.World.Features.Tree;
-using Obsidian.Registries;
-
 namespace Obsidian.WorldData.Features.Tree.Placers.Trunk;
 
-[TreeProperty("minecraft:dark_oak_trunk_placer")]
+/// <summary>
+/// Dark oak trunk: a 2x2 trunk that may lean near the top, plus short random log stubs around the top.
+/// </summary>
+[ConfiguredFeatureProperty("minecraft:dark_oak_trunk_placer")]
 public sealed class DarkOakTrunkPlacer : TrunkPlacer
 {
-    public override required string Type { get; init; }
-
-    public override async ValueTask<List<Vector>> Place(FeatureContext context, Vector origin, int treeHeight, IBlock trunkBlock)
+    public override List<FoliageAttachment> PlaceTrunk(TreeContext tree, int freeTreeHeight, Vector origin)
     {
-        var trunkPositions = new List<Vector>();
-        var random = context.Random;
-
-        // Set dirt below the 2x2 origin
+        var random = tree.Random;
+        var attachments = new List<FoliageAttachment>();
         var below = origin + Vector.Down;
-        await context.World.SetBlockUntrackedAsync(below, BlocksRegistry.Dirt, false);
-        await context.World.SetBlockUntrackedAsync(below + Vector.East, BlocksRegistry.Dirt, false);
-        await context.World.SetBlockUntrackedAsync(below + Vector.South, BlocksRegistry.Dirt, false);
-        await context.World.SetBlockUntrackedAsync(below + Vector.South + Vector.East, BlocksRegistry.Dirt, false);
+        SetDirtAt(tree, below);
+        SetDirtAt(tree, below + Vector.East);
+        SetDirtAt(tree, below + Vector.South);
+        SetDirtAt(tree, below + Vector.South + Vector.East);
 
-        // Determine lean direction and parameters
-        var cardinalDirs = Vector.CardinalDirs.ToArray();
-        var leanDirection = cardinalDirs[random.Next(cardinalDirs.Length)];
-        int leanHeight = treeHeight - random.Next(4);
-        int leanSteps = 2 - random.Next(3);
+        var leanDirection = TreeDirections.RandomHorizontal(random);
+        var leanHeight = freeTreeHeight - random.NextInt(4);
+        var leanSteps = 2 - random.NextInt(3);
+        var trunkX = origin.X;
+        var trunkZ = origin.Z;
+        var topY = origin.Y + freeTreeHeight - 1;
 
-        int x = origin.X;
-        int y = origin.Y;
-        int z = origin.Z;
-        int tx = x;
-        int tz = z;
-        int ey = y + treeHeight - 1;
-
-        // Place main 2x2 trunk with potential lean
-        for (int dy = 0; dy < treeHeight; dy++)
+        for (var i = 0; i < freeTreeHeight; i++)
         {
-            if (dy >= leanHeight && leanSteps > 0)
+            if (i >= leanHeight && leanSteps > 0)
             {
-                tx += leanDirection.X;
-                tz += leanDirection.Z;
+                var step = leanDirection.ToVector();
+                trunkX += step.X;
+                trunkZ += step.Z;
                 leanSteps--;
             }
 
-            int yy = y + dy;
-            var blockPos = new Vector(tx, yy, tz);
-
-            // Place 2x2 logs at this height
-            await PlaceLogIfFree(context, blockPos, trunkBlock);
-            await PlaceLogIfFree(context, blockPos + Vector.East, trunkBlock);
-            await PlaceLogIfFree(context, blockPos + Vector.South, trunkBlock);
-            await PlaceLogIfFree(context, blockPos + Vector.South + Vector.East, trunkBlock);
+            var position = new Vector(trunkX, origin.Y + i, trunkZ);
+            if (TreeBlocks.IsAirOrLeaves(tree.Level, position))
+            {
+                this.PlaceLog(tree, position);
+                this.PlaceLog(tree, position + Vector.East);
+                this.PlaceLog(tree, position + Vector.South);
+                this.PlaceLog(tree, position + Vector.East + Vector.South);
+            }
         }
 
-        // Add main trunk top attachment point
-        trunkPositions.Add(new Vector(tx, ey, tz));
+        attachments.Add(new FoliageAttachment(new Vector(trunkX, topY, trunkZ), 0, true));
 
-        // Place additional branch attachments around the perimeter
-        for (int ox = -1; ox <= 2; ox++)
+        for (var dx = -1; dx <= 2; dx++)
         {
-            for (int oz = -1; oz <= 2; oz++)
+            for (var dz = -1; dz <= 2; dz++)
             {
-                // Only place branches on the perimeter (not the center 2x2)
-                if ((ox < 0 || ox > 1 || oz < 0 || oz > 1) && random.Next(3) <= 0)
+                // Only the ring around the 2x2 trunk, each spot with a 1/3 chance.
+                if ((dx < 0 || dx > 1 || dz < 0 || dz > 1) && random.NextInt(3) <= 0)
                 {
-                    int length = random.Next(3) + 2;
+                    var length = random.NextInt(3) + 2;
+                    for (var i = 0; i < length; i++)
+                        this.PlaceLog(tree, new Vector(origin.X + dx, topY - i - 1, origin.Z + dz));
 
-                    // Place downward branch logs
-                    for (int branchY = 0; branchY < length; branchY++)
-                    {
-                        var branchPos = new Vector(x + ox, ey - branchY - 1, z + oz);
-                        await PlaceLogIfFree(context, branchPos, trunkBlock);
-                    }
-
-                    // Add branch attachment point for foliage
-                    trunkPositions.Add(new Vector(x + ox, ey, z + oz));
+                    attachments.Add(new FoliageAttachment(new Vector(origin.X + dx, topY, origin.Z + dz), 0, false));
                 }
             }
         }
 
-        return trunkPositions;
-    }
-
-    private async ValueTask PlaceLogIfFree(FeatureContext context, Vector pos, IBlock trunkBlock)
-    {
-        var existingBlock = await context.World.GetBlockAsync(pos);
-        if (existingBlock != null && TagsRegistry.Block.Replaceable.Entries.Contains(existingBlock.RegistryId))
-        {
-            await context.World.SetBlockUntrackedAsync(pos, trunkBlock, false);
-        }
+        return attachments;
     }
 }

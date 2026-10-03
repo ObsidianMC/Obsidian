@@ -1,24 +1,73 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Obsidian.API.World.Generator.RandomSources;
 
 namespace Obsidian.WorldData.Features.PlacementModifiers;
 
 /// <summary>
-/// In the horizontal relative range (0,0) to (16,16), 
-/// at each vertical layer separated by air, lava or water, 
-/// tries to randomly select the specified number of horizontal positions, 
-/// whose Y coordinate is one block above this layer at this selected horizontal position. 
-/// Return these selected positions.
+/// For each layer of ground (counting down from the top), places at random columns until a layer yields none.
 /// </summary>
+/// <remarks>
+/// Like vanilla, the count is re-sampled on every iteration of the inner loop.
+/// </remarks>
 [ConfiguredFeatureProperty("minecraft:count_on_every_layer")]
 public sealed class CountOnEveryLayerPlacement : PlacementModifierBase
 {
-    public override string Type { get; internal init; } = "minecraft:count_on_every_layer";
+    public override string Type => "minecraft:count_on_every_layer";
 
-    /// <summary>
-    /// Count on each layer. Value between 0 and 256 (inclusive).
-    /// </summary>
-    [Range(0, 256)]
     public required IIntProvider Count { get; init; }
 
-    protected override bool ShouldPlace(PlacementContext context) => throw new NotImplementedException();
+    public override IEnumerable<Vector> GetPositions(PlacementContext context, IRandomSource random, Vector position)
+    {
+        var positions = new List<Vector>();
+        var layer = 0;
+        bool placedOnLayer;
+
+        do
+        {
+            placedOnLayer = false;
+
+            for (var i = 0; i < this.Count.Sample(random); i++)
+            {
+                var x = random.NextInt(16) + position.X;
+                var z = random.NextInt(16) + position.Z;
+                var height = context.Level.GetHeight(HeightmapType.MotionBlocking, x, z);
+                var y = FindOnGroundY(context.Level, x, height, z, layer);
+
+                if (y != int.MaxValue)
+                {
+                    positions.Add(new Vector(x, y, z));
+                    placedOnLayer = true;
+                }
+            }
+
+            layer++;
+        }
+        while (placedOnLayer);
+
+        return positions;
+    }
+
+    private static int FindOnGroundY(IWorldGenLevel level, int x, int startY, int z, int targetLayer)
+    {
+        var layer = 0;
+        var above = level.GetBlock(new Vector(x, startY, z));
+
+        for (var y = startY; y >= level.MinY + 1; y--)
+        {
+            var below = level.GetBlock(new Vector(x, y - 1, z));
+
+            if (!IsEmpty(below) && IsEmpty(above) && below.Material != Material.Bedrock)
+            {
+                if (layer == targetLayer)
+                    return y;
+
+                layer++;
+            }
+
+            above = below;
+        }
+
+        return int.MaxValue;
+    }
+
+    private static bool IsEmpty(IBlock block) => block.IsAir || block.Material is Material.Water or Material.Lava;
 }

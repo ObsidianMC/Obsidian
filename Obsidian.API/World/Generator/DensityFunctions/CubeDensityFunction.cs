@@ -7,9 +7,15 @@ public sealed class CubeDensityFunction : IDensityFunction
 
     public required IDensityFunction Argument { get; init; }
 
-    public double MinValue => -MaxValue;
+    public double MinValue => Cube(this.Argument.MinValue);
 
-    public double MaxValue => Math.Pow(Argument.MaxValue, 3);
+    public double MaxValue => Cube(this.Argument.MaxValue);
 
-    public double GetValue(double x, double y, double z) => Math.Pow(Argument.GetValue(x, y, z), 3);
+    public double GetValue(double x, double y, double z) => Cube(this.Argument.GetValue(x, y, z));
+
+    public IDensityFunction MapAll(IDensityFunctionVisitor visitor) =>
+        visitor.Apply(new CubeDensityFunction { Argument = visitor.Map(this.Argument) });
+
+    // Math.Pow can differ from plain multiplication in the last bit.
+    internal static double Cube(double value) => value * value * value;
 }

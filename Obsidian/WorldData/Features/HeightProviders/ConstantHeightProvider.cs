@@ -1,13 +1,16 @@
-﻿namespace Obsidian.WorldData.Features.HeightProviders;
+﻿using Obsidian.API.World.Generator.RandomSources;
 
-[ConfiguredFeatureProperty("minecarft:constant")]
+namespace Obsidian.WorldData.Features.HeightProviders;
+
+/// <summary>
+/// A fixed Y level. Feature data may also write a bare vertical anchor where a height provider is expected.
+/// </summary>
+[ConfiguredFeatureProperty("minecraft:constant")]
 public sealed class ConstantHeightProvider : IHeightProvider
 {
-    public required string Type { get; init; } = "minecarft:constant";
-
-    public int? Absolute { get; init; }
-    public int? AboveBottom { get; init; }
-    public int? BelowTop { get; init; }
+    public string Type { get; init; } = "minecraft:constant";
 
     public required VerticalAnchor Value { get; init; }
+
+    public int Sample(IRandomSource random, WorldGenerationContext context) => this.Value.Resolve(context);
 }

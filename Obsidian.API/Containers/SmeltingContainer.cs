@@ -36,6 +36,7 @@ public class SmeltingContainer : ResultContainer, IBlockEntity
     {
         BlockPosition = this.BlockPosition,
         Title = this.Title,
+        CustomName = this.CustomName,
         items = this.items,
         CookTime = this.CookTime,
         CookTimeTotal = this.CookTimeTotal,

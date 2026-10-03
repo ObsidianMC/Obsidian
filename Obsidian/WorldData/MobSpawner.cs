@@ -40,7 +40,7 @@ internal sealed class MobSpawner(AbstractLevel level)
         var chunks = new HashSet<long>();
         foreach (var player in players)
         {
-            var (cx, cz) = player.Position.ToChunkCoord();
+            var (cx, cz) = Region.ChunkOf(player.Position);
             var distance = Math.Min(8, (int)level.Configuration.SimulationDistance);
             for (var x = cx - distance; x <= cx + distance; x++)
             for (var z = cz - distance; z <= cz + distance; z++)
@@ -71,8 +71,9 @@ internal sealed class MobSpawner(AbstractLevel level)
         var x = chunk.X * 16 + random.Next(16);
         var z = chunk.Z * 16 + random.Next(16);
         var top = chunk.Heightmaps[HeightmapType.MotionBlocking].GetHeight(x & 15, z & 15) + 1;
-        var y = category == "creature" ? top : random.Next(-64, Math.Clamp(top + 1, -63, 320));
-        var biome = chunk.GetBiome(x, Math.Clamp(y, -64, 319), z);
+        var maxY = level.MinY + level.Height;
+        var y = category == "creature" ? top : random.Next(level.MinY, Math.Clamp(top + 1, level.MinY + 1, maxY));
+        var biome = chunk.GetBiome(x, Math.Clamp(y, level.MinY, maxY - 1), z);
         if (!biomeSpawns.TryGetValue(biome.Name, out var categories) || !categories.TryGetValue(category, out var choices) || choices.Length == 0)
             return 0;
         if (category == "monster")

@@ -8,10 +8,15 @@ public partial class BlocksGenerator
     private static void GenerateBlocks(Block[] blocks, SourceProductionContext ctx)
     {
         var blocksBuilder = new CodeBuilder()
+            .Line("#nullable enable")
             .Using("Obsidian.Blocks")
             .Line()
             .Namespace("Obsidian.Registries")
             .Type("internal partial class BlocksRegistry");
+
+        // Factories by registry id, so the registry builds its blocks without reflection.
+        var createDefault = new CodeBuilder();
+        var createState = new CodeBuilder();
 
         foreach (var block in blocks)
         {
@@ -55,7 +60,26 @@ public partial class BlocksGenerator
             ctx.AddSource($"{blockName}.g.cs", builder.ToString());
 
             blocksBuilder.Indent().Append($"public static readonly IBlock {blockName} = new {blockName}();").Line();
+
+            createDefault.Indent().Append($"{block.RegistryId} => new {blockName}(),").Line();
+            if (block.Properties.Length > 0)
+                createState.Indent().Append($"{block.RegistryId} => new {blockName}(stateId),").Line();
         }
+
+        blocksBuilder.Line()
+            .Line("/// <summary>The block of a registry id without a state, which reads as its default state.</summary>")
+            .Line("private static IBlock CreateDefault(int registryId) => registryId switch")
+            .Line("{")
+            .Append(createDefault.ToString())
+            .Line("    _ => throw new ArgumentOutOfRangeException(nameof(registryId)),")
+            .Line("};")
+            .Line()
+            .Line("/// <summary>The block of a registry id in a state, or <c>null</c> for blocks without properties.</summary>")
+            .Line("private static IBlock? CreateState(int registryId, int stateId) => registryId switch")
+            .Line("{")
+            .Append(createState.ToString())
+            .Line("    _ => null,")
+            .Line("};");
 
         blocksBuilder.EndScope();
 

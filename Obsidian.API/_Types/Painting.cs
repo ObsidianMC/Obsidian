@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API;
 
-public readonly struct Painting
+public readonly record struct Painting
 {
     public short Id { get; }
     public byte X { get; }

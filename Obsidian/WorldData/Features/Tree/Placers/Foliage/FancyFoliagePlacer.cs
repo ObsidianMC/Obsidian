@@ -1,71 +1,26 @@
-using Obsidian.API.World.Features;
-using Obsidian.API.World.Features.Tree;
-using System.ComponentModel.DataAnnotations;
+using Obsidian.API.World.Generator.RandomSources;
 
 namespace Obsidian.WorldData.Features.Tree.Placers.Foliage;
 
 /// <summary>
-/// Foliage placer for fancy (large) oak trees - irregular rounded canopy with circular skip logic.
+/// Fancy oak clusters: round rows, one block wider in the middle layers.
 /// </summary>
-[TreeProperty("minecraft:fancy_foliage_placer")]
-public sealed class FancyFoliagePlacer : FoliagePlacer
+[ConfiguredFeatureProperty("minecraft:fancy_foliage_placer")]
+public sealed class FancyFoliagePlacer : BlobFoliagePlacer
 {
-	public override required string Type { get; init; }
+    protected override void CreateFoliage(TreeContext tree, int freeTreeHeight, FoliageAttachment attachment, int foliageHeight,
+        int foliageRadius, int offset)
+    {
+        for (var y = offset; y >= offset - foliageHeight; y--)
+        {
+            var radius = foliageRadius + (y != offset && y != offset - foliageHeight ? 1 : 0);
+            this.PlaceLeavesRow(tree, attachment.Position, radius, y, attachment.DoubleTrunk);
+        }
+    }
 
-	/// <summary>
-	/// Height of the fancy oak foliage (0-16 blocks).
-	/// </summary>
-	[Range(0, 16)]
-	public required int Height { get; init; }
+    // Circle test in float, like vanilla's Mth.square(x + 0.5F).
+    protected override bool ShouldSkipLocation(IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk) =>
+        Square(dx + 0.5f) + Square(dz + 0.5f) > radius * radius;
 
-	public override int GetFoliageHeight(Random random, int treeHeight)
-	{
-		return Height;
-	}
-
-	public override async ValueTask<List<Vector>> Place(FeatureContext context, List<Vector> trunkPositions, int treeHeight, IBlock foliageBlock)
-	{
-		var random = context.Random;
-		var placedPositions = new List<Vector>();
-
-		foreach (var attachment in trunkPositions)
-		{
-			int leafRadius = FoliageRadius(random, treeHeight);
-			int offset = GetOffset(random);
-			int foliageHeight = GetFoliageHeight(random, treeHeight);
-			bool doubleTrunk = false; // Fancy oaks are single trunk
-			int radiusOffset = 0;
-
-			var foliagePos = attachment;
-
-			// Fancy oak places leaves from offset down to offset - foliageHeight
-			for (int yo = offset; yo >= offset - foliageHeight; yo--)
-			{
-				// Fancy: radius is larger on middle layers (adds 1 if not top or bottom)
-				int currentRadius = leafRadius + (yo != offset && yo != offset - foliageHeight ? 1 : 0);
-				await FoliagePlacerHelper.PlaceLeavesRow(
-					context.World,
-					random,
-					foliageBlock,
-					foliagePos,
-					currentRadius,
-					yo,
-					doubleTrunk,
-					ShouldSkipLocation,
-					placedPositions
-				);
-			}
-		}
-
-		return placedPositions;
-	}
-
-	protected override bool ShouldSkipLocation(Random random, int dx, int y, int dz, int currentRadius, bool doubleTrunk)
-	{
-		// Fancy: circular skip - (dx + 0.5)² + (dz + 0.5)² > radius²
-		// This creates smooth circular edges
-		float dxOffset = dx + 0.5f;
-		float dzOffset = dz + 0.5f;
-		return (dxOffset * dxOffset + dzOffset * dzOffset) > currentRadius * currentRadius;
-	}
+    private static float Square(float value) => value * value;
 }

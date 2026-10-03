@@ -33,7 +33,133 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
 #if CACHE_VALID_BLOCKS
         validBlockCount.SetDirty();
 #endif
-        base.Set(x, y, z, blockState);
+        lock (this.dataLock)
+        {
+            // The common case, an indirect palette, without the general path's checks.
+            var data = this.DataArray;
+            if (data is not null && this.Palette is IndirectBlockPalette palette)
+            {
+                var id = palette.GetOrAddId(blockState);
+                if (palette.BitCount > data.BitsPerEntry)
+                    this.DataArray = data = data.Grow(palette.BitCount);
+
+                data[this.GetIndex(x, y, z)] = id;
+                return;
+            }
+
+            base.Set(x, y, z, blockState);
+        }
+    }
+
+    /// <summary>
+    /// Sets the blocks of layer <paramref name="y"/>: entry <c>z * 16 + x</c> of <paramref name="layer"/> indexes
+    /// <paramref name="blocks"/>, where null blocks are skipped. The result is the same as calling <see cref="Set"/> for each
+    /// block in index order (palette order included), but much faster.
+    /// </summary>
+    internal void SetLayer(int y, ReadOnlySpan<byte> layer, ReadOnlySpan<IBlock?> blocks)
+    {
+#if CACHE_VALID_BLOCKS
+        validBlockCount.SetDirty();
+#endif
+        // Palette ids of the blocks once set, or -1. Indirect palettes only append, so ids stay valid.
+        Span<int> ids = stackalloc int[blocks.Length];
+        ids.Fill(-1);
+
+        lock (this.dataLock)
+        {
+            var offset = y << 8;
+            var data = this.DataArray;
+
+            for (var i = 0; i < 256; i++)
+            {
+                var index = layer[i];
+                var id = ids[index];
+                if (id >= 0)
+                {
+                    data![offset + i] = id;
+                    continue;
+                }
+
+                if (blocks[index] is not { } block)
+                    continue;
+
+                // The first of each block goes through the general path, which grows the palette and data array as needed.
+                this.Set(i & 15, y, i >> 4, block);
+                data = this.DataArray;
+                if (data is not null && this.Palette is IndirectBlockPalette)
+                    ids[index] = data[offset + i];
+            }
+        }
+    }
+
+    /// <remarks>
+    /// Reads don't take the container's lock, since generation reads blocks far more than it writes them. Palettes only
+    /// append and data arrays are replaced whole when they grow, so a read racing a write sees the block before or after
+    /// it. The data array is read before the palette: it's set last when a single value palette grows. A read that finds
+    /// them out of step (or a global palette) reads under the lock instead.
+    /// </remarks>
+    public override IBlock Get(int x, int y, int z)
+    {
+        var data = this.DataArray;
+        var palette = this.Palette;
+
+        if (data is not null)
+        {
+            if (palette is IndirectBlockPalette indirect && indirect.TryGetBlock(data[this.GetIndex(x, y, z)], out var block))
+                return block;
+        }
+        else if (palette is SingleBlockValuePalette single && single.IsFull)
+        {
+            return single.Value;
+        }
+
+        return base.Get(x, y, z);
+    }
+
+    /// <summary>
+    /// The state id of a block, read like <see cref="Get"/> without resolving the block.
+    /// </summary>
+    public int GetStateId(int x, int y, int z)
+    {
+        var data = this.DataArray;
+        var palette = this.Palette;
+
+        if (data is not null)
+        {
+            if (palette is IndirectBlockPalette indirect && indirect.TryGetStateId(data[this.GetIndex(x, y, z)], out var stateId))
+                return stateId;
+        }
+        else if (palette is SingleBlockValuePalette single && single.IsFull)
+        {
+            return single.Value.GetHashCode();
+        }
+
+        return base.Get(x, y, z).GetHashCode();
+    }
+
+    /// <summary>
+    /// Sets a block by its state id, like <see cref="Set"/>.
+    /// </summary>
+    public void SetStateId(int x, int y, int z, int stateId)
+    {
+#if CACHE_VALID_BLOCKS
+        validBlockCount.SetDirty();
+#endif
+        lock (this.dataLock)
+        {
+            var data = this.DataArray;
+            if (data is not null && this.Palette is IndirectBlockPalette palette)
+            {
+                var id = palette.GetOrAddValueId(stateId);
+                if (palette.BitCount > data.BitsPerEntry)
+                    this.DataArray = data = data.Grow(palette.BitCount);
+
+                data[this.GetIndex(x, y, z)] = id;
+                return;
+            }
+
+            base.Set(x, y, z, BlocksRegistry.Get(stateId));
+        }
     }
 
     public override void WriteTo(INetStreamWriter writer)

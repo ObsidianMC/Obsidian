@@ -19,54 +19,69 @@ internal sealed class Tag
         Values = values;
     }
 
-    public static Tag Get(JsonProperty property, List<ITaggable> taggables, Dictionary<string, Tag> knownTags, Dictionary<string, List<string>> missedTags)
+    /// <summary>
+    /// Resolves the tag named <paramref name="propertyName"/>, expanding referenced tags in place like vanilla's
+    /// tag loader: entries keep their declaration order and duplicates are dropped.
+    /// </summary>
+    /// <param name="definitions">Every raw tag definition, keyed by property name (e.g. <c>block/logs</c>).</param>
+    /// <param name="resolved">Tags resolved so far; referenced tags are added to it as they're resolved.</param>
+    /// <exception cref="InvalidOperationException">Tags reference each other in a cycle.</exception>
+    public static Tag Get(string propertyName, IReadOnlyDictionary<string, JsonElement> definitions, List<ITaggable> taggables,
+        Dictionary<string, Tag> resolved) => Get(propertyName, definitions, taggables, resolved, []);
+
+    private static Tag Get(string propertyName, IReadOnlyDictionary<string, JsonElement> definitions, List<ITaggable> taggables,
+        Dictionary<string, Tag> resolved, HashSet<string> resolving)
     {
-        JsonElement propertyValues = property.Value;
+        if (resolved.TryGetValue(propertyName, out var known))
+            return known;
 
-        var type = propertyValues.GetProperty("type").GetString()!;
-        var name = propertyValues.GetProperty("name").GetString()!;
+        if (!resolving.Add(propertyName))
+            throw new InvalidOperationException($"Tag '{propertyName}' references itself through {string.Join(", ", resolving)}.");
 
-        var values = new List<ITaggable>();
+        var definition = definitions[propertyName];
+        var type = definition.GetProperty("type").GetString()!;
+        var name = definition.GetProperty("name").GetString()!;
 
-        foreach (JsonElement value in propertyValues.GetProperty("values").EnumerateArray())
+        var tag = new Tag(name, type, []);
+        var registry = RegistryOf(type);
+
+        foreach (var value in definition.GetProperty("values").EnumerateArray())
         {
-            string valueTag = value.GetString()!;
+            var valueTag = value.GetString()!;
 
             if (valueTag.StartsWith("#"))
             {
-                valueTag = type + '/' + valueTag.Substring(valueTag.IndexOf(':') + 1);
-                if (knownTags.TryGetValue(valueTag, out Tag knownTag))
+                var reference = registry + '/' + valueTag.Substring(valueTag.IndexOf(':') + 1);
+                if (definitions.ContainsKey(reference))
                 {
-                    foreach (ITaggable taggable in knownTag.Values)
-                    {
-                        values.Add(taggable);
-                    }
-                }
-                else
-                {
-                    UpdateMissedTags(property.Name, valueTag, missedTags);
+                    foreach (var taggable in Get(reference, definitions, taggables, resolved, resolving).Values)
+                        tag.Add(taggable);
                 }
             }
-            else if (taggables.FirstOrDefault(x => x.Tag == valueTag && x.Type == type) is ITaggable taggable)
+            else if (taggables.FirstOrDefault(x => x.Tag == valueTag && x.Type == registry) is ITaggable taggable)
             {
-                values.Add(taggable);
-            }
-            else
-            {
-                UpdateMissedTags(property.Name, valueTag, missedTags);
+                tag.Add(taggable);
             }
         }
 
-        var tag = new Tag(name, type, values);
-        knownTags[property.Name] = tag;
+        resolving.Remove(propertyName);
+        resolved[propertyName] = tag;
         return tag;
     }
 
-    private static void UpdateMissedTags(string propertyName, string valueTag, Dictionary<string, List<string>> missedTags)
+    /// <summary>
+    /// The registry a tag type belongs to. Tags can sit in subfolders of their registry (<c>block/mineable</c>), and
+    /// references and entries are relative to the registry, not the subfolder.
+    /// </summary>
+    private static string RegistryOf(string type)
     {
-        if (!missedTags.ContainsKey(propertyName))
-            missedTags.Add(propertyName, [valueTag]);
-        else
-            missedTags[propertyName].Add(valueTag);
+        var parts = type.Split('/');
+        return parts[0] == "worldgen" && parts.Length > 1 ? parts[0] + '/' + parts[1] : parts[0];
+    }
+
+    private void Add(ITaggable taggable)
+    {
+        if (!this.Values.Contains(taggable))
+            this.Values.Add(taggable);
     }
 }

@@ -1,17 +1,25 @@
-﻿namespace Obsidian.WorldData.BlockPredicates;
+﻿using Obsidian.WorldData.Features;
 
+namespace Obsidian.WorldData.BlockPredicates;
+
+/// <summary>
+/// Matches when the block is one of <see cref="Blocks"/>.
+/// </summary>
 [ConfiguredFeatureProperty("minecraft:matching_blocks")]
 public sealed class MatchingBlocksPredicate : IBlockPredicate
 {
     public string Type { get; init; } = "minecraft:matching_blocks";
 
-    public List<int> Offset { get; init; } = [0, 0, 0];
+    /// <summary>
+    /// Offset from the tested position to the block that is checked.
+    /// </summary>
+    public Vector Offset { get; init; } = Vector.Zero;
 
-    public required string Blocks { get; init; }
+    public required BlockSet Blocks { get; init; }
 
-    public bool GetResult(BlockPredicateContext context)
+    public bool Test(IWorldGenLevel level, Vector position)
     {
-
-        return false;
+        var block = level.GetBlock(position + this.Offset);
+        return this.Blocks.Contains(block);
     }
 }

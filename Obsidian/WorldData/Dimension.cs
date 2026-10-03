@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Obsidian.API.Configuration;
 using Obsidian.API.Registry.Codecs.Dimensions;
@@ -16,7 +16,7 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
     {
         this.FolderPath = Path.Combine("worlds", ParentWorld.Name, "dimensions", this.Name.TrimResourceTag(true));
 
-        this.DimensionName = codec.Name;
+        this.SetDimension(codec);
 
         this.LevelData = new LevelData
         {

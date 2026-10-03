@@ -54,7 +54,7 @@ public partial class ExplodePacket
     }
 }
 
-public readonly struct ExplosionRecord
+public readonly record struct ExplosionRecord
 {
     public required ParticleData Particle { get; init; }
 

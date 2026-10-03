@@ -15,12 +15,12 @@ public sealed class Command
     public required IPluginContainer? PluginContainer { get; init; }
     public required string Name { get; init; }
 
-    public string[] Aliases { get; init; } = [];
+    public ImmutableArray<string> Aliases { get; init; } = [];
     public string? Description { get; init; }
     public string? Usage { get; init; }
 
     public List<IExecutor<CommandContext>> Overloads { get; init; } = [];
-    public BaseExecutionCheckAttribute[] ExecutionChecks { get; init; } = [];
+    public ImmutableArray<BaseExecutionCheckAttribute> ExecutionChecks { get; init; } = [];
 
     public Command? Parent { get; init; }
 
@@ -52,9 +52,8 @@ public sealed class Command
     /// <summary>
     /// Executes this command.
     /// </summary>
-    /// <typeparam name="T">Context type.</typeparam>
-    /// <param name="Context">Execution context.</param>
-    /// <returns></returns>
+    /// <param name="context">Execution context.</param>
+    /// <param name="args">The arguments the command was issued with.</param>
     public async Task ExecuteAsync(CommandContext context, string[] args)
     {
         // Check whether the issuer can execute this command
@@ -89,6 +88,10 @@ public sealed class Command
     /// <summary>
     /// Finds the first overload whose parameters accept every argument.
     /// </summary>
+    /// <param name="executors">The overloads to try, in order.</param>
+    /// <param name="args">The arguments the command was issued with.</param>
+    /// <param name="context">Execution context.</param>
+    /// <param name="executor">The first overload that accepts <paramref name="args"/>.</param>
     /// <param name="boundArgs">The arguments bound to the executor's parameters, one per parameter.</param>
     private bool TryFindExecutor(IEnumerable<IExecutor<CommandContext>> executors, string[] args, CommandContext context,
         [NotNullWhen(true)] out IExecutor<CommandContext>? executor, [NotNullWhen(true)] out string[]? boundArgs)

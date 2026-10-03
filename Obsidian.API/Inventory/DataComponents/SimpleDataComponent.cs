@@ -26,30 +26,6 @@ public record class SimpleDataComponent<TValue> : DataComponent
 }
 
 
-public record class TooltipSimpleDataComponent<TValue> : SimpleDataComponent<TValue>
-{
-    public bool ShowInTooltip { get; set; }
-
-    public TooltipSimpleDataComponent(DataComponentType Type, string Identifier,
-        Action<INetStreamWriter, TValue> writer, Func<INetStreamReader, TValue> reader,
-        bool showInTooltip = false) : base(Type, Identifier, writer, reader)
-    {
-        this.ShowInTooltip = showInTooltip;
-    }
-
-    public override void Read(INetStreamReader reader)
-    {
-        base.Read(reader);
-        this.ShowInTooltip = reader.ReadBoolean();
-    }
-
-    public override void Write(INetStreamWriter writer)
-    {
-        base.Write(writer);
-        writer.WriteBoolean(this.ShowInTooltip);
-    }
-}
-
 public record class SimpleDataComponent : DataComponent
 {
     public override string Identifier { get; }

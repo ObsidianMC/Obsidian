@@ -11,14 +11,12 @@ public sealed partial class FinishConfigurationPacket
     {
         var client = player.Client;
 
-        client.Logger.LogDebug("Got finished configuration");
-
         client.SetState(ClientState.Play);
         await player.LoadAsync();
         if (!server.AddPlayer(player))
         {
             await player.DisconnectAsync("Unable to complete login due to a server error. Please try again or contact an administrator.");
-            client.Logger.LogWarning("Failed to add player {Username} to online players. Disconnecting...", player.Username);
+            Log.AddPlayerFailed(client.Logger, player.Username);
             return;
         }
 
@@ -44,7 +42,7 @@ public sealed partial class FinishConfigurationPacket
         await client.QueuePacketAsync(new SetDefaultSpawnPositionPacket(new()
         {
             DimensionName = codec.Name,
-            Position = (Vector)player.Level.LevelData.SpawnPosition
+            Position = (Vector)player.Level.LevelData.SpawnPosition.Floor()
         }, 0, 0));
         await client.QueuePacketAsync(new SetTimePacket(player.Level.LevelData.Time, player.Level.LevelData.DayTime, true));
         await client.QueuePacketAsync(new GameEventPacket(player.Level.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
@@ -67,5 +65,11 @@ public sealed partial class FinishConfigurationPacket
         await client.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
         await player.UpdateChunksAsync(distance: 7);
         await server.EventDispatcher.ExecuteEventAsync(new PlayerJoinEventArgs(player, server, DateTimeOffset.Now));
+    }
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Disconnected {Username}: adding them to the online players failed")]
+        public static partial void AddPlayerFailed(ILogger logger, string username);
     }
 }

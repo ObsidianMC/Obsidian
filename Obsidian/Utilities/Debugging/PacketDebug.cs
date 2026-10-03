@@ -4,12 +4,15 @@ using System.Text;
 
 namespace Obsidian.Utilities.Debugging;
 
-public static class PacketDebug
+public static partial class PacketDebug
 {
     internal static ILogger Logger { get; set; }
 
     public static Task AppendAsync(string description, byte[] newBytes)
     {
+        if (!Logger.IsEnabled(LogLevel.Debug))
+            return Task.CompletedTask;
+
         var builder = new StringBuilder();
         builder.AppendLine("====================");
 
@@ -24,7 +27,8 @@ public static class PacketDebug
 
         builder.AppendLine("====================");
 
-        Logger.LogDebug(builder.ToString());
+        var dump = builder.ToString();
+        Log.PacketDump(Logger, dump);
 
         return Task.CompletedTask;
     }
@@ -50,5 +54,11 @@ public static class PacketDebug
         }
 
         return builder.ToString();
+    }
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Debug, Message = "{PacketDump}")]
+        public static partial void PacketDump(ILogger logger, string packetDump);
     }
 }

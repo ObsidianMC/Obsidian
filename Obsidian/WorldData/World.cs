@@ -2,12 +2,14 @@
 using Microsoft.Extensions.Options;
 using Obsidian.API.Configuration;
 using Obsidian.API.Registry.Codecs.Dimensions;
+using Obsidian.Entities;
 using Obsidian.Nbt;
+using Obsidian.WorldData.Maps;
 using System.IO;
 
 namespace Obsidian.WorldData;
 
-public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPacketBroadcaster packetBroadcaster, IOptionsMonitor<ServerConfiguration> configuration,
+public sealed partial class World(ILogger<World> logger, IWorldManager worldManager, IPacketBroadcaster packetBroadcaster, IOptionsMonitor<ServerConfiguration> configuration,
     IEventDispatcher eventDispatcher, ILevelGenerator worldGenerator, string name, string seed) :
     AbstractLevel(logger, packetBroadcaster, configuration, eventDispatcher, worldGenerator, name, seed), IWorld
 {
@@ -16,6 +18,11 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
     internal readonly ConcurrentDictionary<string, IDimension> dimensions = [];
 
     public string PlayerDataPath { get; private set; } = string.Empty;
+
+    /// <summary>
+    /// The maps of the world and its dimensions.
+    /// </summary>
+    internal MapStorage Maps { get; private set; } = default!;
 
     public async override Task<bool> LoadAsync(DimensionCodec codec)
     {
@@ -41,7 +48,8 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
             DifficultyLocked = levelCompound.GetBool("DifficultyLocked"),
             GeneratorVersion = levelCompound.GetInt("generatorVersion"),
             RainTime = levelCompound.GetInt("rainTime"),
-            SpawnPosition = new VectorF(levelCompound.GetInt("SpawnX"), levelCompound.GetInt("SpawnY"), levelCompound.GetInt("SpawnZ")),
+            // The spawn is saved as a block; players spawn at its center.
+            SpawnPosition = new VectorF(levelCompound.GetInt("SpawnX") + 0.5f, levelCompound.GetInt("SpawnY"), levelCompound.GetInt("SpawnZ") + 0.5f),
             ThunderTime = levelCompound.GetInt("thunderTime"),
             Version = levelCompound.GetInt("version"),
             LastPlayed = levelCompound.GetLong("LastPlayed"),
@@ -51,7 +59,7 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
             LevelName = levelCompound.GetString("LevelName")
         };
 
-        Logger.LogInformation("Loading spawn chunks into memory...");
+        Log.Loading(this.Logger, this.Name);
         for (int rx = -1; rx < 1; rx++)
             for (int rz = -1; rz < 1; rz++)
                 LoadRegion(rx, rz);
@@ -60,9 +68,9 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
         var index = 0;
         for (var cx = x - this.Configuration.SpawnChunkRadius; cx < x + this.Configuration.SpawnChunkRadius; cx++)
             for (var cz = z - this.Configuration.SpawnChunkRadius; cz < z + this.Configuration.SpawnChunkRadius; cz++)
-                SpawnChunks[index++] = NumericsHelper.IntsToLong(cx, cz);
+                this.spawnChunks[index++] = NumericsHelper.IntsToLong(cx, cz);
 
-        await Parallel.ForEachAsync(SpawnChunks, async (c, _) =>
+        await Parallel.ForEachAsync(this.spawnChunks, async (c, _) =>
         {
             NumericsHelper.LongToInts(c, out var cx, out var cz);
             await GetChunkAsync(cx, cz);
@@ -95,9 +103,10 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
         writer.WriteBool("DifficultyLocked", LevelData.DifficultyLocked);
         writer.WriteInt("generatorVersion", LevelData.GeneratorVersion);
         writer.WriteInt("rainTime", LevelData.RainTime);
-        writer.WriteInt("SpawnX", (int)LevelData.SpawnPosition.X);
-        writer.WriteInt("SpawnY", (int)LevelData.SpawnPosition.Y);
-        writer.WriteInt("SpawnZ", (int)LevelData.SpawnPosition.Z);
+        var spawn = LevelData.SpawnPosition.Floor();
+        writer.WriteInt("SpawnX", (int)spawn.X);
+        writer.WriteInt("SpawnY", (int)spawn.Y);
+        writer.WriteInt("SpawnZ", (int)spawn.Z);
         writer.WriteInt("thunderTime", LevelData.ThunderTime);
         writer.WriteInt("version", LevelData.Version);
         writer.WriteLong("LastPlayed", DateTimeOffset.Now.ToUnixTimeMilliseconds());
@@ -108,6 +117,8 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
         writer.EndCompound();
 
         await writer.TryFinishAsync();
+
+        await this.Maps.SaveAsync();
     }
 
     public async Task UnloadPlayerAsync(Guid uuid)
@@ -126,7 +137,7 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
     {
         this.FolderPath = Path.Combine("worlds", Name);
 
-        this.DimensionName = codec.Name;
+        this.SetDimension(codec);
 
         this.LevelData = new LevelData
         {
@@ -136,6 +147,7 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
         };
 
         this.PlayerDataPath = Path.Combine(this.FolderPath, "playerdata");
+        this.Maps = new MapStorage(this.FolderPath);
         this.LevelDataFilePath = Path.Combine(this.FolderPath, "level.dat");
 
         Directory.CreateDirectory(this.PlayerDataPath);
@@ -147,6 +159,16 @@ public sealed class World(ILogger<World> logger, IWorldManager worldManager, IPa
         await base.DoWorldTickAsync();
 
         await Task.WhenAll(this.dimensions.Values.Select(d => d.DoWorldTickAsync()));
+
+        // Like vanilla's player inventory tick, after the levels ticked.
+        foreach (var player in this.Players.Values.Concat(this.dimensions.Values.SelectMany(dimension => dimension.Players.Values)).Cast<Player>())
+            await this.Maps.TickAsync(player);
+    }
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Information, Message = "Loading world {WorldName}")]
+        public static partial void Loading(ILogger logger, string worldName);
     }
 
     public async override Task FlushRegionsAsync()

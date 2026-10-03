@@ -4,6 +4,7 @@ using Obsidian.SourceGenerators.Registry.Models;
 using System.Text.Json;
 
 namespace Obsidian.SourceGenerators.Registry;
+
 public partial class WorldgenNoiseRegistryGenerator
 {
     private static readonly string[] numbers = ["Int32", "Single", "Double", "Int64"];
@@ -144,9 +145,9 @@ public partial class WorldgenNoiseRegistryGenerator
 
             var typeName = typeProperty.ValueKind == JsonValueKind.String ? typeProperty.GetString() : string.Empty;
 
-            if (TryGetCallableName(cleanedNoises, typeName, elementName, out var elementCallableName))
+            if (TryGetCallableName(cleanedNoises, typeName!, elementName, out var elementCallableName))
             {
-                var name =  !string.IsNullOrEmpty(elementName) ? $"{propName.ToPascalCase()} = {elementCallableName}," :
+                var name = !string.IsNullOrEmpty(elementName) ? $"{propName.ToPascalCase()} = {elementCallableName}," :
                     string.Empty;
 
                 builder.Line(name);

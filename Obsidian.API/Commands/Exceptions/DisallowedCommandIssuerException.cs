@@ -20,8 +20,4 @@ public class DisallowedCommandIssuerException : Exception
     {
         AllowedIssuers = allowedIssuers;
     }
-
-    protected DisallowedCommandIssuerException(SerializationInfo info, StreamingContext context) : base(info, context)
-    {
-    }
 }

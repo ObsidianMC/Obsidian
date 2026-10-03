@@ -3,7 +3,7 @@ namespace Obsidian.API.Commands.ArgumentParsers;
 [ArgumentParser("minecraft:time")]
 public sealed partial class MinecraftTimeArgumentParser : BaseArgumentParser<MinecraftTime>
 {
-    public int Min { get; set; } = 0;
+    public int Min { get; set; }
 
     public override bool TryParseArgument(string input, CommandContext ctx, out MinecraftTime result)
     {

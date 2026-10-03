@@ -17,7 +17,7 @@ namespace Obsidian.Entities;
 [MinecraftEntity("minecraft:player")]
 public sealed partial class Player : Avatar, IPlayer
 {
-    public byte CurrentContainerId { get; set; } = 0;
+    public byte CurrentContainerId { get; set; }
 
     public IClient Client { get; internal set; }
 
@@ -139,11 +139,11 @@ public sealed partial class Player : Avatar, IPlayer
     public int FoodTickTimer { get; set; }
     public int XpLevel { get; set; }
     public int XpTotal { get; set; }
-    public float XpP { get; set; } = 0;
+    public float XpP { get; set; }
 
     public double HeadY { get; internal set; }
 
-    public float Absorption { get; set; } = 0;
+    public float Absorption { get; set; }
     public float FallDistance { get; set; }
     public float FoodExhaustionLevel { get; set; }
     public float FoodSaturationLevel { get; set; }
@@ -361,7 +361,7 @@ public sealed partial class Player : Avatar, IPlayer
         CodecRegistry.TryGetDimension(Level.DimensionName, out var codec);
         Debug.Assert(codec is not null); // TODO Handle missing codec
 
-        Logger.LogDebug("Loading into world: {}", Level.Name);
+        Log.ChangingLevel(this.Logger, this.Username, this.Level.Name);
 
         await Client.QueuePacketAsync(new RespawnPacket
         {
@@ -600,7 +600,7 @@ public sealed partial class Player : Avatar, IPlayer
 
     public bool HasAnyPermission(IEnumerable<string> permissions) => permissions.Any(x => HasPermission(x));
 
-    public bool HasAllPermissions(IEnumerable<string> permissions) => permissions.Count(x => HasPermission(x)) == permissions.Count();
+    public bool HasAllPermissions(IEnumerable<string> permissions) => permissions.All(x => HasPermission(x));
 
     public byte GetNextContainerId()
     {
@@ -715,5 +715,14 @@ public sealed partial class Player : Avatar, IPlayer
         }
 
         return sentAll;
+    }
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Debug, Message = "Moving {Username} to {LevelName}")]
+        public static partial void ChangingLevel(ILogger logger, string username, string levelName);
+
+        [LoggerMessage(Level = LogLevel.Warning, Message = "{Username} has invalid saved data; spawning them at the world spawn")]
+        public static partial void InvalidSavedData(ILogger logger, Exception exception, string username);
     }
 }

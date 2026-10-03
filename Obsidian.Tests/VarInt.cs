@@ -21,7 +21,7 @@ public class VarInt
         var actualBytes = stream.Read(bytes.Length);
 
         Assert.InRange(stream.Size, 1, 5);
-        Assert.Equal(bytes, actualBytes.Data);
+        Assert.Equal(bytes, actualBytes.GetBuffer());
     }
 
     [MemberData(nameof(VarIntData))]

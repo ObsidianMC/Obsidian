@@ -278,4 +278,37 @@ public partial class Extensions
 
         builder.EndScope(".ToFrozenDictionary()", true).Line();
     }
+
+    /// <summary>
+    /// Appends a block state object (<c>{"Name", "Properties"}</c>) as a <c>SimpleBlockState</c> initializer.
+    /// Returns whether <paramref name="element"/> was treated as a block state.
+    /// </summary>
+    internal static bool TryAppendStateProperty(this CodeBuilder builder, string? elementName, JsonElement element, bool isDictionary = false)
+    {
+        var isState = elementName is Constants.DefaultBlock or Constants.DefaultFluid or Constants.BlockResult or "state" || element.TryGetProperty("Properties", out _);
+
+        if (isState || isDictionary)
+        {
+            if (!string.IsNullOrEmpty(elementName))
+                builder.Type($"{elementName!.ToPascalCase()} = new()");
+            else
+                builder.Type("new()");
+
+            builder.Line($"Name = {Microsoft.CodeAnalysis.CSharp.SymbolDisplay.FormatLiteral(element.GetProperty("Name").ToString(), true)}, ");
+
+            if (element.TryGetProperty("Properties", out var props))
+            {
+                builder.Type("Properties = new()");
+
+                foreach (var prop in props.EnumerateObject())
+                    builder.Line($" {{ {Microsoft.CodeAnalysis.CSharp.SymbolDisplay.FormatLiteral(prop.Name, true)}, {Microsoft.CodeAnalysis.CSharp.SymbolDisplay.FormatLiteral(prop.Value.GetString()!, true)} }}, ");
+
+                builder.EndScope();
+            }
+
+            builder.EndScope(",", false);
+        }
+
+        return isState;
+    }
 }

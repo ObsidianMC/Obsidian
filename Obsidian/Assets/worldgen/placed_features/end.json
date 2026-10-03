@@ -1,0 +1,122 @@
+{
+  "minecraft:chorus_plant": {
+    "feature": "minecraft:chorus_plant",
+    "placement": [
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:uniform",
+          "max_inclusive": 4,
+          "min_inclusive": 0
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:end_gateway_return": {
+    "feature": "minecraft:end_gateway_return",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 700
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:heightmap",
+        "heightmap": "MOTION_BLOCKING"
+      },
+      {
+        "type": "minecraft:random_offset",
+        "xz_spread": 0,
+        "y_spread": {
+          "type": "minecraft:uniform",
+          "max_inclusive": 9,
+          "min_inclusive": 3
+        }
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:end_island_decorated": {
+    "feature": "minecraft:end_island",
+    "placement": [
+      {
+        "type": "minecraft:rarity_filter",
+        "chance": 14
+      },
+      {
+        "type": "minecraft:count",
+        "count": {
+          "type": "minecraft:weighted_list",
+          "distribution": [
+            {
+              "data": 1,
+              "weight": 3
+            },
+            {
+              "data": 2,
+              "weight": 1
+            }
+          ]
+        }
+      },
+      {
+        "type": "minecraft:in_square"
+      },
+      {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:uniform",
+          "max_inclusive": {
+            "absolute": 70
+          },
+          "min_inclusive": {
+            "absolute": 55
+          }
+        }
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:end_platform": {
+    "feature": "minecraft:end_platform",
+    "placement": [
+      {
+        "type": "minecraft:fixed_placement",
+        "positions": [
+          [
+            100,
+            49,
+            0
+          ]
+        ]
+      },
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  },
+  "minecraft:end_spike": {
+    "feature": "minecraft:end_spike",
+    "placement": [
+      {
+        "type": "minecraft:biome"
+      }
+    ]
+  }
+}

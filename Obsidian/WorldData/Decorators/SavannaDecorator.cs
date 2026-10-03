@@ -7,7 +7,7 @@ public class SavannaDecorator : BaseDecorator
 {
     public SavannaDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(5, Registries.ConfiguredFeatures.Trees.MinecraftAcacia));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(5, Registries.ConfiguredFeatures.Trees.Acacia));
     }
 
     public override void Decorate()

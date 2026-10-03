@@ -7,8 +7,8 @@ public class TaigaDecorator : BaseDecorator
 {
     public TaigaDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(2, Registries.ConfiguredFeatures.Trees.MinecraftSpruce));
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(3, Registries.ConfiguredFeatures.Trees.MinecraftMegaSpruce));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(2, Registries.ConfiguredFeatures.Trees.Spruce));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(3, Registries.ConfiguredFeatures.Trees.MegaSpruce));
     }
 
     public override void Decorate()

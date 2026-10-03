@@ -4,7 +4,7 @@ using System.Drawing;
 namespace Obsidian.API;
 
 [DebuggerDisplay("{" + nameof(GetDebuggerDisplay) + "(),nq}")]
-public readonly struct ChatColor
+public readonly record struct ChatColor
 {
     public Color Color { get; }
     public ConsoleColor? ConsoleColor { get; }

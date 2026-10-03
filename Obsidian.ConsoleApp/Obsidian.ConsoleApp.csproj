@@ -14,6 +14,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<!-- Hot methods are optimized as soon as they're hot rather than once startup goes quiet: world generation starts
+		     with startup and keeps every core busy, which otherwise leaves it running unoptimized code for a long while. -->
+		<RuntimeHostConfigurationOption Include="System.Runtime.TieredCompilation.CallCountingDelayMs" Value="0" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
 	</ItemGroup>
 

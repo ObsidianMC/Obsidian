@@ -1,12 +1,17 @@
-﻿namespace Obsidian.Providers.IntProviders;
+﻿using Obsidian.API.World.Generator.RandomSources;
+
+namespace Obsidian.Providers.IntProviders;
 
 [ConfiguredFeatureProperty(IntProviderTypes.Constant)]
 public sealed class ConstantIntProvider : IIntProvider
 {
-    public required string Type { get; init; } = IntProviderTypes.Constant;
+    public string Type { get; init; } = IntProviderTypes.Constant;
 
-    public int Value { get; set; }
+    public required int Value { get; init; }
 
-    public int Get() => this.Value;
+    public int MinValue => this.Value;
 
+    public int MaxValue => this.Value;
+
+    public int Sample(IRandomSource random) => this.Value;
 }

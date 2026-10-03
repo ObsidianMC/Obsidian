@@ -1,17 +1,20 @@
-﻿namespace Obsidian.WorldData.Features.PlacementModifiers;
+﻿using Obsidian.API.World.Generator.RandomSources;
+
+namespace Obsidian.WorldData.Features.PlacementModifiers;
 
 /// <summary>
-/// Either returns the current position or empty.
-/// Only passes if the biome at the current position includes this placed feature. 
-/// No additional field. 
+/// Keeps the position only if its biome lists the feature being decorated.
 /// </summary>
-/// <remarks>
-/// This modifier type cannot be used in placed features that are referenced from other configured features.
-/// </remarks>
 [ConfiguredFeatureProperty("minecraft:biome")]
-public sealed class BiomePlacement : PlacementModifierBase
+public sealed class BiomePlacement : PlacementFilterBase
 {
-    public override string Type { get; internal init; } = "minecraft:biome";
+    public override string Type => "minecraft:biome";
 
-    protected override bool ShouldPlace(PlacementContext context) => throw new NotImplementedException();
+    protected override bool ShouldPlace(PlacementContext context, IRandomSource random, Vector position)
+    {
+        var feature = context.TopFeature
+            ?? throw new InvalidOperationException("Tried to biome check a feature that isn't placed with a biome check.");
+
+        return context.BiomeHasFeature!(context.Level.GetBiome(position), feature);
+    }
 }

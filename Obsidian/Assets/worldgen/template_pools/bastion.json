@@ -1,0 +1,1908 @@
+{
+  "minecraft:bastion/blocks/gold": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/blocks/air",
+          "processors": {
+            "processors": []
+          },
+          "projection": "rigid"
+        },
+        "weight": 3
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/blocks/gold",
+          "processors": {
+            "processors": []
+          },
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/bridge/bridge_pieces": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/bridge/bridge_pieces/bridge",
+          "processors": "minecraft:bridge",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/bridge/connectors": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/bridge/connectors/back_bridge_top",
+          "processors": "minecraft:bastion_generic_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/bridge/connectors/back_bridge_bottom",
+          "processors": "minecraft:bastion_generic_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/bridge/legs": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/bridge/legs/leg_0",
+          "processors": "minecraft:bastion_generic_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/bridge/legs/leg_1",
+          "processors": "minecraft:bastion_generic_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/bridge/rampart_plates": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/bridge/rampart_plates/plate_0",
+          "processors": "minecraft:rampart_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/bridge/ramparts": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/bridge/ramparts/rampart_0",
+          "processors": "minecraft:rampart_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/bridge/ramparts/rampart_1",
+          "processors": "minecraft:rampart_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/bridge/starting_pieces": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/bridge/starting_pieces/entrance",
+          "processors": "minecraft:entrance_replacement",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/bridge/starting_pieces/entrance_face",
+          "processors": "minecraft:bastion_generic_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/bridge/walls": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/bridge/walls/wall_base_0",
+          "processors": "minecraft:rampart_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/bridge/walls/wall_base_1",
+          "processors": "minecraft:rampart_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/hoglin_stable/connectors": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/connectors/end_post_connector",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/hoglin_stable/large_stables/inner": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/large_stables/inner_0",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/large_stables/inner_1",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/large_stables/inner_2",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/large_stables/inner_3",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/large_stables/inner_4",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/hoglin_stable/large_stables/outer": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/large_stables/outer_0",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/large_stables/outer_1",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/large_stables/outer_2",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/large_stables/outer_3",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/large_stables/outer_4",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/hoglin_stable/mirrored_starting_pieces": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/starting_pieces/stairs_0_mirrored",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/starting_pieces/stairs_1_mirrored",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/starting_pieces/stairs_2_mirrored",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/starting_pieces/stairs_3_mirrored",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/starting_pieces/stairs_4_mirrored",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/hoglin_stable/posts": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/posts/stair_post",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/posts/end_post",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/hoglin_stable/rampart_plates": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/rampart_plates/rampart_plate_1",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/hoglin_stable/ramparts": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/ramparts/ramparts_1",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/ramparts/ramparts_2",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/ramparts/ramparts_3",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/hoglin_stable/small_stables/inner": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/small_stables/inner_0",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/small_stables/inner_1",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/small_stables/inner_2",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/small_stables/inner_3",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/hoglin_stable/small_stables/outer": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/small_stables/outer_0",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/small_stables/outer_1",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/small_stables/outer_2",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/small_stables/outer_3",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/hoglin_stable/stairs": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/stairs/stairs_1_0",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/stairs/stairs_1_1",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/stairs/stairs_1_2",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/stairs/stairs_1_3",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/stairs/stairs_1_4",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/stairs/stairs_2_0",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/stairs/stairs_2_1",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/stairs/stairs_2_2",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/stairs/stairs_2_3",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/stairs/stairs_2_4",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/stairs/stairs_3_0",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/stairs/stairs_3_1",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/stairs/stairs_3_2",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/stairs/stairs_3_3",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/stairs/stairs_3_4",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/hoglin_stable/starting_pieces": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/starting_pieces/starting_stairs_0",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/starting_pieces/starting_stairs_1",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/starting_pieces/starting_stairs_2",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/starting_pieces/starting_stairs_3",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/starting_pieces/starting_stairs_4",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/hoglin_stable/wall_bases": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/walls/wall_base",
+          "processors": "minecraft:stable_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/hoglin_stable/walls": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/walls/side_wall_0",
+          "processors": "minecraft:side_wall_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/walls/side_wall_1",
+          "processors": "minecraft:side_wall_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/mobs/hoglin": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/mobs/hoglin",
+          "processors": {
+            "processors": []
+          },
+          "projection": "rigid"
+        },
+        "weight": 2
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/mobs/empty",
+          "processors": {
+            "processors": []
+          },
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/mobs/piglin": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/mobs/melee_piglin",
+          "processors": {
+            "processors": []
+          },
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/mobs/sword_piglin",
+          "processors": {
+            "processors": []
+          },
+          "projection": "rigid"
+        },
+        "weight": 4
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/mobs/crossbow_piglin",
+          "processors": {
+            "processors": []
+          },
+          "projection": "rigid"
+        },
+        "weight": 4
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/mobs/empty",
+          "processors": {
+            "processors": []
+          },
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/mobs/piglin_melee": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/mobs/melee_piglin_always",
+          "processors": {
+            "processors": []
+          },
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/mobs/melee_piglin",
+          "processors": {
+            "processors": []
+          },
+          "projection": "rigid"
+        },
+        "weight": 5
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/mobs/sword_piglin",
+          "processors": {
+            "processors": []
+          },
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/starts": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/air_base",
+          "processors": "minecraft:bastion_generic_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/hoglin_stable/air_base",
+          "processors": "minecraft:bastion_generic_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/big_air_full",
+          "processors": "minecraft:bastion_generic_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/bridge/starting_pieces/entrance_base",
+          "processors": "minecraft:bastion_generic_degradation",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/treasure/bases": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/bases/lava_basin",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/treasure/bases/centers": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/bases/centers/center_0",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/bases/centers/center_1",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/bases/centers/center_2",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/bases/centers/center_3",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/treasure/brains": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/brains/center_brain",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/treasure/connectors": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/connectors/center_to_wall_middle",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/connectors/center_to_wall_top",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/connectors/center_to_wall_top_entrance",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/treasure/corners/bottom": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/corners/bottom/corner_0",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/corners/bottom/corner_1",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/treasure/corners/edges": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/corners/edges/bottom",
+          "processors": "minecraft:high_wall",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/corners/edges/middle",
+          "processors": "minecraft:high_wall",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/corners/edges/top",
+          "processors": "minecraft:high_wall",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/treasure/corners/middle": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/corners/middle/corner_0",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/corners/middle/corner_1",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/treasure/corners/top": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/corners/top/corner_0",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/corners/top/corner_1",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/treasure/entrances": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/entrances/entrance_0",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/treasure/extensions/houses": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/extensions/house_0",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/extensions/house_1",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/treasure/extensions/large_pool": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/extensions/empty",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/extensions/empty",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/extensions/fire_room",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/extensions/large_bridge_0",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/extensions/large_bridge_1",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/extensions/large_bridge_2",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/extensions/large_bridge_3",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/extensions/roofed_bridge",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/extensions/empty",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/treasure/extensions/small_pool": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/extensions/empty",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/extensions/fire_room",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/extensions/empty",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/extensions/small_bridge_0",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/extensions/small_bridge_1",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/extensions/small_bridge_2",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/extensions/small_bridge_3",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/treasure/ramparts": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/ramparts/mid_wall_main",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/ramparts/mid_wall_side",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/ramparts/bottom_wall_0",
+          "processors": "minecraft:bottom_rampart",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/ramparts/top_wall",
+          "processors": "minecraft:high_rampart",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/ramparts/lava_basin_side",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/ramparts/lava_basin_main",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/treasure/roofs": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/roofs/wall_roof",
+          "processors": "minecraft:roof",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/roofs/corner_roof",
+          "processors": "minecraft:roof",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/roofs/center_roof",
+          "processors": "minecraft:roof",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/treasure/stairs": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/stairs/lower_stairs",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/treasure/walls": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/walls/lava_wall",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/walls/entrance_wall",
+          "processors": "minecraft:high_wall",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/treasure/walls/bottom": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/walls/bottom/wall_0",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/walls/bottom/wall_1",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/walls/bottom/wall_2",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/walls/bottom/wall_3",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/treasure/walls/mid": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/walls/mid/wall_0",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/walls/mid/wall_1",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/walls/mid/wall_2",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/treasure/walls/outer": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/walls/outer/top_corner",
+          "processors": "minecraft:high_wall",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/walls/outer/mid_corner",
+          "processors": "minecraft:high_wall",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/walls/outer/bottom_corner",
+          "processors": "minecraft:high_wall",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/walls/outer/outer_wall",
+          "processors": "minecraft:high_wall",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/walls/outer/medium_outer_wall",
+          "processors": "minecraft:high_wall",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/walls/outer/tall_outer_wall",
+          "processors": "minecraft:high_wall",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/treasure/walls/top": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/walls/top/main_entrance",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/walls/top/wall_0",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/treasure/walls/top/wall_1",
+          "processors": "minecraft:treasure_rooms",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/units/center_pieces": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/center_pieces/center_0",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/center_pieces/center_1",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/center_pieces/center_2",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/units/edge_wall_units": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/wall_units/edge_0_large",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/units/edges": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/edges/edge_0",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/units/fillers/stage_0": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/fillers/stage_0",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/units/large_ramparts": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/ramparts/ramparts_0",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/units/pathways": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/pathways/pathway_0",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/pathways/pathway_wall_0",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/units/rampart_plates": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/rampart_plates/plate_0",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/units/ramparts": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/ramparts/ramparts_0",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/ramparts/ramparts_1",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/ramparts/ramparts_2",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/units/stages/rot/stage_1": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/stages/rot/stage_1_0",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/units/stages/stage_0": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/stages/stage_0_0",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/stages/stage_0_1",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/stages/stage_0_2",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/stages/stage_0_3",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/units/stages/stage_1": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/stages/stage_1_0",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/stages/stage_1_1",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/stages/stage_1_2",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/stages/stage_1_3",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/units/stages/stage_2": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/stages/stage_2_0",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/stages/stage_2_1",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/units/stages/stage_3": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/stages/stage_3_0",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/stages/stage_3_1",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/stages/stage_3_2",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/stages/stage_3_3",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/units/wall_units": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/wall_units/unit_0",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  },
+  "minecraft:bastion/units/walls/wall_bases": {
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/walls/wall_base",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "minecraft:bastion/units/walls/connected_wall",
+          "processors": "minecraft:housing",
+          "projection": "rigid"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  }
+}

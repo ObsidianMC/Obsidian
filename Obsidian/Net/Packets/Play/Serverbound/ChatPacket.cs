@@ -15,7 +15,7 @@ public partial class ChatPacket
     public long Salt { get; private set; }
 
     [Field(4)]
-    public byte[] Signature { get; private set; } = default!;
+    public ReadOnlyMemory<byte> Signature { get; private set; }
 
     [Field(5)]
     public bool SignedPreview { get; set; }

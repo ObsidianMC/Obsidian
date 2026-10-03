@@ -17,7 +17,7 @@ public partial class SelectKnownPacksPacket()
     }
 }
 
-public readonly struct KnownPack
+public readonly record struct KnownPack
 {
     public required string Namespace { get; init; }
 

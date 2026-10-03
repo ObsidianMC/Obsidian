@@ -1,4 +1,6 @@
-﻿namespace Obsidian.API.Inventory.DataComponents;
+﻿using System.Runtime.InteropServices;
+
+namespace Obsidian.API.Inventory.DataComponents;
 public sealed record class ProfileDataComponent : DataComponent
 {
     public override DataComponentType Type => DataComponentType.Profile;
@@ -9,13 +11,13 @@ public sealed record class ProfileDataComponent : DataComponent
 
     public Guid? Id { get; set; }
 
-    public SkinProperty[] Properties { get; set; } = [];
+    public ImmutableArray<SkinProperty> Properties { get; set; } = [];
 
     public override void Read(INetStreamReader reader)
     {
         this.Username = reader.ReadOptionalString();
         this.Id = reader.ReadOptionalGuid();
-        this.Properties = reader.ReadLengthPrefixedArray(() => SkinProperty.Read(reader));
+        this.Properties = ImmutableCollectionsMarshal.AsImmutableArray(reader.ReadLengthPrefixedArray(() => SkinProperty.Read(reader)));
     }
 
     public override void Write(INetStreamWriter writer)
@@ -23,6 +25,6 @@ public sealed record class ProfileDataComponent : DataComponent
         writer.WriteOptional(this.Username);
         writer.WriteOptional(this.Id);
 
-        writer.WriteLengthPrefixedArray((value) => SkinProperty.Write(value, writer), this.Properties);
+        writer.WriteLengthPrefixedArray((value) => SkinProperty.Write(value, writer), this.Properties.AsSpan());
     }
 }

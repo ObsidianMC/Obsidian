@@ -1,135 +1,76 @@
-﻿using Obsidian.API.Utilities;
-using Obsidian.API.World.Features;
-using Obsidian.API.World.Features.Tree;
-using Obsidian.Registries;
-using System.ComponentModel.DataAnnotations;
-
 namespace Obsidian.WorldData.Features.Tree.Placers.Trunk;
 
-[TreeProperty("minecraft:upwards_branching_trunk_placer")]
+/// <summary>
+/// Mangrove trunk: a straight trunk that randomly sprouts diagonal branches climbing outward, each carrying foliage.
+/// </summary>
+[ConfiguredFeatureProperty("minecraft:upwards_branching_trunk_placer")]
 public sealed class UpwardsBranchingTrunkPlacer : TrunkPlacer
 {
-    public override required string Type { get; init; }
-
     public required IIntProvider ExtraBranchSteps { get; init; }
+
+    public required float PlaceBranchPerLogProbability { get; init; }
 
     public required IIntProvider ExtraBranchLength { get; init; }
 
-    [Range(0.0, 1.0)]
-    public required float PlaceBranchPerLogProbability { get; init; }
+    /// <summary>Blocks the trunk may replace in addition to air and <c>#replaceable_by_trees</c>.</summary>
+    public required BlockSet CanGrowThrough { get; init; }
 
-    public string CanGrowThrough { get; init; }
-
-    public override async ValueTask<List<Vector>> Place(FeatureContext context, Vector origin, int treeHeight, IBlock trunkBlock)
+    public override List<FoliageAttachment> PlaceTrunk(TreeContext tree, int freeTreeHeight, Vector origin)
     {
-        var random = context.Random;
-        var trunkPositions = new List<Vector>();
-        var logPos = origin;
-
-        // Place main trunk with probabilistic branches
-        for (int heightPos = 0; heightPos < treeHeight; heightPos++)
+        var random = tree.Random;
+        var attachments = new List<FoliageAttachment>();
+        for (var i = 0; i < freeTreeHeight; i++)
         {
-            int currentHeight = origin.Y + heightPos;
-            logPos = new Vector(origin.X, currentHeight, origin.Z);
-
-            // Place main trunk log
-            if (await PlaceLog(context, logPos, trunkBlock)
-                && heightPos < treeHeight - 1
-                && random.NextDouble() < PlaceBranchPerLogProbability)
+            var y = origin.Y + i;
+            var position = new Vector(origin.X, y, origin.Z);
+            if (this.PlaceLog(tree, position) && i < freeTreeHeight - 1 && random.NextFloat() < this.PlaceBranchPerLogProbability)
             {
-                // Randomly place a branch
-                var cardinalDirs = Vector.CardinalDirs.ToArray();
-                var branchDir = cardinalDirs[random.Next(cardinalDirs.Length)];
-                int branchLen = ExtraBranchLength.Get();
-                int branchPos = Math.Max(0, branchLen - ExtraBranchLength.Get() - 1);
-                int branchSteps = ExtraBranchSteps.Get();
-
-                await PlaceBranch(
-                    context,
-                    treeHeight,
-                    trunkBlock,
-                    trunkPositions,
-                    currentHeight,
-                    branchDir,
-                    branchPos,
-                    branchSteps
-                );
+                var direction = TreeDirections.RandomHorizontal(random);
+                var length = this.ExtraBranchLength.Sample(random);
+                var branchStart = Math.Max(0, length - this.ExtraBranchLength.Sample(random) - 1);
+                var steps = this.ExtraBranchSteps.Sample(random);
+                this.PlaceBranch(tree, freeTreeHeight, attachments, position, y, direction, branchStart, steps);
             }
 
-            // Add top foliage attachment
-            if (heightPos == treeHeight - 1)
-            {
-                trunkPositions.Add(new Vector(origin.X, currentHeight + 1, origin.Z));
-            }
+            if (i == freeTreeHeight - 1)
+                attachments.Add(new FoliageAttachment(new Vector(origin.X, y + 1, origin.Z), 0, false));
         }
 
-        return trunkPositions;
+        return attachments;
     }
 
-    private async ValueTask PlaceBranch(
-        FeatureContext context,
-        int treeHeight,
-        IBlock trunkBlock,
-        List<Vector> attachments,
-        int currentHeight,
-        Vector branchDir,
-        int branchPos,
-        int branchSteps
-    )
+    protected override bool ValidTreePos(IWorldGenLevel level, Vector position) =>
+        base.ValidTreePos(level, position) || this.CanGrowThrough.Contains(level.GetBlock(position));
+
+    private void PlaceBranch(TreeContext tree, int freeTreeHeight, List<FoliageAttachment> attachments, Vector trunkPosition, int trunkY,
+        BlockFace direction, int branchStart, int steps)
     {
-        int heightAlongBranch = currentHeight + branchPos;
-        int logX = context.PlacementLocation.X;
-        int logZ = context.PlacementLocation.Z;
-        int branchPlacementIndex = branchPos;
+        var topY = trunkY + branchStart;
+        var x = trunkPosition.X;
+        var z = trunkPosition.Z;
+        var step = direction.ToVector();
 
-        while (branchPlacementIndex < treeHeight && branchSteps > 0)
+        for (var i = branchStart; i < freeTreeHeight && steps > 0; i++, steps--)
         {
-            if (branchPlacementIndex >= 1)
-            {
-                int placementHeight = currentHeight + branchPlacementIndex;
-                logX += branchDir.X;
-                logZ += branchDir.Z;
-                heightAlongBranch = placementHeight;
+            if (i < 1)
+                continue;
 
-                var branchLogPos = new Vector(logX, placementHeight, logZ);
-                if (await PlaceLog(context, branchLogPos, trunkBlock))
-                {
-                    heightAlongBranch = placementHeight + 1;
-                }
+            var y = trunkY + i;
+            x += step.X;
+            z += step.Z;
+            topY = y;
+            var position = new Vector(x, y, z);
+            if (this.PlaceLog(tree, position))
+                topY++;
 
-                attachments.Add(branchLogPos);
-            }
-
-            branchPlacementIndex++;
-            branchSteps--;
+            attachments.Add(new FoliageAttachment(position, 0, false));
         }
 
-        // Add additional foliage attachments if branch extended upward significantly
-        if (heightAlongBranch - currentHeight > 1)
+        if (topY - trunkY > 1)
         {
-            var foliagePos = new Vector(logX, heightAlongBranch, logZ);
-            attachments.Add(foliagePos);
-            attachments.Add(foliagePos + new Vector(0, -2, 0));
+            var end = new Vector(x, topY, z);
+            attachments.Add(new FoliageAttachment(end, 0, false));
+            attachments.Add(new FoliageAttachment(end + (0, -2, 0), 0, false));
         }
-    }
-
-    private async ValueTask<bool> PlaceLog(FeatureContext context, Vector pos, IBlock trunkBlock)
-    {
-        var existingBlock = await context.World.GetBlockAsync(pos);
-
-        // Check if we can place here (replaceable or can grow through)
-        if (existingBlock != null)
-        {
-            bool canReplace = TagsRegistry.Block.Replaceable.Entries.Contains(existingBlock.RegistryId);
-            bool canGrowThrough = CanGrowThrough.Contains(existingBlock.UnlocalizedName);
-
-            if (canReplace || canGrowThrough)
-            {
-                await context.World.SetBlockUntrackedAsync(pos, trunkBlock, false);
-                return true;
-            }
-        }
-
-        return false;
     }
 }

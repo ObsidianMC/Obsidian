@@ -8,17 +8,17 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
 {
     private readonly ILevel level = level;
 
-    private EntityType? entityType = null;
+    private EntityType? entityType;
 
     private VectorF position = VectorF.Zero;
-    private bool isBaby = false;
-    private string? customName = null;
-    private bool customNameVisible = false;
-    private bool ambientPotionEffect = false;
-    private int absorbedArrows = 0;
-    private int absorbedStingers = 0;
-    private bool burning = false;
-    private bool glowing = false;
+    private bool isBaby;
+    private string? customName;
+    private bool customNameVisible;
+    private bool ambientPotionEffect;
+    private int absorbedArrows;
+    private int absorbedStingers;
+    private bool burning;
+    private bool glowing;
 
     public IEntitySpawner WithEntityType(EntityType type)
     {
@@ -77,51 +77,10 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
 
     public IEntity Spawn()
     {
-        // This could get sgen'd, same for the entity classes. but for now, this is fine for implementation
-        Entity entity = CreateMob(level, entityType) ?? (entityType switch
-        {
-            EntityType.ExperienceOrb => new ExperienceOrb { Level = level, Value = 1 },
-            EntityType.Pig => new Pig()
-            {
-                Level = level,
-            },
-            EntityType.Zombie => new Zombie()
-            {
-                Level = level,
-            },
-            EntityType.Horse => new Horse()
-            {
-                Level = level,
-            },
-            EntityType.Llama => new Llama()
-            {
-                Level = level,
-            },
-            EntityType.Donkey => new Donkey()
-            {
-                Level = level
-            },
-            EntityType.SkeletonHorse => new SkeletonHorse()
-            {
-                Level = level
-            },
-            EntityType.ZombieHorse => new ZombieHorse()
-            {
-                Level = level
-            },
+        if (entityType is null)
+            throw new InvalidOperationException("Entity type must be set");
 
-            null => throw new InvalidOperationException("Entity type must be set"),
-
-            _ => entityType.Value.IsNonLiving() ?
-            new Entity()
-            {
-                Level = level,
-            } :
-            new Living()
-            {
-                Level = level
-            }
-        });
+        var entity = Create(entityType.Value, level);
 
         entity.Type = entityType.Value;
         entity.EntityId = Server.GetNextEntityId();
@@ -149,6 +108,17 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
 
         return level.SpawnEntity(entity);
     }
+
+    internal static Entity Create(EntityType type, ILevel level) => CreateMob(level, type) ?? (type switch
+    {
+        EntityType.ExperienceOrb => new ExperienceOrb { Level = level, Value = 1 },
+        EntityType.Horse => new Horse { Level = level },
+        EntityType.Llama => new Llama { Level = level },
+        EntityType.Donkey => new Donkey { Level = level },
+        EntityType.SkeletonHorse => new SkeletonHorse { Level = level },
+        EntityType.ZombieHorse => new ZombieHorse { Level = level },
+        _ => type.IsNonLiving() ? new Entity { Level = level } : new Living { Level = level }
+    });
 
     internal static Mob? CreateMob(ILevel level, EntityType? type) => type switch
     {

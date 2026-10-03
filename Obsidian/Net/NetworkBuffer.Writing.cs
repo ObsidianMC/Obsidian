@@ -158,7 +158,7 @@ public partial class NetworkBuffer : INetStreamWriter
     public void WriteByteArray(byte[] values) => this.Write(values);
 
     [WriteMethod]
-    public void WriteByteArray(Span<byte> values) => this.Write(values);
+    public void WriteByteArray(ReadOnlySpan<byte> values) => this.Write(values);
 
     #endregion
 
@@ -284,15 +284,15 @@ public partial class NetworkBuffer : INetStreamWriter
         foreach (var criteria in advancement.Criteria)
             this.WriteString(criteria.Identifier);
 
-        var reqired = advancement.Criteria.Where(x => x.Required);
+        var reqired = advancement.Criteria.Where(x => x.Required).ToList();
 
         //For some reason this takes a array of an array??
-        if (reqired.Any())
+        if (reqired.Count > 0)
         {
             //Always gonna be 1 for now
             this.WriteVarInt(1);
 
-            this.WriteVarInt(reqired.Count());
+            this.WriteVarInt(reqired.Count);
 
             foreach (var criteria in reqired)
                 this.WriteString(criteria.Identifier);
@@ -329,8 +329,18 @@ public partial class NetworkBuffer : INetStreamWriter
         writer.EndCompound();
         writer.TryFinish();
 
-        Directory.CreateDirectory("chat");
-        File.WriteAllBytes($"chat/{Path.GetRandomFileName()}.nbt", writer.Data);
+        this.Write(writer.Data);
+    }
+
+    public void WriteNbtCompound(NbtCompound compound)
+    {
+        using var writer = new RawNbtWriter(true);
+
+        foreach (var (_, tag) in compound)
+            writer.WriteTag(tag);
+
+        writer.EndCompound();
+        writer.TryFinish();
 
         this.Write(writer.Data);
     }
@@ -399,10 +409,14 @@ public partial class NetworkBuffer : INetStreamWriter
             return;
 
         WriteVarInt(item.Id);
-        WriteVarInt(value.TotalComponents);
+
+        // Like vanilla's DataComponentPatch: only the components set on the stack. The client knows the item's defaults,
+        // and Obsidian's placeholders for them (e.g. a max stack size of 64) would override them.
+        var components = value.Patch.ToList();
+        WriteVarInt(components.Count);
         WriteVarInt(value.RemoveComponents.Count);
 
-        foreach (var component in value)
+        foreach (var component in components)
         {
             this.WriteVarInt(component.Type);
 
@@ -413,9 +427,9 @@ public partial class NetworkBuffer : INetStreamWriter
             this.WriteVarInt(componentType);
     }
 
-    public void WriteLengthPrefixedArray<TValue>(Action<TValue> write, params TValue[] values)
+    public void WriteLengthPrefixedArray<TValue>(Action<TValue> write, params ReadOnlySpan<TValue> values)
     {
-        this.WriteVarInt(values.Count());
+        this.WriteVarInt(values.Length);
 
         foreach (var value in values)
             write(value);
@@ -423,7 +437,7 @@ public partial class NetworkBuffer : INetStreamWriter
 
     public void WriteLengthPrefixedArray(bool showInTooltips, params Enchantment[] enchantments)
     {
-        this.WriteVarInt(enchantments.Count());
+        this.WriteVarInt(enchantments.Length);
 
         foreach (var enchantment in enchantments)
             this.WriteEnchantment(enchantment);
@@ -680,9 +694,8 @@ public partial class NetworkBuffer : INetStreamWriter
     }
     #endregion
 
-    public byte[] ToArray() => this.Data;
+    public byte[] ToArray() => this.data;
 
-    private const double MaxVelocityComponent = 1.7179869183E10;
     private const double MaxQuantizedValue = short.MaxValue - 1;
     private const double VelocityPackingScale = 0.5;
     private const long ContinuiationBit = 0x04L;

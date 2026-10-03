@@ -18,7 +18,7 @@ public partial class MerchantOffersPacket
     /// The offered trades list.
     /// </summary>
     [Field(1)]
-    public TradeEntry[] Offers { get; set; }
+    public ImmutableArray<TradeEntry> Offers { get; set; } = [];
 
     /// <summary>
     /// The level of the villager. 1: Novice, 2: Apprentice, 3: Journeyman, 4: Expert, 5: Master.
@@ -47,7 +47,7 @@ public partial class MerchantOffersPacket
     public override void Serialize(INetStreamWriter writer)
     {
         writer.WriteVarInt(WindowId);
-        writer.WriteLengthPrefixedArray((o) => TradeEntry.Write(o, writer), Offers);
+        writer.WriteLengthPrefixedArray((o) => TradeEntry.Write(o, writer), Offers.AsSpan());
         writer.WriteVarInt(VillagerLevel);
         writer.WriteVarInt(VillagerExperience);
         writer.WriteBoolean(IsRegularVillager);

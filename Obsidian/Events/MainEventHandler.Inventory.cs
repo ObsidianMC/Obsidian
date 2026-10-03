@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Obsidian.API.Containers;
+﻿using Obsidian.API.Containers;
 using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.Entities;
@@ -44,10 +43,10 @@ public partial class MainEventHandler
                 break;
         }
 
-        await this.HandleCraftingAsync(args);
+        await HandleCraftingAsync(args);
     }
 
-    private async ValueTask HandleCraftingAsync(ContainerClickEventArgs args)
+    private static async ValueTask HandleCraftingAsync(ContainerClickEventArgs args)
     {
         var container = args.Container;
         var player = args.Player;
@@ -71,11 +70,8 @@ public partial class MainEventHandler
                 SlotData = null
             });
 
-            logger.LogTrace("No recipe found: {table}", table);
             return;
         }
-
-        logger.LogTrace("Found Recipe: {recipe}", recipe.Identifier);
 
         var result = recipe.Result.First();
         table.SetResult(result);

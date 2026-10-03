@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Obsidian.API.Events;
+﻿using Obsidian.API.Events;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Handshake.Serverbound;
 using Obsidian.Net.Packets.Login.Clientbound;
@@ -56,16 +55,6 @@ public partial class Client
         if (!this.Connected)
             return false;
 
-        string name = "";
-
-        if (this.State == ClientState.Login)
-            PacketsRegistry.Login.ClientboundNames.TryGetValue(packet.Id, out name);
-        else if (this.State == ClientState.Configuration)
-            PacketsRegistry.Configuration.ClientboundNames.TryGetValue(packet.Id, out name);
-        else if (this.State == ClientState.Play)
-            PacketsRegistry.Play.ClientboundNames.TryGetValue(packet.Id, out name);
-
-        this.Logger.LogDebug("Sending packet({name})", name);
         lock (this.sendLock)
         {
             this.sendBufferMain.WritePacket(packet);
@@ -96,7 +85,7 @@ public partial class Client
             try
             {
                 this.receiving = true;
-                this.receiveEvent.SetBuffer(this.receiveBuffer.Data, this.receiveBuffer.Offset, this.receiveBuffer.Capacity);
+                this.receiveEvent.SetBuffer(this.receiveBuffer.GetBuffer(), this.receiveBuffer.Offset, this.receiveBuffer.Capacity);
 
                 var willRaiseEvent = this.Socket.ReceiveAsync(this.receiveEvent);
                 if (!willRaiseEvent)
@@ -142,7 +131,7 @@ public partial class Client
 
             try
             {
-                this.sendEvent.SetBuffer(this.sendBufferFlush.Data, this.sendBufferFlushOffset, this.sendBufferFlush.Offset);
+                this.sendEvent.SetBuffer(this.sendBufferFlush.GetBuffer(), this.sendBufferFlushOffset, this.sendBufferFlush.Offset);
 
                 if (!this.Socket.SendAsync(this.sendEvent))
                     process = this.ProcessSend(this.sendEvent);
@@ -199,7 +188,7 @@ public partial class Client
                     }
                     else if (packetData.Id == 0x01)
                     {
-                        var pong = Net.Packets.Status.Serverbound.PingRequestPacket.Deserialize(packetData.NetworkBuffer.Data);
+                        var pong = Net.Packets.Status.Serverbound.PingRequestPacket.Deserialize(packetData.NetworkBuffer.GetBuffer());
 
                         SendPacket(new PongResponsePacket { Timestamp = pong.Timestamp });
                     }
@@ -209,7 +198,7 @@ public partial class Client
                     if (packetData.Id != 0x00)
                         return;
 
-                    await IntentionPacket.Deserialize(packetData.NetworkBuffer.Data).HandleAsync(this);
+                    await IntentionPacket.Deserialize(packetData.NetworkBuffer.GetBuffer()).HandleAsync(this);
                     break;
 
                 case ClientState.Login:
@@ -218,28 +207,20 @@ public partial class Client
                 case ClientState.Configuration:
                     Debug.Assert(Player is not null);
 
-                    var result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.Server, packetData.Id, packetData.NetworkBuffer.Data));
+                    var result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.Server, packetData.Id, packetData.NetworkBuffer.GetBuffer()));
 
                     if (result == EventResult.Cancelled)
-                    {
-                        this.Logger.LogDebug("configuration packet({id}) {name} was cancelled and is not being processed.",
-                            packetData.Id, PacketsRegistry.Configuration.ServerboundNames[packetData.Id]);
                         return;
-                    }
 
                     await this.HandlePacketAsync(packetData);
                     break;
                 case ClientState.Play:
                     Debug.Assert(Player is not null);
 
-                    result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.Server, packetData.Id, packetData.NetworkBuffer.Data));
+                    result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.Server, packetData.Id, packetData.NetworkBuffer.GetBuffer()));
 
                     if (result == EventResult.Cancelled)
-                    {
-                        this.Logger.LogDebug("play packet({id}) {name} was cancelled and is not being processed.",
-                            packetData.Id, PacketsRegistry.Play.ServerboundNames[packetData.Id]);
                         return;
-                    }
 
                     await this.HandlePacketAsync(packetData);
 
@@ -263,8 +244,6 @@ public partial class Client
             {
                 SkinProperties = this.Player.SkinProperties,
             });
-
-            this.Logger.LogDebug("Sent Login success to user {Username} {UUID}", this.Player.Username, this.Player.Uuid);
 
             this.loginPending = false;
         }
@@ -309,7 +288,7 @@ public partial class Client
         }
         else
         {
-            this.Logger.LogError("An error has occurred: {error}", e.SocketError);
+            Log.SocketFailed(this.Logger, e.SocketError);
             this.Disconnect();
         }
 

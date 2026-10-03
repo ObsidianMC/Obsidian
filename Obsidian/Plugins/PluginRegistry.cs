@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Obsidian.API.Events;
+﻿using Obsidian.API.Events;
 using Obsidian.API.Plugins;
 using Obsidian.Commands.Framework;
 using Obsidian.Services;
@@ -7,12 +6,11 @@ using System.Reflection;
 
 namespace Obsidian.Plugins;
 public sealed class PluginRegistry(PluginManager pluginManager, EventDispatcher eventDispatcher, 
-    CommandHandler commandHandler, ILogger logger) : IPluginRegistry
+    CommandHandler commandHandler) : IPluginRegistry
 {
     private readonly PluginManager pluginManager = pluginManager;
     private readonly EventDispatcher eventDispatcher = eventDispatcher;
     private readonly CommandHandler commandHandler = commandHandler;
-    private readonly ILogger logger = logger;
 
     public IPluginRegistry MapCommand(string name, Delegate handler)
     {

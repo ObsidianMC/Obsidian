@@ -1,0 +1,6 @@
+{
+  "minecraft:empty": {
+    "elements": [],
+    "fallback": "minecraft:empty"
+  }
+}

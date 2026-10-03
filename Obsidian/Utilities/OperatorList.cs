@@ -4,7 +4,7 @@ using System.IO;
 
 namespace Obsidian.Utilities;
 
-public sealed class OperatorList : IOperatorList
+public sealed partial class OperatorList : IOperatorList
 {
     private readonly List<Operator> operators = [];
     private readonly Dictionary<string, OperatorRequest> requests = [];
@@ -44,14 +44,14 @@ public sealed class OperatorList : IOperatorList
 
         if (this.requests.Values.Any(x => x.Player == player))
         {
-            _logger.LogWarning("{Username} tried to put in another request but already has one pending.", player.Username);
+            Log.RequestAlreadyPending(_logger, player.Username);
             return false;
         }
 
         var request = new OperatorRequest(player);
         requests.Add(request.Code, request);
 
-        _logger.LogInformation("New operator request from {Username}: {Code}", player.Username, request.Code);
+        Log.RequestCreated(_logger, player.Username, request.Code);
 
         return true;
     }
@@ -63,7 +63,7 @@ public sealed class OperatorList : IOperatorList
 
         if (!requests.Remove(request.Code))
         {
-            _logger.LogWarning("Failed to process request with code: {code}", code);
+            Log.RequestFailed(_logger, code);
             return false;
         }
 
@@ -88,6 +88,18 @@ public sealed class OperatorList : IOperatorList
     public bool IsOperator(IPlayer player) => this.operators.Any(x => x.Uuid == player.Uuid);
 
     public ImmutableList<IPlayer> GetOnlineOperators() => server.OnlinePlayers.Values.Where(IsOperator).ToImmutableList();
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Information, Message = "Operator request from {Username}: {Code}")]
+        public static partial void RequestCreated(ILogger logger, string username, string code);
+
+        [LoggerMessage(Level = LogLevel.Debug, Message = "{Username} already has a pending operator request")]
+        public static partial void RequestAlreadyPending(ILogger logger, string username);
+
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Failed to process the operator request with code {Code}")]
+        public static partial void RequestFailed(ILogger logger, string code);
+    }
 
     private void UpdateList() =>
         File.WriteAllText(OpsFilePath, operators.ToJson());

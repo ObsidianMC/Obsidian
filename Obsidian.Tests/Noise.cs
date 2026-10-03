@@ -6,6 +6,7 @@ using SharpNoise;
 using SharpNoise.Builders;
 using SharpNoise.Modules;
 using SharpNoise.Utilities.Imaging;
+using System.Threading.Tasks;
 using Xunit;
 
 
@@ -16,7 +17,7 @@ public class Noise
 {
     private OverworldTerrainNoise noiseGen = new(0);
 
-    private class TestNoiseModule(int sourceModuleCount) : Module(sourceModuleCount)
+    private sealed class TestNoiseModule(int sourceModuleCount) : Module(sourceModuleCount)
     {
         public override double GetValue(double x, double y, double z) => 1;//NoiseRegistry.NoiseSettings.Overworld.NoiseRouter.Continents.GetValue(x, y, z);
     }
@@ -277,7 +278,7 @@ public class Noise
     }
 
     [Fact(DisplayName = "Humidity")]
-    public async void HumidityAsync()
+    public async Task HumidityAsync()
     {
         var noise = noiseGen.HumidityNoise;
         var map = new NoiseMap();

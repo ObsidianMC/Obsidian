@@ -15,7 +15,7 @@ public class HeightNoiseMapBuilder : NoiseMapBuilder
 {
     public NoiseCube SourceNoiseCube { get; set; }
 
-    public double BiasValue { get; set; } = 0;
+    public double BiasValue { get; set; }
 
     protected override void PrepareBuild()
     {

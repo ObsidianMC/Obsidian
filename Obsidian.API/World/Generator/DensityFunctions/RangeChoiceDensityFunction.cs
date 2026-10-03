@@ -15,16 +15,25 @@ public sealed class RangeChoiceDensityFunction : IDensityFunction
 
     public required double MaxExclusive { get; init; }
 
-    public double MinValue => Math.Min(WhenInRange.MinValue, WhenOutOfRange.MinValue);
+    public double MinValue => Math.Min(this.WhenInRange.MinValue, this.WhenOutOfRange.MinValue);
 
-    public double MaxValue =>Math.Max(WhenInRange.MaxValue, WhenOutOfRange.MaxValue);
+    public double MaxValue => Math.Max(this.WhenInRange.MaxValue, this.WhenOutOfRange.MaxValue);
 
     public double GetValue(double x, double y, double z)
     {
-        var control = Input.GetValue(x, y, z);
-        if (control >= MinInclusive && control < MaxExclusive)
-            return WhenInRange.GetValue(x, y, z);
+        var control = this.Input.GetValue(x, y, z);
+        if (control >= this.MinInclusive && control < this.MaxExclusive)
+            return this.WhenInRange.GetValue(x, y, z);
 
-        return WhenOutOfRange.GetValue(x, y, z);
+        return this.WhenOutOfRange.GetValue(x, y, z);
     }
+
+    public IDensityFunction MapAll(IDensityFunctionVisitor visitor) => visitor.Apply(new RangeChoiceDensityFunction
+    {
+        Input = visitor.Map(this.Input),
+        WhenInRange = visitor.Map(this.WhenInRange),
+        WhenOutOfRange = visitor.Map(this.WhenOutOfRange),
+        MinInclusive = this.MinInclusive,
+        MaxExclusive = this.MaxExclusive
+    });
 }

@@ -1,9 +1,13 @@
-﻿namespace Obsidian.API;
-public  interface IBlockStateProvider : IRegistryResource
-{
-    public IBlock Get();
+﻿using Obsidian.API.World.Generator.RandomSources;
 
-    public SimpleBlockState GetSimple();
+namespace Obsidian.API;
+
+/// <summary>
+/// Chooses a block state for a position, like vanilla's BlockStateProvider.
+/// </summary>
+public interface IBlockStateProvider : IRegistryResource
+{
+    public IBlock GetState(IRandomSource random, Vector position);
 }
 
 public sealed class SimpleBlockState

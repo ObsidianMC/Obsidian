@@ -14,8 +14,9 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
 
     public Material Type => this.Holder.Type;
 
-    public bool Unbreakable => this.GetComponent<SimpleDataComponent<bool>>(DataComponentType.Unbreakable)?.Value ?? false;
-    public int MaxStackSize => this.GetComponent<SimpleDataComponent<int>>(DataComponentType.MaxStackSize).Value;
+    // A marker component: the item is unbreakable when it has one.
+    public bool Unbreakable => this.ContainsKey(DataComponentType.Unbreakable);
+    public int MaxStackSize => this.GetComponent<SimpleDataComponent<int>>(DataComponentType.MaxStackSize)?.Value ?? this.Holder.MaxStackSize;
     public ChatMessage? CustomName => this.GetComponent<SimpleDataComponent<ChatMessage>>(DataComponentType.CustomName)?.Value;
     public ChatMessage? ItemName => this.GetComponent<SimpleDataComponent<ChatMessage>>(DataComponentType.ItemName)?.Value;
 
@@ -31,7 +32,13 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
         this.InitializeComponents(components);
     }
 
-    public ItemStack([DisallowNull] ItemStack item, int count = 1) : this(item.Holder, count, item.InternalStorage.Values) { }
+    public ItemStack([DisallowNull] ItemStack item, int count = 1) : this(item.Holder, count, item.Patch) { }
+
+    /// <summary>
+    /// Copies this stack, with its count and the components set on it, as a stack of <paramref name="holder"/> (vanilla's
+    /// <c>transmuteCopy</c>), e.g. to turn a book into an enchanted book.
+    /// </summary>
+    public ItemStack TransmuteCopy(Item holder) => new(holder, this.Count, this.Patch);
 
     public static ItemStack operator -(ItemStack item, int value)
     {
@@ -84,18 +91,20 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
     private void InitializeComponents(params IEnumerable<DataComponent> components)
     {
         foreach (var defaultComponent in ComponentBuilder.DefaultItemComponents)
-            this.Add(defaultComponent);
+        {
+            // The stack size placeholder is the item's own, so the server agrees with the client's default.
+            var placeholder = defaultComponent.Type == DataComponentType.MaxStackSize
+                ? ComponentBuilder.MaxStackSize with { Value = this.Holder.MaxStackSize }
+                : defaultComponent;
+
+            this.Add(placeholder);
+
+            // A copy, so changing the placeholder's value puts it in the patch.
+            this.Placeholders[placeholder.Type] = placeholder with { };
+        }
 
         foreach (var component in components)
-        {
-            if (this.ContainsKey(component.Type))
-            {
-                this.InternalStorage[component.Type] = component;
-                continue;
-            }
-
-            this.Add(component);
-        }
+            this[component.Type] = component;
     }
 
     public override string ToString() => $"{this.Holder.UnlocalizedName}";

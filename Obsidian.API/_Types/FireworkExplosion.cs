@@ -1,12 +1,14 @@
-﻿namespace Obsidian.API;
+﻿using System.Runtime.InteropServices;
+
+namespace Obsidian.API;
 
 public sealed record class FireworkExplosion : INetworkSerializable<FireworkExplosion>
 {
     public required int Shape { get; set; }
 
-    public required int[] Colors { get; set; }
+    public required ImmutableArray<int> Colors { get; set; }
 
-    public required int[] FadeColors { get; set; }
+    public required ImmutableArray<int> FadeColors { get; set; }
 
     public bool HasTrail { get; set; }
 
@@ -15,8 +17,8 @@ public sealed record class FireworkExplosion : INetworkSerializable<FireworkExpl
     public static FireworkExplosion Read(INetStreamReader reader) => new()
     {
         Shape = reader.ReadVarInt(),
-        Colors = reader.ReadLengthPrefixedArray(reader.ReadVarInt),
-        FadeColors = reader.ReadLengthPrefixedArray(reader.ReadVarInt),
+        Colors = ImmutableCollectionsMarshal.AsImmutableArray(reader.ReadLengthPrefixedArray(reader.ReadVarInt)),
+        FadeColors = ImmutableCollectionsMarshal.AsImmutableArray(reader.ReadLengthPrefixedArray(reader.ReadVarInt)),
         HasTrail = reader.ReadBoolean(),
         HasTwinkle = reader.ReadBoolean()
     };
@@ -25,8 +27,8 @@ public sealed record class FireworkExplosion : INetworkSerializable<FireworkExpl
     {
         writer.WriteVarInt(value.Shape);
 
-        writer.WriteLengthPrefixedArray(writer.WriteVarInt, value.Colors);
-        writer.WriteLengthPrefixedArray(writer.WriteVarInt, value.FadeColors);
+        writer.WriteLengthPrefixedArray(writer.WriteVarInt, value.Colors.AsSpan());
+        writer.WriteLengthPrefixedArray(writer.WriteVarInt, value.FadeColors.AsSpan());
 
         writer.WriteBoolean(value.HasTrail);
         writer.WriteBoolean(value.HasTwinkle);

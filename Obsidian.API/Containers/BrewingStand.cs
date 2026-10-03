@@ -22,6 +22,7 @@ public sealed class BrewingStand : ResultContainer, IBlockEntity
     {
         BlockPosition = this.BlockPosition,
         Title = this.Title,
+        CustomName = this.CustomName,
         items = this.items
     };
 }

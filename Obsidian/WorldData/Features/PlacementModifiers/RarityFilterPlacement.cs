@@ -1,18 +1,17 @@
-﻿namespace Obsidian.WorldData.Features.PlacementModifiers;
+﻿using Obsidian.API.World.Generator.RandomSources;
+
+namespace Obsidian.WorldData.Features.PlacementModifiers;
 
 /// <summary>
-/// Either returns the current position or empty. 
-/// The chance is calculated by 1 / chance.
+/// Keeps the position on average once every <see cref="Chance"/> attempts.
 /// </summary>
 [ConfiguredFeatureProperty("minecraft:rarity_filter")]
-public sealed class RarityFilterPlacement : PlacementModifierBase
+public sealed class RarityFilterPlacement : PlacementFilterBase
 {
-    public override string Type { get; internal init; } = "minecraft:rarity_filter";
+    public override string Type => "minecraft:rarity_filter";
 
-    /// <remarks>
-    /// Must be a positive integer.
-    /// </remarks>
     public required int Chance { get; init; }
 
-    protected override bool ShouldPlace(PlacementContext context) => throw new NotImplementedException();
+    protected override bool ShouldPlace(PlacementContext context, IRandomSource random, Vector position) =>
+        random.NextFloat() < 1.0f / this.Chance;
 }

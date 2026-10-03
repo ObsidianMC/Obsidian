@@ -35,12 +35,12 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
 
     public void QueuePacketTo(IClientboundPacket packet, params int[] ids)
     {
-        Enqueue(new() { Packet = packet, IncludedIds = ids }, 1);
+        this.Enqueue(new() { Packet = packet, IncludedIds = ids }, 1);
     }
 
     public void QueuePacketTo(IClientboundPacket packet, int priority, params int[] ids)
     {
-        Enqueue(new()
+        this.Enqueue(new()
         {
             Packet = packet,
             IncludedIds = ids
@@ -48,15 +48,15 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
     }
 
     public void QueuePacket(IClientboundPacket packet, params int[] excludedIds) =>
-         Enqueue(new() { Packet = packet, ExcludedIds = excludedIds }, 1);
+         this.Enqueue(new() { Packet = packet, ExcludedIds = excludedIds }, 1);
 
     public void QueuePacketToLevel(ILevel level, IClientboundPacket packet, params int[] excludedIds) =>
-        Enqueue(new() { Packet = packet, ToLevel = level, ExcludedIds = excludedIds }, 1);
+        this.Enqueue(new() { Packet = packet, ToLevel = level, ExcludedIds = excludedIds }, 1);
 
     public void QueuePacketToLevel(ILevel level, int priority, IClientboundPacket packet, params int[] excludedIds) =>
-        Enqueue(new() { Packet = packet, ExcludedIds = excludedIds, ToLevel = level }, priority);
+        this.Enqueue(new() { Packet = packet, ExcludedIds = excludedIds, ToLevel = level }, priority);
     public void QueuePacket(IClientboundPacket packet, int priority, params int[] excludedIds) =>
-        Enqueue(new() { Packet = packet, ExcludedIds = excludedIds }, priority);
+        this.Enqueue(new() { Packet = packet, ExcludedIds = excludedIds }, priority);
 
     public void Broadcast(IClientboundPacket packet, params int[] excludedIds)
     {
@@ -93,14 +93,13 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
             .Where(x => !includedIDs.Contains(x)))
             .ToArray();
 
-        Enqueue(new()
+        this.Enqueue(new()
         {
             Packet = packet,
             ToLevel = world,
             ExcludedIds = excludedIds,
         }, 1);
     }
-
 
     public void BroadcastToLevel(ILevel toLevel, IClientboundPacket packet, params int[] excludedIds)
     {
@@ -119,7 +118,7 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
         {
             while (await timer.WaitForNextTickAsync(stoppingToken))
             {
-                foreach (var queuedPacket in TakeBatch())
+                foreach (var queuedPacket in this.TakeBatch())
                 {
                     var players = queuedPacket.ToLevel is AbstractLevel toLevel
                         ? toLevel.Players.Values : this.server.OnlinePlayers.Values;
@@ -128,7 +127,8 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
                 }
             }
         }
-        catch (Exception e) when (e is not OperationCanceledException || !stoppingToken.IsCancellationRequested)
+        catch (Exception e) when (e is not ObjectDisposedException &&
+            (e is not OperationCanceledException || !stoppingToken.IsCancellationRequested))
         {
             logger.LogError(e, "Packet broadcasting failed");
             await this.environment.OnServerCrashAsync(e);

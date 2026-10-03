@@ -1,0 +1,88 @@
+{
+  "minecraft:pile_hay": {
+    "type": "minecraft:block_pile",
+    "config": {
+      "state_provider": {
+        "type": "minecraft:rotated_block_provider",
+        "state": {
+          "Name": "minecraft:hay_block",
+          "Properties": {
+            "axis": "y"
+          }
+        }
+      }
+    }
+  },
+  "minecraft:pile_ice": {
+    "type": "minecraft:block_pile",
+    "config": {
+      "state_provider": {
+        "type": "minecraft:weighted_state_provider",
+        "entries": [
+          {
+            "data": {
+              "Name": "minecraft:blue_ice"
+            },
+            "weight": 1
+          },
+          {
+            "data": {
+              "Name": "minecraft:packed_ice"
+            },
+            "weight": 5
+          }
+        ]
+      }
+    }
+  },
+  "minecraft:pile_melon": {
+    "type": "minecraft:block_pile",
+    "config": {
+      "state_provider": {
+        "type": "minecraft:simple_state_provider",
+        "state": {
+          "Name": "minecraft:melon"
+        }
+      }
+    }
+  },
+  "minecraft:pile_pumpkin": {
+    "type": "minecraft:block_pile",
+    "config": {
+      "state_provider": {
+        "type": "minecraft:weighted_state_provider",
+        "entries": [
+          {
+            "data": {
+              "Name": "minecraft:pumpkin"
+            },
+            "weight": 19
+          },
+          {
+            "data": {
+              "Name": "minecraft:jack_o_lantern",
+              "Properties": {
+                "facing": "north"
+              }
+            },
+            "weight": 1
+          }
+        ]
+      }
+    }
+  },
+  "minecraft:pile_snow": {
+    "type": "minecraft:block_pile",
+    "config": {
+      "state_provider": {
+        "type": "minecraft:simple_state_provider",
+        "state": {
+          "Name": "minecraft:snow",
+          "Properties": {
+            "layers": "1"
+          }
+        }
+      }
+    }
+  }
+}

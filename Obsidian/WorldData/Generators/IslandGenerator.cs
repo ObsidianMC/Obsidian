@@ -1,6 +1,7 @@
 ﻿using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.World;
 using Obsidian.WorldData.Decorators;
+using Obsidian.WorldData.Lighting;
 using SharpNoise.Modules;
 
 namespace Obsidian.WorldData.Generators;
@@ -46,6 +47,7 @@ public sealed class IslandGenerator : ILevelGenerator
 
     public async ValueTask<IChunk> GenerateChunkAsync(int cx, int cz, IChunk? chunk = null, ChunkGenStage status = ChunkGenStage.full)
     {
+        OverworldBuildRange.Ensure(chunk, this.Id);
         chunk ??= new Chunk(cx, cz);
 
         // Sanity checks
@@ -128,7 +130,7 @@ public sealed class IslandGenerator : ILevelGenerator
                     if (isSurface)
                     {
                         var biome = chunk.GetBiome(pos + Vector.Down);
-                        IDecorator decorator = DecoratorFactory.GetDecorator(biome, chunk, worldPos, helper);
+                        var decorator = DecoratorFactory.GetDecorator(biome, chunk, worldPos, helper);
                         decorator.Decorate();
                         await OverworldDecorator.GenerateTreesAsync(worldPos, decorator.Features, helper);
                         await OverworldDecorator.GenerateFloraAsync(worldPos, decorator.Features, helper, chunk);
@@ -137,10 +139,8 @@ public sealed class IslandGenerator : ILevelGenerator
             }
         }
 
-        Lighting.InitialFillSkyLight(chunk);
-        await Lighting.LightFromNeighbors(chunk, world);
+        await LightEngine.LightChunkAsync(chunk, world);
         chunk.SetChunkStatus(ChunkGenStage.light);
-        await Lighting.LightToNeighbors(chunk, world);
         chunk.SetChunkStatus(ChunkGenStage.full);
         return chunk;
     }

@@ -50,6 +50,9 @@
 		<AdditionalFiles Include="..\Obsidian\Assets\worldgen\**\*.*" LinkBase="Assets\worldgen\" />
 		<AdditionalFiles Include="..\Obsidian\Assets\enums.json" Link="Assets\enums.json" />
 		<AdditionalFiles Include="..\Obsidian\Assets\item_components.json" Link="Assets\item_components.json" />
+		<AdditionalFiles Include="..\Obsidian\Assets\loot_table\*.json" LinkBase="Assets\loot_table\" />
+		<AdditionalFiles Include="..\Obsidian\Assets\enchantments.json" Link="Assets\enchantments.json" />
+		<AdditionalFiles Include="..\Obsidian\Assets\instruments.json" Link="Assets\instruments.json" />
 	</ItemGroup>
 
 	<ItemGroup>

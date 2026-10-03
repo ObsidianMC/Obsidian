@@ -65,7 +65,7 @@ public sealed class Compression(ITestOutputHelper output)
 
         if (dataLength != 0)
         {
-            using var compressedData = new MemoryStream(packetDataBuffer.Data);
+            using var compressedData = new MemoryStream(packetDataBuffer.GetBuffer());
 
             compressedData.Position = 0;
 
@@ -75,7 +75,7 @@ public sealed class Compression(ITestOutputHelper output)
         }
         else
         {
-            packetData = packetDataBuffer.Data;
+            packetData = packetDataBuffer.GetBuffer();
         }
 
         return packetData;

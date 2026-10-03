@@ -5,7 +5,7 @@ using Obsidian.Net.Packets.Play.Serverbound;
 using System.Collections.Frozen;
 
 namespace Obsidian.Net.ClientHandlers;
-internal sealed class PlayClientHandler : ClientHandler
+internal sealed partial class PlayClientHandler : ClientHandler
 {
     private FrozenDictionary<int, IServerboundPacket> Packets { get; } = new Dictionary<int, IServerboundPacket>()
     {
@@ -103,10 +103,7 @@ internal sealed class PlayClientHandler : ClientHandler
                 break;
             default:
                 if (!Packets.TryGetValue(id, out var packet))
-                {
-                    this.Client.Logger.LogTrace("Play Packet({id}) {name} is not being handled.", id, PacketsRegistry.Play.ServerboundNames[id]);
                     return false;
-                }
 
                 try
                 {
@@ -115,11 +112,17 @@ internal sealed class PlayClientHandler : ClientHandler
                 }
                 catch (Exception e)
                 {
-                    this.Logger.LogCritical(e, "An error has occured trying to populate play packet({id}) {name}.", id, PacketsRegistry.Play.ServerboundNames[id]);
+                    Log.PacketFailed(this.Logger, e, packet.GetType().Name);
                 }
                 break;
         }
 
         return false;
+    }
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Error, Message = "Handling packet {PacketType} failed")]
+        public static partial void PacketFailed(ILogger logger, Exception exception, string packetType);
     }
 }

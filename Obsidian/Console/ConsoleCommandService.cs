@@ -7,7 +7,7 @@ using System.Threading;
 namespace Obsidian.Console;
 
 /// <summary>Reads ordinary terminal lines without taking over the screen or its scrollback.</summary>
-public sealed class ConsoleCommandService(
+public sealed partial class ConsoleCommandService(
     TextReader input,
     IOptions<ConsoleCommandOptions> options,
     IHostApplicationLifetime lifetime,
@@ -42,7 +42,7 @@ public sealed class ConsoleCommandService(
                 }
                 catch (IOException ex)
                 {
-                    logger.LogWarning(ex, "Console input is unavailable; the server will continue running.");
+                    Log.InputUnavailable(logger, ex);
 
                     break;
                 }
@@ -58,7 +58,7 @@ public sealed class ConsoleCommandService(
                     continue;
 
                 if (options.Value.EchoCommands)
-                    logger.LogInformation("{Prompt}{CommandLine}", options.Value.Prompt, commandLine);
+                    Log.Echo(logger, options.Value.Prompt, commandLine);
 
                 if (await this.TryHandleBuiltInAsync(commandLine, pending, token).ConfigureAwait(false))
                     continue;
@@ -90,7 +90,7 @@ public sealed class ConsoleCommandService(
                 if (terminal?.IsInteractive != true)
                     await pending.WaitAsync(token).ConfigureAwait(false);
 
-                logger.LogInformation("Shutdown requested from the console.");
+                Log.ShutdownRequested(logger);
                 lifetime.StopApplication();
 
                 return true;
@@ -112,7 +112,7 @@ public sealed class ConsoleCommandService(
                     }
                     catch (IOException ex)
                     {
-                        logger.LogDebug(ex, "The terminal does not support clearing the screen.");
+                        Log.ClearUnsupported(logger, ex);
                     }
                 }
 
@@ -139,7 +139,7 @@ public sealed class ConsoleCommandService(
         }
         catch (Exception error)
         {
-            logger.LogDebug(error, "Console completion failed");
+            Log.CompletionFailed(logger, error);
         }
 
         return null;
@@ -155,14 +155,38 @@ public sealed class ConsoleCommandService(
                     return;
             }
 
-            logger.LogWarning("Unknown command: {CommandLine}", commandLine);
+            Log.UnknownCommand(logger, commandLine);
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
         {
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Command failed: {CommandLine}", commandLine);
+            Log.CommandFailed(logger, ex, commandLine);
         }
+    }
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Console input is unavailable; the server will continue running")]
+        public static partial void InputUnavailable(ILogger logger, Exception exception);
+
+        [LoggerMessage(Level = LogLevel.Information, Message = "{Prompt}{CommandLine}")]
+        public static partial void Echo(ILogger logger, string prompt, string commandLine);
+
+        [LoggerMessage(Level = LogLevel.Information, Message = "Shutdown requested from the console")]
+        public static partial void ShutdownRequested(ILogger logger);
+
+        [LoggerMessage(Level = LogLevel.Debug, Message = "The terminal does not support clearing the screen")]
+        public static partial void ClearUnsupported(ILogger logger, Exception exception);
+
+        [LoggerMessage(Level = LogLevel.Debug, Message = "Console completion failed")]
+        public static partial void CompletionFailed(ILogger logger, Exception exception);
+
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Unknown command: {CommandLine}")]
+        public static partial void UnknownCommand(ILogger logger, string commandLine);
+
+        [LoggerMessage(Level = LogLevel.Error, Message = "Command failed: {CommandLine}")]
+        public static partial void CommandFailed(ILogger logger, Exception exception, string commandLine);
     }
 }

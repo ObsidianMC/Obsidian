@@ -1,54 +1,44 @@
-﻿using Obsidian.Nbt;
+using Obsidian.WorldData.Structures;
+using Obsidian.Nbt;
 using System.IO;
+using System.IO.Compression;
+using System.Reflection;
 
 namespace Obsidian.Registries;
+
+/// <summary>
+/// Structure templates embedded under <c>Assets/Structures</c>, by id: <c>minecraft:fossil/spine_1</c> is
+/// <c>Assets/Structures/fossil/spine_1.nbt</c>.
+/// </summary>
+/// <remarks>Templates load on first use, since most worlds only ever need part of them.</remarks>
 internal static class StructureRegistry
 {
-    public static readonly ConcurrentDictionary<string, Dictionary<Vector, IBlock>> storage = new();
-    public static void Initialize()
+    private const string ResourcePrefix = "Obsidian.Assets.Structures.";
+    private const string ResourceSuffix = ".nbt";
+
+    // Lazy, so chunks generating in parallel that need the same template load it once.
+    private static readonly ConcurrentDictionary<string, Lazy<StructureTemplate>> templates = new();
+
+    /// <summary>Gets a template by id, loading it on first use; unknown ids get an empty template.</summary>
+    public static StructureTemplate Get(string id) => templates.GetOrAdd(id, key => new Lazy<StructureTemplate>(() => Load(key))).Value;
+
+    private static StructureTemplate Load(string id)
     {
-        var structDir = "Assets/Structures/";
-        if(!Directory.Exists("Assets/Structures/"))
-        {
-            Directory.CreateDirectory("Assets/Structures");
-        }
-        var files = Directory.GetFiles(structDir, "*.nbt");
-        foreach (var file in files)
-        {
-            var structureName = Path.GetFileNameWithoutExtension(file);
-            storage[structureName] = new();
-            byte[] nbtData = File.ReadAllBytes(file);
-            using var byteStream = new ReadOnlyStream(nbtData);
-            var nbtReader = new NbtReader(byteStream, NbtCompression.GZip);
-            var baseCompound = nbtReader.ReadNextTag() as NbtCompound;
+        var path = id.StartsWith("minecraft:", StringComparison.Ordinal) ? id["minecraft:".Length..] : id;
+        var resource = ResourcePrefix + path.Replace('/', '.') + ResourceSuffix;
+        using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resource);
 
-            // Get palette
-            List<IBlock> paletteBuffer = new();
-            if (baseCompound!.TryGetTag("palette", out var palette))
-            {
-                foreach (NbtCompound entry in (palette as NbtList).Cast<NbtCompound>())
-                {
-                    paletteBuffer.Add(entry.ToBlock());
-                }
-            }
+        // Like vanilla's StructureTemplateManager.getOrCreate, an unknown id is an empty template (one vanilla pool
+        // references a template that doesn't exist).
+        if (stream is null)
+            return StructureTemplate.CreateEmpty();
 
-            if (baseCompound.TryGetTag("blocks", out var blocks))
-            {
-                foreach (NbtCompound b in (blocks as NbtList).Cast<NbtCompound>())
-                {
-                    IBlock block = paletteBuffer[b!.GetInt("state")];
-                    if (b!.TryGetTag("pos", out var coords))
-                    {
-                        var c = (NbtList)coords;
-                        var offset = new Vector(
-                            ((NbtTag<int>)c[0]).Value,
-                            ((NbtTag<int>)c[1]).Value,
-                            ((NbtTag<int>)c[2]).Value);
+        // Decompressed whole first: the reader reads a few bytes at a time, and each read of a gzip stream calls into zlib.
+        using var decompressed = new MemoryStream();
+        using (var gzip = new GZipStream(stream, CompressionMode.Decompress))
+            gzip.CopyTo(decompressed);
 
-                        storage[structureName][offset] = block;
-                    }
-                }
-            }
-        }
+        decompressed.Position = 0;
+        return StructureTemplate.Load(decompressed, NbtCompression.None);
     }
 }

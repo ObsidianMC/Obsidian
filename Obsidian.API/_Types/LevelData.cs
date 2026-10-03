@@ -133,7 +133,7 @@ public sealed class LevelData
     /// <summary>
     /// true if the level is currently experiencing rain, snow, and cloud cover.
     /// </summary>
-    public bool Raining { get; set; } = false; // start a world without rain
+    public bool Raining { get; set; } // start a world without rain
 
     /// <summary>
     /// The number of ticks before "raining" is toggled and this value gets set to another random value.

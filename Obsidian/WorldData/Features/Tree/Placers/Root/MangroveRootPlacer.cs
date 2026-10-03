@@ -1,81 +1,71 @@
-﻿using Obsidian.API.World.Features;
-using Obsidian.API.World.Features.Tree;
-using Obsidian.Registries;
-using System.ComponentModel.DataAnnotations;
+using Obsidian.API.World.Generator.RandomSources;
 
 namespace Obsidian.WorldData.Features.Tree.Placers.Root;
 
 /// <summary>
-/// Root placer for mangrove trees with complex branching root systems that grow outward and downward.
+/// Mangrove roots: a column under the raised trunk plus four randomly winding roots, one per horizontal direction.
 /// </summary>
-[TreeProperty("minecraft:mangrove_root_placer")]
+[ConfiguredFeatureProperty("minecraft:mangrove_root_placer")]
 public sealed class MangroveRootPlacer : RootPlacer
 {
-    public override required string Type { get; init; }
+    public required MangroveRootPlacement MangroveRootPlacement { get; init; }
 
-    public required MangrovePlacement MangroveRootPlacement { get; set; }
-
-    public override async ValueTask<List<Vector>> Place(FeatureContext context, Vector origin, Vector trunkOrigin)
+    public override bool PlaceRoots(TreeContext tree, Vector origin, Vector trunkOrigin)
     {
-        var world = context.World;
-        var random = context.Random;
-        var rootPositions = new List<Vector>();
-
-        // Verify we can place roots in the column from origin to trunk
-        var columnPos = origin;
-        while (columnPos.Y < trunkOrigin.Y)
+        var positions = new List<Vector>();
+        for (var position = origin; position.Y < trunkOrigin.Y; position += Vector.Up)
         {
-            if (!await CanPlaceRoot(world, columnPos))
-                return rootPositions; // Return empty list on failure
-
-            columnPos = columnPos.Relative(Vector.Up);
+            if (!this.CanPlaceRoot(tree.Level, position))
+                return false;
         }
 
-        // Add the position directly below trunk
-        rootPositions.Add(trunkOrigin.Relative(Vector.Down));
-
-        // Simulate roots in all four horizontal directions
-        foreach (var direction in new[] { Vector.North, Vector.South, Vector.East, Vector.West })
+        positions.Add(trunkOrigin + Vector.Down);
+        foreach (var direction in TreeDirections.Horizontal)
         {
-            var pos = trunkOrigin + direction;
-            var positionsInDirection = new List<Vector>();
+            var start = trunkOrigin + direction.ToVector();
+            var root = new List<Vector>();
+            if (!this.SimulateRoots(tree, start, direction, trunkOrigin, root, 0))
+                return false;
 
-            if (!await SimulateRoots(world, random, pos, direction, trunkOrigin, positionsInDirection, 0))
-                return rootPositions; // Return positions placed so far on failure
-
-            rootPositions.AddRange(positionsInDirection);
-            rootPositions.Add(trunkOrigin + direction);
+            positions.AddRange(root);
+            positions.Add(start);
         }
 
-        // Place all the root blocks
-        foreach (var rootPos in rootPositions)
-        {
-            await PlaceRoot(world, rootPos, RootProvider, MangroveRootPlacement.MuddyRootsProvider);
-        }
+        foreach (var position in positions)
+            this.PlaceRoot(tree, position);
 
-        return rootPositions;
+        return true;
     }
 
-    private async ValueTask<bool> SimulateRoots(
-        IWorld world,
-        Random random,
-        Vector rootPos,
-        Vector direction,
-        Vector rootOrigin,
-        List<Vector> rootPositions,
-        int layer)
-    {
-        int maxRootLength = MangroveRootPlacement.MaxRootLength;
+    protected override bool CanPlaceRoot(IWorldGenLevel level, Vector position) =>
+        base.CanPlaceRoot(level, position) || this.MangroveRootPlacement.CanGrowThrough.Contains(level.GetBlock(position));
 
-        if (layer >= maxRootLength || rootPositions.Count > maxRootLength)
+    /// <summary>Roots replacing mud become muddy mangrove roots instead.</summary>
+    protected override void PlaceRoot(TreeContext tree, Vector position)
+    {
+        if (this.MangroveRootPlacement.MuddyRootsIn.Contains(tree.Level.GetBlock(position)))
+        {
+            var block = this.MangroveRootPlacement.MuddyRootsProvider.GetState(tree.Random, position);
+            tree.SetRoot(position, GetPotentiallyWaterloggedState(tree.Level, position, block));
+        }
+        else
+        {
+            base.PlaceRoot(tree, position);
+        }
+    }
+
+    private bool SimulateRoots(TreeContext tree, Vector position, BlockFace direction, Vector trunkOrigin, List<Vector> root, int depth)
+    {
+        var maxLength = this.MangroveRootPlacement.MaxRootLength;
+        if (depth == maxLength || root.Count > maxLength)
             return false;
 
-        foreach (var pos in GetPotentialRootPositions(rootPos, direction, random, rootOrigin))
+        foreach (var next in this.PotentialRootPositions(position, direction, tree.Random, trunkOrigin))
         {
-            if (await CanPlaceRoot(world, pos))
+            if (this.CanPlaceRoot(tree.Level, next))
             {
-                rootPositions.Add(pos);
-                if (!await SimulateRoots(world, random, pos, direction, rootOrigin, rootPositions, layer + 1))
+                root.Add(next);
+                if (!this.SimulateRoots(tree, next, direction, trunkOrigin, root, depth + 1))
                     return false;
             }
         }
@@ -83,111 +73,41 @@ public sealed class MangroveRootPlacer : RootPlacer
         return true;
     }
 
-    private List<Vector> GetPotentialRootPositions(Vector pos, Vector prevDir, Random random, Vector rootOrigin)
+    private Vector[] PotentialRootPositions(Vector position, BlockFace direction, IRandomSource random, Vector trunkOrigin)
     {
-        var below = pos.Relative(Vector.Down);
-        var nextTo = pos + prevDir;
-        // Manhattan distance: |x1-x2| + |y1-y2| + |z1-z2|
-        int width = Math.Abs(pos.X - rootOrigin.X) + Math.Abs(pos.Y - rootOrigin.Y) + Math.Abs(pos.Z - rootOrigin.Z);
-        int maxRootWidth = MangroveRootPlacement.MaxRootWidth;
-        float randomSkewChance = MangroveRootPlacement.RandomSkewChance;
+        var below = position + Vector.Down;
+        var outward = position + direction.ToVector();
+        var distance = TreeDirections.DistManhattan(position, trunkOrigin);
+        var maxWidth = this.MangroveRootPlacement.MaxRootWidth;
+        var skewChance = this.MangroveRootPlacement.RandomSkewChance;
 
-        if (width > maxRootWidth - 3 && width <= maxRootWidth)
-        {
-            // Near max width: either go down or continue in direction then down
-            return random.NextSingle() < randomSkewChance
-                ? new List<Vector> { below, nextTo.Relative(Vector.Down) }
-                : new List<Vector> { below };
-        }
-        else if (width > maxRootWidth)
-        {
-            // Beyond max width: only go down
-            return new List<Vector> { below };
-        }
-        else if (random.NextSingle() < randomSkewChance)
-        {
-            // Sometimes just go down early
-            return new List<Vector> { below };
-        }
-        else
-        {
-            // Either continue in direction or go down
-            return random.Next(2) == 0
-                ? new List<Vector> { nextTo }
-                : new List<Vector> { below };
-        }
+        if (distance > maxWidth - 3 && distance <= maxWidth)
+            return random.NextFloat() < skewChance ? [below, outward + Vector.Down] : [below];
+
+        if (distance > maxWidth)
+            return [below];
+
+        if (random.NextFloat() < skewChance)
+            return [below];
+
+        return random.NextBoolean() ? [outward] : [below];
     }
+}
 
-    private async ValueTask<bool> CanPlaceRoot(IWorld world, Vector pos)
-    {
-        // Check if position is valid for tree placement
-        var block = await world.GetBlockAsync(pos);
+/// <summary>
+/// Settings of <see cref="MangroveRootPlacer"/>, like vanilla's <c>MangroveRootPlacement</c>.
+/// </summary>
+public sealed class MangroveRootPlacement
+{
+    public required BlockSet CanGrowThrough { get; init; }
 
-        // Can place in air, water, or blocks in the CanGrowThrough list
-        if (block.IsAir || block.IsLiquid)
-            return true;
+    public required BlockSet MuddyRootsIn { get; init; }
 
-        if (MangroveRootPlacement.CanGrowThrough.Contains(block.UnlocalizedName))
-            return true;
+    public required IBlockStateProvider MuddyRootsProvider { get; init; }
 
-        // Check if replaceable (like grass, flowers, etc.)
-        return TagsRegistry.Block.Replaceable.Entries.Contains(block.RegistryId);
-    }
+    public required int MaxRootWidth { get; init; }
 
-    private async ValueTask PlaceRoot(IWorld world, Vector pos, IBlockStateProvider rootProvider, IBlockStateProvider? muddyProvider)
-    {
-        var existingBlock = await world.GetBlockAsync(pos);
+    public required int MaxRootLength { get; init; }
 
-        // Determine which root type to use
-        SimpleBlockState rootState;
-        if (muddyProvider != null && MangroveRootPlacement.MuddyRootsIn.Contains(existingBlock.UnlocalizedName))
-        {
-            rootState = muddyProvider.GetSimple();
-        }
-        else
-        {
-            rootState = rootProvider.GetSimple();
-        }
-
-        // Handle waterlogging if the block is water
-        if (existingBlock.IsLiquid)
-        {
-            // Set waterlogged property to true
-            rootState.Properties["waterlogged"] = "true";
-        }
-
-        var rootBlock = BlocksRegistry.GetFromSimpleState(rootState);
-        await world.SetBlockAsync(pos, rootBlock);
-
-        // Place a block above the root for support
-        var abovePos = pos + Vector.Up;
-        var aboveBlock = await world.GetBlockAsync(abovePos);
-        if (aboveBlock.IsAir)
-        {
-            var aboveRootState = rootProvider.GetSimple();
-            if (existingBlock.IsLiquid)
-            {
-                aboveRootState.Properties["waterlogged"] = "true";
-            }
-            var aboveRootBlock = BlocksRegistry.GetFromSimpleState(aboveRootState);
-            await world.SetBlockAsync(abovePos, aboveRootBlock);
-        }
-    }
-
-    public sealed class MangrovePlacement
-    {
-        [Range(1, 8)]
-        public required int MaxRootWidth { get; set; }
-
-        [Range(1, 15)]
-        public required int MaxRootLength { get; set; }
-
-        [Range(0.0, 1.0)]
-        public required float RandomSkewChance { get; set; }
-
-        public string CanGrowThrough { get; set; }
-        public List<string> MuddyRootsIn { get; set; } = [];
-
-        public required IBlockStateProvider MuddyRootsProvider { get; set; }
-    }
+    public required float RandomSkewChance { get; init; }
 }

@@ -45,7 +45,7 @@ public class Encryption
 
         using var incomingRandomData = buffer.Read(testDataLength);
 
-        Assert.Equal(testData, incomingRandomData.Data);
+        Assert.Equal(testData, incomingRandomData.GetBuffer());
     }
 
     public static IEnumerable<object[]> RandomData

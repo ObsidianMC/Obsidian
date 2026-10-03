@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Inventory;
+using Obsidian.Nbt;
 
 using Obsidian.Entities.AI;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -33,6 +34,25 @@ public partial class ItemEntity : Entity
 
         writer.WriteEntityMetadataType(8, EntityMetadataType.Slot);
         writer.WriteItemStack(this.Item);
+    }
+
+    // Vanilla's default pickup delay is 10 ticks; a stack that can't be picked up yet keeps it.
+    internal override void WriteNbt(NbtCompound tag)
+    {
+        base.WriteNbt(tag);
+
+        tag.Set(this.Item.ToNbt("Item"));
+        tag.Set(new NbtTag<short>("PickupDelay", (short)(this.CanPickup ? 0 : 10)));
+    }
+
+    internal override void ReadNbt(NbtCompound tag)
+    {
+        base.ReadNbt(tag);
+
+        if (tag.TryGetTag<NbtCompound>("Item", out var item) && item.ItemFromNbt() is ItemStack stack)
+            this.Item = stack;
+
+        this.CanPickup = tag.TryGetTag<NbtTag<short>>("PickupDelay", out var delay) && delay.Value == 0;
     }
 
     public async override ValueTask TickAsync()

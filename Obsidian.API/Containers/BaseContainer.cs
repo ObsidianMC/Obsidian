@@ -13,12 +13,18 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
 
     public ChatMessage Title { get; set; }
 
+    /// <summary>
+    /// The name the container was given (vanilla's <c>CustomName</c>), shown as its <see cref="Title"/> instead of the
+    /// default one; <c>null</c> when it has none.
+    /// </summary>
+    public ChatMessage? CustomName { get; set; }
+
     public Guid Uuid { get; } = Guid.NewGuid();
 
     public List<IPlayer> Viewers { get; } = [];
 
     public ItemStack? this[int index] { get => this.items[index]; set => this.items[index] = value; }
-    public ItemStack?[] this[Range range] { get => this.items[range]; }
+    public ReadOnlySpan<ItemStack?> this[Range range] => this.items.AsSpan(range);
 
     public BaseContainer(int size) : this(size, InventoryType.Custom) { }
 

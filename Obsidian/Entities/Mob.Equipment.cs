@@ -9,7 +9,6 @@ public partial class Mob
     private readonly Dictionary<EquipmentSlot, ItemStack> equipment = [];
     private readonly Dictionary<EquipmentSlot, float> equipmentDropChances = [];
     public bool CanPickUpLoot { get; set; }
-    public bool PersistenceRequired { get; set; }
     private static readonly EquipmentSlot[] armorSlots = [EquipmentSlot.Helmet, EquipmentSlot.Chestplate, EquipmentSlot.Leggings, EquipmentSlot.Boots];
     private static readonly Dictionary<string, (int Helmet, int Chest, int Legs, int Boots, int Durability, float Toughness)> armorMaterials = new()
     {

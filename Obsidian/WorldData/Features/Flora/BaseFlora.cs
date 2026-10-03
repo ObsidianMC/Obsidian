@@ -35,7 +35,7 @@ public abstract class BaseFlora(GenHelper helper, IChunk chunk, Material mat = M
     public virtual async Task GenerateFloraAsync(Vector origin, int seed, int radius, int density)
     {
         density = Math.Max(1, 10 - density);
-        var seedRand = new XorshiftRandom(seed + origin.GetHashCode());
+        var seedRand = new Random(seed + origin.GetHashCode());
 
         for (int rz = 0; rz <= radius * 2; rz++)
         {

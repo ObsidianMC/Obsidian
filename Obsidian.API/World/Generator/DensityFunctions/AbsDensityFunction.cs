@@ -7,9 +7,15 @@ public sealed class AbsDensityFunction : IDensityFunction
 
     public required IDensityFunction Argument { get; init; }
 
-    public double MinValue => 0;
+    public double MinValue => this.Bounds.Min;
 
-    public double MaxValue => Argument.MaxValue;
+    public double MaxValue => this.Bounds.Max;
 
-    public double GetValue(double x, double y, double z) => Math.Abs(Argument.GetValue(x, y, z));
+    private DensityBounds Bounds => field ??= new(Math.Max(0.0, this.Argument.MinValue),
+        Math.Max(Math.Abs(this.Argument.MinValue), Math.Abs(this.Argument.MaxValue)));
+
+    public double GetValue(double x, double y, double z) => Math.Abs(this.Argument.GetValue(x, y, z));
+
+    public IDensityFunction MapAll(IDensityFunctionVisitor visitor) =>
+        visitor.Apply(new AbsDensityFunction { Argument = visitor.Map(this.Argument) });
 }

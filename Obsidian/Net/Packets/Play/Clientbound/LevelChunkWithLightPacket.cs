@@ -1,4 +1,5 @@
 ﻿using Obsidian.Nbt;
+using Obsidian.WorldData;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
@@ -43,8 +44,20 @@ public partial class LevelChunkWithLightPacket(IChunk chunk)
         writer.Write(sectionBuffer);
 
 
-        // Num block entities
-        writer.WriteVarInt(0);
+        // Block entities kept as data; clients create the others from the block states when they're placed.
+        var blockEntities = Chunk.GetBlockEntities().OfType<DataBlockEntity>()
+            .Where(blockEntity => BlockPhysics.BlockEntityTypeId(blockEntity.Id) >= 0)
+            .ToList();
+
+        writer.WriteVarInt(blockEntities.Count);
+        foreach (var blockEntity in blockEntities)
+        {
+            var position = blockEntity.BlockPosition;
+            writer.WriteByte((sbyte)((position.X & 15) << 4 | (position.Z & 15)));
+            writer.WriteShort((short)position.Y);
+            writer.WriteVarInt(BlockPhysics.BlockEntityTypeId(blockEntity.Id));
+            WriteNbt(writer, blockEntity.GetClientData());
+        }
 
         // Lighting
         Chunk.WriteLightMaskTo(writer, LightType.Sky);
@@ -55,5 +68,26 @@ public partial class LevelChunkWithLightPacket(IChunk chunk)
 
         Chunk.WriteLightTo(writer, LightType.Sky);
         Chunk.WriteLightTo(writer, LightType.Block);
+    }
+
+    /// <summary>
+    /// Writes a compound as network NBT (an unnamed root), or an end tag for <c>null</c>.
+    /// </summary>
+    private static void WriteNbt(INetStreamWriter writer, NbtCompound? compound)
+    {
+        if (compound is null)
+        {
+            writer.WriteByte((sbyte)NbtTagType.End);
+            return;
+        }
+
+        using var nbtWriter = new RawNbtWriter(true);
+        foreach (var (_, tag) in compound)
+            nbtWriter.WriteTag(tag);
+
+        nbtWriter.EndCompound();
+        nbtWriter.TryFinish();
+
+        writer.WriteByteArray(nbtWriter.Data.ToArray());
     }
 }

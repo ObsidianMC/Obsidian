@@ -8,7 +8,7 @@ public sealed class DenseCollection<T> : IEnumerable<T> where T : class
 
     private readonly T[] source;
 
-    public int Count { get; private set; } = 0;
+    public int Count { get; private set; }
 
     public int Width { get; }
 

@@ -7,7 +7,7 @@ public class DustParticle : IParticle
     public ParticleColor Color { get; set; }
 }
 
-public struct ParticleColor
+public record struct ParticleColor
 {
     public float R { get; set; }
 

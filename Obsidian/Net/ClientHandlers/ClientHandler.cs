@@ -4,7 +4,7 @@ using Obsidian.Net.Packets;
 using Obsidian.Utilities.Collections;
 
 namespace Obsidian.Net.ClientHandlers;
-internal abstract class ClientHandler
+internal abstract partial class ClientHandler
 {
     protected Server Server => (Server)this.Client.Server;
     protected ILogger Logger => this.Client.Logger;
@@ -26,7 +26,7 @@ internal abstract class ClientHandler
         }
         catch (Exception e)
         {
-            this.Logger.LogCritical(e, "An error has occured trying to populate a packet.");
+            Log.PacketFailed(this.Logger, e, typeof(T).Name);
             success = false;
         }
         SimpleObjectPool<T>.Shared.Return(packet);
@@ -35,4 +35,10 @@ internal abstract class ClientHandler
     }
 
     protected void SendPacket(IClientboundPacket packet) => this.Client.SendPacket(packet);
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Error, Message = "Handling packet {PacketType} failed")]
+        public static partial void PacketFailed(ILogger logger, Exception exception, string packetType);
+    }
 }

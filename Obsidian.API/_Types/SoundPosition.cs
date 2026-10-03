@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API;
 
-public struct SoundPosition
+public record struct SoundPosition
 {
     public int X { get; set; }
     public int Y { get; set; }

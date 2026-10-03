@@ -33,7 +33,7 @@ public sealed class PacketCryptography
         return this.RSAParameters;
     }
 
-    public byte[] Decrypt(byte[] toDecrypt) => this.provider.Decrypt(toDecrypt, RSAEncryptionPadding.Pkcs1);
+    public byte[] Decrypt(ReadOnlySpan<byte> toDecrypt) => this.provider.Decrypt(toDecrypt, RSAEncryptionPadding.Pkcs1);
 
     public byte[] Encrypt(byte[] toDecrypt) => this.provider.Encrypt(toDecrypt, RSAEncryptionPadding.Pkcs1);
 

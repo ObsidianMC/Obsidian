@@ -1,20 +1,20 @@
-﻿namespace Obsidian.WorldData.BlockPredicates;
+﻿using Obsidian.WorldData.Features;
 
+namespace Obsidian.WorldData.BlockPredicates;
+
+/// <summary>
+/// Matches when <see cref="State"/> could survive at the position (e.g. a flower on dirt).
+/// </summary>
 [ConfiguredFeatureProperty("minecraft:would_survive")]
 public sealed class WouldSurvivePredicate : IBlockPredicate
 {
     public string Type { get; init; } = "minecraft:would_survive";
 
-    public List<int> Offset { get; init; } = [0, 0, 0];
+    public Vector Offset { get; init; } = Vector.Zero;
 
-    /// <summary>
-    /// Checks whether this block state can survive in the specified position.
-    /// </summary>
-    public required IBlockState State { get; init; }
+    public required SimpleBlockState State { get; init; }
 
-    public bool GetResult(BlockPredicateContext context)
-    {
+    private IBlock Block => field ??= BlocksRegistry.GetFromSimpleState(this.State);
 
-        return false;
-    }
+    public bool Test(IWorldGenLevel level, Vector position) => this.Block.CanSurvive(level, position + this.Offset);
 }

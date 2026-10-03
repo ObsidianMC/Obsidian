@@ -1,5 +1,5 @@
 ﻿namespace Obsidian.Net;
-public readonly struct PacketData
+public readonly record struct PacketData
 {
     public static readonly PacketData Default = new() { Id = -1, NetworkBuffer = new() };
 

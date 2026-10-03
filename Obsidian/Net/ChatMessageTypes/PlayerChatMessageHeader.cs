@@ -1,13 +1,13 @@
 ﻿namespace Obsidian.Net.ChatMessageTypes;
 public sealed class PlayerChatMessageHeader
 {
-    public bool MessageSignaturePresent => this.MessageSignature != null;
+    public bool MessageSignaturePresent => this.MessageSignature.HasValue;
 
-    public byte[]? MessageSignature { get; init; }
+    public ReadOnlyMemory<byte>? MessageSignature { get; init; }
 
     public required Guid Sender { get; init; }
 
-    public required byte[] HeaderSignature { get; init; }
+    public required ReadOnlyMemory<byte> HeaderSignature { get; init; }
 
     public required string PlainMessage { get; init; }
 

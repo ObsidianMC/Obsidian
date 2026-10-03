@@ -1,25 +1,35 @@
 ﻿using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace Obsidian.ChunkData;
 
 public abstract class BaseIndirectPalette<T> : IPalette<T>
 {
-    public int[] Values { get; private set; }
+    private int[] values;
+
+    /// <summary>
+    /// The palette's value ids. Spans the whole backing array, which can be longer than <see cref="Count"/>; growing the
+    /// palette replaces the array, so a span read once stays consistent.
+    /// </summary>
+    public ReadOnlySpan<int> Values => this.values;
     public int BitCount { get; private set; }
-    public int Count { get; protected set; }
-    public bool IsFull => Count == Values.Length;
+    // Reads of the block storage don't lock (see BlockStateContainer.Get): an entry is written before the count that
+    // makes it readable.
+    private int count;
+    public int Count { get => Volatile.Read(ref this.count); protected set => Volatile.Write(ref this.count, value); }
+    public bool IsFull => Count == this.values.Length;
 
     public bool ShouldGrow => false;
 
     public BaseIndirectPalette(byte bitCount)
     {
         BitCount = bitCount;
-        Values = GC.AllocateUninitializedArray<int>(1 << bitCount);
+        this.values = GC.AllocateUninitializedArray<int>(1 << bitCount);
     }
 
     protected BaseIndirectPalette(int[] values, int bitCount, int count)
     {
-        Values = values;
+        this.values = values;
         BitCount = bitCount;
         Count = count;
     }
@@ -28,10 +38,9 @@ public abstract class BaseIndirectPalette<T> : IPalette<T>
 
     public bool TryGetId(T value, out int id)
     {
-        if (!typeof(T).IsValueType)
-        {
-            ArgumentNullException.ThrowIfNull(value, nameof(value));
-        }
+        // A null check rather than typeof(T).IsValueType, which shared generic code can't fold away.
+        if (value is null)
+            throw new ArgumentNullException(nameof(value));
 
         int valueId = this.GetValueId(value);
 
@@ -40,27 +49,24 @@ public abstract class BaseIndirectPalette<T> : IPalette<T>
 
     private bool TryGetIdImpl(int valueId, out int id)
     {
-        ReadOnlySpan<int> valueIds = GetSpan();
-        for (id = 0; id < valueIds.Length; id++)
-        {
-            if (valueIds[id] == valueId)
-            {
-                return true;
-            }
-        }
-
-        return false;
+        id = GetSpan().IndexOf(valueId);
+        return id >= 0;
     }
 
     public int GetOrAddId(T value)
     {
-        if (!typeof(T).IsValueType)
-        {
-            ArgumentNullException.ThrowIfNull(value, nameof(value));
-        }
+        if (value is null)
+            throw new ArgumentNullException(nameof(value));
 
+        return this.GetOrAddValueId(this.GetValueId(value));
+    }
+
+    /// <summary>
+    /// The palette index of a value by its id (a block's state id, a biome's id), added when it's missing.
+    /// </summary>
+    public int GetOrAddValueId(int valueId)
+    {
         // Get
-        int valueId = this.GetValueId(value);
         if (TryGetIdImpl(valueId, out int id))
             return id;
 
@@ -69,12 +75,14 @@ public abstract class BaseIndirectPalette<T> : IPalette<T>
         {
             BitCount++;
             int[] newArray = GC.AllocateUninitializedArray<int>(1 << BitCount);
-            Array.Copy(Values, newArray, Values.Length);
-            Values = newArray;
+            Array.Copy(this.values, newArray, this.values.Length);
+            this.values = newArray;
         }
 
-        var newId = Count++;
-        Values[newId] = valueId;
+        // The entry is written before the count publishes it to reads that don't lock.
+        var newId = Count;
+        this.values[newId] = valueId;
+        Count = newId + 1;
         return newId;
     }
 
@@ -95,7 +103,7 @@ public abstract class BaseIndirectPalette<T> : IPalette<T>
 
     protected ReadOnlySpan<int> GetSpan()
     {
-        ref int first = ref MemoryMarshal.GetArrayDataReference(Values);
+        ref int first = ref MemoryMarshal.GetArrayDataReference(this.values);
         return MemoryMarshal.CreateReadOnlySpan(ref first, Count);
     }
 

@@ -4,7 +4,7 @@ namespace Obsidian.Entities.AI;
 
 internal sealed class MobTerrain(ILevel level)
 {
-    public int GetSkyLight(Vector position) => level is AbstractLevel concrete && position.Y is >= -64 and < 320 ?
+    public int GetSkyLight(Vector position) => level is AbstractLevel concrete && !concrete.IsOutsideBuildHeight(position.Y) ?
         concrete.GetLoadedChunk(position.X >> 4, position.Z >> 4)?.GetLightLevel(position.X, position.Y, position.Z, LightType.Sky) ?? 0 : 0;
 
     public float GetFriction(VectorF position) => GetBlock((Vector)(position - new VectorF(0, 0.500001f, 0)).Floor())?.Material switch
@@ -16,7 +16,7 @@ internal sealed class MobTerrain(ILevel level)
     };
     public IBlock? GetBlock(Vector position)
     {
-        if (level is not AbstractLevel concrete || position.Y is < -64 or >= 320)
+        if (level is not AbstractLevel concrete || concrete.IsOutsideBuildHeight(position.Y))
             return null;
 
         return concrete.GetLoadedChunk(position.X >> 4, position.Z >> 4)?.GetBlock(position);

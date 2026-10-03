@@ -11,7 +11,7 @@ using System.Threading;
 using System.Web;
 
 namespace Obsidian.Services;
-public sealed class UserCache(HttpClient httpClient, ILogger<UserCache> logger) : IUserCache
+public sealed partial class UserCache(HttpClient httpClient, ILogger<UserCache> logger) : IUserCache
 {
     private const string userWithNameEndpoint = "https://api.mojang.com/users/profiles/minecraft/";
     private const string userWithIdEndpoint = "https://sessionserver.mojang.com/session/minecraft/profile/";
@@ -47,7 +47,7 @@ public sealed class UserCache(HttpClient httpClient, ILogger<UserCache> logger) 
         }
         catch
         {
-            logger.LogWarning("Could not get user profile for {Username}", username);
+            Log.ProfileLookupFailed(this.logger, username);
             return null;
         }
     }
@@ -106,6 +106,12 @@ public sealed class UserCache(HttpClient httpClient, ILogger<UserCache> logger) 
     }
 
     private static string Sanitize(string value) => HttpUtility.UrlEncode(Encoding.UTF8.GetBytes(value));
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Could not get the user profile of {Username}")]
+        public static partial void ProfileLookupFailed(ILogger logger, string username);
+    }
 }
 
 public interface IUserCache

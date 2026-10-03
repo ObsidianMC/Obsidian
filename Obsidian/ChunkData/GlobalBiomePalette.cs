@@ -4,7 +4,6 @@ namespace Obsidian.ChunkData;
 
 public class GlobalBiomePalette : IPalette<BiomeCodec>
 {
-    public int[] Values => throw new NotSupportedException();
     public int BitCount { get; }
     public int Count => throw new NotSupportedException();
     public bool IsFull => false;

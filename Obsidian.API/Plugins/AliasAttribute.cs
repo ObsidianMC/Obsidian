@@ -4,7 +4,7 @@
 /// Specifies the property/field name that is used for dependency injection.
 /// </summary>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false, Inherited = false)]
-public class AliasAttribute : Attribute
+public sealed class AliasAttribute : Attribute
 {
     /// <summary>
     /// Name that is used for dependency injection.

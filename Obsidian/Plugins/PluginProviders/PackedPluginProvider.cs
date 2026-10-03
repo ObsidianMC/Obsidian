@@ -3,12 +3,13 @@ using Obsidian.API.Plugins;
 using System.Collections.Frozen;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace Obsidian.Plugins.PluginProviders;
-public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger logger)
+public sealed partial class PackedPluginProvider(PluginManager pluginManager, ILogger logger)
 {
     private readonly PluginManager pluginManager = pluginManager;
     private readonly ILogger logger = logger;
@@ -64,15 +65,15 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
 
         var loadContext = new PluginLoadContext(pluginAssembly);
 
-        var entries = await this.InitializeEntriesAsync(reader, fs);
+        var entries = await InitializeEntriesAsync(reader, fs);
 
         var partialContainer = BuildPartialContainer(loadContext, path, entries, isSigValid, new PluginInfo
         {
             Id = pluginId,
             Name = pluginName,
             Version = Version.Parse(pluginVersion),
-            Authors = pluginAuthors.Split(','),
-            Dependencies = dependencies,
+            Authors = ImmutableCollectionsMarshal.AsImmutableArray(pluginAuthors.Split(',')),
+            Dependencies = ImmutableCollectionsMarshal.AsImmutableArray(dependencies),
             Description = pluginDescription,
             ProjectUrl = Uri.TryCreate(projectUrl, UriKind.Absolute, out var uri) ? uri : null,
             AssemblyName = pluginAssembly
@@ -81,9 +82,7 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
         //Can't load until those plugins are loaded
         if (partialContainer.Info.Dependencies.Any(x => x.Required && !this.pluginManager.Plugins.Any(d => d.Info.Id == x.Id)))
         {
-            var str = partialContainer.Info.Dependencies.Length > 1 ? "has multiple hard dependencies." :
-                $"has a hard dependency on {partialContainer.Info.Dependencies.First().Id}.";
-            this.logger.LogWarning("{name} {message}. Will Attempt to load after.", partialContainer.Info.Name, str);
+            Log.WaitingForDependencies(this.logger, partialContainer.Info.Name);
             return partialContainer;
         }
 
@@ -92,7 +91,7 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
             var plugin = this.pluginManager.Plugins.FirstOrDefault(x => x.Info.Id == depends.Id);
 
             partialContainer.AddDependency(plugin.LoadContext);
-            this.logger.LogInformation("Added {depends} as a dependency for {name}", plugin.Info.Name, partialContainer.Info.Name);
+            Log.DependencyAdded(this.logger, plugin.Info.Name, partialContainer.Info.Name);
         }
 
         var mainAssembly = this.InitializePlugin(partialContainer);
@@ -124,7 +123,7 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
         return mainAssembly;
     }
 
-    internal PluginContainer HandlePlugin(PluginContainer pluginContainer, Assembly assembly)
+    internal static PluginContainer HandlePlugin(PluginContainer pluginContainer, Assembly assembly)
     {
         Type? pluginType = assembly.GetTypes().FirstOrDefault(type => type.IsSubclassOf(typeof(PluginBase)));
 
@@ -132,12 +131,10 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
         if (pluginType == null || pluginType.GetConstructor([]) == null)
         {
             plugin = default;
-            logger.LogError("Loaded assembly contains no type implementing PluginBase with public parameterless constructor.");
 
             throw new InvalidOperationException("Loaded assembly contains no type implementing PluginBase with public parameterless constructor.");
         }
 
-        logger.LogDebug("Creating plugin instance...");
         plugin = (PluginBase)Activator.CreateInstance(pluginType)!;
 
         pluginContainer.PluginAssembly = assembly;
@@ -159,7 +156,7 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
             var verifyHash = await sha384.ComputeHashAsync(fs);
             if (!verifyHash.SequenceEqual(hash))
             {
-                this.logger.LogWarning("File {filePath} integrity does not match specified hash.", path);
+                Log.HashMismatch(this.logger, path);
                 return false;
             }
         }
@@ -189,7 +186,7 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
     /// Steps through the plugin file stream and initializes each file entry found.
     /// </summary>
     /// <returns>A dictionary that contains file entries with the key as the FileName and value as <see cref="PluginFileEntry"/>.</returns>
-    private async Task<Dictionary<string, PluginFileEntry>> InitializeEntriesAsync(BinaryReader reader, FileStream fs)
+    private static async Task<Dictionary<string, PluginFileEntry>> InitializeEntriesAsync(BinaryReader reader, FileStream fs)
     {
         var entryCount = reader.ReadInt32();
         var entries = new Dictionary<string, PluginFileEntry>(entryCount);
@@ -310,31 +307,43 @@ public sealed class PackedPluginProvider(PluginManager pluginManager, ILogger lo
 
         return libsWithSymbols;
     }
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Debug, Message = "Plugin {PluginName} will load after its required dependencies")]
+        public static partial void WaitingForDependencies(ILogger logger, string pluginName);
+
+        [LoggerMessage(Level = LogLevel.Debug, Message = "Added {DependencyName} as a dependency of {PluginName}")]
+        public static partial void DependencyAdded(ILogger logger, string dependencyName, string pluginName);
+
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Skipping plugin {Path}: its contents do not match its hash")]
+        public static partial void HashMismatch(ILogger logger, string path);
+    }
 }
 
 
-public readonly struct DotNetDeps
+public readonly record struct DotNetDeps
 {
     public required RuntimeTarget RuntimeTarget { get; init; }
 
     public required Dictionary<string, JsonElement> Targets { get; init; }
 }
 
-public readonly struct DotNetTarget
+public readonly record struct DotNetTarget
 {
     public Dictionary<string, string>? Dependencies { get; init; }
 
     public Dictionary<string, JsonElement>? Runtime { get; init; }
 }
 
-public readonly struct DependencyRuntime
+public readonly record struct DependencyRuntime
 {
     public required string AssemblyVersion { get; init; }
 
     public required string FileVersion { get; init; }
 }
 
-public readonly struct RuntimeTarget
+public readonly record struct RuntimeTarget
 {
     public required string Name { get; init; }
 

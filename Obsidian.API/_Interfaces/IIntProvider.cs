@@ -1,4 +1,10 @@
-﻿namespace Obsidian.API;
+﻿using Obsidian.API.World.Generator.RandomSources;
+
+namespace Obsidian.API;
+
+/// <summary>
+/// Samples an int, like vanilla's IntProvider.
+/// </summary>
 public interface IIntProvider : IRegistryResource
 {
     /// <summary>
@@ -9,7 +15,11 @@ public interface IIntProvider : IRegistryResource
     /// </remarks>
     public new string Type { get; }
 
-    public int Get();
+    public int MinValue { get; }
+
+    public int MaxValue { get; }
+
+    public int Sample(IRandomSource random);
 }
 
 public static class IntProviderTypes

@@ -510,7 +510,7 @@ public sealed class MainCommandModule : CommandModuleBase
     }
 #endif
 
-    private ChatMessage SendCommandUsage(string commandUsage)
+    private static ChatMessage SendCommandUsage(string commandUsage)
     {
         var commands = ChatMessage.Simple("");
         var commandSuggest = commandUsage.Contains(' ') ? $"{commandUsage.Split(" ").FirstOrDefault()} " : commandUsage;

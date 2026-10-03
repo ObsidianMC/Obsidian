@@ -19,7 +19,7 @@ public sealed class NoiseSetting
 
     public int SeaLevel { get; set; }
 
-    public ClimateParameter[] SpawnTarget { get; set; }
+    public ImmutableArray<ClimateParameter> SpawnTarget { get; set; } = [];
 
     public ISurfaceRule SurfaceRule { get; set; }
 }

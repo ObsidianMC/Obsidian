@@ -1,5 +1,5 @@
 ﻿namespace Obsidian.API;
-public readonly struct IntProviderRangeValue
+public readonly record struct IntProviderRangeValue
 {
     public required int MinInclusive { get; init; }
 
