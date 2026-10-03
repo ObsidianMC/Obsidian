@@ -699,9 +699,9 @@ public sealed partial class Player : Avatar, IPlayer
                 return !this.IsInView(x, z);
             });
 
-            for (var x = centerX - this.chunkViewDistance; x <= centerX + this.chunkViewDistance; x++)
+            for (var x = centerX - this.chunkViewDistance - 1; x <= centerX + this.chunkViewDistance + 1; x++)
             {
-                for (var z = centerZ - this.chunkViewDistance; z <= centerZ + this.chunkViewDistance; z++)
+                for (var z = centerZ - this.chunkViewDistance - 1; z <= centerZ + this.chunkViewDistance + 1; z++)
                 {
                     var value = NumericsHelper.IntsToLong(x, z);
                     if (this.IsInView(x, z) && !LoadedChunks.Contains(value))
@@ -729,6 +729,11 @@ public sealed partial class Player : Avatar, IPlayer
         try
         {
             await this.SendReadyChunksAsync();
+        }
+        catch (OperationCanceledException)
+        {
+            // The client disconnected while chunks were queued for it, which shouldn't reach the level's tick: the server
+            // loop takes a cancellation for its own shutdown.
         }
         finally
         {
@@ -767,15 +772,15 @@ public sealed partial class Player : Avatar, IPlayer
         return this.pendingChunks.Count == 0;
     }
 
-    // Vanilla's ChunkTrackingView.isWithinDistance: a cylinder around the center that reaches the view distance along the
-    // axes.
+    // Vanilla's ChunkTrackingView.contains, which counts the neighbors the client needs to render the edge: a cylinder
+    // around the center that reaches one chunk past the view distance along the axes.
     private bool IsInView(int chunkX, int chunkZ)
     {
         if (this.chunkCacheCenter is not var (centerX, centerZ))
             return false;
 
-        long dx = Math.Max(0, Math.Abs(chunkX - centerX) - 1);
-        long dz = Math.Max(0, Math.Abs(chunkZ - centerZ) - 1);
+        long dx = Math.Max(0, Math.Abs(chunkX - centerX) - 2);
+        long dz = Math.Max(0, Math.Abs(chunkZ - centerZ) - 2);
         return dx * dx + dz * dz < (long)this.chunkViewDistance * this.chunkViewDistance;
     }
 
