@@ -6,12 +6,13 @@ using Obsidian.Hosting;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Net.Http;
 using System.Threading;
 
 namespace Obsidian.WorldData;
 
 public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceProvider serviceProvider,
-    IServerEnvironment serverEnvironment, ILevelFactory levelFactory) : BackgroundService, IWorldManager
+    IServerEnvironment serverEnvironment, ILevelFactory levelFactory, IHttpClientFactory httpClientFactory) : BackgroundService, IWorldManager
 {
     private readonly ILogger<WorldManager> logger = logger;
     private readonly ConcurrentDictionary<string, IWorld> worlds = [];
@@ -34,6 +35,10 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         try
         {
             this.levelFactory.Initialize();
+
+            // Structure templates come from Mojang's server jar, which Obsidian can't ship.
+            StructureRegistry.Initialize(await VanillaServerJar.ExtractStructuresAsync(httpClientFactory.CreateClient(),
+                ServerConstants.VanillaCachePath, ServerConstants.ProtocolDescription, this.logger, stoppingToken));
 
             await this.LoadWorldsAsync(stoppingToken);
 

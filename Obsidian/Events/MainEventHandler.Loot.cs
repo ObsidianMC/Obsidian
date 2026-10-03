@@ -13,19 +13,26 @@ public sealed partial class MainEventHandler
     // Vanilla shares one set of random sequences between a server's levels and saves it; these live per level, in memory.
     private static readonly ConditionalWeakTable<ILevel, RandomSequences> randomSequences = [];
 
+    // The containers filled from world generation's block entities, until the block entity is gone. Also the lock that
+    // makes one player fill each.
+    private static readonly ConditionalWeakTable<DataBlockEntity, BaseContainer> generatedContainers = [];
+
     /// <summary>
-    /// Fills <paramref name="container"/> from the loot table world generation stored in <paramref name="blockEntity"/>,
-    /// like vanilla's <c>RandomizableContainer.unpackLootTable</c> when <paramref name="player"/> opens the container.
-    /// Does nothing when there's no loot table.
+    /// Fills <paramref name="container"/> with what world generation stored in <paramref name="blockEntity"/>: the loot
+    /// of its loot table, like vanilla's <c>RandomizableContainer.unpackLootTable</c> when <paramref name="player"/> opens
+    /// the container, or else the items its template placed.
     /// </summary>
     /// <remarks>
     /// The caller replaces the block entity with the filled container, which also drops the loot table so it isn't
     /// generated again.
     /// </remarks>
-    private static void UnpackLootTable(DataBlockEntity blockEntity, BaseContainer container, Player player)
+    private static void FillGeneratedContainer(DataBlockEntity blockEntity, BaseContainer container, Player player)
     {
         if (!blockEntity.Data.TryGetTag<NbtTag<string>>("LootTable", out var lootTable))
+        {
+            BlockEntityNbt.LoadContents(blockEntity.Data, container);
             return;
+        }
 
         var seed = blockEntity.Data.TryGetTag<NbtTag<long>>("LootTableSeed", out var lootTableSeed) ? lootTableSeed.Value : 0L;
 

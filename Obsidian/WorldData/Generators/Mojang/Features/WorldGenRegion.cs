@@ -34,6 +34,9 @@ internal sealed class WorldGenRegion : IWorldGenLevel
     private readonly IChunk?[] area = new IChunk?[AreaWidth * AreaWidth];
     private readonly FinalHeightmaps?[] areaHeightmaps = new FinalHeightmaps?[AreaWidth * AreaWidth];
 
+    // The writable chunks written to, a bit per AreaIndex.
+    private int writtenAreas;
+
     // The sections of the writable chunks, indexed by AreaIndex * sectionCount + section index, so block reads and writes
     // skip the chunk; null for chunks of other types or build ranges, which are read through the chunk.
     private readonly ChunkSection?[] areaSections;
@@ -176,6 +179,7 @@ internal sealed class WorldGenRegion : IWorldGenLevel
 
         var info = knownState ? writeInfos[stateId] : WriteInfo(block!);
         heightmaps.Update(position.X, position.Y, position.Z, info & HeightmapMask);
+        this.writtenAreas |= 1 << index;
 
         // Like DataBlockEntity.ApplyBlockChange, which blocks without a block entity don't need.
         if ((info & BlockEntityBit) != 0)
@@ -184,6 +188,21 @@ internal sealed class WorldGenRegion : IWorldGenLevel
             chunk.RemoveBlockEntity(position.X, position.Y, position.Z);
 
         return true;
+    }
+
+    /// <summary>
+    /// Writes the final heightmaps of the chunks written to that already stored theirs (past
+    /// <see cref="ChunkGenStage.initialize_light"/>) back to them, like the heightmaps a vanilla level chunk updates with each
+    /// write. Chunks still generating store theirs once they're finished.
+    /// </summary>
+    public void StoreFinishedHeightmaps()
+    {
+        for (var index = 0; index < this.area.Length; index++)
+        {
+            if ((this.writtenAreas >> index & 1) != 0 && this.area[index] is IChunk chunk && chunk.ChunkStatus >= ChunkGenStage.initialize_light
+                && this.areaHeightmaps[index] is FinalHeightmaps heightmaps)
+                WorldgenHeightmaps.StoreFinal(chunk, heightmaps);
+        }
     }
 
     public int GetHeight(HeightmapType type, int x, int z)

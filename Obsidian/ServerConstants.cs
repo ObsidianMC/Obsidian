@@ -31,4 +31,9 @@ public static class ServerConstants
     public const string PermissionPath = "permissions";
     public const string AcceptedKeysPath = "accepted_keys";
     public const string PluginsPath = "plugins";
+
+    /// <summary>
+    /// Where vanilla data extracted from Mojang's server jar is cached, per version.
+    /// </summary>
+    public const string VanillaCachePath = "cache";
 }

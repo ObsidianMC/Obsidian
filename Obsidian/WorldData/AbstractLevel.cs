@@ -39,6 +39,9 @@ public abstract partial class AbstractLevel : ILevel
     // A failed background generation job, rethrown by the next ManageChunksAsync so failures still reach the server.
     private Exception? generationFailure;
 
+    // The generation jobs finished since the last FlushRegionsAsync started, so disposal knows whether to save again.
+    private int jobsSinceFlush;
+
     // The chunks generation jobs may write, counted per job, which aren't unloaded meanwhile: a job writes up to 2 chunks
     // from its own (its neighbors' decorations reach theirs), and writes to an unloaded chunk would be lost.
     private readonly ConcurrentDictionary<long, int> generationPins = [];
@@ -580,6 +583,7 @@ public abstract partial class AbstractLevel : ILevel
             region = new Region(regionX, regionZ, FolderPath, minY: this.MinY, height: this.Height)
             {
                 LockChunk = this.Generator.LockChunkAsync,
+                FluidTickLock = this.Fluids.TickLock,
                 EntitiesLoaded = this.QueueEntitySpawn,
                 SaveStructureStarts = this.Generator is IStructureStartStorage storage ? storage.SaveStructureStarts : null
             };
@@ -715,6 +719,7 @@ public abstract partial class AbstractLevel : ILevel
         {
             this.PinGenerationArea(jobX, jobZ, -1);
             this.queuedChunks.TryRemove(job, out _);
+            Interlocked.Increment(ref this.jobsSinceFlush);
             this.generationSlots.Release();
         }
     }
@@ -724,6 +729,7 @@ public abstract partial class AbstractLevel : ILevel
         await simulationGate.WaitAsync();
         try
         {
+            Interlocked.Exchange(ref this.jobsSinceFlush, 0);
             SavingEntities = true;
             await Task.WhenAll(Regions.Select(pair => pair.Value.FlushAsync()));
         }
@@ -999,16 +1005,15 @@ public abstract partial class AbstractLevel : ILevel
 
         this.optionsMonitor.Dispose();
 
-        // Waits out the generation jobs, holding every slot so no new one starts, and saves what they generated since the
-        // last save.
-        var generating = this.generationSlots.CurrentCount < Environment.ProcessorCount;
+        // Waits out the generation jobs, holding every slot so no new one starts, and saves what jobs finished since the
+        // last save started, including jobs that were still running during the server's save on stop.
         for (var i = 0; i < Environment.ProcessorCount; i++)
             await this.generationSlots.WaitAsync();
 
         if (Interlocked.Exchange(ref this.generationFailure, null) is Exception failure)
             Log.ChunkGenerationFailed(this.Logger, failure);
 
-        if (generating)
+        if (Volatile.Read(ref this.jobsSinceFlush) != 0)
             await this.FlushRegionsAsync();
 
         foreach (var region in Regions.Values)

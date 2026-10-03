@@ -67,22 +67,9 @@ internal static class BlockEntityNbt
     /// </summary>
     public static IBlockEntity Load(NbtCompound tag, string id, Vector position)
     {
-        if (tag.TryGetTag<NbtList>("Items", out var items) && !tag.HasTag("LootTable") && CreateContainer(id, position) is BaseContainer container)
+        if (tag.HasTag("Items") && !tag.HasTag("LootTable") && CreateContainer(id, position) is BaseContainer container)
         {
-            foreach (var itemTag in items.OfType<NbtCompound>())
-            {
-                if (!itemTag.TryGetTag<NbtTag<byte>>("Slot", out var slot) || slot.Value >= container.Size)
-                    continue;
-
-                container.SetItem(slot.Value, itemTag.ItemFromNbt());
-            }
-
-            if (tag.TryGetTag("CustomName", out var customName) && customName.TextFromNbt() is ChatMessage name)
-            {
-                container.CustomName = name;
-                container.Title = name;
-            }
-
+            LoadContents(tag, container);
             return (IBlockEntity)container;
         }
 
@@ -94,6 +81,30 @@ internal static class BlockEntityNbt
         }
 
         return new DataBlockEntity { Id = id, BlockPosition = position, Data = data };
+    }
+
+    /// <summary>
+    /// Fills <paramref name="container"/> with the <c>Items</c> and <c>CustomName</c> saved in <paramref name="tag"/>,
+    /// like vanilla's <c>BaseContainerBlockEntity.loadAdditional</c>. Slots past the container's size are skipped.
+    /// </summary>
+    public static void LoadContents(NbtCompound tag, BaseContainer container)
+    {
+        if (tag.TryGetTag<NbtList>("Items", out var items))
+        {
+            foreach (var itemTag in items.OfType<NbtCompound>())
+            {
+                if (!itemTag.TryGetTag<NbtTag<byte>>("Slot", out var slot) || slot.Value >= container.Size)
+                    continue;
+
+                container.SetItem(slot.Value, itemTag.ItemFromNbt());
+            }
+        }
+
+        if (tag.TryGetTag("CustomName", out var customName) && customName.TextFromNbt() is ChatMessage name)
+        {
+            container.CustomName = name;
+            container.Title = name;
+        }
     }
 
     private static NbtCompound Header(string id, Vector position) => new()

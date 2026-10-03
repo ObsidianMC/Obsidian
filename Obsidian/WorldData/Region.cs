@@ -69,6 +69,12 @@ public class Region : IRegion
     /// </summary>
     internal Func<int, int, NbtCompound?, NbtCompound?>? SaveStructureStarts { get; init; }
 
+    /// <summary>
+    /// The lock fluid ticks run under (the level's <see cref="Fluids.LevelFluids.TickLock"/>), held while a chunk is
+    /// serialized so its blocks and fluid ticks are saved as of the same moment.
+    /// </summary>
+    internal Lock FluidTickLock { get; init; } = new();
+
     // The dimension's build range, which decides the section count of loaded chunks.
     private readonly int minY;
     private readonly int height;
@@ -251,8 +257,9 @@ public class Region : IRegion
         NbtList? entities = null;
         await using (NbtWriterStream writer = new(strm, ChunkCompression, ""))
         {
-            // Take the chunk and its entities in the same snapshot under the generator's lock.
+            // Snapshot blocks, fluid ticks and entities together; take the generator's lock before the fluid lock.
             using (this.LockChunk is null ? null : await this.LockChunk(chunk.X, chunk.Z))
+            lock (this.FluidTickLock)
             {
                 var loadedStarts = (chunk as Chunk)?.StructureStarts;
                 var structureStarts = this.SaveStructureStarts is null ? loadedStarts : this.SaveStructureStarts(chunk.X, chunk.Z, loadedStarts);

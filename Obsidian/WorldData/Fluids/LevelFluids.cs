@@ -88,6 +88,12 @@ internal sealed class LevelFluids : IFluidLevelAccess
     }
 
     /// <summary>
+    /// The lock fluid ticks and fluid block changes run under. Holding it keeps them from running, for code that reads a
+    /// complete chunk's blocks and ticks together (saving it). Take it after generation's chunk locks, never before.
+    /// </summary>
+    public Lock TickLock => this.sync;
+
+    /// <summary>
     /// Runs <paramref name="action"/> while no fluid tick runs, for code that changes complete chunks' blocks or ticks
     /// from another thread (generation post-processing a chunk next to complete ones).
     /// </summary>

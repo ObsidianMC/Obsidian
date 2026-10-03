@@ -238,6 +238,9 @@ internal sealed class ChunkBuilder
             if (!updated.IsSameState(block))
                 region.SetBlock(position, updated);
         }
+
+        // Fluids may have spread into finished neighbors, whose heightmaps are already stored.
+        region.StoreFinishedHeightmaps();
     }
 
     /// <param name="trackHeightmaps">

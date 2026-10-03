@@ -335,3 +335,6 @@ Obsidian/config.json
 .vscode/launch.json
 .vscode/tasks.json
 Obsidian.Tests/Local*.cs
+
+# Vanilla data extracted from Mojang's server jar at runtime
+cache/
