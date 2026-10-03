@@ -65,7 +65,7 @@ public partial class Mob
             fallDistance = 0;
         else if (MovementFlags.HasFlag(MovementFlags.OnGround))
         {
-            var damage = MathF.Ceiling(fallDistance - 3);
+            var damage = MathF.Ceiling(fallDistance - SafeFallDistance);
             if (this is Creeper creeper)
                 creeper.FuseTicks = Math.Max(0, Math.Min(creeper.Fuse - 5, creeper.FuseTicks + (int)(fallDistance * 1.5f)));
             fallDistance = 0;
@@ -84,7 +84,7 @@ public partial class Mob
         }
         if (floor?.Material == Material.MagmaBlock && !IsFireImmune && !Sneaking)
             await ApplyDamageAsync(this, 1, true);
-        if (feet?.Material == Material.SweetBerryBush && !IsRemoved &&
+        if (this is not Fox && feet?.Material == Material.SweetBerryBush && !IsRemoved &&
             (LastPosition - Position).MagnitudeSquared() > 0.000025f)
             await ApplyDamageAsync(this, 1, true);
     }

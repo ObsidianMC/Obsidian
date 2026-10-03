@@ -18,7 +18,7 @@ internal sealed class MobProjectile : Entity
         Level = level;
         Type = type;
         Dimension = new EntityDimension { Width = type == EntityType.Fireball ? 1 : 0.3125f, Height = type == EntityType.Fireball ? 1 : 0.3125f };
-        NoGravity = type != EntityType.Snowball;
+        NoGravity = type is not EntityType.Snowball and not EntityType.LlamaSpit;
     }
     [System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
     internal MobProjectile(Mob owner, EntityType type, VectorF position, VectorF direction) : this(owner.Level, type)
@@ -30,9 +30,9 @@ internal sealed class MobProjectile : Entity
         BoundingBox = Dimension.CreateBBFromPosition(Position);
         if (direction.Magnitude > 0.0001f)
             direction /= direction.Magnitude;
-        Motion = direction * (type == EntityType.Snowball ? 1.6f : 0.2f);
-        acceleration = type == EntityType.Snowball ? VectorF.Zero : direction * 0.1f;
-        NoGravity = type != EntityType.Snowball;
+        Motion = direction * (type == EntityType.Snowball ? 1.6f : type == EntityType.LlamaSpit ? 1.5f : 0.2f);
+        acceleration = type is EntityType.Snowball or EntityType.LlamaSpit ? VectorF.Zero : direction * 0.1f;
+        NoGravity = type is not EntityType.Snowball and not EntityType.LlamaSpit;
     }
     public override void SpawnEntity(Velocity? velocity = null, int additionalData = 0) =>
         base.SpawnEntity(velocity ?? new Velocity(Motion.X, Motion.Y, Motion.Z), Owner?.EntityId ?? 0);
@@ -104,6 +104,7 @@ internal sealed class MobProjectile : Entity
                 {
                     EntityType.SmallFireball => target is Living { IsFireImmune: true } ? 0 : 5,
                     EntityType.Snowball => target is Blaze ? 3 : 0,
+                    EntityType.LlamaSpit => 1,
                     _ => target is Ghast && Owner is IPlayer ? 1000 : target is Living { IsFireImmune: true } ? 0 : 6
                 };
                 await target.DamageAsync(Owner ?? this, damage);
@@ -114,7 +115,7 @@ internal sealed class MobProjectile : Entity
             }
             if (Type == EntityType.Fireball)
                 await level.ExplodeAsync(this, 1, Owner);
-            if (Type != EntityType.Snowball)
+            if (Type is not EntityType.Snowball and not EntityType.LlamaSpit)
             {
                 var fire = (Vector)(Position - Motion * 0.05f).Floor();
                 if (terrain.GetBlock(fire)?.IsAir == true && terrain.GetBlock(new Vector(fire.X, fire.Y - 1, fire.Z)) is { } floor &&
@@ -124,7 +125,7 @@ internal sealed class MobProjectile : Entity
             await RemoveAsync();
             return;
         }
-        if (Type == EntityType.Snowball)
+        if (Type is EntityType.Snowball or EntityType.LlamaSpit)
             Motion = Motion * 0.99f - new VectorF(0, 0.03f, 0);
         else
             Motion = (Motion + acceleration) * 0.95f;
@@ -142,7 +143,7 @@ internal sealed class MobProjectile : Entity
     {
         base.ReadNbt(tag);
         if (tag.TryGetTagValue<int>("ObsidianLife", out var life)) age = Math.Clamp(life, 0, 600);
-        if (!EntityNbt.TryReadVector(tag, "ObsidianAcceleration", out acceleration) && Type != EntityType.Snowball && Motion.Magnitude > 0.001f)
+        if (!EntityNbt.TryReadVector(tag, "ObsidianAcceleration", out acceleration) && Type is not EntityType.Snowball and not EntityType.LlamaSpit && Motion.Magnitude > 0.001f)
             acceleration = Motion / Motion.Magnitude * 0.1f;
         if (tag.TryGetTag<NbtArray<int>>("Owner", out var owner) && owner.Count == 4)
             ownerUuid = EntityNbt.UuidFromInts(owner.GetArray());

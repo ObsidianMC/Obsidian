@@ -93,7 +93,8 @@ internal sealed class PathFinder(PathfinderMob mob)
     public MobPath? FindPath(VectorF target)
     {
         evaluator.Reset();
-        var start = evaluator.FindGround((int)MathF.Floor(mob.Position.X), (int)MathF.Floor(mob.Position.Z), mob.Position.Y);
+        var volume = VolumeMovement.UsesVolume(mob);
+        var start = volume ? mob.Position : evaluator.FindGround((int)MathF.Floor(mob.Position.X), (int)MathF.Floor(mob.Position.Z), mob.Position.Y);
         if (start is not VectorF startPosition)
             return null;
 
@@ -107,7 +108,6 @@ internal sealed class PathFinder(PathfinderMob mob)
         var closestDistance = Distance(first.Position, target);
         var order = 1;
 
-        // ponytail: bounded synchronous search; use snapshots and worker searches if profiling requires it.
         for (var visited = 0; visited < 1024 && open.TryDequeue(out var current, out _); visited++)
         {
             if (!ReferenceEquals(nodes[Key(current.Position)], current) || current.Closed)
@@ -124,12 +124,12 @@ internal sealed class PathFinder(PathfinderMob mob)
             if (distance <= 1)
                 return BuildPath(current, true);
 
-            foreach (var next in evaluator.GetNeighbors(current.Position))
+            foreach (var next in volume ? VolumeMovement.Neighbors(mob, current.Position) : evaluator.GetNeighbors(current.Position))
             {
                 if (Distance(next, startPosition) > range)
                     continue;
 
-                var cost = current.Cost + Distance(current.Position, next) + evaluator.GetCost(next);
+                var cost = current.Cost + Distance(current.Position, next) + (volume ? 0 : evaluator.GetCost(next));
                 var key = Key(next);
                 if (nodes.TryGetValue(key, out var previous) && previous.Cost <= cost)
                     continue;

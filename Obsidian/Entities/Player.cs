@@ -110,6 +110,8 @@ public sealed partial class Player : Avatar, IPlayer
     public bool Sleeping { get; set; }
     public bool InHorseInventory { get; set; }
     public bool Respawning { get; internal set; }
+    private bool pendingRespawnChunks;
+    private int respawnChunkRetryTicks;
 
     public short AttackTime { get; set; }
     public short DeathTime { get; set; }
@@ -135,7 +137,7 @@ public sealed partial class Player : Avatar, IPlayer
     }
 
     public int Ping => Client.Ping;
-    public int FoodLevel { get; set; }
+    public int FoodLevel { get; set; } = 20;
     public int FoodTickTimer { get; set; }
     public int XpLevel { get; set; }
     public int XpTotal { get; set; }
@@ -146,7 +148,7 @@ public sealed partial class Player : Avatar, IPlayer
     public float Absorption { get; set; }
     public float FallDistance { get; set; }
     public float FoodExhaustionLevel { get; set; }
-    public float FoodSaturationLevel { get; set; }
+    public float FoodSaturationLevel { get; set; } = 5;
 
     public Entity? LeftShoulder { get; set; }
     public Entity? RightShoulder { get; set; }
@@ -349,13 +351,72 @@ public sealed partial class Player : Avatar, IPlayer
     public async ValueTask KickAsync(string reason) => await this.Client.DisconnectAsync(reason);
     public async ValueTask KickAsync(ChatMessage reason) => await Client.DisconnectAsync(reason);
 
+    internal async Task TransferDimensionAsync(ILevel destination)
+    {
+        CancelEating();
+        Vehicle?.Dismount();
+        var origin = Level;
+        var spawn = destination.LevelData.SpawnPosition;
+        await destination.GetChunkAsync((Vector)spawn.Floor());
+        await origin.DestroyEntityAsync(this);
+        origin.TryRemovePlayer(this);
+        foreach (var observer in origin.GetPlayersInRange(Position, float.MaxValue).OfType<Player>())
+            observer.visiblePlayers.Remove(this);
+        Level = destination;
+        Position = spawn;
+        LastPosition = spawn;
+        BoundingBox = Dimension.CreateBBFromPosition(spawn);
+        HeadY = spawn.Y + 1.62;
+        Motion = VectorF.Zero;
+        FallDistance = 0;
+        foodPosition = null;
+        destination.TryAddPlayer(this);
+        destination.TryAddEntity(this);
+        await RespawnAsync();
+        await Client.QueuePacketAsync(new SetDefaultSpawnPositionPacket(new()
+        { DimensionName = destination.DimensionName, Position = (Vector)spawn.Floor() }, 0, 0));
+        await Client.QueuePacketAsync(new SetTimePacket(destination.LevelData.Time, destination.LevelData.DayTime, true));
+        await Client.QueuePacketAsync(new GameEventPacket(destination.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
+        foreach (var (id, effect) in ActivePotionEffects)
+            await Client.QueuePacketAsync(new UpdateMobEffectPacket(EntityId, id, effect.CurrentDuration)
+            { Amplifier = effect.EffectData.Amplifier, Flags = EntityEffectFlags.ShowParticles | EntityEffectFlags.ShowIcon });
+        await SaveAsync();
+    }
+
     public async Task RespawnAsync(DataKept dataKept = DataKept.Metadata)
     {
+        if (Respawning) return;
+        Respawning = true;
         if (!Alive)
         {
-            // if unalive, reset health and set location to world spawn
+            CancelEating();
+            Vehicle?.Dismount();
+            ClearPotionEffects();
+            FireTicks = 0;
+            Burning = false;
+            Motion = VectorF.Zero;
+            FallDistance = 0;
+            Absorption = 0;
+            AbsorbtionAmount = 0;
+            FoodLevel = 20;
+            FoodSaturationLevel = 5;
+            FoodExhaustionLevel = 0;
+            FoodTickTimer = 0;
+            foodPosition = null;
+            Sprinting = false;
+            Swimming = false;
+            Sleeping = false;
+            Pose = Pose.Standing;
+            Yaw = 0;
+            Pitch = 0;
+            MovementFlags = MovementFlags.None;
             Health = 20f;
+            await Level.DestroyEntityAsync(this);
             Position = Level.LevelData.SpawnPosition;
+            LastPosition = Position;
+            BoundingBox = Dimension.CreateBBFromPosition(Position);
+            HeadY = Position.Y + 1.62;
+            Level.TryAddEntity(this);
         }
 
         CodecRegistry.TryGetDimension(Level.DimensionName, out var codec);
@@ -380,10 +441,7 @@ public sealed partial class Player : Avatar, IPlayer
 
         visiblePlayers.Clear();
 
-        Respawning = true;
         TeleportId = 0;
-
-        await UpdateChunksAsync(true, 2);
 
         await Client.QueuePacketAsync(new PlayerPositionPacket
         {
@@ -393,25 +451,30 @@ public sealed partial class Player : Avatar, IPlayer
             TeleportId = 0
         });
 
+        await Client.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
+        var (chunkX, chunkZ) = Position.ToChunkCoord();
+        await Client.QueuePacketAsync(new SetChunkCacheCenterPacket(chunkX, chunkZ));
+        pendingRespawnChunks = !await UpdateChunksAsync(true, 2);
+        respawnChunkRetryTicks = 20;
+        Level.TryAddEntity(this);
         Respawning = false;
+        await Client.QueuePacketAsync(new SetHealthPacket(Health, FoodLevel, FoodSaturationLevel));
+        await SendPlayerInfoAsync();
+        await TrySpawnPlayerAsync(Position);
+        await SynchronizeTrackedEntitiesAsync();
     }
 
     //TODO make IDamageSource 
     public async override ValueTask KillAsync(IEntity source, ChatMessage deathMessage)
     {
-        //await this.client.QueuePacketAsync(new PlayerDied
-        //{
-        //    PlayerId = this.EntityId,
-        //    EntityId = source != null ? source.EntityId : -1,
-        //    Message = deathMessage as ChatMessage
-        //});
-        // TODO implement new death packets
-
-        await Client.QueuePacketAsync(new GameEventPacket(RespawnReason.EnableRespawnScreen));
-        await RemoveAsync();
-
-        if (source is Player attacker)
-            attacker.visiblePlayers.Remove(this);
+        Health = 0;
+        CancelEating();
+        Vehicle?.Dismount();
+        await Client.QueuePacketAsync(new SetHealthPacket(0, FoodLevel, FoodSaturationLevel));
+        await Client.QueuePacketAsync(new PlayerCombatKillPacket { PlayerID = EntityId, Message = deathMessage });
+        PacketBroadcaster.QueuePacketToLevel(Level, new EntityEventPacket { EntityId = EntityId, Event = 3 });
+        foreach (var observer in Level.GetPlayersInRange(Position, float.MaxValue).OfType<Player>())
+            observer.visiblePlayers.Remove(this);
     }
 
     public override void Write(INetStreamWriter writer)
@@ -613,6 +676,7 @@ public sealed partial class Player : Avatar, IPlayer
 
     public async override ValueTask UpdateAsync(VectorF position, MovementFlags movementFlags)
     {
+        if (!Alive || Respawning) return;
         if (Vehicle != null)
             position = Position;
         await base.UpdateAsync(position, movementFlags);
@@ -626,6 +690,7 @@ public sealed partial class Player : Avatar, IPlayer
 
     public async override ValueTask UpdateAsync(VectorF position, Angle yaw, Angle pitch, MovementFlags movementFlags)
     {
+        if (!Alive || Respawning) return;
         if (Vehicle != null)
             position = Position;
         await base.UpdateAsync(position, yaw, pitch, movementFlags);
@@ -639,6 +704,7 @@ public sealed partial class Player : Avatar, IPlayer
 
     public async override ValueTask UpdateAsync(Angle yaw, Angle pitch, MovementFlags movementFlags)
     {
+        if (!Alive || Respawning) return;
         await base.UpdateAsync(yaw, pitch, movementFlags);
 
         await PickupNearbyItemsAsync();

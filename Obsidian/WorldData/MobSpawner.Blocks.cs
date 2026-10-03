@@ -40,7 +40,7 @@ internal sealed partial class MobSpawner
             if (mob == null || level.LevelData.Difficulty == Difficulty.Peaceful &&
                 (mob.Hostile || mob is Zombie or Skeleton or Creeper))
                 continue;
-            if (terrain.GetBlock(blockPoint) is not { } feet || (type == EntityType.Squid ? feet.Material != Material.Water : feet.IsLiquid) ||
+            if (terrain.GetBlock(blockPoint) is not { } feet || (IsAquatic(type) ? feet.Material != Material.Water : feet.IsLiquid) ||
                 !terrain.IsFree(mob.Dimension.CreateBBFromPosition(point)))
                 continue;
             var blockLight = chunk.GetLightLevel(blockPoint.X, blockPoint.Y, blockPoint.Z, LightType.Block);

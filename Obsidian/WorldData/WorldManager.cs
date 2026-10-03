@@ -69,27 +69,26 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
             if (!CodecRegistry.TryGetDimension(serverWorld.DefaultDimension, out var defaultCodec) || !CodecRegistry.TryGetDimension("minecraft:overworld", out defaultCodec))
                 throw new UnreachableException("Failed to get default dimension codec.");
 
-            if (!await world.LoadAsync(defaultCodec))
+            var worldLoaded = await world.LoadAsync(defaultCodec);
+            foreach (var dimensionName in serverWorld.ChildDimensions)
             {
-                Log.CreatingWorld(this.logger, serverWorld.Name);
-
-                foreach (var dimensionName in serverWorld.ChildDimensions)
+                if (!CodecRegistry.TryGetDimension(dimensionName, out var codec))
                 {
-                    if (!CodecRegistry.TryGetDimension(dimensionName, out var codec))
-                    {
-                        Log.UnknownDimension(this.logger, dimensionName, serverWorld.Name);
-                        continue;
-                    }
-
-                    var dimension = this.levelFactory.CreateDimension(world, codec.Name, dimensionName);
-
-                    dimension.Initialize(codec);
-                    world.RegisterDimension(codec, dimension);
-
+                    Log.UnknownDimension(this.logger, dimensionName, serverWorld.Name);
+                    continue;
+                }
+                var dimension = this.levelFactory.CreateDimension(world, codec.Name, dimensionName);
+                dimension.Initialize(codec);
+                world.RegisterDimension(codec, dimension);
+                if (!await dimension.LoadAsync(codec))
+                {
                     await dimension.GenerateAsync();
                     await dimension.SaveAsync();
                 }
-
+            }
+            if (!worldLoaded)
+            {
+                Log.CreatingWorld(this.logger, serverWorld.Name);
                 await world.GenerateAsync();
                 await world.SaveAsync();
             }

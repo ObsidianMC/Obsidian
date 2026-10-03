@@ -4,7 +4,7 @@ using Obsidian.Net.Packets.Play.Clientbound;
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:squid")]
-public sealed partial class Squid : Mob
+public partial class Squid : AgeableMob
 {
     private VectorF swimming;
     private int changeDirection;
@@ -12,11 +12,13 @@ public sealed partial class Squid : Mob
     protected override bool UsesAi => true;
     protected override bool TakesFallDamage => false;
     protected override string? SoundName => "squid";
+    protected virtual ParticleType InkParticleType => ParticleType.SquidInk;
     protected override int GetExperienceReward() => Random.Next(1, 4);
-    protected override ValueTask TickMobAsync()
+    protected override async ValueTask TickMobAsync()
     {
+        await base.TickMobAsync();
         if (MobBitMask.HasFlag(MobBitmask.NoAi))
-            return default;
+            return;
         if (--changeDirection <= 0 || MovementFlags.HasFlag(MovementFlags.HorizontalCollision))
         {
             changeDirection = Random.Next(20, 70);
@@ -34,7 +36,6 @@ public sealed partial class Squid : Mob
             Yaw = MathF.Atan2(-Motion.X, Motion.Z) * 180 / MathF.PI;
             Pitch = -MathF.Atan2(Motion.Y, MathF.Sqrt(Motion.X * Motion.X + Motion.Z * Motion.Z)) * 180 / MathF.PI;
         }
-        return default;
     }
     protected override VectorF Travel()
     {
@@ -65,17 +66,17 @@ public sealed partial class Squid : Mob
             changeDirection = 100;
             PlayMobSound("squirt");
             PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new LevelParticlesPacket
-            { Position = Position, ParticleCount = 30, Offset = new VectorF(0.3f), Data = new InkParticle() });
+            { Position = Position, ParticleCount = 30, Offset = new VectorF(0.3f), Data = new InkParticle(InkParticleType) });
         }
         return default;
     }
     protected override ValueTask OnDeathAsync(IEntity source)
     {
-        DropItem(Material.InkSac, Random.Next(1, 4));
+        if (!IsBaby) DropItem(Material.InkSac, Random.Next(1, 4));
         return default;
     }
-    private sealed class InkParticle : ParticleData
+    private sealed class InkParticle(ParticleType type) : ParticleData
     {
-        public override ParticleType ParticleType => ParticleType.SquidInk;
+        public override ParticleType ParticleType => type;
     }
 }

@@ -54,7 +54,7 @@ public sealed class BreakDoorGoal(Zombie mob) : Goal
         }
         if (ticks != 240)
             return;
-        // ponytail: mob-griefing is always enabled until the server exposes vanilla gamerules.
+
         var block = mob.Terrain.GetBlock(door);
         await mob.Level.SetBlockAsync(door, BlocksRegistry.Air, true);
         var upper = door + new Vector(0, 1, 0);

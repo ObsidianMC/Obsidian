@@ -29,6 +29,14 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// The builder generating the level's chunks, available once <see cref="Init"/> ran.
     /// </summary>
     internal ChunkBuilder Builder => this.builder;
+    internal Vector? FindDolphinTreasure(Vector position)
+    {
+        if (builder.Structures is not StructureManager manager)
+            return null;
+        var targets = manager.StructuresPerStep.SelectMany(step => step).Where(structure =>
+            structure.Identifier is "minecraft:buried_treasure" or "minecraft:shipwreck" or "minecraft:ocean_ruin_cold" or "minecraft:ocean_ruin_warm").ToArray();
+        return new StructureLocator(manager).FindNearest(targets, position, 16, false);
+    }
     private ILevel world;
 
     private readonly SemaphoreSlim[] chunkLocks = [.. Enumerable.Range(0, LockStripeCount).Select(_ => new SemaphoreSlim(1, 1))];

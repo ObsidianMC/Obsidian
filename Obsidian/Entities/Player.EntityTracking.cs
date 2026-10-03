@@ -9,7 +9,6 @@ public partial class Player
     internal async ValueTask SynchronizeTrackedEntitiesAsync()
     {
         var visible = new HashSet<int>();
-        // ponytail: scan visible entities each tick; use chunk tracker subscriptions if crowded servers make this costly.
         foreach (var entity in Level.GetNonPlayerEntitiesInRange(Position, Server.Configuration.EntityBroadcastRangePercentage).OfType<Entity>())
         {
             var (x, z) = entity.Position.ToChunkCoord();

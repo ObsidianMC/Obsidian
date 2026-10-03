@@ -132,7 +132,6 @@ public abstract partial class AbstractLevel : ILevel
         if (GetLoadedChunk(x, z) == null)
             return false;
 
-        // ponytail: player proximity covers normal ticking; use chunk tickets for forced entity ticking.
         return Players.Values.Any(player => player.Gamemode != Gamemode.Spectator &&
             Math.Abs(Region.ChunkOf(player.Position).X - x) <= Configuration.SimulationDistance &&
             Math.Abs(Region.ChunkOf(player.Position).Z - z) <= Configuration.SimulationDistance);
@@ -980,6 +979,20 @@ public abstract partial class AbstractLevel : ILevel
 
                     return;
                 }
+            }
+        }
+        if (this is IDimension && await GetChunkAsync(0, 0, false) is { } dimensionChunk)
+        {
+            for (var x = 0; x < 16; x++)
+            for (var z = 0; z < 16; z++)
+            {
+                var y = dimensionChunk.Heightmaps[HeightmapType.MotionBlocking].GetHeight(x, z);
+                var ground = dimensionChunk.GetBlock(x, y, z);
+                if (ground.IsAir || ground.IsLiquid || IsOutsideBuildHeight(y + 2) ||
+                    !dimensionChunk.GetBlock(x, y + 1, z).IsAir || !dimensionChunk.GetBlock(x, y + 2, z).IsAir) continue;
+                LevelData.SpawnPosition = new VectorF(x + 0.5f, y + 1, z + 0.5f);
+                Log.SpawnSet(this.Logger, this.Name, LevelData.SpawnPosition);
+                return;
             }
         }
         Log.SpawnNotFound(this.Logger, this.Name);

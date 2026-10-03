@@ -395,7 +395,8 @@ public class Entity : IEquatable<Entity>, IEntity
 
             if (living is Player player)
             {
-                await player.Client.QueuePacketAsync(new SetHealthPacket(Health, 20, 5));
+                player.AddExhaustion(0.1f);
+                await player.Client.QueuePacketAsync(new SetHealthPacket(Math.Max(0, Health), player.FoodLevel, player.FoodSaturationLevel));
 
                 if (!player.Alive)
                     await player.KillAsync(source, ChatMessage.Simple("You died xd"));

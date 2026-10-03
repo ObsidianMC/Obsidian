@@ -126,7 +126,6 @@ public partial class Zombie : PathfinderMob
                 level.GetLoadedChunk(blockPosition.X >> 4, blockPosition.Z >> 4) is not { } chunk ||
                 chunk.GetLightLevel(blockPosition.X, blockPosition.Y, blockPosition.Z, LightType.Block) != 0)
                 continue;
-            // ponytail: the server has no mob-spawning gamerule registry; consult it here when one exists.
             var reinforcement = (Zombie)Level.GetNewEntitySpawner().WithEntityType(EntityType.Zombie).AtPosition(point).Spawn();
             reinforcement.AlertedTarget = target;
             reinforcement.ReinforcementChance -= 0.05f;

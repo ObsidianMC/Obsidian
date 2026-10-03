@@ -15,14 +15,19 @@ public partial class UseItemPacket
     {
         this.Hand = reader.ReadVarInt<Hand>();
         this.Sequence = reader.ReadVarInt();
+        reader.ReadSingle();
+        reader.ReadSingle();
     }
 
     public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
-        await server.EventDispatcher.ExecuteEventAsync(new PlayerInteractEventArgs(player, server)
+        var args = new PlayerInteractEventArgs(player, server)
         {
             Item = this.Hand == Hand.MainHand ? player.GetHeldItem() : player.GetOffHandItem(),
             Hand = this.Hand,
-        });
+        };
+        await server.EventDispatcher.ExecuteEventAsync(args);
+        if (!args.IsCancelled && player is Obsidian.Entities.Player concrete)
+            concrete.StartEating(Hand);
     }
 }

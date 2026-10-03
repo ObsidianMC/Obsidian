@@ -169,6 +169,20 @@ public sealed class MobAi
     [InlineData(EntityType.SnowGolem)]
     [InlineData(EntityType.Squid)]
     [InlineData(EntityType.Wolf)]
+    [InlineData(EntityType.Bat)]
+    [InlineData(EntityType.Bee)]
+    [InlineData(EntityType.Fox)]
+    [InlineData(EntityType.Frog)]
+    [InlineData(EntityType.Llama)]
+    [InlineData(EntityType.SkeletonHorse)]
+    [InlineData(EntityType.Tadpole)]
+    [InlineData(EntityType.GlowSquid)]
+    [InlineData(EntityType.Dolphin)]
+    [InlineData(EntityType.Donkey)]
+    [InlineData(EntityType.Axolotl)]
+    [InlineData(EntityType.Goat)]
+    [InlineData(EntityType.Panda)]
+    [InlineData(EntityType.Parrot)]
     public void MobSavesRoundTripIdentityPositionHealthAndNoAi(EntityType type)
     {
         var mob = Obsidian.Entities.Factories.EntitySpawner.CreateMob(null!, type)!;

@@ -14,6 +14,19 @@ internal sealed partial class MobSpawner(AbstractLevel level)
 {
     private static readonly Dictionary<string, Dictionary<string, SpawnerMob[]>> biomeSpawns = LoadBiomeSpawns();
     private static readonly SpawnerMob[] fortressSpawns = LoadFortressSpawns();
+    private static readonly (string Name, int Cap, bool Rare)[] spawnCategories =
+    [("monster", 70, false), ("creature", 10, true), ("ambient", 15, false), ("axolotls", 5, false),
+        ("underground_water_creature", 5, false), ("water_creature", 5, false), ("water_ambient", 20, false)];
+    private static readonly Dictionary<string, string> mobCategories = biomeSpawns.Values.SelectMany(categories => categories)
+        .SelectMany(category => category.Value.Select(mob => (mob.Type, Category: category.Key)))
+        .GroupBy(entry => entry.Type).ToDictionary(group => group.Key, group => group.First().Category);
+    internal static string SpawnCategory(EntityType type) => type switch
+    {
+        EntityType.Blaze or EntityType.Silverfish or EntityType.Bogged or EntityType.Parched => "monster",
+        EntityType.Cat or EntityType.Camel or EntityType.SkeletonHorse => "creature",
+        _ => mobCategories.GetValueOrDefault(EntityNbt.TypeId(type), "misc")
+    };
+    internal static bool IsAquatic(EntityType type) => type is EntityType.Squid or EntityType.GlowSquid or EntityType.Dolphin or EntityType.Axolotl or EntityType.Tadpole;
     private static SpawnerMob[] LoadFortressSpawns()
     {
         using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Obsidian.Assets.worldgen.structures.nether.json")
@@ -23,6 +36,13 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             .GetProperty("spawns").Deserialize<SpawnerMob[]>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
     }
     private readonly Random random = new();
+    private readonly Dictionary<string, bool> supportedSpawns = [];
+    private bool SupportsSpawn(string id)
+    {
+        if (!supportedSpawns.TryGetValue(id, out var supported))
+            supportedSpawns[id] = supported = EntityNbt.TryParseType(id, out var type) && EntitySpawner.CreateMob(level, type) is { HasAi: true };
+        return supported;
+    }
     private long ticks;
 
     private static Dictionary<string, Dictionary<string, SpawnerMob[]>> LoadBiomeSpawns()
@@ -61,25 +81,30 @@ internal sealed partial class MobSpawner(AbstractLevel level)
         }
         var mobs = level.Regions.Values.SelectMany(region => region.Entities.Values).OfType<Mob>()
             .Where(mob => mob.Alive && level.IsMobTicking(mob.Position)).ToArray();
-        var monsters = mobs.Count(mob => mob is not Animal && mob is not Squid && !mob.PersistenceRequired);
-        var creatures = mobs.Count(mob => mob is Animal && !mob.PersistenceRequired);
-        var monsterCap = 70 * chunks.Count / 289;
-        var waterCreatures = mobs.Count(mob => mob is Squid && !mob.PersistenceRequired);
-        var waterCap = 5 * chunks.Count / 289;
-        var creatureCap = 10 * chunks.Count / 289;
+        var counts = mobs.Where(mob => !mob.PersistenceRequired && mob.CustomName == null)
+            .GroupBy(mob => SpawnCategory(mob.Type)).ToDictionary(group => group.Key, group => group.Count());
         foreach (var packed in chunks.OrderBy(_ => random.Next()))
         {
             NumericsHelper.LongToInts(packed, out var cx, out var cz);
             var chunk = level.GetLoadedChunk(cx, cz)!;
-            foreach (var spawner in chunk.GetBlockEntities().OfType<DataBlockEntity>().Where(entity => entity.Id == "minecraft:mob_spawner").ToArray())
-                TickSpawner(spawner, players);
-            if (waterCreatures < waterCap)
-                waterCreatures += SpawnGroup(chunk, "water_creature", players, waterCap - waterCreatures);
-            if (level.LevelData.Difficulty != Difficulty.Peaceful && monsters < monsterCap)
-                monsters += SpawnGroup(chunk, "monster", players, monsterCap - monsters);
-            if (ticks % 400 == 0 && creatures < creatureCap)
-                creatures += SpawnGroup(chunk, "creature", players, creatureCap - creatures);
+            foreach (var blockEntity in chunk.GetBlockEntities().OfType<DataBlockEntity>().ToArray())
+            {
+                if (blockEntity.Id == "minecraft:mob_spawner") TickSpawner(blockEntity, players);
+                else if (blockEntity.Id == "minecraft:beehive") TickHive(blockEntity);
+            }
+            if (chunk is Chunk concrete) TickFrogspawn(concrete);
+            TickThunder(chunk);
+            foreach (var category in spawnCategories)
+            {
+                if (category.Rare && ticks % 400 != 0 || category.Name == "monster" && level.LevelData.Difficulty == Difficulty.Peaceful)
+                    continue;
+                var cap = category.Cap * chunks.Count / 289;
+                var count = counts.GetValueOrDefault(category.Name);
+                if (count < cap)
+                    counts[category.Name] = count + SpawnGroup(chunk, category.Name, players, cap - count);
+            }
         }
+        if (ticks % 1200 == 0) SpawnVillageCats(mobs);
     }
 
     private int SpawnGroup(IChunk chunk, string category, IPlayer[] players, int remaining, bool generation = false)
@@ -111,6 +136,7 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             }
             choices = updated.ToArray();
         }
+        choices = choices.Where(entry => SupportsSpawn(entry.Type)).ToArray();
         var total = choices.Sum(choice => choice.Weight);
         if (total <= 0)
             return 0;
@@ -134,6 +160,11 @@ internal sealed partial class MobSpawner(AbstractLevel level)
         {
             x += random.Next(6) - random.Next(6);
             z += random.Next(6) - random.Next(6);
+            if (generation)
+            {
+                x = Math.Clamp(x, chunk.X * 16, chunk.X * 16 + 15);
+                z = Math.Clamp(z, chunk.Z * 16, chunk.Z * 16 + 15);
+            }
             if (level.GetLoadedChunk(x >> 4, z >> 4) is not { } candidateChunk)
                 continue;
             if (generation)
@@ -152,21 +183,42 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             var feet = terrain.GetBlock(new Vector(x, y, z));
             var floor = terrain.GetBlock(new Vector(x, y - 1, z));
             if (feet == null || floor == null || !terrain.IsFree(mob.Dimension.CreateBBFromPosition(position)) ||
-                (type == EntityType.Squid ? feet.Material != Material.Water || y <= seaLevel - 24 || y >= seaLevel - 1 :
-                    feet.IsLiquid || type != EntityType.Ghast && (floor.IsLiquid || BlockCollisionShapes.Get(floor).Count == 0)))
+                (IsAquatic(type) ? feet.Material != Material.Water :
+                    feet.IsLiquid || type is not EntityType.Ghast and not EntityType.Bat && (floor.IsLiquid || BlockCollisionShapes.Get(floor).Count == 0)))
                 continue;
             var sky = candidateChunk.GetLightLevel(x, y, z, LightType.Sky);
             var block = candidateChunk.GetLightLevel(x, y, z, LightType.Block);
             if (category == "creature")
             {
-                if ((type == EntityType.Mooshroom ? floor.Material != Material.Mycelium : type == EntityType.Wolf ?
-                        !TagsRegistry.Block.WolvesSpawnableOn.Entries.Contains(floor.RegistryId) : floor.Material != Material.GrassBlock) ||
+                if ((type switch
+                    {
+                        EntityType.Mooshroom => floor.Material != Material.Mycelium,
+                        EntityType.Wolf => !TagsRegistry.Block.WolvesSpawnableOn.Entries.Contains(floor.RegistryId),
+                        EntityType.Goat => !TagsRegistry.Block.GoatsSpawnableOn.Entries.Contains(floor.RegistryId),
+                        EntityType.Frog => !TagsRegistry.Block.FrogsSpawnableOn.Entries.Contains(floor.RegistryId),
+                        EntityType.Parrot => !TagsRegistry.Block.ParrotsSpawnableOn.Entries.Contains(floor.RegistryId),
+                        EntityType.Camel => floor.Material != Material.Sand,
+                        EntityType.Ocelot => floor.Material != Material.GrassBlock && !TagsRegistry.Block.Leaves.Entries.Contains(floor.RegistryId),
+                        _ => floor.Material != Material.GrassBlock
+                    }) ||
                     Math.Max(block, Math.Max(0, sky - (!generation && level.DayTime is >= 12000 and < 23000 ? 11 : 0))) <= 8)
                     continue;
             }
-            else if (category == "water_creature")
+            else if (IsAquatic(type))
             {
                 if (terrain.GetBlock(new Vector(x, y + 1, z))?.Material != Material.Water)
+                    continue;
+                if (type is EntityType.Squid or EntityType.Dolphin && (y <= seaLevel - 24 || y >= seaLevel - 1) ||
+                    type == EntityType.GlowSquid && (y >= seaLevel - 33 || Math.Max(block, sky) > 0))
+                    continue;
+                if (type == EntityType.Axolotl && !Enumerable.Range(1, 5).Any(depth => terrain.GetBlock(new Vector(x, y - depth, z))?.Material == Material.Clay))
+                    continue;
+            }
+            else if (type == EntityType.Bat)
+            {
+                var date = DateTime.Now;
+                var halloween = date.Month == 10 && date.Day >= 20 || date.Month == 11 && date.Day <= 3;
+                if (y >= seaLevel || !halloween && random.Next(2) == 0 || Math.Max(block, sky) > random.Next(halloween ? 7 : 4))
                     continue;
             }
             else if (level.DimensionName == "minecraft:the_nether")
@@ -200,7 +252,7 @@ internal sealed partial class MobSpawner(AbstractLevel level)
                 wolfVariant ??= wolf.Variant;
                 wolf.Variant = wolfVariant.Value;
             }
-            if (mob is Animal animal && spawned > 0 && random.NextSingle() < 0.05f)
+            if (mob is AgeableMob animal && mob is not Frog and not Parrot && spawned > 0 && random.NextSingle() < 0.05f)
                 animal.IsBaby = true;
             if (!terrain.IsFree(mob.Dimension.CreateBBFromPosition(position)) || level.GetEntitiesInRange(position, 2)
                 .Any(entity => MobTerrain.Overlaps(mob.Dimension.CreateBBFromPosition(position), entity.Dimension.CreateBBFromPosition(entity.Position))))

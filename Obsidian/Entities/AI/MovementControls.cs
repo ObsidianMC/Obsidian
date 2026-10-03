@@ -5,16 +5,16 @@ public class MoveControl(Mob mob)
     private VectorF? wantedPosition;
     private float speedModifier;
     private VectorF? strafe;
-    internal VectorF Acceleration { get; private set; }
+    internal VectorF Acceleration { get; set; }
     internal bool IsStrafing => strafe != null;
 
-    public void MoveTo(VectorF position, float speed)
+    public virtual void MoveTo(VectorF position, float speed)
     {
         wantedPosition = position;
         speedModifier = speed;
     }
 
-    public void Stop()
+    public virtual void Stop()
     {
         wantedPosition = null;
         strafe = null;
@@ -111,7 +111,7 @@ public sealed class LookControl(Mob mob)
                 var yaw = MathF.Atan2(difference.Z, difference.X) * 180 / MathF.PI - 90;
                 var pitch = -MathF.Atan2(difference.Y, MathF.Sqrt(difference.X * difference.X + difference.Z * difference.Z)) * 180 / MathF.PI;
                 HeadYaw = RotateTowards(HeadYaw.Degrees, yaw, yawSpeed);
-                mob.Pitch = RotateTowards(mob.Pitch.Degrees, pitch, pitchSpeed);
+                mob.Pitch = RotateTowards(WrapDegrees(mob.Pitch.Degrees), Math.Clamp(pitch, -40, 40), pitchSpeed);
             }
             wantedPosition = null;
         }
@@ -124,7 +124,14 @@ public sealed class LookControl(Mob mob)
         // Keep the head within the body's range while allowing idle head movement.
         var offset = WrapDegrees(HeadYaw.Degrees - mob.Yaw.Degrees);
         if (MathF.Abs(offset) > 75)
-            mob.Yaw = HeadYaw.Degrees - MathF.CopySign(75, offset);
+        {
+            if (mob.Navigator is Navigator { IsNavigating: true })
+                HeadYaw = mob.Yaw.Degrees + MathF.CopySign(75, offset);
+            else
+                mob.Yaw = RotateTowards(mob.Yaw.Degrees, HeadYaw.Degrees - MathF.CopySign(75, offset), 10);
+        }
+        if (mob.FlyingNavigation)
+            mob.Pitch = 0;
     }
 
     internal static float RotateTowards(float current, float target, float maximumChange) =>

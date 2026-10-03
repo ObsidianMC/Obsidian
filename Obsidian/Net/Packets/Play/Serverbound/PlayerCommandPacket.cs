@@ -33,6 +33,7 @@ public partial class PlayerCommandPacket
                 player.Sleeping = false;
                 break;
             case PlayerCommand.StartSprinting:
+                if (player.FoodLevel <= 6 && player.Gamemode is not Gamemode.Creative and not Gamemode.Spectator) break;
                 if ((bool)(block?.IsLiquid))
                     player.Swimming = true;
 

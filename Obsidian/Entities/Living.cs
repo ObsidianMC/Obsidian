@@ -49,6 +49,9 @@ public class Living : Entity, ILiving
     {
         foreach (var (potion, data) in activePotionEffects)
         {
+            if (this is Player && Alive && potion == (int)PotionEffect.Regeneration - 1 &&
+                data.CurrentDuration % Math.Max(1, 50 >> Math.Min(30, data.EffectData.Amplifier)) == 0)
+                Health = Math.Min(20, Health + 1);
             var poisonInterval = Math.Max(1, 25 >> Math.Min(30, data.EffectData.Amplifier));
             if (potion == (int)PotionEffect.Poison - 1 && data.CurrentDuration % poisonInterval == 0 && Health > 1)
             {

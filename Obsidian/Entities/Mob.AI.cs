@@ -21,8 +21,13 @@ public partial class Mob
     internal virtual float MovementSpeed => GetAttributeValue("minecraft:generic.movement_speed");
     internal virtual float JumpPower => 0.42f;
     protected virtual bool TakesFallDamage => true;
+    protected virtual float SafeFallDistance => 3;
+    protected virtual bool CanDespawn => this is not Animal;
     protected virtual bool WaterSensitive => false;
     internal virtual bool Hostile => false;
+    internal virtual bool FlyingNavigation => false;
+    internal virtual bool SwimmingNavigation => false;
+    internal virtual bool PanicsWhenHurt => true;
     protected virtual VectorF Travel() => EntityMovement.Move(this);
     internal float FollowRange => GetAttributeValue("minecraft:generic.follow_range");
     internal IEntity? AttackTarget { get; set; }
@@ -79,6 +84,8 @@ public partial class Mob
         GoalController ??= goals;
         if (this is PathfinderMob pathfinder)
             Navigator ??= new Navigator(pathfinder);
+        if (FlyingNavigation || SwimmingNavigation)
+            MoveControl = new VolumeMoveControl(this);
         initialized = true;
         RegisterGoals(goals, TargetGoals);
         if (finalizeSpawn)
@@ -200,7 +207,7 @@ public partial class Mob
             await RemoveAsync();
             return;
         }
-        if (Alive && this is not Animal && !PersistenceRequired && CustomName == null)
+        if (Alive && CanDespawn && !PersistenceRequired && CustomName == null)
         {
             var nearest = Level.GetPlayersInRange(Position, float.MaxValue).Where(player => player.Gamemode != Gamemode.Spectator)
                 .Select(player => (player.Position - Position).MagnitudeSquared()).DefaultIfEmpty(float.MaxValue).Min();

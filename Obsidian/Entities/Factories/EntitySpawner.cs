@@ -111,7 +111,7 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
 
     internal static Entity Create(EntityType type, ILevel level) => CreateMob(level, type) ?? (type switch
     {
-        EntityType.Fireball or EntityType.SmallFireball or EntityType.Snowball => new MobProjectile(level, type),
+        EntityType.Fireball or EntityType.SmallFireball or EntityType.Snowball or EntityType.LlamaSpit => new MobProjectile(level, type),
         EntityType.ExperienceOrb => new ExperienceOrb { Level = level, Value = 1 },
         EntityType.Horse => new Horse { Level = level },
         EntityType.Llama => new Llama { Level = level },
@@ -152,6 +152,20 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
         EntityType.Silverfish => new Silverfish { Level = level },
         EntityType.SnowGolem => new SnowGolem { Level = level },
         EntityType.Squid => new Squid { Level = level },
+        EntityType.Bat => new Bat { Level = level },
+        EntityType.Bee => new Bee { Level = level },
+        EntityType.Fox => new Fox { Level = level },
+        EntityType.Frog => new Frog { Level = level },
+        EntityType.Llama => new Llama { Level = level },
+        EntityType.SkeletonHorse => new SkeletonHorse { Level = level },
+        EntityType.Tadpole => new Tadpole { Level = level },
+        EntityType.GlowSquid => new GlowSquid { Level = level },
+        EntityType.Dolphin => new Dolphin { Level = level },
+        EntityType.Donkey => new Donkey { Level = level },
+        EntityType.Axolotl => new Axolotl { Level = level },
+        EntityType.Goat => new Goat { Level = level },
+        EntityType.Panda => new Panda { Level = level },
+        EntityType.Parrot => new Parrot { Level = level },
         EntityType.Wolf => new Wolf { Level = level },
         _ => null
     };

@@ -417,6 +417,9 @@ public class Region : IRegion
         int z = chunkCompound.GetInt("zPos");
 
         var chunk = new Chunk(x, z, this.minY, this.height);
+        if (chunkCompound.TryGetTag<NbtList>("ObsidianFrogspawnTicks", out var frogspawnTicks))
+            foreach (var tick in frogspawnTicks.OfType<NbtCompound>())
+                chunk.FrogspawnTicks[new Vector(tick.GetInt("x"), tick.GetInt("y"), tick.GetInt("z"))] = Math.Clamp(tick.GetInt("delay"), 1, 12000);
         if (chunkCompound.TryGetTagValue<long>("InhabitedTime", out var inhabitedTime))
             chunk.InhabitedTime = inhabitedTime;
 
@@ -706,6 +709,18 @@ public class Region : IRegion
 
             // Scheduled fluid ticks, like vanilla's "fluid_ticks".
             generated.FluidTicks.Write(writer);
+            var frogspawnTicks = generated.FrogspawnTicks.ToArray();
+            writer.WriteListStart("ObsidianFrogspawnTicks", NbtTagType.Compound, frogspawnTicks.Length);
+            foreach (var (position, delay) in frogspawnTicks)
+            {
+                writer.WriteCompoundStart();
+                writer.WriteInt("x", position.X);
+                writer.WriteInt("y", position.Y);
+                writer.WriteInt("z", position.Z);
+                writer.WriteInt("delay", delay);
+                writer.EndCompound();
+            }
+            writer.EndList();
         }
 
         writer.WriteInt("xPos", chunk.X);

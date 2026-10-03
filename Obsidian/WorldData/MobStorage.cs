@@ -11,7 +11,6 @@ internal sealed class MobStorage(AbstractLevel level) : IAsyncDisposable
     private readonly SemaphoreSlim gate = new(1, 1);
     private readonly Dictionary<long, RegionFile> files = [];
     private readonly HashSet<long> loadedChunks = [];
-    // ponytail: keep inactive mobs in their regions for this session; evict after saving if exploration makes memory usage significant.
     private readonly Dictionary<long, List<NbtCompound>> unsupported = [];
     private readonly ConcurrentDictionary<long, List<NbtCompound>> pending = [];
 

@@ -41,6 +41,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                     (entity is not Mob mob || mob.CanSee(attacker)))
                 {
                     await entity.DamageAsync(attacker, e.Damage > 0 ? e.Damage : 1);
+                    if (attacker is Player attackingPlayer) attackingPlayer.AddExhaustion(0.1f);
                     if (entity is Living && attacker is IPlayer owner)
                         Wolf.AlertOwnedWolves(owner, entity);
                 }

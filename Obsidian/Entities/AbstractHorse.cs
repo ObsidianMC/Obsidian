@@ -14,6 +14,9 @@ public class AbstractHorse : Animal
     internal int Temper { get; set; }
     internal bool HasRider => Rider != null;
     protected virtual bool CanBreedHorse => false;
+    protected virtual int MaximumTemper => 100;
+    protected virtual bool SupportsSaddle => true;
+    protected virtual bool IsBreedingFood(Material food) => food is Material.GoldenCarrot or Material.GoldenApple;
     protected override string? SoundName => Type == EntityType.ZombieHorse ? "zombie_horse" : "horse";
     internal override float JumpPower => GetAttributeValue("minecraft:horse.jump_strength");
 
@@ -47,12 +50,12 @@ public class AbstractHorse : Animal
         {
             var food = item!.Type;
             var heal = food switch { Material.HayBlock => 20, Material.Apple => 3, Material.GoldenCarrot => 4, Material.GoldenApple => 10, _ => 2 };
-            var breedingFood = food is Material.GoldenCarrot or Material.GoldenApple;
+            var breedingFood = IsBreedingFood(food);
             if (Health >= GetAttributeValue("minecraft:generic.max_health") && !IsBaby &&
-                (tamed || Temper >= 100) && !(tamed && breedingFood && Age == 0 && LoveTicks == 0))
+                (tamed || Temper >= MaximumTemper) && !(tamed && breedingFood && Age == 0 && LoveTicks == 0))
                 return;
             Health = Math.Min(GetAttributeValue("minecraft:generic.max_health"), Health + heal);
-            Temper = Math.Min(100, Temper + (breedingFood ? 5 : 3));
+            Temper = Math.Min(MaximumTemper, Temper + (breedingFood ? 5 : 3));
             if (IsBaby)
                 Age = Math.Min(0, Age + (food == Material.HayBlock ? 3600 : 1200));
             else if (tamed && breedingFood && Age == 0)
@@ -66,7 +69,7 @@ public class AbstractHorse : Animal
         }
         if (IsBaby)
             return;
-        if (tamed && !HasSaddle && item is { Count: > 0, Type: Material.Saddle })
+        if (SupportsSaddle && tamed && !HasSaddle && item is { Count: > 0, Type: Material.Saddle })
         {
             HasSaddle = true;
             await ConsumeItemAsync(player, slot);
@@ -111,7 +114,7 @@ public class AbstractHorse : Animal
         {
             if (Random.Next(50) != 0)
                 return;
-            if (Random.Next(100) < Temper)
+            if (Random.Next(MaximumTemper) < Temper)
             {
                 HorseMask |= HorseMask.Tamed;
                 Owner = Rider.Uuid;
@@ -121,13 +124,13 @@ public class AbstractHorse : Animal
             }
             else
             {
-                Temper = Math.Min(100, Temper + 5);
+                Temper = Math.Min(MaximumTemper, Temper + 5);
                 Dismount();
                 SendEntityEvent(6);
             }
             return;
         }
-        if (!HasSaddle)
+        if (!SupportsSaddle || !HasSaddle)
             return;
         Yaw = Rider.Yaw;
         Pitch = Rider.Pitch.Degrees * 0.5f;

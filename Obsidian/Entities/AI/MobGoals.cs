@@ -11,7 +11,14 @@ internal static class RandomPosition
         {
             var x = (int)MathF.Floor(mob.Position.X) + mob.Random.Next(-horizontalRange, horizontalRange + 1);
             var z = (int)MathF.Floor(mob.Position.Z) + mob.Random.Next(-horizontalRange, horizontalRange + 1);
-            var position = evaluator.FindGround(x, z, mob.Position.Y + mob.Random.Next(-3, 4));
+            VectorF? position;
+            if (VolumeMovement.UsesVolume(mob))
+            {
+                var point = new VectorF(x + 0.5f, mob.Position.Y + mob.Random.Next(-3, 4), z + 0.5f);
+                position = VolumeMovement.CanOccupy(mob, point) ? point : null;
+            }
+            else
+                position = evaluator.FindGround(x, z, mob.Position.Y + mob.Random.Next(-3, 4));
             if (position is not VectorF candidate)
                 continue;
 
@@ -65,7 +72,7 @@ public sealed class PanicGoal(PathfinderMob mob, float speed) : NavigationGoal(m
     private VectorF destination;
     public override bool CanUse()
     {
-        if (!Mob.Burning && (Mob.LastAttacker == null || Mob.AiTick - Mob.LastHurtTick > 100))
+        if (!Mob.Burning && (!Mob.PanicsWhenHurt || Mob.LastAttacker == null || Mob.AiTick - Mob.LastHurtTick > 100))
             return false;
 
         VectorF? position = null;

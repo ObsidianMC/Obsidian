@@ -11,13 +11,20 @@ namespace Obsidian.Entities;
 public partial class Mob
 {
     private NbtCompound? originalSave;
+    protected virtual void WriteAdditionalSave(INbtWriter writer) { }
+    protected virtual void ReadAdditionalSave(NbtCompound tag) { }
     private static readonly HashSet<string> saveFields = ["id", "UUID", "Pos", "Motion", "Rotation", "Health", "AbsorptionAmount", "Air", "Fire", "OnGround",
         "NoAI", "LeftHanded", "CanPickUpLoot", "PersistenceRequired", "Silent", "NoGravity", "Glowing", "CustomNameVisible", "CustomName",
         "attributes", "ObsidianEquipment", "Age", "InLove", "IsBaby", "ObsidianVariant", "Type", "EggLayTime", "IsChickenJockey", "Color",
         "Sheared", "sheared", "Size", "powered", "ignited", "Fuse", "ExplosionRadius", "ObsidianEffects", "InWaterTime",
         "DrownedConversionTime", "StrayConversionTime", "ObsidianPowderSnowTicks", "ObsidianStewEffect", "CanBreakDoors", "ObsidianReinforcementChance",
         "Tame", "Temper", "Owner", "EatingHaystack", "Bred", "Variant", "PlayerCreated", "Trusting", "Sitting", "variant",
-        "CollarColor", "LastPoseTick", "ObsidianDashCooldown", "AngerTime", "Pumpkin", "ObsidianCarriedBlock", "sound_variant", "AngryAt", "carriedBlockState"];
+        "CollarColor", "LastPoseTick", "ObsidianDashCooldown", "AngerTime", "Pumpkin", "ObsidianCarriedBlock", "sound_variant", "AngryAt", "carriedBlockState",
+        "BatFlags", "DarkTicksRemaining", "FromBucket", "ObsidianPregnant", "ObsidianPlayDead", "ObsidianHuntingCooldown", "ObsidianDryTicks",
+        "HasNectar", "HasStung", "ObsidianStingTicks", "ObsidianHivePos", "ObsidianFlowerPos", "GotFish", "Moistness", "ObsidianTreasurePos",
+        "Sleeping", "ObsidianTrusted", "ObsidianSecondTrusted", "ObsidianBreedingPlayer", "IsScreamingGoat", "HasLeftHorn", "HasRightHorn",
+        "ObsidianRamCooldown", "ObsidianLongJumpCooldown", "MainGene", "HiddenGene", "ObsidianEatingTicks", "SkeletonTrap", "SkeletonTrapTime",
+        "ObsidianSkeletonRider", "ChestedHorse", "Strength"];
     internal void WriteSave(INbtWriter writer, bool writeCompound = true)
     {
         if (writeCompound)
@@ -191,6 +198,7 @@ public partial class Mob
             writer.WriteShort("Fuse", (short)creeper.Fuse);
             writer.WriteByte("ExplosionRadius", (byte)creeper.ExplosionRadius);
         }
+        WriteAdditionalSave(writer);
         if (originalSave != null)
             foreach (var tag in originalSave)
                 if (!saveFields.Contains(tag.Key))
@@ -394,6 +402,7 @@ public partial class Mob
             if (tag.TryGetTagValue<short>("Fuse", out var fuse)) creeper.Fuse = Math.Max(1, (int)fuse);
             if (tag.TryGetTagValue<byte>("ExplosionRadius", out var radius)) creeper.ExplosionRadius = Math.Max(1, (int)radius);
         }
+        ReadAdditionalSave(tag);
         BoundingBox = Dimension.CreateBBFromPosition(Position);
     }
 

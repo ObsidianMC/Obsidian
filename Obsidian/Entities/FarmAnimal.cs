@@ -9,12 +9,13 @@ public abstract class FarmAnimal : Animal
     protected override bool UsesAi => true;
     protected virtual float PanicSpeed => 1.25f;
     protected virtual float TemptSpeed => 1.25f;
+    protected virtual bool UsesFloatGoal => true;
     protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Type: Material.Wheat };
     protected override int GetExperienceReward() => IsBaby ? 0 : Random.Next(1, 4);
 
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
-        actions.AddGoal(0, new FloatGoal(this));
+        if (UsesFloatGoal) actions.AddGoal(0, new FloatGoal(this));
         actions.AddGoal(1, new PanicGoal(this, PanicSpeed));
         actions.AddGoal(2, new BreedGoal(this));
         actions.AddGoal(3, new TemptGoal(this, CanEat, TemptSpeed));

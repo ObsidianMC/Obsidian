@@ -27,6 +27,7 @@ public partial class MainEventHandler
         }
 
         await world.SetBlockAsync(location, BlocksRegistry.Air, true);
+        if (player is Player concrete) concrete.AddExhaustion(0.005f);
 
         player.Client.SendPacket(new BlockUpdatePacket(location, BlocksRegistry.Air.GetHashCode()));
 
