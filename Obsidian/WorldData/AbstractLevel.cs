@@ -43,6 +43,10 @@ public abstract partial class AbstractLevel : ILevel
     // from its own (its neighbors' decorations reach theirs), and writes to an unloaded chunk would be lost.
     private readonly ConcurrentDictionary<long, int> generationPins = [];
 
+    // Set once DisposeAsync starts. A level can be disposed twice (by the server's shutdown and again by the host's
+    // container), and the second call would wait forever on the generation slots the first one keeps.
+    private int disposed;
+
     // The chunks kept loaded around the spawn, filled in once the spawn is known.
     protected readonly long[] spawnChunks;
 
@@ -986,6 +990,9 @@ public abstract partial class AbstractLevel : ILevel
 
     public async ValueTask DisposeAsync()
     {
+        if (Interlocked.Exchange(ref this.disposed, 1) != 0)
+            return;
+
         GC.SuppressFinalize(this);
 
         this.optionsMonitor.Dispose();
