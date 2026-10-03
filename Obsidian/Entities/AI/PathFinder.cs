@@ -4,11 +4,26 @@ internal sealed record MobPath(IReadOnlyList<VectorF> Nodes, bool ReachedTarget)
 
 internal sealed class WalkNodeEvaluator(PathfinderMob mob)
 {
+    private readonly Dictionary<(int X, int Z, float Y), VectorF?> groundCache = [];
     private bool CanOpenDoors => mob.Navigator is Navigator { CanOpenDoors: true };
     private static readonly (int X, int Z)[] directions =
     [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1)];
 
     public VectorF? FindGround(int x, int z, float currentY)
+    {
+        var key = (x, z, currentY);
+        if (!groundCache.TryGetValue(key, out var ground))
+        {
+            ground = EvaluateGround(x, z, currentY);
+            groundCache.Add(key, ground);
+        }
+        return ground;
+    }
+
+    // Terrain and door permissions can change between searches, including a previously blocked column.
+    public void Reset() => groundCache.Clear();
+
+    private VectorF? EvaluateGround(int x, int z, float currentY)
     {
         var candidates = new List<float>();
         for (var y = (int)MathF.Floor(currentY + 1); y >= (int)MathF.Floor(currentY - 3) - 1; y--)
@@ -77,6 +92,7 @@ internal sealed class PathFinder(PathfinderMob mob)
 
     public MobPath? FindPath(VectorF target)
     {
+        evaluator.Reset();
         var start = evaluator.FindGround((int)MathF.Floor(mob.Position.X), (int)MathF.Floor(mob.Position.Z), mob.Position.Y);
         if (start is not VectorF startPosition)
             return null;

@@ -70,7 +70,7 @@ internal sealed class MobSpawner(AbstractLevel level)
         var terrain = new MobTerrain(level);
         var x = chunk.X * 16 + random.Next(16);
         var z = chunk.Z * 16 + random.Next(16);
-        var top = chunk.Heightmaps[HeightmapType.MotionBlocking].GetHeight(x & 15, z & 15) + 1;
+        var top = GetSpawnHeight(chunk, x, z);
         var maxY = level.MinY + level.Height;
         var y = category == "creature" ? top : random.Next(level.MinY, Math.Clamp(top + 1, level.MinY + 1, maxY));
         var biome = chunk.GetBiome(x, Math.Clamp(y, level.MinY, maxY - 1), z);
@@ -114,7 +114,7 @@ internal sealed class MobSpawner(AbstractLevel level)
             if (level.GetLoadedChunk(x >> 4, z >> 4) is not { } candidateChunk)
                 continue;
             if (generation)
-                y = candidateChunk.Heightmaps[HeightmapType.MotionBlocking].GetHeight(x & 15, z & 15) + 1;
+                y = GetSpawnHeight(candidateChunk, x, z);
             var position = new VectorF(x + 0.5f, y, z + 0.5f);
             if (!generation && (players.Any(player => (player.Position - position).MagnitudeSquared() < 576) ||
                 !players.Any(player => (player.Position - position).MagnitudeSquared() <= 16384) ||
@@ -163,6 +163,15 @@ internal sealed class MobSpawner(AbstractLevel level)
             spawned++;
         }
         return spawned;
+    }
+
+    private static int GetSpawnHeight(IChunk chunk, int x, int z)
+    {
+        var y = chunk.Heightmaps[HeightmapType.MotionBlocking].GetHeight(x & 15, z & 15);
+        // Legacy generators store the occupied surface Y; newer ones store the first free Y.
+        if (y < chunk.MinY + chunk.Height && BlockCollisionShapes.Get(chunk.GetBlock(x, y, z)).Count > 0)
+            y++;
+        return y;
     }
 
     internal static bool IsSlimeChunk(long seed, int x, int z)

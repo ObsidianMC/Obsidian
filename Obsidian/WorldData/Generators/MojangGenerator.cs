@@ -103,6 +103,8 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
 
         if (this.world is AbstractLevel level)
         {
+            level.QueueChunkPopulation(chunk);
+
             // Like vanilla when a proto chunk becomes a level chunk; the level spawns the entities generation placed on its
             // own thread. They stay pending in the chunk until then, so a save in between keeps them.
             if (chunk is Chunk { PendingEntities.Count: > 0 } complete)

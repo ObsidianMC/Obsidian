@@ -43,6 +43,9 @@ public sealed partial class Server : IServer
     private readonly ILoggerFactory loggerFactory;
     private readonly IServiceProvider serviceProvider;
     private readonly IDisposable? configWatcher;
+    private readonly object shutdownLock = new();
+    private Task? shutdownTask;
+    private Task[] serverTasks = [];
 
     public IOptionsMonitor<WhitelistConfiguration> WhitelistConfiguration { get; }
 
@@ -220,34 +223,36 @@ public sealed partial class Server : IServer
 
         CommandsRegistry.Register(this);
 
-        var serverTasks = new List<Task>()
-        {
+        this.serverTasks = [
             LoopAsync(),
             ServerSaveAsync()
-        };
-
-        // Wait for worlds to load. Polling with a delay leaves the cores to world generation instead of spinning one.
-        while (!this.WorldManager.ReadyToJoin)
-        {
-            if (this.cancelTokenSource.IsCancellationRequested)
-                return;
-
-            await Task.Delay(50);
-        }
-
-        ScoreboardManager = new ScoreboardManager(this, this.loggerFactory);
-
-        await this.PluginManager.OnServerReadyAsync();
-
-        loadTimeStopwatch.Stop();
-        Log.Ready(this.logger, loadTimeStopwatch.Elapsed, this.Port);
-
-        await this.StartAsync(this.Port);
+        ];
 
         // A failure here reaches the host, which reports the crash.
         try
         {
-            await Task.WhenAll(serverTasks);
+            // Polling leaves the cores to world generation instead of spinning one.
+            while (!this.WorldManager.ReadyToJoin)
+            {
+                if (this.cancelTokenSource.IsCancellationRequested)
+                    return;
+
+                await Task.Delay(50);
+            }
+
+            if (this.cancelTokenSource.IsCancellationRequested)
+                return;
+
+            ScoreboardManager = new ScoreboardManager(this, this.loggerFactory);
+
+            await this.PluginManager.OnServerReadyAsync();
+
+            loadTimeStopwatch.Stop();
+            Log.Ready(this.logger, loadTimeStopwatch.Elapsed, this.Port);
+
+            await this.StartAsync(this.Port);
+
+            await Task.WhenAll(this.serverTasks);
         }
         finally
         {
@@ -267,17 +272,29 @@ public sealed partial class Server : IServer
         await CommandHandler.ProcessCommand(context);
     }
 
-    public async Task StopAsync()
+    public Task StopAsync()
+    {
+        lock (this.shutdownLock)
+            return this.shutdownTask ??= this.StopCoreAsync();
+    }
+
+    private async Task StopCoreAsync()
     {
         await cancelTokenSource.CancelAsync();
 
-        this.socket.Close();
+        this.socket?.Close();
 
-        await WorldManager.FlushLoadedWorldsAsync();
-        await WorldManager.DisposeAsync();
-        await this.PluginManager.DisposeAsync();
+        try
+        {
+            await Task.WhenAll(this.serverTasks);
+        }
+        finally
+        {
+            await WorldManager.DisposeAsync();
+            await this.PluginManager.DisposeAsync();
 
-        await this.userCache.SaveAsync();
+            await this.userCache.SaveAsync();
+        }
     }
 
     public bool AddPlayer(IPlayer player)
@@ -375,6 +392,7 @@ public sealed partial class Server : IServer
         {
             TickStage = $"failed: {ex.GetType().Name}: {ex.Message}";
             logger.LogError(ex, "The game tick loop failed");
+            await this.cancelTokenSource.CancelAsync();
             throw;
         }
 

@@ -8,8 +8,8 @@ namespace Obsidian.Entities;
 public sealed partial class ExperienceOrb : Entity
 {
     private int age;
-    private VectorF motion = new((Globals.Random.NextFloat() * 2 - 1) * 0.2f,
-        Globals.Random.NextFloat() * 0.4f, (Globals.Random.NextFloat() * 2 - 1) * 0.2f);
+    private VectorF motion = new((Globals.Random.NextSingle() * 2 - 1) * 0.2f,
+        Globals.Random.NextSingle() * 0.4f, (Globals.Random.NextSingle() * 2 - 1) * 0.2f);
     public int Value { get; init; }
 
     public ExperienceOrb() => Type = EntityType.ExperienceOrb;

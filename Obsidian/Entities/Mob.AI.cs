@@ -19,6 +19,7 @@ public partial class Mob
     internal virtual float EyeHeight => Dimension.Height * 0.85f;
     internal VectorF EyePosition => Position + new VectorF(0, EyeHeight, 0);
     internal virtual float MovementSpeed => GetAttributeValue("minecraft:generic.movement_speed");
+    internal virtual float JumpPower => 0.42f;
     internal float FollowRange => GetAttributeValue("minecraft:generic.follow_range");
     internal IEntity? AttackTarget { get; set; }
     internal IEntity? AlertedTarget { get; set; }
@@ -116,6 +117,16 @@ public partial class Mob
         await RemoveAsync();
         Level.SpawnEntity(replacement);
         return replacement;
+    }
+
+    protected async ValueTask ConsumeInteractionItemAsync(IPlayer player, Hand hand)
+    {
+        if (player.Gamemode == Gamemode.Creative)
+            return;
+        var slot = hand == Hand.OffHand ? 45 : player.CurrentHeldItemSlot;
+        player.Inventory.RemoveItem(slot, 1);
+        await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
+        { ContainerId = 0, Slot = (short)slot, SlotData = player.Inventory.GetItem(slot) });
     }
 
     protected async ValueTask DamageInteractionToolAsync(IPlayer player, Hand hand, int amount = 1)

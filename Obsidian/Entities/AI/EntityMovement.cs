@@ -16,7 +16,7 @@ internal static class EntityMovement
             if (inWater || inLava)
                 velocity.Y += 0.04f;
             else if (grounded && jumpingMob.TryJump())
-                velocity.Y = 0.42f;
+                velocity.Y = jumpingMob.JumpPower;
         }
 
         var bounds = mob.Dimension.CreateBBFromPosition(mob.Position);

@@ -45,6 +45,8 @@ public partial class PlayerCommandPacket
                 player.Sprinting = false;
                 break;
             case PlayerCommand.StartJumpWithHorse:
+                if (player is Player { Vehicle: Camel camel })
+                    camel.RequestDash(player, JumpBoost);
                 break;
             case PlayerCommand.StopJumpWithHorse:
                 break;

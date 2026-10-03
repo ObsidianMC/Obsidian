@@ -30,6 +30,7 @@ public abstract class Goal : IGoal
 public sealed class GoalSelector : IGoalController
 {
     private readonly List<WrappedGoal> goals = [];
+    private readonly List<WrappedGoal> conflicts = [];
     public bool IsPaused { get; private set; }
     public bool IsExecuting => goals.Any(goal => goal.Running);
 
@@ -100,10 +101,18 @@ public sealed class GoalSelector : IGoalController
             if (entry.Running)
                 continue;
 
-            var conflicts = goals.Where(other => other.Running &&
-                (other.Goal.Flags & entry.Goal.Flags) != 0).ToArray();
-            if (conflicts.Any(other => other.Priority <= entry.Priority || !other.Goal.IsInterruptible) ||
-                !entry.Goal.CanUse())
+            conflicts.Clear();
+            var blocked = false;
+            foreach (var other in goals)
+            {
+                if (!other.Running || (other.Goal.Flags & entry.Goal.Flags) == 0)
+                    continue;
+
+                conflicts.Add(other);
+                if (other.Priority <= entry.Priority || !other.Goal.IsInterruptible)
+                    blocked = true;
+            }
+            if (blocked || !entry.Goal.CanUse())
                 continue;
 
             foreach (var conflict in conflicts)
@@ -112,6 +121,7 @@ public sealed class GoalSelector : IGoalController
             entry.Running = true;
             entry.Goal.Start();
         }
+        conflicts.Clear();
 
         foreach (var entry in goals)
         {

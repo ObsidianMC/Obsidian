@@ -152,6 +152,13 @@ public sealed class MobAi
     [InlineData(EntityType.Parched)]
     [InlineData(EntityType.Creeper)]
     [InlineData(EntityType.Slime)]
+    [InlineData(EntityType.Horse)]
+    [InlineData(EntityType.ZombieHorse)]
+    [InlineData(EntityType.Villager)]
+    [InlineData(EntityType.IronGolem)]
+    [InlineData(EntityType.Ocelot)]
+    [InlineData(EntityType.Cat)]
+    [InlineData(EntityType.Camel)]
     public void MobSavesRoundTripIdentityPositionHealthAndNoAi(EntityType type)
     {
         var mob = Obsidian.Entities.Factories.EntitySpawner.CreateMob(null!, type)!;
@@ -160,6 +167,27 @@ public sealed class MobAi
         mob.Health = 3;
         mob.PersistenceRequired = true;
         mob.MobBitMask = MobBitmask.NoAi;
+        if (mob is AbstractHorse horse)
+        {
+            horse.HorseMask = HorseMask.Tamed | HorseMask.HasBred;
+            horse.Temper = 40;
+            horse.Owner = System.Guid.Parse("01234567-89ab-cdef-0123-456789abcdef");
+        }
+        if (mob is Horse normalHorse) normalHorse.Variant = 0x0304;
+        if (mob is IronGolem golem) golem.PlayerCreated = true;
+        if (mob is Ocelot ocelot) ocelot.Trusting = true;
+        if (mob is Cat cat)
+        {
+            cat.Owner = System.Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffffff");
+            cat.OrderedToSit = true;
+            cat.Variant = 10;
+            cat.CollarColor = 3;
+        }
+        if (mob is Camel camel)
+        {
+            camel.LastPoseChangeTick = -123;
+            camel.DashCooldown = 20;
+        }
         using var writer = new Obsidian.Nbt.RawNbtWriter("");
         writer.WriteListStart("Entities", Obsidian.Nbt.NbtTagType.Compound, 1);
         mob.WriteSave(writer);
@@ -175,6 +203,160 @@ public sealed class MobAi
         Assert.Equal(3, restored.Health);
         Assert.True(restored.PersistenceRequired);
         Assert.Equal(MobBitmask.NoAi, restored.MobBitMask);
+        if (mob is AbstractHorse originalHorse)
+        {
+            var restoredHorse = Assert.IsAssignableFrom<AbstractHorse>(restored);
+            Assert.Equal(originalHorse.HorseMask, restoredHorse.HorseMask);
+            Assert.Equal(originalHorse.Temper, restoredHorse.Temper);
+            Assert.Equal(originalHorse.Owner, restoredHorse.Owner);
+        }
+        if (mob is Horse originalNormalHorse)
+            Assert.Equal(originalNormalHorse.Variant, Assert.IsType<Horse>(restored).Variant);
+        if (mob is IronGolem originalGolem)
+            Assert.Equal(originalGolem.PlayerCreated, Assert.IsType<IronGolem>(restored).PlayerCreated);
+        if (mob is Ocelot originalOcelot)
+            Assert.Equal(originalOcelot.Trusting, Assert.IsType<Ocelot>(restored).Trusting);
+        if (mob is Cat originalCat)
+        {
+            var restoredCat = Assert.IsType<Cat>(restored);
+            Assert.Equal(originalCat.Owner, restoredCat.Owner);
+            Assert.True(restoredCat.Tamed);
+            Assert.True(restoredCat.OrderedToSit);
+            Assert.Equal(originalCat.Variant, restoredCat.Variant);
+            Assert.Equal(originalCat.CollarColor, restoredCat.CollarColor);
+        }
+        if (mob is Camel originalCamel)
+        {
+            var restoredCamel = Assert.IsType<Camel>(restored);
+            Assert.Equal(originalCamel.LastPoseChangeTick, restoredCamel.LastPoseChangeTick);
+            Assert.Equal(originalCamel.DashCooldown, restoredCamel.DashCooldown);
+            Assert.True(restoredCamel.IsSitting);
+            Assert.Equal(Pose.Sitting, restoredCamel.Pose);
+        }
+    }
+
+    [Theory]
+    [InlineData(EntityType.Horse)]
+    [InlineData(EntityType.ZombieHorse)]
+    [InlineData(EntityType.SkeletonHorse)]
+    [InlineData(EntityType.Donkey)]
+    [InlineData(EntityType.Llama)]
+    [InlineData(EntityType.Camel)]
+    public void HorseFamilyMetadataMatches12111ClientFields(EntityType type)
+    {
+        var entity = Obsidian.Entities.Factories.EntitySpawner.Create(type, null!);
+        if (entity is Camel camel)
+            camel.LastPoseChangeTick = -123;
+        var fields = ReadMetadataTypes(entity);
+        Assert.Equal(EntityMetadataType.Boolean, fields[16]);
+        Assert.Equal(EntityMetadataType.Byte, fields[17]);
+        Assert.DoesNotContain(EntityMetadataType.OptionalLivingEntityReference, fields.Values);
+        if (type == EntityType.Horse)
+        {
+            Assert.Equal(EntityMetadataType.VarInt, fields[18]);
+            Assert.Equal(19, fields.Count);
+        }
+        else if (type is EntityType.Donkey or EntityType.Llama)
+        {
+            Assert.Equal(EntityMetadataType.Boolean, fields[18]);
+            if (type == EntityType.Llama)
+            {
+                Assert.Equal(EntityMetadataType.VarInt, fields[19]);
+                Assert.Equal(EntityMetadataType.VarInt, fields[20]);
+                Assert.Equal(21, fields.Count);
+            }
+            else
+                Assert.Equal(19, fields.Count);
+        }
+        else if (type == EntityType.Camel)
+        {
+            Assert.Equal(EntityMetadataType.Boolean, fields[18]);
+            Assert.Equal(EntityMetadataType.VarLong, fields[19]);
+            Assert.Equal(20, fields.Count);
+        }
+        else
+            Assert.Equal(18, fields.Count);
+    }
+
+    [Theory]
+    [InlineData(EntityType.Ocelot)]
+    [InlineData(EntityType.Cat)]
+    public void FelineMetadataMatches12111ClientFields(EntityType type)
+    {
+        var entity = Obsidian.Entities.Factories.EntitySpawner.Create(type, null!);
+        if (entity is Cat cat)
+        {
+            cat.Owner = System.Guid.Parse("01234567-89ab-cdef-0123-456789abcdef");
+            cat.Variant = 10;
+            cat.IsSitting = true;
+        }
+        var fields = ReadMetadataTypes(entity);
+        Assert.Equal(EntityMetadataType.Boolean, fields[16]);
+        if (type == EntityType.Ocelot)
+        {
+            Assert.Equal(EntityMetadataType.Boolean, fields[17]);
+            Assert.Equal(18, fields.Count);
+        }
+        else
+        {
+            Assert.Equal(EntityMetadataType.Byte, fields[17]);
+            Assert.Equal(EntityMetadataType.OptionalLivingEntityReference, fields[18]);
+            Assert.Equal(EntityMetadataType.CatVariant, fields[19]);
+            Assert.Equal(EntityMetadataType.Boolean, fields[20]);
+            Assert.Equal(EntityMetadataType.Boolean, fields[21]);
+            Assert.Equal(EntityMetadataType.VarInt, fields[22]);
+            Assert.Equal(23, fields.Count);
+        }
+    }
+
+    private static System.Collections.Generic.Dictionary<byte, EntityMetadataType> ReadMetadataTypes(Entity entity)
+    {
+        var buffer = new Obsidian.Net.NetworkBuffer();
+        entity.Write(buffer);
+        var reader = new Obsidian.Net.NetworkBuffer(buffer.AsSpan(0, buffer.Size).ToArray());
+        var fields = new System.Collections.Generic.Dictionary<byte, EntityMetadataType>();
+        while (reader.Offset < reader.Size)
+        {
+            var index = reader.ReadByte();
+            var fieldType = (EntityMetadataType)reader.ReadVarInt();
+            Assert.True(fields.TryAdd(index, fieldType), $"Duplicate metadata field {index}");
+            switch (fieldType)
+            {
+                case EntityMetadataType.Byte:
+                case EntityMetadataType.Boolean:
+                    reader.ReadByte();
+                    break;
+                case EntityMetadataType.VarInt:
+                case EntityMetadataType.Pose:
+                    reader.ReadVarInt();
+                    break;
+                case EntityMetadataType.Float:
+                    reader.ReadSingle();
+                    break;
+                case EntityMetadataType.VarLong:
+                    Assert.Equal(Assert.IsType<Camel>(entity).LastPoseChangeTick, reader.ReadVarLong());
+                    break;
+                case EntityMetadataType.CatVariant:
+                    Assert.Equal(Assert.IsType<Cat>(entity).Variant, reader.ReadVarInt());
+                    break;
+                case EntityMetadataType.OptionalLivingEntityReference:
+                    var cat = Assert.IsType<Cat>(entity);
+                    Assert.Equal(cat.Tamed, reader.ReadBoolean());
+                    if (cat.Tamed)
+                        Assert.Equal(cat.Owner, reader.ReadGuid());
+                    break;
+                case EntityMetadataType.Particles:
+                    Assert.Equal(0, reader.ReadVarInt());
+                    break;
+                case EntityMetadataType.OptionalTextComponent:
+                case EntityMetadataType.OptionalBlockPos:
+                    Assert.False(reader.ReadBoolean());
+                    break;
+                default:
+                    throw new System.InvalidOperationException($"Unexpected metadata type {fieldType}");
+            }
+        }
+        return fields;
     }
 
     private sealed class ProbeGoal(GoalFlags flags) : Goal

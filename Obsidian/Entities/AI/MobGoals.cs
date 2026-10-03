@@ -120,7 +120,7 @@ public sealed class LookAtPlayerGoal(Mob mob, float range) : Goal
             return false;
         player = mob.Level.GetPlayersInRange(mob.Position, range)
             .Where(target => target.Health > 0 && target.Gamemode != Gamemode.Spectator)
-            .OrderBy(target => (target.Position - mob.Position).MagnitudeSquared()).FirstOrDefault();
+            .MinBy(target => (target.Position - mob.Position).MagnitudeSquared());
         return player != null;
     }
     public override void Start() => endTick = mob.AiTick + 40 + mob.Random.Next(40);
@@ -165,7 +165,7 @@ public sealed class TemptGoal(Animal pig, Func<Obsidian.API.Inventory.ItemStack?
         if (pig.AiTick < cooldownEnd)
             return false;
         player = pig.Level.GetPlayersInRange(pig.Position, 10)
-            .Where(IsTempting).OrderBy(target => (target.Position - pig.Position).MagnitudeSquared()).FirstOrDefault();
+            .Where(IsTempting).MinBy(target => (target.Position - pig.Position).MagnitudeSquared());
         return player != null;
     }
     private bool IsTempting(IPlayer target) => target.Health > 0 && target.Gamemode != Gamemode.Spectator &&
@@ -202,7 +202,7 @@ public sealed class FollowParentGoal(Animal pig) : NavigationGoal(pig, 1.1f)
             MathF.Abs(target.Position.X - pig.Position.X) <= 8 + pig.Dimension.Width &&
             MathF.Abs(target.Position.Y - pig.Position.Y) <= 4 + pig.Dimension.Height &&
             MathF.Abs(target.Position.Z - pig.Position.Z) <= 8 + pig.Dimension.Width)
-            .OrderBy(target => (target.Position - pig.Position).MagnitudeSquared()).FirstOrDefault();
+            .MinBy(target => (target.Position - pig.Position).MagnitudeSquared());
         return parent != null && (parent.Position - pig.Position).MagnitudeSquared() >= 9;
     }
     public override bool CanContinue()
@@ -238,7 +238,7 @@ public sealed class BreedGoal(Animal pig) : NavigationGoal(pig, 1)
         if (!pig.CanBreed)
             return false;
         mate = pig.GetEntitiesNear(8).OfType<Animal>().Where(target => target.Type == pig.Type && target.CanBreed)
-            .OrderBy(target => (target.Position - pig.Position).MagnitudeSquared()).FirstOrDefault();
+            .MinBy(target => (target.Position - pig.Position).MagnitudeSquared());
         return mate != null;
     }
     public override void Start() => startTick = pig.AiTick;
@@ -269,7 +269,7 @@ public sealed class NearestAttackableTargetGoal(PathfinderMob zombie, Func<IEnti
             return false;
         candidate = zombie.Level.GetEntitiesInRange(zombie.Position, zombie.FollowRange)
             .Where(target => predicate(target) && zombie.IsValidTarget(target) && (!mustSee || zombie.CanSee(target)))
-            .OrderBy(target => (target.Position - zombie.Position).MagnitudeSquared()).FirstOrDefault();
+            .MinBy(target => (target.Position - zombie.Position).MagnitudeSquared());
         return candidate != null;
     }
     public override void Start()

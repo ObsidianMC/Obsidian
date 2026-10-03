@@ -15,7 +15,9 @@ public partial class Mob
         "NoAI", "LeftHanded", "CanPickUpLoot", "PersistenceRequired", "Silent", "NoGravity", "Glowing", "CustomNameVisible", "CustomName",
         "attributes", "ObsidianEquipment", "Age", "InLove", "IsBaby", "ObsidianVariant", "Type", "EggLayTime", "IsChickenJockey", "Color",
         "Sheared", "sheared", "Size", "powered", "ignited", "Fuse", "ExplosionRadius", "ObsidianEffects", "InWaterTime",
-        "DrownedConversionTime", "StrayConversionTime", "ObsidianPowderSnowTicks", "ObsidianStewEffect", "CanBreakDoors", "ObsidianReinforcementChance"];
+        "DrownedConversionTime", "StrayConversionTime", "ObsidianPowderSnowTicks", "ObsidianStewEffect", "CanBreakDoors", "ObsidianReinforcementChance",
+        "Tame", "Temper", "Owner", "EatingHaystack", "Bred", "Variant", "PlayerCreated", "Trusting", "Sitting", "variant",
+        "CollarColor", "LastPoseTick", "ObsidianDashCooldown"];
     internal void WriteSave(INbtWriter writer, bool writeCompound = true)
     {
         if (writeCompound)
@@ -88,6 +90,32 @@ public partial class Mob
             writer.WriteInt("Age", ageable.Age);
         if (this is Animal animal)
             writer.WriteInt("InLove", animal.LoveTicks);
+        if (this is AbstractHorse horse)
+        {
+            writer.WriteBool("Tame", horse.HorseMask.HasFlag(HorseMask.Tamed));
+            writer.WriteBool("Bred", horse.HorseMask.HasFlag(HorseMask.HasBred));
+            writer.WriteBool("EatingHaystack", horse.HorseMask.HasFlag(HorseMask.Eating));
+            writer.WriteInt("Temper", horse.Temper);
+            WriteOwner(writer, horse.Owner);
+            if (horse is Horse normalHorse)
+                writer.WriteInt("Variant", normalHorse.Variant);
+        }
+        if (this is Ocelot ocelot)
+            writer.WriteBool("Trusting", ocelot.Trusting);
+        if (this is Cat cat)
+        {
+            WriteOwner(writer, cat.Owner);
+            writer.WriteBool("Sitting", cat.OrderedToSit);
+            writer.WriteString("variant", $"minecraft:{Cat.VariantNames[cat.Variant]}");
+            writer.WriteString("CollarColor", Cat.DyeNames[cat.CollarColor]);
+        }
+        if (this is Camel camel)
+        {
+            writer.WriteLong("LastPoseTick", camel.LastPoseChangeTick);
+            writer.WriteInt("ObsidianDashCooldown", camel.DashCooldown);
+        }
+        if (this is IronGolem golem)
+            writer.WriteBool("PlayerCreated", golem.PlayerCreated);
         if (this is Zombie zombie)
         {
             writer.WriteBool("IsBaby", zombie.IsBaby);
@@ -176,7 +204,7 @@ public partial class Mob
         MobBitMask = (ReadFlag(tag, "NoAI") ? MobBitmask.NoAi : MobBitmask.None) |
             (ReadFlag(tag, "LeftHanded") ? MobBitmask.LeftHanded : MobBitmask.None);
         CanPickUpLoot = ReadFlag(tag, "CanPickUpLoot");
-        PersistenceRequired = ReadFlag(tag, "PersistenceRequired");
+        PersistenceRequired = ReadFlag(tag, "PersistenceRequired") || this is Villager or IronGolem;
         Silent = ReadFlag(tag, "Silent");
         NoGravity = ReadFlag(tag, "NoGravity");
         Glowing = ReadFlag(tag, "Glowing");
@@ -204,6 +232,49 @@ public partial class Mob
             ageable.Age = age;
         if (this is Animal animal && tag.TryGetTagValue<int>("InLove", out var love))
             animal.LoveTicks = love;
+        if (this is AbstractHorse horse)
+        {
+            horse.HorseMask = (ReadFlag(tag, "Tame") ? HorseMask.Tamed : HorseMask.None) |
+                (ReadFlag(tag, "Bred") ? HorseMask.HasBred : HorseMask.None);
+            if (tag.TryGetTagValue<int>("Temper", out var temper)) horse.Temper = Math.Clamp(temper, 0, 100);
+            horse.Owner = ReadOwner(tag);
+            if (horse is Horse normalHorse && tag.TryGetTagValue<int>("Variant", out var horseVariant))
+                normalHorse.Variant = horseVariant;
+        }
+        if (this is Ocelot ocelot)
+        {
+            ocelot.Trusting = ReadFlag(tag, "Trusting");
+            PersistenceRequired |= ocelot.Trusting;
+        }
+        if (this is Cat cat)
+        {
+            cat.Owner = ReadOwner(tag);
+            PersistenceRequired |= cat.Tamed;
+            cat.OrderedToSit = cat.Tamed && ReadFlag(tag, "Sitting");
+            cat.IsSitting = cat.OrderedToSit;
+            if (tag.TryGetTagValue<string>("variant", out var catVariant))
+            {
+                var index = Array.IndexOf(Cat.VariantNames, catVariant.StartsWith("minecraft:", StringComparison.Ordinal) ? catVariant[10..] : catVariant);
+                if (index >= 0) cat.Variant = index;
+            }
+            if (tag.TryGetTagValue<string>("CollarColor", out var collar))
+            {
+                var index = Array.IndexOf(Cat.DyeNames, collar);
+                if (index >= 0) cat.CollarColor = (byte)index;
+            }
+            else if (tag.TryGetTagValue<byte>("CollarColor", out var legacyCollar))
+                cat.CollarColor = (byte)(legacyCollar & 15);
+        }
+        if (this is Camel camel)
+        {
+            camel.HorseMask |= HorseMask.Tamed;
+            if (tag.TryGetTagValue<long>("LastPoseTick", out var poseTick)) camel.LastPoseChangeTick = poseTick;
+            camel.Pose = camel.IsSitting ? Pose.Sitting : Pose.Standing;
+            if (tag.TryGetTagValue<int>("ObsidianDashCooldown", out var cooldown))
+                camel.DashCooldown = Math.Clamp(cooldown, 0, Camel.DashCooldownTicks);
+        }
+        if (this is IronGolem golem)
+            golem.PlayerCreated = ReadFlag(tag, "PlayerCreated");
         if (this is Zombie zombie)
         {
             zombie.IsBaby = ReadFlag(tag, "IsBaby");
@@ -255,6 +326,29 @@ public partial class Mob
     }
 
     private static bool ReadFlag(NbtCompound tag, string name) => tag.TryGetBool(name, out var value) && value;
+
+    private static void WriteOwner(INbtWriter writer, Guid owner)
+    {
+        if (owner == Guid.Empty)
+            return;
+        var bytes = owner.ToByteArray(true);
+        var value = new int[4];
+        for (var index = 0; index < value.Length; index++)
+            value[index] = BinaryPrimitives.ReadInt32BigEndian(bytes.AsSpan(index * sizeof(int), sizeof(int)));
+        writer.WriteArray("Owner", value);
+    }
+
+    private static Guid ReadOwner(NbtCompound tag)
+    {
+        if (tag.TryGetTag<NbtArray<int>>("Owner", out var owner) && owner.Count == 4)
+        {
+            Span<byte> bytes = stackalloc byte[16];
+            for (var index = 0; index < owner.Count; index++)
+                BinaryPrimitives.WriteInt32BigEndian(bytes.Slice(index * sizeof(int), sizeof(int)), owner[index]);
+            return new Guid(bytes, true);
+        }
+        return tag.TryGetTagValue<string>("Owner", out var text) && Guid.TryParse(text, out var uuid) ? uuid : Guid.Empty;
+    }
 
     internal static void WriteVector(INbtWriter writer, string name, VectorF value)
     {

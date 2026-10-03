@@ -382,7 +382,8 @@ public class Region : IRegion
             }
         }
         delayed.ForEach(AddBlockUpdate);
-        neighborUpdates.ForEach(async u => await u.Level.BlockUpdateNeighborsAsync(u));
+        foreach (var update in neighborUpdates)
+            await update.Level.BlockUpdateNeighborsAsync(update);
     }
 
     /// <summary>

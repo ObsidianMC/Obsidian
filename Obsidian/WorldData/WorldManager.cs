@@ -39,7 +39,9 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
 
             while (await timer.WaitForNextTickAsync())
             {
-                await Task.WhenAll(this.worlds.Values.Cast<World>().Select(x => x.ManageChunksAsync()));
+                await Task.WhenAll(this.worlds.Values.Cast<World>()
+                    .SelectMany(world => world.dimensions.Values.Cast<AbstractLevel>().Prepend(world))
+                    .Select(level => level.ManageChunksAsync()));
             }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -117,9 +119,15 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
 
     public async ValueTask DisposeAsync()
     {
+        await this.StopAsync(CancellationToken.None);
+        await this.FlushLoadedWorldsAsync();
+
         foreach (var world in this.worlds.Values)
         {
             await world.DisposeAsync();
+
+            foreach (var dimension in ((World)world).dimensions.Values)
+                await dimension.DisposeAsync();
         }
 
         this.serviceScope.Dispose();

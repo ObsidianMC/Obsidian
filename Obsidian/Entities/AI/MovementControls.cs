@@ -23,11 +23,14 @@ public class MoveControl(Mob mob)
 
     internal void Strafe(float forward, float sideways) => strafe = new VectorF(sideways, 0, forward);
 
-    internal void Ride(float speed)
+    internal void Ride(float speed, float forward = 1, float sideways = 0)
     {
         wantedPosition = null;
         var yaw = mob.Yaw.Degrees * MathF.PI / 180;
-        var input = new VectorF(-MathF.Sin(yaw), 0, MathF.Cos(yaw));
+        var input = new VectorF(sideways * MathF.Cos(yaw) - forward * MathF.Sin(yaw), 0,
+            forward * MathF.Cos(yaw) + sideways * MathF.Sin(yaw));
+        if (input.MagnitudeSquared() > 1)
+            input /= input.Magnitude;
         var acceleration = mob.InWater ? 0.02f : mob.MovementFlags.HasFlag(MovementFlags.OnGround) ? speed : 0.02f;
         Acceleration = input * (acceleration * 0.98f);
     }

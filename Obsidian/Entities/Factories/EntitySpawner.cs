@@ -135,6 +135,13 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
         EntityType.Parched => new Parched { Level = level },
         EntityType.Creeper => new Creeper { Level = level },
         EntityType.Slime => new Slime { Level = level },
+        EntityType.Horse => new Horse { Level = level },
+        EntityType.ZombieHorse => new ZombieHorse { Level = level },
+        EntityType.Villager => new Villager { Level = level },
+        EntityType.IronGolem => new IronGolem { Level = level },
+        EntityType.Ocelot => new Ocelot { Level = level },
+        EntityType.Cat => new Cat { Level = level },
+        EntityType.Camel => new Camel { Level = level },
         _ => null
     };
 }
