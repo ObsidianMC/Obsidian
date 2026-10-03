@@ -85,9 +85,14 @@ internal static class WorldgenHeightmaps
     /// Features track these heights only while decorating, so they're written back once every feature that can reach the
     /// chunk has run.
     /// </remarks>
-    public static void UpdateFinal(IChunk chunk, int minY, int height)
+    public static void UpdateFinal(IChunk chunk, int minY, int height) =>
+        StoreFinal(chunk, (chunk as Chunk)?.FinalHeightmaps ?? new FinalHeightmaps(chunk, minY, height));
+
+    /// <summary>
+    /// Writes <paramref name="heights"/> to the final heightmaps the chunk still has.
+    /// </summary>
+    public static void StoreFinal(IChunk chunk, FinalHeightmaps heights)
     {
-        var heights = (chunk as Chunk)?.FinalHeightmaps ?? new FinalHeightmaps(chunk, minY, height);
         Span<int> values = stackalloc int[256];
 
         foreach (var type in finalHeightmaps)
