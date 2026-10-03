@@ -294,10 +294,22 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                 }
                 else if (tileEntity is DataBlockEntity dataBlockEntity)
                 {
-                    // A container from world generation: generate its loot, then keep the container as the block entity.
-                    UnpackLootTable(dataBlockEntity, container, player);
+                    // A container from world generation: fill it once, then keep it as the block entity. Players opening it
+                    // before it's stored get the first one's container, so its loot isn't generated twice.
+                    lock (generatedContainers)
+                    {
+                        if (generatedContainers.TryGetValue(dataBlockEntity, out var generated))
+                        {
+                            container = generated;
+                        }
+                        else
+                        {
+                            FillGeneratedContainer(dataBlockEntity, container, player);
+                            generatedContainers.Add(dataBlockEntity, container);
+                        }
+                    }
 
-                    await player.Level.SetBlockEntity(blockPosition, containerTileEntity.Clone());
+                    await player.Level.SetBlockEntity(blockPosition, (IBlockEntity)container);
                 }
             }
 
