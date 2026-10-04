@@ -56,6 +56,7 @@
 			<AdditionalFiles Include="..\Obsidian\Assets\loot_table\*.json" LinkBase="Assets\loot_table\" />
 			<AdditionalFiles Include="..\Obsidian\Assets\enchantments.json" Link="Assets\enchantments.json" />
 			<AdditionalFiles Include="..\Obsidian\Assets\instruments.json" Link="Assets\instruments.json" />
+			<AdditionalFiles Include="..\Obsidian\Assets\packet_types.json" Link="Assets\packet_types.json" />
 		</ItemGroup>
 	</Target>
 
