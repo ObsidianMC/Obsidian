@@ -93,6 +93,22 @@ public class GeneratedPackets
         Assert.Equal("hi", buffer.ReadChat().Text);
     }
 
+    [Fact(DisplayName = "Nested chat components can be plain NBT strings")]
+    public void ReadsNestedStringComponents()
+    {
+        // {text: "a", extra: ["b"]} as network NBT: an unnamed compound, a string "text", a list "extra" of one string.
+        using var buffer = new NetworkBuffer([
+            0x0A,
+            0x08, 0x00, 0x04, .. "text"u8, 0x00, 0x01, (byte)'a',
+            0x09, 0x00, 0x05, .. "extra"u8, 0x08, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, (byte)'b',
+            0x00]);
+
+        var message = buffer.ReadChat();
+
+        Assert.Equal("a", message.Text);
+        Assert.Equal("b", Assert.Single(message.GetExtras()).Text);
+    }
+
     [Theory(DisplayName = "Generated vanilla types read back what they write")]
     [MemberData(nameof(GeneratedRecords))]
     public void RecordsRoundTrip(Type type)

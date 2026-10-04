@@ -119,25 +119,12 @@ public partial class Extensions
         if (root.TryGetTag<NbtCompound>("hover_event", out var hoverEventCompound))
             chatMessage.HoverEvent = hoverEventCompound.ToHoverComponent();
 
+        // Nested components can be plain strings or lists as well as compounds, like the top-level one.
         if (root.TryGetTag<NbtList>("extra", out var extrasList))
-        {
-            var extra = new List<ChatMessage>();
-
-            foreach (var extraCompound in extrasList)
-                extra.Add(ChatMessage.Empty.FromNbt((NbtCompound)extraCompound));
-
-            chatMessage.AddExtra(extra);
-        }
+            chatMessage.AddExtra(extrasList.Select(tag => tag.TextFromNbt()).OfType<ChatMessage>().ToList());
 
         if (root.TryGetTag<NbtList>("with", out var withList))
-        {
-            var with = new List<ChatMessage>();
-
-            foreach (var withCompound in withList)
-                with.Add(ChatMessage.Empty.FromNbt((NbtCompound)withCompound));
-
-            chatMessage.AddChatComponent(with);
-        }
+            chatMessage.AddChatComponent(withList.Select(tag => tag.TextFromNbt()).OfType<ChatMessage>().ToList());
 
         return chatMessage;
     }
