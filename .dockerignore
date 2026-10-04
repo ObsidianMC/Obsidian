@@ -10,3 +10,4 @@ docker-compose.yml
 **/bin
 **/obj
 Obsidian/Assets
+Obsidian/Assets.tmp
