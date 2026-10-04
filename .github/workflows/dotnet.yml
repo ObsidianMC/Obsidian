@@ -7,12 +7,14 @@ on:
     paths:
       - "**/*.cs"
       - "**/*.csproj"
+      - "**/*.java"
       - ".github/workflows/dotnet.yml"
   pull_request:
     branches: [ 1.* ]
     paths:
       - "**/*.cs"
       - "**/*.csproj"
+      - "**/*.java"
       - ".github/workflows/dotnet.yml"
 
 jobs:
@@ -29,6 +31,12 @@ jobs:
       uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 10.0.x
+    - name: Setup Java
+      # Generating the vanilla assets runs the Minecraft server's data generators.
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: 21
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
