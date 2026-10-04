@@ -1,6 +1,7 @@
 using Obsidian.API;
 using Obsidian.Nbt;
 using Obsidian.Net;
+using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
 using System;
@@ -43,6 +44,53 @@ public class GeneratedPackets
         packet.Populate(buffer);
 
         Assert.Equal(GameMode.Creative, packet.Mode);
+    }
+
+    [Fact(DisplayName = "UUIDs are always sixteen bytes, even with leading zeros")]
+    public void WritesWholeUuids()
+    {
+        using var buffer = new NetworkBuffer();
+        new ResourcePackPopPacket { IdValue = new Guid("00000000-0000-0000-0000-000000000001") }.Serialize(buffer);
+
+        Assert.Equal([0x01, .. new byte[15], 0x01], Written(buffer));
+    }
+
+    [Fact(DisplayName = "Rotations are written as one byte")]
+    public void WritesRotationsAsBytes()
+    {
+        using var buffer = new NetworkBuffer();
+        NewMinecartBehaviorMinecartStep.Write(new NewMinecartBehaviorMinecartStep
+        {
+            Position = new VectorF(0, 0, 0),
+            Movement = new VectorF(0, 0, 0),
+            YRot = 90f,
+            XRot = 0f,
+            Weight = 1f
+        }, buffer);
+
+        // Two vectors of three doubles, then yaw 90° as 64/256 of a turn, pitch 0, and the weight as a float.
+        Assert.Equal([0x40, 0x00, 0x3F, 0x80, 0x00, 0x00], Written(buffer)[48..]);
+    }
+
+    [Fact(DisplayName = "Reads enforce vanilla's limits")]
+    public void EnforcesReadLimits()
+    {
+        // ClientInformation's language is read with a 16 character limit, although it's written with 32767.
+        using var language = new NetworkBuffer([17, .. "abcdefghijklmnopq"u8]);
+        Assert.ThrowsAny<Exception>(() => ClientInformation.Read(language));
+
+        // A book has at most 100 pages: slot 0, then a count of 101.
+        using var book = new NetworkBuffer([0x00, 101]);
+        Assert.Throws<System.IO.InvalidDataException>(() => new EditBookPacket().Populate(book));
+    }
+
+    [Fact(DisplayName = "Chat components can be plain NBT strings")]
+    public void ReadsStringComponents()
+    {
+        // A string tag (type 8), unnamed as network NBT, holding "hi".
+        using var buffer = new NetworkBuffer([0x08, 0x00, 0x02, (byte)'h', (byte)'i']);
+
+        Assert.Equal("hi", buffer.ReadChat().Text);
     }
 
     [Theory(DisplayName = "Generated vanilla types read back what they write")]
