@@ -10,7 +10,7 @@ namespace Obsidian.API;
 /// <remarks>
 /// On the network it's three doubles (vanilla's <c>Vec3.STREAM_CODEC</c>).
 /// </remarks>
-[DebuggerDisplay("{ToString(),nq}")]
+[DebuggerDisplay("{X}, {Y}, {Z}")] // full precision; ToString rounds for display
 public struct VectorD : IEquatable<VectorD>, INetworkSerializable<VectorD>
 {
     /// <summary>
