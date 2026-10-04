@@ -163,13 +163,36 @@ public class Entity : IEquatable<Entity>, IEntity
         return (long)floor + (value - floor >= 0.5 ? 1 : 0);
     }
 
+    /// <summary>
+    /// Whether a move fits a relative-move packet, whose delta is a short on each axis; vanilla sends larger moves
+    /// as a teleport to the absolute position.
+    /// </summary>
+    internal static bool IsRelativeMove(Vector delta) =>
+        delta.X is >= short.MinValue and <= short.MaxValue
+        && delta.Y is >= short.MinValue and <= short.MaxValue
+        && delta.Z is >= short.MinValue and <= short.MaxValue;
+
+    private void BroadcastTeleport(VectorD position, Angle yaw, Angle pitch, MovementFlags movementFlags) =>
+        this.PacketBroadcaster.BroadcastToLevelInRange(this.Level, position, new TeleportEntityPacket
+        {
+            EntityId = EntityId,
+            OnGround = movementFlags.HasFlag(MovementFlags.OnGround),
+            Position = position,
+            Pitch = pitch,
+            Yaw = yaw
+        }, EntityId);
+
     public virtual async ValueTask UpdateAsync(VectorD position, MovementFlags movementFlags)
     {
         // Moved when the move shows on the client: when its delta, in 1/4096 blocks, isn't zero.
         var delta = MoveDelta(Position, position);
         var isNewLocation = delta != Vector.Zero;
 
-        if (isNewLocation)
+        if (!IsRelativeMove(delta))
+        {
+            this.BroadcastTeleport(position, Yaw, Pitch, movementFlags);
+        }
+        else if (isNewLocation)
         {
             this.PacketBroadcaster.BroadcastToLevelInRange(this.Level, position, new MoveEntityPosPacket
             {
@@ -191,7 +214,13 @@ public class Entity : IEquatable<Entity>, IEntity
         var isNewLocation = delta != Vector.Zero;
         var isNewRotation = yaw != Yaw || pitch != Pitch;
 
-        if (isNewLocation)
+        if (!IsRelativeMove(delta))
+        {
+            this.BroadcastTeleport(position, yaw, pitch, movementFlags);
+            if (isNewRotation)
+                this.SetHeadRotation(yaw);
+        }
+        else if (isNewLocation)
         {
             if (isNewRotation)
             {
@@ -220,6 +249,12 @@ public class Entity : IEquatable<Entity>, IEntity
                     OnGround = movementFlags.HasFlag(MovementFlags.OnGround)
                 }, EntityId);
             }
+        }
+        else if (isNewRotation)
+        {
+            // Turned without moving.
+            this.SetRotation(yaw, pitch, movementFlags);
+            this.SetHeadRotation(yaw);
         }
 
         await UpdatePositionAsync(position, yaw, pitch, movementFlags);
@@ -468,7 +503,8 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public virtual ValueTask TeleportAsync(VectorD pos)
     {
-        if (VectorD.Distance(Position, pos) > 8)
+        var delta = MoveDelta(Position, pos);
+        if (!IsRelativeMove(delta))
         {
             this.PacketBroadcaster.QueuePacketToLevel(this.Level, 0, new TeleportEntityPacket
             {
@@ -481,8 +517,6 @@ public class Entity : IEquatable<Entity>, IEntity
 
             return default;
         }
-
-        var delta = MoveDelta(Position, pos);
 
         this.PacketBroadcaster.QueuePacketToLevel(this.Level, 0, new MoveEntityPosRotPacket
         {

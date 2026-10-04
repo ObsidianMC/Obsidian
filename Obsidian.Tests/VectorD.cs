@@ -40,4 +40,15 @@ public class VectorDTests
     [InlineData(-0.5000000000000001, -1)]
     public void RoundsHalvesUp(double units, int delta) =>
         Assert.Equal(delta, Entity.MoveDelta(VectorD.Zero, new VectorD(units / 4096, 0, 0)).X);
+
+    [Fact(DisplayName = "Moves too long for a relative-move packet are sent as teleports")]
+    public void LongMovesTeleport()
+    {
+        // Eight blocks along one axis is 32768 in 1/4096 blocks, one more than a short holds.
+        var delta = Entity.MoveDelta(new VectorD(0.0001, 0, 0), new VectorD(8, 0, 0));
+
+        Assert.Equal(32768, delta.X);
+        Assert.False(Entity.IsRelativeMove(delta));
+        Assert.True(Entity.IsRelativeMove(Entity.MoveDelta(VectorD.Zero, new VectorD(7.9, -7.9, 0))));
+    }
 }
