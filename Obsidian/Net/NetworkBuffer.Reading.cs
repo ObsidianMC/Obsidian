@@ -417,7 +417,7 @@ public partial class NetworkBuffer : INetStreamReader
     /// <summary>Reads a VarInt count, then that many longs.</summary>
     public long[] ReadLongArray()
     {
-        var values = new long[this.ReadVarInt()];
+        var values = new long[this.ReadCount(LongSize)];
         for (var i = 0; i < values.Length; i++)
             values[i] = this.ReadLong();
         return values;
@@ -426,10 +426,22 @@ public partial class NetworkBuffer : INetStreamReader
     /// <summary>Reads a VarInt count, then that many VarInts.</summary>
     public int[] ReadVarIntArray()
     {
-        var values = new int[this.ReadVarInt()];
+        var values = new int[this.ReadCount(ByteSize)];
         for (var i = 0; i < values.Length; i++)
             values[i] = this.ReadVarInt();
         return values;
+    }
+
+    /// <summary>
+    /// Reads a VarInt count of values at least <paramref name="minimumSize"/> bytes each, rejecting counts the rest of
+    /// the buffer can't hold before anything is allocated for them.
+    /// </summary>
+    private int ReadCount(int minimumSize)
+    {
+        var count = this.ReadVarInt();
+        if (count < 0 || count > (this.size - this.offset) / minimumSize)
+            throw new InvalidDataException($"Count {count} is more than the rest of the packet holds.");
+        return count;
     }
 
     /// <summary>Reads a bit set as a VarInt count of longs, then the longs (Java's <c>BitSet.toLongArray</c>).</summary>

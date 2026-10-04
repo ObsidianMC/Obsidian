@@ -84,6 +84,17 @@ public class GeneratedPackets
         Assert.Throws<System.IO.InvalidDataException>(() => new EditBookPacket().Populate(book));
     }
 
+    [Fact(DisplayName = "Array counts larger than the packet are rejected before allocating")]
+    public void RejectsOversizedArrayCounts()
+    {
+        // A count of int.MaxValue with nothing after it.
+        using var longs = new NetworkBuffer([0xFF, 0xFF, 0xFF, 0xFF, 0x07]);
+        Assert.Throws<System.IO.InvalidDataException>(() => longs.ReadLongArray());
+
+        using var varInts = new NetworkBuffer([0xFF, 0xFF, 0xFF, 0xFF, 0x07]);
+        Assert.Throws<System.IO.InvalidDataException>(() => varInts.ReadVarIntArray());
+    }
+
     [Fact(DisplayName = "Empty byte arrays can end a packet")]
     public void ReadsEmptyByteArraysAtTheEnd()
     {
