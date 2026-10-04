@@ -252,13 +252,13 @@ public sealed class MainCommandModule : CommandModuleBase
         if (this.Player is not Player player)
             return;
 
-        if (!Enum.TryParse<Gamemode>(gamemode, true, out var result))
+        if (!Enum.TryParse<GameMode>(gamemode, true, out var result))
         {
             await player.SendMessageAsync(SendCommandUsage("/gamemode <survival/creative/adventure/spectator>"));
             return;
         }
 
-        if (player.Gamemode != result)
+        if (player.GameMode != result)
         {
             await player.SetGamemodeAsync(result);
             await player.SendMessageAsync($"{ChatColor.Reset}Gamemode set to {ChatColor.Red}{gamemode}{ChatColor.Reset}.");

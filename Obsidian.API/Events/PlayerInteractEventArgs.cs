@@ -24,7 +24,7 @@ public sealed class PlayerInteractEventArgs : PlayerEventArgs, ICancellable
     /// </summary>
     public Vector? BlockLocation { get; init; }
 
-    public Hand Hand { get; init; }
+    public InteractionHand Hand { get; init; }
 
     /// <inheritdoc />
     public bool IsCancelled { get; private set; }

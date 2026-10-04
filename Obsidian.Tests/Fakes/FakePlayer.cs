@@ -38,7 +38,7 @@ public sealed class FakePlayer : IPlayer
 
     public string ClientIP => throw new NotImplementedException();
 
-    public Gamemode Gamemode { get; set; }
+    public GameMode GameMode { get; set; }
 
     public PlayerAbility Abilities { get; set; }
     public bool IsDragging { get; set; }
@@ -165,7 +165,7 @@ public sealed class FakePlayer : IPlayer
     public ValueTask SendTitleAsync(ChatMessage title, int fadeIn, int stay, int fadeOut) => throw new NotImplementedException();
     public ValueTask SendTitleAsync(ChatMessage title, ChatMessage subtitle, int fadeIn, int stay, int fadeOut) => throw new NotImplementedException();
     public ValueTask SetActionBarTextAsync(ChatMessage message) => throw new NotImplementedException();
-    public ValueTask SetGamemodeAsync(Gamemode gamemode) => throw new NotImplementedException();
+    public ValueTask SetGamemodeAsync(GameMode gamemode) => throw new NotImplementedException();
     public void SetHeadRotation(Angle headYaw) => throw new NotImplementedException();
     public void SetRotation(Angle yaw, Angle pitch, MovementFlags movementFlags) => throw new NotImplementedException();
     public void SpawnEntity(Velocity? velocity = null, int additionalData = 0) => throw new NotImplementedException();

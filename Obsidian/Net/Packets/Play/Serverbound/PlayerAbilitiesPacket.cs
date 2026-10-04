@@ -16,7 +16,7 @@ public partial class PlayerAbilitiesPacket
     {
         if (Abilities.HasFlag(PlayerAbility.Flying)
             && !Abilities.HasFlag(PlayerAbility.AllowFlying)
-            && player.Gamemode is not (Gamemode.Creative or Gamemode.Spectator))
+            && player.GameMode is not (GameMode.Creative or GameMode.Spectator))
         {
             await player.KickAsync("Cheating is not allowed!");
         }

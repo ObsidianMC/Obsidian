@@ -78,7 +78,7 @@ public sealed class ServerPlayers
 
         foreach (var player in server.OnlinePlayers.Values)
         {
-            if (!player.ClientInformation.AllowServerListings)
+            if (!player.ClientInformation.AllowsListing)
                 continue;
 
             this.AddPlayer(player.Username, player.Uuid);

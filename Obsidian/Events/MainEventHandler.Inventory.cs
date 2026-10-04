@@ -145,7 +145,7 @@ public partial class MainEventHandler
         var player = args.Player;
         var clickedItem = args.Item;
 
-        if (player.Gamemode != Gamemode.Creative || clickedItem.IsNullOrAir())
+        if (player.GameMode != GameMode.Creative || clickedItem.IsNullOrAir())
             return;
 
         player.CarriedItem = new ItemStack(clickedItem, clickedItem.MaxStackSize);

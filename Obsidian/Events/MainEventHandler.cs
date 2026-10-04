@@ -368,7 +368,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         {
             addAction,
             new UpdatePingInfoAction(joined.Ping),
-            new UpdateListedInfoAction(joined.ClientInformation.AllowServerListings),
+            new UpdateListedInfoAction(joined.ClientInformation.AllowsListing),
         };
 
         packetBroadcaster.Broadcast(new PlayerInfoUpdatePacket(new Dictionary<Guid, List<InfoAction>>()

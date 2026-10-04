@@ -16,7 +16,7 @@ public partial class InteractPacket
     public VectorF Target { get; private set; }
 
     [Field(3), ActualType(typeof(int)), VarLength, Condition("Type is InteractionType.Interact or InteractionType.InteractAt")]
-    public Hand Hand { get; private set; }
+    public InteractionHand Hand { get; private set; }
 
     [Field(4)]
     public bool Sneaking { get; private set; }
@@ -30,7 +30,7 @@ public partial class InteractPacket
             this.Target = reader.ReadAbsoluteFloatPositionF();
 
         if (this.Type is InteractionType.Interact or InteractionType.InteractAt)
-            this.Hand = reader.ReadVarInt<Hand>();
+            this.Hand = reader.ReadVarInt<InteractionHand>();
 
         this.Sneaking = reader.ReadBoolean();
     }

@@ -89,7 +89,7 @@ public sealed class LevelData
     /// <summary>
     /// The default game mode for the singleplayer player when they initially spawn.
     /// </summary>
-    public Gamemode DefaultGamemode { get; set; }
+    public GameMode DefaultGamemode { get; set; }
 
     /// <summary>
     /// Used in 1.15 and below. The name of the world generator.

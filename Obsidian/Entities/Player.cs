@@ -78,19 +78,19 @@ public sealed partial class Player : Avatar, IPlayer
 
     public IBlock? LastClickedBlock { get; internal set; }
 
-    public Gamemode Gamemode
+    public GameMode GameMode
     {
         get => field;
         set
         {
             field = value;
 
-            Abilities = Gamemode switch
+            Abilities = GameMode switch
             {
-                Gamemode.Creative => PlayerAbility.CreativeMode | PlayerAbility.AllowFlying | PlayerAbility.Invulnerable,
-                Gamemode.Spectator => PlayerAbility.AllowFlying | PlayerAbility.Invulnerable,
-                Gamemode.Survival or Gamemode.Adventure or Gamemode.Hardcore => PlayerAbility.None,
-                _ => throw new ArgumentOutOfRangeException(nameof(Gamemode), Gamemode, "Unknown gamemode.")
+                GameMode.Creative => PlayerAbility.CreativeMode | PlayerAbility.AllowFlying | PlayerAbility.Invulnerable,
+                GameMode.Spectator => PlayerAbility.AllowFlying | PlayerAbility.Invulnerable,
+                GameMode.Survival or GameMode.Adventure => PlayerAbility.None,
+                _ => throw new ArgumentOutOfRangeException(nameof(GameMode), GameMode, "Unknown gamemode.")
             };
         }
     }
@@ -372,8 +372,8 @@ public sealed partial class Player : Avatar, IPlayer
             {
                 DimensionType = codec.Id,
                 DimensionName = Level.DimensionName,
-                Gamemode = Gamemode,
-                PreviousGamemode = Gamemode,
+                GameMode = GameMode,
+                PreviousGamemode = GameMode,
                 HashedSeed = 0,
                 Flat = false,
                 Debug = false,
@@ -444,13 +444,13 @@ public sealed partial class Player : Avatar, IPlayer
         }
     }
 
-    public async ValueTask SetGamemodeAsync(Gamemode gamemode)
+    public async ValueTask SetGamemodeAsync(GameMode gamemode)
     {
         this.PacketBroadcaster.QueuePacketToLevel(this.Level, new PlayerInfoUpdatePacket(CompilePlayerInfo(new UpdateGamemodeInfoAction(gamemode))));
 
         await Client.QueuePacketAsync(new GameEventPacket(gamemode));
 
-        Gamemode = gamemode;
+        GameMode = gamemode;
     }
 
     public ValueTask UpdateDisplayNameAsync(string newDisplayName)

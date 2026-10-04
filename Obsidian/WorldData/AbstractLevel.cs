@@ -93,7 +93,7 @@ public abstract partial class AbstractLevel : ILevel
     public IPacketBroadcaster PacketBroadcaster { get; }
     public IEventDispatcher EventDispatcher { get; }
     public ServerConfiguration Configuration { get; private set; }
-    public Gamemode DefaultGamemode => LevelData.DefaultGamemode;
+    public GameMode DefaultGamemode => LevelData.DefaultGamemode;
 
     public string DimensionName { get; protected set; } = string.Empty;
 

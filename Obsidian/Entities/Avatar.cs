@@ -12,6 +12,6 @@ public class Avatar : Living
         writer.WriteVarInt(ClientInformation.MainHand);
 
         this.WriteEntityMetadataType(writer, EntityMetadataType.Byte);
-        writer.WriteByte(ClientInformation.DisplayedSkinParts);
+        writer.WriteByte((byte)ClientInformation.ModelCustomisation);
     }
 }

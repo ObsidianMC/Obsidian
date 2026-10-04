@@ -50,8 +50,8 @@ public partial class Player
         writer.WriteByte("MovementFlags", (byte)this.MovementFlags);
 
         writer.WriteInt("DataVersion", 3337);
-        writer.WriteInt("playerGameType", (int)Gamemode);
-        writer.WriteInt("previousPlayerGameType", (int)Gamemode);
+        writer.WriteInt("playerGameType", (int)GameMode);
+        writer.WriteInt("previousPlayerGameType", (int)GameMode);
         writer.WriteInt("Score", 0);
         writer.WriteInt("SelectedItemSlot", CurrentHeldItemSlot);
         writer.WriteInt("foodLevel", FoodLevel);
@@ -185,7 +185,7 @@ public partial class Player
             var list = new List<InfoAction>
             {
                 addPlayerInforAction,
-                new UpdateListedInfoAction(player.ClientInformation.AllowServerListings),
+                new UpdateListedInfoAction(player.ClientInformation.AllowsListing),
                 new UpdateDisplayNameInfoAction(player.Username),
                 new UpdatePingInfoAction(player.Ping)
             };
@@ -338,7 +338,7 @@ public partial class Player
         SleepTimer = compound.GetShort("SleepTimer");
         FoodLevel = compound.GetInt("foodLevel");
         FoodTickTimer = compound.GetInt("foodTickTimer");
-        Gamemode = (Gamemode)compound.GetInt("playerGameType");
+        GameMode = (GameMode)compound.GetInt("playerGameType");
         XpLevel = compound.GetInt("XpLevel");
         XpTotal = compound.GetInt("XpTotal");
         FallDistance = compound.GetFloat("FallDistance");

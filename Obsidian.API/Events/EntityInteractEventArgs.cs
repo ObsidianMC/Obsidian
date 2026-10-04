@@ -14,7 +14,7 @@ public class EntityInteractEventArgs : EntityEventArgs
 
     public VectorF? TargetPosition { get; set; }
 
-    public Hand? Hand { get; set; }
+    public InteractionHand? Hand { get; set; }
 
     public EntityInteractEventArgs(IPlayer player, IEntity entity, IServer server, bool sneaking = false) : base(entity, server)
     {
@@ -22,7 +22,7 @@ public class EntityInteractEventArgs : EntityEventArgs
         this.Sneaking = sneaking;
     }
 
-    public EntityInteractEventArgs(IPlayer player, IEntity entity, IServer server, Hand hand, VectorF targetPosition, bool sneaking = false) : base(entity, server)
+    public EntityInteractEventArgs(IPlayer player, IEntity entity, IServer server, InteractionHand hand, VectorF targetPosition, bool sneaking = false) : base(entity, server)
     {
         this.Player = player;
         this.Sneaking = sneaking;

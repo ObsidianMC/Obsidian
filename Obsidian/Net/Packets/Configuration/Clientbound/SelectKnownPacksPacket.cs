@@ -16,12 +16,3 @@ public partial class SelectKnownPacksPacket()
         }
     }
 }
-
-public readonly record struct KnownPack
-{
-    public required string Namespace { get; init; }
-
-    public required string Id { get; init; }
-
-    public required string Version { get; init; }
-}

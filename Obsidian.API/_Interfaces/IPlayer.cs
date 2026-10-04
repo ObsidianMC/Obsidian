@@ -33,7 +33,7 @@ public interface IPlayer : ILiving
     public Vector? LastDeathLocation { get; set; }
 
     public string? ClientIP { get; }
-    public Gamemode Gamemode { get; set; }
+    public GameMode GameMode { get; set; }
 
     public PlayerAbility Abilities { get; set; }
 
@@ -124,7 +124,7 @@ public interface IPlayer : ILiving
     public bool HasPermission(string permission);
     public bool HasAnyPermission(IEnumerable<string> permissions);
     public bool HasAllPermissions(IEnumerable<string> permissions);
-    public ValueTask SetGamemodeAsync(Gamemode gamemode);
+    public ValueTask SetGamemodeAsync(GameMode gamemode);
 
     public ValueTask UpdateDisplayNameAsync(string newDisplayName);
 

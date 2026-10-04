@@ -42,7 +42,7 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
             MapFeatures = levelCompound.GetBool("MapFeatures"),
             Raining = levelCompound.GetBool("raining"),
             Thundering = levelCompound.GetBool("thundering"),
-            DefaultGamemode = (Gamemode)levelCompound.GetInt("GameType"),
+            DefaultGamemode = (GameMode)levelCompound.GetInt("GameType"),
             GeneratorVersion = levelCompound.GetInt("generatorVersion"),
             RainTime = levelCompound.GetInt("rainTime"),
             // The spawn is saved as a block; players spawn at its center.
@@ -147,7 +147,7 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         this.LevelData = new LevelData
         {
             Time = codec.Element.FixedTime ?? 0,
-            DefaultGamemode = Gamemode.Survival,
+            DefaultGamemode = GameMode.Survival,
             GeneratorName = Generator.Id
         };
 

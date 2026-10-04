@@ -15,7 +15,7 @@ public partial class UseItemOnPacket
     ];
 
     [Field(0), ActualType(typeof(int)), VarLength]
-    public Hand Hand { get; private set; } // Hand it was placed from. 0 = Main, 1 = Off
+    public InteractionHand Hand { get; private set; } // Hand it was placed from. 0 = Main, 1 = Off
 
     [Field(1)]
     public Vector Position { get; private set; }
@@ -37,7 +37,7 @@ public partial class UseItemOnPacket
 
     public override void Populate(INetStreamReader reader)
     {
-        this.Hand = reader.ReadVarInt<Hand>();
+        this.Hand = reader.ReadVarInt<InteractionHand>();
         this.Position = reader.ReadPosition();
         this.Face = reader.ReadVarInt<BlockFace>();
         this.Cursor = reader.ReadAbsoluteFloatPositionF();
@@ -95,7 +95,7 @@ public partial class UseItemOnPacket
             return;
         }
 
-        if (player.Gamemode != Gamemode.Creative)
+        if (player.GameMode != GameMode.Creative)
             player.Inventory.RemoveItem(player.CurrentHeldItemSlot, 1);
 
         switch (Face) // TODO fix this for logs

@@ -20,7 +20,7 @@ public interface ILevel : IAsyncDisposable
 
     public LevelData LevelData { get; }
 
-    public Gamemode DefaultGamemode { get; }
+    public GameMode DefaultGamemode { get; }
 
     public int RegionCount { get; }
     public int LoadedChunkCount { get; }
