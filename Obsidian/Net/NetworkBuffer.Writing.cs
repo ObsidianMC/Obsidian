@@ -96,18 +96,16 @@ public partial class NetworkBuffer : INetStreamWriter
     }
 
     [WriteMethod]
+    /// <summary>
+    /// Writes a UUID as vanilla does: its most significant 64 bits, then its least significant, as two longs (16
+    /// bytes, the reverse of <see cref="ReadGuid"/>).
+    /// </summary>
     public void WriteUuid(Guid value)
     {
-        if (value == Guid.Empty)
-        {
-            WriteLong(0L);
-            WriteLong(0L);
-        }
-        else
-        {
-            var uuid = System.Numerics.BigInteger.Parse(value.ToString().Replace("-", ""), System.Globalization.NumberStyles.HexNumber);
-            Write(uuid.ToByteArray(false, true));
-        }
+        Span<char> hex = stackalloc char[32];
+        value.TryFormat(hex, out _, "N");
+        WriteLong((long)ulong.Parse(hex[..16], System.Globalization.NumberStyles.HexNumber));
+        WriteLong((long)ulong.Parse(hex[16..], System.Globalization.NumberStyles.HexNumber));
     }
 
 

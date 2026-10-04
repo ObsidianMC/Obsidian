@@ -1,4 +1,4 @@
-using Obsidian.API.Effects;
+﻿using Obsidian.API.Effects;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;
@@ -71,12 +71,15 @@ public partial class Extensions
     }
 
     /// <summary>
-    /// Reads a text component saved by vanilla's <c>ComponentSerialization.CODEC</c>: a plain string or a compound.
+    /// Reads a text component saved by vanilla's <c>ComponentSerialization.CODEC</c>: a plain string, a compound, or
+    /// a list whose first component has the rest as extras.
     /// </summary>
     internal static ChatMessage? TextFromNbt(this INbtTag tag) => tag switch
     {
         NbtTag<string> text => ChatMessage.Simple(text.Value ?? string.Empty),
         NbtCompound compound => ChatMessage.Empty.FromNbt(compound),
+        NbtList { Count: > 0 } list when list[0].TextFromNbt() is { } first =>
+            first.AddExtra(list.Skip(1).Select(TextFromNbt).OfType<ChatMessage>()),
         _ => null
     };
 

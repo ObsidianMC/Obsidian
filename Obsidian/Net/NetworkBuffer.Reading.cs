@@ -273,24 +273,21 @@ public partial class NetworkBuffer : INetStreamReader
     [ReadMethod]
     public Angle ReadAngle() => new(this.ReadByte());
 
+    /// <summary>
+    /// Reads a text component as network NBT: a compound, or the plain string or list of components vanilla's
+    /// component codec also writes.
+    /// </summary>
     [ReadMethod]
     public ChatMessage ReadChat()
     {
         //TODO this can be sped up or done better
         using var ms = new MemoryStream(this.AsSpan((int)(this.size - this.offset)).ToArray());
 
-        var reader = new NbtReader(ms);
-        var chatMessage = ChatMessage.Empty;
-
-        if (!reader.TryReadNextTag<NbtCompound>(false, out var root))
-        {
-            this.offset += (int)ms.Position;
-            return chatMessage;
-        }
-
+        var found = new NbtReader(ms).TryReadNextTag(false, out INbtTag? tag);
         this.offset += (int)ms.Position;
+        this.BytesPending -= (int)ms.Position;
 
-        return chatMessage.FromNbt(root);
+        return found ? tag!.TextFromNbt() ?? ChatMessage.Empty : ChatMessage.Empty;
     }
 
     #region Generic Read Methods
