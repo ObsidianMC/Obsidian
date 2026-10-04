@@ -31,17 +31,15 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
     {
         this.Initialize(codec);
 
-        // A save replaces level.dat with its backup kept as .old; if it stopped in between, the backup is the world.
-        var fi = new FileInfo(this.LevelDataFilePath);
-        if (!fi.Exists)
-            fi = new FileInfo($"{this.LevelDataFilePath}.old");
-        if (!fi.Exists)
+        // The level data is level.dat, or its backup (.old) when level.dat is missing or can't be read: a save that
+        // stopped partway, or a damaged file. With neither, the world is new; with neither readable, it fails rather
+        // than generate a new world over the damaged one.
+        var backupPath = $"{this.LevelDataFilePath}.old";
+        if (!File.Exists(this.LevelDataFilePath) && !File.Exists(backupPath))
             return false;
 
-
-        await using var fs = fi.OpenRead();
-        var reader = new NbtReader(fs, NbtCompression.GZip);
-        var levelCompound = (reader.ReadNextTag() as NbtCompound)!;
+        var levelCompound = ReadLevelData(this.LevelDataFilePath, this.Logger) ?? ReadLevelData(backupPath, this.Logger)
+            ?? throw new InvalidDataException($"Neither {this.LevelDataFilePath} nor its backup can be read.");
         LevelData = new LevelData()
         {
             Hardcore = levelCompound.GetBool("hardcore"),
@@ -81,6 +79,25 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
 
         Loaded = true;
         return true;
+    }
+
+    /// <summary>A level data file's root compound, or null when it's missing or can't be read.</summary>
+    internal static NbtCompound? ReadLevelData(string path, ILogger logger)
+    {
+        if (!File.Exists(path))
+            return null;
+
+        try
+        {
+            using var fs = File.OpenRead(path);
+            return new NbtReader(fs, NbtCompression.GZip).ReadNextTag() as NbtCompound;
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or InvalidOperationException or ArgumentException
+            or Obsidian.Nbt.Exceptions.NbtException or System.Diagnostics.UnreachableException)
+        {
+            Log.UnreadableLevelData(logger, path, ex);
+            return null;
+        }
     }
 
     public override async Task SaveAsync()
@@ -208,5 +225,8 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
     {
         [LoggerMessage(Level = LogLevel.Information, Message = "Loading world {WorldName}")]
         public static partial void Loading(ILogger logger, string worldName);
+
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Can't read the level data in {Path}")]
+        public static partial void UnreadableLevelData(ILogger logger, string path, Exception exception);
     }
 }
