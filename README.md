@@ -44,7 +44,7 @@ Very early development builds are available over at the [GitHub Actions](https:/
 Easy, isn't it?
 
 ## 🛠️ Building from source
-Building needs the .NET 10 SDK, Java 21 or newer (on the `PATH` or in `JAVA_HOME`) and internet access. The first build downloads the vanilla server jar of the Minecraft version set in `Obsidian/Obsidian.csproj` (`MinecraftVersion`), runs its data generators, and generates `Obsidian/Assets` from them (`Obsidian.AssetGenerator`). Later builds reuse the generated assets until the version changes.
+Building needs the .NET 10 SDK, Java 25 or newer (on the `PATH` or in `JAVA_HOME`) and internet access. The first build downloads the vanilla server jar of the Minecraft version set in `Obsidian/Obsidian.csproj` (`MinecraftVersion`), runs its data generators, and generates `Obsidian/Assets` from them (`Obsidian.AssetGenerator`). Later builds reuse the generated assets until the version changes.
 
 ## 🐟 Docker
 You can now run Obsidian using Docker! As of right now, no image is available on DockerHub yet, but it will be sometime soon.

@@ -15,6 +15,10 @@ internal sealed record VanillaServer(string Version, string Directory, IReadOnly
 {
     private const string ManifestUrl = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
 
+    // The Java dumper runs as a multi-file source program and reads bytecode with java.lang.classfile, both of which
+    // need Java 25 (the LTS release with both).
+    private const int RequiredJavaVersion = 25;
+
     /// <summary>The data generators' output (<c>data</c> and <c>reports</c>).</summary>
     public string GeneratedDirectory => Path.Combine(Directory, "generated");
 
@@ -24,6 +28,7 @@ internal sealed record VanillaServer(string Version, string Directory, IReadOnly
     /// </summary>
     public static async Task<VanillaServer> PrepareAsync(HttpClient httpClient, string version, string directory)
     {
+        await CheckJavaVersionAsync();
         System.IO.Directory.CreateDirectory(directory);
 
         var jarPath = Path.Combine(directory, "server.jar");
@@ -52,26 +57,49 @@ internal sealed record VanillaServer(string Version, string Directory, IReadOnly
     /// <summary>Runs <c>java</c> (from <c>JAVA_HOME</c> when set) in <paramref name="workingDirectory"/>.</summary>
     public static async Task RunJavaAsync(string workingDirectory, params string[] arguments)
     {
-        var javaHome = Environment.GetEnvironmentVariable("JAVA_HOME");
-        var java = string.IsNullOrEmpty(javaHome) ? "java" : Path.Combine(javaHome, "bin", "java");
+        using var process = StartJava(new ProcessStartInfo(JavaPath, arguments) { WorkingDirectory = workingDirectory });
+        await process.WaitForExitAsync();
+        if (process.ExitCode != 0)
+            throw new InvalidOperationException($"java {string.Join(' ', arguments)} exited with code {process.ExitCode}.");
+    }
 
-        var startInfo = new ProcessStartInfo(java, arguments) { WorkingDirectory = workingDirectory };
+    private static string JavaPath
+    {
+        get
+        {
+            var javaHome = Environment.GetEnvironmentVariable("JAVA_HOME");
+            return string.IsNullOrEmpty(javaHome) ? "java" : Path.Combine(javaHome, "bin", "java");
+        }
+    }
 
-        Process process;
+    private static Process StartJava(ProcessStartInfo startInfo)
+    {
         try
         {
-            process = Process.Start(startInfo)!;
+            return Process.Start(startInfo)!;
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException("Generating Obsidian's assets needs Java 21 or newer, set JAVA_HOME or put java on the PATH.", ex);
+            throw new InvalidOperationException(
+                $"Generating Obsidian's assets needs Java {RequiredJavaVersion} or newer, set JAVA_HOME or put java on the PATH.", ex);
         }
+    }
 
-        using (process)
+    // `java --version` prints e.g. "openjdk 25.0.3 2026-04-21 LTS" first; Java 8 doesn't know the option and fails.
+    private static async Task CheckJavaVersionAsync()
+    {
+        using var process = StartJava(new ProcessStartInfo(JavaPath, "--version") { RedirectStandardOutput = true, RedirectStandardError = true });
+        var output = await process.StandardOutput.ReadToEndAsync();
+        await process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+
+        var found = output.Split('\n')[0].Trim();
+        var words = found.Split(' ');
+        var major = words.Length > 1 && int.TryParse(words[1].Split('.', '-', '+')[0], out var number) ? number : 0;
+        if (process.ExitCode != 0 || major < RequiredJavaVersion)
         {
-            await process.WaitForExitAsync();
-            if (process.ExitCode != 0)
-                throw new InvalidOperationException($"java {string.Join(' ', arguments)} exited with code {process.ExitCode}.");
+            throw new InvalidOperationException(
+                $"Generating Obsidian's assets needs Java {RequiredJavaVersion} or newer, but {JavaPath} is {(found.Length > 0 ? found : "older")}.");
         }
     }
 

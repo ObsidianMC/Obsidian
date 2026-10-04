@@ -2,7 +2,7 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 ARG GIT_SHA=v0.1
 WORKDIR /src
 # Generating the vanilla assets runs the Minecraft server's data generators.
-RUN apk add --no-cache openjdk21-jdk
+RUN apk add --no-cache openjdk25-jdk
 COPY . .
 RUN dotnet restore
 RUN dotnet publish Obsidian.ConsoleApp/ -c Release -o out /p:SourceRevisionId=$GIT_SHA
