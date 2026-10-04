@@ -400,7 +400,8 @@ public partial class NetworkBuffer : INetStreamReader
         if (length < 0 || length > maxLength)
             throw new InvalidDataException($"Byte array length {length} is outside 0 to {maxLength}.");
 
-        return this.ReadUntil(length);
+        // ReadUntil throws at the end of the buffer even for no bytes, and an empty array can end a packet.
+        return length == 0 ? [] : this.ReadUntil(length);
     }
 
     /// <summary>Reads the rest of the buffer; throws when it's longer than <paramref name="maxLength"/>.</summary>
@@ -410,7 +411,7 @@ public partial class NetworkBuffer : INetStreamReader
         if (length > maxLength)
             throw new InvalidDataException($"{length} remaining bytes are more than {maxLength}.");
 
-        return this.ReadUntil(length);
+        return length == 0 ? [] : this.ReadUntil(length);
     }
 
     /// <summary>Reads a VarInt count, then that many longs.</summary>

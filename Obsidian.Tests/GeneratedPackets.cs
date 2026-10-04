@@ -84,6 +84,17 @@ public class GeneratedPackets
         Assert.Throws<System.IO.InvalidDataException>(() => new EditBookPacket().Populate(book));
     }
 
+    [Fact(DisplayName = "Empty byte arrays can end a packet")]
+    public void ReadsEmptyByteArraysAtTheEnd()
+    {
+        // A cookie response's payload: present, and empty.
+        using var payload = new NetworkBuffer([0x00]);
+        Assert.Empty(payload.ReadByteArray(5120));
+
+        using var nothingLeft = new NetworkBuffer([]);
+        Assert.Empty(nothingLeft.ReadRemainingBytes(32767));
+    }
+
     [Fact(DisplayName = "Chat components can be plain NBT strings")]
     public void ReadsStringComponents()
     {
