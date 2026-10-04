@@ -166,7 +166,7 @@ public sealed class MainCommandModule : CommandModuleBase
     {
         if (this.Player?.Level is World world)
         {
-            await world.FlushRegionsAsync();
+            await world.FlushAsync();
         }
     }
 

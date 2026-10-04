@@ -115,6 +115,15 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         await this.Maps.SaveAsync();
     }
 
+    /// <summary>
+    /// Saves what changes while the world runs: its regions, then its level data and maps.
+    /// </summary>
+    public async Task FlushAsync()
+    {
+        await this.FlushRegionsAsync();
+        await this.SaveAsync();
+    }
+
     public async Task UnloadPlayerAsync(Guid uuid)
     {
         Players.TryRemove(uuid, out var player);
