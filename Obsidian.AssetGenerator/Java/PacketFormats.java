@@ -569,6 +569,9 @@ final class PacketFormats {
                 // codec.apply(ByteBufCodecs.list()) is a list of the codec; other operations stay as written.
                 case "apply" -> {
                     var operation = call.arguments().getFirst();
+                    var named = describeApplied(call.receiver(), operation);
+                    if (named != null)
+                        return named;
                     var inner = describe(call.receiver());
                     var wrapper = operation.name() == null ? null : WRAPPERS.get(operation.name().replace("::", "."));
                     if (wrapper != null && (operation.kind() == Kind.CALL || operation.kind() == Kind.LAMBDA))
@@ -578,6 +581,9 @@ final class PacketFormats {
                 default -> { }
             }
         }
+        var named = describeFactory(call);
+        if (named != null)
+            return named;
         if (ALIASES.containsKey(call.name()))
             return ALIASES.get(call.name());
 
@@ -595,6 +601,51 @@ final class PacketFormats {
                 arguments.add(describe(argument));
         }
         return call.name() + "(" + String.join(", ", arguments) + ")";
+    }
+
+    /**
+     * Codec factories named by hand, where what vanilla builds doesn't say what's written: a payload whose codec its
+     * channel picks at runtime, or NBT read through a lambda. Limits come from the factory's arguments.
+     */
+    private String describeFactory(Node call) {
+        return switch (call.name()) {
+            // The channel id, then the payload to the end of the packet: each channel's codec writes it, and unknown
+            // channels fall back to DiscardedPayload.codec(id, limit), which copies the bytes up to the packet's limit.
+            case "CustomPacketPayload.codec" -> "Identifier, RemainingBytes" + payloadLimit(call.arguments().getFirst());
+            // A nameless NBT tag, or an end tag for none (the lambda only sets the NBT size budget).
+            case "ByteBufCodecs.optionalTagCodec" -> "OptionalNbt";
+            default -> null;
+        };
+    }
+
+    /** {@code codec.apply(operation)} for operations named by hand, or null. */
+    private String describeApplied(Node codec, Node operation) {
+        if (operation.kind() != Kind.CALL)
+            return null;
+        // The codec's bytes after their VarInt length.
+        if (operation.name().equals("ByteBufCodecs.lengthPrefixed"))
+            return "LengthPrefixed<" + describe(codec) + ">" + limit(operation, 0);
+        // A serialization codec's value as a JSON string of at most the limit's length.
+        if (operation.name().equals("ByteBufCodecs.fromCodec") && codec.kind() == Kind.CALL && codec.name().equals("ByteBufCodecs.lenientJson")) {
+            var serializer = operation.arguments().stream().filter(argument -> isCodec(argument.type())).findFirst();
+            return "Json<" + serializer.map(this::describe).orElse("?") + ">" + limit(codec, 0);
+        }
+        return null;
+    }
+
+    /** The limit a custom payload packet's fallback ({@code id -> DiscardedPayload.codec(id, limit)}) passes on. */
+    private String payloadLimit(Node fallback) {
+        if (fallback.kind() != Kind.LAMBDA)
+            return "";
+        var owner = classOf(fallback.handle().owner());
+        var codec = owner == null ? null : runLambda(new Analysis(owner), fallback, new ArrayList<>());
+        return codec != null && codec.kind() == Kind.CALL && codec.name().equals("DiscardedPayload.codec") ? limit(codec, 1) : "";
+    }
+
+    /** {@code (limit)} from a factory's constant argument, or nothing when it isn't a constant. */
+    private static String limit(Node call, int index) {
+        var argument = index < call.arguments().size() ? call.arguments().get(index) : null;
+        return argument != null && argument.kind() == Kind.CONSTANT ? "(" + argument.name() + ")" : "";
     }
 
     // Helpers.
