@@ -8,6 +8,11 @@
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
 
+	<PropertyGroup>
+		<!-- The Minecraft version Obsidian implements. Obsidian.AssetGenerator generates Assets from its server jar. -->
+		<MinecraftVersion>1.21.11</MinecraftVersion>
+	</PropertyGroup>
+
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
 		<DefineConstants>TRACE</DefineConstants>
 		<Deterministic>False</Deterministic>
@@ -64,13 +69,18 @@
 		<Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<!-- Biome parameter lists, configured carvers and block physics are only read at runtime; keep them away from the source generators. -->
-		<AdditionalFiles Include="Assets\**\*.json" Exclude="Assets\biome_parameters\**;Assets\configured_carver\**;Assets\block_physics.json" />
-		<EmbeddedResource Include="Assets\**\*.*" />
-	</ItemGroup>
+	<!-- Assets is generated when Obsidian.AssetGenerator builds, so it's included once the reference is built rather than
+	     at evaluation, when a fresh clone has none. -->
+	<Target Name="IncludeVanillaAssets" AfterTargets="ResolveProjectReferences">
+		<ItemGroup>
+			<!-- Biome parameter lists, configured carvers and block physics are only read at runtime; keep them away from the source generators. -->
+			<AdditionalFiles Include="Assets\**\*.json" Exclude="Assets\biome_parameters\**;Assets\configured_carver\**;Assets\block_physics.json" />
+			<EmbeddedResource Include="Assets\**\*.*" Exclude="Assets\.generated-*" />
+		</ItemGroup>
+	</Target>
 
 	<ItemGroup>
+		<ProjectReference Include="..\Obsidian.AssetGenerator\Obsidian.AssetGenerator.csproj" ReferenceOutputAssembly="false" />
 		<ProjectReference Include="..\Obsidian.API\Obsidian.API.csproj" />
       <ProjectReference Include="..\Obsidian.Nbt\Nbt\Obsidian.Nbt.csproj" />
 		<ProjectReference Include="..\Obsidian.SourceGenerators\Obsidian.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
