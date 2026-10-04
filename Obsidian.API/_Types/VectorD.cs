@@ -58,13 +58,17 @@ public struct VectorD : IEquatable<VectorD>, INetworkSerializable<VectorD>
     public readonly double MagnitudeSquared() => Dot(this, this);
 
     /// <summary>
-    /// Indicates whether this <see cref="VectorD"/> is near equal to <paramref name="other"/> (within 0.01 on each
-    /// axis, like <see cref="VectorF"/>).
+    /// Indicates whether this <see cref="VectorD"/> has exactly the same parts as <paramref name="other"/>; see
+    /// <see cref="IsNear"/> to compare with a tolerance.
     /// </summary>
-    public readonly bool Equals(VectorD other) => IsNear(X, other.X) && IsNear(Y, other.Y) && IsNear(Z, other.Z);
+    public readonly bool Equals(VectorD other) => X.Equals(other.X) && Y.Equals(other.Y) && Z.Equals(other.Z);
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool IsNear(double a, double b) => Math.Abs(a - b) <= 0.01;
+    /// <summary>
+    /// Indicates whether each part of this <see cref="VectorD"/> is within <paramref name="tolerance"/> of
+    /// <paramref name="other"/>'s.
+    /// </summary>
+    public readonly bool IsNear(VectorD other, double tolerance = 0.01) =>
+        Math.Abs(X - other.X) <= tolerance && Math.Abs(Y - other.Y) <= tolerance && Math.Abs(Z - other.Z) <= tolerance;
 
     /// <summary>
     /// Rounds each part of this <see cref="VectorD"/> down to a whole number.

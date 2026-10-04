@@ -74,7 +74,8 @@ public struct Velocity(double x, double y, double z) : IEquatable<Velocity>
     /// <param name="vector"><see cref="VectorD"/> to be used for conversion.</param>
     public static Velocity FromVector(VectorD vector)
     {
-        return FromBlockPerSecond((float)vector.X, (float)vector.Y, (float)vector.Z);
+        // Blocks per second to blocks per tick (20 ticks a second), in doubles to keep the vector's precision.
+        return new Velocity(vector.X / 20, vector.Y / 20, vector.Z / 20);
     }
 
     /// <summary>

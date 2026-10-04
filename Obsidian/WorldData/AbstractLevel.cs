@@ -365,7 +365,7 @@ public abstract partial class AbstractLevel : ILevel
         {
             foreach (var player in Players.Values)
             {
-                if (player.Position == location)
+                if (player.Position.IsNear(location))
                 {
                     yield return player;
                 }
