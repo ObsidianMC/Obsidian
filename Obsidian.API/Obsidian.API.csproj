@@ -36,28 +36,31 @@
 		<DocumentationFile>Obsidian.API.xml</DocumentationFile>
 	</PropertyGroup>
 
-	<ItemGroup>
-		<AdditionalFiles Include="..\Obsidian\Assets\blocks.json" Link="Assets\blocks.json" />
-		<AdditionalFiles Include="..\Obsidian\Assets\items.json" Link="Assets\items.json" />
-		<AdditionalFiles Include="..\Obsidian\Assets\fluids.json" Link="Assets\fluids.json" />
+	<!-- Obsidian.AssetGenerator generates ..\Obsidian\Assets when it builds, so the assets are included once the reference
+	     is built rather than at evaluation, when a fresh clone has none. -->
+	<Target Name="IncludeVanillaAssets" AfterTargets="ResolveProjectReferences">
+		<ItemGroup>
+			<AdditionalFiles Include="..\Obsidian\Assets\blocks.json" Link="Assets\blocks.json" />
+			<AdditionalFiles Include="..\Obsidian\Assets\items.json" Link="Assets\items.json" />
+			<AdditionalFiles Include="..\Obsidian\Assets\fluids.json" Link="Assets\fluids.json" />
 
-		<AdditionalFiles Include="..\Obsidian\Assets\command_parsers.json" Link="Assets\command_parsers.json" />
-		<AdditionalFiles Include="..\Obsidian\Assets\sounds.json" Link="Assets\sounds.json" />
-		<AdditionalFiles Include="..\Obsidian\Assets\tags.json" Link="Assets\tags.json" />
-		
-		<AdditionalFiles Include="..\Obsidian\Assets\Codecs\**\*.json" LinkBase="Assets\Codecs\" />
+			<AdditionalFiles Include="..\Obsidian\Assets\command_parsers.json" Link="Assets\command_parsers.json" />
+			<AdditionalFiles Include="..\Obsidian\Assets\sounds.json" Link="Assets\sounds.json" />
+			<AdditionalFiles Include="..\Obsidian\Assets\tags.json" Link="Assets\tags.json" />
 
-		<AdditionalFiles Include="..\Obsidian\Assets\worldgen\**\*.*" LinkBase="Assets\worldgen\" />
-		<AdditionalFiles Include="..\Obsidian\Assets\enums.json" Link="Assets\enums.json" />
-		<AdditionalFiles Include="..\Obsidian\Assets\item_components.json" Link="Assets\item_components.json" />
-		<AdditionalFiles Include="..\Obsidian\Assets\loot_table\*.json" LinkBase="Assets\loot_table\" />
-		<AdditionalFiles Include="..\Obsidian\Assets\enchantments.json" Link="Assets\enchantments.json" />
-		<AdditionalFiles Include="..\Obsidian\Assets\instruments.json" Link="Assets\instruments.json" />
-	</ItemGroup>
+			<AdditionalFiles Include="..\Obsidian\Assets\Codecs\**\*.json" LinkBase="Assets\Codecs\" />
+
+			<AdditionalFiles Include="..\Obsidian\Assets\worldgen\**\*.*" LinkBase="Assets\worldgen\" />
+			<AdditionalFiles Include="..\Obsidian\Assets\enums.json" Link="Assets\enums.json" />
+			<AdditionalFiles Include="..\Obsidian\Assets\item_components.json" Link="Assets\item_components.json" />
+			<AdditionalFiles Include="..\Obsidian\Assets\loot_table\*.json" LinkBase="Assets\loot_table\" />
+			<AdditionalFiles Include="..\Obsidian\Assets\enchantments.json" Link="Assets\enchantments.json" />
+			<AdditionalFiles Include="..\Obsidian\Assets\instruments.json" Link="Assets\instruments.json" />
+		</ItemGroup>
+	</Target>
 
 	<ItemGroup>
 		<Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
-		<Folder Include="Assets\" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -90,6 +93,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\Obsidian.AssetGenerator\Obsidian.AssetGenerator.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
       <ProjectReference Include="..\Obsidian.Nbt\Nbt\Obsidian.Nbt.csproj" PrivateAssets="all" />
 		<ProjectReference Include="..\Obsidian.SourceGenerators\Obsidian.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 	</ItemGroup>
