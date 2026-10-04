@@ -24,11 +24,17 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
     /// </summary>
     internal MapStorage Maps { get; private set; } = default!;
 
+    // Saves and flushes of the world run one at a time: /save, autosaves and shutdown can overlap.
+    private readonly System.Threading.SemaphoreSlim saveLock = new(1, 1);
+
     public async override Task<bool> LoadAsync(DimensionCodec codec)
     {
         this.Initialize(codec);
 
+        // A save replaces level.dat with its backup kept as .old; if it stopped in between, the backup is the world.
         var fi = new FileInfo(this.LevelDataFilePath);
+        if (!fi.Exists)
+            fi = new FileInfo($"{this.LevelDataFilePath}.old");
         if (!fi.Exists)
             return false;
 
@@ -79,15 +85,37 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
 
     public override async Task SaveAsync()
     {
-        var worldFile = new FileInfo(LevelDataFilePath);
-
-        if (worldFile.Exists)
+        await this.saveLock.WaitAsync();
+        try
         {
-            worldFile.CopyTo($"{LevelDataFilePath}.old", true);
-            worldFile.Delete();
+            await this.SaveLevelAsync();
         }
+        finally
+        {
+            this.saveLock.Release();
+        }
+    }
 
-        await using var fs = worldFile.Create();
+    /// <summary>
+    /// Writes level.dat and the maps. The level data is written to a temporary file first and then replaces level.dat,
+    /// keeping the previous one as level.dat.old, so a save that stops partway leaves a complete file.
+    /// </summary>
+    private async Task SaveLevelAsync()
+    {
+        var temporaryPath = $"{LevelDataFilePath}.tmp";
+        await using (var fs = File.Create(temporaryPath))
+            await this.WriteLevelDataAsync(fs);
+
+        if (File.Exists(LevelDataFilePath))
+            File.Replace(temporaryPath, LevelDataFilePath, $"{LevelDataFilePath}.old");
+        else
+            File.Move(temporaryPath, LevelDataFilePath);
+
+        await this.Maps.SaveAsync();
+    }
+
+    private async Task WriteLevelDataAsync(Stream fs)
+    {
         await using var writer = new NbtWriterStream(fs, NbtCompression.GZip, "");
 
         writer.WriteBool("hardcore", LevelData.Hardcore);
@@ -111,8 +139,6 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         writer.EndCompound();
 
         await writer.TryFinishAsync();
-
-        await this.Maps.SaveAsync();
     }
 
     /// <summary>
@@ -120,8 +146,16 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
     /// </summary>
     public async Task FlushAsync()
     {
-        await this.FlushRegionsAsync();
-        await this.SaveAsync();
+        await this.saveLock.WaitAsync();
+        try
+        {
+            await this.FlushRegionsAsync();
+            await this.SaveLevelAsync();
+        }
+        finally
+        {
+            this.saveLock.Release();
+        }
     }
 
     public async Task UnloadPlayerAsync(Guid uuid)
