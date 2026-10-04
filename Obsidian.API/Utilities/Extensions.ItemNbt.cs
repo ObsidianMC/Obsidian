@@ -1,4 +1,4 @@
-﻿using Obsidian.API.Effects;
+using Obsidian.API.Effects;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;

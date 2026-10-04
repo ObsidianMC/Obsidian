@@ -1,4 +1,4 @@
-namespace Obsidian.Net.Packets.Common;
+﻿namespace Obsidian.Net.Packets.Common;
 public partial record class ClientInformationPacket
 {
     public override ValueTask HandleAsync(IServer server, IPlayer player)
