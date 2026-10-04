@@ -1,9 +1,12 @@
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,17 +20,19 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Dumps the vanilla data Obsidian needs that Mojang's data generators don't report: per block state light, physics,
- * transforms, map colors and wall shape covers, and entity data.
+ * transforms, map colors and wall shape covers, entity data, and the fields of each packet.
  *
  * <p>Usage, with the unbundled server jar and its libraries on the class path:
  * {@code java -cp <server + libraries> VanillaDumper.java <server mappings (server.txt)> <assets directory> <work directory>}.
- * The assets go to the assets directory; {@code worldgen_groups.json}, which only the generator itself uses, goes to the
- * work directory.
+ * The assets go to the assets directory; {@code worldgen_groups.json} and {@code packet_fields.json}, which only the
+ * generator itself uses, go to the work directory.
  *
  * <p>The server jar is obfuscated, so everything vanilla is reached through reflection, by its Mojang name looked up in
  * Mojang's ProGuard mappings (see {@link Mojang}). The values all come from calling vanilla's own methods on every block
@@ -55,6 +60,7 @@ public final class VanillaDumper {
     private static final String ENTITY = "net.minecraft.world.entity.Entity";
     private static final String ENTITY_TYPE = "net.minecraft.world.entity.EntityType";
     private static final String TAG_KEY = "net.minecraft.tags.TagKey";
+    private static final String PACKET_TYPE = "net.minecraft.network.protocol.PacketType";
 
     private final Mojang mojang;
     private final Path output;
@@ -106,6 +112,7 @@ public final class VanillaDumper {
         dumper.dumpWallShapeCovers();
         dumper.dumpEntities();
         dumper.dumpWorldgenGroups(work);
+        dumper.dumpPacketFields(work);
         System.out.printf("Dumped vanilla data in %.1fs%n", (System.nanoTime() - started) / 1e9);
     }
 
@@ -701,6 +708,81 @@ public final class VanillaDumper {
         return groups;
     }
 
+    /**
+     * {@code packet_fields.json} in the work directory: per direction ({@code PacketFlow.id()}) and packet id, the
+     * fields of the packet's class, which {@code DatagenAssets} adds to {@code packets.json}. A packet's class is the
+     * type argument of its {@code PacketType<T>} constant in vanilla's {@code *PacketTypes} classes.
+     *
+     * <p>The fields are the class's instance fields, its superclasses' first, in declaration order: for record packets
+     * the order of their components, which their codecs usually write in. They're Java fields, so they don't tell how a
+     * value is encoded (an {@code int} may be written as a VarInt), and a class may hold fields its codec derives or skips.
+     */
+    private void dumpPacketFields(Path work) throws IOException {
+        var packetType = mojang.type(PACKET_TYPE);
+        var flow = mojang.method(PACKET_TYPE, "flow");
+        var id = mojang.method(PACKET_TYPE, "id");
+        var flowId = mojang.method("net.minecraft.network.protocol.PacketFlow", "id");
+        var classes = new HashMap<String, Class<?>>();
+        var json = new TreeMap<String, Map<String, Object>>();
+        for (var className : mojang.classes(name -> name.startsWith("net.minecraft.network.protocol.") && name.endsWith("PacketTypes"))) {
+            for (var field : mojang.type(className).getDeclaredFields()) {
+                if (!Modifier.isStatic(field.getModifiers()) || field.getType() != packetType
+                    || !(field.getGenericType() instanceof ParameterizedType generic))
+                    continue;
+
+                // Generic packets (BundleDelimiterPacket<T>) are listed by their class.
+                var argument = generic.getActualTypeArguments()[0];
+                var type = (Class<?>) (argument instanceof ParameterizedType parameterized ? parameterized.getRawType() : argument);
+                var packet = Mojang.getStatic(field);
+                var direction = (String) Mojang.call(flowId, Mojang.call(flow, packet));
+                var key = direction + " " + Mojang.call(id, packet);
+                var previous = classes.put(key, type);
+                if (previous != null && previous != type)
+                    throw new IllegalStateException(key + " is both " + mojang.simpleName(previous) + " and " + mojang.simpleName(type));
+
+                json.computeIfAbsent(direction, name -> new TreeMap<>()).put(Mojang.call(id, packet).toString(), packetFields(type));
+            }
+        }
+        if (classes.isEmpty())
+            throw new IllegalStateException("Found no packet types");
+
+        Json.write(work.resolve("packet_fields.json"), json, true);
+    }
+
+    /** A class's instance fields, its superclasses' first, by Mojang name and type ({@link #typeName}). */
+    private List<Object> packetFields(Class<?> type) {
+        var fields = type.getSuperclass() == null ? new ArrayList<Object>() : packetFields(type.getSuperclass());
+        for (var field : type.getDeclaredFields()) {
+            if (Modifier.isStatic(field.getModifiers()) || field.isSynthetic())
+                continue;
+
+            var entry = new LinkedHashMap<String, Object>();
+            entry.put("name", mojang.fieldName(type, field));
+            entry.put("type", typeName(field.getGenericType()));
+            fields.add(entry);
+        }
+
+        return fields;
+    }
+
+    /**
+     * A Java type by Mojang's names, without packages and with nested classes after their outer class:
+     * {@code int}, {@code Optional<Component>}, {@code ClientboundBossEventPacket.Operation}.
+     */
+    private String typeName(Type type) {
+        return switch (type) {
+            case Class<?> array when array.isArray() -> typeName(array.getComponentType()) + "[]";
+            case Class<?> plain -> mojang.nestedName(plain);
+            case ParameterizedType generic -> typeName(generic.getRawType())
+                + Arrays.stream(generic.getActualTypeArguments()).map(this::typeName).collect(Collectors.joining(", ", "<", ">"));
+            case GenericArrayType array -> typeName(array.getGenericComponentType()) + "[]";
+            case WildcardType wildcard when wildcard.getLowerBounds().length > 0 -> "? super " + typeName(wildcard.getLowerBounds()[0]);
+            case WildcardType wildcard when wildcard.getUpperBounds()[0] == Object.class -> "?";
+            case WildcardType wildcard -> "? extends " + typeName(wildcard.getUpperBounds()[0]);
+            default -> type.getTypeName(); // type variables
+        };
+    }
+
     // Helpers.
 
     /** The id of a registry entry, like {@code minecraft:stone}. */
@@ -837,17 +919,25 @@ public final class VanillaDumper {
 
         /** The Mojang names of the classes directly in a package (not its subpackages), sorted. */
         List<String> classesIn(String packageName) {
-            return obfuscatedClasses.keySet().stream()
-                .filter(name -> name.lastIndexOf('.') == packageName.length() && name.startsWith(packageName + ".")
-                    && !name.endsWith(".package-info"))
-                .sorted()
-                .toList();
+            return classes(name -> name.lastIndexOf('.') == packageName.length() && name.startsWith(packageName + ".")
+                && !name.endsWith(".package-info"));
+        }
+
+        /** The Mojang names of the classes matching a filter, sorted. */
+        List<String> classes(Predicate<String> filter) {
+            return obfuscatedClasses.keySet().stream().filter(filter).sorted().toList();
         }
 
         /** The Mojang simple name of a class, like {@code StairBlock} (the part after the last '.' or '$'). */
         String simpleName(Class<?> type) {
             var name = mojangClasses.getOrDefault(type.getName(), type.getName());
             return name.substring(Math.max(name.lastIndexOf('.'), name.lastIndexOf('$')) + 1);
+        }
+
+        /** The Mojang name of a class without its package, like {@code BossEvent.BossBarColor} for a nested class. */
+        String nestedName(Class<?> type) {
+            var name = mojangClasses.getOrDefault(type.getName(), type.getName());
+            return name.substring(name.lastIndexOf('.') + 1).replace('$', '.');
         }
 
         /** The Mojang name of a field declared by a class. */

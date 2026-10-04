@@ -3,7 +3,8 @@ namespace Obsidian.AssetGenerator;
 /// <summary>
 /// Runs <c>Java/VanillaDumper.java</c> against a vanilla server, which writes the assets the data generators don't
 /// report: per block state light, physics, transforms, map colors and wall shape covers, and entity data. It also writes
-/// <see cref="WorldgenGroupsPath"/> into the server's directory for <see cref="Datagen.DatagenAssets"/>.
+/// <see cref="WorldgenGroupsPath"/> and <see cref="PacketFieldsPath"/> into the server's directory for
+/// <see cref="Datagen.DatagenAssets"/>.
 /// </summary>
 /// <remarks>
 /// The dumper runs from source (java's source launcher) with the server on its class path, and finds vanilla's classes
@@ -18,6 +19,12 @@ internal static class JavaDumper
     /// feature, which the worldgen assets are grouped by.
     /// </summary>
     public static string WorldgenGroupsPath(VanillaServer server) => Path.Combine(server.Directory, "worldgen_groups.json");
+
+    /// <summary>
+    /// The fields of each packet's class, as <c>direction → packet id → [{ name, type }]</c>, which are added to
+    /// <c>packets.json</c>.
+    /// </summary>
+    public static string PacketFieldsPath(VanillaServer server) => Path.Combine(server.Directory, "packet_fields.json");
 
     public static Task RunAsync(VanillaServer server, string outputDirectory) =>
         VanillaServer.RunJavaAsync(server.Directory,

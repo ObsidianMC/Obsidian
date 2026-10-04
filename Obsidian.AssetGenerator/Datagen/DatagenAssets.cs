@@ -21,8 +21,9 @@ internal static class DatagenAssets
 
     /// <param name="generatedDirectory">The data generators' output (<c>data</c> and <c>reports</c>).</param>
     /// <param name="worldgenGroupsPath">The Java dumper's vanilla classes declaring each feature (see <see cref="WorldgenAssets"/>).</param>
+    /// <param name="packetFieldsPath">The Java dumper's fields of each packet (see <see cref="JavaDumper.PacketFieldsPath"/>).</param>
     /// <param name="outputDirectory">The assets directory to write into.</param>
-    public static void Write(string generatedDirectory, string worldgenGroupsPath, string outputDirectory)
+    public static void Write(string generatedDirectory, string worldgenGroupsPath, string packetFieldsPath, string outputDirectory)
     {
         var reports = Path.Combine(generatedDirectory, "reports");
         var data = Path.Combine(generatedDirectory, "data", "minecraft");
@@ -33,7 +34,7 @@ internal static class DatagenAssets
         CopyDirectory(Path.Combine(data, "worldgen", "configured_carver"), Path.Combine(outputDirectory, "configured_carver"));
 
         WriteRegistries(ReadObject(Path.Combine(reports, "registries.json")), outputDirectory);
-        WritePackets(ReadObject(Path.Combine(reports, "packets.json")), outputDirectory);
+        WritePackets(ReadObject(Path.Combine(reports, "packets.json")), ReadObject(packetFieldsPath), outputDirectory);
 
         WriteJson(Path.Combine(outputDirectory, "recipes.json"), Combine(Path.Combine(data, "recipe"), path => path));
         WriteJson(Path.Combine(outputDirectory, "advancements.json"), Combine(Path.Combine(data, "advancement"), ToId));
@@ -76,9 +77,9 @@ internal static class DatagenAssets
 
     /// <summary>
     /// Flattens the packets report (<c>state → direction → packet → protocol_id</c>) into the list the packet source
-    /// generator reads.
+    /// generator reads, with the Java dumper's fields of each packet.
     /// </summary>
-    private static void WritePackets(JsonObject report, string outputDirectory)
+    private static void WritePackets(JsonObject report, JsonObject fields, string outputDirectory)
     {
         var packets = new JsonArray();
         foreach (var (state, directions) in report)
@@ -95,7 +96,8 @@ internal static class DatagenAssets
                         ["namespace"] = ToPascalCase(direction),
                         ["state"] = ToPascalCase(state),
                         ["packet_id"] = packet!["protocol_id"]!.DeepClone(),
-                        ["usable_interface"] = $"I{ToPascalCase(direction)}Packet"
+                        ["usable_interface"] = $"I{ToPascalCase(direction)}Packet",
+                        ["fields"] = (fields[direction]?[id] ?? throw new InvalidDataException($"The Java dumper has no fields for {direction} {id}.")).DeepClone()
                     });
                 }
             }

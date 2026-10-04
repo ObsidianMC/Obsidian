@@ -28,7 +28,7 @@ Console.WriteLine("Running the Java dumper...");
 await JavaDumper.RunAsync(server, staging);
 
 Console.WriteLine("Writing data generator assets...");
-DatagenAssets.Write(server.GeneratedDirectory, JavaDumper.WorldgenGroupsPath(server), staging);
+DatagenAssets.Write(server.GeneratedDirectory, JavaDumper.WorldgenGroupsPath(server), JavaDumper.PacketFieldsPath(server), staging);
 
 if (Directory.Exists(assetsDirectory))
     Directory.Delete(assetsDirectory, recursive: true);
