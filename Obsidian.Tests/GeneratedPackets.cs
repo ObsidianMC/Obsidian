@@ -116,7 +116,7 @@ public class GeneratedPackets
             .OrderBy(type => type.Name)
             .Select(type => new object[] { type });
 
-    private static byte[] Write(MethodInfo write, object? value)
+    private static byte[] Write(MethodInfo write, object value)
     {
         using var buffer = new NetworkBuffer();
         write.Invoke(null, [value, buffer]);
@@ -127,7 +127,7 @@ public class GeneratedPackets
     private static byte[] Written(NetworkBuffer buffer) => buffer.AsSpan(0, buffer.Size).ToArray();
 
     /// <summary>A value of every type generated code reads and writes, with records filled in recursively.</summary>
-    private static object? Sample(Type type, int depth)
+    private static object Sample(Type type, int depth)
     {
         type = Nullable.GetUnderlyingType(type) ?? type;
         if (type.IsEnum)
