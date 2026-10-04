@@ -143,14 +143,24 @@ public class Entity : IEquatable<Entity>, IEntity
     #endregion NBT
 
     #region Update methods
+    /// <summary>
+    /// A move as a relative-move packet's delta, in 1/4096 blocks: each position rounded to that scale, then
+    /// subtracted. This matches vanilla's <c>VecDeltaCodec</c> (Java's <c>Math.round</c>, so halves round up),
+    /// which the client decodes the delta with; rounding the difference instead lets repeated moves drift.
+    /// </summary>
+    internal static Vector MoveDelta(VectorD from, VectorD to) =>
+        new(MoveDelta(from.X, to.X), MoveDelta(from.Y, to.Y), MoveDelta(from.Z, to.Z));
+
+    private static int MoveDelta(double from, double to) => (int)(Math.Floor(to * 4096 + 0.5) - Math.Floor(from * 4096 + 0.5));
+
     public virtual async ValueTask UpdateAsync(VectorD position, MovementFlags movementFlags)
     {
-        var isNewLocation = position != Position;
+        // Moved when the move shows on the client: when its delta, in 1/4096 blocks, isn't zero.
+        var delta = MoveDelta(Position, position);
+        var isNewLocation = delta != Vector.Zero;
 
         if (isNewLocation)
         {
-            var delta = (Vector)((position * 32 - Position * 32) * 128);
-
             this.PacketBroadcaster.BroadcastToLevelInRange(this.Level, position, new MoveEntityPosPacket
             {
                 EntityId = EntityId,
@@ -166,13 +176,13 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public virtual async ValueTask UpdateAsync(VectorD position, Angle yaw, Angle pitch, MovementFlags movementFlags)
     {
-        var isNewLocation = position != Position;
+        // Moved when the move shows on the client: when its delta, in 1/4096 blocks, isn't zero.
+        var delta = MoveDelta(Position, position);
+        var isNewLocation = delta != Vector.Zero;
         var isNewRotation = yaw != Yaw || pitch != Pitch;
 
         if (isNewLocation)
         {
-            var delta = (Vector)((position * 32 - Position * 32) * 128);
-
             if (isNewRotation)
             {
                 this.PacketBroadcaster.BroadcastToLevelInRange(this.Level, position, new MoveEntityPosRotPacket
@@ -462,7 +472,7 @@ public class Entity : IEquatable<Entity>, IEntity
             return default;
         }
 
-        var delta = (Vector)(pos * 32 - Position * 32) * 128;
+        var delta = MoveDelta(Position, pos);
 
         this.PacketBroadcaster.QueuePacketToLevel(this.Level, 0, new MoveEntityPosRotPacket
         {
