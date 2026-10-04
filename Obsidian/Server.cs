@@ -303,11 +303,23 @@ public sealed partial class Server : IServer
             while (await timer.WaitForNextTickAsync(this.cancelTokenSource.Token))
             {
                 Log.SavingWorlds(this.logger);
-                await WorldManager.FlushLoadedWorldsAsync();
-                await this.userCache.SaveAsync();
+
+                // A failed save is reported, and the next one still runs.
+                try
+                {
+                    await WorldManager.FlushLoadedWorldsAsync();
+                    await this.userCache.SaveAsync();
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    Log.AutosaveFailed(this.logger, ex);
+                }
             }
         }
-        catch { }
+        catch (OperationCanceledException)
+        {
+            // The server is stopping, which saves the worlds itself.
+        }
     }
 
     private async Task LoopAsync()
@@ -414,6 +426,9 @@ public sealed partial class Server : IServer
 
         [LoggerMessage(Level = LogLevel.Debug, Message = "Saving worlds")]
         public static partial void SavingWorlds(ILogger logger);
+
+        [LoggerMessage(Level = LogLevel.Error, Message = "Saving the worlds failed")]
+        public static partial void AutosaveFailed(ILogger logger, Exception exception);
 
         [LoggerMessage(Level = LogLevel.Debug, Message = "Throttled {Ip} for reconnecting too quickly")]
         public static partial void Throttled(ILogger logger, string ip);
