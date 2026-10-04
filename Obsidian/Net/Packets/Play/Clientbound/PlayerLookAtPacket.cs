@@ -8,7 +8,7 @@ public partial class PlayerLookAtPacket
     public Anchor FromAnchor { get; set; }
 
     [Field(1), DataFormat(typeof(double))]
-    public VectorF Target { get; set; }
+    public VectorD Target { get; set; }
 
     [Field(2), VarLength]
     public int? EntityId { get; set; }
@@ -19,7 +19,7 @@ public partial class PlayerLookAtPacket
     public override void Serialize(INetStreamWriter writer)
     {
         writer.WriteVarInt(this.FromAnchor);
-        writer.WriteAbsolutePositionF(this.Target);
+        VectorD.Write(this.Target, writer);
 
         writer.WriteBoolean(this.EntityId.HasValue);
 

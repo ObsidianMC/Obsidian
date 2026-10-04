@@ -45,7 +45,7 @@ public sealed class PacketBroadcaster(IServer server, IServerEnvironment environ
             player.Client.SendPacket(packet);
     }
 
-    public void BroadcastToLevelInRange(ILevel toLevel, VectorF location, IClientboundPacket packet, params int[] excludedIds)
+    public void BroadcastToLevelInRange(ILevel toLevel, VectorD location, IClientboundPacket packet, params int[] excludedIds)
     {
         if (toLevel is not AbstractLevel world)
             return;
@@ -54,7 +54,7 @@ public sealed class PacketBroadcaster(IServer server, IServerEnvironment environ
             player.Client.SendPacket(packet);
     }
 
-    public void QueuePacketToLevelInRange(ILevel toLevel, VectorF location, IClientboundPacket packet, params int[] excludedIds)
+    public void QueuePacketToLevelInRange(ILevel toLevel, VectorD location, IClientboundPacket packet, params int[] excludedIds)
     {
         if (toLevel is not AbstractLevel world)
             return;

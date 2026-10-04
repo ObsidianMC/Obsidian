@@ -4,10 +4,10 @@ public readonly struct BoundingBox : IEquatable<BoundingBox>
 {
     public const int CornerCount = 8;
 
-    public readonly VectorF Max;
-    public readonly VectorF Min;
+    public readonly VectorD Max;
+    public readonly VectorD Min;
 
-    public BoundingBox(VectorF min, VectorF max)
+    public BoundingBox(VectorD min, VectorD max)
     {
         this.Min = min;
         this.Max = max;
@@ -52,25 +52,25 @@ public readonly struct BoundingBox : IEquatable<BoundingBox>
         return ContainmentType.Intersects;
     }
 
-    public bool Contains(VectorF vec)
+    public bool Contains(VectorD vec)
     {
         return Min.X <= vec.X && vec.X <= Max.X &&
                Min.Y <= vec.Y && vec.Y <= Max.Y &&
                Min.Z <= vec.Z && vec.Z <= Max.Z;
     }
 
-    public static BoundingBox CreateFromPoints(IEnumerable<VectorF> points)
+    public static BoundingBox CreateFromPoints(IEnumerable<VectorD> points)
     {
         ArgumentNullException.ThrowIfNull(points);
 
         var empty = true;
-        var pos2 = new VectorF(float.MaxValue);
-        var pos1 = new VectorF(float.MinValue);
+        var pos2 = new VectorD(double.MaxValue);
+        var pos1 = new VectorD(double.MinValue);
 
         foreach (var Position in points)
         {
-            pos2 = VectorF.Min(pos2, Position);
-            pos1 = VectorF.Max(pos1, Position);
+            pos2 = VectorD.Min(pos2, Position);
+            pos1 = VectorD.Max(pos1, Position);
             empty = false;
         }
 
@@ -80,20 +80,20 @@ public readonly struct BoundingBox : IEquatable<BoundingBox>
         return new BoundingBox(pos2, pos1);
     }
 
-    public BoundingBox OffsetBy(VectorF offset) => new BoundingBox(Min + offset, Max + offset);
+    public BoundingBox OffsetBy(VectorD offset) => new BoundingBox(Min + offset, Max + offset);
 
-    public VectorF[] GetCorners()
+    public VectorD[] GetCorners()
     {
         return
         [
-                new VectorF(Min.X, Max.Y, Max.Z),
-                new VectorF(Max.X, Max.Y, Max.Z),
-                new VectorF(Max.X, Min.Y, Max.Z),
-                new VectorF(Min.X, Min.Y, Max.Z),
-                new VectorF(Min.X, Max.Y, Min.Z),
-                new VectorF(Max.X, Max.Y, Min.Z),
-                new VectorF(Max.X, Min.Y, Min.Z),
-                new VectorF(Min.X, Min.Y, Min.Z)
+                new VectorD(Min.X, Max.Y, Max.Z),
+                new VectorD(Max.X, Max.Y, Max.Z),
+                new VectorD(Max.X, Min.Y, Max.Z),
+                new VectorD(Min.X, Min.Y, Max.Z),
+                new VectorD(Min.X, Max.Y, Min.Z),
+                new VectorD(Max.X, Max.Y, Min.Z),
+                new VectorD(Max.X, Min.Y, Min.Z),
+                new VectorD(Min.X, Min.Y, Min.Z)
             ];
     }
 

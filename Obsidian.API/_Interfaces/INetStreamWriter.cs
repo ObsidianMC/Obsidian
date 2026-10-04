@@ -49,12 +49,10 @@ public interface INetStreamWriter : INetStream
     public void WriteUuid(Guid value);
     public void WritePosition(Vector value);
     public void WritePosition(SoundPosition position);
-    public void WriteAbsolutePosition(Vector value);
     public void WriteAbsoluteFloatPosition(Vector value);
     public void WriteAbsoluteShortPosition(Vector value);
     public void WriteAbsoluteShortPosition(VectorF value);
     public void WritePositionF(VectorF value);
-    public void WriteAbsolutePositionF(VectorF value);
     public void WriteAbsoluteFloatPositionF(VectorF value);
     public void WriteVelocity(Velocity value);
     public void WriteAdvancement(Advancement advancement);

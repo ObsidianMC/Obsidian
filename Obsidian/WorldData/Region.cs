@@ -356,7 +356,7 @@ public class Region : IRegion
     /// <remarks>
     /// Unlike <c>VectorF.ToChunkCoord</c>, which truncates, this floors negative coordinates like vanilla.
     /// </remarks>
-    internal static (int X, int Z) ChunkOf(VectorF position) => ((int)MathF.Floor(position.X) >> 4, (int)MathF.Floor(position.Z) >> 4);
+    internal static (int X, int Z) ChunkOf(VectorD position) => ((int)Math.Floor(position.X) >> 4, (int)Math.Floor(position.Z) >> 4);
 
     public async Task BeginTickAsync(CancellationToken cts = default)
     {

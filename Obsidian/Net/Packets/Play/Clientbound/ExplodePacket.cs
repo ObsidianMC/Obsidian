@@ -5,7 +5,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound;
 public partial class ExplodePacket
 {
     [Field(0), DataFormat(typeof(double))]
-    public required VectorF Center { get; init; }
+    public required VectorD Center { get; init; }
 
     [Field(1)]
     public required float Radius { get; init; }

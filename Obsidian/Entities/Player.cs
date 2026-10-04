@@ -246,7 +246,7 @@ public sealed partial class Player : Avatar, IPlayer
             await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId, container.ToList()));
     }
 
-    public async override ValueTask TeleportAsync(VectorF pos)
+    public async override ValueTask TeleportAsync(VectorD pos)
     {
         LastPosition = Position;
         Position = pos;
@@ -614,7 +614,7 @@ public sealed partial class Player : Avatar, IPlayer
 
     public override string ToString() => Username;
 
-    public async override ValueTask UpdateAsync(VectorF position, MovementFlags movementFlags)
+    public async override ValueTask UpdateAsync(VectorD position, MovementFlags movementFlags)
     {
         await base.UpdateAsync(position, movementFlags);
 
@@ -625,7 +625,7 @@ public sealed partial class Player : Avatar, IPlayer
         await PickupNearbyItemsAsync();
     }
 
-    public async override ValueTask UpdateAsync(VectorF position, Angle yaw, Angle pitch, MovementFlags movementFlags)
+    public async override ValueTask UpdateAsync(VectorD position, Angle yaw, Angle pitch, MovementFlags movementFlags)
     {
         await base.UpdateAsync(position, yaw, pitch, movementFlags);
 

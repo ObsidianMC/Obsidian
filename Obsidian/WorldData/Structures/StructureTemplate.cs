@@ -489,7 +489,7 @@ public sealed class StructureTemplate
 
             // Vanilla keeps the rotation within a turn when the entity is loaded into the level (Entity.setRot).
             level.AddEntity(new GeneratedEntity(id.Value!,
-                new VectorF((float)(position.X + origin.X), (float)(position.Y + origin.Y), (float)(position.Z + origin.Z)),
+                new VectorD(position.X + origin.X, position.Y + origin.Y, position.Z + origin.Z),
                 RotateYaw(yaw, settings.Mirror, settings.Rotation) % 360f, pitch % 360f)
             {
                 Data = NbtCopy.Copy(entity.Nbt, "id", "Pos", "Rotation", "UUID")

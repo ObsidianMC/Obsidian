@@ -7,20 +7,15 @@ public class Animal : AgeableMob
     public async override ValueTask TickAsync()
     {
         // TODO obby doesn't properly spawn entities yet
-        var closest = Level.PlayersInRange((Vector)Position).MinBy(p => VectorF.Distance(Position, p.Position));
+        var closest = Level.PlayersInRange((Vector)Position).MinBy(p => VectorD.Distance(Position, p.Position));
         if (closest is not null)
         {
-            var closestPosition = new VectorF()
-            {
-                X = closest.Position.X,
-                Y = (float)closest.HeadY,
-                Z = closest.Position.Z
-            };
+            var closestPosition = new VectorD(closest.Position.X, closest.HeadY, closest.Position.Z);
 
             var lookAt = closestPosition - Position;
 
-            var yaw = (byte)((MathF.Atan2(lookAt.Z, lookAt.X) * (256 / (2 * MathF.PI)) - 64) % 256);
-            var pitch = (byte)(256 - (MathF.Asin(lookAt.Y / lookAt.Magnitude) * (256 / (2 * MathF.PI))));
+            var yaw = (byte)((Math.Atan2(lookAt.Z, lookAt.X) * (256 / (2 * Math.PI)) - 64) % 256);
+            var pitch = (byte)(256 - (Math.Asin(lookAt.Y / lookAt.Magnitude) * (256 / (2 * Math.PI))));
 
             SetRotation(new Angle(yaw), new Angle(pitch), MovementFlags.OnGround);
             SetHeadRotation(new Angle(yaw));

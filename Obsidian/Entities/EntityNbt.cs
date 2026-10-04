@@ -156,19 +156,19 @@ internal static class EntityNbt
     public static void SetFlag(this NbtCompound compound, string name, bool value) =>
         compound.SetOrRemove(name, value ? new NbtTag<bool>(name, true) : null);
 
-    public static NbtList DoubleList(string name, VectorF vector) => new(NbtTagType.Double, name)
+    public static NbtList DoubleList(string name, VectorD vector) => new(NbtTagType.Double, name)
     {
         new NbtTag<double>(string.Empty, vector.X),
         new NbtTag<double>(string.Empty, vector.Y),
         new NbtTag<double>(string.Empty, vector.Z)
     };
 
-    public static bool TryReadVector(NbtCompound compound, string name, out VectorF vector)
+    public static bool TryReadVector(NbtCompound compound, string name, out VectorD vector)
     {
         if (compound.TryGetTag<NbtList>(name, out var list) && list.Count >= 3
             && list[0] is NbtTag<double> x && list[1] is NbtTag<double> y && list[2] is NbtTag<double> z)
         {
-            vector = new VectorF((float)x.Value, (float)y.Value, (float)z.Value);
+            vector = new VectorD(x.Value, y.Value, z.Value);
             return true;
         }
 

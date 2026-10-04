@@ -9,7 +9,7 @@ namespace Obsidian.API.World.Features;
 /// <param name="Position">Where the entity is spawned.</param>
 /// <param name="Yaw">The entity's yaw, in degrees.</param>
 /// <param name="Pitch">The entity's pitch, in degrees.</param>
-public sealed record GeneratedEntity(string Type, VectorF Position, float Yaw = 0f, float Pitch = 0f)
+public sealed record GeneratedEntity(string Type, VectorD Position, float Yaw = 0f, float Pitch = 0f)
 {
     /// <summary>
     /// Vanilla's saved entity fields besides the id, position and rotation, e.g. <c>Invulnerable</c>.

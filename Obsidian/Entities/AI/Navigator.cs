@@ -10,10 +10,10 @@ public class Navigator : INavigator
 
     public TargetType TargetType { get; set; }
 
-    public VectorF TargetLocation { get; set; }
+    public VectorD TargetLocation { get; set; }
     public IEntity? Target { get; set; }
 
-    public void NavigateTo(VectorF to)
+    public void NavigateTo(VectorD to)
     {
 
     }

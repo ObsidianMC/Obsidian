@@ -18,9 +18,9 @@ public class Entity : IEquatable<Entity>, IEntity
     public IEventDispatcher EventDispatcher => this.Level.EventDispatcher;
 
     #region Location properties
-    public VectorF LastPosition { get; set; }
+    public VectorD LastPosition { get; set; }
 
-    public VectorF Position { get; set; }
+    public VectorD Position { get; set; }
 
     public Angle Pitch { get; set; }
 
@@ -29,7 +29,7 @@ public class Entity : IEquatable<Entity>, IEntity
     /// <summary>
     /// The entity's velocity in blocks per tick, saved as vanilla's <c>Motion</c>.
     /// </summary>
-    public VectorF Motion { get; set; }
+    public VectorD Motion { get; set; }
     #endregion Location properties
 
     public int EntityId { get; internal set; }
@@ -38,7 +38,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public Pose Pose { get; set; } = Pose.Standing;
 
-    public virtual BoundingBox BoundingBox { get; protected set; } = new(VectorF.Zero, VectorF.Zero);
+    public virtual BoundingBox BoundingBox { get; protected set; } = new(VectorD.Zero, VectorD.Zero);
     public virtual EntityDimension Dimension { get; protected set; } = EntityDimension.Zero;
 
     public int PowderedSnowTicks { get; set; }
@@ -143,7 +143,7 @@ public class Entity : IEquatable<Entity>, IEntity
     #endregion NBT
 
     #region Update methods
-    public virtual async ValueTask UpdateAsync(VectorF position, MovementFlags movementFlags)
+    public virtual async ValueTask UpdateAsync(VectorD position, MovementFlags movementFlags)
     {
         var isNewLocation = position != Position;
 
@@ -164,7 +164,7 @@ public class Entity : IEquatable<Entity>, IEntity
         await UpdatePositionAsync(position, movementFlags);
     }
 
-    public virtual async ValueTask UpdateAsync(VectorF position, Angle yaw, Angle pitch, MovementFlags movementFlags)
+    public virtual async ValueTask UpdateAsync(VectorD position, Angle yaw, Angle pitch, MovementFlags movementFlags)
     {
         var isNewLocation = position != Position;
         var isNewRotation = yaw != Yaw || pitch != Pitch;
@@ -251,7 +251,7 @@ public class Entity : IEquatable<Entity>, IEntity
         this.UpdatePosition(yaw, pitch, movementFlags);
     }
 
-    public async Task UpdatePositionAsync(VectorF pos, MovementFlags movementFlags)
+    public async Task UpdatePositionAsync(VectorD pos, MovementFlags movementFlags)
     {
         var (x, z) = pos.ToChunkCoord();
         var chunk = await this.Level.GetChunkAsync(x, z, false);
@@ -266,7 +266,7 @@ public class Entity : IEquatable<Entity>, IEntity
             BoundingBox = Dimension.CreateBBFromPosition(pos);
     }
 
-    public async Task UpdatePositionAsync(VectorF pos, Angle yaw, Angle pitch, MovementFlags movementFlags = MovementFlags.OnGround)
+    public async Task UpdatePositionAsync(VectorD pos, Angle yaw, Angle pitch, MovementFlags movementFlags = MovementFlags.OnGround)
     {
         var (x, z) = pos.ToChunkCoord();
         var chunk = await Level.GetChunkAsync(x, z, false);
@@ -446,9 +446,9 @@ public class Entity : IEquatable<Entity>, IEntity
         await this.TeleportAsync(to.Position);
     }
 
-    public virtual ValueTask TeleportAsync(VectorF pos)
+    public virtual ValueTask TeleportAsync(VectorD pos)
     {
-        if (VectorF.Distance(Position, pos) > 8)
+        if (VectorD.Distance(Position, pos) > 8)
         {
             this.PacketBroadcaster.QueuePacketToLevel(this.Level, 0, new TeleportEntityPacket
             {

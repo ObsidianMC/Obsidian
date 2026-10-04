@@ -135,7 +135,7 @@ public sealed class EndSpikeFeature : ConfiguredFeatureBase
         if (this.CrystalInvulnerable)
             data.Add(new NbtTag<bool>("Invulnerable", true));
 
-        level.AddEntity(new GeneratedEntity("minecraft:end_crystal", new VectorF(crystal.X + 0.5f, crystal.Y, crystal.Z + 0.5f),
+        level.AddEntity(new GeneratedEntity("minecraft:end_crystal", new VectorD(crystal.X + 0.5, crystal.Y, crystal.Z + 0.5),
             random.NextFloat() * 360.0f) { Data = data });
         level.SetBlock(crystal + Vector.Down, Bedrock);
         level.SetBlock(crystal, Fire);

@@ -108,7 +108,6 @@ public partial class NetworkBuffer : INetStreamWriter
         WriteLong((long)ulong.Parse(hex[16..], System.Globalization.NumberStyles.HexNumber));
     }
 
-
     [WriteMethod, VarLength]
     public void WriteVarInt(int value)
     {
@@ -142,7 +141,6 @@ public partial class NetworkBuffer : INetStreamWriter
 
             if (unsigned != 0)
                 temp |= 128;
-
 
             this.WriteByte(temp);
         }
@@ -184,14 +182,6 @@ public partial class NetworkBuffer : INetStreamWriter
         WriteLong(val);
     }
 
-    [WriteMethod, DataFormat(typeof(double))]
-    public void WriteAbsolutePosition(Vector value)
-    {
-        WriteDouble(value.X);
-        WriteDouble(value.Y);
-        WriteDouble(value.Z);
-    }
-
     [WriteMethod, DataFormat(typeof(float))]
     public void WriteAbsoluteFloatPosition(Vector value)
     {
@@ -224,14 +214,6 @@ public partial class NetworkBuffer : INetStreamWriter
         val |= (long)((int)value.Y & 0xFFF);
 
         WriteLong(val);
-    }
-
-    [WriteMethod, DataFormat(typeof(double))]
-    public void WriteAbsolutePositionF(VectorF value)
-    {
-        WriteDouble(value.X);
-        WriteDouble(value.Y);
-        WriteDouble(value.Z);
     }
 
     [WriteMethod, DataFormat(typeof(float))]

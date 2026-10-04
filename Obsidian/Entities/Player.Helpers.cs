@@ -217,7 +217,7 @@ public partial class Player
 
     internal ValueTask UnloadChunkAsync(int x, int z) => LoadedChunks.Contains(NumericsHelper.IntsToLong(x, z)) ? this.Client.QueuePacketAsync(new ForgetLevelChunkPacket(x, z)) : default;
 
-    private async ValueTask TrySpawnPlayerAsync(VectorF position)
+    private async ValueTask TrySpawnPlayerAsync(VectorD position)
     {
         var entityBroadcastDistance = this.Server.Configuration.EntityBroadcastRangePercentage;
 
@@ -355,7 +355,7 @@ public partial class Player
         compound.TryGetTag("Pos", out var posTag);
         Position = (posTag as NbtList) switch
         {
-            [NbtTag<double> a, NbtTag<double> b, NbtTag<double> c, ..] => new VectorF((float)a.Value, (float)b.Value, (float)c.Value),
+            [NbtTag<double> a, NbtTag<double> b, NbtTag<double> c, ..] => new VectorD(a.Value, b.Value, c.Value),
             _ => Level.LevelData.SpawnPosition
         };
 

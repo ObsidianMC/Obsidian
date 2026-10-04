@@ -7,7 +7,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound;
 public partial class MovePlayerPosRotPacket
 {
     [Field(0), DataFormat(typeof(double))]
-    public VectorF Position { get; private set; }
+    public VectorD Position { get; private set; }
 
     [Field(1), DataFormat(typeof(float))]
     public Angle Yaw { get; private set; }
@@ -20,7 +20,7 @@ public partial class MovePlayerPosRotPacket
 
     public override void Populate(INetStreamReader reader)
     {
-        this.Position = reader.ReadAbsolutePositionF();
+        this.Position = VectorD.Read(reader);
         this.Yaw = reader.ReadSingle();
         this.Pitch = reader.ReadSingle();
         this.MovementFlags = reader.ReadSignedByte<MovementFlags>();

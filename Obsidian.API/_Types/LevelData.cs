@@ -145,7 +145,7 @@ public sealed class LevelData
     /// </summary>
     public long RandomSeed { get; set; }
 
-    public VectorF SpawnPosition { get; set; }
+    public VectorD SpawnPosition { get; set; }
 
     /// <summary>
     /// true if the rain/snow/cloud cover is a lightning storm and dark enough for mobs to spawn under the sky.

@@ -50,7 +50,7 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
             GeneratorVersion = levelCompound.GetInt("generatorVersion"),
             RainTime = levelCompound.GetInt("rainTime"),
             // The spawn is saved as a block; players spawn at its center.
-            SpawnPosition = new VectorF(levelCompound.GetInt("SpawnX") + 0.5f, levelCompound.GetInt("SpawnY"), levelCompound.GetInt("SpawnZ") + 0.5f),
+            SpawnPosition = new VectorD(levelCompound.GetInt("SpawnX") + 0.5, levelCompound.GetInt("SpawnY"), levelCompound.GetInt("SpawnZ") + 0.5),
             ThunderTime = levelCompound.GetInt("thunderTime"),
             Version = levelCompound.GetInt("version"),
             LastPlayed = levelCompound.GetLong("LastPlayed"),

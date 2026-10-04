@@ -17,7 +17,7 @@ public interface IPacketBroadcaster
     /// <param name="excludedIds">The list of entity ids to exlude from the broadcast.</param>
     public void BroadcastToLevel(ILevel toLevel, IClientboundPacket packet, params int[] excludedIds);
 
-    public void BroadcastToLevelInRange(ILevel level, VectorF location, IClientboundPacket packet, params int[] excludedIds);
+    public void BroadcastToLevelInRange(ILevel level, VectorD location, IClientboundPacket packet, params int[] excludedIds);
 
     public void QueuePacketTo(IClientboundPacket packet, params int[] ids);
     public void QueuePacketTo(IClientboundPacket packet, int priority, params int[] ids);
@@ -30,7 +30,7 @@ public interface IPacketBroadcaster
     /// /// <remarks>Packets queued without a priority set will be queued up with a priority of 1.</remarks>
     public void QueuePacketToLevel(ILevel toLevel, IClientboundPacket packet, params int[] excludedIds);
 
-    public void QueuePacketToLevelInRange(ILevel level, VectorF location, IClientboundPacket packet, params int[] excludedIds);
+    public void QueuePacketToLevelInRange(ILevel level, VectorD location, IClientboundPacket packet, params int[] excludedIds);
 
     /// <summary>
     /// Puts the packet in a priority queue for processing then broadcasting when dequeued.

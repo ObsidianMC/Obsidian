@@ -9,10 +9,10 @@ public partial class PlayerPositionPacket
     public int TeleportId { get; init; }
 
     [Field(1), DataFormat(typeof(double))]
-    public VectorF Position { get; init; }
+    public VectorD Position { get; init; }
 
     [Field(2)]
-    public VectorF Delta { get; init; }
+    public VectorD Delta { get; init; }
 
     [Field(2), DataFormat(typeof(float))]
     public Angle Yaw { get; init; }
@@ -27,8 +27,8 @@ public partial class PlayerPositionPacket
     {
         writer.WriteVarInt(this.TeleportId);
 
-        writer.WriteAbsolutePositionF(this.Position);
-        writer.WriteAbsolutePositionF(this.Delta);
+        VectorD.Write(this.Position, writer);
+        VectorD.Write(this.Delta, writer);
         writer.WriteSingle(this.Yaw);
         writer.WriteSingle(this.Pitch);
 

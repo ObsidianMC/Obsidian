@@ -271,7 +271,7 @@ public sealed class MainCommandModule : CommandModuleBase
     [Command("tp")]
     [CommandInfo("teleports you to a location", "/tp <x> <y> <z>")]
     [IssuerScope(CommandIssuers.Client)]
-    public async Task TeleportAsync([Remaining] VectorF location)
+    public async Task TeleportAsync([Remaining] VectorD location)
     {
         if (this.Player is not IPlayer player)
             return;

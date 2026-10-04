@@ -114,5 +114,5 @@ public sealed class SwampHutPiece : ScatteredFeaturePiece
     }
 
     private static GeneratedEntity Persistent(string type, Vector position) =>
-        new(type, new VectorF(position.X + 0.5f, position.Y, position.Z + 0.5f)) { Data = { new NbtTag<bool>("PersistenceRequired", true) } };
+        new(type, new VectorD(position.X + 0.5, position.Y, position.Z + 0.5)) { Data = { new NbtTag<bool>("PersistenceRequired", true) } };
 }
