@@ -158,7 +158,76 @@ final class PacketFormats {
         var analysis = new Analysis(type);
         analysis.statics.putAll(staticsOf(type));
         var events = new ArrayList<Event>();
-        return readCodec(analysis, codec, events) ? aggregate(events) : null;
+        if (!readCodec(analysis, codec, events))
+            return null;
+
+        // Codecs with a hand-written decoder (Packet.codec(X::write, X::new)) can read differently from how they write.
+        var writes = aggregate(events);
+        if (codec.kind() == Kind.CALL && codec.arguments().size() > 1 && codec.arguments().get(1).kind() == Kind.LAMBDA
+            && Set.of("Packet.codec", "StreamCodec.ofMember", "StreamCodec.of").contains(codec.name()))
+            applyReadHints(writes, decoderHints(type, codec.arguments().get(1)));
+        return writes;
+    }
+
+    /**
+     * How a decoder reads a class's fields where that differs from how they're written: a string's maximum length
+     * ({@code readUtf(16)}) and numbers read unsigned ({@code readUnsignedByte}), by field.
+     */
+    private Map<String, Map<String, Object>> decoderHints(Class<?> type, Node decoder) {
+        var analysis = new Analysis(type);
+        analysis.statics.putAll(staticsOf(type));
+        var handle = decoder.handle();
+        if (handle.kind() == DirectMethodHandleDesc.Kind.CONSTRUCTOR) {
+            var owner = classOf(handle.owner());
+            var constructor = owner == null ? null : method(owner, "<init>", handle.lookupDescriptor());
+            if (constructor != null)
+                readConstructor(analysis, owner, constructor);
+        } else {
+            runLambda(analysis, decoder, new ArrayList<>());
+        }
+        return analysis.readHints;
+    }
+
+    /** The read hints of a class's constructor that reads it from a buffer ({@code X(FriendlyByteBuf)}), if it has one. */
+    private Map<String, Map<String, Object>> constructorHints(Class<?> type) {
+        var analysis = new Analysis(type);
+        analysis.statics.putAll(staticsOf(type));
+        var model = model(type);
+        for (var method : model == null ? List.<MethodModel>of() : model.methods()) {
+            var parameters = MethodTypeDesc.ofDescriptor(method.methodType().stringValue()).parameterList();
+            var parameter = parameters.size() == 1 ? classOf(parameters.getFirst()) : null;
+            if (method.methodName().equalsString("<init>") && parameter != null && byteBuf.isAssignableFrom(parameter))
+                readConstructor(analysis, type, method);
+        }
+        return analysis.readHints;
+    }
+
+    private void readConstructor(Analysis analysis, Class<?> owner, MethodModel constructor) {
+        var arguments = new ArrayList<Node>(List.of(Node.of(Kind.PACKET, owner)));
+        for (var parameter : MethodTypeDesc.ofDescriptor(constructor.methodType().stringValue()).parameterList()) {
+            var parameterType = classOf(parameter);
+            arguments.add(parameterType != null && byteBuf.isAssignableFrom(parameterType) ? Node.of(Kind.BUFFER, parameterType) : Node.value(Set.of(), parameterType));
+        }
+        interpret(analysis, owner, constructor, arguments, Flow.ALWAYS, new ArrayList<>());
+    }
+
+    /** Narrows written encodings by how they're read: a string's lower maximum, a number read unsigned. */
+    @SuppressWarnings("unchecked")
+    private static void applyReadHints(Map<String, Write> writes, Map<String, Map<String, Object>> hints) {
+        for (var hint : hints.entrySet()) {
+            var write = writes.get(hint.getKey());
+            if (write == null || !(write.encoding() instanceof Map<?, ?> encoding))
+                continue;
+
+            var narrowed = new LinkedHashMap<>((Map<String, Object>) encoding);
+            var kind = narrowed.get("kind");
+            if ("string".equals(kind) && hint.getValue().get("max") instanceof Integer max
+                && (!(narrowed.get("max") instanceof Integer written) || max < written))
+                narrowed.put("max", max);
+            if (("byte".equals(kind) || "short".equals(kind)) && Boolean.TRUE.equals(hint.getValue().get("unsigned")))
+                narrowed.put("unsigned", true);
+            writes.put(hint.getKey(), new Write(write.order(), narrowed, write.conditional(), write.repeated(), write.packed()));
+        }
     }
 
     /**
@@ -182,7 +251,9 @@ final class PacketFormats {
         }
         var events = new ArrayList<Event>();
         interpret(analysis, write.owner(), write.method(), arguments, Flow.ALWAYS, events);
-        return aggregate(events);
+        var writes = aggregate(events);
+        applyReadHints(writes, constructorHints(type));
+        return writes;
     }
 
     /** Groups the writes by field: each field's first position, its encodings in order, and when it's written. */
@@ -196,10 +267,8 @@ final class PacketFormats {
         var result = new HashMap<String, Write>();
         for (var entry : writes.entrySet()) {
             var encodings = new ArrayList<Object>();
-            for (var event : entry.getValue()) {
-                if (encodings.isEmpty() || !encodings.getLast().equals(event.encoding()))
-                    encodings.add(event.encoding());
-            }
+            for (var event : entry.getValue())
+                encodings.add(event.encoding());
             var fieldEvents = entry.getValue();
             result.put(entry.getKey(), new Write(events.indexOf(fieldEvents.getFirst()),
                 encodings.size() == 1 ? encodings.getFirst() : node("sequence", "of", encodings),
@@ -304,6 +373,8 @@ final class PacketFormats {
         final Class<?> packet;
         final Map<String, Node> statics = new HashMap<>();
         final Set<String> running = new HashSet<>();
+        // How decoders read the class's fields, by field (see decoderHints).
+        final Map<String, Map<String, Object>> readHints = new HashMap<>();
 
         Analysis(Class<?> packet) {
             this.packet = packet;
@@ -486,7 +557,12 @@ final class PacketFormats {
                 var receiver = pop(stack);
                 stack.add(receiver.kind() == Kind.PACKET ? Node.value(Set.of(name), type) : derive(List.of(receiver), type));
             }
-            case PUTFIELD -> popArguments(stack, 2);
+            case PUTFIELD -> {
+                var value = pop(stack);
+                var receiver = pop(stack);
+                if (receiver.kind() == Kind.PACKET && value.name() != null && value.name().startsWith(READ_HINT))
+                    analysis.readHints.computeIfAbsent(name, key -> new HashMap<>()).putAll(readHint(value.name()));
+            }
             default -> { }
         }
     }
@@ -505,8 +581,18 @@ final class PacketFormats {
             all.add(receiver);
         all.addAll(arguments);
 
-        // A constructed object stands for the values it was constructed from.
+        // A constructed object stands for the values it was constructed from. Constructing the analyzed class (or
+        // this(...)/super(...) in its constructor) is followed, for the fields it reads from the buffer.
         if (obfuscated.equals("<init>")) {
+            var key = owner == null ? null : owner.getName() + ".<init>" + type.descriptorString();
+            var constructor = key == null ? null : method(owner, "<init>", type.descriptorString());
+            if (constructor != null && constructor.code().isPresent() && (receiver.kind() == Kind.PACKET || receiver.type() == analysis.packet)
+                && analysis.running.size() < MAX_DEPTH && analysis.running.add(key)) {
+                var constructorArguments = new ArrayList<Node>(List.of(Node.of(Kind.PACKET, owner)));
+                constructorArguments.addAll(arguments);
+                interpret(analysis, owner, constructor, constructorArguments, flow, new ArrayList<>());
+                analysis.running.remove(key);
+            }
             var constructed = derive(arguments, receiver.type());
             for (var i = 0; i < stack.size(); i++) {
                 if (stack.get(i) == receiver)
@@ -531,9 +617,11 @@ final class PacketFormats {
             var method = methodName(owner, obfuscated, type);
             if (!fields.isEmpty())
                 events.add(new Event(fields, encoding(analysis, owner, method, obfuscated, type.descriptorString(), receiver, arguments), flow));
-            // Buffer writes return the buffer, for chaining.
+            // Buffer writes return the buffer, for chaining; some reads say how the value is read.
+            var hint = receiver != null && receiver.kind() == Kind.BUFFER ? readHint(method.substring(method.lastIndexOf('.') + 1), arguments) : null;
             result = receiver != null && receiver.kind() == Kind.BUFFER && returnType != null && byteBuf.isAssignableFrom(returnType)
-                ? receiver : Node.value(Set.of(), returnType);
+                ? receiver
+                : hint != null ? new Node(Kind.VALUE, hint, null, List.of(), Set.of(), returnType, null, null) : Node.value(Set.of(), returnType);
         } else if (owner != null && (isCodec(returnType) || returnType == codecOperation)) {
             result = new Node(Kind.CALL, methodName(owner, obfuscated, type), receiver, arguments, Set.of(), returnType, null, null);
         } else {
@@ -932,6 +1020,23 @@ final class PacketFormats {
             }
             default -> "?";
         };
+    }
+
+    // Read hints: what a buffer read says about the value it returns, carried as the value's name until it's stored.
+
+    private static final String READ_HINT = "read:";
+
+    private static String readHint(String method, List<Node> arguments) {
+        return switch (method) {
+            case "readUtf" -> constant(arguments, 0) instanceof Integer max ? READ_HINT + "max=" + max : null;
+            case "readUnsignedByte", "readUnsignedShort" -> READ_HINT + "unsigned";
+            default -> null;
+        };
+    }
+
+    private static Map<String, Object> readHint(String hint) {
+        var value = hint.substring(READ_HINT.length());
+        return value.startsWith("max=") ? Map.of("max", Integer.valueOf(value.substring(4))) : Map.of("unsigned", true);
     }
 
     // Helpers.
