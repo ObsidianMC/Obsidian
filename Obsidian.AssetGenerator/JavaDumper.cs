@@ -2,7 +2,8 @@ namespace Obsidian.AssetGenerator;
 
 /// <summary>
 /// Runs <c>Java/VanillaDumper.java</c> against a vanilla server, which writes the assets the data generators don't
-/// report: per block state light, physics, transforms, map colors and wall shape covers, and entity data. It also writes
+/// report: per block state light, physics, transforms, map colors and wall shape covers, entity data, and the vanilla
+/// types packets write (<c>packet_types.json</c>). It also writes
 /// <see cref="WorldgenGroupsPath"/> and <see cref="PacketFieldsPath"/> into the server's directory for
 /// <see cref="Datagen.DatagenAssets"/>.
 /// </summary>

@@ -761,6 +761,30 @@ public final class VanillaDumper {
             System.out.println("Couldn't read how these packets are written, so their fields don't say whether they're sent: " + String.join(", ", unread));
 
         Json.write(work.resolve("packet_fields.json"), json, true);
+        dumpPacketTypes(formats);
+    }
+
+    /**
+     * {@code packet_types.json}, read by {@code Obsidian.SourceGenerators/Packets}: the vanilla records and enums the
+     * packets write (their encodings refer to them as {@code {"kind": "type"}} and {@code {"kind": "enum"}}), by Mojang
+     * name ({@code Outer.Inner}). A record lists its fields like a packet does; an enum its wire value per constant.
+     */
+    private void dumpPacketTypes(PacketFormats formats) throws IOException {
+        var json = new LinkedHashMap<String, Object>();
+        for (var entry : formats.types().entrySet()) {
+            var definition = entry.getValue();
+            var type = new LinkedHashMap<String, Object>();
+            if (definition.values() != null) {
+                type.put("kind", "enum");
+                type.put("values", definition.values());
+            } else {
+                type.put("kind", "record");
+                type.put("fields", packetFields(definition.type(), definition.fields()));
+            }
+            json.put(entry.getKey(), type);
+        }
+
+        Json.write(output.resolve("packet_types.json"), json, true);
     }
 
     /**

@@ -45,6 +45,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 /**
@@ -66,27 +67,53 @@ import java.util.stream.Collectors;
  */
 final class PacketFormats {
     /**
-     * How a field is sent: its position among the packet's writes and its encodings in order; whether it's only
-     * sometimes written, written in a loop, and written together with other fields in one value (a flag byte).
+     * How a field is sent: its position among its class's writes, its encoding (a JSON node with a {@code kind}, see
+     * {@link #describe}), and whether it's only sometimes written, written in a loop, or written together with other
+     * fields in one value (a flag byte).
      */
-    record Write(int order, String encoding, boolean conditional, boolean repeated, boolean packed) {}
+    record Write(int order, Object encoding, boolean conditional, boolean repeated, boolean packed) {}
 
-    // The same primitive encodings named alike, whether written by a buffer method (writeUtf) or a codec.
-    private static final Map<String, String> ALIASES = Map.ofEntries(
-        Map.entry("ByteBufCodecs.BOOL", "Boolean"), Map.entry("ByteBufCodecs.BYTE", "Byte"),
-        Map.entry("ByteBufCodecs.SHORT", "Short"), Map.entry("ByteBufCodecs.UNSIGNED_SHORT", "UnsignedShort"),
-        Map.entry("ByteBufCodecs.INT", "Int"), Map.entry("ByteBufCodecs.VAR_INT", "VarInt"),
-        Map.entry("ByteBufCodecs.LONG", "Long"), Map.entry("ByteBufCodecs.VAR_LONG", "VarLong"),
-        Map.entry("ByteBufCodecs.FLOAT", "Float"), Map.entry("ByteBufCodecs.DOUBLE", "Double"),
-        Map.entry("ByteBufCodecs.STRING_UTF8", "String"), Map.entry("ByteBufCodecs.stringUtf8", "String"),
-        Map.entry("ByteBufCodecs.BYTE_ARRAY", "ByteArray"), Map.entry("ByteBufCodecs.byteArray", "ByteArray"),
-        Map.entry("ByteBufCodecs.LONG_ARRAY", "LongArray"), Map.entry("UUIDUtil.STREAM_CODEC", "UUID"),
-        Map.entry("VarInt.write", "VarInt"), Map.entry("VarLong.write", "VarLong"), Map.entry("Utf", "String"));
+    /**
+     * A vanilla type that packets write: a record's fields by Mojang name (as {@link #writes} gives a packet's), or an
+     * enum's wire value per constant.
+     */
+    record TypeDefinition(Class<?> type, Map<String, Write> fields, Map<String, Integer> values) {}
 
-    // Codec factories that wrap other codecs, written as generics: ByteBufCodecs.optional(X) is Optional<X>.
-    private static final Map<String, String> WRAPPERS = Map.of(
-        "ByteBufCodecs.optional", "Optional", "ByteBufCodecs.list", "List",
-        "ByteBufCodecs.collection", "Collection", "ByteBufCodecs.map", "Map");
+    // Buffer write methods (by name) and codecs (by Owner.FIELD) that write the same thing, by encoding kind.
+    private static final Map<String, String> KINDS = Map.ofEntries(
+        Map.entry("ByteBufCodecs.BOOL", "boolean"), Map.entry("writeBoolean", "boolean"),
+        Map.entry("ByteBufCodecs.BYTE", "byte"), Map.entry("writeByte", "byte"),
+        Map.entry("ByteBufCodecs.SHORT", "short"), Map.entry("writeShort", "short"),
+        Map.entry("ByteBufCodecs.UNSIGNED_SHORT", "unsigned_short"),
+        Map.entry("ByteBufCodecs.INT", "int"), Map.entry("writeInt", "int"),
+        Map.entry("ByteBufCodecs.VAR_INT", "var_int"), Map.entry("writeVarInt", "var_int"), Map.entry("VarInt.write", "var_int"),
+        Map.entry("ByteBufCodecs.LONG", "long"), Map.entry("writeLong", "long"),
+        Map.entry("ByteBufCodecs.VAR_LONG", "var_long"), Map.entry("writeVarLong", "var_long"), Map.entry("VarLong.write", "var_long"),
+        Map.entry("ByteBufCodecs.FLOAT", "float"), Map.entry("writeFloat", "float"),
+        Map.entry("ByteBufCodecs.DOUBLE", "double"), Map.entry("writeDouble", "double"),
+        Map.entry("ByteBufCodecs.BYTE_ARRAY", "byte_array"), Map.entry("writeByteArray", "byte_array"),
+        Map.entry("ByteBufCodecs.LONG_ARRAY", "long_array"), Map.entry("writeLongArray", "long_array"),
+        Map.entry("writeVarIntArray", "var_int_array"),
+        Map.entry("UUIDUtil.STREAM_CODEC", "uuid"), Map.entry("writeUUID", "uuid"),
+        Map.entry("Identifier.STREAM_CODEC", "identifier"), Map.entry("writeIdentifier", "identifier"),
+        Map.entry("writeResourceKey", "identifier"),
+        Map.entry("BlockPos.STREAM_CODEC", "block_pos"), Map.entry("writeBlockPos", "block_pos"),
+        Map.entry("Vec3.STREAM_CODEC", "vec3"), Map.entry("writeVec3", "vec3"),
+        Map.entry("Vec3.LP_STREAM_CODEC", "lp_vec3"), Map.entry("LpVec3.write", "lp_vec3"), Map.entry("writeLpVec3", "lp_vec3"),
+        Map.entry("ByteBufCodecs.CONTAINER_ID", "container_id"), Map.entry("writeContainerId", "container_id"),
+        Map.entry("ByteBufCodecs.ROTATION_BYTE", "angle"),
+        Map.entry("ComponentSerialization.TRUSTED_STREAM_CODEC", "component"),
+        Map.entry("ComponentSerialization.TRUSTED_CONTEXT_FREE_STREAM_CODEC", "component"),
+        Map.entry("ComponentSerialization.STREAM_CODEC", "component"),
+        Map.entry("ItemStack.OPTIONAL_STREAM_CODEC", "item_stack"), Map.entry("ItemStack.STREAM_CODEC", "item_stack"),
+        Map.entry("ItemStack.OPTIONAL_UNTRUSTED_STREAM_CODEC", "item_stack"),
+        Map.entry("ByteBufCodecs.COMPOUND_TAG", "nbt"), Map.entry("ByteBufCodecs.TRUSTED_COMPOUND_TAG", "nbt"),
+        Map.entry("ByteBufCodecs.OPTIONAL_COMPOUND_TAG", "optional_nbt"), Map.entry("writeNbt", "optional_nbt"),
+        Map.entry("ByteBufCodecs.TAG", "tag"), Map.entry("writeBitSet", "bit_set"),
+        Map.entry("ChunkPos.STREAM_CODEC", "chunk_pos"), Map.entry("writeChunkPos", "chunk_pos"));
+
+    // FriendlyByteBuf.writeUtf's and ByteBufCodecs.STRING_UTF8's maximum length.
+    private static final int MAX_STRING = 32767;
 
     // The marker field of a collection's element, for describing what a writer lambda writes per element.
     private static final String ELEMENT = "\0element";
@@ -98,6 +125,8 @@ final class PacketFormats {
     private final Class<?> codec;
     private final Class<?> codecOperation;
     private final Map<String, ClassModel> models = new HashMap<>();
+    private final Map<Class<?>, Map<String, Node>> statics = new HashMap<>();
+    private final Map<String, TypeDefinition> types = new TreeMap<>();
 
     PacketFormats(VanillaDumper.Mojang mojang) {
         this.mojang = mojang;
@@ -112,19 +141,52 @@ final class PacketFormats {
      * packet's codec isn't one this understands.
      */
     Map<String, Write> writes(Class<?> packet) {
-        var analysis = new Analysis(packet);
-        var initializer = method(packet, "<clinit>", "()V");
-        if (initializer != null)
-            interpret(analysis, packet, initializer, List.of(), Flow.ALWAYS, new ArrayList<>());
-
-        var codecs = analysis.statics.keySet().stream().filter(name -> name.endsWith("STREAM_CODEC")).sorted().toList();
+        var own = staticsOf(packet);
+        var codecs = own.keySet().stream().filter(name -> name.endsWith("STREAM_CODEC")).sorted().toList();
         if (codecs.isEmpty())
             return null;
-        var events = new ArrayList<Event>();
-        var name = codecs.contains("STREAM_CODEC") ? "STREAM_CODEC" : codecs.getFirst();
-        if (!readCodec(analysis, analysis.statics.get(name), events))
-            return null;
+        return recordWrites(packet, own.get(codecs.contains("STREAM_CODEC") ? "STREAM_CODEC" : codecs.getFirst()));
+    }
 
+    /** The vanilla records and enums the packets read so far write, by Mojang name ({@code Outer.Inner}). */
+    Map<String, TypeDefinition> types() {
+        return types;
+    }
+
+    /** How a codec writes the fields of the class it encodes, or null when it isn't one this understands. */
+    private Map<String, Write> recordWrites(Class<?> type, Node codec) {
+        var analysis = new Analysis(type);
+        analysis.statics.putAll(staticsOf(type));
+        var events = new ArrayList<Event>();
+        return readCodec(analysis, codec, events) ? aggregate(events) : null;
+    }
+
+    /**
+     * How a class's {@code write} method writes its fields: an instance {@code write(buf)}, or a static
+     * {@code write(buf, value)} given a value of the class.
+     */
+    private Map<String, Write> methodWrites(Class<?> type, Target write) {
+        var analysis = new Analysis(type);
+        analysis.statics.putAll(staticsOf(type));
+        var arguments = new ArrayList<Node>();
+        if (!write.method().flags().has(java.lang.reflect.AccessFlag.STATIC))
+            arguments.add(Node.of(Kind.PACKET, type));
+        for (var parameter : MethodTypeDesc.ofDescriptor(write.method().methodType().stringValue()).parameterList()) {
+            var parameterType = classOf(parameter);
+            if (parameterType != null && byteBuf.isAssignableFrom(parameterType))
+                arguments.add(Node.of(Kind.BUFFER, parameterType));
+            else if (parameterType != null && parameterType != Object.class && parameterType.isAssignableFrom(type))
+                arguments.add(Node.of(Kind.PACKET, parameterType));
+            else
+                arguments.add(Node.value(Set.of(), parameterType));
+        }
+        var events = new ArrayList<Event>();
+        interpret(analysis, write.owner(), write.method(), arguments, Flow.ALWAYS, events);
+        return aggregate(events);
+    }
+
+    /** Groups the writes by field: each field's first position, its encodings in order, and when it's written. */
+    private static Map<String, Write> aggregate(List<Event> events) {
         var writes = new LinkedHashMap<String, List<Event>>();
         for (var event : events) {
             for (var field : event.fields())
@@ -133,13 +195,14 @@ final class PacketFormats {
 
         var result = new HashMap<String, Write>();
         for (var entry : writes.entrySet()) {
-            var encodings = new ArrayList<String>();
+            var encodings = new ArrayList<Object>();
             for (var event : entry.getValue()) {
                 if (encodings.isEmpty() || !encodings.getLast().equals(event.encoding()))
                     encodings.add(event.encoding());
             }
             var fieldEvents = entry.getValue();
-            result.put(entry.getKey(), new Write(events.indexOf(fieldEvents.getFirst()), String.join(", ", encodings),
+            result.put(entry.getKey(), new Write(events.indexOf(fieldEvents.getFirst()),
+                encodings.size() == 1 ? encodings.getFirst() : node("sequence", "of", encodings),
                 fieldEvents.stream().allMatch(event -> event.flow().conditional()),
                 fieldEvents.stream().allMatch(event -> event.flow().repeated()),
                 fieldEvents.stream().anyMatch(event -> event.fields().size() > 1)));
@@ -148,8 +211,25 @@ final class PacketFormats {
         return result;
     }
 
-    /** Records what a codec expression writes of the packet, or returns false for codecs this doesn't understand. */
+    /** The static fields a class's initializer sets, as the expressions that build them, by Mojang name. */
+    private Map<String, Node> staticsOf(Class<?> type) {
+        var known = statics.get(type);
+        if (known != null)
+            return known;
+
+        var analysis = new Analysis(type);
+        statics.put(type, analysis.statics); // before interpreting, for initializers that read their own codecs
+        var initializer = method(type, "<clinit>", "()V");
+        if (initializer != null)
+            interpret(analysis, type, initializer, List.of(), Flow.ALWAYS, new ArrayList<>());
+        return analysis.statics;
+    }
+
+    /** Records what a codec expression writes of the class it encodes, or returns false for codecs this doesn't understand. */
     private boolean readCodec(Analysis analysis, Node codec, List<Event> events) {
+        // A codec that's another static codec (STREAM_CODEC = DETAILS_STREAM_CODEC) is that codec.
+        while (codec != null && codec.kind() == Kind.STATIC && codec.owner() != null)
+            codec = staticsOf(codec.owner()).get(codec.name().substring(codec.name().lastIndexOf('.') + 1));
         if (codec == null || codec.kind() != Kind.CALL)
             return false;
 
@@ -211,7 +291,7 @@ final class PacketFormats {
             else if (parameter != null && parameter != Object.class && parameter.isAssignableFrom(analysis.packet))
                 arguments.add(Node.of(Kind.PACKET, parameter));
             else
-                arguments.add(new Node(Kind.VALUE, "element", null, List.of(), Set.of(ELEMENT), parameter, null));
+                arguments.add(new Node(Kind.VALUE, "element", null, List.of(), Set.of(ELEMENT), parameter, null, null));
         }
 
         return interpret(analysis, owner, method, arguments, Flow.ALWAYS, events);
@@ -237,13 +317,13 @@ final class PacketFormats {
      * other value; each with the packet fields it's computed from.
      */
     private record Node(Kind kind, String name, Node receiver, List<Node> arguments, Set<String> fields, Class<?> type,
-                        DirectMethodHandleDesc handle) {
+                        DirectMethodHandleDesc handle, Class<?> owner) {
         static Node of(Kind kind, Class<?> type) {
-            return new Node(kind, null, null, List.of(), Set.of(), type, null);
+            return new Node(kind, null, null, List.of(), Set.of(), type, null, null);
         }
 
         static Node value(Set<String> fields, Class<?> type) {
-            return new Node(Kind.VALUE, null, null, List.of(), fields, type, null);
+            return new Node(Kind.VALUE, null, null, List.of(), fields, type, null, null);
         }
 
         boolean wide() {
@@ -252,7 +332,7 @@ final class PacketFormats {
     }
 
     /** A call that got the buffer: the packet fields it was given, how it encodes them, and when it runs. */
-    private record Event(Set<String> fields, String encoding, Flow flow) {}
+    private record Event(Set<String> fields, Object encoding, Flow flow) {}
 
     /** Whether code only runs sometimes (in an if, after an early return) and whether it runs in a loop. */
     private record Flow(boolean conditional, boolean repeated) {
@@ -310,7 +390,7 @@ final class PacketFormats {
                 case LoadInstruction load -> stack.add(locals.getOrDefault(load.slot(), Node.value(Set.of(), kindClass(load.typeKind()))));
                 case StoreInstruction store -> locals.put(store.slot(), pop(stack));
                 case ConstantInstruction constant -> stack.add(new Node(Kind.CONSTANT, String.valueOf(constant.constantValue()), null,
-                    List.of(), branches.conditionFields(i), kindClass(constant.typeKind()), null));
+                    List.of(), branches.conditionFields(i), kindClass(constant.typeKind()), null, null));
                 case FieldInstruction field -> field(analysis, field, stack);
                 case InvokeInstruction invoke -> invoke(analysis, invoke, stack, at, events);
                 case InvokeDynamicInstruction dynamic -> stack.add(dynamic(dynamic, popArguments(stack, dynamic.typeSymbol().parameterCount())));
@@ -394,9 +474,8 @@ final class PacketFormats {
         var name = owner == null ? field.name().stringValue() : fieldName(owner, field.name().stringValue());
         switch (field.opcode()) {
             case GETSTATIC -> {
-                var own = owner == analysis.packet ? analysis.statics.get(name) : null;
                 var ownerName = owner == null ? field.owner().asInternalName() : mojang.nestedName(owner);
-                stack.add(own != null ? own : new Node(Kind.STATIC, ownerName + "." + name, null, List.of(), Set.of(), type, null));
+                stack.add(new Node(Kind.STATIC, ownerName + "." + name, null, List.of(), Set.of(), type, null, owner));
             }
             case PUTSTATIC -> {
                 var value = pop(stack);
@@ -451,12 +530,12 @@ final class PacketFormats {
             }
             var method = methodName(owner, obfuscated, type);
             if (!fields.isEmpty())
-                events.add(new Event(fields, encoding(analysis, owner, method, receiver, arguments), flow));
+                events.add(new Event(fields, encoding(analysis, owner, method, obfuscated, type.descriptorString(), receiver, arguments), flow));
             // Buffer writes return the buffer, for chaining.
             result = receiver != null && receiver.kind() == Kind.BUFFER && returnType != null && byteBuf.isAssignableFrom(returnType)
                 ? receiver : Node.value(Set.of(), returnType);
         } else if (owner != null && (isCodec(returnType) || returnType == codecOperation)) {
-            result = new Node(Kind.CALL, methodName(owner, obfuscated, type), receiver, arguments, Set.of(), returnType, null);
+            result = new Node(Kind.CALL, methodName(owner, obfuscated, type), receiver, arguments, Set.of(), returnType, null, null);
         } else {
             result = derive(all, returnType);
         }
@@ -491,7 +570,7 @@ final class PacketFormats {
             var separator = name.lastIndexOf('.');
             var method = name.substring(separator + 1).startsWith("lambda$") ? "lambda" : name.substring(separator + 1);
             var reference = (separator < 0 ? "" : name.substring(0, separator)) + "::" + method;
-            return new Node(Kind.LAMBDA, reference, null, captured, Set.of(), classOf(dynamic.typeSymbol().returnType()), handle);
+            return new Node(Kind.LAMBDA, reference, null, captured, Set.of(), classOf(dynamic.typeSymbol().returnType()), handle, null);
         }
 
         // String concatenation and other dynamic values.
@@ -500,41 +579,66 @@ final class PacketFormats {
 
     // Describing encodings.
 
-    /** How a call that got the buffer encodes its values. */
-    private String encoding(Analysis analysis, Class<?> owner, String method, Node receiver, List<Node> arguments) {
+    /**
+     * How a call that got the buffer encodes the values it was given: a buffer method, a codec's {@code encode}, or a
+     * value's own {@code write} method.
+     */
+    private Object encoding(Analysis analysis, Class<?> owner, String method, String obfuscated, String descriptor,
+                            Node receiver, List<Node> arguments) {
         var simpleName = method.substring(method.lastIndexOf('.') + 1);
         var isBufferMethod = receiver != null ? receiver.kind() == Kind.BUFFER : byteBuf.isAssignableFrom(owner);
-        if (isBufferMethod) {
-            // buf.writeVarInt(value), buf.writeCollection(list, writer)
-            var name = simpleName.startsWith("write") && simpleName.length() > 5 ? simpleName.substring(5) : simpleName;
-            name = ALIASES.getOrDefault(name, name);
-            var writers = arguments.stream()
-                .filter(node -> node.kind() == Kind.LAMBDA || isCodec(node.type()))
-                .map(node -> describeWriter(analysis, node))
-                .toList();
-            return writers.isEmpty() ? name : name + "<" + String.join(", ", writers) + ">";
-        }
+        if (isBufferMethod)
+            return bufferWrite(analysis, simpleName, arguments.stream().filter(node -> node.kind() != Kind.BUFFER).toList());
         if (receiver != null && isCodec(receiver.type()) && simpleName.equals("encode"))
             return describe(receiver);
+        if (KINDS.containsKey(method))
+            return node(KINDS.get(method));
 
-        // value.write(buf), Helper.write(buf, value)
-        return ALIASES.getOrDefault(method, method);
+        // value.write(buf) or Value.write(buf, value): the value's class describes itself.
+        var writesValue = receiver != null || arguments.stream().anyMatch(argument -> argument.kind() != Kind.BUFFER && argument.type() == owner);
+        if (writesValue && simpleName.equals("write")) {
+            var reference = writeReference(owner, obfuscated, descriptor);
+            if (reference != null)
+                return reference;
+        }
+        return opaque(method);
+    }
+
+    /** What a buffer method ({@code FriendlyByteBuf.writeX}) writes, given its arguments other than the buffer. */
+    private Object bufferWrite(Analysis analysis, String name, List<Node> values) {
+        return switch (name) {
+            case "writeUtf" -> node("string", "max", values.size() > 1 ? constant(values, 1) : Integer.valueOf(MAX_STRING));
+            case "writeEnum" -> enumNode(values.isEmpty() ? null : values.getFirst().type(), null, node("var_int"));
+            case "writeCollection" -> values.size() > 1 ? node("list", "of", describeWriter(analysis, values.get(1))) : opaque(name);
+            case "writeOptional" -> values.size() > 1 ? node("optional", "of", describeWriter(analysis, values.get(1))) : opaque(name);
+            case "writeNullable" -> values.size() > 1 ? node("nullable", "of", describeWriter(analysis, values.get(1))) : opaque(name);
+            case "writeMap" -> values.size() > 2
+                ? node("map", "key", describeWriter(analysis, values.get(1)), "value", describeWriter(analysis, values.get(2)))
+                : opaque(name);
+            case "writeFixedBitSet" -> node("fixed_bit_set", "size", constant(values, 1));
+            default -> KINDS.containsKey(name) ? node(KINDS.get(name)) : opaque("FriendlyByteBuf." + name);
+        };
     }
 
     /** What a writer passed to a buffer method writes: a method reference, a codec or a lambda writing each element. */
-    private String describeWriter(Analysis analysis, Node writer) {
+    private Object describeWriter(Analysis analysis, Node writer) {
         if (writer.kind() != Kind.LAMBDA)
             return describe(writer);
 
-        var owner = classOf(writer.handle().owner());
-        if (owner != null && byteBuf.isAssignableFrom(owner)) {
-            var name = writer.name().substring(writer.name().lastIndexOf(':') + 1);
-            name = name.startsWith("write") && name.length() > 5 ? name.substring(5) : name;
-            return ALIASES.getOrDefault(name, name);
-        }
+        var handle = writer.handle();
+        var owner = classOf(handle.owner());
+        var method = writer.name().substring(writer.name().lastIndexOf(':') + 1);
+        if (owner != null && byteBuf.isAssignableFrom(owner))
+            return bufferWrite(analysis, method, List.of());
         // A bound codec::encode
-        if (writer.name().endsWith("::encode") && !writer.arguments().isEmpty() && isCodec(writer.arguments().getFirst().type()))
+        if (method.equals("encode") && !writer.arguments().isEmpty() && isCodec(writer.arguments().getFirst().type()))
             return describe(writer.arguments().getFirst());
+        // Element::write
+        if (method.equals("write") && owner != null) {
+            var reference = writeReference(owner, handle.methodName(), handle.lookupDescriptor());
+            if (reference != null)
+                return reference;
+        }
 
         var events = new ArrayList<Event>();
         if (owner != null && owner.isAssignableFrom(analysis.packet) && runLambda(analysis, writer, events) != null) {
@@ -542,110 +646,292 @@ final class PacketFormats {
             if (encodings.size() == 1)
                 return encodings.getFirst();
             if (!encodings.isEmpty())
-                return "(" + String.join(", ", encodings) + ")";
+                return node("sequence", "of", encodings);
         }
 
-        return writer.name();
+        return opaque(writer.name());
     }
 
-    /** A codec expression, like {@code VarInt}, {@code Optional<ComponentSerialization.TRUSTED_STREAM_CODEC>}. */
-    private String describe(Node node) {
+    /**
+     * A codec expression as an encoding node: {@code {"kind": "var_int"}}, {@code {"kind": "optional", "of": ...}},
+     * {@code {"kind": "type", "name": "PositionMoveRotation"}} for a vanilla record (see {@link #types}), or
+     * {@code {"kind": "codec", "name": ...}} for codecs this can't describe.
+     */
+    private Object describe(Node node) {
         return switch (node.kind()) {
-            case STATIC -> ALIASES.getOrDefault(node.name(), node.name());
+            case STATIC -> describeStatic(node);
             case CALL -> describeCall(node);
-            case LAMBDA, CONSTANT -> node.name();
-            default -> "?";
+            default -> opaque(text(node));
         };
     }
 
-    private String describeCall(Node call) {
-        var simpleName = call.name().substring(call.name().lastIndexOf('.') + 1);
-        if (call.receiver() != null && isCodec(call.receiver().type())) {
-            switch (simpleName) {
-                // Mapping a codec's values doesn't change how they're written.
-                case "map", "cast", "mapStream" -> {
-                    return describe(call.receiver());
+    private Object describeStatic(Node node) {
+        if (KINDS.containsKey(node.name()))
+            return node(KINDS.get(node.name()));
+        switch (node.name()) {
+            case "ByteBufCodecs.STRING_UTF8" -> {
+                return node("string", "max", MAX_STRING);
+            }
+            case "ItemStack.OPTIONAL_LIST_STREAM_CODEC" -> {
+                return node("list", "of", node("item_stack"));
+            }
+            default -> { }
+        }
+
+        // Another class's codec: describe the expression its initializer builds it with.
+        var tree = node.owner() == null ? null : staticsOf(node.owner()).get(node.name().substring(node.name().lastIndexOf('.') + 1));
+        var described = tree == null ? null : describe(tree);
+        return described == null || isOpaque(described) ? opaque(node.name()) : described;
+    }
+
+    private Object describeCall(Node call) {
+        var arguments = call.arguments();
+        var receiver = call.receiver();
+        if (receiver != null && isCodec(receiver.type())) {
+            switch (call.name().substring(call.name().lastIndexOf('.') + 1)) {
+                // codec.map(constructor, getter): a record of one field, an enum written as its id, or the same values.
+                case "map" -> {
+                    var record = recordReference(call, arguments.getFirst());
+                    if (record != null)
+                        return record;
+                    return enumNode(enumType(arguments.getFirst(), arguments.get(1)), idMethod(arguments.get(1)), describe(receiver));
                 }
-                // codec.apply(ByteBufCodecs.list()) is a list of the codec; other operations stay as written.
+                case "cast", "mapStream" -> {
+                    return describe(receiver);
+                }
                 case "apply" -> {
-                    var operation = call.arguments().getFirst();
-                    var named = describeApplied(call.receiver(), operation);
-                    if (named != null)
-                        return named;
-                    var inner = describe(call.receiver());
-                    var wrapper = operation.name() == null ? null : WRAPPERS.get(operation.name().replace("::", "."));
-                    if (wrapper != null && (operation.kind() == Kind.CALL || operation.kind() == Kind.LAMBDA))
-                        return wrapper + "<" + inner + ">";
-                    return inner + ".apply(" + describe(operation) + ")";
+                    return applied(receiver, arguments.getFirst());
                 }
                 default -> { }
             }
         }
-        var named = describeFactory(call);
-        if (named != null)
-            return named;
-        if (ALIASES.containsKey(call.name()))
-            return ALIASES.get(call.name());
 
-        if (WRAPPERS.containsKey(call.name())) {
-            var codecs = call.arguments().stream().filter(node -> isCodec(node.type())).map(this::describe).toList();
-            return WRAPPERS.get(call.name()) + "<" + String.join(", ", codecs) + ">";
-        }
-
-        // Other factories by name, with the arguments that describe something (not plain values).
-        var arguments = new ArrayList<String>();
-        if (call.receiver() != null)
-            arguments.add(describe(call.receiver()));
-        for (var argument : call.arguments()) {
-            if (argument.kind() != Kind.VALUE)
-                arguments.add(describe(argument));
-        }
-        return call.name() + "(" + String.join(", ", arguments) + ")";
-    }
-
-    /**
-     * Codec factories named by hand, where what vanilla builds doesn't say what's written: a payload whose codec its
-     * channel picks at runtime, or NBT read through a lambda. Limits come from the factory's arguments.
-     */
-    private String describeFactory(Node call) {
         return switch (call.name()) {
+            case "StreamCodec.composite" -> orOpaque(recordReference(call, arguments.getLast()), call);
+            case "Packet.codec", "StreamCodec.ofMember", "StreamCodec.of" -> orOpaque(recordReference(call, arguments.get(1)), call);
+            case "StreamCodec.unit" -> node("unit");
+            case "ByteBufCodecs.optional" -> node("optional", "of", describe(arguments.getFirst()));
+            case "ByteBufCodecs.collection" -> node("list", "of", describe(arguments.get(1)), "max", constant(arguments, 2));
+            case "ByteBufCodecs.map" -> node("map", "key", describe(arguments.get(1)), "value", describe(arguments.get(2)), "max", constant(arguments, 3));
+            case "ByteBufCodecs.stringUtf8" -> node("string", "max", constant(arguments, 0));
+            case "ByteBufCodecs.byteArray" -> node("byte_array", "max", constant(arguments, 0));
+            case "ByteBufCodecs.registry" -> node("registry_id", "registry", registryId(arguments.getFirst()));
+            case "ByteBufCodecs.holderRegistry" -> node("holder", "registry", registryId(arguments.getFirst()));
+            // idMapper(byId, getId) writes an id as a VarInt; with an IdMap it's the map's id.
+            case "ByteBufCodecs.idMapper" -> arguments.size() == 2
+                ? enumNode(enumType(arguments.getFirst(), arguments.get(1)), idMethod(arguments.get(1)), node("var_int"))
+                : node("var_int");
+            // A nameless NBT tag, or an end tag for none (the lambda only sets the NBT size budget).
+            case "ByteBufCodecs.optionalTagCodec" -> node("optional_nbt");
+            // A resource key is written as its identifier; its registry is implied.
+            case "ResourceKey.streamCodec" -> node("identifier");
             // The channel id, then the payload to the end of the packet: each channel's codec writes it, and unknown
             // channels fall back to DiscardedPayload.codec(id, limit), which copies the bytes up to the packet's limit.
-            case "CustomPacketPayload.codec" -> "Identifier, RemainingBytes" + payloadLimit(call.arguments().getFirst());
-            // A nameless NBT tag, or an end tag for none (the lambda only sets the NBT size budget).
-            case "ByteBufCodecs.optionalTagCodec" -> "OptionalNbt";
-            default -> null;
+            case "CustomPacketPayload.codec" -> node("sequence", "of",
+                List.of(node("identifier"), node("remaining_bytes", "max", payloadLimit(arguments.getFirst()))));
+            default -> opaque(text(call));
         };
     }
 
-    /** {@code codec.apply(operation)} for operations named by hand, or null. */
-    private String describeApplied(Node codec, Node operation) {
-        if (operation.kind() != Kind.CALL)
+    /** {@code codec.apply(operation)}: a list, an optional, a length prefix or JSON of the codec. */
+    private Object applied(Node codec, Node operation) {
+        var name = operation.kind() == Kind.LAMBDA ? operation.name().replace("::", ".") : operation.name();
+        var parameters = operation.kind() == Kind.CALL ? operation.arguments() : List.<Node>of();
+        return switch (name == null ? "" : name) {
+            case "ByteBufCodecs.list" -> node("list", "of", describe(codec), "max", constant(parameters, 0));
+            case "ByteBufCodecs.collection" -> node("list", "of", describe(codec), "max", constant(parameters, 1));
+            case "ByteBufCodecs.optional" -> node("optional", "of", describe(codec));
+            // The codec's bytes after their VarInt length.
+            case "ByteBufCodecs.lengthPrefixed" -> node("length_prefixed", "of", describe(codec), "max", constant(parameters, 0));
+            // A serialization codec's value as a JSON string of at most the limit's length.
+            case "ByteBufCodecs.fromCodec" -> codec.kind() == Kind.CALL && codec.name().equals("ByteBufCodecs.lenientJson")
+                ? node("json", "codec", parameters.stream().filter(node -> isCodec(node.type())).findFirst().map(this::text).orElse(null),
+                    "max", constant(codec.arguments(), 0))
+                : opaque(text(codec) + ".apply(" + text(operation) + ")");
+            default -> opaque(text(codec) + ".apply(" + text(operation) + ")");
+        };
+    }
+
+    // Vanilla types.
+
+    /**
+     * A record type for a codec whose constructor (a lambda returning the class) builds a vanilla class from the
+     * fields it writes; null when the class isn't one to describe or the codec doesn't map to its fields.
+     */
+    private Object recordReference(Node codec, Node constructor) {
+        var type = returnType(constructor);
+        if (!isDescribable(type))
             return null;
-        // The codec's bytes after their VarInt length.
-        if (operation.name().equals("ByteBufCodecs.lengthPrefixed"))
-            return "LengthPrefixed<" + describe(codec) + ">" + limit(operation, 0);
-        // A serialization codec's value as a JSON string of at most the limit's length.
-        if (operation.name().equals("ByteBufCodecs.fromCodec") && codec.kind() == Kind.CALL && codec.name().equals("ByteBufCodecs.lenientJson")) {
-            var serializer = operation.arguments().stream().filter(argument -> isCodec(argument.type())).findFirst();
-            return "Json<" + serializer.map(this::describe).orElse("?") + ">" + limit(codec, 0);
+        return typeReference(type, () -> recordWrites(type, codec));
+    }
+
+    /** A record type for a class written by its own {@code write} method, or null. */
+    private Object writeReference(Class<?> type, String obfuscated, String descriptor) {
+        if (!isDescribable(type))
+            return null;
+        for (var owner = type; owner != null && owner != Object.class; owner = owner.getSuperclass()) {
+            var method = method(owner, obfuscated, descriptor);
+            if (method != null) {
+                var write = new Target(owner, method);
+                return method.code().isPresent() ? typeReference(type, () -> methodWrites(type, write)) : null;
+            }
         }
+
         return null;
     }
 
-    /** The limit a custom payload packet's fallback ({@code id -> DiscardedPayload.codec(id, limit)}) passes on. */
-    private String payloadLimit(Node fallback) {
-        if (fallback.kind() != Kind.LAMBDA)
-            return "";
-        var owner = classOf(fallback.handle().owner());
-        var codec = owner == null ? null : runLambda(new Analysis(owner), fallback, new ArrayList<>());
-        return codec != null && codec.kind() == Kind.CALL && codec.name().equals("DiscardedPayload.codec") ? limit(codec, 1) : "";
+    /** Registers a record type (once, by its Mojang name) and returns the encoding that refers to it. */
+    private Object typeReference(Class<?> type, java.util.function.Supplier<Map<String, Write>> fields) {
+        var name = mojang.nestedName(type);
+        if (!types.containsKey(name)) {
+            types.put(name, new TypeDefinition(type, Map.of(), null)); // against types that contain themselves
+            var written = fields.get();
+            // A codec that writes none of a class's fields doesn't describe it.
+            if (written == null || written.isEmpty() && !hasNoInstanceFields(type)) {
+                types.remove(name);
+                return null;
+            }
+            types.put(name, new TypeDefinition(type, written, null));
+        }
+        return node("type", "name", name);
     }
 
-    /** {@code (limit)} from a factory's constant argument, or nothing when it isn't a constant. */
-    private static String limit(Node call, int index) {
-        var argument = index < call.arguments().size() ? call.arguments().get(index) : null;
-        return argument != null && argument.kind() == Kind.CONSTANT ? "(" + argument.name() + ")" : "";
+    /**
+     * An enum written as a number ({@code wire}), registering its values: each constant's ordinal, or what
+     * {@code id} returns for it. For other types it's just the number.
+     */
+    private Object enumNode(Class<?> type, java.lang.reflect.Method id, Object wire) {
+        if (type == null || !type.isEnum())
+            return wire;
+
+        var values = new LinkedHashMap<String, Integer>();
+        for (var field : type.getDeclaredFields()) {
+            if (!field.isEnumConstant())
+                continue;
+            field.setAccessible(true);
+            var constant = (Enum<?>) VanillaDumper.Mojang.getStatic(field);
+            values.put(mojang.fieldName(type, field), id == null ? constant.ordinal() : ((Number) VanillaDumper.Mojang.call(id, constant)).intValue());
+        }
+
+        var name = mojang.nestedName(type);
+        var known = types.get(name);
+        if (known == null)
+            types.put(name, new TypeDefinition(type, null, values));
+        else if (!values.equals(known.values()))
+            System.out.println("Vanilla writes " + name + " with different values in different places; using the first");
+        return node("enum", "type", name, "as", wire);
+    }
+
+    /** The no-argument method a lambda refers to on its own class (Enum::getId), for an enum's ids; else null. */
+    private java.lang.reflect.Method idMethod(Node lambda) {
+        if (lambda.kind() != Kind.LAMBDA || !lambda.handle().lookupDescriptor().startsWith("()"))
+            return null;
+        var owner = classOf(lambda.handle().owner());
+        try {
+            var method = owner == null ? null : owner.getDeclaredMethod(lambda.handle().methodName());
+            if (method != null)
+                method.setAccessible(true);
+            return method;
+        } catch (NoSuchMethodException e) {
+            return null;
+        }
+    }
+
+    /** The enum a (byId, getId) pair converts: what byId returns, or the class getId is declared on. */
+    private Class<?> enumType(Node byId, Node getId) {
+        var type = returnType(byId);
+        if (type != null && type.isEnum())
+            return type;
+        var owner = getId.kind() == Kind.LAMBDA ? classOf(getId.handle().owner()) : null;
+        return owner != null && owner.isEnum() ? owner : type;
+    }
+
+    /** The class a lambda returns (a constructor reference's class), or null. */
+    private Class<?> returnType(Node lambda) {
+        return lambda.kind() == Kind.LAMBDA ? classOf(lambda.handle().invocationType().returnType()) : null;
+    }
+
+    /** Whether a class is a vanilla class this describes as a record: concrete, and not an enum. */
+    private boolean isDescribable(Class<?> type) {
+        return type != null && !type.isPrimitive() && !type.isArray() && !type.isInterface() && !type.isEnum()
+            && !java.lang.reflect.Modifier.isAbstract(type.getModifiers()) && mojang.className(type.getName()).startsWith("net.minecraft.");
+    }
+
+    private static boolean hasNoInstanceFields(Class<?> type) {
+        return java.util.Arrays.stream(type.getDeclaredFields()).allMatch(field -> java.lang.reflect.Modifier.isStatic(field.getModifiers()));
+    }
+
+    /** A registry's id ({@code minecraft:entity_type}) from a {@code Registries.X} constant. */
+    private String registryId(Node key) {
+        if (key.kind() != Kind.STATIC || key.owner() == null)
+            return null;
+        var field = mojang.field(mojang.className(key.owner().getName()), key.name().substring(key.name().lastIndexOf('.') + 1));
+        var value = VanillaDumper.Mojang.getStatic(field);
+        return VanillaDumper.Mojang.call(mojang.method("net.minecraft.resources.ResourceKey", "identifier"), value).toString();
+    }
+
+    /** The limit a custom payload packet's fallback ({@code id -> DiscardedPayload.codec(id, limit)}) passes on. */
+    private Integer payloadLimit(Node fallback) {
+        if (fallback.kind() != Kind.LAMBDA)
+            return null;
+        var owner = classOf(fallback.handle().owner());
+        var codec = owner == null ? null : runLambda(new Analysis(owner), fallback, new ArrayList<>());
+        return codec != null && codec.kind() == Kind.CALL && codec.name().equals("DiscardedPayload.codec") ? constant(codec.arguments(), 1) : null;
+    }
+
+    // Encoding nodes.
+
+    /** An encoding node: its kind and parameters (name, value pairs; null values are left out). */
+    private static Map<String, Object> node(String kind, Object... parameters) {
+        var node = new LinkedHashMap<String, Object>();
+        node.put("kind", kind);
+        for (var i = 0; i + 1 < parameters.length; i += 2) {
+            if (parameters[i + 1] != null)
+                node.put((String) parameters[i], parameters[i + 1]);
+        }
+        return node;
+    }
+
+    /** A codec this can't describe, by its expression. */
+    private static Map<String, Object> opaque(String name) {
+        return node("codec", "name", name);
+    }
+
+    private static boolean isOpaque(Object encoding) {
+        return encoding instanceof Map<?, ?> map && "codec".equals(map.get("kind"));
+    }
+
+    private Object orOpaque(Object encoding, Node call) {
+        return encoding != null ? encoding : opaque(text(call));
+    }
+
+    /** An integer constant argument, or null when the argument isn't a constant. */
+    private static Integer constant(List<Node> arguments, int index) {
+        if (index >= arguments.size() || arguments.get(index).kind() != Kind.CONSTANT)
+            return null;
+        try {
+            return Integer.valueOf(arguments.get(index).name());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /** An expression as text, like {@code ByteBufCodecs.registry(Registries.BLOCK)}, for naming what isn't described. */
+    private String text(Node node) {
+        return switch (node.kind()) {
+            case STATIC, LAMBDA, CONSTANT -> node.name();
+            case CALL -> {
+                var parts = new ArrayList<String>();
+                if (node.receiver() != null)
+                    parts.add(text(node.receiver()));
+                for (var argument : node.arguments()) {
+                    if (argument.kind() != Kind.VALUE)
+                        parts.add(text(argument));
+                }
+                yield node.name() + "(" + String.join(", ", parts) + ")";
+            }
+            default -> "?";
+        };
     }
 
     // Helpers.
