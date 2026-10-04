@@ -113,7 +113,7 @@ internal sealed class Encodings
         "string" or "identifier" => "string",
         "uuid" => "global::System.Guid",
         "block_pos" => "global::Obsidian.API.Vector",
-        "vec3" => "global::Obsidian.API.VectorF",
+        "vec3" => "global::Obsidian.API.VectorD",
         "lp_vec3" => "global::Obsidian.API.Velocity",
         "angle" => "global::Obsidian.API.Angle",
         "component" => "global::Obsidian.API.ChatMessage",
@@ -155,7 +155,7 @@ internal sealed class Encodings
             case "identifier": code.Line($"writer.WriteString({value});"); break;
             case "uuid": code.Line($"writer.WriteUuid({value});"); break;
             case "block_pos": code.Line($"writer.WritePosition({value});"); break;
-            case "vec3": code.Line($"writer.WriteAbsolutePositionF({value});"); break;
+            case "vec3": code.Line($"global::Obsidian.API.VectorD.Write({value}, writer);"); break;
             case "lp_vec3": code.Line($"writer.WriteVelocity({value});"); break;
             case "angle": code.Line($"writer.WriteByte({value}.Value);"); break;
             case "component": code.Line($"writer.WriteChat({value});"); break;
@@ -251,7 +251,7 @@ internal sealed class Encodings
             case "identifier": return "reader.ReadString()";
             case "uuid": return "reader.ReadGuid()";
             case "block_pos": return "reader.ReadPosition()";
-            case "vec3": return "reader.ReadAbsolutePositionF()";
+            case "vec3": return "global::Obsidian.API.VectorD.Read(reader)";
             case "lp_vec3": return "reader.ReadVelocity()";
             case "angle": return "reader.ReadAngle()";
             case "component": return "reader.ReadChat()";
