@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,8 +36,12 @@ import java.util.stream.Collectors;
  * generator itself uses, go to the work directory.
  *
  * <p>The server jar is obfuscated, so everything vanilla is reached through reflection, by its Mojang name looked up in
- * Mojang's ProGuard mappings (see {@link Mojang}). The values all come from calling vanilla's own methods on every block
- * state or entity type; the file formats are Obsidian's, documented by their readers (named on each dump method).
+ * Mojang's ProGuard mappings (see {@link Mojang}). The values come from calling vanilla's own methods on every block
+ * state or entity type, except how packets are written, which {@link PacketFormats} reads from their bytecode; the file
+ * formats are Obsidian's, documented by their readers (named on each dump method).
+ *
+ * <p>Needs Java 25: the source launcher compiles {@code PacketFormats.java} next to this file, and it uses the
+ * class-file API ({@code java.lang.classfile}).
  */
 public final class VanillaDumper {
     // Mojang names of the classes used below, as the mappings spell them (also how parameter types are given).
@@ -713,11 +718,15 @@ public final class VanillaDumper {
      * fields of the packet's class, which {@code DatagenAssets} adds to {@code packets.json}. A packet's class is the
      * type argument of its {@code PacketType<T>} constant in vanilla's {@code *PacketTypes} classes.
      *
-     * <p>The fields are the class's instance fields, its superclasses' first, in declaration order: for record packets
-     * the order of their components, which their codecs usually write in. They're Java fields, so they don't tell how a
-     * value is encoded (an {@code int} may be written as a VarInt), and a class may hold fields its codec derives or skips.
+     * <p>The fields are the class's instance fields (its superclasses' too), each with whether vanilla sends it and,
+     * if so, its encoding and whether it's only sometimes written ({@code conditional}), written in a loop
+     * ({@code repeated}) or written together with other fields in one value ({@code packed}), as {@link PacketFormats}
+     * reads them from the packet's codec. Sent fields come first, in the order they're written; the rest follow in
+     * declaration order.
      */
     private void dumpPacketFields(Path work) throws IOException {
+        var formats = new PacketFormats(mojang);
+        var unread = new ArrayList<String>();
         var packetType = mojang.type(PACKET_TYPE);
         var flow = mojang.method(PACKET_TYPE, "flow");
         var id = mojang.method(PACKET_TYPE, "id");
@@ -740,18 +749,52 @@ public final class VanillaDumper {
                 if (previous != null && previous != type)
                     throw new IllegalStateException(key + " is both " + mojang.simpleName(previous) + " and " + mojang.simpleName(type));
 
-                json.computeIfAbsent(direction, name -> new TreeMap<>()).put(Mojang.call(id, packet).toString(), packetFields(type));
+                var writes = formats.writes(type);
+                if (writes == null && !unread.contains(mojang.simpleName(type)))
+                    unread.add(mojang.simpleName(type));
+                json.computeIfAbsent(direction, name -> new TreeMap<>()).put(Mojang.call(id, packet).toString(), packetFields(type, writes));
             }
         }
         if (classes.isEmpty())
             throw new IllegalStateException("Found no packet types");
+        if (!unread.isEmpty())
+            System.out.println("Couldn't read how these packets are written, so their fields don't say whether they're sent: " + String.join(", ", unread));
 
         Json.write(work.resolve("packet_fields.json"), json, true);
     }
 
-    /** A class's instance fields, its superclasses' first, by Mojang name and type ({@link #typeName}). */
-    private List<Object> packetFields(Class<?> type) {
-        var fields = type.getSuperclass() == null ? new ArrayList<Object>() : packetFields(type.getSuperclass());
+    /**
+     * A packet class's fields by Mojang name and type ({@link #typeName}), with how they're written when known
+     * ({@code writes} isn't null): sent fields in the order they're written, then the rest.
+     */
+    private List<Object> packetFields(Class<?> type, Map<String, PacketFormats.Write> writes) {
+        var fields = instanceFields(type);
+        if (writes == null)
+            return new ArrayList<>(fields);
+
+        for (var field : fields) {
+            var write = writes.get((String) field.get("name"));
+            field.put("sent", write != null);
+            if (write != null) {
+                field.put("encoding", write.encoding());
+                if (write.conditional())
+                    field.put("conditional", true);
+                if (write.repeated())
+                    field.put("repeated", true);
+                if (write.packed())
+                    field.put("packed", true);
+            }
+        }
+        var order = Comparator.comparingInt((Map<String, Object> field) -> {
+            var write = writes.get((String) field.get("name"));
+            return write == null ? Integer.MAX_VALUE : write.order();
+        });
+        return new ArrayList<>(fields.stream().sorted(order).toList());
+    }
+
+    /** A class's instance fields, its superclasses' first, by Mojang name and type. */
+    private List<Map<String, Object>> instanceFields(Class<?> type) {
+        var fields = type.getSuperclass() == null ? new ArrayList<Map<String, Object>>() : instanceFields(type.getSuperclass());
         for (var field : type.getDeclaredFields()) {
             if (Modifier.isStatic(field.getModifiers()) || field.isSynthetic())
                 continue;
@@ -878,11 +921,14 @@ public final class VanillaDumper {
         private final Map<String, Map<String, String>> members = new HashMap<>();
         // Per Mojang class name: obfuscated field name to Mojang name.
         private final Map<String, Map<String, String>> fieldNames = new HashMap<>();
+        // Per Mojang class name: "obfuscated(Mojang parameter types)" to the method's Mojang name.
+        private final Map<String, Map<String, String>> methodNames = new HashMap<>();
 
         static Mojang read(Path path) throws IOException {
             var mojang = new Mojang();
             Map<String, String> classMembers = null;
             Map<String, String> classFields = null;
+            Map<String, String> classMethods = null;
             for (var line : Files.readAllLines(path, StandardCharsets.UTF_8)) {
                 if (line.isEmpty() || line.stripLeading().startsWith("#"))
                     continue;
@@ -893,10 +939,13 @@ public final class VanillaDumper {
                     mojang.mojangClasses.put(match.group(2), match.group(1));
                     classMembers = mojang.members.computeIfAbsent(match.group(1), name -> new HashMap<>());
                     classFields = mojang.fieldNames.computeIfAbsent(match.group(1), name -> new HashMap<>());
+                    classMethods = mojang.methodNames.computeIfAbsent(match.group(1), name -> new HashMap<>());
                 } else if (classMembers != null && (match = MEMBER.matcher(line)).matches()) {
                     var isMethod = match.group(2) != null;
                     classMembers.putIfAbsent(isMethod ? match.group(1) + match.group(2) : match.group(1), match.group(4));
-                    if (!isMethod)
+                    if (isMethod)
+                        classMethods.putIfAbsent(match.group(4) + match.group(2), match.group(1));
+                    else
                         classFields.put(match.group(4), match.group(1));
                 }
             }
@@ -938,6 +987,20 @@ public final class VanillaDumper {
         String nestedName(Class<?> type) {
             var name = mojangClasses.getOrDefault(type.getName(), type.getName());
             return name.substring(name.lastIndexOf('.') + 1).replace('$', '.');
+        }
+
+        /** The Mojang name of a class by its runtime name, or the name itself for classes the mappings don't rename. */
+        String className(String name) {
+            return mojangClasses.getOrDefault(name, name);
+        }
+
+        /**
+         * The Mojang name of a method a class declares, by its obfuscated name and parameter types as the mappings
+         * spell them ({@code int,net.minecraft.core.BlockPos}); null when the mappings don't list it.
+         */
+        String methodName(Class<?> owner, String obfuscated, String parameterTypes) {
+            var mojangOwner = mojangClasses.get(owner.getName());
+            return mojangOwner == null ? null : methodNames.getOrDefault(mojangOwner, Map.of()).get(obfuscated + "(" + parameterTypes + ")");
         }
 
         /** The Mojang name of a field declared by a class. */

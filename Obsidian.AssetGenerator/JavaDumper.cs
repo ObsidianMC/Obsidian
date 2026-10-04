@@ -21,7 +21,8 @@ internal static class JavaDumper
     public static string WorldgenGroupsPath(VanillaServer server) => Path.Combine(server.Directory, "worldgen_groups.json");
 
     /// <summary>
-    /// The fields of each packet's class, as <c>direction → packet id → [{ name, type }]</c>, which are added to
+    /// The fields of each packet's class and how vanilla writes them, as
+    /// <c>direction → packet id → [{ name, type, sent, encoding, conditional, repeated, packed }]</c>, which are added to
     /// <c>packets.json</c>.
     /// </summary>
     public static string PacketFieldsPath(VanillaServer server) => Path.Combine(server.Directory, "packet_fields.json");
