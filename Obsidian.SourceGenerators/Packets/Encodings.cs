@@ -17,6 +17,9 @@ internal sealed class Encodings
 {
     private const string Types = "global::" + Protocol.TypesNamespace;
 
+    // How many elements a read collection makes room for up front, whatever count the packet claims (vanilla caps it too).
+    private const int MaxInitialCapacity = 65536;
+
     private readonly Protocol protocol;
     private readonly Func<ProtocolType, string?> unavailable;
     private readonly Dictionary<string, string?> typeProblems = [];
@@ -139,7 +142,7 @@ internal sealed class Encodings
         switch (Kind(encoding))
         {
             case "boolean": code.Line($"writer.WriteBoolean({value});"); break;
-            case "byte": code.Line(javaType == "byte" ? $"writer.WriteByte({value});" : $"writer.WriteByte(unchecked((sbyte){value}));"); break;
+            case "byte": code.Line(javaType == "byte" ? $"writer.WriteByte({value});" : $"writer.WriteByte(unchecked((byte){value}));"); break;
             case "short": code.Line(javaType == "short" ? $"writer.WriteShort({value});" : $"writer.WriteShort(unchecked((short){value}));"); break;
             case "unsigned_short": code.Line($"writer.WriteUnsignedShort(unchecked((ushort){value}));"); break;
             case "int": code.Line($"writer.WriteInt({value});"); break;
@@ -154,7 +157,7 @@ internal sealed class Encodings
             case "block_pos": code.Line($"writer.WritePosition({value});"); break;
             case "vec3": code.Line($"writer.WriteAbsolutePositionF({value});"); break;
             case "lp_vec3": code.Line($"writer.WriteVelocity({value});"); break;
-            case "angle": code.Line($"global::Obsidian.API.Angle.Write({value}, writer);"); break;
+            case "angle": code.Line($"writer.WriteByte({value}.Value);"); break;
             case "component": code.Line($"writer.WriteChat({value});"); break;
             case "item_stack": code.Line($"writer.WriteItemStack({value});"); break;
             case "nbt": code.Line($"writer.WriteNbtCompound({value});"); break;
@@ -199,6 +202,7 @@ internal sealed class Encodings
             case "list":
             {
                 var element = Temporary("element");
+                CheckCount(code, encoding, $"{value}.Count", reading: false);
                 code.Line($"writer.WriteVarInt({value}.Count);");
                 code.Statement($"foreach (var {element} in {value})");
                 Write(code, encoding.GetProperty("of"), ElementType(javaType, 0), element);
@@ -208,6 +212,7 @@ internal sealed class Encodings
             case "map":
             {
                 var entry = Temporary("entry");
+                CheckCount(code, encoding, $"{value}.Count", reading: false);
                 code.Line($"writer.WriteVarInt({value}.Count);");
                 code.Statement($"foreach (var {entry} in {value})");
                 Write(code, encoding.GetProperty("key"), ElementType(javaType, 0), $"{entry}.Key");
@@ -231,7 +236,9 @@ internal sealed class Encodings
         switch (Kind(encoding))
         {
             case "boolean": return "reader.ReadBoolean()";
+            case "byte" when IsUnsigned(encoding): return javaType == "byte" ? "unchecked((sbyte)reader.ReadByte())" : "(int)reader.ReadByte()";
             case "byte": return javaType == "byte" ? "reader.ReadSignedByte()" : "(int)reader.ReadSignedByte()";
+            case "short" when IsUnsigned(encoding): return javaType == "short" ? "unchecked((short)reader.ReadUnsignedShort())" : "(int)reader.ReadUnsignedShort()";
             case "short": return javaType == "short" ? "reader.ReadShort()" : "(int)reader.ReadShort()";
             case "unsigned_short": return "(int)reader.ReadUnsignedShort()";
             case "int": return "reader.ReadInt()";
@@ -246,7 +253,7 @@ internal sealed class Encodings
             case "block_pos": return "reader.ReadPosition()";
             case "vec3": return "reader.ReadAbsolutePositionF()";
             case "lp_vec3": return "reader.ReadVelocity()";
-            case "angle": return "global::Obsidian.API.Angle.Read(reader)";
+            case "angle": return "reader.ReadAngle()";
             case "component": return "reader.ReadChat()";
             case "item_stack": return "reader.ReadItemStack()";
             case "nbt": return "reader.ReadNbtCompound()";
@@ -277,7 +284,8 @@ internal sealed class Encodings
                 var count = Temporary("count");
                 var index = Temporary("index");
                 code.Line($"var {count} = reader.ReadVarInt();");
-                code.Line($"var {result} = new {CSharpType(encoding, javaType)}({count});");
+                CheckCount(code, encoding, count, reading: true);
+                code.Line($"var {result} = new {CSharpType(encoding, javaType)}(global::System.Math.Min({count}, {MaxInitialCapacity}));");
                 code.Statement($"for (var {index} = 0; {index} < {count}; {index}++)");
                 var element = Read(code, encoding.GetProperty("of"), ElementType(javaType, 0));
                 code.Line($"{result}.Add({element});");
@@ -291,7 +299,8 @@ internal sealed class Encodings
                 var index = Temporary("index");
                 var key = Temporary("key");
                 code.Line($"var {count} = reader.ReadVarInt();");
-                code.Line($"var {result} = new {CSharpType(encoding, javaType)}({count});");
+                CheckCount(code, encoding, count, reading: true);
+                code.Line($"var {result} = new {CSharpType(encoding, javaType)}(global::System.Math.Min({count}, {MaxInitialCapacity}));");
                 code.Statement($"for (var {index} = 0; {index} < {count}; {index}++)");
                 code.Line($"var {key} = {Read(code, encoding.GetProperty("key"), ElementType(javaType, 0))};");
                 var item = Read(code, encoding.GetProperty("value"), ElementType(javaType, 1));
@@ -316,6 +325,25 @@ internal sealed class Encodings
         : null;
 
     private static string Kind(JsonElement encoding) => encoding.GetProperty("kind").GetString()!;
+
+    /// <summary>
+    /// Throws when a collection's count is negative or over the encoding's maximum (vanilla rejects both when reading,
+    /// and won't write more than the maximum).
+    /// </summary>
+    private static void CheckCount(CodeBuilder code, JsonElement encoding, string count, bool reading)
+    {
+        var max = Max(encoding, int.MaxValue);
+        if (!reading && max == int.MaxValue)
+            return;
+
+        var exception = reading ? "global::System.IO.InvalidDataException" : "global::System.InvalidOperationException";
+        code.Statement(max == int.MaxValue ? $"if ({count} < 0)" : $"if ({count} < 0 || {count} > {max})");
+        code.Line($"throw new {exception}($\"Collection count {{{count}}} is outside 0 to {max}.\");");
+        code.EndScope();
+    }
+
+    private static bool IsUnsigned(JsonElement encoding) =>
+        encoding.TryGetProperty("unsigned", out var unsigned) && unsigned.GetBoolean();
 
     private static int Max(JsonElement encoding, int fallback) =>
         encoding.TryGetProperty("max", out var max) ? max.GetInt32() : fallback;
