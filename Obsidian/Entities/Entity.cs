@@ -151,7 +151,17 @@ public class Entity : IEquatable<Entity>, IEntity
     internal static Vector MoveDelta(VectorD from, VectorD to) =>
         new(MoveDelta(from.X, to.X), MoveDelta(from.Y, to.Y), MoveDelta(from.Z, to.Z));
 
-    private static int MoveDelta(double from, double to) => (int)(Math.Floor(to * 4096 + 0.5) - Math.Floor(from * 4096 + 0.5));
+    private static int MoveDelta(double from, double to) => (int)(JavaRound(to * 4096) - JavaRound(from * 4096));
+
+    /// <summary>
+    /// Java's <c>Math.round</c>: to the nearest whole number, halves up. Adding 0.5 and flooring would round the
+    /// sum first (0.49999999999999994 + 0.5 is 1); a number minus its floor is exact, so its fraction compares safely.
+    /// </summary>
+    private static long JavaRound(double value)
+    {
+        var floor = Math.Floor(value);
+        return (long)floor + (value - floor >= 0.5 ? 1 : 0);
+    }
 
     public virtual async ValueTask UpdateAsync(VectorD position, MovementFlags movementFlags)
     {

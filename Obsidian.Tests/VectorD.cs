@@ -30,4 +30,14 @@ public class VectorDTests
         Assert.Equal(-82, Entity.MoveDelta(start, end).X);
         Assert.Equal(82, Entity.MoveDelta(end, start).X);
     }
+
+    [Theory(DisplayName = "Relative moves round halves up like Java's Math.round")]
+    [InlineData(0.49999999999999994, 0)] // just below a half: adding 0.5 first would round up
+    [InlineData(0.5, 1)]
+    [InlineData(0.5000000000000001, 1)]
+    [InlineData(-0.49999999999999994, 0)]
+    [InlineData(-0.5, 0)] // halves round towards positive infinity
+    [InlineData(-0.5000000000000001, -1)]
+    public void RoundsHalvesUp(double units, int delta) =>
+        Assert.Equal(delta, Entity.MoveDelta(VectorD.Zero, new VectorD(units / 4096, 0, 0)).X);
 }
