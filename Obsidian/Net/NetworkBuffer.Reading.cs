@@ -396,6 +396,75 @@ public partial class NetworkBuffer : INetStreamReader
         return ReadUInt8Array(length);
     }
 
+    /// <summary>Reads a VarInt length, then that many bytes; throws when the length is over <paramref name="maxLength"/>.</summary>
+    public byte[] ReadByteArray(int maxLength)
+    {
+        var length = this.ReadVarInt();
+        if (length < 0 || length > maxLength)
+            throw new InvalidDataException($"Byte array length {length} is outside 0 to {maxLength}.");
+
+        return this.ReadUntil(length);
+    }
+
+    /// <summary>Reads the rest of the buffer; throws when it's longer than <paramref name="maxLength"/>.</summary>
+    public byte[] ReadRemainingBytes(int maxLength)
+    {
+        var length = (int)(this.size - this.offset);
+        if (length > maxLength)
+            throw new InvalidDataException($"{length} remaining bytes are more than {maxLength}.");
+
+        return this.ReadUntil(length);
+    }
+
+    /// <summary>Reads a VarInt count, then that many longs.</summary>
+    public long[] ReadLongArray()
+    {
+        var values = new long[this.ReadVarInt()];
+        for (var i = 0; i < values.Length; i++)
+            values[i] = this.ReadLong();
+        return values;
+    }
+
+    /// <summary>Reads a VarInt count, then that many VarInts.</summary>
+    public int[] ReadVarIntArray()
+    {
+        var values = new int[this.ReadVarInt()];
+        for (var i = 0; i < values.Length; i++)
+            values[i] = this.ReadVarInt();
+        return values;
+    }
+
+    /// <summary>Reads a bit set as a VarInt count of longs, then the longs (Java's <c>BitSet.toLongArray</c>).</summary>
+    public BitSet ReadBitSet() => new(this.ReadLongArray());
+
+    /// <summary>
+    /// Reads a bit set of <paramref name="size"/> bits as <c>ceil(size / 8)</c> bytes, lowest bit first (Java's
+    /// <c>BitSet.toByteArray</c>, padded to the size).
+    /// </summary>
+    public BitSet ReadFixedBitSet(int size)
+    {
+        var bytes = this.ReadUntil((size + 7) / 8);
+        var bits = new BitSet();
+        for (var i = 0; i < size; i++)
+            bits.SetBit(i, (bytes[i / 8] & (1 << (i % 8))) != 0);
+        return bits;
+    }
+
+    /// <summary>Reads a network NBT compound (no root name); throws when it's an empty (end) tag.</summary>
+    public NbtCompound ReadNbtCompound() =>
+        this.ReadOptionalNbtCompound() ?? throw new InvalidDataException("Expected an NBT compound, but found an end tag.");
+
+    /// <summary>Reads a network NBT compound (no root name), or null for an empty (end) tag.</summary>
+    public NbtCompound? ReadOptionalNbtCompound()
+    {
+        using var stream = new MemoryStream(this.AsSpan((int)(this.size - this.offset)).ToArray());
+        var found = new NbtReader(stream).TryReadNextTag<NbtCompound>(false, out var compound);
+
+        this.offset += (int)stream.Position;
+        this.BytesPending -= (int)stream.Position;
+        return found ? compound : null;
+    }
+
     [ReadMethod]
     public byte[] ReadUInt8Array(int length = 0)
     {

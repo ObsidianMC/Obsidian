@@ -5,6 +5,11 @@ public sealed class BitSet
     public ReadOnlyMemory<long> DataStorage => data.AsMemory();
     private long[] data = [];
 
+    public BitSet() { }
+
+    /// <summary>A bit set over the given longs, bit 0 being the lowest bit of the first (Java's <c>BitSet.valueOf</c>).</summary>
+    public BitSet(long[] data) => this.data = data;
+
     public void SetBit(int bitIndex, bool value)
     {
         (var arrayIndex, var mask) = GetBitLoc(bitIndex);

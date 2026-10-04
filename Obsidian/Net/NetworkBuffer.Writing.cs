@@ -339,6 +339,30 @@ public partial class NetworkBuffer : INetStreamWriter
         this.Write(writer.Data);
     }
 
+    /// <summary>Writes a network NBT compound, or an empty (end) tag for null.</summary>
+    public void WriteOptionalNbtCompound(NbtCompound? compound)
+    {
+        if (compound is null)
+            this.WriteByte((byte)NbtTagType.End);
+        else
+            this.WriteNbtCompound(compound);
+    }
+
+    /// <summary>
+    /// Writes a bit set of <paramref name="size"/> bits as <c>ceil(size / 8)</c> bytes, lowest bit first (Java's
+    /// <c>BitSet.toByteArray</c>, padded to the size).
+    /// </summary>
+    public void WriteFixedBitSet(BitSet bits, int size)
+    {
+        var bytes = new byte[(size + 7) / 8];
+        for (var i = 0; i < size; i++)
+        {
+            if (bits.GetBit(i))
+                bytes[i / 8] |= (byte)(1 << (i % 8));
+        }
+        this.WriteByteArray(bytes);
+    }
+
     public void WriteNbtCompound(NbtCompound compound)
     {
         using var writer = new RawNbtWriter(true);
