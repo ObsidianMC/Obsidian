@@ -2,7 +2,22 @@
 
 public class Avatar : Living
 {
-    public ClientInformation ClientInformation { get; set; }
+    /// <summary>
+    /// The client's settings, from its client information packet; until it sends one, vanilla's defaults
+    /// (<c>ClientInformation.createDefault</c>).
+    /// </summary>
+    public ClientInformation ClientInformation { get; set; } = new()
+    {
+        Language = "en_us",
+        ViewDistance = 2,
+        ChatVisibility = ChatVisibility.Full,
+        ChatColors = true,
+        ModelCustomisation = 0,
+        MainHand = HumanoidArm.Right,
+        TextFilteringEnabled = false,
+        AllowsListing = false,
+        ParticleStatus = ParticleStatus.All
+    };
 
     public override void Write(INetStreamWriter writer)
     {
