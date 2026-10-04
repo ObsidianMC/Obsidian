@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using System.Text.Json;
 
 namespace Obsidian.Registries;
@@ -309,8 +309,9 @@ internal static class BlockPhysics
 }
 
 /// <summary>
-/// Fluid carried by a block state, in vanilla's fluid registry terms (the values are vanilla's fluid registry ids, which
-/// <see cref="BlockPhysics.CanHoldSpecificFluid"/> relies on).
+/// Fluid carried by a block state. The values are how <c>block_physics.json</c> encodes fluids, which
+/// <see cref="BlockPhysics.CanHoldSpecificFluid"/> relies on; they aren't vanilla's fluid registry ids, which list flowing
+/// water before water.
 /// </summary>
 internal enum FluidKind
 {
