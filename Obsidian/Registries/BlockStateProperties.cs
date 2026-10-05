@@ -26,6 +26,9 @@ internal static class BlockStateProperties
     public static string? GetProperty(this IBlock block, string property) =>
         table.Value.Properties.TryGetValue(block.GetHashCode(), out var properties) ? properties.GetValueOrDefault(property) : null;
 
+    internal static IReadOnlyDictionary<string, string> GetProperties(IBlock block) =>
+        table.Value.Properties.GetValueOrDefault(block.GetHashCode()) ?? FrozenDictionary<string, string>.Empty;
+
     public static bool HasProperty(this IBlock block, string property) => block.GetProperty(property) is not null;
 
     /// <summary>

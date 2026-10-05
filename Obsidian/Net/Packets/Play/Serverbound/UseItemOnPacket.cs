@@ -1,4 +1,4 @@
-﻿using Obsidian.API.Events;
+using Obsidian.API.Events;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
 
@@ -24,7 +24,7 @@ public partial class UseItemOnPacket
     public BlockFace Face { get; private set; }
 
     [Field(3), DataFormat(typeof(float))]
-    public VectorF Cursor { get; private set; }
+    public VectorD Cursor { get; private set; }
 
     [Field(6)]
     public bool InsideBlock { get; private set; }
@@ -48,6 +48,39 @@ public partial class UseItemOnPacket
 
     public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
+        var handSlot = Hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
+        var bucket = player.Inventory.GetItem(handSlot);
+        if (bucket is { Count: > 0, Type: Material.AxolotlBucket or Material.TadpoleBucket } && player.Health > 0 && player.GameMode != GameMode.Spectator)
+        {
+            var destination = Position + Face.ToVector();
+            if ((player.Position - (VectorD)destination).MagnitudeSquared() > 36 || player.Level is not Obsidian.WorldData.AbstractLevel level || level.IsOutsideBuildHeight(destination.Y)) return;
+            var terrain = new Obsidian.Entities.AI.MobTerrain(level);
+            var existing = terrain.GetBlock(destination);
+            if (existing == null || !existing.IsAir && existing.Material != Material.Water) return;
+            var type = bucket.Type == Material.AxolotlBucket ? EntityType.Axolotl : EntityType.Tadpole;
+            var mob = Obsidian.Entities.Factories.EntitySpawner.CreateMob(level, type)!;
+            mob.EntityId = Server.GetNextEntityId();
+            mob.Position = (VectorD)destination + new VectorD(0.5f, 0, 0.5f);
+            if (!terrain.IsFree(mob.Dimension.CreateBBFromPosition(mob.Position))) return;
+            await level.SetBlockAsync(destination, BlocksRegistry.Water, true);
+            mob.InitializeAi();
+            var saved = Obsidian.Entities.EntityNbt.Save(mob)!;
+            if (bucket.GetComponent<Obsidian.API.Inventory.DataComponents.BucketEntityDataComponent>(DataComponentType.BucketEntityData) is { } component)
+                foreach (var (name, value) in component.Value)
+                    if (name is not ("id" or "UUID" or "Pos" or "Motion" or "Rotation")) { saved.Remove(name); saved.Add(name, value); }
+            saved.Remove("FromBucket");
+            saved.Add(new Obsidian.Nbt.NbtTag<bool>("FromBucket", true));
+            mob.ReadSave(saved);
+            mob.PersistenceRequired = true;
+            level.SpawnEntity(mob);
+            if (player.GameMode != GameMode.Creative)
+            {
+                player.Inventory.SetItem(handSlot, ItemsRegistry.GetSingleItem(Material.Bucket));
+                await player.Client.QueuePacketAsync(new ContainerSetSlotPacket { ContainerId = 0, Slot = (short)handSlot, SlotData = player.Inventory.GetItem(handSlot) });
+            }
+            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = Sequence });
+            return;
+        }
         //Get main hand first return offhand if null
         var currentItem = player.GetHeldItem() ?? player.GetOffHandItem();
         var position = this.Position;
@@ -70,6 +103,8 @@ public partial class UseItemOnPacket
         }
 
         var itemType = currentItem != null ? currentItem.Type : Material.Air;
+        if (player is Obsidian.Entities.Player eatingPlayer)
+            eatingPlayer.StartEating(Hand);
 
         switch (itemType)
         {

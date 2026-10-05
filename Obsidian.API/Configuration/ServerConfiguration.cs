@@ -113,7 +113,7 @@ public sealed class ServerConfiguration
 public sealed class ServerWorld
 {
     public string Name { get; set; } = "overworld";
-    public string Generator { get; set; } = "overworld";
+    public string Generator { get; set; } = "minecraft:mojang_generator";
 
     public string Seed { get; set; } = default!;
 

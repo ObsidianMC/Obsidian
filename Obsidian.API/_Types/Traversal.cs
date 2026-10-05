@@ -1,4 +1,4 @@
-﻿namespace Obsidian.API;
+namespace Obsidian.API;
 
 public class Traverse
 {
@@ -38,8 +38,8 @@ public class Traverse
         double tMaxX, tMaxY, tMaxZ, tDeltaX, tDeltaY, tDeltaZ;
         VectorD voxel = new VectorD();
 
-        double x1 = StartPoint.X, y1 = StartPoint.Y, z1 = StartPoint.Z; // start point   
-        double x2 = EndPoint.X, y2 = EndPoint.Y, z2 = EndPoint.Z; // end point   
+        double x1 = StartPoint.X, y1 = StartPoint.Y, z1 = StartPoint.Z; // start point
+        double x2 = EndPoint.X, y2 = EndPoint.Y, z2 = EndPoint.Z; // end point
 
 
         var dx = Math.Sign(x2 - x1); // x direction

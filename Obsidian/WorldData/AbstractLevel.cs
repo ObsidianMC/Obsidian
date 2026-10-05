@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Obsidian.API.Configuration;
 using Obsidian.API.Entities;
@@ -118,10 +118,53 @@ public abstract partial class AbstractLevel : ILevel
 
     private readonly IDisposable optionsMonitor;
     private readonly Lock regionLock = new();
+    private readonly ConcurrentQueue<Func<ValueTask>> entityActions = new();
+    private MobSpawner? mobSpawner;
+    private readonly SemaphoreSlim simulationGate = new(1, 1);
+
+    internal void EnqueueEntityAction(Func<ValueTask> action) => entityActions.Enqueue(action);
+
+    internal void QueueChunkPopulation(IChunk chunk) => EnqueueEntityAction(() =>
+    {
+        if (ReferenceEquals(GetLoadedChunk(chunk.X, chunk.Z), chunk))
+            (mobSpawner ??= new MobSpawner(this)).PopulateChunk(chunk);
+        return default;
+    });
+
+    internal bool IsMobTicking(VectorD position)
+    {
+        var (x, z) = Region.ChunkOf(position);
+        if (GetLoadedChunk(x, z) == null)
+            return false;
+
+        return Players.Values.Any(player => player.GameMode != GameMode.Spectator &&
+            Math.Abs(Region.ChunkOf(player.Position).X - x) <= Configuration.SimulationDistance &&
+            Math.Abs(Region.ChunkOf(player.Position).Z - z) <= Configuration.SimulationDistance);
+    }
+
+    internal IChunk? GetLoadedChunk(int chunkX, int chunkZ) => GetRegionForChunk(chunkX, chunkZ) is Region region
+        ? region.GetLoadedChunk(NumericsHelper.Modulo(chunkX, 32), NumericsHelper.Modulo(chunkZ, 32))
+        : null;
+
+    internal bool TryMoveEntity(IEntity entity, VectorD from, VectorD to)
+    {
+        var destination = GetRegionForLocation(to);
+        var origin = GetRegionForLocation(from);
+        if (destination == null)
+            return false;
+        if (ReferenceEquals(origin, destination))
+            return true;
+        if (!destination.Entities.TryAdd(entity.EntityId, entity))
+            return false;
+        origin?.Entities.TryRemove(entity.EntityId, out _);
+        return true;
+    }
 
     // Chunks whose pending entities (placed by world generation or loaded from disk) spawn on the level's tick rather than
     // on generator or loading threads.
     private readonly ConcurrentQueue<Chunk> entitySpawns = new();
+
+
 
     public AbstractLevel(ILogger logger, IPacketBroadcaster packetBroadcaster, IOptionsMonitor<ServerConfiguration> configuration,
         IEventDispatcher eventDispatcher, ILevelGenerator worldGenerator, string name, string seed)
@@ -164,7 +207,7 @@ public abstract partial class AbstractLevel : ILevel
 
     public IRegion? GetRegionForLocation(VectorD location)
     {
-        (int chunkX, int chunkZ) = location.ToChunkCoord();
+        var (chunkX, chunkZ) = Region.ChunkOf(location);
         long key = NumericsHelper.IntsToLong(chunkX >> Region.CubicRegionSizeShift, chunkZ >> Region.CubicRegionSizeShift);
         Regions.TryGetValue(key, out var region);
         return region;
@@ -242,6 +285,7 @@ public abstract partial class AbstractLevel : ILevel
 
         await SetBlockUntrackedAsync(x, y, z, block);
         this.BroadcastBlockChange(block, new(x, y, z));
+        CheckSnowGolem(new Vector(x, y, z), block);
     }
 
     public async ValueTask SetBlockAsync(int x, int y, int z, IBlock block, bool doBlockUpdate)
@@ -251,6 +295,7 @@ public abstract partial class AbstractLevel : ILevel
 
         await SetBlockUntrackedAsync(x, y, z, block, doBlockUpdate);
         this.BroadcastBlockChange(block, new(x, y, z));
+        CheckSnowGolem(new Vector(x, y, z), block);
     }
 
     internal void BroadcastBlockChange(IBlock block, Vector location)
@@ -326,16 +371,21 @@ public abstract partial class AbstractLevel : ILevel
             yield break;
         }
 
-        (int left, int top) = (location - new VectorD(distance)).ToChunkCoord();
-        (int right, int bottom) = (location + new VectorD(distance)).ToChunkCoord();
+        var (left, top) = Region.ChunkOf(location - new VectorD(distance));
+        var (right, bottom) = Region.ChunkOf(location + new VectorD(distance));
+
+        left >>= Region.CubicRegionSizeShift;
+        right >>= Region.CubicRegionSizeShift;
+        top >>= Region.CubicRegionSizeShift;
+        bottom >>= Region.CubicRegionSizeShift;
 
         distance *= distance;
 
-        for (int x = left; x <= right; x += Region.CubicRegionSize)
+        for (int x = left; x <= right; x++)
         {
-            for (int z = top; z >= bottom; z -= Region.CubicRegionSize)
+            for (int z = top; z <= bottom; z++)
             {
-                if (GetRegionForChunk(x, z) is not Region region)
+                if (GetRegionForChunk(x << Region.CubicRegionSizeShift, z << Region.CubicRegionSizeShift) is not Region region)
                     continue;
 
                 foreach (var entity in region.Entities.Values)
@@ -400,6 +450,21 @@ public abstract partial class AbstractLevel : ILevel
 
     public async virtual Task DoWorldTickAsync()
     {
+        TickStage = "waiting for simulation gate";
+        await simulationGate.WaitAsync();
+        try
+        {
+            await TickLevelAsync();
+        }
+        finally
+        {
+            simulationGate.Release();
+        }
+    }
+
+    private async Task TickLevelAsync()
+    {
+        TickStage = "starting";
         if (LevelData is null)
             return;
 
@@ -418,8 +483,51 @@ public abstract partial class AbstractLevel : ILevel
         // Like vanilla, fluid ticks run before entities tick.
         this.Fluids.Tick();
 
-        await Task.WhenAll(this.Regions.Values.Select(r => r.BeginTickAsync()));
+        foreach (var region in Regions.Values.OfType<Region>())
+            region.TickInhabitedTime(this);
+
+        var actionCount = entityActions.Count;
+        for (var index = 0; index < actionCount && entityActions.TryDequeue(out var action); index++)
+        {
+            TickStage = $"entity action {index + 1}/{actionCount}";
+            await action();
+        }
+
+        TickStage = "natural spawning";
+        (mobSpawner ??= new MobSpawner(this)).Tick();
+
+        // Snapshot once so crossing a region boundary cannot tick an entity twice.
+        var entities = Regions.Values.SelectMany(region => region.Entities.Values)
+            .DistinctBy(entity => entity.EntityId).OrderBy(entity => entity.EntityId).ToArray();
+        foreach (var entity in entities)
+        {
+            if (entity is Mob { HasAi: true } or ItemEntity or ExperienceOrb && !IsMobTicking(entity.Position))
+                continue;
+            if (GetRegionForLocation(entity.Position)?.Entities.ContainsKey(entity.EntityId) == true)
+            {
+                TickStage = $"entity {entity.EntityId} ({entity.GetType().Name})";
+                await entity.TickAsync();
+            }
+        }
+
+        foreach (var region in Regions.Values)
+        {
+            if (region is Region concrete)
+            {
+                TickStage = "block updates";
+                await concrete.TickBlocksAsync();
+            }
+        }
+        foreach (var player in Players.Values.OfType<Player>())
+        {
+            TickStage = $"tracking for {player.Username}";
+            await player.SynchronizeTrackedEntitiesAsync();
+        }
+        TickStage = "idle";
     }
+
+    internal string TickStage { get; private set; } = "not started";
+    internal bool SavingEntities { get; private set; }
 
     /// <summary>
     /// Sends a chunk's light to the players that have the chunk, after it changed.
@@ -454,7 +562,11 @@ public abstract partial class AbstractLevel : ILevel
 
                 foreach (var pending in chunk.PendingEntities)
                 {
-                    if (EntityNbt.Load(EntityNbt.ToNbt(pending), this) is Entity entity)
+                    var tag = EntityNbt.ToNbt(pending);
+                    if (EntityNbt.Load(tag, this) is not Entity entity)
+                        chunk.UnspawnableEntities.Add(tag);
+                    else if (entity is not Mob { HasAi: true, Alive: false } &&
+                        !this.Regions.Values.Any(region => region.Entities.Values.Any(existing => existing.Uuid == entity.Uuid)))
                         this.SpawnEntity(entity);
                 }
 
@@ -504,8 +616,16 @@ public abstract partial class AbstractLevel : ILevel
     public async Task UnloadRegionAsync(int regionX, int regionZ)
     {
         long value = NumericsHelper.IntsToLong(regionX, regionZ);
-        if (Regions.TryRemove(value, out var r))
-            await r.FlushAsync();
+        await simulationGate.WaitAsync();
+        try
+        {
+            if (Regions.TryRemove(value, out var r))
+                await r.FlushAsync();
+        }
+        finally
+        {
+            simulationGate.Release();
+        }
     }
 
     public async ValueTask ScheduleBlockUpdateAsync(IBlockUpdate blockUpdate)
@@ -531,8 +651,17 @@ public abstract partial class AbstractLevel : ILevel
                 if (LoadedChunks.TryRemove(chunk))
                 {
                     NumericsHelper.LongToInts(chunk, out var cx, out var cz);
-                    var r = GetRegionForChunk(cx, cz);
-                    await r.UnloadChunk(cx, cz);
+                    await simulationGate.WaitAsync();
+                    try
+                    {
+                        var r = GetRegionForChunk(cx, cz);
+                        if (r is not null)
+                            await r.UnloadChunk(NumericsHelper.Modulo(cx, Region.CubicRegionSize), NumericsHelper.Modulo(cz, Region.CubicRegionSize));
+                    }
+                    finally
+                    {
+                        simulationGate.Release();
+                    }
                 }
             }
         }
@@ -641,12 +770,17 @@ public abstract partial class AbstractLevel : ILevel
 
             var (x, z) = (NumericsHelper.Modulo(jobX, Region.CubicRegionSize), NumericsHelper.Modulo(jobZ, Region.CubicRegionSize));
 
-            var c = await region.GetOrAddChunkAsync(x, z, () => new Chunk(jobX, jobZ, this.MinY, this.Height, ChunkGenStage.structure_starts));
-            if (!c.IsGenerated)
+            var c = await region.GetOrAddChunkAsync(x, z,
+                () => new Chunk(jobX, jobZ, this.MinY, this.Height, ChunkGenStage.structure_starts));
+            var populate = !c.IsGenerated;
+            if (populate)
             {
                 c = await this.Generator.GenerateChunkAsync(jobX, jobZ, c);
             }
             region.SetChunk(c);
+            // Mojang generation queues population at completion, including chunks generated by the spawn search.
+            if (populate && c.IsGenerated && this.Generator is not MojangGenerator)
+                QueueChunkPopulation(c);
         }
         catch (Exception ex)
         {
@@ -664,10 +798,20 @@ public abstract partial class AbstractLevel : ILevel
         }
     }
 
-    public Task FlushRegionsAsync()
+    public async virtual Task FlushRegionsAsync()
     {
-        Interlocked.Exchange(ref this.jobsSinceFlush, 0);
-        return Task.WhenAll(Regions.Select(pair => pair.Value.FlushAsync()));
+        await simulationGate.WaitAsync();
+        try
+        {
+            Interlocked.Exchange(ref this.jobsSinceFlush, 0);
+            SavingEntities = true;
+            await Task.WhenAll(Regions.Select(pair => pair.Value.FlushAsync()));
+        }
+        finally
+        {
+            SavingEntities = false;
+            simulationGate.Release();
+        }
     }
 
     public IEntity SpawnFallingBlock(VectorD position, Material mat)
@@ -707,9 +851,6 @@ public abstract partial class AbstractLevel : ILevel
 
     public IEntity SpawnEntity(VectorD position, EntityType type)
     {
-        if (type == EntityType.ExperienceOrb)
-            throw new NotImplementedException($"EntityType {type} is not supported.");
-
         if (type == EntityType.FallingBlock)
             return SpawnFallingBlock(position + (0, 20, 0), Material.Sand);
 
@@ -721,13 +862,22 @@ public abstract partial class AbstractLevel : ILevel
 
     public IEntity SpawnEntity(IEntity entity)
     {
+        if (entity is Mob mob)
+            mob.InitializeAi();
+        if (!TryAddEntity(entity))
+            throw new InvalidOperationException($"Could not register entity {entity.EntityId}.");
         entity.SpawnEntity();
-        TryAddEntity(entity as Entity);
         return entity;
     }
 
     public void SpawnExperienceOrbs(VectorD position, short count = 1)
     {
+        while (count > 0)
+        {
+            var value = ExperienceOrb.SplitValue(count);
+            SpawnEntity(new ExperienceOrb { Level = this, EntityId = Server.GetNextEntityId(), Position = position, Value = value });
+            count -= (short)value;
+        }
     }
 
     public async ValueTask<bool> HandleBlockUpdateAsync(IBlockUpdate update)
@@ -906,6 +1056,20 @@ public abstract partial class AbstractLevel : ILevel
                 }
             }
         }
+        if (this is IDimension && await GetChunkAsync(0, 0, false) is { } dimensionChunk)
+        {
+            for (var x = 0; x < 16; x++)
+            for (var z = 0; z < 16; z++)
+            {
+                var y = dimensionChunk.Heightmaps[HeightmapType.MotionBlocking].GetHeight(x, z);
+                var ground = dimensionChunk.GetBlock(x, y, z);
+                if (ground.IsAir || ground.IsLiquid || IsOutsideBuildHeight(y + 2) ||
+                    !dimensionChunk.GetBlock(x, y + 1, z).IsAir || !dimensionChunk.GetBlock(x, y + 2, z).IsAir) continue;
+                LevelData.SpawnPosition = new VectorD(x + 0.5f, y + 1, z + 0.5f);
+                Log.SpawnSet(this.Logger, this.Name, LevelData.SpawnPosition);
+                return;
+            }
+        }
         Log.SpawnNotFound(this.Logger, this.Name);
     }
 
@@ -944,6 +1108,7 @@ public abstract partial class AbstractLevel : ILevel
         {
             await region.DisposeAsync();
         }
+        simulationGate.Dispose();
     }
 
     public IEntitySpawner GetNewEntitySpawner() => new EntitySpawner(this);

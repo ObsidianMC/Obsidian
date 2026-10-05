@@ -1,4 +1,4 @@
-﻿
+
 namespace Obsidian.Net.Packets.Configuration.Clientbound;
 public partial class SelectKnownPacksPacket()
 {

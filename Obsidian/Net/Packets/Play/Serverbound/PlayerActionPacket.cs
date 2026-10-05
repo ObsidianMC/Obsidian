@@ -30,6 +30,11 @@ public partial class PlayerActionPacket
 
     public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
+        if (Status == PlayerActionStatus.ReleaseUseItem)
+        {
+            if (player is Player concrete) concrete.CancelEating();
+            return;
+        }
         if (await player.Level.GetBlockAsync(Position) is not IBlock block)
             return;
 

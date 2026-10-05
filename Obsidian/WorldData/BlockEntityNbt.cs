@@ -25,7 +25,7 @@ internal static class BlockEntityNbt
             case DataBlockEntity data:
             {
                 var tag = Header(data.Id, position);
-                foreach (var (name, child) in data.Data)
+                foreach (var (name, child) in data.SnapshotData())
                     tag.Add(name, child);
 
                 return tag;

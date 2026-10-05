@@ -112,6 +112,8 @@ public final class VanillaDumper {
         var dumper = new VanillaDumper(mojang, output, version);
         dumper.dumpBlockLight();
         dumper.dumpBlockPhysics();
+        dumper.dumpCollisionShapes();
+        dumper.dumpBlastResistance();
         dumper.dumpBlockTransforms();
         dumper.dumpMapColors();
         dumper.dumpWallShapeCovers();
@@ -285,6 +287,33 @@ public final class VanillaDumper {
                 }
             }
         }
+    }
+
+    /** Collision boxes by block state, read by Obsidian/Entities/AI/BlockCollisionShapes.cs. */
+    private void dumpCollisionShapes() throws IOException {
+        var shapes = new Indexer<List<double[]>>(shape ->
+            shape.stream().map(box -> Arrays.stream(box).boxed().toList()).toList());
+        var stateShapes = new LinkedHashMap<String, Integer>();
+        for (var id = 0; id < states.size(); id++) {
+            var shape = Mojang.call(getCollisionShape, states.get(id), emptyLevel, origin);
+            stateShapes.put(Integer.toString(id), shapes.indexOf(boxes(shape)));
+        }
+
+        var shapeDefinitions = new LinkedHashMap<String, List<double[]>>();
+        for (var id = 0; id < shapes.values().size(); id++)
+            shapeDefinitions.put(Integer.toString(id), shapes.values().get(id));
+
+        Json.write(output.resolve("collision_shapes.json"), Map.of("shapes", shapeDefinitions, "states", stateShapes), false);
+    }
+
+    /** Block blast resistance, read by Obsidian/WorldData/AbstractLevel.Explosion.cs. */
+    private void dumpBlastResistance() throws IOException {
+        var getExplosionResistance = mojang.method(BLOCK, "getExplosionResistance");
+        var resistance = new LinkedHashMap<String, Float>();
+        for (var block : (Iterable<?>) blockRegistry)
+            resistance.put(key(blockRegistry, block), (float) Mojang.call(getExplosionResistance, block));
+
+        Json.write(output.resolve("blast_resistance.json"), resistance, false);
     }
 
     private static long[] maskWords(String hex) {

@@ -39,10 +39,13 @@ public partial class InteractPacket
     {
         var entity = player.GetEntitiesNear(4).FirstOrDefault(x => x.EntityId == EntityId); // TODO check if the entity is within range and in vision/not being blocked by a wall
 
+        if (entity == null)
+            return;
+
         switch (Type)
         {
             case InteractionType.Interact:
-                await server.EventDispatcher.ExecuteEventAsync(new EntityInteractEventArgs(player, entity, server, Sneaking));
+                await server.EventDispatcher.ExecuteEventAsync(new EntityInteractEventArgs(player, entity, server, Hand, Sneaking));
                 break;
 
             case InteractionType.Attack:

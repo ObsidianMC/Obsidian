@@ -370,6 +370,35 @@ public sealed class MainCommandModule : CommandModuleBase
             .Spawn();
 
         await player.SendMessageAsync($"Spawning: {type}");
+        if (builder is Mob mob)
+            await SendMobStatusAsync(player, mob);
+    }
+
+    [Command("mobinfo")]
+    [CommandInfo("Shows nearby mob ticking and save eligibility", "/mobinfo")]
+    [IssuerScope(CommandIssuers.Client)]
+    public async Task MobInfoAsync()
+    {
+        if (Player is not IPlayer player)
+            return;
+        var mobs = player.Level.GetNonPlayerEntitiesInRange(player.Position, 32).OfType<Mob>()
+            .OrderBy(mob => (mob.Position - player.Position).MagnitudeSquared()).Take(5).ToArray();
+        if (mobs.Length == 0)
+            await player.SendMessageAsync("No registered mobs within 32 blocks.");
+        foreach (var mob in mobs)
+            await SendMobStatusAsync(player, mob);
+    }
+
+    private async Task SendMobStatusAsync(IPlayer player, Mob mob)
+    {
+        var level = mob.Level as AbstractLevel;
+        var (x, z) = mob.Position.ToChunkCoord();
+        var registered = level?.GetRegionForLocation(mob.Position)?.Entities.ContainsKey(mob.EntityId) == true;
+        await player.SendMessageAsync($"{mob.Type} ({mob.GetType().Name}) id={mob.EntityId}: AI={mob.HasAi}, ticks={mob.AiTick}, " +
+            $"health={mob.Health}, registered={registered}, chunkLoaded={level?.GetLoadedChunk(x, z) != null}, " +
+            $"ticking={level?.IsMobTicking(mob.Position)}, noAI={mob.MobBitMask.HasFlag(MobBitmask.NoAi)}, " +
+            $"saveEligible={mob.HasAi && mob.Alive && !mob.IsRemoved}, worldReady={Server.WorldManager.ReadyToJoin}, time={mob.Level.Time}");
+        await player.SendMessageAsync($"Server tick: {(Server as Obsidian.Server)?.TickStage}; level tick: {level?.TickStage}; saving entities: {level?.SavingEntities}");
     }
 
     [Command("derp")]
@@ -468,6 +497,109 @@ public sealed class MainCommandModule : CommandModuleBase
 
         string available = string.Join("§r, §a", server.WorldManager.GetAvailableWorlds().Select(x => x.Name));
         await this.Sender.SendMessageAsync($"Available worlds: §a{available}§r");
+    }
+
+    [Command("hunger")]
+    [CommandInfo("Sets your hunger level.", "/hunger <0-20>")]
+    [IssuerScope(CommandIssuers.Client)]
+    public async Task HungerAsync(int hunger)
+    {
+        if (Player is not Player player) return;
+        if (hunger is < 0 or > 20)
+        {
+            await player.SendMessageAsync(SendCommandUsage("/hunger <0-20>"));
+            return;
+        }
+        player.FoodLevel = hunger;
+        player.FoodSaturationLevel = Math.Min(player.FoodSaturationLevel, hunger);
+        player.FoodExhaustionLevel = 0;
+        player.FoodTickTimer = 0;
+        await player.Client.QueuePacketAsync(new SetHealthPacket(player.Health, hunger, player.FoodSaturationLevel));
+        await player.SendMessageAsync($"Hunger set to {hunger}.");
+    }
+
+    [Command("health")]
+    [CommandInfo("Sets your health.", "/health <0-20>")]
+    [IssuerScope(CommandIssuers.Client)]
+    public async Task HealthAsync(float health)
+    {
+        if (Player is not Player player) return;
+        if (!float.IsFinite(health) || health is < 0 or > 20)
+        {
+            await player.SendMessageAsync(SendCommandUsage("/health <0-20>"));
+            return;
+        }
+        if (!player.Alive)
+        {
+            await player.SendMessageAsync("Respawn before setting health.");
+            return;
+        }
+        if (health == 0) await player.KillAsync(player, ChatMessage.Simple("You died."));
+        else
+        {
+            player.Health = health;
+            await player.Client.QueuePacketAsync(new SetHealthPacket(health, player.FoodLevel, player.FoodSaturationLevel));
+            player.Level.PacketBroadcaster.QueuePacketToLevel(player.Level, new SetEntityDataPacket { EntityId = player.EntityId, Entity = player });
+        }
+        await player.SendMessageAsync($"Health set to {health}.");
+    }
+
+    [Command("dimension")]
+    [CommandInfo("Transfers you to another dimension.", "/dimension <overworld|nether|end>")]
+    [IssuerScope(CommandIssuers.Client)]
+    public async Task DimensionAsync(string dimension)
+    {
+        if (Player is not Player player) return;
+        var name = dimension.ToLowerInvariant() switch
+        {
+            "overworld" => "minecraft:overworld",
+            "nether" => "minecraft:the_nether",
+            "end" => "minecraft:the_end",
+            _ => null
+        };
+        if (name == null)
+        {
+            await player.SendMessageAsync(SendCommandUsage("/dimension <overworld|nether|end>"));
+            return;
+        }
+        var world = player.Level is IDimension child ? child.ParentWorld as World : player.Level as World;
+        ILevel? destination = world?.DimensionName == name ? world : world?.dimensions.GetValueOrDefault(name);
+        if (destination == null)
+        {
+            await player.SendMessageAsync("That dimension is not available in this world.");
+            return;
+        }
+        if (!player.Alive || player.Respawning)
+        {
+            await player.SendMessageAsync("Respawn before changing dimensions.");
+            return;
+        }
+        await player.TransferDimensionAsync(destination);
+        await player.SendMessageAsync($"Transferred to {dimension.ToLowerInvariant()}.");
+    }
+
+    [Command("spawn")]
+    [CommandInfo("Teleports you to this dimension's spawn.", "/spawn")]
+    [IssuerScope(CommandIssuers.Client)]
+    public async Task SpawnAsync()
+    {
+        if (Player is not Player player || !player.Alive) return;
+        await player.TeleportAsync(player.Level.LevelData.SpawnPosition);
+        await player.SendMessageAsync("Teleported to spawn.");
+    }
+
+    [Command("setspawn")]
+    [CommandInfo("Sets this dimension's spawn to your position.", "/setspawn")]
+    [IssuerScope(CommandIssuers.Client)]
+    public async Task SetSpawnAsync()
+    {
+        if (Player is not Player player || !player.Alive) return;
+        var block = (Vector)player.Position.Floor();
+        player.Level.LevelData.SpawnPosition = (VectorD)block + new VectorD(0.5, 0, 0.5);
+        await player.Level.SaveAsync();
+        player.Level.PacketBroadcaster.QueuePacketToLevel(player.Level,
+            new SetDefaultSpawnPositionPacket(new() { Dimension = player.Level.DimensionName, Pos = block }, 0, 0));
+        await player.SendMessageAsync($"Spawn set to {block.X} {block.Y} {block.Z}.");
     }
 
 #if DEBUG

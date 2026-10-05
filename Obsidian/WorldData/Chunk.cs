@@ -1,4 +1,4 @@
-﻿using Obsidian.API;
+using Obsidian.API;
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.Blocks;
 using Obsidian.ChunkData;
@@ -13,6 +13,8 @@ public sealed class Chunk : IChunk
 {
     public int X { get; }
     public int Z { get; }
+    public long InhabitedTime { get; internal set; }
+    internal ConcurrentDictionary<Vector, int> FrogspawnTicks { get; } = new();
 
     public bool IsGenerated => ChunkStatus == ChunkGenStage.full;
 
@@ -43,6 +45,9 @@ public sealed class Chunk : IChunk
     /// Once the chunk is complete, only touch these under <see cref="EntityLock"/>.
     /// </remarks>
     internal List<GeneratedEntity> PendingEntities { get; } = [];
+
+    // Saved entities that cannot be restored remain in the chunk's entity file.
+    internal List<NbtCompound> UnspawnableEntities { get; } = [];
 
     /// <summary>
     /// Taken while the chunk's entities move between <see cref="PendingEntities"/> and the level, and while they're saved,
@@ -331,6 +336,7 @@ public sealed class Chunk : IChunk
         }
 
         chunk.SetChunkStatus(ChunkStatus);
+        chunk.InhabitedTime = InhabitedTime;
 
         return chunk;
     }

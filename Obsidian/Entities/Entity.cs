@@ -1,4 +1,4 @@
-﻿using Obsidian.API.AI;
+using Obsidian.API.AI;
 using Obsidian.API.World;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -40,6 +40,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public virtual BoundingBox BoundingBox { get; protected set; } = new(VectorD.Zero, VectorD.Zero);
     public virtual EntityDimension Dimension { get; protected set; } = EntityDimension.Zero;
+    protected virtual float DimensionScale => 1;
 
     public int PowderedSnowTicks { get; set; }
 
@@ -310,7 +311,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public async Task UpdatePositionAsync(VectorD pos, MovementFlags movementFlags)
     {
-        var (x, z) = pos.ToChunkCoord();
+        var (x, z) = WorldData.Region.ChunkOf(pos);
         var chunk = await this.Level.GetChunkAsync(x, z, false);
         if (chunk != null && chunk.IsGenerated)
         {
@@ -325,7 +326,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public async Task UpdatePositionAsync(VectorD pos, Angle yaw, Angle pitch, MovementFlags movementFlags = MovementFlags.OnGround)
     {
-        var (x, z) = pos.ToChunkCoord();
+        var (x, z) = WorldData.Region.ChunkOf(pos);
         var chunk = await Level.GetChunkAsync(x, z, false);
         if (chunk is { IsGenerated: true })
         {
@@ -350,9 +351,9 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public VectorF GetLookDirection()
     {
-        const float DegreesToRadian = (1 / 255f) * 360f / (180f * MathF.PI);
-        float pitch = Pitch.Value * DegreesToRadian;
-        float yaw = Yaw.Value * DegreesToRadian;
+        const float DegreesToRadian = MathF.PI / 180f;
+        float pitch = Pitch.Degrees * DegreesToRadian;
+        float yaw = Yaw.Degrees * DegreesToRadian;
 
         (float sinPitch, float cosPitch) = MathF.SinCos(pitch);
         (float sinYaw, float cosYaw) = MathF.SinCos(yaw);
@@ -431,21 +432,28 @@ public class Entity : IEquatable<Entity>, IEntity
     public virtual ValueTask TickAsync() => default;
 
     //TODO check for other entities and handle accordingly 
-    public async ValueTask DamageAsync(IEntity source, float amount = 1.0f)
+    public virtual async ValueTask DamageAsync(IEntity source, float amount = 1.0f)
     {
+        if (!float.IsFinite(amount) || amount <= 0 || Health <= 0 || source.Level != Level ||
+            this is IPlayer immune && immune.GameMode is GameMode.Creative or GameMode.Spectator)
+            return;
+
         Health -= amount;
+        if (this is IPlayer attackedPlayer && !ReferenceEquals(source, this))
+            Wolf.AlertOwnedWolves(attackedPlayer, source);
 
         if (this is ILiving living)
         {
-            this.PacketBroadcaster.QueuePacketToLevel(this.Level, new AnimatePacket
+            this.PacketBroadcaster.QueuePacketToLevel(this.Level, new HurtAnimationPacket
             {
                 EntityId = EntityId,
-                Animation = EntityAnimationType.CriticalEffect
+                Yaw = (float)(Math.Atan2(source.Position.Z - Position.Z, source.Position.X - Position.X) * 180 / Math.PI - Yaw.Degrees)
             });
 
             if (living is Player player)
             {
-                await player.Client.QueuePacketAsync(new SetHealthPacket(Health, 20, 5));
+                player.AddExhaustion(0.1f);
+                await player.Client.QueuePacketAsync(new SetHealthPacket(Math.Max(0, Health), player.FoodLevel, player.FoodSaturationLevel));
 
                 if (!player.Alive)
                     await player.KillAsync(source, ChatMessage.Simple("You died xd"));
@@ -534,7 +542,22 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public virtual void SpawnEntity(Velocity? velocity = null, int additionalData = 0)
     {
-        this.PacketBroadcaster.QueuePacketToLevelInRange(this.Level, this.Position, new BundledPacket
+        var packet = CreateSpawnPacket(velocity, additionalData);
+        var range = Level is Obsidian.WorldData.AbstractLevel level ? level.Configuration.EntityBroadcastRangePercentage : 100;
+        foreach (var player in Level.GetPlayersInRange(Position, range).OfType<Player>())
+        {
+            if (player.EntityId == EntityId)
+                continue;
+            var (x, z) = Position.ToChunkCoord();
+            if (this is not Player && !player.LoadedChunks.Contains(NumericsHelper.IntsToLong(x, z)))
+                continue;
+            PacketBroadcaster.QueuePacketTo(packet, ids: [player.EntityId]);
+            if (this is not Player)
+                player.TrackedEntities[EntityId] = Uuid;
+        }
+    }
+
+    internal virtual IClientboundPacket CreateSpawnPacket(Velocity? velocity = null, int additionalData = 0) => new BundledPacket
         (
              [
                 new AddEntityPacket
@@ -554,14 +577,14 @@ public class Entity : IEquatable<Entity>, IEntity
                     Entity = this
                 }
             ]
-        ), this.EntityId);
-    }
+        );
 
     public bool TryAddAttribute(string attributeResourceName, float value) =>
-        Attributes.TryAdd(attributeResourceName, value);
+        Attributes.TryAdd(ResolveAttributeName(attributeResourceName), value);
 
     public bool TryUpdateAttribute(string attributeResourceName, float newValue)
     {
+        attributeResourceName = ResolveAttributeName(attributeResourceName);
         if (!Attributes.TryGetValue(attributeResourceName, out var value))
             return false;
 
@@ -569,8 +592,21 @@ public class Entity : IEquatable<Entity>, IEntity
     }
 
     public bool HasAttribute(string attributeResourceName) =>
-        Attributes.ContainsKey(attributeResourceName);
+        Attributes.ContainsKey(ResolveAttributeName(attributeResourceName));
 
     public float GetAttributeValue(string attributeResourceName) =>
-        Attributes.GetValueOrDefault(attributeResourceName);
+        Attributes.GetValueOrDefault(ResolveAttributeName(attributeResourceName));
+
+    private string ResolveAttributeName(string name)
+    {
+        // Keep saved legacy overrides, while allowing AI to use the regenerated vanilla attribute names.
+        if (Attributes.ContainsKey(name))
+            return name;
+
+        const string genericPrefix = "minecraft:generic.";
+        if (name.StartsWith(genericPrefix, StringComparison.Ordinal))
+            return "minecraft:" + name[genericPrefix.Length..];
+
+        return name == "minecraft:horse.jump_strength" ? "minecraft:jump_strength" : name;
+    }
 }

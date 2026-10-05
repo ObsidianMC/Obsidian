@@ -1,4 +1,4 @@
-﻿namespace Obsidian.WorldData.Generators;
+namespace Obsidian.WorldData.Generators;
 
 public class SuperflatGenerator : ILevelGenerator
 {
@@ -22,6 +22,8 @@ public class SuperflatGenerator : ILevelGenerator
                 chunk.SetBlock(x, -62, z, BlocksRegistry.Dirt);
                 chunk.SetBlock(x, -63, z, BlocksRegistry.Dirt);
                 chunk.SetBlock(x, -64, z, BlocksRegistry.Bedrock);
+                for (var y = -59; y < 320; y++)
+                    chunk.SetLightLevel(x, y, z, LightType.Sky, 15);
 
                 if (x % 4 == 0 && z % 4 == 0) // Biomes are in 4x4x4 blocks. Do a 2D array for now and just copy it vertically.
                 {

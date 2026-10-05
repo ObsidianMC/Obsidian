@@ -1,4 +1,4 @@
-﻿using Obsidian.API.Containers;
+using Obsidian.API.Containers;
 using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Net.Actions.PlayerInfo;
@@ -33,10 +33,38 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         var entity = e.Entity;
         var attacker = e.Attacker;
 
-        if (entity is IPlayer player)
+        if (entity is IPlayer || entity is Mob { HasAi: true } || entity is MobProjectile { Type: EntityType.Fireball })
         {
-            await player.DamageAsync(attacker);
+            async ValueTask Damage()
+            {
+                if (entity.Level == attacker.Level && entity.IsInRange(attacker, 4) &&
+                    (entity is not Mob mob || mob.CanSee(attacker)))
+                {
+                    await entity.DamageAsync(attacker, e.Damage > 0 ? e.Damage : 1);
+                    if (attacker is Player attackingPlayer) attackingPlayer.AddExhaustion(0.1f);
+                    if (entity is Living && attacker is IPlayer owner)
+                        Wolf.AlertOwnedWolves(owner, entity);
+                }
+            }
+
+            if (entity.Level is Obsidian.WorldData.AbstractLevel level)
+                level.EnqueueEntityAction(Damage);
+            else
+                await Damage();
         }
+    }
+
+    [EventPriority(Priority = Priority.Internal)]
+    public async Task OnEntityInteract(EntityInteractEventArgs e)
+    {
+        if (e.IsCancelled || e.TargetPosition != null || e.Entity is not Mob { HasAi: true } mob)
+            return;
+
+        ValueTask Feed() => mob.InteractAsync(e.Player, e.Hand ?? InteractionHand.MainHand);
+        if (mob.Level is Obsidian.WorldData.AbstractLevel level)
+            level.EnqueueEntityAction(Feed);
+        else
+            await Feed();
     }
 
     //TODO fix sounds
@@ -132,6 +160,30 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         var block = e.Block;
         var server = e.Server as Server;
         var player = e.Player as Player;
+
+        if (block == null && player?.Vehicle is Pig pig && item is { Count: > 0, Type: Material.CarrotOnAStick })
+        {
+            async ValueTask Boost()
+            {
+                if (!pig.Boost(player) || player.GameMode == GameMode.Creative)
+                    return;
+                var component = Obsidian.API.Inventory.DataComponents.ComponentBuilder.Damage;
+                component.Value = item.Damage + 7;
+                item[DataComponentType.Damage] = component;
+                var slot = e.Hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
+                if (component.Value >= 25)
+                    player.Inventory.SetItem(slot, ItemsRegistry.GetSingleItem(Material.FishingRod));
+                await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
+                {
+                    ContainerId = 0, Slot = (short)slot, SlotData = player.Inventory.GetItem(slot)
+                });
+            }
+            if (player.Level is Obsidian.WorldData.AbstractLevel level)
+                level.EnqueueEntityAction(Boost);
+            else
+                await Boost();
+            return;
+        }
 
         if (e.IsCancelled)
             return;

@@ -33,6 +33,7 @@ public partial class PlayerCommandPacket
                 player.Sleeping = false;
                 break;
             case PlayerCommand.StartSprinting:
+                if (player.FoodLevel <= 6 && player.GameMode is not GameMode.Creative and not GameMode.Spectator) break;
                 if ((bool)(block?.IsLiquid))
                     player.Swimming = true;
 
@@ -45,6 +46,8 @@ public partial class PlayerCommandPacket
                 player.Sprinting = false;
                 break;
             case PlayerCommand.StartJumpWithHorse:
+                if (player is Player { Vehicle: Camel camel })
+                    camel.RequestDash(player, JumpBoost);
                 break;
             case PlayerCommand.StopJumpWithHorse:
                 break;

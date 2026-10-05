@@ -1,6 +1,7 @@
-﻿using Obsidian.API.Effects;
+using Obsidian.API.Effects;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Entities.AI;
 
 namespace Obsidian.Entities;
 
@@ -30,16 +31,36 @@ public class Living : Entity, ILiving
     public IReadOnlyDictionary<int, EffectWithCurrentDuration> ActivePotionEffects => activePotionEffects.AsReadOnly();
 
     private readonly ConcurrentDictionary<int, EffectWithCurrentDuration> activePotionEffects;
+    private int fireTicks;
+    internal int FireTicks { get => fireTicks; set => fireTicks = value; }
+
+    public void Ignite(int seconds)
+    {
+        if (!IsFireImmune && seconds > 0)
+            fireTicks = Math.Max(fireTicks, checked(seconds * 20));
+    }
 
     public Living()
     {
         activePotionEffects = new ConcurrentDictionary<int, EffectWithCurrentDuration>();
     }
 
-    public override ValueTask TickAsync()
+    public override async ValueTask TickAsync()
     {
         foreach (var (potion, data) in activePotionEffects)
         {
+            if (this is Player && Alive && potion == (int)PotionEffect.Regeneration - 1 &&
+                data.CurrentDuration % Math.Max(1, 50 >> Math.Min(30, data.EffectData.Amplifier)) == 0)
+                Health = Math.Min(20, Health + 1);
+            var poisonInterval = Math.Max(1, 25 >> Math.Min(30, data.EffectData.Amplifier));
+            if (potion == (int)PotionEffect.Poison - 1 && data.CurrentDuration % poisonInterval == 0 && Health > 1)
+            {
+                var amount = Math.Min(1, Health - 1);
+                if (this is Mob mob)
+                    await mob.DamageEnvironmentAsync(amount);
+                else
+                    await DamageAsync(this, amount);
+            }
             data.CurrentDuration--;
 
             if (data.CurrentDuration <= 0)
@@ -48,10 +69,44 @@ public class Living : Entity, ILiving
             }
         }
 
-        return default;
+        if (!Alive || this is not Player and not Mob { HasAi: true })
+            return;
+        var terrain = new MobTerrain(Level);
+        var feet = (Vector)(Position + new VectorD(0, 0.1f, 0)).Floor();
+        if (Burning && fireTicks == 0)
+            fireTicks = 160;
+        if (IsFireImmune || terrain.GetBlock(feet)?.Material == Material.Water ||
+            Level.LevelData.Raining && terrain.GetSkyLight(feet) == 15)
+            fireTicks = 0;
+        if (fireTicks > 0)
+        {
+            if (fireTicks % 20 == 0)
+            {
+                if (this is Mob mob)
+                    await mob.DamageEnvironmentAsync(1);
+                else
+                    await DamageAsync(this, 1);
+            }
+            fireTicks--;
+        }
+        if (Burning != fireTicks > 0)
+        {
+            Burning = fireTicks > 0;
+            PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new SetEntityDataPacket { EntityId = EntityId, Entity = this }, EntityId);
+        }
     }
 
     public bool HasPotionEffect(int effectId) => activePotionEffects.ContainsKey(effectId);
+
+    internal void RestorePotionEffect(int id, int duration, int amplifier)
+    {
+        if (duration > 0)
+            activePotionEffects[id] = new()
+            {
+                CurrentDuration = duration,
+                EffectData = new() { Id = id, Duration = duration, Amplifier = amplifier }
+            };
+    }
 
     public void ClearPotionEffects()
     {
@@ -63,6 +118,9 @@ public class Living : Entity, ILiving
 
     public void AddPotionEffect(int effectId, int duration, int amplifier = 0, EntityEffectFlags effect = EntityEffectFlags.None)
     {
+        if (effectId == (int)PotionEffect.Poison - 1 && Type is EntityType.Zombie or EntityType.Husk or EntityType.Skeleton or EntityType.Stray or EntityType.Bogged or EntityType.Parched or EntityType.Spider or EntityType.CaveSpider ||
+            effectId == (int)PotionEffect.Weakness - 1 && Type == EntityType.Parched)
+            return;
         this.PacketBroadcaster.QueuePacketToLevel(this.Level, new UpdateMobEffectPacket(EntityId, effectId, duration)
         {
             Amplifier = amplifier,

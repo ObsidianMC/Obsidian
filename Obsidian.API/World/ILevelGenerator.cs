@@ -1,4 +1,4 @@
-﻿namespace Obsidian.API.World;
+namespace Obsidian.API.World;
 
 public interface ILevelGenerator
 {

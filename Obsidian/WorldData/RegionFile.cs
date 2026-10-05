@@ -1,4 +1,4 @@
-﻿using Obsidian.Nbt;
+using Obsidian.Nbt;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.ComponentModel.DataAnnotations;
@@ -13,7 +13,7 @@ public sealed class RegionFile : IAsyncDisposable
 {
     private const int HeaderTableSize = 1024;
     private const int SectorSize = 4096;
-    private const int MaxSectorSize = 256;
+    private const int MaxSectorSize = byte.MaxValue;
 
     private readonly string filePath;
 
@@ -57,9 +57,16 @@ public sealed class RegionFile : IAsyncDisposable
 
         this.initialized = true;
 
-        if (regionFileStream.Length == 0)
+        if (regionFileStream.Length < HeaderTableSize * 8)
         {
+            // Interrupted creation can leave part of an empty header on disk.
+            var existing = new byte[(int)regionFileStream.Length];
+            await regionFileStream.ReadExactlyAsync(existing);
+            if (existing.Any(value => value != 0))
+                throw new InvalidDataException($"Region file '{filePath}' has a truncated header containing data ({existing.Length} bytes).");
+
             await this.WriteHeadersAsync();
+            await regionFileStream.FlushAsync();
 
             this.Pad();
 
@@ -158,11 +165,8 @@ public sealed class RegionFile : IAsyncDisposable
         var size = chunk.Length;
         var length = BinaryPrimitives.ReadInt32BigEndian(chunk.Span[..4]);
 
-        if (length == 0)
-            throw new UnreachableException("Chunk size header value returned 0.");
-
-        if (length > size)
-            throw new UnreachableException($"{length} > {size}");
+        if (length <= 1 || length > size - sizeof(int))
+            throw new InvalidDataException($"Region file '{this.filePath}', chunk ({chunkX}, {chunkZ}) has invalid length {length} for {size} allocated bytes.");
 
         await using var compressedDataStream = new ReadOnlyStream(chunk.Memory.Slice(5, length - 1));
         await using var uncompressedData = new MemoryStream();
@@ -225,6 +229,7 @@ public sealed class RegionFile : IAsyncDisposable
             if (offset == 0 && size == 0)
                 return null;
 
+            this.ValidateLocation(tableIndex, offset, size);
             this.regionFileStream.Position = offset;
 
             var chunk = new RentedArray<byte>(size);
@@ -247,15 +252,11 @@ public sealed class RegionFile : IAsyncDisposable
 
     private async Task WriteChunkAsync(Sector sector)
     {
-        var offset = sector.Start * SectorSize;
+        var offset = (long)sector.Start * SectorSize;
         var pad = offset == this.EndOfFile;
 
         using var mem = new RentedArray<byte>(sector.Size);
-
-        this.SetTimestamp(sector.TableIndex, (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds());
-        this.SetLocation(sector.TableIndex, sector.Start, sector.ChunkSectorSize);
-
-        await this.WriteHeadersAsync();
+        mem.Span.Clear();
 
         BinaryPrimitives.WriteInt32BigEndian(mem.Span[..4], sector.ChunkData.Length + 1);
 
@@ -270,29 +271,38 @@ public sealed class RegionFile : IAsyncDisposable
             this.Pad();
 
         this.SetUsedSector(sector.Start, sector.ChunkSectorSize);
+
+        // Publish the location only after its payload has been written successfully.
+        var previousLocation = this.locations[sector.TableIndex];
+        var previousTimestamp = this.timestamps[sector.TableIndex];
+        this.SetTimestamp(sector.TableIndex, (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+        this.SetLocation(sector.TableIndex, sector.Start, sector.ChunkSectorSize);
+        try
+        {
+            await this.WriteHeadersAsync();
+        }
+        catch
+        {
+            this.locations[sector.TableIndex] = previousLocation;
+            this.timestamps[sector.TableIndex] = previousTimestamp;
+            throw;
+        }
     }
 
     private async Task WriteHeadersAsync()
     {
+        using var header = new RentedArray<byte>(HeaderTableSize * 8);
+        for (var index = 0; index < HeaderTableSize; index++)
+        {
+            BinaryPrimitives.WriteInt32BigEndian(header.Span.Slice(index * sizeof(int), sizeof(int)), this.locations[index]);
+        }
+
+        for (var index = 0; index < HeaderTableSize; index++)
+        {
+            BinaryPrimitives.WriteInt32BigEndian(header.Span.Slice((HeaderTableSize + index) * sizeof(int), sizeof(int)), this.timestamps[index]);
+        }
         this.regionFileStream.Position = 0;
-
-        for (var index = 0; index < HeaderTableSize; index++)
-        {
-            using var mem = new RentedArray<byte>(4);
-
-            BinaryPrimitives.WriteInt32BigEndian(mem.Span, this.locations[index]);
-
-            await this.regionFileStream.WriteAsync(mem);
-        }
-
-        for (var index = 0; index < HeaderTableSize; index++)
-        {
-            using var mem = new RentedArray<byte>(4);
-
-            BinaryPrimitives.WriteInt32BigEndian(mem.Span, this.timestamps[index]);
-
-            await this.regionFileStream.WriteAsync(mem);
-        }
+        await this.regionFileStream.WriteAsync(header);
     }
 
     private int FindFreeSector(int sectorCount)
@@ -331,6 +341,10 @@ public sealed class RegionFile : IAsyncDisposable
         {
             var (offset, size) = this.GetLocation(i);
 
+            if (offset == 0 && size == 0)
+                continue;
+            this.ValidateLocation(i, offset, size);
+
             var sectorStart = offset / SectorSize;
             var chunkSectorSize = size / SectorSize;
 
@@ -363,12 +377,18 @@ public sealed class RegionFile : IAsyncDisposable
 
     private (long offset, int size) GetLocation(int tableIndex)
     {
-        var sector = this.locations[tableIndex];
+        var sector = (uint)this.locations[tableIndex];
 
         var offset = sector >> 8;
         var size = sector & 0xFF;
 
-        return (offset * SectorSize, size * SectorSize);
+        return ((long)offset * SectorSize, (int)size * SectorSize);
+    }
+
+    private void ValidateLocation(int tableIndex, long offset, int size)
+    {
+        if (offset < HeaderTableSize * 8 || size == 0 || offset > this.EndOfFile - size)
+            throw new InvalidDataException($"Region file '{this.filePath}', chunk ({tableIndex % this.cubicRegionSize}, {tableIndex / this.cubicRegionSize}) has invalid allocation at byte {offset} with length {size}; file length is {this.EndOfFile}.");
     }
 
     private int GetChunkTableIndex(int x, int z) =>
@@ -381,7 +401,7 @@ public sealed class RegionFile : IAsyncDisposable
          this.locations[tableIndex] = (offset << 8) | (size & 0xFF);
 
     private static int CalculateSectorSize(int length) =>
-        (int)Math.Ceiling((length + 5) / (double)SectorSize);
+        (int)Math.Ceiling((length + 5L) / (double)SectorSize);
 
     private void Pad()
     {

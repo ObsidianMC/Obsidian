@@ -1,4 +1,4 @@
-﻿using Obsidian.API.Entities;
+using Obsidian.API.Entities;
 using Obsidian.API.World;
 using Obsidian.WorldData;
 
@@ -100,25 +100,73 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
             ageable.IsBaby = isBaby;
         }
 
+        if (entity is Zombie zombie && isBaby)
+            zombie.IsBaby = true;
+
         entity.Burning = burning;
         entity.Glowing = glowing;
 
         return level.SpawnEntity(entity);
     }
 
-    /// <summary>
-    /// A new entity of the class Obsidian has for <paramref name="type"/>: a <see cref="Living"/> or plain
-    /// <see cref="Entity"/> for types without one. The caller sets the type, id and position.
-    /// </summary>
-    // This could get sgen'd, same for the entity classes. but for now, this is fine for implementation
-    internal static Entity Create(EntityType type, ILevel level) => type switch
+    internal static Entity Create(EntityType type, ILevel level) => CreateMob(level, type) ?? (type switch
     {
-        EntityType.Pig => new Pig { Level = level },
+        EntityType.Fireball or EntityType.SmallFireball or EntityType.Snowball or EntityType.LlamaSpit => new MobProjectile(level, type),
+        EntityType.ExperienceOrb => new ExperienceOrb { Level = level, Value = 1 },
         EntityType.Horse => new Horse { Level = level },
         EntityType.Llama => new Llama { Level = level },
         EntityType.Donkey => new Donkey { Level = level },
         EntityType.SkeletonHorse => new SkeletonHorse { Level = level },
         EntityType.ZombieHorse => new ZombieHorse { Level = level },
         _ => type.IsNonLiving() ? new Entity { Level = level } : new Living { Level = level }
+    });
+
+    internal static Mob? CreateMob(ILevel level, EntityType? type) => type switch
+    {
+        EntityType.Pig => new Pig { Level = level },
+        EntityType.Cow => new Cow { Level = level },
+        EntityType.Mooshroom => new Mooshroom { Level = level },
+        EntityType.Chicken => new Chicken { Level = level },
+        EntityType.Sheep => new Sheep { Level = level },
+        EntityType.Zombie => new Zombie { Level = level },
+        EntityType.Husk => new Husk { Level = level },
+        EntityType.Skeleton => new Skeleton { Level = level },
+        EntityType.Stray => new Stray { Level = level },
+        EntityType.Bogged => new Bogged { Level = level },
+        EntityType.Parched => new Parched { Level = level },
+        EntityType.Creeper => new Creeper { Level = level },
+        EntityType.Slime => new Slime { Level = level },
+        EntityType.Horse => new Horse { Level = level },
+        EntityType.ZombieHorse => new ZombieHorse { Level = level },
+        EntityType.Villager => new Villager { Level = level },
+        EntityType.IronGolem => new IronGolem { Level = level },
+        EntityType.Ocelot => new Ocelot { Level = level },
+        EntityType.Cat => new Cat { Level = level },
+        EntityType.Camel => new Camel { Level = level },
+        EntityType.Blaze => new Blaze { Level = level },
+        EntityType.CaveSpider => new CaveSpider { Level = level },
+        EntityType.Spider => new Spider { Level = level },
+        EntityType.Enderman => new Enderman { Level = level },
+        EntityType.Ghast => new Ghast { Level = level },
+        EntityType.MagmaCube => new MagmaCube { Level = level },
+        EntityType.Silverfish => new Silverfish { Level = level },
+        EntityType.SnowGolem => new SnowGolem { Level = level },
+        EntityType.Squid => new Squid { Level = level },
+        EntityType.Bat => new Bat { Level = level },
+        EntityType.Bee => new Bee { Level = level },
+        EntityType.Fox => new Fox { Level = level },
+        EntityType.Frog => new Frog { Level = level },
+        EntityType.Llama => new Llama { Level = level },
+        EntityType.SkeletonHorse => new SkeletonHorse { Level = level },
+        EntityType.Tadpole => new Tadpole { Level = level },
+        EntityType.GlowSquid => new GlowSquid { Level = level },
+        EntityType.Dolphin => new Dolphin { Level = level },
+        EntityType.Donkey => new Donkey { Level = level },
+        EntityType.Axolotl => new Axolotl { Level = level },
+        EntityType.Goat => new Goat { Level = level },
+        EntityType.Panda => new Panda { Level = level },
+        EntityType.Parrot => new Parrot { Level = level },
+        EntityType.Wolf => new Wolf { Level = level },
+        _ => null
     };
 }

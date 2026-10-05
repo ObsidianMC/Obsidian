@@ -1,4 +1,4 @@
-﻿using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Nbt;
@@ -27,6 +27,15 @@ public class Region : IRegion
     public ConcurrentDictionary<int, IEntity> Entities { get; } = new();
 
     public int LoadedChunkCount => loadedChunks.Count(c => c.IsGenerated);
+
+    internal void TickInhabitedTime(AbstractLevel level)
+    {
+        foreach (var chunk in loadedChunks.OfType<Chunk>())
+        {
+            if (level.IsMobTicking(new VectorF(chunk.X * 16 + 8, 0, chunk.Z * 16 + 8)))
+                chunk.InhabitedTime++;
+        }
+    }
 
     private DenseCollection<IChunk> loadedChunks { get; } = new(CubicRegionSize, CubicRegionSize);
 
@@ -177,6 +186,8 @@ public class Region : IRegion
         loadedChunks[x, z] = null;
     }
 
+    internal IChunk? GetLoadedChunk(int x, int z) => loadedChunks[x, z] is { IsGenerated: true } chunk ? chunk : null;
+
     private async Task<Chunk?> GetChunkFromFileAsync(int x, int z)
     {
         if (await ReadCompoundAsync(this.regionFile, x, z) is not NbtCompound chunkCompound)
@@ -192,8 +203,11 @@ public class Region : IRegion
             {
                 foreach (var entity in entities.OfType<NbtCompound>())
                 {
-                    if (EntityNbt.ToGeneratedEntity(entity) is GeneratedEntity pending)
+                    if (entity.TryGetTagValue<string>("id", out var id) && EntityNbt.TryParseType(id, out _) &&
+                        EntityNbt.ToGeneratedEntity(entity) is GeneratedEntity pending)
                         chunk.PendingEntities.Add(pending);
+                    else
+                        chunk.UnspawnableEntities.Add(entity);
                 }
             }
 
@@ -254,17 +268,16 @@ public class Region : IRegion
 
     private async Task WriteChunkAsync(IChunk chunk, bool unloading)
     {
+        await this.initialization.Value;
+
         var (x, z) = (NumericsHelper.Modulo(chunk.X, CubicRegionSize), NumericsHelper.Modulo(chunk.Z, CubicRegionSize));
 
         await using MemoryStream strm = new();
-        await using NbtWriterStream writer = new(strm, ChunkCompression, "");
-
-        // Generation writes chunks (and their neighbors) under its locks, so the snapshot is taken under the chunk's lock.
-        // A fluid tick takes its tick from the chunk before it changes blocks, so the snapshot also waits out fluid ticks.
-        // The entities are taken in the same snapshot, so they agree with the chunk's status.
         NbtList? entities = null;
-        using (this.LockChunk is null ? null : await this.LockChunk(chunk.X, chunk.Z))
+        await using (NbtWriterStream writer = new(strm, ChunkCompression, ""))
         {
+            // Snapshot blocks, fluid ticks and entities together; take the generator's lock before the fluid lock.
+            using (this.LockChunk is null ? null : await this.LockChunk(chunk.X, chunk.Z))
             lock (this.FluidTickLock)
             {
                 var loadedStarts = (chunk as Chunk)?.StructureStarts;
@@ -275,12 +288,13 @@ public class Region : IRegion
                 if (chunk.IsGenerated && chunk is Chunk complete)
                     entities = this.CollectEntities(complete, unloading);
             }
+
+            writer.EndCompound();
+
+            await writer.TryFinishAsync();
         }
 
-        writer.EndCompound();
-
-        await writer.TryFinishAsync();
-
+        // Disposing the writer finishes the compression trailer before copying the bytes.
         await regionFile.SetChunkAsync(x, z, strm.ToArray());
 
         if (entities is not null)
@@ -304,13 +318,20 @@ public class Region : IRegion
             foreach (var pending in chunk.PendingEntities)
                 entities.Add(EntityNbt.ToNbt(pending));
 
+            foreach (var unsupported in chunk.UnspawnableEntities)
+                entities.Add(unsupported);
+
             foreach (var entity in this.Entities.Values)
             {
                 if (entity is not Entity levelEntity || ChunkOf(levelEntity.Position) != (chunk.X, chunk.Z))
                     continue;
 
                 if (EntityNbt.Save(levelEntity) is not NbtCompound saved)
+                {
+                    if (unloading && levelEntity is Mob { HasAi: true })
+                        this.Entities.TryRemove(levelEntity.EntityId, out _);
                     continue;
+                }
 
                 entities.Add(saved);
                 if (unloading)
@@ -338,14 +359,15 @@ public class Region : IRegion
             return;
 
         await using MemoryStream strm = new();
-        await using NbtWriterStream writer = new(strm, ChunkCompression, "");
+        await using (NbtWriterStream writer = new(strm, ChunkCompression, ""))
+        {
+            writer.WriteInt("DataVersion", LevelData.DataVersion);
+            writer.WriteArray("Position", [chunkX, chunkZ]);
+            writer.WriteTag(entities);
+            writer.EndCompound();
 
-        writer.WriteInt("DataVersion", LevelData.DataVersion);
-        writer.WriteArray("Position", [chunkX, chunkZ]);
-        writer.WriteTag(entities);
-        writer.EndCompound();
-
-        await writer.TryFinishAsync();
+            await writer.TryFinishAsync();
+        }
 
         await this.entityRegionFile.SetChunkAsync(x, z, strm.ToArray());
     }
@@ -360,8 +382,16 @@ public class Region : IRegion
 
     public async Task BeginTickAsync(CancellationToken cts = default)
     {
-        await Parallel.ForEachAsync(Entities.Values, cts, async (entity, cts) => await entity.TickAsync());
+        foreach (var entity in Entities.Values.OrderBy(entity => entity.EntityId).ToArray())
+        {
+            cts.ThrowIfCancellationRequested();
+            await entity.TickAsync();
+        }
+        await TickBlocksAsync();
+    }
 
+    internal async Task TickBlocksAsync()
+    {
         this.MoveEntitiesToTheirRegions();
 
         List<IBlockUpdate> neighborUpdates = [];
@@ -382,7 +412,8 @@ public class Region : IRegion
             }
         }
         delayed.ForEach(AddBlockUpdate);
-        neighborUpdates.ForEach(async u => await u.Level.BlockUpdateNeighborsAsync(u));
+        foreach (var update in neighborUpdates)
+            await update.Level.BlockUpdateNeighborsAsync(update);
     }
 
     /// <summary>
@@ -409,8 +440,13 @@ public class Region : IRegion
         int z = chunkCompound.GetInt("zPos");
 
         var chunk = new Chunk(x, z, this.minY, this.height);
+        if (chunkCompound.TryGetTag<NbtList>("ObsidianFrogspawnTicks", out var frogspawnTicks))
+            foreach (var tick in frogspawnTicks.OfType<NbtCompound>())
+                chunk.FrogspawnTicks[new Vector(tick.GetInt("x"), tick.GetInt("y"), tick.GetInt("z"))] = Math.Clamp(tick.GetInt("delay"), 1, 12000);
+        if (chunkCompound.TryGetTagValue<long>("InhabitedTime", out var inhabitedTime))
+            chunk.InhabitedTime = inhabitedTime;
 
-        // Chunks saved before build ranges were per dimension used the overworld's (min section -4) everywhere.
+        // Older chunks used the overworld's minimum section in every dimension.
         var storedMinSection = chunkCompound.TryGetTag<NbtTag<int>>("yPos", out var yPos) ? yPos.Value : -4;
         var minSection = this.minY >> 4;
 
@@ -559,6 +595,7 @@ public class Region : IRegion
 
     private static void SerializeChunk(NbtWriterStream writer, IChunk chunk, NbtCompound? structureStarts)
     {
+        writer.WriteLong("InhabitedTime", chunk is Chunk concrete ? concrete.InhabitedTime : 0);
         writer.WriteListStart("sections", NbtTagType.Compound, chunk.Sections.Length);
 
         foreach (var section in chunk.Sections)
@@ -695,6 +732,18 @@ public class Region : IRegion
 
             // Scheduled fluid ticks, like vanilla's "fluid_ticks".
             generated.FluidTicks.Write(writer);
+            var frogspawnTicks = generated.FrogspawnTicks.ToArray();
+            writer.WriteListStart("ObsidianFrogspawnTicks", NbtTagType.Compound, frogspawnTicks.Length);
+            foreach (var (position, delay) in frogspawnTicks)
+            {
+                writer.WriteCompoundStart();
+                writer.WriteInt("x", position.X);
+                writer.WriteInt("y", position.Y);
+                writer.WriteInt("z", position.Z);
+                writer.WriteInt("delay", delay);
+                writer.EndCompound();
+            }
+            writer.EndList();
         }
 
         writer.WriteInt("xPos", chunk.X);
