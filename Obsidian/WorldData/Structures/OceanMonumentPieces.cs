@@ -298,7 +298,7 @@ public static class OceanMonumentPieces
             if (!context.Box.IsInside(position))
                 return;
 
-            context.Level.AddEntity(new GeneratedEntity("minecraft:elder_guardian", new VectorF(position.X + 0.5f, position.Y, position.Z + 0.5f))
+            context.Level.AddEntity(new GeneratedEntity("minecraft:elder_guardian", new VectorD(position.X + 0.5, position.Y, position.Z + 0.5))
             {
                 Data = { new NbtTag<bool>("PersistenceRequired", true) }
             });

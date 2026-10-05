@@ -12,7 +12,7 @@ public interface ILevelGenerator
     /// Finds where players spawn in a new level, generating the chunks it needs.
     /// </summary>
     /// <returns>The spawn position, or <c>null</c> to let the level search its generated chunks.</returns>
-    public ValueTask<VectorF?> FindSpawnPointAsync() => ValueTask.FromResult<VectorF?>(null);
+    public ValueTask<VectorD?> FindSpawnPointAsync() => ValueTask.FromResult<VectorD?>(null);
 
     /// <summary>
     /// Locks a chunk against generation while it's saved, so saves never capture a chunk mid-write.

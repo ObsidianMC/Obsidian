@@ -174,7 +174,6 @@ public partial class NetworkBuffer : INetStreamReader
         return itemStack;
     }
 
-
     [ReadMethod]
     public DateTimeOffset ReadDateTimeOffset() => DateTimeOffset.FromUnixTimeMilliseconds(this.ReadLong());
 
@@ -206,17 +205,6 @@ public partial class NetworkBuffer : INetStreamReader
         };
     }
 
-    [ReadMethod, DataFormat(typeof(double))]
-    public Vector ReadAbsolutePosition()
-    {
-        return new Vector
-        {
-            X = (int)ReadDouble(),
-            Y = (int)ReadDouble(),
-            Z = (int)ReadDouble()
-        };
-    }
-
     [ReadMethod]
     public VectorF ReadPositionF()
     {
@@ -242,17 +230,6 @@ public partial class NetworkBuffer : INetStreamReader
             Y = y,
 
             Z = z,
-        };
-    }
-
-    [ReadMethod, DataFormat(typeof(double))]
-    public VectorF ReadAbsolutePositionF()
-    {
-        return new VectorF
-        {
-            X = (float)ReadDouble(),
-            Y = (float)ReadDouble(),
-            Z = (float)ReadDouble()
         };
     }
 
@@ -384,7 +361,6 @@ public partial class NetworkBuffer : INetStreamReader
     }
 
     #endregion
-
 
     [ReadMethod]
     public byte[] ReadByteArray()

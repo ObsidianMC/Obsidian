@@ -263,7 +263,7 @@ public sealed class EndCityPiece : TemplateStructurePiece
         {
             if (metadata.StartsWith("Sentry", StringComparison.Ordinal))
             {
-                level.AddEntity(new GeneratedEntity("minecraft:shulker", new VectorF(position.X + 0.5f, position.Y, position.Z + 0.5f)));
+                level.AddEntity(new GeneratedEntity("minecraft:shulker", new VectorD(position.X + 0.5, position.Y, position.Z + 0.5)));
             }
             else if (metadata.StartsWith("Elytra", StringComparison.Ordinal))
             {
@@ -281,7 +281,7 @@ public sealed class EndCityPiece : TemplateStructurePiece
     {
         // Hanging entities sit against the block's face: the block center moved back by half a block minus the frame's depth.
         var step = facing.ToVector();
-        var center = new VectorF(position.X + 0.5f - step.X * 0.46875f, position.Y + 0.5f - step.Y * 0.46875f, position.Z + 0.5f - step.Z * 0.46875f);
+        var center = new VectorD(position.X + 0.5 - step.X * 0.46875, position.Y + 0.5 - step.Y * 0.46875, position.Z + 0.5 - step.Z * 0.46875);
         var item = new NbtCompound("Item")
         {
             new NbtTag<string>("id", "minecraft:elytra"),

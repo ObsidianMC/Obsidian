@@ -47,7 +47,7 @@ public partial class MainEventHandler
             EntityId = Server.GetNextEntityId(),
             Item = droppedItem,
             Level = player.Level,
-            Position = (VectorF)location + 0.5f,
+            Position = (VectorD)location + 0.5,
         };
 
         player.Level.TryAddEntity(item);

@@ -43,7 +43,7 @@ public partial class ItemFrame : Entity
 
         // The block the frame is in; its position is offset from the block's center towards the block it hangs on.
         var position = this.Position;
-        tag.Set(new NbtArray<int>("block_pos", [(int)MathF.Floor(position.X), (int)MathF.Floor(position.Y), (int)MathF.Floor(position.Z)]));
+        tag.Set(new NbtArray<int>("block_pos", [(int)Math.Floor(position.X), (int)Math.Floor(position.Y), (int)Math.Floor(position.Z)]));
     }
 
     internal override void ReadNbt(NbtCompound tag)

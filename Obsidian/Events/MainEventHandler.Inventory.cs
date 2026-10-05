@@ -317,7 +317,7 @@ public partial class MainEventHandler
         if (thrownItem.IsNullOrAir())
             return;
 
-        var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
+        var loc = new VectorD(player.Position.X, player.HeadY - 0.3, player.Position.Z);
 
         var item = new ItemEntity
         {

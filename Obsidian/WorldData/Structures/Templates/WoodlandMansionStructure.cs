@@ -113,7 +113,7 @@ public sealed class WoodlandMansionPiece : TemplateStructurePiece
         for (var index = 0; index < count; index++)
         {
             // Vanilla finalizes the spawn (equipment and the like) when the mob is created.
-            level.AddEntity(new GeneratedEntity(type, new VectorF(position.X + 0.5f, position.Y, position.Z + 0.5f))
+            level.AddEntity(new GeneratedEntity(type, new VectorD(position.X + 0.5, position.Y, position.Z + 0.5))
             {
                 Data = new NbtCompound { new NbtTag<bool>("PersistenceRequired", true) }
             });

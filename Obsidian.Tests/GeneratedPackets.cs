@@ -61,8 +61,8 @@ public class GeneratedPackets
         using var buffer = new NetworkBuffer();
         NewMinecartBehaviorMinecartStep.Write(new NewMinecartBehaviorMinecartStep
         {
-            Position = new VectorF(0, 0, 0),
-            Movement = new VectorF(0, 0, 0),
+            Position = VectorD.Zero,
+            Movement = VectorD.Zero,
             YRot = 90f,
             XRot = 0f,
             Weight = 1f
@@ -129,6 +129,24 @@ public class GeneratedPackets
 
         Assert.Equal("a", message.Text);
         Assert.Equal("b", Assert.Single(message.GetExtras()).Text);
+    }
+
+    [Fact(DisplayName = "Positions keep double precision far from the origin")]
+    public void KeepsPositionPrecision()
+    {
+        using var buffer = new NetworkBuffer();
+        var step = new NewMinecartBehaviorMinecartStep
+        {
+            Position = new VectorD(1_000_000.03125, 64, -2.5),
+            Movement = VectorD.Zero,
+            YRot = 0f,
+            XRot = 0f,
+            Weight = 1f
+        };
+        NewMinecartBehaviorMinecartStep.Write(step, buffer);
+
+        using var input = new NetworkBuffer(Written(buffer));
+        Assert.Equal(1_000_000.03125, NewMinecartBehaviorMinecartStep.Read(input).Position.X);
     }
 
     [Theory(DisplayName = "Generated vanilla types read back what they write")]
@@ -199,6 +217,7 @@ public class GeneratedPackets
             _ when type == typeof(DateTimeOffset) => DateTimeOffset.FromUnixTimeMilliseconds(1_000),
             _ when type == typeof(Vector) => new Vector(1, 2, 3),
             _ when type == typeof(VectorF) => new VectorF(1.5f, 2, 3),
+            _ when type == typeof(VectorD) => new VectorD(1_000_000.03125, 64, -2.5),
             _ when type == typeof(Velocity) => new Velocity(0.25, 0, -0.5),
             _ when type == typeof(Angle) => new Angle(64),
             _ when type == typeof(ChatMessage) => ChatMessage.Simple("hi"),

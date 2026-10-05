@@ -26,7 +26,7 @@ public sealed class LootContext
     /// <summary>
     /// Where the loot is generated (vanilla's <c>origin</c> parameter); for containers, the center of the block.
     /// </summary>
-    public VectorF? Origin { get; init; }
+    public VectorD? Origin { get; init; }
 
     /// <summary>
     /// The entity the loot is generated for (vanilla's <c>this_entity</c> parameter), e.g. the player opening a container.

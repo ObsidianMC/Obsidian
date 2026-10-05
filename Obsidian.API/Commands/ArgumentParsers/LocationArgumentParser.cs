@@ -1,28 +1,28 @@
 ﻿namespace Obsidian.API.Commands.ArgumentParsers;
 
 [ArgumentParser("minecraft:vec3")]
-public sealed partial class LocationArgumentParser : BaseArgumentParser<VectorF>
+public sealed partial class LocationArgumentParser : BaseArgumentParser<VectorD>
 {
-    public override bool TryParseArgument(string input, CommandContext context, out VectorF result)
+    public override bool TryParseArgument(string input, CommandContext context, out VectorD result)
     {
         var splitted = input.Split(' ');
-        var location = new VectorF();
+        var location = new VectorD();
         var player = context.Player;
 
         for (var i = 0; i < splitted.Length; i++)
         {
             var text = splitted[i];
-            if (float.TryParse(text, out var floatResult))
+            if (double.TryParse(text, System.Globalization.CultureInfo.InvariantCulture, out var number))
                 switch (i)
                 {
                     case 0:
-                        location.X = floatResult;
+                        location.X = number;
                         break;
                     case 1:
-                        location.Y = floatResult;
+                        location.Y = number;
                         break;
                     case 2:
-                        location.Z = floatResult;
+                        location.Z = number;
                         break;
                     default:
                         throw new IndexOutOfRangeException("Count went out of range");

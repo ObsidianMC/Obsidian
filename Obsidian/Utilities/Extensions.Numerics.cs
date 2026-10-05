@@ -10,6 +10,9 @@ public static partial class Extensions
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static (int x, int z) ToChunkCoord(this VectorF value) => ((int)value.X >> 4, (int)value.Z >> 4);
 
+    /// <summary>The chunk a position is in: its block coordinates (rounded down) shifted to chunk coordinates.</summary>
+    public static (int x, int z) ToChunkCoord(this VectorD value) => ((int)Math.Floor(value.X) >> 4, (int)Math.Floor(value.Z) >> 4);
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static (int x, int z) ToChunkCoord(this Vector value) => (value.X >> 4, value.Z >> 4);
 

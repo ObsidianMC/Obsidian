@@ -14,7 +14,7 @@ public partial class AddEntityPacket
     public EntityType Type { get; init; }
 
     [Field(3), DataFormat(typeof(double))]
-    public VectorF Position { get; init; }
+    public VectorD Position { get; init; }
 
     [Field(4)]
     public Velocity Velocity { get; init; }
@@ -38,7 +38,7 @@ public partial class AddEntityPacket
         writer.WriteVarInt(EntityId);
         writer.WriteUuid(Uuid);
         writer.WriteVarInt(Type);
-        writer.WriteAbsolutePositionF(Position);
+        VectorD.Write(Position, writer);
         writer.WriteVelocity(Velocity);
         writer.WriteByte(Pitch.Value);
         writer.WriteByte(Yaw.Value);

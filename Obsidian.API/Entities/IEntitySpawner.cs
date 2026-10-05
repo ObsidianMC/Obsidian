@@ -29,7 +29,7 @@ public interface IEntitySpawner
     /// </summary>
     /// <param name="position">Entity position</param>
     /// <returns></returns>
-    public IEntitySpawner AtPosition(VectorF position);
+    public IEntitySpawner AtPosition(VectorD position);
 
     /// <summary>
     /// Spawns the entity with a custom name plate.

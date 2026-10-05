@@ -10,7 +10,7 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
 
     private EntityType? entityType;
 
-    private VectorF position = VectorF.Zero;
+    private VectorD position = VectorD.Zero;
     private bool isBaby;
     private string? customName;
     private bool customNameVisible;
@@ -32,7 +32,7 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
         return this;
     }
 
-    public IEntitySpawner AtPosition(VectorF position)
+    public IEntitySpawner AtPosition(VectorD position)
     {
         this.position = position;
         return this;

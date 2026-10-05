@@ -69,12 +69,13 @@ public struct Velocity(double x, double y, double z) : IEquatable<Velocity>
     }
 
     /// <summary>
-    /// Turns <see cref="VectorF"/> into <see cref="Velocity"/>, using it's coordinates as to how many blocks can be travelled per second.
+    /// Turns <see cref="VectorD"/> into <see cref="Velocity"/>, using it's coordinates as to how many blocks can be travelled per second.
     /// </summary>
-    /// <param name="vector"><see cref="VectorF"/> to be used for conversion.</param>
-    public static Velocity FromVector(VectorF vector)
+    /// <param name="vector"><see cref="VectorD"/> to be used for conversion.</param>
+    public static Velocity FromVector(VectorD vector)
     {
-        return FromBlockPerSecond(vector.X, vector.Y, vector.Z);
+        // Blocks per second to blocks per tick (20 ticks a second), in doubles to keep the vector's precision.
+        return new Velocity(vector.X / 20, vector.Y / 20, vector.Z / 20);
     }
 
     /// <summary>
@@ -92,7 +93,7 @@ public struct Velocity(double x, double y, double z) : IEquatable<Velocity>
     /// </summary>
     /// <param name="from">Starting position.</param>
     /// <param name="to">Target position.</param>
-    public static Velocity FromDirection(VectorF from, VectorF to)
+    public static Velocity FromDirection(VectorD from, VectorD to)
     {
         return FromVector(to - from);
     }

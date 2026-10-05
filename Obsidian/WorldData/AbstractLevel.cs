@@ -162,7 +162,7 @@ public abstract partial class AbstractLevel : ILevel
     public abstract Task<bool> LoadAsync(DimensionCodec codec);
     public abstract Task SaveAsync();
 
-    public IRegion? GetRegionForLocation(VectorF location)
+    public IRegion? GetRegionForLocation(VectorD location)
     {
         (int chunkX, int chunkZ) = location.ToChunkCoord();
         long key = NumericsHelper.IntsToLong(chunkX >> Region.CubicRegionSizeShift, chunkZ >> Region.CubicRegionSizeShift);
@@ -306,7 +306,7 @@ public abstract partial class AbstractLevel : ILevel
             this.Fluids.OnBlockChanged(new Vector(x, y, z), block);
     }
 
-    public IEnumerable<IEntity> GetEntitiesInRange(VectorF location, float distance = 10f)
+    public IEnumerable<IEntity> GetEntitiesInRange(VectorD location, float distance = 10f)
     {
         foreach (IPlayer player in GetPlayersInRange(location, distance))
         {
@@ -319,15 +319,15 @@ public abstract partial class AbstractLevel : ILevel
         }
     }
 
-    public IEnumerable<IEntity> GetNonPlayerEntitiesInRange(VectorF location, float distance)
+    public IEnumerable<IEntity> GetNonPlayerEntitiesInRange(VectorD location, float distance)
     {
         if (float.IsNaN(distance) || distance < 0f)
         {
             yield break;
         }
 
-        (int left, int top) = (location - new VectorF(distance)).ToChunkCoord();
-        (int right, int bottom) = (location + new VectorF(distance)).ToChunkCoord();
+        (int left, int top) = (location - new VectorD(distance)).ToChunkCoord();
+        (int right, int bottom) = (location + new VectorD(distance)).ToChunkCoord();
 
         distance *= distance;
 
@@ -354,7 +354,7 @@ public abstract partial class AbstractLevel : ILevel
         }
     }
 
-    public IEnumerable<IPlayer> GetPlayersInRange(VectorF location, float distance)
+    public IEnumerable<IPlayer> GetPlayersInRange(VectorD location, float distance)
     {
         if (float.IsNaN(distance) || distance < 0f)
         {
@@ -670,7 +670,7 @@ public abstract partial class AbstractLevel : ILevel
         return Task.WhenAll(Regions.Select(pair => pair.Value.FlushAsync()));
     }
 
-    public IEntity SpawnFallingBlock(VectorF position, Material mat)
+    public IEntity SpawnFallingBlock(VectorD position, Material mat)
     {
         position.X += 0.5f;
         position.Z += 0.5f;
@@ -705,7 +705,7 @@ public abstract partial class AbstractLevel : ILevel
         c?.SetBlockEntity(x, y, z, tileEntityData);
     }
 
-    public IEntity SpawnEntity(VectorF position, EntityType type)
+    public IEntity SpawnEntity(VectorD position, EntityType type)
     {
         if (type == EntityType.ExperienceOrb)
             throw new NotImplementedException($"EntityType {type} is not supported.");
@@ -726,7 +726,7 @@ public abstract partial class AbstractLevel : ILevel
         return entity;
     }
 
-    public void SpawnExperienceOrbs(VectorF position, short count = 1)
+    public void SpawnExperienceOrbs(VectorD position, short count = 1)
     {
     }
 
@@ -870,7 +870,7 @@ public abstract partial class AbstractLevel : ILevel
             return;
 
         var pregenRange = this.Configuration.PregenerateChunkRange;
-        var region = GetRegionForLocation(VectorF.Zero)!;
+        var region = GetRegionForLocation(VectorD.Zero)!;
         foreach (var chunk in region.GeneratedChunks())
         {
             for (int bx = 0; bx < 16; bx++)
@@ -890,7 +890,7 @@ public abstract partial class AbstractLevel : ILevel
                         continue;
                     }
 
-                    var worldPos = new VectorF(bx + 0.5f + (chunk.X * 16), by + 1, bz + 0.5f + (chunk.Z * 16));
+                    var worldPos = new VectorD(bx + 0.5 + (chunk.X * 16), by + 1, bz + 0.5 + (chunk.Z * 16));
                     LevelData.SpawnPosition = worldPos;
                     Log.SpawnSet(this.Logger, this.Name, worldPos);
 
@@ -960,7 +960,7 @@ public abstract partial class AbstractLevel : ILevel
         public static partial void Generating(ILogger logger, int chunkCount, string levelName);
 
         [LoggerMessage(Level = LogLevel.Debug, Message = "Spawn of {LevelName} set to {Position}")]
-        public static partial void SpawnSet(ILogger logger, string levelName, VectorF position);
+        public static partial void SpawnSet(ILogger logger, string levelName, VectorD position);
 
         [LoggerMessage(Level = LogLevel.Warning, Message = "Failed to find a spawn position for {LevelName}")]
         public static partial void SpawnNotFound(ILogger logger, string levelName);

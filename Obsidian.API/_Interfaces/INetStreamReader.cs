@@ -44,9 +44,7 @@ public interface INetStreamReader : INetStream
     public PotionEffectData ReadPotionEffectData();
 
     public Vector ReadPosition();
-    public Vector ReadAbsolutePosition();
     public VectorF ReadPositionF();
-    public VectorF ReadAbsolutePositionF();
     public VectorF ReadAbsoluteFloatPositionF();
 
     public SoundPosition ReadSoundPosition();

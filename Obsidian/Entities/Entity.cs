@@ -18,9 +18,9 @@ public class Entity : IEquatable<Entity>, IEntity
     public IEventDispatcher EventDispatcher => this.Level.EventDispatcher;
 
     #region Location properties
-    public VectorF LastPosition { get; set; }
+    public VectorD LastPosition { get; set; }
 
-    public VectorF Position { get; set; }
+    public VectorD Position { get; set; }
 
     public Angle Pitch { get; set; }
 
@@ -29,7 +29,7 @@ public class Entity : IEquatable<Entity>, IEntity
     /// <summary>
     /// The entity's velocity in blocks per tick, saved as vanilla's <c>Motion</c>.
     /// </summary>
-    public VectorF Motion { get; set; }
+    public VectorD Motion { get; set; }
     #endregion Location properties
 
     public int EntityId { get; internal set; }
@@ -38,7 +38,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public Pose Pose { get; set; } = Pose.Standing;
 
-    public virtual BoundingBox BoundingBox { get; protected set; } = new(VectorF.Zero, VectorF.Zero);
+    public virtual BoundingBox BoundingBox { get; protected set; } = new(VectorD.Zero, VectorD.Zero);
     public virtual EntityDimension Dimension { get; protected set; } = EntityDimension.Zero;
 
     public int PowderedSnowTicks { get; set; }
@@ -143,14 +143,57 @@ public class Entity : IEquatable<Entity>, IEntity
     #endregion NBT
 
     #region Update methods
-    public virtual async ValueTask UpdateAsync(VectorF position, MovementFlags movementFlags)
+    /// <summary>
+    /// A move as a relative-move packet's delta, in 1/4096 blocks: each position rounded to that scale, then
+    /// subtracted. This matches vanilla's <c>VecDeltaCodec</c> (Java's <c>Math.round</c>, so halves round up),
+    /// which the client decodes the delta with; rounding the difference instead lets repeated moves drift.
+    /// </summary>
+    internal static Vector MoveDelta(VectorD from, VectorD to) =>
+        new(MoveDelta(from.X, to.X), MoveDelta(from.Y, to.Y), MoveDelta(from.Z, to.Z));
+
+    private static int MoveDelta(double from, double to) => (int)(JavaRound(to * 4096) - JavaRound(from * 4096));
+
+    /// <summary>
+    /// Java's <c>Math.round</c>: to the nearest whole number, halves up. Adding 0.5 and flooring would round the
+    /// sum first (0.49999999999999994 + 0.5 is 1); a number minus its floor is exact, so its fraction compares safely.
+    /// </summary>
+    private static long JavaRound(double value)
     {
-        var isNewLocation = position != Position;
+        var floor = Math.Floor(value);
+        return (long)floor + (value - floor >= 0.5 ? 1 : 0);
+    }
 
-        if (isNewLocation)
+    /// <summary>
+    /// Whether a move fits a relative-move packet, whose delta is a short on each axis; vanilla sends larger moves
+    /// as a teleport to the absolute position.
+    /// </summary>
+    internal static bool IsRelativeMove(Vector delta) =>
+        delta.X is >= short.MinValue and <= short.MaxValue
+        && delta.Y is >= short.MinValue and <= short.MaxValue
+        && delta.Z is >= short.MinValue and <= short.MaxValue;
+
+    private void BroadcastTeleport(VectorD position, Angle yaw, Angle pitch, MovementFlags movementFlags) =>
+        this.PacketBroadcaster.BroadcastToLevelInRange(this.Level, position, new TeleportEntityPacket
         {
-            var delta = (Vector)((position * 32 - Position * 32) * 128);
+            EntityId = EntityId,
+            OnGround = movementFlags.HasFlag(MovementFlags.OnGround),
+            Position = position,
+            Pitch = pitch,
+            Yaw = yaw
+        }, EntityId);
 
+    public virtual async ValueTask UpdateAsync(VectorD position, MovementFlags movementFlags)
+    {
+        // Moved when the move shows on the client: when its delta, in 1/4096 blocks, isn't zero.
+        var delta = MoveDelta(Position, position);
+        var isNewLocation = delta != Vector.Zero;
+
+        if (!IsRelativeMove(delta))
+        {
+            this.BroadcastTeleport(position, Yaw, Pitch, movementFlags);
+        }
+        else if (isNewLocation)
+        {
             this.PacketBroadcaster.BroadcastToLevelInRange(this.Level, position, new MoveEntityPosPacket
             {
                 EntityId = EntityId,
@@ -164,15 +207,21 @@ public class Entity : IEquatable<Entity>, IEntity
         await UpdatePositionAsync(position, movementFlags);
     }
 
-    public virtual async ValueTask UpdateAsync(VectorF position, Angle yaw, Angle pitch, MovementFlags movementFlags)
+    public virtual async ValueTask UpdateAsync(VectorD position, Angle yaw, Angle pitch, MovementFlags movementFlags)
     {
-        var isNewLocation = position != Position;
+        // Moved when the move shows on the client: when its delta, in 1/4096 blocks, isn't zero.
+        var delta = MoveDelta(Position, position);
+        var isNewLocation = delta != Vector.Zero;
         var isNewRotation = yaw != Yaw || pitch != Pitch;
 
-        if (isNewLocation)
+        if (!IsRelativeMove(delta))
         {
-            var delta = (Vector)((position * 32 - Position * 32) * 128);
-
+            this.BroadcastTeleport(position, yaw, pitch, movementFlags);
+            if (isNewRotation)
+                this.SetHeadRotation(yaw);
+        }
+        else if (isNewLocation)
+        {
             if (isNewRotation)
             {
                 this.PacketBroadcaster.BroadcastToLevelInRange(this.Level, position, new MoveEntityPosRotPacket
@@ -200,6 +249,12 @@ public class Entity : IEquatable<Entity>, IEntity
                     OnGround = movementFlags.HasFlag(MovementFlags.OnGround)
                 }, EntityId);
             }
+        }
+        else if (isNewRotation)
+        {
+            // Turned without moving.
+            this.SetRotation(yaw, pitch, movementFlags);
+            this.SetHeadRotation(yaw);
         }
 
         await UpdatePositionAsync(position, yaw, pitch, movementFlags);
@@ -251,7 +306,7 @@ public class Entity : IEquatable<Entity>, IEntity
         this.UpdatePosition(yaw, pitch, movementFlags);
     }
 
-    public async Task UpdatePositionAsync(VectorF pos, MovementFlags movementFlags)
+    public async Task UpdatePositionAsync(VectorD pos, MovementFlags movementFlags)
     {
         var (x, z) = pos.ToChunkCoord();
         var chunk = await this.Level.GetChunkAsync(x, z, false);
@@ -266,7 +321,7 @@ public class Entity : IEquatable<Entity>, IEntity
             BoundingBox = Dimension.CreateBBFromPosition(pos);
     }
 
-    public async Task UpdatePositionAsync(VectorF pos, Angle yaw, Angle pitch, MovementFlags movementFlags = MovementFlags.OnGround)
+    public async Task UpdatePositionAsync(VectorD pos, Angle yaw, Angle pitch, MovementFlags movementFlags = MovementFlags.OnGround)
     {
         var (x, z) = pos.ToChunkCoord();
         var chunk = await Level.GetChunkAsync(x, z, false);
@@ -446,9 +501,10 @@ public class Entity : IEquatable<Entity>, IEntity
         await this.TeleportAsync(to.Position);
     }
 
-    public virtual ValueTask TeleportAsync(VectorF pos)
+    public virtual ValueTask TeleportAsync(VectorD pos)
     {
-        if (VectorF.Distance(Position, pos) > 8)
+        var delta = MoveDelta(Position, pos);
+        if (!IsRelativeMove(delta))
         {
             this.PacketBroadcaster.QueuePacketToLevel(this.Level, 0, new TeleportEntityPacket
             {
@@ -461,8 +517,6 @@ public class Entity : IEquatable<Entity>, IEntity
 
             return default;
         }
-
-        var delta = (Vector)(pos * 32 - Position * 32) * 128;
 
         this.PacketBroadcaster.QueuePacketToLevel(this.Level, 0, new MoveEntityPosRotPacket
         {
