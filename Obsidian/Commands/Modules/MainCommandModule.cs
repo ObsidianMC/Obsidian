@@ -252,7 +252,8 @@ public sealed class MainCommandModule : CommandModuleBase
         if (this.Player is not Player player)
             return;
 
-        if (!Enum.TryParse<GameMode>(gamemode, true, out var result))
+        // TryParse accepts any number, so "/gamemode 4" needs the defined check.
+        if (!Enum.TryParse<GameMode>(gamemode, true, out var result) || !Enum.IsDefined(result))
         {
             await player.SendMessageAsync(SendCommandUsage("/gamemode <survival/creative/adventure/spectator>"));
             return;

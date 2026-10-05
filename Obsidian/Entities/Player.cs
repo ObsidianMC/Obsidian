@@ -83,15 +83,15 @@ public sealed partial class Player : Avatar, IPlayer
         get => field;
         set
         {
-            field = value;
-
-            Abilities = GameMode switch
+            // Validated before it's stored, so an unknown mode throws without changing the player.
+            Abilities = value switch
             {
                 GameMode.Creative => PlayerAbility.CreativeMode | PlayerAbility.AllowFlying | PlayerAbility.Invulnerable,
                 GameMode.Spectator => PlayerAbility.AllowFlying | PlayerAbility.Invulnerable,
                 GameMode.Survival or GameMode.Adventure => PlayerAbility.None,
-                _ => throw new ArgumentOutOfRangeException(nameof(GameMode), GameMode, "Unknown gamemode.")
+                _ => throw new ArgumentOutOfRangeException(nameof(value), value, "Unknown gamemode.")
             };
+            field = value;
         }
     }
 
