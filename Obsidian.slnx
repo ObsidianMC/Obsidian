@@ -3,6 +3,7 @@
     <File Path=".editorconfig" />
   </Folder>
   <Project Path="Obsidian.API/Obsidian.API.csproj" />
+  <Project Path="Obsidian.AssetGenerator/Obsidian.AssetGenerator.csproj" />
   <Project Path="Obsidian.ConsoleApp/Obsidian.ConsoleApp.csproj" />
   <Project Path="Obsidian.Nbt/Nbt/Obsidian.Nbt.csproj" />
   <Project Path="Obsidian.SourceGenerators/Obsidian.SourceGenerators.csproj" />

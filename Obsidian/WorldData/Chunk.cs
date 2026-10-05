@@ -32,7 +32,8 @@ public sealed class Chunk : IChunk
 
     //TODO try and do some temp caching
     public Dictionary<short, BlockMeta> BlockMetaStore { get; private set; } = new Dictionary<short, BlockMeta>();
-    public Dictionary<int, IBlockEntity> BlockEntities { get; private set; } = new Dictionary<int, IBlockEntity>();
+    // Concurrent, since players change block entities while saves read them.
+    public ConcurrentDictionary<int, IBlockEntity> BlockEntities { get; private set; } = new();
 
     /// <summary>
     /// Entities of the chunk that haven't been spawned yet: those world generation placed, and once the chunk is complete,
@@ -160,9 +161,9 @@ public sealed class Chunk : IChunk
     public void SetBlockEntity(int x, int y, int z, IBlockEntity tileEntityData) =>
         this.BlockEntities[this.BlockEntityKey(x, y, z)] = tileEntityData;
 
-    public void RemoveBlockEntity(int x, int y, int z) => this.BlockEntities.Remove(this.BlockEntityKey(x, y, z));
+    public void RemoveBlockEntity(int x, int y, int z) => this.BlockEntities.TryRemove(this.BlockEntityKey(x, y, z), out _);
 
-    public IReadOnlyCollection<IBlockEntity> GetBlockEntities() => this.BlockEntities.Values;
+    public IReadOnlyCollection<IBlockEntity> GetBlockEntities() => [.. this.BlockEntities.Values];
 
     private int BlockEntityKey(int x, int y, int z) =>
         (y - this.MinY) << 8 | (z & 15) << 4 | (x & 15);

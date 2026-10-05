@@ -44,9 +44,7 @@ public interface INetStreamReader : INetStream
     public PotionEffectData ReadPotionEffectData();
 
     public Vector ReadPosition();
-    public Vector ReadAbsolutePosition();
     public VectorF ReadPositionF();
-    public VectorF ReadAbsolutePositionF();
     public VectorF ReadAbsoluteFloatPositionF();
 
     public SoundPosition ReadSoundPosition();
@@ -55,6 +53,14 @@ public interface INetStreamReader : INetStream
     public Angle ReadFloatAngle();
     public ChatMessage ReadChat();
     public byte[] ReadByteArray();
+    public byte[] ReadByteArray(int maxLength);
+    public byte[] ReadRemainingBytes(int maxLength);
+    public long[] ReadLongArray();
+    public int[] ReadVarIntArray();
+    public BitSet ReadBitSet();
+    public BitSet ReadFixedBitSet(int size);
+    public Obsidian.Nbt.NbtCompound ReadNbtCompound();
+    public Obsidian.Nbt.NbtCompound? ReadOptionalNbtCompound();
     public Guid ReadGuid();
 
     public TValue? ReadOptional<TValue>() where TValue : INetworkSerializable<TValue>;

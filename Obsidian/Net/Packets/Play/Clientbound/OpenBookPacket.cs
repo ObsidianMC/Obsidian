@@ -11,7 +11,7 @@ public partial class OpenBookPacket
     /// The hand that is holding the book.
     /// </summary>
     [Field(0), ActualType(typeof(int)), VarLength]
-    public Hand Hand { get; set; }
+    public InteractionHand Hand { get; set; }
 
     public override void Serialize(INetStreamWriter writer) => writer.WriteVarInt(this.Hand);
 }

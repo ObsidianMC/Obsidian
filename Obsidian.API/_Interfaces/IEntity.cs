@@ -11,8 +11,8 @@ public interface IEntity
 
     public Guid Uuid { get; set; }
 
-    public VectorF LastPosition { get; set; }
-    public VectorF Position { get; set; }
+    public VectorD LastPosition { get; set; }
+    public VectorD Position { get; set; }
     public Angle Pitch { get; set; }
     public Angle Yaw { get; set; }
 
@@ -54,10 +54,10 @@ public interface IEntity
 
     public ValueTask TeleportAsync(IWorld world);
     public ValueTask TeleportAsync(IEntity to);
-    public ValueTask TeleportAsync(VectorF pos);
+    public ValueTask TeleportAsync(VectorD pos);
 
-    public ValueTask UpdateAsync(VectorF position, MovementFlags movementFlags);
-    public ValueTask UpdateAsync(VectorF position, Angle yaw, Angle pitch, MovementFlags movementFlags);
+    public ValueTask UpdateAsync(VectorD position, MovementFlags movementFlags);
+    public ValueTask UpdateAsync(VectorD position, Angle yaw, Angle pitch, MovementFlags movementFlags);
     public ValueTask UpdateAsync(Angle yaw, Angle pitch, MovementFlags movementFlags);
 
     public void Write(INetStreamWriter writer);

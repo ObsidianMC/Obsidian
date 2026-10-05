@@ -29,7 +29,7 @@ public sealed partial class FinishConfigurationPacket
             DimensionNames = CodecRegistry.Dimensions.All.Keys.ToList(),
             CommonPlayerSpawnInfo = new()
             {
-                Gamemode = player.Gamemode,
+                GameMode = player.GameMode,
                 DimensionType = codec.Id,
                 DimensionName = codec.Name,
                 HashedSeed = 0,
@@ -41,8 +41,8 @@ public sealed partial class FinishConfigurationPacket
 
         await client.QueuePacketAsync(new SetDefaultSpawnPositionPacket(new()
         {
-            DimensionName = codec.Name,
-            Position = (Vector)player.Level.LevelData.SpawnPosition.Floor()
+            Dimension = codec.Name,
+            Pos = (Vector)player.Level.LevelData.SpawnPosition.Floor()
         }, 0, 0));
         await client.QueuePacketAsync(new SetTimePacket(player.Level.LevelData.Time, player.Level.LevelData.DayTime, true));
         await client.QueuePacketAsync(new GameEventPacket(player.Level.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));

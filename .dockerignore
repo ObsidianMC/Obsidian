@@ -9,3 +9,5 @@ docker-compose.yml
 .claude
 **/bin
 **/obj
+Obsidian/Assets
+Obsidian/Assets.tmp

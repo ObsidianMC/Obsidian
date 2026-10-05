@@ -119,7 +119,7 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// Vanilla's initial spawn: the climate spawn chunk at the default spawn height, moved onto the first standable block
     /// found in the chunks spiraling out from it.
     /// </summary>
-    public virtual async ValueTask<VectorF?> FindSpawnPointAsync()
+    public virtual async ValueTask<VectorD?> FindSpawnPointAsync()
     {
         var (x, z) = this.builder.FindClimateSpawn();
         var spawnChunkX = x >> 4;
@@ -137,7 +137,7 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
             }
         }
 
-        return new VectorF(spawn.X + 0.5f, spawn.Y, spawn.Z + 0.5f);
+        return new VectorD(spawn.X + 0.5, spawn.Y, spawn.Z + 0.5);
     }
 
     /// <summary>
@@ -409,7 +409,7 @@ internal sealed class MojangNetherGenerator : MojangGenerator
     protected override MojangDimension Dimension => MojangDimension.Nether;
 
     // Vanilla only searches a spawn in the overworld.
-    public override ValueTask<VectorF?> FindSpawnPointAsync() => ValueTask.FromResult<VectorF?>(null);
+    public override ValueTask<VectorD?> FindSpawnPointAsync() => ValueTask.FromResult<VectorD?>(null);
 }
 
 /// <summary>
@@ -422,5 +422,5 @@ internal sealed class MojangEndGenerator : MojangGenerator
     protected override MojangDimension Dimension => MojangDimension.End;
 
     // Vanilla's ServerLevel.END_SPAWN_POINT, on the obsidian platform.
-    public override ValueTask<VectorF?> FindSpawnPointAsync() => ValueTask.FromResult<VectorF?>(new VectorF(100.5f, 50, 0.5f));
+    public override ValueTask<VectorD?> FindSpawnPointAsync() => ValueTask.FromResult<VectorD?>(new VectorD(100.5, 50, 0.5));
 }

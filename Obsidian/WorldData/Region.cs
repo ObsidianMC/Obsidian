@@ -43,6 +43,10 @@ public class Region : IRegion
     // Serializes filling empty chunk slots, so concurrent callers never end up with different instances of a chunk.
     private readonly SemaphoreSlim chunkSlotLock = new(1, 1);
 
+    // Serializes saving chunks, from the snapshot through the writes, so overlapping saves of a chunk (an autosave and an
+    // unload) are written in the order they were taken.
+    private readonly SemaphoreSlim saveLock = new(1, 1);
+
     /// <summary>
     /// Locks a chunk against generation while it's serialized (the level's generator), or <c>null</c> for no locking.
     /// </summary>
@@ -237,6 +241,19 @@ public class Region : IRegion
     {
         await this.initialization.Value;
 
+        await this.saveLock.WaitAsync();
+        try
+        {
+            await this.WriteChunkAsync(chunk, unloading);
+        }
+        finally
+        {
+            this.saveLock.Release();
+        }
+    }
+
+    private async Task WriteChunkAsync(IChunk chunk, bool unloading)
+    {
         var (x, z) = (NumericsHelper.Modulo(chunk.X, CubicRegionSize), NumericsHelper.Modulo(chunk.Z, CubicRegionSize));
 
         await using MemoryStream strm = new();
@@ -274,12 +291,16 @@ public class Region : IRegion
     /// The entities to save with a complete chunk: those still waiting to spawn, and those of the level in the chunk. When
     /// unloading, the level's are taken out of it too, and the chunk's pending ones won't spawn anymore.
     /// </summary>
-    private NbtList CollectEntities(Chunk chunk, bool unloading)
+    /// <returns><c>null</c> once an unloading save took the entities, which a later save of the chunk mustn't overwrite.</returns>
+    private NbtList? CollectEntities(Chunk chunk, bool unloading)
     {
         var entities = new NbtList(NbtTagType.Compound, "Entities");
 
         using (chunk.EntityLock.EnterScope())
         {
+            if (chunk.EntitiesUnloaded)
+                return null;
+
             foreach (var pending in chunk.PendingEntities)
                 entities.Add(EntityNbt.ToNbt(pending));
 
@@ -335,7 +356,7 @@ public class Region : IRegion
     /// <remarks>
     /// Unlike <c>VectorF.ToChunkCoord</c>, which truncates, this floors negative coordinates like vanilla.
     /// </remarks>
-    internal static (int X, int Z) ChunkOf(VectorF position) => ((int)MathF.Floor(position.X) >> 4, (int)MathF.Floor(position.Z) >> 4);
+    internal static (int X, int Z) ChunkOf(VectorD position) => ((int)Math.Floor(position.X) >> 4, (int)Math.Floor(position.Z) >> 4);
 
     public async Task BeginTickAsync(CancellationToken cts = default)
     {

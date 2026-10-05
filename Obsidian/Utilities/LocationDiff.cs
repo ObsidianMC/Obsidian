@@ -2,15 +2,15 @@ namespace Obsidian.Utilities;
 
 internal readonly struct LocationDiff
 {
-    public required float DifferenceX { get; init; }
+    public required double DifferenceX { get; init; }
 
-    public required float DifferenceY { get; init; }
+    public required double DifferenceY { get; init; }
 
-    public required float DifferenceZ { get; init; }
+    public required double DifferenceZ { get; init; }
 
-    public float CalculatedDifference => this.DifferenceX * this.DifferenceX + this.DifferenceZ * this.DifferenceZ;
+    public double CalculatedDifference => this.DifferenceX * this.DifferenceX + this.DifferenceZ * this.DifferenceZ;
 
-    public static LocationDiff GetDifference(VectorF entityLocation, VectorF location) => new()
+    public static LocationDiff GetDifference(VectorD entityLocation, VectorD location) => new()
     {
         DifferenceX = entityLocation.X - location.X,
         DifferenceY = entityLocation.Y - location.Y,

@@ -174,7 +174,6 @@ public partial class NetworkBuffer : INetStreamReader
         return itemStack;
     }
 
-
     [ReadMethod]
     public DateTimeOffset ReadDateTimeOffset() => DateTimeOffset.FromUnixTimeMilliseconds(this.ReadLong());
 
@@ -206,17 +205,6 @@ public partial class NetworkBuffer : INetStreamReader
         };
     }
 
-    [ReadMethod, DataFormat(typeof(double))]
-    public Vector ReadAbsolutePosition()
-    {
-        return new Vector
-        {
-            X = (int)ReadDouble(),
-            Y = (int)ReadDouble(),
-            Z = (int)ReadDouble()
-        };
-    }
-
     [ReadMethod]
     public VectorF ReadPositionF()
     {
@@ -245,17 +233,6 @@ public partial class NetworkBuffer : INetStreamReader
         };
     }
 
-    [ReadMethod, DataFormat(typeof(double))]
-    public VectorF ReadAbsolutePositionF()
-    {
-        return new VectorF
-        {
-            X = (float)ReadDouble(),
-            Y = (float)ReadDouble(),
-            Z = (float)ReadDouble()
-        };
-    }
-
     [ReadMethod, DataFormat(typeof(float))]
     public VectorF ReadAbsoluteFloatPositionF()
     {
@@ -273,24 +250,21 @@ public partial class NetworkBuffer : INetStreamReader
     [ReadMethod]
     public Angle ReadAngle() => new(this.ReadByte());
 
+    /// <summary>
+    /// Reads a text component as network NBT: a compound, or the plain string or list of components vanilla's
+    /// component codec also writes.
+    /// </summary>
     [ReadMethod]
     public ChatMessage ReadChat()
     {
         //TODO this can be sped up or done better
         using var ms = new MemoryStream(this.AsSpan((int)(this.size - this.offset)).ToArray());
 
-        var reader = new NbtReader(ms);
-        var chatMessage = ChatMessage.Empty;
-
-        if (!reader.TryReadNextTag<NbtCompound>(false, out var root))
-        {
-            this.offset += (int)ms.Position;
-            return chatMessage;
-        }
-
+        var found = new NbtReader(ms).TryReadNextTag(false, out INbtTag? tag);
         this.offset += (int)ms.Position;
+        this.BytesPending -= (int)ms.Position;
 
-        return chatMessage.FromNbt(root);
+        return found ? tag!.TextFromNbt() ?? ChatMessage.Empty : ChatMessage.Empty;
     }
 
     #region Generic Read Methods
@@ -388,12 +362,93 @@ public partial class NetworkBuffer : INetStreamReader
 
     #endregion
 
-
     [ReadMethod]
     public byte[] ReadByteArray()
     {
         var length = ReadVarInt();
         return ReadUInt8Array(length);
+    }
+
+    /// <summary>Reads a VarInt length, then that many bytes; throws when the length is over <paramref name="maxLength"/>.</summary>
+    public byte[] ReadByteArray(int maxLength)
+    {
+        var length = this.ReadVarInt();
+        if (length < 0 || length > maxLength)
+            throw new InvalidDataException($"Byte array length {length} is outside 0 to {maxLength}.");
+
+        // ReadUntil throws at the end of the buffer even for no bytes, and an empty array can end a packet.
+        return length == 0 ? [] : this.ReadUntil(length);
+    }
+
+    /// <summary>Reads the rest of the buffer; throws when it's longer than <paramref name="maxLength"/>.</summary>
+    public byte[] ReadRemainingBytes(int maxLength)
+    {
+        var length = (int)(this.size - this.offset);
+        if (length > maxLength)
+            throw new InvalidDataException($"{length} remaining bytes are more than {maxLength}.");
+
+        return length == 0 ? [] : this.ReadUntil(length);
+    }
+
+    /// <summary>Reads a VarInt count, then that many longs.</summary>
+    public long[] ReadLongArray()
+    {
+        var values = new long[this.ReadCount(LongSize)];
+        for (var i = 0; i < values.Length; i++)
+            values[i] = this.ReadLong();
+        return values;
+    }
+
+    /// <summary>Reads a VarInt count, then that many VarInts.</summary>
+    public int[] ReadVarIntArray()
+    {
+        var values = new int[this.ReadCount(ByteSize)];
+        for (var i = 0; i < values.Length; i++)
+            values[i] = this.ReadVarInt();
+        return values;
+    }
+
+    /// <summary>
+    /// Reads a VarInt count of values at least <paramref name="minimumSize"/> bytes each, rejecting counts the rest of
+    /// the buffer can't hold before anything is allocated for them.
+    /// </summary>
+    private int ReadCount(int minimumSize)
+    {
+        var count = this.ReadVarInt();
+        if (count < 0 || count > (this.size - this.offset) / minimumSize)
+            throw new InvalidDataException($"Count {count} is more than the rest of the packet holds.");
+        return count;
+    }
+
+    /// <summary>Reads a bit set as a VarInt count of longs, then the longs (Java's <c>BitSet.toLongArray</c>).</summary>
+    public BitSet ReadBitSet() => new(this.ReadLongArray());
+
+    /// <summary>
+    /// Reads a bit set of <paramref name="size"/> bits as <c>ceil(size / 8)</c> bytes, lowest bit first (Java's
+    /// <c>BitSet.toByteArray</c>, padded to the size).
+    /// </summary>
+    public BitSet ReadFixedBitSet(int size)
+    {
+        var bytes = this.ReadUntil((size + 7) / 8);
+        var bits = new BitSet();
+        for (var i = 0; i < size; i++)
+            bits.SetBit(i, (bytes[i / 8] & (1 << (i % 8))) != 0);
+        return bits;
+    }
+
+    /// <summary>Reads a network NBT compound (no root name); throws when it's an empty (end) tag.</summary>
+    public NbtCompound ReadNbtCompound() =>
+        this.ReadOptionalNbtCompound() ?? throw new InvalidDataException("Expected an NBT compound, but found an end tag.");
+
+    /// <summary>Reads a network NBT compound (no root name), or null for an empty (end) tag.</summary>
+    public NbtCompound? ReadOptionalNbtCompound()
+    {
+        using var stream = new MemoryStream(this.AsSpan((int)(this.size - this.offset)).ToArray());
+        var found = new NbtReader(stream).TryReadNextTag<NbtCompound>(false, out var compound);
+
+        this.offset += (int)stream.Position;
+        this.BytesPending -= (int)stream.Position;
+        return found ? compound : null;
     }
 
     [ReadMethod]

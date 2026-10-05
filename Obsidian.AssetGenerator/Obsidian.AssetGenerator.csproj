@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<IsPackable>false</IsPackable>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<!-- The generated assets, which Obsidian.API and Obsidian read. Their Minecraft version is set in Obsidian.csproj. -->
+		<VanillaAssetsDirectory>$(MSBuildThisFileDirectory)..\Obsidian\Assets\</VanillaAssetsDirectory>
+		<!-- The downloaded server jars and data generator output, per version. -->
+		<VanillaWorkDirectory>$(MSBuildThisFileDirectory)$(BaseIntermediateOutputPath)vanilla\</VanillaWorkDirectory>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="Java\**\*.java" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+
+	<Target Name="ReadMinecraftVersion">
+		<XmlPeek XmlInputPath="$(MSBuildThisFileDirectory)..\Obsidian\Obsidian.csproj" Query="/Project/PropertyGroup/MinecraftVersion/text()">
+			<Output TaskParameter="Result" PropertyName="MinecraftVersion" />
+		</XmlPeek>
+		<Error Condition="'$(MinecraftVersion)' == ''" Text="Obsidian.csproj doesn't set MinecraftVersion." />
+		<PropertyGroup>
+			<VanillaAssetsStamp>$(VanillaAssetsDirectory).generated-$(MinecraftVersion)</VanillaAssetsStamp>
+		</PropertyGroup>
+	</Target>
+
+	<!-- Runs after every build of the generator, which Obsidian.API and Obsidian reference so that it runs before they
+	     compile. Skipped while the assets of the version are newer than the generator. -->
+	<Target Name="GenerateVanillaAssets" AfterTargets="Build" DependsOnTargets="ReadMinecraftVersion"
+	        Inputs="$(TargetPath);@(None->'$(OutDir)%(Identity)')" Outputs="$(VanillaAssetsStamp)">
+		<!-- Java logs warnings (e.g. deprecated Unsafe use by vanilla's libraries) to stderr; failures still fail by exit code. -->
+		<Exec IgnoreStandardErrorWarningFormat="true" Command="dotnet &quot;$(TargetPath)&quot; $(MinecraftVersion) &quot;$(VanillaWorkDirectory).&quot; &quot;$(VanillaAssetsDirectory).&quot;" />
+		<Touch Files="$(VanillaAssetsStamp)" AlwaysCreate="true" />
+	</Target>
+</Project>

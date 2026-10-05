@@ -38,6 +38,8 @@ public interface INetStreamWriter : INetStream
     /// codec, such as <c>minecraft:map_decorations</c>.
     /// </summary>
     public void WriteNbtCompound(Obsidian.Nbt.NbtCompound compound);
+    public void WriteOptionalNbtCompound(Obsidian.Nbt.NbtCompound? compound);
+    public void WriteFixedBitSet(BitSet bits, int size);
     public void WriteItemStack(ItemStack? itemStack);
     public void WriteDateTimeOffset(DateTimeOffset date);
     public void WriteSoundEvent(SoundEvent soundEvent);
@@ -47,12 +49,10 @@ public interface INetStreamWriter : INetStream
     public void WriteUuid(Guid value);
     public void WritePosition(Vector value);
     public void WritePosition(SoundPosition position);
-    public void WriteAbsolutePosition(Vector value);
     public void WriteAbsoluteFloatPosition(Vector value);
     public void WriteAbsoluteShortPosition(Vector value);
     public void WriteAbsoluteShortPosition(VectorF value);
     public void WritePositionF(VectorF value);
-    public void WriteAbsolutePositionF(VectorF value);
     public void WriteAbsoluteFloatPositionF(VectorF value);
     public void WriteVelocity(Velocity value);
     public void WriteAdvancement(Advancement advancement);

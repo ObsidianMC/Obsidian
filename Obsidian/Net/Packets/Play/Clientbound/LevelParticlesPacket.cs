@@ -8,7 +8,7 @@ public partial class LevelParticlesPacket
     public bool OverrideLimiter { get; set; }
 
     [Field(1), DataFormat(typeof(double))]
-    public required VectorF Position { get; init; }
+    public required VectorD Position { get; init; }
 
     [Field(2), DataFormat(typeof(float))]
     public VectorF Offset { get; init; }
@@ -25,7 +25,7 @@ public partial class LevelParticlesPacket
     public override void Serialize(INetStreamWriter writer)
     {
         writer.WriteBoolean(this.OverrideLimiter);
-        writer.WriteAbsolutePositionF(this.Position);
+        VectorD.Write(this.Position, writer);
         writer.WriteAbsoluteFloatPositionF(this.Offset);
         writer.WriteSingle(this.MaxSpeed);
         writer.WriteInt(this.ParticleCount);

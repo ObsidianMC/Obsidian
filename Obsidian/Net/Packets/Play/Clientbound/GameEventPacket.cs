@@ -21,7 +21,7 @@ public partial class GameEventPacket
         Value = value;
     }
 
-    public GameEventPacket(Gamemode gamemode)
+    public GameEventPacket(GameMode gamemode)
     {
         Reason = ChangeGameStateReason.ChangeGamemode;
         Value = (float)gamemode;

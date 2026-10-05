@@ -20,7 +20,7 @@ public interface ILevel : IAsyncDisposable
 
     public LevelData LevelData { get; }
 
-    public Gamemode DefaultGamemode { get; }
+    public GameMode DefaultGamemode { get; }
 
     public int RegionCount { get; }
     public int LoadedChunkCount { get; }
@@ -33,9 +33,9 @@ public interface ILevel : IAsyncDisposable
 
     public IEntitySpawner GetNewEntitySpawner();
 
-    public IEnumerable<IEntity> GetNonPlayerEntitiesInRange(VectorF location, float distance);
-    public IEnumerable<IEntity> GetEntitiesInRange(VectorF location, float distance);
-    public IEnumerable<IPlayer> GetPlayersInRange(VectorF location, float distance);
+    public IEnumerable<IEntity> GetNonPlayerEntitiesInRange(VectorD location, float distance);
+    public IEnumerable<IEntity> GetEntitiesInRange(VectorD location, float distance);
+    public IEnumerable<IPlayer> GetPlayersInRange(VectorD location, float distance);
     public IEnumerable<IPlayer> GetPlayersInChunkRange(Vector worldPosition);
 
     /// <summary>
@@ -88,10 +88,10 @@ public interface ILevel : IAsyncDisposable
     public bool TryAddEntity(IEntity entity);
     public bool TryAddPlayer(IPlayer player);
 
-    public IEntity SpawnEntity(VectorF position, EntityType type);
+    public IEntity SpawnEntity(VectorD position, EntityType type);
     public IEntity SpawnEntity(IEntity entity);
-    public IEntity SpawnFallingBlock(VectorF position, Material mat);
-    public void SpawnExperienceOrbs(VectorF position, short count);
+    public IEntity SpawnFallingBlock(VectorD position, Material mat);
+    public void SpawnExperienceOrbs(VectorD position, short count);
     public IEnumerable<IPlayer> PlayersInRange(Vector location);
     public Task DoWorldTickAsync();
     public Task FlushRegionsAsync();

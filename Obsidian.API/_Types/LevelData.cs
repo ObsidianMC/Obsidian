@@ -89,7 +89,7 @@ public sealed class LevelData
     /// <summary>
     /// The default game mode for the singleplayer player when they initially spawn.
     /// </summary>
-    public Gamemode DefaultGamemode { get; set; }
+    public GameMode DefaultGamemode { get; set; }
 
     /// <summary>
     /// Used in 1.15 and below. The name of the world generator.
@@ -145,7 +145,7 @@ public sealed class LevelData
     /// </summary>
     public long RandomSeed { get; set; }
 
-    public VectorF SpawnPosition { get; set; }
+    public VectorD SpawnPosition { get; set; }
 
     /// <summary>
     /// true if the rain/snow/cloud cover is a lightning storm and dark enough for mobs to spawn under the sky.

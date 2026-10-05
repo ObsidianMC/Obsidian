@@ -10,7 +10,8 @@ on:
     paths:
       - "Obsidian.API/**/*.cs"
       - "Obsidian.API/*.csproj"
-      - "Obsidian/Assets/**/*.json"
+      - "Obsidian/Obsidian.csproj"
+      - "Obsidian.AssetGenerator/**"
       - "Obsidian.SourceGenerators/**/*.cs"
       - "Obsidian.SourceGenerators/*.csproj"
       - ".github/workflows/nuget-push.yml"
@@ -39,6 +40,12 @@ jobs:
             9
             8
             7
+      - name: Setup Java
+        # Generating the vanilla assets runs the Minecraft server's data generators.
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
       - name: Pack n Push
         run: |
           cd Obsidian.API

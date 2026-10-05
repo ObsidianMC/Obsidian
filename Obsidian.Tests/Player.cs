@@ -66,7 +66,7 @@ public sealed class Player
     [Fact]
     public void Clone_ShouldGiveMaxStackInCreative()
     {
-        var player = new FakePlayer { Gamemode = Gamemode.Creative };
+        var player = new FakePlayer { GameMode = GameMode.Creative };
         var container = new Container(9);
         var item = new ItemStack(ItemsRegistry.Diamond, 1);
         container.SetItem(0, item);

@@ -45,7 +45,7 @@ public sealed partial class MainEventHandler
         table.Fill(container, new LootContext
         {
             Random = table.CreateRandom(seed, sequences),
-            Origin = new VectorF(position.X + 0.5f, position.Y + 0.5f, position.Z + 0.5f),
+            Origin = new VectorD(position.X + 0.5, position.Y + 0.5, position.Z + 0.5),
             ThisEntity = player,
             ExplorationMaps = ExplorationMaps.For(player.Level)
         });

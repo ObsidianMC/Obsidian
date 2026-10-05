@@ -552,7 +552,7 @@ public sealed class MineshaftCorridor : MineshaftPiece
         var shape = random.NextBoolean() ? "north_south" : "east_west";
         this.PlaceBlock(level, BlocksRegistry.Get(Material.Rail).WithProperty("shape", shape), x, y, z, box);
 
-        var minecart = new GeneratedEntity("minecraft:chest_minecart", new VectorF(position.X + 0.5f, position.Y + 0.5f, position.Z + 0.5f))
+        var minecart = new GeneratedEntity("minecraft:chest_minecart", new VectorD(position.X + 0.5, position.Y + 0.5, position.Z + 0.5))
         {
             Data = { new NbtTag<string>("LootTable", "minecraft:chests/abandoned_mineshaft") }
         };

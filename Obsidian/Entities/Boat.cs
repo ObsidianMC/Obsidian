@@ -1,6 +1,7 @@
 ﻿namespace Obsidian.Entities;
 
-[MinecraftEntity("minecraft:boat")]
+// Vanilla has an entity type per wood since 1.21.2; they share their dimensions, which are generated from oak_boat.
+[MinecraftEntity("minecraft:oak_boat")]
 public sealed partial class Boat : Entity
 {
     public int LastTimeHit { get; private set; }

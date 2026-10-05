@@ -78,20 +78,20 @@ public sealed partial class Player : Avatar, IPlayer
 
     public IBlock? LastClickedBlock { get; internal set; }
 
-    public Gamemode Gamemode
+    public GameMode GameMode
     {
         get => field;
         set
         {
-            field = value;
-
-            Abilities = Gamemode switch
+            // Validated before it's stored, so an unknown mode throws without changing the player.
+            Abilities = value switch
             {
-                Gamemode.Creative => PlayerAbility.CreativeMode | PlayerAbility.AllowFlying | PlayerAbility.Invulnerable,
-                Gamemode.Spectator => PlayerAbility.AllowFlying | PlayerAbility.Invulnerable,
-                Gamemode.Survival or Gamemode.Adventure or Gamemode.Hardcore => PlayerAbility.None,
-                _ => throw new ArgumentOutOfRangeException(nameof(Gamemode), Gamemode, "Unknown gamemode.")
+                GameMode.Creative => PlayerAbility.CreativeMode | PlayerAbility.AllowFlying | PlayerAbility.Invulnerable,
+                GameMode.Spectator => PlayerAbility.AllowFlying | PlayerAbility.Invulnerable,
+                GameMode.Survival or GameMode.Adventure => PlayerAbility.None,
+                _ => throw new ArgumentOutOfRangeException(nameof(value), value, "Unknown gamemode.")
             };
+            field = value;
         }
     }
 
@@ -246,7 +246,7 @@ public sealed partial class Player : Avatar, IPlayer
             await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId, container.ToList()));
     }
 
-    public async override ValueTask TeleportAsync(VectorF pos)
+    public async override ValueTask TeleportAsync(VectorD pos)
     {
         LastPosition = Position;
         Position = pos;
@@ -372,8 +372,8 @@ public sealed partial class Player : Avatar, IPlayer
             {
                 DimensionType = codec.Id,
                 DimensionName = Level.DimensionName,
-                Gamemode = Gamemode,
-                PreviousGamemode = Gamemode,
+                GameMode = GameMode,
+                PreviousGamemode = GameMode,
                 HashedSeed = 0,
                 Flat = false,
                 Debug = false,
@@ -444,13 +444,14 @@ public sealed partial class Player : Avatar, IPlayer
         }
     }
 
-    public async ValueTask SetGamemodeAsync(Gamemode gamemode)
+    public async ValueTask SetGamemodeAsync(GameMode gamemode)
     {
+        // Set first: the setter rejects unknown modes, and they must not reach clients.
+        GameMode = gamemode;
+
         this.PacketBroadcaster.QueuePacketToLevel(this.Level, new PlayerInfoUpdatePacket(CompilePlayerInfo(new UpdateGamemodeInfoAction(gamemode))));
 
         await Client.QueuePacketAsync(new GameEventPacket(gamemode));
-
-        Gamemode = gamemode;
     }
 
     public ValueTask UpdateDisplayNameAsync(string newDisplayName)
@@ -614,7 +615,7 @@ public sealed partial class Player : Avatar, IPlayer
 
     public override string ToString() => Username;
 
-    public async override ValueTask UpdateAsync(VectorF position, MovementFlags movementFlags)
+    public async override ValueTask UpdateAsync(VectorD position, MovementFlags movementFlags)
     {
         await base.UpdateAsync(position, movementFlags);
 
@@ -625,7 +626,7 @@ public sealed partial class Player : Avatar, IPlayer
         await PickupNearbyItemsAsync();
     }
 
-    public async override ValueTask UpdateAsync(VectorF position, Angle yaw, Angle pitch, MovementFlags movementFlags)
+    public async override ValueTask UpdateAsync(VectorD position, Angle yaw, Angle pitch, MovementFlags movementFlags)
     {
         await base.UpdateAsync(position, yaw, pitch, movementFlags);
 

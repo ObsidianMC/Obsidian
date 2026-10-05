@@ -24,29 +24,33 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
     /// </summary>
     internal MapStorage Maps { get; private set; } = default!;
 
+    // Saves and flushes of the world run one at a time: /save, autosaves and shutdown can overlap.
+    private readonly System.Threading.SemaphoreSlim saveLock = new(1, 1);
+
     public async override Task<bool> LoadAsync(DimensionCodec codec)
     {
         this.Initialize(codec);
 
-        var fi = new FileInfo(this.LevelDataFilePath);
-        if (!fi.Exists)
+        // The level data is level.dat, or its backup (.old) when level.dat is missing or can't be read: a save that
+        // stopped partway, or a damaged file. With neither, the world is new; with neither readable, it fails rather
+        // than generate a new world over the damaged one.
+        var backupPath = $"{this.LevelDataFilePath}.old";
+        if (!File.Exists(this.LevelDataFilePath) && !File.Exists(backupPath))
             return false;
 
-
-        await using var fs = fi.OpenRead();
-        var reader = new NbtReader(fs, NbtCompression.GZip);
-        var levelCompound = (reader.ReadNextTag() as NbtCompound)!;
+        var levelCompound = ReadLevelData(this.LevelDataFilePath, this.Logger) ?? ReadLevelData(backupPath, this.Logger)
+            ?? throw new InvalidDataException($"Neither {this.LevelDataFilePath} nor its backup can be read.");
         LevelData = new LevelData()
         {
             Hardcore = levelCompound.GetBool("hardcore"),
             MapFeatures = levelCompound.GetBool("MapFeatures"),
             Raining = levelCompound.GetBool("raining"),
             Thundering = levelCompound.GetBool("thundering"),
-            DefaultGamemode = (Gamemode)levelCompound.GetInt("GameType"),
+            DefaultGamemode = (GameMode)levelCompound.GetInt("GameType"),
             GeneratorVersion = levelCompound.GetInt("generatorVersion"),
             RainTime = levelCompound.GetInt("rainTime"),
             // The spawn is saved as a block; players spawn at its center.
-            SpawnPosition = new VectorF(levelCompound.GetInt("SpawnX") + 0.5f, levelCompound.GetInt("SpawnY"), levelCompound.GetInt("SpawnZ") + 0.5f),
+            SpawnPosition = new VectorD(levelCompound.GetInt("SpawnX") + 0.5, levelCompound.GetInt("SpawnY"), levelCompound.GetInt("SpawnZ") + 0.5),
             ThunderTime = levelCompound.GetInt("thunderTime"),
             Version = levelCompound.GetInt("version"),
             LastPlayed = levelCompound.GetLong("LastPlayed"),
@@ -77,17 +81,58 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         return true;
     }
 
+    /// <summary>A level data file's root compound, or null when it's missing or can't be read.</summary>
+    internal static NbtCompound? ReadLevelData(string path, ILogger logger)
+    {
+        if (!File.Exists(path))
+            return null;
+
+        try
+        {
+            using var fs = File.OpenRead(path);
+            return new NbtReader(fs, NbtCompression.GZip).ReadNextTag() as NbtCompound;
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or InvalidOperationException or ArgumentException
+            or Obsidian.Nbt.Exceptions.NbtException or System.Diagnostics.UnreachableException)
+        {
+            Log.UnreadableLevelData(logger, path, ex);
+            return null;
+        }
+    }
+
     public override async Task SaveAsync()
     {
-        var worldFile = new FileInfo(LevelDataFilePath);
-
-        if (worldFile.Exists)
+        await this.saveLock.WaitAsync();
+        try
         {
-            worldFile.CopyTo($"{LevelDataFilePath}.old", true);
-            worldFile.Delete();
+            await this.SaveLevelAsync();
         }
+        finally
+        {
+            this.saveLock.Release();
+        }
+    }
 
-        await using var fs = worldFile.Create();
+    /// <summary>
+    /// Writes level.dat and the maps. The level data is written to a temporary file first and then replaces level.dat,
+    /// keeping the previous one as level.dat.old, so a save that stops partway leaves a complete file.
+    /// </summary>
+    private async Task SaveLevelAsync()
+    {
+        var temporaryPath = $"{LevelDataFilePath}.tmp";
+        await using (var fs = File.Create(temporaryPath))
+            await this.WriteLevelDataAsync(fs);
+
+        if (File.Exists(LevelDataFilePath))
+            File.Replace(temporaryPath, LevelDataFilePath, $"{LevelDataFilePath}.old");
+        else
+            File.Move(temporaryPath, LevelDataFilePath);
+
+        await this.Maps.SaveAsync();
+    }
+
+    private async Task WriteLevelDataAsync(Stream fs)
+    {
         await using var writer = new NbtWriterStream(fs, NbtCompression.GZip, "");
 
         writer.WriteBool("hardcore", LevelData.Hardcore);
@@ -111,8 +156,23 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         writer.EndCompound();
 
         await writer.TryFinishAsync();
+    }
 
-        await this.Maps.SaveAsync();
+    /// <summary>
+    /// Saves what changes while the world runs: its regions, then its level data and maps.
+    /// </summary>
+    public async Task FlushAsync()
+    {
+        await this.saveLock.WaitAsync();
+        try
+        {
+            await this.FlushRegionsAsync();
+            await this.SaveLevelAsync();
+        }
+        finally
+        {
+            this.saveLock.Release();
+        }
     }
 
     public async Task UnloadPlayerAsync(Guid uuid)
@@ -138,7 +198,7 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         this.LevelData = new LevelData
         {
             Time = codec.Element.FixedTime ?? 0,
-            DefaultGamemode = Gamemode.Survival,
+            DefaultGamemode = GameMode.Survival,
             GeneratorName = Generator.Id
         };
 
@@ -165,5 +225,8 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
     {
         [LoggerMessage(Level = LogLevel.Information, Message = "Loading world {WorldName}")]
         public static partial void Loading(ILogger logger, string worldName);
+
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Can't read the level data in {Path}")]
+        public static partial void UnreadableLevelData(ILogger logger, string path, Exception exception);
     }
 }

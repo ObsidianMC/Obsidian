@@ -8,7 +8,7 @@ public partial class TeleportEntityPacket
     public int EntityId { get; init; }
 
     [Field(1), DataFormat(typeof(double))]
-    public VectorF Position { get; init; }
+    public VectorD Position { get; init; }
 
     [Field(2)]
     public Angle Yaw { get; init; }
@@ -26,7 +26,7 @@ public partial class TeleportEntityPacket
     {
         writer.WriteVarInt(this.EntityId);
 
-        writer.WriteAbsolutePositionF(this.Position);
+        VectorD.Write(this.Position, writer);
 
         writer.WriteSingle(this.Yaw);
         writer.WriteSingle(this.Pitch);

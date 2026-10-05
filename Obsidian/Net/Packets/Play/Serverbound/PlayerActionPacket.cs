@@ -33,7 +33,7 @@ public partial class PlayerActionPacket
         if (await player.Level.GetBlockAsync(Position) is not IBlock block)
             return;
 
-        if (Status == PlayerActionStatus.FinishedDigging || (Status == PlayerActionStatus.StartedDigging && player.Gamemode == Gamemode.Creative))
+        if (Status == PlayerActionStatus.FinishedDigging || (Status == PlayerActionStatus.StartedDigging && player.GameMode == GameMode.Creative))
         {
             var args = new BlockBreakEventArgs(server, player, block, Position, player.Level)
             {
@@ -86,7 +86,7 @@ public partial class PlayerActionPacket
             return;
 
         var lookDir = player.GetLookDirection();
-        var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z) + lookDir * 0.3f;
+        var loc = new VectorD(player.Position.X, player.HeadY - 0.3, player.Position.Z) + lookDir * 0.3f;
 
         var item = new ItemEntity
         {

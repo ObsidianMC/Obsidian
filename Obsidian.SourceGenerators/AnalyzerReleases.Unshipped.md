@@ -15,3 +15,4 @@ OBSWG004 | WorldgenFeatures | Error | WorldgenFeatureRegistryGenerator
 OBSLT001 | Loot | Error | LootRegistryGenerator
 OBSLT002 | Loot | Error | LootRegistryGenerator
 OBSLT003 | Loot | Error | LootRegistryGenerator
+OBSPK001 | Packets | Warning | PacketSerializationGenerator

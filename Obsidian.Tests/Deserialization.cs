@@ -119,7 +119,7 @@ public class Deserialization
     //[Fact]
     //public async Task AnimationServerPacket()
     //{
-    //    var hand = Hand.OffHand;
+    //    var hand = InteractionHand.OffHand;
 
     //    using var stream = new MinecraftStream();
     //    await stream.WriteVarIntAsync(hand);

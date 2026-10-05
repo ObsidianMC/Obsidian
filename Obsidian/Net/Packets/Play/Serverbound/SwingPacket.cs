@@ -7,9 +7,9 @@ namespace Obsidian.Net.Packets.Play.Serverbound;
 public partial class SwingPacket
 {
     [Field(0), ActualType(typeof(int)), VarLength]
-    public Hand Hand { get; private set; }
+    public InteractionHand Hand { get; private set; }
 
-    public override void Populate(INetStreamReader reader) => this.Hand = reader.ReadVarInt<Hand>();
+    public override void Populate(INetStreamReader reader) => this.Hand = reader.ReadVarInt<InteractionHand>();
 
     public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
@@ -21,7 +21,7 @@ public partial class SwingPacket
 
             switch (Hand)
             {
-                case Hand.MainHand:
+                case InteractionHand.MainHand:
                     await otherPlayer.Client.QueuePacketAsync(new AnimatePacket
                     {
                         EntityId = player.EntityId,
@@ -29,7 +29,7 @@ public partial class SwingPacket
                     });
                     break;
 
-                case Hand.OffHand:
+                case InteractionHand.OffHand:
                     await otherPlayer.Client.QueuePacketAsync(new AnimatePacket
                     {
                         EntityId = player.EntityId,

@@ -23,5 +23,5 @@ public interface IExplorationMapFactory
 /// <param name="SkipKnownStructures">Skips structures another map already points to.</param>
 /// <param name="Zoom">The map scale, 0 to 4.</param>
 /// <param name="Decoration">The map decoration type marking the structure, e.g. <c>minecraft:red_x</c>.</param>
-public sealed record ExplorationMapRequest(string Destination, VectorF Origin, int SearchRadius, bool SkipKnownStructures, int Zoom,
+public sealed record ExplorationMapRequest(string Destination, VectorD Origin, int SearchRadius, bool SkipKnownStructures, int Zoom,
     string Decoration);

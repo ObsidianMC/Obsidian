@@ -1,6 +1,10 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 ARG GIT_SHA=v0.1
 WORKDIR /src
+# Generating the vanilla assets runs the Minecraft server's data generators.
+RUN apk add --no-cache openjdk25-jdk
+# Alpine installs it outside the PATH; the asset generator finds java through JAVA_HOME.
+ENV JAVA_HOME=/usr/lib/jvm/java-25-openjdk
 COPY . .
 RUN dotnet restore
 RUN dotnet publish Obsidian.ConsoleApp/ -c Release -o out /p:SourceRevisionId=$GIT_SHA

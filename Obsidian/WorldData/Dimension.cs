@@ -21,7 +21,7 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
         this.LevelData = new LevelData
         {
             Time = codec.Element.FixedTime ?? 0,
-            DefaultGamemode = Gamemode.Survival,
+            DefaultGamemode = GameMode.Survival,
             GeneratorName = Generator.Id
         };
 

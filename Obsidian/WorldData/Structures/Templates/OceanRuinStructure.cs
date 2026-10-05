@@ -101,7 +101,7 @@ public sealed class OceanRuinPiece : TemplateStructurePiece
         else if (metadata == "drowned")
         {
             // Vanilla finalizes the spawn (equipment, baby chance) when the drowned is created.
-            level.AddEntity(new GeneratedEntity("minecraft:drowned", new VectorF(position.X + 0.5f, position.Y, position.Z + 0.5f))
+            level.AddEntity(new GeneratedEntity("minecraft:drowned", new VectorD(position.X + 0.5, position.Y, position.Z + 0.5))
             {
                 Data = new NbtCompound { new NbtTag<bool>("PersistenceRequired", true) }
             });

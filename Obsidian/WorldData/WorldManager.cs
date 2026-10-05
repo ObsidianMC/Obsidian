@@ -117,7 +117,7 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
     }
 
     public Task TickWorldsAsync() => Task.WhenAll(this.worlds.Values.Select(world => world.DoWorldTickAsync()));
-    public Task FlushLoadedWorldsAsync() => Task.WhenAll(this.worlds.Values.Select(world => world.FlushRegionsAsync()));
+    public Task FlushLoadedWorldsAsync() => Task.WhenAll(this.worlds.Values.Cast<World>().Select(world => world.FlushAsync()));
 
     public async ValueTask DisposeAsync()
     {

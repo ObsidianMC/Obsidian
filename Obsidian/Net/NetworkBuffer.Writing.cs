@@ -96,20 +96,17 @@ public partial class NetworkBuffer : INetStreamWriter
     }
 
     [WriteMethod]
+    /// <summary>
+    /// Writes a UUID as vanilla does: its most significant 64 bits, then its least significant, as two longs (16
+    /// bytes, the reverse of <see cref="ReadGuid"/>).
+    /// </summary>
     public void WriteUuid(Guid value)
     {
-        if (value == Guid.Empty)
-        {
-            WriteLong(0L);
-            WriteLong(0L);
-        }
-        else
-        {
-            var uuid = System.Numerics.BigInteger.Parse(value.ToString().Replace("-", ""), System.Globalization.NumberStyles.HexNumber);
-            Write(uuid.ToByteArray(false, true));
-        }
+        Span<char> hex = stackalloc char[32];
+        value.TryFormat(hex, out _, "N");
+        WriteLong((long)ulong.Parse(hex[..16], System.Globalization.NumberStyles.HexNumber));
+        WriteLong((long)ulong.Parse(hex[16..], System.Globalization.NumberStyles.HexNumber));
     }
-
 
     [WriteMethod, VarLength]
     public void WriteVarInt(int value)
@@ -144,7 +141,6 @@ public partial class NetworkBuffer : INetStreamWriter
 
             if (unsigned != 0)
                 temp |= 128;
-
 
             this.WriteByte(temp);
         }
@@ -186,14 +182,6 @@ public partial class NetworkBuffer : INetStreamWriter
         WriteLong(val);
     }
 
-    [WriteMethod, DataFormat(typeof(double))]
-    public void WriteAbsolutePosition(Vector value)
-    {
-        WriteDouble(value.X);
-        WriteDouble(value.Y);
-        WriteDouble(value.Z);
-    }
-
     [WriteMethod, DataFormat(typeof(float))]
     public void WriteAbsoluteFloatPosition(Vector value)
     {
@@ -226,14 +214,6 @@ public partial class NetworkBuffer : INetStreamWriter
         val |= (long)((int)value.Y & 0xFFF);
 
         WriteLong(val);
-    }
-
-    [WriteMethod, DataFormat(typeof(double))]
-    public void WriteAbsolutePositionF(VectorF value)
-    {
-        WriteDouble(value.X);
-        WriteDouble(value.Y);
-        WriteDouble(value.Z);
     }
 
     [WriteMethod, DataFormat(typeof(float))]
@@ -337,6 +317,30 @@ public partial class NetworkBuffer : INetStreamWriter
         writer.TryFinish();
 
         this.Write(writer.Data);
+    }
+
+    /// <summary>Writes a network NBT compound, or an empty (end) tag for null.</summary>
+    public void WriteOptionalNbtCompound(NbtCompound? compound)
+    {
+        if (compound is null)
+            this.WriteByte((byte)NbtTagType.End);
+        else
+            this.WriteNbtCompound(compound);
+    }
+
+    /// <summary>
+    /// Writes a bit set of <paramref name="size"/> bits as <c>ceil(size / 8)</c> bytes, lowest bit first (Java's
+    /// <c>BitSet.toByteArray</c>, padded to the size).
+    /// </summary>
+    public void WriteFixedBitSet(BitSet bits, int size)
+    {
+        var bytes = new byte[(size + 7) / 8];
+        for (var i = 0; i < size; i++)
+        {
+            if (bits.GetBit(i))
+                bytes[i / 8] |= (byte)(1 << (i % 8));
+        }
+        this.WriteByteArray(bytes);
     }
 
     public void WriteNbtCompound(NbtCompound compound)

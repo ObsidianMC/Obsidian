@@ -7,7 +7,8 @@ on:
     paths:
       - "Obsidian.API/**/*.cs"
       - "Obsidian.API/*.csproj"
-      - "Obsidian/Assets/**/*.json"
+      - "Obsidian/Obsidian.csproj"
+      - "Obsidian.AssetGenerator/**"
       - "Obsidian.SourceGenerators/**/*.cs"
       - "Obsidian.SourceGenerators/*.csproj"
       - ".github/workflows/docfx.yml"

@@ -10,7 +10,7 @@ namespace Obsidian.SourceGenerators.Packets;
 [Generator]
 public sealed class PacketClassesGenerator : IIncrementalGenerator
 {
-    private static readonly string[] commonPacketNames = [
+    internal static readonly string[] commonPacketNames = [
         "custom_payload",
         "custom_report_details",
         "disconnect",
