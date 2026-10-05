@@ -446,11 +446,12 @@ public sealed partial class Player : Avatar, IPlayer
 
     public async ValueTask SetGamemodeAsync(GameMode gamemode)
     {
+        // Set first: the setter rejects unknown modes, and they must not reach clients.
+        GameMode = gamemode;
+
         this.PacketBroadcaster.QueuePacketToLevel(this.Level, new PlayerInfoUpdatePacket(CompilePlayerInfo(new UpdateGamemodeInfoAction(gamemode))));
 
         await Client.QueuePacketAsync(new GameEventPacket(gamemode));
-
-        GameMode = gamemode;
     }
 
     public ValueTask UpdateDisplayNameAsync(string newDisplayName)
