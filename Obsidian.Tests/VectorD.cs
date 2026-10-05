@@ -50,5 +50,8 @@ public class VectorDTests
         Assert.Equal(32768, delta.X);
         Assert.False(Entity.IsRelativeMove(delta));
         Assert.True(Entity.IsRelativeMove(Entity.MoveDelta(VectorD.Zero, new VectorD(7.9, -7.9, 0))));
+
+        // 1,048,576 blocks is 2^32 units, which would wrap to 0 as an int.
+        Assert.False(Entity.IsRelativeMove(Entity.MoveDelta(VectorD.Zero, new VectorD(1_048_576, 0, 0))));
     }
 }

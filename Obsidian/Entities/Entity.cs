@@ -151,7 +151,9 @@ public class Entity : IEquatable<Entity>, IEntity
     internal static Vector MoveDelta(VectorD from, VectorD to) =>
         new(MoveDelta(from.X, to.X), MoveDelta(from.Y, to.Y), MoveDelta(from.Z, to.Z));
 
-    private static int MoveDelta(double from, double to) => (int)(JavaRound(to * 4096) - JavaRound(from * 4096));
+    // Clamped rather than cast, so a move of 2^32 units or more can't wrap into a small delta that passes IsRelativeMove.
+    private static int MoveDelta(double from, double to) =>
+        (int)Math.Clamp(JavaRound(to * 4096) - JavaRound(from * 4096), int.MinValue, int.MaxValue);
 
     /// <summary>
     /// Java's <c>Math.round</c>: to the nearest whole number, halves up. Adding 0.5 and flooring would round the
