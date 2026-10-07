@@ -37,7 +37,8 @@ public abstract class StructurePlacement
     internal bool IsStructureChunk(IStructurePlacementState state, int chunkX, int chunkZ) =>
         this.IsPlacementChunk(state, chunkX, chunkZ)
         && this.ApplyAdditionalChunkRestrictions(chunkX, chunkZ, state.Seed)
-        && (this.ExclusionZone is null || !state.HasStructureChunkInRange(this.ExclusionZone.OtherSet, chunkX, chunkZ, this.ExclusionZone.ChunkCount));
+        && (this.ExclusionZone is null
+            || !state.HasStructureChunkInRange(this.ExclusionZone.OtherSet, chunkX, chunkZ, this.ExclusionZone.ChunkCount));
 
     private protected abstract bool IsPlacementChunk(IStructurePlacementState state, int chunkX, int chunkZ);
 

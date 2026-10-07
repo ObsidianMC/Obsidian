@@ -244,7 +244,7 @@ public partial class NetworkBuffer : INetStreamWriter
         if (hasParent)
             this.WriteString(advancement.Parent);
 
-        var hasDisplay = advancement.Display != null;
+        var hasDisplay = advancement.Display is not null;
 
         this.WriteBoolean(hasDisplay);
 
@@ -306,16 +306,18 @@ public partial class NetworkBuffer : INetStreamWriter
     [WriteMethod]
     public void WriteChat(ChatMessage chatMessage)
     {
-        if (chatMessage == null)
+        if (chatMessage is null)
             return;
 
-        if (chatMessage.Translate is null && chatMessage.Color is null && chatMessage.Bold is null && chatMessage.Italic is null &&
-            chatMessage.Underlined is null && chatMessage.Strikethrough is null && chatMessage.Obfuscated is null &&
-            chatMessage.ShadowColor is null && chatMessage.Insertion is null && chatMessage.ClickEvent is null && chatMessage.HoverEvent is null &&
-            !chatMessage.GetExtras().Any() && !chatMessage.GetExtraChatComponents().Any())
+        if (chatMessage.Translate is null && chatMessage.Color is null && chatMessage.Bold is null && chatMessage.Italic is null
+            && chatMessage.Underlined is null && chatMessage.Strikethrough is null && chatMessage.Obfuscated is null
+            && chatMessage.ShadowColor is null && chatMessage.Insertion is null && chatMessage.ClickEvent is null && chatMessage.HoverEvent is null
+            && !chatMessage.GetExtras().Any() && !chatMessage.GetExtraChatComponents().Any())
         {
             ModifiedUtf8.TryGetBytes(chatMessage.Text ?? "", out var text);
-            this.WriteByte((byte)8); this.WriteUnsignedShort(checked((ushort)text!.Length)); this.Write(text);
+            this.WriteByte((byte)8);
+            this.WriteUnsignedShort(checked((ushort)text!.Length));
+            this.Write(text);
             return;
         }
 
@@ -453,7 +455,8 @@ public partial class NetworkBuffer : INetStreamWriter
                 this.WriteVarInt(encoded.Offset);
                 this.Write(encoded.data.AsSpan(0, encoded.Offset));
             }
-            else this.WriteDataComponent(component);
+            else
+                this.WriteDataComponent(component);
         }
 
         foreach (var componentType in value.RemoveComponents)
@@ -461,11 +464,15 @@ public partial class NetworkBuffer : INetStreamWriter
     }
 
     public void WriteUntrustedItemStack(ItemStack? value) => this.WriteItemStack(value, true);
+
     public void WriteRequiredItemStack(ItemStack value)
     {
-        if (value is null || value.IsAir || value.Count <= 0) throw new ArgumentException("Expected a nonempty stack.", nameof(value));
+        if (value is null || value.IsAir || value.Count <= 0)
+            throw new ArgumentException("Expected a nonempty stack.", nameof(value));
+
         this.WriteItemStack(value);
     }
+
     public void WriteItemStackList(params ReadOnlySpan<ItemStack?> values) => this.WriteLengthPrefixedArray(this.WriteItemStack, values);
 
     public void WriteLengthPrefixedArray<TValue>(Action<TValue> write, params ReadOnlySpan<TValue> values)
@@ -628,7 +635,7 @@ public partial class NetworkBuffer : INetStreamWriter
     #region optionals
     private bool ShouldWriteOptional<TValue>(TValue? value)
     {
-        var notNull = value != null;
+        var notNull = value is not null;
 
         this.WriteBoolean(notNull);
 

@@ -20,7 +20,8 @@ internal static class FixtureDumper
     {
         await VanillaServer.RunJavaAsync(server.Directory, "-cp", string.Join(Path.PathSeparator, classpath),
             Source("ClientProtocolFixtures.java"), mappings, Path.Combine(output, $"client-protocol-{server.Version}.json"));
-        foreach (var (name, fixture) in new[] { ("HudFixtures", "hud"), ("ParticleFixtures", "particles"), ("PlayerPhysicsFixtures", "player-physics") })
+        var fixtures = new[] { ("HudFixtures", "hud"), ("ParticleFixtures", "particles"), ("PlayerPhysicsFixtures", "player-physics") };
+        foreach (var (name, fixture) in fixtures)
         {
             // Only our probe source is name-resolved. No game jar is rewritten or downloaded.
             var source = Path.Combine(server.Directory, "fixture-sources", name + ".java");

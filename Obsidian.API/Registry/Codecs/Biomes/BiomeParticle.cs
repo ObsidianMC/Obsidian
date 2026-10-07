@@ -16,7 +16,7 @@ public sealed record class BiomeParticle : INbtSerializable
             new NbtTag<float>("probability", this.Probability)
         };
 
-        if (this.Options != null)
+        if (this.Options is not null)
         {
             var options = new NbtCompound("options")
             {

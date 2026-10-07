@@ -78,7 +78,7 @@ public partial class ContainerClickPacket
         var clickedItem = slot != -999 ? container.GetItem(slot) : null;
 
         // Maybe we should have an event called ValidateContainerContentsEventArgs? 
-        if (clickedItem != null && this.CarriedItem != null && !this.CarriedItem.Compare(clickedItem))
+        if (clickedItem != null && this.CarriedItem is not null && !this.CarriedItem.Compare(clickedItem))
         {
             Log.CarriedItemMismatch(player.Client.Logger, player.Username);
 
@@ -98,7 +98,7 @@ public partial class ContainerClickPacket
             var (mappedSlot, isPlayerSlot) = baseContainer.GetSlot(changedSlot);
             var currentContainer = isPlayerSlot ? player.Inventory : baseContainer;
 
-            if (hashedItem == null)
+            if (hashedItem is null)
             {
                 currentContainer.RemoveItem(mappedSlot);
                 continue;

@@ -18,7 +18,8 @@ internal sealed class FixedLengthBehavior : AttributeBehaviorBase
     {
         if (Length < 0)
         {
-            DiagnosticHelper.ReportDiagnostic(context.GeneratorContext, DiagnosticSeverity.Warning, "Length must be a non-negative number. Attribute will be ignored.", syntax);
+            DiagnosticHelper.ReportDiagnostic(context.GeneratorContext, DiagnosticSeverity.Warning,
+                "Length must be a non-negative number. Attribute will be ignored.", syntax);
             return false;
         }
 
@@ -30,7 +31,8 @@ internal sealed class FixedLengthBehavior : AttributeBehaviorBase
     {
         if (Length < 0)
         {
-            DiagnosticHelper.ReportDiagnostic(context.GeneratorContext, DiagnosticSeverity.Warning, "Length must be a non-negative number. Attribute will be ignored.", syntax);
+            DiagnosticHelper.ReportDiagnostic(context.GeneratorContext, DiagnosticSeverity.Warning,
+                "Length must be a non-negative number. Attribute will be ignored.", syntax);
             return false;
         }
 

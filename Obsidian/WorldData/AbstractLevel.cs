@@ -291,7 +291,8 @@ public abstract partial class AbstractLevel : ILevel
         return this.Players.Values.Where(player => player.LoadedChunks.Contains(packedXZ));
     }
 
-    public ValueTask SetBlockUntrackedAsync(Vector location, IBlock block, bool doBlockUpdate = false) => SetBlockUntrackedAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
+    public ValueTask SetBlockUntrackedAsync(Vector location, IBlock block, bool doBlockUpdate = false) =>
+        SetBlockUntrackedAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
 
     public async ValueTask SetBlockUntrackedAsync(int x, int y, int z, IBlock block, bool doBlockUpdate = false)
     {
@@ -701,7 +702,8 @@ public abstract partial class AbstractLevel : ILevel
         return entity;
     }
 
-    public ValueTask<IBlockEntity?> GetBlockEntityAsync(Vector blockPosition) => GetBlockEntityAsync(blockPosition.X, blockPosition.Y, blockPosition.Z);
+    public ValueTask<IBlockEntity?> GetBlockEntityAsync(Vector blockPosition) =>
+        GetBlockEntityAsync(blockPosition.X, blockPosition.Y, blockPosition.Z);
 
     public async ValueTask<IBlockEntity?> GetBlockEntityAsync(int x, int y, int z)
     {
@@ -709,7 +711,8 @@ public abstract partial class AbstractLevel : ILevel
         return c?.GetBlockEntity(x, y, z);
     }
 
-    public ValueTask SetBlockEntity(Vector blockPosition, IBlockEntity tileEntityData) => SetBlockEntity(blockPosition.X, blockPosition.Y, blockPosition.Z, tileEntityData);
+    public ValueTask SetBlockEntity(Vector blockPosition, IBlockEntity tileEntityData) =>
+        SetBlockEntity(blockPosition.X, blockPosition.Y, blockPosition.Z, tileEntityData);
     public async ValueTask SetBlockEntity(int x, int y, int z, IBlockEntity tileEntityData)
     {
         var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
@@ -853,7 +856,8 @@ public abstract partial class AbstractLevel : ILevel
                 {
                     var cps = completedChunks / Math.Max(stopwatch.Elapsed.TotalSeconds, 0.001);
                     var remain = (startChunks - completedChunks) / (int)Math.Max(cps, 1);
-                    System.Console.Write("\r{0} chunks/second - {1}% complete - {2} seconds remaining   ", cps.ToString("###.00"), pctComplete, remain);
+                    System.Console.Write("\r{0} chunks/second - {1}% complete - {2} seconds remaining   ",
+                        cps.ToString("###.00"), pctComplete, remain);
                 }
             }
 
@@ -872,7 +876,8 @@ public abstract partial class AbstractLevel : ILevel
             this.GenerationProgress(startChunks, startChunks);
         else
         {
-            System.Console.Write("\r{0} chunks/second - 100% complete - 0 seconds remaining   ", (startChunks / stopwatch.Elapsed.TotalSeconds).ToString("###.00"));
+            System.Console.Write("\r{0} chunks/second - 100% complete - 0 seconds remaining   ",
+                (startChunks / stopwatch.Elapsed.TotalSeconds).ToString("###.00"));
             System.Console.WriteLine();
         }
 
@@ -944,7 +949,8 @@ public abstract partial class AbstractLevel : ILevel
         return region is not null && region.Entities.TryAdd(entity.EntityId, entity);
     }
 
-    protected void BroadcastTime() => this.PacketBroadcaster.QueuePacketToLevel(this, new SetTimePacket(LevelData.Time, LevelData.Time % 24000, true));
+    protected void BroadcastTime() =>
+        this.PacketBroadcaster.QueuePacketToLevel(this, new SetTimePacket(LevelData.Time, LevelData.Time % 24000, true));
 
     public async ValueTask DisposeAsync()
     {
@@ -978,7 +984,8 @@ public abstract partial class AbstractLevel : ILevel
 
     public ValueTask<IBlock?> GetBlockAsync(Vector location) => this.GetBlockAsync(location.X, location.Y, location.Z);
     public ValueTask SetBlockAsync(Vector location, IBlock block) => this.SetBlockAsync(location.X, location.Y, location.Z, block);
-    public ValueTask SetBlockAsync(Vector location, IBlock block, bool doBlockUpdate) => this.SetBlockAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
+    public ValueTask SetBlockAsync(Vector location, IBlock block, bool doBlockUpdate) =>
+        this.SetBlockAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
 
     private static partial class Log
     {

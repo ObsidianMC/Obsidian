@@ -16,10 +16,13 @@ public sealed class DefaultEnumConverter<T> : JsonConverter<T>
         if (value.StartsWith("minecraft:"))
             value = value.TrimResourceTag();
 
-        return Enum.TryParse(typeof(T), value.Replace("_", ""), true, out var result) ? (T)result : throw new InvalidOperationException($"Failed to deserialize: {value}");
+        return Enum.TryParse(typeof(T), value.Replace("_", ""), true, out var result)
+            ? (T)result
+            : throw new InvalidOperationException($"Failed to deserialize: {value}");
     }
 
-    public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options) => writer.WriteStringValue(value.ToString().ToSnakeCase());
+    public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options) =>
+        writer.WriteStringValue(value.ToString().ToSnakeCase());
 }
 
 public sealed class CraftingTypeConverter : JsonConverter<CraftingType>
@@ -28,8 +31,11 @@ public sealed class CraftingTypeConverter : JsonConverter<CraftingType>
     {
         var value = reader.GetString().TrimResourceTag();
 
-        return Enum.TryParse<CraftingType>(value, true, out var result) ? result : throw new InvalidOperationException($"Failed to deserialize: {value}");
+        return Enum.TryParse<CraftingType>(value, true, out var result)
+            ? result
+            : throw new InvalidOperationException($"Failed to deserialize: {value}");
     }
 
-    public override void Write(Utf8JsonWriter writer, CraftingType value, JsonSerializerOptions options) => writer.WriteStringValue(value.ToString().ToSnakeCase());
+    public override void Write(Utf8JsonWriter writer, CraftingType value, JsonSerializerOptions options) =>
+        writer.WriteStringValue(value.ToString().ToSnakeCase());
 }

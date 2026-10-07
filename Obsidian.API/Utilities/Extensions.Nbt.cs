@@ -32,9 +32,9 @@ public partial class Extensions
         if (chatMessage.ShadowColor is int shadowColor)
             writer.WriteInt("shadow_color", shadowColor);
 
-        if (chatMessage.ClickEvent != null)
+        if (chatMessage.ClickEvent is not null)
             writer.WriteTag(chatMessage.ClickEvent.ToNbt());
-        if (chatMessage.HoverEvent != null)
+        if (chatMessage.HoverEvent is not null)
             writer.WriteTag(chatMessage.HoverEvent.ToNbt());
 
         if (chatMessage.Extra is List<ChatMessage> extras)
@@ -90,9 +90,9 @@ public partial class Extensions
         if (!chatMessage.Insertion.IsNullOrEmpty())
             compound.Add(new NbtTag<string>("insertion", chatMessage.Insertion!));
 
-        if (chatMessage.ClickEvent != null)
+        if (chatMessage.ClickEvent is not null)
             compound.Add(chatMessage.ClickEvent.ToNbt());
-        if (chatMessage.HoverEvent != null)
+        if (chatMessage.HoverEvent is not null)
             compound.Add(chatMessage.HoverEvent.ToNbt());
 
         return compound;

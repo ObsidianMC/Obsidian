@@ -17,41 +17,72 @@ public sealed class ComponentConsumeEffect : IConsumeEffect
     internal static ComponentConsumeEffect ReadValue(INetStreamReader reader)
     {
         var value = new ComponentConsumeEffect { Id = reader.ReadVarInt() };
-        value.Read(reader); return value;
+        value.Read(reader);
+        return value;
     }
+
     internal static void WriteValue(IConsumeEffect effect, INetStreamWriter writer)
     {
         var id = Array.IndexOf(Names, effect.Type.Replace("minecraft:", "").Replace("minecraf:", ""));
-        if (id < 0) throw new ArgumentException("Unknown consume effect.", nameof(effect));
+        if (id < 0)
+            throw new ArgumentException("Unknown consume effect.", nameof(effect));
+
         writer.WriteVarInt(id);
         if (effect is EffectWithProbability legacy)
         {
-            writer.WriteVarInt(1); ComponentValueCodecs.WriteEffect(legacy.EffectData, writer); writer.WriteSingle(legacy.Probability);
+            writer.WriteVarInt(1);
+            ComponentValueCodecs.WriteEffect(legacy.EffectData, writer);
+            writer.WriteSingle(legacy.Probability);
         }
-        else effect.Write(writer);
+        else
+            effect.Write(writer);
     }
+
     public void Read(INetStreamReader reader)
     {
         switch (this.Id)
         {
-            case 0: this.Effects = reader.ReadLengthPrefixedArray(() => ComponentValueCodecs.ReadEffect(reader)); this.Probability = reader.ReadSingle(); break;
-            case 1: this.RemovedEffects = reader.ReadIdSet(); break;
-            case 2: break;
-            case 3: this.Diameter = reader.ReadSingle(); break;
-            case 4: this.Sound = ComponentValueCodecs.ReadSoundHolder(reader); break;
-            default: throw new System.IO.InvalidDataException("Unknown consume effect.");
+            case 0:
+                this.Effects = reader.ReadLengthPrefixedArray(() => ComponentValueCodecs.ReadEffect(reader));
+                this.Probability = reader.ReadSingle();
+                break;
+            case 1:
+                this.RemovedEffects = reader.ReadIdSet();
+                break;
+            case 2:
+                break;
+            case 3:
+                this.Diameter = reader.ReadSingle();
+                break;
+            case 4:
+                this.Sound = ComponentValueCodecs.ReadSoundHolder(reader);
+                break;
+            default:
+                throw new System.IO.InvalidDataException("Unknown consume effect.");
         }
     }
+
     public void Write(INetStreamWriter writer)
     {
         switch (this.Id)
         {
-            case 0: writer.WriteLengthPrefixedArray(value => ComponentValueCodecs.WriteEffect(value, writer), this.Effects); writer.WriteSingle(this.Probability); break;
-            case 1: IdSet.Write(this.RemovedEffects, writer); break;
-            case 2: break;
-            case 3: writer.WriteSingle(this.Diameter); break;
-            case 4: ComponentValueCodecs.WriteSoundHolder(this.Sound, writer); break;
-            default: throw new System.IO.InvalidDataException("Unknown consume effect.");
+            case 0:
+                writer.WriteLengthPrefixedArray(value => ComponentValueCodecs.WriteEffect(value, writer), this.Effects);
+                writer.WriteSingle(this.Probability);
+                break;
+            case 1:
+                IdSet.Write(this.RemovedEffects, writer);
+                break;
+            case 2:
+                break;
+            case 3:
+                writer.WriteSingle(this.Diameter);
+                break;
+            case 4:
+                ComponentValueCodecs.WriteSoundHolder(this.Sound, writer);
+                break;
+            default:
+                throw new System.IO.InvalidDataException("Unknown consume effect.");
         }
     }
 }

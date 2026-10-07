@@ -34,7 +34,7 @@ public static partial class RecipesRegistry
     public static IRecipeWithResult? FindRecipe(CraftingTable grid)
     {
         var shapedMatch = FindShapedRecipe(grid);
-        if (shapedMatch != null)
+        if (shapedMatch is not null)
             return shapedMatch;
 
         var shapelessMatch = FindShapelessRecipe(grid);
@@ -176,7 +176,8 @@ public static partial class RecipesRegistry
         foreach (var recipe in Recipes.Values.Where(x => x is ShapelessRecipe).Cast<ShapelessRecipe>())
         {
             int ingredientCount = recipe.Ingredients.Count;
-            if (ingredientCount == 0) continue;
+            if (ingredientCount == 0)
+                continue;
 
             if (!recipeKeyDictionary.TryGetValue(ingredientCount, out var value))
             {

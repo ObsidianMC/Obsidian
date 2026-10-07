@@ -50,7 +50,10 @@ public sealed class PacketBroadcaster(IServer server, IServerEnvironment environ
         if (toLevel is not AbstractLevel world)
             return;
 
-        foreach (var player in world.GetPlayersInRange(location, world.Configuration.EntityBroadcastRangePercentage).Cast<Player>().Where(x => !excludedIds.Contains(x.EntityId)))
+        var players = world.GetPlayersInRange(location, world.Configuration.EntityBroadcastRangePercentage)
+            .Cast<Player>()
+            .Where(player => !excludedIds.Contains(player.EntityId));
+        foreach (var player in players)
             player.Client.SendPacket(packet);
     }
 
@@ -130,10 +133,10 @@ public sealed class PacketBroadcaster(IServer server, IServerEnvironment environ
 
     private static bool ShouldGetPacket(IPlayer player, QueuedPacket packet)
     {
-        if (packet.IncludedIds != null)
+        if (packet.IncludedIds is not null)
             return packet.IncludedIds.Contains(player.EntityId);
 
-        return packet.ExcludedIds == null || !packet.ExcludedIds.Contains(player.EntityId);
+        return packet.ExcludedIds is null || !packet.ExcludedIds.Contains(player.EntityId);
     }
 
     private readonly struct QueuedPacket

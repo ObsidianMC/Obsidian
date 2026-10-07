@@ -18,8 +18,10 @@ public sealed record class FireworksDataComponent : DataComponent
     public override void Read(INetStreamReader reader)
     {
         this.FlightDuration = reader.ReadVarInt();
-        this.Explosions = ImmutableCollectionsMarshal.AsImmutableArray(reader.ReadLengthPrefixedArray(() => ComponentValueCodecs.ReadExplosion(reader)));
+        this.Explosions = ImmutableCollectionsMarshal.AsImmutableArray(
+            reader.ReadLengthPrefixedArray(() => ComponentValueCodecs.ReadExplosion(reader)));
     }
+
     public override void Write(INetStreamWriter writer)
     {
         writer.WriteVarInt(this.FlightDuration);

@@ -45,7 +45,8 @@ public sealed class FakeServer : IServer
     public bool AddPlayer(IPlayer player) => throw new NotImplementedException();
     public void BroadcastMessage(ChatMessage message) => throw new NotImplementedException();
     public void BroadcastMessage(IWorld world, ChatMessage message) => throw new NotImplementedException();
-    public IBossBar CreateBossBar(ChatMessage title, float health, BossBarColor color, BossBarDivisionType divisionType, BossBarFlags flags) => throw new NotImplementedException();
+    public IBossBar CreateBossBar(ChatMessage title, float health, BossBarColor color, BossBarDivisionType divisionType, BossBarFlags flags) =>
+        throw new NotImplementedException();
     public void Dispose() => throw new NotImplementedException();
     public IPlayer GetPlayer(string username) => throw new NotImplementedException();
     public IPlayer GetPlayer(Guid uuid) => throw new NotImplementedException();

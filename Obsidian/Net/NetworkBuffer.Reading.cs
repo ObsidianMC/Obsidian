@@ -120,11 +120,15 @@ public partial class NetworkBuffer : INetStreamReader
     /// <summary>Reads the creative-slot codec when delimitedComponents is true.</summary>
     public ItemStack? ReadItemStack(bool delimitedComponents)
     {
-        if (++this.componentDepth > 64) throw new InvalidDataException("Item nesting exceeds 64.");
+        if (++this.componentDepth > 64)
+            throw new InvalidDataException("Item nesting exceeds 64.");
+
         try
         {
             var count = this.ReadVarInt();
-            if (count <= 0) return null;
+            if (count <= 0)
+                return null;
+
             var itemStack = new ItemStack(ItemsRegistry.Get(this.ReadVarInt()), count);
             var added = this.ReadComponentCount();
             var removed = this.ReadComponentCount();
@@ -136,15 +140,22 @@ public partial class NetworkBuffer : INetStreamReader
                 if (delimitedComponents && this.offset != end)
                     throw new InvalidDataException("Component length does not match its value.");
             }
+
             for (var i = 0; i < removed; i++)
             {
                 var type = (DataComponentType)this.ReadVarInt();
-                if (!Enum.IsDefined(type)) throw new InvalidDataException("Unknown removed component.");
+                if (!Enum.IsDefined(type))
+                    throw new InvalidDataException("Unknown removed component.");
+
                 itemStack.Remove(type);
             }
+
             return itemStack;
         }
-        finally { this.componentDepth--; }
+        finally
+        {
+            this.componentDepth--;
+        }
     }
 
     public ItemStack? ReadUntrustedItemStack() => this.ReadItemStack(true);
@@ -162,7 +173,9 @@ public partial class NetworkBuffer : INetStreamReader
         var itemStack = new ReceivedHashedStack(item, count, this.ComponentRegistryName);
 
         var componentsToAdd = this.ReadComponentCount();
-        if (componentsToAdd > 256) throw new InvalidDataException("Too many hashed components.");
+        if (componentsToAdd > 256)
+            throw new InvalidDataException("Too many hashed components.");
+
         for (int i = 0; i < componentsToAdd; i++)
         {
             var type = this.ReadVarInt<DataComponentType>();
@@ -171,7 +184,8 @@ public partial class NetworkBuffer : INetStreamReader
         }
 
         var componentsToRemove = this.ReadComponentCount();
-        if (componentsToRemove > 256) throw new InvalidDataException("Too many removed hashed components.");
+        if (componentsToRemove > 256)
+            throw new InvalidDataException("Too many removed hashed components.");
 
         for (int i = 0; i < componentsToRemove; i++)
             itemStack.ComponentsToRemove.Add(this.ReadVarInt<DataComponentType>());

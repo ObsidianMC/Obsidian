@@ -5,6 +5,7 @@ public sealed record BannerPatternsDataComponent() : SimpleDataComponent<BannerP
     DataComponentType.BannerPatterns, "minecraft:banner_patterns", (_, _) => { }, _ => [])
 {
     public int?[] RegistryIds { get; set; } = [];
+
     public override void Read(INetStreamReader reader)
     {
         var entries = reader.ReadLengthPrefixedArray(() =>
@@ -20,6 +21,7 @@ public sealed record BannerPatternsDataComponent() : SimpleDataComponent<BannerP
         this.Value = entries.Select(entry => entry.layer).ToArray();
         this.RegistryIds = entries.Select(entry => entry.id).ToArray();
     }
+
     public override void Write(INetStreamWriter writer)
     {
         writer.WriteVarInt(this.Value.Length);
@@ -27,7 +29,12 @@ public sealed record BannerPatternsDataComponent() : SimpleDataComponent<BannerP
         {
             var id = i < this.RegistryIds.Length ? this.RegistryIds[i] : null;
             writer.WriteVarInt(id is int value ? value + 1 : 0);
-            if (id is null) { writer.WriteString(this.Value[i].AssetId); writer.WriteString(this.Value[i].TranslationKey); }
+            if (id is null)
+            {
+                writer.WriteString(this.Value[i].AssetId);
+                writer.WriteString(this.Value[i].TranslationKey);
+            }
+
             writer.WriteVarInt(this.Value[i].Color);
         }
     }

@@ -22,7 +22,8 @@ public class EntityInteractEventArgs : EntityEventArgs
         this.Sneaking = sneaking;
     }
 
-    public EntityInteractEventArgs(IPlayer player, IEntity entity, IServer server, InteractionHand hand, VectorF targetPosition, bool sneaking = false) : base(entity, server)
+    public EntityInteractEventArgs(IPlayer player, IEntity entity, IServer server, InteractionHand hand, VectorF targetPosition,
+        bool sneaking = false) : base(entity, server)
     {
         this.Player = player;
         this.Sneaking = sneaking;

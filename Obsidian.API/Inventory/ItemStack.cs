@@ -26,7 +26,8 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
     public int MaxDamage => this.RemoveComponents.Contains(DataComponentType.MaxDamage) ? 0 :
         this.GetComponent<SimpleDataComponent<int>>(DataComponentType.MaxDamage)?.Value ?? this.Holder.MaxDamage;
     public IReadOnlyList<ChatMessage> Lore => this.GetComponent<SimpleDataComponent<ChatMessage[]>>(DataComponentType.Lore)?.Value ?? [];
-    public IReadOnlyList<Enchantment> Enchantments => this.GetComponent<SimpleDataComponent<Enchantment[]>>(DataComponentType.Enchantments)?.Value ?? [];
+    public IReadOnlyList<Enchantment> Enchantments =>
+        this.GetComponent<SimpleDataComponent<Enchantment[]>>(DataComponentType.Enchantments)?.Value ?? [];
     public bool HasEnchantmentGlint => this.GetComponent<SimpleDataComponent<bool>>(DataComponentType.EnchantmentGlintOverride)?.Value ??
         (!this.RemoveComponents.Contains(DataComponentType.EnchantmentGlintOverride) &&
             this.Type is Material.EnchantedBook or Material.EnchantedGoldenApple or Material.ExperienceBottle or
@@ -54,7 +55,8 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
 
     public ItemStack([DisallowNull] ItemStack item, int count = 1) : this(item.Holder, count, item.Patch)
     {
-        foreach (var type in item.RemoveComponents) this.Remove(type);
+        foreach (var type in item.RemoveComponents)
+            this.Remove(type);
 
         this.UnmodeledComponents = item.UnmodeledComponents;
     }
@@ -66,7 +68,9 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
     public ItemStack TransmuteCopy(Item holder)
     {
         var copy = new ItemStack(holder, this.Count, this.Patch) { UnmodeledComponents = this.UnmodeledComponents };
-        foreach (var type in this.RemoveComponents) copy.Remove(type);
+        foreach (var type in this.RemoveComponents)
+            copy.Remove(type);
+
         return copy;
     }
 

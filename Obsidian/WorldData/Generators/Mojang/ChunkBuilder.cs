@@ -44,7 +44,8 @@ internal sealed class ChunkBuilder
     // Vanilla's level biome lookup (BiomeManager with the obfuscated seed) over the noise biomes. It caches, so it's used
     // under its lock: explorer maps can be made on several threads at once.
     private readonly Lock biomeLock = new();
-    private BiomeManager BiomeManager => field ??= new BiomeManager(this.biomeSource, this.RandomState.Seed, this.dimension.MinY, this.dimension.Height);
+    private BiomeManager BiomeManager =>
+        field ??= new BiomeManager(this.biomeSource, this.RandomState.Seed, this.dimension.MinY, this.dimension.Height);
 
     /// <summary>
     /// The world's structures, or <c>null</c> when structures aren't generated.

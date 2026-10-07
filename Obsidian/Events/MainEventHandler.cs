@@ -281,7 +281,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             {
                 var tileEntity = await player.Level.GetBlockEntityAsync(blockPosition);
 
-                if (tileEntity == null)
+                if (tileEntity is null)
                 {
                     tileEntity = containerTileEntity.Clone();
 

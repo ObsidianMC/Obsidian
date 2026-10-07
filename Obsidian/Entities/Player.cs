@@ -454,7 +454,8 @@ public sealed partial class Player : Avatar, IPlayer
 
     public ValueTask UpdateDisplayNameAsync(string newDisplayName)
     {
-        this.PacketBroadcaster.QueuePacketToLevel(this.Level, new PlayerInfoUpdatePacket(CompilePlayerInfo(new UpdateDisplayNameInfoAction(newDisplayName))));
+        this.PacketBroadcaster.QueuePacketToLevel(this.Level,
+            new PlayerInfoUpdatePacket(CompilePlayerInfo(new UpdateDisplayNameInfoAction(newDisplayName))));
 
         CustomName = newDisplayName;
 

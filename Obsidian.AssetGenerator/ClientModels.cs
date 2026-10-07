@@ -31,7 +31,8 @@ internal static class ClientModels
         var mappings = Path.Combine(server.Directory, "client.txt");
         var download = version.RootElement.GetProperty("downloads").GetProperty("client_mappings");
         var hash = download.GetProperty("sha1").GetString()!;
-        if (!File.Exists(mappings) || !Convert.ToHexStringLower(SHA1.HashData(await File.ReadAllBytesAsync(mappings))).Equals(hash, StringComparison.OrdinalIgnoreCase))
+        if (!File.Exists(mappings)
+            || !Convert.ToHexStringLower(SHA1.HashData(await File.ReadAllBytesAsync(mappings))).Equals(hash, StringComparison.OrdinalIgnoreCase))
         {
             var bytes = await http.GetByteArrayAsync(download.GetProperty("url").GetString()!);
             if (!Convert.ToHexStringLower(SHA1.HashData(bytes)).Equals(hash, StringComparison.OrdinalIgnoreCase))
@@ -44,7 +45,8 @@ internal static class ClientModels
             if (library.TryGetProperty("downloads", out var downloads) && downloads.TryGetProperty("artifact", out var artifact))
             {
                 var path = Path.Combine(installation, "libraries", artifact.GetProperty("path").GetString()!);
-                if (File.Exists(path)) classpath.Add(path);
+                if (File.Exists(path))
+                    classpath.Add(path);
             }
         }
         Console.WriteLine("Dumping all installed-client model layers...");

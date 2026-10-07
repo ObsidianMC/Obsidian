@@ -25,7 +25,7 @@ public static class CommandsRegistry
         {
             //Don't register commands alone that have parents 
             //This is very inconvenient and should be changed
-            if (cmd.Parent != null)
+            if (cmd.Parent is not null)
                 continue;
 
             Register(server, cmd, commands, rootNode, ref index);
@@ -36,7 +36,9 @@ public static class CommandsRegistry
 
     private static void Register(Server server, Command command, IEnumerable<Command> commands, CommandNode node, ref int index)
     {
-        var nodeType = command.Overloads.Any(x => x.GetParameters().Length == 0) ? CommandNodeType.IsExecutable | CommandNodeType.Literal : CommandNodeType.Literal;
+        var nodeType = command.Overloads.Any(overload => overload.GetParameters().Length == 0)
+            ? CommandNodeType.IsExecutable | CommandNodeType.Literal
+            : CommandNodeType.Literal;
         var parentNode = new CommandNode()
         {
             Index = ++index,
@@ -77,7 +79,9 @@ public static class CommandsRegistry
             //TODO make this better 
             argNode.Parser = mctype switch
             {
-                "brigadier:string" => new StringArgumentParser(arg.CustomAttributes.Any(x => x.AttributeType == typeof(RemainingAttribute)) ? StringType.GreedyPhrase : StringType.QuotablePhrase),
+                "brigadier:string" => new StringArgumentParser(arg.CustomAttributes.Any(x => x.AttributeType == typeof(RemainingAttribute))
+                    ? StringType.GreedyPhrase
+                    : StringType.QuotablePhrase),
                 "brigadier:double" => new DoubleArgumentParser(),
                 "brigadier:float" => new FloatArgumentParser(),
                 "brigadier:integer" => new UnsignedIntArgumentParser(),

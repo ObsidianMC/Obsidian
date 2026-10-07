@@ -104,7 +104,9 @@ internal static class BlockStateProperties
     }
 
     private static string Key(string name, IReadOnlyDictionary<string, string> properties) =>
-        properties.Count == 0 ? name : $"{name}[{string.Join(',', properties.OrderBy(entry => entry.Key, StringComparer.Ordinal).Select(entry => $"{entry.Key}={entry.Value}"))}]";
+        properties.Count == 0
+            ? name
+            : $"{name}[{string.Join(',', properties.OrderBy(entry => entry.Key, StringComparer.Ordinal).Select(entry => $"{entry.Key}={entry.Value}"))}]";
 
     private static Table Load()
     {

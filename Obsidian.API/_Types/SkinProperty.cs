@@ -6,7 +6,7 @@ public sealed class SkinProperty : INetworkSerializable<SkinProperty>
     public required string Value { get; set; }
     public string? Signature { get; set; }
 
-    public bool HasSignature => this.Signature != null;
+    public bool HasSignature => this.Signature is not null;
 
     public static SkinProperty Read(INetStreamReader reader) => new()
     {

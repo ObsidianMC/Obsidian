@@ -21,8 +21,10 @@ internal sealed class FluidLevel
     private const int UpdateLimit = 512;
 
     // Vanilla NeighborUpdater.UPDATE_ORDER (neighborChanged) and BlockBehaviour.UPDATE_SHAPE_ORDER (updateShape).
-    private static readonly BlockFace[] updateOrder = [BlockFace.West, BlockFace.East, BlockFace.Down, BlockFace.Up, BlockFace.North, BlockFace.South];
-    private static readonly BlockFace[] updateShapeOrder = [BlockFace.West, BlockFace.East, BlockFace.North, BlockFace.South, BlockFace.Down, BlockFace.Up];
+    private static readonly BlockFace[] updateOrder = [BlockFace.West, BlockFace.East, BlockFace.Down, BlockFace.Up,
+        BlockFace.North, BlockFace.South];
+    private static readonly BlockFace[] updateShapeOrder = [BlockFace.West, BlockFace.East, BlockFace.North,
+        BlockFace.South, BlockFace.Down, BlockFace.Up];
 
     // Vanilla LiquidBlock.POSSIBLE_FLOW_DIRECTIONS; lava checks the block each of them flows from.
     private static readonly BlockFace[] possibleFlowDirections = [BlockFace.Down, BlockFace.South, BlockFace.North, BlockFace.East, BlockFace.West];

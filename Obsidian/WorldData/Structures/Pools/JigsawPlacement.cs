@@ -245,7 +245,8 @@ internal static class JigsawPlacement
                     space.Remove(placedBox);
                     var groundLevelDelta = piece.GroundLevelDelta;
                     var candidateGroundLevelDelta = candidateRigid ? groundLevelDelta - deltaY : candidate.GroundLevelDelta;
-                    var child = new PoolElementStructurePiece(candidate, placedPosition, candidateGroundLevelDelta, rotation, placedBox, liquidSettings);
+                    var child = new PoolElementStructurePiece(candidate, placedPosition, candidateGroundLevelDelta,
+                        rotation, placedBox, liquidSettings);
 
                     int junctionY;
                     if (rigid)

@@ -131,7 +131,8 @@ public sealed class EndSpikeFeature : ConfiguredFeatureBase
         var crystal = new Vector(spike.CenterX, spike.Height + 1, spike.CenterZ);
         var data = new NbtCompound();
         if (this.CrystalBeamTarget is not null)
-            data.Add(new NbtArray<int>("beam_target", [this.CrystalBeamTarget.Value.X, this.CrystalBeamTarget.Value.Y, this.CrystalBeamTarget.Value.Z]));
+            data.Add(new NbtArray<int>("beam_target",
+                [this.CrystalBeamTarget.Value.X, this.CrystalBeamTarget.Value.Y, this.CrystalBeamTarget.Value.Z]));
         if (this.CrystalInvulnerable)
             data.Add(new NbtTag<bool>("Invulnerable", true));
 

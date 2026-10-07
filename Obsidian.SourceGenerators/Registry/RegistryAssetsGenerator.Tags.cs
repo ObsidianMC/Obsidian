@@ -21,7 +21,10 @@ public partial class RegistryAssetsGenerator
             builder.Type($"public static class {childTags.Key.ToPascalCase()}");
            
             //Workaround for flat_level_generator_preset will change this up another time
-            foreach (var groupedTags in childTags.Value.GroupBy(tag => tag.Type.GetActualType(1)).Where(x => x.Count() > 1 || x.Key == "flat_level_generator_preset"))
+            var tagGroups = childTags.Value
+                .GroupBy(tag => tag.Type.GetActualType(1))
+                .Where(group => group.Count() > 1 || group.Key == "flat_level_generator_preset");
+            foreach (var groupedTags in tagGroups)
             {
                 if (childTags.Key == groupedTags.Key)
                     continue;
@@ -67,7 +70,12 @@ public partial class RegistryAssetsGenerator
                 if(tag.Type == tag.Parent)
                     builder.Append(tag.Type.ToPascalCase()).Append(".").Append(tag.PropertyName).Append(", ");
                 else
-                    builder.Append(tag.Parent.ToPascalCase()).Append(".").Append(tag.Type.GetActualType(1).ToPascalCase()).Append(".").Append(tag.PropertyName).Append(", ");
+                    builder.Append(tag.Parent.ToPascalCase())
+                        .Append(".")
+                        .Append(tag.Type.GetActualType(1).ToPascalCase())
+                        .Append(".")
+                        .Append(tag.PropertyName)
+                        .Append(", ");
             }
             builder.Append("} }, ");
             builder.Line();
