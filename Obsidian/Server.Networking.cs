@@ -46,6 +46,7 @@ public partial class Server
     /// Accepts connections on another endpoint too, like Open to LAN does.
     /// </summary>
     /// <returns>The bound port.</returns>
+    /// <exception cref="InvalidOperationException">The server is stopping.</exception>
     public async ValueTask<int> ListenAsync(IPEndPoint endpoint)
     {
         var socket = new Socket(endpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
@@ -65,8 +66,19 @@ public partial class Server
         var acceptor = new SocketAsyncEventArgs { UserToken = socket };
         acceptor.Completed += OnAsyncCompleted;
 
+        // Stopping closes the listeners under this lock after it's flagged, so no listener is added once they're closed.
         lock (this.listeners)
+        {
+            if (this.Stopping)
+            {
+                socket.Dispose();
+                acceptor.Dispose();
+
+                throw new InvalidOperationException("The server is stopping.");
+            }
+
             this.listeners.Add((socket, acceptor));
+        }
 
         await this.Accept(acceptor);
 

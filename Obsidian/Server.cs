@@ -311,6 +311,11 @@ public sealed partial class Server : IServer
         await CommandHandler.ProcessCommand(context);
     }
 
+    /// <summary>
+    /// Whether the server is stopping or stopped: nothing new (saves, listeners) should start.
+    /// </summary>
+    internal bool Stopping => this.cancelTokenSource.IsCancellationRequested;
+
     public async Task StopAsync()
     {
         await cancelTokenSource.CancelAsync();
@@ -318,11 +323,21 @@ public sealed partial class Server : IServer
         this.CloseListeners();
 
         await this.PendingLeavesAsync();
-        await WorldManager.FlushLoadedWorldsAsync();
-        await WorldManager.DisposeAsync();
-        await this.PluginManager.DisposeAsync();
 
-        await this.userCache.SaveAsync();
+        // The final save waits for a save in progress (a pause, the save command, an autosave), so they never overlap.
+        await this.saveLock.WaitAsync();
+        try
+        {
+            await WorldManager.FlushLoadedWorldsAsync();
+            await WorldManager.DisposeAsync();
+            await this.PluginManager.DisposeAsync();
+
+            await this.userCache.SaveAsync();
+        }
+        finally
+        {
+            this.saveLock.Release();
+        }
     }
 
     /// <summary>
@@ -484,8 +499,8 @@ public sealed partial class Server : IServer
             await client.DisconnectAsync("Server closed");
         }
 
+        // The worlds are saved by StopAsync, which follows.
         await this.PendingLeavesAsync();
-        await WorldManager.FlushLoadedWorldsAsync();
     }
 
     public bool IsWhitelisted(string username) => this.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => x.Name == username);

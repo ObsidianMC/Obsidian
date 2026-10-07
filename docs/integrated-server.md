@@ -64,6 +64,8 @@ feed. Other lines on standard input are ordinary console commands; other lines o
 | `{"command":"publish","port":25565,"gameMode":"survival","allowCommands":true}` | Open to LAN, below. `port` 0 or missing picks a free port; `gameMode` missing keeps the world's default. Then `published` or `publishFailed`. |
 
 Malformed control lines and unknown commands are logged and ignored. Commands run one at a time in arrival order.
+Once the server is stopping, further control commands are logged and ignored, and the final save waits for a save
+that's still running.
 
 Open to LAN works like vanilla's `IntegratedServer.publishServer`: the server also listens on every address at the
 port (the loopback listener keeps working), advertises `<local player name> - <level name>` to the LAN (multicast

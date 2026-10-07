@@ -90,6 +90,10 @@ public sealed partial class ConsoleCommandService(
         catch (OperationCanceledException) when (token.IsCancellationRequested)
         {
         }
+
+        // A command still running when the host stops (a save, say) finishes before the host disposes the services it
+        // uses and exits. Commands queued behind it run with the cancelled token.
+        await pending.ConfigureAwait(false);
     }
 
     private async ValueTask<bool> TryHandleBuiltInAsync(string commandLine, Task pending, CancellationToken token)

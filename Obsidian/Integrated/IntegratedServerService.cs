@@ -91,6 +91,13 @@ public sealed partial class IntegratedServerService(
             return true;
         }
 
+        // Commands queued behind a stop would race the final save, or open a listener after the others closed.
+        if (this.server.Stopping)
+        {
+            Log.IgnoredWhileStopping(logger, command.Command);
+            return true;
+        }
+
         switch (command.Command)
         {
             case "pause":
@@ -137,6 +144,12 @@ public sealed partial class IntegratedServerService(
         await this.publishLock.WaitAsync();
         try
         {
+            if (this.server.Stopping)
+            {
+                events.Write(IntegratedEvent.PublishFailed("The server is stopping."));
+                return null;
+            }
+
             if (!this.server.Started || !worldManager.ReadyToJoin)
             {
                 events.Write(IntegratedEvent.PublishFailed("The world isn't ready yet."));
@@ -154,7 +167,7 @@ public sealed partial class IntegratedServerService(
             {
                 boundPort = await this.server.ListenAsync(new IPEndPoint(IPAddress.Any, port));
             }
-            catch (SocketException ex)
+            catch (Exception ex) when (ex is SocketException or InvalidOperationException)
             {
                 Log.PublishFailed(logger, ex, port);
                 events.Write(IntegratedEvent.PublishFailed(ex.Message));
@@ -226,6 +239,9 @@ public sealed partial class IntegratedServerService(
 
         [LoggerMessage(Level = LogLevel.Warning, Message = "Ignoring the unknown control command {Command}")]
         public static partial void UnknownCommand(ILogger logger, string command);
+
+        [LoggerMessage(Level = LogLevel.Information, Message = "Ignoring the control command {Command}: the server is stopping")]
+        public static partial void IgnoredWhileStopping(ILogger logger, string command);
 
         [LoggerMessage(Level = LogLevel.Information, Message = "Saving and pausing game...")]
         public static partial void SavingAndPausing(ILogger logger);
