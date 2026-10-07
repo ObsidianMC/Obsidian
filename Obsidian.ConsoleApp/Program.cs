@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Obsidian;
 using Obsidian.Hosting;
@@ -21,9 +22,11 @@ Console.ResetColor();
 
 var builder = Host.CreateApplicationBuilder(args);
 
-// The configuration files are generated under Paths:Root before Obsidian reads them.
+// The configuration files are generated under Paths:Root before Obsidian reads them. An integrated server runs on its own
+// defaults (see ConfigureObsidian), which the dedicated server's files would override.
 ServerConstants.ConfigurePaths(builder.Configuration);
-await GenerateConfigFiles(ServerConstants.ConfigPath);
+if (!builder.Configuration.GetValue<bool>("Integrated:Enabled"))
+    await GenerateConfigFiles(ServerConstants.ConfigPath);
 
 builder.ConfigureObsidian();
 builder.AddObsidian();

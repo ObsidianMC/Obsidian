@@ -40,9 +40,11 @@ list. The process exits with code 0 after a graceful stop and 1 after a crash (s
 | `PregenerateChunkRange` | `15` | Chunks generated around the spawn in every direction, in every dimension, when the world is created. Lower values create worlds faster. |
 | `NewWorld:*` | | How a new world is created (see [World](#world)). |
 
-The integrated defaults are the lowest-priority configuration source, so any setting overrides them. Standard input
-is read without the interactive prompt, commands typed there aren't echoed to the log, and the server stops when
-standard input ends, so a client that crashes doesn't leave the server running.
+The integrated defaults are the lowest-priority configuration source, so any setting overrides them, including
+`config/server.json`; `Obsidian.ConsoleApp` therefore doesn't create its default configuration files for an integrated
+server (files that already exist still apply). Standard input is read without the interactive prompt, commands typed
+there aren't echoed to the log, and the server stops when standard input ends, so a client that crashes doesn't leave
+the server running.
 
 ## Control channel
 
