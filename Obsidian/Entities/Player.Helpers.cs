@@ -18,8 +18,15 @@ public partial class Player
     private readonly SemaphoreSlim saveLock = new(1, 1);
 
     /// <summary>
-    /// Saves the player in vanilla's shape to the world's <c>playerdata/&lt;uuid&gt;.dat</c>, and the world they're in
-    /// to <see cref="PersistentDataFile"/>.
+    /// Whether this is the singleplayer owner (an integrated server's local player), whose data vanilla also keeps in
+    /// level.dat.
+    /// </summary>
+    internal bool IsSingleplayerOwner { get; init; }
+
+    /// <summary>
+    /// Saves the player in vanilla's shape to the world's <c>playerdata/&lt;uuid&gt;.dat</c> (and for the singleplayer
+    /// owner of a vanilla-shaped world, to its level.dat's <c>Data.Player</c> too), and the world they're in to
+    /// <see cref="PersistentDataFile"/>.
     /// </summary>
     public async Task SaveAsync()
     {
@@ -31,7 +38,11 @@ public partial class Player
             //TODO make sure to save inventory in the right location if has using global data set to true
             await PlayerDataFile.WriteAsync(this.PersistentDataFile, new NbtCompound { new NbtTag<string>("worldName", world.Name) });
 
-            await PlayerDataFile.WriteAsync(world.GetPlayerDataPath(this.Uuid), this.SaveData());
+            var data = this.SaveData();
+            if (this.IsSingleplayerOwner && world is World { UsesVanillaLayout: true } vanillaWorld)
+                vanillaWorld.SingleplayerPlayerData = data;
+
+            await PlayerDataFile.WriteAsync(world.GetPlayerDataPath(this.Uuid), data);
         }
         finally
         {
@@ -53,7 +64,8 @@ public partial class Player
     }
 
     /// <summary>
-    /// Loads the player's saved data in their world from <c>playerdata</c>. A player without data starts at the spawn.
+    /// Loads the player's saved data in their world, like vanilla's <c>PlayerList.loadPlayerData</c>: the singleplayer
+    /// owner's from level.dat when it has it, otherwise from <c>playerdata</c>. A player without data starts at the spawn.
     /// </summary>
     /// <param name="loadFromPersistentWorld">Whether to move the player to the world they were last saved in first.</param>
     public async Task LoadAsync(bool loadFromPersistentWorld = true)
@@ -70,7 +82,11 @@ public partial class Player
         await LoadPermsAsync();
 
         var world = (IWorld)this.Level;
-        if (PlayerDataFile.Read(world.GetPlayerDataPath(this.Uuid), this.Logger) is not NbtCompound data)
+        var ownerData = this.IsSingleplayerOwner && world is World { UsesVanillaLayout: true } vanillaWorld
+            ? vanillaWorld.SingleplayerPlayerData
+            : null;
+
+        if ((ownerData ?? PlayerDataFile.Read(world.GetPlayerDataPath(this.Uuid), this.Logger)) is not NbtCompound data)
         {
             // Like vanilla, a new player starts in the world's default game mode.
             this.UnmodeledData = new();

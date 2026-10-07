@@ -34,6 +34,12 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
     private NbtCompound? vanillaData;
 
     /// <summary>
+    /// The singleplayer owner's data in a vanilla-shaped level.dat (<c>Data.Player</c>), which vanilla loads for the owner
+    /// in place of their playerdata file. The owner's saves replace it, and level.dat saves write it.
+    /// </summary>
+    internal NbtCompound? SingleplayerPlayerData { get; set; }
+
+    /// <summary>
     /// Whether the world is laid out like a vanilla save (see <see cref="UseVanillaLayout"/>).
     /// </summary>
     public bool UsesVanillaLayout => this.vanillaFolder is not null;
@@ -80,6 +86,9 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
 
         // A level in vanilla's shape is kept whole and written back in that shape.
         this.vanillaData = VanillaLevelData.GetData(levelCompound);
+        if (this.vanillaData is not null && this.vanillaData.TryGetTag<NbtCompound>("Player", out var player))
+            this.SingleplayerPlayerData = player;
+
         LevelData = this.vanillaData is not null ? VanillaLevelData.Read(this.vanillaData) : new LevelData()
         {
             Hardcore = levelCompound.GetBool("hardcore"),
@@ -180,6 +189,15 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
     private async Task WriteVanillaLevelDataAsync(Stream fs, NbtCompound data)
     {
         VanillaLevelData.Update(data, this.LevelData);
+
+        if (this.SingleplayerPlayerData is NbtCompound player)
+        {
+            var saved = new NbtCompound("Player");
+            foreach (var (name, tag) in player)
+                saved.Add(name, tag);
+
+            data.Set(saved);
+        }
 
         await using var writer = new NbtWriterStream(fs, NbtCompression.GZip, "");
         writer.WriteTag(data);

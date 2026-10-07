@@ -107,7 +107,7 @@ public sealed class VanillaSaves : IDisposable
     public async Task VanillaPlayerRoundTrips()
     {
         var world = this.CreateWorld();
-        var player = CreatePlayer(world);
+        var player = CreatePlayer(world, owner: false);
         await PlayerDataFile.WriteAsync(world.GetPlayerDataPath(player.Uuid), VanillaPlayer(xpLevel: 5));
 
         try
@@ -152,11 +152,42 @@ public sealed class VanillaSaves : IDisposable
         }
     }
 
+    [Fact(DisplayName = "The singleplayer owner loads from level.dat's Data.Player and saves to it and playerdata")]
+    public async Task OwnerUsesLevelData()
+    {
+        var world = this.CreateWorld();
+        var player = CreatePlayer(world, owner: true);
+
+        await PlayerDataFile.WriteAsync(world.GetPlayerDataPath(player.Uuid), VanillaPlayer(xpLevel: 1));
+        world.SingleplayerPlayerData = VanillaPlayer(xpLevel: 30);
+
+        try
+        {
+            await player.LoadAsync(loadFromPersistentWorld: false);
+            Assert.Equal(30, player.XpLevel);
+
+            player.XpLevel = 31;
+            await player.SaveAsync();
+            await world.SaveAsync();
+
+            var playerData = PlayerDataFile.Read(world.GetPlayerDataPath(player.Uuid), NullLogger.Instance)!;
+            Assert.Equal(31, playerData.GetInt("XpLevel"));
+
+            var levelData = World.ReadLevelData(Path.Join(this.folder, "level.dat"), NullLogger.Instance)!;
+            var owner = (NbtCompound)((NbtCompound)levelData["Data"])["Player"];
+            Assert.Equal(31, owner.GetInt("XpLevel"));
+        }
+        finally
+        {
+            DeletePersistentData(player);
+        }
+    }
+
     [Fact(DisplayName = "Concurrent saves of a player all succeed and leave a readable file and its backup")]
     public async Task ConcurrentSavesSucceed()
     {
         var world = this.CreateWorld();
-        var player = CreatePlayer(world);
+        var player = CreatePlayer(world, owner: false);
 
         try
         {
@@ -187,9 +218,10 @@ public sealed class VanillaSaves : IDisposable
         return world;
     }
 
-    private static PlayerEntity CreatePlayer(World world) => new(playerUuid, "dev", new FakeClient(), world)
+    private static PlayerEntity CreatePlayer(World world, bool owner) => new(playerUuid, "dev", new FakeClient(), world)
     {
-        Server = new FakeServer()
+        Server = new FakeServer(),
+        IsSingleplayerOwner = owner
     };
 
     private static void DeletePersistentData(PlayerEntity player)

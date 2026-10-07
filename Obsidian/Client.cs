@@ -4,6 +4,7 @@ using Microsoft.Extensions.ObjectPool;
 using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
+using Obsidian.Integrated;
 using Obsidian.Net;
 using Obsidian.Net.ClientHandlers;
 using Obsidian.Net.Packets.Common;
@@ -416,7 +417,12 @@ public sealed partial class Client : IClient
 
     private Player CreatePlayer(Guid uuid, string username, IWorld world) => new(uuid, username, this, world)
     {
-        Server = this.serviceProvider.GetRequiredService<IServer>()
+        Server = this.serviceProvider.GetRequiredService<IServer>(),
+
+        // Vanilla's isSingleplayerOwner: an integrated server's local player.
+        IsSingleplayerOwner = this.Server is Server { Integrated: IntegratedSession integrated }
+            && uuid == integrated.Configuration.LocalPlayerUuid
+            && integrated.IsLocalPlayer(username)
     };
 
     /// <summary>
