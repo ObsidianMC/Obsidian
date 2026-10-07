@@ -40,7 +40,16 @@ public interface INetStreamWriter : INetStream
     public void WriteNbtCompound(Obsidian.Nbt.NbtCompound compound);
     public void WriteOptionalNbtCompound(Obsidian.Nbt.NbtCompound? compound);
     public void WriteFixedBitSet(BitSet bits, int size);
+    public void WriteDataComponent(DataComponent component);
     public void WriteItemStack(ItemStack? itemStack);
+    public void WriteHashedItemStack(ItemStack? itemStack);
+    public void WriteHashedItemStack(IHashedItemStack? itemStack);
+    public void WriteUntrustedItemStack(ItemStack? itemStack);
+
+    /// <summary>Writes a villager trade like vanilla's <c>MerchantOffer</c> stream codec.</summary>
+    public void WriteMerchantOffer(TradeEntry value);
+    public void WriteRequiredItemStack(ItemStack itemStack);
+    public void WriteItemStackList(params ReadOnlySpan<ItemStack?> values);
     public void WriteDateTimeOffset(DateTimeOffset date);
     public void WriteSoundEvent(SoundEvent soundEvent);
     public void WriteSoundEffect(SoundEffect sound);

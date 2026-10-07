@@ -18,11 +18,11 @@ public sealed record class FireworksDataComponent : DataComponent
     public override void Read(INetStreamReader reader)
     {
         this.FlightDuration = reader.ReadVarInt();
-        this.Explosions = ImmutableCollectionsMarshal.AsImmutableArray(reader.ReadLengthPrefixedArray(() => FireworkExplosion.Read(reader)));
+        this.Explosions = ImmutableCollectionsMarshal.AsImmutableArray(reader.ReadLengthPrefixedArray(() => ComponentValueCodecs.ReadExplosion(reader)));
     }
     public override void Write(INetStreamWriter writer)
     {
         writer.WriteVarInt(this.FlightDuration);
-        writer.WriteLengthPrefixedArray((value) => FireworkExplosion.Write(value, writer), this.Explosions.AsSpan());
+        writer.WriteLengthPrefixedArray((value) => ComponentValueCodecs.WriteExplosion(value, writer), this.Explosions.AsSpan());
     }
 }

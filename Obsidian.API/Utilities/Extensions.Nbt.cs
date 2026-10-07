@@ -29,6 +29,8 @@ public partial class Extensions
             writer.WriteBool("strikethrough", chatMessage.Strikethrough.Value);
         if (chatMessage.Obfuscated is not null)
             writer.WriteBool("obfuscated", chatMessage.Obfuscated.Value);
+        if (chatMessage.ShadowColor is int shadowColor)
+            writer.WriteInt("shadow_color", shadowColor);
 
         if (chatMessage.ClickEvent != null)
             writer.WriteTag(chatMessage.ClickEvent.ToNbt());
@@ -76,6 +78,8 @@ public partial class Extensions
             compound.Add(new NbtTag<bool>("strikethrough", chatMessage.Strikethrough.Value));
         if (chatMessage.Obfuscated is not null)
             compound.Add(new NbtTag<bool>("obfuscated", chatMessage.Obfuscated.Value));
+        if (chatMessage.ShadowColor is int shadowColor)
+            compound.Add(new NbtTag<int>("shadow_color", shadowColor));
 
         if (!chatMessage.Text.IsNullOrEmpty())
             compound.Add(new NbtTag<string>("text", chatMessage.Text!));
@@ -113,6 +117,7 @@ public partial class Extensions
         chatMessage.Underlined = root.TryGetTag("underlined", out _) ? root.GetBool("underlined") : null;
         chatMessage.Strikethrough = root.TryGetTag("strikethrough", out _) ? root.GetBool("strikethrough") : null;
         chatMessage.Obfuscated = root.TryGetTag("obfuscated", out _) ? root.GetBool("obfuscated") : null;
+        chatMessage.ShadowColor = root.TryGetTagValue<int>("shadow_color", out var shadowColor) ? shadowColor : null;
 
         if (root.TryGetTag<NbtCompound>("click_event", out var clickEventCompound))
             chatMessage.ClickEvent = clickEventCompound.ToClickComponent();

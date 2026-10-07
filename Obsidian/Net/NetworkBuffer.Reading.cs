@@ -88,7 +88,8 @@ public partial class NetworkBuffer : INetStreamReader
         var secondByte = this.ReadByte();
         var remainingBytes = this.ReadInt();
 
-        long packedData = remainingBytes << 16 | (secondByte << 8) | firstByte;
+        // LpVec3 carries 48 bits: widen the unsigned high word before shifting.
+        long packedData = (long)(uint)remainingBytes << 16 | ((long)secondByte << 8) | firstByte;
 
         long scaleFactor = firstByte & ScaleBits;
 
@@ -114,35 +115,41 @@ public partial class NetworkBuffer : INetStreamReader
     };
 
     [ReadMethod]
-    public ItemStack? ReadItemStack()
+    public ItemStack? ReadItemStack() => this.ReadItemStack(false);
+
+    /// <summary>Reads the creative-slot codec when delimitedComponents is true.</summary>
+    public ItemStack? ReadItemStack(bool delimitedComponents)
     {
-        var count = this.ReadVarInt();
-
-        if (count == 0)
-            return null;
-
-        var item = ItemsRegistry.Get(ReadVarInt());
-
-        var itemStack = new ItemStack(item, count);
-
-        if (itemStack.Type == Material.Air)
-            return itemStack;
-
-        var componentsToAdd = this.ReadVarInt();
-        var componentsToRemove = this.ReadVarInt();
-
-        for (int i = 0; i < componentsToAdd; i++)
+        if (++this.componentDepth > 64) throw new InvalidDataException("Item nesting exceeds 64.");
+        try
         {
-            var type = this.ReadVarInt();
-
-            itemStack.Add(ComponentBuilder.ComponentsMap[type]());
+            var count = this.ReadVarInt();
+            if (count <= 0) return null;
+            var itemStack = new ItemStack(ItemsRegistry.Get(this.ReadVarInt()), count);
+            var added = this.ReadComponentCount();
+            var removed = this.ReadComponentCount();
+            for (var i = 0; i < added; i++)
+            {
+                var type = (DataComponentType)this.ReadVarInt();
+                var end = delimitedComponents ? checked(this.ReadComponentLength() + this.offset) : -1;
+                itemStack[type] = this.ReadDataComponent(type);
+                if (delimitedComponents && this.offset != end)
+                    throw new InvalidDataException("Component length does not match its value.");
+            }
+            for (var i = 0; i < removed; i++)
+            {
+                var type = (DataComponentType)this.ReadVarInt();
+                if (!Enum.IsDefined(type)) throw new InvalidDataException("Unknown removed component.");
+                itemStack.Remove(type);
+            }
+            return itemStack;
         }
-
-        for (int i = 0; i < componentsToRemove; i++)
-            itemStack.Remove(this.ReadVarInt<DataComponentType>());
-
-        return itemStack;
+        finally { this.componentDepth--; }
     }
+
+    public ItemStack? ReadUntrustedItemStack() => this.ReadItemStack(true);
+    public ItemStack ReadRequiredItemStack() => this.ReadItemStack() ?? throw new InvalidDataException("Expected a nonempty item stack.");
+    public ItemStack?[] ReadItemStackList() => this.ReadLengthPrefixedArray(this.ReadItemStack);
 
     public IHashedItemStack? ReadHashedItemStack()
     {
@@ -152,13 +159,10 @@ public partial class NetworkBuffer : INetStreamReader
         var item = ItemsRegistry.Get(ReadVarInt());
         var count = this.ReadVarInt();
 
-        var itemStack = new HashedItemStack(item, count);
+        var itemStack = new ReceivedHashedStack(item, count, this.ComponentRegistryName);
 
-        //Might be best to change this
-        if (itemStack.Type == Material.Air)
-            return itemStack;
-
-        var componentsToAdd = this.ReadVarInt();
+        var componentsToAdd = this.ReadComponentCount();
+        if (componentsToAdd > 256) throw new InvalidDataException("Too many hashed components.");
         for (int i = 0; i < componentsToAdd; i++)
         {
             var type = this.ReadVarInt<DataComponentType>();
@@ -166,7 +170,8 @@ public partial class NetworkBuffer : INetStreamReader
             itemStack.HashedComponents.Add(type, this.ReadInt());
         }
 
-        var componentsToRemove = this.ReadVarInt();
+        var componentsToRemove = this.ReadComponentCount();
+        if (componentsToRemove > 256) throw new InvalidDataException("Too many removed hashed components.");
 
         for (int i = 0; i < componentsToRemove; i++)
             itemStack.ComponentsToRemove.Add(this.ReadVarInt<DataComponentType>());
@@ -257,14 +262,11 @@ public partial class NetworkBuffer : INetStreamReader
     [ReadMethod]
     public ChatMessage ReadChat()
     {
-        //TODO this can be sped up or done better
-        using var ms = new MemoryStream(this.AsSpan((int)(this.size - this.offset)).ToArray());
-
-        var found = new NbtReader(ms).TryReadNextTag(false, out INbtTag? tag);
-        this.offset += (int)ms.Position;
-        this.BytesPending -= (int)ms.Position;
-
-        return found ? tag!.TextFromNbt() ?? ChatMessage.Empty : ChatMessage.Empty;
+        var start = this.offset;
+        this.SkipNbt(); // Validate bounds before projecting any nested collections.
+        this.BytesPending += this.offset - start;
+        this.offset = start;
+        return ProjectChat(this.ReadChatNbt(this.ReadByte()));
     }
 
     #region Generic Read Methods
@@ -462,14 +464,7 @@ public partial class NetworkBuffer : INetStreamReader
         return result;
     }
 
-    public IdSet ReadIdSet()
-    {
-        var type = this.ReadVarInt();
-        string? tagName = type == 0 ? tagName = this.ReadString() : null;
-        ImmutableArray<int>? ids = type != 0 ? ImmutableCollectionsMarshal.AsImmutableArray(this.ReadLengthPrefixedArray(this.ReadVarInt)) : null;
-
-        return new() { Type = type, Ids = ids, TagName = tagName };
-    }
+    public IdSet ReadIdSet() => IdSet.Read(this);
     public SoundEvent ReadSoundEvent() => new()
     {
         ResourceLocation = this.ReadString(),

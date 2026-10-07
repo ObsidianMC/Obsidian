@@ -14,6 +14,8 @@ public sealed record class ToolDataComponent : DataComponent
 
     public required int DamagePerBlock { get; set; }
 
+    public bool CanDestroyBlocksInCreative { get; set; } = true;
+
     [SetsRequiredMembers]
     internal ToolDataComponent() { }
 
@@ -28,6 +30,7 @@ public sealed record class ToolDataComponent : DataComponent
 
         this.DefaultMiningSpeed = reader.ReadSingle();
         this.DamagePerBlock = reader.ReadVarInt();
+        this.CanDestroyBlocksInCreative = reader.ReadBoolean();
     }
 
     public override void Write(INetStreamWriter writer)
@@ -35,6 +38,7 @@ public sealed record class ToolDataComponent : DataComponent
         writer.WriteLengthPrefixedArray((rule) => ToolRule.Write(rule, writer), this.Rules.AsSpan());
         writer.WriteSingle(this.DefaultMiningSpeed);
         writer.WriteVarInt(this.DamagePerBlock);
+        writer.WriteBoolean(this.CanDestroyBlocksInCreative);
     }
 }
 
@@ -94,12 +98,20 @@ public readonly record struct IdSet : INetworkSerializable<IdSet>
 
         return type == 0
             ? new() { Type = type, TagName = reader.ReadString() }
-            : new() { Type = type, Ids = ImmutableCollectionsMarshal.AsImmutableArray(reader.ReadLengthPrefixedArray(reader.ReadVarInt)) };
+            : new() { Type = type, Ids = ReadIds(reader, type - 1) };
+    }
+
+    private static ImmutableArray<int> ReadIds(INetStreamReader reader, int count)
+    {
+        if (count < 0 || count > 65536) throw new System.IO.InvalidDataException("Invalid ID set size.");
+        var ids = ImmutableArray.CreateBuilder<int>(count);
+        for (var i = 0; i < count; i++) ids.Add(reader.ReadVarInt());
+        return ids.MoveToImmutable();
     }
 
     public static void Write(IdSet value, INetStreamWriter writer)
     {
-        writer.WriteVarInt(value.Type);
+        writer.WriteVarInt(value.Type == 0 ? 0 : value.Ids!.Value.Length + 1);
         if (value.Type == 0)
         {
             if (string.IsNullOrEmpty(value.TagName))
@@ -113,7 +125,6 @@ public readonly record struct IdSet : INetworkSerializable<IdSet>
             throw new NullReferenceException("Ids must have a value set if type is anything other than 0.");
 
         var ids = value.Ids.Value;
-        writer.WriteVarInt(ids.Length);
 
         foreach (var id in ids)
             writer.WriteVarInt(id);

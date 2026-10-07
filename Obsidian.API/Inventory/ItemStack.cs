@@ -1,4 +1,4 @@
-﻿using Obsidian.API.Inventory.DataComponents;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;
 using System.Diagnostics.CodeAnalysis;
 
@@ -22,6 +22,16 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
 
     public int Damage => this.GetComponent<SimpleDataComponent<int>>(DataComponentType.Damage)?.Value ?? 0;
 
+    public int MaxDamage => this.RemoveComponents.Contains(DataComponentType.MaxDamage) ? 0 :
+        this.GetComponent<SimpleDataComponent<int>>(DataComponentType.MaxDamage)?.Value ?? this.Holder.MaxDamage;
+    public IReadOnlyList<ChatMessage> Lore => this.GetComponent<SimpleDataComponent<ChatMessage[]>>(DataComponentType.Lore)?.Value ?? [];
+    public IReadOnlyList<Enchantment> Enchantments => this.GetComponent<SimpleDataComponent<Enchantment[]>>(DataComponentType.Enchantments)?.Value ?? [];
+    public bool HasEnchantmentGlint => this.GetComponent<SimpleDataComponent<bool>>(DataComponentType.EnchantmentGlintOverride)?.Value ??
+        (!this.RemoveComponents.Contains(DataComponentType.EnchantmentGlintOverride) &&
+            this.Type is Material.EnchantedBook or Material.EnchantedGoldenApple or Material.ExperienceBottle or
+                Material.WrittenBook or Material.NetherStar or Material.EndCrystal or Material.DebugStick ||
+            this.Enchantments.Count > 0 || this.Type == Material.Compass && this.ContainsKey(DataComponentType.LodestoneTracker));
+
     public bool IsAir => Type == Material.Air;
 
     public ItemStack(Item holder, int count = 1, params IEnumerable<DataComponent> components)
@@ -32,13 +42,21 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
         this.InitializeComponents(components);
     }
 
-    public ItemStack([DisallowNull] ItemStack item, int count = 1) : this(item.Holder, count, item.Patch) { }
+    public ItemStack([DisallowNull] ItemStack item, int count = 1) : this(item.Holder, count, item.Patch)
+    {
+        foreach (var type in item.RemoveComponents) this.Remove(type);
+    }
 
     /// <summary>
     /// Copies this stack, with its count and the components set on it, as a stack of <paramref name="holder"/> (vanilla's
     /// <c>transmuteCopy</c>), e.g. to turn a book into an enchanted book.
     /// </summary>
-    public ItemStack TransmuteCopy(Item holder) => new(holder, this.Count, this.Patch);
+    public ItemStack TransmuteCopy(Item holder)
+    {
+        var copy = new ItemStack(holder, this.Count, this.Patch);
+        foreach (var type in this.RemoveComponents) copy.Remove(type);
+        return copy;
+    }
 
     public static ItemStack operator -(ItemStack item, int value)
     {

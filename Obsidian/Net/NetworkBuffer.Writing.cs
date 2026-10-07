@@ -309,6 +309,16 @@ public partial class NetworkBuffer : INetStreamWriter
         if (chatMessage == null)
             return;
 
+        if (chatMessage.Translate is null && chatMessage.Color is null && chatMessage.Bold is null && chatMessage.Italic is null &&
+            chatMessage.Underlined is null && chatMessage.Strikethrough is null && chatMessage.Obfuscated is null &&
+            chatMessage.ShadowColor is null && chatMessage.Insertion is null && chatMessage.ClickEvent is null && chatMessage.HoverEvent is null &&
+            !chatMessage.GetExtras().Any() && !chatMessage.GetExtraChatComponents().Any())
+        {
+            ModifiedUtf8.TryGetBytes(chatMessage.Text ?? "", out var text);
+            this.WriteByte((byte)8); this.WriteUnsignedShort(checked((ushort)text!.Length)); this.Write(text);
+            return;
+        }
+
         using var writer = new RawNbtWriter(true);
 
         writer.WriteChatMessage(chatMessage);
@@ -408,16 +418,21 @@ public partial class NetworkBuffer : INetStreamWriter
     }
 
     [WriteMethod]
-    public void WriteItemStack(ItemStack? value)
+    public void WriteItemStack(ItemStack? value) => this.WriteItemStack(value, false);
+
+    /// <summary>Writes the creative-slot codec when delimitedComponents is true.</summary>
+    public void WriteItemStack(ItemStack? value, bool delimitedComponents)
     {
         value ??= ItemStack.Air;
 
         var item = value.AsItem();
 
-        WriteVarInt(value.Count);
-
-        if (value.Count <= 0)
+        if (value.Count <= 0 || value.IsAir)
+        {
+            this.WriteVarInt(0);
             return;
+        }
+        WriteVarInt(value.Count);
 
         WriteVarInt(item.Id);
 
@@ -431,12 +446,27 @@ public partial class NetworkBuffer : INetStreamWriter
         {
             this.WriteVarInt(component.Type);
 
-            component.Write(this);
+            if (delimitedComponents)
+            {
+                var encoded = new NetworkBuffer();
+                encoded.WriteDataComponent(component);
+                this.WriteVarInt(encoded.Offset);
+                this.Write(encoded.data.AsSpan(0, encoded.Offset));
+            }
+            else this.WriteDataComponent(component);
         }
 
         foreach (var componentType in value.RemoveComponents)
             this.WriteVarInt(componentType);
     }
+
+    public void WriteUntrustedItemStack(ItemStack? value) => this.WriteItemStack(value, true);
+    public void WriteRequiredItemStack(ItemStack value)
+    {
+        if (value is null || value.IsAir || value.Count <= 0) throw new ArgumentException("Expected a nonempty stack.", nameof(value));
+        this.WriteItemStack(value);
+    }
+    public void WriteItemStackList(params ReadOnlySpan<ItemStack?> values) => this.WriteLengthPrefixedArray(this.WriteItemStack, values);
 
     public void WriteLengthPrefixedArray<TValue>(Action<TValue> write, params ReadOnlySpan<TValue> values)
     {
@@ -513,29 +543,19 @@ public partial class NetworkBuffer : INetStreamWriter
 
         if (dataLength >= compressionThreshold)
         {   // Compress the packet
-            using NetworkBuffer compressedBuffer = new();
-
-            using var ms = new MemoryStream();
-            using (ZLibStream zlibStream = new(ms, CompressionLevel.Optimal, true))
+            using var compressed = new MemoryStream();
+            using (ZLibStream zlibStream = new(compressed, CompressionLevel.Optimal, true))
             {
-                zlibStream.Write(networkBuffer.AsSpan(offset: 0));
+                zlibStream.Write(networkBuffer.AsSpan(0, dataLength));
             }
 
-            var data = ArrayPool<byte>.Shared.Rent(dataLength);
-            ms.Position = 0;
-
-            ms.ReadExactly(data);
-
-            compressedBuffer.Write(data.AsSpan(0, dataLength));
-
-            ArrayPool<byte>.Shared.Return(data);
-
-            int totalLength = dataLength.GetVarIntLength() + (int)compressedBuffer.Offset;
+            var compressedLength = (int)compressed.Length;
+            int totalLength = dataLength.GetVarIntLength() + compressedLength;
 
             this.WriteVarInt(totalLength);
             this.WriteVarInt(dataLength);
 
-            this.Write(compressedBuffer);
+            this.Write(compressed.GetBuffer().AsSpan(0, compressedLength));
         }
         else
         {   // Do not compress the packet

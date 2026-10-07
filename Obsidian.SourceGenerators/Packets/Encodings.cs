@@ -72,7 +72,7 @@ internal sealed class Encodings
         {
             case "boolean": case "byte": case "short": case "unsigned_short": case "int": case "var_int": case "long":
             case "var_long": case "float": case "double": case "string": case "identifier": case "uuid": case "block_pos":
-            case "vec3": case "lp_vec3": case "angle": case "component": case "item_stack": case "nbt": case "optional_nbt":
+            case "vec3": case "lp_vec3": case "angle": case "component": case "item_stack": case "untrusted_item_stack": case "required_item_stack": case "nbt": case "optional_nbt":
             case "byte_array": case "long_array": case "var_int_array": case "bit_set": case "remaining_bytes": case "instant":
             case "container_id": case "registry_id":
                 return null;
@@ -117,7 +117,8 @@ internal sealed class Encodings
         "lp_vec3" => "global::Obsidian.API.Velocity",
         "angle" => "global::Obsidian.API.Angle",
         "component" => "global::Obsidian.API.ChatMessage",
-        "item_stack" => "global::Obsidian.API.Inventory.ItemStack?",
+        "item_stack" or "untrusted_item_stack" => "global::Obsidian.API.Inventory.ItemStack?",
+        "required_item_stack" => "global::Obsidian.API.Inventory.ItemStack",
         "nbt" => "global::Obsidian.Nbt.NbtCompound",
         "optional_nbt" => "global::Obsidian.Nbt.NbtCompound?",
         "byte_array" or "remaining_bytes" => "byte[]",
@@ -159,6 +160,8 @@ internal sealed class Encodings
             case "lp_vec3": code.Line($"writer.WriteVelocity({value});"); break;
             case "angle": code.Line($"writer.WriteByte({value}.Value);"); break;
             case "component": code.Line($"writer.WriteChat({value});"); break;
+            case "untrusted_item_stack": code.Line($"writer.WriteUntrustedItemStack({value});"); break;
+            case "required_item_stack": code.Line($"writer.WriteRequiredItemStack({value});"); break;
             case "item_stack": code.Line($"writer.WriteItemStack({value});"); break;
             case "nbt": code.Line($"writer.WriteNbtCompound({value});"); break;
             case "optional_nbt": code.Line($"writer.WriteOptionalNbtCompound({value});"); break;
@@ -256,6 +259,8 @@ internal sealed class Encodings
             case "angle": return "reader.ReadAngle()";
             case "component": return "reader.ReadChat()";
             case "item_stack": return "reader.ReadItemStack()";
+            case "untrusted_item_stack": return "reader.ReadUntrustedItemStack()";
+            case "required_item_stack": return "reader.ReadRequiredItemStack()";
             case "nbt": return "reader.ReadNbtCompound()";
             case "optional_nbt": return "reader.ReadOptionalNbtCompound()";
             case "byte_array": return $"reader.ReadByteArray({Max(encoding, int.MaxValue)})";

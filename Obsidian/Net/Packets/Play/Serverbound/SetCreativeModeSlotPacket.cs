@@ -15,7 +15,8 @@ public partial class SetCreativeModeSlotPacket
     public override void Populate(INetStreamReader reader)
     {
         this.ClickedSlot = reader.ReadShort();
-        this.ClickedItem = reader.ReadItemStack(); 
+        // Vanilla's creative slot packet sends the stack with its components length-prefixed (the untrusted codec).
+        this.ClickedItem = reader.ReadUntrustedItemStack();
     }
 
     public override ValueTask HandleAsync(IServer server, IPlayer player)
