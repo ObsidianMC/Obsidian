@@ -1,4 +1,5 @@
 using System.Collections.Frozen;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json;
 
@@ -29,6 +30,12 @@ internal static class BlockStateProperties
     public static bool HasProperty(this IBlock block, string property) => block.GetProperty(property) is not null;
 
     /// <summary>
+    /// Gets every property of the block's state by name, empty for blocks without properties.
+    /// </summary>
+    public static IReadOnlyDictionary<string, string> GetProperties(this IBlock block) =>
+        table.Value.Properties.GetValueOrDefault(block.GetHashCode()) ?? FrozenDictionary<string, string>.Empty;
+
+    /// <summary>
     /// Returns the same block with <paramref name="property"/> set, or the block unchanged if it doesn't have it.
     /// </summary>
     public static IBlock WithProperty(this IBlock block, string property, string value)
@@ -46,12 +53,26 @@ internal static class BlockStateProperties
     /// <summary>
     /// Gets a block state from its name and properties; unspecified properties keep their default values.
     /// </summary>
-    public static IBlock GetState(string name, IReadOnlyDictionary<string, string>? properties = null)
+    public static IBlock GetState(string name, IReadOnlyDictionary<string, string>? properties = null) =>
+        TryGetState(name, properties, out var state) ? state : throw new InvalidOperationException($"{name} is not a valid block.");
+
+    /// <summary>
+    /// Gets a block state like <see cref="GetState"/>, or returns <c>false</c> when <paramref name="name"/> isn't a block.
+    /// </summary>
+    public static bool TryGetState(string name, IReadOnlyDictionary<string, string>? properties, [NotNullWhen(true)] out IBlock? state)
     {
+        state = null;
+
         var data = table.Value;
         if (!data.DefaultIds.TryGetValue(name, out var defaultId))
-            throw new InvalidOperationException($"{name} is not a valid block.");
+            return false;
 
+        state = FindState(defaultId, properties);
+        return true;
+    }
+
+    private static IBlock FindState(int defaultId, IReadOnlyDictionary<string, string>? properties)
+    {
         if (properties is null || properties.Count == 0)
             return BlocksRegistry.Get(defaultId);
 
