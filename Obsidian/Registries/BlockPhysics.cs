@@ -278,6 +278,28 @@ internal static class BlockPhysics
 
     private static int Flags(IBlock block) => Flags(block.GetHashCode());
 
+    /// <summary>Vanilla state shapes captured with empty collision context, in block-local coordinates.</summary>
+    public static IReadOnlyList<double[]> ShapeBoxes(int state, bool visual = false) => data.Value.ShapeBoxes[(visual ? data.Value.VisualShapes : data.Value.CollisionShapes)[state]];
+    /// <summary>Vanilla's selection/picking shape, distinct from the camera's visual shape.</summary>
+    public static IReadOnlyList<double[]> OutlineBoxes(int state) => data.Value.ShapeBoxes[data.Value.OutlineShapes[state]];
+    public static bool Suffocates(int state) => data.Value.Suffocating[state];
+
+    /// <summary>Moves shapes captured at the origin to a state's position-dependent offset (flowers, bamboo, etc.).</summary>
+    public static (double X, double Y, double Z) ShapeOffset(int state, int x, int z)
+    {
+        var offset = data.Value.ShapeOffsets[state];
+        if (offset.Length == 0) return default;
+        // Vanilla's Mth position seed and float fractions must match the offset used by the block's shape.
+        var seed = unchecked((long)(x * 3129871) ^ z * 116129781L);
+        seed = unchecked(seed * seed * 42317861L + seed * 11L) >> 16;
+        var dx = Math.Clamp(((float)(seed & 15) / 15f - .5) * .5, -offset[3], offset[3]);
+        var dz = Math.Clamp(((float)((seed >> 8) & 15) / 15f - .5) * .5, -offset[3], offset[3]);
+        var dy = offset[1] == 0 ? 0 : ((float)((seed >> 4) & 15) / 15f - 1.0) * offset[4];
+        return (dx - offset[0], dy - offset[1], dz - offset[2]);
+    }
+    public static float MiningHardness(int state) => data.Value.Hardness[state];
+    public static bool RequiresCorrectTool(int state) => data.Value.RequiresTool[state];
+
     private static PhysicsData Load()
     {
         using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Obsidian.Assets.block_physics.json")
@@ -296,12 +318,22 @@ internal static class BlockPhysics
                 .Select(set => set.EnumerateArray().Select(face => face.GetInt32()).ToArray()).ToArray(),
             root.GetProperty("collisionFaces").EnumerateArray()
                 .Select(face => face.EnumerateArray().Select(box => box.EnumerateArray().Select(value => value.GetDouble()).ToArray()).ToArray())
-                .ToArray());
+                .ToArray(),
+            root.GetProperty("shapeBoxes").EnumerateArray().Select(shape => shape.EnumerateArray()
+                .Select(box => box.EnumerateArray().Select(value => value.GetDouble()).ToArray()).ToArray()).ToArray(),
+            root.GetProperty("collisionShapes").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
+            root.GetProperty("visualShapes").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
+            root.GetProperty("outlineShapes").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
+            root.GetProperty("suffocating").EnumerateArray().Select(value => value.GetBoolean()).ToArray(),
+            root.GetProperty("shapeOffsets").EnumerateArray().Select(value => value.EnumerateArray().Select(number => number.GetDouble()).ToArray()).ToArray(),
+            root.GetProperty("hardness").EnumerateArray().Select(value => value.GetSingle()).ToArray(),
+            root.GetProperty("requiresTool").EnumerateArray().Select(value => value.GetBoolean()).ToArray());
     }
 
     private sealed record PhysicsData(int[] Flags, Dictionary<string, string> BlockClasses, Dictionary<string, string> BlockEntityTypes,
         Dictionary<string, int> BlockEntityTypeIds, HashSet<string> SignalSources, int[] FluidFlags, int[][] CollisionFaceSets,
-        double[][][] CollisionFaces)
+        double[][][] CollisionFaces, double[][][] ShapeBoxes, int[] CollisionShapes, int[] VisualShapes, int[] OutlineShapes, bool[] Suffocating,
+        double[][] ShapeOffsets, float[] Hardness, bool[] RequiresTool)
     {
         // Like vanilla's occlusion cache in FlowingFluid: the same pairs of partial blocks come up again and again.
         public ConcurrentDictionary<(int From, int To, BlockFace Direction), bool> FaceOcclusion { get; } = new();
