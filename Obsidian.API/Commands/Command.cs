@@ -40,7 +40,7 @@ public sealed class Command
         var c = this;
         string name = c.Name;
 
-        while (c.Parent != null)
+        while (c.Parent is not null)
         {
             name = $"{c.Parent.Name} {name}";
             c = c.Parent;
@@ -64,10 +64,10 @@ public sealed class Command
         }
 
         var executors = Overloads.Where(x => x.MatchParams(args)
-            || x.GetParameters().LastOrDefault()?.GetCustomAttribute<RemainingAttribute>() != null);
+            || x.GetParameters().LastOrDefault()?.GetCustomAttribute<RemainingAttribute>() is not null);
 
         // Find matching overload
-        if (executors == null)
+        if (executors is null)
         {
             //TODO since commands can have multiple usages, if this is empty we should print out all of the args for usage
             //throw new InvalidCommandOverloadException($"No such overload for command {this.GetQualifiedName()}");

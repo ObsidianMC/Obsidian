@@ -28,7 +28,8 @@ public sealed record class PotionContentsDataComponent : DataComponent
     {
         this.Potion = reader.ReadBoolean() ? (Potion)reader.ReadVarInt() : null;
         this.CustomColor = reader.ReadOptionalInt();
-        this.CustomEffects = ImmutableCollectionsMarshal.AsImmutableArray(reader.ReadLengthPrefixedArray(() => ComponentValueCodecs.ReadEffect(reader)));
+        this.CustomEffects = ImmutableCollectionsMarshal.AsImmutableArray(
+            reader.ReadLengthPrefixedArray(() => ComponentValueCodecs.ReadEffect(reader)));
         this.CustomName = reader.ReadOptionalString();
     }
 

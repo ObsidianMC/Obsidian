@@ -18,37 +18,68 @@ public abstract record class BlockPredicatesDataComponent : DataComponent
             Blocks = reader.ReadBoolean() ? reader.ReadIdSet() : null,
             Properties = reader.ReadBoolean() ? reader.ReadLengthPrefixedArray(() =>
             {
-                var name = reader.ReadString(); var exact = reader.ReadBoolean();
-                return exact ? new BlockProperty { Name = name, IsExactMatch = true, ExactValue = reader.ReadString() } :
-                    new BlockProperty { Name = name, IsExactMatch = false, MinValue = reader.ReadOptionalString(), MaxValue = reader.ReadOptionalString() };
+                var name = reader.ReadString();
+                var exact = reader.ReadBoolean();
+                return exact
+                    ? new BlockProperty { Name = name, IsExactMatch = true, ExactValue = reader.ReadString() }
+                    : new BlockProperty
+                    {
+                        Name = name,
+                        IsExactMatch = false,
+                        MinValue = reader.ReadOptionalString(),
+                        MaxValue = reader.ReadOptionalString()
+                    };
             }).ToList() : null,
             Nbt = reader.ReadBoolean() ? reader.ReadNbtCompound() : null,
             ExactComponents = reader.ReadLengthPrefixedArray(() => reader.ReadDataComponent(reader.ReadVarInt<DataComponentType>())),
             PartialComponents = reader.ReadLengthPrefixedArray(() => new ComponentPredicate
             {
-                IsPredicateType = reader.ReadBoolean(), TypeId = reader.ReadVarInt(), Value = reader.ReadNbtCompound()
+                IsPredicateType = reader.ReadBoolean(),
+                TypeId = reader.ReadVarInt(),
+                Value = reader.ReadNbtCompound()
             })
         }).ToList();
     }
+
     public override void Write(INetStreamWriter writer)
     {
         writer.WriteLengthPrefixedArray(predicate =>
         {
             writer.WriteBoolean(predicate.Blocks.HasValue);
-            if (predicate.Blocks.HasValue) IdSet.Write(predicate.Blocks.Value, writer);
+            if (predicate.Blocks.HasValue)
+                IdSet.Write(predicate.Blocks.Value, writer);
+
             writer.WriteBoolean(predicate.Properties is not null);
-            if (predicate.Properties is not null) writer.WriteLengthPrefixedArray(property =>
+            if (predicate.Properties is not null)
             {
-                writer.WriteString(property.Name); writer.WriteBoolean(property.IsExactMatch);
-                if (property.IsExactMatch) writer.WriteString(property.ExactValue!);
-                else { writer.WriteOptional(property.MinValue); writer.WriteOptional(property.MaxValue); }
-            }, predicate.Properties.ToArray());
+                writer.WriteLengthPrefixedArray(property =>
+                {
+                    writer.WriteString(property.Name);
+                    writer.WriteBoolean(property.IsExactMatch);
+                    if (property.IsExactMatch)
+                        writer.WriteString(property.ExactValue!);
+                    else
+                    {
+                        writer.WriteOptional(property.MinValue);
+                        writer.WriteOptional(property.MaxValue);
+                    }
+                }, predicate.Properties.ToArray());
+            }
+
             writer.WriteBoolean(predicate.Nbt is not null);
-            if (predicate.Nbt is not null) writer.WriteNbtCompound(predicate.Nbt);
-            writer.WriteLengthPrefixedArray(component => { writer.WriteVarInt(component.Type); writer.WriteDataComponent(component); }, predicate.ExactComponents);
+            if (predicate.Nbt is not null)
+                writer.WriteNbtCompound(predicate.Nbt);
+
             writer.WriteLengthPrefixedArray(component =>
             {
-                writer.WriteBoolean(component.IsPredicateType); writer.WriteVarInt(component.TypeId); writer.WriteNbtCompound(component.Value);
+                writer.WriteVarInt(component.Type);
+                writer.WriteDataComponent(component);
+            }, predicate.ExactComponents);
+            writer.WriteLengthPrefixedArray(component =>
+            {
+                writer.WriteBoolean(component.IsPredicateType);
+                writer.WriteVarInt(component.TypeId);
+                writer.WriteNbtCompound(component.Value);
             }, predicate.PartialComponents);
         }, this.Predicates.ToArray());
     }
@@ -76,7 +107,7 @@ public readonly record struct BlockPredicate
 
     public List<BlockProperty>? Properties { get; init; }
 
-    public bool HasNbt => this.Nbt != null;
+    public bool HasNbt => this.Nbt is not null;
 
     public NbtCompound? Nbt { get; init; }
 }

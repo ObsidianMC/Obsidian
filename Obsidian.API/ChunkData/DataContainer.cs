@@ -25,7 +25,8 @@ public abstract class DataContainer<T>(byte minBitsPerEntry, byte maxBitsPerEntr
 
     internal DataArray? DataArray { get; private protected set; }
 
-    public DataContainer(byte initialBitsPerEntry, byte minBitsPerEntry, byte maxBitsPerEntry, int maxEntryCount, Func<byte, IPalette<T>> paletteFactory)
+    public DataContainer(byte initialBitsPerEntry, byte minBitsPerEntry, byte maxBitsPerEntry, int maxEntryCount,
+        Func<byte, IPalette<T>> paletteFactory)
         : this(minBitsPerEntry, maxBitsPerEntry, maxEntryCount, paletteFactory)
     {
         this.Palette = this.PaletteFactory(initialBitsPerEntry);

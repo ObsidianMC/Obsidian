@@ -37,7 +37,10 @@ public sealed record class EquippableDataComponent : DataComponent
         this.Slot = reader.ReadVarInt<EquipmentSlot>();
         this.EquipSound = ComponentValueCodecs.ReadSoundHolder(reader);
         this.AssetIdentifier = reader.ReadOptionalString();
-        this.AssetId = this.AssetIdentifier is string value && Enum.TryParse<EquipmentAssets>(value.TrimResourceTag().ToPascalCase(), true, out var asset) ? asset : null;
+        this.AssetId = this.AssetIdentifier is string value
+            && Enum.TryParse<EquipmentAssets>(value.TrimResourceTag().ToPascalCase(), true, out var asset)
+                ? asset
+                : null;
         this.CameraOverlay = reader.ReadOptionalString();
 
         var hasEntities = reader.ReadBoolean();

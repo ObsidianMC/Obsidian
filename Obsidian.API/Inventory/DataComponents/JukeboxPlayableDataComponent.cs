@@ -13,23 +13,43 @@ public sealed record class JukeboxPlayableDataComponent : DataComponent
 
     public override void Read(INetStreamReader reader)
     {
-        if (!reader.ReadBoolean()) { this.Song = new(reader.ReadString()); return; }
-        var holder = reader.ReadVarInt(); this.RegistryId = holder == 0 ? null : holder - 1;
-        if (holder == 0) this.Song = new(new JukeboxSong
+        if (!reader.ReadBoolean())
         {
-            SoundEvent = ComponentValueCodecs.ReadSoundHolder(reader), Description = reader.ReadChat(),
-            LengthInSeconds = reader.ReadSingle(), ComparatorOutput = reader.ReadVarInt()
-        });
+            this.Song = new(reader.ReadString());
+            return;
+        }
+
+        var holder = reader.ReadVarInt();
+        this.RegistryId = holder == 0 ? null : holder - 1;
+        if (holder == 0)
+        {
+            this.Song = new(new JukeboxSong
+            {
+                SoundEvent = ComponentValueCodecs.ReadSoundHolder(reader),
+                Description = reader.ReadChat(),
+                LengthInSeconds = reader.ReadSingle(),
+                ComparatorOutput = reader.ReadVarInt()
+            });
+        }
     }
 
     public override void Write(INetStreamWriter writer)
     {
         writer.WriteBoolean(this.Song.Left is null);
-        if (this.Song.Left is string key) { writer.WriteString(key); return; }
+        if (this.Song.Left is string key)
+        {
+            writer.WriteString(key);
+            return;
+        }
+
         writer.WriteVarInt(this.RegistryId is int id ? id + 1 : 0);
-        if (this.RegistryId is not null) return;
+        if (this.RegistryId is not null)
+            return;
+
         var value = this.Song.Right!;
-        ComponentValueCodecs.WriteSoundHolder(value.SoundEvent, writer); writer.WriteChat(value.Description);
-        writer.WriteSingle(value.LengthInSeconds); writer.WriteVarInt(value.ComparatorOutput);
+        ComponentValueCodecs.WriteSoundHolder(value.SoundEvent, writer);
+        writer.WriteChat(value.Description);
+        writer.WriteSingle(value.LengthInSeconds);
+        writer.WriteVarInt(value.ComparatorOutput);
     }
 }

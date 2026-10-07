@@ -103,9 +103,13 @@ public readonly record struct IdSet : INetworkSerializable<IdSet>
 
     private static ImmutableArray<int> ReadIds(INetStreamReader reader, int count)
     {
-        if (count < 0 || count > 65536) throw new System.IO.InvalidDataException("Invalid ID set size.");
+        if (count < 0 || count > 65536)
+            throw new System.IO.InvalidDataException("Invalid ID set size.");
+
         var ids = ImmutableArray.CreateBuilder<int>(count);
-        for (var i = 0; i < count; i++) ids.Add(reader.ReadVarInt());
+        for (var i = 0; i < count; i++)
+            ids.Add(reader.ReadVarInt());
+
         return ids.MoveToImmutable();
     }
 

@@ -69,11 +69,13 @@ public static partial class ComponentBuilder
     /// </summary>
     public static SimpleDataComponent CreativeSlotLock => new(DataComponentType.CreativeSlotLock, "minecraft:creative_slot_lock");
 
-    public static SimpleDataComponent<bool> EnchantmentGlintOverride => BuildSimpleComponent(DataComponentType.EnchantmentGlintOverride, "minecraft:enchantment_glint_override",
+    public static SimpleDataComponent<bool> EnchantmentGlintOverride => BuildSimpleComponent(DataComponentType.EnchantmentGlintOverride,
+        "minecraft:enchantment_glint_override",
         (writer, value) => writer.WriteBoolean(value),
         (reader) => reader.ReadBoolean());
 
-    public static SimpleDataComponent<Obsidian.Nbt.NbtCompound> IntangibleProjectile => NbtComponent(DataComponentType.IntangibleProjectile, "minecraft:intangible_projectile");
+    public static SimpleDataComponent<Obsidian.Nbt.NbtCompound> IntangibleProjectile =>
+        NbtComponent(DataComponentType.IntangibleProjectile, "minecraft:intangible_projectile");
 
     public static SimpleDataComponent<ItemStack?> UseRemainder => BuildSimpleComponent(DataComponentType.UseRemainder, "minecraft:use_remainder",
         (writer, value) => writer.WriteRequiredItemStack(value!),
@@ -100,11 +102,13 @@ public static partial class ComponentBuilder
       (writer, value) => writer.WriteString(value),
       reader => reader.ReadString());
 
-    public static SimpleDataComponent<IConsumeEffect[]> DeathProtection => BuildSimpleComponent(DataComponentType.DeathProtection, "minecraft:death_protection",
+    public static SimpleDataComponent<IConsumeEffect[]> DeathProtection => BuildSimpleComponent(DataComponentType.DeathProtection,
+        "minecraft:death_protection",
         (writer, values) => writer.WriteLengthPrefixedArray(value => ComponentConsumeEffect.WriteValue(value, writer), values),
         reader => reader.ReadLengthPrefixedArray<IConsumeEffect>(() => ComponentConsumeEffect.ReadValue(reader)));
 
-    public static SimpleDataComponent<Enchantment[]> StoredEnchantments => BuildSimpleComponent(DataComponentType.StoredEnchantments, "minecraft:stored_enchantments",
+    public static SimpleDataComponent<Enchantment[]> StoredEnchantments => BuildSimpleComponent(DataComponentType.StoredEnchantments,
+        "minecraft:stored_enchantments",
         (writer, values) => writer.WriteLengthPrefixedArray(writer.WriteEnchantment, values),
         reader => reader.ReadLengthPrefixedArray(reader.ReadEnchantment));
 
@@ -118,15 +122,18 @@ public static partial class ComponentBuilder
        (writer, value) => writer.WriteVarInt(value),
        reader => reader.ReadVarInt());
 
-    public static SimpleDataComponent<MapPostProcessingType> MapPostProcessing => BuildSimpleComponent(DataComponentType.MapPostProcessing, "minecraft:map_post_processing",
+    public static SimpleDataComponent<MapPostProcessingType> MapPostProcessing => BuildSimpleComponent(DataComponentType.MapPostProcessing,
+        "minecraft:map_post_processing",
        (writer, value) => writer.WriteVarInt(value),
        reader => reader.ReadVarInt<MapPostProcessingType>());
 
-    public static SimpleDataComponent<ItemStack[]> ChargedProjectiles => BuildSimpleComponent(DataComponentType.ChargedProjectiles, "minecraft:charged_projectiles",
+    public static SimpleDataComponent<ItemStack[]> ChargedProjectiles => BuildSimpleComponent(DataComponentType.ChargedProjectiles,
+        "minecraft:charged_projectiles",
         (writer, values) => writer.WriteLengthPrefixedArray(item => writer.WriteRequiredItemStack(item), values),
         reader => reader.ReadLengthPrefixedArray(() => reader.ReadRequiredItemStack()));
 
-    public static SimpleDataComponent<ItemStack[]> BundleContents => BuildSimpleComponent(DataComponentType.BundleContents, "minecraft:bundle_contents",
+    public static SimpleDataComponent<ItemStack[]> BundleContents => BuildSimpleComponent(DataComponentType.BundleContents,
+        "minecraft:bundle_contents",
         (writer, values) => writer.WriteLengthPrefixedArray(item => writer.WriteRequiredItemStack(item), values),
         reader => reader.ReadLengthPrefixedArray(() => reader.ReadRequiredItemStack()));
 
@@ -135,20 +142,24 @@ public static partial class ComponentBuilder
         (writer, values) => writer.WriteLengthPrefixedArray(value => SuspiciousStewEffect.Write(value, writer), values),
         reader => reader.ReadLengthPrefixedArray(() => SuspiciousStewEffect.Read(reader)));
 
-    public static SimpleDataComponent<Page[]> WritableBookContent => BuildSimpleComponent(DataComponentType.WritableBookContent, "minecraft:writable_book_content",
+    public static SimpleDataComponent<Page[]> WritableBookContent => BuildSimpleComponent(DataComponentType.WritableBookContent,
+        "minecraft:writable_book_content",
         (writer, values) => writer.WriteLengthPrefixedArray((value) => Page.Write(value, writer), values),
         reader => reader.ReadLengthPrefixedArray(() => Page.Read(reader)));
 
     public static WrittenBookDataComponent WrittenBookContent => new();
 
-    public static SimpleDataComponent<Obsidian.Nbt.NbtCompound> DebugStickState => NbtComponent(DataComponentType.DebugStickState, "minecraft:debug_stick_state");
+    public static SimpleDataComponent<Obsidian.Nbt.NbtCompound> DebugStickState =>
+        NbtComponent(DataComponentType.DebugStickState, "minecraft:debug_stick_state");
     public static EntityDataComponent EntityData => new(DataComponentType.EntityData);
-    public static SimpleDataComponent<Obsidian.Nbt.NbtCompound> BucketEntityData => NbtComponent(DataComponentType.BucketEntityData, "minecraft:bucket_entity_data");
+    public static SimpleDataComponent<Obsidian.Nbt.NbtCompound> BucketEntityData =>
+        NbtComponent(DataComponentType.BucketEntityData, "minecraft:bucket_entity_data");
     public static EntityDataComponent BlockEntityData => new(DataComponentType.BlockEntityData);
 
     public static InstrumentDataComponent Instrument => new();
 
-    public static SimpleDataComponent<int> OminousBottleAmplifier => BuildSimpleComponent(DataComponentType.OminousBottleAmplifier, "minecraft:ominous_bottle_amplifier",
+    public static SimpleDataComponent<int> OminousBottleAmplifier => BuildSimpleComponent(DataComponentType.OminousBottleAmplifier,
+        "minecraft:ominous_bottle_amplifier",
         (writer, value) => writer.WriteVarInt(value),
         reader => reader.ReadVarInt());
 
@@ -156,29 +167,42 @@ public static partial class ComponentBuilder
     public static SimpleDataComponent<string[]> Recipes => BuildSimpleComponent(DataComponentType.Recipes, "minecraft:recipes",
         (writer, values) =>
         {
-            writer.WriteByte((byte)9); writer.WriteByte((byte)8); writer.WriteInt(values.Length);
+            writer.WriteByte((byte)9);
+            writer.WriteByte((byte)8);
+            writer.WriteInt(values.Length);
             foreach (var value in values)
             {
                 var bytes = System.Text.Encoding.UTF8.GetBytes(value);
                 writer.WriteUnsignedShort(checked((ushort)bytes.Length));
-                foreach (var part in bytes) writer.WriteByte(part);
+                foreach (var part in bytes)
+                    writer.WriteByte(part);
             }
         }, reader =>
         {
-            if (reader.ReadByte() != 9) throw new System.IO.InvalidDataException("Expected recipe NBT list.");
-            var element = reader.ReadByte(); var count = reader.ReadInt();
-            if (count < 0 || count > 65536 || (count > 0 && element != 8)) throw new System.IO.InvalidDataException("Invalid recipe list.");
+            if (reader.ReadByte() != 9)
+                throw new System.IO.InvalidDataException("Expected recipe NBT list.");
+
+            var element = reader.ReadByte();
+            var count = reader.ReadInt();
+            if (count < 0 || count > 65536 || (count > 0 && element != 8))
+                throw new System.IO.InvalidDataException("Invalid recipe list.");
+
             var values = new string[count];
             for (var i = 0; i < count; i++)
             {
-                var length = reader.ReadUnsignedShort(); var bytes = new byte[length];
-                for (var j = 0; j < length; j++) bytes[j] = reader.ReadByte();
+                var length = reader.ReadUnsignedShort();
+                var bytes = new byte[length];
+                for (var j = 0; j < length; j++)
+                    bytes[j] = reader.ReadByte();
+
                 values[i] = System.Text.Encoding.UTF8.GetString(bytes);
             }
+
             return values;
         });
 
-    public static SimpleDataComponent<FireworkExplosion> FireworkExplosion => BuildSimpleComponent(DataComponentType.FireworkExplosion, "minecraft:firework_explosion",
+    public static SimpleDataComponent<FireworkExplosion> FireworkExplosion => BuildSimpleComponent(DataComponentType.FireworkExplosion,
+        "minecraft:firework_explosion",
         (writer, value) => ComponentValueCodecs.WriteExplosion(value, writer),
         ComponentValueCodecs.ReadExplosion);
 
@@ -215,10 +239,13 @@ public static partial class ComponentBuilder
 
     public static SimpleDataComponent<Obsidian.Nbt.NbtCompound> Lock => NbtComponent(DataComponentType.Lock, "minecraft:lock");
 
-    public static SimpleDataComponent<Obsidian.Nbt.NbtCompound> ContainerLoot => NbtComponent(DataComponentType.ContainerLoot, "minecraft:container_loot");
+    public static SimpleDataComponent<Obsidian.Nbt.NbtCompound> ContainerLoot =>
+        NbtComponent(DataComponentType.ContainerLoot, "minecraft:container_loot");
 
     private static SimpleDataComponent<Obsidian.Nbt.NbtCompound> NbtComponent(DataComponentType type, string identifier) =>
-        BuildSimpleComponent<Obsidian.Nbt.NbtCompound>(type, identifier, (writer, value) => writer.WriteNbtCompound(value ?? new()), reader => reader.ReadNbtCompound());
+        BuildSimpleComponent<Obsidian.Nbt.NbtCompound>(type, identifier,
+            (writer, value) => writer.WriteNbtCompound(value ?? new()),
+            reader => reader.ReadNbtCompound());
 
     public static List<DataComponent> DefaultItemComponents =>
     [

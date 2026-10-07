@@ -23,17 +23,21 @@ public abstract class DataComponentsStorage
     public IEnumerable<DataComponent> Patch => this.patchOrder
         .Where(type => this.InternalStorage.ContainsKey(type) && !this.RemoveComponents.Contains(type))
         .Select(type => this.InternalStorage[type])
-        .Concat(this.InternalStorage.Values.Where(component => !this.patchOrder.Contains(component.Type) &&
-            !this.RemoveComponents.Contains(component.Type) &&
-            (!this.Placeholders.TryGetValue(component.Type, out var placeholder) || !component.Equals(placeholder))));
+        .Concat(this.InternalStorage.Values.Where(component => !this.patchOrder.Contains(component.Type)
+            && !this.RemoveComponents.Contains(component.Type)
+            && (!this.Placeholders.TryGetValue(component.Type, out var placeholder) || !component.Equals(placeholder))));
 
     public DataComponent this[DataComponentType type]
     {
         get => this.InternalStorage[type];
         set
         {
-            if (value.Type != type) throw new ArgumentException("Component type does not match its key.", nameof(value));
-            if (!this.patchOrder.Contains(type)) this.patchOrder.Add(type);
+            if (value.Type != type)
+                throw new ArgumentException("Component type does not match its key.", nameof(value));
+
+            if (!this.patchOrder.Contains(type))
+                this.patchOrder.Add(type);
+
             this.InternalStorage[type] = value;
             this.RemoveComponents.Remove(type);
             this.Placeholders.Remove(type);
@@ -42,7 +46,9 @@ public abstract class DataComponentsStorage
 
     public bool Add(DataComponent component)
     {
-        if (!this.InternalStorage.TryAdd(component.Type, component)) return false;
+        if (!this.InternalStorage.TryAdd(component.Type, component))
+            return false;
+
         this.RemoveComponents.Remove(component.Type);
         return true;
     }
@@ -67,7 +73,9 @@ public abstract class DataComponentsStorage
     {
         this.Placeholders.Remove(type);
         this.patchOrder.Remove(type);
-        if (!this.RemoveComponents.Contains(type)) this.RemoveComponents.Add(type);
+        if (!this.RemoveComponents.Contains(type))
+            this.RemoveComponents.Add(type);
+
         return this.InternalStorage.Remove(type);
     }
 
