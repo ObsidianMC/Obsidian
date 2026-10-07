@@ -26,7 +26,7 @@ public sealed partial class FinishConfigurationPacket
         }
 
         if (!CodecRegistry.TryGetDimension(player.Level.DimensionName, out var codec)
-            || !CodecRegistry.TryGetDimension("minecraft:overworld", out codec))
+            && !CodecRegistry.TryGetDimension("minecraft:overworld", out codec))
             throw new UnreachableException("Failed to retrieve proper dimension for player.");
 
         await client.QueuePacketAsync(new LoginPacket
