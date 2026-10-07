@@ -113,8 +113,9 @@ With `Integrated:WorldPath`, the server loads exactly that folder as a vanilla s
 `session.lock` (a snowman, locked exclusively) while it's open; a world that's already open elsewhere fails the start
 with a crash event. The folder holds:
 
-- `level.dat` in vanilla 1.21.11's shape (a root compound with `Data`), and its backup `level.dat_old`. Obsidian's
-  own `level.dat.old` is read too if it's the only backup.
+- `level.dat` in vanilla 1.21.11's shape (a root compound with `Data`), and its backup `level.dat_old`. When
+  level.dat is missing or can't be read, everything (generator, seed and level data) comes from `level.dat_old`, or
+  else Obsidian's own `level.dat.old`.
 - `region/` and `entities/` for the overworld, `DIM-1/` for the nether and `DIM1/` for the end with their own `region/`
   and `entities/`, `data/` for maps and `playerdata/`. Obsidian doesn't write `poi/`.
 

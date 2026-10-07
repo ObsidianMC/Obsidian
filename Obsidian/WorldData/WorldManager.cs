@@ -174,7 +174,7 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
 
         var settings = newWorldOptions.Value;
         var levelDataPath = Path.Combine(folder, "level.dat");
-        var root = World.ReadLevelData(levelDataPath, this.logger) ?? World.ReadLevelData($"{levelDataPath}_old", this.logger);
+        var root = World.ReadLevelDataOrBackup(levelDataPath, this.logger);
         var data = root is not null ? VanillaLevelData.GetData(root) : null;
 
         string name, generatorId;

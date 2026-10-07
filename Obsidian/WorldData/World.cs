@@ -68,15 +68,10 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
     {
         this.Initialize(codec);
 
-        // The level data is level.dat, or its backup when level.dat is missing or can't be read: a save that stopped
-        // partway, or a damaged file. Vanilla names the backup level.dat_old, Obsidian level.dat.old. With none, the world
-        // is new; with none readable, it fails rather than generate a new world over the damaged one.
-        string[] paths = [this.LevelDataFilePath, $"{this.LevelDataFilePath}_old", $"{this.LevelDataFilePath}.old"];
-        if (!paths.Any(File.Exists))
+        // With no level data, the world is new.
+        var levelCompound = ReadLevelDataOrBackup(this.LevelDataFilePath, this.Logger);
+        if (levelCompound is null)
             return false;
-
-        var levelCompound = paths.Select(path => ReadLevelData(path, this.Logger)).FirstOrDefault(compound => compound is not null)
-            ?? throw new InvalidDataException($"Neither {this.LevelDataFilePath} nor its backup can be read.");
 
         // A level in vanilla's shape is kept whole and written back in that shape.
         this.vanillaData = VanillaLevelData.GetData(levelCompound);
@@ -120,6 +115,26 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
 
         Loaded = true;
         return true;
+    }
+
+    /// <summary>
+    /// The level data at <paramref name="levelDataPath"/> or, when it's missing or can't be read (a save that stopped
+    /// partway, a damaged file), its first readable backup: vanilla's <c>level.dat_old</c>, then Obsidian's
+    /// <c>level.dat.old</c>. Whatever reads a world's level data uses this, so they all pick the same file.
+    /// </summary>
+    /// <returns>The root compound, or <c>null</c> when there's no level data at all, so the world is new.</returns>
+    /// <exception cref="InvalidDataException">
+    /// There is level data but none of it can be read; the world fails to load rather than be generated over it.
+    /// </exception>
+    internal static NbtCompound? ReadLevelDataOrBackup(string levelDataPath, ILogger logger)
+    {
+        string[] paths = [levelDataPath, $"{levelDataPath}_old", $"{levelDataPath}.old"];
+        if (!paths.Any(File.Exists))
+            return null;
+
+        var readable = paths.Select(path => ReadLevelData(path, logger)).FirstOrDefault(compound => compound is not null);
+
+        return readable ?? throw new InvalidDataException($"Neither {levelDataPath} nor its backup can be read.");
     }
 
     /// <summary>A level data file's root compound, or null when it's missing or can't be read.</summary>
