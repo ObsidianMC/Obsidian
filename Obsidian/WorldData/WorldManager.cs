@@ -57,7 +57,12 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
 
             while (await timer.WaitForNextTickAsync())
             {
-                await Task.WhenAll(this.worlds.Values.Cast<World>().Select(x => x.ManageChunksAsync()));
+                // Every level manages its chunks, the dimensions too: it's what generates the chunks players ask for.
+                var levels = this.worlds.Values
+                    .Cast<World>()
+                    .SelectMany(world => world.dimensions.Values.Cast<AbstractLevel>().Prepend(world));
+
+                await Task.WhenAll(levels.Select(level => level.ManageChunksAsync()));
             }
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
