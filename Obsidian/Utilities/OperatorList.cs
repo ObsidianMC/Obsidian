@@ -84,7 +84,13 @@ public sealed partial class OperatorList : IOperatorList
 
     public void AddOperator(IPlayer player, int level = 4, bool bypassesPlayerLimit = false)
     {
-        this.operators.Add(new Operator { Username = player.Username, Uuid = player.Uuid, Level = level, BypassesPlayerLimit = bypassesPlayerLimit  });
+        this.operators.Add(new Operator
+        {
+            Username = player.Username,
+            Uuid = player.Uuid,
+            Level = level,
+            BypassesPlayerLimit = bypassesPlayerLimit
+        });
         this.UpdateList();
         _ = this.SendPermissionLevelAsync(player);
     }

@@ -207,7 +207,8 @@ public partial class Client
                 case ClientState.Configuration:
                     Debug.Assert(Player is not null);
 
-                    var result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.Server, packetData.Id, packetData.NetworkBuffer.GetBuffer()));
+                    var result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player,
+                        this.Server, packetData.Id, packetData.NetworkBuffer.GetBuffer()));
 
                     if (result == EventResult.Cancelled)
                         return;
@@ -217,7 +218,8 @@ public partial class Client
                 case ClientState.Play:
                     Debug.Assert(Player is not null);
 
-                    result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player, this.Server, packetData.Id, packetData.NetworkBuffer.GetBuffer()));
+                    result = await this.eventDispatcher.ExecuteEventAsync(new PacketReceivedEventArgs(Player,
+                        this.Server, packetData.Id, packetData.NetworkBuffer.GetBuffer()));
 
                     if (result == EventResult.Cancelled)
                         return;

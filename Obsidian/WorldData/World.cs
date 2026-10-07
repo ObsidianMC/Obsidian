@@ -9,7 +9,8 @@ using System.IO;
 
 namespace Obsidian.WorldData;
 
-public sealed partial class World(ILogger<World> logger, IWorldManager worldManager, IPacketBroadcaster packetBroadcaster, IOptionsMonitor<ServerConfiguration> configuration,
+public sealed partial class World(ILogger<World> logger, IWorldManager worldManager,
+    IPacketBroadcaster packetBroadcaster, IOptionsMonitor<ServerConfiguration> configuration,
     IEventDispatcher eventDispatcher, ILevelGenerator worldGenerator, string name, string seed) :
     AbstractLevel(logger, packetBroadcaster, configuration, eventDispatcher, worldGenerator, name, seed), IWorld
 {

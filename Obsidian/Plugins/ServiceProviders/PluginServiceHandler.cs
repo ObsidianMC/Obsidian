@@ -19,7 +19,7 @@ public static partial class PluginServiceHandler
 
     private static void InjectService(IServiceProvider provider, PropertyInfo property, object target, ILogger logger)
     {
-        if (property.GetValue(target) != null)
+        if (property.GetValue(target) is not null)
             return;
 
         try

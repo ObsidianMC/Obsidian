@@ -241,7 +241,9 @@ internal static class MapRenderer
         return best.Color;
     }
 
-    private static MapBrightness WaterBrightness(double shade) => shade < 0.5 ? MapBrightness.High : shade > 0.9 ? MapBrightness.Low : MapBrightness.Normal;
+    private static MapBrightness WaterBrightness(double shade) =>
+        shade < 0.5 ? MapBrightness.High : shade > 0.9 ? MapBrightness.Low : MapBrightness.Normal;
 
-    private static MapBrightness LandBrightness(double shade) => shade > 0.6 ? MapBrightness.High : shade < -0.6 ? MapBrightness.Low : MapBrightness.Normal;
+    private static MapBrightness LandBrightness(double shade) =>
+        shade > 0.6 ? MapBrightness.High : shade < -0.6 ? MapBrightness.Low : MapBrightness.Normal;
 }

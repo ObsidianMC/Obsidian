@@ -279,7 +279,8 @@ internal static class BlockPhysics
     private static int Flags(IBlock block) => Flags(block.GetHashCode());
 
     /// <summary>Vanilla state shapes captured with empty collision context, in block-local coordinates.</summary>
-    public static IReadOnlyList<double[]> ShapeBoxes(int state, bool visual = false) => data.Value.ShapeBoxes[(visual ? data.Value.VisualShapes : data.Value.CollisionShapes)[state]];
+    public static IReadOnlyList<double[]> ShapeBoxes(int state, bool visual = false) =>
+        data.Value.ShapeBoxes[(visual ? data.Value.VisualShapes : data.Value.CollisionShapes)[state]];
     /// <summary>Vanilla's selection/picking shape, distinct from the camera's visual shape.</summary>
     public static IReadOnlyList<double[]> OutlineBoxes(int state) => data.Value.ShapeBoxes[data.Value.OutlineShapes[state]];
     public static bool Suffocates(int state) => data.Value.Suffocating[state];
@@ -288,7 +289,9 @@ internal static class BlockPhysics
     public static (double X, double Y, double Z) ShapeOffset(int state, int x, int z)
     {
         var offset = data.Value.ShapeOffsets[state];
-        if (offset.Length == 0) return default;
+        if (offset.Length == 0)
+            return default;
+
         // Vanilla's Mth position seed and float fractions must match the offset used by the block's shape.
         var seed = unchecked((long)(x * 3129871) ^ z * 116129781L);
         seed = unchecked(seed * seed * 42317861L + seed * 11L) >> 16;
@@ -325,7 +328,9 @@ internal static class BlockPhysics
             root.GetProperty("visualShapes").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
             root.GetProperty("outlineShapes").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
             root.GetProperty("suffocating").EnumerateArray().Select(value => value.GetBoolean()).ToArray(),
-            root.GetProperty("shapeOffsets").EnumerateArray().Select(value => value.EnumerateArray().Select(number => number.GetDouble()).ToArray()).ToArray(),
+            root.GetProperty("shapeOffsets").EnumerateArray()
+                .Select(value => value.EnumerateArray().Select(number => number.GetDouble()).ToArray())
+                .ToArray(),
             root.GetProperty("hardness").EnumerateArray().Select(value => value.GetSingle()).ToArray(),
             root.GetProperty("requiresTool").EnumerateArray().Select(value => value.GetBoolean()).ToArray());
     }

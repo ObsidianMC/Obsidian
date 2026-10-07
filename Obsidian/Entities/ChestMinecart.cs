@@ -30,7 +30,9 @@ public sealed partial class ChestMinecart : Entity
         base.WriteNbt(tag);
 
         tag.SetOrRemove("LootTable", this.LootTable is null ? null : new NbtTag<string>("LootTable", this.LootTable));
-        tag.SetOrRemove("LootTableSeed", this.LootTable is null || this.LootTableSeed == 0 ? null : new NbtTag<long>("LootTableSeed", this.LootTableSeed));
+        tag.SetOrRemove("LootTableSeed", this.LootTable is null || this.LootTableSeed == 0
+            ? null
+            : new NbtTag<long>("LootTableSeed", this.LootTableSeed));
     }
 
     internal override void ReadNbt(NbtCompound tag)

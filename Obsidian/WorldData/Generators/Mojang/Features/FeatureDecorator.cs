@@ -38,8 +38,8 @@ internal sealed class FeatureDecorator
     /// <param name="possibleBiomes">Biomes the biome source can produce, in vanilla's possibleBiomes order.</param>
     /// <param name="biomeFeatures">Decoration steps of each biome, keyed by biome id.</param>
     /// <param name="generationDepth">The noise settings' height, which caps the height placements see.</param>
-    public FeatureDecorator(IReadOnlyList<BiomeCodec> possibleBiomes, IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>> biomeFeatures,
-        int generationDepth)
+    public FeatureDecorator(IReadOnlyList<BiomeCodec> possibleBiomes,
+        IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>> biomeFeatures, int generationDepth)
     {
         this.biomeFeatures = biomeFeatures;
         this.generationDepth = generationDepth;
@@ -110,7 +110,11 @@ internal sealed class FeatureDecorator
                         continue;
 
                     random.SetFeatureSeed(decorationSeed, index, step);
-                    var context = new StructurePieceContext(region, random, writableArea, chunkX, chunkZ, default) { Terrain = terrain, Generation = generation };
+                    var context = new StructurePieceContext(region, random, writableArea, chunkX, chunkZ, default)
+                    {
+                        Terrain = terrain,
+                        Generation = generation
+                    };
 
                     foreach (var start in structures.GetReferencingStarts(chunkX, chunkZ, stepStructures[index]))
                     {

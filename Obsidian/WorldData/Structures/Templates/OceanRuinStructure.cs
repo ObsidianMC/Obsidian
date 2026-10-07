@@ -82,7 +82,8 @@ public sealed class OceanRuinPiece : TemplateStructurePiece
         var position = this.TemplatePosition;
         position = position with { Y = level.GetHeight(HeightmapType.OceanFloorWG, position.X, position.Z) };
         var size = this.Template.Size;
-        var corner = StructureTemplate.Transform(new Vector(size.X - 1, 0, size.Z - 1), StructureMirror.None, this.PlaceSettings.Rotation, Vector.Zero)
+        var corner = StructureTemplate.Transform(new Vector(size.X - 1, 0, size.Z - 1), StructureMirror.None,
+            this.PlaceSettings.Rotation, Vector.Zero)
             + position;
 
         this.PlaceTemplate(context, context.Box, position with { Y = GetHeight(level, position, corner) });

@@ -15,7 +15,7 @@ public static class ServerConstants
         get
         {
             var informalVersion = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>();
-            if (informalVersion != null && informalVersion.InformationalVersion.Contains('+'))
+            if (informalVersion is not null && informalVersion.InformationalVersion.Contains('+'))
                 return informalVersion.InformationalVersion.Split('+')[1];
 
             return "0.1";

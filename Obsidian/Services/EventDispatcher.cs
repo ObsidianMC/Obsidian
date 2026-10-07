@@ -63,7 +63,8 @@ public sealed partial class EventDispatcher : IEventDispatcher
         foreach (var method in methods)
         {
             var eventPriorityAttribute = method.GetCustomAttribute<EventPriorityAttribute>()!;
-            var eventType = method.GetParameters().FirstOrDefault()?.ParameterType ?? throw new InvalidOperationException("Method must contain a BaseMinecraftEventArgs type as the first parameter.");
+            var eventType = method.GetParameters().FirstOrDefault()?.ParameterType
+                ?? throw new InvalidOperationException("Method must contain a BaseMinecraftEventArgs type as the first parameter.");
 
             if (!eventType.IsSubclassOf(baseMinecraftEventArgsType))
                 throw new InvalidOperationException("Method must contain a BaseMinecraftEventArgs type as the first parameter.");
@@ -130,7 +131,7 @@ public sealed partial class EventDispatcher : IEventDispatcher
 
     private void RegisterEventsInternal(IEnumerable<Type>? modules, IPluginContainer? pluginContainer = null)
     {
-        if (modules == null)
+        if (modules is null)
             return;
 
         foreach (var eventModule in modules)
@@ -141,7 +142,8 @@ public sealed partial class EventDispatcher : IEventDispatcher
             foreach (var method in methods)
             {
                 var eventPriorityAttribute = method.GetCustomAttribute<EventPriorityAttribute>()!;
-                var eventType = method.GetParameters().FirstOrDefault()?.ParameterType ?? throw new InvalidOperationException("Method must contain a BaseMinecraftEventArgs type as the first parameter.");
+                var eventType = method.GetParameters().FirstOrDefault()?.ParameterType
+                ?? throw new InvalidOperationException("Method must contain a BaseMinecraftEventArgs type as the first parameter.");
 
                 if (!eventType.IsSubclassOf(baseMinecraftEventArgsType))
                     throw new InvalidOperationException("Method must contain a BaseMinecraftEventArgs type as the first parameter.");

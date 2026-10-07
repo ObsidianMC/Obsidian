@@ -14,5 +14,6 @@ public sealed class RandomBooleanSelectorFeature : ConfiguredFeatureBase
 
     public override bool Place(FeatureContext context) =>
         context.Level.EnsureCanWrite(context.Origin)
-        && (context.Random.NextBoolean() ? this.FeatureTrue : this.FeatureFalse).Place(context.Level, context.Generation, context.Random, context.Origin);
+        && (context.Random.NextBoolean() ? this.FeatureTrue : this.FeatureFalse)
+            .Place(context.Level, context.Generation, context.Random, context.Origin);
 }

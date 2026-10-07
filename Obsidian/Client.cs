@@ -195,7 +195,7 @@ public sealed partial class Client : IClient
 
     public void Initialize(IWorld world)
     {
-        if (this.profile == null)
+        if (this.profile is null)
             throw new UnreachableException("Profile was not set or is null.");
 
         this.Player = this.CreatePlayer(this.profile.Uuid, this.profile.Name, world);
@@ -377,7 +377,7 @@ public sealed partial class Client : IClient
             {
                 var packet = await this.packetQueue.Reader.ReadAsync(this.cancellationSource.Token);
 
-                if (packet == null)
+                if (packet is null)
                     continue;
 
                 this.SendPacket(packet);

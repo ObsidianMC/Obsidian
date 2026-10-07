@@ -67,13 +67,16 @@ public static partial class Extensions
         await player.KickAsync(reason);
     }
 
-    public static IEnumerable<PropertyInfo> WithInjectAttribute(this Type type) => type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-        .Where(x => x.GetCustomAttribute<InjectAttribute>() != null && !x.PropertyType.IsAssignableTo(pluginBaseType));
+    public static IEnumerable<PropertyInfo> WithInjectAttribute(this Type type) =>
+        type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+            .Where(property => property.GetCustomAttribute<InjectAttribute>() is not null
+                && !property.PropertyType.IsAssignableTo(pluginBaseType));
 
     public static string TrimEventArgs(this string value) =>
         value.Replace(EventArgs, string.Empty);
 
-    public static ParameterExpression[] GetParamExpressions(this Type[] types) => types.Select((t, i) => Expression.Parameter(t, $"param{i}")).ToArray();
+    public static ParameterExpression[] GetParamExpressions(this Type[] types) =>
+        types.Select((type, i) => Expression.Parameter(type, $"param{i}")).ToArray();
 
     internal static bool IsNonLiving(this EntityType type) => nonLiving.Contains(type);
 
@@ -109,9 +112,11 @@ public static partial class Extensions
         }
     }
 
-    public static string ToJson(this object? value, JsonSerializerOptions? options = null) => JsonSerializer.Serialize(value, options ?? Globals.JsonOptions);
+    public static string ToJson(this object? value, JsonSerializerOptions? options = null) =>
+        JsonSerializer.Serialize(value, options ?? Globals.JsonOptions);
 
-    public static ValueTask<TValue?> FromJsonAsync<TValue>(this Stream stream, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default) =>
+    public static ValueTask<TValue?> FromJsonAsync<TValue>(this Stream stream, JsonSerializerOptions? options = null,
+        CancellationToken cancellationToken = default) =>
         JsonSerializer.DeserializeAsync<TValue>(stream, options ?? Globals.JsonOptions, cancellationToken);
     public static Task ToJsonAsync(this object? value, Stream stream, CancellationToken cancellationToken = default) =>
         JsonSerializer.SerializeAsync(stream, value, Globals.JsonOptions, cancellationToken);

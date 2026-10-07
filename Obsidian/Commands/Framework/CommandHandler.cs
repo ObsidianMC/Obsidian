@@ -52,7 +52,9 @@ public sealed class CommandHandler : ICommandHandler
         this._argumentParsers.TryGetValue(argumentType, out _);
 
     public BaseArgumentParser GetArgumentParser(Type argumentType) =>
-        this._argumentParsers.TryGetValue(argumentType, out var parser) ? parser : throw new ArgumentException($"No parser registered for type {argumentType}");
+        this._argumentParsers.TryGetValue(argumentType, out var parser)
+            ? parser
+            : throw new ArgumentException($"No parser registered for type {argumentType}");
 
     public Command[] GetAllCommands() => _commands.ToArray();
 
@@ -91,7 +93,7 @@ public sealed class CommandHandler : ICommandHandler
 
     public void RegisterCommandClass(IPluginContainer? plugin, Type moduleType)
     {
-        if (moduleType.GetCustomAttribute<CommandGroupAttribute>() != null)
+        if (moduleType.GetCustomAttribute<CommandGroupAttribute>() is not null)
         {
             this.RegisterGroupCommand(moduleType, plugin, null);
             return;
@@ -202,7 +204,9 @@ public sealed class CommandHandler : ICommandHandler
                 ModuleFactory = ActivatorUtilities.CreateFactory(moduleType, Type.EmptyTypes)
             };
 
-            var overloads = methods.Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandOverloadAttribute)) && x.Name == method.Name)
+            var overloads = methods
+                .Where(overload => overload.CustomAttributes.Any(attribute => attribute.AttributeType == typeof(CommandOverloadAttribute))
+                    && overload.Name == method.Name)
                 .Select(x => ObjectMethodExecutor.Create(x, moduleType.GetTypeInfo()))
                 .Select(x => new CommandExecutor
                 {

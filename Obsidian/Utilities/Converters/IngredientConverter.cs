@@ -26,7 +26,7 @@ public sealed class IngredientConverter : JsonConverter<Ingredient>
                 var resourceLocation = rawRecipe.TrimResourceTag(true);
 
                 var tag = TagsRegistry.Item.All.FirstOrDefault(x => x.Name == resourceLocation);
-                if (tag != null)
+                if (tag is not null)
                 {
                     foreach (var id in tag!.Entries)
                     {

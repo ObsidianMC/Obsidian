@@ -180,7 +180,9 @@ public partial class Player
         });
     }
 
-    internal ValueTask UnloadChunkAsync(int x, int z) => LoadedChunks.Contains(NumericsHelper.IntsToLong(x, z)) ? this.Client.QueuePacketAsync(new ForgetLevelChunkPacket(x, z)) : default;
+    internal ValueTask UnloadChunkAsync(int x, int z) => LoadedChunks.Contains(NumericsHelper.IntsToLong(x, z))
+        ? this.Client.QueuePacketAsync(new ForgetLevelChunkPacket(x, z))
+        : default;
 
     private async ValueTask TrySpawnPlayerAsync(VectorD position)
     {
