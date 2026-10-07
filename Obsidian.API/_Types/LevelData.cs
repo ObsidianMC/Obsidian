@@ -76,9 +76,9 @@ public sealed class LevelData
     }
 
     /// <summary>
-    /// The current difficulty
+    /// The current difficulty: normal unless the level data says otherwise, like vanilla's.
     /// </summary>
-    public Difficulty Difficulty { get; set; }
+    public Difficulty Difficulty { get; set; } = Difficulty.Normal;
 
     /// <summary>
     /// True if the difficulty has been locked. Defaults to 0.

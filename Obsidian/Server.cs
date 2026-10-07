@@ -214,6 +214,17 @@ public sealed partial class Server : IServer
     }
 
     /// <summary>
+    /// Whether <paramref name="player"/> may change or lock the world's difficulty: like vanilla, a game master
+    /// (permission level 2) or the owner of a singleplayer world, whether or not it allows commands.
+    /// </summary>
+    internal bool MayChangeDifficulty(IPlayer player) =>
+        this.Integrated?.IsLocalPlayer(player) == true || ((OperatorList)this.Operators).GetPermissionLevel(player) >= 2;
+
+    /// <summary>Tells every player the world's difficulty and whether it's locked.</summary>
+    internal void BroadcastDifficulty() =>
+        this.DefaultWorld.PacketBroadcaster.QueuePacket(Net.Packets.Play.Clientbound.ChangeDifficultyPacket.Of(this.DefaultWorld.LevelData));
+
+    /// <summary>
     /// Starts this server asynchronously.
     /// </summary>
     public async Task RunAsync()

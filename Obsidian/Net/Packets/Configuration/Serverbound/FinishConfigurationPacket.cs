@@ -45,6 +45,9 @@ public sealed partial class FinishConfigurationPacket
             EnableRespawnScreen = true,
         });
 
+        // Like vanilla's PlayerList.placeNewPlayer, the player learns the world's difficulty right after joining.
+        await client.QueuePacketAsync(ChangeDifficultyPacket.Of(server.DefaultWorld.LevelData));
+
         await client.QueuePacketAsync(new SetDefaultSpawnPositionPacket(new()
         {
             Dimension = codec.Name,
