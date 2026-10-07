@@ -5,7 +5,7 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.stream.*;
 
-/** Captures metadata serializer payloads with vanilla's registry-aware stream codecs. Run manually for parity tests. */
+/** Captures metadata serializer payloads with vanilla's registry-aware stream codecs. Run during asset generation for parity tests. */
 class EntityMetadataFixtures {
     static VanillaDumper.Mojang m;
     static Object access;

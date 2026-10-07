@@ -35,7 +35,7 @@ import com.mojang.serialization.JsonOps;
 import io.netty.buffer.*;
 import java.nio.file.*;
 
-/** Build-time protocol-774 fixture capture. Run against the Mojang-named client and its matching installed libraries. */
+/** Build-time protocol-774 fixture capture. Resolve with FixtureSource and run against the installed client and its matching libraries. */
 class ParticleFixtures {
     public static void main(String[] args) throws Exception {
         MC_SharedConstants.MC_SharedConstants_tryDetectVersion();
