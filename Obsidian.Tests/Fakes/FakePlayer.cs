@@ -128,7 +128,8 @@ public sealed class FakePlayer : IPlayer
 
     public bool IsFireImmune => throw new NotImplementedException();
 
-    public void AddPotionEffect(int effectId, int duration, int amplifier = 0, EntityEffectFlags effectFlags = EntityEffectFlags.None) => throw new NotImplementedException();
+    public void AddPotionEffect(int effectId, int duration, int amplifier = 0, EntityEffectFlags effectFlags = EntityEffectFlags.None) =>
+        throw new NotImplementedException();
     public void ClearPotionEffects() => throw new NotImplementedException();
     public ValueTask DamageAsync(IEntity source, float amount = 1) => throw new NotImplementedException();
     public ValueTask DisconnectAsync(ChatMessage reason) => throw new NotImplementedException();
@@ -158,12 +159,14 @@ public sealed class FakePlayer : IPlayer
     public Task SaveAsync() => throw new NotImplementedException();
     public ValueTask SendActionBarAsync(string text) => throw new NotImplementedException();
     public ValueTask SendMessageAsync(ChatMessage message) => throw new NotImplementedException();
-    public ValueTask SendMessageAsync(ChatMessage message, Guid sender, SecureMessageSignature messageSignature) => throw new NotImplementedException();
+    public ValueTask SendMessageAsync(ChatMessage message, Guid sender, SecureMessageSignature messageSignature) =>
+        throw new NotImplementedException();
     public ValueTask SendPlayerInfoAsync() => throw new NotImplementedException();
     public ValueTask SendSoundAsync(ISoundEffect soundEffect) => throw new NotImplementedException();
     public ValueTask SendSubtitleAsync(ChatMessage subtitle, int fadeIn, int stay, int fadeOut) => throw new NotImplementedException();
     public ValueTask SendTitleAsync(ChatMessage title, int fadeIn, int stay, int fadeOut) => throw new NotImplementedException();
-    public ValueTask SendTitleAsync(ChatMessage title, ChatMessage subtitle, int fadeIn, int stay, int fadeOut) => throw new NotImplementedException();
+    public ValueTask SendTitleAsync(ChatMessage title, ChatMessage subtitle, int fadeIn, int stay, int fadeOut) =>
+        throw new NotImplementedException();
     public ValueTask SetActionBarTextAsync(ChatMessage message) => throw new NotImplementedException();
     public ValueTask SetGamemodeAsync(GameMode gamemode) => throw new NotImplementedException();
     public void SetHeadRotation(Angle headYaw) => throw new NotImplementedException();
