@@ -64,6 +64,11 @@ public sealed class VanillaSaves : IDisposable
         await WriteChunkAsync(this.folder, VanillaChunk());
         var loaded = await LoadChunkAsync(this.folder);
 
+        // Post-processing marks in two sections.
+        var marks = ((Chunk)loaded).PostProcessing;
+        marks.Add(new Vector(3, -60, 5));
+        marks.Add(new Vector(15, 17, 0));
+
         // Saved again by Obsidian, into another world.
         var savedFolder = Path.Join(this.folder, "saved");
         await using (var region = new Region(0, 0, savedFolder, "region"))
@@ -101,6 +106,13 @@ public sealed class VanillaSaves : IDisposable
         }
 
         Assert.Equal("minecraft:desert", reloaded.GetBiome(desert.X, desert.Y, desert.Z).Name);
+
+        // Vanilla's post-processing: a list of packed positions for every section, x | y << 4 | z << 8 within it.
+        var postProcessing = ((NbtList)saved["PostProcessing"]).Cast<NbtList>().ToList();
+        Assert.Equal(loaded.Sections.Length, postProcessing.Count);
+        Assert.Equal([(short)(3 | 4 << 4 | 5 << 8)], postProcessing[0].Cast<NbtTag<short>>().Select(mark => mark.Value));
+        Assert.Equal([(short)(15 | 1 << 4)], postProcessing[5].Cast<NbtTag<short>>().Select(mark => mark.Value));
+        Assert.Equal(marks, ((Chunk)reloaded).PostProcessing);
     }
 
     [Fact(DisplayName = "A vanilla player loads, and saves keep vanilla's names and what Obsidian doesn't model")]

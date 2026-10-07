@@ -130,8 +130,7 @@ runs on `DayTime`, and advances `Time` by as much as the clock moved.
 Chunks and their entities are read and written in 1.21.11's format (data version 4671): sections name block states by
 `Name` and `Properties` and biomes by id, and statuses are namespaced (`minecraft:full`). A missing or unknown status
 counts as complete, so a chunk is never generated again over its data. Obsidian doesn't write light as complete
-(`isLightOn`), so vanilla lights its chunks again, and doesn't write structure references, block ticks or
-post-processing marks in vanilla's shape.
+(`isLightOn`), so vanilla lights its chunks again, and doesn't write structure references or block ticks.
 
 Players are saved in vanilla's shape (`playerdata/<uuid>.dat`, with the previous save as `<uuid>.dat_old`): the fields
 Obsidian models are rewritten and the rest is kept, and inventory items keep components Obsidian doesn't model. Like

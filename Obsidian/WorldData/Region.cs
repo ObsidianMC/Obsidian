@@ -562,6 +562,29 @@ public class Region : IRegion
         }
     }
 
+    /// <summary>
+    /// Writes post-processing marks in vanilla's shape (see <see cref="ReadPostProcessing"/>): a list for every section,
+    /// of positions packed as <c>x | y &lt;&lt; 4 | z &lt;&lt; 8</c> within it.
+    /// </summary>
+    private static void WritePostProcessing(NbtWriterStream writer, Chunk chunk)
+    {
+        var bySection = chunk.PostProcessing.ToLookup(position => (position.Y - chunk.MinY) >> 4);
+
+        writer.WriteListStart("PostProcessing", NbtTagType.List, chunk.Sections.Length);
+        for (var section = 0; section < chunk.Sections.Length; section++)
+        {
+            var marks = bySection[section].ToList();
+
+            writer.WriteListStart("", NbtTagType.Short, marks.Count);
+            foreach (var position in marks)
+                writer.WriteShort((short)((position.X & 15) | (position.Y & 15) << 4 | (position.Z & 15) << 8));
+
+            writer.EndList();
+        }
+
+        writer.EndList();
+    }
+
     private static void SerializeChunk(NbtWriterStream writer, IChunk chunk, NbtCompound? structureStarts)
     {
         writer.WriteListStart("sections", NbtTagType.Compound, chunk.Sections.Length);
@@ -615,15 +638,8 @@ public class Region : IRegion
 
         if (chunk is Chunk generated)
         {
-            // Post-processing marks in Obsidian's own shape: vanilla's (a list of short lists per section) can't be written
-            // while Obsidian.Nbt's writer gets lists inside lists wrong. Vanilla ignores this field, and complete chunks
-            // rarely have marks. Both shapes are read.
             if (generated.PostProcessing.Count > 0)
-            {
-                writer.WriteArray("PostProcessing", generated.PostProcessing
-                    .Select(position => (position.X & 15) | (position.Z & 15) << 4 | (position.Y - chunk.MinY) << 8)
-                    .ToArray());
-            }
+                WritePostProcessing(writer, generated);
 
             // Scheduled fluid ticks, like vanilla's "fluid_ticks".
             generated.FluidTicks.Write(writer);
