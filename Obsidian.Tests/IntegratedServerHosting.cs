@@ -185,7 +185,8 @@ public sealed class IntegratedServerHosting : IDisposable
     {
         using var server = this.StartServer(world);
 
-        var ready = await server.WaitForEventAsync(line => line.StartsWith("@obsidian:{\"event\":\"ready\"", StringComparison.Ordinal));
+        var ready = await server.WaitForEventAsync(
+            line => line.StartsWith("@obsidian:{\"event\":\"ready\"", StringComparison.Ordinal));
 
         int port;
         using (var readyEvent = JsonDocument.Parse(ready["@obsidian:".Length..]))

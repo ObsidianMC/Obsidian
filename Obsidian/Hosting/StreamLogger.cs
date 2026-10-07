@@ -68,7 +68,8 @@ public class StreamLogger : ILogger
                 // The exception follows on its own lines, between separators.
                 const string separator = "--------------------";
 
-                _streamWriter.WriteLine("[{0}] [{1}] ({2}) {3}\n{4}\n{5}\n{4}", dateTime, logLevel, _category, msg, separator, exception);
+                _streamWriter.WriteLine("[{0}] [{1}] ({2}) {3}\n{4}\n{5}\n{4}",
+                    dateTime, logLevel, _category, msg, separator, exception);
             }
             else
             {
