@@ -119,9 +119,19 @@ with a crash event. The folder holds:
 level.dat keeps everything it was loaded with: on each save Obsidian only rewrites the fields it owns (`DataVersion`
 4671, `Version`, `GameType`, `hardcore`, `allowCommands`, `Difficulty`, `DifficultyLocked`, `initialized`,
 `LastPlayed`, `Time`, `DayTime`, weather, `spawn`, `ServerBrands` with `obsidian` added, and `WasModded`), so vanilla
-data Obsidian doesn't model (dragon fight, game rules, scheduled events, `Player` and so on) survives. Obsidian has one
-clock: it runs on `DayTime`, and advances `Time` by as much as the clock moved. Chunks are still written with Obsidian's
-data version, so vanilla upgrades them when it opens the world.
+data Obsidian doesn't model (dragon fight, game rules, scheduled events and so on) survives. Obsidian has one clock: it
+runs on `DayTime`, and advances `Time` by as much as the clock moved.
+
+Chunks and their entities are read and written in 1.21.11's format (data version 4671): sections name block states by
+`Name` and `Properties` and biomes by id, and statuses are namespaced (`minecraft:full`). A missing or unknown status
+counts as complete, so a chunk is never generated again over its data. Obsidian doesn't write light as complete
+(`isLightOn`), so vanilla lights its chunks again, and doesn't write structure references, block ticks or
+post-processing marks in vanilla's shape.
+
+Players are saved in vanilla's shape (`playerdata/<uuid>.dat`, with the previous save as `<uuid>.dat_old`): the fields
+Obsidian models are rewritten and the rest is kept, and inventory items keep components Obsidian doesn't model. Like
+vanilla, the local player is loaded from level.dat's `Data.Player` when it has one, and saved to both. Obsidian keeps
+players in the overworld, so a player saved in another dimension starts at the spawn.
 
 ### New worlds
 
