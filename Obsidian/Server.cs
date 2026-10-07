@@ -27,6 +27,8 @@ public sealed partial class Server : IServer
 
     internal static readonly ConcurrentDictionary<string, DateTimeOffset> throttler = new();
 
+    private readonly ConcurrentDictionary<Task, byte> pendingLeaves = new();
+
     internal readonly CancellationTokenSource cancelTokenSource;
     internal readonly ILogger logger;
 
@@ -304,6 +306,7 @@ public sealed partial class Server : IServer
 
         this.CloseListeners();
 
+        await this.PendingLeavesAsync();
         await WorldManager.FlushLoadedWorldsAsync();
         await WorldManager.DisposeAsync();
         await this.PluginManager.DisposeAsync();
@@ -355,6 +358,21 @@ public sealed partial class Server : IServer
 
         return this.OnlinePlayers.TryAdd(player.Uuid, player);
     }
+
+    /// <summary>
+    /// Keeps track of a player leaving after their connection closed, whose save stopping the server waits for.
+    /// </summary>
+    internal void TrackLeave(Task leave)
+    {
+        if (leave.IsCompleted)
+            return;
+
+        this.pendingLeaves.TryAdd(leave, 0);
+        _ = leave.ContinueWith(finished => this.pendingLeaves.TryRemove(finished, out _), TaskScheduler.Default);
+    }
+
+    // Leaves log their own failures, so waiting for them never throws.
+    private Task PendingLeavesAsync() => Task.WhenAll(this.pendingLeaves.Keys);
 
     public bool RemovePlayer(IPlayer player)
     {
@@ -455,6 +473,7 @@ public sealed partial class Server : IServer
             await client.DisconnectAsync("Server closed");
         }
 
+        await this.PendingLeavesAsync();
         await WorldManager.FlushLoadedWorldsAsync();
     }
 

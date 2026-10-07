@@ -71,6 +71,9 @@ public sealed partial class Client : IClient
     /// </summary>
     private readonly CancellationTokenSource cancellationSource = new();
 
+    // Set once the player's leave was raised; see LeaveAsync.
+    private int left;
+
     /// <summary>
     /// Used to handle packets while the client is in a <see cref="ClientState.Play"/> state.
     /// </summary>
@@ -228,8 +231,7 @@ public sealed partial class Client : IClient
 
     public async ValueTask DisconnectAsync(ChatMessage reason)
     {
-        if (this.Player != null)
-            await this.eventDispatcher.ExecuteEventAsync(new PlayerLeaveEventArgs(this.Player, this.Server, DateTimeOffset.Now));
+        await this.LeaveAsync();
 
         if (this.State == ClientState.Login)
         {
@@ -257,7 +259,14 @@ public sealed partial class Client : IClient
         if (result == EventResult.Cancelled)
             return;
 
-        await packetQueue.Writer.WriteAsync(packet, this.cancellationSource.Token);
+        try
+        {
+            await packetQueue.Writer.WriteAsync(packet, this.cancellationSource.Token);
+        }
+        catch (OperationCanceledException) when (this.cancellationSource.IsCancellationRequested)
+        {
+            // The connection closed meanwhile, e.g. the client quit as the server stopped; there's nobody to send to.
+        }
     }
 
     public bool SendPacket(IClientboundPacket packet) => this.SendAsync(packet);
@@ -316,6 +325,11 @@ public sealed partial class Client : IClient
     {
         cancellationSource.Cancel();
         Disconnected?.Invoke(this);
+
+        // The player also leaves (and is saved) when their client closed the connection, as vanilla's clients do to quit.
+        var leaving = this.LeaveAsync();
+        if (this.Server is Server server)
+            server.TrackLeave(leaving);
 
         this.receiveEvent.Completed -= this.OnAsyncCompleted;
         this.sendEvent.Completed -= this.OnAsyncCompleted;
@@ -405,8 +419,30 @@ public sealed partial class Client : IClient
         Server = this.serviceProvider.GetRequiredService<IServer>()
     };
 
+    /// <summary>
+    /// Raises the player's leave event, which saves them, once however the connection ends: closed by the server
+    /// (<see cref="DisconnectAsync"/>) or by the client (<see cref="Disconnect"/>).
+    /// </summary>
+    private async Task LeaveAsync()
+    {
+        if (this.Player is null || Interlocked.Exchange(ref this.left, 1) == 1)
+            return;
+
+        try
+        {
+            await this.eventDispatcher.ExecuteEventAsync(new PlayerLeaveEventArgs(this.Player, this.Server, DateTimeOffset.Now));
+        }
+        catch (Exception ex)
+        {
+            Log.LeaveFailed(this.Logger, ex, this.Player.Username);
+        }
+    }
+
     private static partial class Log
     {
+        [LoggerMessage(Level = LogLevel.Error, Message = "Handling {Username} leaving failed")]
+        public static partial void LeaveFailed(ILogger logger, Exception exception, string username);
+
         [LoggerMessage(Level = LogLevel.Warning, Message = "Failed to authenticate {Username}")]
         public static partial void AuthenticationFailed(ILogger logger, string? username);
 

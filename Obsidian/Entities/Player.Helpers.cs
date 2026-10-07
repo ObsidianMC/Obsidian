@@ -328,25 +328,31 @@ public partial class Player
         { Uuid, actions.ToList() }
     };
 
+    /// <remarks>
+    /// A missing tag keeps the value vanilla gives a new player, so player data from vanilla, older Obsidian versions and
+    /// Obsidian's own saves (which don't write every tag read here) loads.
+    /// </remarks>
     private void InitializePlayer(NbtCompound compound)
     {
-        MovementFlags = (MovementFlags)compound.GetByte("MovementFlags");
+        T Read<T>(string name, T fallback) => compound.TryGetTagValue<T>(name, out var value) ? value : fallback;
+
+        MovementFlags = (MovementFlags)Read<byte>("MovementFlags", 0);
         Sleeping = compound.GetBool("Sleeping");
-        Air = compound.GetShort("Air");
-        AttackTime = compound.GetShort("AttackTime");
-        DeathTime = compound.GetShort("DeathTime");
-        Health = compound.GetFloat("Health");
-        HurtTime = compound.GetShort("HurtTime");
-        SleepTimer = compound.GetShort("SleepTimer");
-        FoodLevel = compound.GetInt("foodLevel");
-        FoodTickTimer = compound.GetInt("foodTickTimer");
-        GameMode = (GameMode)compound.GetInt("playerGameType");
-        XpLevel = compound.GetInt("XpLevel");
-        XpTotal = compound.GetInt("XpTotal");
-        FallDistance = compound.GetFloat("FallDistance");
-        FoodExhaustionLevel = compound.GetFloat("foodExhaustionLevel");
-        FoodSaturationLevel = compound.GetFloat("foodSaturationLevel");
-        XpP = compound.GetInt("XpP");
+        Air = Read<short>("Air", 300);
+        AttackTime = Read<short>("AttackTime", 0);
+        DeathTime = Read<short>("DeathTime", 0);
+        Health = Read("Health", 20f);
+        HurtTime = Read<short>("HurtTime", 0);
+        SleepTimer = Read<short>("SleepTimer", 0);
+        FoodLevel = Read("foodLevel", 20);
+        FoodTickTimer = Read("foodTickTimer", 0);
+        GameMode = (GameMode)Read("playerGameType", (int)Level.LevelData.DefaultGamemode);
+        XpLevel = Read("XpLevel", 0);
+        XpTotal = Read("XpTotal", 0);
+        FallDistance = Read("FallDistance", 0f);
+        FoodExhaustionLevel = Read("foodExhaustionLevel", 0f);
+        FoodSaturationLevel = Read("foodSaturationLevel", 5f);
+        XpP = Read("XpP", 0);
 
         var dimensionName = compound.GetString("Dimension");
         if (!string.IsNullOrWhiteSpace(dimensionName) && CodecRegistry.TryGetDimension(dimensionName, out var codec))
