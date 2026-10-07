@@ -1,0 +1,401 @@
+{
+  "custom_data": {
+    "a": 4,
+    "text": "hello",
+    "nested": [
+      1,
+      2,
+      3
+    ]
+  },
+  "max_stack_size": 16,
+  "max_damage": 500,
+  "damage": 12,
+  "unbreakable": {},
+  "use_effects": {
+    "can_sprint": true,
+    "interact_vibrations": false,
+    "speed_multiplier": 0.4
+  },
+  "custom_name": {
+    "text": "Name",
+    "italic": false
+  },
+  "minimum_attack_charge": 0.7,
+  "damage_type": "minecraft:generic",
+  "item_name": "Item name",
+  "item_model": "minecraft:diamond",
+  "lore": [
+    "One",
+    {
+      "text": "Two",
+      "color": "red"
+    }
+  ],
+  "rarity": "rare",
+  "enchantments": {
+    "minecraft:sharpness": 2
+  },
+  "can_place_on": [
+    {
+      "blocks": "minecraft:stone",
+      "state": {
+        "axis": "x"
+      }
+    }
+  ],
+  "can_break": [
+    {
+      "blocks": [
+        "minecraft:stone",
+        "minecraft:dirt"
+      ]
+    }
+  ],
+  "attribute_modifiers": [
+    {
+      "type": "minecraft:attack_damage",
+      "id": "minecraft:sample",
+      "amount": 2.5,
+      "operation": "add_value",
+      "slot": "mainhand",
+      "display": {
+        "type": "override",
+        "value": "Modifier"
+      }
+    }
+  ],
+  "custom_model_data": {
+    "floats": [
+      1.25
+    ],
+    "flags": [
+      true,
+      false
+    ],
+    "strings": [
+      "sample"
+    ],
+    "colors": [
+      1193046
+    ]
+  },
+  "tooltip_display": {
+    "hide_tooltip": true,
+    "hidden_components": [
+      "minecraft:lore"
+    ]
+  },
+  "repair_cost": 5,
+  "enchantment_glint_override": true,
+  "intangible_projectile": {},
+  "food": {
+    "nutrition": 4,
+    "saturation": 0.7,
+    "can_always_eat": true
+  },
+  "consumable": {
+    "consume_seconds": 1.5,
+    "animation": "eat",
+    "sound": "minecraft:entity.generic.eat",
+    "has_consume_particles": true,
+    "on_consume_effects": [
+      {
+        "type": "minecraft:apply_effects",
+        "effects": [
+          {
+            "id": "minecraft:speed",
+            "duration": 100
+          }
+        ],
+        "probability": 0.5
+      },
+      {
+        "type": "minecraft:remove_effects",
+        "effects": [
+          "minecraft:slowness"
+        ]
+      },
+      {
+        "type": "minecraft:clear_all_effects"
+      },
+      {
+        "type": "minecraft:teleport_randomly",
+        "diameter": 8
+      },
+      {
+        "type": "minecraft:play_sound",
+        "sound": "minecraft:entity.generic.eat"
+      }
+    ]
+  },
+  "use_remainder": {
+    "id": "minecraft:bowl"
+  },
+  "use_cooldown": {
+    "seconds": 1.5,
+    "cooldown_group": "minecraft:sample"
+  },
+  "damage_resistant": {
+    "types": "#minecraft:is_fire"
+  },
+  "tool": {
+    "rules": [
+      {
+        "blocks": [
+          "minecraft:stone"
+        ],
+        "speed": 3.5,
+        "correct_for_drops": true
+      }
+    ],
+    "default_mining_speed": 1.5,
+    "damage_per_block": 2,
+    "can_destroy_blocks_in_creative": false
+  },
+  "weapon": {
+    "item_damage_per_attack": 2,
+    "disable_blocking_for_seconds": 2.5
+  },
+  "attack_range": {},
+  "enchantable": {
+    "value": 10
+  },
+  "equippable": {
+    "slot": "head",
+    "equip_sound": "minecraft:item.armor.equip_diamond",
+    "asset_id": "minecraft:diamond",
+    "camera_overlay": "minecraft:misc/pumpkinblur",
+    "allowed_entities": [
+      "minecraft:player"
+    ],
+    "equip_on_interact": true,
+    "can_be_sheared": true,
+    "shearing_sound": "minecraft:item.shears.snip"
+  },
+  "repairable": {
+    "items": [
+      "minecraft:diamond"
+    ]
+  },
+  "glider": {},
+  "tooltip_style": "minecraft:sample",
+  "death_protection": {
+    "death_effects": [
+      {
+        "type": "minecraft:clear_all_effects"
+      }
+    ]
+  },
+  "blocks_attacks": {},
+  "piercing_weapon": {},
+  "kinetic_weapon": {},
+  "swing_animation": {
+    "type": "whack",
+    "duration": 8
+  },
+  "stored_enchantments": {
+    "minecraft:unbreaking": 3
+  },
+  "dyed_color": 1193046,
+  "map_color": 1193046,
+  "map_id": 7,
+  "map_decorations": {
+    "home": {
+      "type": "minecraft:target_x",
+      "x": 2.0,
+      "z": 3.0,
+      "rotation": 90.0
+    }
+  },
+  "charged_projectiles": [
+    {
+      "id": "minecraft:arrow"
+    }
+  ],
+  "bundle_contents": [
+    {
+      "id": "minecraft:stone",
+      "count": 2
+    }
+  ],
+  "potion_contents": {
+    "potion": "minecraft:healing",
+    "custom_effects": [
+      {
+        "id": "minecraft:speed",
+        "duration": 100,
+        "hidden_effect": {
+          "duration": 200,
+          "amplifier": 1
+        }
+      }
+    ]
+  },
+  "potion_duration_scale": 1.5,
+  "suspicious_stew_effects": [
+    {
+      "id": "minecraft:speed",
+      "duration": 200
+    }
+  ],
+  "writable_book_content": {
+    "pages": [
+      {
+        "raw": "Raw",
+        "filtered": "Filtered"
+      }
+    ]
+  },
+  "written_book_content": {
+    "title": "Title",
+    "author": "Author",
+    "pages": [
+      "Page"
+    ]
+  },
+  "trim": {
+    "material": "minecraft:gold",
+    "pattern": "minecraft:spire"
+  },
+  "debug_stick_state": {
+    "minecraft:oak_log": "axis"
+  },
+  "entity_data": {
+    "id": "minecraft:pig",
+    "Health": 10
+  },
+  "bucket_entity_data": {
+    "Age": 3
+  },
+  "block_entity_data": {
+    "id": "minecraft:chest",
+    "Lock": "sample"
+  },
+  "instrument": "minecraft:ponder_goat_horn",
+  "provides_trim_material": "minecraft:gold",
+  "ominous_bottle_amplifier": 3,
+  "jukebox_playable": "minecraft:cat",
+  "provides_banner_patterns": "#minecraft:pattern_item/creeper",
+  "recipes": [
+    "minecraft:bread"
+  ],
+  "lodestone_tracker": {
+    "target": {
+      "dimension": "minecraft:overworld",
+      "pos": [
+        3,
+        64,
+        -9
+      ]
+    },
+    "tracked": true
+  },
+  "firework_explosion": {
+    "shape": "star",
+    "colors": [
+      1193046
+    ],
+    "fade_colors": [
+      255
+    ],
+    "has_trail": true
+  },
+  "fireworks": {
+    "flight_duration": 2,
+    "explosions": [
+      {
+        "shape": "burst",
+        "colors": [
+          255
+        ]
+      }
+    ]
+  },
+  "profile": {
+    "name": "Alex",
+    "id": [
+      305419896,
+      305419896,
+      305419896,
+      305419896
+    ],
+    "properties": [
+      {
+        "name": "textures",
+        "value": "test",
+        "signature": "sig"
+      }
+    ]
+  },
+  "note_block_sound": "minecraft:entity.pig.ambient",
+  "banner_patterns": [
+    {
+      "pattern": "minecraft:creeper",
+      "color": "red"
+    }
+  ],
+  "base_color": "red",
+  "pot_decorations": [
+    "minecraft:brick",
+    "minecraft:angler_pottery_sherd",
+    "minecraft:brick",
+    "minecraft:brick"
+  ],
+  "container": [
+    {
+      "slot": 1,
+      "item": {
+        "id": "minecraft:diamond",
+        "count": 4
+      }
+    }
+  ],
+  "block_state": {
+    "axis": "x"
+  },
+  "bees": [
+    {
+      "entity_data": {
+        "id": "minecraft:bee"
+      },
+      "ticks_in_hive": 5,
+      "min_ticks_in_hive": 20
+    }
+  ],
+  "lock": {
+    "components": {
+      "minecraft:custom_name": "Key"
+    }
+  },
+  "container_loot": {
+    "loot_table": "minecraft:chests/simple_dungeon",
+    "seed": 123
+  },
+  "break_sound": "minecraft:entity.item.break",
+  "villager/variant": "minecraft:plains",
+  "wolf/variant": "minecraft:pale",
+  "wolf/sound_variant": "minecraft:classic",
+  "wolf/collar": "red",
+  "fox/variant": "red",
+  "salmon/size": "large",
+  "parrot/variant": "red_blue",
+  "tropical_fish/pattern": "kob",
+  "tropical_fish/base_color": "red",
+  "tropical_fish/pattern_color": "blue",
+  "mooshroom/variant": "red",
+  "rabbit/variant": "brown",
+  "pig/variant": "minecraft:temperate",
+  "cow/variant": "minecraft:temperate",
+  "chicken/variant": "minecraft:temperate",
+  "zombie_nautilus/variant": "minecraft:temperate",
+  "frog/variant": "minecraft:temperate",
+  "horse/variant": "white",
+  "painting/variant": "minecraft:kebab",
+  "llama/variant": "creamy",
+  "axolotl/variant": "lucy",
+  "cat/variant": "minecraft:tabby",
+  "cat/collar": "red",
+  "sheep/color": "red",
+  "shulker/color": "red"
+}

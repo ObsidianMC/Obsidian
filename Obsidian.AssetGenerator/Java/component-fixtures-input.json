@@ -1,0 +1,302 @@
+[
+  {
+    "name": "tool",
+    "stack": {
+      "id": "minecraft:diamond_sword",
+      "count": 1,
+      "components": {
+        "minecraft:damage": 17,
+        "minecraft:max_damage": 1700,
+        "minecraft:repair_cost": 3,
+        "minecraft:custom_name": {
+          "text": "Test sword",
+          "color": "gold",
+          "italic": false
+        },
+        "minecraft:lore": [
+          "First line",
+          {
+            "text": "Second",
+            "bold": true
+          }
+        ],
+        "minecraft:enchantments": {
+          "minecraft:sharpness": 5,
+          "minecraft:unbreaking": 3
+        },
+        "minecraft:unbreakable": {}
+      }
+    }
+  },
+  {
+    "name": "potion",
+    "stack": {
+      "id": "minecraft:potion",
+      "components": {
+        "minecraft:potion_contents": {
+          "potion": "minecraft:strong_healing",
+          "custom_color": 1193046,
+          "custom_effects": [
+            {
+              "id": "minecraft:speed",
+              "amplifier": 2,
+              "duration": 400
+            }
+          ],
+          "custom_name": "test"
+        }
+      }
+    }
+  },
+  {
+    "name": "book",
+    "stack": {
+      "id": "minecraft:written_book",
+      "components": {
+        "minecraft:written_book_content": {
+          "title": "A title",
+          "author": "Author",
+          "pages": [
+            "Page one",
+            {
+              "raw": {
+                "text": "Page two",
+                "bold": true
+              },
+              "filtered": "Safe"
+            }
+          ],
+          "generation": 1,
+          "resolved": true
+        }
+      }
+    }
+  },
+  {
+    "name": "firework",
+    "stack": {
+      "id": "minecraft:firework_rocket",
+      "count": 3,
+      "components": {
+        "minecraft:fireworks": {
+          "flight_duration": 2,
+          "explosions": [
+            {
+              "shape": "star",
+              "colors": [
+                1193046,
+                16711680
+              ],
+              "fade_colors": [
+                255
+              ],
+              "has_trail": true,
+              "has_twinkle": true
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "banner",
+    "stack": {
+      "id": "minecraft:white_banner",
+      "components": {
+        "minecraft:banner_patterns": [
+          {
+            "pattern": "minecraft:creeper",
+            "color": "red"
+          },
+          {
+            "pattern": "minecraft:stripe_bottom",
+            "color": "blue"
+          }
+        ],
+        "minecraft:base_color": "white"
+      }
+    }
+  },
+  {
+    "name": "armor",
+    "stack": {
+      "id": "minecraft:leather_chestplate",
+      "components": {
+        "minecraft:dyed_color": 1193046,
+        "minecraft:trim": {
+          "material": "minecraft:gold",
+          "pattern": "minecraft:spire"
+        }
+      }
+    }
+  },
+  {
+    "name": "container",
+    "stack": {
+      "id": "minecraft:chest",
+      "components": {
+        "minecraft:container": [
+          {
+            "slot": 2,
+            "item": {
+              "id": "minecraft:diamond",
+              "count": 9
+            }
+          },
+          {
+            "slot": 5,
+            "item": {
+              "id": "minecraft:stone",
+              "count": 64
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "bundle",
+    "stack": {
+      "id": "minecraft:bundle",
+      "components": {
+        "minecraft:bundle_contents": [
+          {
+            "id": "minecraft:stone",
+            "count": 3
+          },
+          {
+            "id": "minecraft:diamond_pickaxe",
+            "components": {
+              "minecraft:damage": 12
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "removed",
+    "stack": {
+      "id": "minecraft:diamond_sword",
+      "components": {
+        "!minecraft:attribute_modifiers": {},
+        "!minecraft:enchantments": {},
+        "minecraft:item_name": "Named"
+      }
+    }
+  },
+  {
+    "name": "inline_holders",
+    "stack": {
+      "id": "minecraft:diamond_sword",
+      "components": {
+        "minecraft:trim": {
+          "material": {
+            "asset_name": "test",
+            "description": {
+              "translate": "test.trim",
+              "color": "gold"
+            },
+            "override_armor_assets": {
+              "minecraft:iron": "test_iron"
+            }
+          },
+          "pattern": {
+            "asset_id": "minecraft:test",
+            "description": {
+              "translate": "test.pattern"
+            },
+            "decal": true
+          }
+        },
+        "minecraft:instrument": {
+          "sound_event": {
+            "sound_id": "minecraft:test",
+            "range": 12
+          },
+          "use_duration": 2,
+          "range": 32,
+          "description": "Test horn"
+        },
+        "minecraft:banner_patterns": [
+          {
+            "pattern": {
+              "asset_id": "minecraft:test",
+              "translation_key": "test.banner"
+            },
+            "color": "cyan"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "partial_profile",
+    "stack": {
+      "id": "minecraft:player_head",
+      "components": {
+        "minecraft:profile": {
+          "name": "Alex",
+          "texture": "minecraft:test",
+          "cape": "minecraft:cape",
+          "elytra": "minecraft:elytra",
+          "model": "slim"
+        }
+      }
+    }
+  },
+  {
+    "name": "predicates",
+    "stack": {
+      "id": "minecraft:stone",
+      "components": {
+        "minecraft:can_break": [
+          {
+            "blocks": "#minecraft:logs",
+            "state": {
+              "axis": {
+                "min": "x",
+                "max": "z"
+              }
+            },
+            "nbt": "{test:1}",
+            "components": {
+              "minecraft:custom_name": "Named"
+            },
+            "predicates": {
+              "minecraft:damage": {
+                "damage": {
+                  "min": 3
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "chat_unicode",
+    "stack": {
+      "id": "minecraft:stone",
+      "components": {
+        "minecraft:custom_name": "NUL\u0000 \ud83d\ude00 music \ud834\udd1e",
+        "minecraft:lore": [
+          {
+            "translate": "key.test",
+            "with": [
+              "nested",
+              {
+                "text": "style",
+                "bold": true
+              }
+            ],
+            "extra": [
+              "tail"
+            ]
+          }
+        ]
+      }
+    }
+  }
+]

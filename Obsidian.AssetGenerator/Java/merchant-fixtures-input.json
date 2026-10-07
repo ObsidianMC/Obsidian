@@ -1,0 +1,13 @@
+[
+  {
+    "buy": {"id":"minecraft:emerald", "count":5},
+    "sell":{"id":"minecraft:diamond_sword", "components":{"minecraft:damage":17,"minecraft:custom_name":{"text":"Trade"}}},
+    "uses":2,"maxUses":12,"specialPrice":-2,"demand":3,"priceMultiplier":0.05,"xp":5
+  },
+  {
+    "buy":{"id":"minecraft:diamond_sword", "components":{"minecraft:damage":17}},
+    "buyB":{"id":"minecraft:emerald", "count":3},
+    "sell":{"id":"minecraft:diamond_sword", "components":{"minecraft:enchantments":{"minecraft:sharpness":3}}},
+    "uses":4,"maxUses":4
+  }
+]
