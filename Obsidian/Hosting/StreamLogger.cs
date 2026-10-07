@@ -60,15 +60,19 @@ public class StreamLogger : ILogger
 
         var dateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
-        if (exception != null)
+        // Loggers of every category share the writer, and entries come from many threads.
+        lock (_streamWriter)
         {
-            _streamWriter.WriteLine("[{0}] [{1}] ({2})\n--------------------\n{3}\n--------------------", dateTime, logLevel, _category, exception.ToString());
-        }
-        else
-        {
-            _streamWriter.WriteLine("[{0}] [{1}] ({2}) {3}", dateTime, logLevel, _category, msg);
-        }
+            if (exception != null)
+            {
+                _streamWriter.WriteLine("[{0}] [{1}] ({2}) {3}\n--------------------\n{4}\n--------------------", dateTime, logLevel, _category, msg, exception.ToString());
+            }
+            else
+            {
+                _streamWriter.WriteLine("[{0}] [{1}] ({2}) {3}", dateTime, logLevel, _category, msg);
+            }
 
-        _streamWriter.Flush();
+            _streamWriter.Flush();
+        }
     }
 }

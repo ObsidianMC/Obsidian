@@ -101,7 +101,7 @@ public sealed partial class PluginManager : IAsyncDisposable
             this.acceptedKeys.Add(rsa.ExportParameters(false));
         }
 
-        var files = Directory.GetFiles("plugins", "*.obby", SearchOption.AllDirectories);
+        var files = Directory.GetFiles(ServerConstants.PluginsPath, "*.obby", SearchOption.AllDirectories);
 
         var waitingForDepend = new List<PluginContainer>();
         foreach (var file in files)
@@ -127,7 +127,7 @@ public sealed partial class PluginManager : IAsyncDisposable
             await this.HandlePluginAsync(canLoad);
         }
 
-        DirectoryWatcher.Watch("plugins");
+        DirectoryWatcher.Watch(ServerConstants.PluginsPath);
     }
 
     public async Task UnloadPluginsAsync()

@@ -2,10 +2,8 @@
 
 public partial class Program
 {
-    private static async ValueTask GenerateConfigFiles()
+    private static async ValueTask GenerateConfigFiles(string path)
     {
-        const string path = "config";
-
         Directory.CreateDirectory(path);
 
         var serverJsonFile = Path.Combine(path, "server.json");

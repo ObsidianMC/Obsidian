@@ -210,11 +210,15 @@ public sealed partial class Client : IClient
         });
     }
 
-    public void InitializeOffline(string username, IWorld world)
+    /// <summary>
+    /// Logs the player in without Mojang authentication, with the UUID offline servers derive from the name, or with
+    /// <paramref name="uuid"/> (an integrated server's local player).
+    /// </summary>
+    public void InitializeOffline(string username, IWorld world, Guid? uuid = null)
     {
         this.InitializeId();
 
-        this.Player = this.CreatePlayer(GuidHelper.FromStringHash($"OfflinePlayer:{username}"), username, world);
+        this.Player = this.CreatePlayer(uuid ?? GuidHelper.FromStringHash($"OfflinePlayer:{username}"), username, world);
 
         this.SendPacket(new LoginFinishedPacket(Player.Uuid, Player.Username)
         {

@@ -13,6 +13,11 @@ public sealed partial class FinishConfigurationPacket
 
         client.SetState(ClientState.Play);
         await player.LoadAsync();
+
+        // An integrated server opened to LAN forces its game mode on players who join.
+        if (((Server)server).Integrated?.GetForcedGameMode(player.Level.LevelData) is GameMode forcedGameMode)
+            player.GameMode = forcedGameMode;
+
         if (!server.AddPlayer(player))
         {
             await player.DisconnectAsync("Unable to complete login due to a server error. Please try again or contact an administrator.");
@@ -26,6 +31,7 @@ public sealed partial class FinishConfigurationPacket
         await client.QueuePacketAsync(new LoginPacket
         {
             EntityId = player.EntityId,
+            Hardcore = player.Level.LevelData.Hardcore,
             DimensionNames = CodecRegistry.Dimensions.All.Keys.ToList(),
             CommonPlayerSpawnInfo = new()
             {
@@ -48,6 +54,10 @@ public sealed partial class FinishConfigurationPacket
         await client.QueuePacketAsync(new GameEventPacket(player.Level.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
 
         await client.QueuePacketAsync(CustomPayloadPacket.ClientboundPlay with { Channel = "minecraft:brand", PluginData = server.BrandData });
+
+        // Like vanilla's PlayerList.placeNewPlayer, the player learns their permission level before the commands.
+        var permissionLevel = ((OperatorList)server.Operators).GetPermissionLevel(player);
+        await client.QueuePacketAsync(EntityEventPacket.PermissionLevel(player.EntityId, permissionLevel));
         await client.QueuePacketAsync(CommandsRegistry.Packet);
 
         await player.UpdatePlayerInfoAsync();

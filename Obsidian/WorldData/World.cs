@@ -27,20 +27,60 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
     // Saves and flushes of the world run one at a time: /save, autosaves and shutdown can overlap.
     private readonly System.Threading.SemaphoreSlim saveLock = new(1, 1);
 
+    // The vanilla save folder this world is, or null for Obsidian's worlds/<name> layout.
+    private string? vanillaFolder;
+
+    // The level.dat "Data" compound of a vanilla-shaped level, written back with the fields Obsidian owns updated.
+    private NbtCompound? vanillaData;
+
+    /// <summary>
+    /// Whether the world is laid out like a vanilla save (see <see cref="UseVanillaLayout"/>).
+    /// </summary>
+    public bool UsesVanillaLayout => this.vanillaFolder is not null;
+
+    protected override string RegionFolderName => this.UsesVanillaLayout ? "region" : "regions";
+
+    // Vanilla names its level.dat backup level.dat_old; Obsidian's own layout keeps level.dat.old.
+    private string LevelDataBackupPath => this.UsesVanillaLayout ? $"{this.LevelDataFilePath}_old" : $"{this.LevelDataFilePath}.old";
+
+    /// <summary>
+    /// Makes the world a vanilla save in <paramref name="folder"/>: <c>level.dat</c> in vanilla's shape, <c>region/</c>,
+    /// <c>entities/</c>, <c>data/</c> and <c>playerdata/</c>, and its dimensions in <c>DIM-1/</c> and <c>DIM1/</c>.
+    /// Call it before the world is loaded.
+    /// </summary>
+    internal void UseVanillaLayout(string folder) => this.vanillaFolder = folder;
+
+    /// <summary>
+    /// Sets up the level data of a new world from <paramref name="data"/>, a vanilla <c>Data</c> compound (see
+    /// <see cref="VanillaLevelData.Create"/>), which its level.dat is then written from.
+    /// </summary>
+    internal void CreateVanillaLevel(NbtCompound data)
+    {
+        this.vanillaData = data;
+
+        var level = VanillaLevelData.Read(data);
+        level.GeneratorName = this.Generator.Id;
+        level.Time = this.LevelData.Time;
+        this.LevelData = level;
+    }
+
     public async override Task<bool> LoadAsync(DimensionCodec codec)
     {
         this.Initialize(codec);
 
-        // The level data is level.dat, or its backup (.old) when level.dat is missing or can't be read: a save that
-        // stopped partway, or a damaged file. With neither, the world is new; with neither readable, it fails rather
-        // than generate a new world over the damaged one.
-        var backupPath = $"{this.LevelDataFilePath}.old";
-        if (!File.Exists(this.LevelDataFilePath) && !File.Exists(backupPath))
+        // The level data is level.dat, or its backup when level.dat is missing or can't be read: a save that stopped
+        // partway, or a damaged file. Vanilla names the backup level.dat_old, Obsidian level.dat.old. With none, the world
+        // is new; with none readable, it fails rather than generate a new world over the damaged one.
+        string[] paths = [this.LevelDataFilePath, $"{this.LevelDataFilePath}_old", $"{this.LevelDataFilePath}.old"];
+        if (!paths.Any(File.Exists))
             return false;
 
-        var levelCompound = ReadLevelData(this.LevelDataFilePath, this.Logger) ?? ReadLevelData(backupPath, this.Logger)
+        var levelCompound = paths.Select(path => ReadLevelData(path, this.Logger)).FirstOrDefault(compound => compound is not null)
             ?? throw new InvalidDataException($"Neither {this.LevelDataFilePath} nor its backup can be read.");
-        LevelData = new LevelData()
+
+        // A level in vanilla's shape is kept whole and written back in that shape.
+        this.vanillaData = VanillaLevelData.GetData(levelCompound);
+        LevelData = this.vanillaData is not null ? VanillaLevelData.Read(this.vanillaData) : new LevelData()
         {
             Hardcore = levelCompound.GetBool("hardcore"),
             MapFeatures = levelCompound.GetBool("MapFeatures"),
@@ -59,6 +99,7 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
             GeneratorName = levelCompound.GetString("generatorName"),
             LevelName = levelCompound.GetString("LevelName")
         };
+        LevelData.GeneratorName ??= this.Generator.Id;
 
         Log.Loading(this.Logger, this.Name);
         for (int rx = -1; rx < 1; rx++)
@@ -115,20 +156,36 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
 
     /// <summary>
     /// Writes level.dat and the maps. The level data is written to a temporary file first and then replaces level.dat,
-    /// keeping the previous one as level.dat.old, so a save that stops partway leaves a complete file.
+    /// keeping the previous one as the backup, so a save that stops partway leaves a complete file.
     /// </summary>
     private async Task SaveLevelAsync()
     {
         var temporaryPath = $"{LevelDataFilePath}.tmp";
         await using (var fs = File.Create(temporaryPath))
-            await this.WriteLevelDataAsync(fs);
+        {
+            if (this.vanillaData is not null)
+                await this.WriteVanillaLevelDataAsync(fs, this.vanillaData);
+            else
+                await this.WriteLevelDataAsync(fs);
+        }
 
         if (File.Exists(LevelDataFilePath))
-            File.Replace(temporaryPath, LevelDataFilePath, $"{LevelDataFilePath}.old");
+            File.Replace(temporaryPath, LevelDataFilePath, this.LevelDataBackupPath);
         else
             File.Move(temporaryPath, LevelDataFilePath);
 
         await this.Maps.SaveAsync();
+    }
+
+    private async Task WriteVanillaLevelDataAsync(Stream fs, NbtCompound data)
+    {
+        VanillaLevelData.Update(data, this.LevelData);
+
+        await using var writer = new NbtWriterStream(fs, NbtCompression.GZip, "");
+        writer.WriteTag(data);
+        writer.EndCompound();
+
+        await writer.TryFinishAsync();
     }
 
     private async Task WriteLevelDataAsync(Stream fs)
@@ -159,7 +216,7 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
     }
 
     /// <summary>
-    /// Saves what changes while the world runs: its regions, then its level data and maps.
+    /// Saves what changes while the world runs: its and its dimensions' regions, then its level data and maps.
     /// </summary>
     public async Task FlushAsync()
     {
@@ -167,6 +224,7 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         try
         {
             await this.FlushRegionsAsync();
+            await Task.WhenAll(this.dimensions.Values.Cast<AbstractLevel>().Select(dimension => dimension.FlushRegionsAsync()));
             await this.SaveLevelAsync();
         }
         finally
@@ -191,7 +249,7 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
 
     public override void Initialize(DimensionCodec codec)
     {
-        this.FolderPath = Path.Combine("worlds", Name);
+        this.FolderPath = this.vanillaFolder ?? Path.Combine(ServerConstants.WorldsPath, Name);
 
         this.SetDimension(codec);
 

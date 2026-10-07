@@ -6,13 +6,13 @@ using System.Net.Sockets;
 namespace Obsidian;
 public partial class Server
 {
-    private Socket socket;
+    // The listening sockets with their acceptors: the configured one, and Open to LAN's in integrated mode. Locked on itself.
+    private readonly List<(Socket Socket, SocketAsyncEventArgs Acceptor)> listeners = [];
 
     internal int bytesPending;
     internal int bytesReceived;
     internal int bytesSent;
 
-    private SocketAsyncEventArgs acceptorEventArgs;
     private SimpleObjectPool<SocketAsyncEventArgs> socketEventArgsPool;
 
     public ConcurrentDictionary<int, IClient> Connections { get; private set; }
@@ -25,25 +25,61 @@ public partial class Server
 
     public bool Started { get; private set; }
 
+    /// <summary>
+    /// Starts accepting connections on <see cref="ServerConfiguration.BindAddress"/> and <paramref name="port"/>.
+    /// <see cref="Port"/> then holds the bound port, which the operating system picks when <paramref name="port"/> is 0.
+    /// </summary>
     public async ValueTask StartAsync(int port)
     {
-        var endpoint = new IPEndPoint(IPAddress.Any, port);
         this.socketEventArgsPool = new(this.Configuration.MaxPlayers * 2);
 
-        this.acceptorEventArgs = new();
-        this.acceptorEventArgs.Completed += OnAsyncCompleted;
+        var address = string.IsNullOrWhiteSpace(this.Configuration.BindAddress) ? IPAddress.Any
+            : IPAddress.TryParse(this.Configuration.BindAddress, out var parsed) ? parsed
+            : throw new FormatException($"BindAddress '{this.Configuration.BindAddress}' isn't an IP address.");
 
-        this.socket = new(endpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-
-        this.socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, false);
-
-        this.socket.Bind(endpoint);
-
-        this.socket.Listen(this.MaxConnections);
+        this.Port = await this.ListenAsync(new IPEndPoint(address, port));
 
         this.Started = true;
+    }
 
-        await this.Accept(this.acceptorEventArgs);
+    /// <summary>
+    /// Accepts connections on another endpoint too, like Open to LAN does.
+    /// </summary>
+    /// <returns>The bound port.</returns>
+    public async ValueTask<int> ListenAsync(IPEndPoint endpoint)
+    {
+        var socket = new Socket(endpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+
+        try
+        {
+            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, false);
+            socket.Bind(endpoint);
+            socket.Listen(this.MaxConnections);
+        }
+        catch
+        {
+            socket.Dispose();
+            throw;
+        }
+
+        var acceptor = new SocketAsyncEventArgs { UserToken = socket };
+        acceptor.Completed += OnAsyncCompleted;
+
+        lock (this.listeners)
+            this.listeners.Add((socket, acceptor));
+
+        await this.Accept(acceptor);
+
+        return ((IPEndPoint)socket.LocalEndPoint!).Port;
+    }
+
+    private void CloseListeners()
+    {
+        lock (this.listeners)
+        {
+            foreach (var (socket, _) in this.listeners)
+                socket.Close();
+        }
     }
 
     private async ValueTask Accept(SocketAsyncEventArgs e)
@@ -52,7 +88,7 @@ public partial class Server
         {
             e.AcceptSocket = null;
 
-            if (!this.socket.AcceptAsync(e))
+            if (!((Socket)e.UserToken!).AcceptAsync(e))
                 await this.ProcessAccept(e);
         }
         catch (ObjectDisposedException)
@@ -78,8 +114,15 @@ public partial class Server
 
             await this.TryProcessClientAsync(client);
         }
+        else if (e.SocketError == SocketError.OperationAborted)
+        {
+            // The listener was closed: the server is stopping.
+            return;
+        }
         else
+        {
             Log.AcceptFailed(this.logger, e.SocketError);
+        }
 
         await this.Accept(e);
     }
@@ -121,8 +164,14 @@ public partial class Server
     {
         GC.SuppressFinalize(this);
 
-        this.acceptorEventArgs.Completed -= this.OnAsyncCompleted;
-        this.acceptorEventArgs.Dispose();
+        lock (this.listeners)
+        {
+            foreach (var (_, acceptor) in this.listeners)
+            {
+                acceptor.Completed -= this.OnAsyncCompleted;
+                acceptor.Dispose();
+            }
+        }
 
         this.configWatcher?.Dispose();
 

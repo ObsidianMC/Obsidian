@@ -122,7 +122,9 @@ public partial class Player
 
         if (!playerDataFile.Exists)
         {
+            // Like vanilla, a new player starts in the world's default game mode.
             Position = Level.LevelData.SpawnPosition;
+            GameMode = Level.LevelData.DefaultGamemode;
             return;
         }
 

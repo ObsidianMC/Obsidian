@@ -5,6 +5,7 @@ using Obsidian.API.Commands;
 using Obsidian.API.Commands.ArgumentParsers;
 using Obsidian.API.Plugins;
 using Obsidian.Commands.Builders;
+using Obsidian.Commands.Modules;
 using Obsidian.Commands.Framework.Exceptions;
 using Obsidian.Plugins;
 using System.Reflection;
@@ -104,7 +105,9 @@ public sealed class CommandHandler : ICommandHandler
     {
         var assembly = pluginContainer?.PluginAssembly ?? Assembly.GetExecutingAssembly();
 
-        var commandRoots = assembly.GetTypes().Where(x => x.IsSubclassOf(typeof(CommandModuleBase)));
+        // The integrated server's commands are registered by the server when it runs as one.
+        var commandRoots = assembly.GetTypes()
+            .Where(type => type.IsSubclassOf(typeof(CommandModuleBase)) && type != typeof(IntegratedCommandModule));
 
         foreach (var root in commandRoots)
         {

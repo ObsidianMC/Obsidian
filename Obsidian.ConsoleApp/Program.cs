@@ -19,17 +19,13 @@ Console.ForegroundColor = ConsoleColor.Black;
 Console.WriteLine(asciilogo);
 Console.ResetColor();
 
-await GenerateConfigFiles();
+var builder = Host.CreateApplicationBuilder(args);
 
-var builder = Host.CreateApplicationBuilder();
+// The configuration files are generated under Paths:Root before Obsidian reads them.
+ServerConstants.ConfigurePaths(builder.Configuration);
+await GenerateConfigFiles(ServerConstants.ConfigPath);
 
 builder.ConfigureObsidian();
-
-if (!Directory.Exists("logs"))
-{
-    Directory.CreateDirectory("logs");
-}
-
 builder.AddObsidian();
 
 // Give the server some time to shut down after CTRL-C or SIGTERM.

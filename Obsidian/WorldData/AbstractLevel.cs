@@ -109,6 +109,17 @@ public abstract partial class AbstractLevel : ILevel
 
     public string LevelDataFilePath { get; protected set; }
 
+    /// <summary>
+    /// The folder of the level's chunk region files, inside <see cref="FolderPath"/>: Obsidian's <c>regions</c>, or
+    /// vanilla's <c>region</c> in worlds laid out like vanilla saves.
+    /// </summary>
+    protected virtual string RegionFolderName => "regions";
+
+    /// <summary>
+    /// Called while <see cref="GenerateAsync"/> runs, with the chunks generated so far and the chunks to generate.
+    /// </summary>
+    internal Action<int, int>? GenerationProgress { get; set; }
+
     protected ILogger Logger { get; }
 
     /// <summary>
@@ -481,7 +492,7 @@ public abstract partial class AbstractLevel : ILevel
             if (Regions.TryGetValue(value, out region))
                 return region;
 
-            region = new Region(regionX, regionZ, FolderPath, minY: this.MinY, height: this.Height)
+            region = new Region(regionX, regionZ, FolderPath, this.RegionFolderName, minY: this.MinY, height: this.Height)
             {
                 LockChunk = this.Generator.LockChunkAsync,
                 FluidTickLock = this.Fluids.TickLock,
@@ -831,9 +842,16 @@ public abstract partial class AbstractLevel : ILevel
             if (pctComplete != lastPercent)
             {
                 lastPercent = pctComplete;
-                var cps = completedChunks / Math.Max(stopwatch.Elapsed.TotalSeconds, 0.001);
-                var remain = (startChunks - completedChunks) / (int)Math.Max(cps, 1);
-                System.Console.Write("\r{0} chunks/second - {1}% complete - {2} seconds remaining   ", cps.ToString("###.00"), pctComplete, remain);
+
+                // Without a listener, the progress goes to the terminal.
+                if (this.GenerationProgress is not null)
+                    this.GenerationProgress(completedChunks, startChunks);
+                else
+                {
+                    var cps = completedChunks / Math.Max(stopwatch.Elapsed.TotalSeconds, 0.001);
+                    var remain = (startChunks - completedChunks) / (int)Math.Max(cps, 1);
+                    System.Console.Write("\r{0} chunks/second - {1}% complete - {2} seconds remaining   ", cps.ToString("###.00"), pctComplete, remain);
+                }
             }
 
             if (completedChunks / 1024 > flushedThousands)
@@ -847,8 +865,13 @@ public abstract partial class AbstractLevel : ILevel
         if (Interlocked.Exchange(ref this.generationFailure, null) is Exception failure)
             ExceptionDispatchInfo.Throw(failure);
 
-        System.Console.Write("\r{0} chunks/second - 100% complete - 0 seconds remaining   ", (startChunks / stopwatch.Elapsed.TotalSeconds).ToString("###.00"));
-        System.Console.WriteLine();
+        if (this.GenerationProgress is not null)
+            this.GenerationProgress(startChunks, startChunks);
+        else
+        {
+            System.Console.Write("\r{0} chunks/second - 100% complete - 0 seconds remaining   ", (startChunks / stopwatch.Elapsed.TotalSeconds).ToString("###.00"));
+            System.Console.WriteLine();
+        }
 
         await FlushRegionsAsync();
         await SetWorldSpawnAsync();

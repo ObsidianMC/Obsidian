@@ -7,6 +7,8 @@ using Obsidian.API.Commands;
 using Obsidian.API.Configuration;
 using Obsidian.API.Crafting;
 using Obsidian.Commands.Framework;
+using Obsidian.Commands.Modules;
+using Obsidian.Integrated;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -67,7 +69,38 @@ public sealed partial class Server : IServer
     public string Version => ServerConstants.VERSION;
 
     public string Brand { get; } = "obsidian";
-    public int Port { get; }
+
+    /// <summary>
+    /// The port the server listens on: the configured one until it's started, then the bound one.
+    /// </summary>
+    public int Port { get; private set; }
+
+    /// <summary>
+    /// Whether the worlds are paused, like an integrated server while its game is paused: they don't tick, and the ticks
+    /// don't count toward the autosave, while connections keep running.
+    /// </summary>
+    public bool Paused { get; set; }
+
+    /// <summary>
+    /// Raised when a save of everything starts, with whether it's an autosave.
+    /// </summary>
+    public event Action<bool>? SaveStarted;
+
+    /// <summary>
+    /// Raised when a save of everything ends, with whether it was an autosave and its failure, if it failed.
+    /// </summary>
+    public event Action<bool, Exception?>? SaveCompleted;
+
+    /// <summary>
+    /// The integrated server's session, when a game client runs this server.
+    /// </summary>
+    internal IntegratedSession? Integrated { get; }
+
+    // Vanilla's autosave interval (MinecraftServer's autosave period): every 6000 ticks, 5 minutes at 20 TPS.
+    private const int AutosaveInterval = 6000;
+
+    // Saves of everything run one at a time.
+    private readonly SemaphoreSlim saveLock = new(1, 1);
     public IWorld DefaultWorld => WorldManager.DefaultWorld;
 
     /// <summary>
@@ -102,8 +135,9 @@ public sealed partial class Server : IServer
 
         this.Configuration = config;
         this.Port = config.Port;
+        this.Integrated = serviceProvider.GetService<IntegratedSession>();
 
-        this.Operators = new OperatorList(this, loggerFactory);
+        this.Operators = new OperatorList(this, loggerFactory, this.Integrated);
         this.CommandHandler = commandHandler;
         this.PluginManager = ActivatorUtilities.CreateInstance<PluginManager>(this.serviceProvider, this);
     }
@@ -187,6 +221,9 @@ public sealed partial class Server : IServer
         this.CommandHandler.RegisterCommands();
         this.EventDispatcher.RegisterEvents();
 
+        if (this.Integrated is not null)
+            ((CommandHandler)this.CommandHandler).RegisterCommandClass(null, typeof(IntegratedCommandModule));
+
         Directory.CreateDirectory(ServerConstants.PermissionPath);
         Directory.CreateDirectory(ServerConstants.PersistentDataPath);
         Directory.CreateDirectory(ServerConstants.AcceptedKeysPath);
@@ -218,11 +255,7 @@ public sealed partial class Server : IServer
 
         CommandsRegistry.Register(this);
 
-        var serverTasks = new List<Task>()
-        {
-            LoopAsync(),
-            ServerSaveAsync()
-        };
+        var loop = LoopAsync();
 
         // Wait for worlds to load. Polling with a delay leaves the cores to world generation instead of spinning one.
         while (!this.WorldManager.ReadyToJoin)
@@ -237,15 +270,15 @@ public sealed partial class Server : IServer
 
         await this.PluginManager.OnServerReadyAsync();
 
+        await this.StartAsync(this.Port);
+
         loadTimeStopwatch.Stop();
         Log.Ready(this.logger, loadTimeStopwatch.Elapsed, this.Port);
-
-        await this.StartAsync(this.Port);
 
         // A failure here reaches the host, which reports the crash.
         try
         {
-            await Task.WhenAll(serverTasks);
+            await loop;
         }
         finally
         {
@@ -269,13 +302,51 @@ public sealed partial class Server : IServer
     {
         await cancelTokenSource.CancelAsync();
 
-        this.socket.Close();
+        this.CloseListeners();
 
         await WorldManager.FlushLoadedWorldsAsync();
         await WorldManager.DisposeAsync();
         await this.PluginManager.DisposeAsync();
 
         await this.userCache.SaveAsync();
+    }
+
+    /// <summary>
+    /// Saves everything: the online players, the worlds with their regions and level data, and the user cache. Saves run
+    /// one at a time; a failed one is logged and reported through <see cref="SaveCompleted"/>.
+    /// </summary>
+    /// <param name="autosave">Whether this is the periodic autosave, rather than one that was asked for.</param>
+    /// <returns>Whether the save succeeded.</returns>
+    public async Task<bool> SaveEverythingAsync(bool autosave)
+    {
+        await this.saveLock.WaitAsync();
+        try
+        {
+            Log.SavingWorlds(this.logger);
+            this.SaveStarted?.Invoke(autosave);
+
+            try
+            {
+                foreach (var player in this.OnlinePlayers.Values)
+                    await player.SaveAsync();
+
+                await WorldManager.FlushLoadedWorldsAsync();
+                await this.userCache.SaveAsync();
+            }
+            catch (Exception ex)
+            {
+                Log.AutosaveFailed(this.logger, ex);
+                this.SaveCompleted?.Invoke(autosave, ex);
+                return false;
+            }
+
+            this.SaveCompleted?.Invoke(autosave, null);
+            return true;
+        }
+        finally
+        {
+            this.saveLock.Release();
+        }
     }
 
     public bool AddPlayer(IPlayer player)
@@ -294,37 +365,38 @@ public sealed partial class Server : IServer
         return this.OnlinePlayers.Remove(player.Uuid, out _);
     }
 
-    private async Task ServerSaveAsync()
+    /// <summary>
+    /// The mean time the last 100 world ticks took to run, in milliseconds, like vanilla's smoothed tick time (the busy
+    /// time of a tick, not its 50 ms interval).
+    /// </summary>
+    public double AverageTickMilliseconds
     {
-        var timer = new PeriodicTimer(TimeSpan.FromMinutes(5));
-
-        try
+        get
         {
-            while (await timer.WaitForNextTickAsync(this.cancelTokenSource.Token))
-            {
-                Log.SavingWorlds(this.logger);
-
-                // A failed save is reported, and the next one still runs.
-                try
-                {
-                    await WorldManager.FlushLoadedWorldsAsync();
-                    await this.userCache.SaveAsync();
-                }
-                catch (Exception ex) when (ex is not OperationCanceledException)
-                {
-                    Log.AutosaveFailed(this.logger, ex);
-                }
-            }
+            lock (this.tickTimes)
+                return this.tickTimeCount == 0 ? 0 : this.tickTimes.Take(this.tickTimeCount).Average();
         }
-        catch (OperationCanceledException)
+    }
+
+    private readonly double[] tickTimes = new double[100];
+    private int tickTimeCount;
+    private int tickTimeIndex;
+
+    private void RecordTickTime(TimeSpan elapsed)
+    {
+        lock (this.tickTimes)
         {
-            // The server is stopping, which saves the worlds itself.
+            this.tickTimes[this.tickTimeIndex] = elapsed.TotalMilliseconds;
+            this.tickTimeIndex = (this.tickTimeIndex + 1) % this.tickTimes.Length;
+            this.tickTimeCount = Math.Min(this.tickTimeCount + 1, this.tickTimes.Length);
         }
     }
 
     private async Task LoopAsync()
     {
         var keepAliveTicks = 0;
+        var worldTicks = 0;
+        Task autosave = Task.CompletedTask;
 
         var tpsMeasure = new TpsMeasure();
         var stopwatch = Stopwatch.StartNew();
@@ -354,8 +426,16 @@ public sealed partial class Server : IServer
 
                 // Like vanilla, worlds tick once they're loaded: ticking chunks while the rest generate (fluids in complete
                 // chunks) would change them before the world is ready.
-                if (this.WorldManager.ReadyToJoin)
+                if (this.WorldManager.ReadyToJoin && !this.Paused)
+                {
+                    var tickStart = Stopwatch.GetTimestamp();
                     await this.WorldManager.TickWorldsAsync();
+                    this.RecordTickTime(Stopwatch.GetElapsedTime(tickStart));
+
+                    // The autosave runs beside the ticks; when the previous one is still running, this one is skipped.
+                    if (++worldTicks % AutosaveInterval == 0 && autosave.IsCompleted)
+                        autosave = this.SaveEverythingAsync(autosave: true);
+                }
 
                 long elapsedTicks = stopwatch.ElapsedTicks;
                 stopwatch.Restart();
@@ -367,6 +447,8 @@ public sealed partial class Server : IServer
         {
             // Just stop looping.
         }
+
+        await autosave;
 
         foreach (var client in this.Connections.Values)
         {

@@ -74,14 +74,16 @@ public class Region : IRegion
     private readonly int minY;
     private readonly int height;
 
-    internal Region(int x, int z, string worldFolderPath, NbtCompression chunkCompression = NbtCompression.ZLib,
-        int minY = -64, int height = 384)
+    /// <param name="regionFolderName">The chunk region files' folder in <paramref name="worldFolderPath"/>: Obsidian's
+    /// <c>regions</c>, or vanilla's <c>region</c>. Entities are in <c>entities</c> either way.</param>
+    internal Region(int x, int z, string worldFolderPath, string regionFolderName = "regions",
+        NbtCompression chunkCompression = NbtCompression.ZLib, int minY = -64, int height = 384)
     {
         X = x;
         Z = z;
         this.minY = minY;
         this.height = height;
-        RegionFolder = Path.Join(worldFolderPath, "regions");
+        RegionFolder = Path.Join(worldFolderPath, regionFolderName);
         Directory.CreateDirectory(RegionFolder);
         var filePath = Path.Join(RegionFolder, $"r.{X}.{Z}.mca");
 

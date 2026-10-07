@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.Integrated;
+using Obsidian.Net.Packets.Play.Clientbound;
 using System.Collections.Immutable;
 using System.IO;
 
@@ -10,17 +12,25 @@ public sealed partial class OperatorList : IOperatorList
     private readonly Dictionary<string, OperatorRequest> requests = [];
     private readonly IServer server;
     private readonly ILogger _logger;
-    private static string OpsFilePath => Path.Combine("config", "ops.json");
+    private readonly IntegratedSession? integrated;
+    private static string OpsFilePath => Path.Combine(ServerConstants.ConfigPath, "ops.json");
 
-    public OperatorList(IServer server, ILoggerFactory loggerFactory)
+    /// <param name="integrated">An integrated server's session: its operators are kept in memory only, and its players
+    /// get the levels the session gives them.</param>
+    public OperatorList(IServer server, ILoggerFactory loggerFactory, IntegratedSession? integrated = null)
     {
         this.server = server;
+        this.integrated = integrated;
         _logger = loggerFactory.CreateLogger<OperatorList>();
     }
 
     public async Task InitializeAsync()
     {
+        if (this.integrated is not null)
+            return;
+
         var fi = new FileInfo(OpsFilePath);
+        fi.Directory?.Create();
 
         if (fi.Exists)
         {
@@ -76,6 +86,7 @@ public sealed partial class OperatorList : IOperatorList
     {
         this.operators.Add(new Operator { Username = player.Username, Uuid = player.Uuid, Level = level, BypassesPlayerLimit = bypassesPlayerLimit  });
         this.UpdateList();
+        _ = this.SendPermissionLevelAsync(player);
     }
 
     public void RemoveOperator(IPlayer player)
@@ -83,9 +94,43 @@ public sealed partial class OperatorList : IOperatorList
         this.operators.RemoveAll(x => x.Uuid == player.Uuid);
 
         this.UpdateList();
+        _ = this.SendPermissionLevelAsync(player);
     }
 
-    public bool IsOperator(IPlayer player) => this.operators.Any(x => x.Uuid == player.Uuid);
+    public bool IsOperator(IPlayer player) => this.GetPermissionLevel(player) > 0;
+
+    /// <summary>
+    /// A player's permission level, 0 to 4: their operator level, or on an integrated server the level its session
+    /// gives them when that's higher.
+    /// </summary>
+    public int GetPermissionLevel(IPlayer player)
+    {
+        var level = this.operators.Where(x => x.Uuid == player.Uuid).Select(x => x.Level).DefaultIfEmpty(0).Max();
+
+        if (this.integrated is not null)
+            level = Math.Max(level, this.integrated.GetPermissionLevel(player, this.server.DefaultWorld.LevelData.AllowCommands));
+
+        return level;
+    }
+
+    /// <summary>
+    /// Tells an online player their permission level and resends the commands, after it changed.
+    /// </summary>
+    public async Task SendPermissionLevelAsync(IPlayer player)
+    {
+        if (!this.server.IsPlayerOnline(player.Uuid))
+            return;
+
+        try
+        {
+            await player.Client.QueuePacketAsync(EntityEventPacket.PermissionLevel(player.EntityId, this.GetPermissionLevel(player)));
+            await player.Client.QueuePacketAsync(CommandsRegistry.Packet);
+        }
+        catch (OperationCanceledException)
+        {
+            // The player disconnected meanwhile.
+        }
+    }
 
     public ImmutableList<IPlayer> GetOnlineOperators() => server.OnlinePlayers.Values.Where(IsOperator).ToImmutableList();
 
@@ -101,8 +146,11 @@ public sealed partial class OperatorList : IOperatorList
         public static partial void RequestFailed(ILogger logger, string code);
     }
 
-    private void UpdateList() =>
-        File.WriteAllText(OpsFilePath, operators.ToJson());
+    private void UpdateList()
+    {
+        if (this.integrated is null)
+            File.WriteAllText(OpsFilePath, operators.ToJson());
+    }
 
     private readonly struct Operator
     {

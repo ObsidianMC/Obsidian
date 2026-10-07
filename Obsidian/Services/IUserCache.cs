@@ -17,7 +17,7 @@ public sealed partial class UserCache(HttpClient httpClient, ILogger<UserCache> 
     private const string userWithIdEndpoint = "https://sessionserver.mojang.com/session/minecraft/profile/";
     private const string verifySessionEndpoint = "https://sessionserver.mojang.com/session/minecraft/hasJoined";
 
-    private readonly FileInfo cacheFile = new("usercache.json");
+    private readonly FileInfo cacheFile = new(ServerConstants.UserCacheFile);
     private readonly ILogger<UserCache> logger = logger;
 
     private List<CachedProfile> cachedUsers = new();

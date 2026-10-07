@@ -19,10 +19,7 @@ public partial class CustomQueryAnswerPacket
         this.MessageId = reader.ReadVarInt();
         this.Successful = reader.ReadBoolean();
 
-        //TODO we need a query registry.
-        if(this.Successful)
-        {
-            throw new NotImplementedException();
-        }
+        // Like vanilla, the payload is the rest of the packet, up to its payload limit.
+        this.Data = this.Successful ? reader.ReadRemainingBytes(ServerConstants.MaxPayloadLength) : ReadOnlyMemory<byte>.Empty;
     }
 }
