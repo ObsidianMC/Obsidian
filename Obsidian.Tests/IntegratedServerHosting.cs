@@ -9,6 +9,7 @@ using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
@@ -64,10 +65,26 @@ public sealed class IntegratedServerHosting : IDisposable
     {
         var world = Path.Combine(this.root, "saves", "Test World");
 
-        var firstRun = await this.RunUntilReadyAsync(world, (_, _) => Task.CompletedTask);
+        var firstRun = await this.RunUntilReadyAsync(world, (_, sendCommand) =>
+        {
+            sendCommand("@obsidian:{\"command\":\"pause\"}");
+            sendCommand("@obsidian:{\"command\":\"resume\"}");
+
+            return Task.CompletedTask;
+        });
 
         Assert.Contains(firstRun, line => line.StartsWith("@obsidian:{\"event\":\"progress\"", StringComparison.Ordinal));
-        Assert.Contains("@obsidian:{\"event\":\"stopping\"}", firstRun);
+
+        // Pausing saves once before it's acknowledged.
+        string[] lifecycle =
+        [
+            "@obsidian:{\"event\":\"saving\",\"autosave\":false}",
+            "@obsidian:{\"event\":\"saved\",\"autosave\":false}",
+            "@obsidian:{\"event\":\"paused\"}",
+            "@obsidian:{\"event\":\"resumed\"}",
+            "@obsidian:{\"event\":\"stopping\"}"
+        ];
+        Assert.Equal(lifecycle, firstRun.Where(lifecycle.Contains));
 
         var levelDat = Path.Combine(world, "level.dat");
         var data = ReadData(levelDat);

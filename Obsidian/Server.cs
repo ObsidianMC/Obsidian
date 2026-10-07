@@ -79,9 +79,13 @@ public sealed partial class Server : IServer
 
     /// <summary>
     /// Whether the worlds are paused, like an integrated server while its game is paused: they don't tick, and the ticks
-    /// don't count toward the autosave, while connections keep running.
+    /// don't count toward the autosave, while connections keep running. See <see cref="PauseAsync"/> and
+    /// <see cref="Resume"/>.
     /// </summary>
-    public bool Paused { get; set; }
+    public bool Paused { get; private set; }
+
+    // Held while the worlds tick, so pausing waits for the tick in progress.
+    private readonly SemaphoreSlim tickGate = new(1, 1);
 
     /// <summary>
     /// Raised when a save of everything starts, with whether it's an autosave.
@@ -365,6 +369,31 @@ public sealed partial class Server : IServer
     }
 
     /// <summary>
+    /// Pauses the worlds between two ticks: once this returns, no world tick runs until <see cref="Resume"/>.
+    /// </summary>
+    /// <returns>Whether the worlds were running, so this call paused them.</returns>
+    public async Task<bool> PauseAsync()
+    {
+        await this.tickGate.WaitAsync();
+        try
+        {
+            var wasRunning = !this.Paused;
+            this.Paused = true;
+
+            return wasRunning;
+        }
+        finally
+        {
+            this.tickGate.Release();
+        }
+    }
+
+    /// <summary>
+    /// Lets the worlds tick again from the next tick.
+    /// </summary>
+    public void Resume() => this.Paused = false;
+
+    /// <summary>
     /// Saves everything: the online players, the worlds with their regions and level data, and the user cache. Saves run
     /// one at a time; a failed one is logged and reported through <see cref="SaveCompleted"/>.
     /// </summary>
@@ -494,15 +523,27 @@ public sealed partial class Server : IServer
 
                 // Like vanilla, worlds tick once they're loaded: ticking chunks while the rest generate (fluids in complete
                 // chunks) would change them before the world is ready.
-                if (this.WorldManager.ReadyToJoin && !this.Paused)
+                if (this.WorldManager.ReadyToJoin)
                 {
-                    var tickStart = Stopwatch.GetTimestamp();
-                    await this.WorldManager.TickWorldsAsync();
-                    this.RecordTickTime(Stopwatch.GetElapsedTime(tickStart));
+                    // Under the gate, so a pause lands between two ticks (see PauseAsync).
+                    await this.tickGate.WaitAsync();
+                    try
+                    {
+                        if (!this.Paused)
+                        {
+                            var tickStart = Stopwatch.GetTimestamp();
+                            await this.WorldManager.TickWorldsAsync();
+                            this.RecordTickTime(Stopwatch.GetElapsedTime(tickStart));
 
-                    // The autosave runs beside the ticks; when the previous one is still running, this one is skipped.
-                    if (++worldTicks % AutosaveInterval == 0 && autosave.IsCompleted)
-                        autosave = this.SaveEverythingAsync(autosave: true);
+                            // The autosave runs beside the ticks, and is skipped while the previous one still runs.
+                            if (++worldTicks % AutosaveInterval == 0 && autosave.IsCompleted)
+                                autosave = this.SaveEverythingAsync(autosave: true);
+                        }
+                    }
+                    finally
+                    {
+                        this.tickGate.Release();
+                    }
                 }
 
                 long elapsedTicks = stopwatch.ElapsedTicks;

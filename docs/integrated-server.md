@@ -57,7 +57,7 @@ feed. Other lines on standard input are ordinary console commands; other lines o
 
 | Command | Effect |
 | --- | --- |
-| `{"command":"pause"}` | Stops ticking the worlds (connections and keep-alives keep running). On the change to paused it saves everything once, like vanilla's "Saving and pausing game...", with `saving`/`saved` events. Then `paused`. |
+| `{"command":"pause"}` | Stops ticking the worlds once the tick in progress ends (connections and keep-alives keep running). On the change to paused it saves everything once, like vanilla's "Saving and pausing game...", with `saving`/`saved` events. Then `paused`. |
 | `{"command":"resume"}` | Ticks the worlds again. Then `resumed`. |
 | `{"command":"save","flush":true}` | Saves everything: online players, the world and its dimensions (regions, level.dat, maps) and the user cache. `saving`, then `saved` or `saveFailed`. Every save is flushed to disk, so `flush` is accepted and ignored. |
 | `{"command":"stop"}` | Stops gracefully: `stopping`, then disconnects the players, saves everything, releases the world and exits with code 0. The end of standard input does the same. |

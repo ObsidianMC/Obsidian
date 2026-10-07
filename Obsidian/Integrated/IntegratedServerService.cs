@@ -104,7 +104,7 @@ public sealed partial class IntegratedServerService(
                 await this.PauseAsync();
                 break;
             case "resume":
-                this.server.Paused = false;
+                this.server.Resume();
                 events.Write(IntegratedEvent.Resumed());
                 break;
             case "save":
@@ -194,14 +194,13 @@ public sealed partial class IntegratedServerService(
     }
 
     /// <summary>
-    /// Stops ticking the worlds and saves everything once on the way, like vanilla's integrated server when its game
-    /// pauses.
+    /// Stops ticking the worlds after the tick in progress, and saves everything once on the way, like vanilla's
+    /// integrated server when its game pauses.
     /// </summary>
     private async Task PauseAsync()
     {
-        if (!this.server.Paused)
+        if (await this.server.PauseAsync())
         {
-            this.server.Paused = true;
             Log.SavingAndPausing(logger);
             await this.server.SaveEverythingAsync(autosave: false);
         }
