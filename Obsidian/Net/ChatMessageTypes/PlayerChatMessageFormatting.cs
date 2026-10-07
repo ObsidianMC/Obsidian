@@ -5,7 +5,7 @@ public sealed class PlayerChatMessageFormatting
 
     public required ChatMessage SenderName { get; init; }
 
-    public bool TargetNamePresent => this.TargetName != null;
+    public bool TargetNamePresent => this.TargetName is not null;
 
     public ChatMessage? TargetName { get; init; }
 }

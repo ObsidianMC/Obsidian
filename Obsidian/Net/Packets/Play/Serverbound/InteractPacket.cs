@@ -37,7 +37,8 @@ public partial class InteractPacket
 
     public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
-        var entity = player.GetEntitiesNear(4).FirstOrDefault(x => x.EntityId == EntityId); // TODO check if the entity is within range and in vision/not being blocked by a wall
+        // TODO check if the entity is within range and in vision/not being blocked by a wall
+        var entity = player.GetEntitiesNear(4).FirstOrDefault(x => x.EntityId == EntityId);
 
         switch (Type)
         {

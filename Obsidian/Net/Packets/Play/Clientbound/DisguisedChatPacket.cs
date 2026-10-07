@@ -16,7 +16,7 @@ public partial class DisguisedChatPacket
     [Condition("HasTargetName")]
     public ChatMessage? TargetName { get; init; }
 
-    public bool HasTargetName => this.TargetName != null;
+    public bool HasTargetName => this.TargetName is not null;
 
     public override void Serialize(INetStreamWriter writer)
     {
