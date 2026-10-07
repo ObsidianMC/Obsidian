@@ -31,7 +31,10 @@ internal sealed partial class LoginClientHandler : ClientHandler
                     {
                         await this.HandleLoginStartAsync(buffer.GetBuffer());
                     }
-                    catch { return false; }
+                    catch
+                    {
+                        return false;
+                    }
 
                     return true;
                 }
@@ -41,7 +44,10 @@ internal sealed partial class LoginClientHandler : ClientHandler
                     {
                         await this.HandleEncryptionResponseAsync(buffer.GetBuffer());
                     }
-                    catch { return false; }
+                    catch
+                    {
+                        return false;
+                    }
 
                     return true;
                 }
@@ -51,7 +57,10 @@ internal sealed partial class LoginClientHandler : ClientHandler
                     {
                         await this.HandleCustomQueryAnswerAsync(buffer.GetBuffer());
                     }
-                    catch { return false; }
+                    catch
+                    {
+                        return false;
+                    }
 
                     return true;
                 }

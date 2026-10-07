@@ -63,9 +63,12 @@ public class StreamLogger : ILogger
         // Loggers of every category share the writer, and entries come from many threads.
         lock (_streamWriter)
         {
-            if (exception != null)
+            if (exception is not null)
             {
-                _streamWriter.WriteLine("[{0}] [{1}] ({2}) {3}\n--------------------\n{4}\n--------------------", dateTime, logLevel, _category, msg, exception.ToString());
+                // The exception follows on its own lines, between separators.
+                const string separator = "--------------------";
+
+                _streamWriter.WriteLine("[{0}] [{1}] ({2}) {3}\n{4}\n{5}\n{4}", dateTime, logLevel, _category, msg, separator, exception);
             }
             else
             {
