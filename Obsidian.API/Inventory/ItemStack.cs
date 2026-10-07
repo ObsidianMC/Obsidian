@@ -1,5 +1,6 @@
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;
+using Obsidian.Nbt;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API.Inventory;
@@ -34,6 +35,15 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
 
     public bool IsAir => Type == Material.Air;
 
+    /// <summary>
+    /// Saved components Obsidian doesn't model (e.g. <c>minecraft:custom_data</c>), kept as they were loaded so saving the
+    /// stack again doesn't drop them. Copies of the stack share the compound, so it's never changed.
+    /// </summary>
+    /// <remarks>
+    /// They aren't sent to clients and don't take part in <see cref="Equals(ItemStack?)"/>.
+    /// </remarks>
+    internal NbtCompound? UnmodeledComponents { get; init; }
+
     public ItemStack(Item holder, int count = 1, params IEnumerable<DataComponent> components)
     {
         this.Holder = holder;
@@ -45,6 +55,8 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
     public ItemStack([DisallowNull] ItemStack item, int count = 1) : this(item.Holder, count, item.Patch)
     {
         foreach (var type in item.RemoveComponents) this.Remove(type);
+
+        this.UnmodeledComponents = item.UnmodeledComponents;
     }
 
     /// <summary>
@@ -53,7 +65,7 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
     /// </summary>
     public ItemStack TransmuteCopy(Item holder)
     {
-        var copy = new ItemStack(holder, this.Count, this.Patch);
+        var copy = new ItemStack(holder, this.Count, this.Patch) { UnmodeledComponents = this.UnmodeledComponents };
         foreach (var type in this.RemoveComponents) copy.Remove(type);
         return copy;
     }

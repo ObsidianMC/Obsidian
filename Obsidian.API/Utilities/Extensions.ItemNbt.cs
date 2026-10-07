@@ -15,8 +15,8 @@ public partial class Extensions
     /// it (its patch).
     /// </summary>
     /// <remarks>
-    /// Only the components Obsidian can generate are saved (damage, names, enchantments, potions, stew effects,
-    /// instruments...); others are left out.
+    /// The components Obsidian models are saved from the stack (damage, names, enchantments, potions, stew effects,
+    /// instruments...), and the others it was loaded with as they were.
     /// </remarks>
     public static NbtCompound ToNbt(this ItemStack item, string name = "")
     {
@@ -34,6 +34,12 @@ public partial class Extensions
                 components.Add(tag);
         }
 
+        foreach (var (componentName, tag) in item.UnmodeledComponents ?? [])
+        {
+            if (!components.HasTag(componentName))
+                components.Add(componentName, tag);
+        }
+
         if (components.Count > 0)
             compound.Add(components);
 
@@ -42,8 +48,12 @@ public partial class Extensions
 
     /// <summary>
     /// Reads a stack saved like vanilla's <c>ItemStack.CODEC</c>, or <c>null</c> when the compound is missing or its item
-    /// is unknown. Components Obsidian doesn't support are skipped.
+    /// is unknown. Components Obsidian doesn't model are kept in <see cref="ItemStack.UnmodeledComponents"/>.
     /// </summary>
+    /// <remarks>
+    /// Stacks Obsidian saved before it used vanilla's codec, with a byte <c>Count</c> and a <c>tag</c> holding
+    /// <c>Damage</c> and <c>Unbreakable</c>, are read too.
+    /// </remarks>
     public static ItemStack? ItemFromNbt(this NbtCompound? item)
     {
         if (item is null || !item.TryGetTag<NbtTag<string>>("id", out var id))
@@ -54,9 +64,12 @@ public partial class Extensions
         if (holder.UnlocalizedName is null)
             return null;
 
-        var count = item.TryGetTag<NbtTag<int>>("count", out var countTag) ? countTag.Value : 1;
+        var count = item.TryGetTag<NbtTag<int>>("count", out var countTag) ? countTag.Value
+            : item.TryGetTag<NbtTag<byte>>("Count", out var legacyCount) ? legacyCount.Value
+            : 1;
 
         var components = new List<DataComponent>();
+        var unmodeled = new NbtCompound();
         if (item.TryGetTag<NbtCompound>("components", out var componentsCompound))
         {
             foreach (var (componentName, tag) in componentsCompound)
@@ -64,10 +77,25 @@ public partial class Extensions
                 var component = ComponentFromNbt(componentName, tag);
                 if (component is not null)
                     components.Add(component);
+                else
+                    unmodeled.Add(componentName, tag);
             }
         }
 
-        return new ItemStack(holder, count, components);
+        if (item.TryGetTag<NbtCompound>("tag", out var legacyTag))
+            components.AddRange(LegacyComponents(legacyTag));
+
+        return new ItemStack(holder, count, components) { UnmodeledComponents = unmodeled.Count > 0 ? unmodeled : null };
+    }
+
+    // The fields of Obsidian's previous item tag.
+    private static IEnumerable<DataComponent> LegacyComponents(NbtCompound tag)
+    {
+        if (tag.TryGetTag<NbtTag<int>>("Damage", out var damage) && damage.Value > 0)
+            yield return ComponentBuilder.Damage with { Value = damage.Value };
+
+        if (tag.TryGetBool("Unbreakable", out var unbreakable) && unbreakable)
+            yield return ComponentBuilder.Unbreakable with { Value = true };
     }
 
     /// <summary>

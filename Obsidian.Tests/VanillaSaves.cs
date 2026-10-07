@@ -1,19 +1,26 @@
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Obsidian.API;
+using Obsidian.API.Configuration;
 using Obsidian.API.Registries;
 using Obsidian.Nbt;
 using Obsidian.Registries;
+using Obsidian.Tests.Fakes;
+using Obsidian.Utilities;
 using Obsidian.WorldData;
+using Obsidian.WorldData.Generators;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
+using PlayerEntity = Obsidian.Entities.Player;
 
 namespace Obsidian.Tests;
 
 /// <summary>
-/// Chunks in the shapes vanilla 1.21.11 saves them, built here from those shapes (not captured saves).
+/// Chunks and players in the shapes vanilla 1.21.11 saves them, built here from those shapes (not captured saves).
 /// </summary>
 public sealed class VanillaSaves : IDisposable
 {
@@ -24,6 +31,8 @@ public sealed class VanillaSaves : IDisposable
         ["shape"] = "straight",
         ["waterlogged"] = "false"
     };
+
+    private static readonly Guid playerUuid = Guid.Parse("0f3c2b1a-1111-2222-3333-444455556666");
 
     // Where the synthetic chunk has its stairs and desert, in section 0 of chunk (0, 0).
     private static readonly Vector stairs = new(3, 5, 7);
@@ -93,6 +102,161 @@ public sealed class VanillaSaves : IDisposable
 
         Assert.Equal("minecraft:desert", reloaded.GetBiome(desert.X, desert.Y, desert.Z).Name);
     }
+
+    [Fact(DisplayName = "A vanilla player loads, and saves keep vanilla's names and what Obsidian doesn't model")]
+    public async Task VanillaPlayerRoundTrips()
+    {
+        var world = this.CreateWorld();
+        var player = CreatePlayer(world);
+        await PlayerDataFile.WriteAsync(world.GetPlayerDataPath(player.Uuid), VanillaPlayer(xpLevel: 5));
+
+        try
+        {
+            await player.LoadAsync(loadFromPersistentWorld: false);
+
+            Assert.Equal(new VectorD(1.5, 70, -2.5), player.Position);
+            Assert.Equal(GameMode.Creative, player.GameMode);
+            Assert.Equal(15f, player.Health);
+            Assert.Equal(17, player.FoodLevel);
+            Assert.Equal(0.25f, player.XpP);
+            Assert.Equal(playerUuid, player.Uuid);
+            Assert.Equal(39, player.CurrentHeldItemSlot);
+            Assert.Equal(5, player.Inventory.GetItem(39)!.Damage);
+            Assert.Equal(64, player.Inventory.GetItem(9)!.Count);
+            Assert.Equal(Material.IronHelmet, player.Inventory.GetItem(5)!.Type);
+            Assert.Equal(Material.Shield, player.Inventory.GetItem(45)!.Type);
+            Assert.Equal(3, player.EnderInventory.GetItem(0)!.Count);
+
+            player.XpLevel = 6;
+            await player.SaveAsync();
+
+            var saved = PlayerDataFile.Read(world.GetPlayerDataPath(player.Uuid), NullLogger.Instance)!;
+            Assert.Equal(6, saved.GetInt("XpLevel"));
+            Assert.Equal(3, saved.GetInt("SelectedItemSlot"));
+            Assert.Equal("minecraft:overworld", saved.GetString("Dimension"));
+            Assert.Equal(1.0, saved.GetDouble("fall_distance"));
+            Assert.True(((NbtCompound)saved["recipeBook"]).GetBool("isGuiOpen"));
+            Assert.Equal("minecraft:iron_helmet", ((NbtCompound)((NbtCompound)saved["equipment"])["head"]).GetString("id"));
+
+            var sword = ((NbtList)saved["Inventory"]).Cast<NbtCompound>().Single(item => item.GetByte("Slot") == 3);
+            Assert.Equal(1, sword.GetInt("count"));
+            Assert.False(sword.HasTag("Count"));
+
+            var components = (NbtCompound)sword["components"];
+            Assert.Equal(5, components.GetInt("minecraft:damage"));
+            Assert.Equal("dev", ((NbtCompound)components["minecraft:custom_data"]).GetString("owner"));
+        }
+        finally
+        {
+            DeletePersistentData(player);
+        }
+    }
+
+    [Fact(DisplayName = "Concurrent saves of a player all succeed and leave a readable file and its backup")]
+    public async Task ConcurrentSavesSucceed()
+    {
+        var world = this.CreateWorld();
+        var player = CreatePlayer(world);
+
+        try
+        {
+            await player.LoadAsync(loadFromPersistentWorld: false);
+            await Task.WhenAll(Enumerable.Range(0, 16).Select(_ => Task.Run(player.SaveAsync)));
+
+            var path = world.GetPlayerDataPath(player.Uuid);
+            Assert.NotNull(PlayerDataFile.Read(path, NullLogger.Instance));
+            Assert.True(File.Exists(PlayerDataFile.BackupPath(path)));
+            Assert.Empty(Directory.GetFiles(world.PlayerDataPath, "*.tmp"));
+        }
+        finally
+        {
+            DeletePersistentData(player);
+        }
+    }
+
+    private World CreateWorld()
+    {
+        var world = new World(NullLogger<World>.Instance, null!, null!, new FixedOptions(new ServerConfiguration()), null!,
+            new EmptyWorldGenerator(), "world", "0");
+
+        world.UseVanillaLayout(this.folder);
+        CodecRegistry.TryGetDimension("minecraft:overworld", out var overworld);
+        world.Initialize(overworld!);
+        world.CreateVanillaLevel(new NbtCompound("Data") { new NbtTag<string>("LevelName", "world") });
+
+        return world;
+    }
+
+    private static PlayerEntity CreatePlayer(World world) => new(playerUuid, "dev", new FakeClient(), world)
+    {
+        Server = new FakeServer()
+    };
+
+    private static void DeletePersistentData(PlayerEntity player)
+    {
+        File.Delete(player.PersistentDataFile);
+        File.Delete(PlayerDataFile.BackupPath(player.PersistentDataFile));
+    }
+
+    /// <summary>
+    /// A player as vanilla 1.21.11 saves them: an item with a component Obsidian doesn't model, equipment, an ender chest,
+    /// and fields Obsidian doesn't model at all (the recipe book, and another player's UUID).
+    /// </summary>
+    private static NbtCompound VanillaPlayer(int xpLevel) => new()
+    {
+        new NbtTag<int>("DataVersion", 4671),
+        new NbtList(NbtTagType.Double, "Pos")
+        {
+            new NbtTag<double>(string.Empty, 1.5),
+            new NbtTag<double>(string.Empty, 70),
+            new NbtTag<double>(string.Empty, -2.5)
+        },
+        new NbtList(NbtTagType.Float, "Rotation") { new NbtTag<float>(string.Empty, 90f), new NbtTag<float>(string.Empty, 10f) },
+        new NbtArray<int>("UUID", [1, 2, 3, 4]),
+        new NbtTag<string>("Dimension", "minecraft:overworld"),
+        new NbtTag<int>("playerGameType", 1),
+        new NbtTag<float>("Health", 15f),
+        new NbtTag<int>("foodLevel", 17),
+        new NbtTag<int>("XpLevel", xpLevel),
+        new NbtTag<float>("XpP", 0.25f),
+        new NbtTag<double>("fall_distance", 1.0),
+        new NbtTag<int>("SelectedItemSlot", 3),
+        new NbtList(NbtTagType.Compound, "Inventory")
+        {
+            new NbtCompound
+            {
+                new NbtTag<byte>("Slot", 3),
+                new NbtTag<string>("id", "minecraft:diamond_sword"),
+                new NbtTag<int>("count", 1),
+                new NbtCompound("components")
+                {
+                    new NbtTag<int>("minecraft:damage", 5),
+                    new NbtCompound("minecraft:custom_data") { new NbtTag<string>("owner", "dev") }
+                }
+            },
+            new NbtCompound
+            {
+                new NbtTag<byte>("Slot", 9),
+                new NbtTag<string>("id", "minecraft:stone"),
+                new NbtTag<int>("count", 64)
+            }
+        },
+        new NbtCompound("equipment")
+        {
+            new NbtCompound("head") { new NbtTag<string>("id", "minecraft:iron_helmet"), new NbtTag<int>("count", 1) },
+            new NbtCompound("offhand") { new NbtTag<string>("id", "minecraft:shield"), new NbtTag<int>("count", 1) }
+        },
+        new NbtList(NbtTagType.Compound, "EnderItems")
+        {
+            new NbtCompound
+            {
+                new NbtTag<byte>("Slot", 0),
+                new NbtTag<string>("id", "minecraft:apple"),
+                new NbtTag<int>("count", 3)
+            }
+        },
+        new NbtCompound("recipeBook") { new NbtTag<byte>("isGuiOpen", 1) }
+    };
 
     /// <summary>
     /// A complete chunk as vanilla 1.21.11 saves it, with two sections: section 0 holds stone with oak stairs (by name and
@@ -199,5 +363,14 @@ public sealed class VanillaSaves : IDisposable
 
         var bytes = (await file.GetChunkBytesAsync(0, 0))!.Value;
         return (NbtCompound)new NbtReader(new MemoryStream(bytes.ToArray())).ReadNextTag()!;
+    }
+
+    private sealed class FixedOptions(ServerConfiguration value) : IOptionsMonitor<ServerConfiguration>
+    {
+        public ServerConfiguration CurrentValue => value;
+
+        public ServerConfiguration Get(string? name) => value;
+
+        public IDisposable? OnChange(Action<ServerConfiguration, string?> listener) => null;
     }
 }
