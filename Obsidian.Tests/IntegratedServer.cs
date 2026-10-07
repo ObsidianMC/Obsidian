@@ -6,6 +6,7 @@ using Obsidian.API.Configuration;
 using Obsidian.Hosting;
 using Obsidian.Integrated;
 using Obsidian.Nbt;
+using Obsidian.WorldData;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -77,3 +78,26 @@ public class IntegratedProtocolTests
     }
 }
 
+public class VanillaLevelDataTests
+{
+    /// <summary>
+    /// Obsidian's own flat worlds open with its superflat generator; flat worlds with other layers, like vanilla's
+    /// classic preset (2 dirt), are refused instead of silently getting different terrain.
+    /// </summary>
+    [Fact]
+    public void OnlyFlatWorldsWithObsidiansLayersOpen()
+    {
+        var data = VanillaLevelData.Create(new NewWorldConfiguration { WorldType = "flat" }, "Flat", 1, "superflat");
+        Assert.Equal("superflat", VanillaLevelData.GetGeneratorId(data));
+
+        var worldGen = (NbtCompound)data["WorldGenSettings"];
+        var overworld = (NbtCompound)((NbtCompound)worldGen["dimensions"])["minecraft:overworld"];
+        var settings = (NbtCompound)((NbtCompound)overworld["generator"])["settings"];
+        var dirt = (NbtCompound)((NbtList)settings["layers"])[1];
+
+        dirt.Remove("height");
+        dirt.Add(new NbtTag<int>("height", 2));
+
+        Assert.Throws<NotSupportedException>(() => VanillaLevelData.GetGeneratorId(data));
+    }
+}

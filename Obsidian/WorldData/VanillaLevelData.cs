@@ -31,6 +31,15 @@ internal static class VanillaLevelData
     private const string MojangGeneratorId = "minecraft:mojang_generator";
     private const string SuperflatGeneratorId = "superflat";
 
+    // The layers (bottom up) and biome of Obsidian's superflat generator, whose terrain is fixed.
+    private const string FlatBiome = "minecraft:plains";
+    private static readonly (string Block, int Height)[] FlatLayers =
+    [
+        ("minecraft:bedrock", 1),
+        ("minecraft:dirt", 3),
+        ("minecraft:grass_block", 1)
+    ];
+
     /// <summary>
     /// The <c>Data</c> compound of a vanilla-shaped root, or <c>null</c> for Obsidian's flat shape.
     /// </summary>
@@ -82,7 +91,10 @@ internal static class VanillaLevelData
     /// <summary>
     /// Obsidian's generator for the overworld a level's <c>WorldGenSettings</c> describe.
     /// </summary>
-    /// <exception cref="NotSupportedException">Obsidian can't generate that overworld.</exception>
+    /// <exception cref="NotSupportedException">
+    /// Obsidian can't generate that overworld, including flat worlds with other layers or another biome than its superflat
+    /// generator's: they'd silently get different terrain.
+    /// </exception>
     public static string GetGeneratorId(NbtCompound data)
     {
         if (!data.TryGetTag<NbtCompound>("WorldGenSettings", out var worldGen)
@@ -93,7 +105,15 @@ internal static class VanillaLevelData
 
         var type = Get<string?>(generator, "type", null);
         if (type == "minecraft:flat")
+        {
+            if (!HasSuperflatTerrain(generator))
+            {
+                throw new NotSupportedException("Obsidian can only open flat worlds with its own layers "
+                    + "(bedrock, 3 dirt, grass block, in plains); this one has other layers or another biome.");
+            }
+
             return SuperflatGeneratorId;
+        }
 
         // Vanilla's default overworld: noise with the overworld's settings and multi-noise biomes. Large biomes and
         // amplified differ in their settings, single biome in its biome source.
@@ -106,6 +126,24 @@ internal static class VanillaLevelData
             return MojangGeneratorId;
 
         throw new NotSupportedException($"Obsidian can't generate this world's overworld ({type}, {settings ?? "custom settings"}).");
+    }
+
+    /// <summary>
+    /// Whether a flat generator's settings describe the terrain Obsidian's superflat generator makes: the same layers and
+    /// biome (vanilla's default when the biome is missing is plains).
+    /// </summary>
+    private static bool HasSuperflatTerrain(NbtCompound generator)
+    {
+        if (!generator.TryGetTag<NbtCompound>("settings", out var settings)
+            || !settings.TryGetTag<NbtList>("layers", out var layers)
+            || Get(settings, "biome", FlatBiome) != FlatBiome)
+            return false;
+
+        var savedLayers = layers
+            .OfType<NbtCompound>()
+            .Select(layer => (Block: Get(layer, "block", string.Empty), Height: Get(layer, "height", 0)));
+
+        return savedLayers.SequenceEqual(FlatLayers);
     }
 
     /// <summary>
@@ -227,15 +265,10 @@ internal static class VanillaLevelData
                 new NbtTag<string>("type", "minecraft:flat"),
                 new NbtCompound("settings")
                 {
-                    new NbtTag<string>("biome", "minecraft:plains"),
+                    new NbtTag<string>("biome", FlatBiome),
                     new NbtTag<byte>("features", 0),
                     new NbtTag<byte>("lakes", 0),
-                    new NbtList(NbtTagType.Compound, "layers")
-                    {
-                        Layer("minecraft:bedrock", 1),
-                        Layer("minecraft:dirt", 3),
-                        Layer("minecraft:grass_block", 1)
-                    }
+                    FlatLayerList()
                 }
             }
             : NoiseGenerator(Overworld, MultiNoise(Overworld));
@@ -256,11 +289,20 @@ internal static class VanillaLevelData
             }
         };
 
-        static NbtCompound Layer(string block, int height) => new()
+        static NbtList FlatLayerList()
         {
-            new NbtTag<string>("block", block),
-            new NbtTag<int>("height", height)
-        };
+            var list = new NbtList(NbtTagType.Compound, "layers");
+            foreach (var (block, height) in FlatLayers)
+            {
+                list.Add(new NbtCompound
+                {
+                    new NbtTag<string>("block", block),
+                    new NbtTag<int>("height", height)
+                });
+            }
+
+            return list;
+        }
 
         static NbtCompound Dimension(string name, NbtCompound generator) => new(name)
         {

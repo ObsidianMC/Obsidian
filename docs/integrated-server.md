@@ -150,4 +150,7 @@ opening the folder again creates the world from the `NewWorld` settings and keep
 it with the same seed or delete the folder.
 
 An existing world's overworld generator comes from its `WorldGenSettings`: vanilla's default noise overworld and flat
-worlds load; other presets (large biomes, amplified, single biome, custom) fail the start with a message.
+worlds with Obsidian's superflat terrain (bedrock, 3 dirt, grass block, plains) load. Obsidian's superflat generator
+can't take other layers, so flat worlds with other layers or another biome, vanilla's Classic Flat preset (2 dirt)
+included, fail the start with a message rather than get different terrain, as do other presets (large biomes,
+amplified, single biome, custom).
