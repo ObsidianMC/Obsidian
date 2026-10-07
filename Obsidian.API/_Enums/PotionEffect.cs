@@ -34,5 +34,12 @@ public enum PotionEffect : int
     DolphinsGrace,
     BadOmen,
     HeroOfTheVillage,
-    Darkness
+    Darkness,
+    TrialOmen,
+    RaidOmen,
+    WindCharged,
+    Weaving,
+    Oozing,
+    Infested,
+    BreathOfTheNautilus
 }

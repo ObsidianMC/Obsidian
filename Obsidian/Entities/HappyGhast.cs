@@ -1,11 +1,21 @@
 using Obsidian.API.Inventory;
 using Obsidian.Entities.AI;
+using Obsidian.Nbt;
+using Obsidian.Nbt.Interfaces;
 
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:happy_ghast")]
 public sealed partial class HappyGhast : FarmAnimal
 {
+    private int stillTimeout;
+    private VectorD? home;
+    protected override int MaximumPassengers => 4;
+    protected override VectorD PassengerOffset(int index)
+    {
+        var angle = (Yaw.Degrees + index * 90) * MathF.PI / 180;
+        return new VectorD(-MathF.Sin(angle) * 1.1f, Dimension.Height, MathF.Cos(angle) * 1.1f);
+    }
     public HappyGhast() => Type = EntityType.HappyGhast;
     internal override bool FlyingNavigation => true;
     protected override bool TakesFallDamage => false;
@@ -24,6 +34,18 @@ public sealed partial class HappyGhast : FarmAnimal
     protected override async ValueTask TickMobAsync()
     {
         await base.TickMobAsync();
+        home ??= Position;
+        if (Rider != null) home = Position;
+        if (stillTimeout > 0) stillTimeout--;
+        if (!IsBaby && Level.GetPlayersInRange(Position, 5).Any(player => player is Player { Vehicle: null } &&
+            player.Position.Y >= Position.Y + Dimension.Height - 0.2 && player.Position.Y <= Position.Y + Dimension.Height + 1 &&
+            Math.Abs(player.Position.X - Position.X) <= Dimension.Width / 2 && Math.Abs(player.Position.Z - Position.Z) <= Dimension.Width / 2))
+            stillTimeout = 10;
+        if (stillTimeout > 0 && Rider == null) { GoalController?.Pause(); MoveControl.Stop(); Motion = VectorD.Zero; }
+        else if (Rider == null && GoalController is GoalSelector { IsPaused: true } goals) goals.Resume();
+        var radius = IsBaby || !GetEquipment(EquipmentSlot.Body).IsAir ? 32 : 64;
+        if (Rider == null && stillTimeout == 0 && home is { } center && (Position - center).MagnitudeSquared() > radius * radius)
+            MoveControl.MoveTo(center, 1);
         var fast = Terrain.IsRainingAt((Vector)Position.Floor()) || Terrain.GetTemperature((Vector)Position.Floor()) < 0.15;
         if (AiTick % (fast ? 20 : 600) == 0) Health = Math.Min(GetAttributeValue("minecraft:generic.max_health"), Health + 1);
     }
@@ -53,8 +75,13 @@ public sealed partial class HappyGhast : FarmAnimal
         if (MobBitMask.HasFlag(MobBitmask.NoAi)) return;
         Yaw = Rider.Yaw;
         Pitch = Rider.Pitch;
-        var forward = (Rider.Input.HasFlag(PlayerInput.Forward) ? 1 : 0) - (Rider.Input.HasFlag(PlayerInput.Backward) ? 1 : 0);
-        MoveControl.Acceleration = (VectorD)Rider.GetLookDirection() * (forward * 0.025);
+        var forward = (Rider.Input.HasFlag(PlayerInput.Forward) ? 1f : 0) - (Rider.Input.HasFlag(PlayerInput.Backward) ? 0.5f : 0);
+        var sideways = (Rider.Input.HasFlag(PlayerInput.Left) ? 1f : 0) - (Rider.Input.HasFlag(PlayerInput.Right) ? 1f : 0);
+        var yaw = Yaw.Degrees * MathF.PI / 180;
+        var input = (VectorD)Rider.GetLookDirection() * forward + new VectorD(MathF.Cos(yaw) * sideways,
+            Rider.Input.HasFlag(PlayerInput.Jump) ? 0.5f : 0, MathF.Sin(yaw) * sideways);
+        if (input.MagnitudeSquared() > 1) input /= input.Magnitude;
+        MoveControl.Acceleration = input * (GetAttributeValue("minecraft:generic.flying_speed") * 0.78f);
         Motion *= 0.8;
     }
     protected override ValueTask OnDeathAsync(IEntity source)
@@ -63,6 +90,17 @@ public sealed partial class HappyGhast : FarmAnimal
     {
         base.Write(writer);
         writer.WriteEntityMetadataType(17, EntityMetadataType.Boolean); writer.WriteBoolean(false);
-        writer.WriteEntityMetadataType(18, EntityMetadataType.Boolean); writer.WriteBoolean(Rider != null);
+        writer.WriteEntityMetadataType(18, EntityMetadataType.Boolean); writer.WriteBoolean(stillTimeout > 0);
+    }
+    protected override void WriteAdditionalSave(INbtWriter writer)
+    {
+        writer.WriteInt("still_timeout", stillTimeout);
+        if (home is { } center) writer.WriteArray("ObsidianHome", new[] { (int)center.X, (int)center.Y, (int)center.Z });
+    }
+    protected override void ReadAdditionalSave(NbtCompound tag)
+    {
+        stillTimeout = tag.TryGetTagValue<int>("still_timeout", out var timeout) ? Math.Clamp(timeout, 0, 60) : 0;
+        if (tag.TryGetTag<NbtArray<int>>("ObsidianHome", out var saved) && saved.Count == 3)
+        { var values = saved.GetArray(); home = new VectorD(values[0], values[1], values[2]); }
     }
 }

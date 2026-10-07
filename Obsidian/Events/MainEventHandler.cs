@@ -161,17 +161,19 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         var server = e.Server as Server;
         var player = e.Player as Player;
 
-        if (block == null && player?.Vehicle is Pig pig && item is { Count: > 0, Type: Material.CarrotOnAStick })
+        if (block == null && player != null && item is { Count: > 0 } &&
+            (player.Vehicle is Pig && item.Type == Material.CarrotOnAStick || player.Vehicle is Strider && item.Type == Material.WarpedFungusOnAStick))
         {
             async ValueTask Boost()
             {
-                if (!pig.Boost(player) || player.GameMode == GameMode.Creative)
+                var boosted = player.Vehicle switch { Pig pig => pig.Boost(player), Strider strider => strider.Boost(player), _ => false };
+                if (!boosted || player.GameMode == GameMode.Creative)
                     return;
                 var component = Obsidian.API.Inventory.DataComponents.ComponentBuilder.Damage;
-                component.Value = item.Damage + 7;
+                component.Value = item.Damage + (player.Vehicle is Strider ? 1 : 7);
                 item[DataComponentType.Damage] = component;
                 var slot = e.Hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
-                if (component.Value >= 25)
+                if (component.Value >= (player.Vehicle is Strider ? 100 : 25))
                     player.Inventory.SetItem(slot, ItemsRegistry.GetSingleItem(Material.FishingRod));
                 await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
                 {

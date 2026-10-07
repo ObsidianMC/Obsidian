@@ -15,6 +15,19 @@ public sealed partial class Sniffer : FarmAnimal
     internal int DropSeedAt { get; private set; }
     public Sniffer() => Type = EntityType.Sniffer;
     protected override string? SoundName => "sniffer";
+    protected override async ValueTask TickMobAsync()
+    {
+        await base.TickMobAsync();
+        if (MobBitMask.HasFlag(MobBitmask.NoAi)) return;
+        if (idleStateTicks > 0)
+        {
+            if (--idleStateTicks == 0 || !CanDig) { idleStateTicks = 0; ChangeState(0); }
+            return;
+        }
+        if (State != 0 || IsBaby || !CanDig) return;
+        if (Random.Next(1000) == 0) { ChangeState(2); idleStateTicks = Random.Next(40, 81); PlayMobSound("scenting"); }
+    }
+    private int idleStateTicks;
     protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Type: Material.TorchflowerSeeds };
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
@@ -79,7 +92,7 @@ internal sealed class SnifferDigGoal(Sniffer sniffer) : NavigationGoal(sniffer, 
     public override GoalFlags Flags => GoalFlags.Move | GoalFlags.Look;
     public override bool CanUse()
     {
-        if (!sniffer.CanDig || sniffer.Random.Next(100) != 0) return false;
+        if (!sniffer.CanDig || sniffer.State != 0 || sniffer.Random.Next(100) != 0) return false;
         var origin = (Vector)sniffer.Position.Floor();
         for (var attempt = 0; attempt < 20; attempt++)
         {

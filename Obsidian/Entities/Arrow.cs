@@ -36,8 +36,11 @@ public partial class Arrow : Entity
         }
     }
 
-    public override void SpawnEntity(Velocity? velocity = null, int additionalData = 0) =>
+    public override void SpawnEntity(Velocity? velocity = null, int additionalData = 0)
+    {
         base.SpawnEntity(velocity ?? new Velocity(Motion.X, Motion.Y, Motion.Z), Owner?.EntityId ?? 0);
+        if (Level is AbstractLevel level) level.EmitGameEvent(MobGameEvent.ProjectileShoot, Position, Owner ?? this);
+    }
 
     public override async ValueTask TickAsync()
     {
@@ -95,6 +98,7 @@ public partial class Arrow : Entity
         { EntityId = EntityId, Position = Position, Delta = Motion, Yaw = Yaw, Pitch = Pitch, OnGround = false });
         if (target != null)
         {
+            level.EmitGameEvent(MobGameEvent.ProjectileLand, Position, this, Owner);
             var health = target.Health;
             if (target is MobProjectile fireball)
                 fireball.Deflect(Owner ?? this, Motion);
@@ -115,6 +119,7 @@ public partial class Arrow : Entity
         }
         if (fraction < 1)
         {
+            level.EmitGameEvent(MobGameEvent.ProjectileLand, Position, this, Owner);
             if (Type is EntityType.ShulkerBullet or EntityType.WitherSkull) { await OnImpactAsync(null, false); return; }
             embedded = true;
             Motion = VectorD.Zero;

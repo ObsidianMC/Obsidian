@@ -37,8 +37,11 @@ internal sealed class MobProjectile : Entity
         acceleration = type is EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion ? VectorD.Zero : direction * 0.1f;
         NoGravity = type is not (EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion);
     }
-    public override void SpawnEntity(Velocity? velocity = null, int additionalData = 0) =>
+    public override void SpawnEntity(Velocity? velocity = null, int additionalData = 0)
+    {
         base.SpawnEntity(velocity ?? new Velocity(Motion.X, Motion.Y, Motion.Z), Owner?.EntityId ?? 0);
+        if (Level is AbstractLevel level) level.EmitGameEvent(MobGameEvent.ProjectileShoot, Position, Owner ?? this);
+    }
     public override ValueTask DamageAsync(IEntity source, float amount = 1)
     {
         if (Type == EntityType.Fireball && source.Level == Level && source.Health > 0 && amount > 0)
@@ -101,6 +104,7 @@ internal sealed class MobProjectile : Entity
         BoundingBox = Dimension.CreateBBFromPosition(Position);
         if (fraction < 1 || target != null)
         {
+            level.EmitGameEvent(MobGameEvent.ProjectileLand, Position, this, Owner);
             if (Type == EntityType.SplashPotion)
             {
                 await SplashAsync(target);
@@ -181,7 +185,7 @@ internal sealed class MobProjectile : Entity
             var distance = (living.Position - Position).Magnitude;
             if (distance >= 4) continue;
             var strength = ReferenceEquals(living, directHit) ? 1 : 1 - distance / 4;
-            var undead = living.Type is EntityType.Zombie or EntityType.Husk or EntityType.Drowned or EntityType.ZombifiedPiglin or EntityType.Zoglin or EntityType.Skeleton or EntityType.Stray or EntityType.Bogged or EntityType.Parched or EntityType.WitherSkeleton or EntityType.Wither or EntityType.Phantom or EntityType.SkeletonHorse or EntityType.ZombieHorse;
+            var undead = living.Type is EntityType.Zombie or EntityType.Husk or EntityType.Drowned or EntityType.ZombifiedPiglin or EntityType.Zoglin or EntityType.Skeleton or EntityType.Stray or EntityType.Bogged or EntityType.Parched or EntityType.WitherSkeleton or EntityType.Wither or EntityType.Phantom or EntityType.SkeletonHorse or EntityType.ZombieHorse or EntityType.CamelHusk or EntityType.ZombieNautilus or EntityType.ZombieVillager or EntityType.Giant;
             if (SplashEffect == (int)PotionEffect.InstantDamage - 1 || SplashEffect == (int)PotionEffect.InstantHealth - 1)
             {
                 var harms = (SplashEffect == (int)PotionEffect.InstantDamage - 1) != undead;

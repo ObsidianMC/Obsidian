@@ -69,6 +69,8 @@ public partial class ContainerClickPacket
 
     public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
+        if (player.OpenedContainer is Obsidian.Entities.MerchantContainer merchant)
+        { await merchant.HandleClickAsync(this, player); return; }
         var baseContainer = player.OpenedContainer ?? player.Inventory;
 
         var (slot, forPlayer) = baseContainer.GetSlot(ClickedSlot);

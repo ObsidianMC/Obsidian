@@ -73,6 +73,16 @@ public sealed partial class Strider : FarmAnimal
         writer.WriteEntityMetadataType(17, EntityMetadataType.VarInt); writer.WriteVarInt(boostDuration);
         writer.WriteEntityMetadataType(18, EntityMetadataType.Boolean); writer.WriteBoolean(cold);
     }
-    protected override void WriteAdditionalSave(INbtWriter writer) => writer.WriteBool("Suffocating", cold);
-    protected override void ReadAdditionalSave(NbtCompound tag) => cold = tag.TryGetBool("Suffocating", out var saved) && saved;
+    protected override void WriteAdditionalSave(INbtWriter writer)
+    {
+        writer.WriteBool("Suffocating", cold);
+        writer.WriteInt("ObsidianBoostTicks", boostTicks);
+        writer.WriteInt("ObsidianBoostDuration", boostDuration);
+    }
+    protected override void ReadAdditionalSave(NbtCompound tag)
+    {
+        cold = tag.TryGetBool("Suffocating", out var saved) && saved;
+        boostDuration = tag.TryGetTagValue<int>("ObsidianBoostDuration", out var duration) ? Math.Clamp(duration, 0, 980) : 0;
+        boostTicks = tag.TryGetTagValue<int>("ObsidianBoostTicks", out var ticks) ? Math.Clamp(ticks, 0, boostDuration) : 0;
+    }
 }

@@ -1,5 +1,6 @@
 using Obsidian.Entities.AI;
 using Obsidian.Nbt;
+using Obsidian.Nbt.Interfaces;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
 
@@ -202,7 +203,7 @@ public sealed partial class EnderDragon : BossMob
 
     private async ValueTask DestroyBlocksAsync()
     {
-        if (Level is not AbstractLevel level || level.Generator is Obsidian.WorldData.Generators.MobTestGenerator)
+        if (Level is not AbstractLevel level || level.Generator is Obsidian.WorldData.Generators.MobTestGenerator || !Level.LevelData.GetBooleanRule("mob_griefing"))
             return;
         var blocked = false;
         foreach (var part in parts.Take(3))
@@ -302,7 +303,16 @@ public sealed partial class EnderDragon : BossMob
     protected override async ValueTask TickDeathAsync()
     {
         phaseTicks++;
+        if (phaseTicks == 1)
+            PacketBroadcaster.QueuePacketToLevel(Level, new LevelEventPacket(1028, (Vector)Position.Floor(), 0));
+        if (phaseTicks >= 180 && phaseTicks <= 200)
+            PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new LevelParticlesPacket
+            {
+                Position = Position + new VectorD((Random.NextDouble() - 0.5) * 8, 2 + (Random.NextDouble() - 0.5) * 4, (Random.NextDouble() - 0.5) * 8),
+                ParticleCount = 1, Data = new DragonDeathParticle()
+            });
         Motion = new VectorD(0, 0.1f, 0);
+        Yaw = Yaw.Degrees + 20;
         var next = Position + Motion;
         if (Level is AbstractLevel level && level.TryMoveEntity(this, Position, next))
         {
@@ -311,14 +321,18 @@ public sealed partial class EnderDragon : BossMob
             PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new TeleportEntityPacket
             { EntityId = EntityId, Position = Position, Delta = Motion, Yaw = Yaw, Pitch = Pitch, OnGround = false });
         }
-        if (phaseTicks > 150 && phaseTicks % 5 == 0)
+        if (phaseTicks > 150 && phaseTicks % 5 == 0 && Level.LevelData.GetBooleanRule("mob_drops"))
             Level.SpawnExperienceOrbs(Position, (short)(PreviouslyKilled ? 40 : 960));
         if (phaseTicks >= 200)
         {
-            Level.SpawnExperienceOrbs(Position, (short)(PreviouslyKilled ? 100 : 2400));
+            if (Level.LevelData.GetBooleanRule("mob_drops")) Level.SpawnExperienceOrbs(Position, (short)(PreviouslyKilled ? 100 : 2400));
             if (Level is AbstractLevel fightLevel) await fightLevel.EndFightDragonKilledAsync(this);
             await RemoveAsync();
         }
+    }
+    private sealed class DragonDeathParticle : ParticleData
+    {
+        public override ParticleType ParticleType => ParticleType.ExplosionEmitter;
     }
     internal async ValueTask OnCrystalDestroyedAsync(EndCrystal destroyed, IEntity source)
     {
@@ -347,6 +361,16 @@ public sealed partial class EnderDragon : BossMob
     internal override void WriteNbt(NbtCompound tag)
     {
         base.WriteNbt(tag);
+        WriteDragonNbt(tag);
+    }
+    protected override void WriteAdditionalSave(INbtWriter writer)
+    {
+        var tag = new NbtCompound();
+        WriteDragonNbt(tag);
+        foreach (var (_, child) in tag) writer.WriteTag(child);
+    }
+    private void WriteDragonNbt(NbtCompound tag)
+    {
         tag.Set(new NbtTag<int>("DragonPhase", (int)phase));
         tag.Set(new NbtTag<int>("DragonDeathTime", phase == DragonPhase.Dying ? phaseTicks : 0));
         tag.Set(new NbtTag<bool>("ObsidianPreviouslyKilled", PreviouslyKilled));
@@ -360,6 +384,11 @@ public sealed partial class EnderDragon : BossMob
     internal override void ReadNbt(NbtCompound tag)
     {
         base.ReadNbt(tag);
+        ReadDragonNbt(tag);
+    }
+    protected override void ReadAdditionalSave(NbtCompound tag) => ReadDragonNbt(tag);
+    private void ReadDragonNbt(NbtCompound tag)
+    {
         phase = (DragonPhase)Math.Clamp(tag.TryGetTagValue<int>("DragonPhase", out var saved) ? saved : 0, 0, 10);
         phaseTicks = phase == DragonPhase.Dying && tag.TryGetTagValue<int>("DragonDeathTime", out var ticks) ? Math.Clamp(ticks, 0, 199) : 0;
         PreviouslyKilled = !tag.TryGetBool("ObsidianPreviouslyKilled", out var killed) || killed;

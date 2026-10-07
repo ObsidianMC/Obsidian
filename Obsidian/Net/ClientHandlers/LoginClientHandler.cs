@@ -87,6 +87,7 @@ internal sealed partial class LoginClientHandler : ClientHandler
         // Item components refer to these by network id (the index of the entry sent here), e.g. an item's enchantments.
         this.SendPacket(new RegistryDataPacket("minecraft:enchantment", EnchantmentsRegistry.All.Select(enchantment => enchantment.Identifier)));
         this.SendPacket(new RegistryDataPacket("minecraft:instrument", InstrumentsRegistry.All.Select(instrument => instrument.Identifier)));
+        this.SendPacket(new RegistryDataPacket("minecraft:jukebox_song", Obsidian.Registries.JukeboxSongsRegistry.Identifiers));
 
         this.SendPacket(UpdateTagsPacket.ClientboundConfiguration with { Tags = TagsRegistry.Categories });
 

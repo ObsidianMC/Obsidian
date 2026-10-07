@@ -10,7 +10,7 @@ public sealed partial class EndCrystal : Entity
 {
     private Vector? beamTarget;
     public VectorF BeamTarget => beamTarget is { } target ? new VectorF(target.X, target.Y, target.Z) : default;
-    public bool ShowBottom { get; private set; } = true;
+    public bool ShowBottom { get; internal set; } = true;
     private bool destroyed;
     internal bool Invulnerable { get; set; }
 

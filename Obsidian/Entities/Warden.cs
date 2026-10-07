@@ -2,6 +2,7 @@ using Obsidian.Entities.AI;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.WorldData;
 
 namespace Obsidian.Entities;
 
@@ -10,7 +11,7 @@ public sealed partial class Warden : PathfinderMob
 {
     private const int AngryThreshold = 80;
     private readonly Dictionary<Guid, int> anger = [];
-    private readonly Dictionary<Guid, VectorD> heardPositions = [];
+    private int projectileMemoryTicks;
     private int idleTicks;
     private int poseTicks;
     private int vibrationCooldown;
@@ -20,6 +21,37 @@ public sealed partial class Warden : PathfinderMob
     private int sonicTicks;
     private int clientAnger;
     private int touchCooldown;
+
+    internal void BeginEmerging()
+    {
+        Pose = Pose.Emerging;
+        poseTicks = 134;
+    }
+
+    internal bool AcceptsVibration(MobVibration vibration) => Alive && !MobBitMask.HasFlag(MobBitmask.NoAi) &&
+        vibrationCooldown == 0 && Pose is not (Pose.Digging or Pose.Emerging) &&
+        vibration.Source != this && (vibration.Source is not ILiving || CanSense(vibration.Source));
+
+    internal void ReceiveVibration(MobVibration vibration)
+    {
+        if (!AcceptsVibration(vibration)) return;
+        vibrationCooldown = 40;
+        idleTicks = 0;
+        SendEntityEvent(61);
+        PlayMobSound("tendril_clicks");
+        var destination = vibration.Position;
+        if (vibration.Owner is { } owner)
+        {
+            if (IsInRange(owner, 30))
+            {
+                IncreaseAnger(owner, projectileMemoryTicks > 0 ? 35 : 10);
+                if (projectileMemoryTicks > 0 && CanSense(owner)) destination = owner.Position;
+            }
+            projectileMemoryTicks = 100;
+        }
+        else if (vibration.Source is { } source) IncreaseAnger(source, 35);
+        if (AttackTarget == null && poseTicks == 0) Navigator?.NavigateTo(destination);
+    }
 
     public Warden()
     {
@@ -75,6 +107,7 @@ public sealed partial class Warden : PathfinderMob
         if (meleeCooldown > 0) meleeCooldown--;
         if (sonicCooldown > 0) sonicCooldown--;
         if (vibrationCooldown > 0) vibrationCooldown--;
+        if (projectileMemoryTicks > 0) projectileMemoryTicks--;
         if (touchCooldown > 0) touchCooldown--;
         if (sniffCooldown > 0) sniffCooldown--;
         var nearby = GetEntitiesNear(32).Where(CanSense).ToArray();
@@ -88,24 +121,6 @@ public sealed partial class Warden : PathfinderMob
             foreach (var id in anger.Keys.ToArray())
                 if (--anger[id] <= 0) anger.Remove(id);
         }
-        // There is no world game-event bus yet. Observed movement supplies step vibrations.
-        foreach (var entity in nearby)
-        {
-            if (heardPositions.TryGetValue(entity.Uuid, out var previous) && !entity.Sneaking &&
-                (entity.Position - previous).MagnitudeSquared() > 0.0001 && vibrationCooldown == 0 &&
-                IsInRange(entity, 16) && Pose is not (Pose.Digging or Pose.Emerging))
-            {
-                IncreaseAnger(entity, 35);
-                vibrationCooldown = 40;
-                SendEntityEvent(61);
-                PlayMobSound("tendril_clicks");
-                if (AttackTarget == null) Navigator?.NavigateTo(entity.Position);
-            }
-            heardPositions[entity.Uuid] = entity.Position;
-        }
-        foreach (var id in heardPositions.Keys.Where(id => !nearby.Any(entity => entity.Uuid == id)).ToArray())
-            heardPositions.Remove(id);
-
         var mostAngry = nearby.Where(entity => anger.GetValueOrDefault(entity.Uuid) >= AngryThreshold)
             .OrderByDescending(entity => anger[entity.Uuid]).ThenBy(entity => entity is IPlayer ? 0 : 1)
             .ThenBy(entity => (entity.Position - Position).MagnitudeSquared()).FirstOrDefault();
@@ -254,6 +269,7 @@ public sealed partial class Warden : PathfinderMob
         writer.WriteInt("ObsidianWardenVibrationCooldown", vibrationCooldown);
         writer.WriteInt("ObsidianWardenMeleeCooldown", meleeCooldown);
         writer.WriteInt("ObsidianWardenTouchCooldown", touchCooldown);
+        writer.WriteInt("ObsidianWardenProjectileMemory", projectileMemoryTicks);
         writer.WriteInt("ObsidianWardenPoseTicks", poseTicks);
         writer.WriteInt("ObsidianWardenPose", (int)Pose);
         writer.WriteInt("ObsidianWardenSonicCooldown", sonicCooldown);
@@ -276,7 +292,8 @@ public sealed partial class Warden : PathfinderMob
         vibrationCooldown = ReadTimer(tag, "ObsidianWardenVibrationCooldown", 40);
         meleeCooldown = ReadTimer(tag, "ObsidianWardenMeleeCooldown", 18);
         touchCooldown = ReadTimer(tag, "ObsidianWardenTouchCooldown", 20);
-        poseTicks = ReadTimer(tag, "ObsidianWardenPoseTicks", 100);
+        projectileMemoryTicks = ReadTimer(tag, "ObsidianWardenProjectileMemory", 100);
+        poseTicks = ReadTimer(tag, "ObsidianWardenPoseTicks", 134);
         sonicCooldown = ReadTimer(tag, "ObsidianWardenSonicCooldown", 200);
         sonicTicks = ReadTimer(tag, "ObsidianWardenSonicTicks", 60);
         if (tag.TryGetTagValue<int>("ObsidianWardenPose", out var pose) &&

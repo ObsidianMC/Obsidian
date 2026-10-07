@@ -12,6 +12,9 @@ public partial class ContainerClosePacket
         if (ContainerId == 0)
             return;
 
+        if (player.OpenedContainer is Obsidian.Entities.MerchantContainer merchant)
+        { await merchant.CloseAsync(player); return; }
+
         await server.EventDispatcher.ExecuteEventAsync(new ContainerClosedEventArgs(player, server, player.OpenedContainer!));
     }
 

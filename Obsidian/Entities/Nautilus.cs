@@ -2,6 +2,7 @@ using Obsidian.API.Inventory;
 using Obsidian.Entities.AI;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
+using System.Threading;
 
 namespace Obsidian.Entities;
 
@@ -11,7 +12,7 @@ public partial class Nautilus : FarmAnimal
     public Guid Owner { get; private set; }
     private int dashCooldown;
     private int dashTicks;
-    private bool jumped;
+    private int pendingDashCharge = -1;
     public Nautilus() => Type = EntityType.Nautilus;
     internal override bool SwimmingNavigation => true;
     protected override bool UsesFloatGoal => false;
@@ -19,13 +20,19 @@ public partial class Nautilus : FarmAnimal
     protected override bool CanEat(ItemStack? item) => item is { Count: > 0 } && TagsRegistry.Item.NautilusFood.Entries.Contains(item.Holder.Id);
     protected override VectorD Travel() => VolumeMovement.Travel(this, InWater);
     protected override ValueTask TickAirSupplyAsync() { Air = 300; return default; }
+    protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
+    {
+        base.RegisterGoals(actions, targets);
+        actions.AddGoal(5, new NautilusFollowOwnerGoal(this));
+    }
     protected override async ValueTask TickMobAsync()
     {
         await base.TickMobAsync();
         if (dashCooldown > 0 && --dashCooldown == 0) PlayMobSound("dash_ready");
         if (dashTicks > 0 && --dashTicks == 0) SynchronizeMetadata();
         if (!InWater && AiTick % 20 == 0) await DamageEnvironmentAsync(1);
-        if (Rider != null && InWater) Rider.Air = 300;
+        if (Rider != null && InWater && AiTick % 20 == 0)
+            Rider.AddPotionEffect((int)PotionEffect.BreathOfTheNautilus - 1, 200, 0, EntityEffectFlags.ShowIcon);
     }
     internal override async ValueTask FeedAsync(IPlayer player, InteractionHand hand)
     {
@@ -41,7 +48,7 @@ public partial class Nautilus : FarmAnimal
             }
             else if (Health < GetAttributeValue("minecraft:generic.max_health"))
             { Health = Math.Min(GetAttributeValue("minecraft:generic.max_health"), Health + 2); await ConsumeInteractionItemAsync(player, hand); }
-            else await base.FeedAsync(player, hand);
+            else if (Type == EntityType.Nautilus) await base.FeedAsync(player, hand);
             return;
         }
         if (Owner == Guid.Empty || IsBaby) return;
@@ -57,17 +64,23 @@ public partial class Nautilus : FarmAnimal
     protected override void TickRidden()
     {
         base.TickRidden();
-        if (Rider == null) { if (GoalController is GoalSelector { IsPaused: true } goals) goals.Resume(); jumped = false; return; }
+        var charge = Interlocked.Exchange(ref pendingDashCharge, -1);
+        if (Rider == null) { if (GoalController is GoalSelector { IsPaused: true } goals) goals.Resume(); return; }
         if (MobBitMask.HasFlag(MobBitmask.NoAi)) return;
         Yaw = Rider.Yaw; Pitch = Rider.Pitch;
         var forward = (Rider.Input.HasFlag(PlayerInput.Forward) ? 1 : 0) - (Rider.Input.HasFlag(PlayerInput.Backward) ? 1 : 0);
         if (InWater) MoveControl.Acceleration = (VectorD)Rider.GetLookDirection() * (forward * 0.025);
         else MoveControl.Ride(MovementSpeed, forward);
-        var jumping = Rider.Input.HasFlag(PlayerInput.Jump);
-        if (jumping && !jumped && dashCooldown == 0)
-        { Motion += (VectorD)Rider.GetLookDirection() * (InWater ? 1.2 : 0.5); dashCooldown = 40; dashTicks = 10; SynchronizeMetadata(); PlayMobSound("dash"); }
-        jumped = jumping;
+        if (charge >= 0 && dashCooldown == 0)
+        {
+            var strength = charge >= 90 ? 1 : 0.4f + 0.4f * charge / 90;
+            Motion += (VectorD)Rider.GetLookDirection() * ((InWater ? 1.2 : 0.5) * strength);
+            dashCooldown = 40; dashTicks = 10; SynchronizeMetadata(); PlayMobSound("dash");
+        }
     }
+    internal bool RequestDash(IPlayer player, int charge) => ReferenceEquals(Rider, player) && !IsBaby &&
+        !GetEquipment(EquipmentSlot.Saddle).IsAir && dashCooldown == 0 && !MobBitMask.HasFlag(MobBitmask.NoAi) &&
+        Interlocked.CompareExchange(ref pendingDashCharge, Math.Clamp(charge, 0, 100), -1) == -1;
     protected override ValueTask OnDeathAsync(IEntity source)
     {
         foreach (var slot in new[] { EquipmentSlot.Body, EquipmentSlot.Saddle }) if (!GetEquipment(slot).IsAir) DropItem(GetEquipment(slot));
@@ -87,4 +100,17 @@ public partial class Nautilus : FarmAnimal
         if (tag.TryGetTag<NbtArray<int>>("Owner", out var owner) && owner.Count == 4) Owner = EntityNbt.UuidFromInts(owner.GetArray());
         dashCooldown = Math.Clamp(tag.TryGetTagValue<int>("ObsidianDashCooldown", out var cooldown) ? cooldown : 0, 0, 40);
     }
+}
+
+internal sealed class NautilusFollowOwnerGoal(Nautilus nautilus) : NavigationGoal(nautilus, 1)
+{
+    private IPlayer? owner;
+    public override bool CanUse()
+    {
+        owner = nautilus.Owner == Guid.Empty ? null : nautilus.Level.GetPlayersInRange(nautilus.Position, 32).FirstOrDefault(player => player.Uuid == nautilus.Owner);
+        return owner != null && !nautilus.IsInRange(owner, 8);
+    }
+    public override bool CanContinue() => owner != null && owner.Level == nautilus.Level && !nautilus.IsInRange(owner, 3);
+    public override ValueTask TickAsync() { if (owner != null) MoveTo(owner); return default; }
+    public override void Stop() { base.Stop(); owner = null; }
 }

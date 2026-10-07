@@ -64,6 +64,9 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         };
 
         Log.Loading(this.Logger, this.Name);
+        ReadGameRules(levelCompound);
+        ReadEndFightNbt(levelCompound);
+        ReadRaidsNbt(levelCompound);
         for (int rx = -1; rx < 1; rx++)
             for (int rz = -1; rz < 1; rz++)
                 LoadRegion(rx, rz);
@@ -158,6 +161,9 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         writer.WriteLong("Time", Time);
         writer.WriteString("generatorName", Generator.Id);
         writer.WriteString("LevelName", Name);
+        WriteGameRules(writer);
+        WriteEndFightNbt(writer);
+        WriteRaidsNbt(writer);
         writer.EndCompound();
 
         await writer.TryFinishAsync();

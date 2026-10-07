@@ -29,7 +29,7 @@ public sealed partial class Wither : BossMob
     protected override VectorD Travel() => VolumeMovement.Travel(this, true);
     protected override ValueTask TickAirSupplyAsync() { Air = 300; return default; }
 
-    protected override void FinalizeSpawn()
+    internal void BeginSpawnCharge()
     {
         invulnerableTicks = SpawnCharge;
         Health = GetAttributeValue("minecraft:generic.max_health") / 3;
@@ -111,6 +111,7 @@ public sealed partial class Wither : BossMob
 
     private async ValueTask BreakBlocksAsync()
     {
+        if (!Level.LevelData.GetBooleanRule("mob_griefing")) return;
         var position = (Vector)Position.Floor();
         var broken = false;
         for (var x = -1; x <= 1; x++)
@@ -136,7 +137,17 @@ public sealed partial class Wither : BossMob
         return default;
     }
 
-    protected override ValueTask OnDeathAsync(IEntity source) { DropItem(Material.NetherStar); return default; }
+    protected override ValueTask OnDeathAsync(IEntity source)
+    {
+        if (Level.LevelData.GetBooleanRule("mob_drops"))
+        {
+            var star = new ItemEntity { Level = Level, EntityId = Server.GetNextEntityId(), Position = Position,
+                Item = ItemsRegistry.GetSingleItem(Material.NetherStar) };
+            star.SetExtendedLifetime();
+            Level.SpawnEntity(star);
+        }
+        return default;
+    }
 
     public override void Write(INetStreamWriter writer)
     {
@@ -146,8 +157,22 @@ public sealed partial class Wither : BossMob
         writer.WriteEntityMetadataType(19, EntityMetadataType.VarInt); writer.WriteVarInt(invulnerableTicks);
     }
 
-    protected override void WriteAdditionalSave(INbtWriter writer) => writer.WriteInt("Invul", invulnerableTicks);
-    protected override void ReadAdditionalSave(NbtCompound tag) => invulnerableTicks = Math.Clamp(tag.TryGetTagValue<int>("Invul", out var ticks) ? ticks : 0, 0, SpawnCharge);
+    protected override void WriteAdditionalSave(INbtWriter writer)
+    {
+        writer.WriteInt("Invul", invulnerableTicks);
+        writer.WriteInt("ObsidianWitherBreakTicks", breakBlocksTicks);
+        writer.WriteArray("ObsidianWitherHeadTimers", nextShot.Select(tick => (int)Math.Clamp(tick - AiTick, 0, int.MaxValue)).ToArray());
+        writer.WriteArray("ObsidianWitherIdleShots", idleShots);
+    }
+    protected override void ReadAdditionalSave(NbtCompound tag)
+    {
+        invulnerableTicks = Math.Clamp(tag.TryGetTagValue<int>("Invul", out var ticks) ? ticks : 0, 0, SpawnCharge);
+        breakBlocksTicks = Math.Clamp(tag.GetInt("ObsidianWitherBreakTicks"), 0, 20);
+        if (tag.TryGetTag<NbtArray<int>>("ObsidianWitherHeadTimers", out var timers))
+            for (var index = 0; index < Math.Min(nextShot.Length, timers.Count); index++) nextShot[index] = Math.Max(0, timers[index]);
+        if (tag.TryGetTag<NbtArray<int>>("ObsidianWitherIdleShots", out var shots))
+            for (var index = 0; index < Math.Min(idleShots.Length, shots.Count); index++) idleShots[index] = Math.Max(0, shots[index]);
+    }
 
     private sealed class WitherFlightGoal(Wither mob) : Goal
     {

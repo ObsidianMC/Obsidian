@@ -12,6 +12,7 @@ public partial class ItemEntity : Entity
 {
     private static readonly TimeSpan DropWaitTime = TimeSpan.FromSeconds(.5);
     private int age;
+    internal void SetExtendedLifetime() => age = -6000;
 
     public ItemStack Item { get; set; }
 
@@ -42,6 +43,7 @@ public partial class ItemEntity : Entity
         base.WriteNbt(tag);
 
         tag.Set(this.Item.ToNbt("Item"));
+        tag.Set(new NbtTag<short>("Age", (short)Math.Clamp(age, short.MinValue, short.MaxValue)));
         tag.Set(new NbtTag<short>("PickupDelay", (short)(this.CanPickup ? 0 : 10)));
     }
 
@@ -52,6 +54,7 @@ public partial class ItemEntity : Entity
         if (tag.TryGetTag<NbtCompound>("Item", out var item) && item.ItemFromNbt() is ItemStack stack)
             this.Item = stack;
 
+        if (tag.TryGetTag<NbtTag<short>>("Age", out var savedAge)) age = savedAge.Value;
         this.CanPickup = tag.TryGetTag<NbtTag<short>>("PickupDelay", out var delay) && delay.Value == 0;
     }
 

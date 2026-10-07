@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Obsidian.API;
 using Obsidian.API.Configuration;
 using Obsidian.API.Entities;
 using Obsidian.API.Inventory;
@@ -127,7 +128,10 @@ public abstract partial class AbstractLevel : ILevel
     internal void QueueChunkPopulation(IChunk chunk) => EnqueueEntityAction(() =>
     {
         if (ReferenceEquals(GetLoadedChunk(chunk.X, chunk.Z), chunk))
+        {
+            if (chunk is Chunk concrete) RegisterChunkMusic(concrete);
             (mobSpawner ??= new MobSpawner(this)).PopulateChunk(chunk);
+        }
         return default;
     });
 
@@ -137,9 +141,15 @@ public abstract partial class AbstractLevel : ILevel
         if (GetLoadedChunk(x, z) == null)
             return false;
 
-        return Players.Values.Any(player => player.GameMode != GameMode.Spectator &&
-            Math.Abs(Region.ChunkOf(player.Position).X - x) <= Configuration.SimulationDistance &&
-            Math.Abs(Region.ChunkOf(player.Position).Z - z) <= Configuration.SimulationDistance);
+        var simulationDistance = Configuration.SimulationDistance;
+        foreach (var player in Players.Values)
+        {
+            if (player.GameMode == GameMode.Spectator) continue;
+            var playerChunk = Region.ChunkOf(player.Position);
+            if (Math.Abs(playerChunk.X - x) <= simulationDistance && Math.Abs(playerChunk.Z - z) <= simulationDistance)
+                return true;
+        }
+        return false;
     }
 
     internal IChunk? GetLoadedChunk(int chunkX, int chunkZ) => GetRegionForChunk(chunkX, chunkZ) is Region region
@@ -195,7 +205,7 @@ public abstract partial class AbstractLevel : ILevel
     {
         var destroyed = new RemoveEntitiesPacket(entity.EntityId);
 
-        this.PacketBroadcaster.QueuePacketToLevel(this, destroyed);
+        this.PacketBroadcaster.QueuePacketToLevel(this, destroyed, entity is IPlayer ? [entity.EntityId] : []);
 
         var (chunkX, chunkZ) = Region.ChunkOf(entity.Position);
 
@@ -287,6 +297,8 @@ public abstract partial class AbstractLevel : ILevel
 
         await SetBlockUntrackedAsync(x, y, z, block);
         this.BroadcastBlockChange(block, new(x, y, z));
+        TrackMobEgg(new Vector(x, y, z), block);
+        CheckWither(new Vector(x, y, z), block);
         CheckSnowGolem(new Vector(x, y, z), block);
     }
 
@@ -297,6 +309,8 @@ public abstract partial class AbstractLevel : ILevel
 
         await SetBlockUntrackedAsync(x, y, z, block, doBlockUpdate);
         this.BroadcastBlockChange(block, new(x, y, z));
+        TrackMobEgg(new Vector(x, y, z), block);
+        CheckWither(new Vector(x, y, z), block);
         CheckSnowGolem(new Vector(x, y, z), block);
     }
 
@@ -395,9 +409,8 @@ public abstract partial class AbstractLevel : ILevel
                     if (entity.Type == EntityType.Player)
                         continue;
 
-                    var locationDifference = LocationDiff.GetDifference(entity.Position, location);
-
-                    if (locationDifference.CalculatedDifference <= distance)
+                    var difference = entity.Position - location;
+                    if (difference.X * difference.X + difference.Z * difference.Z <= distance)
                     {
                         yield return entity;
                     }
@@ -429,9 +442,8 @@ public abstract partial class AbstractLevel : ILevel
 
         foreach (var player in Players.Values)
         {
-            var locationDifference = LocationDiff.GetDifference(player.Position, location);
-
-            if (locationDifference.CalculatedDifference <= distance)
+            var difference = player.Position - location;
+            if (difference.X * difference.X + difference.Z * difference.Z <= distance)
             {
                 yield return player;
             }
@@ -495,6 +507,8 @@ public abstract partial class AbstractLevel : ILevel
             await action();
         }
 
+        await TickEndFightAsync();
+
         TickStage = "natural spawning";
         (mobSpawner ??= new MobSpawner(this)).Tick();
 
@@ -511,6 +525,10 @@ public abstract partial class AbstractLevel : ILevel
                 await entity.TickAsync();
             }
         }
+
+        await TickRaidsAsync();
+        await TickMobGameEventsAsync();
+        await TickMobEggsAsync();
 
         foreach (var region in Regions.Values)
         {
@@ -562,12 +580,15 @@ public abstract partial class AbstractLevel : ILevel
                 if (chunk.EntitiesUnloaded)
                     continue;
 
+                RegisterChunkMusic(chunk);
+                RegisterMobEggs(chunk);
+
                 foreach (var pending in chunk.PendingEntities)
                 {
                     var tag = EntityNbt.ToNbt(pending);
                     if (EntityNbt.Load(tag, this) is not Entity entity)
                         chunk.UnspawnableEntities.Add(tag);
-                    else if (entity is not Mob { HasAi: true, Alive: false } &&
+                    else if ((entity is not Mob { HasAi: true, Alive: false } || entity is EnderDragon) &&
                         !this.Regions.Values.Any(region => region.Entities.Values.Any(existing => existing.Uuid == entity.Uuid)))
                         this.SpawnEntity(entity);
                 }

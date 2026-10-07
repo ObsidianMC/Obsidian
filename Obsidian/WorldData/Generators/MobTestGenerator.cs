@@ -25,6 +25,19 @@ public sealed class MobTestGenerator : ILevelGenerator
 
     public ValueTask<VectorD?> FindSpawnPointAsync() => ValueTask.FromResult<VectorD?>(new VectorD(-4, Floor + 1, -4));
 
+    internal bool TryGetExhibitDestination(EntityType type, string state, out VectorD destination, out string availableStates)
+    {
+        availableStates = string.Join(", ", exhibits.Where(exhibit => exhibit.Type == type).Select(exhibit => exhibit.Label));
+        for (var index = 0; index < exhibits.Length; index++)
+        {
+            if (exhibits[index].Type != type || !string.Equals(exhibits[index].Label, state, StringComparison.OrdinalIgnoreCase)) continue;
+            destination = new VectorD(index % Columns * PenSize + 1.5, Floor + 1, index / Columns * PenSize + 16.5);
+            return true;
+        }
+        destination = default;
+        return false;
+    }
+
     public async ValueTask<IChunk> GenerateChunkAsync(int x, int z, IChunk? chunk = null, ChunkGenStage stage = ChunkGenStage.full)
     {
         if (chunk is { IsGenerated: true }) return chunk;

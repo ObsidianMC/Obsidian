@@ -48,6 +48,8 @@ public partial class PlayerCommandPacket
             case PlayerCommand.StartJumpWithHorse:
                 if (player is Player { Vehicle: Camel camel })
                     camel.RequestDash(player, JumpBoost);
+                else if (player is Player { Vehicle: Nautilus nautilus })
+                    nautilus.RequestDash(player, JumpBoost);
                 break;
             case PlayerCommand.StopJumpWithHorse:
                 break;

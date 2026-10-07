@@ -46,6 +46,9 @@ public partial class InteractPacket
         if (entity == null)
             return;
 
+        if (Type is InteractionType.Interact or InteractionType.InteractAt && player.Level is Obsidian.WorldData.AbstractLevel events)
+            events.EmitGameEvent(Obsidian.WorldData.MobGameEvent.EntityInteract, entity.Position, player);
+
         switch (Type)
         {
             case InteractionType.Interact:

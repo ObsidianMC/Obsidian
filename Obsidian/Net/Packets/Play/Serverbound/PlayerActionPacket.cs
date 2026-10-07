@@ -38,6 +38,9 @@ public partial class PlayerActionPacket
         if (await player.Level.GetBlockAsync(Position) is not IBlock block)
             return;
 
+        if (Status == PlayerActionStatus.StartedDigging && block.Material == Material.NoteBlock && player.Level is Obsidian.WorldData.AbstractLevel notes)
+            notes.PlayNoteBlock(Position, player);
+
         if (Status == PlayerActionStatus.FinishedDigging || (Status == PlayerActionStatus.StartedDigging && player.GameMode == GameMode.Creative))
         {
             var args = new BlockBreakEventArgs(server, player, block, Position, player.Level)

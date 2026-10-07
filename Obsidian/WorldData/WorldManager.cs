@@ -100,6 +100,12 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
 
         //No default world was defined so choose the first one to come up
         this.DefaultWorld ??= this.worlds.FirstOrDefault().Value;
+        if (this.worlds.Values.Any(world => world is AbstractLevel { Generator: Generators.MobTestGenerator }))
+        {
+            var commands = this.serviceScope.ServiceProvider.GetRequiredService<Obsidian.Commands.Framework.CommandHandler>();
+            if (!commands.GetAllCommands().Any(command => command.Name == "mob_tp"))
+                commands.RegisterCommandClass<Obsidian.Commands.Modules.MobTestCommandModule>(null);
+        }
         this.ReadyToJoin = true;
     }
 

@@ -126,6 +126,7 @@ public sealed partial class Player : Avatar, IPlayer
     public short DeathTime { get; set; }
     public short HurtTime { get; set; }
     public short SleepTimer { get; set; }
+    internal int TimeSinceRest { get; private set; }
 
     public short CurrentHeldItemSlot
     {
@@ -252,7 +253,7 @@ public sealed partial class Player : Avatar, IPlayer
 
     public async override ValueTask TeleportAsync(VectorD pos)
     {
-        Vehicle?.Dismount();
+        Vehicle?.Dismount(this);
         LastPosition = Position;
         Position = pos;
         await UpdateChunksAsync();
@@ -360,7 +361,7 @@ public sealed partial class Player : Avatar, IPlayer
     internal async Task TransferDimensionAsync(ILevel destination)
     {
         CancelEating();
-        Vehicle?.Dismount();
+        Vehicle?.Dismount(this);
         var origin = Level;
         var spawn = destination.LevelData.SpawnPosition;
         await destination.GetChunkAsync((Vector)spawn.Floor());
@@ -393,83 +394,90 @@ public sealed partial class Player : Avatar, IPlayer
     {
         if (Respawning) return;
         Respawning = true;
-        if (!Alive)
+        try
         {
-            CancelEating();
-            Vehicle?.Dismount();
-            ClearPotionEffects();
-            FireTicks = 0;
-            Burning = false;
-            Motion = VectorD.Zero;
-            FallDistance = 0;
-            Absorption = 0;
-            AbsorbtionAmount = 0;
-            FoodLevel = 20;
-            FoodSaturationLevel = 5;
-            FoodExhaustionLevel = 0;
-            FoodTickTimer = 0;
-            foodPosition = null;
-            Sprinting = false;
-            Swimming = false;
-            Sleeping = false;
-            Pose = Pose.Standing;
-            Yaw = 0;
-            Pitch = 0;
-            MovementFlags = MovementFlags.None;
-            Health = 20f;
-            await Level.DestroyEntityAsync(this);
-            Position = Level.LevelData.SpawnPosition;
-            LastPosition = Position;
-            BoundingBox = Dimension.CreateBBFromPosition(Position);
-            HeadY = Position.Y + 1.62;
+            if (!Alive)
+            {
+                CancelEating();
+                Vehicle?.Dismount(this);
+                ClearPotionEffects();
+                damageCooldown = 0;
+                lastIncomingDamage = 0;
+                HurtTime = 0;
+                DeathTime = 0;
+                FireTicks = 0;
+                Burning = false;
+                Motion = VectorD.Zero;
+                FallDistance = 0;
+                Absorption = 0;
+                AbsorbtionAmount = 0;
+                FoodLevel = 20;
+                FoodSaturationLevel = 5;
+                FoodExhaustionLevel = 0;
+                FoodTickTimer = 0;
+                foodPosition = null;
+                Sprinting = false;
+                Swimming = false;
+                Sleeping = false;
+                Pose = Pose.Standing;
+                Yaw = 0;
+                Pitch = 0;
+                MovementFlags = MovementFlags.None;
+                Health = 20f;
+                await Level.DestroyEntityAsync(this);
+                Position = Level.LevelData.SpawnPosition;
+                LastPosition = Position;
+                BoundingBox = Dimension.CreateBBFromPosition(Position);
+                HeadY = Position.Y + 1.62;
+                Level.TryAddEntity(this);
+            }
+
+            CodecRegistry.TryGetDimension(Level.DimensionName, out var codec);
+            Debug.Assert(codec is not null); // TODO Handle missing codec
+
+            Log.ChangingLevel(this.Logger, this.Username, this.Level.Name);
+
+            await Client.QueuePacketAsync(new RespawnPacket
+            {
+                CommonPlayerSpawnInfo = new()
+                {
+                    DimensionType = codec.Id,
+                    DimensionName = Level.DimensionName,
+                    GameMode = GameMode,
+                    PreviousGamemode = GameMode,
+                    HashedSeed = 0,
+                    Flat = false,
+                    Debug = false,
+                },
+                DataKept = dataKept,
+            });
+
+            visiblePlayers.Clear();
+
+            TeleportId = 0;
+
+            await Client.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
+            await Client.QueuePacketAsync(new PlayerPositionPacket
+            {
+                Position = Position,
+                Yaw = Yaw,
+                Pitch = Pitch,
+                TeleportId = 0
+            });
+
+            pendingRespawnChunks = !await UpdateChunksAsync(true);
+            respawnChunkRetryTicks = 20;
             Level.TryAddEntity(this);
+            await Client.QueuePacketAsync(new SetHealthPacket(Health, FoodLevel, FoodSaturationLevel));
+            await SendPlayerInfoAsync();
+            await TrySpawnPlayerAsync(Position);
+            await SynchronizeTrackedEntitiesAsync();
+        }
+        finally
+        {
+            Respawning = false;
         }
 
-        CodecRegistry.TryGetDimension(Level.DimensionName, out var codec);
-        Debug.Assert(codec is not null); // TODO Handle missing codec
-
-        Log.ChangingLevel(this.Logger, this.Username, this.Level.Name);
-
-        await Client.QueuePacketAsync(new RespawnPacket
-        {
-            CommonPlayerSpawnInfo = new()
-            {
-                DimensionType = codec.Id,
-                DimensionName = Level.DimensionName,
-                GameMode = GameMode,
-                PreviousGamemode = GameMode,
-                HashedSeed = 0,
-                Flat = false,
-                Debug = false,
-            },
-            DataKept = dataKept,
-        });
-
-        visiblePlayers.Clear();
-
-        TeleportId = 0;
-
-        await UpdateChunksAsync(true);
-
-        await Client.QueuePacketAsync(new PlayerPositionPacket
-        {
-            Position = Position,
-            Yaw = 0,
-            Pitch = 0,
-            TeleportId = 0
-        });
-
-        await Client.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
-        var (chunkX, chunkZ) = Position.ToChunkCoord();
-        await Client.QueuePacketAsync(new SetChunkCacheCenterPacket(chunkX, chunkZ));
-        pendingRespawnChunks = !await UpdateChunksAsync(true, 2);
-        respawnChunkRetryTicks = 20;
-        Level.TryAddEntity(this);
-        Respawning = false;
-        await Client.QueuePacketAsync(new SetHealthPacket(Health, FoodLevel, FoodSaturationLevel));
-        await SendPlayerInfoAsync();
-        await TrySpawnPlayerAsync(Position);
-        await SynchronizeTrackedEntitiesAsync();
     }
 
     //TODO make IDamageSource 
@@ -477,10 +485,10 @@ public sealed partial class Player : Avatar, IPlayer
     {
         Health = 0;
         CancelEating();
-        Vehicle?.Dismount();
+        Vehicle?.Dismount(this);
         await Client.QueuePacketAsync(new SetHealthPacket(0, FoodLevel, FoodSaturationLevel));
         await Client.QueuePacketAsync(new PlayerCombatKillPacket { PlayerID = EntityId, Message = deathMessage });
-        PacketBroadcaster.QueuePacketToLevel(Level, new EntityEventPacket { EntityId = EntityId, Event = 3 });
+        PacketBroadcaster.QueuePacketToLevel(Level, new EntityEventPacket { EntityId = EntityId, Event = 3 }, EntityId);
         foreach (var observer in Level.GetPlayersInRange(Position, float.MaxValue).OfType<Player>())
             observer.visiblePlayers.Remove(this);
     }
@@ -688,7 +696,10 @@ public sealed partial class Player : Avatar, IPlayer
         if (!Alive || Respawning) return;
         if (Vehicle != null)
             position = Position;
+        var oldPosition = Position;
+        var oldMovementFlags = MovementFlags;
         await base.UpdateAsync(position, movementFlags);
+        if (Level is AbstractLevel events) await events.EmitMovementGameEventsAsync(this, oldPosition, oldMovementFlags);
 
         HeadY = position.Y + 1.62f;
 
@@ -702,7 +713,10 @@ public sealed partial class Player : Avatar, IPlayer
         if (!Alive || Respawning) return;
         if (Vehicle != null)
             position = Position;
+        var oldPosition = Position;
+        var oldMovementFlags = MovementFlags;
         await base.UpdateAsync(position, yaw, pitch, movementFlags);
+        if (Level is AbstractLevel events) await events.EmitMovementGameEventsAsync(this, oldPosition, oldMovementFlags);
 
         HeadY = position.Y + 1.62f;
 
@@ -734,12 +748,12 @@ public sealed partial class Player : Avatar, IPlayer
         await this.chunkUpdates.WaitAsync();
         try
         {
-            var tracked = TrackedEntities.Keys.ToArray();
-            TrackedEntities.Clear();
-            if (!Respawning && tracked.Length > 0)
-                await Client.QueuePacketAsync(new RemoveEntitiesPacket(tracked));
             if (unloadAll)
             {
+                var tracked = TrackedEntities.Keys.ToArray();
+                TrackedEntities.Clear();
+                if (!Respawning && tracked.Length > 0)
+                    await Client.QueuePacketAsync(new RemoveEntitiesPacket(tracked));
                 if (!Respawning)
                 {
                     foreach (var value in LoadedChunks)

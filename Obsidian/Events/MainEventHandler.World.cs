@@ -27,6 +27,11 @@ public partial class MainEventHandler
         }
 
         await world.SetBlockAsync(location, BlocksRegistry.Air, true);
+        if (world is Obsidian.WorldData.AbstractLevel gameEvents)
+        {
+            if (block.Material == Material.Jukebox) gameEvents.StopJukebox(location);
+            gameEvents.EmitGameEvent(Obsidian.WorldData.MobGameEvent.BlockDestroy, (VectorD)location + new VectorD(0.5, 0.5, 0.5), player, affectedBlock: block);
+        }
         if (player is Player concrete) concrete.AddExhaustion(0.005f);
 
         player.Client.SendPacket(new BlockUpdatePacket(location, BlocksRegistry.Air.GetHashCode()));

@@ -19,7 +19,7 @@ public sealed partial class CopperGolem : PathfinderMob
     protected override bool CanDespawn => false;
     protected override string? SoundName => "copper_golem";
     internal override float MovementSpeed => base.MovementSpeed * (1 - weather * 0.1f);
-    protected override void FinalizeSpawn() { PersistenceRequired = true; nextWeather = Level.LevelData.Time + Random.Next(50400, 82801); }
+    protected override void FinalizeSpawn() { PersistenceRequired = true; nextWeather = Level.LevelData.Time + Random.Next(504000, 552001); }
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
         actions.AddGoal(1, new CopperSortGoal(this));
@@ -32,14 +32,18 @@ public sealed partial class CopperGolem : PathfinderMob
         if (MobBitMask.HasFlag(MobBitmask.NoAi)) return;
         if (nextWeather >= 0 && Level.LevelData.Time >= nextWeather)
         {
-            nextWeather = Level.LevelData.Time + Random.Next(50400, 82801);
+            nextWeather = Level.LevelData.Time + Random.Next(504000, 552001);
             if (weather < 3) { weather++; SynchronizeMetadata(); }
-            else if (Random.NextSingle() < 0.2f && Terrain.GetBlock((Vector)Position.Floor())?.IsAir == true)
-            {
-                if (!GetEquipment(EquipmentSlot.MainHand).IsAir) DropItem(GetEquipment(EquipmentSlot.MainHand));
-                await Level.SetBlockAsync((Vector)Position.Floor(), BlocksRegistry.Get(Material.OxidizedCopperGolemStatue), true);
-                await RemoveAsync(); return;
-            }
+        }
+        if (weather == 3 && nextWeather != -2 && MovementFlags.HasFlag(MovementFlags.OnGround) &&
+            Terrain.GetBlock((Vector)Position.Floor())?.IsAir == true &&
+            Terrain.GetBlock((Vector)(Position - new VectorD(0, 0.1f, 0)).Floor()) is { IsLiquid: false, IsAir: false })
+        {
+            if (!GetEquipment(EquipmentSlot.MainHand).IsAir) DropItem(GetEquipment(EquipmentSlot.MainHand));
+            var facing = new[] { "south", "west", "north", "east" }[((int)Math.Floor(Yaw.Degrees / 90 + 0.5) % 4 + 4) % 4];
+            var statue = BlocksRegistry.Get(Material.OxidizedCopperGolemStatue).WithProperty("facing", facing);
+            await Level.SetBlockAsync((Vector)Position.Floor(), statue, true);
+            await RemoveAsync(); return;
         }
         if (destination == null && AiTick >= searchAt && Level is AbstractLevel level)
         {
@@ -132,7 +136,7 @@ public sealed partial class CopperGolem : PathfinderMob
         else if (item is { Count: > 0 } && item.Holder.UnlocalizedName.EndsWith("_axe", StringComparison.Ordinal) && (weather > 0 || nextWeather == -2))
         {
             if (nextWeather != -2) weather--;
-            nextWeather = Level.LevelData.Time + Random.Next(50400, 82801);
+            nextWeather = Level.LevelData.Time + Random.Next(504000, 552001);
             await DamageInteractionToolAsync(player, hand, 1); SynchronizeMetadata();
         }
     }
@@ -149,8 +153,9 @@ public sealed partial class CopperGolem : PathfinderMob
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         weather = tag.TryGetTagValue<string>("weather_state", out var state) ? Math.Max(0, Array.IndexOf(new[] { "unaffected", "exposed", "weathered", "oxidized" }, state)) : 0;
-        nextWeather = tag.TryGetTagValue<long>("next_weather_age", out var ticks) ? ticks : Level.LevelData.Time + Random.Next(50400, 82801);
+        nextWeather = tag.TryGetTagValue<long>("next_weather_age", out var ticks) ? ticks : Level.LevelData.Time + Random.Next(504000, 552001);
     }
 }
 internal sealed class CopperSortGoal(CopperGolem golem) : Goal
 { public override GoalFlags Flags => GoalFlags.Move; public override bool CanUse() => golem.Sorting; }
+

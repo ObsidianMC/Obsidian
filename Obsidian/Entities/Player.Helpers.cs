@@ -62,6 +62,7 @@ public partial class Player
         writer.WriteShort("Air", Air);
 
         writer.WriteFloat("Health", Health);
+        writer.WriteInt("ObsidianTimeSinceRest", TimeSinceRest);
 
         writer.WriteFloat("foodExhaustionLevel", FoodExhaustionLevel);
         writer.WriteFloat("foodSaturationLevel", FoodSaturationLevel);
@@ -336,6 +337,7 @@ public partial class Player
         Health = compound.GetFloat("Health");
         HurtTime = compound.GetShort("HurtTime");
         SleepTimer = compound.GetShort("SleepTimer");
+        TimeSinceRest = Math.Max(0, compound.GetInt("ObsidianTimeSinceRest"));
         FoodLevel = compound.GetInt("foodLevel");
         FoodTickTimer = compound.GetInt("foodTickTimer");
         GameMode = (GameMode)compound.GetInt("playerGameType");

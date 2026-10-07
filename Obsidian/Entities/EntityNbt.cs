@@ -16,7 +16,7 @@ internal static class EntityNbt
     /// </summary>
     public static NbtCompound? Save(Entity entity)
     {
-        if (!IsSaved(entity.Type) || entity is Mob { HasAi: true } mob && (!mob.Alive || mob.IsRemoved))
+        if (!IsSaved(entity.Type) || entity is Mob { HasAi: true } mob && (!mob.Alive && mob is not EnderDragon || mob.IsRemoved))
             return null;
 
         var tag = new NbtCompound { new NbtTag<string>("id", TypeId(entity.Type)) };

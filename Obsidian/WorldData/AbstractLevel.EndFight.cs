@@ -6,6 +6,7 @@ using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Generators;
 using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.Net.Packets.Play.Clientbound;
 
 namespace Obsidian.WorldData;
 
@@ -20,16 +21,19 @@ public abstract partial class AbstractLevel
     private int resurrectionTicks = -1;
     private Guid[] resurrectionCrystals = [];
     private int ticksWithoutDragon;
+    private readonly Dictionary<Guid, int> endPortalCooldowns = [];
     private bool HasEndFight => DimensionName == "minecraft:the_end" && Generator is not MobTestGenerator;
 
     internal async ValueTask TickEndFightAsync()
     {
-        if (!HasEndFight || !Players.Values.Any(player => player.GameMode != GameMode.Spectator &&
+        if (!HasEndFight) return;
+        await TickEndPortalsAsync();
+        if (!Players.Values.Any(player => player.GameMode != GameMode.Spectator &&
             (player.Position - new VectorD(0, 128, 0)).MagnitudeSquared() < 192 * 192)) return;
         var ready = true;
         for (var x = -8; x <= 8; x++)
         for (var z = -8; z <= 8; z++)
-            if (await GetChunkAsync(x, z) is not { IsGenerated: true }) ready = false;
+            if (GetLoadedChunk(x, z) is not { IsGenerated: true } && await GetChunkAsync(x, z) is not { IsGenerated: true }) ready = false;
         if (!ready) return;
         var entities = GetEntitiesInRange(new VectorD(0, 128, 0), 256).ToArray();
         if (!endFightInitialized)
@@ -79,6 +83,8 @@ public abstract partial class AbstractLevel
             return;
         }
         var tick = resurrectionTicks++;
+        if (tick is 1 or 50 or 51 or 52 or 95 or 96 or 97 or 98 or 99 or 100 || tick >= 581 && tick <= 600)
+            PacketBroadcaster.QueuePacketToLevel(this, new LevelEventPacket(3001, new Vector(0, 128, 0), 0));
         if (tick == 0 || tick == 501)
             foreach (var crystal in ritual) crystal.SetBeam(new Vector(0, 128, 0));
         if (tick >= 101 && tick < 501)
@@ -95,6 +101,65 @@ public abstract partial class AbstractLevel
         foreach (var crystal in ritual) { await crystal.RemoveAsync(); await ExplodeAsync(crystal, 6, crystal); }
         dragonKilled = false;
         CreateFightDragon();
+    }
+
+    private async ValueTask TickEndPortalsAsync()
+    {
+        foreach (var id in endPortalCooldowns.Keys.ToArray())
+            if (--endPortalCooldowns[id] <= 0) endPortalCooldowns.Remove(id);
+        foreach (var player in Players.Values.OfType<Player>().ToArray())
+        {
+            if (player.GameMode == GameMode.Spectator || endPortalCooldowns.ContainsKey(player.Uuid)) continue;
+            var position = (Vector)player.Position.Floor();
+            var block = await GetBlockAsync(position);
+            if (block?.Material == Material.EndPortal && this is IDimension dimension)
+            {
+                endPortalCooldowns[player.Uuid] = 100;
+                await player.TransferDimensionAsync(dimension.ParentWorld);
+            }
+            else if (block?.Material == Material.EndGateway)
+            {
+                var data = await GetBlockEntityAsync(position) as DataBlockEntity;
+                Vector destination;
+                if (data != null && data.Data.TryGetTag<NbtArray<int>>("exit_portal", out var savedExit) && savedExit.Count == 3)
+                {
+                    var values = savedExit.GetArray();
+                    destination = new Vector(values[0], values[1], values[2]);
+                }
+                else
+                {
+                    var length = Math.Sqrt(position.X * (double)position.X + position.Z * (double)position.Z);
+                    if (length < 1) continue;
+                    destination = new Vector((int)Math.Floor(position.X / length * 1024), 75, (int)Math.Floor(position.Z / length * 1024));
+                    if (await GetChunkAsync(destination.X >> 4, destination.Z >> 4) is not { IsGenerated: true }) continue;
+                    var terrain = new MobTerrain(this);
+                    for (var y = MinY + Height - 1; y >= MinY; y--)
+                        if (terrain.GetBlock(new Vector(destination.X, y, destination.Z)) is { IsAir: false })
+                        { destination = new Vector(destination.X, y + 3, destination.Z); break; }
+                    // Gateways always have a safe arrival platform, including gateways aimed into the void.
+                    for (var x = -2; x <= 2; x++)
+                    for (var z = -2; z <= 2; z++)
+                        await SetBlockAsync(destination + new Vector(x, -2, z), BlocksRegistry.Get(Material.EndStone), true);
+                    var returnGateway = destination + new Vector(0, 1, 0);
+                    await CreateEndGatewayAsync(returnGateway);
+                    await StoreGatewayExitAsync(returnGateway, position + new Vector(0, 3, 0));
+                    await StoreGatewayExitAsync(position, destination + new Vector(2, -1, 0));
+                    destination += new Vector(2, -1, 0);
+                }
+                if (await GetChunkAsync(destination.X >> 4, destination.Z >> 4) is not { IsGenerated: true }) continue;
+                endPortalCooldowns[player.Uuid] = 100;
+                await player.TeleportAsync(new VectorD(destination.X + 0.5, destination.Y, destination.Z + 0.5));
+            }
+        }
+    }
+
+    private async ValueTask StoreGatewayExitAsync(Vector gateway, Vector destination)
+    {
+        var data = await GetBlockEntityAsync(gateway) as DataBlockEntity;
+        data ??= new DataBlockEntity { Id = "minecraft:end_gateway", BlockPosition = gateway };
+        data.Set(new NbtArray<int>("exit_portal", [destination.X, destination.Y, destination.Z]));
+        data.Set("ExactTeleport", true);
+        await SetBlockEntity(gateway, data);
     }
 
     private void CreateFightDragon()
@@ -119,6 +184,11 @@ public abstract partial class AbstractLevel
         var index = gatewayOrder[19 - gatewaysCreated++];
         var angle = 2 * Math.PI * index / 20;
         var gateway = new Vector((int)Math.Floor(96 * Math.Cos(angle)), 75, (int)Math.Floor(96 * Math.Sin(angle)));
+        await CreateEndGatewayAsync(gateway);
+    }
+
+    private async ValueTask CreateEndGatewayAsync(Vector gateway)
+    {
         for (var x = -1; x <= 1; x++)
         for (var y = -2; y <= 2; y++)
         for (var z = -1; z <= 1; z++)
@@ -127,6 +197,9 @@ public abstract partial class AbstractLevel
                 y != 0 && (Math.Abs(y) == 2 ? x == 0 && z == 0 : x == 0 || z == 0) ? Material.Bedrock : Material.Air;
             await SetBlockAsync(gateway + new Vector(x, y, z), BlocksRegistry.Get(material), true);
         }
+        if (await GetBlockEntityAsync(gateway) == null)
+            await SetBlockEntity(gateway, new DataBlockEntity { Id = "minecraft:end_gateway", BlockPosition = gateway });
+        PacketBroadcaster.QueuePacketToLevel(this, new LevelEventPacket(3000, gateway, 0));
     }
 
     internal async ValueTask AbortDragonResurrectionAsync(EndCrystal? destroyed = null)
@@ -164,6 +237,16 @@ public abstract partial class AbstractLevel
     {
         foreach (var crystal in GetEntitiesInRange(new VectorD(spike.CenterX, spike.Height, spike.CenterZ), 12).OfType<EndCrystal>().ToArray())
             await crystal.RemoveAsync();
+        if (resurrecting)
+        {
+            for (var x = -10; x <= 10; x++)
+            for (var y = -10; y <= 10; y++)
+            for (var z = -10; z <= 10; z++)
+                await SetBlockAsync(new Vector(spike.CenterX + x, spike.Height + y, spike.CenterZ + z), BlocksRegistry.Air, true);
+            var blast = new EndCrystal { Level = this, EntityId = Server.GetNextEntityId(),
+                Position = new VectorD(spike.CenterX + 0.5, spike.Height, spike.CenterZ + 0.5) };
+            await ExplodeAsync(blast, 5, blast);
+        }
         var radius = spike.Radius;
         for (var x = -radius; x <= radius; x++)
         for (var z = -radius; z <= radius; z++)

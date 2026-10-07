@@ -20,6 +20,7 @@ public partial class Player
 
     private static (int Nutrition, float Saturation, bool AlwaysEat, float Seconds)? GetFood(ItemStack? item)
     {
+        if (item?.Type == Material.OminousBottle) return (0, 0, true, 1.6f);
         if (item == null || item.RemoveComponents.Contains(DataComponentType.Food) || item.RemoveComponents.Contains(DataComponentType.Consumable)) return null;
         foodDefaults.TryGetValue(item.Holder.UnlocalizedName, out var defaults);
         var seconds = item.GetComponent<ConsumableDataComponent>(DataComponentType.Consumable)?.ConsumeSeconds ??
@@ -76,6 +77,12 @@ public partial class Player
 
     private void ApplyFoodEffects(ItemStack item)
     {
+        if (item.Type == Material.OminousBottle)
+        {
+            var amplifier = item.GetComponent<SimpleDataComponent<int>>(DataComponentType.OminousBottleAmplifier)?.Value ?? 0;
+            AddPotionEffect((int)PotionEffect.BadOmen - 1, 120000, Math.Clamp(amplifier, 0, 4));
+            return;
+        }
         if (item.GetComponent<ConsumableDataComponent>(DataComponentType.Consumable) is { } custom)
         {
             foreach (var effect in custom.Effects)
@@ -109,9 +116,11 @@ public partial class Player
 
     public override async ValueTask TickAsync()
     {
+        if (damageCooldown > 0) damageCooldown--;
+        if (HurtTime > 0) HurtTime--;
         if (pendingRespawnChunks && !Respawning && --respawnChunkRetryTicks <= 0)
         {
-            pendingRespawnChunks = !await UpdateChunksAsync(distance: 2);
+            pendingRespawnChunks = !await UpdateChunksAsync();
             respawnChunkRetryTicks = 20;
         }
         await base.TickAsync();
@@ -121,6 +130,7 @@ public partial class Player
             CancelEating();
             return;
         }
+        TimeSinceRest = Sleeping ? 0 : (int)Math.Min(int.MaxValue, (long)TimeSinceRest + 1);
         var grounded = MovementFlags.HasFlag(MovementFlags.OnGround);
         if (foodPosition is VectorD previous)
         {
@@ -152,7 +162,7 @@ public partial class Player
                         Inventory.RemoveItem(eatingSlot, 1);
                         if (item.Type is Material.MushroomStew or Material.RabbitStew or Material.BeetrootSoup or Material.SuspiciousStew)
                             Inventory.SetItem(eatingSlot, new ItemStack(ItemsRegistry.Bowl));
-                        else if (item.Type == Material.HoneyBottle)
+                        else if (item.Type is Material.HoneyBottle or Material.OminousBottle)
                         {
                             if (item.Count <= 0) Inventory.SetItem(eatingSlot, new ItemStack(ItemsRegistry.GlassBottle));
                             else

@@ -45,6 +45,7 @@ internal sealed partial class MobSpawner(AbstractLevel level)
         return supported;
     }
     private long ticks;
+    private int phantomDelay;
 
     private static Dictionary<string, Dictionary<string, SpawnerMob[]>> LoadBiomeSpawns()
     {
@@ -59,7 +60,7 @@ internal sealed partial class MobSpawner(AbstractLevel level)
 
     internal void PopulateChunk(IChunk chunk)
     {
-        if (level.Generator is MobTestGenerator) return;
+        if (level.Generator is MobTestGenerator || !level.LevelData.GetBooleanRule("spawn_mobs")) return;
         while (random.NextSingle() < 0.1f)
             SpawnGroup(chunk, "creature", [], 32, true);
     }
@@ -99,7 +100,8 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             TickThunder(chunk);
             foreach (var category in spawnCategories)
             {
-                if (category.Rare && ticks % 400 != 0 || category.Name == "monster" && level.LevelData.Difficulty == Difficulty.Peaceful)
+                if (!level.LevelData.GetBooleanRule("spawn_mobs") || category.Rare && ticks % 400 != 0 ||
+                    category.Name == "monster" && (level.LevelData.Difficulty == Difficulty.Peaceful || !level.LevelData.GetBooleanRule("spawn_monsters")))
                     continue;
                 var cap = category.Cap * chunks.Count / 289;
                 var count = counts.GetValueOrDefault(category.Name);
@@ -107,7 +109,11 @@ internal sealed partial class MobSpawner(AbstractLevel level)
                     counts[category.Name] = count + SpawnGroup(chunk, category.Name, players, cap - count);
             }
         }
-        if (ticks % 1200 == 0) SpawnVillageCats(mobs);
+        if (level.LevelData.GetBooleanRule("spawn_mobs"))
+        {
+            TickPhantoms(players);
+            if (ticks % 1200 == 0) SpawnVillageCats(mobs);
+        }
     }
 
     private int SpawnGroup(IChunk chunk, string category, IPlayer[] players, int remaining, bool generation = false)

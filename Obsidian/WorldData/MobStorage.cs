@@ -67,7 +67,7 @@ internal sealed class MobStorage(AbstractLevel level) : IAsyncDisposable
                     var mob = EntitySpawner.CreateMob(level, type)!;
                     mob.EntityId = Server.GetNextEntityId();
                     mob.ReadSave(tag);
-                    if (!mob.Alive || level.Regions.Values.Any(region => region.Entities.Values.Any(entity => entity.Uuid == mob.Uuid)))
+                    if (!mob.Alive && mob is not EnderDragon || level.Regions.Values.Any(region => region.Entities.Values.Any(entity => entity.Uuid == mob.Uuid)))
                         continue;
                     level.SpawnEntity(mob);
                 }
@@ -99,7 +99,7 @@ internal sealed class MobStorage(AbstractLevel level) : IAsyncDisposable
         try
         {
             var mobs = level.Regions.Values.SelectMany(region => region.Entities.Values).OfType<Mob>()
-                .Where(mob => mob.HasAi && mob.Alive && !mob.IsRemoved).DistinctBy(mob => mob.Uuid)
+                .Where(mob => mob.HasAi && (mob.Alive || mob is EnderDragon) && !mob.IsRemoved).DistinctBy(mob => mob.Uuid)
                 .GroupBy(mob => { var (x, z) = mob.Position.ToChunkCoord(); return NumericsHelper.IntsToLong(x, z); })
                 .ToDictionary(group => group.Key, group => group.ToArray());
             foreach (var key in loadedChunks.Union(mobs.Keys).ToArray())

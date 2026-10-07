@@ -5,7 +5,7 @@ public partial class Mob
     private int ambientSoundTime;
     protected virtual string? SoundName => null;
     protected virtual SoundCategory MobSoundCategory => SoundCategory.Neutral;
-    protected float EffectiveDifficulty
+    protected internal float EffectiveDifficulty
     {
         get
         {
@@ -92,7 +92,7 @@ public partial class Mob
     protected virtual async ValueTask TickAirSupplyAsync()
     {
         if (Terrain.GetBlock((Vector)EyePosition.Floor())?.Material == Material.Water &&
-              !TagsRegistry.EntityType.CanBreatheUnderWater.Entries.Contains((int)Type) && !HasPotionEffect((int)PotionEffect.WaterBreathing - 1))
+              !TagsRegistry.EntityType.CanBreatheUnderWater.Entries.Contains((int)Type) && !HasPotionEffect((int)PotionEffect.WaterBreathing - 1) && !HasPotionEffect((int)PotionEffect.BreathOfTheNautilus - 1))
         {
             Air--;
             if (Air == -20)

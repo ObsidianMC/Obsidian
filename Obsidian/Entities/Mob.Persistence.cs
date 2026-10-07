@@ -29,7 +29,7 @@ public partial class Mob
         "DuplicationCooldown", "ObsidianLikedPlayer", "ObsidianCollected", "state", "scute_time", "ObsidianDigCooldown", "ObsidianExplored",
         "Suffocating", "weather_state", "next_weather_age", "home_pos", "has_egg", "Invul", "DragonPhase", "DragonDeathTime", "ObsidianPreviouslyKilled", "ObsidianDragonArena",
         "ObsidianWardenIdle", "ObsidianWardenPoseTicks", "ObsidianWardenPose", "ObsidianWardenSonicCooldown", "ObsidianWardenSonicTicks", "ObsidianWardenAnger",
-        "ObsidianWardenSniffCooldown", "ObsidianWardenVibrationCooldown", "ObsidianWardenMeleeCooldown", "ObsidianWardenTouchCooldown"];
+        "ObsidianWardenSniffCooldown", "ObsidianWardenVibrationCooldown", "ObsidianWardenMeleeCooldown", "ObsidianWardenTouchCooldown", "ObsidianPhaseTicks", "ObsidianFlameCount", "ObsidianFlightPoint", "ObsidianSittingDamage", "ObsidianDestination", "DespawnDelay", "ObsidianTrader", "ConversionTime", "ConversionPlayer", "Xp", "WanderTarget", "ObsidianWitherHeadTimers", "ObsidianWitherIdleShots", "ObsidianWitherBreakTicks", "VillagerData", "ObsidianTradingLevel", "RestocksToday", "LastRestock", "ObsidianRestockDay", "ObsidianHome", "ObsidianJobSite", "ObsidianOffers", "ObsidianNoteBlockTicks", "ObsidianThrowCooldown", "ObsidianNoteBlock", "still_timeout", "ObsidianBoostTicks", "ObsidianBoostDuration", "ObsidianWardenProjectileMemory"];
     internal void WriteSave(INbtWriter writer, bool writeCompound = true)
     {
         if (writeCompound)
@@ -218,10 +218,16 @@ public partial class Mob
             writer.WriteShort("Fuse", (short)creeper.Fuse);
             writer.WriteByte("ExplosionRadius", (byte)creeper.ExplosionRadius);
         }
-        WriteAdditionalSave(writer);
+        using var additionalWriter = new RawNbtWriter(string.Empty);
+        WriteAdditionalSave(additionalWriter);
+        additionalWriter.EndCompound();
+        using var additionalStream = new ReadOnlyStream(additionalWriter.AsSpan().ToArray());
+        var additionalTags = (NbtCompound)new NbtReader(additionalStream).ReadNextTag()!;
+        foreach (var (_, child) in additionalTags)
+            writer.WriteTag(child);
         if (originalSave != null)
             foreach (var tag in originalSave)
-                if (!saveFields.Contains(tag.Key))
+                if (!saveFields.Contains(tag.Key) && !additionalTags.HasTag(tag.Key))
                     writer.WriteTag(tag.Value);
         if (writeCompound)
             writer.EndCompound();

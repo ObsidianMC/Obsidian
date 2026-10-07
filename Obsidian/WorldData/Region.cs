@@ -62,7 +62,7 @@ public class Region : IRegion
     internal Func<int, int, ValueTask<IDisposable?>>? LockChunk { get; init; }
 
     /// <summary>
-    /// Called with a complete chunk loaded from disk that has entities to spawn (the level queues them).
+    /// Called with a complete chunk loaded from disk for entity and egg registration.
     /// </summary>
     internal Action<Chunk>? EntitiesLoaded { get; init; }
 
@@ -211,8 +211,7 @@ public class Region : IRegion
                 }
             }
 
-            if (chunk.PendingEntities.Count > 0)
-                this.EntitiesLoaded?.Invoke(chunk);
+            this.EntitiesLoaded?.Invoke(chunk);
         }
 
         return chunk;
@@ -440,6 +439,10 @@ public class Region : IRegion
         int z = chunkCompound.GetInt("zPos");
 
         var chunk = new Chunk(x, z, this.minY, this.height);
+        if (chunkCompound.TryGetTag<NbtList>("ObsidianMobEggTicks", out var mobEggTicks))
+            foreach (NbtCompound tick in mobEggTicks)
+                chunk.MobEggTicks[new Vector(tick.GetInt("x"), tick.GetInt("y"), tick.GetInt("z"))] = Math.Clamp(tick.GetInt("delay"), 0, 8300);
+
         if (chunkCompound.TryGetTag<NbtList>("ObsidianFrogspawnTicks", out var frogspawnTicks))
             foreach (var tick in frogspawnTicks.OfType<NbtCompound>())
                 chunk.FrogspawnTicks[new Vector(tick.GetInt("x"), tick.GetInt("y"), tick.GetInt("z"))] = Math.Clamp(tick.GetInt("delay"), 1, 12000);
@@ -732,6 +735,18 @@ public class Region : IRegion
 
             // Scheduled fluid ticks, like vanilla's "fluid_ticks".
             generated.FluidTicks.Write(writer);
+            var mobEggTicks = generated.MobEggTicks.ToArray();
+            writer.WriteListStart("ObsidianMobEggTicks", NbtTagType.Compound, mobEggTicks.Length);
+            foreach (var (position, delay) in mobEggTicks)
+            {
+                writer.WriteCompoundStart();
+                writer.WriteInt("x", position.X);
+                writer.WriteInt("y", position.Y);
+                writer.WriteInt("z", position.Z);
+                writer.WriteInt("delay", delay);
+                writer.EndCompound();
+            }
+            writer.EndList();
             var frogspawnTicks = generated.FrogspawnTicks.ToArray();
             writer.WriteListStart("ObsidianFrogspawnTicks", NbtTagType.Compound, frogspawnTicks.Length);
             foreach (var (position, delay) in frogspawnTicks)

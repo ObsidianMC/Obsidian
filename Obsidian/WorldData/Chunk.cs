@@ -14,6 +14,8 @@ public sealed class Chunk : IChunk
     public int X { get; }
     public int Z { get; }
     public long InhabitedTime { get; internal set; }
+    internal bool MusicRegistered { get; set; }
+    internal ConcurrentDictionary<Vector, int> MobEggTicks { get; } = new();
     internal ConcurrentDictionary<Vector, int> FrogspawnTicks { get; } = new();
 
     public bool IsGenerated => ChunkStatus == ChunkGenStage.full;

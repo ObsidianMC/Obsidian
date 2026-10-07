@@ -63,7 +63,8 @@ public sealed record TradeEntry : INetworkSerializable<TradeEntry>
     {
         TradeItem.Write(value.FirstInput, writer);
         writer.WriteItemStack(value.Output);
-        TradeItem.Write(value.SecondInput, writer);
+        writer.WriteBoolean(value.SecondInput is { Count: > 0 });
+        if (value.SecondInput is { Count: > 0 }) TradeItem.Write(value.SecondInput, writer);
         writer.WriteBoolean(value.IsDisabled);
         writer.WriteInt(value.UsedCount);
         writer.WriteInt(value.MaxCount);

@@ -12,6 +12,7 @@ public sealed partial class Turtle : FarmAnimal
     internal bool HasEgg { get; private set; }
     internal bool Laying { get; set; }
     public Turtle() => Type = EntityType.Turtle;
+    internal void SetHome(Vector point) => Home = point;
     internal override bool SwimmingNavigation => true;
     protected override bool UsesFloatGoal => false;
     protected override string? SoundName => "turtle";
@@ -34,6 +35,7 @@ public sealed partial class Turtle : FarmAnimal
     }
     internal async ValueTask LayEggAsync(Vector point)
     {
+        if (Terrain.GetBlock(point)?.IsAir != true || Terrain.GetBlock(point - new Vector(0, 1, 0))?.Material is not (Material.Sand or Material.RedSand)) return;
         await Level.SetBlockAsync(point, BlocksRegistry.Get(Material.TurtleEgg).WithProperty("eggs", Random.Next(1, 5)), true);
         HasEgg = false; Laying = false; LoveTicks = 0; SynchronizeMetadata();
     }
@@ -66,7 +68,7 @@ internal sealed class TurtleLayEggGoal(Turtle turtle) : NavigationGoal(turtle, 1
         for (var attempt = 0; attempt < 30; attempt++)
         {
             point = turtle.Home + new Vector(turtle.Random.Next(-8, 9), turtle.Random.Next(-2, 3), turtle.Random.Next(-8, 9));
-            if (turtle.Terrain.GetBlock(point)?.IsAir == true && turtle.Terrain.GetBlock(point - new Vector(0, 1, 0))?.Material == Material.Sand) return true;
+            if (turtle.Terrain.GetBlock(point)?.IsAir == true && turtle.Terrain.GetBlock(point - new Vector(0, 1, 0))?.Material is Material.Sand or Material.RedSand) return true;
         }
         return false;
     }

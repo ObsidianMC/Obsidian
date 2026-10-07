@@ -439,6 +439,11 @@ public class Entity : IEquatable<Entity>, IEntity
             return;
 
         Health -= amount;
+        if (Level is Obsidian.WorldData.AbstractLevel events)
+        {
+            events.EmitGameEvent(Obsidian.WorldData.MobGameEvent.EntityDamage, Position, this);
+            if (Health <= 0) events.EmitGameEvent(Obsidian.WorldData.MobGameEvent.EntityDie, Position, this);
+        }
         if (this is IPlayer attackedPlayer && !ReferenceEquals(source, this))
             Wolf.AlertOwnedWolves(attackedPlayer, source);
 

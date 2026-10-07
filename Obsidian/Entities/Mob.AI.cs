@@ -1,3 +1,4 @@
+using Obsidian.API.Inventory;
 using Obsidian.Entities.AI;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
@@ -227,8 +228,12 @@ public partial class Mob
         }
         if (Alive && CanDespawn && !PersistenceRequired && CustomName == null)
         {
-            var nearest = Level.GetPlayersInRange(Position, float.MaxValue).Where(player => player.GameMode != GameMode.Spectator)
-                .Select(player => (player.Position - Position).MagnitudeSquared()).DefaultIfEmpty(float.MaxValue).Min();
+            var nearest = (double)float.MaxValue;
+            foreach (var player in Level.Players.Values)
+            {
+                if (player.GameMode == GameMode.Spectator) continue;
+                nearest = Math.Min(nearest, (player.Position - Position).MagnitudeSquared());
+            }
             if (nearest > 16384 && nearest < float.MaxValue || ++despawnAge > 600 && nearest > 1024 && nearest < float.MaxValue && Random.Next(800) == 0)
             {
                 await RemoveAsync();
@@ -243,7 +248,7 @@ public partial class Mob
             if (IsRemoved) return;
             if (++deathTicks >= DeathDuration)
             {
-                if (AiTick - lastPlayerHurtTick <= 120)
+                if (AiTick - lastPlayerHurtTick <= 120 && Level.LevelData.GetBooleanRule("mob_drops"))
                     Level.SpawnExperienceOrbs(Position, (short)GetExperienceReward());
                 await RemoveAsync();
             }
@@ -285,6 +290,7 @@ public partial class Mob
         TickRidden();
 
         var oldPosition = Position;
+        var oldMovementFlags = MovementFlags;
         var position = Travel();
         LastPosition = oldPosition;
         if (Level is AbstractLevel level && !level.TryMoveEntity(this, oldPosition, position))
@@ -297,6 +303,7 @@ public partial class Mob
         Position = position;
         BoundingBox = Dimension.CreateBBFromPosition(position);
         UpdateRider();
+        if (Level is AbstractLevel events) await events.EmitMovementGameEventsAsync(this, oldPosition, oldMovementFlags);
         SynchronizeMovement(oldPosition);
     }
 
@@ -442,6 +449,7 @@ public partial class Mob
             amount *= 1 - Math.Clamp(armor - amount / (2 + toughness / 4), armor / 5, 20) / 25;
             foreach (var slot in armorSlots)
                 DamageEquipment(slot, Math.Max(1, (int)(incoming / 4)));
+            DamageEquipment(EquipmentSlot.Body, Math.Max(1, (int)(incoming / 4)));
         }
         await base.DamageAsync(source, amount);
         await OnHurtAsync(source);
@@ -484,6 +492,7 @@ public partial class Mob
         (Navigator as Navigator)?.Stop();
         SendEntityEvent(3);
         PlayMobSound("death");
+        if (Level is AbstractLevel raids) raids.NotifyRaiderKilled(this, source);
         await OnDeathAsync(source);
     }
 }

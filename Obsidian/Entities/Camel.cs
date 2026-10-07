@@ -22,6 +22,13 @@ public partial class Camel : AbstractHorse
     }
 
     protected override bool UsesAi => true;
+    protected override int MaximumPassengers => 2;
+    protected override VectorD PassengerOffset(int index)
+    {
+        var yaw = Yaw.Degrees * MathF.PI / 180;
+        var offset = index == 0 ? 0.5f : -0.7f;
+        return new VectorD(-MathF.Sin(yaw) * offset, Dimension.Height - (IsSitting ? 1.43f : 0), MathF.Cos(yaw) * offset);
+    }
     protected virtual float DashSpeed => 22.2222f;
     protected override string? SoundName => "camel";
     protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Type: Material.Cactus };
@@ -124,8 +131,8 @@ public partial class Camel : AbstractHorse
     protected override void TickRidden()
     {
         // Camel controls replace the horse's taming and vertical jump behavior.
-        if (Rider != null && (Rider.Level != Level || !Rider.Alive || Rider.Sneaking || !Alive))
-            Dismount();
+        foreach (var passenger in Passengers.ToArray())
+            if (passenger.Level != Level || !passenger.Alive || passenger.Sneaking || !Alive) Dismount(passenger);
         var charge = Interlocked.Exchange(ref pendingDashCharge, -1);
         if (Rider == null)
         {

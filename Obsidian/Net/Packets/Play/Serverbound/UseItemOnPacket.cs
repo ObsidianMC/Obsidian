@@ -50,6 +50,7 @@ public partial class UseItemOnPacket
     {
         var handSlot = Hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
         var bucket = player.Inventory.GetItem(handSlot);
+        if (await TryPlaceEndCrystalAsync(player, handSlot, bucket)) return;
         if (bucket is { Count: > 0, Type: Material.AxolotlBucket or Material.TadpoleBucket or Material.CodBucket or
             Material.SalmonBucket or Material.TropicalFishBucket or Material.PufferfishBucket } && player.Health > 0 && player.GameMode != GameMode.Spectator)
         {
@@ -98,6 +99,8 @@ public partial class UseItemOnPacket
 
         if (b is null)
             return;
+
+        if (await TryUseMusicBlockAsync(player, handSlot, bucket, b)) return;
 
         if (interactableBlocks.Contains(b.Material) && !player.Sneaking)
         {
@@ -188,6 +191,8 @@ public partial class UseItemOnPacket
         }
 
         await player.Level.SetBlockAsync(position, block, doBlockUpdate: true);
+        if (player.Level is Obsidian.WorldData.AbstractLevel events)
+            events.EmitGameEvent(Obsidian.WorldData.MobGameEvent.BlockPlace, (VectorD)position + new VectorD(0.5, 0.5, 0.5), player, affectedBlock: block);
         player.Client.SendPacket(new BlockChangedAckPacket
         {
             SequenceID = Sequence

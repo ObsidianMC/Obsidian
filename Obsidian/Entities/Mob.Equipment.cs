@@ -24,6 +24,13 @@ public partial class Mob
     private static (int Armor, int Durability, float Toughness) GetArmorStats(ItemStack item, EquipmentSlot slot)
     {
         var name = item.Holder.UnlocalizedName.Replace("minecraft:", "", StringComparison.Ordinal);
+        if (slot == EquipmentSlot.Body && (name.EndsWith("_nautilus_armor", StringComparison.Ordinal) || name.EndsWith("_horse_armor", StringComparison.Ordinal)))
+        {
+            var bodyMaterial = name[..name.IndexOf('_')];
+            var armor = bodyMaterial switch { "leather" => 3, "copper" => 4, "iron" => 5, "golden" => 7, "diamond" => 11, "netherite" => 19, _ => 0 };
+            var durability = name.EndsWith("_nautilus_armor", StringComparison.Ordinal) && armorMaterials.TryGetValue(bodyMaterial, out var bodyStats) ? bodyStats.Durability * 16 : 0;
+            return (armor, durability, 0);
+        }
         var separator = name.IndexOf('_');
         var suffix = slot switch { EquipmentSlot.Helmet => "_helmet", EquipmentSlot.Chestplate => "_chestplate", EquipmentSlot.Leggings => "_leggings", EquipmentSlot.Boots => "_boots", _ => "" };
         if (suffix.Length == 0 || !name.EndsWith(suffix, StringComparison.Ordinal))
@@ -40,7 +47,7 @@ public partial class Mob
         };
     }
 
-    private float EquipmentArmor => armorSlots.Sum(slot => GetArmorStats(GetEquipment(slot), slot).Armor);
+    private float EquipmentArmor => armorSlots.Sum(slot => GetArmorStats(GetEquipment(slot), slot).Armor) + GetArmorStats(GetEquipment(EquipmentSlot.Body), EquipmentSlot.Body).Armor;
     private float EquipmentToughness => armorSlots.Sum(slot => GetArmorStats(GetEquipment(slot), slot).Toughness);
 
     protected void PopulateDefaultArmor()
@@ -173,7 +180,7 @@ public partial class Mob
 
     protected void DropItem(ItemStack item)
     {
-        if (item.Count <= 0 || item.IsAir)
+        if (item.Count <= 0 || item.IsAir || deathStarted && !Level.LevelData.GetBooleanRule("mob_drops"))
             return;
         var entity = new ItemEntity
         {

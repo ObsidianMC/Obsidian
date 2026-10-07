@@ -121,6 +121,7 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
         EntityType.Trident => new Trident { Level = level },
         EntityType.EvokerFangs => new EvokerFangs { Level = level },
         EntityType.ShulkerBullet => new ShulkerBullet { Level = level },
+        EntityType.BreezeWindCharge => new BreezeWindCharge(level),
         EntityType.WitherSkull => new WitherSkull { Level = level },
         EntityType.EndCrystal => new EndCrystal { Level = level },
         EntityType.DragonFireball => new DragonFireball(level),
@@ -134,6 +135,14 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
 
     internal static Mob? CreateMob(ILevel level, EntityType? type) => type switch
     {
+        EntityType.Breeze => new Breeze { Level = level },
+        EntityType.CamelHusk => new CamelHusk { Level = level },
+        EntityType.Creaking => new Creaking { Level = level },
+        EntityType.Giant => new Giant { Level = level },
+        EntityType.TraderLlama => new TraderLlama { Level = level },
+        EntityType.WanderingTrader => new WanderingTrader { Level = level },
+        EntityType.ZombieNautilus => new ZombieNautilus { Level = level },
+        EntityType.ZombieVillager => new ZombieVillager { Level = level },
         EntityType.Wither => new Wither { Level = level },
         EntityType.EnderDragon => new EnderDragon { Level = level },
         EntityType.Warden => new Warden { Level = level },

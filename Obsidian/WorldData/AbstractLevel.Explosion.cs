@@ -86,11 +86,12 @@ public abstract partial class AbstractLevel
             if (target is IPlayer)
                 knockbacks[target.EntityId] = knockback;
         }
+        if ((source is Mob || owner is Mob) && !LevelData.GetBooleanRule("mob_griefing")) destroyed.Clear();
         foreach (var position in destroyed)
         {
             var block = terrain.GetBlock(position)!;
             await SetBlockAsync(position, BlocksRegistry.Air, true);
-            if (random.NextSingle() <= 1 / radius)
+            if (!LevelData.GetBooleanRule("mob_explosion_drop_decay") || random.NextSingle() <= 1 / radius)
             {
                 if (ItemsRegistry.TryGet(block.Material, out var holder))
                 {
