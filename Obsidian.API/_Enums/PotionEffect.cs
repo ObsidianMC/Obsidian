@@ -32,5 +32,7 @@ public enum PotionEffect : int
     SlowFalling,
     ConduitPower,
     DolphinsGrace,
-    BadOmen
+    BadOmen,
+    HeroOfTheVillage,
+    Darkness
 }

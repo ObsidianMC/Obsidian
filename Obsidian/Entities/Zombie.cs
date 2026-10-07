@@ -23,6 +23,8 @@ public partial class Zombie : PathfinderMob
         }
     }
     public float ReinforcementChance { get; internal set; }
+    internal int DrowningWaterTicks { get; set; } = -1;
+    internal int DrowningConversionTicks { get; set; } = -1;
     protected override string? SoundName => "zombie";
     protected override SoundCategory MobSoundCategory => SoundCategory.Hostile;
     protected override int GetExperienceReward() => (IsBaby ? 12 : 5) +
@@ -47,25 +49,47 @@ public partial class Zombie : PathfinderMob
             entity is AgeableMob { IsBaby: true } && entity.MovementFlags.HasFlag(MovementFlags.OnGround)));
     }
 
-    protected override ValueTask TickMobAsync()
+    protected override async ValueTask TickMobAsync()
     {
         if (Level.LevelData.Difficulty == Difficulty.Peaceful)
-            return RemoveAsync();
+        {
+            await RemoveAsync();
+            return;
+        }
+        if (Type == EntityType.Zombie && !MobBitMask.HasFlag(MobBitmask.NoAi))
+        {
+            if (DrowningConversionTicks >= 0)
+            {
+                if (--DrowningConversionTicks < 0)
+                {
+                    await ConvertToAsync(EntityType.Drowned);
+                    return;
+                }
+            }
+            else if (Terrain.GetBlock((Vector)EyePosition.Floor())?.Material == Material.Water)
+            {
+                if (++DrowningWaterTicks >= 600)
+                {
+                    DrowningConversionTicks = 300;
+                    SynchronizeMetadata();
+                }
+            }
+            else DrowningWaterTicks = -1;
+        }
         var dayTime = Level.DayTime;
         if (Level.DimensionName != "minecraft:overworld" || dayTime is < 0 or >= 12000 ||
             Level.LevelData.Raining || Level.LevelData.Thundering || InWater || Random.NextSingle() * 30 >= 1.2f)
-            return default;
+            return;
         var position = (Vector)EyePosition.Floor();
         if (Terrain.GetSkyLight(position) < 15)
-            return default;
+            return;
         var helmet = GetEquipment(Obsidian.API.Inventory.EquipmentSlot.Helmet);
         if (!helmet.IsAir)
         {
             DamageEquipment(Obsidian.API.Inventory.EquipmentSlot.Helmet, Random.Next(2));
-            return default;
+            return;
         }
         Ignite(8);
-        return default;
     }
 
     protected override void FinalizeSpawn()
@@ -165,6 +189,6 @@ public partial class Zombie : PathfinderMob
         writer.WriteEntityMetadataType(17, EntityMetadataType.VarInt);
         writer.WriteVarInt(0);
         writer.WriteEntityMetadataType(18, EntityMetadataType.Boolean);
-        writer.WriteBoolean(this is Husk { ConversionTicks: >= 0 });
+        writer.WriteBoolean(DrowningConversionTicks >= 0 || this is Husk { ConversionTicks: >= 0 });
     }
 }

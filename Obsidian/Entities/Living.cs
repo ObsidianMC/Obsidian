@@ -49,17 +49,25 @@ public class Living : Entity, ILiving
     {
         foreach (var (potion, data) in activePotionEffects)
         {
-            if (this is Player && Alive && potion == (int)PotionEffect.Regeneration - 1 &&
+            if (Alive && potion == (int)PotionEffect.Regeneration - 1 &&
                 data.CurrentDuration % Math.Max(1, 50 >> Math.Min(30, data.EffectData.Amplifier)) == 0)
-                Health = Math.Min(20, Health + 1);
+                Health = Math.Min(this is Player ? 20 : GetAttributeValue("minecraft:generic.max_health"), Health + 1);
             var poisonInterval = Math.Max(1, 25 >> Math.Min(30, data.EffectData.Amplifier));
             if (potion == (int)PotionEffect.Poison - 1 && data.CurrentDuration % poisonInterval == 0 && Health > 1)
             {
-                var amount = Math.Min(1, Health - 1);
+                var amount = Math.Min(this is Witch ? 0.15f : 1, Health - 1);
                 if (this is Mob mob)
                     await mob.DamageEnvironmentAsync(amount);
                 else
                     await DamageAsync(this, amount);
+            }
+            if (potion == (int)PotionEffect.Wither - 1 && Alive &&
+                data.CurrentDuration % Math.Max(1, 40 >> Math.Min(30, data.EffectData.Amplifier)) == 0)
+            {
+                if (this is Mob mob)
+                    await mob.DamageEnvironmentAsync(this is Witch ? 0.15f : 1);
+                else
+                    await DamageAsync(this, 1);
             }
             data.CurrentDuration--;
 
@@ -80,7 +88,7 @@ public class Living : Entity, ILiving
             fireTicks = 0;
         if (fireTicks > 0)
         {
-            if (fireTicks % 20 == 0)
+            if (fireTicks % 20 == 0 && !HasPotionEffect((int)PotionEffect.FireResistance - 1))
             {
                 if (this is Mob mob)
                     await mob.DamageEnvironmentAsync(1);
@@ -118,7 +126,9 @@ public class Living : Entity, ILiving
 
     public void AddPotionEffect(int effectId, int duration, int amplifier = 0, EntityEffectFlags effect = EntityEffectFlags.None)
     {
-        if (effectId == (int)PotionEffect.Poison - 1 && Type is EntityType.Zombie or EntityType.Husk or EntityType.Skeleton or EntityType.Stray or EntityType.Bogged or EntityType.Parched or EntityType.Spider or EntityType.CaveSpider ||
+        if (Type is EntityType.Wither or EntityType.EnderDragon) return;
+        if (effectId == (int)PotionEffect.Poison - 1 && Type is EntityType.Zombie or EntityType.Husk or EntityType.Skeleton or EntityType.Stray or EntityType.Bogged or EntityType.Parched or EntityType.Spider or EntityType.CaveSpider or EntityType.WitherSkeleton or EntityType.Drowned or EntityType.ZombifiedPiglin or EntityType.Zoglin ||
+            effectId == (int)PotionEffect.Wither - 1 && Type == EntityType.WitherSkeleton ||
             effectId == (int)PotionEffect.Weakness - 1 && Type == EntityType.Parched)
             return;
         this.PacketBroadcaster.QueuePacketToLevel(this.Level, new UpdateMobEffectPacket(EntityId, effectId, duration)

@@ -148,6 +148,8 @@ public abstract partial class AbstractLevel : ILevel
 
     internal bool TryMoveEntity(IEntity entity, VectorD from, VectorD to)
     {
+        if (Generator is MobTestGenerator && entity is Entity testEntity && !MobTestGenerator.AllowsMovement(testEntity, to))
+            return false;
         var destination = GetRegionForLocation(to);
         var origin = GetRegionForLocation(from);
         if (destination == null)
@@ -862,8 +864,13 @@ public abstract partial class AbstractLevel : ILevel
 
     public IEntity SpawnEntity(IEntity entity)
     {
+        if (entity is EnderDragon dragon) dragon.EnsureMultipartIds();
         if (entity is Mob mob)
+        {
             mob.InitializeAi();
+            // Summoned vexes, offspring and slime splits inherit the enclosure they spawn in.
+            if (Generator is MobTestGenerator testWorld) testWorld.AssignPen(mob);
+        }
         if (!TryAddEntity(entity))
             throw new InvalidOperationException($"Could not register entity {entity.EntityId}.");
         entity.SpawnEntity();

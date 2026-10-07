@@ -5,7 +5,7 @@ using System.Threading;
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:camel")]
-public sealed partial class Camel : AbstractHorse
+public partial class Camel : AbstractHorse
 {
     internal const int DashCooldownTicks = 55;
     private int pendingDashCharge = -1;
@@ -22,6 +22,7 @@ public sealed partial class Camel : AbstractHorse
     }
 
     protected override bool UsesAi => true;
+    protected virtual float DashSpeed => 22.2222f;
     protected override string? SoundName => "camel";
     protected override bool CanEat(ItemStack? item) => item is { Count: > 0, Type: Material.Cactus };
     protected override int GetExperienceReward() => IsBaby ? 0 : Random.Next(1, 4);
@@ -151,8 +152,8 @@ public sealed partial class Camel : AbstractHorse
             return;
         var strength = charge >= 90 ? 1 : 0.4f + 0.4f * charge / 90;
         var yaw = Yaw.Degrees * MathF.PI / 180;
-        Motion += new VectorD(-MathF.Sin(yaw) * 22.2222f * MovementSpeed * strength,
-            1.4285f * JumpPower * strength, MathF.Cos(yaw) * 22.2222f * MovementSpeed * strength);
+        Motion += new VectorD(-MathF.Sin(yaw) * DashSpeed * MovementSpeed * strength,
+            1.4285f * JumpPower * strength, MathF.Cos(yaw) * DashSpeed * MovementSpeed * strength);
         DashCooldown = DashCooldownTicks;
         dashTicks = 0;
         Dashing = true;

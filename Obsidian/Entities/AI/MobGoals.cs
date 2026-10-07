@@ -244,7 +244,7 @@ public sealed class BreedGoal(Animal pig) : NavigationGoal(pig, 1)
     {
         if (!pig.CanBreed)
             return false;
-        mate = pig.GetEntitiesNear(8).OfType<Animal>().Where(target => target.Type == pig.Type && target.CanBreed)
+        mate = pig.GetEntitiesNear(8).OfType<Animal>().Where(pig.CanMateWith)
             .MinBy(target => (target.Position - pig.Position).MagnitudeSquared());
         return mate != null;
     }

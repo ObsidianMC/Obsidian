@@ -24,7 +24,12 @@ public partial class Mob
         "HasNectar", "HasStung", "ObsidianStingTicks", "ObsidianHivePos", "ObsidianFlowerPos", "GotFish", "Moistness", "ObsidianTreasurePos",
         "Sleeping", "ObsidianTrusted", "ObsidianSecondTrusted", "ObsidianBreedingPlayer", "IsScreamingGoat", "HasLeftHorn", "HasRightHorn",
         "ObsidianRamCooldown", "ObsidianLongJumpCooldown", "MainGene", "HiddenGene", "ObsidianEatingTicks", "SkeletonTrap", "SkeletonTrapTime",
-        "ObsidianSkeletonRider", "ChestedHorse", "Strength"];
+        "ObsidianSkeletonRider", "ChestedHorse", "Strength", "Lifetime", "Johnny", "type", "PuffState",
+        "IsImmuneToZombification", "CannotBeHunted", "TimeInOverworld", "RabbitType", "life_ticks", "bound_pos", "owner", "AttackTick", "StunTick", "RoarTick", "SpellTicks", "size", "anchor_pos", "ObsidianDrinkTicks", "ObsidianDrinkEffect", "ObsidianAdmireTicks", "AttachFace", "Peek",
+        "DuplicationCooldown", "ObsidianLikedPlayer", "ObsidianCollected", "state", "scute_time", "ObsidianDigCooldown", "ObsidianExplored",
+        "Suffocating", "weather_state", "next_weather_age", "home_pos", "has_egg", "Invul", "DragonPhase", "DragonDeathTime", "ObsidianPreviouslyKilled", "ObsidianDragonArena",
+        "ObsidianWardenIdle", "ObsidianWardenPoseTicks", "ObsidianWardenPose", "ObsidianWardenSonicCooldown", "ObsidianWardenSonicTicks", "ObsidianWardenAnger",
+        "ObsidianWardenSniffCooldown", "ObsidianWardenVibrationCooldown", "ObsidianWardenMeleeCooldown", "ObsidianWardenTouchCooldown"];
     internal void WriteSave(INbtWriter writer, bool writeCompound = true)
     {
         if (writeCompound)
@@ -160,6 +165,21 @@ public partial class Mob
         {
             writer.WriteInt("InWaterTime", husk.WaterTicks);
             writer.WriteInt("DrownedConversionTime", husk.ConversionTicks);
+        }
+        else if (this is Zombie { Type: EntityType.Zombie } drowningZombie)
+        {
+            writer.WriteInt("InWaterTime", drowningZombie.DrowningWaterTicks);
+            writer.WriteInt("DrownedConversionTime", drowningZombie.DrowningConversionTicks);
+        }
+        if (this is ZombifiedPiglin piglin)
+        {
+            writer.WriteInt("AngerTime", piglin.AngerTicks);
+            WriteReference(writer, "AngryAt", piglin.AngryAt);
+        }
+        if (this is PolarBear bear)
+        {
+            writer.WriteInt("AngerTime", bear.AngerTicks);
+            WriteReference(writer, "AngryAt", bear.AngryAt);
         }
         if (this is Skeleton { Type: EntityType.Skeleton } skeleton)
         {
@@ -365,6 +385,21 @@ public partial class Mob
         {
             if (tag.TryGetTagValue<int>("InWaterTime", out var water)) husk.WaterTicks = water;
             if (tag.TryGetTagValue<int>("DrownedConversionTime", out var conversion)) husk.ConversionTicks = conversion;
+        }
+        else if (this is Zombie { Type: EntityType.Zombie } drowningZombie)
+        {
+            if (tag.TryGetTagValue<int>("InWaterTime", out var water)) drowningZombie.DrowningWaterTicks = water;
+            if (tag.TryGetTagValue<int>("DrownedConversionTime", out var conversion)) drowningZombie.DrowningConversionTicks = conversion;
+        }
+        if (this is ZombifiedPiglin piglin)
+        {
+            piglin.AngryAt = ReadReference(tag, "AngryAt");
+            piglin.AngerTicks = Math.Max(0, tag.TryGetTagValue<int>("AngerTime", out var anger) ? anger : 0);
+        }
+        if (this is PolarBear bear)
+        {
+            bear.AngryAt = ReadReference(tag, "AngryAt");
+            bear.AngerTicks = Math.Max(0, tag.TryGetTagValue<int>("AngerTime", out var anger) ? anger : 0);
         }
         if (this is Skeleton { Type: EntityType.Skeleton } skeleton)
         {

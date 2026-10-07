@@ -41,6 +41,7 @@ internal static class EntityNbt
 
         Entity entity = type switch
         {
+            EntityType.AreaEffectCloud when tag.TryGetBool("ObsidianDragonBreath", out var breath) && breath => new DragonBreathCloud { Level = level },
             EntityType.ItemFrame => new ItemFrame { Level = level },
             EntityType.Item => new ItemEntity { Level = level },
             EntityType.ChestMinecart => new ChestMinecart { Level = level },

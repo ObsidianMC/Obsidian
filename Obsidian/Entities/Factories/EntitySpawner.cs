@@ -102,6 +102,10 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
 
         if (entity is Zombie zombie && isBaby)
             zombie.IsBaby = true;
+        if (entity is Zoglin zoglin && isBaby)
+            zoglin.IsBaby = true;
+        if (entity is Piglin piglin && isBaby)
+            piglin.IsBaby = true;
 
         entity.Burning = burning;
         entity.Glowing = glowing;
@@ -111,8 +115,15 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
 
     internal static Entity Create(EntityType type, ILevel level) => CreateMob(level, type) ?? (type switch
     {
-        EntityType.Fireball or EntityType.SmallFireball or EntityType.Snowball or EntityType.LlamaSpit => new MobProjectile(level, type),
+        EntityType.Fireball or EntityType.SmallFireball or EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion => new MobProjectile(level, type),
         EntityType.ExperienceOrb => new ExperienceOrb { Level = level, Value = 1 },
+        EntityType.Arrow => new Arrow { Level = level },
+        EntityType.Trident => new Trident { Level = level },
+        EntityType.EvokerFangs => new EvokerFangs { Level = level },
+        EntityType.ShulkerBullet => new ShulkerBullet { Level = level },
+        EntityType.WitherSkull => new WitherSkull { Level = level },
+        EntityType.EndCrystal => new EndCrystal { Level = level },
+        EntityType.DragonFireball => new DragonFireball(level),
         EntityType.Horse => new Horse { Level = level },
         EntityType.Llama => new Llama { Level = level },
         EntityType.Donkey => new Donkey { Level = level },
@@ -123,7 +134,20 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
 
     internal static Mob? CreateMob(ILevel level, EntityType? type) => type switch
     {
+        EntityType.Wither => new Wither { Level = level },
+        EntityType.EnderDragon => new EnderDragon { Level = level },
+        EntityType.Warden => new Warden { Level = level },
+        EntityType.Allay => new Allay { Level = level },
+        EntityType.Armadillo => new Armadillo { Level = level },
+        EntityType.CopperGolem => new CopperGolem { Level = level },
+        EntityType.HappyGhast => new HappyGhast { Level = level },
+        EntityType.Nautilus => new Nautilus { Level = level },
+        EntityType.Sniffer => new Sniffer { Level = level },
+        EntityType.Strider => new Strider { Level = level },
+        EntityType.Turtle => new Turtle { Level = level },
         EntityType.Pig => new Pig { Level = level },
+        EntityType.Rabbit => new Rabbit { Level = level },
+        EntityType.PolarBear => new PolarBear { Level = level },
         EntityType.Cow => new Cow { Level = level },
         EntityType.Mooshroom => new Mooshroom { Level = level },
         EntityType.Chicken => new Chicken { Level = level },
@@ -167,6 +191,30 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
         EntityType.Panda => new Panda { Level = level },
         EntityType.Parrot => new Parrot { Level = level },
         EntityType.Wolf => new Wolf { Level = level },
+        EntityType.WitherSkeleton => new WitherSkeleton { Level = level },
+        EntityType.Endermite => new Endermite { Level = level },
+        EntityType.Mule => new Mule { Level = level },
+        EntityType.Vindicator => new Vindicator { Level = level },
+        EntityType.Cod => new Cod { Level = level },
+        EntityType.Salmon => new Salmon { Level = level },
+        EntityType.TropicalFish => new TropicalFish { Level = level },
+        EntityType.Pufferfish => new Pufferfish { Level = level },
+        EntityType.Drowned => new Drowned { Level = level },
+        EntityType.ZombifiedPiglin => new ZombifiedPiglin { Level = level },
+        EntityType.Guardian => new Guardian { Level = level },
+        EntityType.ElderGuardian => new ElderGuardian { Level = level },
+        EntityType.Hoglin => new Hoglin { Level = level },
+        EntityType.Zoglin => new Zoglin { Level = level },
+        EntityType.Pillager => new Pillager { Level = level },
+        EntityType.PiglinBrute => new PiglinBrute { Level = level },
+        EntityType.Vex => new Vex { Level = level },
+        EntityType.Ravager => new Ravager { Level = level },
+        EntityType.Evoker => new Evoker { Level = level },
+        EntityType.Phantom => new Phantom { Level = level },
+        EntityType.Illusioner => new Illusioner { Level = level },
+        EntityType.Witch => new Witch { Level = level },
+        EntityType.Piglin => new Piglin { Level = level },
+        EntityType.Shulker => new Shulker { Level = level },
         _ => null
     };
 }

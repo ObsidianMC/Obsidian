@@ -26,7 +26,8 @@ internal sealed partial class MobSpawner(AbstractLevel level)
         EntityType.Cat or EntityType.Camel or EntityType.SkeletonHorse => "creature",
         _ => mobCategories.GetValueOrDefault(EntityNbt.TypeId(type), "misc")
     };
-    internal static bool IsAquatic(EntityType type) => type is EntityType.Squid or EntityType.GlowSquid or EntityType.Dolphin or EntityType.Axolotl or EntityType.Tadpole;
+    internal static bool IsAquatic(EntityType type) => type is EntityType.Squid or EntityType.GlowSquid or EntityType.Dolphin or EntityType.Axolotl or EntityType.Tadpole or
+        EntityType.Cod or EntityType.Salmon or EntityType.TropicalFish or EntityType.Pufferfish or EntityType.Drowned or EntityType.Guardian or EntityType.ElderGuardian;
     private static SpawnerMob[] LoadFortressSpawns()
     {
         using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Obsidian.Assets.worldgen.structures.nether.json")
@@ -58,12 +59,14 @@ internal sealed partial class MobSpawner(AbstractLevel level)
 
     internal void PopulateChunk(IChunk chunk)
     {
+        if (level.Generator is MobTestGenerator) return;
         while (random.NextSingle() < 0.1f)
             SpawnGroup(chunk, "creature", [], 32, true);
     }
 
     internal void Tick()
     {
+        if (level.Generator is MobTestGenerator) return;
         ticks++;
         var players = level.Players.Values.Where(player => player.GameMode != GameMode.Spectator).ToArray();
         if (players.Length == 0)
@@ -195,6 +198,10 @@ internal sealed partial class MobSpawner(AbstractLevel level)
                         EntityType.Mooshroom => floor.Material != Material.Mycelium,
                         EntityType.Wolf => !TagsRegistry.Block.WolvesSpawnableOn.Entries.Contains(floor.RegistryId),
                         EntityType.Goat => !TagsRegistry.Block.GoatsSpawnableOn.Entries.Contains(floor.RegistryId),
+                        EntityType.Rabbit => !TagsRegistry.Block.RabbitsSpawnableOn.Entries.Contains(floor.RegistryId),
+                        EntityType.PolarBear => TagsRegistry.Worldgen.Biome.PolarBearsSpawnOnAlternateBlocks.Entries.Contains(candidateChunk.GetBiome(x, y, z).Id)
+                            ? !TagsRegistry.Block.PolarBearsSpawnableOnAlternate.Entries.Contains(floor.RegistryId)
+                            : !TagsRegistry.Block.AnimalsSpawnableOn.Entries.Contains(floor.RegistryId),
                         EntityType.Frog => !TagsRegistry.Block.FrogsSpawnableOn.Entries.Contains(floor.RegistryId),
                         EntityType.Parrot => !TagsRegistry.Block.ParrotsSpawnableOn.Entries.Contains(floor.RegistryId),
                         EntityType.Camel => floor.Material != Material.Sand,
@@ -207,6 +214,9 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             else if (IsAquatic(type))
             {
                 if (terrain.GetBlock(new Vector(x, y + 1, z))?.Material != Material.Water)
+                    continue;
+                if (type == EntityType.Drowned && (block != 0 || sky > random.Next(32) ||
+                    Math.Max(block, Math.Max(0, sky - (level.DayTime is >= 12000 and < 23000 ? 11 : 0))) > random.Next(8)))
                     continue;
                 if (type is EntityType.Squid or EntityType.Dolphin && (y <= seaLevel - 24 || y >= seaLevel - 1) ||
                     type == EntityType.GlowSquid && (y >= seaLevel - 33 || Math.Max(block, sky) > 0))

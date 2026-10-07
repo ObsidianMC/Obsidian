@@ -19,6 +19,7 @@ public partial class Mob
     };
 
     public float GetEquipmentDropChance(EquipmentSlot slot) => equipmentDropChances.GetValueOrDefault(slot, 0.085f);
+    protected void SetEquipmentDropChance(EquipmentSlot slot, float chance) => equipmentDropChances[slot] = chance;
 
     private static (int Armor, int Durability, float Toughness) GetArmorStats(ItemStack item, EquipmentSlot slot)
     {

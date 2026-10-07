@@ -18,7 +18,16 @@ public partial class Mob
     internal long LastHurtTick { get; private set; } = -100;
     internal virtual float EyeHeight => Dimension.Height * 0.85f;
     internal VectorD EyePosition => Position + new VectorD(0, EyeHeight, 0);
-    internal virtual float MovementSpeed => GetAttributeValue("minecraft:generic.movement_speed");
+    internal virtual float MovementSpeed
+    {
+        get
+        {
+            var speed = GetAttributeValue("minecraft:generic.movement_speed");
+            if (ActivePotionEffects.TryGetValue((int)PotionEffect.Speed - 1, out var faster)) speed *= 1 + 0.2f * (faster.EffectData.Amplifier + 1);
+            if (ActivePotionEffects.TryGetValue((int)PotionEffect.Slowness - 1, out var slower)) speed *= Math.Max(0, 1 - 0.15f * (slower.EffectData.Amplifier + 1));
+            return speed;
+        }
+    }
     internal virtual float JumpPower => 0.42f;
     protected virtual bool TakesFallDamage => true;
     protected virtual float SafeFallDistance => 3;
@@ -95,6 +104,8 @@ public partial class Mob
     protected virtual void RegisterGoals(GoalSelector actionGoals, GoalSelector targetGoals) { }
     protected virtual void FinalizeSpawn() { }
     protected virtual ValueTask TickMobAsync() => default;
+    protected virtual int DeathDuration => 20;
+    protected virtual ValueTask TickDeathAsync() => default;
     protected virtual ValueTask OnHurtAsync(IEntity source) => default;
     internal virtual ValueTask InteractAsync(IPlayer player, InteractionHand hand) => default;
 
@@ -114,10 +125,14 @@ public partial class Mob
         replacement.PersistenceRequired = PersistenceRequired;
         replacement.CanPickUpLoot = CanPickUpLoot;
         replacement.MobBitMask = MobBitMask;
+        if (replacement is Zoglin zoglin && this is Hoglin hoglin)
+            zoglin.IsBaby = hoglin.IsBaby;
+        if (replacement is ZombifiedPiglin zombified && this is Piglin piglin)
+            zombified.IsBaby = piglin.IsBaby;
         if (replacement is Zombie zombie && this is Zombie original)
         {
             zombie.IsBaby = original.IsBaby;
-            zombie.CanBreakDoors = original.CanBreakDoors;
+            zombie.CanBreakDoors = original.CanBreakDoors && zombie is not Drowned and not ZombifiedPiglin;
         }
         foreach (var (slot, item) in equipment)
         {
@@ -182,6 +197,8 @@ public partial class Mob
         PacketBroadcaster.QueuePacketToLevelInRange(Level, Position,
             new AnimatePacket { EntityId = EntityId, Animation = EntityAnimationType.SwingMainArm }, EntityId);
         var damage = AttackDamage;
+        if (ActivePotionEffects.TryGetValue((int)PotionEffect.Strength - 1, out var stronger)) damage += 3 * (stronger.EffectData.Amplifier + 1);
+        if (ActivePotionEffects.TryGetValue((int)PotionEffect.Weakness - 1, out var weaker)) damage = Math.Max(0, damage - 4 * (weaker.EffectData.Amplifier + 1));
         if (target is IPlayer)
             damage = Level.LevelData.Difficulty switch
             {
@@ -202,7 +219,8 @@ public partial class Mob
         InitializeAi();
         AiTick++;
         visibility.Clear();
-        if (Hostile && Level.LevelData.Difficulty == Difficulty.Peaceful)
+        if (Hostile && Level.LevelData.Difficulty == Difficulty.Peaceful &&
+            Level is not AbstractLevel { Generator: Obsidian.WorldData.Generators.MobTestGenerator })
         {
             await RemoveAsync();
             return;
@@ -221,7 +239,9 @@ public partial class Mob
         }
         if (!Alive)
         {
-            if (++deathTicks >= 20)
+            await TickDeathAsync();
+            if (IsRemoved) return;
+            if (++deathTicks >= DeathDuration)
             {
                 if (AiTick - lastPlayerHurtTick <= 120)
                     Level.SpawnExperienceOrbs(Position, (short)GetExperienceReward());
@@ -230,6 +250,12 @@ public partial class Mob
             return;
         }
 
+        if (Level is AbstractLevel { Generator: Obsidian.WorldData.Generators.MobTestGenerator } &&
+            UnmodeledData.TryGetBool("ObsidianTestDisplay", out var display) && display)
+        {
+            Motion = VectorD.Zero;
+            return;
+        }
         await TickMobAsync();
         if (IsRemoved)
             return;
@@ -368,31 +394,34 @@ public partial class Mob
     public override ValueTask DamageAsync(IEntity source, float amount = 1) => ApplyDamageAsync(source, amount, true);
 
     internal ValueTask DamageEnvironmentAsync(float amount) => ApplyDamageAsync(this, amount, false);
+    internal ValueTask DamageMagicAsync(IEntity source, float amount, bool ignoreHurtCooldown = false) => ApplyDamageAsync(source, amount, false, ignoreHurtCooldown);
+    protected virtual bool CanTakeDamage(IEntity source) => true;
 
-    private async ValueTask ApplyDamageAsync(IEntity source, float amount, bool applyArmor)
+    private async ValueTask ApplyDamageAsync(IEntity source, float amount, bool applyArmor, bool ignoreHurtCooldown = false)
     {
         if (!UsesAi)
         {
             await base.DamageAsync(source, amount);
             return;
         }
-        if (IsRemoved || !Alive || source.Level != Level || !float.IsFinite(amount) || amount <= 0)
+        if (IsRemoved || !Alive || source.Level != Level || !float.IsFinite(amount) || amount <= 0 || !CanTakeDamage(source))
             return;
 
         var incoming = amount;
-        var recentlyHurt = AiTick - lastDamageTick < 10;
+        var recentlyHurt = !ignoreHurtCooldown && AiTick - lastDamageTick < 10;
         if (recentlyHurt)
         {
             if (amount <= lastDamage)
                 return;
             amount -= lastDamage;
         }
-        else
+        else if (!ignoreHurtCooldown)
         {
             var direction = Position - source.Position;
             var horizontal = Math.Sqrt(direction.X * direction.X + direction.Z * direction.Z);
-            if (horizontal > 0.0001f)
-                Motion = new VectorD(Motion.X / 2 + direction.X / horizontal * 0.4f, 0.4f, Motion.Z / 2 + direction.Z / horizontal * 0.4f);
+            var strength = 0.4f * (1 - Math.Clamp(GetAttributeValue("minecraft:generic.knockback_resistance"), 0, 1));
+            if (horizontal > 0.0001f && strength > 0)
+                Motion = new VectorD(Motion.X / 2 + direction.X / horizontal * strength, strength, Motion.Z / 2 + direction.Z / horizontal * strength);
         }
 
         lastDamage = incoming;

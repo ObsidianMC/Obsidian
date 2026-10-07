@@ -17,6 +17,22 @@ public class AbstractHorse : Animal
     protected virtual int MaximumTemper => 100;
     protected virtual bool SupportsSaddle => true;
     protected virtual bool IsBreedingFood(Material food) => food is Material.GoldenCarrot or Material.GoldenApple;
+    internal override bool CanMateWith(Animal mate) => HorseMask.HasFlag(HorseMask.Tamed) &&
+        Health >= GetAttributeValue("minecraft:generic.max_health") && mate is AbstractHorse other &&
+        other.HorseMask.HasFlag(HorseMask.Tamed) && other.Health >= other.GetAttributeValue("minecraft:generic.max_health") &&
+        (base.CanMateWith(mate) || !ReferenceEquals(this, mate) && mate.CanBreed &&
+            (Type == EntityType.Horse && mate.Type == EntityType.Donkey || Type == EntityType.Donkey && mate.Type == EntityType.Horse));
+
+    protected override IEntity CreateOffspring(Animal mate)
+    {
+        var type = Type != mate.Type && (Type is EntityType.Horse or EntityType.Donkey) ? EntityType.Mule : Type;
+        var child = (AbstractHorse)Level.GetNewEntitySpawner().WithEntityType(type).AtPosition(Position).AsBaby().Spawn();
+        HorseMask |= HorseMask.HasBred;
+        ((AbstractHorse)mate).HorseMask |= HorseMask.HasBred;
+        SynchronizeMetadata();
+        ((AbstractHorse)mate).SynchronizeMetadata();
+        return child;
+    }
     protected override string? SoundName => Type == EntityType.ZombieHorse ? "zombie_horse" : "horse";
     internal override float JumpPower => GetAttributeValue("minecraft:horse.jump_strength");
 

@@ -27,6 +27,7 @@ public sealed partial class Enderman : PathfinderMob
         actions.AddGoal(7, new RandomStrollGoal(this, 1));
         actions.AddGoal(8, new LookAtPlayerGoal(this, 8));
         actions.AddGoal(9, new RandomLookAroundGoal(this));
+        targets.AddGoal(3, new NearestAttackableTargetGoal(this, target => target.Type == EntityType.Endermite));
     }
     internal bool IsStaring(IPlayer player)
     {

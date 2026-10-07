@@ -6,6 +6,7 @@ public class Animal : AgeableMob
 {
     public int LoveTicks { get; internal set; }
     internal virtual bool CanBreed => Alive && !IsRemoved && Age == 0 && LoveTicks > 0;
+    internal virtual bool CanMateWith(Animal mate) => !ReferenceEquals(this, mate) && mate.Type == Type && mate.CanBreed;
     protected virtual bool CanEat(Obsidian.API.Inventory.ItemStack? item) => false;
     internal override ValueTask InteractAsync(IPlayer player, InteractionHand hand) => FeedAsync(player, hand);
 
@@ -54,7 +55,7 @@ public class Animal : AgeableMob
 
     internal void BreedWith(Animal mate)
     {
-        if (!CanBreed || !mate.CanBreed || mate.Level != Level || !IsInRange(mate, 3))
+        if (!CanBreed || !CanMateWith(mate) || mate.Level != Level || !IsInRange(mate, 3))
             return;
 
         CreateOffspring(mate);

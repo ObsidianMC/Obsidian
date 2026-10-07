@@ -40,7 +40,12 @@ public abstract partial class AbstractLevel
                 if (block == null)
                     break;
                 if (!block.IsAir)
-                    strength -= (blastResistance[block.UnlocalizedName] + 0.3f) * 0.3f;
+                {
+                    var resistance = blastResistance[block.UnlocalizedName];
+                    if (source is WitherSkull { Invulnerable: true } && !TagsRegistry.Block.WitherImmune.Entries.Contains(block.RegistryId))
+                        resistance = Math.Min(resistance, 0.8f);
+                    strength -= (resistance + 0.3f) * 0.3f;
+                }
                 if (strength > 0 && !block.IsAir)
                     destroyed.Add(position);
                 point += direction * 0.3f;
@@ -49,7 +54,7 @@ public abstract partial class AbstractLevel
         }
         var knockbacks = new Dictionary<int, VectorD>();
         var diameter = radius * 2;
-        foreach (var target in GetEntitiesInRange(source.Position, diameter + 1).OfType<Living>().ToArray())
+        foreach (var target in GetEntitiesInRange(source.Position, diameter + 1).OfType<Entity>().Where(entity => entity is Living or EndCrystal).ToArray())
         {
             if (ReferenceEquals(target, source) || target.Health <= 0 ||
                 target is IPlayer player && player.GameMode == GameMode.Spectator)
@@ -76,7 +81,7 @@ public abstract partial class AbstractLevel
             }
             var exposure = (1 - distance) * visible / Math.Max(1, total);
             await target.DamageAsync(owner ?? source, (float)Math.Floor((exposure * exposure + exposure) / 2 * 7 * diameter + 1));
-            var knockback = direction * exposure;
+            var knockback = direction * exposure * (1 - Math.Clamp(target.GetAttributeValue("minecraft:generic.knockback_resistance"), 0, 1));
             target.Motion += knockback;
             if (target is IPlayer)
                 knockbacks[target.EntityId] = knockback;

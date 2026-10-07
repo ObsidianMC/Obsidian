@@ -50,14 +50,23 @@ public partial class UseItemOnPacket
     {
         var handSlot = Hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
         var bucket = player.Inventory.GetItem(handSlot);
-        if (bucket is { Count: > 0, Type: Material.AxolotlBucket or Material.TadpoleBucket } && player.Health > 0 && player.GameMode != GameMode.Spectator)
+        if (bucket is { Count: > 0, Type: Material.AxolotlBucket or Material.TadpoleBucket or Material.CodBucket or
+            Material.SalmonBucket or Material.TropicalFishBucket or Material.PufferfishBucket } && player.Health > 0 && player.GameMode != GameMode.Spectator)
         {
             var destination = Position + Face.ToVector();
             if ((player.Position - (VectorD)destination).MagnitudeSquared() > 36 || player.Level is not Obsidian.WorldData.AbstractLevel level || level.IsOutsideBuildHeight(destination.Y)) return;
             var terrain = new Obsidian.Entities.AI.MobTerrain(level);
             var existing = terrain.GetBlock(destination);
             if (existing == null || !existing.IsAir && existing.Material != Material.Water) return;
-            var type = bucket.Type == Material.AxolotlBucket ? EntityType.Axolotl : EntityType.Tadpole;
+            var type = bucket.Type switch
+            {
+                Material.AxolotlBucket => EntityType.Axolotl,
+                Material.TadpoleBucket => EntityType.Tadpole,
+                Material.CodBucket => EntityType.Cod,
+                Material.SalmonBucket => EntityType.Salmon,
+                Material.TropicalFishBucket => EntityType.TropicalFish,
+                _ => EntityType.Pufferfish
+            };
             var mob = Obsidian.Entities.Factories.EntitySpawner.CreateMob(level, type)!;
             mob.EntityId = Server.GetNextEntityId();
             mob.Position = (VectorD)destination + new VectorD(0.5f, 0, 0.5f);

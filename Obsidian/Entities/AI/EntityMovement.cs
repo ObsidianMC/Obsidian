@@ -7,6 +7,11 @@ internal static class EntityMovement
     internal static VectorD Move(Entity mob, MobTerrain terrain, VectorD acceleration, float gravity = 0.08f, float airFriction = 0.91f)
     {
         var velocity = mob.Motion + acceleration;
+        if (mob is Living living && living.ActivePotionEffects.TryGetValue((int)PotionEffect.Levitation - 1, out var levitation))
+        {
+            velocity.Y += (0.05f * (levitation.EffectData.Amplifier + 1) - velocity.Y) * 0.2f;
+            gravity = 0;
+        }
         var feet = terrain.GetBlock((Vector)(mob.Position + new VectorD(0, 0.1f, 0)).Floor());
         var inWater = feet?.Material == Material.Water;
         var inLava = feet?.Material == Material.Lava;

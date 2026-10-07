@@ -73,12 +73,12 @@ public sealed partial class Tadpole : PathfinderMob
     }
 }
 
-internal sealed class SeekWaterGoal(PathfinderMob mob) : NavigationGoal(mob, 1)
+internal sealed class SeekWaterGoal(PathfinderMob mob, bool onlyDuringDay = false) : NavigationGoal(mob, 1)
 {
     private VectorD destination;
     public override bool CanUse()
     {
-        if (mob.InWater || mob.Random.Next(20) != 0)
+        if (mob.InWater || onlyDuringDay && (mob.Level.DayTime is < 0 or >= 12000) || mob.Random.Next(20) != 0)
             return false;
         var origin = (Vector)mob.Position.Floor();
         for (var y = -2; y <= 2; y++)

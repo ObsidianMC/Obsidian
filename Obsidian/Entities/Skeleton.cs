@@ -109,9 +109,17 @@ public partial class Skeleton : PathfinderMob
             Owner = this, Motion = direction * 1.6f,
             Damage = 2 + MathF.Sqrt(-2 * MathF.Log(Math.Max(float.Epsilon, Random.NextSingle()))) *
                 MathF.Cos(2 * MathF.PI * Random.NextSingle()) * 0.25f + (int)Level.LevelData.Difficulty * 0.11f,
-            Effect = ArrowEffect, EffectDuration = ArrowEffectDuration
+            Effect = ArrowEffect, EffectDuration = ArrowEffectDuration,
+            FireSeconds = this is WitherSkeleton ? 100 : 0, Burning = this is WitherSkeleton
         });
-        PlayMobSound("shoot");
+        if (this is Illusioner)
+        {
+            if (!Silent)
+                PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new Obsidian.Net.Packets.Play.Clientbound.SoundEntityPacket
+                { EntityId = EntityId, SoundLocation = "minecraft:entity.skeleton.shoot", Category = SoundCategory.Hostile,
+                    Volume = 1, Pitch = 1 / (Random.NextSingle() * 0.4f + 0.8f), Seed = Random.NextInt64() }, EntityId);
+        }
+        else PlayMobSound("shoot");
     }
 
     protected override ValueTask OnDeathAsync(IEntity source)

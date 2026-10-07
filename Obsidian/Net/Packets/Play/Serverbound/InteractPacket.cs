@@ -39,6 +39,10 @@ public partial class InteractPacket
     {
         var entity = player.GetEntitiesNear(4).FirstOrDefault(x => x.EntityId == EntityId); // TODO check if the entity is within range and in vision/not being blocked by a wall
 
+        entity ??= player.GetEntitiesNear(24).OfType<EnderDragon>()
+            .SelectMany(dragon => dragon.Parts)
+            .FirstOrDefault(part => part.EntityId == EntityId && part.IsInRange(player, 4));
+
         if (entity == null)
             return;
 

@@ -114,6 +114,7 @@ public sealed partial class Server : IServer
     }
 
     public static int GetNextEntityId() => Interlocked.Increment(ref EntityCounter);
+    internal static int ReserveEntityIds(int count) => Interlocked.Add(ref EntityCounter, count) - count + 1;
 
     public void RegisterRecipes(params IRecipe[] recipes)
     {

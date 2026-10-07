@@ -12,7 +12,8 @@ public partial class Horse : AbstractHorse
 
     protected override IEntity CreateOffspring(Animal mate)
     {
-        var child = (Horse)base.CreateOffspring(mate);
+        var offspring = base.CreateOffspring(mate);
+        if (offspring is not Horse child) return offspring;
         HorseMask |= HorseMask.HasBred;
         ((Horse)mate).HorseMask |= HorseMask.HasBred;
         child.Variant = Random.Next(2) == 0 ? Variant : ((Horse)mate).Variant;

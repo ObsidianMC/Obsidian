@@ -53,7 +53,7 @@ public partial class Mob
         if (InLava && !IsFireImmune)
         {
             Ignite(15);
-            await DamageEnvironmentAsync(4);
+            if (!HasPotionEffect((int)PotionEffect.FireResistance - 1)) await DamageEnvironmentAsync(4);
         }
         await TickAirSupplyAsync();
         if (WaterSensitive && (InWater || Terrain.IsRainingAt((Vector)Position.Floor())))
@@ -61,7 +61,7 @@ public partial class Mob
 
         if (Position.Y < -128)
             await DamageEnvironmentAsync(4);
-        if (InWater || InLava)
+        if (InWater || InLava || HasPotionEffect((int)PotionEffect.Levitation - 1))
             fallDistance = 0;
         else if (MovementFlags.HasFlag(MovementFlags.OnGround))
         {
@@ -80,9 +80,9 @@ public partial class Mob
         if (feet?.Material is Material.Fire or Material.SoulFire && !IsFireImmune)
         {
             Ignite(8);
-            await ApplyDamageAsync(this, 1, true);
+            if (!HasPotionEffect((int)PotionEffect.FireResistance - 1)) await ApplyDamageAsync(this, 1, true);
         }
-        if (floor?.Material == Material.MagmaBlock && !IsFireImmune && !Sneaking)
+        if (floor?.Material == Material.MagmaBlock && !IsFireImmune && !Sneaking && !HasPotionEffect((int)PotionEffect.FireResistance - 1))
             await ApplyDamageAsync(this, 1, true);
         if (this is not Fox && feet?.Material == Material.SweetBerryBush && !IsRemoved &&
             (LastPosition - Position).MagnitudeSquared() > 0.000025f)
@@ -92,7 +92,7 @@ public partial class Mob
     protected virtual async ValueTask TickAirSupplyAsync()
     {
         if (Terrain.GetBlock((Vector)EyePosition.Floor())?.Material == Material.Water &&
-            !TagsRegistry.EntityType.CanBreatheUnderWater.Entries.Contains((int)Type))
+              !TagsRegistry.EntityType.CanBreatheUnderWater.Entries.Contains((int)Type) && !HasPotionEffect((int)PotionEffect.WaterBreathing - 1))
         {
             Air--;
             if (Air == -20)

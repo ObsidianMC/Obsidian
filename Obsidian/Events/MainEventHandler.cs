@@ -33,7 +33,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         var entity = e.Entity;
         var attacker = e.Attacker;
 
-        if (entity is IPlayer || entity is Mob { HasAi: true } || entity is MobProjectile { Type: EntityType.Fireball })
+        if (entity is IPlayer || entity is Mob { HasAi: true } || entity is EndCrystal or EnderDragonPart || entity is MobProjectile { Type: EntityType.Fireball })
         {
             async ValueTask Damage()
             {
