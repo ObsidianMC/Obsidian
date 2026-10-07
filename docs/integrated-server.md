@@ -143,5 +143,10 @@ When the folder has no level.dat, the world is created from these settings:
 | `NewWorld:AllowCommands` | `false` | Whether the local player may use commands. |
 | `NewWorld:GameRules:<rule>` | | Vanilla rule ids without the namespace (configuration keys can't contain colons), e.g. `--NewWorld:GameRules:keep_inventory=true`. Stored in `game_rules` as `minecraft:<rule>`: `true`/`false` as bytes, integers as ints; other values are skipped. Obsidian doesn't implement game rules yet, so none are applied. |
 
+A stop (or the end of standard input) while a new world generates ends the generation within moments, and the server
+stops gracefully as usual. That world gets no level.dat, so it isn't a world yet (vanilla lists only folders with one):
+opening the folder again creates the world from the `NewWorld` settings and keeps the chunks generated so far, so open
+it with the same seed or delete the folder.
+
 An existing world's overworld generator comes from its `WorldGenSettings`: vanilla's default noise overworld and flat
 worlds load; other presets (large biomes, amplified, single biome, custom) fail the start with a message.

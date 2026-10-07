@@ -60,11 +60,14 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
                 await Task.WhenAll(this.worlds.Values.Cast<World>().Select(x => x.ManageChunksAsync()));
             }
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            // Stopping, possibly while the worlds were still loading or generating.
+        }
+        catch (Exception ex)
         {
             await this.serverEnvironment.OnServerCrashAsync(ex);
         }
-
     }
 
     public async Task LoadWorldsAsync(CancellationToken cancellationToken = default)
@@ -72,14 +75,14 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         var integrated = integratedOptions.Value;
         if (integrated.Enabled && !string.IsNullOrWhiteSpace(integrated.WorldPath))
         {
-            await this.LoadSingleWorldAsync(Path.GetFullPath(integrated.WorldPath));
+            await this.LoadSingleWorldAsync(Path.GetFullPath(integrated.WorldPath), cancellationToken);
         }
         else
         {
             foreach (var serverWorld in await LoadServerWorldsAsync(cancellationToken))
             {
                 var world = this.levelFactory.CreateWorld(serverWorld.Name, serverWorld.Seed, serverWorld.Generator);
-                await this.LoadWorldAsync((World)world, serverWorld);
+                await this.LoadWorldAsync((World)world, serverWorld, cancellationToken: cancellationToken);
             }
         }
 
@@ -93,7 +96,11 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
     /// Loads a world, or generates it with its dimensions when it's new.
     /// </summary>
     /// <param name="createLevel">Sets up a new world's level data before it's generated.</param>
-    private async Task LoadWorldAsync(World world, ServerWorld serverWorld, Action<World>? createLevel = null)
+    /// <param name="cancellationToken">
+    /// Stops generating a new world, throwing <see cref="OperationCanceledException"/> before its level data is saved.
+    /// </param>
+    private async Task LoadWorldAsync(World world, ServerWorld serverWorld, Action<World>? createLevel = null,
+        CancellationToken cancellationToken = default)
     {
         this.worlds.Add(world.Name, world);
 
@@ -136,7 +143,7 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
                 if (integratedOptions.Value.Enabled)
                     ((AbstractLevel)dimension).GenerationProgress = Report;
 
-                await dimension.GenerateAsync();
+                await dimension.GenerateAsync(cancellationToken);
                 await dimension.SaveAsync();
             }
 
@@ -148,7 +155,7 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
             if (integratedOptions.Value.Enabled)
                 world.GenerationProgress = Report;
 
-            await world.GenerateAsync();
+            await world.GenerateAsync(cancellationToken);
             await world.SaveAsync();
         }
 
@@ -161,7 +168,7 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
     /// <c>NewWorld</c> settings when it has no level.dat. The folder stays locked while the world is open.
     /// </summary>
     /// <exception cref="NotSupportedException">Obsidian can't generate the world.</exception>
-    private async Task LoadSingleWorldAsync(string folder)
+    private async Task LoadSingleWorldAsync(string folder, CancellationToken cancellationToken)
     {
         this.sessionLock = SessionLock.Acquire(folder);
 
@@ -203,7 +210,8 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         world.UseVanillaLayout(folder);
 
         await this.LoadWorldAsync(world, serverWorld,
-            createLevel: newWorld => newWorld.CreateVanillaLevel(VanillaLevelData.Create(settings, name, seed, generatorId)));
+            createLevel: newWorld => newWorld.CreateVanillaLevel(VanillaLevelData.Create(settings, name, seed, generatorId)),
+            cancellationToken);
     }
 
     public IReadOnlyCollection<IWorld> GetAvailableWorlds() => this.worlds.Values.ToList().AsReadOnly();
@@ -226,6 +234,10 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
 
     public async ValueTask DisposeAsync()
     {
+        // Loading, generation and chunk management stop first, so nothing generates into the disposed levels. The levels
+        // then wait for the chunks still generating.
+        await this.StopAsync(CancellationToken.None);
+
         foreach (var world in this.worlds.Values.Cast<World>())
         {
             foreach (var dimension in world.dimensions.Values)

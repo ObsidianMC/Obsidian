@@ -782,8 +782,11 @@ public abstract partial class AbstractLevel : ILevel
     /// Starts the initial generation of the world, which includes pregenerating chunks in a square around the spawn and loading their regions,
     /// as well as setting the world spawn if specified. This should be called after Initialize and before allowing players to join.
     /// </summary>
-    /// <param name="setWorldSpawn">Whether to set the world spawn after generation.</param>
-    public async Task GenerateAsync()
+    /// <param name="cancellationToken">
+    /// Stops generation: no new chunk starts, and <see cref="OperationCanceledException"/> is thrown. The chunks already
+    /// generating finish in the background, and disposal waits for them.
+    /// </param>
+    public async Task GenerateAsync(CancellationToken cancellationToken = default)
     {
         if (this.generated)
             return;
@@ -832,7 +835,7 @@ public abstract partial class AbstractLevel : ILevel
         var flushedThousands = 0;
         while (this.ChunksToGen.TryDequeue(out var job))
         {
-            await this.generationSlots.WaitAsync();
+            await this.generationSlots.WaitAsync(cancellationToken);
             jobs.Add(this.GenerateQueuedChunkAsync(job));
 
             while (completedChunks < jobs.Count && jobs[completedChunks].IsCompleted)

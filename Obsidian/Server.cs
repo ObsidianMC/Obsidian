@@ -270,27 +270,15 @@ public sealed partial class Server : IServer
 
         var loop = LoopAsync();
 
-        // Wait for worlds to load. Polling with a delay leaves the cores to world generation instead of spinning one.
-        while (!this.WorldManager.ReadyToJoin)
-        {
-            if (this.cancelTokenSource.IsCancellationRequested)
-                return;
-
-            await Task.Delay(50);
-        }
-
-        ScoreboardManager = new ScoreboardManager(this, this.loggerFactory);
-
-        await this.PluginManager.OnServerReadyAsync();
-
-        await this.StartAsync(this.Port);
-
-        loadTimeStopwatch.Stop();
-        Log.Ready(this.logger, loadTimeStopwatch.Elapsed, this.Port);
-
-        // A failure here reaches the host, which reports the crash.
+        // A failure here reaches the host, which reports the crash. A stop while the worlds load shuts down gracefully too.
         try
         {
+            if (await this.StartWhenWorldsLoadAsync())
+            {
+                loadTimeStopwatch.Stop();
+                Log.Ready(this.logger, loadTimeStopwatch.Elapsed, this.Port);
+            }
+
             await loop;
         }
         finally
@@ -299,6 +287,38 @@ public sealed partial class Server : IServer
             await this.StopAsync();
             Log.Stopped(this.logger);
         }
+    }
+
+    /// <summary>
+    /// Waits for the worlds to load, then starts accepting connections, unless the server stops first.
+    /// </summary>
+    /// <returns>Whether the server started.</returns>
+    private async Task<bool> StartWhenWorldsLoadAsync()
+    {
+        // Polling with a delay leaves the cores to world generation instead of spinning one.
+        while (!this.WorldManager.ReadyToJoin)
+        {
+            if (this.Stopping)
+                return false;
+
+            await Task.Delay(50);
+        }
+
+        ScoreboardManager = new ScoreboardManager(this, this.loggerFactory);
+
+        await this.PluginManager.OnServerReadyAsync();
+
+        try
+        {
+            await this.StartAsync(this.Port);
+        }
+        catch (InvalidOperationException) when (this.Stopping)
+        {
+            // Stopped just before the listener opened (see ListenAsync).
+            return false;
+        }
+
+        return true;
     }
 
     public IBossBar CreateBossBar(ChatMessage title, float health, BossBarColor color, BossBarDivisionType divisionType, BossBarFlags flags) =>
@@ -328,7 +348,11 @@ public sealed partial class Server : IServer
         await this.saveLock.WaitAsync();
         try
         {
-            await WorldManager.FlushLoadedWorldsAsync();
+            // Worlds that didn't finish loading aren't saved: a new world whose generation was stopped keeps no level.dat,
+            // so it isn't later taken for a complete world.
+            if (this.WorldManager.ReadyToJoin)
+                await WorldManager.FlushLoadedWorldsAsync();
+
             await WorldManager.DisposeAsync();
             await this.PluginManager.DisposeAsync();
 

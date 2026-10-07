@@ -104,6 +104,29 @@ public sealed class IntegratedServerHosting : IDisposable
     }
 
     /// <summary>
+    /// A stop while a new world generates ends the generation promptly and stops gracefully, without writing level.dat,
+    /// so the unfinished world isn't taken for a complete one.
+    /// </summary>
+    [Fact]
+    public async Task StopWhileGeneratingLeavesNoLevelData()
+    {
+        var world = Path.Combine(this.root, "saves", "Unfinished");
+
+        // Far more chunks than the test waits for.
+        using var server = this.StartServer(world, "--PregenerateChunkRange=64");
+
+        await server.WaitForEventAsync(line => line.Contains("\"stage\":\"generating\"", StringComparison.Ordinal));
+
+        server.Input.Send("@obsidian:{\"command\":\"stop\"}");
+        await server.Run.WaitAsync(TimeSpan.FromSeconds(30));
+
+        var events = server.DrainEvents();
+        Assert.Contains("@obsidian:{\"event\":\"stopping\"}", events);
+        Assert.DoesNotContain(events, line => line.Contains("\"event\":\"crashed\"", StringComparison.Ordinal));
+        Assert.False(File.Exists(Path.Combine(world, "level.dat")));
+    }
+
+    /// <summary>
     /// Logs in over the loopback listener: a stranger is turned away before the world is open to LAN, the local player
     /// is asked for the join secret, and only the right secret logs them in with their own UUID.
     /// </summary>
@@ -143,6 +166,30 @@ public sealed class IntegratedServerHosting : IDisposable
     /// <returns>Every event line the server wrote.</returns>
     private async Task<List<string>> RunUntilReadyAsync(string world, Func<int, Action<string>, Task> whileReady)
     {
+        using var server = this.StartServer(world);
+
+        var ready = await server.WaitForEventAsync(line => line.StartsWith("@obsidian:{\"event\":\"ready\"", StringComparison.Ordinal));
+
+        int port;
+        using (var readyEvent = JsonDocument.Parse(ready["@obsidian:".Length..]))
+            port = readyEvent.RootElement.GetProperty("port").GetInt32();
+
+        Assert.True(port > 0);
+
+        await whileReady(port, server.Input.Send);
+
+        server.Input.Send("@obsidian:{\"command\":\"stop\"}");
+        await server.Run.WaitAsync(TimeSpan.FromMinutes(1));
+
+        return server.DrainEvents();
+    }
+
+    /// <summary>
+    /// Starts an integrated server on <paramref name="world"/> with a small flat world; <paramref name="extraArgs"/>
+    /// override its settings.
+    /// </summary>
+    private RunningServer StartServer(string world, params string[] extraArgs)
+    {
         string[] args =
         [
             $"--Paths:Root={this.root}",
@@ -160,10 +207,11 @@ public sealed class IntegratedServerHosting : IDisposable
             "--NewWorld:Seed=hello",
             "--NewWorld:GameMode=creative",
             "--NewWorld:AllowCommands=true",
-            "--NewWorld:GameRules:keep_inventory=true"
+            "--NewWorld:GameRules:keep_inventory=true",
+            ..extraArgs
         ];
 
-        using var input = new LineReader();
+        var input = new LineReader();
         var output = new EventLines();
 
         var builder = Host.CreateApplicationBuilder(args);
@@ -172,37 +220,9 @@ public sealed class IntegratedServerHosting : IDisposable
         builder.AddObsidian();
         builder.Services.AddSingleton(new IntegratedEventWriter(output));
 
-        using var host = builder.Build();
-        var run = host.RunAsync();
+        var host = builder.Build();
 
-        var events = new List<string>();
-        using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(2));
-        while (true)
-        {
-            var line = await output.Lines.Reader.ReadAsync(timeout.Token);
-            events.Add(line);
-
-            Assert.DoesNotContain("\"event\":\"crashed\"", line);
-
-            if (line.StartsWith("@obsidian:{\"event\":\"ready\"", StringComparison.Ordinal))
-                break;
-        }
-
-        int port;
-        using (var ready = JsonDocument.Parse(events[^1]["@obsidian:".Length..]))
-            port = ready.RootElement.GetProperty("port").GetInt32();
-
-        Assert.True(port > 0);
-
-        await whileReady(port, input.Send);
-
-        input.Send("@obsidian:{\"command\":\"stop\"}");
-        await run.WaitAsync(TimeSpan.FromMinutes(1));
-
-        while (output.Lines.Reader.TryRead(out var line))
-            events.Add(line);
-
-        return events;
+        return new RunningServer(host, host.RunAsync(), input, output);
     }
 
     public void Dispose()
@@ -248,6 +268,54 @@ public sealed class IntegratedServerHosting : IDisposable
         writer.WriteTag(data);
         writer.EndCompound();
         writer.TryFinish();
+    }
+
+    /// <summary>
+    /// A server running in the test process, with its standard input and the event lines it wrote so far.
+    /// </summary>
+    private sealed class RunningServer(IHost host, Task run, LineReader input, EventLines output) : IDisposable
+    {
+        private readonly List<string> events = [];
+
+        public Task Run { get; } = run;
+
+        public LineReader Input { get; } = input;
+
+        /// <summary>
+        /// Reads events until one matches <paramref name="match"/>, failing on a crash.
+        /// </summary>
+        /// <returns>The matching event line.</returns>
+        public async Task<string> WaitForEventAsync(Func<string, bool> match)
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+            while (true)
+            {
+                var line = await output.Lines.Reader.ReadAsync(timeout.Token);
+                this.events.Add(line);
+
+                Assert.DoesNotContain("\"event\":\"crashed\"", line);
+
+                if (match(line))
+                    return line;
+            }
+        }
+
+        /// <summary>
+        /// Every event line the server wrote.
+        /// </summary>
+        public List<string> DrainEvents()
+        {
+            while (output.Lines.Reader.TryRead(out var line))
+                this.events.Add(line);
+
+            return this.events;
+        }
+
+        public void Dispose()
+        {
+            host.Dispose();
+            this.Input.Dispose();
+        }
     }
 
     /// <summary>
