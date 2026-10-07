@@ -46,6 +46,18 @@ public abstract class DataContainer<T>(byte minBitsPerEntry, byte maxBitsPerEntr
     /// </summary>
     internal Lock.Scope EnterScope() => this.dataLock.EnterScope();
 
+    /// <summary>
+    /// Empties the container, as it was created: a single value palette without a value.
+    /// </summary>
+    internal void Reset()
+    {
+        lock (this.dataLock)
+        {
+            this.Palette = this.PaletteFactory(0);
+            this.DataArray = null;
+        }
+    }
+
     public bool TryGrow()
     {
         if (this.Palette is SingleValuePalette<T> singleValuePalette)

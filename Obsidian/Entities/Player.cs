@@ -165,7 +165,6 @@ public sealed partial class Player : Avatar, IPlayer
     public Permission PlayerPermissions { get; private set; } = new Permission("root");
 
     public string PersistentDataFile { get; }
-    public string PersistentDataBackupFile { get; }
 
     public string? ClientIP => Client.Ip;
 
@@ -190,7 +189,6 @@ public sealed partial class Player : Avatar, IPlayer
         Type = EntityType.Player;
 
         PersistentDataFile = Path.Combine(ServerConstants.PersistentDataPath, $"{Uuid}.dat");
-        PersistentDataBackupFile = Path.Combine(ServerConstants.PersistentDataPath, $"{Uuid}.dat.old");
 
         Health = 20f;
 
@@ -790,7 +788,7 @@ public sealed partial class Player : Avatar, IPlayer
         [LoggerMessage(Level = LogLevel.Debug, Message = "Moving {Username} to {LevelName}")]
         public static partial void ChangingLevel(ILogger logger, string username, string levelName);
 
-        [LoggerMessage(Level = LogLevel.Warning, Message = "{Username} has invalid saved data; spawning them at the world spawn")]
-        public static partial void InvalidSavedData(ILogger logger, Exception exception, string username);
+        [LoggerMessage(Level = LogLevel.Warning, Message = "{Username} was saved in {Dimension}; spawning them at the world spawn")]
+        public static partial void OtherDimension(ILogger logger, string username, string dimension);
     }
 }
