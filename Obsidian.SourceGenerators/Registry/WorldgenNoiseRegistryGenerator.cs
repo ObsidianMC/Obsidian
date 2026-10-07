@@ -46,7 +46,7 @@ public sealed partial class WorldgenNoiseRegistryGenerator : IIncrementalGenerat
 
         var symbol = ctx.SemanticModel.GetDeclaredSymbol(ctx.Node);
 
-        if (symbol == null)
+        if (symbol is null)
             return null;
 
         return symbol.GetAttributes().Any(x => IsAttribute(x.AttributeClass?.Name))

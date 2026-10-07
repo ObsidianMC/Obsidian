@@ -98,7 +98,8 @@ internal static class DatagenAssets
                         ["state"] = ToPascalCase(state),
                         ["packet_id"] = packet!["protocol_id"]!.DeepClone(),
                         ["usable_interface"] = $"I{ToPascalCase(direction)}Packet",
-                        ["fields"] = (fields[direction]?[id] ?? throw new InvalidDataException($"The Java dumper has no fields for {direction} {id}.")).DeepClone()
+                        ["fields"] = (fields[direction]?[id]
+                            ?? throw new InvalidDataException($"The Java dumper has no fields for {direction} {id}.")).DeepClone()
                     });
                 }
             }
