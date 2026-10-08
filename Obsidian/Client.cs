@@ -244,7 +244,7 @@ public sealed partial class Client : IClient
 
     public async ValueTask QueuePacketAsync(IClientboundPacket packet)
     {
-        if (!this.Connected)
+        if (this.disposed || this.cancellationSource.IsCancellationRequested || !this.Connected)
             return;
 
         var args = new QueuePacketEventArgs(this.Server, this, packet);
@@ -253,7 +253,11 @@ public sealed partial class Client : IClient
         if (result == EventResult.Cancelled)
             return;
 
-        await packetQueue.Writer.WriteAsync(packet, this.cancellationSource.Token);
+        if (this.disposed || this.cancellationSource.IsCancellationRequested)
+            return;
+
+        // The unbounded queue never needs to wait; disconnects during the event must not cancel a broadcaster's send.
+        this.packetQueue.Writer.TryWrite(packet);
     }
 
     public bool SendPacket(IClientboundPacket packet) => this.SendAsync(packet);

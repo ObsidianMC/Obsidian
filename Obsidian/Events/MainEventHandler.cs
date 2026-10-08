@@ -337,6 +337,9 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             await ReturnCraftingItemsAsync(player, table, 3);
         await ReturnCraftingItemsAsync(player, player.Inventory, 2);
 
+        if (player is Player portalPlayer)
+            await portalPlayer.CancelPortalTravelAsync();
+
         await player.SaveAsync();
 
         packetBroadcaster.Broadcast(new PlayerInfoRemovePacket

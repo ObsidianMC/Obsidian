@@ -11,6 +11,8 @@ public partial class ClientCommandPacket
     {
         if (Action == ClientAction.PerformRespawn)
         {
+            if (player is Entities.Player concrete && await concrete.FinishEndCreditsAsync())
+                return;
             await player.RespawnAsync();
         }
     }

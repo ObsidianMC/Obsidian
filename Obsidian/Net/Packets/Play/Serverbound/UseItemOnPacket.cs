@@ -1,5 +1,8 @@
 ﻿using Obsidian.API.Events;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
+using Obsidian.WorldData;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
@@ -48,8 +51,7 @@ public partial class UseItemOnPacket
 
     public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
-        //Get main hand first return offhand if null
-        var currentItem = player.GetHeldItem() ?? player.GetOffHandItem();
+        var currentItem = this.Hand == InteractionHand.MainHand ? player.GetHeldItem() : player.GetOffHandItem();
         var position = this.Position;
 
         var b = await player.Level.GetBlockAsync(position);
@@ -66,6 +68,36 @@ public partial class UseItemOnPacket
                 BlockLocation = this.Position,
             });
 
+            return;
+        }
+
+        if (player.Level is AbstractLevel level && currentItem is { Count: > 0 } &&
+            currentItem.Type is Material.EnderEye or Material.FlintAndSteel or Material.FireCharge)
+        {
+            var used = false;
+            if (player.GameMode != GameMode.Spectator && (uint)this.Face <= (uint)BlockFace.East)
+            {
+                if (currentItem.Type == Material.EnderEye)
+                    used = await level.Portals.TryInsertEyeAsync(position);
+                else if (player.GameMode != GameMode.Adventure)
+                {
+                    var firePosition = position + this.Face.ToVector();
+                    var existing = await level.GetBlockAsync(firePosition);
+                    if (existing is { IsAir: true } && !level.IsOutsideBuildHeight(firePosition.Y))
+                    {
+                        used = await level.Portals.TryIgniteAsync(firePosition);
+                        if (!used && await level.GetBlockAsync(firePosition + Vector.Down) is { } below && below.HasFullTopCollisionFace())
+                        {
+                            await level.SetBlockAsync(firePosition, BlocksRegistry.Get(
+                                below.Material is Material.SoulSand or Material.SoulSoil ? Material.SoulFire : Material.Fire), true);
+                            used = true;
+                        }
+                    }
+                }
+            }
+            if (used)
+                await this.ConsumePortalItemAsync(player, currentItem);
+            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
             return;
         }
 
@@ -96,7 +128,13 @@ public partial class UseItemOnPacket
         }
 
         if (player.GameMode != GameMode.Creative)
-            player.Inventory.RemoveItem(player.CurrentHeldItemSlot, 1);
+            player.Inventory.RemoveItem(this.Hand == InteractionHand.MainHand ? player.CurrentHeldItemSlot : (short)45, 1);
+
+        if (block.Material == Material.EndPortalFrame)
+        {
+            string[] facings = ["north", "east", "south", "west"];
+            block = block.WithProperty("facing", facings[(int)Math.Floor((player.Yaw.Degrees + 45) / 90) % 4]);
+        }
 
         switch (Face) // TODO fix this for logs
         {
@@ -148,5 +186,36 @@ public partial class UseItemOnPacket
         {
             SequenceID = Sequence
         });
+    }
+    private async ValueTask ConsumePortalItemAsync(IPlayer player, ItemStack item)
+    {
+        var slot = this.Hand == InteractionHand.MainHand ? player.CurrentHeldItemSlot : (short)45;
+        if (item.Type == Material.EnderEye || player.GameMode != GameMode.Creative)
+        {
+            if (item.Type != Material.FlintAndSteel)
+                player.Inventory.RemoveItem(slot, 1);
+            else if (!item.Unbreakable && ShouldDamageTool(item))
+            {
+                var damage = ComponentBuilder.Damage;
+                damage.Value = item.Damage + 1;
+                item[DataComponentType.Damage] = damage;
+                var maxDamage = item.GetComponent<SimpleDataComponent<int>>(DataComponentType.MaxDamage)?.Value ?? item.Holder.MaxDamage;
+                if (damage.Value >= maxDamage)
+                    player.Inventory.RemoveItem(slot, 1);
+            }
+        }
+        await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
+        {
+            Slot = slot,
+            StateId = player.Inventory.StateId++,
+            SlotData = player.Inventory.GetItem(slot)
+        });
+    }
+
+    private static bool ShouldDamageTool(ItemStack item)
+    {
+        var enchantments = item.GetComponent<SimpleDataComponent<Enchantment[]>>(DataComponentType.Enchantments)?.Value;
+        var unbreaking = enchantments?.FirstOrDefault(enchantment => enchantment.Id == EnchantmentsRegistry.Unbreaking.Id).Level ?? 0;
+        return Globals.Random.NextDouble() < 1.0 / (Math.Max(0, unbreaking) + 1.0);
     }
 }

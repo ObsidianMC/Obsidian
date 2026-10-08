@@ -381,6 +381,7 @@ public sealed partial class Player : Avatar, IPlayer
                 HashedSeed = 0,
                 Flat = false,
                 Debug = false,
+                PortalCooldown = this.portalCooldown,
             },
             DataKept = dataKept,
         });
@@ -395,10 +396,16 @@ public sealed partial class Player : Avatar, IPlayer
         await Client.QueuePacketAsync(new PlayerPositionPacket
         {
             Position = Position,
-            Yaw = 0,
-            Pitch = 0,
+            Yaw = Yaw,
+            Pitch = Pitch,
+            Delta = this.preservePortalMotion ? VectorD.Zero : Motion,
+            Flags = 0,
+            // DELTA_X/Y/Z and ROTATE_DELTA preserve and rotate the client's velocity across a Nether portal.
+            RelativeFlags = this.preservePortalMotion ? NetherPortalRelativeFlags : 0,
             TeleportId = 0
         });
+
+        await Client.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
 
         Respawning = false;
     }

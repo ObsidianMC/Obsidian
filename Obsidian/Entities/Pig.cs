@@ -11,10 +11,8 @@ public sealed partial class Pig : Animal
     {
         base.Write(writer);
 
-        writer.WriteEntityMetadataType(17, EntityMetadataType.Boolean);
-        writer.WriteBoolean(HasSaddle);
-
-        writer.WriteEntityMetadataType(18, EntityMetadataType.VarInt);
+        // Saddles use equipment now; field 17 is boost time, followed by the client's default variant.
+        writer.WriteEntityMetadataType(17, EntityMetadataType.VarInt);
         writer.WriteVarInt(TotalTimeBoost);
     }
 }

@@ -122,6 +122,10 @@ public sealed class PacketBroadcaster(IServer server, IServerEnvironment environ
 
             }
         }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            // Normal service shutdown.
+        }
         catch (Exception e) when (e is not (OperationCanceledException or ObjectDisposedException))
         {
             await this.environment.OnServerCrashAsync(e);
