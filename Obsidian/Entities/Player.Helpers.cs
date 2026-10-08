@@ -61,8 +61,15 @@ public partial class Player
         writer.WriteInt("XpTotal", XpTotal);
 
         writer.WriteShort("Air", Air);
+        writer.WriteShort("AttackTime", AttackTime);
+        writer.WriteShort("DeathTime", DeathTime);
+        writer.WriteShort("HurtTime", HurtTime);
+        writer.WriteShort("SleepTimer", SleepTimer);
+        writer.WriteBool("Sleeping", Sleeping);
 
         writer.WriteFloat("Health", Health);
+        writer.WriteFloat("FallDistance", FallDistance);
+        writer.WriteFloat("XpP", XpP);
 
         writer.WriteFloat("foodExhaustionLevel", FoodExhaustionLevel);
         writer.WriteFloat("foodSaturationLevel", FoodSaturationLevel);
@@ -381,20 +388,21 @@ public partial class Player
         MovementFlags = (MovementFlags)compound.GetByte("MovementFlags");
         Sleeping = compound.GetBool("Sleeping");
         Air = compound.GetShort("Air");
-        AttackTime = compound.GetShort("AttackTime");
-        DeathTime = compound.GetShort("DeathTime");
+        AttackTime = compound.TryGetTagValue<short>("AttackTime", out var attackTime) ? attackTime : (short)0;
+        DeathTime = compound.TryGetTagValue<short>("DeathTime", out var deathTime) ? deathTime : (short)0;
         Health = compound.GetFloat("Health");
-        HurtTime = compound.GetShort("HurtTime");
-        SleepTimer = compound.GetShort("SleepTimer");
+        HurtTime = compound.TryGetTagValue<short>("HurtTime", out var hurtTime) ? hurtTime : (short)0;
+        SleepTimer = compound.TryGetTagValue<short>("SleepTimer", out var sleepTimer) ? sleepTimer : (short)0;
         FoodLevel = compound.GetInt("foodLevel");
         FoodTickTimer = compound.GetInt("foodTickTimer");
         GameMode = (GameMode)compound.GetInt("playerGameType");
         XpLevel = compound.GetInt("XpLevel");
         XpTotal = compound.GetInt("XpTotal");
-        FallDistance = compound.GetFloat("FallDistance");
+        FallDistance = compound.TryGetTagValue<float>("FallDistance", out var fallDistance) ? fallDistance : 0;
         FoodExhaustionLevel = compound.GetFloat("foodExhaustionLevel");
         FoodSaturationLevel = compound.GetFloat("foodSaturationLevel");
-        XpP = compound.GetInt("XpP");
+        XpP = compound.TryGetTagValue<float>("XpP", out var xpProgress) ? xpProgress :
+            compound.TryGetTagValue<int>("XpP", out var legacyXpProgress) ? legacyXpProgress : 0;
 
         var dimensionName = compound.GetString("Dimension");
         var parentWorld = this.Level is IDimension dimension ? dimension.ParentWorld as World : this.Level as World;
@@ -407,7 +415,7 @@ public partial class Player
                 this.Level.TryAddPlayer(this);
         }
         this.SeenCredits = compound.GetBool("seenCredits");
-        this.portalCooldown = Math.Max(0, compound.GetInt("PortalCooldown"));
+        this.portalCooldown = compound.TryGetTagValue<int>("PortalCooldown", out var savedCooldown) ? Math.Max(0, savedCooldown) : 0;
 
         compound.TryGetTag("Pos", out var posTag);
         Position = (posTag as NbtList) switch

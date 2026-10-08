@@ -96,7 +96,25 @@ public partial class UseItemOnPacket
                 }
             }
             if (used)
+            {
+                if (currentItem.Type is Material.FlintAndSteel or Material.FireCharge)
+                {
+                    var soundPosition = position + this.Face.ToVector();
+                    level.PacketBroadcaster.BroadcastToLevelInRange(level, soundPosition, new SoundPacket
+                    {
+                        SoundLocation = currentItem.Type == Material.FlintAndSteel
+                            ? "minecraft:item.flintandsteel.use" : "minecraft:item.firecharge.use",
+                        SoundPosition = new SoundPosition(soundPosition.X + 0.5, soundPosition.Y + 0.5, soundPosition.Z + 0.5),
+                        Category = SoundCategory.Blocks,
+                        Volume = 1,
+                        Pitch = currentItem.Type == Material.FlintAndSteel
+                            ? 0.8f + Random.Shared.NextSingle() * 0.4f
+                            : 0.8f + (Random.Shared.NextSingle() - Random.Shared.NextSingle()) * 0.2f,
+                        Seed = Random.Shared.NextInt64()
+                    });
+                }
                 await this.ConsumePortalItemAsync(player, currentItem);
+            }
             player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
             return;
         }
