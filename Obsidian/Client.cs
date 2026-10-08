@@ -75,8 +75,15 @@ public sealed partial class Client : IClient
     // The player's leave, once it was raised; see LeaveAsync.
     private TaskCompletionSource? leaving;
 
-    // Set once Disconnect ran; it may be called again (a shutdown disconnecting a client that already left).
-    private int disconnected;
+    // Set once Disconnect ran; it may be called again (a shutdown disconnecting a client that already left). Guarded by
+    // connectionLock together with registering the client, so a login that resumes after a disconnect doesn't register
+    // it again.
+    private bool disconnected;
+    private readonly Lock connectionLock = new();
+
+    // The client whose leave event is being raised on this flow, so a leave handler that disconnects the same player
+    // doesn't wait for the leave it's part of.
+    private static readonly AsyncLocal<Client?> raisingLeave = new();
 
     /// <summary>
     /// Used to handle packets while the client is in a <see cref="ClientState.Play"/> state.
@@ -327,8 +334,13 @@ public sealed partial class Client : IClient
 
     public void Disconnect()
     {
-        if (Interlocked.Exchange(ref this.disconnected, 1) == 1)
-            return;
+        lock (this.connectionLock)
+        {
+            if (this.disconnected)
+                return;
+
+            this.disconnected = true;
+        }
 
         cancellationSource.Cancel();
         Disconnected?.Invoke(this);
@@ -410,13 +422,20 @@ public sealed partial class Client : IClient
 
     private void InitializeId()
     {
-        this.Server.Connections.Remove(this.Id, out _);
+        lock (this.connectionLock)
+        {
+            // Login awaits, and the client may have disconnected meanwhile; it stays out of the connections then.
+            if (this.disconnected)
+                return;
 
-        this.Id = Obsidian.Server.GetNextEntityId();
+            this.Server.Connections.Remove(this.Id, out _);
 
-        this.Server.Connections.TryAdd(this.Id, this);
+            this.Id = Obsidian.Server.GetNextEntityId();
 
-        this.Logger = this.loggerFactory.CreateLogger($"Client({this.Id})");
+            this.Server.Connections.TryAdd(this.Id, this);
+
+            this.Logger = this.loggerFactory.CreateLogger($"Client({this.Id})");
+        }
     }
 
     private Player CreatePlayer(Guid uuid, string username, IWorld world) => new(uuid, username, this, world)
@@ -432,11 +451,12 @@ public sealed partial class Client : IClient
     /// <summary>
     /// Raises the player's leave event, which saves them, once however the connection ends: closed by the server
     /// (<see cref="DisconnectAsync"/>) or by the client (<see cref="Disconnect"/>). Every call returns the same leave, so
-    /// a later one waits for it, and the server's shutdown waits for it too (<see cref="Server.TrackLeave"/>).
+    /// a later one waits for it, and the server's shutdown waits for it too (<see cref="Server.TrackLeave"/>). A call from
+    /// a leave handler itself (kicking the player who's leaving) doesn't wait, since the leave waits for it.
     /// </summary>
     private Task LeaveAsync()
     {
-        if (this.Player is not Player player)
+        if (this.Player is not Player player || raisingLeave.Value == this)
             return Task.CompletedTask;
 
         var leave = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -454,6 +474,7 @@ public sealed partial class Client : IClient
     // Raises the leave event and completes the leave; it never throws.
     private async Task RaiseLeaveAsync(Player player, TaskCompletionSource leave)
     {
+        raisingLeave.Value = this;
         try
         {
             EventResult result;
