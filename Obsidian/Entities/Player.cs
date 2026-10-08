@@ -43,6 +43,16 @@ public sealed partial class Player : Avatar, IPlayer
     private const int MaximumChunkLoadsPerPass = 16;
     private static readonly TimeSpan ChunkLoadTimeBudget = TimeSpan.FromMilliseconds(5);
     private readonly SemaphoreSlim chunkUpdates = new(1, 1);
+
+    // Vanilla's chunk batch flow control (PlayerChunkSender): chunks go out in batches the client acknowledges with how
+    // many chunks a tick it can take, so a slow connection isn't flooded and later packets (keep-alives) don't wait
+    // behind megabytes of chunks. The client's rate tops up a quota every tick. One batch may be unacknowledged at first,
+    // ten once the client has answered. Guarded by chunkBatchLock, since acknowledgements arrive on the network thread.
+    private readonly Lock chunkBatchLock = new();
+    private float desiredChunksPerTick = 9;
+    private float chunkBatchQuota;
+    private int unacknowledgedChunkBatches;
+    private int maxUnacknowledgedChunkBatches = 1;
     private (int X, int Z)? chunkCacheCenter;
     private int chunkViewDistance;
 
@@ -867,6 +877,15 @@ public sealed partial class Player : Avatar, IPlayer
     /// </summary>
     internal async Task SendPendingChunksAsync()
     {
+        lock (this.chunkBatchLock)
+        {
+            if (this.unacknowledgedChunkBatches < this.maxUnacknowledgedChunkBatches)
+            {
+                var cap = Math.Max(1, this.desiredChunksPerTick);
+                this.chunkBatchQuota = Math.Min(this.chunkBatchQuota + this.desiredChunksPerTick, cap);
+            }
+        }
+
         if (this.pendingChunks.Count == 0 || !await this.chunkUpdates.WaitAsync(0))
             return;
 
@@ -907,15 +926,29 @@ public sealed partial class Player : Avatar, IPlayer
                 this.pendingChunkLoads.Enqueue(value);
         }
 
+        int allowed;
+        lock (this.chunkBatchLock)
+        {
+            allowed = this.unacknowledgedChunkBatches < this.maxUnacknowledgedChunkBatches
+                ? (int)Math.Floor(this.chunkBatchQuota)
+                : 0;
+        }
+
+        if (allowed <= 0)
+            return false;
+
+        var batch = new List<IChunk>();
         var started = Stopwatch.GetTimestamp();
-        for (var count = 0; count < MaximumChunkLoadsPerPass && this.pendingChunkLoads.TryDequeue(out var value); count++)
+        for (var count = 0;
+             count < MaximumChunkLoadsPerPass && batch.Count < allowed && this.pendingChunkLoads.TryDequeue(out var value);
+             count++)
         {
             if (this.pendingChunks.Contains(value))
             {
                 NumericsHelper.LongToInts(value, out var x, out var z);
                 if (await Level.GetChunkAsync(x, z) is IChunk { IsGenerated: true } chunk)
                 {
-                    await Client.QueuePacketAsync(new LevelChunkWithLightPacket(chunk));
+                    batch.Add(chunk);
                     LoadedChunks.Add(value);
                     this.pendingChunks.Remove(value);
                 }
@@ -925,7 +958,39 @@ public sealed partial class Player : Avatar, IPlayer
                 break;
         }
 
+        if (batch.Count > 0)
+        {
+            lock (this.chunkBatchLock)
+            {
+                this.unacknowledgedChunkBatches++;
+                this.chunkBatchQuota -= batch.Count;
+            }
+
+            await Client.QueuePacketAsync(new ChunkBatchStartPacket());
+            foreach (var chunk in batch)
+                await Client.QueuePacketAsync(new LevelChunkWithLightPacket(chunk));
+
+            await Client.QueuePacketAsync(new ChunkBatchFinishedPacket { BatchSize = batch.Count });
+        }
+
         return this.pendingChunks.Count == 0;
+    }
+
+    /// <summary>
+    /// Takes the client's acknowledgement of a chunk batch and the chunks a tick it asks for (vanilla's
+    /// <c>onChunkBatchReceivedByClient</c>).
+    /// </summary>
+    internal void OnChunkBatchReceived(float chunksPerTick)
+    {
+        lock (this.chunkBatchLock)
+        {
+            this.unacknowledgedChunkBatches = Math.Max(0, this.unacknowledgedChunkBatches - 1);
+            this.desiredChunksPerTick = float.IsNaN(chunksPerTick) ? .01f : Math.Clamp(chunksPerTick, .01f, 64);
+            if (this.unacknowledgedChunkBatches == 0)
+                this.chunkBatchQuota = 1;
+
+            this.maxUnacknowledgedChunkBatches = 10;
+        }
     }
 
     // Vanilla's ChunkTrackingView.contains, which counts the neighbors the client needs to render the edge: a cylinder

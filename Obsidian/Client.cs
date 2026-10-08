@@ -100,7 +100,10 @@ public sealed partial class Client : IClient
     /// <summary>
     /// Whether the client has compression enabled on the Minecraft stream.
     /// </summary>
-    public bool CompressionEnabled { get; private set; }
+    public bool CompressionEnabled => this.compressionThreshold >= 0;
+
+    // The size from which packets are compressed, or -1 before compression is enabled (see EnableCompression).
+    private volatile int compressionThreshold = -1;
 
     /// <summary>
     /// Whether the stream has encryption enabled. This can be set to false when the client is connecting through LAN or when the server is in offline mode.
@@ -218,6 +221,7 @@ public sealed partial class Client : IClient
 
         this.Player = this.CreatePlayer(GuidHelper.FromStringHash($"OfflinePlayer:{username}"), username, world);
 
+        this.EnableCompression();
         this.SendPacket(new LoginFinishedPacket(Player.Uuid, Player.Username)
         {
             SkinProperties = this.Player.SkinProperties,
@@ -269,6 +273,22 @@ public sealed partial class Client : IClient
     }
 
     public bool SendPacket(IClientboundPacket packet) => this.SendAsync(packet);
+
+    /// <summary>
+    /// Tells the client to compress packets from the configured size (vanilla's network compression threshold; a
+    /// negative one leaves compression off) and frames every later packet in both directions that way. Like vanilla, it's
+    /// sent right before the login finishes.
+    /// </summary>
+    private void EnableCompression()
+    {
+        var threshold = this.Server.Configuration.Network.CompressionThreshold;
+        if (threshold < 0 || this.CompressionEnabled)
+            return;
+
+        // The packet itself still goes out uncompressed. Nothing else is sent or received during login meanwhile.
+        this.SendPacket(new LoginCompressionPacket(threshold));
+        this.compressionThreshold = threshold;
+    }
 
     internal void Login(MojangProfile user)
     {

@@ -57,7 +57,10 @@ public partial class Client
 
         lock (this.sendLock)
         {
-            this.sendBufferMain.WritePacket(packet);
+            if (this.compressionThreshold >= 0)
+                this.sendBufferMain.WriteCompressedPacket(packet, this.compressionThreshold);
+            else
+                this.sendBufferMain.WritePacket(packet);
 
             if (this.sending)
                 return true;
@@ -147,6 +150,9 @@ public partial class Client
             var length = this.receiveBuffer.ReadVarInt();
             if (length == 0)
                 throw new UnreachableException("Packet length returned 0");
+
+            if (this.compressionThreshold >= 0)
+                return NetworkBuffer.ReadCompressedPacket(this.receiveBuffer.Read(length).GetBuffer());
 
             var packetId = this.receiveBuffer.ReadVarInt();
 
@@ -240,6 +246,7 @@ public partial class Client
 
             this.receiveBuffer.Reserve(MaxBufferSize);
 
+            this.EnableCompression();
             this.SendPacket(new LoginFinishedPacket(Player.Uuid, Player.Username)
             {
                 SkinProperties = this.Player.SkinProperties,

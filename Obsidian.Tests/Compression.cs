@@ -42,7 +42,7 @@ public sealed class Compression(ITestOutputHelper output)
             using var innerStream = new NetworkBuffer(ReadCompressed(buffer, innerDataLength, innerPacketLength));
 
             //Make sure packet id matches.
-            Assert.Equal(115, innerStream.ReadVarInt());
+            Assert.Equal(bundledPacket.Packets[i].Id, innerStream.ReadVarInt());
 
             var chatMessage = innerStream.ReadChat();
 
@@ -53,6 +53,29 @@ public sealed class Compression(ITestOutputHelper output)
         }
 
         AssertDelimiter(buffer);
+    }
+
+    [Theory(DisplayName = "Packets round-trip through compressed framing")]
+    [InlineData(10)]
+    [InlineData(4000)]
+    public void CompressedFramingRoundTrip(int messageLength)
+    {
+        var message = new string('x', messageLength);
+        var chat = new SystemChatPacket(message, false);
+        using var buffer = new NetworkBuffer();
+        buffer.WriteCompressedPacket(chat, 256);
+        buffer.Reset();
+
+        var frameLength = buffer.ReadVarInt();
+        var packet = NetworkBuffer.ReadCompressedPacket(buffer.Read(frameLength).GetBuffer());
+
+        // Only the packet above the threshold is compressed, which makes this one far smaller than its text.
+        if (messageLength > 256)
+            Assert.True(frameLength < messageLength / 4);
+
+        Assert.Equal(chat.Id, packet.Id);
+        Assert.Equal(message, packet.NetworkBuffer.ReadChat().Text);
+        Assert.False(packet.NetworkBuffer.ReadBoolean());
     }
 
     private static byte[] ReadCompressed(NetworkBuffer readStream, int dataLength, int packetLength)
