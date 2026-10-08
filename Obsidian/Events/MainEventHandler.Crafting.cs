@@ -275,7 +275,15 @@ public partial class MainEventHandler
             return;
 
         if (width == 3 && args.Container == args.Player.Inventory)
+        {
+            int before = item.Count;
             StoreCraftingItem(grid, item, 1, 10);
+            if (item.Count == before)
+            {
+                bool fromMain = args.ClickedSlot >= 9 && args.ClickedSlot < 36;
+                StoreCraftingItem(args.Player.Inventory, item, fromMain ? 36 : 9, fromMain ? 45 : 36);
+            }
+        }
         else
         {
             int start = args.ClickedSlot >= 9 && args.ClickedSlot < 36 && args.Container == args.Player.Inventory ? 36 : 9;
