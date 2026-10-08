@@ -1,4 +1,5 @@
 using Obsidian.API.Effects;
+using Obsidian.API.Inventory;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Entities.AI;
@@ -7,6 +8,19 @@ namespace Obsidian.Entities;
 
 public class Living : Entity, ILiving
 {
+    internal CombatDamageKind? IncomingDamageKind { get; private set; }
+    internal ItemStack? IncomingWeapon { get; private set; }
+    internal int AcceptedDamageCount { get; set; }
+
+    internal virtual async ValueTask DamageCombatAsync(IEntity source, float amount, CombatDamageKind kind, ItemStack? weapon = null)
+    {
+        var previousKind = IncomingDamageKind;
+        var previousWeapon = IncomingWeapon;
+        IncomingDamageKind = kind;
+        IncomingWeapon = weapon;
+        try { await DamageAsync(source, amount); }
+        finally { IncomingDamageKind = previousKind; IncomingWeapon = previousWeapon; }
+    }
     public LivingBitMask LivingBitMask { get; set; }
 
     /// <summary>
@@ -59,7 +73,7 @@ public class Living : Entity, ILiving
                 if (this is Mob mob)
                     await mob.DamageEnvironmentAsync(amount);
                 else
-                    await DamageAsync(this, amount);
+                    await DamageCombatAsync(this, amount, CombatDamageKind.Magic);
             }
             if (potion == (int)PotionEffect.Wither - 1 && Alive &&
                 data.CurrentDuration % Math.Max(1, 40 >> Math.Min(30, data.EffectData.Amplifier)) == 0)
@@ -67,7 +81,7 @@ public class Living : Entity, ILiving
                 if (this is Mob mob)
                     await mob.DamageEnvironmentAsync(this is Witch ? 0.15f : 1);
                 else
-                    await DamageAsync(this, 1);
+                    await DamageCombatAsync(this, 1, CombatDamageKind.Magic);
             }
             data.CurrentDuration--;
 
@@ -90,10 +104,7 @@ public class Living : Entity, ILiving
         {
             if (fireTicks % 20 == 0 && !HasPotionEffect((int)PotionEffect.FireResistance - 1))
             {
-                if (this is Mob mob)
-                    await mob.DamageEnvironmentAsync(1);
-                else
-                    await DamageAsync(this, 1);
+                await DamageCombatAsync(this, 1, CombatDamageKind.Fire);
             }
             fireTicks--;
         }

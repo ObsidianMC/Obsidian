@@ -108,6 +108,9 @@ internal sealed partial class PlayClientHandler : ClientHandler
             case 64:
                 await HandleFromPoolAsync<UseItemPacket>(data);
                 break;
+            case 65:
+                await HandleFromPoolAsync<CustomClickActionPacket>(data);
+                break;
             default:
                 if (!Packets.TryGetValue(id, out var packet))
                     return false;

@@ -243,6 +243,39 @@ public sealed class MainCommandModule : CommandModuleBase
         }
     }
 
+    [Command("clearinventory")]
+    [CommandInfo("Clears your inventory, armor, offhand, and cursor.", "/clearinventory")]
+    [IssuerScope(CommandIssuers.Client)]
+    [RequirePermission(op: true, permissions: "obsidian.clearinventory")]
+    public async Task ClearInventoryAsync()
+    {
+        if (this.Player is not Player player)
+            return;
+
+        player.CancelEating();
+        player.CancelWeaponUse();
+        for (var slot = 0; slot < player.Inventory.Size; slot++)
+            player.Inventory.SetItem(slot, null);
+        player.CarriedItem = null;
+        player.DraggedSlots.Clear();
+
+        await player.Client.QueuePacketAsync(new ContainerSetContentPacket(0, player.Inventory.ToList())
+        {
+            StateId = player.Inventory.StateId++,
+            CarriedItem = null
+        });
+        if (player.OpenedContainer is { } container)
+        {
+            await player.Client.QueuePacketAsync(new ContainerSetContentPacket(player.CurrentContainerId,
+                container.Concat(player.Inventory.Skip(9).Take(36)).ToList())
+            {
+                StateId = player.Inventory.StateId++,
+                CarriedItem = null
+            });
+        }
+        await player.SendMessageAsync("Inventory cleared.");
+    }
+
     [Command("gamemode")]
     [CommandInfo("Change your gamemode.", "/gamemode <survival/creative/adventure/spectator>")]
     [IssuerScope(CommandIssuers.Client)]

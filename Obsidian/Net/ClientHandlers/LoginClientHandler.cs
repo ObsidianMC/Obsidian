@@ -64,7 +64,8 @@ internal sealed partial class LoginClientHandler : ClientHandler
         });
 
         //This is very inconvenient
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.Dialog.CodecKey, CodecRegistry.Dialog.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
+        var dialogs = this.Server.CreateDialogConfiguration();
+        this.SendPacket(new RegistryDataPacket(CodecRegistry.Dialog.CodecKey, dialogs.Codecs) { WriteCodecs = true });
         this.SendPacket(new RegistryDataPacket(CodecRegistry.Dimensions.CodecKey, CodecRegistry.Dimensions.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.Biomes.CodecKey, CodecRegistry.Biomes.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.ChatType.CodecKey, CodecRegistry.ChatType.All.ToDictionary(x => x.Key, x => (ICodec)x.Value)));
@@ -89,7 +90,7 @@ internal sealed partial class LoginClientHandler : ClientHandler
         this.SendPacket(new RegistryDataPacket("minecraft:instrument", InstrumentsRegistry.All.Select(instrument => instrument.Identifier)));
         this.SendPacket(new RegistryDataPacket("minecraft:jukebox_song", Obsidian.Registries.JukeboxSongsRegistry.Identifiers));
 
-        this.SendPacket(UpdateTagsPacket.ClientboundConfiguration with { Tags = TagsRegistry.Categories });
+        this.SendPacket(UpdateTagsPacket.ClientboundConfiguration with { Tags = dialogs.Tags });
 
         this.SendPacket(FinishConfigurationPacket.Default);
     }

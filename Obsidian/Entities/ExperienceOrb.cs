@@ -43,8 +43,9 @@ public sealed partial class ExperienceOrb : Entity
                 Level.LevelData.Time - player.LastExperiencePickupTick >= 2)
             {
                 player.LastExperiencePickupTick = Level.LevelData.Time;
-                player.XpTotal += Value;
-                var points = player.XpP * XpHelper.ExperienceRequiredForNextLevel(player.XpLevel) + Value;
+                var experience = await player.RepairWithMendingAsync(Value);
+                player.XpTotal += experience;
+                var points = player.XpP * XpHelper.ExperienceRequiredForNextLevel(player.XpLevel) + experience;
                 while (points >= XpHelper.ExperienceRequiredForNextLevel(player.XpLevel))
                 {
                     points -= XpHelper.ExperienceRequiredForNextLevel(player.XpLevel);

@@ -118,6 +118,7 @@ public partial class Player
     {
         if (damageCooldown > 0) damageCooldown--;
         if (HurtTime > 0) HurtTime--;
+        await TickCombatAsync();
         if (pendingRespawnChunks && !Respawning && --respawnChunkRetryTicks <= 0)
         {
             pendingRespawnChunks = !await UpdateChunksAsync();
@@ -128,6 +129,7 @@ public partial class Player
         {
             foodPosition = null;
             CancelEating();
+            CancelWeaponUse();
             return;
         }
         TimeSinceRest = Sleeping ? 0 : (int)Math.Min(int.MaxValue, (long)TimeSinceRest + 1);
@@ -223,7 +225,7 @@ public partial class Player
                 {
                     FoodTickTimer = 0;
                     var minimumHealth = Level.LevelData.Difficulty switch { Difficulty.Easy => 10, Difficulty.Normal => 1, _ => 0 };
-                    if (Health > minimumHealth) await DamageAsync(this, Math.Min(1, Health - minimumHealth));
+                    if (Health > minimumHealth) await DamageCombatAsync(this, Math.Min(1, Health - minimumHealth), CombatDamageKind.Starvation);
                 }
             }
             else FoodTickTimer = 0;

@@ -6,6 +6,9 @@ namespace Obsidian.API;
 
 public interface IPlayer : ILiving
 {
+    public ValueTask ShowDialogAsync(Registry.Codecs.Dialogs.DialogElement dialog);
+    public ValueTask ClearDialogAsync();
+
     public byte CurrentContainerId { get; }
     public IClient Client { get; }
     public IScoreboard? CurrentScoreboard { get; set; }

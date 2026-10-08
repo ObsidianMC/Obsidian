@@ -16,6 +16,25 @@ public partial class MainEventHandler
         if (args.IsCancelled)
             return;
 
+        if (args.Container == args.Player.Inventory && args.ClickedSlot is >= 5 and <= 8 &&
+            args.ClickType != ClickType.Clone)
+        {
+            var equipped = args.Item;
+            var locked = args.Player.GameMode != GameMode.Creative && args.Player.Alive &&
+                CombatItems.EnchantmentLevel(equipped, EnchantmentsRegistry.BindingCurse) > 0;
+            var incoming = args.ClickType == ClickType.Pickup ? args.Player.CarriedItem :
+                args.ClickType == ClickType.Swap && args.Button is >= 0 and <= 8 ? args.Player.Inventory.GetItem(36 + args.Button) :
+                args.ClickType == ClickType.Swap && args.Button == 40 ? args.Player.GetOffHandItem() : null;
+            if (locked || !incoming.IsNullOrAir() && CombatItems.PlayerArmorSlot(incoming) != args.ClickedSlot)
+            {
+                await args.Player.Client.QueuePacketAsync(new Obsidian.Net.Packets.Play.Clientbound.ContainerSetContentPacket(0, args.Player.Inventory.ToList())
+                { StateId = args.StateId + 1, CarriedItem = args.Player.CarriedItem });
+                return;
+            }
+        }
+
+        if (await HandleEnchantingClickAsync(args)) return;
+
         if (await HandleCraftingAsync(args))
             return;
 
@@ -132,6 +151,8 @@ public partial class MainEventHandler
             if (i == 0 && (container is CraftingTable || container == player.Inventory))
                 continue;
             ItemStack? item = container[i];
+            if (container == player.Inventory && i is >= 5 and <= 8 && player.GameMode != GameMode.Creative &&
+                CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.BindingCurse) > 0) continue;
             if (item != carriedItem)
                 continue;
 
@@ -156,6 +177,8 @@ public partial class MainEventHandler
                 if (i == 0)
                     continue;
                 var item = player.Inventory.GetItem(i);
+                if (i is >= 5 and <= 8 && player.GameMode != GameMode.Creative &&
+                    CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.BindingCurse) > 0) continue;
                 if (item != carriedItem)
                     continue;
 

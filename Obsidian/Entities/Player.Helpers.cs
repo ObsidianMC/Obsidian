@@ -59,6 +59,7 @@ public partial class Player
         writer.WriteInt("foodTickTimer", FoodTickTimer);
         writer.WriteInt("XpLevel", XpLevel);
         writer.WriteInt("XpTotal", XpTotal);
+        writer.WriteInt("XpSeed", EnchantmentSeed);
 
         writer.WriteShort("Air", Air);
         writer.WriteShort("AttackTime", AttackTime);
@@ -400,6 +401,7 @@ public partial class Player
         GameMode = (GameMode)compound.GetInt("playerGameType");
         XpLevel = compound.GetInt("XpLevel");
         XpTotal = compound.GetInt("XpTotal");
+        if (compound.TryGetTagValue<int>("XpSeed", out var enchantmentSeed)) EnchantmentSeed = enchantmentSeed;
         FallDistance = compound.TryGetTagValue<float>("FallDistance", out var fallDistance) ? fallDistance : 0;
         FoodExhaustionLevel = compound.GetFloat("foodExhaustionLevel");
         FoodSaturationLevel = compound.GetFloat("foodSaturationLevel");

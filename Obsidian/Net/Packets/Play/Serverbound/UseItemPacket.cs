@@ -28,6 +28,6 @@ public partial class UseItemPacket
         };
         await server.EventDispatcher.ExecuteEventAsync(args);
         if (!args.IsCancelled && player is Obsidian.Entities.Player concrete)
-            concrete.StartEating(Hand);
+            await concrete.StartUsingItemAsync(Hand);
     }
 }

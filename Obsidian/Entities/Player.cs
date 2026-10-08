@@ -242,6 +242,10 @@ public sealed partial class Player : Avatar, IPlayer
 
     public async ValueTask OpenInventoryAsync(BaseContainer container)
     {
+        if (OpenedContainer is EnchantmentTable previousTable)
+            await Obsidian.Events.MainEventHandler.ReturnEnchantingItemsAsync(this, previousTable);
+        if (container is EnchantmentTable table)
+            container = new EnchantmentTable { BlockPosition = table.BlockPosition, Title = table.Title, CustomName = table.CustomName };
         OpenedContainer = container;
 
         var nextId = GetNextContainerId();
@@ -253,10 +257,18 @@ public sealed partial class Player : Avatar, IPlayer
                 container.Concat(this.Inventory.Skip(9).Take(36)).ToList()));
         else if (container.HasItems())
             await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId, container.ToList()));
+        if (container is EnchantmentTable)
+        {
+            await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId, container.Concat(Inventory.Skip(9).Take(36)).ToList()));
+            await RefreshEnchantingAsync();
+        }
     }
 
     public async override ValueTask TeleportAsync(VectorD pos)
     {
+        FallDistance = 0;
+        combatPosition = null;
+        CancelWeaponUse();
         Vehicle?.Dismount(this);
         LastPosition = Position;
         Position = pos;
@@ -283,6 +295,9 @@ public sealed partial class Player : Avatar, IPlayer
 
     public async override ValueTask TeleportAsync(IEntity to)
     {
+        FallDistance = 0;
+        combatPosition = null;
+        CancelWeaponUse();
         LastPosition = Position;
         Position = to.Position;
 
@@ -365,6 +380,8 @@ public sealed partial class Player : Avatar, IPlayer
     internal async Task TransferDimensionAsync(ILevel destination)
     {
         CancelEating();
+        CancelWeaponUse();
+        combatPosition = null;
         Vehicle?.Dismount(this);
         var origin = Level;
         var spawn = destination.LevelData.SpawnPosition;
@@ -402,7 +419,12 @@ public sealed partial class Player : Avatar, IPlayer
         {
             if (!Alive)
             {
+                // Death respawns must create fresh client state rather than retain the dead player's metadata.
+                dataKept = DataKept.None;
                 CancelEating();
+                CancelWeaponUse();
+                combatPosition = null;
+                attackTicks = 0;
                 Vehicle?.Dismount(this);
                 ClearPotionEffects();
                 damageCooldown = 0;
@@ -493,6 +515,12 @@ public sealed partial class Player : Avatar, IPlayer
     {
         Health = 0;
         CancelEating();
+        CancelWeaponUse();
+        if (OpenedContainer is EnchantmentTable table)
+        {
+            await Obsidian.Events.MainEventHandler.ReturnEnchantingItemsAsync(this, table);
+            OpenedContainer = null;
+        }
         Vehicle?.Dismount(this);
         await Client.QueuePacketAsync(new SetHealthPacket(0, FoodLevel, FoodSaturationLevel));
         await Client.QueuePacketAsync(new PlayerCombatKillPacket { PlayerID = EntityId, Message = deathMessage });
@@ -702,11 +730,13 @@ public sealed partial class Player : Avatar, IPlayer
     public async override ValueTask UpdateAsync(VectorD position, MovementFlags movementFlags)
     {
         if (!Alive || Respawning) return;
+        if (!double.IsFinite(position.X) || !double.IsFinite(position.Y) || !double.IsFinite(position.Z)) return;
         if (Vehicle != null)
             position = Position;
         var oldPosition = Position;
         var oldMovementFlags = MovementFlags;
         await base.UpdateAsync(position, movementFlags);
+        await UpdateFallAsync(oldPosition, movementFlags);
         if (Level is AbstractLevel events) await events.EmitMovementGameEventsAsync(this, oldPosition, oldMovementFlags);
 
         HeadY = position.Y + 1.62f;
@@ -719,11 +749,13 @@ public sealed partial class Player : Avatar, IPlayer
     public async override ValueTask UpdateAsync(VectorD position, Angle yaw, Angle pitch, MovementFlags movementFlags)
     {
         if (!Alive || Respawning) return;
+        if (!double.IsFinite(position.X) || !double.IsFinite(position.Y) || !double.IsFinite(position.Z)) return;
         if (Vehicle != null)
             position = Position;
         var oldPosition = Position;
         var oldMovementFlags = MovementFlags;
         await base.UpdateAsync(position, yaw, pitch, movementFlags);
+        await UpdateFallAsync(oldPosition, movementFlags);
         if (Level is AbstractLevel events) await events.EmitMovementGameEventsAsync(this, oldPosition, oldMovementFlags);
 
         HeadY = position.Y + 1.62f;
@@ -737,6 +769,8 @@ public sealed partial class Player : Avatar, IPlayer
     {
         if (!Alive || Respawning) return;
         await base.UpdateAsync(yaw, pitch, movementFlags);
+        MovementFlags = movementFlags;
+        await UpdateFallAsync(Position, movementFlags);
 
         await PickupNearbyItemsAsync();
     }

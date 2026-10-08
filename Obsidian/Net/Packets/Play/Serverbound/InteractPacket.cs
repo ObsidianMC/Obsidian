@@ -37,7 +37,7 @@ public partial class InteractPacket
 
     public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
-        var entity = player.GetEntitiesNear(4).FirstOrDefault(x => x.EntityId == EntityId); // TODO check if the entity is within range and in vision/not being blocked by a wall
+        var entity = player.GetEntitiesNear(player.GameMode == GameMode.Creative ? 8 : 6).FirstOrDefault(x => x.EntityId == EntityId);
 
         entity ??= player.GetEntitiesNear(24).OfType<EnderDragon>()
             .SelectMany(dragon => dragon.Parts)
@@ -56,7 +56,14 @@ public partial class InteractPacket
                 break;
 
             case InteractionType.Attack:
-                await server.EventDispatcher.ExecuteEventAsync(new PlayerAttackEntityEventArgs(player, entity, server, Sneaking));
+                var attack = new PlayerAttackEntityEventArgs(player, entity, server, Sneaking);
+                if (player is Player combatPlayer)
+                {
+                    if (!combatPlayer.CanAttack(entity)) return;
+                    (attack.Damage, attack.IsCrit) = combatPlayer.GetAttackDamage(entity);
+                }
+                else attack.Damage = 1;
+                await server.EventDispatcher.ExecuteEventAsync(attack);
                 break;
 
             case InteractionType.InteractAt:

@@ -1,8 +1,13 @@
 ﻿namespace Obsidian.API.Events;
 
-//TODO check if player crits and calculate damage
 public class PlayerAttackEntityEventArgs : EntityEventArgs
 {
+    internal Inventory.ItemStack? Weapon { get; init; }
+    internal int WeaponSlot { get; init; } = -1;
+    internal bool PiercingAttack { get; init; }
+    internal bool ChargeAttack { get; init; }
+    internal bool ChargeKnockback { get; init; }
+    internal bool ChargeDismount { get; init; }
     /// <summary>
     /// The player who interacted with the entity.
     /// </summary>

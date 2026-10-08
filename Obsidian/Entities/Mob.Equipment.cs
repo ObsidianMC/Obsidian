@@ -107,16 +107,7 @@ public partial class Mob
 
     protected static float GetWeaponDamage(ItemStack item)
     {
-        var name = item.Holder.UnlocalizedName.Replace("minecraft:", "", StringComparison.Ordinal);
-        var separator = name.IndexOf('_');
-        var material = separator < 0 ? "" : name[..separator];
-        var tier = material switch { "wooden" or "golden" => 0, "stone" or "copper" => 1, "iron" => 2, "diamond" => 3, "netherite" => 4, _ => 0 };
-        if (name.EndsWith("_sword", StringComparison.Ordinal)) return 3 + tier;
-        if (name.EndsWith("_spear", StringComparison.Ordinal)) return tier;
-        if (name.EndsWith("_shovel", StringComparison.Ordinal)) return 1.5f + tier;
-        if (name.EndsWith("_pickaxe", StringComparison.Ordinal)) return 1 + tier;
-        if (name.EndsWith("_axe", StringComparison.Ordinal)) return tier + (material is "stone" or "copper" ? 7 : material is "diamond" or "netherite" ? 5 : 6);
-        return item.Type switch { Material.Trident => 8, Material.Mace => 5, _ => 0 };
+        return CombatItems.Attribute(item, "attack_damage", "mainhand");
     }
 
     public ItemStack GetEquipment(EquipmentSlot slot) => equipment.GetValueOrDefault(slot, ItemStack.Air);
@@ -157,16 +148,11 @@ public partial class Mob
     internal bool DamageEquipment(EquipmentSlot slot, int amount)
     {
         var item = GetEquipment(slot);
-        var maximum = item.GetComponent<SimpleDataComponent<int>>(DataComponentType.MaxDamage)?.Value ?? 0;
-        if (item.IsAir || item.Unbreakable || maximum == 0)
-            return false;
-        var damage = ComponentBuilder.Damage;
-        damage.Value = item.Damage + amount;
-        item[DataComponentType.Damage] = damage;
-        if (damage.Value < maximum)
-            return false;
-        SetEquipment(slot, ItemStack.Air);
-        return true;
+        var previous = item.Damage;
+        var broke = CombatItems.HurtItem(item, amount, slot is not EquipmentSlot.MainHand and not EquipmentSlot.OffHand);
+        if (broke && item.Count == 0) SetEquipment(slot, ItemStack.Air);
+        else if (item.Damage != previous) SynchronizeEquipment();
+        return broke;
     }
 
     protected void DropItem(Material material, int count = 1)

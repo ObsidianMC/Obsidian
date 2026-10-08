@@ -70,7 +70,7 @@ public partial class Mob
                 creeper.FuseTicks = Math.Max(0, Math.Min(creeper.Fuse - 5, creeper.FuseTicks + (int)(fallDistance * 1.5f)));
             fallDistance = 0;
             if (damage > 0 && TakesFallDamage && this is not Chicken)
-                await DamageEnvironmentAsync(damage);
+                await DamageCombatAsync(this, damage, CombatDamageKind.Fall);
         }
         else if (LastPosition.Y > Position.Y)
             fallDistance += (float)(LastPosition.Y - Position.Y);
