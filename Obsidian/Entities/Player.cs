@@ -36,10 +36,12 @@ public sealed partial class Player : Avatar, IPlayer
     /// </summary>
     public ConcurrentHashSet<long> LoadedChunks { get; internal set; } = [];
 
-    // The chunks in view that weren't generated when they were asked for, sent once they are, and the center and view
-    // distance last sent to the client. Guarded by chunkUpdates, which keeps packet handlers and the level tick from
-    // updating the client's chunks at the same time.
+    // Unsent chunks, the current nearest-first loading pass, and the client's view. Guarded by chunkUpdates so packet
+    // handlers and the level tick can't update the client's chunks at the same time.
     private readonly HashSet<long> pendingChunks = [];
+    private readonly Queue<long> pendingChunkLoads = [];
+    private const int MaximumChunkLoadsPerPass = 16;
+    private static readonly TimeSpan ChunkLoadTimeBudget = TimeSpan.FromMilliseconds(5);
     private readonly SemaphoreSlim chunkUpdates = new(1, 1);
     private (int X, int Z)? chunkCacheCenter;
     private int chunkViewDistance;
@@ -807,6 +809,7 @@ public sealed partial class Player : Avatar, IPlayer
 
                 LoadedChunks.Clear();
                 this.pendingChunks.Clear();
+                this.pendingChunkLoads.Clear();
                 this.chunkCacheCenter = null;
             }
 
@@ -816,11 +819,15 @@ public sealed partial class Player : Avatar, IPlayer
             if (this.chunkCacheCenter != (centerX, centerZ))
             {
                 this.chunkCacheCenter = (centerX, centerZ);
+                this.pendingChunkLoads.Clear();
                 await Client.QueuePacketAsync(new SetChunkCacheCenterPacket(centerX, centerZ));
             }
 
             // Like vanilla, at least 2.
-            this.chunkViewDistance = Math.Max(2, distance < 1 ? ClientInformation.ViewDistance : distance);
+            var viewDistance = Math.Max(2, distance < 1 ? ClientInformation.ViewDistance : distance);
+            if (this.chunkViewDistance != viewDistance)
+                this.pendingChunkLoads.Clear();
+            this.chunkViewDistance = viewDistance;
 
             foreach (var value in LoadedChunks)
             {
@@ -877,32 +884,44 @@ public sealed partial class Player : Avatar, IPlayer
         }
     }
 
-    // Sends the pending chunks that are generated, nearest to the center first, and asks for the others again (generation
-    // only queues them once). Returns whether none are left. Called under chunkUpdates.
+    // Bound disk reads and packet queuing so login and movement don't wait for the entire view. Finish a pass before
+    // retrying ungenerated chunks, so they can't prevent the rest of the view from being requested. Called under chunkUpdates.
     private async Task<bool> SendReadyChunksAsync()
     {
         if (this.pendingChunks.Count == 0 || this.chunkCacheCenter is not var (centerX, centerZ))
             return this.pendingChunks.Count == 0;
 
-        var chunks = this.pendingChunks.ToArray();
-        var distances = new int[chunks.Length];
-        for (var i = 0; i < chunks.Length; i++)
+        if (this.pendingChunkLoads.Count == 0)
         {
-            NumericsHelper.LongToInts(chunks[i], out var x, out var z);
-            distances[i] = (x - centerX) * (x - centerX) + (z - centerZ) * (z - centerZ);
+            var chunks = this.pendingChunks.ToArray();
+            var distances = new int[chunks.Length];
+            for (var i = 0; i < chunks.Length; i++)
+            {
+                NumericsHelper.LongToInts(chunks[i], out var x, out var z);
+                distances[i] = (x - centerX) * (x - centerX) + (z - centerZ) * (z - centerZ);
+            }
+
+            Array.Sort(distances, chunks);
+            foreach (var value in chunks)
+                this.pendingChunkLoads.Enqueue(value);
         }
 
-        Array.Sort(distances, chunks);
-
-        foreach (var value in chunks)
+        var started = Stopwatch.GetTimestamp();
+        for (var count = 0; count < MaximumChunkLoadsPerPass && this.pendingChunkLoads.TryDequeue(out var value); count++)
         {
-            NumericsHelper.LongToInts(value, out var x, out var z);
-            if (await Level.GetChunkAsync(x, z) is not IChunk chunk || !chunk.IsGenerated)
-                continue;
+            if (this.pendingChunks.Contains(value))
+            {
+                NumericsHelper.LongToInts(value, out var x, out var z);
+                if (await Level.GetChunkAsync(x, z) is IChunk { IsGenerated: true } chunk)
+                {
+                    await Client.QueuePacketAsync(new LevelChunkWithLightPacket(chunk));
+                    LoadedChunks.Add(value);
+                    this.pendingChunks.Remove(value);
+                }
+            }
 
-            await Client.QueuePacketAsync(new LevelChunkWithLightPacket(chunk));
-            LoadedChunks.Add(value);
-            this.pendingChunks.Remove(value);
+            if (Stopwatch.GetElapsedTime(started) >= ChunkLoadTimeBudget)
+                break;
         }
 
         return this.pendingChunks.Count == 0;

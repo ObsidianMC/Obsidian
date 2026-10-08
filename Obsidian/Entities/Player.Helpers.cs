@@ -130,6 +130,9 @@ public partial class Player
         // Then read player data
         var playerDataFile = new FileInfo(world.GetPlayerDataPath(this.Uuid));
 
+        if (loadFromPersistentWorld)
+            IsFirstJoin = !persistentDataFile.Exists && !playerDataFile.Exists;
+
         await LoadPermsAsync();
 
         if (!playerDataFile.Exists)

@@ -49,6 +49,14 @@ Custom payloads are limited to 64 KiB, 32 levels of nesting and 4,096 tags.
 
 ## Feedback
 
+First-time players also receive a welcome dialog once their client finishes
+loading the world. It explains that Obsidian is early in development and links
+to GitHub and Discord. When feedback is configured, it also explains the G
+quick-action key. A player is considered new when neither their global
+persistent file nor their current world's player file exists. Normal player
+saves preserve this across reconnects and server restarts; deleting the saved
+data or disconnecting before a save can show the welcome dialog again.
+
 Set `feedbackWebhookUrl` in `config/server.json` to a Discord webhook URL:
 
 ```json

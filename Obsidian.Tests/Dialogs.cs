@@ -17,6 +17,25 @@ namespace Obsidian.Tests;
 
 public sealed class Dialogs
 {
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void WelcomeDialog_ContainsDisclaimerAndCommunityLinks(bool feedbackEnabled)
+    {
+        var dialog = Obsidian.Entities.Player.CreateWelcomeDialog(feedbackEnabled);
+        var root = Serialize(dialog);
+        var body = Assert.IsType<NbtList>(root["body"]);
+        var messages = body.Cast<NbtCompound>().Select(x => Assert.IsType<NbtCompound>(x["contents"]).GetString("text")).ToArray();
+        Assert.Contains(messages, x => x!.Contains("early in development"));
+        Assert.Equal(feedbackEnabled, messages.Any(x => x!.Contains("Press G")));
+        var actions = Assert.IsType<NbtList>(root["actions"]);
+        var urls = actions.Cast<NbtCompound>().Select(x => Assert.IsType<NbtCompound>(x["action"]).GetString("url")).ToArray();
+        Assert.Contains("https://github.com/ObsidianMC/Obsidian", urls);
+        Assert.Contains("https://discord.gg/gQBtqyXChu", urls);
+        Assert.Equal("Continue", Assert.IsType<NbtCompound>(Assert.IsType<NbtCompound>(root["exit_action"])["label"]).GetString("text"));
+        Assert.True(root.GetBool("can_close_with_escape"));
+    }
+
     [Fact]
     public async Task FeedbackComponents_ContainReportAndPlayerMetadataWithoutMentions()
     {
