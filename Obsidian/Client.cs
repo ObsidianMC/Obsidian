@@ -48,6 +48,8 @@ public sealed partial class Client : IClient
     /// Whether this client is disposed.
     /// </summary>
     private bool disposed;
+    private bool disconnected;
+    private readonly Lock lifecycleLock = new();
 
     /// <summary>
     /// The random token used to encrypt the stream; empty until the encryption request is sent.
@@ -288,18 +290,21 @@ public sealed partial class Client : IClient
 
     public void Dispose()
     {
-        if (disposed)
-            return;
-
-        disposed = true;
-
-        try
+        lock (this.lifecycleLock)
         {
-            cancellationSource?.Dispose();
+            if (this.disposed)
+                return;
 
-            this.Socket.Dispose();
+            this.disposed = true;
+
+            try
+            {
+                this.cancellationSource.Cancel();
+                this.cancellationSource.Dispose();
+                this.Socket.Dispose();
+            }
+            catch (ObjectDisposedException) { }
         }
-        catch (ObjectDisposedException) { }
 
         GC.SuppressFinalize(this);
     }
@@ -320,7 +325,14 @@ public sealed partial class Client : IClient
 
     public void Disconnect()
     {
-        cancellationSource.Cancel();
+        lock (this.lifecycleLock)
+        {
+            if (this.disposed || this.disconnected)
+                return;
+
+            this.disconnected = true;
+            this.cancellationSource.Cancel();
+        }
         Disconnected?.Invoke(this);
 
         this.receiveEvent.Completed -= this.OnAsyncCompleted;
@@ -341,6 +353,7 @@ public sealed partial class Client : IClient
             this.Socket.Shutdown(SocketShutdown.Both);
         }
         catch (SocketException) { }
+        catch (ObjectDisposedException) { }
 
         this.Socket.Close();
 
@@ -364,9 +377,10 @@ public sealed partial class Client : IClient
     {
         try
         {
-            while (this.Connected || !this.disposed || !this.cancellationSource.IsCancellationRequested)
+            var cancellationToken = this.cancellationSource.Token;
+            while (this.Connected && !this.disposed && !cancellationToken.IsCancellationRequested)
             {
-                var packet = await this.packetQueue.Reader.ReadAsync(this.cancellationSource.Token);
+                var packet = await this.packetQueue.Reader.ReadAsync(cancellationToken);
 
                 if (packet == null)
                     continue;

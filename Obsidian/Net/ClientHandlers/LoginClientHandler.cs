@@ -104,9 +104,10 @@ internal sealed partial class LoginClientHandler : ClientHandler
         Log.LoginRequest(this.Logger, username);
         await this.Server.DisconnectPlayerIfConnectedAsync(username);
 
-        if (this.Server.Configuration.OnlineMode && await this.Client.TrySetCachedProfileAsync(username))
+        if (this.Server.Configuration.OnlineMode)
         {
-            this.Client.Initialize(world);
+            if (await this.Client.TrySetCachedProfileAsync(username))
+                this.Client.Initialize(world);
 
             return;
         }

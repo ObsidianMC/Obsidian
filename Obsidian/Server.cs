@@ -406,7 +406,7 @@ public sealed partial class Server : IServer
         await WorldManager.FlushLoadedWorldsAsync();
     }
 
-    public bool IsWhitelisted(string username) => this.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => x.Name == username);
+    public bool IsWhitelisted(string username) => this.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => string.Equals(x.Name, username, StringComparison.OrdinalIgnoreCase));
 
     public bool IsWhitelisted(Guid uuid) => this.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => x.Id == uuid);
 
