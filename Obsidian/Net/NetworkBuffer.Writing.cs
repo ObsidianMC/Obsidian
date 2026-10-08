@@ -512,29 +512,19 @@ public partial class NetworkBuffer : INetStreamWriter
 
         if (dataLength >= compressionThreshold)
         {   // Compress the packet
-            using NetworkBuffer compressedBuffer = new();
-
-            using var ms = new MemoryStream();
-            using (ZLibStream zlibStream = new(ms, CompressionLevel.Optimal, true))
+            using var compressed = new MemoryStream();
+            using (ZLibStream zlibStream = new(compressed, CompressionLevel.Optimal, true))
             {
-                zlibStream.Write(networkBuffer.AsSpan(offset: 0));
+                zlibStream.Write(networkBuffer.AsSpan(0, dataLength));
             }
 
-            var data = ArrayPool<byte>.Shared.Rent(dataLength);
-            ms.Position = 0;
-
-            ms.ReadExactly(data);
-
-            compressedBuffer.Write(data.AsSpan(0, dataLength));
-
-            ArrayPool<byte>.Shared.Return(data);
-
-            int totalLength = dataLength.GetVarIntLength() + (int)compressedBuffer.Offset;
+            var compressedData = compressed.GetBuffer().AsSpan(0, (int)compressed.Length);
+            int totalLength = dataLength.GetVarIntLength() + compressedData.Length;
 
             this.WriteVarInt(totalLength);
             this.WriteVarInt(dataLength);
 
-            this.Write(compressedBuffer);
+            this.Write(compressedData);
         }
         else
         {   // Do not compress the packet

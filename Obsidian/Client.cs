@@ -100,7 +100,13 @@ public sealed partial class Client : IClient
     /// <summary>
     /// Whether the client has compression enabled on the Minecraft stream.
     /// </summary>
-    public bool CompressionEnabled { get; private set; }
+    public bool CompressionEnabled => this.compressionThreshold >= 0;
+
+    // The size from which packets are compressed, or -1 before compression is enabled (see EnableCompression).
+    private volatile int compressionThreshold = -1;
+
+    // Set once the player's leave event was raised; see RaiseLeaveAsync.
+    private int leaveRaised;
 
     /// <summary>
     /// Whether the stream has encryption enabled. This can be set to false when the client is connecting through LAN or when the server is in offline mode.
@@ -218,6 +224,7 @@ public sealed partial class Client : IClient
 
         this.Player = this.CreatePlayer(GuidHelper.FromStringHash($"OfflinePlayer:{username}"), username, world);
 
+        this.EnableCompression();
         this.SendPacket(new LoginFinishedPacket(Player.Uuid, Player.Username)
         {
             SkinProperties = this.Player.SkinProperties,
@@ -226,8 +233,7 @@ public sealed partial class Client : IClient
 
     public async ValueTask DisconnectAsync(ChatMessage reason)
     {
-        if (this.Player != null)
-            await this.eventDispatcher.ExecuteEventAsync(new PlayerLeaveEventArgs(this.Player, this.Server, DateTimeOffset.Now));
+        await this.RaiseLeaveAsync();
 
         if (this.State == ClientState.Login)
         {
@@ -269,6 +275,22 @@ public sealed partial class Client : IClient
     }
 
     public bool SendPacket(IClientboundPacket packet) => this.SendAsync(packet);
+
+    /// <summary>
+    /// Tells the client to compress packets from the configured size (vanilla's network compression threshold; a
+    /// negative one leaves compression off) and frames every later packet in both directions that way. Like vanilla, it's
+    /// sent right before the login finishes.
+    /// </summary>
+    private void EnableCompression()
+    {
+        var threshold = this.Server.Configuration.Network.CompressionThreshold;
+        if (threshold < 0 || this.CompressionEnabled)
+            return;
+
+        // The packet itself still goes out uncompressed. Nothing else is sent or received during login meanwhile.
+        this.SendPacket(new LoginCompressionPacket(threshold));
+        this.compressionThreshold = threshold;
+    }
 
     internal void Login(MojangProfile user)
     {
@@ -335,6 +357,11 @@ public sealed partial class Client : IClient
         }
         Disconnected?.Invoke(this);
 
+        // A player whose client closed the connection (as vanilla's clients do to quit) leaves too, and other players
+        // stop seeing them. A player still logging in or configuring hasn't joined, so there's nothing to leave.
+        if (this.State == ClientState.Play)
+            _ = this.RaiseLeaveAsync();
+
         this.receiveEvent.Completed -= this.OnAsyncCompleted;
         this.sendEvent.Completed -= this.OnAsyncCompleted;
 
@@ -367,6 +394,25 @@ public sealed partial class Client : IClient
         }
 
         this.Dispose();
+    }
+
+    /// <summary>
+    /// Raises the player's leave event the first time it's called, however the connection ends: kicked by the server
+    /// (<see cref="DisconnectAsync"/>) or closed by the client (<see cref="Disconnect"/>).
+    /// </summary>
+    private async Task RaiseLeaveAsync()
+    {
+        if (this.Player is not IPlayer player || Interlocked.Exchange(ref this.leaveRaised, 1) == 1)
+            return;
+
+        try
+        {
+            await this.eventDispatcher.ExecuteEventAsync(new PlayerLeaveEventArgs(player, this.Server, DateTimeOffset.Now));
+        }
+        catch (Exception ex)
+        {
+            Log.LeaveFailed(this.Logger, ex, player.Username);
+        }
     }
 
     private async Task<MojangProfile?> HasJoinedAsync() => await this.userCache.HasJoinedAsync(this.Player!.Username, this.ServerId!);
@@ -425,6 +471,9 @@ public sealed partial class Client : IClient
 
     private static partial class Log
     {
+        [LoggerMessage(Level = LogLevel.Error, Message = "Handling {Username} leaving failed")]
+        public static partial void LeaveFailed(ILogger logger, Exception exception, string username);
+
         [LoggerMessage(Level = LogLevel.Warning, Message = "Failed to authenticate {Username}")]
         public static partial void AuthenticationFailed(ILogger logger, string? username);
 

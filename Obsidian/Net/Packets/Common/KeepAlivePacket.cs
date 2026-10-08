@@ -26,14 +26,18 @@ public partial record class KeepAlivePacket
 
     public async override ValueTask HandleAsync(IClient client)
     {
-        var time = DateTimeOffset.Now;
-        var player = client.Player!;
         var server = client.Server;
 
-        long keepAliveId = time.ToUnixTimeMilliseconds();
-        if (keepAliveId - client.LastKeepAliveId > server.Configuration.Network.KeepAliveTimeoutInterval)
+        long keepAliveId = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+
+        // Like vanilla, a keep-alive the client hasn't answered yet isn't replaced: its answer can be stuck behind a lot of
+        // data (chunks on a slow connection) and would no longer match a newer id. The client only times out once that
+        // keep-alive has gone unanswered for too long.
+        if (client.LastKeepAliveId is long pending)
         {
-            await client.DisconnectAsync("Timed out..");
+            if (keepAliveId - pending > server.Configuration.Network.KeepAliveTimeoutInterval)
+                await client.DisconnectAsync("Timed out..");
+
             return;
         }
 

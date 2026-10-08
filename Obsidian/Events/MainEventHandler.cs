@@ -405,6 +405,11 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             UUIDs = [player.Uuid]
         }, player.EntityId);
 
+        // Like changing level or dying, leaving removes the player's entity for everyone who could see it.
+        await player.Level.DestroyEntityAsync(player);
+        foreach (var observer in player.Level.GetPlayersInRange(player.Position, float.MaxValue).OfType<Player>())
+            observer.visiblePlayers.Remove(player);
+
         server.BroadcastMessage(string.Format(server.Configuration.Messages.Leave, e.Player.Username));
     }
 
