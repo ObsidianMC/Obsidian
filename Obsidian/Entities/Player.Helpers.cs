@@ -257,7 +257,8 @@ public partial class Player
         var index = 0;
         visiblePlayers.RemoveWhere(visiblePlayer =>
         {
-            if (!visiblePlayer.IsInRange(this, entityBroadcastDistance))
+            // A player who left or changed level isn't in this level anymore, wherever they were last.
+            if (!visiblePlayer.IsInRange(this, entityBroadcastDistance) || !Level.Players.ContainsKey(visiblePlayer.Uuid))
             {
                 removed[index++] = visiblePlayer.EntityId;
                 return true;
@@ -266,7 +267,7 @@ public partial class Player
         });
 
         if (index > 0)
-            await Client.QueuePacketAsync(new RemoveEntitiesPacket(removed.ToArray()));
+            await Client.QueuePacketAsync(new RemoveEntitiesPacket(removed.AsSpan(0, index).ToArray()));
 
         ArrayPool<int>.Shared.Return(removed);
     }
