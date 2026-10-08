@@ -208,7 +208,13 @@ public partial class Mob
                 Difficulty.Hard => damage * 1.5f,
                 _ => damage
             };
-        await target.DamageAsync(this, damage);
+        var weapon = GetEquipment(EquipmentSlot.MainHand);
+        damage += CombatEffects.DamageBonus(weapon, target);
+        var health = target.Health;
+        if (target is Living living) await living.DamageCombatAsync(this, damage, CombatDamageKind.Melee, weapon);
+        else await target.DamageAsync(this, damage);
+        if (target.Health < health && target is Living victim)
+            await CombatEffects.PostAttackAsync(this, victim, weapon);
     }
 
     public override async ValueTask TickAsync()
@@ -406,6 +412,8 @@ public partial class Mob
 
     private async ValueTask ApplyDamageAsync(IEntity source, float amount, bool applyArmor, bool ignoreHurtCooldown = false)
     {
+        var kind = IncomingDamageKind ?? (applyArmor ? CombatDamageKind.Melee : CombatDamageKind.Magic);
+        applyArmor &= kind is CombatDamageKind.Melee or CombatDamageKind.Projectile or CombatDamageKind.Explosion;
         if (!UsesAi)
         {
             await base.DamageAsync(source, amount);
@@ -432,6 +440,7 @@ public partial class Mob
         }
 
         lastDamage = incoming;
+        AcceptedDamageCount++;
         despawnAge = 0;
         if (source is IPlayer)
             lastPlayerHurtTick = AiTick;
@@ -446,11 +455,13 @@ public partial class Mob
         {
             var armor = GetAttributeValue("minecraft:generic.armor") + EquipmentArmor;
             var toughness = GetAttributeValue("minecraft:generic.armor_toughness") + EquipmentToughness;
-            amount *= 1 - Math.Clamp(armor - amount / (2 + toughness / 4), armor / 5, 20) / 25;
+            amount = CombatItems.ReduceArmor(amount, armor, toughness,
+                1 - 0.15f * CombatItems.EnchantmentLevel(IncomingWeapon, EnchantmentsRegistry.Breach));
             foreach (var slot in armorSlots)
                 DamageEquipment(slot, Math.Max(1, (int)(incoming / 4)));
             DamageEquipment(EquipmentSlot.Body, Math.Max(1, (int)(incoming / 4)));
         }
+        amount = CombatEffects.Protect(this, amount, kind);
         await base.DamageAsync(source, amount);
         await OnHurtAsync(source);
         if (Alive)

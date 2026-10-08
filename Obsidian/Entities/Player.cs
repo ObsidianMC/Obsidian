@@ -36,10 +36,12 @@ public sealed partial class Player : Avatar, IPlayer
     /// </summary>
     public ConcurrentHashSet<long> LoadedChunks { get; internal set; } = [];
 
-    // The chunks in view that weren't generated when they were asked for, sent once they are, and the center and view
-    // distance last sent to the client. Guarded by chunkUpdates, which keeps packet handlers and the level tick from
-    // updating the client's chunks at the same time.
+    // Unsent chunks, the current nearest-first loading pass, and the client's view. Guarded by chunkUpdates so packet
+    // handlers and the level tick can't update the client's chunks at the same time.
     private readonly HashSet<long> pendingChunks = [];
+    private readonly Queue<long> pendingChunkLoads = [];
+    private const int MaximumChunkLoadsPerPass = 16;
+    private static readonly TimeSpan ChunkLoadTimeBudget = TimeSpan.FromMilliseconds(5);
     private readonly SemaphoreSlim chunkUpdates = new(1, 1);
     private (int X, int Z)? chunkCacheCenter;
     private int chunkViewDistance;
@@ -242,6 +244,10 @@ public sealed partial class Player : Avatar, IPlayer
 
     public async ValueTask OpenInventoryAsync(BaseContainer container)
     {
+        if (OpenedContainer is EnchantmentTable previousTable)
+            await Obsidian.Events.MainEventHandler.ReturnEnchantingItemsAsync(this, previousTable);
+        if (container is EnchantmentTable table)
+            container = new EnchantmentTable { BlockPosition = table.BlockPosition, Title = table.Title, CustomName = table.CustomName };
         OpenedContainer = container;
 
         var nextId = GetNextContainerId();
@@ -253,10 +259,18 @@ public sealed partial class Player : Avatar, IPlayer
                 container.Concat(this.Inventory.Skip(9).Take(36)).ToList()));
         else if (container.HasItems())
             await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId, container.ToList()));
+        if (container is EnchantmentTable)
+        {
+            await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId, container.Concat(Inventory.Skip(9).Take(36)).ToList()));
+            await RefreshEnchantingAsync();
+        }
     }
 
     public async override ValueTask TeleportAsync(VectorD pos)
     {
+        FallDistance = 0;
+        combatPosition = null;
+        CancelWeaponUse();
         Vehicle?.Dismount(this);
         LastPosition = Position;
         Position = pos;
@@ -283,6 +297,9 @@ public sealed partial class Player : Avatar, IPlayer
 
     public async override ValueTask TeleportAsync(IEntity to)
     {
+        FallDistance = 0;
+        combatPosition = null;
+        CancelWeaponUse();
         LastPosition = Position;
         Position = to.Position;
 
@@ -365,6 +382,8 @@ public sealed partial class Player : Avatar, IPlayer
     internal async Task TransferDimensionAsync(ILevel destination)
     {
         CancelEating();
+        CancelWeaponUse();
+        combatPosition = null;
         Vehicle?.Dismount(this);
         var origin = Level;
         var spawn = destination.LevelData.SpawnPosition;
@@ -402,7 +421,12 @@ public sealed partial class Player : Avatar, IPlayer
         {
             if (!Alive)
             {
+                // Death respawns must create fresh client state rather than retain the dead player's metadata.
+                dataKept = DataKept.None;
                 CancelEating();
+                CancelWeaponUse();
+                combatPosition = null;
+                attackTicks = 0;
                 Vehicle?.Dismount(this);
                 ClearPotionEffects();
                 damageCooldown = 0;
@@ -493,6 +517,12 @@ public sealed partial class Player : Avatar, IPlayer
     {
         Health = 0;
         CancelEating();
+        CancelWeaponUse();
+        if (OpenedContainer is EnchantmentTable table)
+        {
+            await Obsidian.Events.MainEventHandler.ReturnEnchantingItemsAsync(this, table);
+            OpenedContainer = null;
+        }
         Vehicle?.Dismount(this);
         await Client.QueuePacketAsync(new SetHealthPacket(0, FoodLevel, FoodSaturationLevel));
         await Client.QueuePacketAsync(new PlayerCombatKillPacket { PlayerID = EntityId, Message = deathMessage });
@@ -505,26 +535,27 @@ public sealed partial class Player : Avatar, IPlayer
     {
         base.Write(writer);
 
-        this.WriteEntityMetadataType(writer, EntityMetadataType.Float);
+        writer.WriteEntityMetadataType(17, EntityMetadataType.Float);
         writer.WriteSingle(Absorption);
 
-        this.WriteEntityMetadataType(writer, EntityMetadataType.VarInt);
+        writer.WriteEntityMetadataType(18, EntityMetadataType.VarInt);
         writer.WriteVarInt(XpTotal);
+
+        this.MetadataIndex = 19;
 
         //TODO fix possibly an extension method?
         if (this.LeftShoulder is not null)
         {
-            this.WriteEntityMetadataType(writer, EntityMetadataType.OptionalLivingEntityReference);
+            writer.WriteEntityMetadataType(19, EntityMetadataType.OptionalLivingEntityReference);
             writer.WriteNbtCompound([]);
+            this.MetadataIndex = 20;
         }
 
         if (this.RightShoulder is not null)
         {
-            if (this.LeftShoulder is null)
-                this.MetadataIndex++;
-
-            this.WriteEntityMetadataType(writer, EntityMetadataType.OptionalLivingEntityReference);
+            writer.WriteEntityMetadataType(20, EntityMetadataType.OptionalLivingEntityReference);
             writer.WriteNbtCompound([]);
+            this.MetadataIndex = 21;
         }
     }
 
@@ -702,11 +733,13 @@ public sealed partial class Player : Avatar, IPlayer
     public async override ValueTask UpdateAsync(VectorD position, MovementFlags movementFlags)
     {
         if (!Alive || Respawning) return;
+        if (!double.IsFinite(position.X) || !double.IsFinite(position.Y) || !double.IsFinite(position.Z)) return;
         if (Vehicle != null)
             position = Position;
         var oldPosition = Position;
         var oldMovementFlags = MovementFlags;
         await base.UpdateAsync(position, movementFlags);
+        await UpdateFallAsync(oldPosition, movementFlags);
         if (Level is AbstractLevel events) await events.EmitMovementGameEventsAsync(this, oldPosition, oldMovementFlags);
 
         HeadY = position.Y + 1.62f;
@@ -719,11 +752,13 @@ public sealed partial class Player : Avatar, IPlayer
     public async override ValueTask UpdateAsync(VectorD position, Angle yaw, Angle pitch, MovementFlags movementFlags)
     {
         if (!Alive || Respawning) return;
+        if (!double.IsFinite(position.X) || !double.IsFinite(position.Y) || !double.IsFinite(position.Z)) return;
         if (Vehicle != null)
             position = Position;
         var oldPosition = Position;
         var oldMovementFlags = MovementFlags;
         await base.UpdateAsync(position, yaw, pitch, movementFlags);
+        await UpdateFallAsync(oldPosition, movementFlags);
         if (Level is AbstractLevel events) await events.EmitMovementGameEventsAsync(this, oldPosition, oldMovementFlags);
 
         HeadY = position.Y + 1.62f;
@@ -737,6 +772,8 @@ public sealed partial class Player : Avatar, IPlayer
     {
         if (!Alive || Respawning) return;
         await base.UpdateAsync(yaw, pitch, movementFlags);
+        MovementFlags = movementFlags;
+        await UpdateFallAsync(Position, movementFlags);
 
         await PickupNearbyItemsAsync();
     }
@@ -773,6 +810,7 @@ public sealed partial class Player : Avatar, IPlayer
 
                 LoadedChunks.Clear();
                 this.pendingChunks.Clear();
+                this.pendingChunkLoads.Clear();
                 this.chunkCacheCenter = null;
             }
 
@@ -782,11 +820,15 @@ public sealed partial class Player : Avatar, IPlayer
             if (this.chunkCacheCenter != (centerX, centerZ))
             {
                 this.chunkCacheCenter = (centerX, centerZ);
+                this.pendingChunkLoads.Clear();
                 await Client.QueuePacketAsync(new SetChunkCacheCenterPacket(centerX, centerZ));
             }
 
             // Like vanilla, at least 2.
-            this.chunkViewDistance = Math.Max(2, distance < 1 ? ClientInformation.ViewDistance : distance);
+            var viewDistance = Math.Max(2, distance < 1 ? ClientInformation.ViewDistance : distance);
+            if (this.chunkViewDistance != viewDistance)
+                this.pendingChunkLoads.Clear();
+            this.chunkViewDistance = viewDistance;
 
             foreach (var value in LoadedChunks)
             {
@@ -843,32 +885,44 @@ public sealed partial class Player : Avatar, IPlayer
         }
     }
 
-    // Sends the pending chunks that are generated, nearest to the center first, and asks for the others again (generation
-    // only queues them once). Returns whether none are left. Called under chunkUpdates.
+    // Bound disk reads and packet queuing so login and movement don't wait for the entire view. Finish a pass before
+    // retrying ungenerated chunks, so they can't prevent the rest of the view from being requested. Called under chunkUpdates.
     private async Task<bool> SendReadyChunksAsync()
     {
         if (this.pendingChunks.Count == 0 || this.chunkCacheCenter is not var (centerX, centerZ))
             return this.pendingChunks.Count == 0;
 
-        var chunks = this.pendingChunks.ToArray();
-        var distances = new int[chunks.Length];
-        for (var i = 0; i < chunks.Length; i++)
+        if (this.pendingChunkLoads.Count == 0)
         {
-            NumericsHelper.LongToInts(chunks[i], out var x, out var z);
-            distances[i] = (x - centerX) * (x - centerX) + (z - centerZ) * (z - centerZ);
+            var chunks = this.pendingChunks.ToArray();
+            var distances = new int[chunks.Length];
+            for (var i = 0; i < chunks.Length; i++)
+            {
+                NumericsHelper.LongToInts(chunks[i], out var x, out var z);
+                distances[i] = (x - centerX) * (x - centerX) + (z - centerZ) * (z - centerZ);
+            }
+
+            Array.Sort(distances, chunks);
+            foreach (var value in chunks)
+                this.pendingChunkLoads.Enqueue(value);
         }
 
-        Array.Sort(distances, chunks);
-
-        foreach (var value in chunks)
+        var started = Stopwatch.GetTimestamp();
+        for (var count = 0; count < MaximumChunkLoadsPerPass && this.pendingChunkLoads.TryDequeue(out var value); count++)
         {
-            NumericsHelper.LongToInts(value, out var x, out var z);
-            if (await Level.GetChunkAsync(x, z) is not IChunk chunk || !chunk.IsGenerated)
-                continue;
+            if (this.pendingChunks.Contains(value))
+            {
+                NumericsHelper.LongToInts(value, out var x, out var z);
+                if (await Level.GetChunkAsync(x, z) is IChunk { IsGenerated: true } chunk)
+                {
+                    await Client.QueuePacketAsync(new LevelChunkWithLightPacket(chunk));
+                    LoadedChunks.Add(value);
+                    this.pendingChunks.Remove(value);
+                }
+            }
 
-            await Client.QueuePacketAsync(new LevelChunkWithLightPacket(chunk));
-            LoadedChunks.Add(value);
-            this.pendingChunks.Remove(value);
+            if (Stopwatch.GetElapsedTime(started) >= ChunkLoadTimeBudget)
+                break;
         }
 
         return this.pendingChunks.Count == 0;

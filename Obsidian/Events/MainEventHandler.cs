@@ -38,11 +38,11 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         {
             async ValueTask Damage()
             {
-                if (entity.Level == attacker.Level && entity.IsInRange(attacker, 4) &&
+                if (entity.Level == attacker.Level && (attacker is Player rangePlayer ? rangePlayer.CanAttack(entity, e.Weapon) : entity.IsInRange(attacker, 4)) &&
                     (entity is not Mob mob || mob.CanSee(attacker)))
                 {
-                    await entity.DamageAsync(attacker, e.Damage > 0 ? e.Damage : 1);
-                    if (attacker is Player attackingPlayer) attackingPlayer.AddExhaustion(0.1f);
+                    if (attacker is Player attackingPlayer) await attackingPlayer.AttackAsync(e);
+                    else await entity.DamageAsync(attacker, e.Damage > 0 ? e.Damage : 1);
                     if (entity is Living && attacker is IPlayer owner)
                         Wolf.AlertOwnedWolves(owner, entity);
                 }
@@ -79,6 +79,8 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
 
         if (e.Container is CraftingTable { Type: InventoryType.Crafting })
             await ReturnCraftingItemsAsync(player, e.Container, 3);
+        if (e.Container is EnchantmentTable enchantingTable)
+            await ReturnEnchantingItemsAsync(player, enchantingTable);
 
         //Player successfully exited container
         player.OpenedContainer = null;
@@ -389,6 +391,8 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
 
         if (player.OpenedContainer is CraftingTable { Type: InventoryType.Crafting } table)
             await ReturnCraftingItemsAsync(player, table, 3);
+        if (player.OpenedContainer is EnchantmentTable enchantingTable)
+            await ReturnEnchantingItemsAsync(player, enchantingTable);
         await ReturnCraftingItemsAsync(player, player.Inventory, 2);
 
         if (player is Player portalPlayer)

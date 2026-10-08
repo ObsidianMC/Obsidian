@@ -5,6 +5,74 @@ services:
     # Keep stdin open with a terminal so console commands work via `docker attach`.
     stdin_open: true
     tty: true
+    environment:
+      DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: "1"
+      # Omitted values fall back to saved config files, then built-in defaults.
+      # Uncomment options to override them; quote values, including booleans and numbers.
+      # Nested properties use __; collection entries use zero-based indexes.
+      # Server (config/server.json)
+      # Motd: "Welcome to Obsidian!"
+      # Port: "25565" # Update the container port in ports below if changed.
+      # OnlineMode: "true"
+      # MaxPlayers: "25"
+      # AllowOperatorRequests: "true"
+      # ServerShutdownStopsProgram: "true"
+      # AllowUntrustedPlugins: "true"
+      # Baah: "false" # Omit to retain the nullable default.
+      # Whitelist: "false"
+      # FEEDBACK_WEBHOOK_URL: "${FEEDBACK_WEBHOOK_URL}" # Alias for FeedbackWebhookUrl.
+      # FeedbackWebhookUrl: "https://discord.com/api/webhooks/ID/TOKEN"
+      # AllowLan: "true"
+      # ViewDistance: "10"
+      # SimulationDistance: "10"
+      # EntityBroadcastRangePercentage: "100"
+      # SpawnChunkRadius: "12"
+      # PregenerateChunkRange: "15"
+      # ServerListQuery: "Full" # Full, Anonymized, Disabled.
+      # TimeTickSpeedMultiplier: "1"
+
+      # Network (MulitplayerDebugMode retains the configuration property's spelling)
+      # Network__CompressionThreshold: "256"
+      # Network__KeepAliveInterval: "10000"
+      # Network__KeepAliveTimeoutInterval: "30000"
+      # Network__ConnectionThrottle: "15000"
+      # Network__MulitplayerDebugMode: "false"
+
+      # Messages
+      # Messages__Join: "{0} joined the game"
+      # Messages__Leave: "{0} left the game"
+      # Messages__NotWhitelisted: "You are not whitelisted on this server!"
+      # Messages__ServerFull: "The server is full!"
+      # Messages__OutdatedClient: "Outdated client! Please use {0}"
+      # Messages__OutdatedServer: "Outdated server! I'm still on {0}"
+
+      # RCON settings bind, but the RCON server is currently unimplemented.
+      # Omit all Rcon__ entries to leave the Rcon object disabled by default.
+      # Rcon__Password: "${RCON_PASSWORD}"
+      # Rcon__Port: "25575" # Example port; the configuration default is 0.
+      # Rcon__BroadcastToOps: "false"
+      # Rcon__RequireEncryption: "false"
+
+      # Whitelist entries (config/whitelist.json); repeat with __1, __2, etc.
+      # Entries merge by index with saved lists; omission preserves saved entries.
+      # WhitelistedPlayers__0__Name: "PlayerName"
+      # WhitelistedPlayers__0__Id: "00000000-0000-0000-0000-000000000000"
+      # WhitelistedIps__0: "127.0.0.1"
+
+      # Worlds (config/worlds.json); repeat Worlds__1__, Worlds__2__, etc.
+      # Omit Seed to retain the saved seed or the generated seed on first startup.
+      # Seed overrides do not regenerate already saved chunks.
+      # Worlds__0__Name: "overworld"
+      # Worlds__0__Generator: "minecraft:mojang_generator"
+      # Worlds__0__Seed: "12345"
+      # Worlds__0__Default: "true"
+      # Worlds__0__DefaultDimension: "minecraft:overworld"
+      # Worlds__0__ChildDimensions__0: "minecraft:the_nether"
+      # Worlds__0__ChildDimensions__1: "minecraft:the_end"
+
+      # Logging (config/server.json); add category names as needed.
+      # Logging__LogLevel__Default: "Information"
+      # Logging__LogLevel__Microsoft: "Warning"
     ports:
       - "25565:25565"
     volumes:

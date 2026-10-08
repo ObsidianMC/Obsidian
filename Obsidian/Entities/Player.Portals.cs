@@ -257,6 +257,8 @@ public partial class Player
         this.Pitch = destination.Pitch;
         this.Motion = destination.Motion;
         this.FallDistance = 0;
+        this.CancelWeaponUse();
+        this.combatPosition = null;
         this.Level.TryAddPlayer(this);
         this.Level.TryAddEntity(this);
         this.portalCooldown = PlayerPortalCooldown;

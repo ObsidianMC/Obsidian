@@ -1,5 +1,6 @@
 using Obsidian.API.Containers;
 using Obsidian.API.Events;
+using Obsidian.Entities;
 using Obsidian.API.Inventory;
 using Obsidian.Net.Packets.Play.Clientbound;
 using System.Diagnostics;
@@ -112,8 +113,10 @@ public partial class MainEventHandler
         }
         else if (clicked.IsNullOrAir() || clicked.Count <= 0 || clicked == carried)
         {
+            var maximum = args.Container == player.Inventory && args.ClickedSlot is >= 5 and <= 8 ||
+                args.Container is EnchantmentTable && args.ClickedSlot == 0 ? 1 : carried.MaxStackSize;
             int count = Math.Min(args.Button == 0 ? carried.Count : 1,
-                carried.MaxStackSize - (clicked?.Count ?? 0));
+                maximum - (clicked?.Count ?? 0));
             if (count <= 0)
                 return;
             args.Container.SetItem(args.ClickedSlot, new ItemStack(carried, (clicked?.Count ?? 0) + count));
@@ -121,7 +124,7 @@ public partial class MainEventHandler
             if (carried.Count == 0)
                 player.CarriedItem = null;
         }
-        else if (carried.Count <= carried.MaxStackSize)
+        else if (carried.Count <= (args.Container == player.Inventory && args.ClickedSlot is >= 5 and <= 8 ? 1 : carried.MaxStackSize))
         {
             args.Container.SetItem(args.ClickedSlot, carried);
             player.CarriedItem = clicked;
@@ -156,6 +159,8 @@ public partial class MainEventHandler
             if (args.ClickedSlot < 0 || (args.Container == grid && args.ClickedSlot == 0))
                 return;
             var item = args.Item;
+            if (args.Container == player.Inventory && args.ClickedSlot is >= 5 and <= 8 &&
+                (CombatItems.PlayerArmorSlot(carried) != args.ClickedSlot || !item.IsNullOrAir())) return;
             if (!item.IsNullOrAir() && (item != carried || item.Count >= item.MaxStackSize))
                 return;
             short slot = args.Container == grid ? args.ClickedSlot : (short)(grid.Size + args.ClickedSlot - 9);
@@ -172,10 +177,13 @@ public partial class MainEventHandler
             var targetContainer = slot < grid.Size ? grid : player.Inventory;
             int targetSlot = slot < grid.Size ? slot : slot - grid.Size + 9;
             var target = targetContainer.GetItem(targetSlot);
+            if (targetContainer == player.Inventory && targetSlot is >= 5 and <= 8 &&
+                (CombatItems.PlayerArmorSlot(carried) != targetSlot || !target.IsNullOrAir())) continue;
             if (!target.IsNullOrAir() && target != carried)
                 continue;
-            int count = Math.Min(args.Button == 10 ? carried.MaxStackSize : Math.Min(perSlot, carried.Count),
-                carried.MaxStackSize - (target?.Count ?? 0));
+            var maximum = targetContainer == player.Inventory && targetSlot is >= 5 and <= 8 ? 1 : carried.MaxStackSize;
+            int count = Math.Min(args.Button == 10 ? maximum : Math.Min(perSlot, carried.Count),
+                maximum - (target?.Count ?? 0));
             if (count <= 0)
                 continue;
             targetContainer.SetItem(targetSlot, new ItemStack(carried, (target?.Count ?? 0) + count));
@@ -273,6 +281,14 @@ public partial class MainEventHandler
         var item = args.Item;
         if (item.IsNullOrAir() || args.ClickedSlot < 0)
             return;
+
+        var armorSlot = CombatItems.PlayerArmorSlot(item);
+        if (args.Container == args.Player.Inventory && args.ClickedSlot >= 9 && armorSlot >= 0 && args.Player.Inventory.GetItem(armorSlot).IsNullOrAir())
+        {
+            args.Player.Inventory.SetItem(armorSlot, new ItemStack(item));
+            args.Container.RemoveItem(args.ClickedSlot, 1);
+            return;
+        }
 
         if (width == 3 && args.Container == args.Player.Inventory)
         {

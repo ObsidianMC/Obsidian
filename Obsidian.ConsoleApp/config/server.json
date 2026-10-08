@@ -3,9 +3,10 @@
 
   "allowLan": true,
   "allowOperatorRequests": true,
+  "feedbackWebhookUrl": null,
 
   "maxPlayers": 25,
-  "motd": "�k||||�r �5Obsidian �cPre�r-�cRelease �r�k||||�r \n�r�lRunning on .NET �l�c8 �r�l<3",
+  "motd": "§k||||§r §5Obsidian §cPre§r-§cRelease §r§k||||§r \n§r§lRunning on .NET §l§c8 §r§l<3",
 
   "onlineMode": true,
   "port": 25565,

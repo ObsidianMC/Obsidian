@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -7,6 +8,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading;
 
 namespace Obsidian.WorldData;
@@ -156,8 +158,9 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         if (worldsFile.Exists)
         {
             await using var worldsFileStream = worldsFile.OpenRead();
-            return await worldsFileStream.FromJsonAsync<List<ServerWorld>>(cancellationToken: cancellationToken)
+            var savedWorlds = await worldsFileStream.FromJsonAsync<List<ServerWorld>>(cancellationToken: cancellationToken)
                 ?? throw new Exception("A worlds file does exist, but is invalid. Is it corrupt?");
+            return ApplyWorldEnvironmentOverrides(savedWorlds);
         }
 
         var worlds = new List<ServerWorld>()
@@ -176,7 +179,16 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         await using var fileStream = worldsFile.Create();
         await worlds.ToJsonAsync(fileStream, cancellationToken: cancellationToken);
 
-        return worlds;
+        return ApplyWorldEnvironmentOverrides(worlds);
+    }
+
+    private static List<ServerWorld> ApplyWorldEnvironmentOverrides(List<ServerWorld> worlds)
+    {
+        // Merge before binding so list entries are overridden by index rather than appended.
+        using var defaults = new MemoryStream(JsonSerializer.SerializeToUtf8Bytes(new { Worlds = worlds }));
+        using var configuration = new ConfigurationManager();
+        configuration.AddJsonStream(defaults).AddEnvironmentVariables();
+        return configuration.GetSection("Worlds").Get<List<ServerWorld>>() ?? [];
     }
 
     private static partial class Log

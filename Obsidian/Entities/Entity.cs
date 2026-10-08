@@ -10,6 +10,7 @@ public class Entity : IEquatable<Entity>, IEntity
 {
     protected virtual ConcurrentDictionary<string, float> Attributes { get; } = new();
 
+    // Retained for derived classes; built-in serializers use fixed indexes to avoid concurrent-write races.
     protected byte MetadataIndex { get; set; }
 
     public required ILevel Level { get; set; }
@@ -392,35 +393,33 @@ public class Entity : IEquatable<Entity>, IEntity
         return mask;
     }
 
-    // TODO: Source generate the metadata types and their indexes for each type to avoid this and potential bugs with index ordering
     public virtual void Write(INetStreamWriter writer)
     {
-        //Reset index for writing metadata, so that it starts from 0 for each entity, might be better to statically assign these indexes for each type, but this works for now
-        this.MetadataIndex = 0;
-
-        this.WriteEntityMetadataType(writer, EntityMetadataType.Byte);
+        writer.WriteEntityMetadataType(0, EntityMetadataType.Byte);
         writer.WriteByte(GenerateBitmask());
 
-        this.WriteEntityMetadataType(writer, EntityMetadataType.VarInt);
+        writer.WriteEntityMetadataType(1, EntityMetadataType.VarInt);
         writer.WriteVarInt(Air);
 
-        this.WriteEntityMetadataType(writer, EntityMetadataType.OptionalTextComponent);
+        writer.WriteEntityMetadataType(2, EntityMetadataType.OptionalTextComponent);
         writer.WriteOptional(CustomName);
 
-        this.WriteEntityMetadataType(writer, EntityMetadataType.Boolean);
+        writer.WriteEntityMetadataType(3, EntityMetadataType.Boolean);
         writer.WriteBoolean(CustomNameVisible);
 
-        this.WriteEntityMetadataType(writer, EntityMetadataType.Boolean);
+        writer.WriteEntityMetadataType(4, EntityMetadataType.Boolean);
         writer.WriteBoolean(Silent);
 
-        this.WriteEntityMetadataType(writer, EntityMetadataType.Boolean);
+        writer.WriteEntityMetadataType(5, EntityMetadataType.Boolean);
         writer.WriteBoolean(NoGravity);
 
-        this.WriteEntityMetadataType(writer, EntityMetadataType.Pose);
+        writer.WriteEntityMetadataType(6, EntityMetadataType.Pose);
         writer.WriteVarInt(this.Pose);
 
-        this.WriteEntityMetadataType(writer, EntityMetadataType.VarInt);
+        writer.WriteEntityMetadataType(7, EntityMetadataType.VarInt);
         writer.WriteVarInt(PowderedSnowTicks);
+
+        this.MetadataIndex = 8;
     }
 
     protected void WriteEntityMetadataType(INetStreamWriter writer, EntityMetadataType type) =>

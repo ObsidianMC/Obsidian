@@ -27,6 +27,8 @@ public sealed partial class FinishConfigurationPacket
         await client.QueuePacketAsync(new LoginPacket
         {
             EntityId = player.EntityId,
+            ViewDistance = server.Configuration.ViewDistance,
+            SimulationDistance = server.Configuration.SimulationDistance,
             DimensionNames = CodecRegistry.Dimensions.All.Keys.ToList(),
             CommonPlayerSpawnInfo = new()
             {
@@ -69,8 +71,8 @@ public sealed partial class FinishConfigurationPacket
         });
 
         await client.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
-        await player.UpdateChunksAsync();
         await server.EventDispatcher.ExecuteEventAsync(new PlayerJoinEventArgs(player, server, DateTimeOffset.Now));
+        await player.UpdateChunksAsync();
     }
 
     private static partial class Log

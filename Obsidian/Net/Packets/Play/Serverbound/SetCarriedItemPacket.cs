@@ -15,6 +15,8 @@ public partial class SetCarriedItemPacket
 
     public override ValueTask HandleAsync(IServer server, IPlayer player)
     {
+        if (Slot is < 0 or > 8) return ValueTask.CompletedTask;
+        if (player is Obsidian.Entities.Player concrete) { concrete.CancelWeaponUse(); concrete.CancelEating(); }
         player.CurrentHeldItemSlot = Slot;
 
         var heldItem = player.GetHeldItem();
