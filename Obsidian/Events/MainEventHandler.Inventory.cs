@@ -263,20 +263,25 @@ public partial class MainEventHandler
         SpawnThrownItem(player, thrownItem);
     }
 
-    private static ItemStack? ThrowItem(IPlayer player, BaseContainer container, short clickedSlot, sbyte button, bool forPlayer = false)
+    internal static ItemStack? ThrowItem(IPlayer player, BaseContainer container, short clickedSlot, sbyte button, bool forPlayer = false)
     {
-        var amountToRemove = button == 0 ? 1 : 64;
+        var source = forPlayer ? player.CarriedItem : container.GetItem(clickedSlot);
+        if (source.IsNullOrAir() || source.Count <= 0)
+            return null;
 
-        ItemStack? removedItem;
+        // Outside clicks drop the whole cursor stack on left click, and one item on right click.
+        var count = forPlayer ? button == 0 ? source.Count : 1 : button == 0 ? 1 : source.Count;
+        var dropped = new ItemStack(source, count);
         if (forPlayer)
         {
-            player.CarriedItem -= amountToRemove;
-            removedItem = player.CarriedItem;
+            source.Count -= count;
+            if (source.Count == 0)
+                player.CarriedItem = null;
         }
         else
-            container.RemoveItem(clickedSlot, amountToRemove, out removedItem);
+            container.RemoveItem(clickedSlot, count);
 
-        return removedItem;
+        return dropped;
     }
 
     private static void SpawnThrownItem(IPlayer player, ItemStack? thrownItem)
@@ -284,18 +289,7 @@ public partial class MainEventHandler
         if (thrownItem.IsNullOrAir() || thrownItem.Count <= 0)
             return;
 
-        var loc = new VectorD(player.Position.X, player.HeadY - 0.3, player.Position.Z);
-
-        var item = new ItemEntity
-        {
-            EntityId = Server.GetNextEntityId(),
-            Item = thrownItem,
-            Glowing = true,
-            Level = player.Level,
-            Position = loc
-        };
-
-        player.Level.SpawnEntity(item);
+        ItemEntity.Drop(player, thrownItem);
     }
 
     private static void HandlePickup(ContainerClickEventArgs args)

@@ -125,6 +125,7 @@ internal sealed class LevelFluids : IFluidLevelAccess
             chunk.RemoveBlockEntity(position.X, position.Y, position.Z);
 
         this.level.BroadcastBlockChange(block, position);
+        this.level.Portals.OnBlockChanged(position);
         return true;
     }
 

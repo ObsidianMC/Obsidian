@@ -44,7 +44,9 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
 
             while (await timer.WaitForNextTickAsync())
             {
-                await Task.WhenAll(this.worlds.Values.Cast<World>().Select(x => x.ManageChunksAsync()));
+                await Task.WhenAll(this.worlds.Values.Cast<World>()
+                    .SelectMany(world => new[] { (AbstractLevel)world }.Concat(world.dimensions.Values.Cast<AbstractLevel>()))
+                    .Select(level => level.ManageChunksAsync()));
             }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -63,29 +65,27 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
 
             this.worlds.Add(world.Name, world);
 
-            if (!CodecRegistry.TryGetDimension(serverWorld.DefaultDimension, out var defaultCodec) || !CodecRegistry.TryGetDimension("minecraft:overworld", out defaultCodec))
+            if (!CodecRegistry.TryGetDimension(serverWorld.DefaultDimension, out var defaultCodec) && !CodecRegistry.TryGetDimension("minecraft:overworld", out defaultCodec))
                 throw new UnreachableException("Failed to get default dimension codec.");
 
-            if (!await world.LoadAsync(defaultCodec))
+            var loaded = await world.LoadAsync(defaultCodec);
+            foreach (var dimensionName in serverWorld.ChildDimensions)
+            {
+                if (!CodecRegistry.TryGetDimension(dimensionName, out var codec))
+                {
+                    Log.UnknownDimension(this.logger, dimensionName, serverWorld.Name);
+                    continue;
+                }
+                var dimension = this.levelFactory.CreateDimension(world, codec.Name, dimensionName);
+                dimension.Initialize(codec);
+                world.RegisterDimension(codec, dimension);
+                if (!loaded)
+                    await dimension.GenerateAsync();
+            }
+
+            if (!loaded)
             {
                 Log.CreatingWorld(this.logger, serverWorld.Name);
-
-                foreach (var dimensionName in serverWorld.ChildDimensions)
-                {
-                    if (!CodecRegistry.TryGetDimension(dimensionName, out var codec))
-                    {
-                        Log.UnknownDimension(this.logger, dimensionName, serverWorld.Name);
-                        continue;
-                    }
-
-                    var dimension = this.levelFactory.CreateDimension(world, codec.Name, dimensionName);
-
-                    dimension.Initialize(codec);
-                    world.RegisterDimension(codec, dimension);
-
-                    await dimension.GenerateAsync();
-                    await dimension.SaveAsync();
-                }
 
                 await world.GenerateAsync();
                 await world.SaveAsync();

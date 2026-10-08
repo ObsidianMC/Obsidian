@@ -350,9 +350,9 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public VectorF GetLookDirection()
     {
-        const float DegreesToRadian = (1 / 255f) * 360f / (180f * MathF.PI);
-        float pitch = Pitch.Value * DegreesToRadian;
-        float yaw = Yaw.Value * DegreesToRadian;
+        const float DegreesToRadian = MathF.PI / 180f;
+        float pitch = Pitch.Degrees * DegreesToRadian;
+        float yaw = Yaw.Degrees * DegreesToRadian;
 
         (float sinPitch, float cosPitch) = MathF.SinCos(pitch);
         (float sinYaw, float cosYaw) = MathF.SinCos(yaw);
