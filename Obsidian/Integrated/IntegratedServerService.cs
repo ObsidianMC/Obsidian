@@ -39,6 +39,7 @@ public sealed partial class IntegratedServerService(
         this.server.SaveStarted += autosave => events.Write(IntegratedEvent.Saving(autosave));
         this.server.SaveCompleted += (autosave, failure) =>
             events.Write(failure is null ? IntegratedEvent.Saved(autosave) : IntegratedEvent.SaveFailed(failure.Message));
+        this.server.PlayerSaveFailed += message => events.Write(IntegratedEvent.PlayerSaveFailed(message));
 
         // Every graceful stop is announced, whether the client asked for it, its input ended, or the host stops.
         lifetime.ApplicationStopping.Register(this.ReportStopping);

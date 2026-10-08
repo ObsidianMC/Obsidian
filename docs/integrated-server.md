@@ -85,6 +85,7 @@ servers only) runs the same thing and also emits the event.
 | `{"event":"ready","port":51234}` | The world is ready and the loopback listener listens on `port`. |
 | `{"event":"saving","autosave":true}` / `{"event":"saved","autosave":true}` | Around every save: autosaves every 6000 ticks (vanilla's interval; paused ticks don't count), and the saves of `pause` and `save` with `autosave` false. |
 | `{"event":"saveFailed","message":"..."}` | A save failed; it's in the log too. |
+| `{"event":"playerSaveFailed","message":"..."}` | Handling a player leaving failed, so their data may not have been saved (a later save can't make up for it, since they're gone). It's in the log too. |
 | `{"event":"stats","tickMs":3.2}` | About once a second while not paused: the mean time the last 100 world ticks took to run, in milliseconds (vanilla's smoothed tick time). |
 | `{"event":"paused"}` / `{"event":"resumed"}` | Replies to `pause` and `resume`. |
 | `{"event":"published","port":25565}` / `{"event":"publishFailed","message":"..."}` | Open to LAN's outcome, from the control command or `/publish`. |

@@ -101,6 +101,7 @@ public sealed record IntegratedEvent(string Event)
     public static IntegratedEvent Saving(bool autosave) => new("saving") { Autosave = autosave };
     public static IntegratedEvent Saved(bool autosave) => new("saved") { Autosave = autosave };
     public static IntegratedEvent SaveFailed(string message) => new("saveFailed") { Message = message };
+    public static IntegratedEvent PlayerSaveFailed(string message) => new("playerSaveFailed") { Message = message };
     public static IntegratedEvent Paused() => new("paused");
     public static IntegratedEvent Resumed() => new("resumed");
     public static IntegratedEvent Published(int port) => new("published") { Port = port };

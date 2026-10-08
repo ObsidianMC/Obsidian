@@ -434,14 +434,20 @@ public sealed partial class Client : IClient
         if (this.Player is null || Interlocked.Exchange(ref this.left, 1) == 1)
             return;
 
+        EventResult result;
         try
         {
-            await this.eventDispatcher.ExecuteEventAsync(new PlayerLeaveEventArgs(this.Player, this.Server, DateTimeOffset.Now));
+            result = await this.eventDispatcher.ExecuteEventAsync(new PlayerLeaveEventArgs(this.Player, this.Server, DateTimeOffset.Now));
         }
         catch (Exception ex)
         {
             Log.LeaveFailed(this.Logger, ex, this.Player.Username);
+            result = EventResult.Failed;
         }
+
+        // Leaving saves the player, so a failed leave may have lost their data; it's reported like a failed save.
+        if (result == EventResult.Failed && this.Server is Server server)
+            server.ReportPlayerSaveFailed(this.Player.Username);
     }
 
     private static partial class Log

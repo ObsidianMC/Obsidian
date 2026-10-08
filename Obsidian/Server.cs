@@ -98,6 +98,12 @@ public sealed partial class Server : IServer
     public event Action<bool, Exception?>? SaveCompleted;
 
     /// <summary>
+    /// Raised when handling a player's leave failed, so their data may not have been saved, with a message saying so.
+    /// Unlike a failed save of everything, a later save doesn't make up for it: the player is gone.
+    /// </summary>
+    public event Action<string>? PlayerSaveFailed;
+
+    /// <summary>
     /// The integrated server's session, when a game client runs this server.
     /// </summary>
     internal IntegratedSession? Integrated { get; }
@@ -449,6 +455,10 @@ public sealed partial class Server : IServer
         this.pendingLeaves.TryAdd(leave, 0);
         _ = leave.ContinueWith(finished => this.pendingLeaves.TryRemove(finished, out _), TaskScheduler.Default);
     }
+
+    /// <summary>Reports through <see cref="PlayerSaveFailed"/> that a player's data may not have been saved as they left.</summary>
+    internal void ReportPlayerSaveFailed(string username) =>
+        this.PlayerSaveFailed?.Invoke($"Saving {username} as they left failed.");
 
     // Leaves log their own failures, so waiting for them never throws.
     private Task PendingLeavesAsync() => Task.WhenAll(this.pendingLeaves.Keys);
