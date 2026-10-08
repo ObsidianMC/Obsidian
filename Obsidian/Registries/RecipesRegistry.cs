@@ -13,6 +13,8 @@ public static partial class RecipesRegistry
 
     public static readonly Dictionary<string, IRecipe> Recipes = [];
 
+    internal static IReadOnlyList<IRecipeWithResult> RecipeBookRecipes { get; private set; } = [];
+
     public static async Task InitializeAsync()
     {
         await using var fs = Assembly.GetExecutingAssembly().GetManifestResourceStream("Obsidian.Assets.recipes.json")!;
@@ -20,6 +22,9 @@ public static partial class RecipesRegistry
 
         foreach (var recipe in recipes!)
             Recipes.Add(recipe.Identifier, recipe);
+
+        RecipeBookRecipes = Recipes.Values.Where(recipe => recipe is ShapedRecipe or ShapelessRecipe)
+            .Cast<IRecipeWithResult>().ToList().AsReadOnly();
 
         shapedRecipeLookup = Recipes.Values.OfType<ShapedRecipe>()
             .GroupBy(recipe => recipe.Pattern.Sum(row => row.Count(symbol => symbol != ' ')))
