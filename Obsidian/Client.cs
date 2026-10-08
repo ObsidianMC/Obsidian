@@ -346,8 +346,6 @@ public sealed partial class Client : IClient
         if (this.Player != null)
             this.Server.RemovePlayer(this.Player);
 
-        Log.Disconnected(this.Logger, this.Ip);
-
         try
         {
             this.Socket.Shutdown(SocketShutdown.Both);
@@ -429,9 +427,6 @@ public sealed partial class Client : IClient
     {
         [LoggerMessage(Level = LogLevel.Warning, Message = "Failed to authenticate {Username}")]
         public static partial void AuthenticationFailed(ILogger logger, string? username);
-
-        [LoggerMessage(Level = LogLevel.Debug, Message = "Client {Ip} disconnected")]
-        public static partial void Disconnected(ILogger logger, string? ip);
 
         [LoggerMessage(Level = LogLevel.Debug, Message = "Handling packet {PacketId} in state {State} failed")]
         public static partial void PacketHandlingFailed(ILogger logger, Exception exception, int packetId, ClientState state);

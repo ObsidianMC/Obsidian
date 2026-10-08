@@ -939,13 +939,14 @@ public abstract partial class AbstractLevel : ILevel
 
     public async ValueTask BlockUpdateNeighborsAsync(IBlockUpdate update)
     {
-        update.Block = null;
+        // Each neighbor is offset from the original position, not from the previous neighbor.
+        var origin = update.Position;
 
         Vector[] directions = Vector.AllDirections;
         for (int i = 0; i < directions.Length; i++)
         {
-            update.Position = update.Position + directions[i];
-            await ScheduleBlockUpdateAsync(update);
+            var neighbor = new BlockUpdate(this, origin + directions[i]);
+            await ScheduleBlockUpdateAsync(neighbor);
         }
     }
 
