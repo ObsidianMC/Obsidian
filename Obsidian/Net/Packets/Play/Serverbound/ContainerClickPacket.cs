@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.API.Events;
+using Obsidian.API.Containers;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
 
@@ -69,11 +70,34 @@ public partial class ContainerClickPacket
 
     public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
+        if (this.ContainerId != (player.OpenedContainer is null ? 0 : player.CurrentContainerId))
+            return;
+
         var baseContainer = player.OpenedContainer ?? player.Inventory;
 
         var (slot, forPlayer) = baseContainer.GetSlot(ClickedSlot);
 
         var container = (this.IsPlayerInventory || forPlayer) ? player.Inventory : baseContainer;
+
+        if (this.ClickedSlot != -999 && (this.ClickedSlot < 0 || slot < 0 || slot >= container.Size ||
+            (!this.IsPlayerInventory && forPlayer && slot >= 45)))
+            return;
+
+        if (this.IsPlayerInventory || baseContainer is CraftingTable { Type: InventoryType.Crafting })
+        {
+            if (this.ClickType == ClickType.QuickCraft && this.ClickedSlot == -999)
+                player.IsDragging = DraggingButtons.Contains(this.Button);
+
+            await server.EventDispatcher.ExecuteEventAsync(new ContainerClickEventArgs(player, server, container)
+            {
+                ClickedSlot = slot,
+                ClickType = this.ClickType,
+                Button = this.Button,
+                StateId = this.StateId,
+                ContainerId = this.ContainerId,
+            });
+            return;
+        }
 
         var clickedItem = slot != -999 ? container.GetItem(slot) : null;
 

@@ -1,11 +1,11 @@
-﻿using Obsidian.API.Containers;
+using Obsidian.API.Containers;
 using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.Entities;
-using Obsidian.Net.Packets.Play.Clientbound;
 using System.Runtime.InteropServices;
 
 namespace Obsidian.Events;
+
 public partial class MainEventHandler
 {
     private const int OutsideInventory = -999;
@@ -14,6 +14,9 @@ public partial class MainEventHandler
     public async ValueTask OnInventoryClick(ContainerClickEventArgs args)
     {
         if (args.IsCancelled)
+            return;
+
+        if (await HandleCraftingAsync(args))
             return;
 
         switch (args.ClickType)
@@ -42,46 +45,6 @@ public partial class MainEventHandler
             default:
                 break;
         }
-
-        await HandleCraftingAsync(args);
-    }
-
-    private static async ValueTask HandleCraftingAsync(ContainerClickEventArgs args)
-    {
-        var container = args.Container;
-        var player = args.Player;
-
-        if (container is not CraftingTable table)
-            return;
-
-        var recipe = RecipesRegistry.FindRecipe(table);
-
-        if (recipe is null)
-        {
-            if (container[9] != null)
-                container.RemoveItem(9);
-
-            table.SetResult(null);
-
-            await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
-            {
-                Slot = 0,
-                ContainerId = player.CurrentContainerId,
-                SlotData = null
-            });
-
-            return;
-        }
-
-        var result = recipe.Result.First();
-        table.SetResult(result);
-
-        await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
-        {
-            Slot = 0,
-            ContainerId = player.CurrentContainerId,
-            SlotData = result
-        });
     }
 
     private static void HandleQuickMove(ContainerClickEventArgs args)
@@ -166,6 +129,8 @@ public partial class MainEventHandler
 
         for (int i = 0; i < container.Size; i++)
         {
+            if (i == 0 && (container is CraftingTable || container == player.Inventory))
+                continue;
             ItemStack? item = container[i];
             if (item != carriedItem)
                 continue;
@@ -188,6 +153,8 @@ public partial class MainEventHandler
         {
             for (int i = 0; i < player.Inventory.Size; i++)
             {
+                if (i == 0)
+                    continue;
                 var item = player.Inventory.GetItem(i);
                 if (item != carriedItem)
                     continue;
@@ -314,7 +281,7 @@ public partial class MainEventHandler
 
     private static void SpawnThrownItem(IPlayer player, ItemStack? thrownItem)
     {
-        if (thrownItem.IsNullOrAir())
+        if (thrownItem.IsNullOrAir() || thrownItem.Count <= 0)
             return;
 
         var loc = new VectorD(player.Position.X, player.HeadY - 0.3, player.Position.Z);
@@ -328,26 +295,7 @@ public partial class MainEventHandler
             Position = loc
         };
 
-        var lookDir = player.GetLookDirection();
-        var vel = Velocity.FromDirection(loc, lookDir);
-
-        //TODO Get this shooting out from the player properly.
-        player.Level.PacketBroadcaster.QueuePacketToLevel(player.Level, new AddEntityPacket
-        {
-            EntityId = item.EntityId,
-            Uuid = item.Uuid,
-            Type = EntityType.Item,
-            Position = item.Position,
-            Pitch = 0,
-            Yaw = 0,
-            Data = 1,
-            Velocity = vel
-        });
-        player.Level.PacketBroadcaster.QueuePacketToLevel(player.Level, new SetEntityDataPacket
-        {
-            EntityId = item.EntityId,
-            Entity = item
-        });
+        player.Level.SpawnEntity(item);
     }
 
     private static void HandlePickup(ContainerClickEventArgs args)
@@ -446,7 +394,9 @@ public partial class MainEventHandler
         var player = args.Player;
         var button = args.Button;
 
-        var localSlot = button + 36;
+        var localSlot = button == 40 ? 45 : button + 36;
+        if (button is not (>= 0 and <= 8 or 40))
+            return;
 
         var currentItem = player.Inventory.GetItem(localSlot);
 
