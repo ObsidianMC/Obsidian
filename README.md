@@ -23,7 +23,7 @@ Feel free to join our [Discord](https://discord.gg/gQBtqyXChu) if you're curious
 - [x] Daylight and weather cycle
 - [x] World generation
 - [x] Liquid physics
-- [ ] Mobs AI & pathfinding
+- [x] Mobs AI & pathfinding (basic)
 - [ ] Redstone circuits
 
 ## 💻 Contribute
