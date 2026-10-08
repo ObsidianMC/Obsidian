@@ -96,35 +96,9 @@ public static partial class Extensions
     /// </summary>
     public static string TrimResourceTag(this string value, bool keepUnderscores = false)
     {
-        var values = value.Split(':');
+        var resourceName = value[(value.IndexOf(':') + 1)..];
 
-        var resourceLocationLength = values[0].Length + 1;
-
-        int length = value.Length - resourceLocationLength;
-
-        if (!keepUnderscores)
-            length -= value.Count(c => c == '_');
-
-        return string.Create(length, value, (span, source) =>
-        {
-            int sourceIndex = resourceLocationLength;
-            for (int i = 0; i < span.Length;)
-            {
-                char sourceChar = source[sourceIndex];
-
-                if (keepUnderscores)
-                {
-                    span[i] = sourceChar;
-                    i++;
-                }
-                else if (sourceChar != '_')
-                {
-                    span[i] = sourceChar;
-                    i++;
-                }
-                sourceIndex++;
-            }
-        });
+        return keepUnderscores ? resourceName : resourceName.Replace("_", "");
     }
 
     //[Obsolete("Do not use. Kept as a masterpiece.")]
