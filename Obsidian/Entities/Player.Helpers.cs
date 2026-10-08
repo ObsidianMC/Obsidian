@@ -14,8 +14,12 @@ namespace Obsidian.Entities;
 public partial class Player
 {
     // A player's saves run one at a time: autosaves, leaving and changing worlds can overlap, and each replaces the same
-    // files.
+    // files. Loading takes it too, so a save never runs while the saved data is still being read.
     private readonly SemaphoreSlim saveLock = new(1, 1);
+
+    // Whether LoadAsync finished. Until then the player holds defaults, and saving them would overwrite their real data,
+    // as leaving during login or configuration would.
+    private bool dataLoaded;
 
     /// <summary>
     /// Whether this is the singleplayer owner (an integrated server's local player), whose data vanilla also keeps in
@@ -33,6 +37,9 @@ public partial class Player
         await this.saveLock.WaitAsync();
         try
         {
+            if (!this.dataLoaded)
+                return;
+
             var world = this.Level is IDimension dimension ? dimension.ParentWorld : (IWorld)this.Level;
 
             //TODO make sure to save inventory in the right location if has using global data set to true
@@ -69,6 +76,20 @@ public partial class Player
     /// </summary>
     /// <param name="loadFromPersistentWorld">Whether to move the player to the world they were last saved in first.</param>
     public async Task LoadAsync(bool loadFromPersistentWorld = true)
+    {
+        await this.saveLock.WaitAsync();
+        try
+        {
+            await this.LoadDataAsync(loadFromPersistentWorld);
+            this.dataLoaded = true;
+        }
+        finally
+        {
+            this.saveLock.Release();
+        }
+    }
+
+    private async Task LoadDataAsync(bool loadFromPersistentWorld)
     {
         //TODO use inventory if has using global data set to true
         if (loadFromPersistentWorld
