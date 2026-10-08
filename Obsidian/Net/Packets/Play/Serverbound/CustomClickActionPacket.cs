@@ -28,7 +28,11 @@ public partial class CustomClickActionPacket
     {
         var args = new DialogActionEventArgs(player, server, ActionId, Payload);
         await server.EventDispatcher.ExecuteEventAsync(args);
-        if (!args.Handled && server is Server obsidian && player is Entities.Player connectedPlayer)
+        if (args.Handled) return;
+
+        if (ActionId == Entities.Player.WelcomeContinueActionId)
+            await player.ClearDialogAsync();
+        else if (server is Server obsidian && player is Entities.Player connectedPlayer)
             await obsidian.HandleFeedbackAsync(connectedPlayer, ActionId, Payload);
     }
 

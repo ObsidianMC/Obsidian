@@ -25,7 +25,19 @@ public sealed class Dialogs
         var dialog = Obsidian.Entities.Player.CreateWelcomeDialog(feedbackEnabled);
         var root = Serialize(dialog);
         var body = Assert.IsType<NbtList>(root["body"]);
-        var messages = body.Cast<NbtCompound>().Select(x => Assert.IsType<NbtCompound>(x["contents"]).GetString("text")).ToArray();
+        var block = Assert.IsType<NbtCompound>(body[0]);
+        Assert.Equal("minecraft:item", block.GetString("type"));
+        Assert.Equal("minecraft:obsidian", Assert.IsType<NbtCompound>(block["item"]).GetString("id"));
+        var heading = Assert.IsType<NbtCompound>(Assert.IsType<NbtCompound>(body[1])["contents"]);
+        Assert.Equal("Welcome to ", heading.GetString("text"));
+        Assert.True(heading.GetBool("bold"));
+        var headingExtras = Assert.IsType<NbtList>(heading["extra"]);
+        var name = Assert.IsType<NbtCompound>(headingExtras[0]);
+        Assert.Equal("Obsidian", name.GetString("text"));
+        Assert.Equal(HexColor.DarkPurple.ToString(), name.GetString("color"));
+        Assert.Equal("!", Assert.IsType<NbtCompound>(headingExtras[1]).GetString("text"));
+        var messages = body.Cast<NbtCompound>().Where(x => x.GetString("type") == "minecraft:plain_message")
+            .Select(x => Assert.IsType<NbtCompound>(x["contents"]).GetString("text")).ToArray();
         Assert.Contains(messages, x => x!.Contains("early in development"));
         Assert.Equal(feedbackEnabled, messages.Any(x => x!.Contains("Press G")));
         var actions = Assert.IsType<NbtList>(root["actions"]);
@@ -33,6 +45,11 @@ public sealed class Dialogs
         Assert.Contains("https://github.com/ObsidianMC/Obsidian", urls);
         Assert.Contains("https://discord.gg/gQBtqyXChu", urls);
         Assert.Equal("Continue", Assert.IsType<NbtCompound>(Assert.IsType<NbtCompound>(root["exit_action"])["label"]).GetString("text"));
+        var continueAction = Assert.IsType<NbtCompound>(Assert.IsType<NbtCompound>(root["exit_action"])["action"]);
+        Assert.Equal("minecraft:custom", continueAction.GetString("type"));
+        Assert.Equal(Obsidian.Entities.Player.WelcomeContinueActionId, continueAction.GetString("id"));
+        Assert.Equal("none", root.GetString("after_action"));
+        Assert.False(root.GetBool("pause"));
         Assert.True(root.GetBool("can_close_with_escape"));
     }
 
