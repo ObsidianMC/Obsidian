@@ -22,6 +22,14 @@ public static class DependencyInjection
         builder.Configuration.AddJsonFile(Path.Combine("config", "whitelist.json"), optional: false, reloadOnChange: true);
         builder.Configuration.AddEnvironmentVariables();
 
+        if (Environment.GetEnvironmentVariable("FEEDBACK_WEBHOOK_URL") is { } feedbackWebhookUrl)
+        {
+            builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                [nameof(ServerConfiguration.FeedbackWebhookUrl)] = feedbackWebhookUrl
+            });
+        }
+
         return builder;
     }
 

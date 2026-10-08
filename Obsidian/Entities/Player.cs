@@ -535,26 +535,27 @@ public sealed partial class Player : Avatar, IPlayer
     {
         base.Write(writer);
 
-        this.WriteEntityMetadataType(writer, EntityMetadataType.Float);
+        writer.WriteEntityMetadataType(17, EntityMetadataType.Float);
         writer.WriteSingle(Absorption);
 
-        this.WriteEntityMetadataType(writer, EntityMetadataType.VarInt);
+        writer.WriteEntityMetadataType(18, EntityMetadataType.VarInt);
         writer.WriteVarInt(XpTotal);
+
+        this.MetadataIndex = 19;
 
         //TODO fix possibly an extension method?
         if (this.LeftShoulder is not null)
         {
-            this.WriteEntityMetadataType(writer, EntityMetadataType.OptionalLivingEntityReference);
+            writer.WriteEntityMetadataType(19, EntityMetadataType.OptionalLivingEntityReference);
             writer.WriteNbtCompound([]);
+            this.MetadataIndex = 20;
         }
 
         if (this.RightShoulder is not null)
         {
-            if (this.LeftShoulder is null)
-                this.MetadataIndex++;
-
-            this.WriteEntityMetadataType(writer, EntityMetadataType.OptionalLivingEntityReference);
+            writer.WriteEntityMetadataType(20, EntityMetadataType.OptionalLivingEntityReference);
             writer.WriteNbtCompound([]);
+            this.MetadataIndex = 21;
         }
     }
 

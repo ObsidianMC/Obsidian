@@ -5,6 +5,8 @@ services:
     # Keep stdin open with a terminal so console commands work via `docker attach`.
     stdin_open: true
     tty: true
+    environment:
+      FEEDBACK_WEBHOOK_URL: "${FEEDBACK_WEBHOOK_URL:-}"
     ports:
       - "25565:25565"
     volumes:

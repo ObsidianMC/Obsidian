@@ -195,25 +195,27 @@ public class Living : Entity, ILiving
     {
         base.Write(writer);
 
-        this.WriteEntityMetadataType(writer, EntityMetadataType.Byte);
+        writer.WriteEntityMetadataType(8, EntityMetadataType.Byte);
         writer.WriteByte(LivingBitMask);
 
-        this.WriteEntityMetadataType(writer, EntityMetadataType.Float);
+        writer.WriteEntityMetadataType(9, EntityMetadataType.Float);
         writer.WriteSingle(Health);
 
-        this.WriteEntityMetadataType(writer, EntityMetadataType.Particles);//This is a list of integers?
+        writer.WriteEntityMetadataType(10, EntityMetadataType.Particles);//This is a list of integers?
         writer.WriteVarInt(0);
 
-        this.WriteEntityMetadataType(writer, EntityMetadataType.Boolean);
+        writer.WriteEntityMetadataType(11, EntityMetadataType.Boolean);
         writer.WriteBoolean(AmbientPotionEffect);
        
-        this.WriteEntityMetadataType(writer, EntityMetadataType.VarInt);
+        writer.WriteEntityMetadataType(12, EntityMetadataType.VarInt);
         writer.WriteVarInt(AbsorbedArrows);
 
-        this.WriteEntityMetadataType(writer, EntityMetadataType.VarInt);
+        writer.WriteEntityMetadataType(13, EntityMetadataType.VarInt);
         writer.WriteVarInt(AbsorbedStingers);
 
-        this.WriteEntityMetadataType(writer, EntityMetadataType.OptionalBlockPos);
+        writer.WriteEntityMetadataType(14, EntityMetadataType.OptionalBlockPos);
         writer.WriteOptional(BedBlockPosition);
+
+        this.MetadataIndex = 15;
     }
 }
