@@ -127,6 +127,10 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
                 }
             }
         }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            // Normal service shutdown.
+        }
         catch (Exception e) when (e is not ObjectDisposedException &&
             (e is not OperationCanceledException || !stoppingToken.IsCancellationRequested))
         {

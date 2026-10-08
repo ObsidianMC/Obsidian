@@ -49,6 +49,10 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
                     .Select(level => level.ManageChunksAsync()));
             }
         }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            // Normal service shutdown.
+        }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             await this.serverEnvironment.OnServerCrashAsync(ex);
@@ -66,7 +70,7 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
             if (!this.worlds.TryAdd(world.Name, world))
                 throw new InvalidOperationException($"World already exists: {world.Name}");
 
-            if (!CodecRegistry.TryGetDimension(serverWorld.DefaultDimension, out var defaultCodec) || !CodecRegistry.TryGetDimension("minecraft:overworld", out defaultCodec))
+            if (!CodecRegistry.TryGetDimension(serverWorld.DefaultDimension, out var defaultCodec) && !CodecRegistry.TryGetDimension("minecraft:overworld", out defaultCodec))
                 throw new UnreachableException("Failed to get default dimension codec.");
 
             var worldLoaded = await world.LoadAsync(defaultCodec);

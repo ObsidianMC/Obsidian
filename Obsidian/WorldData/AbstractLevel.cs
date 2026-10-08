@@ -11,6 +11,7 @@ using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData.Fluids;
 using Obsidian.WorldData.Generators;
+using Obsidian.WorldData.Portals;
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 using System.Threading;
@@ -117,6 +118,15 @@ public abstract partial class AbstractLevel : ILevel
     /// </summary>
     internal LevelFluids Fluids { get; }
 
+    internal LevelPortals Portals { get; }
+
+    internal void PinPortalChunk(int x, int z, int delta)
+    {
+        var key = NumericsHelper.IntsToLong(x, z);
+        if (this.generationPins.AddOrUpdate(key, delta, (_, count) => count + delta) == 0)
+            this.generationPins.TryRemove(KeyValuePair.Create(key, 0));
+    }
+
     private readonly IDisposable optionsMonitor;
     private readonly Lock regionLock = new();
     private readonly ConcurrentQueue<Func<ValueTask>> entityActions = new();
@@ -194,6 +204,7 @@ public abstract partial class AbstractLevel : ILevel
         this.Name = name;
         this.Seed = seed;
         this.Fluids = new LevelFluids(this);
+        this.Portals = new LevelPortals(this);
 
         var spawnChunkCount = 2 * this.Configuration.SpawnChunkRadius + 1;
         this.spawnChunks = new long[spawnChunkCount * spawnChunkCount];
@@ -364,7 +375,10 @@ public abstract partial class AbstractLevel : ILevel
             c.RemoveBlockEntity(x, y, z);
 
         if (doBlockUpdate)
+        {
             this.Fluids.OnBlockChanged(new Vector(x, y, z), block);
+            this.Portals.OnBlockChanged(new Vector(x, y, z));
+        }
     }
 
     public IEnumerable<IEntity> GetEntitiesInRange(VectorD location, float distance = 10f)
@@ -382,7 +396,7 @@ public abstract partial class AbstractLevel : ILevel
 
     public IEnumerable<IEntity> GetNonPlayerEntitiesInRange(VectorD location, float distance)
     {
-        if (float.IsNaN(distance) || distance < 0f)
+        if (!float.IsFinite(distance) || distance < 0f)
         {
             yield break;
         }
@@ -409,8 +423,9 @@ public abstract partial class AbstractLevel : ILevel
                     if (entity.Type == EntityType.Player)
                         continue;
 
-                    var difference = entity.Position - location;
-                    if (difference.X * difference.X + difference.Z * difference.Z <= distance)
+                    var locationDifference = LocationDiff.GetDifference(entity.Position, location);
+
+                    if (locationDifference.CalculatedDifference + locationDifference.DifferenceY * locationDifference.DifferenceY <= distance)
                     {
                         yield return entity;
                     }
@@ -496,6 +511,8 @@ public abstract partial class AbstractLevel : ILevel
 
         // Like vanilla, fluid ticks run before entities tick.
         this.Fluids.Tick();
+
+        await this.Portals.TickAsync();
 
         foreach (var region in Regions.Values.OfType<Region>())
             region.TickInhabitedTime(this);
@@ -1112,7 +1129,7 @@ public abstract partial class AbstractLevel : ILevel
 
     protected void BroadcastTime() => this.PacketBroadcaster.QueuePacketToLevel(this, new SetTimePacket(LevelData.Time, LevelData.Time % 24000, true));
 
-    public async ValueTask DisposeAsync()
+    public async virtual ValueTask DisposeAsync()
     {
         if (Interlocked.Exchange(ref this.disposed, 1) != 0)
             return;

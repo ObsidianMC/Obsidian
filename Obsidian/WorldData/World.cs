@@ -180,6 +180,7 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         try
         {
             await this.FlushRegionsAsync();
+            await Task.WhenAll(this.dimensions.Values.Select(dimension => dimension.FlushRegionsAsync()));
             await this.SaveLevelAsync();
         }
         finally
@@ -228,8 +229,18 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         await Task.WhenAll(this.dimensions.Values.Select(d => d.DoWorldTickAsync()));
 
         // Like vanilla's player inventory tick, after the levels ticked.
-        foreach (var player in this.Players.Values.Concat(this.dimensions.Values.SelectMany(dimension => dimension.Players.Values)).Cast<Player>())
+        foreach (var player in this.Players.Values.Concat(this.dimensions.Values.SelectMany(dimension => dimension.Players.Values)).Cast<Player>().ToArray())
+        {
+            await player.TickPortalsAsync();
+            await player.PickupNearbyItemsAsync();
             await this.Maps.TickAsync(player);
+        }
+    }
+
+    public override async ValueTask DisposeAsync()
+    {
+        await Task.WhenAll(this.dimensions.Values.Select(dimension => dimension.DisposeAsync().AsTask()));
+        await base.DisposeAsync();
     }
 
     private static partial class Log

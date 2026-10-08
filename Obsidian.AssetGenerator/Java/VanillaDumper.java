@@ -362,6 +362,8 @@ public final class VanillaDumper {
 
         var flags = new int[states.size()];
         var fluidFlags = new int[states.size()];
+        var collisionShapeIds = new int[states.size()];
+        var collisionShapes = new Indexer<List<double[]>>(shape -> shape.stream().map(Arrays::toString).toList());
         var faces = new Indexer<List<double[]>>(face -> face.stream().map(Arrays::toString).toList());
         var faceSets = new Indexer<List<Integer>>();
         faceSets.indexOf(List.of(0, 0, 0, 0, 0, 0)); // set 0: no faces, also used for full blocks (checked first)
@@ -369,6 +371,7 @@ public final class VanillaDumper {
             var state = states.get(id);
             var fluidState = Mojang.call(getFluidState, state);
             var collision = Mojang.call(getCollisionShape, state, emptyLevel, origin);
+            collisionShapeIds[id] = collisionShapes.indexOf(boxes(collision));
 
             var bits = 0;
             bits |= bit(0, Mojang.call(isAir, state));
@@ -424,6 +427,8 @@ public final class VanillaDumper {
         json.put("fluidFlags", fluidFlags);
         json.put("collisionFaceSets", faceSets.values());
         json.put("collisionFaces", faces.values());
+        json.put("collisionShapeIds", collisionShapeIds);
+        json.put("collisionShapes", collisionShapes.values());
         Json.write(output.resolve("block_physics.json"), json, false);
     }
 

@@ -17,6 +17,7 @@
 
 	<ItemGroup>
 		<None Include="Java\**\*.java" CopyToOutputDirectory="PreserveNewest" />
+		<UpToDateCheckOutput Include="$(VanillaAssetsDirectory)collision_shapes.json" />
 	</ItemGroup>
 
 	<Target Name="ReadMinecraftVersion">
@@ -32,7 +33,7 @@
 	<!-- Runs after every build of the generator, which Obsidian.API and Obsidian reference so that it runs before they
 	     compile. Skipped while the assets of the version are newer than the generator. -->
 	<Target Name="GenerateVanillaAssets" AfterTargets="Build" DependsOnTargets="ReadMinecraftVersion"
-	        Inputs="$(TargetPath);@(None->'$(OutDir)%(Identity)')" Outputs="$(VanillaAssetsStamp)">
+	        Inputs="$(TargetPath);@(None->'$(OutDir)%(Identity)')" Outputs="$(VanillaAssetsStamp);$(VanillaAssetsDirectory)collision_shapes.json">
 		<!-- Java logs warnings (e.g. deprecated Unsafe use by vanilla's libraries) to stderr; failures still fail by exit code. -->
 		<Exec IgnoreStandardErrorWarningFormat="true" Command="dotnet &quot;$(TargetPath)&quot; $(MinecraftVersion) &quot;$(VanillaWorkDirectory).&quot; &quot;$(VanillaAssetsDirectory).&quot;" />
 		<Touch Files="$(VanillaAssetsStamp)" AlwaysCreate="true" />

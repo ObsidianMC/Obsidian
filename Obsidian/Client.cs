@@ -244,7 +244,7 @@ public sealed partial class Client : IClient
 
     public async ValueTask QueuePacketAsync(IClientboundPacket packet)
     {
-        if (!this.Connected || this.cancellationSource.IsCancellationRequested)
+        if (this.disposed || this.cancellationSource.IsCancellationRequested || !this.Connected)
             return;
         try
         {
@@ -256,7 +256,9 @@ public sealed partial class Client : IClient
                 return;
             }
 
-            await packetQueue.Writer.WriteAsync(packet, this.cancellationSource.Token);
+            if (this.disposed || this.cancellationSource.IsCancellationRequested)
+                return;
+            this.packetQueue.Writer.TryWrite(packet);
         }
         catch (OperationCanceledException) when (this.cancellationSource.IsCancellationRequested)
         {

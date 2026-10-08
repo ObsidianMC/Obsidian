@@ -452,6 +452,7 @@ public sealed partial class Player : Avatar, IPlayer
                     HashedSeed = 0,
                     Flat = false,
                     Debug = false,
+                    PortalCooldown = this.portalCooldown,
                 },
                 DataKept = dataKept,
             });
@@ -466,6 +467,9 @@ public sealed partial class Player : Avatar, IPlayer
                 Position = Position,
                 Yaw = Yaw,
                 Pitch = Pitch,
+                Delta = this.preservePortalMotion ? VectorD.Zero : Motion,
+                Flags = 0,
+                RelativeFlags = this.preservePortalMotion ? NetherPortalRelativeFlags : 0,
                 TeleportId = 0
             });
 
