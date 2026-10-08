@@ -1,8 +1,8 @@
-﻿using Obsidian.Nbt;
+using Obsidian.Nbt;
 
 namespace Obsidian.Entities;
 
-public class Mob : Living
+public partial class Mob : Living
 {
     public MobBitmask MobBitMask { get; set; } = MobBitmask.None;
 
@@ -20,11 +20,29 @@ public class Mob : Living
 
         tag.Set(new NbtTag<bool>("LeftHanded", this.MobBitMask.HasFlag(MobBitmask.LeftHanded)));
         tag.SetFlag("NoAI", this.MobBitMask.HasFlag(MobBitmask.NoAi));
+
+        if (HasAi)
+        {
+            // Reuse the AI save format within the chunk's single entity storage path.
+            using var writer = new RawNbtWriter(string.Empty);
+            WriteSave(writer, writeCompound: false);
+            writer.EndCompound();
+            using var stream = new ReadOnlyStream(writer.AsSpan().ToArray());
+            var saved = (NbtCompound)new NbtReader(stream).ReadNextTag()!;
+            foreach (var (name, child) in saved)
+            {
+                if (name != "id")
+                    tag.Set(child);
+            }
+        }
     }
 
     internal override void ReadNbt(NbtCompound tag)
     {
         base.ReadNbt(tag);
+
+        if (HasAi)
+            ReadSave(tag);
 
         if (tag.TryGetBool("LeftHanded", out var leftHanded) && leftHanded)
             this.MobBitMask |= MobBitmask.LeftHanded;

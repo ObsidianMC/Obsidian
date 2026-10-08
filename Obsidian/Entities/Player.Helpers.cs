@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Obsidian.API.Inventory;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
@@ -68,6 +68,7 @@ public partial class Player
         writer.WriteBool("Sleeping", Sleeping);
 
         writer.WriteFloat("Health", Health);
+        writer.WriteInt("ObsidianTimeSinceRest", TimeSinceRest);
         writer.WriteFloat("FallDistance", FallDistance);
         writer.WriteFloat("XpP", XpP);
 
@@ -393,6 +394,7 @@ public partial class Player
         Health = compound.GetFloat("Health");
         HurtTime = compound.TryGetTagValue<short>("HurtTime", out var hurtTime) ? hurtTime : (short)0;
         SleepTimer = compound.TryGetTagValue<short>("SleepTimer", out var sleepTimer) ? sleepTimer : (short)0;
+        TimeSinceRest = compound.TryGetTagValue<int>("ObsidianTimeSinceRest", out var timeSinceRest) ? Math.Max(0, timeSinceRest) : 0;
         FoodLevel = compound.GetInt("foodLevel");
         FoodTickTimer = compound.GetInt("foodTickTimer");
         GameMode = (GameMode)compound.GetInt("playerGameType");

@@ -9,7 +9,7 @@ public partial class ClientCommandPacket
 
     public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
-        if (Action == ClientAction.PerformRespawn)
+        if (Action == ClientAction.PerformRespawn && player.Health <= 0)
         {
             if (player is Entities.Player concrete && await concrete.FinishEndCreditsAsync())
                 return;

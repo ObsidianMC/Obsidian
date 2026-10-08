@@ -3,8 +3,8 @@
 namespace Obsidian.API.Inventory.DataComponents;
 public partial class ComponentBuilder
 {
-    //TODO SOURCE GENERATE THIS
-    internal static ImmutableArray<Func<DataComponent?>> ComponentsMap { get; } = new List<Func<DataComponent?>>
+    // Protocol IDs can change independently of the order of these factories.
+    internal static ImmutableDictionary<DataComponentType, Func<DataComponent?>> ComponentsMap { get; } = new List<Func<DataComponent?>>
     {
         () => CustomData,
         () => MaxStackSize,
@@ -73,5 +73,5 @@ public partial class ComponentBuilder
         () => Bees,
         () => Lock,
         () => ContainerLoot
-    }.ToImmutableArray();
+    }.ToImmutableDictionary(factory => factory()!.Type);
 }

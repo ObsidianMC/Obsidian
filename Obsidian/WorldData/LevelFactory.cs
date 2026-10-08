@@ -62,6 +62,7 @@ public sealed class LevelFactory(IServiceScopeFactory serviceScopeFactory) : ILe
     private void RegisterDefaults()
     {
         this.RegisterGenerator<SuperflatGenerator>();
+        this.RegisterGenerator<MobTestGenerator>();
         this.RegisterGenerator<OverworldGenerator>();
         this.RegisterGenerator<IslandGenerator>();
         this.RegisterGenerator<EmptyWorldGenerator>();

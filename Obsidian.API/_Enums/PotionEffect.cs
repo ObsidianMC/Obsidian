@@ -32,5 +32,14 @@ public enum PotionEffect : int
     SlowFalling,
     ConduitPower,
     DolphinsGrace,
-    BadOmen
+    BadOmen,
+    HeroOfTheVillage,
+    Darkness,
+    TrialOmen,
+    RaidOmen,
+    WindCharged,
+    Weaving,
+    Oozing,
+    Infested,
+    BreathOfTheNautilus
 }

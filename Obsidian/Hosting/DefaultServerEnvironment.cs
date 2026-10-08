@@ -26,7 +26,10 @@ internal sealed partial class DefaultServerEnvironment(ILogger<DefaultServerEnvi
             "I blame Naamloos for this one...",
             "I blame Sebastian for this one...",
             "I blame Tides for this one...",
-            "I blame Craftplacer for this one..."
+            "I blame Craftplacer for this one...",
+            "This is really just your fault",
+            "Please tell me you have a backup of your world teehee",
+            "This is all Mojang's fault, not mine",
         };
 
         var byeMessage = byeMessages[Random.Shared.Next(byeMessages.Length)];

@@ -164,7 +164,7 @@ public static partial class ComponentBuilder
     //TODO WE NEED NBT ACCESS IN API
     public static SimpleDataComponent DebugStickState => new(DataComponentType.DebugStickState, "minecraft:debug_stick_state");
     public static SimpleDataComponent EntityData => new(DataComponentType.EntityData, "minecraft:entity_data");
-    public static SimpleDataComponent BucketEntityData => new(DataComponentType.BucketEntityData, "minecraft:bucket_entity_data");
+    public static SimpleDataComponent BucketEntityData => new BucketEntityDataComponent();
     public static SimpleDataComponent BlockEntityData => new(DataComponentType.BlockEntityData, "minecraft:block_entity_data");
 
     public static SimpleDataComponent<InstrumentData> Instrument => BuildSimpleComponent(DataComponentType.Instrument, "minecraft:instrument",

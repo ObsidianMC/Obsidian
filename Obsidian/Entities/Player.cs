@@ -49,6 +49,8 @@ public sealed partial class Player : Avatar, IPlayer
     public required IServer Server { get; init; }
 
     public PlayerInput Input { get; set; }
+    internal Mob? Vehicle { get; set; }
+    internal long LastExperiencePickupTick { get; set; } = -2;
 
     public override bool Sneaking
     {
@@ -118,11 +120,14 @@ public sealed partial class Player : Avatar, IPlayer
     public bool Sleeping { get; set; }
     public bool InHorseInventory { get; set; }
     public bool Respawning { get; internal set; }
+    private bool pendingRespawnChunks;
+    private int respawnChunkRetryTicks;
 
     public short AttackTime { get; set; }
     public short DeathTime { get; set; }
     public short HurtTime { get; set; }
     public short SleepTimer { get; set; }
+    internal int TimeSinceRest { get; private set; }
 
     public short CurrentHeldItemSlot
     {
@@ -143,18 +148,18 @@ public sealed partial class Player : Avatar, IPlayer
     }
 
     public int Ping => Client.Ping;
-    public int FoodLevel { get; set; }
+    public int FoodLevel { get; set; } = 20;
     public int FoodTickTimer { get; set; }
     public int XpLevel { get; set; }
     public int XpTotal { get; set; }
     public float XpP { get; set; }
 
-    public double HeadY { get; private set; }
+    public double HeadY { get; internal set; }
 
     public float Absorption { get; set; }
     public float FallDistance { get; set; }
     public float FoodExhaustionLevel { get; set; }
-    public float FoodSaturationLevel { get; set; }
+    public float FoodSaturationLevel { get; set; } = 5;
 
     public Entity? LeftShoulder { get; set; }
     public Entity? RightShoulder { get; set; }
@@ -252,6 +257,7 @@ public sealed partial class Player : Avatar, IPlayer
 
     public async override ValueTask TeleportAsync(VectorD pos)
     {
+        Vehicle?.Dismount(this);
         LastPosition = Position;
         Position = pos;
         await UpdateChunksAsync();
@@ -356,76 +362,143 @@ public sealed partial class Player : Avatar, IPlayer
     public async ValueTask KickAsync(string reason) => await this.Client.DisconnectAsync(reason);
     public async ValueTask KickAsync(ChatMessage reason) => await Client.DisconnectAsync(reason);
 
+    internal async Task TransferDimensionAsync(ILevel destination)
+    {
+        CancelEating();
+        Vehicle?.Dismount(this);
+        var origin = Level;
+        var spawn = destination.LevelData.SpawnPosition;
+        await destination.GetChunkAsync((Vector)spawn.Floor());
+        await origin.DestroyEntityAsync(this);
+        origin.TryRemovePlayer(this);
+        foreach (var observer in origin.GetPlayersInRange(Position, float.MaxValue).OfType<Player>())
+            observer.visiblePlayers.Remove(this);
+        Level = destination;
+        Position = spawn;
+        LastPosition = spawn;
+        BoundingBox = Dimension.CreateBBFromPosition(spawn);
+        HeadY = spawn.Y + 1.62;
+        Motion = VectorD.Zero;
+        FallDistance = 0;
+        foodPosition = null;
+        destination.TryAddPlayer(this);
+        destination.TryAddEntity(this);
+        await RespawnAsync();
+        await Client.QueuePacketAsync(new SetDefaultSpawnPositionPacket(new()
+        { Dimension = destination.DimensionName, Pos = (Vector)spawn.Floor() }, 0, 0));
+        await Client.QueuePacketAsync(new SetTimePacket(destination.LevelData.Time, destination.LevelData.DayTime, true));
+        await Client.QueuePacketAsync(new GameEventPacket(destination.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
+        foreach (var (id, effect) in ActivePotionEffects)
+            await Client.QueuePacketAsync(new UpdateMobEffectPacket(EntityId, id, effect.CurrentDuration)
+            { Amplifier = effect.EffectData.Amplifier, Flags = EntityEffectFlags.ShowParticles | EntityEffectFlags.ShowIcon });
+        await SaveAsync();
+    }
+
     public async Task RespawnAsync(DataKept dataKept = DataKept.Metadata)
     {
-        if (!Alive)
+        if (Respawning) return;
+        Respawning = true;
+        try
         {
-            // if unalive, reset health and set location to world spawn
-            Health = 20f;
-            Position = Level.LevelData.SpawnPosition;
+            if (!Alive)
+            {
+                CancelEating();
+                Vehicle?.Dismount(this);
+                ClearPotionEffects();
+                damageCooldown = 0;
+                lastIncomingDamage = 0;
+                HurtTime = 0;
+                DeathTime = 0;
+                FireTicks = 0;
+                Burning = false;
+                Motion = VectorD.Zero;
+                FallDistance = 0;
+                Absorption = 0;
+                AbsorbtionAmount = 0;
+                FoodLevel = 20;
+                FoodSaturationLevel = 5;
+                FoodExhaustionLevel = 0;
+                FoodTickTimer = 0;
+                foodPosition = null;
+                Sprinting = false;
+                Swimming = false;
+                Sleeping = false;
+                Pose = Pose.Standing;
+                Yaw = 0;
+                Pitch = 0;
+                MovementFlags = MovementFlags.None;
+                Health = 20f;
+                await Level.DestroyEntityAsync(this);
+                Position = Level.LevelData.SpawnPosition;
+                LastPosition = Position;
+                BoundingBox = Dimension.CreateBBFromPosition(Position);
+                HeadY = Position.Y + 1.62;
+                Level.TryAddEntity(this);
+            }
+
+            CodecRegistry.TryGetDimension(Level.DimensionName, out var codec);
+            Debug.Assert(codec is not null); // TODO Handle missing codec
+
+            Log.ChangingLevel(this.Logger, this.Username, this.Level.Name);
+
+            await Client.QueuePacketAsync(new RespawnPacket
+            {
+                CommonPlayerSpawnInfo = new()
+                {
+                    DimensionType = codec.Id,
+                    DimensionName = Level.DimensionName,
+                    GameMode = GameMode,
+                    PreviousGamemode = GameMode,
+                    HashedSeed = 0,
+                    Flat = false,
+                    Debug = false,
+                    PortalCooldown = this.portalCooldown,
+                },
+                DataKept = dataKept,
+            });
+
+            visiblePlayers.Clear();
+
+            TeleportId = 0;
+
+            await Client.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
+            await Client.QueuePacketAsync(new PlayerPositionPacket
+            {
+                Position = Position,
+                Yaw = Yaw,
+                Pitch = Pitch,
+                Delta = this.preservePortalMotion ? VectorD.Zero : Motion,
+                Flags = 0,
+                RelativeFlags = this.preservePortalMotion ? NetherPortalRelativeFlags : 0,
+                TeleportId = 0
+            });
+
+            pendingRespawnChunks = !await UpdateChunksAsync(true);
+            respawnChunkRetryTicks = 20;
+            Level.TryAddEntity(this);
+            await Client.QueuePacketAsync(new SetHealthPacket(Health, FoodLevel, FoodSaturationLevel));
+            await SendPlayerInfoAsync();
+            await TrySpawnPlayerAsync(Position);
+            await SynchronizeTrackedEntitiesAsync();
+        }
+        finally
+        {
+            Respawning = false;
         }
 
-        CodecRegistry.TryGetDimension(Level.DimensionName, out var codec);
-        Debug.Assert(codec is not null); // TODO Handle missing codec
-
-        Log.ChangingLevel(this.Logger, this.Username, this.Level.Name);
-
-        await Client.QueuePacketAsync(new RespawnPacket
-        {
-            CommonPlayerSpawnInfo = new()
-            {
-                DimensionType = codec.Id,
-                DimensionName = Level.DimensionName,
-                GameMode = GameMode,
-                PreviousGamemode = GameMode,
-                HashedSeed = 0,
-                Flat = false,
-                Debug = false,
-                PortalCooldown = this.portalCooldown,
-            },
-            DataKept = dataKept,
-        });
-
-        visiblePlayers.Clear();
-
-        Respawning = true;
-        TeleportId = 0;
-
-        await UpdateChunksAsync(true);
-
-        await Client.QueuePacketAsync(new PlayerPositionPacket
-        {
-            Position = Position,
-            Yaw = Yaw,
-            Pitch = Pitch,
-            Delta = this.preservePortalMotion ? VectorD.Zero : Motion,
-            Flags = 0,
-            // DELTA_X/Y/Z and ROTATE_DELTA preserve and rotate the client's velocity across a Nether portal.
-            RelativeFlags = this.preservePortalMotion ? NetherPortalRelativeFlags : 0,
-            TeleportId = 0
-        });
-
-        await Client.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
-
-        Respawning = false;
     }
 
     //TODO make IDamageSource 
     public async override ValueTask KillAsync(IEntity source, ChatMessage deathMessage)
     {
-        //await this.client.QueuePacketAsync(new PlayerDied
-        //{
-        //    PlayerId = this.EntityId,
-        //    EntityId = source != null ? source.EntityId : -1,
-        //    Message = deathMessage as ChatMessage
-        //});
-        // TODO implement new death packets
-
-        await Client.QueuePacketAsync(new GameEventPacket(RespawnReason.EnableRespawnScreen));
-        await RemoveAsync();
-
-        if (source is Player attacker)
-            attacker.visiblePlayers.Remove(this);
+        Health = 0;
+        CancelEating();
+        Vehicle?.Dismount(this);
+        await Client.QueuePacketAsync(new SetHealthPacket(0, FoodLevel, FoodSaturationLevel));
+        await Client.QueuePacketAsync(new PlayerCombatKillPacket { PlayerID = EntityId, Message = deathMessage });
+        PacketBroadcaster.QueuePacketToLevel(Level, new EntityEventPacket { EntityId = EntityId, Event = 3 }, EntityId);
+        foreach (var observer in Level.GetPlayersInRange(Position, float.MaxValue).OfType<Player>())
+            observer.visiblePlayers.Remove(this);
     }
 
     public override void Write(INetStreamWriter writer)
@@ -628,7 +701,13 @@ public sealed partial class Player : Avatar, IPlayer
 
     public async override ValueTask UpdateAsync(VectorD position, MovementFlags movementFlags)
     {
+        if (!Alive || Respawning) return;
+        if (Vehicle != null)
+            position = Position;
+        var oldPosition = Position;
+        var oldMovementFlags = MovementFlags;
         await base.UpdateAsync(position, movementFlags);
+        if (Level is AbstractLevel events) await events.EmitMovementGameEventsAsync(this, oldPosition, oldMovementFlags);
 
         HeadY = position.Y + 1.62f;
 
@@ -639,7 +718,13 @@ public sealed partial class Player : Avatar, IPlayer
 
     public async override ValueTask UpdateAsync(VectorD position, Angle yaw, Angle pitch, MovementFlags movementFlags)
     {
+        if (!Alive || Respawning) return;
+        if (Vehicle != null)
+            position = Position;
+        var oldPosition = Position;
+        var oldMovementFlags = MovementFlags;
         await base.UpdateAsync(position, yaw, pitch, movementFlags);
+        if (Level is AbstractLevel events) await events.EmitMovementGameEventsAsync(this, oldPosition, oldMovementFlags);
 
         HeadY = position.Y + 1.62f;
 
@@ -650,6 +735,7 @@ public sealed partial class Player : Avatar, IPlayer
 
     public async override ValueTask UpdateAsync(Angle yaw, Angle pitch, MovementFlags movementFlags)
     {
+        if (!Alive || Respawning) return;
         await base.UpdateAsync(yaw, pitch, movementFlags);
 
         await PickupNearbyItemsAsync();
@@ -672,6 +758,10 @@ public sealed partial class Player : Avatar, IPlayer
         {
             if (unloadAll)
             {
+                var tracked = TrackedEntities.Keys.ToArray();
+                TrackedEntities.Clear();
+                if (!Respawning && tracked.Length > 0)
+                    await Client.QueuePacketAsync(new RemoveEntitiesPacket(tracked));
                 if (!Respawning)
                 {
                     foreach (var value in LoadedChunks)

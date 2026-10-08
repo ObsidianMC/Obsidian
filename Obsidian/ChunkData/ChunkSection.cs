@@ -1,4 +1,4 @@
-﻿using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.API.Registry.Codecs.Biomes;
 using System.Diagnostics;
 
 namespace Obsidian.ChunkData;
@@ -203,5 +203,11 @@ public sealed class ChunkSection : IChunkSection
     public void SetLightLevel(Vector position, LightType lt, int level) => this.SetLightLevel(position.X, position.Y, position.Z, lt, level);
     public int GetLightLevel(Vector position, LightType lt) => this.GetLightLevel(position.X, position.Y, position.Z, lt);
 
-    public IChunkSection Clone() => new ChunkSection(BlockStateContainer.Clone(), BiomeContainer.Clone(), YBase, IsEmpty);
+    public IChunkSection Clone()
+    {
+        var clone = new ChunkSection(BlockStateContainer.Clone(), BiomeContainer.Clone(), YBase, IsEmpty);
+        clone.SetLight((byte[])skyLight.Clone(), LightType.Sky);
+        clone.SetLight((byte[])blockLight.Clone(), LightType.Block);
+        return clone;
+    }
 }

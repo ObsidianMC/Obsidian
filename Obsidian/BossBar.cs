@@ -111,7 +111,7 @@ public class BossBar : IBossBar
             Health = this.Health
         };
 
-        this.packetBroadcaster.QueuePacketTo(new BossEventPacket(addAction), entityID);
+        this.packetBroadcaster.QueuePacketTo(new BossEventPacket(addAction), ids: [entityID]);
     }
 
     public void RemovePlayer(int entityId)
@@ -122,7 +122,7 @@ public class BossBar : IBossBar
         if (!removed)
             return;
 
-        this.packetBroadcaster.QueuePacketTo(new BossEventPacket(this.removeAction), entityId);
+        this.packetBroadcaster.QueuePacketTo(new BossEventPacket(this.removeAction), ids: [entityId]);
     }
 
     private void UpdateFlags()

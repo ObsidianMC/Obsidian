@@ -73,6 +73,12 @@ public partial class ContainerClickPacket
         if (this.ContainerId != (player.OpenedContainer is null ? 0 : player.CurrentContainerId))
             return;
 
+        if (player.OpenedContainer is Obsidian.Entities.MerchantContainer merchant)
+        {
+            await merchant.HandleClickAsync(this, player);
+            return;
+        }
+
         var baseContainer = player.OpenedContainer ?? player.Inventory;
 
         var (slot, forPlayer) = baseContainer.GetSlot(ClickedSlot);

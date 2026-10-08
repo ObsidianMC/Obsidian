@@ -16,7 +16,7 @@ internal static class EntityNbt
     /// </summary>
     public static NbtCompound? Save(Entity entity)
     {
-        if (!IsSaved(entity.Type))
+        if (!IsSaved(entity.Type) || entity is Mob { HasAi: true } mob && (!mob.Alive && mob is not EnderDragon || mob.IsRemoved))
             return null;
 
         var tag = new NbtCompound { new NbtTag<string>("id", TypeId(entity.Type)) };
@@ -41,6 +41,7 @@ internal static class EntityNbt
 
         Entity entity = type switch
         {
+            EntityType.AreaEffectCloud when tag.TryGetBool("ObsidianDragonBreath", out var breath) && breath => new DragonBreathCloud { Level = level },
             EntityType.ItemFrame => new ItemFrame { Level = level },
             EntityType.Item => new ItemEntity { Level = level },
             EntityType.ChestMinecart => new ChestMinecart { Level = level },

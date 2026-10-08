@@ -8,7 +8,7 @@ public sealed record class CanPlaceOnDataComponent : BlockPredicatesDataComponen
 
 public sealed record class CanBreakDataComponent : BlockPredicatesDataComponent
 {
-    public override DataComponentType Type => DataComponentType.CanPlaceOn;
+    public override DataComponentType Type => DataComponentType.CanBreak;
 
     public override string Identifier => "minecraft:can_break";
 }

@@ -31,8 +31,16 @@ public partial class PlayerActionPacket
 
     public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
+        if (Status == PlayerActionStatus.ReleaseUseItem)
+        {
+            if (player is Player concrete) concrete.CancelEating();
+            return;
+        }
         if (await player.Level.GetBlockAsync(Position) is not IBlock block)
             return;
+
+        if (Status == PlayerActionStatus.StartedDigging && block.Material == Material.NoteBlock && player.Level is Obsidian.WorldData.AbstractLevel notes)
+            notes.PlayNoteBlock(Position, player);
 
         if (Status == PlayerActionStatus.FinishedDigging || (Status == PlayerActionStatus.StartedDigging && player.GameMode == GameMode.Creative))
         {

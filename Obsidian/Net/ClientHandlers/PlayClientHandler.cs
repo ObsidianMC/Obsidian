@@ -87,6 +87,9 @@ internal sealed partial class PlayClientHandler : ClientHandler
             case 46:
                 await HandleFromPoolAsync<RecipeBookSeenRecipePacket>(data);
                 break;
+            case 50:
+                await HandleFromPoolAsync<SelectTradePacket>(data);
+                break;
             case 47:
                 await HandleFromPoolAsync<RenameItemPacket>(data);
                 break;

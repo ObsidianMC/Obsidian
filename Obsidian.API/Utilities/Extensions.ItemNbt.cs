@@ -119,6 +119,7 @@ public partial class Extensions
             SimpleDataComponent<InstrumentData> instrument when instrument.Value?.Identifier is not null =>
                 new NbtTag<string>(name, instrument.Value.Identifier),
             PotionContentsDataComponent potion => PotionContentsToNbt(name, potion),
+            BucketEntityDataComponent bucket => CopyBucketData(name, bucket.Value),
             _ => null
         };
     }
@@ -128,6 +129,8 @@ public partial class Extensions
     {
         switch (name)
         {
+            case "minecraft:bucket_entity_data" when tag is NbtCompound bucket:
+                return new BucketEntityDataComponent { Value = bucket };
             case "minecraft:damage" when tag is NbtTag<int> damage:
                 return ComponentBuilder.Damage with { Value = damage.Value };
             case "minecraft:max_damage" when tag is NbtTag<int> maxDamage:
@@ -162,6 +165,13 @@ public partial class Extensions
     }
 
     // Vanilla's ItemEnchantments.CODEC: a map of enchantment id to level.
+    private static NbtCompound CopyBucketData(string name, NbtCompound data)
+    {
+        var copy = new NbtCompound(name);
+        foreach (var (key, tag) in data) copy.Add(key, tag);
+        return copy;
+    }
+
     private static NbtCompound EnchantmentsToNbt(string name, Enchantment[] enchantments)
     {
         var compound = new NbtCompound(name);
