@@ -5,10 +5,14 @@ namespace Obsidian.Net.Packets.Play.Serverbound;
 public partial class RecipeBookSeenRecipePacket
 {
     [Field(0)]
-    public string RecipeId { get; private set; } = default!;
+    [VarLength]
+    public int RecipeDisplayId { get; private set; }
+
+    public string RecipeId => RecipeDisplayId >= 0 && RecipeDisplayId < RecipesRegistry.RecipeBookRecipes.Count
+        ? RecipesRegistry.RecipeBookRecipes[RecipeDisplayId].Identifier : string.Empty;
 
     public override void Populate(INetStreamReader reader)
     {
-        RecipeId = reader.ReadString();
+        RecipeDisplayId = reader.ReadVarInt();
     }
 }
