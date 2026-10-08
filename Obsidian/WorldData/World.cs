@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Obsidian.API.Configuration;
 using Obsidian.API.Registry.Codecs.Dimensions;
@@ -15,7 +15,7 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
 {
     public IWorldManager WorldManager { get; } = worldManager;
 
-    internal Dictionary<string, IDimension> dimensions = [];
+    internal readonly ConcurrentDictionary<string, IDimension> dimensions = [];
 
     public string PlayerDataPath { get; private set; } = string.Empty;
 
@@ -47,10 +47,13 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
             Raining = levelCompound.GetBool("raining"),
             Thundering = levelCompound.GetBool("thundering"),
             DefaultGamemode = (GameMode)levelCompound.GetInt("GameType"),
+            Difficulty = levelCompound.TryGetTagValue<byte>("Difficulty", out var difficulty)
+                ? (Difficulty)difficulty : Difficulty.Normal,
+            DifficultyLocked = levelCompound.GetBool("DifficultyLocked"),
             GeneratorVersion = levelCompound.GetInt("generatorVersion"),
             RainTime = levelCompound.GetInt("rainTime"),
             // The spawn is saved as a block; players spawn at its center.
-            SpawnPosition = new VectorD(levelCompound.GetInt("SpawnX") + 0.5, levelCompound.GetInt("SpawnY"), levelCompound.GetInt("SpawnZ") + 0.5),
+            SpawnPosition = new VectorD(levelCompound.GetInt("SpawnX") + 0.5f, levelCompound.GetInt("SpawnY"), levelCompound.GetInt("SpawnZ") + 0.5f),
             ThunderTime = levelCompound.GetInt("thunderTime"),
             Version = levelCompound.GetInt("version"),
             LastPlayed = levelCompound.GetLong("LastPlayed"),
@@ -61,6 +64,9 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         };
 
         Log.Loading(this.Logger, this.Name);
+        ReadGameRules(levelCompound);
+        ReadEndFightNbt(levelCompound);
+        ReadRaidsNbt(levelCompound);
         for (int rx = -1; rx < 1; rx++)
             for (int rz = -1; rz < 1; rz++)
                 LoadRegion(rx, rz);
@@ -140,6 +146,8 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         writer.WriteBool("raining", LevelData.Raining);
         writer.WriteBool("thundering", LevelData.Thundering);
         writer.WriteInt("GameType", (int)LevelData.DefaultGamemode);
+        writer.WriteByte("Difficulty", (byte)LevelData.Difficulty);
+        writer.WriteBool("DifficultyLocked", LevelData.DifficultyLocked);
         writer.WriteInt("generatorVersion", LevelData.GeneratorVersion);
         writer.WriteInt("rainTime", LevelData.RainTime);
         var spawn = LevelData.SpawnPosition.Floor();
@@ -153,9 +161,14 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         writer.WriteLong("Time", Time);
         writer.WriteString("generatorName", Generator.Id);
         writer.WriteString("LevelName", Name);
+        WriteGameRules(writer);
+        WriteEndFightNbt(writer);
+        WriteRaidsNbt(writer);
         writer.EndCompound();
 
         await writer.TryFinishAsync();
+
+        await this.Maps.SaveAsync();
     }
 
     /// <summary>
@@ -167,6 +180,7 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         try
         {
             await this.FlushRegionsAsync();
+            await Task.WhenAll(this.dimensions.Values.Select(dimension => dimension.FlushRegionsAsync()));
             await this.SaveLevelAsync();
         }
         finally
@@ -183,10 +197,8 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
 
     public void RegisterDimension(DimensionCodec codec, IDimension dimension)
     {
-        if (dimensions.ContainsKey(codec.Name))
+        if (!dimensions.TryAdd(codec.Name, dimension))
             throw new ArgumentException($"World already contains dimension with name: {codec.Name}");
-
-        dimensions.Add(codec.Name, dimension);
     }
 
     public override void Initialize(DimensionCodec codec)
@@ -217,8 +229,18 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         await Task.WhenAll(this.dimensions.Values.Select(d => d.DoWorldTickAsync()));
 
         // Like vanilla's player inventory tick, after the levels ticked.
-        foreach (var player in this.Players.Values.Concat(this.dimensions.Values.SelectMany(dimension => dimension.Players.Values)).Cast<Player>())
+        foreach (var player in this.Players.Values.Concat(this.dimensions.Values.SelectMany(dimension => dimension.Players.Values)).Cast<Player>().ToArray())
+        {
+            await player.TickPortalsAsync();
+            await player.PickupNearbyItemsAsync();
             await this.Maps.TickAsync(player);
+        }
+    }
+
+    public override async ValueTask DisposeAsync()
+    {
+        await Task.WhenAll(this.dimensions.Values.Select(dimension => dimension.DisposeAsync().AsTask()));
+        await base.DisposeAsync();
     }
 
     private static partial class Log
@@ -228,5 +250,11 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
 
         [LoggerMessage(Level = LogLevel.Warning, Message = "Can't read the level data in {Path}")]
         public static partial void UnreadableLevelData(ILogger logger, string path, Exception exception);
+    }
+
+    public async override Task FlushRegionsAsync()
+    {
+        await base.FlushRegionsAsync();
+        await Task.WhenAll(dimensions.Values.Select(dimension => dimension.FlushRegionsAsync()));
     }
 }

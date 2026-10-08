@@ -234,8 +234,9 @@ public partial class Client
         if (this.loginPending)
         {
             this.receiveBuffer = new EncryptedNetworkBuffer(sharedKey);
-            this.sendBufferMain = new EncryptedNetworkBuffer(sharedKey);
-            this.sendBufferFlush = new EncryptedNetworkBuffer(sharedKey);
+            var outgoingBuffer = new EncryptedNetworkBuffer(sharedKey);
+            this.sendBufferMain = outgoingBuffer;
+            this.sendBufferFlush = new EncryptedNetworkBuffer(sharedKey, outgoingBuffer);
 
             this.receiveBuffer.Reserve(MaxBufferSize);
 

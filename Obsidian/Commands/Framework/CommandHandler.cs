@@ -108,6 +108,8 @@ public sealed class CommandHandler : ICommandHandler
 
         foreach (var root in commandRoots)
         {
+            if (root == typeof(Obsidian.Commands.Modules.MobTestCommandModule))
+                continue;
             this.RegisterCommandClass(pluginContainer, root);
         }
     }

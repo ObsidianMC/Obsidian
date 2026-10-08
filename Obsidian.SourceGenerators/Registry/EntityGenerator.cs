@@ -118,10 +118,13 @@ public sealed partial class EntityGenerator : IIncrementalGenerator
                 .Line()
                 .Type($"public partial class {@class.Symbol.Name}");
 
-            builder.Indent().Append("public override EntityDimension Dimension { get; protected set; } = new() { ")
+            builder.Indent().Append("private EntityDimension baseDimension = new() { ")
                 .Append($"Width = {widthElement.GetSingle().ToString(CultureInfo.InvariantCulture)}f, ")
                 .Append($"Height = {heightElement.GetSingle().ToString(CultureInfo.InvariantCulture)}f }}; ")
                 .Line()
+                .Line();
+
+            builder.Line("public override EntityDimension Dimension { get => new() { Width = baseDimension.Width * DimensionScale, Height = baseDimension.Height * DimensionScale }; protected set => baseDimension = value; }")
                 .Line();
 
             if (entityElement.TryGetProperty("is_fire_immune", out var fireImmuneElement))

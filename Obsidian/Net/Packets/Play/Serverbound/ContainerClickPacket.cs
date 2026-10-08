@@ -73,6 +73,12 @@ public partial class ContainerClickPacket
         if (this.ContainerId != (player.OpenedContainer is null ? 0 : player.CurrentContainerId))
             return;
 
+        if (player.OpenedContainer is Obsidian.Entities.MerchantContainer merchant)
+        {
+            await merchant.HandleClickAsync(this, player);
+            return;
+        }
+
         var baseContainer = player.OpenedContainer ?? player.Inventory;
 
         var (slot, forPlayer) = baseContainer.GetSlot(ClickedSlot);
@@ -99,51 +105,6 @@ public partial class ContainerClickPacket
             return;
         }
 
-        var clickedItem = slot != -999 ? container.GetItem(slot) : null;
-
-        // Maybe we should have an event called ValidateContainerContentsEventArgs? 
-        if (clickedItem != null && this.CarriedItem != null && !this.CarriedItem.Compare(clickedItem))
-        {
-            Log.CarriedItemMismatch(player.Client.Logger, player.Username);
-
-            //The items don't match sync the client back.
-            await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
-            {
-                ContainerId = this.ContainerId,
-                Slot = -1,
-                SlotData = clickedItem,
-                StateId = 0,
-            });
-        }
-
-        var invalidItems = new Dictionary<short, IHashedItemStack>();
-        foreach (var (changedSlot, hashedItem) in this.ChangedSlots)
-        {
-            var (mappedSlot, isPlayerSlot) = baseContainer.GetSlot(changedSlot);
-            var currentContainer = isPlayerSlot ? player.Inventory : baseContainer;
-
-            if (hashedItem == null)
-            {
-                currentContainer.RemoveItem(mappedSlot);
-                continue;
-            }
-
-            var checkedItem = currentContainer.GetItem(mappedSlot);
-            if (checkedItem != null && !hashedItem.Compare(checkedItem))
-                invalidItems.Add(changedSlot, hashedItem);
-        }
-
-        if (invalidItems.Count > 0)
-        {
-            Log.InventoryOutOfSync(player.Client.Logger, player.Username, invalidItems.Count);
-
-            await player.Client.QueuePacketAsync(new ContainerSetContentPacket(this.ContainerId, container.ToList())
-            {
-                StateId = this.StateId,
-                CarriedItem = clickedItem
-            });
-        }
-
         if (this.ClickType == ClickType.QuickCraft && ClickedSlot == -999)
             player.IsDragging = DraggingButtons.Contains(Button);
 
@@ -155,17 +116,18 @@ public partial class ContainerClickPacket
             StateId = this.StateId,
             ContainerId = this.ContainerId,
         });
+
+        // Client slot hashes describe its prediction, not authoritative inventory changes.
+        var contents = baseContainer.ToList();
+        contents.AddRange(player.Inventory.Skip(9).Take(36));
+        await player.Client.QueuePacketAsync(new ContainerSetContentPacket(this.ContainerId, contents)
+        {
+            StateId = this.StateId + 1,
+            CarriedItem = player.CarriedItem
+        });
     }
 
     private static readonly sbyte[] DraggingButtons = [0, 4, 8];
 
-    private static partial class Log
-    {
-        [LoggerMessage(Level = LogLevel.Debug, Message = "Resyncing {Username}: carried item does not match the clicked item")]
-        public static partial void CarriedItemMismatch(ILogger logger, string username);
-
-        [LoggerMessage(Level = LogLevel.Debug, Message = "Resyncing {Username}: {Count} inventory slots were out of sync")]
-        public static partial void InventoryOutOfSync(ILogger logger, string username, int count);
-    }
 }
 

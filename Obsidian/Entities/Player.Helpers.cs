@@ -1,8 +1,9 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Obsidian.API.Inventory;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
 using Obsidian.Net.Actions.PlayerInfo;
+using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
 using System.Buffers;
@@ -58,15 +59,26 @@ public partial class Player
         writer.WriteInt("foodTickTimer", FoodTickTimer);
         writer.WriteInt("XpLevel", XpLevel);
         writer.WriteInt("XpTotal", XpTotal);
+        writer.WriteInt("XpSeed", EnchantmentSeed);
 
         writer.WriteShort("Air", Air);
+        writer.WriteShort("AttackTime", AttackTime);
+        writer.WriteShort("DeathTime", DeathTime);
+        writer.WriteShort("HurtTime", HurtTime);
+        writer.WriteShort("SleepTimer", SleepTimer);
+        writer.WriteBool("Sleeping", Sleeping);
 
         writer.WriteFloat("Health", Health);
+        writer.WriteInt("ObsidianTimeSinceRest", TimeSinceRest);
+        writer.WriteFloat("FallDistance", FallDistance);
+        writer.WriteFloat("XpP", XpP);
 
         writer.WriteFloat("foodExhaustionLevel", FoodExhaustionLevel);
         writer.WriteFloat("foodSaturationLevel", FoodSaturationLevel);
 
         writer.WriteString("Dimension", Level.DimensionName);
+        writer.WriteBool("seenCredits", this.SeenCredits);
+        writer.WriteInt("PortalCooldown", this.portalCooldown);
 
         writer.WriteListStart("Pos", NbtTagType.Double, 3);
 
@@ -114,9 +126,12 @@ public partial class Player
             }
         }
 
-        var world = this.Level as IWorld;
+        var world = this.Level is IDimension dimension ? dimension.ParentWorld : this.Level as IWorld;
         // Then read player data
         var playerDataFile = new FileInfo(world.GetPlayerDataPath(this.Uuid));
+
+        if (loadFromPersistentWorld)
+            IsFirstJoin = !persistentDataFile.Exists && !playerDataFile.Exists;
 
         await LoadPermsAsync();
 
@@ -256,34 +271,81 @@ public partial class Player
         ArrayPool<int>.Shared.Return(removed);
     }
 
-    private async Task PickupNearbyItemsAsync(float distance = 1.5f)
+    internal async Task PickupNearbyItemsAsync()
     {
-        foreach (var entity in Level.GetNonPlayerEntitiesInRange(Position, distance))
+        if (!this.Alive || this.GameMode == GameMode.Spectator || this.Respawning)
+            return;
+        const double pickupPadding = 0.5;
+        const double itemHalfWidth = 0.125;
+        var halfWidth = (this.Dimension.Width > 0 ? this.Dimension.Width : 0.6) / 2;
+        var height = this.Dimension.Height > 0 ? this.Dimension.Height : this.Swimming ? 0.6 : this.Sneaking ? 1.5 : 1.8;
+        foreach (var entity in Level.GetNonPlayerEntitiesInRange(Position, (float)(height + 1)))
         {
             if (entity is not ItemEntity itemEntity)
                 continue;
-
-            if (!itemEntity.CanPickup)
+            if (Math.Abs(itemEntity.Position.X - this.Position.X) >= halfWidth + pickupPadding + itemHalfWidth ||
+                Math.Abs(itemEntity.Position.Z - this.Position.Z) >= halfWidth + pickupPadding + itemHalfWidth ||
+                itemEntity.Position.Y + 0.25 <= this.Position.Y - pickupPadding ||
+                itemEntity.Position.Y >= this.Position.Y + height + pickupPadding)
                 continue;
 
-            this.PacketBroadcaster.QueuePacketToLevel(this.Level, new TakeItemEntityPacket
+            bool remove;
+            lock (ItemEntity.TransferLock)
             {
-                CollectedEntityId = itemEntity.EntityId,
-                CollectorEntityId = EntityId,
-                PickupItemCount = itemEntity.Item.Count
-            });
-
-            var slot = Inventory.AddItem(new ItemStack(itemEntity.Item.Holder, itemEntity.Item.Count));
-
-            Client.SendPacket(new ContainerSetSlotPacket
-            {
-                Slot = (short)slot,
-                ContainerId = 0,
-                SlotData = Inventory.GetItem(slot)!,
-                StateId = Inventory.StateId++
-            });
-
-            await itemEntity.RemoveAsync();
+                if (itemEntity.Removed || !itemEntity.CanPickup || itemEntity.Item.Count <= 0)
+                    continue;
+                var originalCount = itemEntity.Item.Count;
+                var slots = new[] { (int)this.CurrentHeldItemSlot, 45 }
+                    .Concat(Enumerable.Range(36, 9)).Concat(Enumerable.Range(9, 27)).Distinct().ToArray();
+                var changed = new HashSet<int>();
+                // Fill matching stacks before using empty slots, preserving the item's components.
+                for (var pass = 0; pass < 2 && itemEntity.Item.Count > 0; pass++)
+                    foreach (var slot in slots)
+                    {
+                        if (pass == 1 && slot == 45)
+                            continue;
+                        var existing = this.Inventory.GetItem(slot);
+                        var empty = existing.IsNullOrAir() || existing.Count <= 0;
+                        if (pass == 0 ? empty || existing != itemEntity.Item : !empty)
+                            continue;
+                        var count = Math.Min(itemEntity.Item.Count,
+                            itemEntity.Item.MaxStackSize - (empty ? 0 : existing.Count));
+                        if (count <= 0)
+                            continue;
+                        if (empty)
+                            this.Inventory.SetItem(slot, new ItemStack(itemEntity.Item, count));
+                        else
+                            existing.Count += count;
+                        itemEntity.Item.Count -= count;
+                        changed.Add(slot);
+                    }
+                var collected = originalCount - itemEntity.Item.Count;
+                if (collected == 0)
+                    continue;
+                var pickup = new TakeItemEntityPacket
+                {
+                    CollectedEntityId = itemEntity.EntityId,
+                    CollectorEntityId = this.EntityId,
+                    PickupItemCount = collected
+                };
+                var packets = new List<ClientboundPacket> { pickup };
+                foreach (var slot in changed)
+                {
+                    var stack = this.Inventory.GetItem(slot)!;
+                    packets.Add(new SetPlayerInventoryPacket
+                    {
+                        Slot = slot == 45 ? 40 : slot >= 36 ? slot - 36 : slot,
+                        Contents = new ItemStack(stack, stack.Count)
+                    });
+                }
+                this.Client.SendPacket(new BundledPacket(packets));
+                this.PacketBroadcaster.QueuePacketToLevel(this.Level, pickup, this.EntityId);
+                remove = itemEntity.Removed = itemEntity.Item.Count == 0;
+                if (!remove)
+                    itemEntity.SendItemUpdate();
+            }
+            if (remove)
+                await itemEntity.RemoveAsync();
         }
     }
 
@@ -331,26 +393,36 @@ public partial class Player
         MovementFlags = (MovementFlags)compound.GetByte("MovementFlags");
         Sleeping = compound.GetBool("Sleeping");
         Air = compound.GetShort("Air");
-        AttackTime = compound.GetShort("AttackTime");
-        DeathTime = compound.GetShort("DeathTime");
+        AttackTime = compound.TryGetTagValue<short>("AttackTime", out var attackTime) ? attackTime : (short)0;
+        DeathTime = compound.TryGetTagValue<short>("DeathTime", out var deathTime) ? deathTime : (short)0;
         Health = compound.GetFloat("Health");
-        HurtTime = compound.GetShort("HurtTime");
-        SleepTimer = compound.GetShort("SleepTimer");
+        HurtTime = compound.TryGetTagValue<short>("HurtTime", out var hurtTime) ? hurtTime : (short)0;
+        SleepTimer = compound.TryGetTagValue<short>("SleepTimer", out var sleepTimer) ? sleepTimer : (short)0;
+        TimeSinceRest = compound.TryGetTagValue<int>("ObsidianTimeSinceRest", out var timeSinceRest) ? Math.Max(0, timeSinceRest) : 0;
         FoodLevel = compound.GetInt("foodLevel");
         FoodTickTimer = compound.GetInt("foodTickTimer");
         GameMode = (GameMode)compound.GetInt("playerGameType");
         XpLevel = compound.GetInt("XpLevel");
         XpTotal = compound.GetInt("XpTotal");
-        FallDistance = compound.GetFloat("FallDistance");
+        if (compound.TryGetTagValue<int>("XpSeed", out var enchantmentSeed)) EnchantmentSeed = enchantmentSeed;
+        FallDistance = compound.TryGetTagValue<float>("FallDistance", out var fallDistance) ? fallDistance : 0;
         FoodExhaustionLevel = compound.GetFloat("foodExhaustionLevel");
         FoodSaturationLevel = compound.GetFloat("foodSaturationLevel");
-        XpP = compound.GetInt("XpP");
+        XpP = compound.TryGetTagValue<float>("XpP", out var xpProgress) ? xpProgress :
+            compound.TryGetTagValue<int>("XpP", out var legacyXpProgress) ? legacyXpProgress : 0;
 
         var dimensionName = compound.GetString("Dimension");
-        if (!string.IsNullOrWhiteSpace(dimensionName) && CodecRegistry.TryGetDimension(dimensionName, out var codec))
+        var parentWorld = this.Level is IDimension dimension ? dimension.ParentWorld as World : this.Level as World;
+        if (!string.IsNullOrWhiteSpace(dimensionName) && parentWorld is not null &&
+            parentWorld.dimensions.TryGetValue(dimensionName, out var savedDimension))
         {
-            //TODO load into dimension ^ ^
+            var registered = this.Level.TryRemovePlayer(this);
+            this.Level = savedDimension;
+            if (registered)
+                this.Level.TryAddPlayer(this);
         }
+        this.SeenCredits = compound.GetBool("seenCredits");
+        this.portalCooldown = compound.TryGetTagValue<int>("PortalCooldown", out var savedCooldown) ? Math.Max(0, savedCooldown) : 0;
 
         compound.TryGetTag("Pos", out var posTag);
         Position = (posTag as NbtList) switch

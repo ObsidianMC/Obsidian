@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
 using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -21,12 +21,14 @@ public sealed partial class FinishConfigurationPacket
             return;
         }
 
-        if (!CodecRegistry.TryGetDimension(player.Level.DimensionName, out var codec) || !CodecRegistry.TryGetDimension("minecraft:overworld", out codec))
+        if (!CodecRegistry.TryGetDimension(player.Level.DimensionName, out var codec) && !CodecRegistry.TryGetDimension("minecraft:overworld", out codec))
             throw new UnreachableException("Failed to retrieve proper dimension for player.");
 
         await client.QueuePacketAsync(new LoginPacket
         {
             EntityId = player.EntityId,
+            ViewDistance = server.Configuration.ViewDistance,
+            SimulationDistance = server.Configuration.SimulationDistance,
             DimensionNames = CodecRegistry.Dimensions.All.Keys.ToList(),
             CommonPlayerSpawnInfo = new()
             {
@@ -34,16 +36,18 @@ public sealed partial class FinishConfigurationPacket
                 DimensionType = codec.Id,
                 DimensionName = codec.Name,
                 HashedSeed = 0,
-                Flat = false
+                Flat = false,
+                PortalCooldown = player is Entities.Player concrete ? concrete.PortalCooldown : 0
             },
             ReducedDebugInfo = false,
             EnableRespawnScreen = true,
         });
 
+        var spawnLevel = player.Level is IDimension dimension ? dimension.ParentWorld : player.Level;
         await client.QueuePacketAsync(new SetDefaultSpawnPositionPacket(new()
         {
-            Dimension = codec.Name,
-            Pos = (Vector)player.Level.LevelData.SpawnPosition.Floor()
+            Dimension = spawnLevel.DimensionName,
+            Pos = (Vector)spawnLevel.LevelData.SpawnPosition.Floor()
         }, 0, 0));
         await client.QueuePacketAsync(new SetTimePacket(player.Level.LevelData.Time, player.Level.LevelData.DayTime, true));
         await client.QueuePacketAsync(new GameEventPacket(player.Level.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
@@ -60,14 +64,15 @@ public sealed partial class FinishConfigurationPacket
         await client.QueuePacketAsync(new PlayerPositionPacket
         {
             Position = player.Position,
-            Yaw = 0,
-            Pitch = 0,
+            Yaw = player.Yaw,
+            Pitch = player.Pitch,
+            Flags = 0,
             TeleportId = player.TeleportId
         });
 
         await client.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
-        await player.UpdateChunksAsync();
         await server.EventDispatcher.ExecuteEventAsync(new PlayerJoinEventArgs(player, server, DateTimeOffset.Now));
+        await player.UpdateChunksAsync();
     }
 
     private static partial class Log

@@ -3,7 +3,7 @@ using Obsidian.Nbt;
 namespace Obsidian.WorldData;
 
 /// <summary>
-/// A block entity kept as vanilla's saved data, for block entities Obsidian has no behavior for yet: spawners, end
+/// A block entity backed by vanilla's saved data: spawners, end
 /// gateways, chests waiting for their loot and the like.
 /// </summary>
 /// <remarks>
@@ -40,8 +40,11 @@ public sealed class DataBlockEntity : IBlockEntity
     /// </summary>
     public void Set(INbtTag tag)
     {
-        this.Data.Remove(tag.Name!);
-        this.Data.Add(tag.Name!, tag);
+        lock (this.Data)
+        {
+            this.Data.Remove(tag.Name!);
+            this.Data.Add(tag.Name!, tag);
+        }
     }
 
     public void ToNbt() => throw new NotSupportedException("Use Data instead.");
@@ -58,7 +61,7 @@ public sealed class DataBlockEntity : IBlockEntity
             return null;
 
         var data = new NbtCompound();
-        foreach (var (name, tag) in this.Data)
+        foreach (var (name, tag) in SnapshotData())
         {
             if (name is not ("LootTable" or "LootTableSeed" or "SpawnPotentials"))
                 data.Add(name, tag);
@@ -82,7 +85,14 @@ public sealed class DataBlockEntity : IBlockEntity
             chunk.SetBlockEntity(position.X, position.Y, position.Z, new DataBlockEntity { Id = type, BlockPosition = position });
     }
 
-    public IBlockEntity Clone() => new DataBlockEntity { Id = this.Id, BlockPosition = this.BlockPosition, Data = Copy(this.Data) };
+    public IBlockEntity Clone() => new DataBlockEntity { Id = this.Id, BlockPosition = this.BlockPosition, Data = SnapshotData() };
+
+    internal NbtCompound SnapshotData()
+    {
+        // Spawner timers change on the simulation thread while chunks can be saved or sent in parallel.
+        lock (this.Data)
+            return Copy(this.Data);
+    }
 
     /// <summary>
     /// Deep copies a compound.

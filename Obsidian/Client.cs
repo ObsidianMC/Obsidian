@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.ObjectPool;
 using Obsidian.API.Events;
@@ -48,6 +48,8 @@ public sealed partial class Client : IClient
     /// Whether this client is disposed.
     /// </summary>
     private bool disposed;
+    private bool disconnected;
+    private readonly Lock lifecycleLock = new();
 
     /// <summary>
     /// The random token used to encrypt the stream; empty until the encryption request is sent.
@@ -156,7 +158,7 @@ public sealed partial class Client : IClient
             { ClientState.Play, new PlayClientHandler { Client = this } }
         }.ToFrozenDictionary();
 
-        packetQueue = Channel.CreateUnbounded<IClientboundPacket>(new() { SingleReader = true, SingleWriter = true });
+        packetQueue = Channel.CreateUnbounded<IClientboundPacket>(new() { SingleReader = true, SingleWriter = false });
     }
 
     public async ValueTask<bool> TrySetCachedProfileAsync(string username)
@@ -244,16 +246,26 @@ public sealed partial class Client : IClient
 
     public async ValueTask QueuePacketAsync(IClientboundPacket packet)
     {
-        if (!this.Connected)
+        if (this.disposed || this.cancellationSource.IsCancellationRequested || !this.Connected)
             return;
+        try
+        {
+            var args = new QueuePacketEventArgs(this.Server, this, packet);
+            var result = await this.eventDispatcher.ExecuteEventAsync(args);
+            if (result == EventResult.Cancelled)
+            {
+                Logger.LogDebug("Packet {PacketId} was sent to the queue, however an event handler has cancelled it.", args.Packet.Id);
+                return;
+            }
 
-        var args = new QueuePacketEventArgs(this.Server, this, packet);
-
-        var result = await this.eventDispatcher.ExecuteEventAsync(args);
-        if (result == EventResult.Cancelled)
-            return;
-
-        await packetQueue.Writer.WriteAsync(packet, this.cancellationSource.Token);
+            if (this.disposed || this.cancellationSource.IsCancellationRequested)
+                return;
+            this.packetQueue.Writer.TryWrite(packet);
+        }
+        catch (OperationCanceledException) when (this.cancellationSource.IsCancellationRequested)
+        {
+            // A disconnect cancels this client's send, not the world tick awaiting it.
+        }
     }
 
     public bool SendPacket(IClientboundPacket packet) => this.SendAsync(packet);
@@ -278,18 +290,21 @@ public sealed partial class Client : IClient
 
     public void Dispose()
     {
-        if (disposed)
-            return;
-
-        disposed = true;
-
-        try
+        lock (this.lifecycleLock)
         {
-            cancellationSource?.Dispose();
+            if (this.disposed)
+                return;
 
-            this.Socket.Dispose();
+            this.disposed = true;
+
+            try
+            {
+                this.cancellationSource.Cancel();
+                this.cancellationSource.Dispose();
+                this.Socket.Dispose();
+            }
+            catch (ObjectDisposedException) { }
         }
-        catch (ObjectDisposedException) { }
 
         GC.SuppressFinalize(this);
     }
@@ -310,7 +325,14 @@ public sealed partial class Client : IClient
 
     public void Disconnect()
     {
-        cancellationSource.Cancel();
+        lock (this.lifecycleLock)
+        {
+            if (this.disposed || this.disconnected)
+                return;
+
+            this.disconnected = true;
+            this.cancellationSource.Cancel();
+        }
         Disconnected?.Invoke(this);
 
         this.receiveEvent.Completed -= this.OnAsyncCompleted;
@@ -329,6 +351,7 @@ public sealed partial class Client : IClient
             this.Socket.Shutdown(SocketShutdown.Both);
         }
         catch (SocketException) { }
+        catch (ObjectDisposedException) { }
 
         this.Socket.Close();
 
@@ -352,9 +375,10 @@ public sealed partial class Client : IClient
     {
         try
         {
-            while (this.Connected || !this.disposed || !this.cancellationSource.IsCancellationRequested)
+            var cancellationToken = this.cancellationSource.Token;
+            while (this.Connected && !this.disposed && !cancellationToken.IsCancellationRequested)
             {
-                var packet = await this.packetQueue.Reader.ReadAsync(this.cancellationSource.Token);
+                var packet = await this.packetQueue.Reader.ReadAsync(cancellationToken);
 
                 if (packet == null)
                     continue;

@@ -1,0 +1,141 @@
+namespace Obsidian.Entities.AI;
+
+public class MoveControl(Mob mob)
+{
+    private VectorD? wantedPosition;
+    private float speedModifier;
+    private VectorD? strafe;
+    internal VectorD Acceleration { get; set; }
+    internal bool IsStrafing => strafe != null;
+
+    public virtual void MoveTo(VectorD position, float speed)
+    {
+        wantedPosition = position;
+        speedModifier = speed;
+    }
+
+    public virtual void Stop()
+    {
+        wantedPosition = null;
+        strafe = null;
+        Acceleration = VectorD.Zero;
+    }
+
+    internal void Strafe(float forward, float sideways) => strafe = new VectorD(sideways, 0, forward);
+
+    internal void Ride(float speed, float forward = 1, float sideways = 0)
+    {
+        wantedPosition = null;
+        var yaw = mob.Yaw.Degrees * MathF.PI / 180;
+        var input = new VectorD(sideways * MathF.Cos(yaw) - forward * MathF.Sin(yaw), 0,
+            forward * MathF.Cos(yaw) + sideways * MathF.Sin(yaw));
+        if (input.MagnitudeSquared() > 1)
+            input /= input.Magnitude;
+        var acceleration = mob.InWater ? 0.02f : mob.MovementFlags.HasFlag(MovementFlags.OnGround) ? speed : 0.02f;
+        Acceleration = input * (acceleration * 0.98f);
+    }
+
+    internal virtual void Tick()
+    {
+        Acceleration = VectorD.Zero;
+        if (strafe is VectorD input)
+        {
+            strafe = null;
+            var strafeYaw = mob.Yaw.Degrees * MathF.PI / 180;
+            var movement = new VectorD(input.X * MathF.Cos(strafeYaw) - input.Z * MathF.Sin(strafeYaw), 0,
+                input.Z * MathF.Cos(strafeYaw) + input.X * MathF.Sin(strafeYaw));
+            var next = mob.Position + movement;
+            if (!mob.Terrain.IsFree(mob.Dimension.CreateBBFromPosition(next)))
+                movement = new VectorD(-MathF.Sin(strafeYaw), 0, MathF.Cos(strafeYaw));
+            Acceleration = movement * (mob.MovementSpeed * 0.25f * 0.98f);
+            return;
+        }
+        if (wantedPosition is not VectorD target)
+            return;
+        wantedPosition = null;
+
+        var delta = target - mob.Position;
+        var horizontalDistance = Math.Sqrt(delta.X * delta.X + delta.Z * delta.Z);
+        if (horizontalDistance < 0.05f)
+            return;
+
+        var wantedYaw = (float)(Math.Atan2(delta.Z, delta.X) * 180 / Math.PI - 90);
+        mob.Yaw = LookControl.RotateTowards(mob.Yaw.Degrees, wantedYaw, 90);
+        var speed = mob.MovementSpeed * speedModifier;
+        var friction = mob.Terrain.GetFriction(mob.Position);
+        var acceleration = mob.InWater || mob.InLava ? 0.02f : mob.MovementFlags.HasFlag(MovementFlags.OnGround) ? speed * 0.21600002f / (friction * friction * friction) : 0.02f;
+        var yaw = mob.Yaw.Degrees * MathF.PI / 180;
+        Acceleration = new VectorD(-MathF.Sin(yaw), 0, MathF.Cos(yaw)) * (acceleration * speed * 0.98f);
+        if (delta.Y > 0.6f && horizontalDistance < MathF.Max(1, mob.Dimension.Width))
+            mob.JumpControl.Jump();
+    }
+}
+
+public sealed class JumpControl
+{
+    private bool requested;
+    public void Jump() => requested = true;
+
+    internal bool Consume()
+    {
+        var result = requested;
+        requested = false;
+        return result;
+    }
+}
+
+public sealed class LookControl(Mob mob)
+{
+    private VectorD? wantedPosition;
+    private float yawSpeed = 10;
+    private float pitchSpeed = 40;
+    internal Angle HeadYaw { get; private set; }
+
+    public void LookAt(VectorD position, float maxYawChange = 10, float maxPitchChange = 40)
+    {
+        wantedPosition = position;
+        yawSpeed = maxYawChange;
+        pitchSpeed = maxPitchChange;
+    }
+
+    public void LookAt(IEntity entity) => LookAt(entity.Position + new VectorD(0,
+        entity is Mob other ? other.EyeHeight : entity.Dimension.Height * 0.85f, 0));
+
+    internal void Tick()
+    {
+        if (wantedPosition is VectorD target)
+        {
+            var difference = target - mob.EyePosition;
+            if (difference.MagnitudeSquared() > 0.000001f)
+            {
+                var yaw = (float)(Math.Atan2(difference.Z, difference.X) * 180 / Math.PI - 90);
+                var pitch = (float)(-Math.Atan2(difference.Y, Math.Sqrt(difference.X * difference.X + difference.Z * difference.Z)) * 180 / Math.PI);
+                HeadYaw = RotateTowards(HeadYaw.Degrees, yaw, yawSpeed);
+                mob.Pitch = RotateTowards(WrapDegrees(mob.Pitch.Degrees), Math.Clamp(pitch, -40, 40), pitchSpeed);
+            }
+            wantedPosition = null;
+        }
+        else
+        {
+            HeadYaw = RotateTowards(HeadYaw.Degrees, mob.Yaw.Degrees, 10);
+            mob.Pitch = RotateTowards(mob.Pitch.Degrees, 0, 10);
+        }
+
+        // Keep the head within the body's range while allowing idle head movement.
+        var offset = WrapDegrees(HeadYaw.Degrees - mob.Yaw.Degrees);
+        if (MathF.Abs(offset) > 75)
+        {
+            if (mob.Navigator is Navigator { IsNavigating: true })
+                HeadYaw = mob.Yaw.Degrees + MathF.CopySign(75, offset);
+            else
+                mob.Yaw = RotateTowards(mob.Yaw.Degrees, HeadYaw.Degrees - MathF.CopySign(75, offset), 10);
+        }
+        if (mob.FlyingNavigation)
+            mob.Pitch = 0;
+    }
+
+    internal static float RotateTowards(float current, float target, float maximumChange) =>
+        current + Math.Clamp(WrapDegrees(target - current), -maximumChange, maximumChange);
+
+    internal static float WrapDegrees(float degrees) => (degrees % 360 + 540) % 360 - 180;
+}

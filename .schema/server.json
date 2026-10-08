@@ -5,6 +5,10 @@
   "x-abstract": true,
   "additionalProperties": false,
   "properties": {
+    "feedbackWebhookUrl": {
+      "type": ["string", "null"],
+      "description": "Discord webhook URL for player feedback; null or empty disables feedback."
+    },
 	"Logging": {
       "$ref": "#/definitions/logging"
     },

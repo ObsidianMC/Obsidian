@@ -21,7 +21,10 @@ public partial class PlayerPositionPacket
     public Angle Pitch { get; init; }
 
     [Field(4)]
-    public PositionFlags Flags { get; init; } = PositionFlags.X | PositionFlags.Y | PositionFlags.Z;
+    public PositionFlags Flags { get; init; }
+
+    // Portal transitions need the 9-bit vanilla mask, which the legacy sbyte PositionFlags API cannot represent.
+    internal int? RelativeFlags { get; init; }
 
     public override void Serialize(INetStreamWriter writer)
     {
@@ -32,6 +35,6 @@ public partial class PlayerPositionPacket
         writer.WriteSingle(this.Yaw);
         writer.WriteSingle(this.Pitch);
 
-        writer.WriteInt(this.Flags);
+        writer.WriteInt(this.RelativeFlags ?? (int)this.Flags);
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace Obsidian.Net.Packets.Play.Serverbound;
+namespace Obsidian.Net.Packets.Play.Serverbound;
 public partial class PlayerAbilitiesPacket
 {
     public PlayerAbility Abilities { get; set; } = PlayerAbility.None;

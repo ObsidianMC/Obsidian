@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<OutputType>Library</OutputType>
@@ -73,8 +73,8 @@
 	     at evaluation, when a fresh clone has none. -->
 	<Target Name="IncludeVanillaAssets" AfterTargets="ResolveProjectReferences">
 		<ItemGroup>
-			<!-- Biome parameter lists, configured carvers and block physics are only read at runtime; keep them away from the source generators. -->
-			<AdditionalFiles Include="Assets\**\*.json" Exclude="Assets\biome_parameters\**;Assets\configured_carver\**;Assets\block_physics.json" />
+			<!-- Biome parameter lists, configured carvers block physics and collision shapes are only read at runtime; keep them away from the source generators. -->
+			<AdditionalFiles Include="Assets\**\*.json" Exclude="Assets\biome_parameters\**;Assets\configured_carver\**;Assets\block_physics.json;Assets\collision_shapes.json" />
 			<EmbeddedResource Include="Assets\**\*.*" Exclude="Assets\.generated-*" />
 		</ItemGroup>
 	</Target>

@@ -81,11 +81,17 @@ internal sealed partial class PlayClientHandler : ClientHandler
             case 42:
                 await HandleFromPoolAsync<PlayerInputPacket>(data);
                 break;
+            case 43:
+                await HandleFromPoolAsync<PlayerLoadedPacket>(data);
+                break;
             case 45:
                 await HandleFromPoolAsync<RecipeBookChangeSettingsPacket>(data);
                 break;
             case 46:
                 await HandleFromPoolAsync<RecipeBookSeenRecipePacket>(data);
+                break;
+            case 50:
+                await HandleFromPoolAsync<SelectTradePacket>(data);
                 break;
             case 47:
                 await HandleFromPoolAsync<RenameItemPacket>(data);
@@ -104,6 +110,9 @@ internal sealed partial class PlayClientHandler : ClientHandler
                 break;
             case 64:
                 await HandleFromPoolAsync<UseItemPacket>(data);
+                break;
+            case 65:
+                await HandleFromPoolAsync<CustomClickActionPacket>(data);
                 break;
             default:
                 if (!Packets.TryGetValue(id, out var packet))

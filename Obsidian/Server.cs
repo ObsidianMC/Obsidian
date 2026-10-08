@@ -43,11 +43,16 @@ public sealed partial class Server : IServer
     private readonly ILoggerFactory loggerFactory;
     private readonly IServiceProvider serviceProvider;
     private readonly IDisposable? configWatcher;
+    private readonly object shutdownLock = new();
+    private Task? shutdownTask;
+    private Task[] serverTasks = [];
 
     public IOptionsMonitor<WhitelistConfiguration> WhitelistConfiguration { get; }
 
     public ProtocolVersion Protocol => ServerConstants.DefaultProtocol;
     public int Tps { get; private set; }
+
+    internal string TickStage { get; private set; } = "not started";
     public DateTimeOffset StartTime { get; private set; }
 
     public PluginManager PluginManager { get; }
@@ -109,6 +114,7 @@ public sealed partial class Server : IServer
     }
 
     public static int GetNextEntityId() => Interlocked.Increment(ref EntityCounter);
+    internal static int ReserveEntityIds(int count) => Interlocked.Add(ref EntityCounter, count) - count + 1;
 
     public void RegisterRecipes(params IRecipe[] recipes)
     {
@@ -218,34 +224,36 @@ public sealed partial class Server : IServer
 
         CommandsRegistry.Register(this);
 
-        var serverTasks = new List<Task>()
-        {
+        this.serverTasks = [
             LoopAsync(),
             ServerSaveAsync()
-        };
-
-        // Wait for worlds to load. Polling with a delay leaves the cores to world generation instead of spinning one.
-        while (!this.WorldManager.ReadyToJoin)
-        {
-            if (this.cancelTokenSource.IsCancellationRequested)
-                return;
-
-            await Task.Delay(50);
-        }
-
-        ScoreboardManager = new ScoreboardManager(this, this.loggerFactory);
-
-        await this.PluginManager.OnServerReadyAsync();
-
-        loadTimeStopwatch.Stop();
-        Log.Ready(this.logger, loadTimeStopwatch.Elapsed, this.Port);
-
-        await this.StartAsync(this.Port);
+        ];
 
         // A failure here reaches the host, which reports the crash.
         try
         {
-            await Task.WhenAll(serverTasks);
+            // Polling leaves the cores to world generation instead of spinning one.
+            while (!this.WorldManager.ReadyToJoin)
+            {
+                if (this.cancelTokenSource.IsCancellationRequested)
+                    return;
+
+                await Task.Delay(50);
+            }
+
+            if (this.cancelTokenSource.IsCancellationRequested)
+                return;
+
+            ScoreboardManager = new ScoreboardManager(this, this.loggerFactory);
+
+            await this.PluginManager.OnServerReadyAsync();
+
+            loadTimeStopwatch.Stop();
+            Log.Ready(this.logger, loadTimeStopwatch.Elapsed, this.Port);
+
+            await this.StartAsync(this.Port);
+
+            await Task.WhenAll(this.serverTasks);
         }
         finally
         {
@@ -265,17 +273,29 @@ public sealed partial class Server : IServer
         await CommandHandler.ProcessCommand(context);
     }
 
-    public async Task StopAsync()
+    public Task StopAsync()
+    {
+        lock (this.shutdownLock)
+            return this.shutdownTask ??= this.StopCoreAsync();
+    }
+
+    private async Task StopCoreAsync()
     {
         await cancelTokenSource.CancelAsync();
 
-        this.socket.Close();
+        this.socket?.Close();
 
-        await WorldManager.FlushLoadedWorldsAsync();
-        await WorldManager.DisposeAsync();
-        await this.PluginManager.DisposeAsync();
+        try
+        {
+            await Task.WhenAll(this.serverTasks);
+        }
+        finally
+        {
+            await WorldManager.DisposeAsync();
+            await this.PluginManager.DisposeAsync();
 
-        await this.userCache.SaveAsync();
+            await this.userCache.SaveAsync();
+        }
     }
 
     public bool AddPlayer(IPlayer player)
@@ -296,15 +316,13 @@ public sealed partial class Server : IServer
 
     private async Task ServerSaveAsync()
     {
-        var timer = new PeriodicTimer(TimeSpan.FromMinutes(5));
+        using var timer = new PeriodicTimer(TimeSpan.FromMinutes(5));
 
         try
         {
             while (await timer.WaitForNextTickAsync(this.cancelTokenSource.Token))
             {
                 Log.SavingWorlds(this.logger);
-
-                // A failed save is reported, and the next one still runs.
                 try
                 {
                     await WorldManager.FlushLoadedWorldsAsync();
@@ -312,14 +330,11 @@ public sealed partial class Server : IServer
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
-                    Log.AutosaveFailed(this.logger, ex);
+                    logger.LogError(ex, "World autosave failed");
                 }
             }
         }
-        catch (OperationCanceledException)
-        {
-            // The server is stopping, which saves the worlds itself.
-        }
+        catch (OperationCanceledException) when (cancelTokenSource.IsCancellationRequested) { }
     }
 
     private async Task LoopAsync()
@@ -333,6 +348,7 @@ public sealed partial class Server : IServer
 
         try
         {
+            TickStage = "waiting for timer";
             while (await timer.WaitForNextTickAsync())
             {
                 if (keepAliveInterval != Configuration.Network.KeepAliveInterval / 50)
@@ -343,6 +359,7 @@ public sealed partial class Server : IServer
                 {
                     foreach (var client in this.Connections.Values.Where(x => x.State == ClientState.Play || x.State == ClientState.Configuration))
                     {
+                        TickStage = "keepalive";
                         if (client.State == ClientState.Play)
                             await KeepAlivePacket.ClientboundPlay.HandleAsync(client);
                         else
@@ -355,19 +372,32 @@ public sealed partial class Server : IServer
                 // Like vanilla, worlds tick once they're loaded: ticking chunks while the rest generate (fluids in complete
                 // chunks) would change them before the world is ready.
                 if (this.WorldManager.ReadyToJoin)
+                {
+                    TickStage = "ticking worlds";
                     await this.WorldManager.TickWorldsAsync();
+                }
 
                 long elapsedTicks = stopwatch.ElapsedTicks;
                 stopwatch.Restart();
                 tpsMeasure.PushMeasurement(elapsedTicks);
                 Tps = tpsMeasure.Tps;
+                TickStage = "waiting for timer";
             }
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (cancelTokenSource.IsCancellationRequested)
         {
+            TickStage = "cancelled";
             // Just stop looping.
         }
+        catch (Exception ex)
+        {
+            TickStage = $"failed: {ex.GetType().Name}: {ex.Message}";
+            logger.LogError(ex, "The game tick loop failed");
+            await this.cancelTokenSource.CancelAsync();
+            throw;
+        }
 
+        TickStage = "stopped";
         foreach (var client in this.Connections.Values)
         {
             await client.DisconnectAsync("Server closed");
@@ -376,7 +406,7 @@ public sealed partial class Server : IServer
         await WorldManager.FlushLoadedWorldsAsync();
     }
 
-    public bool IsWhitelisted(string username) => this.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => x.Name == username);
+    public bool IsWhitelisted(string username) => this.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => string.Equals(x.Name, username, StringComparison.OrdinalIgnoreCase));
 
     public bool IsWhitelisted(Guid uuid) => this.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => x.Id == uuid);
 
@@ -426,9 +456,6 @@ public sealed partial class Server : IServer
 
         [LoggerMessage(Level = LogLevel.Debug, Message = "Saving worlds")]
         public static partial void SavingWorlds(ILogger logger);
-
-        [LoggerMessage(Level = LogLevel.Error, Message = "Saving the worlds failed")]
-        public static partial void AutosaveFailed(ILogger logger, Exception exception);
 
         [LoggerMessage(Level = LogLevel.Debug, Message = "Throttled {Ip} for reconnecting too quickly")]
         public static partial void Throttled(ILogger logger, string ip);

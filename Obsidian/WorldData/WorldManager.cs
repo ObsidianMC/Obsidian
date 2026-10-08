@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Configuration;
@@ -7,6 +8,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading;
 
 namespace Obsidian.WorldData;
@@ -15,7 +17,7 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
     IServerEnvironment serverEnvironment, ILevelFactory levelFactory, IHttpClientFactory httpClientFactory) : BackgroundService, IWorldManager
 {
     private readonly ILogger<WorldManager> logger = logger;
-    private readonly Dictionary<string, IWorld> worlds = [];
+    private readonly ConcurrentDictionary<string, IWorld> worlds = [];
     private readonly IServerEnvironment serverEnvironment = serverEnvironment;
     private readonly ILevelFactory levelFactory = levelFactory;
     private readonly IServiceScope serviceScope = serviceProvider.CreateScope();
@@ -44,8 +46,14 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
 
             while (await timer.WaitForNextTickAsync())
             {
-                await Task.WhenAll(this.worlds.Values.Cast<World>().Select(x => x.ManageChunksAsync()));
+                await Task.WhenAll(this.worlds.Values.Cast<World>()
+                    .SelectMany(world => world.dimensions.Values.Cast<AbstractLevel>().Prepend(world))
+                    .Select(level => level.ManageChunksAsync()));
             }
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            // Normal service shutdown.
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -61,32 +69,32 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         {
             var world = this.levelFactory.CreateWorld(serverWorld.Name, serverWorld.Seed, serverWorld.Generator);
 
-            this.worlds.Add(world.Name, world);
+            if (!this.worlds.TryAdd(world.Name, world))
+                throw new InvalidOperationException($"World already exists: {world.Name}");
 
-            if (!CodecRegistry.TryGetDimension(serverWorld.DefaultDimension, out var defaultCodec) || !CodecRegistry.TryGetDimension("minecraft:overworld", out defaultCodec))
+            if (!CodecRegistry.TryGetDimension(serverWorld.DefaultDimension, out var defaultCodec) && !CodecRegistry.TryGetDimension("minecraft:overworld", out defaultCodec))
                 throw new UnreachableException("Failed to get default dimension codec.");
 
-            if (!await world.LoadAsync(defaultCodec))
+            var worldLoaded = await world.LoadAsync(defaultCodec);
+            foreach (var dimensionName in serverWorld.ChildDimensions)
             {
-                Log.CreatingWorld(this.logger, serverWorld.Name);
-
-                foreach (var dimensionName in serverWorld.ChildDimensions)
+                if (!CodecRegistry.TryGetDimension(dimensionName, out var codec))
                 {
-                    if (!CodecRegistry.TryGetDimension(dimensionName, out var codec))
-                    {
-                        Log.UnknownDimension(this.logger, dimensionName, serverWorld.Name);
-                        continue;
-                    }
-
-                    var dimension = this.levelFactory.CreateDimension(world, codec.Name, dimensionName);
-
-                    dimension.Initialize(codec);
-                    world.RegisterDimension(codec, dimension);
-
+                    Log.UnknownDimension(this.logger, dimensionName, serverWorld.Name);
+                    continue;
+                }
+                var dimension = this.levelFactory.CreateDimension(world, codec.Name, dimensionName);
+                dimension.Initialize(codec);
+                world.RegisterDimension(codec, dimension);
+                if (!await dimension.LoadAsync(codec))
+                {
                     await dimension.GenerateAsync();
                     await dimension.SaveAsync();
                 }
-
+            }
+            if (!worldLoaded)
+            {
+                Log.CreatingWorld(this.logger, serverWorld.Name);
                 await world.GenerateAsync();
                 await world.SaveAsync();
             }
@@ -98,6 +106,12 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
 
         //No default world was defined so choose the first one to come up
         this.DefaultWorld ??= this.worlds.FirstOrDefault().Value;
+        if (this.worlds.Values.Any(world => world is AbstractLevel { Generator: Generators.MobTestGenerator }))
+        {
+            var commands = this.serviceScope.ServiceProvider.GetRequiredService<Obsidian.Commands.Framework.CommandHandler>();
+            if (!commands.GetAllCommands().Any(command => command.Name == "mob_tp"))
+                commands.RegisterCommandClass<Obsidian.Commands.Modules.MobTestCommandModule>(null);
+        }
         this.ReadyToJoin = true;
     }
 
@@ -116,14 +130,20 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         return false;
     }
 
-    public Task TickWorldsAsync() => Task.WhenAll(this.worlds.Values.Select(world => world.DoWorldTickAsync()));
+    public Task TickWorldsAsync() => ReadyToJoin ? Task.WhenAll(this.worlds.Values.Select(world => world.DoWorldTickAsync())) : Task.CompletedTask;
     public Task FlushLoadedWorldsAsync() => Task.WhenAll(this.worlds.Values.Cast<World>().Select(world => world.FlushAsync()));
 
     public async ValueTask DisposeAsync()
     {
+        await this.StopAsync(CancellationToken.None);
+        await this.FlushLoadedWorldsAsync();
+
         foreach (var world in this.worlds.Values)
         {
             await world.DisposeAsync();
+
+            foreach (var dimension in ((World)world).dimensions.Values)
+                await dimension.DisposeAsync();
         }
 
         this.serviceScope.Dispose();
@@ -138,8 +158,9 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         if (worldsFile.Exists)
         {
             await using var worldsFileStream = worldsFile.OpenRead();
-            return await worldsFileStream.FromJsonAsync<List<ServerWorld>>(cancellationToken: cancellationToken)
+            var savedWorlds = await worldsFileStream.FromJsonAsync<List<ServerWorld>>(cancellationToken: cancellationToken)
                 ?? throw new Exception("A worlds file does exist, but is invalid. Is it corrupt?");
+            return ApplyWorldEnvironmentOverrides(savedWorlds);
         }
 
         var worlds = new List<ServerWorld>()
@@ -158,7 +179,16 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         await using var fileStream = worldsFile.Create();
         await worlds.ToJsonAsync(fileStream, cancellationToken: cancellationToken);
 
-        return worlds;
+        return ApplyWorldEnvironmentOverrides(worlds);
+    }
+
+    private static List<ServerWorld> ApplyWorldEnvironmentOverrides(List<ServerWorld> worlds)
+    {
+        // Merge before binding so list entries are overridden by index rather than appended.
+        using var defaults = new MemoryStream(JsonSerializer.SerializeToUtf8Bytes(new { Worlds = worlds }));
+        using var configuration = new ConfigurationManager();
+        configuration.AddJsonStream(defaults).AddEnvironmentVariables();
+        return configuration.GetSection("Worlds").Get<List<ServerWorld>>() ?? [];
     }
 
     private static partial class Log

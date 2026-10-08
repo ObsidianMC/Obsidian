@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Events;
+using Obsidian.API.Inventory;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
@@ -30,8 +31,21 @@ public partial class PlayerActionPacket
 
     public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
+        if (Status == PlayerActionStatus.ReleaseUseItem)
+        {
+            if (player is Player concrete) await concrete.ReleaseUsingItemAsync();
+            return;
+        }
+        if (Status == PlayerActionStatus.Stab)
+        {
+            if (player is Player concrete) await concrete.StabAsync();
+            return;
+        }
         if (await player.Level.GetBlockAsync(Position) is not IBlock block)
             return;
+
+        if (Status == PlayerActionStatus.StartedDigging && block.Material == Material.NoteBlock && player.Level is Obsidian.WorldData.AbstractLevel notes)
+            notes.PlayNoteBlock(Position, player);
 
         if (Status == PlayerActionStatus.FinishedDigging || (Status == PlayerActionStatus.StartedDigging && player.GameMode == GameMode.Creative))
         {
@@ -59,7 +73,7 @@ public partial class PlayerActionPacket
                 }
             case PlayerActionStatus.DropItemStack:
                 {
-                    DropItem(player, 64);
+                    DropItem(player, int.MaxValue);
                     break;
                 }
             case PlayerActionStatus.StartedDigging:
@@ -78,31 +92,20 @@ public partial class PlayerActionPacket
         }
     }
 
-    private static void DropItem(IPlayer player, sbyte amountToRemove)
+    private static void DropItem(IPlayer player, int amountToRemove)
     {
         var droppedItem = player.GetHeldItem();
 
-        if (droppedItem is null or { Type: Material.Air })
+        if (droppedItem is null or { Type: Material.Air } or { Count: <= 0 })
             return;
 
-        var lookDir = player.GetLookDirection();
-        var loc = new VectorD(player.Position.X, player.HeadY - 0.3, player.Position.Z) + lookDir * 0.3f;
+        var count = Math.Min(amountToRemove, droppedItem.Count);
+        var stack = new ItemStack(droppedItem, count);
 
-        var item = new ItemEntity
-        {
-            EntityId = Server.GetNextEntityId(),
-            Item = droppedItem,
-            Level = player.Level,
-            Position = loc
-        };
+        if (!ItemEntity.Drop(player, stack))
+            return;
 
-        player.Level.TryAddEntity(item);
-
-        var vel = Velocity.FromBlockPerTick(lookDir.X * 0.45f, lookDir.Y * 0.45f + 0.1f, lookDir.Z * 0.45f);
-
-        item.SpawnEntity(vel);
-
-        player.Inventory.RemoveItem(player.CurrentHeldItemSlot, amountToRemove);
+        player.Inventory.RemoveItem(player.CurrentHeldItemSlot, count);
 
         player.Client.SendPacket(new ContainerSetSlotPacket
         {

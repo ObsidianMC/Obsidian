@@ -1,0 +1,80 @@
+namespace Obsidian.Entities;
+
+internal static class VillagerTrades
+{
+    internal static IEnumerable<TradeEntry> ForLevel(int profession, int level)
+    {
+        var trades = (profession, level) switch
+        {
+            (1, 1) => new[] { Buy(Material.Coal, 15), Sell(Material.IronHelmet, 5) },
+            (1, 2) => [Buy(Material.IronIngot, 4), Sell(Material.ChainmailBoots, 1)],
+            (1, 3) => [Buy(Material.LavaBucket, 1), Sell(Material.ChainmailChestplate, 4)],
+            (1, 4) => [Buy(Material.Diamond, 1), Sell(Material.DiamondLeggings, 19)],
+            (1, 5) => [Sell(Material.DiamondChestplate, 21), Sell(Material.DiamondHelmet, 13)],
+            (2, 1) => [Buy(Material.Chicken, 14), Buy(Material.Porkchop, 7)],
+            (2, 2) => [Buy(Material.Coal, 15), Sell(Material.CookedPorkchop, 1, 5)],
+            (2, 3) => [Buy(Material.Beef, 10), Buy(Material.Mutton, 7)],
+            (2, 4) => [Buy(Material.DriedKelpBlock, 10)],
+            (2, 5) => [Buy(Material.SweetBerries, 10)],
+            (3, 1) => [Buy(Material.Paper, 24), Sell(Material.Map, 7)],
+            (3, 2) => [Buy(Material.GlassPane, 11)],
+            (3, 3) => [Buy(Material.Compass, 1)],
+            (3, 4) => [Sell(Material.ItemFrame, 7), Sell(Material.WhiteBanner, 3)],
+            (3, 5) => [Sell(Material.GlobeBannerPattern, 8)],
+            (4, 1) => [Buy(Material.RottenFlesh, 32), Sell(Material.Redstone, 1, 2)],
+            (4, 2) => [Buy(Material.GoldIngot, 3), Sell(Material.LapisLazuli, 1)],
+            (4, 3) => [Buy(Material.RabbitFoot, 2), Sell(Material.Glowstone, 4)],
+            (4, 4) => [Buy(Material.GlassBottle, 9), Sell(Material.EnderPearl, 5)],
+            (4, 5) => [Buy(Material.NetherWart, 22), Sell(Material.ExperienceBottle, 3)],
+            (5, 1) => [Buy(Material.Wheat, 20), Buy(Material.Carrot, 22)],
+            (5, 2) => [Buy(Material.Pumpkin, 6), Sell(Material.PumpkinPie, 1, 4)],
+            (5, 3) => [Buy(Material.Melon, 4), Sell(Material.Cookie, 3, 18)],
+            (5, 4) => [Sell(Material.Cake, 1), Sell(Material.Apple, 1, 4)],
+            (5, 5) => [Sell(Material.GoldenCarrot, 3, 3), Sell(Material.GlisteringMelonSlice, 4, 3)],
+            (6, 1) => [Buy(Material.String, 20), Buy(Material.Coal, 10)],
+            (6, 2) => [Buy(Material.Cod, 15), Sell(Material.Campfire, 2)],
+            (6, 3) => [Buy(Material.Salmon, 13), Sell(Material.FishingRod, 8)],
+            (6, 4) => [Buy(Material.TropicalFish, 6)],
+            (6, 5) => [Buy(Material.Pufferfish, 4), Buy(Material.OakBoat, 1)],
+            (7, 1) => [Buy(Material.Stick, 32), Sell(Material.Arrow, 1, 16)],
+            (7, 2) => [Buy(Material.Flint, 26), Sell(Material.Bow, 2)],
+            (7, 3) => [Buy(Material.String, 14), Sell(Material.Crossbow, 3)],
+            (7, 4) => [Buy(Material.Feather, 24), Sell(Material.Bow, 12)],
+            (7, 5) => [Buy(Material.TripwireHook, 8), Sell(Material.Crossbow, 15)],
+            (8, 1) => [Buy(Material.Leather, 6), Sell(Material.LeatherLeggings, 3)],
+            (8, 2) => [Buy(Material.Flint, 26), Sell(Material.LeatherHelmet, 5)],
+            (8, 3) => [Buy(Material.RabbitHide, 9), Sell(Material.LeatherChestplate, 7)],
+            (8, 4) => [Buy(Material.TurtleScute, 4), Sell(Material.LeatherHorseArmor, 6)],
+            (8, 5) => [Sell(Material.Saddle, 6)],
+            (9, 1) => [Buy(Material.Paper, 24), Sell(Material.Bookshelf, 9)],
+            (9, 2) => [Buy(Material.Book, 4), Sell(Material.Lantern, 1)],
+            (9, 3) => [Buy(Material.InkSac, 5), Sell(Material.Glass, 1, 4)],
+            (9, 4) => [Buy(Material.WritableBook, 2), Sell(Material.Clock, 5)],
+            (9, 5) => [Sell(Material.NameTag, 20)],
+            (10, 1) => [Buy(Material.ClayBall, 10), Sell(Material.Brick, 1, 10)],
+            (10, 2) => [Buy(Material.Stone, 20), Sell(Material.ChiseledStoneBricks, 1, 4)],
+            (10, 3) => [Buy(Material.Granite, 16), Sell(Material.PolishedAndesite, 1, 4)],
+            (10, 4) => [Buy(Material.Quartz, 12), Sell(Material.WhiteTerracotta, 1)],
+            (10, 5) => [Sell(Material.QuartzPillar, 1), Sell(Material.QuartzBlock, 1)],
+            (12, 1) => [Buy(Material.WhiteWool, 18), Sell(Material.Shears, 2)],
+            (12, 2) => [Buy(Material.RedDye, 12), Sell(Material.WhiteWool, 1)],
+            (12, 3) => [Buy(Material.WhiteDye, 12), Sell(Material.WhiteBed, 3)],
+            (12, 4) => [Buy(Material.GreenDye, 12), Sell(Material.WhiteBanner, 3)],
+            (12, 5) => [Sell(Material.Painting, 2)],
+            (13, 1) => [Buy(Material.Coal, 15), Sell(Material.StonePickaxe, 1)],
+            (13, 2) => [Buy(Material.IronIngot, 4), Sell(Material.Bell, 36)],
+            (13, 3) => [Buy(Material.Flint, 30), Sell(Material.IronPickaxe, 10)],
+            (13, 4) => [Buy(Material.Diamond, 1), Sell(Material.DiamondAxe, 19)],
+            (13, 5) => [Sell(Material.DiamondPickaxe, 18)],
+            (14, 1) => [Buy(Material.Coal, 15), Sell(Material.IronAxe, 3)],
+            (14, 2) => [Buy(Material.IronIngot, 4), Sell(Material.Bell, 36)],
+            (14, 3) => [Buy(Material.Flint, 24)],
+            (14, 4) => [Buy(Material.Diamond, 1), Sell(Material.DiamondAxe, 19)],
+            (14, 5) => [Sell(Material.DiamondSword, 13)],
+            _ => Array.Empty<TradeEntry>()
+        };
+        foreach (var trade in trades) { trade.XP = level == 1 ? 2 : level == 2 ? 10 : level == 3 ? 20 : 30; yield return trade; }
+    }
+    private static TradeEntry Buy(Material item, int count) => MerchantOffers.Trade(item, count, Material.Emerald, maxUses: 16);
+    private static TradeEntry Sell(Material item, int cost, int count = 1) => MerchantOffers.Trade(Material.Emerald, cost, item, count);
+}
