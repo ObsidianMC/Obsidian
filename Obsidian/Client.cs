@@ -72,8 +72,11 @@ public sealed partial class Client : IClient
     /// </summary>
     private readonly CancellationTokenSource cancellationSource = new();
 
-    // Set once the player's leave was raised; see LeaveAsync.
-    private int left;
+    // The player's leave, once it was raised; see LeaveAsync.
+    private TaskCompletionSource? leaving;
+
+    // Set once Disconnect ran; it may be called again (a shutdown disconnecting a client that already left).
+    private int disconnected;
 
     /// <summary>
     /// Used to handle packets while the client is in a <see cref="ClientState.Play"/> state.
@@ -324,13 +327,14 @@ public sealed partial class Client : IClient
 
     public void Disconnect()
     {
+        if (Interlocked.Exchange(ref this.disconnected, 1) == 1)
+            return;
+
         cancellationSource.Cancel();
         Disconnected?.Invoke(this);
 
         // The player also leaves (and is saved) when their client closed the connection, as vanilla's clients do to quit.
-        var leaving = this.LeaveAsync();
-        if (this.Server is Server server)
-            server.TrackLeave(leaving);
+        _ = this.LeaveAsync();
 
         this.receiveEvent.Completed -= this.OnAsyncCompleted;
         this.sendEvent.Completed -= this.OnAsyncCompleted;
@@ -427,27 +431,50 @@ public sealed partial class Client : IClient
 
     /// <summary>
     /// Raises the player's leave event, which saves them, once however the connection ends: closed by the server
-    /// (<see cref="DisconnectAsync"/>) or by the client (<see cref="Disconnect"/>).
+    /// (<see cref="DisconnectAsync"/>) or by the client (<see cref="Disconnect"/>). Every call returns the same leave, so
+    /// a later one waits for it, and the server's shutdown waits for it too (<see cref="Server.TrackLeave"/>).
     /// </summary>
-    private async Task LeaveAsync()
+    private Task LeaveAsync()
     {
-        if (this.Player is null || Interlocked.Exchange(ref this.left, 1) == 1)
-            return;
+        if (this.Player is not Player player)
+            return Task.CompletedTask;
 
-        EventResult result;
+        var leave = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        if (Interlocked.CompareExchange(ref this.leaving, leave, null) is TaskCompletionSource started)
+            return started.Task;
+
+        // Tracked before it starts, so a shutdown that begins meanwhile still waits for it.
+        if (this.Server is Server server)
+            server.TrackLeave(leave.Task);
+
+        _ = this.RaiseLeaveAsync(player, leave);
+        return leave.Task;
+    }
+
+    // Raises the leave event and completes the leave; it never throws.
+    private async Task RaiseLeaveAsync(Player player, TaskCompletionSource leave)
+    {
         try
         {
-            result = await this.eventDispatcher.ExecuteEventAsync(new PlayerLeaveEventArgs(this.Player, this.Server, DateTimeOffset.Now));
-        }
-        catch (Exception ex)
-        {
-            Log.LeaveFailed(this.Logger, ex, this.Player.Username);
-            result = EventResult.Failed;
-        }
+            EventResult result;
+            try
+            {
+                result = await this.eventDispatcher.ExecuteEventAsync(new PlayerLeaveEventArgs(player, this.Server, DateTimeOffset.Now));
+            }
+            catch (Exception ex)
+            {
+                Log.LeaveFailed(this.Logger, ex, player.Username);
+                result = EventResult.Failed;
+            }
 
-        // Leaving saves the player, so a failed leave may have lost their data; it's reported like a failed save.
-        if (result == EventResult.Failed && this.Server is Server server)
-            server.ReportPlayerSaveFailed(this.Player.Username);
+            // Leaving saves the player, so a failed leave may have lost their data; it's reported like a failed save.
+            if (result == EventResult.Failed && this.Server is Server server)
+                server.ReportPlayerSaveFailed(player.Username);
+        }
+        finally
+        {
+            leave.SetResult();
+        }
     }
 
     private static partial class Log
