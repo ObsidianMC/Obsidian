@@ -20,7 +20,7 @@ public sealed partial class Player
 
     internal static DialogElement CreateWelcomeDialog(bool feedbackEnabled)
     {
-        var builder = DialogBuilder.MultiAction(" ")
+        var builder = DialogBuilder.MultiAction(" ")// Has to be a space, packet will be considered invalid if the title is empty
             .WithBody(DialogBody.Item("minecraft:obsidian", showDecorations: false, showTooltip: false))
             .WithMessage(new ChatMessage { Text = "Welcome to ", Bold = true }
                 .AddExtra(new ChatMessage { Text = "Obsidian", Color = HexColor.DarkPurple })
