@@ -13,6 +13,6 @@ public partial class PlaceGhostRecipePacket(int containerId, string recipeId)
     public override void Serialize(INetStreamWriter writer)
     {
         writer.WriteVarInt(this.ContainerId);
-        writer.WriteString(this.RecipeId);
+        RecipeBookAddPacket.WriteRecipeDisplay(writer, (Obsidian.API.Crafting.IRecipeWithResult)RecipesRegistry.Recipes[this.RecipeId]);
     }
 }

@@ -6,6 +6,7 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
 
 namespace Obsidian.Events;
+
 public sealed partial class MainEventHandler : MinecraftEventHandler
 {
     [EventPriority(Priority = Priority.Internal)]
@@ -75,6 +76,9 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             return;
 
         var player = (e.Player as Player)!;
+
+        if (e.Container is CraftingTable { Type: InventoryType.Crafting })
+            await ReturnCraftingItemsAsync(player, e.Container, 3);
 
         //Player successfully exited container
         player.OpenedContainer = null;
@@ -382,6 +386,10 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         var server = e.Server;
 
         var packetBroadcaster = player.Level.PacketBroadcaster;
+
+        if (player.OpenedContainer is CraftingTable { Type: InventoryType.Crafting } table)
+            await ReturnCraftingItemsAsync(player, table, 3);
+        await ReturnCraftingItemsAsync(player, player.Inventory, 2);
 
         await player.SaveAsync();
 

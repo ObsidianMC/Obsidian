@@ -4,8 +4,6 @@ namespace Obsidian.API.Containers;
 
 public sealed class CraftingTable : ResultContainer
 {
-    private ItemStack? result;
-
     public CraftingTable(InventoryType type = InventoryType.Crafting) : base(10, type)
     {
         if (type is not (InventoryType.Crafting or InventoryType.Crafter))
@@ -14,7 +12,7 @@ public sealed class CraftingTable : ResultContainer
         this.Title = type == InventoryType.Crafting ? "Crafting Table" : "Crafter";
     }
 
-    public override void SetResult(ItemStack? result) => this.result = result;
+    public override void SetResult(ItemStack? result) => this.SetItem(0, result);
 
-    public override ItemStack? GetResult() => this.result;
+    public override ItemStack? GetResult() => this.GetItem(0);
 }

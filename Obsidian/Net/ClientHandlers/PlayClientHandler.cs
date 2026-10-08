@@ -5,6 +5,7 @@ using Obsidian.Net.Packets.Play.Serverbound;
 using System.Collections.Frozen;
 
 namespace Obsidian.Net.ClientHandlers;
+
 internal sealed partial class PlayClientHandler : ClientHandler
 {
     private FrozenDictionary<int, IServerboundPacket> Packets { get; } = new Dictionary<int, IServerboundPacket>()
@@ -79,6 +80,9 @@ internal sealed partial class PlayClientHandler : ClientHandler
                 break;
             case 42:
                 await HandleFromPoolAsync<PlayerInputPacket>(data);
+                break;
+            case 45:
+                await HandleFromPoolAsync<RecipeBookChangeSettingsPacket>(data);
                 break;
             case 46:
                 await HandleFromPoolAsync<RecipeBookSeenRecipePacket>(data);

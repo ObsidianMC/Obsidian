@@ -20,12 +20,12 @@ public sealed class IngredientConverter : JsonConverter<Ingredient>
         {
             var rawRecipeItems = element.Deserialize<string[]>(options);
 
-           
+
             foreach (var rawRecipe in rawRecipeItems!)
             {
                 var resourceLocation = rawRecipe.TrimResourceTag(true);
 
-                var tag = TagsRegistry.Item.All.FirstOrDefault(x => x.Name == resourceLocation);
+                var tag = rawRecipe.StartsWith('#') ? TagsRegistry.Item.All.FirstOrDefault(x => x.Name == resourceLocation) : null;
                 if (tag != null)
                 {
                     foreach (var id in tag!.Entries)
@@ -43,7 +43,7 @@ public sealed class IngredientConverter : JsonConverter<Ingredient>
                 }
             }
 
-           
+
         }
         else
         {
@@ -58,10 +58,13 @@ public sealed class IngredientConverter : JsonConverter<Ingredient>
                 rawRecipe = element.Deserialize<RawRecipeItem>(options);
 
             if (!rawRecipe.Id.IsNullOrEmpty())
-                ingredient.Add(ItemsRegistry.GetSingleItem(rawRecipe.Id));
+            {
+                var item = ItemsRegistry.GetSingleItem(rawRecipe.Id);
+                ingredient.Add(new ItemStack(item, rawRecipe.Count > 0 ? rawRecipe.Count : 1));
+            }
             else
             {
-                var tag = TagsRegistry.Item.All.FirstOrDefault(x => x.Name == rawRecipe.Tag);
+                var tag = TagsRegistry.Item.All.FirstOrDefault(x => x.Name == rawRecipe.Tag!.TrimResourceTag(true));
 
                 foreach (var id in tag!.Entries)
                 {

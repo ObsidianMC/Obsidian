@@ -5,6 +5,7 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using System.Diagnostics;
 
 namespace Obsidian.Net.Packets.Configuration.Serverbound;
+
 public sealed partial class FinishConfigurationPacket
 {
     public async override ValueTask HandleAsync(IServer server, IPlayer player)
@@ -49,6 +50,8 @@ public sealed partial class FinishConfigurationPacket
 
         await client.QueuePacketAsync(CustomPayloadPacket.ClientboundPlay with { Channel = "minecraft:brand", PluginData = server.BrandData });
         await client.QueuePacketAsync(CommandsRegistry.Packet);
+        await client.QueuePacketAsync(new RecipeBookSettingsPacket());
+        await client.QueuePacketAsync(new RecipeBookAddPacket());
 
         await player.UpdatePlayerInfoAsync();
         await player.SendPlayerInfoAsync();

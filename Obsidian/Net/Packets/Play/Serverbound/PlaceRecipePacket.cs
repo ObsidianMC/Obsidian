@@ -1,5 +1,6 @@
 ﻿using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
+using Obsidian.Events;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
@@ -9,20 +10,24 @@ public partial class PlaceRecipePacket
     public int ContainerId { get; private set; }
 
     [Field(1)]
-    public string RecipeId { get; private set; } = default!;
+    [VarLength]
+    public int RecipeDisplayId { get; private set; }
+
+    public string RecipeId => RecipeDisplayId >= 0 && RecipeDisplayId < RecipesRegistry.RecipeBookRecipes.Count
+        ? RecipesRegistry.RecipeBookRecipes[RecipeDisplayId].Identifier : string.Empty;
 
     [Field(2)]
     public bool MakeAll { get; private set; }
 
     public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
-        await player.Client.QueuePacketAsync(new PlaceGhostRecipePacket(ContainerId, RecipeId));
+        await MainEventHandler.PlaceBookRecipeAsync(player, ContainerId, RecipeDisplayId, MakeAll);
     }
 
     public override void Populate(INetStreamReader reader)
     {
         this.ContainerId = reader.ReadVarInt();
-        this.RecipeId = reader.ReadString();
+        this.RecipeDisplayId = reader.ReadVarInt();
         this.MakeAll = reader.ReadBoolean();
     }
 }

@@ -2,6 +2,7 @@
 // https://wiki.vg/Map_Format
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
+using Obsidian.API.Containers;
 using Obsidian.API.Inventory;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets;
@@ -247,7 +248,10 @@ public sealed partial class Player : Avatar, IPlayer
 
         await Client.QueuePacketAsync(new OpenScreenPacket(container, nextId));
 
-        if (container.HasItems())
+        if (container is CraftingTable { Type: InventoryType.Crafting })
+            await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId,
+                container.Concat(this.Inventory.Skip(9).Take(36)).ToList()));
+        else if (container.HasItems())
             await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId, container.ToList()));
     }
 

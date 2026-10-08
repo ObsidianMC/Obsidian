@@ -121,8 +121,11 @@ public partial class Server
     {
         GC.SuppressFinalize(this);
 
-        this.acceptorEventArgs.Completed -= this.OnAsyncCompleted;
-        this.acceptorEventArgs.Dispose();
+        if (this.acceptorEventArgs != null)
+        {
+            this.acceptorEventArgs.Completed -= this.OnAsyncCompleted;
+            this.acceptorEventArgs.Dispose();
+        }
 
         this.configWatcher?.Dispose();
 
