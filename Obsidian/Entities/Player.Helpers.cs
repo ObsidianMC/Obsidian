@@ -331,6 +331,10 @@ public partial class Player
         return changed;
     }
 
+    /// <summary>
+    /// Collects the item entities in the player's pickup area. The world tick calls it once a tick, like vanilla's player
+    /// tick; movement doesn't, so pickup delays and timing don't depend on how often the client sends packets.
+    /// </summary>
     internal async Task PickupNearbyItemsAsync()
     {
         if (!this.Alive || this.GameMode == GameMode.Spectator || this.Respawning)

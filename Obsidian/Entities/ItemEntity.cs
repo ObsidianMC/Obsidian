@@ -11,7 +11,8 @@ public partial class ItemEntity : Entity
 {
     private int age;
     internal void SetExtendedLifetime() => age = -6000;
-    // Region ticks and player movement packets can transfer the same stack concurrently.
+    // Merges, pickups and removal check and set Removed under this lock, so a stack isn't transferred after its entity
+    // is removed, even when the removal comes from outside the level tick.
     internal static readonly object TransferLock = new();
     internal bool Removed { get; set; }
     private int pickupDelay = 10;
