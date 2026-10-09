@@ -130,6 +130,19 @@ Every step must keep the parity hashes above unchanged.
 The steps are ordered by expected overworld gain for the effort. Each is independent, and each lands as its own PR with
 before and after numbers from the harness.
 
+### Progress
+
+| Step | Status | Measured |
+|---|---|---|
+| 0. Harness | Done | — |
+| 1. Surface biome lookups | Done, with allocation-free legacy randoms | Serial surface: overworld 1.59 → 1.45 ms, nether 2.42 → 1.86 ms per chunk. Nether total 4.11 → 3.6 ms per chunk, allocations halved |
+| 2. Compile the noise router | Deprioritised | Dispatch turned out to be a small share of noise (see step 2) |
+| 4. Cold start | Two options ruled out | ReadyToRun and `TC_QuickJitForLoops=0` both cost steady-state speed (see step 4) |
+| 5. Pregeneration scheduler | Done | Overworld pregeneration: 4 cores 4.11 → 3.31 s, 8 cores 2.64 → 2.03 s, 16 cores 1.64 → 1.42 s, 32 threads unchanged |
+| 3, 6, 7 | Not started | — |
+
+The output is unchanged: the bench's parity hashes match after every step, and the committed tests pass.
+
 ### 0. Put the harness in the repository (done)
 
 `Obsidian.WorldgenBench` is a console tool in the solution:
@@ -139,17 +152,18 @@ before and after numbers from the harness.
 
 The server driver stays outside the repo for now. It's a Windows-only Python script that pins and samples both servers.
 
-### 1. Biome lookups in surface rules (small; helps the nether most)
+### 1. Biome lookups in surface rules (done)
 
-Surface rules call `BiomeManager.GetBiome` for each block they test. That's 8 jittered corner distances per call, and
-it's a third of the surface stage.
+Surface rules look up the biome of every block they test. Each lookup measures 8 jittered quart corners and hashed a
+key to find the chosen corner's biome. The biome manager now does two things while it builds a chunk's surface:
+- It keeps the quart biomes a lookup can reach in an array by position.
+- It returns at once when all 8 corners share a biome, since the jitter can't change the answer then.
 
-**Change:** compute each block column's biome once per run of Y whose quart cell and fraction give the same answer, and
-reuse it down the column. Store it in a per-thread buffer of `height` entries per column, filled lazily as Y decreases.
+The same step made `PositionalRandom` allocation-free for legacy worlds such as the nether. It used to create a
+`LegacyRandomSource` per block for surface depths and bedrock gradients.
 
-**Parity:** the lookup function is unchanged; only its results are reused.
-
-**Expected:** about 0.5 ms per overworld chunk and 0.8 ms per nether chunk, serially.
+The upper bound measured by skipping lookups entirely was about 0.45 ms in the overworld and 1.15 ms in the nether. Most
+of what's left is lookups on chunk borders, whose corners reach into neighbouring chunks.
 
 ### 2. Compile the noise router (large; the main overworld lever)
 
@@ -168,6 +182,12 @@ straight-line code with no dispatch:
   `UnaryFiller` object trees also go away.
 - **Expected:** noise 3.9 → about 2.2 ms. Confirm with a prototype that compiles only `final_density` before committing
   to the full generator.
+
+**Finding (deprioritised):** with dynamic PGO off, noise gets only 22% slower, while surface gets 70%, biomes 40% and
+features 35% slower. In the profile, the frames of the density tree and its fillers add up to about 0.5 s of the noise
+stage's 3.8 s; noise sampling itself and the aquifer take most of it. Compiling the router would save perhaps 0.3–0.5 ms per
+chunk, so steps 3 and 7 come first. Surface rules, compiled into delegate trees, depend most on PGO, so they're a better
+candidate for straight-line code.
 
 ### 3. Vectorised noise sampling (medium)
 
@@ -191,6 +211,17 @@ warm it up. Measure these options together, after step 2, because compiled route
 - **Server GC with DATAS** for the console host: −0.2 s on the overworld. Measure peak memory before adopting it,
   because the current 2–3× memory advantage over vanilla is worth keeping.
 
+**Findings:**
+- **ReadyToRun is slower.** Cold, the overworld bound goes from 2.0 to 2.4 s; warm, from 1.14 to 1.27 s, and the nether
+  from 0.53 to 1.2 s. The steady-state losses suggest precompiled code misses the dynamic PGO the JIT path gets.
+- **`DOTNET_TC_QuickJitForLoops=0` trades steady state for startup.** It speeds the cold server up (nether 1.22 → about
+  1.06 s, overworld 1.49 → 1.40 s), but serial steady state gets 16–21% slower, because loop methods never get PGO. A
+  long-running server shouldn't take that trade.
+- **Triggering OSR earlier, or instrumenting all code rather than only hot code, shows no clear gain.** Results were
+  within run-to-run noise, slightly better for the overworld and slightly worse for the nether.
+- **What's left:** a startup warmup, and making hot code fast without PGO (straight-line surface rules, density
+  functions), which also shrinks the JIT's work.
+
 ### 5. Pregeneration scheduler (medium; the main lever at high core counts)
 
 Pregeneration enqueues chunks row by row, and each job takes 3×3 chunk locks for decoration, post-processing and
@@ -212,6 +243,20 @@ take jobs in an order that spaces concurrent jobs at least 3 chunks apart.
 - Region flushing every 1,024 chunks.
 
 **Expected:** overworld 1.5 → about 1.0 s at 32 threads with today's per-chunk cost, and further as steps 1–3 cut it.
+
+**Done:** `MojangGenerator.PrepareAreaAsync` does this for pregeneration, and the job loop then only marks chunks
+complete. Results (median of interleaved runs, 1,024 chunks):
+
+| Cores | Overworld | Nether |
+|---:|---:|---:|
+| 4 | 4.11 → 3.31 s | 2.02 → 2.00 s |
+| 8 | 2.64 → 2.03 s | 1.50 → 1.36 s |
+| 16 | 1.64 → 1.42 s | 1.20 → 1.27 s |
+| 32 threads | 1.41 → 1.42 s | 1.25 → 1.28 s |
+
+At 16 cores and above, cold-start JIT is the limit, not locks: the nether is generated first in a fresh process, so it
+gains nothing there. Light was checked to be independent of the order chunks are lit in. On-demand generation (players
+exploring) still uses the lock-based path.
 
 ### 6. Feature writes (medium)
 
@@ -248,6 +293,9 @@ skip height. Within one grid cell, the candidates are the same for every block i
 
 These are estimates from the bounds and profiles above, not measurements. Each step's PR replaces its line with a
 measured one.
+
+The 32-thread estimates assumed scheduling was the limit there. The step 5 measurements show cold-start JIT is, so those
+gains depend on step 4 more than on steps 1–3.
 
 ## Reproducing
 
