@@ -2,7 +2,7 @@ using Obsidian.API;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
 using Xunit;
-using ServerPlayer = Obsidian.Entities.Player;
+using PlayerEntity = Obsidian.Entities.Player;
 
 namespace Obsidian.Tests;
 
@@ -31,9 +31,9 @@ public sealed class ItemPickup
         var player = new BoundingBox(new VectorD(-0.3, 64, -0.3), new VectorD(0.3, 65.8, 0.3));
         BoundingBox? vehicle = riding ? new BoundingBox(new VectorD(-0.7, 63, -0.7), new VectorD(0.7, 64.6, 0.7)) : null;
 
-        var area = ServerPlayer.GetPickupArea(player, vehicle);
+        var area = PlayerEntity.GetPickupArea(player, vehicle);
 
-        Assert.Equal(expected, ServerPlayer.IsInPickupArea(area, new VectorD(x, y, z)));
+        Assert.Equal(expected, PlayerEntity.IsInPickupArea(area, new VectorD(x, y, z)));
     }
 
     [Fact]
@@ -45,7 +45,7 @@ public sealed class ItemPickup
         inventory.SetItem(9, new ItemStack(ItemsRegistry.Stone, 60));
         var picked = new ItemStack(ItemsRegistry.Stone, 10);
 
-        var changed = ServerPlayer.AddPickedUpItem(inventory, heldSlot, picked);
+        var changed = PlayerEntity.AddPickedUpItem(inventory, heldSlot, picked);
 
         Assert.Equal([45, 9, 36], changed);
         Assert.Equal(0, picked.Count);
@@ -66,7 +66,7 @@ public sealed class ItemPickup
             inventory.SetItem(slot, new ItemStack(ItemsRegistry.Dirt, 64));
         var picked = new ItemStack(ItemsRegistry.Stone, 10);
 
-        var changed = ServerPlayer.AddPickedUpItem(inventory, 36, picked, infiniteMaterials);
+        var changed = PlayerEntity.AddPickedUpItem(inventory, 36, picked, infiniteMaterials);
 
         Assert.Empty(changed);
         Assert.Equal(expectedLeft, picked.Count);
