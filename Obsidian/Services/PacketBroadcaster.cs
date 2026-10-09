@@ -61,13 +61,13 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
     public void Broadcast(IClientboundPacket packet, params int[] excludedIds)
     {
         foreach (var player in this.server.OnlinePlayers.Values.Where(player => !excludedIds.Contains(player.EntityId)))
-            player.Client.SendPacket(packet);
+            player.SendPacket(packet);
     }
 
     public void BroadcastTo(IClientboundPacket packet, params int[] ids)
     {
         foreach (var player in this.server.OnlinePlayers.Values.Where(player => ids.Contains(player.EntityId)))
-            player.Client.SendPacket(packet);
+            player.SendPacket(packet);
     }
 
     public void BroadcastToLevelInRange(ILevel toLevel, VectorD location, IClientboundPacket packet, params int[] excludedIds)
@@ -76,10 +76,9 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
             return;
 
         var players = world.GetPlayersInRange(location, world.Configuration.EntityBroadcastRangePercentage)
-            .Cast<Player>()
             .Where(player => !excludedIds.Contains(player.EntityId));
         foreach (var player in players)
-            player.Client.SendPacket(packet);
+            player.SendPacket(packet);
     }
 
     public void QueuePacketToLevelInRange(ILevel toLevel, VectorD location, IClientboundPacket packet, params int[] excludedIds)
@@ -110,7 +109,7 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
             return;
 
         foreach (var player in world.Players.Values.Where(player => !excludedIds.Contains(player.EntityId)))
-            player.Client.SendPacket(packet);
+            player.SendPacket(packet);
     }
 
     protected async override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -126,7 +125,7 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
                     var players = queuedPacket.ToLevel is AbstractLevel toLevel
                         ? toLevel.Players.Values : this.server.OnlinePlayers.Values;
                     foreach (var player in players.Where(player => ShouldGetPacket(player, queuedPacket)))
-                        await player.Client.QueuePacketAsync(queuedPacket.Packet);
+                        await player.QueuePacketAsync(queuedPacket.Packet);
                 }
             }
         }

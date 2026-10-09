@@ -247,30 +247,35 @@ public partial class Player
         previous.TryRemovePlayer(this);
         foreach (var other in previous.Players.Values.OfType<Player>())
             other.visiblePlayers.Remove(this);
-        this.Level = destination.Level;
-        this.LastPosition = from;
-        this.Position = destination.Position;
-        this.BoundingBox = this.Dimension.CreateBBFromPosition(this.Position);
-        this.HeadY = this.Position.Y + 1.62;
-        this.foodPosition = null;
-        this.Yaw = destination.Yaw;
-        this.Pitch = destination.Pitch;
-        this.Motion = destination.Motion;
-        this.FallDistance = 0;
-        this.CancelWeaponUse();
-        this.combatPosition = null;
-        this.Level.TryAddPlayer(this);
-        this.Level.TryAddEntity(this);
-        this.portalCooldown = PlayerPortalCooldown;
-        this.preservePortalMotion = this.lastPortal == Material.NetherPortal;
+
+        // Held from the level change until the respawn resets the client's view (see RespawnUnderLockAsync).
+        await this.chunkUpdates.WaitAsync();
         try
         {
-            await this.RespawnAsync(DataKept.Attributes | DataKept.Metadata);
+            this.Level = destination.Level;
+            this.LastPosition = from;
+            this.Position = destination.Position;
+            this.BoundingBox = this.Dimension.CreateBBFromPosition(this.Position);
+            this.HeadY = this.Position.Y + 1.62;
+            this.foodPosition = null;
+            this.Yaw = destination.Yaw;
+            this.Pitch = destination.Pitch;
+            this.Motion = destination.Motion;
+            this.FallDistance = 0;
+            this.CancelWeaponUse();
+            this.combatPosition = null;
+            this.Level.TryAddPlayer(this);
+            this.Level.TryAddEntity(this);
+            this.portalCooldown = PlayerPortalCooldown;
+            this.preservePortalMotion = this.lastPortal == Material.NetherPortal;
+            await this.RespawnUnderLockAsync(DataKept.Attributes | DataKept.Metadata);
         }
         finally
         {
             this.preservePortalMotion = false;
+            this.chunkUpdates.Release();
         }
+
         var world = this.Level is IDimension dimension ? dimension.ParentWorld : this.Level as IWorld;
         await this.Client.QueuePacketAsync(new SetDefaultSpawnPositionPacket(new()
         {

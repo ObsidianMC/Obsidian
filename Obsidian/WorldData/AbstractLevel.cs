@@ -339,9 +339,9 @@ public abstract partial class AbstractLevel : ILevel
     internal void BroadcastBlockChange(IBlock block, Vector location)
     {
         var packet = new BlockUpdatePacket(location, block.GetHashCode());
-        foreach (Player player in PlayersInRange(location).Cast<Player>())
+        foreach (var player in PlayersInRange(location))
         {
-            player.Client.SendPacket(packet);
+            player.SendPacket(packet);
         }
     }
 
@@ -351,8 +351,8 @@ public abstract partial class AbstractLevel : ILevel
     internal void BroadcastLevelEvent(int type, Vector location, int data)
     {
         var packet = new LevelEventPacket(type, location, data);
-        foreach (Player player in PlayersInRange(location).Cast<Player>())
-            player.Client.SendPacket(packet);
+        foreach (var player in PlayersInRange(location))
+            player.SendPacket(packet);
     }
 
     public IEnumerable<IPlayer> PlayersInRange(Vector location)
@@ -487,7 +487,8 @@ public abstract partial class AbstractLevel : ILevel
 
     public bool TryAddPlayer(IPlayer player) => Players.TryAdd(player.Uuid, player);
 
-    public bool TryRemovePlayer(IPlayer player) => Players.TryRemove(player.Uuid, out _);
+    // Matches the instance, not just the UUID, so a stale reference can't remove a newer player with the same UUID.
+    public bool TryRemovePlayer(IPlayer player) => Players.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player));
 
     public async virtual Task DoWorldTickAsync()
     {
@@ -560,7 +561,7 @@ public abstract partial class AbstractLevel : ILevel
                 await concrete.TickBlocksAsync();
             }
         }
-        foreach (var player in Players.Values.OfType<Player>())
+        foreach (var player in Players.Values)
         {
             TickStage = $"tracking for {player.Username}";
             await player.SynchronizeTrackedEntitiesAsync();
@@ -577,8 +578,8 @@ public abstract partial class AbstractLevel : ILevel
     internal void SendLightUpdate(IChunk chunk)
     {
         var packet = new LightUpdatePacket(chunk);
-        foreach (Player player in this.GetPlayersInChunkRange(new Vector(chunk.X << 4, 0, chunk.Z << 4)).Cast<Player>())
-            player.Client.SendPacket(packet);
+        foreach (var player in this.GetPlayersInChunkRange(new Vector(chunk.X << 4, 0, chunk.Z << 4)))
+            player.SendPacket(packet);
     }
 
     /// <summary>

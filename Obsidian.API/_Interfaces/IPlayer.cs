@@ -10,7 +10,6 @@ public interface IPlayer : ILiving
     public ValueTask ClearDialogAsync();
 
     public byte CurrentContainerId { get; }
-    public IClient Client { get; }
     public IScoreboard? CurrentScoreboard { get; set; }
 
     public PlayerInput Input { get; set; }
@@ -66,6 +65,28 @@ public interface IPlayer : ILiving
 
     public Task SaveAsync();
     public Task LoadAsync(bool loadFromPersistentWorld = true);
+
+    /// <summary>
+    /// Sends a packet to the player's client immediately. Players without a client ignore it.
+    /// </summary>
+    /// <returns>Whether the packet was sent.</returns>
+    [EditorBrowsable(EditorBrowsableState.Advanced)]
+    public bool SendPacket(IClientboundPacket packet);
+
+    /// <summary>
+    /// Queues a packet for the player's client. Players without a client ignore it.
+    /// </summary>
+    [EditorBrowsable(EditorBrowsableState.Advanced)]
+    public ValueTask QueuePacketAsync(IClientboundPacket packet);
+
+    // Server hooks for what a client has been shown. The defaults suit players without a client, which have nothing to
+    // keep in sync; the server's network player overrides them.
+    internal ValueTask SynchronizeTrackedEntitiesAsync() => default;
+    internal void TrackEntity(IEntity entity) { }
+    internal void ForgetVisiblePlayer(IPlayer player) { }
+
+    // Runs after every level has ticked, like vanilla's per-player inventory tick.
+    internal ValueTask TickAfterLevelsAsync() => default;
 
     public ValueTask DisconnectAsync(ChatMessage reason);
     public ValueTask SendMessageAsync(ChatMessage message);

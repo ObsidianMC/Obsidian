@@ -8,7 +8,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound;
 
 public partial class UseItemOnPacket
 {
-    private async ValueTask<bool> TryPlaceEndCrystalAsync(IPlayer player, int handSlot, ItemStack? item)
+    private async ValueTask<bool> TryPlaceEndCrystalAsync(IClientPlayer player, int handSlot, ItemStack? item)
     {
         if (item is not { Count: > 0, Type: Material.EndCrystal }) return false;
         player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = Sequence });

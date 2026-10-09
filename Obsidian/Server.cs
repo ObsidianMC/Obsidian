@@ -6,9 +6,11 @@ using Obsidian.API.Boss;
 using Obsidian.API.Commands;
 using Obsidian.API.Configuration;
 using Obsidian.API.Crafting;
+using Obsidian.API.Events;
 using Obsidian.Commands.Framework;
 using Obsidian.Commands.Modules;
 using Obsidian.Entities;
+using Obsidian.Events;
 using Obsidian.Integrated;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Common;
@@ -189,10 +191,11 @@ public sealed partial class Server : IServer
 
     public IPlayer? GetPlayer(int entityId)
     {
-        if (this.Connections.TryGetValue(entityId, out var client) && OnlinePlayers.TryGetValue(client.Player!.Uuid, out var player))
+        if (this.Connections.TryGetValue(entityId, out var client) && client.Player is { } connectedPlayer &&
+            OnlinePlayers.TryGetValue(connectedPlayer.Uuid, out var player))
             return player;
 
-        return null;
+        return this.OnlinePlayers.Values.FirstOrDefault(player => player.EntityId == entityId);
     }
 
     public bool TryGetPlayer(string username, [NotNullWhen(true)] out IPlayer? player)
@@ -468,9 +471,46 @@ public sealed partial class Server : IServer
 
     public bool AddPlayer(IPlayer player)
     {
-        this.UsernameToUuidMappings.TryAdd(player.Username, player.Uuid);
+        if (!this.OnlinePlayers.TryAdd(player.Uuid, player))
+            return false;
 
-        return this.OnlinePlayers.TryAdd(player.Uuid, player);
+        // The name must map to this player alone; undo the registration rather than leave lookups disagreeing.
+        if (this.UsernameToUuidMappings.TryAdd(player.Username, player.Uuid))
+            return true;
+
+        this.OnlinePlayers.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player));
+        return false;
+    }
+
+    public async Task<IPlayer> AddServerPlayerAsync(Guid uuid, string username, IWorld? world = null)
+    {
+        var player = new ServerPlayer(uuid, username, this, world ?? this.DefaultWorld);
+        await player.LoadAsync();
+
+        if (!this.AddPlayer(player))
+            throw new InvalidOperationException($"Player '{username}' ({uuid}) is already online.");
+
+        try
+        {
+            // The internal join handler registers the player in its level and fails the event if it can't.
+            var result = await this.EventDispatcher.ExecuteEventAsync(new PlayerJoinEventArgs(player, this, DateTimeOffset.Now));
+            if (result != EventResult.Completed)
+                throw new InvalidOperationException($"Joining server-side player '{username}' failed with result {result}.");
+
+            return player;
+        }
+        catch
+        {
+            try
+            {
+                await MainEventHandler.DespawnPlayerAsync(player);
+            }
+            finally
+            {
+                this.RemovePlayer(player);
+            }
+            throw;
+        }
     }
 
     /// <summary>
@@ -494,11 +534,48 @@ public sealed partial class Server : IServer
 
     public bool RemovePlayer(IPlayer player)
     {
-        this.UsernameToUuidMappings.Remove(player.Username, out _);
+        // Only the registered instance can unregister, so a stale reference can't remove a newer player who reused
+        // the UUID or name.
+        if (!this.OnlinePlayers.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player)))
+            return false;
 
+        this.ReleaseRegistrations(player);
+        return true;
+    }
+
+    // Drops the lookups that hang off an online registration; the caller must have just removed that registration.
+    private void ReleaseRegistrations(IPlayer player)
+    {
+        this.UsernameToUuidMappings.TryRemove(new KeyValuePair<string, Guid>(player.Username, player.Uuid));
         player.Level.TryRemovePlayer(player);
+    }
 
-        return this.OnlinePlayers.Remove(player.Uuid, out _);
+    public async Task<bool> RemoveServerPlayerAsync(IPlayer player)
+    {
+        // Claiming the registration first means concurrent removals run the leave lifecycle only once.
+        if (player is not ServerPlayer || !this.OnlinePlayers.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player)))
+            return false;
+
+        var result = EventResult.Failed;
+        try
+        {
+            result = await this.EventDispatcher.ExecuteEventAsync(new PlayerLeaveEventArgs(player, this, DateTimeOffset.Now));
+        }
+        finally
+        {
+            try
+            {
+                // A failing handler stops the ones after it, which may include the internal one that despawns the player.
+                if (result != EventResult.Completed)
+                    await MainEventHandler.DespawnPlayerAsync(player);
+            }
+            finally
+            {
+                this.ReleaseRegistrations(player);
+            }
+        }
+
+        return true;
     }
 
     // When the world tick in progress started (a Stopwatch timestamp), or 0 between ticks; see KeepAliveLoopAsync.
@@ -528,6 +605,7 @@ public sealed partial class Server : IServer
         var timer = new BalancingTimer(50, cancelTokenSource.Token);
         var keepAliveTicks = 0;
         var nextStuckWarning = StuckTickWarningAfter;
+        var observedTick = 0L;
 
         try
         {
@@ -539,12 +617,17 @@ public sealed partial class Server : IServer
                     await this.ForEachConnectionAsync(SendKeepAliveAsync, this.keepAliveFailures);
                 }
 
+                // Each tick gets its own warnings. Comparing start times also catches a tick that began right after
+                // the previous one ended, between two checks, so it doesn't inherit that tick's later threshold.
                 var started = Volatile.Read(ref this.tickStarted);
-                if (started == 0)
+                if (started != observedTick)
                 {
+                    observedTick = started;
                     nextStuckWarning = StuckTickWarningAfter;
-                    continue;
                 }
+
+                if (started == 0)
+                    continue;
 
                 var running = Stopwatch.GetElapsedTime(started);
                 if (running >= nextStuckWarning)

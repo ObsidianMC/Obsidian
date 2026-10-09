@@ -387,8 +387,6 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         var player = e.Player;
         var server = e.Server;
 
-        var packetBroadcaster = player.Level.PacketBroadcaster;
-
         if (player.OpenedContainer is CraftingTable { Type: InventoryType.Crafting } table)
             await ReturnCraftingItemsAsync(player, table, 3);
         if (player.OpenedContainer is EnchantmentTable enchantingTable)
@@ -400,17 +398,26 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
 
         await player.SaveAsync();
 
-        packetBroadcaster.Broadcast(new PlayerInfoRemovePacket
+        await DespawnPlayerAsync(player);
+
+        server.BroadcastMessage(string.Format(server.Configuration.Messages.Leave, e.Player.Username));
+    }
+
+    /// <summary>
+    /// Takes a leaving player out of every client's view: the tab list entry and the spawned entity.
+    /// Also used to undo a join that failed part-way, so it must tolerate a player who was never fully shown.
+    /// </summary>
+    internal static async ValueTask DespawnPlayerAsync(IPlayer player)
+    {
+        player.Level.PacketBroadcaster.Broadcast(new PlayerInfoRemovePacket
         {
             UUIDs = [player.Uuid]
         }, player.EntityId);
 
         // Like changing level or dying, leaving removes the player's entity for everyone who could see it.
         await player.Level.DestroyEntityAsync(player);
-        foreach (var observer in player.Level.GetPlayersInRange(player.Position, float.MaxValue).OfType<Player>())
-            observer.visiblePlayers.Remove(player);
-
-        server.BroadcastMessage(string.Format(server.Configuration.Messages.Leave, e.Player.Username));
+        foreach (var observer in player.Level.GetPlayersInRange(player.Position, float.MaxValue))
+            observer.ForgetVisiblePlayer(player);
     }
 
     [EventPriority(Priority = Priority.Internal)]
@@ -421,10 +428,15 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
 
         var packetBroadcaster = joined.Level.PacketBroadcaster;
 
-        joined!.Level.TryAddPlayer(joined);
-        joined!.Level.TryAddEntity(joined);
+        if (!joined.Level.TryAddPlayer(joined))
+            throw new InvalidOperationException($"Player '{joined.Username}' is already registered in level '{joined.Level.Name}'.");
+        if (!joined.Level.TryAddEntity(joined))
+        {
+            joined.Level.TryRemovePlayer(joined);
+            throw new InvalidOperationException($"Player '{joined.Username}' could not be registered as a level entity.");
+        }
 
-        server!.BroadcastMessage(new ChatMessage
+        server.BroadcastMessage(new ChatMessage
         {
             Text = string.Format(server.Configuration.Messages.Join, e.Player.Username),
             Color = HexColor.Yellow
@@ -449,6 +461,10 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         {
             { joined.Uuid, list }
         }));
+
+        // Show the new player to everyone already nearby. A joining client sees the players around it through its own
+        // visibility updates, which run whenever it moves.
+        joined.SpawnEntity();
 
         return default;
     }

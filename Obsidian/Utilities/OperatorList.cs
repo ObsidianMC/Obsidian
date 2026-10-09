@@ -129,8 +129,9 @@ public sealed partial class OperatorList : IOperatorList
 
         try
         {
-            await player.Client.QueuePacketAsync(EntityEventPacket.PermissionLevel(player.EntityId, this.GetPermissionLevel(player)));
-            await player.Client.QueuePacketAsync(CommandsRegistry.Packet);
+            var permissionLevel = this.GetPermissionLevel(player);
+            await player.QueuePacketAsync(EntityEventPacket.PermissionLevel(player.EntityId, permissionLevel));
+            await player.QueuePacketAsync(CommandsRegistry.Packet);
         }
         catch (OperationCanceledException)
         {

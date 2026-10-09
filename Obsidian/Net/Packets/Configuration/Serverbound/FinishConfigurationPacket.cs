@@ -8,7 +8,7 @@ namespace Obsidian.Net.Packets.Configuration.Serverbound;
 
 public sealed partial class FinishConfigurationPacket
 {
-    public async override ValueTask HandleAsync(IServer server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         var client = player.Client;
 

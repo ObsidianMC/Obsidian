@@ -13,7 +13,7 @@ public partial class ChatCommandPacket
         Command = reader.ReadString();
     }
 
-    public async override ValueTask HandleAsync(IServer server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         var context = new CommandContext($"/{this.Command}", new CommandSender(CommandIssuers.Client, player), player, server);
 
