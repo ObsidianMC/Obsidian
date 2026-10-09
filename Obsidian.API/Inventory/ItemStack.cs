@@ -86,7 +86,14 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
 
     public static bool operator !=(ItemStack? left, ItemStack? right) => !(left == right);
 
-    public override int GetHashCode() => HashCode.Combine(this.Holder, this.InternalStorage);
+    // Combines the components' hashes without regard to order, so stacks that are equal hash alike.
+    public override int GetHashCode()
+    {
+        var components = 0;
+        foreach (var component in this.InternalStorage.Values)
+            components ^= component.GetHashCode();
+        return HashCode.Combine(this.Holder, components);
+    }
 
     private void InitializeComponents(params IEnumerable<DataComponent> components)
     {
@@ -111,6 +118,20 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
 
     public override bool Equals(object obj) => Equals(obj as ItemStack);
 
-    public bool Equals(ItemStack? other) => other is not null && this.Holder.Equals(other.Holder) &&
-        this.InternalStorage.SequenceEqual(other.InternalStorage);
+    /// <summary>
+    /// Whether <paramref name="other"/> is the same item with the same components, like vanilla's
+    /// <c>isSameItemSameComponents</c>. The count isn't compared, and neither is the order the components were added in.
+    /// </summary>
+    public bool Equals(ItemStack? other)
+    {
+        if (other is null || !this.Holder.Equals(other.Holder) || this.InternalStorage.Count != other.InternalStorage.Count)
+            return false;
+
+        foreach (var (type, component) in this.InternalStorage)
+        {
+            if (!other.InternalStorage.TryGetValue(type, out var otherComponent) || !component.Equals(otherComponent))
+                return false;
+        }
+        return true;
+    }
 }
