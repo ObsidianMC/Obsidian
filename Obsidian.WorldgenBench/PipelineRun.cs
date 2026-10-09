@@ -8,6 +8,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime;
 using System.Threading.Tasks;
 
 namespace WorldgenBench;
@@ -39,7 +40,8 @@ internal static class PipelineRun
         Console.WriteLine($"== {bench.Name} pipeline on {Environment.ProcessorCount} processors, {(options.Cold ? "cold" : "warm")}, " +
             $"seed {options.Seed}, {result.Chunks} chunks: {result.Total.TotalSeconds:F2} s ({result.Chunks / result.Total.TotalSeconds:F0} chunks/s); " +
             $"carve {result.Carve.TotalSeconds:F2} s, decorate {result.Decorate.TotalSeconds:F2} s, " +
-            $"finish {result.Finish.TotalSeconds:F2} s; GC paused {result.GcPause.TotalMilliseconds:F0} ms");
+            $"finish {result.Finish.TotalSeconds:F2} s; GC paused {result.GcPause.TotalMilliseconds:F0} ms; " +
+            $"JIT compiled {result.JitMethods} methods in {result.JitTime.TotalMilliseconds:F0} ms");
         Console.WriteLine("Per call times are summed over threads, so they grow when cores share caches, memory or SMT siblings.");
         result.Timer.Print(result.Chunks);
     }
@@ -59,6 +61,8 @@ internal static class PipelineRun
             _ = structures.GetStartsReaching(centerX, centerZ).Count();
 
         var gcPause = GC.GetTotalPauseDuration();
+        var jitTime = JitInfo.GetCompilationTime();
+        var jitMethods = JitInfo.GetCompiledMethodCount();
         var total = Stopwatch.StartNew();
         Parallel.ForEach(carved, position =>
         {
@@ -89,7 +93,7 @@ internal static class PipelineRun
 
         total.Stop();
         return new PipelineResult(full.Count, total.Elapsed, carve, decorate - carve, total.Elapsed - decorate,
-            GC.GetTotalPauseDuration() - gcPause, timer);
+            GC.GetTotalPauseDuration() - gcPause, JitInfo.GetCompilationTime() - jitTime, JitInfo.GetCompiledMethodCount() - jitMethods, timer);
     }
 
     private static void InWaves(List<(int X, int Z)> positions, Action<(int X, int Z)> action)
@@ -125,5 +129,6 @@ internal static class PipelineRun
     }
 
     private sealed record PipelineResult(int Chunks, TimeSpan Total, TimeSpan Carve, TimeSpan Decorate, TimeSpan Finish, TimeSpan GcPause,
+        TimeSpan JitTime, long JitMethods,
         StageTimer<Stage> Timer);
 }
