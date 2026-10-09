@@ -6,6 +6,7 @@ using Obsidian.API.Boss;
 using Obsidian.API.Commands;
 using Obsidian.API.Configuration;
 using Obsidian.API.Crafting;
+using Obsidian.API.Events;
 using Obsidian.Commands.Framework;
 using Obsidian.Entities;
 using Obsidian.Net;
@@ -309,6 +310,26 @@ public sealed partial class Server : IServer
         return this.OnlinePlayers.TryAdd(player.Uuid, player);
     }
 
+    public async Task<IPlayer> AddServerPlayerAsync(Guid uuid, string username, IWorld? world = null)
+    {
+        var player = new ServerPlayer(uuid, username, this, world ?? this.DefaultWorld);
+        await player.LoadAsync();
+
+        if (!this.AddPlayer(player))
+            throw new InvalidOperationException($"Player '{username}' ({uuid}) is already online.");
+
+        try
+        {
+            await this.EventDispatcher.ExecuteEventAsync(new PlayerJoinEventArgs(player, this, DateTimeOffset.Now));
+            return player;
+        }
+        catch
+        {
+            this.RemovePlayer(player);
+            throw;
+        }
+    }
+
     public bool RemovePlayer(IPlayer player)
     {
         this.UsernameToUuidMappings.Remove(player.Username, out _);
@@ -316,6 +337,15 @@ public sealed partial class Server : IServer
         player.Level.TryRemovePlayer(player);
 
         return this.OnlinePlayers.Remove(player.Uuid, out _);
+    }
+
+    public async Task<bool> RemoveServerPlayerAsync(IPlayer player)
+    {
+        if (!this.OnlinePlayers.ContainsKey(player.Uuid) || player.Client.Connected)
+            return false;
+
+        await this.EventDispatcher.ExecuteEventAsync(new PlayerLeaveEventArgs(player, this, DateTimeOffset.Now));
+        return this.RemovePlayer(player);
     }
 
     // When the world tick in progress started (a Stopwatch timestamp), or 0 between ticks; see KeepAliveLoopAsync.

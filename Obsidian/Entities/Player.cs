@@ -17,7 +17,7 @@ using System.Threading;
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:player")]
-public sealed partial class Player : Avatar, IPlayer
+public partial class Player : Avatar, IPlayer
 {
     public byte CurrentContainerId { get; set; }
 
