@@ -51,8 +51,8 @@ internal static class CodecAssets
 
     // The properties BiomeEffect models of a biome's effects.
     private static readonly string[] modeledBiomeEffects =
-        ["grass_color_modifier", "ambient_sound", "particle", "foliage_color", "sky_color", "water_fog_color",
-            "fog_color", "water_color", "grass_color"];
+        ["grass_color_modifier", "ambient_sound", "particle", "foliage_color", "dry_foliage_color", "sky_color",
+            "water_fog_color", "fog_color", "water_color", "grass_color"];
 
     public static void Write(string dataDirectory, string outputDirectory)
     {
