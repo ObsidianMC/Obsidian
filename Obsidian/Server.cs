@@ -348,32 +348,14 @@ public sealed partial class Server : IServer
         {
             while (await timer.WaitForNextTickAsync())
             {
-                try
+                if (++keepAliveTicks > Configuration.Network.KeepAliveInterval / 50)
                 {
-                    if (++keepAliveTicks > Configuration.Network.KeepAliveInterval / 50)
-                    {
-                        keepAliveTicks = 0;
-                        foreach (var client in this.Connections.Values)
-                        {
-                            if (client.State == ClientState.Play)
-                                await KeepAlivePacket.ClientboundPlay.HandleAsync(client);
-                            else if (client.State == ClientState.Configuration)
-                                await KeepAlivePacket.ClientboundConfiguration.HandleAsync(client);
-                        }
-                    }
+                    keepAliveTicks = 0;
+                    await this.ForEachConnectionAsync(SendKeepAliveAsync);
+                }
 
-                    // Chunks go out in batches the clients acknowledge (see Player.SendPendingChunksAsync).
-                    foreach (var client in this.Connections.Values)
-                    {
-                        if (client.State == ClientState.Play && client.Player is Player player)
-                            await player.SendPendingChunksAsync();
-                    }
-                }
-                catch (Exception ex) when (ex is not OperationCanceledException || !cancelTokenSource.IsCancellationRequested)
-                {
-                    if (this.connectionFailures.ShouldLog(out var suppressed))
-                        Log.ConnectionTickFailed(this.logger, ex, suppressed);
-                }
+                // Chunks go out in batches the clients acknowledge (see Player.SendPendingChunksAsync).
+                await this.ForEachConnectionAsync(SendPendingChunksAsync);
 
                 var started = Volatile.Read(ref this.tickStarted);
                 if (started == 0)
@@ -393,6 +375,40 @@ public sealed partial class Server : IServer
         catch (OperationCanceledException) when (cancelTokenSource.IsCancellationRequested)
         {
             // Stopping.
+        }
+
+        static ValueTask SendKeepAliveAsync(IClient client) => client.State switch
+        {
+            ClientState.Play => KeepAlivePacket.ClientboundPlay.HandleAsync(client),
+            ClientState.Configuration => KeepAlivePacket.ClientboundConfiguration.HandleAsync(client),
+            _ => ValueTask.CompletedTask
+        };
+
+        static async ValueTask SendPendingChunksAsync(IClient client)
+        {
+            if (client.State == ClientState.Play && client.Player is Player player)
+                await player.SendPendingChunksAsync();
+        }
+    }
+
+    /// <summary>
+    /// Runs <paramref name="service"/> for every connection. A client that fails (one closing its socket, say) is
+    /// logged and skipped, so it can't hold up the clients after it.
+    /// </summary>
+    private async Task ForEachConnectionAsync(Func<IClient, ValueTask> service)
+    {
+        foreach (var client in this.Connections.Values)
+        {
+            try
+            {
+                await service(client);
+            }
+            catch (Exception ex)
+                when (ex is not OperationCanceledException || !cancelTokenSource.IsCancellationRequested)
+            {
+                if (this.connectionFailures.ShouldLog(out var suppressed))
+                    Log.ConnectionTickFailed(this.logger, ex, suppressed);
+            }
         }
     }
 
