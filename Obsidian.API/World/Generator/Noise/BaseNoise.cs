@@ -66,4 +66,7 @@ public partial class BaseNoise : INoise
         this.noise ??= NormalNoise.Create(new XoroshiroRandomSource(0L).ForkPositional().FromHashOf(this.Key), (int)this.FirstOctave, this.Amplitudes.AsSpan());
 
     public double GetValue(double x, double y, double z) => this.Noise.GetValue(x, y, z);
+
+    /// <summary>The noise <see cref="GetValue"/> samples.</summary>
+    internal NormalNoise NormalNoise => this.Noise;
 }

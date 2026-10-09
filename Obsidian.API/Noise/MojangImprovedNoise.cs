@@ -10,7 +10,7 @@ namespace Obsidian.API.Noise;
 public sealed class ImprovedNoise
 {
     /// <summary>Vanilla declares this as a float; the widened value (1.0000000116860974E-7) is what it uses.</summary>
-    private const double ShiftUpEpsilon = 1.0E-7f;
+    internal const double ShiftUpEpsilon = 1.0E-7f;
 
     private readonly byte[] p = new byte[256];
 
@@ -19,6 +19,9 @@ public sealed class ImprovedNoise
     public double Yo { get; }
 
     public double Zo { get; }
+
+    /// <summary>The permutation table, for <see cref="ImprovedNoiseLanes"/>.</summary>
+    internal byte[] Permutation => this.p;
 
     /// <summary>Creates a noise, consuming 3 doubles and 256 bounded ints from <paramref name="random"/>.</summary>
     public ImprovedNoise(IRandomSource random)

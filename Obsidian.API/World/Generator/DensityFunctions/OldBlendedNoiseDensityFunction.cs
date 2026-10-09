@@ -49,4 +49,7 @@ public class OldBlendedNoiseDensityFunction : IDensityFunction
     };
 
     public double GetValue(double x, double y, double z) => this.Noise.Compute((int)x, (int)y, (int)z);
+
+    /// <summary>The noise <see cref="GetValue"/> samples.</summary>
+    internal BlendedNoise BlendedNoise => this.Noise;
 }

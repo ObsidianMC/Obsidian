@@ -1,5 +1,6 @@
 ﻿using Obsidian.API.World.Generator.RandomSources;
 using System.Globalization;
+using System.Runtime.Intrinsics;
 
 namespace Obsidian.API.Noise;
 
@@ -21,6 +22,9 @@ public sealed class PerlinNoise
     private readonly double[] amplitudes;
     private readonly double lowestFreqValueFactor;
     private readonly double lowestFreqInputFactor;
+
+    // The octaves sampled four positions at a time, made on first use.
+    private ImprovedNoiseLanes?[]? octaveLanes;
 
     public int FirstOctave { get; }
 
@@ -128,6 +132,38 @@ public sealed class PerlinNoise
 
         return value;
     }
+
+    /// <summary>
+    /// <see cref="GetValue(double, double, double)"/> at four positions, one per lane, with the same arithmetic in each
+    /// (see <see cref="ImprovedNoiseLanes"/>). Only where <see cref="ImprovedNoiseLanes.IsSupported"/>.
+    /// </summary>
+    internal Vector256<double> GetValue(Vector256<double> x, Vector256<double> y, Vector256<double> z)
+    {
+        // Threads racing to make the samplers make equal ones.
+        var octaves = this.octaveLanes ??= [.. this.noiseLevels.Select(noise => noise is null ? null : new ImprovedNoiseLanes(noise))];
+        var value = Vector256<double>.Zero;
+        var inputFactor = this.lowestFreqInputFactor;
+        var valueFactor = this.lowestFreqValueFactor;
+
+        for (var i = 0; i < octaves.Length; i++)
+        {
+            if (octaves[i] is ImprovedNoiseLanes noise)
+            {
+                var factor = Vector256.Create(inputFactor);
+                var sample = noise.Noise(WrapLanes(x * factor), WrapLanes(y * factor), WrapLanes(z * factor));
+                value += Vector256.Create(this.amplitudes[i]) * sample * Vector256.Create(valueFactor);
+            }
+
+            inputFactor *= 2.0;
+            valueFactor /= 2.0;
+        }
+
+        return value;
+    }
+
+    /// <summary><see cref="Wrap"/> in each lane.</summary>
+    internal static Vector256<double> WrapLanes(Vector256<double> value) =>
+        value - Vector256.Floor(value * Vector256.Create(InverseRoundOff) + Vector256.Create(0.5)) * Vector256.Create(RoundOff);
 
     /// <summary>Upper bound used by <see cref="BlendedNoise"/> for samples scaled by <paramref name="scale"/>.</summary>
     public double MaxBrokenValue(double scale) => this.EdgeValue(scale + 2.0);
