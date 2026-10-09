@@ -422,6 +422,7 @@ public sealed partial class Server : IServer
         var timer = new BalancingTimer(50, cancelTokenSource.Token);
         var keepAliveTicks = 0;
         var nextStuckWarning = StuckTickWarningAfter;
+        var observedTick = 0L;
 
         try
         {
@@ -433,12 +434,17 @@ public sealed partial class Server : IServer
                     await this.ForEachConnectionAsync(SendKeepAliveAsync, this.keepAliveFailures);
                 }
 
+                // Each tick gets its own warnings. Comparing start times also catches a tick that began right after
+                // the previous one ended, between two checks, so it doesn't inherit that tick's later threshold.
                 var started = Volatile.Read(ref this.tickStarted);
-                if (started == 0)
+                if (started != observedTick)
                 {
+                    observedTick = started;
                     nextStuckWarning = StuckTickWarningAfter;
-                    continue;
                 }
+
+                if (started == 0)
+                    continue;
 
                 var running = Stopwatch.GetElapsedTime(started);
                 if (running >= nextStuckWarning)
