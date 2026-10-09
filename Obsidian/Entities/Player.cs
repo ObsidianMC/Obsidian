@@ -759,8 +759,6 @@ public sealed partial class Player : Avatar, IClientPlayer
         HeadY = position.Y + 1.62f;
 
         await TrySpawnPlayerAsync(position);
-
-        await PickupNearbyItemsAsync();
     }
 
     public async override ValueTask UpdateAsync(VectorD position, Angle yaw, Angle pitch, MovementFlags movementFlags)
@@ -778,8 +776,6 @@ public sealed partial class Player : Avatar, IClientPlayer
         HeadY = position.Y + 1.62f;
 
         await TrySpawnPlayerAsync(position);
-
-        await PickupNearbyItemsAsync();
     }
 
     public async override ValueTask UpdateAsync(Angle yaw, Angle pitch, MovementFlags movementFlags)
@@ -788,8 +784,6 @@ public sealed partial class Player : Avatar, IClientPlayer
         await base.UpdateAsync(yaw, pitch, movementFlags);
         MovementFlags = movementFlags;
         await UpdateFallAsync(Position, movementFlags);
-
-        await PickupNearbyItemsAsync();
     }
 
     public async ValueTask DisconnectAsync(ChatMessage reason) => await this.Client.DisconnectAsync(reason);
