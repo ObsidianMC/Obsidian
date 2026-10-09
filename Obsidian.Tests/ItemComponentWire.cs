@@ -214,9 +214,9 @@ public class ItemComponentWire
     }
 
     [Fact]
-    public void ValidNbtOutsideThePublicModelIsPreserved()
+    public void EmptyKeysAndLongStringsRoundTrip()
     {
-        // Empty keys and unsigned string lengths are legal Java NBT even though the public NBT model cannot represent them.
+        // Empty keys and unsigned string lengths are legal Java NBT, so custom data with them must be written back as read.
         foreach (var length in new[] { 1, 40000 })
         {
             var payload = new NetworkBuffer();
@@ -230,7 +230,6 @@ public class ItemComponentWire
             var expected = payload.GetBuffer().AsSpan(0, payload.Offset).ToArray();
             payload.Reset();
             var component = payload.ReadDataComponent(DataComponentType.CustomData);
-            Assert.IsType<OpaqueDataComponent>(component);
 
             var writer = new NetworkBuffer();
             writer.WriteDataComponent(component);
