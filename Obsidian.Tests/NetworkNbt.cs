@@ -29,6 +29,10 @@ public class NetworkNbt
         using var absent = new NetworkBuffer([0x00]);
         Assert.Null(absent.ReadOptionalNbtCompound());
 
+        // Even an absent compound has its end tag; without it the packet is cut short.
+        using var missing = new NetworkBuffer([]);
+        Assert.Throws<EndOfStreamException>(() => missing.ReadOptionalNbtCompound());
+
         // A string root tag, which vanilla's readNbt rejects too.
         using var notCompound = new NetworkBuffer([0x08, 0x00, 0x01, (byte)'a']);
         Assert.Throws<InvalidDataException>(() => notCompound.ReadOptionalNbtCompound());
