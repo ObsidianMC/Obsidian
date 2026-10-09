@@ -546,24 +546,19 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public virtual void SpawnEntity(Velocity? velocity = null, int additionalData = 0)
     {
+        var packet = CreateSpawnPacket(velocity, additionalData);
         var range = Level is Obsidian.WorldData.AbstractLevel level ? level.Configuration.EntityBroadcastRangePercentage : 100;
-        foreach (var player in Level.GetPlayersInRange(Position, range).OfType<IClientPlayer>())
+        foreach (var player in Level.GetPlayersInRange(Position, range))
         {
             if (player.EntityId == EntityId)
                 continue;
             var (x, z) = Position.ToChunkCoord();
             if (this is not IPlayer && !player.LoadedChunks.Contains(NumericsHelper.IntsToLong(x, z)))
                 continue;
-            SendSpawnTo(player, velocity, additionalData);
+            PacketBroadcaster.QueuePacketTo(packet, ids: [player.EntityId]);
+            if (this is not IPlayer)
+                player.TrackEntity(this);
         }
-    }
-
-    internal void SendSpawnTo(IClientPlayer player, Velocity? velocity = null, int additionalData = 0)
-    {
-        var packet = CreateSpawnPacket(velocity, additionalData);
-        player.Client.SendPacket(packet);
-        if (this is not IPlayer && player is INetworkPlayer tracked)
-            tracked.TrackEntity(this);
     }
 
     internal virtual IClientboundPacket CreateSpawnPacket(Velocity? velocity = null, int additionalData = 0) => new BundledPacket

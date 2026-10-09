@@ -177,7 +177,7 @@ public sealed partial class Server
         });
     }
 
-    private static string FormatFeedbackPlayer(IPlayer player, bool isOperator, DateTimeOffset submittedAt)
+    private static string FormatFeedbackPlayer(IClientPlayer player, bool isOperator, DateTimeOffset submittedAt)
     {
         var level = player.Level;
         var world = level is IDimension dimension ? dimension.ParentWorld.Name : level.Name;
@@ -197,7 +197,7 @@ public sealed partial class Server
             **Health:** {player.Health:0.##} · **Food:** {player.FoodLevel}
 
             ### Connection
-            **Client:** {MetadataValue(player.RequireClient("player operation").Brand ?? "Unknown")} · **Ping:** {player.Ping} ms
+            **Client:** {MetadataValue(player.Client.Brand ?? "Unknown")} · **Ping:** {player.Ping} ms
 
             -# Submitted: {submittedAt.UtcDateTime:yyyy-MM-dd HH:mm:ss} UTC
             """);

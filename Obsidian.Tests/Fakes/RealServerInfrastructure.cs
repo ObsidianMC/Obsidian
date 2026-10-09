@@ -283,6 +283,9 @@ internal static class TestServerFactory
         await player.UpdatePlayerInfoAsync();
         await player.SendPlayerInfoAsync();
         await server.EventDispatcher.ExecuteEventAsync(new Obsidian.API.Events.PlayerJoinEventArgs(player, server, DateTimeOffset.UtcNow));
+
+        // A real client reports its position right after joining, which is when it starts seeing the players around it.
+        await player.UpdateAsync(player.Position, MovementFlags.OnGround);
     }
 
     private static World CreateWorld(string name, ServerConfiguration configuration, IPacketBroadcaster broadcaster, IEventDispatcher eventDispatcher)

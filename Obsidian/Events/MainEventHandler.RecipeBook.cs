@@ -144,12 +144,12 @@ public partial class MainEventHandler
         var contents = grid.ToList();
         if (width == 3)
             contents.AddRange(player.Inventory.Skip(9).Take(36));
-        await player.RequireClient("player operation").QueuePacketAsync(new ContainerSetContentPacket(containerId, contents)
+        await player.QueuePacketAsync(new ContainerSetContentPacket(containerId, contents)
         {
             CarriedItem = player.CarriedItem
         });
         if (amount == 0)
-            await player.RequireClient("player operation").QueuePacketAsync(new PlaceGhostRecipePacket(containerId, recipe.Identifier));
+            await player.QueuePacketAsync(new PlaceGhostRecipePacket(containerId, recipe.Identifier));
     }
 
     private static void AddRecipeStock(List<ItemStack> stock, ItemStack item)

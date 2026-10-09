@@ -29,7 +29,7 @@ public partial class PlayerActionPacket
         this.Sequence = reader.ReadVarInt();
     }
 
-    public async override ValueTask HandleAsync(IServer server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         if (Status == PlayerActionStatus.ReleaseUseItem)
         {
@@ -62,7 +62,7 @@ public partial class PlayerActionPacket
         this.BroadcastPlayerAction(player);
     }
 
-    private void BroadcastPlayerAction(IPlayer player)
+    private void BroadcastPlayerAction(IClientPlayer player)
     {
         switch (this.Status)
         {
@@ -78,7 +78,7 @@ public partial class PlayerActionPacket
                 }
             case PlayerActionStatus.StartedDigging:
             case PlayerActionStatus.CancelledDigging:
-                player.RequireClient("player operation").SendPacket(new BlockChangedAckPacket
+                player.Client.SendPacket(new BlockChangedAckPacket
                 {
                     SequenceID = this.Sequence
                 });
@@ -92,7 +92,7 @@ public partial class PlayerActionPacket
         }
     }
 
-    private static void DropItem(IPlayer player, int amountToRemove)
+    private static void DropItem(IClientPlayer player, int amountToRemove)
     {
         var droppedItem = player.GetHeldItem();
 
@@ -107,7 +107,7 @@ public partial class PlayerActionPacket
 
         player.Inventory.RemoveItem(player.CurrentHeldItemSlot, count);
 
-        player.RequireClient("player operation").SendPacket(new ContainerSetSlotPacket
+        player.Client.SendPacket(new ContainerSetSlotPacket
         {
             Slot = player.CurrentHeldItemSlot,
 

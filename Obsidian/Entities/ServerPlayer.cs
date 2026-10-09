@@ -147,6 +147,11 @@ public sealed class ServerPlayer : Avatar, IPlayer
         await Task.CompletedTask;
     }
 
+    // There is no client to receive packets, so anything the server would show this player is dropped.
+    public bool SendPacket(IClientboundPacket packet) => false;
+
+    public ValueTask QueuePacketAsync(IClientboundPacket packet) => default;
+
     public ValueTask DisconnectAsync(ChatMessage reason) => new(this.Server.RemoveServerPlayerAsync(this));
 
     public ValueTask SendMessageAsync(ChatMessage message) => default;

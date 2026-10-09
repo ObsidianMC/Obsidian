@@ -9,6 +9,7 @@ using Obsidian.API.Crafting;
 using Obsidian.API.Events;
 using Obsidian.Commands.Framework;
 using Obsidian.Entities;
+using Obsidian.Events;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -321,43 +322,52 @@ public sealed partial class Server : IServer
 
         try
         {
+            // The internal join handler registers the player in its level and fails the event if it can't.
             var result = await this.EventDispatcher.ExecuteEventAsync(new PlayerJoinEventArgs(player, this, DateTimeOffset.Now));
             if (result != EventResult.Completed)
                 throw new InvalidOperationException($"Joining server-side player '{username}' failed with result {result}.");
-            if (!player.Level.Players.ContainsKey(player.Uuid) || !player.Level.GetEntitiesInRange(player.Position, 0.1f).Any(entity => entity.EntityId == player.EntityId))
-                throw new InvalidOperationException($"Server-side player '{username}' was not fully registered in the level.");
 
             return player;
         }
         catch
         {
-            await this.RollBackPlayerLifecycleAsync(player);
+            await MainEventHandler.DespawnPlayerAsync(player);
+            this.RemovePlayer(player);
             throw;
         }
     }
 
     public bool RemovePlayer(IPlayer player)
     {
-        this.UsernameToUuidMappings.Remove(player.Username, out _);
+        // Each removal matches the instance as well as the key, so a stale reference can't unregister a newer
+        // player who reused the name or UUID.
+        this.UsernameToUuidMappings.TryRemove(new KeyValuePair<string, Guid>(player.Username, player.Uuid));
 
         player.Level.TryRemovePlayer(player);
 
-        return this.OnlinePlayers.Remove(player.Uuid, out _);
+        return this.OnlinePlayers.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player));
     }
 
     public async Task<bool> RemoveServerPlayerAsync(IPlayer player)
     {
-        if (player is not ServerPlayer || !this.OnlinePlayers.ContainsKey(player.Uuid))
+        // Claiming the registration first means concurrent removals run the leave lifecycle only once.
+        if (player is not ServerPlayer || !this.OnlinePlayers.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player)))
             return false;
 
-        await this.EventDispatcher.ExecuteEventAsync(new PlayerLeaveEventArgs(player, this, DateTimeOffset.Now));
-        return this.RemovePlayer(player);
-    }
+        var result = EventResult.Failed;
+        try
+        {
+            result = await this.EventDispatcher.ExecuteEventAsync(new PlayerLeaveEventArgs(player, this, DateTimeOffset.Now));
+        }
+        finally
+        {
+            // A failing handler stops the ones after it, which may include the internal one that despawns the player.
+            if (result != EventResult.Completed)
+                await MainEventHandler.DespawnPlayerAsync(player);
+            this.RemovePlayer(player);
+        }
 
-    private async Task RollBackPlayerLifecycleAsync(IPlayer player)
-    {
-        await player.Level.DestroyEntityAsync(player);
-        this.RemovePlayer(player);
+        return true;
     }
 
     // When the world tick in progress started (a Stopwatch timestamp), or 0 between ticks; see KeepAliveLoopAsync.

@@ -8,7 +8,7 @@ public partial class SelectTradePacket
     [Field(0), VarLength]
     public int Item { get; private set; }
     public override void Populate(INetStreamReader reader) => Item = reader.ReadVarInt();
-    public override async ValueTask HandleAsync(IServer server, IPlayer player)
+    public override async ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         if (player.OpenedContainer is MerchantContainer merchant) await merchant.SelectAsync(Item);
     }

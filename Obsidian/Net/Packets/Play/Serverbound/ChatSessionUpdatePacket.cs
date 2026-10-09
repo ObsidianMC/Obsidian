@@ -9,9 +9,9 @@ public sealed partial class ChatSessionUpdatePacket
     [Field(1)]
     public SignatureData SignatureData { get; private set; }
 
-    public override ValueTask HandleAsync(IServer server, IPlayer player)
+    public override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
-        player.RequireClient("player operation").SignatureData = this.SignatureData;
+        player.Client.SignatureData = this.SignatureData;
 
         return default;
     }

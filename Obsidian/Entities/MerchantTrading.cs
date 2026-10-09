@@ -207,17 +207,17 @@ internal sealed class MerchantContainer : BaseContainer
         closed = true;
         ReturnInputs();
         player.OpenedContainer = null;
-        await player.RequireClient("player operation").QueuePacketAsync(new Obsidian.Net.Packets.Play.Clientbound.ContainerClosePacket { ContainerId = player.CurrentContainerId });
-        await player.RequireClient("player operation").QueuePacketAsync(new ContainerSetContentPacket(0, player.Inventory.ToList()) { CarriedItem = player.CarriedItem });
+        await player.QueuePacketAsync(new Obsidian.Net.Packets.Play.Clientbound.ContainerClosePacket { ContainerId = player.CurrentContainerId });
+        await player.QueuePacketAsync(new ContainerSetContentPacket(0, player.Inventory.ToList()) { CarriedItem = player.CarriedItem });
     }
 
     internal async ValueTask SyncAsync()
     {
         items[2] = CanTrade(offers[selected]) ? new ItemStack(offers[selected].Output, offers[selected].Output.Count) : null;
         var contents = items.Concat(Enumerable.Range(9, 36).Select(index => customer.Inventory.GetItem(index))).ToList();
-        await customer.RequireClient("merchant trading").QueuePacketAsync(new ContainerSetContentPacket(customer.CurrentContainerId, contents)
+        await customer.QueuePacketAsync(new ContainerSetContentPacket(customer.CurrentContainerId, contents)
         { StateId = ++state, CarriedItem = customer.CarriedItem });
-        await customer.RequireClient("merchant trading").QueuePacketAsync(new MerchantOffersPacket { WindowId = customer.CurrentContainerId, Offers = offers,
+        await customer.QueuePacketAsync(new MerchantOffersPacket { WindowId = customer.CurrentContainerId, Offers = offers,
             VillagerLevel = level, VillagerExperience = experience, IsRegularVillager = canRestock, CanRestock = canRestock });
     }
 }

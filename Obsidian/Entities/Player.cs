@@ -17,13 +17,17 @@ using System.Threading;
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:player")]
-public sealed partial class Player : Avatar, INetworkPlayer
+public sealed partial class Player : Avatar, IClientPlayer
 {
     public byte CurrentContainerId { get; set; }
 
     public IClient Client { get; internal set; }
 
     public ILogger Logger => this.Client.Logger;
+
+    public bool SendPacket(IClientboundPacket packet) => this.Client.SendPacket(packet);
+
+    public ValueTask QueuePacketAsync(IClientboundPacket packet) => this.Client.QueuePacketAsync(packet);
 
     internal HashSet<IPlayer> visiblePlayers = [];
 

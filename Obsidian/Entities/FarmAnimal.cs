@@ -44,11 +44,9 @@ public abstract class FarmAnimal : Animal
             if (addedSlot < 0)
                 DropItem(item);
             else
-                await player.RequireClient("player operation").QueuePacketAsync(new ContainerSetSlotPacket
-                { ContainerId = 0, Slot = (short)addedSlot, SlotData = player.Inventory.GetItem(addedSlot) });
+                await player.SendInventorySlotAsync(addedSlot);
         }
-        await player.RequireClient("player operation").QueuePacketAsync(new ContainerSetSlotPacket
-        { ContainerId = 0, Slot = (short)slot, SlotData = player.Inventory.GetItem(slot) });
+        await player.SendInventorySlotAsync(slot);
     }
 
     protected int GetFarmVariant()

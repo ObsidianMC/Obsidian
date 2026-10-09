@@ -48,8 +48,7 @@ public sealed partial class Creeper : PathfinderMob
         {
             player.Inventory.RemoveItem(hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot, 1);
             var slot = hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
-            await player.RequireClient("player operation").QueuePacketAsync(new Obsidian.Net.Packets.Play.Clientbound.ContainerSetSlotPacket
-            { ContainerId = 0, Slot = (short)slot, SlotData = player.Inventory.GetItem(slot) });
+            await player.SendInventorySlotAsync(slot);
         }
     }
 

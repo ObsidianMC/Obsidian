@@ -152,8 +152,7 @@ public partial class Mob
             return;
         var slot = hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
         player.Inventory.RemoveItem(slot, 1);
-        await player.RequireClient("player operation").QueuePacketAsync(new ContainerSetSlotPacket
-        { ContainerId = 0, Slot = (short)slot, SlotData = player.Inventory.GetItem(slot) });
+        await player.SendInventorySlotAsync(slot);
     }
 
     protected async ValueTask DamageInteractionToolAsync(IPlayer player, InteractionHand hand, int amount = 1)
@@ -172,8 +171,7 @@ public partial class Mob
         item[DataComponentType.Damage] = damage;
         if (damage.Value >= maximum)
             player.Inventory.SetItem(slot, null);
-        await player.RequireClient("player operation").QueuePacketAsync(new ContainerSetSlotPacket
-        { ContainerId = 0, Slot = (short)slot, SlotData = player.Inventory.GetItem(slot) });
+        await player.SendInventorySlotAsync(slot);
     }
     protected internal virtual float AttackDamage => GetAttributeValue("minecraft:generic.attack_damage");
 

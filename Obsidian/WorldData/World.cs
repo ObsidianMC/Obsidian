@@ -228,9 +228,9 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
 
         await Task.WhenAll(this.dimensions.Values.Select(d => d.DoWorldTickAsync()));
 
-        // Like vanilla's connected-player inventory and session tick, after the levels ticked.
-        foreach (var player in this.Players.Values.Concat(this.dimensions.Values.SelectMany(dimension => dimension.Players.Values)).OfType<INetworkPlayer>().ToArray())
-            await player.TickNetworkLifecycleAsync();
+        // Like vanilla's player inventory tick, after the levels ticked.
+        foreach (var player in this.Players.Values.Concat(this.dimensions.Values.SelectMany(dimension => dimension.Players.Values)).ToArray())
+            await player.TickAfterLevelsAsync();
     }
 
     public override async ValueTask DisposeAsync()

@@ -4,7 +4,7 @@ namespace Obsidian.Entities;
 
 public partial class Player
 {
-    public async ValueTask TickNetworkLifecycleAsync()
+    async ValueTask IPlayer.TickAfterLevelsAsync()
     {
         await this.TickPortalsAsync();
         await this.PickupNearbyItemsAsync();

@@ -49,7 +49,7 @@ public partial class UseItemOnPacket
         this.Sequence = reader.ReadVarInt();
     }
 
-    public async override ValueTask HandleAsync(IServer server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         var handSlot = Hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
         var bucket = player.Inventory.GetItem(handSlot);
@@ -89,9 +89,9 @@ public partial class UseItemOnPacket
             if (player.GameMode != GameMode.Creative)
             {
                 player.Inventory.SetItem(handSlot, ItemsRegistry.GetSingleItem(Material.Bucket));
-                await player.RequireClient("player operation").QueuePacketAsync(new ContainerSetSlotPacket { ContainerId = 0, Slot = (short)handSlot, SlotData = player.Inventory.GetItem(handSlot) });
+                await player.Client.QueuePacketAsync(new ContainerSetSlotPacket { ContainerId = 0, Slot = (short)handSlot, SlotData = player.Inventory.GetItem(handSlot) });
             }
-            player.RequireClient("player operation").SendPacket(new BlockChangedAckPacket { SequenceID = Sequence });
+            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = Sequence });
             return;
         }
         var currentItem = bucket;
@@ -160,7 +160,7 @@ public partial class UseItemOnPacket
                 }
                 await this.ConsumePortalItemAsync(player, currentItem);
             }
-            player.RequireClient("player operation").SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
+            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
             return;
         }
 
@@ -237,7 +237,7 @@ public partial class UseItemOnPacket
                 below.IsFreeForFallingBlock())
             {
                 await player.Level.SetBlockAsync(position, BlocksRegistry.Air, true);
-                player.RequireClient("player operation").SendPacket(new BlockChangedAckPacket
+                player.Client.SendPacket(new BlockChangedAckPacket
                 {
                     SequenceID = Sequence
                 });
@@ -249,12 +249,12 @@ public partial class UseItemOnPacket
         await player.Level.SetBlockAsync(position, block, doBlockUpdate: true);
         if (player.Level is Obsidian.WorldData.AbstractLevel events)
             events.EmitGameEvent(Obsidian.WorldData.MobGameEvent.BlockPlace, (VectorD)position + new VectorD(0.5, 0.5, 0.5), player, affectedBlock: block);
-        player.RequireClient("player operation").SendPacket(new BlockChangedAckPacket
+        player.Client.SendPacket(new BlockChangedAckPacket
         {
             SequenceID = Sequence
         });
     }
-    private async ValueTask ConsumePortalItemAsync(IPlayer player, ItemStack item)
+    private async ValueTask ConsumePortalItemAsync(IClientPlayer player, ItemStack item)
     {
         var slot = this.Hand == InteractionHand.MainHand ? player.CurrentHeldItemSlot : (short)45;
         if (item.Type == Material.EnderEye || player.GameMode != GameMode.Creative)
@@ -271,7 +271,7 @@ public partial class UseItemOnPacket
                     player.Inventory.RemoveItem(slot, 1);
             }
         }
-        await player.RequireClient("player operation").QueuePacketAsync(new ContainerSetSlotPacket
+        await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
         {
             Slot = slot,
             StateId = player.Inventory.StateId++,

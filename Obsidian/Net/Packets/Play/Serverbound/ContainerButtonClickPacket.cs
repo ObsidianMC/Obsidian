@@ -16,6 +16,6 @@ public partial class ContainerButtonClickPacket
         this.ButtonId = reader.ReadVarInt();
     }
 
-    public override ValueTask HandleAsync(IServer server, IPlayer player) => player is Obsidian.Entities.Player concrete
+    public override ValueTask HandleAsync(IServer server, IClientPlayer player) => player is Obsidian.Entities.Player concrete
         ? concrete.EnchantAsync(ContainerId, ButtonId) : ValueTask.CompletedTask;
 }

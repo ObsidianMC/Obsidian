@@ -8,7 +8,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound;
 
 public partial class UseItemOnPacket
 {
-    private async ValueTask<bool> TryUseMusicBlockAsync(IPlayer player, int slot, ItemStack? held, IBlock block)
+    private async ValueTask<bool> TryUseMusicBlockAsync(IClientPlayer player, int slot, ItemStack? held, IBlock block)
     {
         if (block.Material is not Material.NoteBlock and not Material.Jukebox || player.Sneaking || player.Level is not AbstractLevel level) return false;
         if (player.Health <= 0 || player.GameMode is GameMode.Spectator or GameMode.Adventure || (player.Position - (VectorD)Position).MagnitudeSquared() > 36) return true;
@@ -39,11 +39,11 @@ public partial class UseItemOnPacket
                 if (player.GameMode != GameMode.Creative)
                 {
                     player.Inventory.RemoveItem(slot, 1);
-                    await player.RequireClient("player operation").QueuePacketAsync(new ContainerSetSlotPacket { ContainerId = 0, Slot = (short)slot, SlotData = player.Inventory.GetItem(slot) });
+                    await player.Client.QueuePacketAsync(new ContainerSetSlotPacket { ContainerId = 0, Slot = (short)slot, SlotData = player.Inventory.GetItem(slot) });
                 }
             }
         }
-        player.RequireClient("player operation").SendPacket(new BlockChangedAckPacket { SequenceID = Sequence });
+        player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = Sequence });
         return true;
     }
 }

@@ -105,7 +105,7 @@ public abstract partial class AbstractLevel
         foreach (var player in GetPlayersInRange(source.Position, 64))
         {
             var knockback = knockbacks.GetValueOrDefault(player.EntityId);
-            await player.RequireClient("player operation").QueuePacketAsync(new ExplodePacket
+            await player.QueuePacketAsync(new ExplodePacket
             {
                 Center = source.Position, Radius = radius, BlockCount = destroyed.Count,
                 PlayerKnockback = new Velocity(knockback.X, knockback.Y, knockback.Z),

@@ -144,6 +144,64 @@ public sealed class ServerPlayerTests
         Assert.Null(context.Server.GetPlayer(uuid));
     }
 
+    [Fact]
+    public async Task RemovingStaleReference_KeepsReplacementServerPlayer()
+    {
+        await using var context = TestServerFactory.CreateServer($"server-player-{Guid.NewGuid():N}");
+
+        var uuid = Guid.NewGuid();
+        var stale = await context.Server.AddServerPlayerAsync(uuid, "ServerBot", context.World);
+        Assert.True(await context.Server.RemoveServerPlayerAsync(stale));
+        var replacement = await context.Server.AddServerPlayerAsync(uuid, "ServerBot", context.World);
+
+        Assert.False(await context.Server.RemoveServerPlayerAsync(stale));
+
+        Assert.Same(replacement, context.Server.GetPlayer(uuid));
+        Assert.Same(replacement, context.Server.GetPlayer("ServerBot"));
+        Assert.Same(replacement, context.World.Players[uuid]);
+    }
+
+    [Fact]
+    public async Task FailingLeaveHandler_StillDespawnsServerPlayer()
+    {
+        await using var context = TestServerFactory.CreateServer($"server-player-{Guid.NewGuid():N}");
+
+        var human = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Human");
+        await TestServerFactory.JoinConnectedPlayerAsync(context.Server, human);
+        var client = (TestClient)human.Client;
+
+        var player = await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "ServerBot", context.World);
+        // Runs before the internal leave handler and stops it from running.
+        context.EventDispatcher.RegisterEvent(null, (Func<PlayerLeaveEventArgs, ValueTask>)(_ => throw new InvalidOperationException("boom")), Priority.Critical);
+        client.ClearPackets();
+
+        Assert.True(await context.Server.RemoveServerPlayerAsync(player));
+
+        Assert.True(ContainsPlayerInfoRemoval(client, player.Uuid));
+        Assert.True(ContainsEntityRemoval(client, player.EntityId));
+        Assert.False(context.Server.IsPlayerOnline(player.Uuid));
+        Assert.False(context.World.Players.ContainsKey(player.Uuid));
+        Assert.DoesNotContain(context.World.GetEntitiesInRange(player.Position, 1f), entity => entity.EntityId == player.EntityId);
+    }
+
+    [Fact]
+    public async Task Explosion_NearServerPlayer_StillReachesConnectedPlayers()
+    {
+        await using var context = TestServerFactory.CreateServer($"server-player-{Guid.NewGuid():N}");
+
+        var human = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Human");
+        await TestServerFactory.JoinConnectedPlayerAsync(context.Server, human);
+        var client = (TestClient)human.Client;
+
+        var player = (ServerPlayer)await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "ServerBot", context.World);
+        player.Position = human.Position + new VectorD(2, 0, 0);
+        client.ClearPackets();
+
+        await ((Obsidian.WorldData.AbstractLevel)context.World).ExplodeAsync(player, 1f);
+
+        Assert.Contains(client.SentPackets, packet => packet is ExplodePacket);
+    }
+
     private static bool ContainsPlayerInfo(TestClient client, Guid uuid) =>
         client.SentPackets.OfType<PlayerInfoUpdatePacket>().Any(packet => packet.Players.ContainsKey(uuid));
 

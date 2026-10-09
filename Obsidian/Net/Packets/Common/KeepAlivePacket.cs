@@ -48,11 +48,11 @@ public partial record class KeepAlivePacket
         client.LastKeepAliveId = keepAliveId;
     }
 
-    public async override ValueTask HandleAsync(IServer server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         ArgumentNullException.ThrowIfNull(player);
 
-        var client = player.RequireClient("player operation");
+        var client = player.Client;
 
         if (this.KeepAliveId != client.LastKeepAliveId)
         {
