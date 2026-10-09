@@ -24,6 +24,7 @@ public sealed class ServerPlayerTests
         Assert.IsNotType<Obsidian.Entities.Player>(player);
         Assert.IsNotAssignableFrom<IClientPlayer>(player);
         Assert.Null(player.ClientIP);
+        Assert.Equal(new EntityDimension { Width = 0.6f, Height = 1.8f }, player.Dimension);
         Assert.Equal("ServerBot", player.Username);
         Assert.Same(player, context.Server.GetPlayer(player.Uuid));
     }
@@ -173,6 +174,7 @@ public sealed class ServerPlayerTests
         var replacement = await context.Server.AddServerPlayerAsync(uuid, "ServerBot", context.World);
 
         Assert.False(await context.Server.RemoveServerPlayerAsync(stale));
+        Assert.False(context.Server.RemovePlayer(stale));
 
         Assert.Same(replacement, context.Server.GetPlayer(uuid));
         Assert.Same(replacement, context.Server.GetPlayer("ServerBot"));

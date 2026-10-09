@@ -7,7 +7,9 @@ namespace Obsidian.Entities;
 /// <summary>
 /// A server-side player that participates in world and player lifecycle without a Minecraft network connection.
 /// </summary>
-public sealed class ServerPlayer : Avatar, IPlayer
+// Shares the player entity's generated hitbox, attributes and translation key.
+[MinecraftEntity("minecraft:player")]
+public sealed partial class ServerPlayer : Avatar, IPlayer
 {
     private readonly HashSet<string> permissions = new(StringComparer.OrdinalIgnoreCase);
     private IScoreboard? currentScoreboard;

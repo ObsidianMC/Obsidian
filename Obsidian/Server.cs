@@ -345,13 +345,20 @@ public sealed partial class Server : IServer
 
     public bool RemovePlayer(IPlayer player)
     {
-        // Each removal matches the instance as well as the key, so a stale reference can't unregister a newer
-        // player who reused the name or UUID.
+        // Only the registered instance can unregister, so a stale reference can't remove a newer player who reused
+        // the UUID or name.
+        if (!this.OnlinePlayers.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player)))
+            return false;
+
+        this.ReleaseRegistrations(player);
+        return true;
+    }
+
+    // Drops the lookups that hang off an online registration; the caller must have just removed that registration.
+    private void ReleaseRegistrations(IPlayer player)
+    {
         this.UsernameToUuidMappings.TryRemove(new KeyValuePair<string, Guid>(player.Username, player.Uuid));
-
         player.Level.TryRemovePlayer(player);
-
-        return this.OnlinePlayers.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player));
     }
 
     public async Task<bool> RemoveServerPlayerAsync(IPlayer player)
@@ -370,7 +377,7 @@ public sealed partial class Server : IServer
             // A failing handler stops the ones after it, which may include the internal one that despawns the player.
             if (result != EventResult.Completed)
                 await MainEventHandler.DespawnPlayerAsync(player);
-            this.RemovePlayer(player);
+            this.ReleaseRegistrations(player);
         }
 
         return true;
