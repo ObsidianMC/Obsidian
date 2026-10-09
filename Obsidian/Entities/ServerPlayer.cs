@@ -1,5 +1,7 @@
 using Obsidian.API.Containers;
 using Obsidian.API.Inventory;
+using Obsidian.Net.Actions.PlayerInfo;
+using Obsidian.Net.Packets.Play.Clientbound;
 using System.Collections.Generic;
 
 namespace Obsidian.Entities;
@@ -215,11 +217,25 @@ public sealed partial class ServerPlayer : Avatar, IPlayer
 
     public ValueTask SetGamemodeAsync(GameMode gamemode)
     {
+        // Set first: the setter rejects unknown modes, and they must not reach clients.
         this.GameMode = gamemode;
+        this.BroadcastPlayerInfo(new UpdateGamemodeInfoAction(gamemode));
         return default;
     }
 
-    public ValueTask UpdateDisplayNameAsync(string newDisplayName) => default;
+    public ValueTask UpdateDisplayNameAsync(string newDisplayName)
+    {
+        this.BroadcastPlayerInfo(new UpdateDisplayNameInfoAction(newDisplayName));
+        this.CustomName = newDisplayName;
+        return default;
+    }
+
+    // Keeps connected players' tab lists in step with this player, as Player does for itself.
+    private void BroadcastPlayerInfo(InfoAction action) =>
+        this.PacketBroadcaster.QueuePacketToLevel(this.Level, new PlayerInfoUpdatePacket(new Dictionary<Guid, List<InfoAction>>
+        {
+            { this.Uuid, [action] }
+        }));
 
     public ValueTask ShowDialogAsync(Obsidian.API.Registry.Codecs.Dialogs.DialogElement dialog) => default;
 

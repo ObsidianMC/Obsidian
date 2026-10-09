@@ -337,8 +337,14 @@ public sealed partial class Server : IServer
         }
         catch
         {
-            await MainEventHandler.DespawnPlayerAsync(player);
-            this.RemovePlayer(player);
+            try
+            {
+                await MainEventHandler.DespawnPlayerAsync(player);
+            }
+            finally
+            {
+                this.RemovePlayer(player);
+            }
             throw;
         }
     }
@@ -374,10 +380,16 @@ public sealed partial class Server : IServer
         }
         finally
         {
-            // A failing handler stops the ones after it, which may include the internal one that despawns the player.
-            if (result != EventResult.Completed)
-                await MainEventHandler.DespawnPlayerAsync(player);
-            this.ReleaseRegistrations(player);
+            try
+            {
+                // A failing handler stops the ones after it, which may include the internal one that despawns the player.
+                if (result != EventResult.Completed)
+                    await MainEventHandler.DespawnPlayerAsync(player);
+            }
+            finally
+            {
+                this.ReleaseRegistrations(player);
+            }
         }
 
         return true;

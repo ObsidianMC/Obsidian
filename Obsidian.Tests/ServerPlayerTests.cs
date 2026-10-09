@@ -131,6 +131,24 @@ public sealed class ServerPlayerTests
     }
 
     [Fact]
+    public async Task ServerPlayerGamemodeChange_ReachesConnectedPlayers()
+    {
+        await using var context = TestServerFactory.CreateServer($"server-player-{Guid.NewGuid():N}");
+
+        var human = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Human");
+        await TestServerFactory.JoinConnectedPlayerAsync(context.Server, human);
+        var client = (TestClient)human.Client;
+
+        var player = await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "ServerBot", context.World);
+        client.ClearPackets();
+
+        await player.SetGamemodeAsync(GameMode.Creative);
+
+        Assert.Contains(client.SentPackets.OfType<PlayerInfoUpdatePacket>(), packet =>
+            packet.Players.TryGetValue(player.Uuid, out var actions) && actions.OfType<UpdateGamemodeInfoAction>().Any());
+    }
+
+    [Fact]
     public async Task DuplicateServerPlayer_LeavesExistingRegistrationsIntact()
     {
         await using var context = TestServerFactory.CreateServer($"server-player-{Guid.NewGuid():N}");
