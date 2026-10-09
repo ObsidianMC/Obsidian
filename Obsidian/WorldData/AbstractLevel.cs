@@ -514,13 +514,6 @@ public abstract partial class AbstractLevel : ILevel
 
         this.SpawnPendingEntities();
 
-        // Chunks players are waiting for go out once they're generated.
-        foreach (var player in this.Players.Values)
-        {
-            if (player is Player waiting)
-                await waiting.SendPendingChunksAsync();
-        }
-
         // Like vanilla, fluid ticks run before entities tick.
         this.Fluids.Tick();
 

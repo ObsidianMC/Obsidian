@@ -7,7 +7,7 @@ namespace Obsidian.Net;
 public partial class NetworkBuffer
 {
     // NbtOps represents heterogeneous lists by wrapping non-compound elements in {"": value} compounds.
-    // The general-purpose NBT object model forbids empty keys, so chat needs a projection that accepts them.
+    // This projection unwraps them, along with the other shapes vanilla's component codec writes.
     private object? ReadChatNbt(int tag, int depth = 0)
     {
         if (depth > 64)

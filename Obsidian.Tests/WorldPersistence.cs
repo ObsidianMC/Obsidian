@@ -35,7 +35,7 @@ public sealed class WorldPersistence(WorldPersistence.RestartedChunk restarted) 
         var entities = chunk.PendingEntities.Select(pending => EntityNbt.Load(EntityNbt.ToNbt(pending), null!)!).ToList();
         Assert.Equal(5, entities.Count);
 
-        var witch = Assert.IsAssignableFrom<Living>(Assert.Single(entities, entity => entity.Type == EntityType.Witch));
+        var witch = Assert.IsType<Witch>(Assert.Single(entities, entity => entity.Type == EntityType.Witch));
         Assert.Equal(RestartedChunk.WitchUuid, witch.Uuid);
         Assert.Equal(RestartedChunk.WitchPosition, witch.Position);
         Assert.Equal(17f, witch.Health);

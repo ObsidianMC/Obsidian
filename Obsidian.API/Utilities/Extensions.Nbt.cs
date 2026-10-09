@@ -195,6 +195,7 @@ public partial class Extensions
         foreach (var (_, tag) in compound)
             nbtWriter.WriteTag(tag);
 
+        nbtWriter.EndCompound();
         nbtWriter.TryFinish();
 
         writer.WriteByteArray(nbtWriter.Data);
