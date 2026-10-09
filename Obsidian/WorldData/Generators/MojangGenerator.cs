@@ -200,6 +200,49 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
     }
 
     /// <summary>
+    /// Generates the chunks from (<paramref name="minX"/>, <paramref name="minZ"/>) up to (<paramref name="maxX"/>,
+    /// <paramref name="maxZ"/>), exclusive, up to their light, along with the neighbors they need, staged so that steps
+    /// running at once never wait on each other's locks. Completing the chunks afterwards only marks them complete.
+    /// </summary>
+    /// <remarks>
+    /// Every chunk is carved in parallel first. Decorating, post-processing and lighting then each run in 9 waves, one per
+    /// class of a 3 by 3 colouring of chunk positions: chunks of a wave are 3 apart, so the areas they lock never overlap.
+    /// Completing chunks one by one in order instead keeps most concurrent jobs waiting on their neighbors' locks. Light
+    /// doesn't depend on the order chunks are lit in, and decorations meeting at borders already ran in any order.
+    /// </remarks>
+    internal async Task PrepareAreaAsync(int minX, int minZ, int maxX, int maxZ)
+    {
+        // Completing a chunk decorates its neighbors, and decorating a chunk carves its neighbors.
+        await Parallel.ForEachAsync(Area(minX - 2, minZ - 2, maxX + 2, maxZ + 2),
+            async (position, _) => await this.CarveAsync(position.X, position.Z));
+
+        await InWavesAsync(Area(minX - 1, minZ - 1, maxX + 1, maxZ + 1), position => this.DecorateAsync(position.X, position.Z));
+        await InWavesAsync(Area(minX, minZ, maxX, maxZ), async position => await this.FinishBlocksAsync(await this.GetChunkAsync(position.X, position.Z)));
+        await InWavesAsync(Area(minX, minZ, maxX, maxZ), async position => await this.LightAsync(await this.GetChunkAsync(position.X, position.Z)));
+
+        static async Task InWavesAsync(IEnumerable<(int X, int Z)> positions, Func<(int X, int Z), Task> step)
+        {
+            var all = positions.ToList();
+            for (var wave = 0; wave < 9; wave++)
+            {
+                await Parallel.ForEachAsync(all.Where(position => Mod3(position.X) * 3 + Mod3(position.Z) == wave),
+                    async (position, _) => await step(position));
+            }
+        }
+
+        static int Mod3(int value) => (value % 3 + 3) % 3;
+
+        static IEnumerable<(int X, int Z)> Area(int minX, int minZ, int maxX, int maxZ)
+        {
+            for (var x = minX; x < maxX; x++)
+            {
+                for (var z = minZ; z < maxZ; z++)
+                    yield return (x, z);
+            }
+        }
+    }
+
+    /// <summary>
     /// Places the features of a chunk (trees, ores, etc.), carving its neighbors first since features write into them.
     /// </summary>
     private async Task DecorateAsync(int cx, int cz)
