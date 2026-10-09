@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.ObjectPool;
 using Obsidian.API.Events;
@@ -76,10 +76,10 @@ public sealed partial class Client : IClient
     private TaskCompletionSource? leaving;
 
     // Set once Disconnect ran; it may be called again (a shutdown disconnecting a client that already left). Guarded by
-    // connectionLock together with registering the client, so a login that resumes after a disconnect doesn't register
-    // it again.
+    // lifecycleLock together with disposing and registering the client, so a login that resumes after a disconnect
+    // doesn't register it again.
     private bool disconnected;
-    private readonly Lock connectionLock = new();
+    private readonly Lock lifecycleLock = new();
 
     // The client whose leave event is being raised on this flow, so a leave handler that disconnects the same player
     // doesn't wait for the leave it's part of.
@@ -112,7 +112,10 @@ public sealed partial class Client : IClient
     /// <summary>
     /// Whether the client has compression enabled on the Minecraft stream.
     /// </summary>
-    public bool CompressionEnabled { get; private set; }
+    public bool CompressionEnabled => this.compressionThreshold >= 0;
+
+    // The size from which packets are compressed, or -1 before compression is enabled (see EnableCompression).
+    private volatile int compressionThreshold = -1;
 
     /// <summary>
     /// Whether the stream has encryption enabled. This can be set to false when the client is connecting through LAN or when the server is in offline mode.
@@ -170,7 +173,7 @@ public sealed partial class Client : IClient
             { ClientState.Play, new PlayClientHandler { Client = this } }
         }.ToFrozenDictionary();
 
-        packetQueue = Channel.CreateUnbounded<IClientboundPacket>(new() { SingleReader = true, SingleWriter = true });
+        packetQueue = Channel.CreateUnbounded<IClientboundPacket>(new() { SingleReader = true, SingleWriter = false });
     }
 
     public async ValueTask<bool> TrySetCachedProfileAsync(string username)
@@ -234,6 +237,7 @@ public sealed partial class Client : IClient
 
         this.Player = this.CreatePlayer(uuid ?? GuidHelper.FromStringHash($"OfflinePlayer:{username}"), username, world);
 
+        this.EnableCompression();
         this.SendPacket(new LoginFinishedPacket(Player.Uuid, Player.Username)
         {
             SkinProperties = this.Player.SkinProperties,
@@ -261,26 +265,45 @@ public sealed partial class Client : IClient
 
     public async ValueTask QueuePacketAsync(IClientboundPacket packet)
     {
-        if (!this.Connected)
+        if (this.disposed || this.cancellationSource.IsCancellationRequested || !this.Connected)
             return;
-
-        var args = new QueuePacketEventArgs(this.Server, this, packet);
-
-        var result = await this.eventDispatcher.ExecuteEventAsync(args);
-        if (result == EventResult.Cancelled)
-            return;
-
         try
         {
-            await packetQueue.Writer.WriteAsync(packet, this.cancellationSource.Token);
+            var args = new QueuePacketEventArgs(this.Server, this, packet);
+            var result = await this.eventDispatcher.ExecuteEventAsync(args);
+            if (result == EventResult.Cancelled)
+            {
+                Logger.LogDebug("Packet {PacketId} was sent to the queue, however an event handler has cancelled it.", args.Packet.Id);
+                return;
+            }
+
+            if (this.disposed || this.cancellationSource.IsCancellationRequested)
+                return;
+            this.packetQueue.Writer.TryWrite(packet);
         }
         catch (OperationCanceledException) when (this.cancellationSource.IsCancellationRequested)
         {
-            // The connection closed meanwhile, e.g. the client quit as the server stopped; there's nobody to send to.
+            // A disconnect cancels this client's send, not the world tick awaiting it.
         }
     }
 
     public bool SendPacket(IClientboundPacket packet) => this.SendAsync(packet);
+
+    /// <summary>
+    /// Tells the client to compress packets from the configured size (vanilla's network compression threshold; a
+    /// negative one leaves compression off) and frames every later packet in both directions that way. Like vanilla, it's
+    /// sent right before the login finishes.
+    /// </summary>
+    private void EnableCompression()
+    {
+        var threshold = this.Server.Configuration.Network.CompressionThreshold;
+        if (threshold < 0 || this.CompressionEnabled)
+            return;
+
+        // The packet itself still goes out uncompressed. Nothing else is sent or received during login meanwhile.
+        this.SendPacket(new LoginCompressionPacket(threshold));
+        this.compressionThreshold = threshold;
+    }
 
     internal void Login(MojangProfile user)
     {
@@ -302,18 +325,21 @@ public sealed partial class Client : IClient
 
     public void Dispose()
     {
-        if (disposed)
-            return;
-
-        disposed = true;
-
-        try
+        lock (this.lifecycleLock)
         {
-            cancellationSource?.Dispose();
+            if (this.disposed)
+                return;
 
-            this.Socket.Dispose();
+            this.disposed = true;
+
+            try
+            {
+                this.cancellationSource.Cancel();
+                this.cancellationSource.Dispose();
+                this.Socket.Dispose();
+            }
+            catch (ObjectDisposedException) { }
         }
-        catch (ObjectDisposedException) { }
 
         GC.SuppressFinalize(this);
     }
@@ -334,19 +360,22 @@ public sealed partial class Client : IClient
 
     public void Disconnect()
     {
-        lock (this.connectionLock)
+        lock (this.lifecycleLock)
         {
-            if (this.disconnected)
+            if (this.disposed || this.disconnected)
                 return;
 
             this.disconnected = true;
+            this.cancellationSource.Cancel();
         }
 
-        cancellationSource.Cancel();
         Disconnected?.Invoke(this);
 
-        // The player also leaves (and is saved) when their client closed the connection, as vanilla's clients do to quit.
-        _ = this.LeaveAsync();
+        // A player whose client closed the connection (as vanilla's clients do to quit) leaves too and is saved, and
+        // other players stop seeing them. A player still logging in or configuring hasn't joined, so there's nothing to
+        // leave.
+        if (this.State == ClientState.Play)
+            _ = this.LeaveAsync();
 
         this.receiveEvent.Completed -= this.OnAsyncCompleted;
         this.sendEvent.Completed -= this.OnAsyncCompleted;
@@ -359,13 +388,12 @@ public sealed partial class Client : IClient
         if (this.Player != null)
             this.Server.RemovePlayer(this.Player);
 
-        Log.Disconnected(this.Logger, this.Ip);
-
         try
         {
             this.Socket.Shutdown(SocketShutdown.Both);
         }
         catch (SocketException) { }
+        catch (ObjectDisposedException) { }
 
         this.Socket.Close();
 
@@ -389,9 +417,10 @@ public sealed partial class Client : IClient
     {
         try
         {
-            while (this.Connected || !this.disposed || !this.cancellationSource.IsCancellationRequested)
+            var cancellationToken = this.cancellationSource.Token;
+            while (this.Connected && !this.disposed && !cancellationToken.IsCancellationRequested)
             {
-                var packet = await this.packetQueue.Reader.ReadAsync(this.cancellationSource.Token);
+                var packet = await this.packetQueue.Reader.ReadAsync(cancellationToken);
 
                 if (packet is null)
                     continue;
@@ -422,7 +451,7 @@ public sealed partial class Client : IClient
 
     private void InitializeId()
     {
-        lock (this.connectionLock)
+        lock (this.lifecycleLock)
         {
             // Login awaits, and the client may have disconnected meanwhile; it stays out of the connections then.
             if (this.disconnected)
@@ -505,9 +534,6 @@ public sealed partial class Client : IClient
 
         [LoggerMessage(Level = LogLevel.Warning, Message = "Failed to authenticate {Username}")]
         public static partial void AuthenticationFailed(ILogger logger, string? username);
-
-        [LoggerMessage(Level = LogLevel.Debug, Message = "Client {Ip} disconnected")]
-        public static partial void Disconnected(ILogger logger, string? ip);
 
         [LoggerMessage(Level = LogLevel.Debug, Message = "Handling packet {PacketId} in state {State} failed")]
         public static partial void PacketHandlingFailed(ILogger logger, Exception exception, int packetId, ClientState state);

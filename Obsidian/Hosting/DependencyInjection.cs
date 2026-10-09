@@ -14,6 +14,7 @@ using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 using System.IO;
+using System.Net.Http;
 
 namespace Obsidian.Hosting;
 public static class DependencyInjection
@@ -34,6 +35,14 @@ public static class DependencyInjection
         builder.Configuration.AddJsonFile(Path.Combine(ServerConstants.ConfigPath, "server.json"), optional: true, reloadOnChange: true);
         builder.Configuration.AddJsonFile(Path.Combine(ServerConstants.ConfigPath, "whitelist.json"), optional: true, reloadOnChange: true);
         builder.Configuration.AddEnvironmentVariables();
+
+        if (Environment.GetEnvironmentVariable("FEEDBACK_WEBHOOK_URL") is { } feedbackWebhookUrl)
+        {
+            builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                [nameof(ServerConfiguration.FeedbackWebhookUrl)] = feedbackWebhookUrl
+            });
+        }
 
         // Command-line arguments come last, so they override the files.
         foreach (var commandLine in builder.Configuration.Sources.OfType<CommandLineConfigurationSource>().ToList())
@@ -129,6 +138,9 @@ public static class DependencyInjection
         builder.Services.AddConsoleCommands();
 
         builder.Services.AddHttpClient();
+        builder.Services.AddHttpClient("Feedback")
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false })
+            .RemoveAllLoggers();
 
         builder.Services.AddHostedService(sp => sp.GetRequiredService<PacketBroadcaster>());
         builder.Services.AddHostedService<ObsidianHostingService>();
@@ -148,7 +160,8 @@ public static class DependencyInjection
                 }
 
                 //tracing.AddConsoleExporter();
-                tracing.AddHttpClientInstrumentation();
+                tracing.AddHttpClientInstrumentation(options =>
+                    options.FilterHttpRequestMessage = request => !request.Options.TryGetValue(Server.FeedbackRequestOption, out var feedback) || !feedback);
             })
             .WithMetrics(metrics =>
             {

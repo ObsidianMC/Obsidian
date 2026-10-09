@@ -187,19 +187,24 @@ internal static class VanillaLevelData
             new NbtList(NbtTagType.String, "enabled_features") { new NbtTag<string>(string.Empty, "minecraft:vanilla") }
         };
 
-        // Vanilla 1.21.11 keeps game rules by registry id, booleans as bytes and integers as ints.
         var gameRules = new NbtCompound("game_rules");
-        foreach (var (key, value) in settings.GameRules)
-        {
-            var id = key.Contains(':') ? key : $"minecraft:{key}";
-            if (bool.TryParse(value, out var flag))
-                gameRules.Add(new NbtTag<byte>(id, (byte)(flag ? 1 : 0)));
-            else if (int.TryParse(value, out var number))
-                gameRules.Add(new NbtTag<int>(id, number));
-        }
+        SetGameRules(gameRules, settings.GameRules);
 
         data.Add(gameRules);
         return data;
+    }
+
+    // Vanilla 1.21.11 keeps game rules by registry id, booleans as bytes and integers as ints.
+    private static void SetGameRules(NbtCompound gameRules, IEnumerable<KeyValuePair<string, string>> rules)
+    {
+        foreach (var (key, value) in rules)
+        {
+            var id = key.Contains(':') ? key : $"minecraft:{key}";
+            if (bool.TryParse(value, out var flag))
+                Set(gameRules, new NbtTag<byte>(id, (byte)(flag ? 1 : 0)));
+            else if (int.TryParse(value, out var number))
+                Set(gameRules, new NbtTag<int>(id, number));
+        }
     }
 
     /// <summary>
@@ -232,6 +237,13 @@ internal static class VanillaLevelData
         Set(data, new NbtTag<int>("rainTime", level.RainTime));
         Set(data, new NbtTag<int>("thunderTime", level.ThunderTime));
         Set(data, new NbtTag<int>("clearWeatherTime", level.ClearWeatherTime));
+
+        // Rules Obsidian doesn't have stay as they were.
+        var gameRules = data.TryGetTag<NbtCompound>("game_rules", out var savedRules)
+            ? savedRules
+            : new NbtCompound("game_rules");
+        SetGameRules(gameRules, level.GameRules);
+        Set(data, gameRules);
 
         // Vanilla's RespawnData: a dimension, a block position and the facing, which Obsidian keeps as loaded.
         var spawn = level.SpawnPosition.Floor();

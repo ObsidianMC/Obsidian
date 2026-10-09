@@ -1,4 +1,4 @@
-﻿using Obsidian.API.Advancements;
+using Obsidian.API.Advancements;
 using Obsidian.API.Inventory;
 using System.ComponentModel;
 

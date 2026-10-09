@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Obsidian.Utilities.Collections;
 using System.Net;
 using System.Net.Sockets;
@@ -146,7 +146,8 @@ public partial class Server
             return;
 
         var ip = client.Ip;
-        if (Configuration.Whitelist && !WhitelistConfiguration.CurrentValue.WhitelistedIps.Contains(ip))
+        var whitelistedIps = this.WhitelistConfiguration.CurrentValue.WhitelistedIps;
+        if (Configuration.Whitelist && !whitelistedIps.Contains("*") && !whitelistedIps.Contains(ip))
         {
             Log.NotWhitelisted(this.logger, ip);
             await client.DisconnectAsync("Not whitelisted.");

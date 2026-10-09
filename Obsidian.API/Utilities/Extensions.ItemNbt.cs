@@ -147,6 +147,10 @@ public partial class Extensions
             SimpleDataComponent<InstrumentData> instrument when instrument.Value?.Identifier is not null =>
                 new NbtTag<string>(name, instrument.Value.Identifier),
             PotionContentsDataComponent potion => PotionContentsToNbt(name, potion),
+            SimpleDataComponent<ItemStack[]> projectiles when component.Type == DataComponentType.ChargedProjectiles =>
+                ChargedProjectilesToNbt(name, projectiles.Value ?? []),
+            FireworksDataComponent fireworks => FireworksToNbt(name, fireworks),
+            BucketEntityDataComponent bucket => CopyBucketData(name, bucket.Value),
             _ => null
         };
     }
@@ -156,6 +160,8 @@ public partial class Extensions
     {
         switch (name)
         {
+            case "minecraft:bucket_entity_data" when tag is NbtCompound bucket:
+                return new BucketEntityDataComponent { Value = bucket };
             case "minecraft:damage" when tag is NbtTag<int> damage:
                 return ComponentBuilder.Damage with { Value = damage.Value };
             case "minecraft:max_damage" when tag is NbtTag<int> maxDamage:
@@ -184,12 +190,61 @@ public partial class Extensions
                 };
             case "minecraft:potion_contents":
                 return PotionContentsFromNbt(tag);
+            case "minecraft:charged_projectiles" when tag is NbtList projectiles:
+                return ComponentBuilder.ChargedProjectiles with { Value = projectiles.OfType<NbtCompound>()
+                    .Select(projectile => projectile.ItemFromNbt()).OfType<ItemStack>().ToArray() };
+            case "minecraft:fireworks" when tag is NbtCompound fireworks:
+                return FireworksFromNbt(fireworks);
             default:
                 return null;
         }
     }
 
+    private static NbtList ChargedProjectilesToNbt(string name, ItemStack[] projectiles)
+    {
+        var list = new NbtList(NbtTagType.Compound, name);
+        foreach (var projectile in projectiles) list.Add(projectile.ToNbt());
+        return list;
+    }
+
+    private static NbtCompound FireworksToNbt(string name, FireworksDataComponent fireworks)
+    {
+        var explosions = new NbtList(NbtTagType.Compound, "explosions");
+        foreach (var explosion in fireworks.Explosions)
+            explosions.Add(new NbtCompound
+            {
+                new NbtTag<string>("shape", ((FireworkExplosionShape)explosion.Shape).ToString().ToSnakeCase()),
+                new NbtArray<int>("colors", explosion.Colors.ToArray()),
+                new NbtArray<int>("fade_colors", explosion.FadeColors.ToArray()),
+                new NbtTag<bool>("has_trail", explosion.HasTrail), new NbtTag<bool>("has_twinkle", explosion.HasTwinkle)
+            });
+        return new NbtCompound(name) { new NbtTag<int>("flight_duration", fireworks.FlightDuration), explosions };
+    }
+
+    private static FireworksDataComponent FireworksFromNbt(NbtCompound tag)
+    {
+        var explosions = ImmutableArray.CreateBuilder<FireworkExplosion>();
+        if (tag.TryGetTag<NbtList>("explosions", out var list))
+            foreach (var explosion in list.OfType<NbtCompound>())
+                explosions.Add(new()
+                {
+                    Shape = explosion.TryGetTagValue<string>("shape", out var shape) && Enum.TryParse<FireworkExplosionShape>(shape.Replace("_", ""), true, out var parsed) ? (int)parsed : 0,
+                    Colors = explosion.TryGetTag<NbtArray<int>>("colors", out var colors) ? [.. colors.GetArray()] : [],
+                    FadeColors = explosion.TryGetTag<NbtArray<int>>("fade_colors", out var fade) ? [.. fade.GetArray()] : [],
+                    HasTrail = explosion.TryGetBool("has_trail", out var trail) && trail,
+                    HasTwinkle = explosion.TryGetBool("has_twinkle", out var twinkle) && twinkle
+                });
+        return new() { FlightDuration = tag.TryGetTagValue<int>("flight_duration", out var duration) ? Math.Clamp(duration, 0, 255) : 0, Explosions = explosions.ToImmutable() };
+    }
+
     // Vanilla's ItemEnchantments.CODEC: a map of enchantment id to level.
+    private static NbtCompound CopyBucketData(string name, NbtCompound data)
+    {
+        var copy = new NbtCompound(name);
+        foreach (var (key, tag) in data) copy.Add(key, tag);
+        return copy;
+    }
+
     private static NbtCompound EnchantmentsToNbt(string name, Enchantment[] enchantments)
     {
         var compound = new NbtCompound(name);

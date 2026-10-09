@@ -1,0 +1,186 @@
+using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
+using Obsidian.Net.Packets.Play.Clientbound;
+
+namespace Obsidian.Entities;
+
+public partial class Mob
+{
+    private readonly Dictionary<EquipmentSlot, ItemStack> equipment = [];
+    private readonly Dictionary<EquipmentSlot, float> equipmentDropChances = [];
+    public bool CanPickUpLoot { get; set; }
+    private static readonly EquipmentSlot[] armorSlots = [EquipmentSlot.Helmet, EquipmentSlot.Chestplate, EquipmentSlot.Leggings, EquipmentSlot.Boots];
+    private static readonly Dictionary<string, (int Helmet, int Chest, int Legs, int Boots, int Durability, float Toughness)> armorMaterials = new()
+    {
+        ["leather"] = (1, 3, 2, 1, 5, 0), ["copper"] = (2, 4, 3, 1, 11, 0),
+        ["chainmail"] = (2, 5, 4, 1, 15, 0), ["iron"] = (2, 6, 5, 2, 15, 0),
+        ["golden"] = (2, 5, 3, 1, 7, 0), ["diamond"] = (3, 8, 6, 3, 33, 2),
+        ["turtle"] = (2, 6, 5, 2, 25, 0), ["netherite"] = (3, 8, 6, 3, 37, 3)
+    };
+
+    public float GetEquipmentDropChance(EquipmentSlot slot) => equipmentDropChances.GetValueOrDefault(slot, 0.085f);
+    protected void SetEquipmentDropChance(EquipmentSlot slot, float chance) => equipmentDropChances[slot] = chance;
+
+    private static (int Armor, int Durability, float Toughness) GetArmorStats(ItemStack item, EquipmentSlot slot)
+    {
+        var name = item.Holder.UnlocalizedName.Replace("minecraft:", "", StringComparison.Ordinal);
+        if (slot == EquipmentSlot.Body && (name.EndsWith("_nautilus_armor", StringComparison.Ordinal) || name.EndsWith("_horse_armor", StringComparison.Ordinal)))
+        {
+            var bodyMaterial = name[..name.IndexOf('_')];
+            var armor = bodyMaterial switch { "leather" => 3, "copper" => 4, "iron" => 5, "golden" => 7, "diamond" => 11, "netherite" => 19, _ => 0 };
+            var durability = name.EndsWith("_nautilus_armor", StringComparison.Ordinal) && armorMaterials.TryGetValue(bodyMaterial, out var bodyStats) ? bodyStats.Durability * 16 : 0;
+            return (armor, durability, 0);
+        }
+        var separator = name.IndexOf('_');
+        var suffix = slot switch { EquipmentSlot.Helmet => "_helmet", EquipmentSlot.Chestplate => "_chestplate", EquipmentSlot.Leggings => "_leggings", EquipmentSlot.Boots => "_boots", _ => "" };
+        if (suffix.Length == 0 || !name.EndsWith(suffix, StringComparison.Ordinal))
+            return default;
+        if (separator < 0 || !armorMaterials.TryGetValue(name[..separator], out var material))
+            return default;
+        return slot switch
+        {
+            EquipmentSlot.Helmet => (material.Helmet, material.Durability * 11, material.Toughness),
+            EquipmentSlot.Chestplate => (material.Chest, material.Durability * 16, material.Toughness),
+            EquipmentSlot.Leggings => (material.Legs, material.Durability * 15, material.Toughness),
+            EquipmentSlot.Boots => (material.Boots, material.Durability * 13, material.Toughness),
+            _ => default
+        };
+    }
+
+    private float EquipmentArmor => armorSlots.Sum(slot => GetArmorStats(GetEquipment(slot), slot).Armor) + GetArmorStats(GetEquipment(EquipmentSlot.Body), EquipmentSlot.Body).Armor;
+    private float EquipmentToughness => armorSlots.Sum(slot => GetArmorStats(GetEquipment(slot), slot).Toughness);
+
+    protected void PopulateDefaultArmor()
+    {
+        if (Random.NextSingle() >= 0.15f * SpecialDifficulty)
+            return;
+        var tier = Random.Next(3);
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            if (Random.NextSingle() < 0.1087f)
+                tier++;
+        }
+        ReadOnlySpan<string> materials = ["leather", "golden", "copper", "chainmail", "iron", "diamond"];
+        for (var index = 0; index < armorSlots.Length; index++)
+        {
+            if (index > 0 && Random.NextSingle() < (Level.LevelData.Difficulty == Difficulty.Hard ? 0.1f : 0.25f))
+                break;
+            var slot = armorSlots[index];
+            if (!GetEquipment(slot).IsAir)
+                continue;
+            var name = slot switch { EquipmentSlot.Helmet => "helmet", EquipmentSlot.Chestplate => "chestplate", EquipmentSlot.Leggings => "leggings", _ => "boots" };
+            SetEquipment(slot, ItemsRegistry.GetSingleItem($"minecraft:{materials[tier]}_{name}"));
+        }
+    }
+
+    private async ValueTask PickupEquipmentAsync()
+    {
+        if (!CanPickUpLoot || !Alive)
+            return;
+        foreach (var entity in GetEntitiesNear(1.5f).OfType<ItemEntity>().Where(item => item.CanPickup && item.Item.Count > 0).ToArray())
+        {
+            var item = entity.Item;
+            var name = item.Holder.UnlocalizedName;
+            var slot = name.EndsWith("_helmet", StringComparison.Ordinal) ? EquipmentSlot.Helmet :
+                name.EndsWith("_chestplate", StringComparison.Ordinal) ? EquipmentSlot.Chestplate :
+                name.EndsWith("_leggings", StringComparison.Ordinal) ? EquipmentSlot.Leggings :
+                name.EndsWith("_boots", StringComparison.Ordinal) ? EquipmentSlot.Boots : EquipmentSlot.MainHand;
+            var current = GetEquipment(slot);
+            var incomingScore = slot == EquipmentSlot.MainHand ? GetWeaponDamage(item) : GetArmorStats(item, slot).Armor + GetArmorStats(item, slot).Toughness * 0.01f;
+            var currentScore = slot == EquipmentSlot.MainHand ? GetWeaponDamage(current) : GetArmorStats(current, slot).Armor + GetArmorStats(current, slot).Toughness * 0.01f;
+            if (!current.IsAir && (incomingScore < currentScore || incomingScore == currentScore && item.Damage >= current.Damage))
+                continue;
+            if (!current.IsAir && Math.Max(Random.NextSingle() - 0.1f, 0) < GetEquipmentDropChance(slot))
+                DropItem(current);
+            SetEquipment(slot, new ItemStack(item));
+            equipmentDropChances[slot] = 2;
+            PersistenceRequired = true;
+            item.Count--;
+            PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new TakeItemEntityPacket
+            {
+                CollectedEntityId = entity.EntityId, CollectorEntityId = EntityId, PickupItemCount = 1
+            }, EntityId);
+            if (item.Count == 0)
+                await entity.RemoveAsync();
+        }
+    }
+
+    protected static float GetWeaponDamage(ItemStack item)
+    {
+        return CombatItems.Attribute(item, "attack_damage", "mainhand");
+    }
+
+    public ItemStack GetEquipment(EquipmentSlot slot) => equipment.GetValueOrDefault(slot, ItemStack.Air);
+
+    public void SetEquipment(EquipmentSlot slot, ItemStack item)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        if (!Enum.IsDefined(slot))
+            throw new ArgumentOutOfRangeException(nameof(slot));
+        equipment[slot] = item;
+        var maximum = GetArmorStats(item, slot).Durability;
+        if (maximum > 0 && !item.ContainsKey(DataComponentType.MaxDamage))
+        {
+            var durability = ComponentBuilder.MaxDamage;
+            durability.Value = maximum;
+            item[DataComponentType.MaxDamage] = durability;
+        }
+        if (initialized)
+            SynchronizeEquipment();
+    }
+
+    private void SynchronizeEquipment()
+    {
+        if (equipment.Count > 0)
+            PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new SetEquipmentPacket
+            {
+                EntityId = EntityId,
+                Equipment = equipment.Select(pair => new Equipment { Slot = pair.Key, Item = pair.Value }).ToList()
+            }, EntityId);
+    }
+
+    internal ValueTask SendEquipmentToAsync(Player player) => equipment.Count == 0 ? default : player.Client.QueuePacketAsync(new SetEquipmentPacket
+    {
+        EntityId = EntityId,
+        Equipment = equipment.Select(pair => new Equipment { Slot = pair.Key, Item = pair.Value }).ToList()
+    });
+
+    internal bool DamageEquipment(EquipmentSlot slot, int amount)
+    {
+        var item = GetEquipment(slot);
+        var previous = item.Damage;
+        var broke = CombatItems.HurtItem(item, amount, slot is not EquipmentSlot.MainHand and not EquipmentSlot.OffHand);
+        if (broke && item.Count == 0) SetEquipment(slot, ItemStack.Air);
+        else if (item.Damage != previous) SynchronizeEquipment();
+        return broke;
+    }
+
+    protected void DropItem(Material material, int count = 1)
+    {
+        if (count <= 0)
+            return;
+        var item = ItemsRegistry.GetSingleItem(material);
+        item.Count = count;
+        DropItem(item);
+    }
+
+    protected void DropItem(ItemStack item)
+    {
+        if (item.Count <= 0 || item.IsAir || deathStarted && !Level.LevelData.GetBooleanRule("mob_drops"))
+            return;
+        var entity = new ItemEntity
+        {
+            Level = Level, EntityId = Server.GetNextEntityId(), Position = Position + new VectorD(0, 0.5f, 0), Item = item
+        };
+        if (Level.TryAddEntity(entity))
+            entity.SpawnEntity(new Velocity(0, 0.2f, 0));
+    }
+
+    public override void SpawnEntity(Velocity? velocity = null, int additionalData = 0)
+    {
+        base.SpawnEntity(velocity, additionalData);
+        SynchronizeEquipment();
+        if (Rider != null)
+            SynchronizePassengers();
+    }
+}

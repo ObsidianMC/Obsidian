@@ -36,7 +36,8 @@ public static class EnchantmentHelper
         IReadOnlyList<EnchantmentDefinition> options)
     {
         var selected = new List<(EnchantmentDefinition Enchantment, int Level)>();
-        var enchantable = stack.Holder.Enchantable;
+        var enchantable = stack.RemoveComponents.Contains(DataComponentType.Enchantable) ? 0 :
+            stack.GetComponent<SimpleDataComponent<int>>(DataComponentType.Enchantable)?.Value ?? stack.Holder.Enchantable;
         if (enchantable == 0)
             return selected;
 

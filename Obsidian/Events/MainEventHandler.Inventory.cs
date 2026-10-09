@@ -1,11 +1,11 @@
-﻿using Obsidian.API.Containers;
+using Obsidian.API.Containers;
 using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.Entities;
-using Obsidian.Net.Packets.Play.Clientbound;
 using System.Runtime.InteropServices;
 
 namespace Obsidian.Events;
+
 public partial class MainEventHandler
 {
     private const int OutsideInventory = -999;
@@ -14,6 +14,28 @@ public partial class MainEventHandler
     public async ValueTask OnInventoryClick(ContainerClickEventArgs args)
     {
         if (args.IsCancelled)
+            return;
+
+        if (args.Container == args.Player.Inventory && args.ClickedSlot is >= 5 and <= 8 &&
+            args.ClickType != ClickType.Clone)
+        {
+            var equipped = args.Item;
+            var locked = args.Player.GameMode != GameMode.Creative && args.Player.Alive &&
+                CombatItems.EnchantmentLevel(equipped, EnchantmentsRegistry.BindingCurse) > 0;
+            var incoming = args.ClickType == ClickType.Pickup ? args.Player.CarriedItem :
+                args.ClickType == ClickType.Swap && args.Button is >= 0 and <= 8 ? args.Player.Inventory.GetItem(36 + args.Button) :
+                args.ClickType == ClickType.Swap && args.Button == 40 ? args.Player.GetOffHandItem() : null;
+            if (locked || !incoming.IsNullOrAir() && CombatItems.PlayerArmorSlot(incoming) != args.ClickedSlot)
+            {
+                await args.Player.Client.QueuePacketAsync(new Obsidian.Net.Packets.Play.Clientbound.ContainerSetContentPacket(0, args.Player.Inventory.ToList())
+                { StateId = args.StateId + 1, CarriedItem = args.Player.CarriedItem });
+                return;
+            }
+        }
+
+        if (await HandleEnchantingClickAsync(args)) return;
+
+        if (await HandleCraftingAsync(args))
             return;
 
         switch (args.ClickType)
@@ -42,46 +64,6 @@ public partial class MainEventHandler
             default:
                 break;
         }
-
-        await HandleCraftingAsync(args);
-    }
-
-    private static async ValueTask HandleCraftingAsync(ContainerClickEventArgs args)
-    {
-        var container = args.Container;
-        var player = args.Player;
-
-        if (container is not CraftingTable table)
-            return;
-
-        var recipe = RecipesRegistry.FindRecipe(table);
-
-        if (recipe is null)
-        {
-            if (container[9] != null)
-                container.RemoveItem(9);
-
-            table.SetResult(null);
-
-            await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
-            {
-                Slot = 0,
-                ContainerId = player.CurrentContainerId,
-                SlotData = null
-            });
-
-            return;
-        }
-
-        var result = recipe.Result.First();
-        table.SetResult(result);
-
-        await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
-        {
-            Slot = 0,
-            ContainerId = player.CurrentContainerId,
-            SlotData = result
-        });
     }
 
     private static void HandleQuickMove(ContainerClickEventArgs args)
@@ -166,7 +148,11 @@ public partial class MainEventHandler
 
         for (int i = 0; i < container.Size; i++)
         {
+            if (i == 0 && (container is CraftingTable || container == player.Inventory))
+                continue;
             ItemStack? item = container[i];
+            if (container == player.Inventory && i is >= 5 and <= 8 && player.GameMode != GameMode.Creative &&
+                CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.BindingCurse) > 0) continue;
             if (item != carriedItem)
                 continue;
 
@@ -188,7 +174,11 @@ public partial class MainEventHandler
         {
             for (int i = 0; i < player.Inventory.Size; i++)
             {
+                if (i == 0)
+                    continue;
                 var item = player.Inventory.GetItem(i);
+                if (i is >= 5 and <= 8 && player.GameMode != GameMode.Creative &&
+                    CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.BindingCurse) > 0) continue;
                 if (item != carriedItem)
                     continue;
 
@@ -296,58 +286,33 @@ public partial class MainEventHandler
         SpawnThrownItem(player, thrownItem);
     }
 
-    private static ItemStack? ThrowItem(IPlayer player, BaseContainer container, short clickedSlot, sbyte button, bool forPlayer = false)
+    internal static ItemStack? ThrowItem(IPlayer player, BaseContainer container, short clickedSlot, sbyte button, bool forPlayer = false)
     {
-        var amountToRemove = button == 0 ? 1 : 64;
+        var source = forPlayer ? player.CarriedItem : container.GetItem(clickedSlot);
+        if (source.IsNullOrAir() || source.Count <= 0)
+            return null;
 
-        ItemStack? removedItem;
+        // Outside clicks drop the whole cursor stack on left click, and one item on right click.
+        var count = forPlayer ? button == 0 ? source.Count : 1 : button == 0 ? 1 : source.Count;
+        var dropped = new ItemStack(source, count);
         if (forPlayer)
         {
-            player.CarriedItem -= amountToRemove;
-            removedItem = player.CarriedItem;
+            source.Count -= count;
+            if (source.Count == 0)
+                player.CarriedItem = null;
         }
         else
-            container.RemoveItem(clickedSlot, amountToRemove, out removedItem);
+            container.RemoveItem(clickedSlot, count);
 
-        return removedItem;
+        return dropped;
     }
 
     private static void SpawnThrownItem(IPlayer player, ItemStack? thrownItem)
     {
-        if (thrownItem.IsNullOrAir())
+        if (thrownItem.IsNullOrAir() || thrownItem.Count <= 0)
             return;
 
-        var loc = new VectorD(player.Position.X, player.HeadY - 0.3, player.Position.Z);
-
-        var item = new ItemEntity
-        {
-            EntityId = Server.GetNextEntityId(),
-            Item = thrownItem,
-            Glowing = true,
-            Level = player.Level,
-            Position = loc
-        };
-
-        var lookDir = player.GetLookDirection();
-        var vel = Velocity.FromDirection(loc, lookDir);
-
-        //TODO Get this shooting out from the player properly.
-        player.Level.PacketBroadcaster.QueuePacketToLevel(player.Level, new AddEntityPacket
-        {
-            EntityId = item.EntityId,
-            Uuid = item.Uuid,
-            Type = EntityType.Item,
-            Position = item.Position,
-            Pitch = 0,
-            Yaw = 0,
-            Data = 1,
-            Velocity = vel
-        });
-        player.Level.PacketBroadcaster.QueuePacketToLevel(player.Level, new SetEntityDataPacket
-        {
-            EntityId = item.EntityId,
-            Entity = item
-        });
+        ItemEntity.Drop(player, thrownItem);
     }
 
     private static void HandlePickup(ContainerClickEventArgs args)
@@ -446,7 +411,9 @@ public partial class MainEventHandler
         var player = args.Player;
         var button = args.Button;
 
-        var localSlot = button + 36;
+        var localSlot = button == 40 ? 45 : button + 36;
+        if (button is not (>= 0 and <= 8 or 40))
+            return;
 
         var currentItem = player.Inventory.GetItem(localSlot);
 

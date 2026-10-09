@@ -2,6 +2,7 @@
 // https://wiki.vg/Map_Format
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
+using Obsidian.API.Containers;
 using Obsidian.API.Inventory;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets;
@@ -35,11 +36,23 @@ public sealed partial class Player : Avatar, IPlayer
     /// </summary>
     public ConcurrentHashSet<long> LoadedChunks { get; internal set; } = [];
 
-    // The chunks in view that weren't generated when they were asked for, sent once they are, and the center and view
-    // distance last sent to the client. Guarded by chunkUpdates, which keeps packet handlers and the level tick from
-    // updating the client's chunks at the same time.
+    // Unsent chunks, the current nearest-first loading pass, and the client's view. Guarded by chunkUpdates so packet
+    // handlers and the level tick can't update the client's chunks at the same time.
     private readonly HashSet<long> pendingChunks = [];
+    private readonly Queue<long> pendingChunkLoads = [];
+    private const int MaximumChunkLoadsPerPass = 16;
+    private static readonly TimeSpan ChunkLoadTimeBudget = TimeSpan.FromMilliseconds(5);
     private readonly SemaphoreSlim chunkUpdates = new(1, 1);
+
+    // Vanilla's chunk batch flow control (PlayerChunkSender): chunks go out in batches the client acknowledges with how
+    // many chunks a tick it can take, so a slow connection isn't flooded and later packets (keep-alives) don't wait
+    // behind megabytes of chunks. The client's rate tops up a quota every tick. One batch may be unacknowledged at first,
+    // ten once the client has answered. Guarded by chunkBatchLock, since acknowledgements arrive on the network thread.
+    private readonly Lock chunkBatchLock = new();
+    private float desiredChunksPerTick = 9;
+    private float chunkBatchQuota;
+    private int unacknowledgedChunkBatches;
+    private int maxUnacknowledgedChunkBatches = 1;
     private (int X, int Z)? chunkCacheCenter;
     private int chunkViewDistance;
 
@@ -48,6 +61,8 @@ public sealed partial class Player : Avatar, IPlayer
     public required IServer Server { get; init; }
 
     public PlayerInput Input { get; set; }
+    internal Mob? Vehicle { get; set; }
+    internal long LastExperiencePickupTick { get; set; } = -2;
 
     public override bool Sneaking
     {
@@ -117,11 +132,14 @@ public sealed partial class Player : Avatar, IPlayer
     public bool Sleeping { get; set; }
     public bool InHorseInventory { get; set; }
     public bool Respawning { get; internal set; }
+    private bool pendingRespawnChunks;
+    private int respawnChunkRetryTicks;
 
     public short AttackTime { get; set; }
     public short DeathTime { get; set; }
     public short HurtTime { get; set; }
     public short SleepTimer { get; set; }
+    internal int TimeSinceRest { get; private set; }
 
     public short CurrentHeldItemSlot
     {
@@ -142,18 +160,18 @@ public sealed partial class Player : Avatar, IPlayer
     }
 
     public int Ping => Client.Ping;
-    public int FoodLevel { get; set; }
+    public int FoodLevel { get; set; } = 20;
     public int FoodTickTimer { get; set; }
     public int XpLevel { get; set; }
     public int XpTotal { get; set; }
     public float XpP { get; set; }
 
-    public double HeadY { get; private set; }
+    public double HeadY { get; internal set; }
 
     public float Absorption { get; set; }
     public float FallDistance { get; set; }
     public float FoodExhaustionLevel { get; set; }
-    public float FoodSaturationLevel { get; set; }
+    public float FoodSaturationLevel { get; set; } = 5;
 
     public Entity? LeftShoulder { get; set; }
     public Entity? RightShoulder { get; set; }
@@ -234,18 +252,34 @@ public sealed partial class Player : Avatar, IPlayer
 
     public async ValueTask OpenInventoryAsync(BaseContainer container)
     {
+        if (OpenedContainer is EnchantmentTable previousTable)
+            await Obsidian.Events.MainEventHandler.ReturnEnchantingItemsAsync(this, previousTable);
+        if (container is EnchantmentTable table)
+            container = new EnchantmentTable { BlockPosition = table.BlockPosition, Title = table.Title, CustomName = table.CustomName };
         OpenedContainer = container;
 
         var nextId = GetNextContainerId();
 
         await Client.QueuePacketAsync(new OpenScreenPacket(container, nextId));
 
-        if (container.HasItems())
+        if (container is CraftingTable { Type: InventoryType.Crafting })
+            await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId,
+                container.Concat(this.Inventory.Skip(9).Take(36)).ToList()));
+        else if (container.HasItems())
             await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId, container.ToList()));
+        if (container is EnchantmentTable)
+        {
+            await Client.QueuePacketAsync(new ContainerSetContentPacket(nextId, container.Concat(Inventory.Skip(9).Take(36)).ToList()));
+            await RefreshEnchantingAsync();
+        }
     }
 
     public async override ValueTask TeleportAsync(VectorD pos)
     {
+        FallDistance = 0;
+        combatPosition = null;
+        CancelWeaponUse();
+        Vehicle?.Dismount(this);
         LastPosition = Position;
         Position = pos;
         await UpdateChunksAsync();
@@ -271,6 +305,9 @@ public sealed partial class Player : Avatar, IPlayer
 
     public async override ValueTask TeleportAsync(IEntity to)
     {
+        FallDistance = 0;
+        combatPosition = null;
+        CancelWeaponUse();
         LastPosition = Position;
         Position = to.Position;
 
@@ -350,95 +387,183 @@ public sealed partial class Player : Avatar, IPlayer
     public async ValueTask KickAsync(string reason) => await this.Client.DisconnectAsync(reason);
     public async ValueTask KickAsync(ChatMessage reason) => await Client.DisconnectAsync(reason);
 
+    internal async Task TransferDimensionAsync(ILevel destination)
+    {
+        CancelEating();
+        CancelWeaponUse();
+        combatPosition = null;
+        Vehicle?.Dismount(this);
+        var origin = Level;
+        var spawn = destination.LevelData.SpawnPosition;
+        await destination.GetChunkAsync((Vector)spawn.Floor());
+        await origin.DestroyEntityAsync(this);
+        origin.TryRemovePlayer(this);
+        foreach (var observer in origin.GetPlayersInRange(Position, float.MaxValue).OfType<Player>())
+            observer.visiblePlayers.Remove(this);
+        Level = destination;
+        Position = spawn;
+        LastPosition = spawn;
+        BoundingBox = Dimension.CreateBBFromPosition(spawn);
+        HeadY = spawn.Y + 1.62;
+        Motion = VectorD.Zero;
+        FallDistance = 0;
+        foodPosition = null;
+        destination.TryAddPlayer(this);
+        destination.TryAddEntity(this);
+        await RespawnAsync();
+        await Client.QueuePacketAsync(new SetDefaultSpawnPositionPacket(new()
+        { Dimension = destination.DimensionName, Pos = (Vector)spawn.Floor() }, 0, 0));
+        await Client.QueuePacketAsync(new SetTimePacket(destination.LevelData.Time, destination.LevelData.DayTime, true));
+        await Client.QueuePacketAsync(new GameEventPacket(destination.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
+        foreach (var (id, effect) in ActivePotionEffects)
+            await Client.QueuePacketAsync(new UpdateMobEffectPacket(EntityId, id, effect.CurrentDuration)
+            { Amplifier = effect.EffectData.Amplifier, Flags = EntityEffectFlags.ShowParticles | EntityEffectFlags.ShowIcon });
+        await SaveAsync();
+    }
+
     public async Task RespawnAsync(DataKept dataKept = DataKept.Metadata)
     {
-        if (!Alive)
+        if (Respawning) return;
+        Respawning = true;
+        try
         {
-            // if unalive, reset health and set location to world spawn
-            Health = 20f;
-            Position = Level.LevelData.SpawnPosition;
+            if (!Alive)
+            {
+                // Death respawns must create fresh client state rather than retain the dead player's metadata.
+                dataKept = DataKept.None;
+                CancelEating();
+                CancelWeaponUse();
+                combatPosition = null;
+                attackTicks = 0;
+                Vehicle?.Dismount(this);
+                ClearPotionEffects();
+                damageCooldown = 0;
+                lastIncomingDamage = 0;
+                HurtTime = 0;
+                DeathTime = 0;
+                FireTicks = 0;
+                Burning = false;
+                Motion = VectorD.Zero;
+                FallDistance = 0;
+                Absorption = 0;
+                AbsorbtionAmount = 0;
+                FoodLevel = 20;
+                FoodSaturationLevel = 5;
+                FoodExhaustionLevel = 0;
+                FoodTickTimer = 0;
+                foodPosition = null;
+                Sprinting = false;
+                Swimming = false;
+                Sleeping = false;
+                Pose = Pose.Standing;
+                Yaw = 0;
+                Pitch = 0;
+                MovementFlags = MovementFlags.None;
+                Health = 20f;
+                await Level.DestroyEntityAsync(this);
+                Position = Level.LevelData.SpawnPosition;
+                LastPosition = Position;
+                BoundingBox = Dimension.CreateBBFromPosition(Position);
+                HeadY = Position.Y + 1.62;
+                Level.TryAddEntity(this);
+            }
+
+            CodecRegistry.TryGetDimension(Level.DimensionName, out var codec);
+            Debug.Assert(codec is not null); // TODO Handle missing codec
+
+            Log.ChangingLevel(this.Logger, this.Username, this.Level.Name);
+
+            await Client.QueuePacketAsync(new RespawnPacket
+            {
+                CommonPlayerSpawnInfo = new()
+                {
+                    DimensionType = codec.Id,
+                    DimensionName = Level.DimensionName,
+                    GameMode = GameMode,
+                    PreviousGamemode = GameMode,
+                    HashedSeed = 0,
+                    Flat = false,
+                    Debug = false,
+                    PortalCooldown = this.portalCooldown,
+                },
+                DataKept = dataKept,
+            });
+
+            visiblePlayers.Clear();
+
+            TeleportId = 0;
+
+            await Client.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
+            await Client.QueuePacketAsync(new PlayerPositionPacket
+            {
+                Position = Position,
+                Yaw = Yaw,
+                Pitch = Pitch,
+                Delta = this.preservePortalMotion ? VectorD.Zero : Motion,
+                Flags = 0,
+                RelativeFlags = this.preservePortalMotion ? NetherPortalRelativeFlags : 0,
+                TeleportId = 0
+            });
+
+            pendingRespawnChunks = !await UpdateChunksAsync(true);
+            respawnChunkRetryTicks = 20;
+            Level.TryAddEntity(this);
+            await Client.QueuePacketAsync(new SetHealthPacket(Health, FoodLevel, FoodSaturationLevel));
+            await SendPlayerInfoAsync();
+            await TrySpawnPlayerAsync(Position);
+            await SynchronizeTrackedEntitiesAsync();
+        }
+        finally
+        {
+            Respawning = false;
         }
 
-        CodecRegistry.TryGetDimension(Level.DimensionName, out var codec);
-        Debug.Assert(codec is not null); // TODO Handle missing codec
-
-        Log.ChangingLevel(this.Logger, this.Username, this.Level.Name);
-
-        await Client.QueuePacketAsync(new RespawnPacket
-        {
-            CommonPlayerSpawnInfo = new()
-            {
-                DimensionType = codec.Id,
-                DimensionName = Level.DimensionName,
-                GameMode = GameMode,
-                PreviousGamemode = GameMode,
-                HashedSeed = 0,
-                Flat = false,
-                Debug = false,
-            },
-            DataKept = dataKept,
-        });
-
-        visiblePlayers.Clear();
-
-        Respawning = true;
-        TeleportId = 0;
-
-        await UpdateChunksAsync(true);
-
-        await Client.QueuePacketAsync(new PlayerPositionPacket
-        {
-            Position = Position,
-            Yaw = 0,
-            Pitch = 0,
-            TeleportId = 0
-        });
-
-        Respawning = false;
     }
 
     //TODO make IDamageSource 
     public async override ValueTask KillAsync(IEntity source, ChatMessage deathMessage)
     {
-        //await this.client.QueuePacketAsync(new PlayerDied
-        //{
-        //    PlayerId = this.EntityId,
-        //    EntityId = source != null ? source.EntityId : -1,
-        //    Message = deathMessage as ChatMessage
-        //});
-        // TODO implement new death packets
-
-        await Client.QueuePacketAsync(new GameEventPacket(RespawnReason.EnableRespawnScreen));
-        await RemoveAsync();
-
-        if (source is Player attacker)
-            attacker.visiblePlayers.Remove(this);
+        Health = 0;
+        CancelEating();
+        CancelWeaponUse();
+        if (OpenedContainer is EnchantmentTable table)
+        {
+            await Obsidian.Events.MainEventHandler.ReturnEnchantingItemsAsync(this, table);
+            OpenedContainer = null;
+        }
+        Vehicle?.Dismount(this);
+        await Client.QueuePacketAsync(new SetHealthPacket(0, FoodLevel, FoodSaturationLevel));
+        await Client.QueuePacketAsync(new PlayerCombatKillPacket { PlayerID = EntityId, Message = deathMessage });
+        PacketBroadcaster.QueuePacketToLevel(Level, new EntityEventPacket { EntityId = EntityId, Event = 3 }, EntityId);
+        foreach (var observer in Level.GetPlayersInRange(Position, float.MaxValue).OfType<Player>())
+            observer.visiblePlayers.Remove(this);
     }
 
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
 
-        this.WriteEntityMetadataType(writer, EntityMetadataType.Float);
+        writer.WriteEntityMetadataType(17, EntityMetadataType.Float);
         writer.WriteSingle(Absorption);
 
-        this.WriteEntityMetadataType(writer, EntityMetadataType.VarInt);
+        writer.WriteEntityMetadataType(18, EntityMetadataType.VarInt);
         writer.WriteVarInt(XpTotal);
+
+        this.MetadataIndex = 19;
 
         //TODO fix possibly an extension method?
         if (this.LeftShoulder is not null)
         {
-            this.WriteEntityMetadataType(writer, EntityMetadataType.OptionalLivingEntityReference);
+            writer.WriteEntityMetadataType(19, EntityMetadataType.OptionalLivingEntityReference);
             writer.WriteNbtCompound([]);
+            this.MetadataIndex = 20;
         }
 
         if (this.RightShoulder is not null)
         {
-            if (this.LeftShoulder is null)
-                this.MetadataIndex++;
-
-            this.WriteEntityMetadataType(writer, EntityMetadataType.OptionalLivingEntityReference);
+            writer.WriteEntityMetadataType(20, EntityMetadataType.OptionalLivingEntityReference);
             writer.WriteNbtCompound([]);
+            this.MetadataIndex = 21;
         }
     }
 
@@ -616,7 +741,15 @@ public sealed partial class Player : Avatar, IPlayer
 
     public async override ValueTask UpdateAsync(VectorD position, MovementFlags movementFlags)
     {
+        if (!Alive || Respawning) return;
+        if (!double.IsFinite(position.X) || !double.IsFinite(position.Y) || !double.IsFinite(position.Z)) return;
+        if (Vehicle != null)
+            position = Position;
+        var oldPosition = Position;
+        var oldMovementFlags = MovementFlags;
         await base.UpdateAsync(position, movementFlags);
+        await UpdateFallAsync(oldPosition, movementFlags);
+        if (Level is AbstractLevel events) await events.EmitMovementGameEventsAsync(this, oldPosition, oldMovementFlags);
 
         HeadY = position.Y + 1.62f;
 
@@ -627,7 +760,15 @@ public sealed partial class Player : Avatar, IPlayer
 
     public async override ValueTask UpdateAsync(VectorD position, Angle yaw, Angle pitch, MovementFlags movementFlags)
     {
+        if (!Alive || Respawning) return;
+        if (!double.IsFinite(position.X) || !double.IsFinite(position.Y) || !double.IsFinite(position.Z)) return;
+        if (Vehicle != null)
+            position = Position;
+        var oldPosition = Position;
+        var oldMovementFlags = MovementFlags;
         await base.UpdateAsync(position, yaw, pitch, movementFlags);
+        await UpdateFallAsync(oldPosition, movementFlags);
+        if (Level is AbstractLevel events) await events.EmitMovementGameEventsAsync(this, oldPosition, oldMovementFlags);
 
         HeadY = position.Y + 1.62f;
 
@@ -638,7 +779,10 @@ public sealed partial class Player : Avatar, IPlayer
 
     public async override ValueTask UpdateAsync(Angle yaw, Angle pitch, MovementFlags movementFlags)
     {
+        if (!Alive || Respawning) return;
         await base.UpdateAsync(yaw, pitch, movementFlags);
+        MovementFlags = movementFlags;
+        await UpdateFallAsync(Position, movementFlags);
 
         await PickupNearbyItemsAsync();
     }
@@ -660,6 +804,10 @@ public sealed partial class Player : Avatar, IPlayer
         {
             if (unloadAll)
             {
+                var tracked = TrackedEntities.Keys.ToArray();
+                TrackedEntities.Clear();
+                if (!Respawning && tracked.Length > 0)
+                    await Client.QueuePacketAsync(new RemoveEntitiesPacket(tracked));
                 if (!Respawning)
                 {
                     foreach (var value in LoadedChunks)
@@ -671,6 +819,7 @@ public sealed partial class Player : Avatar, IPlayer
 
                 LoadedChunks.Clear();
                 this.pendingChunks.Clear();
+                this.pendingChunkLoads.Clear();
                 this.chunkCacheCenter = null;
             }
 
@@ -680,11 +829,15 @@ public sealed partial class Player : Avatar, IPlayer
             if (this.chunkCacheCenter != (centerX, centerZ))
             {
                 this.chunkCacheCenter = (centerX, centerZ);
+                this.pendingChunkLoads.Clear();
                 await Client.QueuePacketAsync(new SetChunkCacheCenterPacket(centerX, centerZ));
             }
 
             // Like vanilla, at least 2.
-            this.chunkViewDistance = Math.Max(2, distance < 1 ? ClientInformation.ViewDistance : distance);
+            var viewDistance = Math.Max(2, distance < 1 ? ClientInformation.ViewDistance : distance);
+            if (this.chunkViewDistance != viewDistance)
+                this.pendingChunkLoads.Clear();
+            this.chunkViewDistance = viewDistance;
 
             foreach (var value in LoadedChunks)
             {
@@ -723,6 +876,15 @@ public sealed partial class Player : Avatar, IPlayer
     /// </summary>
     internal async Task SendPendingChunksAsync()
     {
+        lock (this.chunkBatchLock)
+        {
+            if (this.unacknowledgedChunkBatches < this.maxUnacknowledgedChunkBatches)
+            {
+                var cap = Math.Max(1, this.desiredChunksPerTick);
+                this.chunkBatchQuota = Math.Min(this.chunkBatchQuota + this.desiredChunksPerTick, cap);
+            }
+        }
+
         if (this.pendingChunks.Count == 0 || !await this.chunkUpdates.WaitAsync(0))
             return;
 
@@ -741,35 +903,93 @@ public sealed partial class Player : Avatar, IPlayer
         }
     }
 
-    // Sends the pending chunks that are generated, nearest to the center first, and asks for the others again (generation
-    // only queues them once). Returns whether none are left. Called under chunkUpdates.
+    // Bound disk reads and packet queuing so login and movement don't wait for the entire view. Finish a pass before
+    // retrying ungenerated chunks, so they can't prevent the rest of the view from being requested. Called under chunkUpdates.
     private async Task<bool> SendReadyChunksAsync()
     {
         if (this.pendingChunks.Count == 0 || this.chunkCacheCenter is not var (centerX, centerZ))
             return this.pendingChunks.Count == 0;
 
-        var chunks = this.pendingChunks.ToArray();
-        var distances = new int[chunks.Length];
-        for (var i = 0; i < chunks.Length; i++)
+        if (this.pendingChunkLoads.Count == 0)
         {
-            NumericsHelper.LongToInts(chunks[i], out var x, out var z);
-            distances[i] = (x - centerX) * (x - centerX) + (z - centerZ) * (z - centerZ);
+            var chunks = this.pendingChunks.ToArray();
+            var distances = new int[chunks.Length];
+            for (var i = 0; i < chunks.Length; i++)
+            {
+                NumericsHelper.LongToInts(chunks[i], out var x, out var z);
+                distances[i] = (x - centerX) * (x - centerX) + (z - centerZ) * (z - centerZ);
+            }
+
+            Array.Sort(distances, chunks);
+            foreach (var value in chunks)
+                this.pendingChunkLoads.Enqueue(value);
         }
 
-        Array.Sort(distances, chunks);
-
-        foreach (var value in chunks)
+        int allowed;
+        lock (this.chunkBatchLock)
         {
-            NumericsHelper.LongToInts(value, out var x, out var z);
-            if (await Level.GetChunkAsync(x, z) is not IChunk chunk || !chunk.IsGenerated)
-                continue;
+            allowed = this.unacknowledgedChunkBatches < this.maxUnacknowledgedChunkBatches
+                ? (int)Math.Floor(this.chunkBatchQuota)
+                : 0;
+        }
 
-            await Client.QueuePacketAsync(new LevelChunkWithLightPacket(chunk));
-            LoadedChunks.Add(value);
-            this.pendingChunks.Remove(value);
+        if (allowed <= 0)
+            return false;
+
+        var batch = new List<IChunk>();
+        var started = Stopwatch.GetTimestamp();
+        for (var count = 0;
+             count < MaximumChunkLoadsPerPass && batch.Count < allowed && this.pendingChunkLoads.TryDequeue(out var value);
+             count++)
+        {
+            if (this.pendingChunks.Contains(value))
+            {
+                NumericsHelper.LongToInts(value, out var x, out var z);
+                if (await Level.GetChunkAsync(x, z) is IChunk { IsGenerated: true } chunk)
+                {
+                    batch.Add(chunk);
+                    LoadedChunks.Add(value);
+                    this.pendingChunks.Remove(value);
+                }
+            }
+
+            if (Stopwatch.GetElapsedTime(started) >= ChunkLoadTimeBudget)
+                break;
+        }
+
+        if (batch.Count > 0)
+        {
+            lock (this.chunkBatchLock)
+            {
+                this.unacknowledgedChunkBatches++;
+                this.chunkBatchQuota -= batch.Count;
+            }
+
+            await Client.QueuePacketAsync(new ChunkBatchStartPacket());
+            foreach (var chunk in batch)
+                await Client.QueuePacketAsync(new LevelChunkWithLightPacket(chunk));
+
+            await Client.QueuePacketAsync(new ChunkBatchFinishedPacket { BatchSize = batch.Count });
         }
 
         return this.pendingChunks.Count == 0;
+    }
+
+    /// <summary>
+    /// Takes the client's acknowledgement of a chunk batch and the chunks a tick it asks for (vanilla's
+    /// <c>onChunkBatchReceivedByClient</c>).
+    /// </summary>
+    internal void OnChunkBatchReceived(float chunksPerTick)
+    {
+        lock (this.chunkBatchLock)
+        {
+            this.unacknowledgedChunkBatches = Math.Max(0, this.unacknowledgedChunkBatches - 1);
+            this.desiredChunksPerTick = float.IsNaN(chunksPerTick) ? .01f : Math.Clamp(chunksPerTick, .01f, 64);
+            if (this.unacknowledgedChunkBatches == 0)
+                this.chunkBatchQuota = 1;
+
+            this.maxUnacknowledgedChunkBatches = 10;
+        }
     }
 
     // Vanilla's ChunkTrackingView.contains, which counts the neighbors the client needs to render the edge: a cylinder

@@ -1,10 +1,11 @@
-﻿using Obsidian.API.BlockStates;
+using Obsidian.API.BlockStates;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.Nbt;
 using Obsidian.Serialization.Attributes;
 using System.Buffers.Binary;
 using System.IO;
+using System.IO.Compression;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -362,6 +363,37 @@ public partial class NetworkBuffer : INetStreamReader
         var buffer = this.ReadUntil(ShortSize);
 
         return BinaryPrimitives.ReadUInt16BigEndian(buffer);
+    }
+
+    // Vanilla's limit on a packet's uncompressed size.
+    private const int MaxUncompressedPacketLength = 8 * 1024 * 1024;
+
+    /// <summary>
+    /// Reads a packet from a frame (without its length prefix) in the compressed format: the packet's uncompressed
+    /// length, or 0 when it's sent uncompressed, then its id and data, zlib-compressed unless the length is 0.
+    /// </summary>
+    internal static PacketData ReadCompressedPacket(byte[] frame)
+    {
+        var header = new NetworkBuffer(frame);
+        var dataLength = header.ReadVarInt();
+        var start = header.Offset;
+
+        byte[] body;
+        if (dataLength == 0)
+            body = frame[start..];
+        else
+        {
+            if (dataLength is < 0 or > MaxUncompressedPacketLength)
+                throw new InvalidDataException($"Invalid uncompressed packet length {dataLength}.");
+
+            body = new byte[dataLength];
+            using var zlib = new ZLibStream(new MemoryStream(frame, start, frame.Length - start), CompressionMode.Decompress);
+            zlib.ReadExactly(body);
+        }
+
+        var packet = new NetworkBuffer(body);
+        var id = packet.ReadVarInt();
+        return new PacketData { Id = id, NetworkBuffer = new NetworkBuffer(body[packet.Offset..]) };
     }
 
     protected virtual byte[] ReadUntil(int size)

@@ -1,4 +1,4 @@
-﻿namespace Obsidian.API.Events;
+namespace Obsidian.API.Events;
 
 public class EntityInteractEventArgs : EntityEventArgs
 {
@@ -29,5 +29,11 @@ public class EntityInteractEventArgs : EntityEventArgs
         this.Sneaking = sneaking;
         this.Hand = hand;
         this.TargetPosition = targetPosition;
+    }
+
+    public EntityInteractEventArgs(IPlayer player, IEntity entity, IServer server, InteractionHand hand, bool sneaking = false)
+        : this(player, entity, server, sneaking)
+    {
+        this.Hand = hand;
     }
 }

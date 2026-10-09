@@ -23,7 +23,7 @@ Feel free to join our [Discord](https://discord.gg/gQBtqyXChu) if you're curious
 - [x] Daylight and weather cycle
 - [x] World generation
 - [x] Liquid physics
-- [ ] Mobs AI & pathfinding
+- [x] Mobs AI & pathfinding (basic)
 - [ ] Redstone circuits
 
 ## 💻 Contribute
@@ -54,16 +54,20 @@ For now, to run Obsidian on Docker you will have to follow the following steps:
 2. Go to Obsidian's cloned directory `cd Obsidian`
 3. Build the docker image `docker build . -t obsidian`
 4. Run the container `docker run -d -p YOUR_HOST_PORT:25565 -v YOUR_SERVERFILES_PATH:/files --name YOUR_CONTAINER_NAME obsidian`
-5. Obsidian will pregenerate a config file. Fill it out in `YOUR_SERVERFILES_PATH/config.json`
+5. Obsidian creates configuration files in `YOUR_SERVERFILES_PATH/config/`. Edit them or supply environment overrides with `docker run -e MaxPlayers=50 -e Network__CompressionThreshold=256 ...`.
 6. Start Obsidian's container again. `docker restart YOUR_CONTAINER_NAME`
 
 ### Docker Compose
-There's also docker-compose support.
+The Compose sample lists every writable server, network, message, RCON, whitelist, and world setting as a commented environment option.
+
 1. Clone Obsidian `git clone --recurse-submodules https://github.com/ObsidianMC/Obsidian.git`
 2. Go to Obsidian's cloned directory `cd Obsidian`
-3. Run `docker-compose up -V` to generate the `config.json`
-4. Edit your `docker-compose.yml` file, along with `files/config.json`
-5. `docker-compose up -Vd` to have the server run! The world, plugin and other server related files will be created in the `files` directory.
+3. Uncomment and edit the options you want in `docker-compose.yml`.
+4. Run `docker compose up --build -d`. Server files persist in the `obsidian-files` named volume, mounted at `/files`.
+
+Environment values override saved configuration files; omitted values fall back to those files, then built-in defaults. Nested properties use double underscores (for example, `Network__CompressionThreshold`); lists use zero-based indexes (for example, `Worlds__0__Seed` or `WhitelistedPlayers__0__Name`). List overrides merge by index and preserve omitted entries. Quote all Compose environment values.
+
+`FEEDBACK_WEBHOOK_URL` remains an alias for `FeedbackWebhookUrl` and takes precedence if both are set. An empty value disables feedback. Changing environment values requires recreating the container with `docker compose up -d`; they are not written into the saved configuration. World seed overrides affect generation of new chunks, not existing chunks. RCON configuration fields are available, but the RCON server is currently unimplemented.
 
 ## 😎 The Obsidian Team
 - [Naamloos](https://github.com/Naamloos) (creator)

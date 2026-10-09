@@ -1,16 +1,19 @@
-﻿using Obsidian.API.Containers;
+using Obsidian.API.Containers;
 using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
 using System.Collections.Frozen;
 using System.Reflection;
 
 namespace Obsidian.Registries;
+
 public static partial class RecipesRegistry
 {
-    private static FrozenDictionary<string, List<CanonicalRecipe>> shapedRecipeLookup;
+    private static FrozenDictionary<int, List<ShapedRecipe>> shapedRecipeLookup;
     private static FrozenDictionary<int, List<ShapelessRecipe>> shapelessRecipeLookup;
 
     public static readonly Dictionary<string, IRecipe> Recipes = [];
+
+    internal static IReadOnlyList<IRecipeWithResult> RecipeBookRecipes { get; private set; } = [];
 
     /// <summary>
     /// Loads vanilla's recipes. They're static, so a server started again in the same process keeps the loaded ones.
@@ -21,174 +24,105 @@ public static partial class RecipesRegistry
             return;
 
         await using var fs = Assembly.GetExecutingAssembly().GetManifestResourceStream("Obsidian.Assets.recipes.json")!;
-
         var recipes = await fs.FromJsonAsync<IRecipe[]>();
 
         foreach (var recipe in recipes!)
             Recipes.Add(recipe.Identifier, recipe);
 
-        LoadShapedRecipes();
-        LoadShapelessRecipes();
+        RecipeBookRecipes = Recipes.Values.Where(recipe => recipe is ShapedRecipe or ShapelessRecipe)
+            .Cast<IRecipeWithResult>().ToList().AsReadOnly();
+
+        shapedRecipeLookup = Recipes.Values.OfType<ShapedRecipe>()
+            .GroupBy(recipe => recipe.Pattern.Sum(row => row.Count(symbol => symbol != ' ')))
+            .ToFrozenDictionary(group => group.Key, group => group.ToList());
+        shapelessRecipeLookup = Recipes.Values.OfType<ShapelessRecipe>()
+            .GroupBy(recipe => recipe.Ingredients.Count)
+            .ToFrozenDictionary(group => group.Key, group => group.ToList());
     }
 
-    public static IRecipeWithResult? FindRecipe(CraftingTable grid)
+    public static IRecipeWithResult? FindRecipe(CraftingTable grid) => FindRecipe(grid, 3);
+
+    internal static IRecipeWithResult? FindRecipe(BaseContainer grid, int width)
     {
-        var shapedMatch = FindShapedRecipe(grid);
-        if (shapedMatch is not null)
-            return shapedMatch;
-
-        var shapelessMatch = FindShapelessRecipe(grid);
-        return shapelessMatch ?? null;
-    }
-
-    private static ShapedRecipe? FindShapedRecipe(CraftingTable grid)
-    {
-        var occupiedSlots = new List<int>();
-        for (int i = 0; i < 9; i++)
-        {
-            if (grid[i] != null)
-                occupiedSlots.Add(i);
-        }
-
+        var occupiedSlots = Enumerable.Range(1, width * width)
+            .Where(slot => !grid[slot].IsNullOrAir() && grid[slot]!.Count > 0).ToList();
         if (occupiedSlots.Count == 0)
             return null;
 
-        int anchorSlot = occupiedSlots.Min();
-        var relativeOffsets = occupiedSlots.Select(s => s - anchorSlot).OrderBy(o => o);
-        var key = string.Join(":", relativeOffsets);
-
-        if (!shapedRecipeLookup.TryGetValue(key, out var candidates))
-            return null;
-
-        foreach (var candidate in candidates)
+        if (shapedRecipeLookup.TryGetValue(occupiedSlots.Count, out var shapedRecipes))
         {
-            if (!DoesGridMatchShaped(grid, anchorSlot, candidate))
-                continue;
+            int minX = occupiedSlots.Min(slot => (slot - 1) % width);
+            int minY = occupiedSlots.Min(slot => (slot - 1) / width);
+            int maxX = occupiedSlots.Max(slot => (slot - 1) % width);
+            int maxY = occupiedSlots.Max(slot => (slot - 1) / width);
 
-            return candidate.OriginalRecipe;
-        }
-
-        return null;
-    }
-
-    private static ShapelessRecipe? FindShapelessRecipe(CraftingTable grid)
-    {
-        var itemsInGrid = grid.Where(i => i != null).ToList();
-        if (itemsInGrid.Count == 0)
-            return null;
-
-        if (!shapelessRecipeLookup.TryGetValue(itemsInGrid.Count, out var candidates))
-            return null;
-
-        foreach (var candidate in candidates)
-        {
-            if (!DoesGridMatchShapeless(itemsInGrid, candidate))
-                continue;
-
-            return candidate;
-        }
-        return null;
-    }
-
-    private static bool DoesGridMatchShaped(CraftingTable grid, int anchorSlot, CanonicalRecipe recipe)
-    {
-        foreach (var entry in recipe.IngredientsByOffset)
-        {
-            int offset = entry.Key;
-            Ingredient requiredIngredient = entry.Value;
-
-            int gridSlot = anchorSlot + offset;
-            if (gridSlot >= 9)
-                return false;
-
-            var itemInGrid = grid[gridSlot];
-
-            if (!requiredIngredient.CanBe(itemInGrid))
-                return false;
-        }
-
-        return true;
-    }
-
-    private static bool DoesGridMatchShapeless(List<ItemStack> gridItems, ShapelessRecipe recipe)
-    {
-        var remainingItems = new List<ItemStack>(gridItems);
-
-        foreach (var requiredIngredient in recipe.Ingredients)
-        {
-            var foundItem = remainingItems.FirstOrDefault(requiredIngredient.CanBe);
-
-            if (foundItem != null)
-                remainingItems.Remove(foundItem);
-            else
-                return false;
-        }
-
-        return true;
-    }
-
-    private static void LoadShapedRecipes()
-    {
-        var recipeKeyDictionary = new Dictionary<string, List<CanonicalRecipe>>();
-        foreach (var recipe in Recipes.Values.Where(x => x is ShapedRecipe).Cast<ShapedRecipe>())
-        {
-            var occupiedSlots = new List<int>();
-            var ingredientsBySlot = new Dictionary<int, Ingredient>();
-
-            for (int r = 0; r < recipe.Pattern.Count; r++)
+            foreach (var recipe in shapedRecipes)
             {
-                for (int c = 0; c < recipe.Pattern[r].Length; c++)
+                if (recipe.Pattern.Count != maxY - minY + 1 || recipe.Pattern[0].Length != maxX - minX + 1)
+                    continue;
+
+                if (MatchesShaped(grid, width, minX, minY, recipe, false) ||
+                    MatchesShaped(grid, width, minX, minY, recipe, true))
+                    return recipe;
+            }
+        }
+
+        if (shapelessRecipeLookup.TryGetValue(occupiedSlots.Count, out var shapelessRecipes))
+        {
+            var items = occupiedSlots.Select(slot => grid[slot]!).ToList();
+            foreach (var recipe in shapelessRecipes)
+            {
+                if (MatchesShapeless(items, recipe.Ingredients, 0, new bool[items.Count]))
+                    return recipe;
+            }
+        }
+
+        return null;
+    }
+
+    private static bool MatchesShaped(BaseContainer grid, int width, int minX, int minY, ShapedRecipe recipe, bool mirrored)
+    {
+        for (int y = 0; y < recipe.Pattern.Count; y++)
+        {
+            var row = recipe.Pattern[y];
+            for (int x = 0; x < row.Length; x++)
+            {
+                char symbol = row[mirrored ? row.Length - x - 1 : x];
+                var item = grid[1 + (minY + y) * width + minX + x];
+                if (symbol == ' ')
                 {
-                    if (recipe.Pattern[r][c] != ' ')
-                    {
-                        int slot = r * 3 + c;
-                        occupiedSlots.Add(slot);
-                        ingredientsBySlot[slot] = recipe.Key[recipe.Pattern[r][c]];
-                    }
+                    if (!item.IsNullOrAir() && item!.Count > 0)
+                        return false;
                 }
+                else if (item.IsNullOrAir() || item!.Count <= 0 || !MatchesIngredient(recipe.Key[symbol], item))
+                    return false;
             }
-
-            if (occupiedSlots.Count == 0)
-                continue;
-
-            int anchorSlot = occupiedSlots.Min();
-
-            var ingredientsByOffset = new Dictionary<int, Ingredient>();
-            foreach (int slot in occupiedSlots)
-                ingredientsByOffset[slot - anchorSlot] = ingredientsBySlot[slot];
-
-            var canonicalRecipe = new CanonicalRecipe(ingredientsByOffset, recipe);
-
-            var key = string.Join(":", ingredientsByOffset.Keys.OrderBy(k => k));
-
-            if (!recipeKeyDictionary.ContainsKey(key))
-                recipeKeyDictionary[key] = [];
-
-            recipeKeyDictionary[key].Add(canonicalRecipe);
         }
 
-        shapedRecipeLookup = recipeKeyDictionary.ToFrozenDictionary();
+        return true;
     }
 
-    private static void LoadShapelessRecipes()
+    private static bool MatchesIngredient(Ingredient ingredient, ItemStack item) =>
+        ingredient.Any(candidate => candidate.Type == item.Type);
+
+    private static bool MatchesShapeless(List<ItemStack> items, IReadOnlyList<Ingredient> ingredients, int index, bool[] used)
     {
-        var recipeKeyDictionary = new Dictionary<int, List<ShapelessRecipe>>();
-        foreach (var recipe in Recipes.Values.Where(x => x is ShapelessRecipe).Cast<ShapelessRecipe>())
+        if (index == ingredients.Count)
+            return true;
+
+        // Backtrack because overlapping tags may need the same item assigned to a different ingredient.
+        for (int i = 0; i < items.Count; i++)
         {
-            int ingredientCount = recipe.Ingredients.Count;
-            if (ingredientCount == 0)
+            if (used[i] || !MatchesIngredient(ingredients[index], items[i]))
                 continue;
 
-            if (!recipeKeyDictionary.TryGetValue(ingredientCount, out var value))
-            {
-                value = [];
-                recipeKeyDictionary[ingredientCount] = value;
-            }
-
-            value.Add(recipe);
+            used[i] = true;
+            if (MatchesShapeless(items, ingredients, index + 1, used))
+                return true;
+            used[i] = false;
         }
 
-        shapelessRecipeLookup = recipeKeyDictionary.ToFrozenDictionary();
+        return false;
     }
 
     public record CanonicalRecipe(Dictionary<int, Ingredient> IngredientsByOffset, ShapedRecipe OriginalRecipe);

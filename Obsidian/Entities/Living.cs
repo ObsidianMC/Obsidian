@@ -1,11 +1,26 @@
-﻿using Obsidian.API.Effects;
+using Obsidian.API.Effects;
+using Obsidian.API.Inventory;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Entities.AI;
 
 namespace Obsidian.Entities;
 
 public class Living : Entity, ILiving
 {
+    internal CombatDamageKind? IncomingDamageKind { get; private set; }
+    internal ItemStack? IncomingWeapon { get; private set; }
+    internal int AcceptedDamageCount { get; set; }
+
+    internal virtual async ValueTask DamageCombatAsync(IEntity source, float amount, CombatDamageKind kind, ItemStack? weapon = null)
+    {
+        var previousKind = IncomingDamageKind;
+        var previousWeapon = IncomingWeapon;
+        IncomingDamageKind = kind;
+        IncomingWeapon = weapon;
+        try { await DamageAsync(source, amount); }
+        finally { IncomingDamageKind = previousKind; IncomingWeapon = previousWeapon; }
+    }
     public LivingBitMask LivingBitMask { get; set; }
 
     /// <summary>
@@ -30,16 +45,44 @@ public class Living : Entity, ILiving
     public IReadOnlyDictionary<int, EffectWithCurrentDuration> ActivePotionEffects => activePotionEffects.AsReadOnly();
 
     private readonly ConcurrentDictionary<int, EffectWithCurrentDuration> activePotionEffects;
+    private int fireTicks;
+    internal int FireTicks { get => fireTicks; set => fireTicks = value; }
+
+    public void Ignite(int seconds)
+    {
+        if (!IsFireImmune && seconds > 0)
+            fireTicks = Math.Max(fireTicks, checked(seconds * 20));
+    }
 
     public Living()
     {
         activePotionEffects = new ConcurrentDictionary<int, EffectWithCurrentDuration>();
     }
 
-    public override ValueTask TickAsync()
+    public override async ValueTask TickAsync()
     {
         foreach (var (potion, data) in activePotionEffects)
         {
+            if (Alive && potion == (int)PotionEffect.Regeneration - 1 &&
+                data.CurrentDuration % Math.Max(1, 50 >> Math.Min(30, data.EffectData.Amplifier)) == 0)
+                Health = Math.Min(this is Player ? 20 : GetAttributeValue("minecraft:generic.max_health"), Health + 1);
+            var poisonInterval = Math.Max(1, 25 >> Math.Min(30, data.EffectData.Amplifier));
+            if (potion == (int)PotionEffect.Poison - 1 && data.CurrentDuration % poisonInterval == 0 && Health > 1)
+            {
+                var amount = Math.Min(this is Witch ? 0.15f : 1, Health - 1);
+                if (this is Mob mob)
+                    await mob.DamageEnvironmentAsync(amount);
+                else
+                    await DamageCombatAsync(this, amount, CombatDamageKind.Magic);
+            }
+            if (potion == (int)PotionEffect.Wither - 1 && Alive &&
+                data.CurrentDuration % Math.Max(1, 40 >> Math.Min(30, data.EffectData.Amplifier)) == 0)
+            {
+                if (this is Mob mob)
+                    await mob.DamageEnvironmentAsync(this is Witch ? 0.15f : 1);
+                else
+                    await DamageCombatAsync(this, 1, CombatDamageKind.Magic);
+            }
             data.CurrentDuration--;
 
             if (data.CurrentDuration <= 0)
@@ -48,10 +91,41 @@ public class Living : Entity, ILiving
             }
         }
 
-        return default;
+        if (!Alive || this is not Player and not Mob { HasAi: true })
+            return;
+        var terrain = new MobTerrain(Level);
+        var feet = (Vector)(Position + new VectorD(0, 0.1f, 0)).Floor();
+        if (Burning && fireTicks == 0)
+            fireTicks = 160;
+        if (IsFireImmune || terrain.GetBlock(feet)?.Material == Material.Water ||
+            Level.LevelData.Raining && terrain.GetSkyLight(feet) == 15)
+            fireTicks = 0;
+        if (fireTicks > 0)
+        {
+            if (fireTicks % 20 == 0 && !HasPotionEffect((int)PotionEffect.FireResistance - 1))
+            {
+                await DamageCombatAsync(this, 1, CombatDamageKind.Fire);
+            }
+            fireTicks--;
+        }
+        if (Burning != fireTicks > 0)
+        {
+            Burning = fireTicks > 0;
+            PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new SetEntityDataPacket { EntityId = EntityId, Entity = this }, EntityId);
+        }
     }
 
     public bool HasPotionEffect(int effectId) => activePotionEffects.ContainsKey(effectId);
+
+    internal void RestorePotionEffect(int id, int duration, int amplifier)
+    {
+        if (duration > 0)
+            activePotionEffects[id] = new()
+            {
+                CurrentDuration = duration,
+                EffectData = new() { Id = id, Duration = duration, Amplifier = amplifier }
+            };
+    }
 
     public void ClearPotionEffects()
     {
@@ -63,6 +137,11 @@ public class Living : Entity, ILiving
 
     public void AddPotionEffect(int effectId, int duration, int amplifier = 0, EntityEffectFlags effect = EntityEffectFlags.None)
     {
+        if (Type is EntityType.Wither or EntityType.EnderDragon) return;
+        if (effectId == (int)PotionEffect.Poison - 1 && Type is EntityType.Zombie or EntityType.Husk or EntityType.Skeleton or EntityType.Stray or EntityType.Bogged or EntityType.Parched or EntityType.Spider or EntityType.CaveSpider or EntityType.WitherSkeleton or EntityType.Drowned or EntityType.ZombifiedPiglin or EntityType.Zoglin or EntityType.CamelHusk or EntityType.ZombieNautilus or EntityType.ZombieVillager or EntityType.Giant or EntityType.Phantom or EntityType.SkeletonHorse or EntityType.ZombieHorse ||
+            effectId == (int)PotionEffect.Wither - 1 && Type == EntityType.WitherSkeleton ||
+            effectId == (int)PotionEffect.Weakness - 1 && Type == EntityType.Parched)
+            return;
         this.PacketBroadcaster.QueuePacketToLevel(this.Level, new UpdateMobEffectPacket(EntityId, effectId, duration)
         {
             Amplifier = amplifier,
@@ -116,25 +195,27 @@ public class Living : Entity, ILiving
     {
         base.Write(writer);
 
-        this.WriteEntityMetadataType(writer, EntityMetadataType.Byte);
+        writer.WriteEntityMetadataType(8, EntityMetadataType.Byte);
         writer.WriteByte(LivingBitMask);
 
-        this.WriteEntityMetadataType(writer, EntityMetadataType.Float);
+        writer.WriteEntityMetadataType(9, EntityMetadataType.Float);
         writer.WriteSingle(Health);
 
-        this.WriteEntityMetadataType(writer, EntityMetadataType.Particles);//This is a list of integers?
+        writer.WriteEntityMetadataType(10, EntityMetadataType.Particles);//This is a list of integers?
         writer.WriteVarInt(0);
 
-        this.WriteEntityMetadataType(writer, EntityMetadataType.Boolean);
+        writer.WriteEntityMetadataType(11, EntityMetadataType.Boolean);
         writer.WriteBoolean(AmbientPotionEffect);
        
-        this.WriteEntityMetadataType(writer, EntityMetadataType.VarInt);
+        writer.WriteEntityMetadataType(12, EntityMetadataType.VarInt);
         writer.WriteVarInt(AbsorbedArrows);
 
-        this.WriteEntityMetadataType(writer, EntityMetadataType.VarInt);
+        writer.WriteEntityMetadataType(13, EntityMetadataType.VarInt);
         writer.WriteVarInt(AbsorbedStingers);
 
-        this.WriteEntityMetadataType(writer, EntityMetadataType.OptionalBlockPos);
+        writer.WriteEntityMetadataType(14, EntityMetadataType.OptionalBlockPos);
         writer.WriteOptional(BedBlockPosition);
+
+        this.MetadataIndex = 15;
     }
 }

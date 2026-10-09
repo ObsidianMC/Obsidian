@@ -47,11 +47,16 @@ public sealed partial class Server : IServer
     private readonly ILoggerFactory loggerFactory;
     private readonly IServiceProvider serviceProvider;
     private readonly IDisposable? configWatcher;
+    private readonly object shutdownLock = new();
+    private Task? shutdownTask;
+    private Task loopTask = Task.CompletedTask;
 
     public IOptionsMonitor<WhitelistConfiguration> WhitelistConfiguration { get; }
 
     public ProtocolVersion Protocol => ServerConstants.DefaultProtocol;
     public int Tps { get; private set; }
+
+    internal string TickStage { get; private set; } = "not started";
     public DateTimeOffset StartTime { get; private set; }
 
     public PluginManager PluginManager { get; }
@@ -155,6 +160,7 @@ public sealed partial class Server : IServer
     }
 
     public static int GetNextEntityId() => Interlocked.Increment(ref EntityCounter);
+    internal static int ReserveEntityIds(int count) => Interlocked.Add(ref EntityCounter, count) - count + 1;
 
     public void RegisterRecipes(params IRecipe[] recipes)
     {
@@ -278,7 +284,7 @@ public sealed partial class Server : IServer
 
         CommandsRegistry.Register(this);
 
-        var loop = LoopAsync();
+        this.loopTask = LoopAsync();
 
         // A failure here reaches the host, which reports the crash. A stop while the worlds load shuts down gracefully too.
         try
@@ -289,7 +295,7 @@ public sealed partial class Server : IServer
                 Log.Ready(this.logger, loadTimeStopwatch.Elapsed, this.Port);
             }
 
-            await loop;
+            await this.loopTask;
         }
         finally
         {
@@ -346,34 +352,51 @@ public sealed partial class Server : IServer
     /// </summary>
     internal bool Stopping => this.cancelTokenSource.IsCancellationRequested;
 
-    public async Task StopAsync()
+    /// <summary>
+    /// Stops the server once: every call returns the same shutdown.
+    /// </summary>
+    public Task StopAsync()
+    {
+        lock (this.shutdownLock)
+            return this.shutdownTask ??= this.StopCoreAsync();
+    }
+
+    private async Task StopCoreAsync()
     {
         await cancelTokenSource.CancelAsync();
 
         this.CloseListeners();
 
-        await this.PendingLeavesAsync();
-
-        // The final save waits for a save in progress (a pause, the save command, an autosave), so they never overlap.
-        await this.saveLock.WaitAsync();
         try
         {
-            // Worlds that didn't finish loading aren't saved: a new world whose generation was stopped keeps no level.dat,
-            // so it isn't later taken for a complete world.
-            if (this.WorldManager.ReadyToJoin)
-                await WorldManager.FlushLoadedWorldsAsync();
-
-            await WorldManager.DisposeAsync();
-            await this.PluginManager.DisposeAsync();
-
-            await this.userCache.SaveAsync();
+            // The loop disconnects the players once it stops, so their leaves save them before the worlds are.
+            await this.loopTask;
         }
         finally
         {
-            this.saveLock.Release();
+            await this.PendingLeavesAsync();
+
+            // The final save waits for a save in progress (a pause, the save command, an autosave), so they never
+            // overlap.
+            await this.saveLock.WaitAsync();
+            try
+            {
+                // Worlds that didn't finish loading aren't saved: a new world whose generation was stopped keeps no
+                // level.dat, so it isn't later taken for a complete world.
+                if (this.WorldManager.ReadyToJoin)
+                    await WorldManager.FlushLoadedWorldsAsync();
+
+                await WorldManager.DisposeAsync();
+                await this.PluginManager.DisposeAsync();
+
+                await this.userCache.SaveAsync();
+            }
+            finally
+            {
+                this.saveLock.Release();
+            }
         }
     }
-
     /// <summary>
     /// Pauses the worlds between two ticks: once this returns, no world tick runs until <see cref="Resume"/>.
     /// </summary>
@@ -512,6 +535,7 @@ public sealed partial class Server : IServer
 
         try
         {
+            TickStage = "waiting for timer";
             while (await timer.WaitForNextTickAsync())
             {
                 if (keepAliveInterval != Configuration.Network.KeepAliveInterval / 50)
@@ -522,6 +546,7 @@ public sealed partial class Server : IServer
                 {
                     foreach (var client in this.Connections.Values.Where(x => x.State == ClientState.Play || x.State == ClientState.Configuration))
                     {
+                        TickStage = "keepalive";
                         if (client.State == ClientState.Play)
                             await KeepAlivePacket.ClientboundPlay.HandleAsync(client);
                         else
@@ -541,6 +566,7 @@ public sealed partial class Server : IServer
                     {
                         if (!this.Paused)
                         {
+                            TickStage = "ticking worlds";
                             var tickStart = Stopwatch.GetTimestamp();
                             await this.WorldManager.TickWorldsAsync();
                             this.RecordTickTime(Stopwatch.GetElapsedTime(tickStart));
@@ -560,15 +586,25 @@ public sealed partial class Server : IServer
                 stopwatch.Restart();
                 tpsMeasure.PushMeasurement(elapsedTicks);
                 Tps = tpsMeasure.Tps;
+                TickStage = "waiting for timer";
             }
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (cancelTokenSource.IsCancellationRequested)
         {
+            TickStage = "cancelled";
             // Just stop looping.
+        }
+        catch (Exception ex)
+        {
+            TickStage = $"failed: {ex.GetType().Name}: {ex.Message}";
+            logger.LogError(ex, "The game tick loop failed");
+            await this.cancelTokenSource.CancelAsync();
+            throw;
         }
 
         await autosave;
 
+        TickStage = "stopped";
         foreach (var client in this.Connections.Values)
         {
             await client.DisconnectAsync("Server closed");
@@ -578,7 +614,7 @@ public sealed partial class Server : IServer
         await this.PendingLeavesAsync();
     }
 
-    public bool IsWhitelisted(string username) => this.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => x.Name == username);
+    public bool IsWhitelisted(string username) => this.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => string.Equals(x.Name, username, StringComparison.OrdinalIgnoreCase));
 
     public bool IsWhitelisted(Guid uuid) => this.WhitelistConfiguration.CurrentValue.WhitelistedPlayers.Any(x => x.Id == uuid);
 

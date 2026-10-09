@@ -26,6 +26,8 @@ public partial class SoundPacket
 
     public override void Serialize(INetStreamWriter writer)
     {
+        // Zero denotes an inline SoundEvent rather than a registry entry.
+        writer.WriteVarInt(0);
         writer.WriteString(this.SoundLocation);
 
         writer.WriteOptional(this.FixedRange);

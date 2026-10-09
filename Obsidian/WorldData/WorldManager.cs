@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -8,6 +9,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading;
 
 namespace Obsidian.WorldData;
@@ -19,7 +21,7 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
     private static readonly string[] VanillaDimensions = ["minecraft:the_nether", "minecraft:the_end"];
 
     private readonly ILogger<WorldManager> logger = logger;
-    private readonly Dictionary<string, IWorld> worlds = [];
+    private readonly ConcurrentDictionary<string, IWorld> worlds = [];
     private readonly IServerEnvironment serverEnvironment = serverEnvironment;
     private readonly ILevelFactory levelFactory = levelFactory;
     private readonly IServiceScope serviceScope = serviceProvider.CreateScope();
@@ -93,6 +95,13 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
 
         //No default world was defined so choose the first one to come up
         this.DefaultWorld ??= this.worlds.FirstOrDefault().Value;
+        if (this.worlds.Values.Any(world => world is AbstractLevel { Generator: Generators.MobTestGenerator }))
+        {
+            var commands = this.serviceScope.ServiceProvider.GetRequiredService<Obsidian.Commands.Framework.CommandHandler>();
+            if (!commands.GetAllCommands().Any(command => command.Name == "mob_tp"))
+                commands.RegisterCommandClass<Obsidian.Commands.Modules.MobTestCommandModule>(null);
+        }
+
         this.Progress = new("generating", 100);
         this.ReadyToJoin = true;
     }
@@ -107,7 +116,8 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
     private async Task LoadWorldAsync(World world, ServerWorld serverWorld, Action<World>? createLevel = null,
         CancellationToken cancellationToken = default)
     {
-        this.worlds.Add(world.Name, world);
+        if (!this.worlds.TryAdd(world.Name, world))
+            throw new InvalidOperationException($"World already exists: {world.Name}");
 
         if (!CodecRegistry.TryGetDimension(serverWorld.DefaultDimension, out var defaultCodec)
             && !CodecRegistry.TryGetDimension("minecraft:overworld", out defaultCodec))
@@ -143,8 +153,13 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
             dimension.Initialize(codec);
             world.RegisterDimension(codec, dimension);
 
-            // A loaded world's dimensions are already generated; their chunks load as they're needed.
-            if (!loaded)
+            // A loaded world's dimensions are already generated: they read their own level data, if they saved any, and
+            // their chunks load as they're needed.
+            if (loaded)
+            {
+                await dimension.LoadAsync(codec);
+            }
+            else
             {
                 if (integratedOptions.Value.Enabled)
                     ((AbstractLevel)dimension).GenerationProgress = Report;
@@ -235,22 +250,18 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         return false;
     }
 
-    public Task TickWorldsAsync() => Task.WhenAll(this.worlds.Values.Select(world => world.DoWorldTickAsync()));
+    public Task TickWorldsAsync() => ReadyToJoin ? Task.WhenAll(this.worlds.Values.Select(world => world.DoWorldTickAsync())) : Task.CompletedTask;
     public Task FlushLoadedWorldsAsync() => Task.WhenAll(this.worlds.Values.Cast<World>().Select(world => world.FlushAsync()));
 
     public async ValueTask DisposeAsync()
     {
         // Loading, generation and chunk management stop first, so nothing generates into the disposed levels. The levels
-        // then wait for the chunks still generating.
+        // then wait for the chunks still generating. The server saved the worlds already, unless they hadn't loaded.
         await this.StopAsync(CancellationToken.None);
 
-        foreach (var world in this.worlds.Values.Cast<World>())
-        {
-            foreach (var dimension in world.dimensions.Values)
-                await dimension.DisposeAsync();
-
+        // A world disposes its dimensions too.
+        foreach (var world in this.worlds.Values)
             await world.DisposeAsync();
-        }
 
         this.sessionLock?.Dispose();
         this.serviceScope.Dispose();
@@ -265,8 +276,9 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         if (worldsFile.Exists)
         {
             await using var worldsFileStream = worldsFile.OpenRead();
-            return await worldsFileStream.FromJsonAsync<List<ServerWorld>>(cancellationToken: cancellationToken)
+            var savedWorlds = await worldsFileStream.FromJsonAsync<List<ServerWorld>>(cancellationToken: cancellationToken)
                 ?? throw new Exception("A worlds file does exist, but is invalid. Is it corrupt?");
+            return ApplyWorldEnvironmentOverrides(savedWorlds);
         }
 
         var worlds = new List<ServerWorld>()
@@ -282,7 +294,16 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         await using var fileStream = worldsFile.Create();
         await worlds.ToJsonAsync(fileStream, cancellationToken: cancellationToken);
 
-        return worlds;
+        return ApplyWorldEnvironmentOverrides(worlds);
+    }
+
+    private static List<ServerWorld> ApplyWorldEnvironmentOverrides(List<ServerWorld> worlds)
+    {
+        // Merge before binding so list entries are overridden by index rather than appended.
+        using var defaults = new MemoryStream(JsonSerializer.SerializeToUtf8Bytes(new { Worlds = worlds }));
+        using var configuration = new ConfigurationManager();
+        configuration.AddJsonStream(defaults).AddEnvironmentVariables();
+        return configuration.GetSection("Worlds").Get<List<ServerWorld>>() ?? [];
     }
 
     /// <summary>

@@ -1,4 +1,4 @@
-﻿using Obsidian.API.Containers;
+using Obsidian.API.Containers;
 using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Net.Actions.PlayerInfo;
@@ -6,6 +6,7 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
 
 namespace Obsidian.Events;
+
 public sealed partial class MainEventHandler : MinecraftEventHandler
 {
     [EventPriority(Priority = Priority.Internal)]
@@ -33,10 +34,38 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         var entity = e.Entity;
         var attacker = e.Attacker;
 
-        if (entity is IPlayer player)
+        if (entity is IPlayer || entity is Mob { HasAi: true } || entity is EndCrystal or EnderDragonPart || entity is MobProjectile { Type: EntityType.Fireball })
         {
-            await player.DamageAsync(attacker);
+            async ValueTask Damage()
+            {
+                if (entity.Level == attacker.Level && (attacker is Player rangePlayer ? rangePlayer.CanAttack(entity, e.Weapon) : entity.IsInRange(attacker, 4)) &&
+                    (entity is not Mob mob || mob.CanSee(attacker)))
+                {
+                    if (attacker is Player attackingPlayer) await attackingPlayer.AttackAsync(e);
+                    else await entity.DamageAsync(attacker, e.Damage > 0 ? e.Damage : 1);
+                    if (entity is Living && attacker is IPlayer owner)
+                        Wolf.AlertOwnedWolves(owner, entity);
+                }
+            }
+
+            if (entity.Level is Obsidian.WorldData.AbstractLevel level)
+                level.EnqueueEntityAction(Damage);
+            else
+                await Damage();
         }
+    }
+
+    [EventPriority(Priority = Priority.Internal)]
+    public async Task OnEntityInteract(EntityInteractEventArgs e)
+    {
+        if (e.IsCancelled || e.TargetPosition != null || e.Entity is not Mob { HasAi: true } mob)
+            return;
+
+        ValueTask Feed() => mob.InteractAsync(e.Player, e.Hand ?? InteractionHand.MainHand);
+        if (mob.Level is Obsidian.WorldData.AbstractLevel level)
+            level.EnqueueEntityAction(Feed);
+        else
+            await Feed();
     }
 
     //TODO fix sounds
@@ -47,6 +76,11 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             return;
 
         var player = (e.Player as Player)!;
+
+        if (e.Container is CraftingTable { Type: InventoryType.Crafting })
+            await ReturnCraftingItemsAsync(player, e.Container, 3);
+        if (e.Container is EnchantmentTable enchantingTable)
+            await ReturnEnchantingItemsAsync(player, enchantingTable);
 
         //Player successfully exited container
         player.OpenedContainer = null;
@@ -132,6 +166,32 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         var block = e.Block;
         var server = e.Server as Server;
         var player = e.Player as Player;
+
+        if (block == null && player != null && item is { Count: > 0 } &&
+            (player.Vehicle is Pig && item.Type == Material.CarrotOnAStick || player.Vehicle is Strider && item.Type == Material.WarpedFungusOnAStick))
+        {
+            async ValueTask Boost()
+            {
+                var boosted = player.Vehicle switch { Pig pig => pig.Boost(player), Strider strider => strider.Boost(player), _ => false };
+                if (!boosted || player.GameMode == GameMode.Creative)
+                    return;
+                var component = Obsidian.API.Inventory.DataComponents.ComponentBuilder.Damage;
+                component.Value = item.Damage + (player.Vehicle is Strider ? 1 : 7);
+                item[DataComponentType.Damage] = component;
+                var slot = e.Hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
+                if (component.Value >= (player.Vehicle is Strider ? 100 : 25))
+                    player.Inventory.SetItem(slot, ItemsRegistry.GetSingleItem(Material.FishingRod));
+                await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
+                {
+                    ContainerId = 0, Slot = (short)slot, SlotData = player.Inventory.GetItem(slot)
+                });
+            }
+            if (player.Level is Obsidian.WorldData.AbstractLevel level)
+                level.EnqueueEntityAction(Boost);
+            else
+                await Boost();
+            return;
+        }
 
         if (e.IsCancelled)
             return;
@@ -329,12 +389,26 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
 
         var packetBroadcaster = player.Level.PacketBroadcaster;
 
+        if (player.OpenedContainer is CraftingTable { Type: InventoryType.Crafting } table)
+            await ReturnCraftingItemsAsync(player, table, 3);
+        if (player.OpenedContainer is EnchantmentTable enchantingTable)
+            await ReturnEnchantingItemsAsync(player, enchantingTable);
+        await ReturnCraftingItemsAsync(player, player.Inventory, 2);
+
+        if (player is Player portalPlayer)
+            await portalPlayer.CancelPortalTravelAsync();
+
         await player.SaveAsync();
 
         packetBroadcaster.Broadcast(new PlayerInfoRemovePacket
         {
             UUIDs = [player.Uuid]
         }, player.EntityId);
+
+        // Like changing level or dying, leaving removes the player's entity for everyone who could see it.
+        await player.Level.DestroyEntityAsync(player);
+        foreach (var observer in player.Level.GetPlayersInRange(player.Position, float.MaxValue).OfType<Player>())
+            observer.visiblePlayers.Remove(player);
 
         server.BroadcastMessage(string.Format(server.Configuration.Messages.Leave, e.Player.Username));
     }

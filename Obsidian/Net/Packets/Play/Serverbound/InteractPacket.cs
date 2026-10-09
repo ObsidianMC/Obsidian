@@ -1,4 +1,4 @@
-﻿using Obsidian.API.Events;
+using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 
@@ -37,17 +37,33 @@ public partial class InteractPacket
 
     public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
-        // TODO check if the entity is within range and in vision/not being blocked by a wall
-        var entity = player.GetEntitiesNear(4).FirstOrDefault(x => x.EntityId == EntityId);
+        var entity = player.GetEntitiesNear(player.GameMode == GameMode.Creative ? 8 : 6).FirstOrDefault(x => x.EntityId == EntityId);
+
+        entity ??= player.GetEntitiesNear(24).OfType<EnderDragon>()
+            .SelectMany(dragon => dragon.Parts)
+            .FirstOrDefault(part => part.EntityId == EntityId && part.IsInRange(player, 4));
+
+        if (entity == null)
+            return;
+
+        if (Type is InteractionType.Interact or InteractionType.InteractAt && player.Level is Obsidian.WorldData.AbstractLevel events)
+            events.EmitGameEvent(Obsidian.WorldData.MobGameEvent.EntityInteract, entity.Position, player);
 
         switch (Type)
         {
             case InteractionType.Interact:
-                await server.EventDispatcher.ExecuteEventAsync(new EntityInteractEventArgs(player, entity, server, Sneaking));
+                await server.EventDispatcher.ExecuteEventAsync(new EntityInteractEventArgs(player, entity, server, Hand, Sneaking));
                 break;
 
             case InteractionType.Attack:
-                await server.EventDispatcher.ExecuteEventAsync(new PlayerAttackEntityEventArgs(player, entity, server, Sneaking));
+                var attack = new PlayerAttackEntityEventArgs(player, entity, server, Sneaking);
+                if (player is Player combatPlayer)
+                {
+                    if (!combatPlayer.CanAttack(entity)) return;
+                    (attack.Damage, attack.IsCrit) = combatPlayer.GetAttackDamage(entity);
+                }
+                else attack.Damage = 1;
+                await server.EventDispatcher.ExecuteEventAsync(attack);
                 break;
 
             case InteractionType.InteractAt:

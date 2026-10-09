@@ -5,6 +5,31 @@ namespace Obsidian.API;
 /// </summary>
 public sealed class LevelData
 {
+    public Dictionary<string, string> GameRules { get; set; } = new(StringComparer.Ordinal);
+
+    public bool GetBooleanRule(string name, bool defaultValue = true)
+    {
+        var value = GetRule(name);
+        return value == null ? defaultValue : bool.TryParse(value, out var enabled) ? enabled : value == "1";
+    }
+
+    public int GetIntegerRule(string name, int defaultValue = 3) =>
+        int.TryParse(GetRule(name), out var value) ? value : defaultValue;
+
+    private string? GetRule(string name)
+    {
+        name = name.StartsWith("minecraft:", StringComparison.Ordinal) ? name[10..] : name;
+        if (GameRules.TryGetValue(name, out var value) || GameRules.TryGetValue($"minecraft:{name}", out value)) return value;
+        var legacy = name switch
+        {
+            "mob_griefing" => "mobGriefing", "mob_drops" => "doMobLoot", "spawn_mobs" => "doMobSpawning",
+            "spawn_patrols" => "doPatrolSpawning", "spawn_phantoms" => "doInsomnia", "spawn_wandering_traders" => "doTraderSpawning",
+            "spawn_wardens" => "doWardenSpawning", "raids" => "disableRaids", "random_tick_speed" => "randomTickSpeed",
+            "universal_anger" => "universalAnger", "forgive_dead_players" => "forgiveDeadPlayers", _ => name
+        };
+        if (!GameRules.TryGetValue(legacy, out value)) return null;
+        return name == "raids" && bool.TryParse(value, out var disabled) ? (!disabled).ToString() : value;
+    }
     public const int DataVersion = 3337;
 
     /// <summary>

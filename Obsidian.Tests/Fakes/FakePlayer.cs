@@ -11,6 +11,19 @@ using System.Threading.Tasks;
 namespace Obsidian.Tests.Fakes;
 public sealed class FakePlayer : IPlayer
 {
+    public Obsidian.API.Registry.Codecs.Dialogs.DialogElement? CurrentDialog { get; private set; }
+    public ValueTask ShowDialogAsync(Obsidian.API.Registry.Codecs.Dialogs.DialogElement dialog)
+    {
+        dialog.Validate();
+        CurrentDialog = dialog;
+        return ValueTask.CompletedTask;
+    }
+    public ValueTask ClearDialogAsync()
+    {
+        CurrentDialog = null;
+        return ValueTask.CompletedTask;
+    }
+
     public byte CurrentContainerId => 0;
 
     public IClient Client => throw new NotImplementedException();

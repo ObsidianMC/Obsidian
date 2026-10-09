@@ -1,4 +1,4 @@
-﻿using Obsidian.API.Advancements;
+using Obsidian.API.Advancements;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registry.Codecs.ArmorTrims.TrimMaterial;
 using Obsidian.API.Registry.Codecs.ArmorTrims.TrimPattern;
@@ -102,10 +102,9 @@ public partial class NetworkBuffer : INetStreamWriter
     /// </summary>
     public void WriteUuid(Guid value)
     {
-        Span<char> hex = stackalloc char[32];
-        value.TryFormat(hex, out _, "N");
-        WriteLong((long)ulong.Parse(hex[..16], System.Globalization.NumberStyles.HexNumber));
-        WriteLong((long)ulong.Parse(hex[16..], System.Globalization.NumberStyles.HexNumber));
+        Span<byte> bytes = stackalloc byte[16];
+        value.TryWriteBytes(bytes, bigEndian: true, out _);
+        Write(bytes);
     }
 
     [WriteMethod, VarLength]

@@ -1,4 +1,5 @@
-﻿using Obsidian.Serialization.Attributes;
+﻿using Obsidian.Entities;
+using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 public sealed partial class ChunkBatchReceivedPacket
@@ -7,4 +8,10 @@ public sealed partial class ChunkBatchReceivedPacket
     public float ChunksPerTick { get; private set; }
 
     public override void Populate(INetStreamReader reader) => this.ChunksPerTick = reader.ReadSingle();
+
+    public override ValueTask HandleAsync(IServer server, IPlayer player)
+    {
+        (player as Player)?.OnChunkBatchReceived(this.ChunksPerTick);
+        return default;
+    }
 }

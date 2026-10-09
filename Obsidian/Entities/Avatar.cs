@@ -23,10 +23,12 @@ public class Avatar : Living
     {
         base.Write(writer);
 
-        this.WriteEntityMetadataType(writer, EntityMetadataType.HumanoidArm);
+        writer.WriteEntityMetadataType(15, EntityMetadataType.HumanoidArm);
         writer.WriteVarInt(ClientInformation.MainHand);
 
-        this.WriteEntityMetadataType(writer, EntityMetadataType.Byte);
+        writer.WriteEntityMetadataType(16, EntityMetadataType.Byte);
         writer.WriteByte((byte)ClientInformation.ModelCustomisation);
+
+        this.MetadataIndex = 17;
     }
 }

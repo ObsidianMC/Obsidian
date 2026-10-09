@@ -152,8 +152,7 @@ public static partial class ComponentBuilder
     public static SimpleDataComponent<Obsidian.Nbt.NbtCompound> DebugStickState =>
         NbtComponent(DataComponentType.DebugStickState, "minecraft:debug_stick_state");
     public static EntityDataComponent EntityData => new(DataComponentType.EntityData);
-    public static SimpleDataComponent<Obsidian.Nbt.NbtCompound> BucketEntityData =>
-        NbtComponent(DataComponentType.BucketEntityData, "minecraft:bucket_entity_data");
+    public static BucketEntityDataComponent BucketEntityData => new();
     public static EntityDataComponent BlockEntityData => new(DataComponentType.BlockEntityData);
 
     public static InstrumentDataComponent Instrument => new();

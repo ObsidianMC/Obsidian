@@ -9,6 +9,7 @@ using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
@@ -379,7 +380,8 @@ public sealed class IntegratedServerHosting : IDisposable
     }
 
     /// <summary>
-    /// A client connection in the login state, speaking the uncompressed, unencrypted protocol.
+    /// A client connection in the login state, speaking the unencrypted protocol. It reads compressed packets once the
+    /// server enables compression, and only sends packets before then.
     /// </summary>
     private sealed class LoginConnection : IDisposable
     {
@@ -387,11 +389,15 @@ public sealed class IntegratedServerHosting : IDisposable
         public const int Disconnect = 0x00;
         public const int LoginFinished = 0x02;
         public const int CustomQuery = 0x04;
+        private const int SetCompression = 0x03;
         private const int Hello = 0x00;
         private const int CustomQueryAnswer = 0x02;
 
         private readonly TcpClient client;
         private readonly NetworkStream stream;
+
+        // Whether the server enabled compression.
+        private bool compressed;
 
         private LoginConnection(TcpClient client)
         {
@@ -452,16 +458,34 @@ public sealed class IntegratedServerHosting : IDisposable
             }
         }
 
+        /// <summary>
+        /// Reads the next packet, applying the server's compression (like vanilla's, sent before the login finishes)
+        /// from the packet that enables it on.
+        /// </summary>
         public async Task<(int Id, byte[] Data)> ReadPacketAsync()
         {
-            var length = ReadVarInt(this.stream);
-            var packet = new byte[length];
-            await this.stream.ReadExactlyAsync(packet);
+            while (true)
+            {
+                var length = ReadVarInt(this.stream);
+                var packet = new byte[length];
+                await this.stream.ReadExactlyAsync(packet);
 
-            var body = new MemoryStream(packet);
-            var id = ReadVarInt(body);
+                var body = new MemoryStream(packet);
+                if (this.compressed && ReadVarInt(body) is var dataLength and > 0)
+                {
+                    using var zlib = new ZLibStream(body, CompressionMode.Decompress);
+                    packet = new byte[dataLength];
+                    zlib.ReadExactly(packet);
+                    body = new MemoryStream(packet);
+                }
 
-            return (id, packet[(int)body.Position..]);
+                var id = ReadVarInt(body);
+                var data = packet[(int)body.Position..];
+                if (id != SetCompression)
+                    return (id, data);
+
+                this.compressed = ReadVarInt(new MemoryStream(data)) >= 0;
+            }
         }
 
         private void Send(int id, byte[] data)

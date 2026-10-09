@@ -1,4 +1,4 @@
-﻿using Obsidian.API.World;
+using Obsidian.API.World;
 using Obsidian.Nbt;
 using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Generators.Mojang.Structures;
@@ -29,6 +29,14 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// The builder generating the level's chunks, available once <see cref="Init"/> ran.
     /// </summary>
     internal ChunkBuilder Builder => this.builder;
+    internal Vector? FindDolphinTreasure(Vector position)
+    {
+        if (builder.Structures is not StructureManager manager)
+            return null;
+        var targets = manager.StructuresPerStep.SelectMany(step => step).Where(structure =>
+            structure.Identifier is "minecraft:buried_treasure" or "minecraft:shipwreck" or "minecraft:ocean_ruin_cold" or "minecraft:ocean_ruin_warm").ToArray();
+        return new StructureLocator(manager).FindNearest(targets, position, 16, false);
+    }
     private ILevel world;
 
     private readonly SemaphoreSlim[] chunkLocks = [.. Enumerable.Range(0, LockStripeCount).Select(_ => new SemaphoreSlim(1, 1))];
@@ -103,6 +111,8 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
 
         if (this.world is AbstractLevel level)
         {
+            level.QueueChunkPopulation(chunk);
+
             // Like vanilla when a proto chunk becomes a level chunk; the level spawns the entities generation placed on its
             // own thread. They stay pending in the chunk until then, so a save in between keeps them.
             if (chunk is Chunk { PendingEntities.Count: > 0 } complete)
@@ -294,6 +304,17 @@ internal class MojangGenerator : ILevelGenerator, IStructureStartStorage
     // like vanilla's, which also wait for start chunks on the server thread. Getting a chunk takes no generation locks.
     private NbtCompound? LoadStartChunk(int chunkX, int chunkZ) =>
         (this.world.GetChunkAsync(chunkX, chunkZ, scheduleGeneration: false).AsTask().GetAwaiter().GetResult() as Chunk)?.StructureStarts;
+
+    internal bool IsInsideFortress(Vector position)
+    {
+        if (this.builder.Structures is not StructureManager manager)
+            return false;
+        var fortress = manager.StructuresPerStep.SelectMany(step => step).FirstOrDefault(structure => structure.Identifier == "minecraft:fortress");
+        return fortress != null && manager.GetReferencingStarts(position.X >> 4, position.Z >> 4, fortress).Any(start =>
+            start.Pieces.Any(piece => piece.BoundingBox.IsInside(position)) ||
+            start.BoundingBox.IsInside(position) && this.world is AbstractLevel level &&
+            level.GetLoadedChunk(position.X >> 4, position.Z >> 4)?.GetBlock(position.X, position.Y - 1, position.Z).Material == Material.NetherBricks);
+    }
 
     public NbtCompound? SaveStructureStarts(int chunkX, int chunkZ, NbtCompound? loaded) =>
         this.builder.Structures is StructureManager structures ? structures.SaveStarts(chunkX, chunkZ, loaded) : loaded;
