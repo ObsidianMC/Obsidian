@@ -328,7 +328,7 @@ public abstract partial class AbstractLevel : ILevel
     internal void BroadcastBlockChange(IBlock block, Vector location)
     {
         var packet = new BlockUpdatePacket(location, block.GetHashCode());
-        foreach (Player player in PlayersInRange(location).Cast<Player>())
+        foreach (var player in PlayersInRange(location).OfType<IClientPlayer>())
         {
             player.Client.SendPacket(packet);
         }
@@ -340,7 +340,7 @@ public abstract partial class AbstractLevel : ILevel
     internal void BroadcastLevelEvent(int type, Vector location, int data)
     {
         var packet = new LevelEventPacket(type, location, data);
-        foreach (Player player in PlayersInRange(location).Cast<Player>())
+        foreach (var player in PlayersInRange(location).OfType<IClientPlayer>())
             player.Client.SendPacket(packet);
     }
 
