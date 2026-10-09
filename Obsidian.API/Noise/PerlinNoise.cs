@@ -11,6 +11,9 @@ public sealed class PerlinNoise
 {
     private const double RoundOff = 33554432.0;
 
+    // RoundOff is a power of two, so multiplying by its inverse divides exactly.
+    private const double InverseRoundOff = 1.0 / RoundOff;
+
     /// <summary>Random values consumed by one <see cref="ImprovedNoise"/>: 3 doubles (2 ints each) + 256 ints.</summary>
     private const int ValuesPerOctave = 262;
 
@@ -140,7 +143,7 @@ public sealed class PerlinNoise
     /// <see cref="Math.Floor(double)"/> is the same as vanilla's <c>Mth.lfloor</c> widened back to a double for any
     /// coordinate within <see cref="long"/> range times <see cref="RoundOff"/>, and is a single instruction.
     /// </remarks>
-    public static double Wrap(double value) => value - Math.Floor(value / RoundOff + 0.5) * RoundOff;
+    public static double Wrap(double value) => value - Math.Floor(value * InverseRoundOff + 0.5) * RoundOff;
 
     private double EdgeValue(double scale)
     {
