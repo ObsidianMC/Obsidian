@@ -17,13 +17,17 @@ using System.Threading;
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:player")]
-public sealed partial class Player : Avatar, IPlayer
+public sealed partial class Player : Avatar, IClientPlayer
 {
     public byte CurrentContainerId { get; set; }
 
     public IClient Client { get; internal set; }
 
     public ILogger Logger => this.Client.Logger;
+
+    public bool SendPacket(IClientboundPacket packet) => this.Client.SendPacket(packet);
+
+    public ValueTask QueuePacketAsync(IClientboundPacket packet) => this.Client.QueuePacketAsync(packet);
 
     internal HashSet<IPlayer> visiblePlayers = [];
 
@@ -798,8 +802,6 @@ public sealed partial class Player : Avatar, IPlayer
         HeadY = position.Y + 1.62f;
 
         await TrySpawnPlayerAsync(position);
-
-        await PickupNearbyItemsAsync();
     }
 
     public async override ValueTask UpdateAsync(VectorD position, Angle yaw, Angle pitch, MovementFlags movementFlags)
@@ -817,8 +819,6 @@ public sealed partial class Player : Avatar, IPlayer
         HeadY = position.Y + 1.62f;
 
         await TrySpawnPlayerAsync(position);
-
-        await PickupNearbyItemsAsync();
     }
 
     public async override ValueTask UpdateAsync(Angle yaw, Angle pitch, MovementFlags movementFlags)
@@ -827,8 +827,6 @@ public sealed partial class Player : Avatar, IPlayer
         await base.UpdateAsync(yaw, pitch, movementFlags);
         MovementFlags = movementFlags;
         await UpdateFallAsync(Position, movementFlags);
-
-        await PickupNearbyItemsAsync();
     }
 
     public async ValueTask DisconnectAsync(ChatMessage reason) => await this.Client.DisconnectAsync(reason);

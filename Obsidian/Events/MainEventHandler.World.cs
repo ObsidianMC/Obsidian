@@ -15,14 +15,14 @@ public partial class MainEventHandler
         var world = player.Level;
         var location = args.Location;
 
-        player.Client.SendPacket(new BlockChangedAckPacket
+        player.SendPacket(new BlockChangedAckPacket
         {
             SequenceID = sequence
         });
 
         if (args.IsCancelled)
         {
-            player.Client.SendPacket(new BlockUpdatePacket(location, block.GetHashCode()));
+            player.SendPacket(new BlockUpdatePacket(location, block.GetHashCode()));
             return;
         }
 
@@ -34,7 +34,7 @@ public partial class MainEventHandler
         }
         if (player is Player concrete) concrete.AddExhaustion(0.005f);
 
-        player.Client.SendPacket(new BlockUpdatePacket(location, BlocksRegistry.Air.GetHashCode()));
+        player.SendPacket(new BlockUpdatePacket(location, BlocksRegistry.Air.GetHashCode()));
 
         world.PacketBroadcaster.QueuePacketToLevel(world, 0, new BlockDestructionPacket
         {

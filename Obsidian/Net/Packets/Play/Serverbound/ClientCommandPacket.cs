@@ -7,7 +7,7 @@ public partial class ClientCommandPacket
     [Field(0), ActualType(typeof(int)), VarLength]
     public ClientAction Action { get; private set; }
 
-    public async override ValueTask HandleAsync(IServer server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         if (Action == ClientAction.PerformRespawn && player.Health <= 0)
         {

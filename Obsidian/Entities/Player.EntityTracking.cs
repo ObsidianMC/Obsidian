@@ -6,6 +6,13 @@ public partial class Player
 {
     internal ConcurrentDictionary<int, Guid> TrackedEntities { get; } = [];
 
+    // Explicit, because the hooks are internal to IPlayer and fall back to its no-op defaults if left unimplemented.
+    void IPlayer.TrackEntity(IEntity entity) => TrackedEntities[entity.EntityId] = entity.Uuid;
+
+    void IPlayer.ForgetVisiblePlayer(IPlayer player) => this.visiblePlayers.Remove(player);
+
+    ValueTask IPlayer.SynchronizeTrackedEntitiesAsync() => SynchronizeTrackedEntitiesAsync();
+
     internal async ValueTask SynchronizeTrackedEntitiesAsync()
     {
         var visible = new HashSet<int>();

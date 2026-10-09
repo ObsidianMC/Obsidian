@@ -49,7 +49,7 @@ public partial class UseItemOnPacket
         this.Sequence = reader.ReadVarInt();
     }
 
-    public async override ValueTask HandleAsync(IServer server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         var handSlot = Hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
         var bucket = player.Inventory.GetItem(handSlot);
@@ -254,7 +254,7 @@ public partial class UseItemOnPacket
             SequenceID = Sequence
         });
     }
-    private async ValueTask ConsumePortalItemAsync(IPlayer player, ItemStack item)
+    private async ValueTask ConsumePortalItemAsync(IClientPlayer player, ItemStack item)
     {
         var slot = this.Hand == InteractionHand.MainHand ? player.CurrentHeldItemSlot : (short)45;
         if (item.Type == Material.EnderEye || player.GameMode != GameMode.Creative)
