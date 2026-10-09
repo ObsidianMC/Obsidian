@@ -11,7 +11,17 @@ internal sealed class ReadOnlyStream : Stream
     public override bool CanWrite => false;
 
     public override long Length => length;
-    public override long Position { get => index; set => Math.Clamp(value, 0, length - 1); }
+    public override long Position
+    {
+        get => index;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+
+            // Past the end there is nothing to read, so the position stops at the end.
+            index = Math.Min(value, length);
+        }
+    }
 
     private readonly byte[] data;
     private readonly long offset;

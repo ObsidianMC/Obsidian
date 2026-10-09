@@ -260,14 +260,9 @@ public partial class NetworkBuffer : INetStreamReader
     [ReadMethod]
     public ChatMessage ReadChat()
     {
-        //TODO this can be sped up or done better
-        using var ms = new MemoryStream(this.AsSpan((int)(this.size - this.offset)).ToArray());
+        var tag = this.ReadNetworkTag();
 
-        var found = new NbtReader(ms).TryReadNextTag(false, out INbtTag? tag);
-        this.offset += (int)ms.Position;
-        this.BytesPending -= (int)ms.Position;
-
-        return found ? tag!.TextFromNbt() ?? ChatMessage.Empty : ChatMessage.Empty;
+        return tag?.TextFromNbt() ?? ChatMessage.Empty;
     }
 
     #region Generic Read Methods
@@ -475,14 +470,25 @@ public partial class NetworkBuffer : INetStreamReader
         this.ReadOptionalNbtCompound() ?? throw new InvalidDataException("Expected an NBT compound, but found an end tag.");
 
     /// <summary>Reads a network NBT compound (no root name), or null for an empty (end) tag.</summary>
-    public NbtCompound? ReadOptionalNbtCompound()
+    /// <exception cref="InvalidDataException">The tag is not a compound, or is invalid or too big.</exception>
+    public NbtCompound? ReadOptionalNbtCompound() => this.ReadNetworkTag() switch
     {
-        using var stream = new MemoryStream(this.AsSpan((int)(this.size - this.offset)).ToArray());
-        var found = new NbtReader(stream).TryReadNextTag<NbtCompound>(false, out var compound);
+        null => null,
+        NbtCompound compound => compound,
+        INbtTag tag => throw new InvalidDataException($"Expected an NBT compound, but found {tag.Type}.")
+    };
 
-        this.offset += (int)stream.Position;
-        this.BytesPending -= (int)stream.Position;
-        return found ? compound : null;
+    /// <summary>
+    /// Reads a network NBT tag in place, as vanilla's FriendlyByteBuf.readNbt does: no root name, and at most its
+    /// 2 MiB quota. Returns null for an empty (end) tag.
+    /// </summary>
+    private INbtTag? ReadNetworkTag()
+    {
+        var tag = NbtReader.ReadNetworkTag(this.AsSpan(this.size - this.offset), out var bytesRead);
+
+        this.offset += bytesRead;
+        this.BytesPending -= bytesRead;
+        return tag;
     }
 
     [ReadMethod]
