@@ -13,7 +13,7 @@ to. So a creative-mode player can send an item with, for example, an enchantment
 registry. The server keeps it and sends it on (equipment, container contents), and vanilla clients that decode it
 disconnect, since vanilla resolves registry ids when it reads a component.
 
-This predates the client branch: before it, the server didn't read creative stacks' component values at all.
+This predates the component codec work: before it, the server didn't read creative stacks' component values at all.
 
 **Where to start:**
 
