@@ -45,10 +45,7 @@ public class Animal : AgeableMob
         if (player.GameMode != GameMode.Creative)
         {
             player.Inventory.RemoveItem(slot, 1);
-            await player.Client.QueuePacketAsync(new Obsidian.Net.Packets.Play.Clientbound.ContainerSetSlotPacket
-            {
-                ContainerId = 0, Slot = (short)slot, SlotData = player.Inventory.GetItem(slot)
-            });
+            await player.SendInventorySlotAsync(slot);
         }
         SynchronizeMetadata();
     }

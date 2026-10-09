@@ -177,7 +177,7 @@ public sealed partial class Server
         });
     }
 
-    private static string FormatFeedbackPlayer(IPlayer player, bool isOperator, DateTimeOffset submittedAt)
+    private static string FormatFeedbackPlayer(IClientPlayer player, bool isOperator, DateTimeOffset submittedAt)
     {
         var level = player.Level;
         var world = level is IDimension dimension ? dimension.ParentWorld.Name : level.Name;

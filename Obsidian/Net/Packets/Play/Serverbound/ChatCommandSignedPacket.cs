@@ -40,7 +40,7 @@ public partial class ChatCommandSignedPacket
         //    reader.ReadUInt8Array(256);//There's still a lot to this I don't understand so maybe someone can 😭😭
     }
 
-    public async override ValueTask HandleAsync(IServer server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         var context = new CommandContext($"/{this.Command}", new CommandSender(CommandIssuers.Client, player), player, server);
 

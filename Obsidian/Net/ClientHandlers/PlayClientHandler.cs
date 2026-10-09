@@ -121,7 +121,7 @@ internal sealed partial class PlayClientHandler : ClientHandler
                 try
                 {
                     packet.Populate(data);
-                    await packet.HandleAsync(this.Server, this.Client.Player!);
+                    await packet.HandleAsync(this.Server, this.Player!);
                 }
                 catch (Exception e)
                 {

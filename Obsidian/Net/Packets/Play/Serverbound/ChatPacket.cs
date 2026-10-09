@@ -24,7 +24,7 @@ public partial class ChatPacket
     public List<SignedMessage> LastSeenMessages { get; private set; } = default!;
 
     //TODO specify custom format in config
-    public async override ValueTask HandleAsync(IServer server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         await server.EventDispatcher.ExecuteEventAsync(new IncomingChatMessageEventArgs(player, server, this.Message, "<{0}> {1}"));
     }

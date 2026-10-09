@@ -548,16 +548,16 @@ public class Entity : IEquatable<Entity>, IEntity
     {
         var packet = CreateSpawnPacket(velocity, additionalData);
         var range = Level is Obsidian.WorldData.AbstractLevel level ? level.Configuration.EntityBroadcastRangePercentage : 100;
-        foreach (var player in Level.GetPlayersInRange(Position, range).OfType<Player>())
+        foreach (var player in Level.GetPlayersInRange(Position, range))
         {
             if (player.EntityId == EntityId)
                 continue;
             var (x, z) = Position.ToChunkCoord();
-            if (this is not Player && !player.LoadedChunks.Contains(NumericsHelper.IntsToLong(x, z)))
+            if (this is not IPlayer && !player.LoadedChunks.Contains(NumericsHelper.IntsToLong(x, z)))
                 continue;
             PacketBroadcaster.QueuePacketTo(packet, ids: [player.EntityId]);
-            if (this is not Player)
-                player.TrackedEntities[EntityId] = Uuid;
+            if (this is not IPlayer)
+                player.TrackEntity(this);
         }
     }
 

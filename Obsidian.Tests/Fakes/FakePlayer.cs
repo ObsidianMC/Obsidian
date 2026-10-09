@@ -144,6 +144,8 @@ public sealed class FakePlayer : IPlayer
     public void AddPotionEffect(int effectId, int duration, int amplifier = 0, EntityEffectFlags effectFlags = EntityEffectFlags.None) => throw new NotImplementedException();
     public void ClearPotionEffects() => throw new NotImplementedException();
     public ValueTask DamageAsync(IEntity source, float amount = 1) => throw new NotImplementedException();
+    public bool SendPacket(IClientboundPacket packet) => throw new NotImplementedException();
+    public ValueTask QueuePacketAsync(IClientboundPacket packet) => throw new NotImplementedException();
     public ValueTask DisconnectAsync(ChatMessage reason) => throw new NotImplementedException();
     public ValueTask DisplayScoreboardAsync(IScoreboard scoreboard, DisplaySlot position) => throw new NotImplementedException();
     public float GetAttributeValue(string attributeResourceName) => throw new NotImplementedException();
