@@ -55,7 +55,7 @@ public partial record class CustomPayloadPacket
         writer.WriteByteArray(this.PluginData.Span);
     }
 
-    public override ValueTask HandleAsync(IServer server, IPlayer player)
+    public override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         var result = Handle();
 

@@ -21,7 +21,7 @@ public partial class MovePlayerRotPacket
         this.MovementFlags = reader.ReadSignedByte<MovementFlags>();
     }
 
-    public async override ValueTask HandleAsync(IServer server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         await player.UpdateAsync(Yaw, Pitch, this.MovementFlags);
     }

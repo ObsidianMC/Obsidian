@@ -61,13 +61,13 @@ public partial class MainEventHandler
         var items = grid.ToList();
         if (width == 3)
             items.AddRange(player.Inventory.Skip(9).Take(36));
-        await player.Client.QueuePacketAsync(new ContainerSetContentPacket(args.ContainerId, items)
+        await player.QueuePacketAsync(new ContainerSetContentPacket(args.ContainerId, items)
         {
             StateId = args.StateId + 1,
             CarriedItem = player.CarriedItem
         });
         if (width == 3 && args.ClickType == ClickType.Swap && args.Button == 40)
-            await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
+            await player.QueuePacketAsync(new ContainerSetSlotPacket
             {
                 ContainerId = -2,
                 Slot = 45,
@@ -367,6 +367,6 @@ public partial class MainEventHandler
         }
         player.DraggedSlots.Clear();
         player.IsDragging = false;
-        await player.Client.QueuePacketAsync(new ContainerSetContentPacket(0, player.Inventory.ToList()));
+        await player.QueuePacketAsync(new ContainerSetContentPacket(0, player.Inventory.ToList()));
     }
 }

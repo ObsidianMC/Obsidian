@@ -89,5 +89,18 @@ public interface IServer : IDisposable
     public bool AddPlayer(IPlayer player);
     public bool RemovePlayer(IPlayer player);
 
+    /// <summary>
+    /// Creates, loads, and registers a server-side player without opening a network connection.
+    /// </summary>
+    /// <param name="uuid">The player's UUID.</param>
+    /// <param name="username">The player's username.</param>
+    /// <param name="world">The world to spawn the player in. Uses <see cref="DefaultWorld"/> when null.</param>
+    public Task<IPlayer> AddServerPlayerAsync(Guid uuid, string username, IWorld? world = null);
+
+    /// <summary>
+    /// Removes a server-side player that was added through <see cref="AddServerPlayerAsync"/>.
+    /// </summary>
+    public Task<bool> RemoveServerPlayerAsync(IPlayer player);
+
     public IBossBar CreateBossBar(ChatMessage title, float health, BossBarColor color, BossBarDivisionType divisionType, BossBarFlags flags);
 }

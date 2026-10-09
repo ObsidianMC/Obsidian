@@ -23,7 +23,7 @@ public partial class PlayerCommandPacket
         this.JumpBoost = reader.ReadVarInt();
     }
 
-    public async override ValueTask HandleAsync(IServer server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         var block = await player.Level.GetBlockAsync((int)player.Position.X, (int)player.HeadY, (int)player.Position.Z);
 

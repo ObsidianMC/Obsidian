@@ -24,7 +24,7 @@ public partial class CustomClickActionPacket
         if (stream.Position != stream.Length) throw new InvalidDataException("Unread custom action payload data.");
     }
 
-    public override async ValueTask HandleAsync(IServer server, IPlayer player)
+    public override async ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         var args = new DialogActionEventArgs(player, server, ActionId, Payload);
         await server.EventDispatcher.ExecuteEventAsync(args);

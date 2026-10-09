@@ -35,7 +35,7 @@ public partial class InteractPacket
         this.Sneaking = reader.ReadBoolean();
     }
 
-    public async override ValueTask HandleAsync(IServer server, IPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         var entity = player.GetEntitiesNear(player.GameMode == GameMode.Creative ? 8 : 6).FirstOrDefault(x => x.EntityId == EntityId);
 
