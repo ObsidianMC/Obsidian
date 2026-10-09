@@ -136,11 +136,13 @@ before and after numbers from the harness.
 |---|---|---|
 | 0. Harness | Done | — |
 | 1. Surface biome lookups | Done, with allocation-free legacy randoms | Serial surface: overworld 1.59 → 1.45 ms, nether 2.42 → 1.86 ms per chunk. Nether total 4.11 → 3.6 ms per chunk, allocations halved |
-| 2. Compile the noise router | Deprioritised | Dispatch turned out to be a small share of noise (see step 2) |
-| 4. Cold start | Options measured, none adopted | ReadyToRun, `TC_QuickJitForLoops=0` and a startup warmup each cost more than they gain. Server GC awaits a decision (see step 4) |
+| 2. Compile the noise router | Done for cell corners, as part of step 3 | Dispatch turned out to be a small share of noise (see step 2) |
+| 3. Vectorised noise sampling | Done: corners sampled a column at a time, noises four corners at once | Overworld corner sampling 1.19 → 0.83 ms per chunk, noise stage 3.1 → 2.8 ms |
+| 4. Cold start | Options measured, none adopted | ReadyToRun, `TC_QuickJitForLoops=0` and a startup warmup each cost more than they gain. Server GC is left to deployments, which will use it by default (see step 4) |
 | 5. Pregeneration scheduler | Done | Overworld pregeneration: 4 cores 4.11 → 3.31 s, 8 cores 2.64 → 2.03 s, 16 cores 1.64 → 1.42 s, 32 threads unchanged |
-| 6, 7 | Measured, deferred | Their costs are spread across many small operations (see steps 6 and 7) |
-| 3 | Not started | Corner sampling is the largest remaining compute item (see step 3) |
+| 6. Feature writes | Partly done: block-entity removal skipped where a chunk has none | Overworld features 2.52 → 2.37 ms per chunk. The rest is spread across many small operations (see step 6) |
+| 7. Aquifer substance | Done: branch-free nearest-centre search | Aquifer calls 0.85 → 0.57 ms per chunk; overworld noise stage 3.6 → 3.2 ms |
+| Noise floors | Done | Flooring noise coordinates without saturating conversions: blended noise samples 410 → 340 ns |
 
 The output is unchanged: the bench's parity hashes match after every step, and the committed tests pass.
 
@@ -207,6 +209,29 @@ Batching needs a column method on the density functions and the noise chunk's ca
 through the whole tree, not just the noises. That's the largest remaining compute item, and also the largest piece of
 work.
 
+**Done:** the noise chunk compiles each interpolated function into column fillers (`NoiseChunk.ColumnFillers.cs`).
+- **Columns:** each node is visited once per column of corners, not once per corner. Shared functions cache the corners
+  sampled so far, and functions that don't depend on Y (flat caches, 2D caches) are sampled once.
+- **Skips:** arguments a node skips at a corner (a product's second argument after a zero, a range choice's other
+  branch, a minimum's second argument below its bound) aren't sampled there either.
+- **Lanes:** noises, shifted noises, weird scaled samplers and the blended noise sample four corners at once in
+  `Vector256` lanes (`ImprovedNoiseLanes`). Each lane does the scalar arithmetic in the same order with no fused
+  multiply-adds, so the values are bit for bit the same; a test compares them. The lanes need AVX, and other CPUs keep
+  the corner-by-corner path.
+- **Result:** overworld corner sampling 1.19 → 0.83 ms per chunk, the noise stage 3.1 → 2.8 ms. What's left is the
+  blended noise (0.29 ms) and the cave noises (0.39 ms).
+
+**Findings:**
+- **The interpolated final density dominates corner sampling:** 0.99 of 1.19 ms. Each evaluation cost about 1 µs,
+  mostly 15–18 cave noises of one or two octaves each, plus the blended noise.
+- **Batching octaves doesn't help.** Sampling four octaves of one noise in lanes made 8-octave noise 1.8× faster in
+  isolation, but generation didn't change: most cave noises have one or two octaves, which can't fill the lanes.
+  Batching corners can.
+- **Hardware gathers** for the permutation tables were no faster than looking the four entries up one by one, and are
+  slow on Intel CPUs with the gather data sampling mitigation, so the lanes don't use them.
+- **The sampling profiler over-attributes methods with loops.** It suspends threads at safe points, and loop back
+  edges are safe points. Timing each interpolator with a stopwatch gave the breakdown above.
+
 ### 4. Cold start (medium)
 
 About 0.5 s of the overworld's 1.5 s is JIT warmup, and the nether pays it in full because it has no spawn search to
@@ -250,8 +275,8 @@ warm it up. Measure these options together, after step 2, because compiled route
   | Nether, 32 threads | 1.40 s, 393 MB | 1.27 s, 456 MB |
   | Nether, 8 cores | 1.41 s, 383 MB | 1.56 s, 431 MB |
 
-  It gains 10–14% for the overworld and costs 5–20% more memory, still well under vanilla's 1.2–1.4 GB. It's a
-  server-wide setting, so it's left as a decision.
+  It gains 10–14% for the overworld and costs 5–20% more memory, still well under vanilla's 1.2–1.4 GB. Deployments
+  will run with server GC by default, so the repository doesn't set it.
 
 ### 5. Pregeneration scheduler (medium; the main lever at high core counts)
 
@@ -289,6 +314,18 @@ At 16 cores and above, cold-start JIT is the limit, not locks: the nether is gen
 gains nothing there. Light was checked to be independent of the order chunks are lit in. On-demand generation (players
 exploring) still uses the lock-based path.
 
+**Later finding: the nether pays for the waves at 32 threads.** A longer interleaved run puts the original nether at
+1.15 s and the waves at 1.29–1.33 s. Timing the phases on the server shows why: carving takes 870 ms, decorating 270 ms and
+lighting 100 ms, where perfect scaling would give about 18 and 15 ms for the last two. Decoration and light then run
+cold and can't overlap with carving, as they did in the job loop. Two variants didn't help:
+- **Carving in parallel but decorating and lighting in the job loop** was slower everywhere (overworld 8 cores 1.81 →
+  2.63 s, nether 32 threads 1.32 → 1.41 s).
+- **Decorating 4 or 8 spaced-out chunks during carving**, to compile the decoration code early, changed nothing.
+
+Even with the JIT warm, per-call costs in the pipeline bench grow far more than SMT explains (nether light 0.45 → 2.9 ms,
+features 0.40 → 1.29 ms). The light engine shares nothing between threads, so GC pauses and memory pressure are the
+likely causes. That's the next thing to investigate for high core counts.
+
 ### 6. Feature writes (medium)
 
 Ores (1.1 ms per chunk) and other block-heavy features go through `IWorldGenLevel` for every block read and write, with
@@ -320,6 +357,15 @@ Recorder profile, and tune them only if they're slower than vanilla's relative c
   `ConcurrentDictionary.IsEmpty` takes every lock when the dictionary is empty.
 - **Deferred:** no single step dominates.
 
+**Done:** the region asks each chunk once whether it has block entities and tracks the ones it adds, so writes to
+chunks without any skip the removal. Overworld features 2.52 → 2.37 ms per chunk.
+
+**Also measured (cutting parts of the ore placement):** the sphere geometry costs about 0.28 ms per chunk, the block
+tests about 0.17 ms and the writes about 0.2 ms; the rest is placement and the spheres' setup. Sculk patches spend about
+0.22 ms per chunk on charge use, 0.18 ms on vein spreading and 0.11 ms on cursor moves, spread across property lookups
+and block reads.
+None is large enough on its own to justify reworking vanilla's algorithms.
+
 **Expected:** features 2.6 → about 1.8 ms.
 
 ### 7. Aquifer substance (medium)
@@ -343,19 +389,39 @@ skip height. Within one grid cell, the candidates are the same for every block i
 - **Deferred:** what's left is the search itself, which a branch-light or SIMD version might cut by a third (about
   0.3 ms per chunk).
 
-### Expected outcome
+**Done:** each candidate gets a key packing its squared distance and search order, and the four smallest keys are kept
+sorted in a `Vector128<int>` with min and max, so nothing branches. That gives vanilla's order: by distance, then the
+latest candidate first. In a replay of one chunk's real calls, aquifer calls go from 0.85 to 0.57 ms per chunk; status
+computations are only about 0.05 ms of that.
 
-| | Today | After 1–3, 6–7 | After 4–5 as well |
-|---|---:|---:|---:|
-| Overworld serial ms/chunk | 9.6 | about 6 | about 6 |
-| Overworld pregeneration, 32 threads | 1.50 s | about 1.1 s | **about 0.6–0.75 s** |
-| Nether pregeneration, 32 threads | 1.35 s | about 1.2 s | about 0.45 s |
+### Outcome
 
-These are estimates from the bounds and profiles above, not measurements. Each step's PR replaces its line with a
-measured one.
+Serial, single thread, after JIT warmup (ms per chunk; parity hashes unchanged in every dimension):
 
-The 32-thread estimates assumed scheduling was the limit there. The step 5 measurements show cold-start JIT is, so those
-gains depend on step 4 more than on steps 1–3.
+| Stage | Overworld before | Overworld after | Nether before | Nether after |
+|---|---:|---:|---:|---:|
+| Noise | 3.89 | 2.77 | 0.61 | 0.38 |
+| Features | 2.63 | 2.42 | 0.50 | 0.40 |
+| Surface | 1.59 | 1.40 | 2.26 | 1.92 |
+| Biomes | 0.47 | 0.47 | 0.09 | 0.08 |
+| Light | 0.42 | 0.42 | 0.48 | 0.46 |
+| Carvers | 0.40 | 0.35 | 0.21 | 0.20 |
+| **Total** | **9.55** | **7.96** | **4.24** | **3.49** |
+
+The end went from 0.71 to 0.60 ms per chunk.
+
+Server pregeneration of 1,024 chunks, medians of 3 interleaved runs, original `1.21.x` against this branch:
+
+| | 8 cores | 32 threads |
+|---|---:|---:|
+| Overworld | 2.60 → **1.84 s** | 1.39 → 1.39 s |
+| Nether | 1.46 → **1.33 s** | 1.15 → 1.31 s (see step 5) |
+
+- **At 8 cores the overworld is 29% faster**, and within 1.4× of the nether, against 1.8× before.
+- **At 32 threads both dimensions sit at about 1.3–1.4 s.** Cold-start JIT and parallel per-call costs set that
+  floor, not the serial cost: a third less serial work didn't move it.
+- **The serial goal of about 6 ms per chunk wasn't reached.** What's left is spread across surface rules (1.4 ms),
+  vanilla's feature algorithms (2.4 ms) and noise that's now mostly the blended and cave noises' arithmetic.
 
 ## Reproducing
 
