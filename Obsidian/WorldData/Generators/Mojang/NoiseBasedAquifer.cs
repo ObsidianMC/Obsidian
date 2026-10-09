@@ -1,4 +1,5 @@
 using Obsidian.API.World.Generator.RandomSources;
+using System.Runtime.Intrinsics;
 
 namespace Obsidian.WorldData.Generators.Mojang;
 
@@ -123,39 +124,29 @@ internal sealed class NoiseBasedAquifer : IAquifer
         var gridY = GridY(y + 1);
         var gridZ = GridZ(z - 5);
 
-        // The four closest aquifer centers, nearest first. Ties move existing entries down, like vanilla's >= comparisons.
-        int distance1 = int.MaxValue, distance2 = int.MaxValue, distance3 = int.MaxValue, distance4 = int.MaxValue;
-        int index1 = 0, index2 = 0, index3 = 0, index4 = 0;
+        // The four closest aquifer centers, nearest first. Vanilla inserts each candidate in search order in front of any
+        // with the same distance, so the order is by distance and then by search order, latest first. Each candidate's key
+        // packs both, and the four smallest keys are kept sorted in a vector without branches, which would mispredict.
+        var candidates = this.GetCandidates(gridX, gridY, gridZ);
+        var nearest = Vector128.Create(int.MaxValue);
 
-        foreach (var candidate in this.GetCandidates(gridX, gridY, gridZ))
+        for (var i = 0; i < candidates.Length; i++)
         {
-            var index = candidate.Index;
+            var candidate = candidates[i];
             var dx = candidate.X - x;
             var dy = candidate.Y - y;
             var dz = candidate.Z - z;
-            var distance = dx * dx + dy * dy + dz * dz;
+            var key = Vector128.Create((dx * dx + dy * dy + dz * dz) << 4 | (15 - i));
 
-            if (distance1 >= distance)
-            {
-                (index4, index3, index2, index1) = (index3, index2, index1, index);
-                (distance4, distance3, distance2, distance1) = (distance3, distance2, distance1, distance);
-            }
-            else if (distance2 >= distance)
-            {
-                (index4, index3, index2) = (index3, index2, index);
-                (distance4, distance3, distance2) = (distance3, distance2, distance);
-            }
-            else if (distance3 >= distance)
-            {
-                (index4, index3) = (index3, index);
-                (distance4, distance3) = (distance3, distance);
-            }
-            else if (distance4 >= distance)
-            {
-                index4 = index;
-                distance4 = distance;
-            }
+            // Inserts the key: each slot takes the smaller of its key and the larger of the new key and the slot before.
+            // Keys aren't negative, so the zero shifted into the first slot never wins.
+            nearest = Vector128.Min(nearest, Vector128.Max(Vector128.Shuffle(nearest, Vector128.Create(4, 0, 1, 2)), key));
         }
+
+        int key1 = nearest[0], key2 = nearest[1], key3 = nearest[2], key4 = nearest[3];
+        int distance1 = key1 >> 4, distance2 = key2 >> 4, distance3 = key3 >> 4, distance4 = key4 >> 4;
+        int index1 = candidates[15 - (key1 & 15)].Index, index2 = candidates[15 - (key2 & 15)].Index;
+        int index3 = candidates[15 - (key3 & 15)].Index, index4 = candidates[15 - (key4 & 15)].Index;
 
         var closest = this.GetAquiferStatus(index1);
         var similarity12 = Similarity(distance1, distance2);
@@ -420,7 +411,10 @@ internal sealed class NoiseBasedAquifer : IAquifer
 
     private static int FromGridX(int gridX, int offset) => (gridX << 4) + offset;
 
-    private static int GridY(int y) => (int)Math.Floor(y / 12.0);
+    private static int GridY(int y) => FloorDiv(y, 12);
+
+    // Equal to vanilla's floor(y / 12.0) for any Y a world can have.
+    private static int FloorDiv(int value, int divisor) => value >= 0 ? value / divisor : (value - divisor + 1) / divisor;
 
     private static int FromGridY(int gridY, int offset) => gridY * 12 + offset;
 
