@@ -45,7 +45,10 @@ public partial class ItemEntity : Entity
             Item = new ItemStack(stack, stack.Count),
             Level = player.Level,
             Position = new VectorD(player.Position.X, player.HeadY - 0.3, player.Position.Z),
-            Motion = motion
+            Motion = motion,
+            // Vanilla gives an item a player drops 40 ticks before anyone can pick it up, so the thrower doesn't
+            // collect it again straight away.
+            pickupDelay = 40
         };
         if (!player.Level.TryAddEntity(item))
             return false;

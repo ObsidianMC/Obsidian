@@ -272,22 +272,77 @@ public partial class Player
         ArrayPool<int>.Shared.Return(removed);
     }
 
+    // Vanilla grows the player's box by 1 horizontally and 0.5 vertically to find items to pick up; an item's box is
+    // 0.25 wide and tall. These decide which items a player collects, so they match vanilla.
+    private const double PickupReachXZ = 1.0, PickupReachY = 0.5, ItemHalfWidth = 0.125, ItemHeight = 0.25;
+
+    // The inventory's hotbar (container slots 36-44) then its main slots (9-35), the order vanilla fills them in.
+    private static readonly int[] hotbarThenMainSlots = [.. Enumerable.Range(36, 9), .. Enumerable.Range(9, 27)];
+
+    /// <summary>
+    /// Whether an item entity at <paramref name="item"/> touches the pickup area of a player standing at
+    /// <paramref name="feet"/> with a box of <paramref name="halfWidth"/> and <paramref name="height"/>.
+    /// </summary>
+    internal static bool IsInPickupArea(VectorD feet, double halfWidth, double height, VectorD item) =>
+        Math.Abs(item.X - feet.X) < halfWidth + PickupReachXZ + ItemHalfWidth &&
+        Math.Abs(item.Z - feet.Z) < halfWidth + PickupReachXZ + ItemHalfWidth &&
+        item.Y + ItemHeight > feet.Y - PickupReachY &&
+        item.Y < feet.Y + height + PickupReachY;
+
+    /// <summary>
+    /// Moves as much of <paramref name="item"/> into a player <paramref name="inventory"/> as fits, taking it off the
+    /// stack's count, and returns the container slots that changed.
+    /// </summary>
+    /// <remarks>
+    /// Like vanilla, it tops up matching stacks first (the held slot, the offhand, the hotbar, then the main inventory)
+    /// and only then fills empty slots, hotbar first. The held slot has no priority among empty slots, so which slot a
+    /// picked-up item lands in matches the client's expectations.
+    /// </remarks>
+    internal static List<int> AddPickedUpItem(Container inventory, int heldSlot, ItemStack item)
+    {
+        var changed = new List<int>();
+        foreach (var slot in (int[])[heldSlot, 45, .. hotbarThenMainSlots])
+        {
+            if (item.Count <= 0)
+                break;
+            var existing = inventory.GetItem(slot);
+            if (existing.IsNullOrAir() || existing.Count <= 0 || existing != item)
+                continue;
+            var count = Math.Min(item.Count, item.MaxStackSize - existing.Count);
+            if (count <= 0)
+                continue;
+            existing.Count += count;
+            item.Count -= count;
+            changed.Add(slot);
+        }
+
+        foreach (var slot in hotbarThenMainSlots)
+        {
+            if (item.Count <= 0)
+                break;
+            var existing = inventory.GetItem(slot);
+            if (!existing.IsNullOrAir() && existing.Count > 0)
+                continue;
+            var count = Math.Min(item.Count, item.MaxStackSize);
+            inventory.SetItem(slot, new ItemStack(item, count));
+            item.Count -= count;
+            changed.Add(slot);
+        }
+        return changed;
+    }
+
     internal async Task PickupNearbyItemsAsync()
     {
         if (!this.Alive || this.GameMode == GameMode.Spectator || this.Respawning)
             return;
-        const double pickupPadding = 0.5;
-        const double itemHalfWidth = 0.125;
         var halfWidth = (this.Dimension.Width > 0 ? this.Dimension.Width : 0.6) / 2;
         var height = this.Dimension.Height > 0 ? this.Dimension.Height : this.Swimming ? 0.6 : this.Sneaking ? 1.5 : 1.8;
-        foreach (var entity in Level.GetNonPlayerEntitiesInRange(Position, (float)(height + 1)))
+        // Far enough from the feet to reach every corner of the pickup area.
+        var reachXZ = halfWidth + PickupReachXZ + ItemHalfWidth;
+        var searchRadius = Math.Sqrt(2 * reachXZ * reachXZ + Math.Pow(height + PickupReachY, 2));
+        foreach (var entity in Level.GetNonPlayerEntitiesInRange(Position, (float)searchRadius))
         {
-            if (entity is not ItemEntity itemEntity)
-                continue;
-            if (Math.Abs(itemEntity.Position.X - this.Position.X) >= halfWidth + pickupPadding + itemHalfWidth ||
-                Math.Abs(itemEntity.Position.Z - this.Position.Z) >= halfWidth + pickupPadding + itemHalfWidth ||
-                itemEntity.Position.Y + 0.25 <= this.Position.Y - pickupPadding ||
-                itemEntity.Position.Y >= this.Position.Y + height + pickupPadding)
+            if (entity is not ItemEntity itemEntity || !IsInPickupArea(this.Position, halfWidth, height, itemEntity.Position))
                 continue;
 
             bool remove;
@@ -296,30 +351,7 @@ public partial class Player
                 if (itemEntity.Removed || !itemEntity.CanPickup || itemEntity.Item.Count <= 0)
                     continue;
                 var originalCount = itemEntity.Item.Count;
-                var slots = new[] { (int)this.CurrentHeldItemSlot, 45 }
-                    .Concat(Enumerable.Range(36, 9)).Concat(Enumerable.Range(9, 27)).Distinct().ToArray();
-                var changed = new HashSet<int>();
-                // Fill matching stacks before using empty slots, preserving the item's components.
-                for (var pass = 0; pass < 2 && itemEntity.Item.Count > 0; pass++)
-                    foreach (var slot in slots)
-                    {
-                        if (pass == 1 && slot == 45)
-                            continue;
-                        var existing = this.Inventory.GetItem(slot);
-                        var empty = existing.IsNullOrAir() || existing.Count <= 0;
-                        if (pass == 0 ? empty || existing != itemEntity.Item : !empty)
-                            continue;
-                        var count = Math.Min(itemEntity.Item.Count,
-                            itemEntity.Item.MaxStackSize - (empty ? 0 : existing.Count));
-                        if (count <= 0)
-                            continue;
-                        if (empty)
-                            this.Inventory.SetItem(slot, new ItemStack(itemEntity.Item, count));
-                        else
-                            existing.Count += count;
-                        itemEntity.Item.Count -= count;
-                        changed.Add(slot);
-                    }
+                var changed = AddPickedUpItem(this.Inventory, this.CurrentHeldItemSlot, itemEntity.Item);
                 var collected = originalCount - itemEntity.Item.Count;
                 if (collected == 0)
                     continue;
