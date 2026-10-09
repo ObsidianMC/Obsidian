@@ -7,11 +7,13 @@ using Obsidian.API.Commands;
 using Obsidian.API.Configuration;
 using Obsidian.API.Crafting;
 using Obsidian.Commands.Framework;
+using Obsidian.Entities;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Plugins;
 using Obsidian.Services;
+using Obsidian.WorldData;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -226,6 +228,8 @@ public sealed partial class Server : IServer
 
         this.serverTasks = [
             LoopAsync(),
+            KeepAliveLoopAsync(),
+            ChunkLoopAsync(),
             ServerSaveAsync()
         ];
 
@@ -314,6 +318,146 @@ public sealed partial class Server : IServer
         return this.OnlinePlayers.Remove(player.Uuid, out _);
     }
 
+    // When the world tick in progress started (a Stopwatch timestamp), or 0 between ticks; see KeepAliveLoopAsync.
+    private long tickStarted;
+
+    // Failures of the world tick and of each connection loop, each logged now and then rather than on every tick.
+    private readonly ThrottledFailures tickFailures = new();
+    private readonly ThrottledFailures keepAliveFailures = new();
+    private readonly ThrottledFailures chunkFailures = new();
+
+    private static readonly TimeSpan StuckTickWarningAfter = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan StuckTickWarningInterval = TimeSpan.FromMinutes(1);
+
+    private void ReportTickFailure(Exception exception)
+    {
+        if (this.tickFailures.ShouldLog(out var suppressed))
+            Log.TickFailed(this.logger, exception, suppressed);
+    }
+
+    /// <summary>
+    /// Keeps connections alive on its own timer, so a slow or stuck world tick doesn't also time every player out. It
+    /// also warns while a world tick is stuck, with the stage each level is at. Chunks go out from
+    /// <see cref="ChunkLoopAsync"/> instead, since a chunk read from disk can take long enough to delay keep-alives.
+    /// </summary>
+    private async Task KeepAliveLoopAsync()
+    {
+        var timer = new BalancingTimer(50, cancelTokenSource.Token);
+        var keepAliveTicks = 0;
+        var nextStuckWarning = StuckTickWarningAfter;
+
+        try
+        {
+            while (await timer.WaitForNextTickAsync())
+            {
+                if (++keepAliveTicks > Configuration.Network.KeepAliveInterval / 50)
+                {
+                    keepAliveTicks = 0;
+                    await this.ForEachConnectionAsync(SendKeepAliveAsync, this.keepAliveFailures);
+                }
+
+                var started = Volatile.Read(ref this.tickStarted);
+                if (started == 0)
+                {
+                    nextStuckWarning = StuckTickWarningAfter;
+                    continue;
+                }
+
+                var running = Stopwatch.GetElapsedTime(started);
+                if (running >= nextStuckWarning)
+                {
+                    Log.TickStuck(this.logger, (int)running.TotalSeconds, this.DescribeLevelTicks());
+                    nextStuckWarning = running + StuckTickWarningInterval;
+                }
+            }
+        }
+        catch (OperationCanceledException) when (cancelTokenSource.IsCancellationRequested)
+        {
+            // Stopping.
+        }
+
+        static ValueTask SendKeepAliveAsync(IClient client) => client.State switch
+        {
+            ClientState.Play => KeepAlivePacket.ClientboundPlay.HandleAsync(client),
+            ClientState.Configuration => KeepAlivePacket.ClientboundConfiguration.HandleAsync(client),
+            _ => ValueTask.CompletedTask
+        };
+    }
+
+    /// <summary>
+    /// Sends players their chunks on its own timer, so a slow or stuck world tick doesn't leave them without terrain.
+    /// Chunks go out in batches the clients acknowledge (see <see cref="Player.SendPendingChunksAsync"/>).
+    /// </summary>
+    private async Task ChunkLoopAsync()
+    {
+        var timer = new BalancingTimer(50, cancelTokenSource.Token);
+
+        try
+        {
+            while (await timer.WaitForNextTickAsync())
+                await this.ForEachConnectionAsync(SendPendingChunksAsync, this.chunkFailures);
+        }
+        catch (OperationCanceledException) when (cancelTokenSource.IsCancellationRequested)
+        {
+            // Stopping.
+        }
+
+        static async ValueTask SendPendingChunksAsync(IClient client)
+        {
+            if (client.State == ClientState.Play && client.Player is Player player)
+                await player.SendPendingChunksAsync();
+        }
+    }
+
+    /// <summary>
+    /// Runs <paramref name="service"/> for every connection. A client that fails (one closing its socket, say) is
+    /// logged to <paramref name="failures"/> and skipped, so it can't hold up the clients after it.
+    /// </summary>
+    private async Task ForEachConnectionAsync(Func<IClient, ValueTask> service, ThrottledFailures failures)
+    {
+        foreach (var client in this.Connections.Values)
+        {
+            try
+            {
+                await service(client);
+            }
+            catch (Exception ex)
+                when (ex is not OperationCanceledException || !cancelTokenSource.IsCancellationRequested)
+            {
+                if (failures.ShouldLog(out var suppressed))
+                    Log.ConnectionTickFailed(this.logger, ex, suppressed);
+            }
+        }
+    }
+
+    /// <summary>Logs a recurring failure at most every ten seconds, counting the occurrences in between.</summary>
+    private sealed class ThrottledFailures
+    {
+        private static readonly TimeSpan Interval = TimeSpan.FromSeconds(10);
+        private long lastLogged;
+        private int suppressed;
+
+        public bool ShouldLog(out int suppressedSinceLast)
+        {
+            suppressedSinceLast = this.suppressed;
+            if (this.lastLogged != 0 && Stopwatch.GetElapsedTime(this.lastLogged) < Interval)
+            {
+                this.suppressed++;
+                return false;
+            }
+
+            this.lastLogged = Stopwatch.GetTimestamp();
+            this.suppressed = 0;
+            return true;
+        }
+    }
+
+    // Each level's tick stage, e.g. "overworld: ticking entities, the_nether: waiting for simulation gate".
+    private string DescribeLevelTicks() => string.Join(", ", this.WorldManager.GetAvailableWorlds()
+        .OfType<World>()
+        .SelectMany(world => world.dimensions.Values.OfType<AbstractLevel>().Prepend(world))
+        .Select(level => $"{level.Name}: {level.TickStage}"));
+
     private async Task ServerSaveAsync()
     {
         using var timer = new PeriodicTimer(TimeSpan.FromMinutes(5));
@@ -339,42 +483,35 @@ public sealed partial class Server : IServer
 
     private async Task LoopAsync()
     {
-        var keepAliveTicks = 0;
-
         var tpsMeasure = new TpsMeasure();
         var stopwatch = Stopwatch.StartNew();
         var timer = new BalancingTimer(50, cancelTokenSource.Token);
-        var keepAliveInterval = Configuration.Network.KeepAliveInterval / 50;
 
         try
         {
             TickStage = "waiting for timer";
             while (await timer.WaitForNextTickAsync())
             {
-                if (keepAliveInterval != Configuration.Network.KeepAliveInterval / 50)
-                    keepAliveInterval = Configuration.Network.KeepAliveInterval / 50;
-
-                keepAliveTicks++;
-                if (keepAliveTicks > keepAliveInterval)
-                {
-                    foreach (var client in this.Connections.Values.Where(x => x.State == ClientState.Play || x.State == ClientState.Configuration))
-                    {
-                        TickStage = "keepalive";
-                        if (client.State == ClientState.Play)
-                            await KeepAlivePacket.ClientboundPlay.HandleAsync(client);
-                        else
-                            await KeepAlivePacket.ClientboundConfiguration.HandleAsync(client);
-                    }
-
-                    keepAliveTicks = 0;
-                }
-
                 // Like vanilla, worlds tick once they're loaded: ticking chunks while the rest generate (fluids in complete
                 // chunks) would change them before the world is ready.
                 if (this.WorldManager.ReadyToJoin)
                 {
                     TickStage = "ticking worlds";
-                    await this.WorldManager.TickWorldsAsync();
+                    Volatile.Write(ref this.tickStarted, Stopwatch.GetTimestamp());
+                    try
+                    {
+                        await this.WorldManager.TickWorldsAsync();
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException || !cancelTokenSource.IsCancellationRequested)
+                    {
+                        // A failing tick used to end this loop for good: players could still join, but nothing ticked
+                        // again. The next tick runs anyway; repeated failures are only logged now and then.
+                        this.ReportTickFailure(ex);
+                    }
+                    finally
+                    {
+                        Volatile.Write(ref this.tickStarted, 0);
+                    }
                 }
 
                 long elapsedTicks = stopwatch.ElapsedTicks;
@@ -436,6 +573,15 @@ public sealed partial class Server : IServer
 
     private static partial class Log
     {
+        [LoggerMessage(Level = LogLevel.Error, Message = "A world tick failed ({Suppressed} more failures weren't logged since the last one)")]
+        public static partial void TickFailed(ILogger logger, Exception exception, int suppressed);
+
+        [LoggerMessage(Level = LogLevel.Warning, Message = "The world tick has been running for {Seconds} s; levels: {Levels}")]
+        public static partial void TickStuck(ILogger logger, int seconds, string levels);
+
+        [LoggerMessage(Level = LogLevel.Error, Message = "Sending keep-alives or chunks failed ({Suppressed} more failures weren't logged since the last one)")]
+        public static partial void ConnectionTickFailed(ILogger logger, Exception exception, int suppressed);
+
         [LoggerMessage(Level = LogLevel.Information, Message = "Starting Obsidian {Version}")]
         public static partial void Starting(ILogger logger, string version);
 

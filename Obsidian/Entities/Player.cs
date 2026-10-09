@@ -872,8 +872,8 @@ public sealed partial class Player : Avatar, IPlayer
     }
 
     /// <summary>
-    /// Sends the chunks in view that weren't generated when they were last asked for and are now. The level calls it every
-    /// tick; it skips the tick while the chunks are being updated.
+    /// Sends the chunks in view that weren't generated when they were last asked for and are now. The server's chunk
+    /// loop calls it every tick, independently of the world tick; it skips the tick while the chunks are being updated.
     /// </summary>
     internal async Task SendPendingChunksAsync()
     {

@@ -34,7 +34,8 @@ public class Encryption
     public void TestEncryption(byte[] testData)
     {
         var random = new Random();
-        var sharedKey = new byte[32];
+        // The protocol's shared secret is 16 bytes, and it also serves as the IV, which must match AES's block size.
+        var sharedKey = new byte[16];
         random.NextBytes(sharedKey);
 
         using var buffer = new EncryptedNetworkBuffer(sharedKey);
