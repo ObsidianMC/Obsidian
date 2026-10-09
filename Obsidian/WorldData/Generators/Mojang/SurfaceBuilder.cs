@@ -501,7 +501,10 @@ internal sealed class SurfaceBuilder
         public void MoveTo(IChunk? chunk)
         {
             this.biomes.Chunk = chunk;
-            this.BiomeManager.ClearCache();
+            if (chunk is not null)
+                this.BiomeManager.FocusOn(chunk.X, chunk.Z);
+            else
+                this.BiomeManager.ClearCache();
         }
     }
 
