@@ -669,8 +669,8 @@ public sealed partial class Server : IServer
     }
 
     /// <summary>
-    /// Ticks the worlds once and records how long it took. A failing tick is reported rather than thrown, so the loop goes
-    /// on.
+    /// Ticks the worlds once and records how long it took. A failing tick is reported rather than thrown, so the loop
+    /// goes on.
     /// </summary>
     private async Task TickWorldsOnceAsync()
     {

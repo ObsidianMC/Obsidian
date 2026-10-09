@@ -8,10 +8,12 @@ public partial class NetworkBuffer
 {
     // NbtOps represents heterogeneous lists by wrapping non-compound elements in {"": value} compounds.
     // This projection unwraps them, along with the other shapes vanilla's component codec writes.
+    // ReadChat checks the tag against vanilla's network limits first; this guard only backs that up, so it matches
+    // vanilla's 512 rather than rejecting chat that vanilla accepts.
     private object? ReadChatNbt(int tag, int depth = 0)
     {
-        if (depth > 64)
-            throw new InvalidDataException("Chat nesting exceeds 64.");
+        if (depth > 512)
+            throw new InvalidDataException("Chat nesting exceeds 512.");
 
         switch (tag)
         {
