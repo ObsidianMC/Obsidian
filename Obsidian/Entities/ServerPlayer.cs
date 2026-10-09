@@ -22,6 +22,7 @@ public sealed class ServerPlayer : Avatar, IPlayer
         this.EntityId = Obsidian.Server.GetNextEntityId();
         this.Type = EntityType.Player;
         this.Health = 20f;
+        this.ClientInformation = this.ClientInformation with { AllowsListing = true };
 
         this.Inventory = new Container(9 * 5 + 1, InventoryType.Generic)
         {

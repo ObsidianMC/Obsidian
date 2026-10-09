@@ -1,6 +1,7 @@
 using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.Entities;
+using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Tests.Fakes;
 using System;
@@ -62,6 +63,7 @@ public sealed class ServerPlayerTests
         player.Position = human.Position;
 
         Assert.True(ContainsPlayerInfo(client, player.Uuid));
+        Assert.True(ContainsListedFlag(client, player.Uuid, listed: true));
         Assert.True(ContainsSpawn(client, player.EntityId));
     }
 
@@ -79,6 +81,7 @@ public sealed class ServerPlayerTests
 
         var client = (TestClient)human.Client;
         Assert.True(ContainsPlayerInfo(client, player.Uuid));
+        Assert.True(ContainsListedFlag(client, player.Uuid, listed: true));
         Assert.True(ContainsSpawn(client, player.EntityId));
     }
 
@@ -143,6 +146,13 @@ public sealed class ServerPlayerTests
 
     private static bool ContainsPlayerInfo(TestClient client, Guid uuid) =>
         client.SentPackets.OfType<PlayerInfoUpdatePacket>().Any(packet => packet.Players.ContainsKey(uuid));
+
+    private static bool ContainsListedFlag(TestClient client, Guid uuid, bool listed) =>
+        client.SentPackets.OfType<PlayerInfoUpdatePacket>()
+            .Where(packet => packet.Players.ContainsKey(uuid))
+            .SelectMany(packet => packet.Players[uuid])
+            .OfType<UpdateListedInfoAction>()
+            .Any(action => action.Listed == listed);
 
     private static bool ContainsPlayerInfoRemoval(TestClient client, Guid uuid) =>
         client.SentPackets.OfType<PlayerInfoRemovePacket>().Any(packet => packet.UUIDs.Contains(uuid));
