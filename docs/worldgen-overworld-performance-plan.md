@@ -130,17 +130,14 @@ Every step must keep the parity hashes above unchanged.
 The steps are ordered by expected overworld gain for the effort. Each is independent, and each lands as its own PR with
 before and after numbers from the harness.
 
-### 0. Put the harness in the repository (small)
+### 0. Put the harness in the repository (done)
 
-Today the server driver and the stage bench live outside the repo (`mcdecomp/bench`). Every later step needs both, so
-add them first:
-- A console tool, for example `tools/WorldgenBench`, with:
-  - per-dimension stage timings;
-  - the parallel pipeline bound, with an optional warm pass;
-  - parity hashes checked against a committed table.
-- The Python server driver (`bench_dims.py`), or a C# port of it.
+`Obsidian.WorldgenBench` is a console tool in the solution:
+- `serial` gives per-dimension stage timings and checks the output against the recorded parity hashes. It exits with 1
+  if a hash differs.
+- `pipeline` gives the parallel pipeline bound, timed on a warm pass unless `--cold` is passed.
 
-Neither needs a new package.
+The server driver stays outside the repo for now. It's a Windows-only Python script that pins and samples both servers.
 
 ### 1. Biome lookups in surface rules (small; helps the nether most)
 
@@ -254,11 +251,18 @@ measured one.
 
 ## Reproducing
 
-The harness is in `C:\Users\LostT\mcdecomp\bench`:
+Stage timings, parity hashes and the pipeline bound come from `Obsidian.WorldgenBench` (Release build):
+
+```
+dotnet run -c Release --project Obsidian.WorldgenBench -- serial [--dimension overworld|nether|end|all]
+dotnet run -c Release --project Obsidian.WorldgenBench -- pipeline [--dimension ...] [--cold]
+```
+
+To pin the pipeline to the first N physical cores on Windows, run it with `start /affinity <mask> /wait /b`. The mask
+sets every other bit, so `55555555` is 16 cores.
+
+The server comparison uses the local harness in `C:\Users\LostT\mcdecomp\bench`:
 - `bench_dims.py <obsidian|vanilla> <overworld|nether|end> <tag> --cpus N` runs one server benchmark. `run_dims.sh` runs
   the whole matrix, and `summarize_dims.py` prints the table above.
-- `WorldgenBenchDims` is the stage bench. Set `DIM=overworld|nether|end` to pick the dimension, `PAR=1` for the parallel
-  bound, and `PARWARM=1` for a warm pass first. `par_scale.sh` pins the bench to N physical cores.
-- Both build against a checkout of Obsidian:
-  - `WorldgenBenchDims` takes `/p:ObsidianRepo=...`.
-  - `ObsidianHostWg` has the path in its project reference.
+- `ObsidianHostWg` is the headless Obsidian host it starts. It builds against the checkout named in its project
+  reference.

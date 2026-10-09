@@ -596,7 +596,10 @@ public class Region : IRegion
         return chunk;
     }
 
-    private static void SerializeChunk(NbtWriterStream writer, IChunk chunk, NbtCompound? structureStarts)
+    /// <summary>
+    /// Writes a chunk's compound as region files store it, without its end tag.
+    /// </summary>
+    internal static void SerializeChunk(NbtWriterStream writer, IChunk chunk, NbtCompound? structureStarts)
     {
         writer.WriteLong("InhabitedTime", chunk is Chunk concrete ? concrete.InhabitedTime : 0);
         writer.WriteListStart("sections", NbtTagType.Compound, chunk.Sections.Length);

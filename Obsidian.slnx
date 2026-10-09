@@ -9,6 +9,7 @@
   <Project Path="Obsidian.SourceGenerators/Obsidian.SourceGenerators.csproj" />
   <Project Path="Obsidian.Tests/Obsidian.Tests.csproj" />
   <Project Path="Obsidian/Obsidian.csproj" />
+  <Project Path="Obsidian.WorldgenBench/Obsidian.WorldgenBench.csproj" />
 </Solution>
 
 
