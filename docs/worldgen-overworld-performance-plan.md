@@ -137,9 +137,10 @@ before and after numbers from the harness.
 | 0. Harness | Done | — |
 | 1. Surface biome lookups | Done, with allocation-free legacy randoms | Serial surface: overworld 1.59 → 1.45 ms, nether 2.42 → 1.86 ms per chunk. Nether total 4.11 → 3.6 ms per chunk, allocations halved |
 | 2. Compile the noise router | Deprioritised | Dispatch turned out to be a small share of noise (see step 2) |
-| 4. Cold start | Two options ruled out | ReadyToRun and `TC_QuickJitForLoops=0` both cost steady-state speed (see step 4) |
+| 4. Cold start | Options measured, none adopted | ReadyToRun, `TC_QuickJitForLoops=0` and a startup warmup each cost more than they gain. Server GC awaits a decision (see step 4) |
 | 5. Pregeneration scheduler | Done | Overworld pregeneration: 4 cores 4.11 → 3.31 s, 8 cores 2.64 → 2.03 s, 16 cores 1.64 → 1.42 s, 32 threads unchanged |
-| 3, 6, 7 | Not started | — |
+| 6, 7 | Measured, deferred | Their costs are spread across many small operations (see steps 6 and 7) |
+| 3 | Not started | Corner sampling is the largest remaining compute item (see step 3) |
 
 The output is unchanged: the bench's parity hashes match after every step, and the committed tests pass.
 
@@ -199,6 +200,13 @@ Corner sampling calls `ImprovedNoise` one point at a time. A column of cell corn
 **Expected:** Perlin plus blended noise go from about 0.8 to about 0.35 ms per chunk. This builds naturally on step 2,
 since generated code can call column samplers.
 
+**Measured:** corner sampling is 1.34 ms of the overworld's 3.86 ms noise stage, about 8,300 density-tree evaluations
+per chunk at about 160 ns each. The aquifer is about 0.95 ms and the per-block fill about 1.5 ms.
+
+Batching needs a column method on the density functions and the noise chunk's caches, because corners are sampled
+through the whole tree, not just the noises. That's the largest remaining compute item, and also the largest piece of
+work.
+
 ### 4. Cold start (medium)
 
 About 0.5 s of the overworld's 1.5 s is JIT warmup, and the nether pays it in full because it has no spawn search to
@@ -219,8 +227,31 @@ warm it up. Measure these options together, after step 2, because compiled route
   long-running server shouldn't take that trade.
 - **Triggering OSR earlier, or instrumenting all code rather than only hot code, shows no clear gain.** Results were
   within run-to-run noise, slightly better for the overworld and slightly worse for the nether.
-- **What's left:** a startup warmup, and making hot code fast without PGO (straight-line surface rules, density
-  functions), which also shrinks the JIT's work.
+- **A startup warmup barely pays.** A background task generated a few throwaway chunks on idle cores while the worlds
+  loaded.
+  - Warming the overworld sped the overworld up but slowed the nether and end, which generate first: the warmup's
+    overworld-only methods filled the JIT's single tier-1 queue.
+  - Warming whichever dimension generates first was better, but the time to the end of pregeneration only improved by
+    0–10% (overworld 2.88 → 2.78 s at 32 threads, 3.49 → 3.21 s at 8 cores). Startup is only about 1.4 s, and the
+    warmup needs most of that to build its own generator. Not adopted.
+- **There's no setting for the number of tier-1 JIT workers.** In the pipeline bench, a cold pass compiles about 10,000
+  methods (2.6 s of JIT time) and even a warm pass about 3,000.
+- **Compiling surface rules into one expression tree is slower.** It replaced the delegate tree with one compiled
+  method.
+  - Surface got slower: overworld 1.50 → 2.0 ms per chunk.
+  - Splitting large branches into separate methods brought the overworld to 1.7 ms but slowed the nether to 2.3 ms.
+  - PGO already devirtualises and inlines the delegate calls well, while compiled expressions get no PGO.
+- **Server GC (with .NET 10's dynamic heap sizing)**, medians of 3 runs:
+
+  | Case | Workstation GC | Server GC |
+  |---|---:|---:|
+  | Overworld, 32 threads | 1.53 s, 501 MB peak | 1.32 s, 599 MB |
+  | Overworld, 8 cores | 2.17 s, 486 MB | 1.96 s, 510 MB |
+  | Nether, 32 threads | 1.40 s, 393 MB | 1.27 s, 456 MB |
+  | Nether, 8 cores | 1.41 s, 383 MB | 1.56 s, 431 MB |
+
+  It gains 10–14% for the overworld and costs 5–20% more memory, still well under vanilla's 1.2–1.4 GB. It's a
+  server-wide setting, so it's left as a decision.
 
 ### 5. Pregeneration scheduler (medium; the main lever at high core counts)
 
@@ -269,6 +300,26 @@ palette, and read and write state ids directly. Have `OreFeature`, `IsAdjacentTo
 **Also:** profile sculk patches (0.6 ms per chunk in this square, which has deep dark) against vanilla's Java Flight
 Recorder profile, and tune them only if they're slower than vanilla's relative cost.
 
+**Measured (timing each feature type's placement):**
+
+| Feature | ms per chunk |
+|---|---:|
+| Ores | 1.00 |
+| Sculk patches | 0.60 |
+| Random selectors (includes trees they place) | 0.20 |
+| Trees | 0.19 |
+| Vegetation patches | 0.15 |
+| Geodes | 0.15 |
+
+- **Ores:** each chunk tests about 10,000 blocks and places 7,800 (dirt, gravel, granite and the other stone blobs count
+  as ores), at about 100 ns per tested block.
+- **Block-entity removal:** the profile blamed most of the ore time on the removal every write does. Skipping it saves
+  only about 0.15 ms per chunk. The sampling profiler suspends threads at safe points, which biases its leaf frames
+  toward lock and GC-poll paths.
+- **The empty-check:** skipping the removal when a chunk has no block entities made features twice as slow, because
+  `ConcurrentDictionary.IsEmpty` takes every lock when the dictionary is empty.
+- **Deferred:** no single step dominates.
+
 **Expected:** features 2.6 → about 1.8 ms.
 
 ### 7. Aquifer substance (medium)
@@ -282,6 +333,15 @@ skip height. Within one grid cell, the candidates are the same for every block i
 - Evaluate the barrier noise only when vanilla would, which keeps parity.
 
 **Expected:** about 0.5 ms per chunk.
+
+**Measured (counting each path):**
+- **Calls:** about 17,700 per chunk, almost all reaching the 12-candidate search, which costs about 55 ns per call and
+  about 0.95 ms per chunk in all.
+- **Barrier noise:** only about 50 samples per chunk.
+- **Status computations:** about 85 per chunk.
+- **Exit points:** two thirds of the calls end at the first similarity check.
+- **Deferred:** what's left is the search itself, which a branch-light or SIMD version might cut by a third (about
+  0.3 ms per chunk).
 
 ### Expected outcome
 
