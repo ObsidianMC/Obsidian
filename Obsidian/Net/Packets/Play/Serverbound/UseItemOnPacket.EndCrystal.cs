@@ -11,7 +11,7 @@ public partial class UseItemOnPacket
     private async ValueTask<bool> TryPlaceEndCrystalAsync(IPlayer player, int handSlot, ItemStack? item)
     {
         if (item is not { Count: > 0, Type: Material.EndCrystal }) return false;
-        player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = Sequence });
+        player.RequireClient("player operation").SendPacket(new BlockChangedAckPacket { SequenceID = Sequence });
         if (player.GameMode == GameMode.Spectator || player.Health <= 0 || player.Level is not AbstractLevel level ||
             (player.Position - (VectorD)Position).MagnitudeSquared() > 36) return true;
         var terrain = new MobTerrain(level);
@@ -27,7 +27,7 @@ public partial class UseItemOnPacket
         if (player.GameMode != GameMode.Creative)
         {
             player.Inventory.RemoveItem(handSlot, 1);
-            await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
+            await player.RequireClient("player operation").QueuePacketAsync(new ContainerSetSlotPacket
             { ContainerId = 0, Slot = (short)handSlot, SlotData = player.Inventory.GetItem(handSlot) });
         }
         return true;

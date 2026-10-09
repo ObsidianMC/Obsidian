@@ -65,7 +65,7 @@ public partial record class CustomPayloadPacket
         switch (result.Type)
         {
             case PluginMessageType.Brand:
-                player.Client.Brand = result.Value.ToString();
+                player.RequireClient("player operation").Brand = result.Value.ToString();
                 break;
 
             case PluginMessageType.Register:

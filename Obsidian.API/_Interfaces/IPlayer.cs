@@ -10,7 +10,6 @@ public interface IPlayer : ILiving
     public ValueTask ClearDialogAsync();
 
     public byte CurrentContainerId { get; }
-    public IClient Client { get; }
     public IScoreboard? CurrentScoreboard { get; set; }
 
     public PlayerInput Input { get; set; }

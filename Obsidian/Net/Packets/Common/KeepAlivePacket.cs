@@ -52,7 +52,7 @@ public partial record class KeepAlivePacket
     {
         ArgumentNullException.ThrowIfNull(player);
 
-        var client = player.Client;
+        var client = player.RequireClient("player operation");
 
         if (this.KeepAliveId != client.LastKeepAliveId)
         {

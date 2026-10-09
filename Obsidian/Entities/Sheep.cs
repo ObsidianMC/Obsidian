@@ -56,7 +56,7 @@ public sealed partial class Sheep : FarmAnimal
                 {
                     player.Inventory.RemoveItem(hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot, 1);
                     var slot = hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
-                    await player.Client.QueuePacketAsync(new Obsidian.Net.Packets.Play.Clientbound.ContainerSetSlotPacket
+                    await player.RequireClient("player operation").QueuePacketAsync(new Obsidian.Net.Packets.Play.Clientbound.ContainerSetSlotPacket
                     { ContainerId = 0, Slot = (short)slot, SlotData = player.Inventory.GetItem(slot) });
                 }
                 SynchronizeMetadata();

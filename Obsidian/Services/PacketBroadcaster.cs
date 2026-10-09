@@ -60,13 +60,13 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
 
     public void Broadcast(IClientboundPacket packet, params int[] excludedIds)
     {
-        foreach (var player in this.server.OnlinePlayers.Values.Where(player => !excludedIds.Contains(player.EntityId)))
+        foreach (var player in this.server.OnlinePlayers.Values.OfType<IClientPlayer>().Where(player => !excludedIds.Contains(player.EntityId)))
             player.Client.SendPacket(packet);
     }
 
     public void BroadcastTo(IClientboundPacket packet, params int[] ids)
     {
-        foreach (var player in this.server.OnlinePlayers.Values.Where(player => ids.Contains(player.EntityId)))
+        foreach (var player in this.server.OnlinePlayers.Values.OfType<IClientPlayer>().Where(player => ids.Contains(player.EntityId)))
             player.Client.SendPacket(packet);
     }
 
@@ -75,7 +75,7 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
         if (toLevel is not AbstractLevel world)
             return;
 
-        foreach (var player in world.GetPlayersInRange(location, world.Configuration.EntityBroadcastRangePercentage).Cast<Player>().Where(x => !excludedIds.Contains(x.EntityId)))
+        foreach (var player in world.GetPlayersInRange(location, world.Configuration.EntityBroadcastRangePercentage).OfType<IClientPlayer>().Where(x => !excludedIds.Contains(x.EntityId)))
             player.Client.SendPacket(packet);
     }
 
@@ -106,7 +106,7 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
         if (toLevel is not AbstractLevel world)
             return;
 
-        foreach (var player in world.Players.Values.Where(player => !excludedIds.Contains(player.EntityId)))
+        foreach (var player in world.Players.Values.OfType<IClientPlayer>().Where(player => !excludedIds.Contains(player.EntityId)))
             player.Client.SendPacket(packet);
     }
 
@@ -121,7 +121,7 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
                 foreach (var queuedPacket in this.TakeBatch())
                 {
                     var players = queuedPacket.ToLevel is AbstractLevel toLevel
-                        ? toLevel.Players.Values : this.server.OnlinePlayers.Values;
+                        ? toLevel.Players.Values.OfType<IClientPlayer>() : this.server.OnlinePlayers.Values.OfType<IClientPlayer>();
                     foreach (var player in players.Where(player => ShouldGetPacket(player, queuedPacket)))
                         await player.Client.QueuePacketAsync(queuedPacket.Packet);
                 }

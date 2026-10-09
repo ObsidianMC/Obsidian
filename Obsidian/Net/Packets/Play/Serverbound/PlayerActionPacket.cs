@@ -78,7 +78,7 @@ public partial class PlayerActionPacket
                 }
             case PlayerActionStatus.StartedDigging:
             case PlayerActionStatus.CancelledDigging:
-                player.Client.SendPacket(new BlockChangedAckPacket
+                player.RequireClient("player operation").SendPacket(new BlockChangedAckPacket
                 {
                     SequenceID = this.Sequence
                 });
@@ -107,7 +107,7 @@ public partial class PlayerActionPacket
 
         player.Inventory.RemoveItem(player.CurrentHeldItemSlot, count);
 
-        player.Client.SendPacket(new ContainerSetSlotPacket
+        player.RequireClient("player operation").SendPacket(new ContainerSetSlotPacket
         {
             Slot = player.CurrentHeldItemSlot,
 

@@ -39,11 +39,11 @@ public partial class UseItemOnPacket
                 if (player.GameMode != GameMode.Creative)
                 {
                     player.Inventory.RemoveItem(slot, 1);
-                    await player.Client.QueuePacketAsync(new ContainerSetSlotPacket { ContainerId = 0, Slot = (short)slot, SlotData = player.Inventory.GetItem(slot) });
+                    await player.RequireClient("player operation").QueuePacketAsync(new ContainerSetSlotPacket { ContainerId = 0, Slot = (short)slot, SlotData = player.Inventory.GetItem(slot) });
                 }
             }
         }
-        player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = Sequence });
+        player.RequireClient("player operation").SendPacket(new BlockChangedAckPacket { SequenceID = Sequence });
         return true;
     }
 }

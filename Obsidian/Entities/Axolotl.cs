@@ -54,7 +54,7 @@ public sealed partial class Axolotl : FarmAnimal
         if (food && player.GameMode != GameMode.Creative && (player.Inventory.GetItem(slot)?.Count ?? 0) < previousCount)
         {
             player.Inventory.SetItem(slot, ItemsRegistry.GetSingleItem(Material.WaterBucket));
-            await player.Client.QueuePacketAsync(new Obsidian.Net.Packets.Play.Clientbound.ContainerSetSlotPacket
+            await player.RequireClient("player operation").QueuePacketAsync(new Obsidian.Net.Packets.Play.Clientbound.ContainerSetSlotPacket
             { ContainerId = 0, Slot = (short)slot, SlotData = player.Inventory.GetItem(slot) });
         }
     }

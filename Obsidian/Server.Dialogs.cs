@@ -197,7 +197,7 @@ public sealed partial class Server
             **Health:** {player.Health:0.##} · **Food:** {player.FoodLevel}
 
             ### Connection
-            **Client:** {MetadataValue(player.Client.Brand ?? "Unknown")} · **Ping:** {player.Ping} ms
+            **Client:** {MetadataValue(player.RequireClient("player operation").Brand ?? "Unknown")} · **Ping:** {player.Ping} ms
 
             -# Submitted: {submittedAt.UtcDateTime:yyyy-MM-dd HH:mm:ss} UTC
             """);

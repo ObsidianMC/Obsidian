@@ -548,7 +548,7 @@ public abstract partial class AbstractLevel : ILevel
                 await concrete.TickBlocksAsync();
             }
         }
-        foreach (var player in Players.Values.OfType<Player>())
+        foreach (var player in Players.Values.OfType<INetworkPlayer>())
         {
             TickStage = $"tracking for {player.Username}";
             await player.SynchronizeTrackedEntitiesAsync();
@@ -565,7 +565,7 @@ public abstract partial class AbstractLevel : ILevel
     internal void SendLightUpdate(IChunk chunk)
     {
         var packet = new LightUpdatePacket(chunk);
-        foreach (Player player in this.GetPlayersInChunkRange(new Vector(chunk.X << 4, 0, chunk.Z << 4)).Cast<Player>())
+        foreach (var player in this.GetPlayersInChunkRange(new Vector(chunk.X << 4, 0, chunk.Z << 4)).OfType<IClientPlayer>())
             player.Client.SendPacket(packet);
     }
 

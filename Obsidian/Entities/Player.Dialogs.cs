@@ -4,7 +4,7 @@ using Obsidian.Net.Packets.Play.Clientbound;
 
 namespace Obsidian.Entities;
 
-public partial class Player
+public sealed partial class Player
 {
     internal const string WelcomeContinueActionId = "obsidian:welcome/continue";
 

@@ -33,7 +33,7 @@ public sealed partial class Mooshroom : Cow
                 {
                     var slot = hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
                     player.Inventory.RemoveItem(slot, 1);
-                    await player.Client.QueuePacketAsync(new Obsidian.Net.Packets.Play.Clientbound.ContainerSetSlotPacket
+                    await player.RequireClient("player operation").QueuePacketAsync(new Obsidian.Net.Packets.Play.Clientbound.ContainerSetSlotPacket
                     { ContainerId = 0, Slot = (short)slot, SlotData = player.Inventory.GetItem(slot) });
                 }
             }

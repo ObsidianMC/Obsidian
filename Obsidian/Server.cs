@@ -141,10 +141,11 @@ public sealed partial class Server : IServer
 
     public IPlayer? GetPlayer(int entityId)
     {
-        if (this.Connections.TryGetValue(entityId, out var client) && OnlinePlayers.TryGetValue(client.Player!.Uuid, out var player))
+        if (this.Connections.TryGetValue(entityId, out var client) && client.Player is { } connectedPlayer &&
+            OnlinePlayers.TryGetValue(connectedPlayer.Uuid, out var player))
             return player;
 
-        return null;
+        return this.OnlinePlayers.Values.FirstOrDefault(player => player.EntityId == entityId);
     }
 
     public bool TryGetPlayer(string username, [NotNullWhen(true)] out IPlayer? player)
@@ -320,12 +321,17 @@ public sealed partial class Server : IServer
 
         try
         {
-            await this.EventDispatcher.ExecuteEventAsync(new PlayerJoinEventArgs(player, this, DateTimeOffset.Now));
+            var result = await this.EventDispatcher.ExecuteEventAsync(new PlayerJoinEventArgs(player, this, DateTimeOffset.Now));
+            if (result != EventResult.Completed)
+                throw new InvalidOperationException($"Joining server-side player '{username}' failed with result {result}.");
+            if (!player.Level.Players.ContainsKey(player.Uuid) || !player.Level.GetEntitiesInRange(player.Position, 0.1f).Any(entity => entity.EntityId == player.EntityId))
+                throw new InvalidOperationException($"Server-side player '{username}' was not fully registered in the level.");
+
             return player;
         }
         catch
         {
-            this.RemovePlayer(player);
+            await this.RollBackPlayerLifecycleAsync(player);
             throw;
         }
     }
@@ -341,11 +347,17 @@ public sealed partial class Server : IServer
 
     public async Task<bool> RemoveServerPlayerAsync(IPlayer player)
     {
-        if (!this.OnlinePlayers.ContainsKey(player.Uuid) || player.Client.Connected)
+        if (player is not ServerPlayer || !this.OnlinePlayers.ContainsKey(player.Uuid))
             return false;
 
         await this.EventDispatcher.ExecuteEventAsync(new PlayerLeaveEventArgs(player, this, DateTimeOffset.Now));
         return this.RemovePlayer(player);
+    }
+
+    private async Task RollBackPlayerLifecycleAsync(IPlayer player)
+    {
+        await player.Level.DestroyEntityAsync(player);
+        this.RemovePlayer(player);
     }
 
     // When the world tick in progress started (a Stopwatch timestamp), or 0 between ticks; see KeepAliveLoopAsync.

@@ -120,7 +120,7 @@ public partial class ContainerClickPacket
         // Client slot hashes describe its prediction, not authoritative inventory changes.
         var contents = baseContainer.ToList();
         contents.AddRange(player.Inventory.Skip(9).Take(36));
-        await player.Client.QueuePacketAsync(new ContainerSetContentPacket(this.ContainerId, contents)
+        await player.RequireClient("player operation").QueuePacketAsync(new ContainerSetContentPacket(this.ContainerId, contents)
         {
             StateId = this.StateId + 1,
             CarriedItem = player.CarriedItem

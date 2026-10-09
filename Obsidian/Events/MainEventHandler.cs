@@ -407,24 +407,29 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
 
         // Like changing level or dying, leaving removes the player's entity for everyone who could see it.
         await player.Level.DestroyEntityAsync(player);
-        foreach (var observer in player.Level.GetPlayersInRange(player.Position, float.MaxValue).OfType<Player>())
-            observer.visiblePlayers.Remove(player);
+        foreach (var observer in player.Level.GetPlayersInRange(player.Position, float.MaxValue).OfType<INetworkPlayer>())
+            observer.ForgetVisiblePlayer(player);
 
         server.BroadcastMessage(string.Format(server.Configuration.Messages.Leave, e.Player.Username));
     }
 
     [EventPriority(Priority = Priority.Internal)]
-    public ValueTask OnPlayerJoin(PlayerJoinEventArgs e)
+    public async ValueTask OnPlayerJoin(PlayerJoinEventArgs e)
     {
         var joined = e.Player;
         var server = e.Server;
 
         var packetBroadcaster = joined.Level.PacketBroadcaster;
 
-        joined!.Level.TryAddPlayer(joined);
-        joined!.Level.TryAddEntity(joined);
+        if (!joined.Level.TryAddPlayer(joined))
+            throw new InvalidOperationException($"Player '{joined.Username}' is already registered in level '{joined.Level.Name}'.");
+        if (!joined.Level.TryAddEntity(joined))
+        {
+            joined.Level.TryRemovePlayer(joined);
+            throw new InvalidOperationException($"Player '{joined.Username}' could not be registered as a level entity.");
+        }
 
-        server!.BroadcastMessage(new ChatMessage
+        server.BroadcastMessage(new ChatMessage
         {
             Text = string.Format(server.Configuration.Messages.Join, e.Player.Username),
             Color = HexColor.Yellow
@@ -450,6 +455,26 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             { joined.Uuid, list }
         }));
 
-        return default;
+        var range = joined.Level is AbstractLevel level ? level.Configuration.EntityBroadcastRangePercentage : 100;
+
+        var connectedObservers = joined.Level.GetPlayersInRange(joined.Position, range)
+            .OfType<IClientPlayer>()
+            .Where(player => player.EntityId != joined.EntityId)
+            .ToArray();
+
+        if (joined is Entity joinedEntity)
+            foreach (var observer in connectedObservers)
+                joinedEntity.SendSpawnTo(observer);
+
+        if (joined is IClientPlayer joinedClient)
+        {
+            var existingPlayers = joined.Level.GetPlayersInRange(joined.Position, range)
+                .Where(player => player.EntityId != joined.EntityId)
+                .OfType<Entity>()
+                .ToArray();
+
+            foreach (var existingPlayer in existingPlayers)
+                existingPlayer.SendSpawnTo(joinedClient);
+        }
     }
 }

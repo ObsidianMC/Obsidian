@@ -10,7 +10,7 @@ public sealed partial class FinishConfigurationPacket
 {
     public async override ValueTask HandleAsync(IServer server, IPlayer player)
     {
-        var client = player.Client;
+        var client = player.RequireClient("player operation");
 
         client.SetState(ClientState.Play);
         await player.LoadAsync();

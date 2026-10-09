@@ -100,7 +100,7 @@ public class AbstractHorse : Animal
         if (player.GameMode == GameMode.Creative)
             return;
         player.Inventory.RemoveItem(slot, 1);
-        await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
+        await player.RequireClient("player operation").QueuePacketAsync(new ContainerSetSlotPacket
         { ContainerId = 0, Slot = (short)slot, SlotData = player.Inventory.GetItem(slot) });
     }
 
