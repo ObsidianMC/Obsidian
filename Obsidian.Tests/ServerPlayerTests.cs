@@ -130,6 +130,24 @@ public sealed class ServerPlayerTests
     }
 
     [Fact]
+    public async Task DuplicateServerPlayer_LeavesExistingRegistrationsIntact()
+    {
+        await using var context = TestServerFactory.CreateServer($"server-player-{Guid.NewGuid():N}");
+
+        var existing = await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "ServerBot", context.World);
+
+        // Same UUID under a new name, then the same name under a new UUID.
+        await Assert.ThrowsAsync<InvalidOperationException>(() => context.Server.AddServerPlayerAsync(existing.Uuid, "OtherBot", context.World));
+        var otherUuid = Guid.NewGuid();
+        await Assert.ThrowsAsync<InvalidOperationException>(() => context.Server.AddServerPlayerAsync(otherUuid, "ServerBot", context.World));
+
+        Assert.False(context.Server.IsPlayerOnline("OtherBot"));
+        Assert.False(context.Server.IsPlayerOnline(otherUuid));
+        Assert.Same(existing, context.Server.GetPlayer(existing.Uuid));
+        Assert.Same(existing, context.Server.GetPlayer("ServerBot"));
+    }
+
+    [Fact]
     public async Task FailedServerPlayerCreation_RollsBackRegistrations()
     {
         await using var context = TestServerFactory.CreateServer($"server-player-{Guid.NewGuid():N}");

@@ -307,9 +307,15 @@ public sealed partial class Server : IServer
 
     public bool AddPlayer(IPlayer player)
     {
-        this.UsernameToUuidMappings.TryAdd(player.Username, player.Uuid);
+        if (!this.OnlinePlayers.TryAdd(player.Uuid, player))
+            return false;
 
-        return this.OnlinePlayers.TryAdd(player.Uuid, player);
+        // The name must map to this player alone; undo the registration rather than leave lookups disagreeing.
+        if (this.UsernameToUuidMappings.TryAdd(player.Username, player.Uuid))
+            return true;
+
+        this.OnlinePlayers.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player));
+        return false;
     }
 
     public async Task<IPlayer> AddServerPlayerAsync(Guid uuid, string username, IWorld? world = null)
