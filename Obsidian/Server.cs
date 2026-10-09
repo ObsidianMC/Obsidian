@@ -228,7 +228,8 @@ public sealed partial class Server : IServer
 
         this.serverTasks = [
             LoopAsync(),
-            ConnectionLoopAsync(),
+            KeepAliveLoopAsync(),
+            ChunkLoopAsync(),
             ServerSaveAsync()
         ];
 
@@ -317,12 +318,13 @@ public sealed partial class Server : IServer
         return this.OnlinePlayers.Remove(player.Uuid, out _);
     }
 
-    // When the world tick in progress started (a Stopwatch timestamp), or 0 between ticks; see ConnectionLoopAsync.
+    // When the world tick in progress started (a Stopwatch timestamp), or 0 between ticks; see KeepAliveLoopAsync.
     private long tickStarted;
 
-    // Failures of the world tick and of the connection loop, each logged now and then rather than on every tick.
+    // Failures of the world tick and of each connection loop, each logged now and then rather than on every tick.
     private readonly ThrottledFailures tickFailures = new();
-    private readonly ThrottledFailures connectionFailures = new();
+    private readonly ThrottledFailures keepAliveFailures = new();
+    private readonly ThrottledFailures chunkFailures = new();
 
     private static readonly TimeSpan StuckTickWarningAfter = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan StuckTickWarningInterval = TimeSpan.FromMinutes(1);
@@ -334,11 +336,11 @@ public sealed partial class Server : IServer
     }
 
     /// <summary>
-    /// Keeps connections alive and sends players their chunks on its own timer, so a slow or stuck world tick doesn't
-    /// also time every player out or leave them without terrain. It also warns while a world tick is stuck, with the
-    /// stage each level is at.
+    /// Keeps connections alive on its own timer, so a slow or stuck world tick doesn't also time every player out. It
+    /// also warns while a world tick is stuck, with the stage each level is at. Chunks go out from
+    /// <see cref="ChunkLoopAsync"/> instead, since a chunk read from disk can take long enough to delay keep-alives.
     /// </summary>
-    private async Task ConnectionLoopAsync()
+    private async Task KeepAliveLoopAsync()
     {
         var timer = new BalancingTimer(50, cancelTokenSource.Token);
         var keepAliveTicks = 0;
@@ -351,11 +353,8 @@ public sealed partial class Server : IServer
                 if (++keepAliveTicks > Configuration.Network.KeepAliveInterval / 50)
                 {
                     keepAliveTicks = 0;
-                    await this.ForEachConnectionAsync(SendKeepAliveAsync);
+                    await this.ForEachConnectionAsync(SendKeepAliveAsync, this.keepAliveFailures);
                 }
-
-                // Chunks go out in batches the clients acknowledge (see Player.SendPendingChunksAsync).
-                await this.ForEachConnectionAsync(SendPendingChunksAsync);
 
                 var started = Volatile.Read(ref this.tickStarted);
                 if (started == 0)
@@ -383,6 +382,25 @@ public sealed partial class Server : IServer
             ClientState.Configuration => KeepAlivePacket.ClientboundConfiguration.HandleAsync(client),
             _ => ValueTask.CompletedTask
         };
+    }
+
+    /// <summary>
+    /// Sends players their chunks on its own timer, so a slow or stuck world tick doesn't leave them without terrain.
+    /// Chunks go out in batches the clients acknowledge (see <see cref="Player.SendPendingChunksAsync"/>).
+    /// </summary>
+    private async Task ChunkLoopAsync()
+    {
+        var timer = new BalancingTimer(50, cancelTokenSource.Token);
+
+        try
+        {
+            while (await timer.WaitForNextTickAsync())
+                await this.ForEachConnectionAsync(SendPendingChunksAsync, this.chunkFailures);
+        }
+        catch (OperationCanceledException) when (cancelTokenSource.IsCancellationRequested)
+        {
+            // Stopping.
+        }
 
         static async ValueTask SendPendingChunksAsync(IClient client)
         {
@@ -393,9 +411,9 @@ public sealed partial class Server : IServer
 
     /// <summary>
     /// Runs <paramref name="service"/> for every connection. A client that fails (one closing its socket, say) is
-    /// logged and skipped, so it can't hold up the clients after it.
+    /// logged to <paramref name="failures"/> and skipped, so it can't hold up the clients after it.
     /// </summary>
-    private async Task ForEachConnectionAsync(Func<IClient, ValueTask> service)
+    private async Task ForEachConnectionAsync(Func<IClient, ValueTask> service, ThrottledFailures failures)
     {
         foreach (var client in this.Connections.Values)
         {
@@ -406,7 +424,7 @@ public sealed partial class Server : IServer
             catch (Exception ex)
                 when (ex is not OperationCanceledException || !cancelTokenSource.IsCancellationRequested)
             {
-                if (this.connectionFailures.ShouldLog(out var suppressed))
+                if (failures.ShouldLog(out var suppressed))
                     Log.ConnectionTickFailed(this.logger, ex, suppressed);
             }
         }
