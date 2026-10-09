@@ -272,22 +272,35 @@ public partial class Player
         ArrayPool<int>.Shared.Return(removed);
     }
 
-    // Vanilla grows the player's box by 1 horizontally and 0.5 vertically to find items to pick up; an item's box is
-    // 0.25 wide and tall. These decide which items a player collects, so they match vanilla.
+    // Vanilla grows the player's box by 1 horizontally and 0.5 vertically to find items to pick up; while riding, it
+    // grows the box around both the player and the vehicle by 1 horizontally only. An item's box is 0.25 wide and tall.
+    // These decide which items a player collects, so they match vanilla.
     private const double PickupReachXZ = 1.0, PickupReachY = 0.5, ItemHalfWidth = 0.125, ItemHeight = 0.25;
 
     // The inventory's hotbar (container slots 36-44) then its main slots (9-35), the order vanilla fills them in.
     private static readonly int[] hotbarThenMainSlots = [.. Enumerable.Range(36, 9), .. Enumerable.Range(9, 27)];
 
     /// <summary>
-    /// Whether an item entity at <paramref name="item"/> touches the pickup area of a player standing at
-    /// <paramref name="feet"/> with a box of <paramref name="halfWidth"/> and <paramref name="height"/>.
+    /// The area a player whose box is <paramref name="player"/> picks items up from, riding a vehicle whose box is
+    /// <paramref name="vehicle"/>, or on foot when it's null.
     /// </summary>
-    internal static bool IsInPickupArea(VectorD feet, double halfWidth, double height, VectorD item) =>
-        Math.Abs(item.X - feet.X) < halfWidth + PickupReachXZ + ItemHalfWidth &&
-        Math.Abs(item.Z - feet.Z) < halfWidth + PickupReachXZ + ItemHalfWidth &&
-        item.Y + ItemHeight > feet.Y - PickupReachY &&
-        item.Y < feet.Y + height + PickupReachY;
+    internal static BoundingBox GetPickupArea(BoundingBox player, BoundingBox? vehicle)
+    {
+        if (vehicle is not BoundingBox mount)
+        {
+            var reach = new VectorD(PickupReachXZ, PickupReachY, PickupReachXZ);
+            return new BoundingBox(player.Min - reach, player.Max + reach);
+        }
+
+        var ridingReach = new VectorD(PickupReachXZ, 0, PickupReachXZ);
+        return new BoundingBox(VectorD.Min(player.Min, mount.Min) - ridingReach, VectorD.Max(player.Max, mount.Max) + ridingReach);
+    }
+
+    /// <summary>Whether the box of an item entity at <paramref name="item"/> overlaps a pickup <paramref name="area"/>.</summary>
+    internal static bool IsInPickupArea(BoundingBox area, VectorD item) =>
+        item.X + ItemHalfWidth > area.Min.X && item.X - ItemHalfWidth < area.Max.X &&
+        item.Z + ItemHalfWidth > area.Min.Z && item.Z - ItemHalfWidth < area.Max.Z &&
+        item.Y + ItemHeight > area.Min.Y && item.Y < area.Max.Y;
 
     /// <summary>
     /// Moves as much of <paramref name="item"/> into a player <paramref name="inventory"/> as fits, taking it off the
@@ -296,9 +309,10 @@ public partial class Player
     /// <remarks>
     /// Like vanilla, it tops up matching stacks first (the held slot, the offhand, the hotbar, then the main inventory)
     /// and only then fills empty slots, hotbar first. The held slot has no priority among empty slots, so which slot a
-    /// picked-up item lands in matches the client's expectations.
+    /// picked-up item lands in matches the client's expectations. With <paramref name="infiniteMaterials"/> (creative
+    /// mode), a stack none of which fits is used up anyway, as vanilla does; a stack that partly fits keeps the rest.
     /// </remarks>
-    internal static List<int> AddPickedUpItem(Container inventory, int heldSlot, ItemStack item)
+    internal static List<int> AddPickedUpItem(Container inventory, int heldSlot, ItemStack item, bool infiniteMaterials = false)
     {
         var changed = new List<int>();
         foreach (var slot in (int[])[heldSlot, 45, .. hotbarThenMainSlots])
@@ -328,6 +342,9 @@ public partial class Player
             item.Count -= count;
             changed.Add(slot);
         }
+
+        if (changed.Count == 0 && infiniteMaterials)
+            item.Count = 0;
         return changed;
     }
 
@@ -341,12 +358,18 @@ public partial class Player
             return;
         var halfWidth = (this.Dimension.Width > 0 ? this.Dimension.Width : 0.6) / 2;
         var height = this.Dimension.Height > 0 ? this.Dimension.Height : this.Swimming ? 0.6 : this.Sneaking ? 1.5 : 1.8;
-        // Far enough from the feet to reach every corner of the pickup area.
-        var reachXZ = halfWidth + PickupReachXZ + ItemHalfWidth;
-        var searchRadius = Math.Sqrt(2 * reachXZ * reachXZ + Math.Pow(height + PickupReachY, 2));
-        foreach (var entity in Level.GetNonPlayerEntitiesInRange(Position, (float)searchRadius))
+        var feet = this.Position;
+        var playerBox = new BoundingBox(new VectorD(feet.X - halfWidth, feet.Y, feet.Z - halfWidth),
+            new VectorD(feet.X + halfWidth, feet.Y + height, feet.Z + halfWidth));
+        var vehicleBox = this.Vehicle is Mob { IsRemoved: false } vehicle ? vehicle.Dimension.CreateBBFromPosition(vehicle.Position) : (BoundingBox?)null;
+        var area = GetPickupArea(playerBox, vehicleBox);
+        // The item positions (the bottom centre of an item's box) that can overlap the area, and a sphere around them.
+        var itemMin = area.Min - new VectorD(ItemHalfWidth, ItemHeight, ItemHalfWidth);
+        var itemMax = area.Max + new VectorD(ItemHalfWidth, 0, ItemHalfWidth);
+        var searchRadius = ((itemMax - itemMin) / 2).Magnitude;
+        foreach (var entity in Level.GetNonPlayerEntitiesInRange((itemMin + itemMax) / 2, (float)searchRadius))
         {
-            if (entity is not ItemEntity itemEntity || !IsInPickupArea(this.Position, halfWidth, height, itemEntity.Position))
+            if (entity is not ItemEntity itemEntity || !IsInPickupArea(area, itemEntity.Position))
                 continue;
 
             bool remove;
@@ -355,7 +378,8 @@ public partial class Player
                 if (itemEntity.Removed || !itemEntity.CanPickup || itemEntity.Item.Count <= 0)
                     continue;
                 var originalCount = itemEntity.Item.Count;
-                var changed = AddPickedUpItem(this.Inventory, this.CurrentHeldItemSlot, itemEntity.Item);
+                var changed = AddPickedUpItem(this.Inventory, this.CurrentHeldItemSlot, itemEntity.Item,
+                    this.GameMode == GameMode.Creative);
                 var collected = originalCount - itemEntity.Item.Count;
                 if (collected == 0)
                     continue;

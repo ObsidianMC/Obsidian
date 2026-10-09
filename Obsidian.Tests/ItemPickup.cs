@@ -8,18 +8,33 @@ namespace Obsidian.Tests;
 
 public sealed class ItemPickup
 {
-    // A standing player at (0, 64, 0): vanilla's pickup area reaches 1.425 out horizontally (0.3 + 1 + the item's
-    // 0.125) and from 0.75 below the feet (0.5 + the item's height) to 0.5 above the head.
+    // A player at (0, 64, 0) with a 0.6 by 1.8 box. On foot, vanilla's pickup area reaches 1.425 out horizontally
+    // (0.3 + 1 + the item's 0.125) and from 0.75 below the feet (0.5 + the item's height) to 0.5 above the head. Riding a
+    // 1.4 by 1.6 vehicle at (0, 63, 0), it reaches 1.825 out (0.7 + 1 + 0.125), down to the vehicle's feet less the
+    // item's height, and only up to the top of the player's head.
     [Theory]
-    [InlineData(1.42, 64, 0, true)]
-    [InlineData(1.43, 64, 0, false)]
-    [InlineData(0, 64, -1.42, true)]
-    [InlineData(0, 63.26, 0, true)]
-    [InlineData(0, 63.25, 0, false)]
-    [InlineData(0, 66.29, 0, true)]
-    [InlineData(0, 66.3, 0, false)]
-    public void PickupAreaMatchesVanilla(double x, double y, double z, bool expected) =>
-        Assert.Equal(expected, ServerPlayer.IsInPickupArea(new VectorD(0, 64, 0), 0.3, 1.8, new VectorD(x, y, z)));
+    [InlineData(false, 1.42, 64, 0, true)]
+    [InlineData(false, 1.43, 64, 0, false)]
+    [InlineData(false, 0, 64, -1.42, true)]
+    [InlineData(false, 0, 63.26, 0, true)]
+    [InlineData(false, 0, 63.25, 0, false)]
+    [InlineData(false, 0, 66.29, 0, true)]
+    [InlineData(false, 0, 66.3, 0, false)]
+    [InlineData(true, 1.82, 63, 0, true)]
+    [InlineData(true, 1.83, 63, 0, false)]
+    [InlineData(true, 0, 62.76, 0, true)]
+    [InlineData(true, 0, 62.75, 0, false)]
+    [InlineData(true, 0, 65.79, 0, true)]
+    [InlineData(true, 0, 65.8, 0, false)]
+    public void PickupAreaMatchesVanilla(bool riding, double x, double y, double z, bool expected)
+    {
+        var player = new BoundingBox(new VectorD(-0.3, 64, -0.3), new VectorD(0.3, 65.8, 0.3));
+        BoundingBox? vehicle = riding ? new BoundingBox(new VectorD(-0.7, 63, -0.7), new VectorD(0.7, 64.6, 0.7)) : null;
+
+        var area = ServerPlayer.GetPickupArea(player, vehicle);
+
+        Assert.Equal(expected, ServerPlayer.IsInPickupArea(area, new VectorD(x, y, z)));
+    }
 
     [Fact]
     public void PickupTopsUpStacksThenFillsTheFirstEmptyHotbarSlot()
@@ -39,5 +54,21 @@ public sealed class ItemPickup
         Assert.Equal(5, inventory.GetItem(36)!.Count);
         // The empty held slot gets no priority over the first empty hotbar slot.
         Assert.Null(inventory.GetItem(heldSlot));
+    }
+
+    [Theory]
+    [InlineData(false, 10)]
+    [InlineData(true, 0)]
+    public void FullInventoryKeepsTheStackUnlessCreative(bool infiniteMaterials, int expectedLeft)
+    {
+        var inventory = new Container(46);
+        for (var slot = 9; slot <= 45; slot++)
+            inventory.SetItem(slot, new ItemStack(ItemsRegistry.Dirt, 64));
+        var picked = new ItemStack(ItemsRegistry.Stone, 10);
+
+        var changed = ServerPlayer.AddPickedUpItem(inventory, 36, picked, infiniteMaterials);
+
+        Assert.Empty(changed);
+        Assert.Equal(expectedLeft, picked.Count);
     }
 }
