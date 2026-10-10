@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.API.Commands;
+using Obsidian.API.Commands.ArgumentParsers;
 using Obsidian.Commands.Framework;
 using System;
 using System.Collections.Generic;
@@ -67,7 +68,7 @@ public class Commands
 
     [Theory(DisplayName = "Command lines complete to subcommands and suggested argument values")]
     [InlineData("/sug", 1, 3, "suggest")]
-    [InlineData("/suggest ", 9, 0, "g,give,mix,paint,set")] // not the denied locked group
+    [InlineData("/suggest ", 9, 0, "draw,g,give,mix,paint,set")] // not the denied locked group
     [InlineData("/suggest set n", 13, 1, "night,noon")]
     [InlineData("/suggest set ", 13, 0, "day,midnight,night,noon")]
     [InlineData("suggest set N", 12, 1, "night,noon")] // command blocks omit the prefix
@@ -76,6 +77,8 @@ public class Commands
     [InlineData("/suggest g 5 d", 13, 1, "dirt")]
     [InlineData("/suggest give x d", 16, 1, "")] // x doesn't parse as the amount
     [InlineData("/suggest paint g", 15, 1, "green")] // from the argument parser
+    [InlineData("/suggest draw ", 14, 0, "circle,rounded_square")] // from the enum's members
+    [InlineData("/suggest draw ROU", 14, 3, "rounded_square")]
     [InlineData("/suggest mix r", 13, 1, "red bike")]
     [InlineData("/suggest mix red b", 13, 5, "red bike,red blue")] // the second word's suggestion is widened
     [InlineData("/suggest locked open n", 21, 1, "")]
@@ -103,6 +106,22 @@ public class Commands
         Assert.Single(handler.GetAllCommands(), x => x.Name == "set");
     }
 
+    [Theory(DisplayName = "Enum arguments read members by snake_case or C# name, but not by number")]
+    [InlineData("rounded_square", true)]
+    [InlineData("RoundedSquare", true)]
+    [InlineData("ROUNDED_SQUARE", true)]
+    [InlineData("1", false)]
+    [InlineData("square", false)]
+    public void ParsesEnumMembers(string input, bool parses)
+    {
+        var parser = new EnumArgumentParser(typeof(Shape));
+
+        Assert.Equal(parses, parser.TryParseArgument(input, null!, out var result));
+
+        if (parses)
+            Assert.Equal(Shape.RoundedSquare, result);
+    }
+
     private CommandHandler CreateSuggestionHandler()
     {
         var services = new ServiceCollection()
@@ -118,6 +137,8 @@ public class Commands
     }
 
     public enum Color { Red, Green }
+
+    public enum Shape { Circle, RoundedSquare }
 
     private sealed class ColorParser : BaseArgumentParser<Color>, ISuggestionProvider
     {
@@ -158,6 +179,9 @@ public class Commands
 
         [Command("paint")]
         public Task Paint(Color color) => Task.CompletedTask;
+
+        [Command("draw")]
+        public Task Draw(Shape shape) => Task.CompletedTask;
 
         [CommandGroup("locked")]
         [Deny]

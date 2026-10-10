@@ -8,6 +8,7 @@ using Obsidian.API.Plugins;
 using Obsidian.API.Utilities.Interfaces;
 using Obsidian.Commands.Builders;
 using Obsidian.Plugins;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace Obsidian.Commands.Framework;
@@ -21,7 +22,8 @@ public sealed class CommandHandler : ICommandHandler
 
     private readonly List<Command> _commands;
     private readonly CommandParser _commandParser;
-    private readonly Dictionary<Type, BaseArgumentParser> _argumentParsers;
+    // Concurrent because enum parsers are added on first use, which can happen on network threads.
+    private readonly ConcurrentDictionary<Type, BaseArgumentParser> _argumentParsers;
 
     public IServiceProvider ServiceProvider { get; }
 
@@ -36,8 +38,7 @@ public sealed class CommandHandler : ICommandHandler
             .Where(type => type.BaseType?.IsGenericType is true && type.BaseType.GetGenericArguments().Length != 0)
             .Select(x => (Activator.CreateInstance(x) as BaseArgumentParser)!);
 
-        _argumentParsers = parsers.OrderBy(x => x.Id)
-            .ToDictionary(x => x.GetType().BaseType!.GetGenericArguments().First(), x => x);
+        _argumentParsers = new(parsers.Select(x => KeyValuePair.Create(x.GetType().BaseType!.GetGenericArguments().First(), x)));
 
         this.ServiceProvider = serviceProvider;
         this.logger = logger;
@@ -45,17 +46,33 @@ public sealed class CommandHandler : ICommandHandler
 
     public (int id, string mctype) FindMinecraftType(Type type)
     {
-        if (!this._argumentParsers.TryGetValue(type, out var parser))
+        if (!this.TryGetArgumentParser(type, out var parser))
             throw new Exception($"No valid argument parser found for type {type.Name}!");
 
         return (parser.Id, parser.Identifier);
     }
 
     public bool IsValidArgumentType(Type argumentType) =>
-        this._argumentParsers.TryGetValue(argumentType, out _);
+        this.TryGetArgumentParser(argumentType, out _);
 
     public BaseArgumentParser GetArgumentParser(Type argumentType) =>
-        this._argumentParsers.TryGetValue(argumentType, out var parser) ? parser : throw new ArgumentException($"No parser registered for type {argumentType}");
+        this.TryGetArgumentParser(argumentType, out var parser) ? parser : throw new ArgumentException($"No parser registered for type {argumentType}");
+
+    /// <summary>
+    /// Finds the parser registered for <paramref name="type"/>. An enum without one gets an
+    /// <see cref="EnumArgumentParser"/>, kept for later lookups, so a plugin's parser for an enum must be added first.
+    /// </summary>
+    private bool TryGetArgumentParser(Type type, [NotNullWhen(true)] out BaseArgumentParser? parser)
+    {
+        if (this._argumentParsers.TryGetValue(type, out parser))
+            return true;
+
+        if (!type.IsEnum)
+            return false;
+
+        parser = this._argumentParsers.GetOrAdd(type, enumType => new EnumArgumentParser(enumType));
+        return true;
+    }
 
     public Command[] GetAllCommands() => _commands.ToArray();
 

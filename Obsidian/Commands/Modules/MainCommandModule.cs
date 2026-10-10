@@ -280,26 +280,21 @@ public sealed class MainCommandModule : CommandModuleBase
     [CommandInfo("Change your gamemode.", "/gamemode <survival/creative/adventure/spectator>")]
     [IssuerScope(CommandIssuers.Client)]
     [RequirePermission(op: true, permissions: "obsidian.gamemode")]
-    public async Task GamemodeAsync(string gamemode)
+    public async Task GamemodeAsync(GameMode gamemode)
     {
         if (this.Player is not Player player)
             return;
 
-        // TryParse accepts any number, so "/gamemode 4" needs the defined check.
-        if (!Enum.TryParse<GameMode>(gamemode, true, out var result) || !Enum.IsDefined(result))
+        var name = gamemode.ToString().ToSnakeCase();
+
+        if (player.GameMode != gamemode)
         {
-            await player.SendMessageAsync(SendCommandUsage("/gamemode <survival/creative/adventure/spectator>"));
+            await player.SetGamemodeAsync(gamemode);
+            await player.SendMessageAsync($"{ChatColor.Reset}Gamemode set to {ChatColor.Red}{name}{ChatColor.Reset}.");
             return;
         }
 
-        if (player.GameMode != result)
-        {
-            await player.SetGamemodeAsync(result);
-            await player.SendMessageAsync($"{ChatColor.Reset}Gamemode set to {ChatColor.Red}{gamemode}{ChatColor.Reset}.");
-            return;
-        }
-
-        await player.SendMessageAsync($"{ChatColor.Reset}You're already in {ChatColor.Red}{gamemode}{ChatColor.Reset}.");
+        await player.SendMessageAsync($"{ChatColor.Reset}You're already in {ChatColor.Red}{name}{ChatColor.Reset}.");
     }
 
     [Command("tp")]
