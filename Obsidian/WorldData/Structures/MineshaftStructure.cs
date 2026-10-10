@@ -242,7 +242,8 @@ public sealed class MineshaftRoom : MineshaftPiece
     private readonly List<BlockBox> entrances = [];
 
     public MineshaftRoom(int genDepth, IRandomSource random, int x, int z, MineshaftType type)
-        : base(genDepth, type, BlockBox.Create(x, MineshaftPieces.StartY, z, x + 7 + random.NextInt(6), 54 + random.NextInt(6), z + 7 + random.NextInt(6)))
+        : base(genDepth, type,
+            BlockBox.Create(x, MineshaftPieces.StartY, z, x + 7 + random.NextInt(6), 54 + random.NextInt(6), z + 7 + random.NextInt(6)))
     {
     }
 

@@ -17,7 +17,7 @@ public record struct TypeInformation
     {
         var members = this.Symbol.GetMembers().Where(x => x.Kind == SymbolKind.Property).ToList();
 
-        if (this.Symbol.BaseType != null)
+        if (this.Symbol.BaseType is not null)
             members.AddRange(this.Symbol.BaseType.GetMembers().Where(x => x.Kind == SymbolKind.Property));
 
         foreach (var mem in members.ToList())

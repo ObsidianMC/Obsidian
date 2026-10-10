@@ -7,8 +7,8 @@ public abstract class BaseTallFlora : BaseFlora
     protected readonly IBlock blockWithLowerState;
     protected readonly IBlock blockWithUpperState;
 
-    protected BaseTallFlora(GenHelper helper, IChunk chunk, Material floraMat, int maxHeight = 2, IBlockState? lowerState = null, IBlockState? upperState = null) : 
-        base(helper, chunk, floraMat)
+    protected BaseTallFlora(GenHelper helper, IChunk chunk, Material floraMat, int maxHeight = 2, IBlockState? lowerState = null,
+        IBlockState? upperState = null) : base(helper, chunk, floraMat)
     {
         this.blockWithLowerState = BlocksRegistry.Get(floraMat, lowerState);
         this.blockWithUpperState = BlocksRegistry.Get(floraMat, upperState);

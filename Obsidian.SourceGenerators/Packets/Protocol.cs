@@ -86,7 +86,8 @@ internal sealed class Protocol
         var parts = mojangName.Split('.');
         var name = parts.Length == 1
             ? parts[0]
-            : string.Concat(parts.Take(parts.Length - 1).Select(part => Regex.Replace(part, "^(Clientbound|Serverbound)|Packet$", ""))) + parts.Last();
+            : string.Concat(parts.Take(parts.Length - 1).Select(part => Regex.Replace(part, "^(Clientbound|Serverbound)|Packet$", "")))
+                + parts.Last();
         return renames.TryGetValue(name, out var renamed) ? renamed : name;
     }
 

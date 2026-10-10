@@ -16,6 +16,7 @@ public sealed record class BiomeEffect : INbtSerializable
     public string FogColor { get; set; }
     public string WaterColor { get; set; }
     public string FoliageColor { get; set; }
+    public string? DryFoliageColor { get; set; }
     public string GrassColor { get; set; }
 
     public void Write(INbtWriter writer)
@@ -29,6 +30,9 @@ public sealed record class BiomeEffect : INbtSerializable
 
         if (!string.IsNullOrEmpty(this.FoliageColor))
             writer.WriteString("foliage_color", FoliageColor);
+
+        if (!string.IsNullOrEmpty(this.DryFoliageColor))
+            writer.WriteString("dry_foliage_color", this.DryFoliageColor);
 
         if (!string.IsNullOrEmpty(this.GrassColor))
             writer.WriteString("grass_color", this.GrassColor);

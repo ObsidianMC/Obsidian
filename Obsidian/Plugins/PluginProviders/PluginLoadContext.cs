@@ -11,7 +11,7 @@ public sealed class PluginLoadContext(string name) : AssemblyLoadContext(name: n
     public Assembly? LoadAssembly(byte[] mainBytes, byte[]? pbdBytes = null)
     {
         using var mainStream = new MemoryStream(mainBytes, false);
-        using var pbdStream = pbdBytes != null ? new MemoryStream(pbdBytes, false) : null;
+        using var pbdStream = pbdBytes is not null ? new MemoryStream(pbdBytes, false) : null;
 
         return this.LoadFromStream(mainStream, pbdStream);
     }

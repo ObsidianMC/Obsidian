@@ -4,6 +4,7 @@ using Microsoft.Extensions.ObjectPool;
 using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
+using Obsidian.Integrated;
 using Obsidian.Net;
 using Obsidian.Net.ClientHandlers;
 using Obsidian.Net.Packets.Common;
@@ -48,8 +49,6 @@ public sealed partial class Client : IClient
     /// Whether this client is disposed.
     /// </summary>
     private bool disposed;
-    private bool disconnected;
-    private readonly Lock lifecycleLock = new();
 
     /// <summary>
     /// The random token used to encrypt the stream; empty until the encryption request is sent.
@@ -72,6 +71,19 @@ public sealed partial class Client : IClient
     /// The cancellation token source used to cancel the packet queue loop and disconnect the client.
     /// </summary>
     private readonly CancellationTokenSource cancellationSource = new();
+
+    // The player's leave, once it was raised; see LeaveAsync.
+    private TaskCompletionSource? leaving;
+
+    // Set once Disconnect ran; it may be called again (a shutdown disconnecting a client that already left). Guarded by
+    // lifecycleLock together with disposing and registering the client, so a login that resumes after a disconnect
+    // doesn't register it again.
+    private bool disconnected;
+    private readonly Lock lifecycleLock = new();
+
+    // The client whose leave event is being raised on this flow, so a leave handler that disconnects the same player
+    // doesn't wait for the leave it's part of.
+    private static readonly AsyncLocal<Client?> raisingLeave = new();
 
     /// <summary>
     /// Used to handle packets while the client is in a <see cref="ClientState.Play"/> state.
@@ -104,9 +116,6 @@ public sealed partial class Client : IClient
 
     // The size from which packets are compressed, or -1 before compression is enabled (see EnableCompression).
     private volatile int compressionThreshold = -1;
-
-    // Set once the player's leave event was raised; see RaiseLeaveAsync.
-    private int leaveRaised;
 
     /// <summary>
     /// Whether the stream has encryption enabled. This can be set to false when the client is connecting through LAN or when the server is in offline mode.
@@ -199,7 +208,7 @@ public sealed partial class Client : IClient
 
     public void Initialize(IWorld world)
     {
-        if (this.profile == null)
+        if (this.profile is null)
             throw new UnreachableException("Profile was not set or is null.");
 
         this.Player = this.CreatePlayer(this.profile.Uuid, this.profile.Name, world);
@@ -218,11 +227,15 @@ public sealed partial class Client : IClient
         });
     }
 
-    public void InitializeOffline(string username, IWorld world)
+    /// <summary>
+    /// Logs the player in without Mojang authentication, with the UUID offline servers derive from the name, or with
+    /// <paramref name="uuid"/> (an integrated server's local player).
+    /// </summary>
+    public void InitializeOffline(string username, IWorld world, Guid? uuid = null)
     {
         this.InitializeId();
 
-        this.Player = this.CreatePlayer(GuidHelper.FromStringHash($"OfflinePlayer:{username}"), username, world);
+        this.Player = this.CreatePlayer(uuid ?? GuidHelper.FromStringHash($"OfflinePlayer:{username}"), username, world);
 
         this.EnableCompression();
         this.SendPacket(new LoginFinishedPacket(Player.Uuid, Player.Username)
@@ -233,7 +246,7 @@ public sealed partial class Client : IClient
 
     public async ValueTask DisconnectAsync(ChatMessage reason)
     {
-        await this.RaiseLeaveAsync();
+        await this.LeaveAsync();
 
         if (this.State == ClientState.Login)
         {
@@ -355,12 +368,14 @@ public sealed partial class Client : IClient
             this.disconnected = true;
             this.cancellationSource.Cancel();
         }
+
         Disconnected?.Invoke(this);
 
-        // A player whose client closed the connection (as vanilla's clients do to quit) leaves too, and other players
-        // stop seeing them. A player still logging in or configuring hasn't joined, so there's nothing to leave.
+        // A player whose client closed the connection (as vanilla's clients do to quit) leaves too and is saved, and
+        // other players stop seeing them. A player still logging in or configuring hasn't joined, so there's nothing to
+        // leave.
         if (this.State == ClientState.Play)
-            _ = this.RaiseLeaveAsync();
+            _ = this.LeaveAsync();
 
         this.receiveEvent.Completed -= this.OnAsyncCompleted;
         this.sendEvent.Completed -= this.OnAsyncCompleted;
@@ -396,25 +411,6 @@ public sealed partial class Client : IClient
         this.Dispose();
     }
 
-    /// <summary>
-    /// Raises the player's leave event the first time it's called, however the connection ends: kicked by the server
-    /// (<see cref="DisconnectAsync"/>) or closed by the client (<see cref="Disconnect"/>).
-    /// </summary>
-    private async Task RaiseLeaveAsync()
-    {
-        if (this.Player is not IPlayer player || Interlocked.Exchange(ref this.leaveRaised, 1) == 1)
-            return;
-
-        try
-        {
-            await this.eventDispatcher.ExecuteEventAsync(new PlayerLeaveEventArgs(player, this.Server, DateTimeOffset.Now));
-        }
-        catch (Exception ex)
-        {
-            Log.LeaveFailed(this.Logger, ex, player.Username);
-        }
-    }
-
     private async Task<MojangProfile?> HasJoinedAsync() => await this.userCache.HasJoinedAsync(this.Player!.Username, this.ServerId!);
 
     private async Task HandlePacketQueueAsync()
@@ -426,7 +422,7 @@ public sealed partial class Client : IClient
             {
                 var packet = await this.packetQueue.Reader.ReadAsync(cancellationToken);
 
-                if (packet == null)
+                if (packet is null)
                     continue;
 
                 this.SendPacket(packet);
@@ -455,19 +451,81 @@ public sealed partial class Client : IClient
 
     private void InitializeId()
     {
-        this.Server.Connections.Remove(this.Id, out _);
+        lock (this.lifecycleLock)
+        {
+            // Login awaits, and the client may have disconnected meanwhile; it stays out of the connections then.
+            if (this.disconnected)
+                return;
 
-        this.Id = Obsidian.Server.GetNextEntityId();
+            this.Server.Connections.Remove(this.Id, out _);
 
-        this.Server.Connections.TryAdd(this.Id, this);
+            this.Id = Obsidian.Server.GetNextEntityId();
 
-        this.Logger = this.loggerFactory.CreateLogger($"Client({this.Id})");
+            this.Server.Connections.TryAdd(this.Id, this);
+
+            this.Logger = this.loggerFactory.CreateLogger($"Client({this.Id})");
+        }
     }
 
     private Player CreatePlayer(Guid uuid, string username, IWorld world) => new(uuid, username, this, world)
     {
-        Server = this.serviceProvider.GetRequiredService<IServer>()
+        Server = this.serviceProvider.GetRequiredService<IServer>(),
+
+        // Vanilla's isSingleplayerOwner: an integrated server's local player.
+        IsSingleplayerOwner = this.Server is Server { Integrated: IntegratedSession integrated }
+            && uuid == integrated.Configuration.LocalPlayerUuid
+            && integrated.IsLocalPlayer(username)
     };
+
+    /// <summary>
+    /// Raises the player's leave event, which saves them, once however the connection ends: closed by the server
+    /// (<see cref="DisconnectAsync"/>) or by the client (<see cref="Disconnect"/>). Every call returns the same leave, so
+    /// a later one waits for it, and the server's shutdown waits for it too (<see cref="Server.TrackLeave"/>). A call from
+    /// a leave handler itself (kicking the player who's leaving) doesn't wait, since the leave waits for it.
+    /// </summary>
+    private Task LeaveAsync()
+    {
+        if (this.Player is not Player player || raisingLeave.Value == this)
+            return Task.CompletedTask;
+
+        var leave = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        if (Interlocked.CompareExchange(ref this.leaving, leave, null) is TaskCompletionSource started)
+            return started.Task;
+
+        // Tracked before it starts, so a shutdown that begins meanwhile still waits for it.
+        if (this.Server is Server server)
+            server.TrackLeave(leave.Task);
+
+        _ = this.RaiseLeaveAsync(player, leave);
+        return leave.Task;
+    }
+
+    // Raises the leave event and completes the leave; it never throws.
+    private async Task RaiseLeaveAsync(Player player, TaskCompletionSource leave)
+    {
+        raisingLeave.Value = this;
+        try
+        {
+            EventResult result;
+            try
+            {
+                result = await this.eventDispatcher.ExecuteEventAsync(new PlayerLeaveEventArgs(player, this.Server, DateTimeOffset.Now));
+            }
+            catch (Exception ex)
+            {
+                Log.LeaveFailed(this.Logger, ex, player.Username);
+                result = EventResult.Failed;
+            }
+
+            // Leaving saves the player, so a failed leave may have lost their data; it's reported like a failed save.
+            if (result == EventResult.Failed && this.Server is Server server)
+                server.ReportPlayerSaveFailed(player.Username);
+        }
+        finally
+        {
+            leave.SetResult();
+        }
+    }
 
     private static partial class Log
     {

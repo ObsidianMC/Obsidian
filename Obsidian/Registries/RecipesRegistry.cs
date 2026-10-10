@@ -15,8 +15,14 @@ public static partial class RecipesRegistry
 
     internal static IReadOnlyList<IRecipeWithResult> RecipeBookRecipes { get; private set; } = [];
 
+    /// <summary>
+    /// Loads vanilla's recipes. They're static, so a server started again in the same process keeps the loaded ones.
+    /// </summary>
     public static async Task InitializeAsync()
     {
+        if (shapedRecipeLookup is not null)
+            return;
+
         await using var fs = Assembly.GetExecutingAssembly().GetManifestResourceStream("Obsidian.Assets.recipes.json")!;
         var recipes = await fs.FromJsonAsync<IRecipe[]>();
 

@@ -141,8 +141,10 @@ internal static class ObjectMethodExecutorFSharpSupport
 
         (nonGenericAwaitableType, coercerExpression) = genericAwaitableType.GetGenericTypeDefinition() switch
         {
-            var typeDef when typeDef == typeof(Task<>) && IsFSharpUnit(genericAwaitableType.GetGenericArguments()[0]) => (typeof(Task), MakeTaskOfUnitToTaskExpression(genericAwaitableType)),
-            var typeDef when typeDef == typeof(ValueTask<>) && IsFSharpUnit(genericAwaitableType.GetGenericArguments()[0]) => (typeof(ValueTask), MakeValueTaskOfUnitToValueTaskExpression(genericAwaitableType)),
+            var typeDef when typeDef == typeof(Task<>) && IsFSharpUnit(genericAwaitableType.GetGenericArguments()[0]) =>
+                (typeof(Task), MakeTaskOfUnitToTaskExpression(genericAwaitableType)),
+            var typeDef when typeDef == typeof(ValueTask<>) && IsFSharpUnit(genericAwaitableType.GetGenericArguments()[0]) =>
+                (typeof(ValueTask), MakeValueTaskOfUnitToValueTaskExpression(genericAwaitableType)),
             _ => default
         };
 

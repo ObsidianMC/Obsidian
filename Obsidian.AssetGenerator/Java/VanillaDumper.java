@@ -111,6 +111,7 @@ public final class VanillaDumper {
         var version = bootstrap(mojang);
         var dumper = new VanillaDumper(mojang, output, version);
         dumper.dumpBlockLight();
+        dumper.dumpBlockSounds();
         dumper.dumpBlockPhysics();
         dumper.dumpCollisionShapes();
         dumper.dumpBlastResistance();
@@ -118,6 +119,8 @@ public final class VanillaDumper {
         dumper.dumpMapColors();
         dumper.dumpWallShapeCovers();
         dumper.dumpEntities();
+        dumper.dumpCreativeTabs();
+        dumper.dumpStatistics();
         dumper.dumpWorldgenGroups(work);
         dumper.dumpPacketFields(work);
         System.out.printf("Dumped vanilla data in %.1fs%n", (System.nanoTime() - started) / 1e9);
@@ -190,6 +193,29 @@ public final class VanillaDumper {
         var size = (int) Mojang.call(mojang.method("net.minecraft.core.IdMapper", "size"), stateIds);
         for (var id = 0; id < size; id++)
             states.add(Mojang.call(byId, stateIds, id));
+    }
+
+    /** State-indexed audio behavior, kept as generated data rather than hand-maintained material guesses. */
+    private void dumpBlockSounds() throws IOException {
+        var soundType = "net.minecraft.world.level.block.SoundType";
+        var getType = mojang.method(STATE_BASE, "getSoundType");
+        var volume = mojang.method(soundType, "getVolume");
+        var pitch = mojang.method(soundType, "getPitch");
+        var location = mojang.method("net.minecraft.sounds.SoundEvent", "location");
+        var types = new Indexer<Map<String, Object>>();
+        var ids = new int[states.size()];
+        for (var i = 0; i < states.size(); i++) {
+            var type = Mojang.call(getType, states.get(i));
+            var row = new LinkedHashMap<String, Object>();
+            row.put("volume", Mojang.call(volume, type));
+            row.put("pitch", Mojang.call(pitch, type));
+            for (var kind : List.of("Break", "Step", "Place", "Hit", "Fall")) {
+                var event = Mojang.call(mojang.method(soundType, "get" + kind + "Sound"), type);
+                row.put(kind.toLowerCase(java.util.Locale.ROOT), Mojang.call(location, event).toString());
+            }
+            ids[i] = types.indexOf(row);
+        }
+        Json.write(output.resolve("block_sounds.json"), Map.of("states", ids, "types", types.values()), false);
     }
 
     /**
@@ -360,10 +386,29 @@ public final class VanillaDumper {
         var fluids = new Object[] { null, mojang.get(FLUIDS, "WATER"), mojang.get(FLUIDS, "FLOWING_WATER"),
             mojang.get(FLUIDS, "LAVA"), mojang.get(FLUIDS, "FLOWING_LAVA") };
 
+        var visualShape = mojang.method(STATE_BASE, "getVisualShape", BLOCK_GETTER, BLOCK_POS, "net.minecraft.world.phys.shapes.CollisionContext");
+        var outlineShape = mojang.method(STATE_BASE, "getShape", BLOCK_GETTER, BLOCK_POS, "net.minecraft.world.phys.shapes.CollisionContext");
+        var isSuffocating = mojang.method(STATE_BASE, "isSuffocating", BLOCK_GETTER, BLOCK_POS);
+        var hasOffset = mojang.method(STATE_BASE, "hasOffsetFunction");
+        var getOffset = mojang.method(STATE_BASE, "getOffset", BLOCK_POS);
+        var maxHorizontalOffset = mojang.method("net.minecraft.world.level.block.state.BlockBehaviour", "getMaxHorizontalOffset");
+        var maxVerticalOffset = mojang.method("net.minecraft.world.level.block.state.BlockBehaviour", "getMaxVerticalOffset");
+        var offsetX = mojang.field("net.minecraft.world.phys.Vec3", "x");
+        var offsetY = mojang.field("net.minecraft.world.phys.Vec3", "y");
+        var offsetZ = mojang.field("net.minecraft.world.phys.Vec3", "z");
+        var emptyContext = Mojang.call(mojang.method("net.minecraft.world.phys.shapes.CollisionContext", "empty"), null);
+        var destroySpeed = mojang.method(STATE_BASE, "getDestroySpeed", BLOCK_GETTER, BLOCK_POS);
+        var correctTool = mojang.method(STATE_BASE, "requiresCorrectToolForDrops");
+        var shapeBoxes = new Indexer<List<double[]>>(shape -> shape.stream().map(Arrays::toString).toList());
+        var collisionShapes = new int[states.size()];
+        var visualShapes = new int[states.size()];
+        var outlineShapes = new int[states.size()];
+        var suffocating = new ArrayList<Boolean>();
+        var shapeOffsets = new double[states.size()][];
+        var hardness = new double[states.size()];
+        var requiresTool = new ArrayList<Boolean>();
         var flags = new int[states.size()];
         var fluidFlags = new int[states.size()];
-        var collisionShapeIds = new int[states.size()];
-        var collisionShapes = new Indexer<List<double[]>>(shape -> shape.stream().map(Arrays::toString).toList());
         var faces = new Indexer<List<double[]>>(face -> face.stream().map(Arrays::toString).toList());
         var faceSets = new Indexer<List<Integer>>();
         faceSets.indexOf(List.of(0, 0, 0, 0, 0, 0)); // set 0: no faces, also used for full blocks (checked first)
@@ -371,7 +416,19 @@ public final class VanillaDumper {
             var state = states.get(id);
             var fluidState = Mojang.call(getFluidState, state);
             var collision = Mojang.call(getCollisionShape, state, emptyLevel, origin);
-            collisionShapeIds[id] = collisionShapes.indexOf(boxes(collision));
+            collisionShapes[id] = shapeBoxes.indexOf(boxes(collision));
+            visualShapes[id] = shapeBoxes.indexOf(boxes(Mojang.call(visualShape, state, emptyLevel, origin, emptyContext)));
+            outlineShapes[id] = shapeBoxes.indexOf(boxes(Mojang.call(outlineShape, state, emptyLevel, origin, emptyContext)));
+            suffocating.add((boolean) Mojang.call(isSuffocating, state, emptyLevel, origin));
+            shapeOffsets[id] = new double[0];
+            if ((boolean) Mojang.call(hasOffset, state)) {
+                var offset = Mojang.call(getOffset, state, origin);
+                var block = Mojang.call(getBlock, state);
+                shapeOffsets[id] = new double[] { (double) Mojang.get(offsetX, offset), (double) Mojang.get(offsetY, offset),
+                    (double) Mojang.get(offsetZ, offset), (float) Mojang.call(maxHorizontalOffset, block), (float) Mojang.call(maxVerticalOffset, block) };
+            }
+            hardness[id] = (float) Mojang.call(destroySpeed, state, emptyLevel, origin);
+            requiresTool.add((boolean) Mojang.call(correctTool, state));
 
             var bits = 0;
             bits |= bit(0, Mojang.call(isAir, state));
@@ -427,8 +484,14 @@ public final class VanillaDumper {
         json.put("fluidFlags", fluidFlags);
         json.put("collisionFaceSets", faceSets.values());
         json.put("collisionFaces", faces.values());
-        json.put("collisionShapeIds", collisionShapeIds);
-        json.put("collisionShapes", collisionShapes.values());
+        json.put("shapeBoxes", shapeBoxes.values());
+        json.put("collisionShapes", collisionShapes);
+        json.put("visualShapes", visualShapes);
+        json.put("outlineShapes", outlineShapes);
+        json.put("suffocating", suffocating);
+        json.put("shapeOffsets", Arrays.asList(shapeOffsets));
+        json.put("hardness", hardness);
+        json.put("requiresTool", requiresTool);
         Json.write(output.resolve("block_physics.json"), json, false);
     }
 
@@ -583,6 +646,90 @@ public final class VanillaDumper {
         Files.write(output.resolve("wall_shape_covers.bin"), covers);
     }
 
+    /** Creative tab metadata and item IDs, evaluated with the default feature flags and vanilla registry tags. */
+    private void dumpCreativeTabs() throws IOException {
+        // Creative variants consult dynamic registry tags (paintings, instruments, enchantments). Load the same
+        // vanilla pack registries as a server, instead of datagen's unbound bootstrap holders.
+        var provider = "net.minecraft.core.HolderLookup$Provider";
+        var packType = "net.minecraft.server.packs.PackType";
+        var vanillaPack = Mojang.call(mojang.method("net.minecraft.server.packs.repository.ServerPacksSource", "createVanillaPackSource"), null);
+        var resources = Mojang.create(mojang.constructor("net.minecraft.server.packs.resources.MultiPackResourceManager", packType, "java.util.List"),
+            mojang.get(packType, "SERVER_DATA"), List.of(vanillaPack));
+        var builtins = Mojang.call(mojang.method("net.minecraft.core.RegistryAccess", "fromRegistryOfRegistries", REGISTRY),
+            null, mojang.get(REGISTRIES, "REGISTRY"));
+        var listRegistries = mojang.method(provider, "listRegistries");
+        var builtinList = ((java.util.stream.Stream<?>) Mojang.call(listRegistries, builtins)).toList();
+        var loaded = Mojang.call(mojang.method("net.minecraft.resources.RegistryDataLoader", "load",
+            "net.minecraft.server.packs.resources.ResourceManager", "java.util.List", "java.util.List"),
+            null, resources, builtinList, mojang.get("net.minecraft.resources.RegistryDataLoader", "WORLDGEN_REGISTRIES"));
+        var lookup = Mojang.call(mojang.method(provider, "create", "java.util.stream.Stream"), null,
+            java.util.stream.Stream.concat(builtinList.stream(), (java.util.stream.Stream<?>) Mojang.call(listRegistries, loaded)));
+        var flags = mojang.get("net.minecraft.world.flag.FeatureFlags", "DEFAULT_FLAGS");
+        Mojang.call(mojang.method("net.minecraft.world.item.CreativeModeTabs", "tryRebuildTabContents",
+            "net.minecraft.world.flag.FeatureFlagSet", "boolean", "net.minecraft.core.HolderLookup$Provider"),
+            null, flags, false, lookup);
+        var tabType = "net.minecraft.world.item.CreativeModeTab";
+        var stackType = "net.minecraft.world.item.ItemStack";
+        var itemRegistry = mojang.get(REGISTRIES, "ITEM");
+        var tabRegistry = mojang.get(REGISTRIES, "CREATIVE_MODE_TAB");
+        var getItem = mojang.method(stackType, "getItem");
+        var getId = mojang.method(REGISTRY, "getId", "java.lang.Object");
+        var tabs = new ArrayList<Object>();
+        for (var tab : (Iterable<?>) tabRegistry) {
+            var entry = new LinkedHashMap<String, Object>();
+            entry.put("name", Mojang.call(registryKey, tabRegistry, tab).toString());
+            entry.put("row", ((Enum<?>) Mojang.call(mojang.method(tabType, "row"), tab)).ordinal());
+            entry.put("column", Mojang.call(mojang.method(tabType, "column"), tab));
+            entry.put("alignedRight", Mojang.call(mojang.method(tabType, "isAlignedRight"), tab));
+            var title = Mojang.call(mojang.method(tabType, "getDisplayName"), tab);
+            var contents = Mojang.call(mojang.method("net.minecraft.network.chat.Component", "getContents"), title);
+            entry.put("title", Mojang.call(mojang.method("net.minecraft.network.chat.contents.TranslatableContents", "getKey"), contents));
+            var icon = Mojang.call(mojang.method(tabType, "getIconItem"), tab);
+            entry.put("icon", Mojang.call(getId, itemRegistry, Mojang.call(getItem, icon)));
+            entry.put("background", Mojang.call(mojang.method(tabType, "getBackgroundTexture"), tab).toString());
+            // Preserve vanilla ordering and duplicates: component variants occupy distinct creative entries.
+            // The client currently offers plain stacks; retaining every entry lets the component codec be added later.
+            var items = new ArrayList<Integer>();
+            for (var stack : (Iterable<?>) Mojang.call(mojang.method(tabType, "getDisplayItems"), tab))
+                items.add((int) Mojang.call(getId, itemRegistry, Mojang.call(getItem, stack)));
+            entry.put("items", items);
+            tabs.add(entry);
+        }
+        Json.write(output.resolve("creative_tabs.json"), Map.of("version", version, "tabs", tabs), true);
+    }
+
+    /** Statistics registry ids, value registries and custom formatters for the client statistics screen. */
+    private void dumpStatistics() throws IOException {
+        var types = mojang.get(REGISTRIES, "STAT_TYPE");
+        var getRegistry = mojang.method("net.minecraft.stats.StatType", "getRegistry");
+        var getStat = mojang.method("net.minecraft.stats.StatType", "get", "java.lang.Object");
+        var formatterField = mojang.field("net.minecraft.stats.Stat", "formatter");
+        var formatterNames = List.of("DEFAULT", "DIVIDE_BY_TEN", "DISTANCE", "TIME");
+        var formatters = formatterNames.stream().map(name -> mojang.get("net.minecraft.stats.StatFormatter", name)).toList();
+        var result = new ArrayList<Object>();
+        for (var type : (Iterable<?>) types) {
+            var registry = Mojang.call(getRegistry, type);
+            var values = new ArrayList<Object>();
+            for (var value : (Iterable<?>) registry) {
+                var entry = new LinkedHashMap<String, Object>();
+                entry.put("name", key(registry, value));
+                if (key(types, type).equals("minecraft:custom")) {
+                    var formatter = Mojang.get(formatterField, Mojang.call(getStat, type, value));
+                    entry.put("formatter", formatterNames.get(formatters.indexOf(formatter)));
+                }
+                values.add(entry);
+            }
+            result.add(Map.of("name", key(types, type), "values", values));
+        }
+        var itemRegistry = mojang.get(REGISTRIES, "ITEM");
+        var getId = mojang.method(REGISTRY, "getId", "java.lang.Object");
+        var asItem = mojang.method(BLOCK, "asItem");
+        var blockItems = new ArrayList<Integer>();
+        for (var block : (Iterable<?>) blockRegistry)
+            blockItems.add((int) Mojang.call(getId, itemRegistry, Mojang.call(asItem, block)));
+        Json.write(output.resolve("statistics.json"), Map.of("types", result, "blockItems", blockItems), true);
+    }
+
     /**
      * {@code entities.json}, read by {@code Obsidian.SourceGenerators/Registry/EntityGenerator.cs}: every entity type
      * by id, with its {@code EntityType} properties, default attributes ({@code DefaultAttributes}), Mojang class name,
@@ -592,6 +739,10 @@ public final class VanillaDumper {
     private void dumpEntities() throws IOException {
         var types = mojang.get(REGISTRIES, "ENTITY_TYPE");
         var attributes = mojang.get(REGISTRIES, "ATTRIBUTE");
+        var attributeIds = new LinkedHashMap<String, Object>();
+        for (var attribute : (Iterable<?>) attributes)
+            attributeIds.put(key(attributes, attribute), Mojang.call(mojang.method("net.minecraft.core.IdMap", "getId", "java.lang.Object"), attributes, attribute));
+        Json.write(output.resolve("attribute_ids.json"), attributeIds, false);
         var getId = mojang.method("net.minecraft.core.IdMap", "getId", "java.lang.Object");
         var wrapAsHolder = mojang.method(REGISTRY, "wrapAsHolder", "java.lang.Object");
         var getDescriptionId = mojang.method(ENTITY_TYPE, "getDescriptionId");

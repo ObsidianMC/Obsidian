@@ -14,7 +14,8 @@ public static class OverworldDecorator
     private static readonly ConcurrentDictionary<Type, Func<GenHelper, IChunk, BaseFlora>> floraCache = new();
 
     private static readonly Type[] argumentCache = [typeof(GenHelper), typeof(IChunk)];
-    public static readonly ParameterExpression[] expressionParameters = argumentCache.Select((t, i) => Expression.Parameter(t, $"param{i}")).ToArray();
+    public static readonly ParameterExpression[] expressionParameters =
+        argumentCache.Select((type, i) => Expression.Parameter(type, $"param{i}")).ToArray();
 
     static OverworldDecorator()
     {

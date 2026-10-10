@@ -189,7 +189,8 @@ public partial class Extensions
         }
     }
 
-    internal static void GenerateSimpleCodec(this CodeBuilder builder, Codec[] codecs, string registryName, string codecKey, string codecType, SourceProductionContext ctx)
+    internal static void GenerateSimpleCodec(this CodeBuilder builder, Codec[] codecs, string registryName,
+        string codecKey, string codecType, SourceProductionContext ctx)
     {
         builder.Type($"public static class {registryName}");
 
@@ -285,7 +286,8 @@ public partial class Extensions
     /// </summary>
     internal static bool TryAppendStateProperty(this CodeBuilder builder, string? elementName, JsonElement element, bool isDictionary = false)
     {
-        var isState = elementName is Constants.DefaultBlock or Constants.DefaultFluid or Constants.BlockResult or "state" || element.TryGetProperty("Properties", out _);
+        var isState = elementName is Constants.DefaultBlock or Constants.DefaultFluid or Constants.BlockResult or "state"
+            || element.TryGetProperty("Properties", out _);
 
         if (isState || isDictionary)
         {

@@ -164,7 +164,7 @@ public sealed partial class PackedPluginProvider(PluginManager pluginManager, IL
         var isSigValid = true;
         if (!this.pluginManager.server.Configuration.AllowUntrustedPlugins)
         {
-            if (signature == null)
+            if (signature is null)
                 return false;
 
             using var rsa = RSA.Create();
@@ -259,7 +259,7 @@ public sealed partial class PackedPluginProvider(PluginManager pluginManager, IL
             var deps = target.Dependencies;
             var runtimes = target.Runtime;
 
-            if (runtimes == null)//We don't care if its null
+            if (runtimes is null)//We don't care if its null
                 continue;
 
             foreach (var (dll, runtimeElement) in runtimes)

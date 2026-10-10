@@ -200,11 +200,14 @@ public sealed class ListPoolElement : StructurePoolElement
     public override List<JigsawBlockInfo> GetShuffledJigsawBlocks(Vector position, StructureRotation rotation, IRandomSource random) =>
         this.Elements[0].GetShuffledJigsawBlocks(position, rotation, random);
 
-    public override void GetShuffledJigsawBlocks(Vector position, StructureRotation rotation, IRandomSource random, List<JigsawBlockInfo> destination) =>
+    public override void GetShuffledJigsawBlocks(Vector position, StructureRotation rotation, IRandomSource random,
+        List<JigsawBlockInfo> destination) =>
         this.Elements[0].GetShuffledJigsawBlocks(position, rotation, random, destination);
 
     public override BlockBox GetBoundingBox(Vector position, StructureRotation rotation) =>
-        BlockBox.Encapsulating(this.Elements.Where(element => element is not EmptyPoolElement).Select(element => element.GetBoundingBox(position, rotation)))
+        BlockBox.Encapsulating(this.Elements
+            .Where(element => element is not EmptyPoolElement)
+            .Select(element => element.GetBoundingBox(position, rotation)))
             ?? throw new InvalidOperationException("Unable to calculate the bounding box of a list pool element.");
 
     public override bool Place(StructurePieceContext context, Vector position, Vector pivot, StructureRotation rotation, BlockBox box,
@@ -226,7 +229,8 @@ public sealed class ListPoolElement : StructurePoolElement
 [StructureType("minecraft:feature_pool_element")]
 public sealed class FeaturePoolElement : StructurePoolElement
 {
-    private static readonly IBlock jigsaw = BlockStateProperties.GetState("minecraft:jigsaw", new Dictionary<string, string> { ["orientation"] = "down_south" });
+    private static readonly IBlock jigsaw = BlockStateProperties.GetState("minecraft:jigsaw",
+        new Dictionary<string, string> { ["orientation"] = "down_south" });
 
     private static readonly NbtCompound jigsawData = new()
     {

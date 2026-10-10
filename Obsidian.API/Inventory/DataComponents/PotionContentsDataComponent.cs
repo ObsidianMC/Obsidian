@@ -28,7 +28,8 @@ public sealed record class PotionContentsDataComponent : DataComponent
     {
         this.Potion = reader.ReadBoolean() ? (Potion)reader.ReadVarInt() : null;
         this.CustomColor = reader.ReadOptionalInt();
-        this.CustomEffects = ImmutableCollectionsMarshal.AsImmutableArray(reader.ReadLengthPrefixedArray(() => PotionEffectData.Read(reader)));
+        this.CustomEffects = ImmutableCollectionsMarshal.AsImmutableArray(
+            reader.ReadLengthPrefixedArray(() => ComponentValueCodecs.ReadEffect(reader)));
         this.CustomName = reader.ReadOptionalString();
     }
 
@@ -39,7 +40,7 @@ public sealed record class PotionContentsDataComponent : DataComponent
             writer.WriteVarInt((int)this.Potion.Value);
 
         writer.WriteOptional(this.CustomColor);
-        writer.WriteLengthPrefixedArray((effect) => PotionEffectData.Write(effect, writer), this.CustomEffects.AsSpan());
+        writer.WriteLengthPrefixedArray((effect) => ComponentValueCodecs.WriteEffect(effect, writer), this.CustomEffects.AsSpan());
         writer.WriteOptional(this.CustomName);
     }
 }

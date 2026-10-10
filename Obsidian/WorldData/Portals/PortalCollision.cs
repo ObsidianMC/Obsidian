@@ -1,15 +1,13 @@
-using System.Reflection;
-using System.Text.Json;
+using Obsidian.Registries;
 
 namespace Obsidian.WorldData.Portals;
 
 /// <summary>Vanilla's nearest free portal exit, using the collision boxes dumped from the server jar.</summary>
 internal static class PortalCollision
 {
-    private static readonly Lazy<Dictionary<int, BoundingBox[]>> shapes = new(LoadShapes);
-
     internal static IReadOnlyList<BoundingBox> GetShapes(IBlock block) => block.HasEmptyCollision()
-        ? [] : shapes.Value.GetValueOrDefault(block.GetHashCode()) ?? [];
+        ? []
+        : CollisionBoxes(block);
 
     public static VectorD FindFreePosition(Func<Vector, IBlock> read, VectorD position, double width, double height)
     {
@@ -25,9 +23,7 @@ internal static class PortalCollision
                     var block = read(new Vector(x, y, z));
                     if (block.HasEmptyCollision())
                         continue;
-                    if (!shapes.Value.TryGetValue(block.GetHashCode(), out var boxes))
-                        continue;
-                    foreach (var box in boxes)
+                    foreach (var box in CollisionBoxes(block))
                     {
                         // Forbidden feet positions: inflate the block's shape by the player's dimensions.
                         obstacles.Add(new BoundingBox(new VectorD(x + box.Min.X - halfWidth, y + box.Min.Y - height, z + box.Min.Z - halfWidth),
@@ -64,17 +60,8 @@ internal static class PortalCollision
             .Where(value => value >= center - radius && value <= center + radius).Distinct()
             .OrderBy(value => Math.Abs(value - center)).ToArray();
 
-    private static Dictionary<int, BoundingBox[]> LoadShapes()
-    {
-        using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Obsidian.Assets.block_physics.json")
-            ?? throw new InvalidOperationException("Missing block physics asset.");
-        using var document = JsonDocument.Parse(stream);
-        var boxes = document.RootElement.GetProperty("collisionShapes").EnumerateArray()
-            .Select(shape => shape.EnumerateArray().Select(box => new BoundingBox(
-                new VectorD(box[0].GetDouble(), box[1].GetDouble(), box[2].GetDouble()),
-                new VectorD(box[3].GetDouble(), box[4].GetDouble(), box[5].GetDouble()))).ToArray()).ToArray();
-        return document.RootElement.GetProperty("collisionShapeIds").EnumerateArray()
-            .Select((shape, state) => (State: state, Boxes: boxes[shape.GetInt32()]))
-            .ToDictionary(entry => entry.State, entry => entry.Boxes);
-    }
+    // The state's vanilla collision boxes (min then max corner), in block-local coordinates.
+    private static BoundingBox[] CollisionBoxes(IBlock block) => BlockPhysics.ShapeBoxes(block.GetHashCode())
+        .Select(box => new BoundingBox(new VectorD(box[0], box[1], box[2]), new VectorD(box[3], box[4], box[5])))
+        .ToArray();
 }

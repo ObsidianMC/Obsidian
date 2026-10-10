@@ -1,7 +1,8 @@
-﻿namespace Obsidian.API.Inventory.DataComponents;
+namespace Obsidian.API.Inventory.DataComponents;
 public abstract class DataComponentsStorage
 {
     protected Dictionary<DataComponentType, DataComponent> InternalStorage { get; } = [];
+    private readonly List<DataComponentType> patchOrder = [];
     protected Dictionary<DataComponentType, int> HashedStorage { get; } = [];
 
     /// <summary>
@@ -19,20 +20,38 @@ public abstract class DataComponentsStorage
     /// The components that were set on this storage, as opposed to placeholders for the item's defaults. Like vanilla's
     /// <c>DataComponentPatch</c>, this is what goes over the network.
     /// </summary>
-    public IEnumerable<DataComponent> Patch => this.InternalStorage.Values.Where(component =>
-        !this.Placeholders.TryGetValue(component.Type, out var placeholder) || !component.Equals(placeholder));
+    public IEnumerable<DataComponent> Patch => this.patchOrder
+        .Where(type => this.InternalStorage.ContainsKey(type) && !this.RemoveComponents.Contains(type))
+        .Select(type => this.InternalStorage[type])
+        .Concat(this.InternalStorage.Values.Where(component => !this.patchOrder.Contains(component.Type)
+            && !this.RemoveComponents.Contains(component.Type)
+            && (!this.Placeholders.TryGetValue(component.Type, out var placeholder) || !component.Equals(placeholder))));
 
     public DataComponent this[DataComponentType type]
     {
         get => this.InternalStorage[type];
         set
         {
+            if (value.Type != type)
+                throw new ArgumentException("Component type does not match its key.", nameof(value));
+
+            if (!this.patchOrder.Contains(type))
+                this.patchOrder.Add(type);
+
             this.InternalStorage[type] = value;
+            this.RemoveComponents.Remove(type);
             this.Placeholders.Remove(type);
         }
     }
 
-    public bool Add(DataComponent component) => this.InternalStorage.TryAdd(component.Type, component);
+    public bool Add(DataComponent component)
+    {
+        if (!this.InternalStorage.TryAdd(component.Type, component))
+            return false;
+
+        this.RemoveComponents.Remove(component.Type);
+        return true;
+    }
 
     /// <summary>
     /// Adds a hashed components to the item.
@@ -53,11 +72,15 @@ public abstract class DataComponentsStorage
     public bool Remove(DataComponentType type)
     {
         this.Placeholders.Remove(type);
+        this.patchOrder.Remove(type);
+        if (!this.RemoveComponents.Contains(type))
+            this.RemoveComponents.Add(type);
+
         return this.InternalStorage.Remove(type);
     }
 
     public TComponent? GetComponent<TComponent>(DataComponentType type) where TComponent : DataComponent =>
-        (TComponent)this.InternalStorage.GetValueOrDefault(type);
+        this.InternalStorage.GetValueOrDefault(type) as TComponent;
 
     public bool TryGetComponent<TComponent>(DataComponentType componentType, out DataComponent component) where TComponent : DataComponent =>
         this.InternalStorage.TryGetValue(componentType, out component);

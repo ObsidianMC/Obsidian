@@ -10,8 +10,10 @@ namespace Microsoft.Extensions.Internal;
 internal readonly struct AwaitableInfo
 {
     private const BindingFlags Everything = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance;
-    private static readonly MethodInfo INotifyCompletion_OnCompleted = typeof(INotifyCompletion).GetMethod(nameof(INotifyCompletion.OnCompleted), Everything, new[] { typeof(Action) })!;
-    private static readonly MethodInfo ICriticalNotifyCompletion_UnsafeOnCompleted = typeof(ICriticalNotifyCompletion).GetMethod(nameof(ICriticalNotifyCompletion.UnsafeOnCompleted), Everything, new[] { typeof(Action) })!;
+    private static readonly MethodInfo INotifyCompletion_OnCompleted =
+        typeof(INotifyCompletion).GetMethod(nameof(INotifyCompletion.OnCompleted), Everything, new[] { typeof(Action) })!;
+    private static readonly MethodInfo ICriticalNotifyCompletion_UnsafeOnCompleted =
+        typeof(ICriticalNotifyCompletion).GetMethod(nameof(ICriticalNotifyCompletion.UnsafeOnCompleted), Everything, new[] { typeof(Action) })!;
 
     public Type AwaiterType { get; }
     public PropertyInfo AwaiterIsCompletedProperty { get; }
@@ -59,7 +61,8 @@ internal readonly struct AwaitableInfo
         var awaiterType = getAwaiterMethod.ReturnType;
 
         // Awaiter must have property matching "bool IsCompleted { get; }"
-        var isCompletedProperty = awaiterType.GetProperty("IsCompleted", Everything, binder: null, returnType: typeof(bool), types: Type.EmptyTypes, modifiers: null);
+        var isCompletedProperty = awaiterType.GetProperty("IsCompleted", Everything, binder: null,
+            returnType: typeof(bool), types: Type.EmptyTypes, modifiers: null);
         if (isCompletedProperty is null)
         {
             awaitableInfo = default(AwaitableInfo);

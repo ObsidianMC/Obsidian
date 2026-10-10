@@ -95,19 +95,22 @@ internal sealed class MethodsRegistry
         var parameters = method.ParameterList.Parameters;
         if (parameters.Count == 0)
         {
-            DiagnosticHelper.ReportDiagnostic(context, DiagnosticSeverity.Warning, "Write methods must have one parameter. Method will not register.", method);
+            DiagnosticHelper.ReportDiagnostic(context, DiagnosticSeverity.Warning,
+                "Write methods must have one parameter. Method will not register.", method);
             return false;
         }
-        if (parameters.Count(param => param.Default != null) > 1)
+        if (parameters.Count(param => param.Default is not null) > 1)
         {
-            DiagnosticHelper.ReportDiagnostic(context, DiagnosticSeverity.Warning, "Write methods must have one parameter. Method will not register.", method);
+            DiagnosticHelper.ReportDiagnostic(context, DiagnosticSeverity.Warning,
+                "Write methods must have one parameter. Method will not register.", method);
             return false;
         }
 
         ParameterSyntax parameter = parameters.First();
         if (parameter.Modifiers.Count > 0)
         {
-            DiagnosticHelper.ReportDiagnostic(context, DiagnosticSeverity.Warning, "Parameter can't have modifiers. Method will not register.", parameter);
+            DiagnosticHelper.ReportDiagnostic(context, DiagnosticSeverity.Warning,
+                "Parameter can't have modifiers. Method will not register.", parameter);
             return false;
         }
 
@@ -121,13 +124,15 @@ internal sealed class MethodsRegistry
 
         if (method.ParameterList.Parameters.Count(parameter => parameter.Default is null) > 0)
         {
-            DiagnosticHelper.ReportDiagnostic(context, DiagnosticSeverity.Warning, "Read method can't have parameters. Method will not register.", method);
+            DiagnosticHelper.ReportDiagnostic(context, DiagnosticSeverity.Warning,
+                "Read method can't have parameters. Method will not register.", method);
             return false;
         }
 
         if (type == "void")
         {
-            DiagnosticHelper.ReportDiagnostic(context, DiagnosticSeverity.Warning, "Read method return type can't be void. Method will not register.", method);
+            DiagnosticHelper.ReportDiagnostic(context, DiagnosticSeverity.Warning,
+                "Read method return type can't be void. Method will not register.", method);
             return false;
         }
 

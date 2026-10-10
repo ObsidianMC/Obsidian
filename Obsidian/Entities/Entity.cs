@@ -314,7 +314,7 @@ public class Entity : IEquatable<Entity>, IEntity
     {
         var (x, z) = WorldData.Region.ChunkOf(pos);
         var chunk = await this.Level.GetChunkAsync(x, z, false);
-        if (chunk != null && chunk.IsGenerated)
+        if (chunk is not null && chunk.IsGenerated)
         {
             Position = pos;
         }

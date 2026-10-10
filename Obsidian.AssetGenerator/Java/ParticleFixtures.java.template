@@ -1,0 +1,89 @@
+// @map MC_SharedConstants_tryDetectVersion net.minecraft.SharedConstants#tryDetectVersion()
+// @map MC_Bootstrap_bootStrap net.minecraft.server.Bootstrap#bootStrap()
+// @map MC_RegistryAccess_fromRegistryOfRegistries net.minecraft.core.RegistryAccess#fromRegistryOfRegistries(net.minecraft.core.Registry)
+// @map MC_RegistryOps_create net.minecraft.resources.RegistryOps#create(com.mojang.serialization.DynamicOps,net.minecraft.core.HolderLookup$Provider)
+// @map MC_Registry_getKey net.minecraft.core.Registry#getKey(java.lang.Object)
+// @map MC_Identifier_getPath net.minecraft.resources.Identifier#getPath()
+// @map MC_Registry_getId net.minecraft.core.Registry#getId(java.lang.Object)
+// @map MC_ParticleType_getOverrideLimiter net.minecraft.core.particles.ParticleType#getOverrideLimiter()
+// @map MC_RandomSource_create net.minecraft.util.RandomSource#create(long)
+// @map MC_WeatherEffectRenderer_ColumnInstance_uOffset net.minecraft.client.renderer.WeatherEffectRenderer$ColumnInstance#uOffset()
+// @map MC_WeatherEffectRenderer_ColumnInstance_vOffset net.minecraft.client.renderer.WeatherEffectRenderer$ColumnInstance#vOffset()
+// @map MC_StreamEncoder_encode net.minecraft.network.codec.StreamEncoder#encode(java.lang.Object,java.lang.Object)
+// @map MC_StreamDecoder_decode net.minecraft.network.codec.StreamDecoder#decode(java.lang.Object)
+// @map MC_BuiltInRegistries_PARTICLE_TYPE net.minecraft.core.registries.BuiltInRegistries#PARTICLE_TYPE
+// @map MC_BuiltInRegistries_REGISTRY net.minecraft.core.registries.BuiltInRegistries#REGISTRY
+// @map MC_ParticleTypes_CODEC net.minecraft.core.particles.ParticleTypes#CODEC
+// @map MC_ParticleTypes_STREAM_CODEC net.minecraft.core.particles.ParticleTypes#STREAM_CODEC
+// @map MC_EntityPositionSource_STREAM_CODEC net.minecraft.world.level.gameevent.EntityPositionSource#STREAM_CODEC
+// @map MC_WeatherEffectRenderer_createRainColumnInstance net.minecraft.client.renderer.WeatherEffectRenderer#createRainColumnInstance(net.minecraft.util.RandomSource,int,int,int,int,int,int,float)
+// @map MC_WeatherEffectRenderer_createSnowColumnInstance net.minecraft.client.renderer.WeatherEffectRenderer#createSnowColumnInstance(net.minecraft.util.RandomSource,int,int,int,int,int,int,float)
+// @map MC_WeatherEffectRenderer_ColumnInstance net.minecraft.client.renderer.WeatherEffectRenderer$ColumnInstance
+// @map MC_RegistryFriendlyByteBuf net.minecraft.network.RegistryFriendlyByteBuf
+// @map MC_VibrationParticleOption net.minecraft.core.particles.VibrationParticleOption
+// @map MC_WeatherEffectRenderer net.minecraft.client.renderer.WeatherEffectRenderer
+// @map MC_EntityPositionSource net.minecraft.world.level.gameevent.EntityPositionSource
+// @map MC_BuiltInRegistries net.minecraft.core.registries.BuiltInRegistries
+// @map MC_SharedConstants net.minecraft.SharedConstants
+// @map MC_RegistryAccess net.minecraft.core.RegistryAccess
+// @map MC_ParticleTypes net.minecraft.core.particles.ParticleTypes
+// @map MC_RandomSource net.minecraft.util.RandomSource
+// @map MC_RegistryOps net.minecraft.resources.RegistryOps
+// @map MC_Bootstrap net.minecraft.server.Bootstrap
+import com.google.gson.*;
+import com.mojang.serialization.JsonOps;
+import io.netty.buffer.*;
+import java.nio.file.*;
+
+/** Build-time protocol-774 fixture capture. Resolve with FixtureSource and run against the installed client and its matching libraries. */
+class ParticleFixtures {
+    public static void main(String[] args) throws Exception {
+        MC_SharedConstants.MC_SharedConstants_tryDetectVersion();
+        MC_Bootstrap.MC_Bootstrap_bootStrap();
+        var access = MC_RegistryAccess.MC_RegistryAccess_fromRegistryOfRegistries(MC_BuiltInRegistries.MC_BuiltInRegistries_REGISTRY);
+        var ops = MC_RegistryOps.MC_RegistryOps_create(JsonOps.INSTANCE, access);
+        var rows = new JsonArray();
+        for (var type : MC_BuiltInRegistries.MC_BuiltInRegistries_PARTICLE_TYPE) {
+            String name = MC_BuiltInRegistries.MC_BuiltInRegistries_PARTICLE_TYPE.MC_Registry_getKey(type).MC_Identifier_getPath();
+            var input = new JsonObject(); input.addProperty("type", "minecraft:" + name);
+            switch (name) {
+                case "block", "block_marker", "falling_dust", "dust_pillar", "block_crumble" -> input.add("block_state", JsonParser.parseString("{\"Name\":\"minecraft:stone\"}"));
+                case "dust" -> { input.addProperty("color", 0x123456); input.addProperty("scale", 1.5); }
+                case "dust_color_transition" -> { input.addProperty("from_color", 0x123456); input.addProperty("to_color", 0xabcdef); input.addProperty("scale", .5); }
+                case "effect", "instant_effect" -> { input.addProperty("color", 0xabcdef); input.addProperty("power", .75); }
+                case "entity_effect", "tinted_leaves", "flash" -> input.addProperty("color", 0x80123456);
+                case "dragon_breath" -> input.addProperty("power", .5);
+                case "sculk_charge" -> input.addProperty("roll", .25);
+                case "shriek" -> input.addProperty("delay", 17);
+                case "item" -> input.add("item", JsonParser.parseString("{\"id\":\"minecraft:diamond\",\"count\":3}"));
+                case "trail" -> { input.add("target", JsonParser.parseString("[1.25,72,-3.5]")); input.addProperty("color", 0xabcdef); input.addProperty("duration", 20); }
+                case "vibration" -> { input.add("destination", JsonParser.parseString("{\"type\":\"minecraft:block\",\"pos\":[-4,72,9]}")); input.addProperty("arrival_in_ticks", 25); }
+            }
+            var option = MC_ParticleTypes.MC_ParticleTypes_CODEC.parse(ops, input).getOrThrow();
+            var buf = new MC_RegistryFriendlyByteBuf(Unpooled.buffer(), access);
+            MC_ParticleTypes.MC_ParticleTypes_STREAM_CODEC.MC_StreamEncoder_encode(buf, option);
+            var row = new JsonObject(); row.addProperty("id", MC_BuiltInRegistries.MC_BuiltInRegistries_PARTICLE_TYPE.MC_Registry_getId(type));
+            row.addProperty("name", name); row.add("input", input); row.addProperty("wire", ByteBufUtil.hexDump(buf));
+            row.addProperty("overrideLimiter", type.MC_ParticleType_getOverrideLimiter()); rows.add(row); buf.release();
+        }
+        // Entity position sources are network-only; construct through the actual position stream codec.
+        var source = Unpooled.buffer(); source.writeByte(42); source.writeFloat(1.25f);
+        var entity = MC_EntityPositionSource.MC_EntityPositionSource_STREAM_CODEC.MC_StreamDecoder_decode(source); source.release();
+        var buf = new MC_RegistryFriendlyByteBuf(Unpooled.buffer(), access);
+        MC_ParticleTypes.MC_ParticleTypes_STREAM_CODEC.MC_StreamEncoder_encode(buf, new MC_VibrationParticleOption(entity, 30));
+        var result = new JsonObject(); result.add("particles", rows); result.addProperty("entityVibration", ByteBufUtil.hexDump(buf)); buf.release();
+        var columns = new JsonArray();
+        var weather = new MC_WeatherEffectRenderer();
+        for (var name : new String[]{"MC_WeatherEffectRenderer_createRainColumnInstance", "MC_WeatherEffectRenderer_createSnowColumnInstance"}) {
+            var method = weather.getClass().getDeclaredMethod(name, MC_RandomSource.class, int.class, int.class, int.class, int.class, int.class, int.class, float.class);
+            method.setAccessible(true);
+            int x=-12,z=7;
+            var random = MC_RandomSource.MC_RandomSource_create((long)(x*x*3121+x*45238971 ^ z*z*418711+z*13761));
+            var column = (MC_WeatherEffectRenderer_ColumnInstance)method.invoke(weather,random,100,x,64,82,z,0,.5f);
+            var row=new JsonObject();row.addProperty("kind",name.equals("MC_WeatherEffectRenderer_createRainColumnInstance")?"Rain":"Snow");row.addProperty("u",column.MC_WeatherEffectRenderer_ColumnInstance_uOffset());row.addProperty("v",column.MC_WeatherEffectRenderer_ColumnInstance_vOffset());columns.add(row);
+        }
+        result.add("weather",columns);
+        Files.writeString(Path.of(args[0]), new GsonBuilder().setPrettyPrinting().create().toJson(result));
+        System.out.println("Captured " + rows.size() + " particle types");
+    }
+}

@@ -44,7 +44,7 @@ public sealed class MobAi
     public void SavedEquipmentComponentsUseTheirProtocolIds()
     {
         Assert.IsType<Obsidian.API.Inventory.DataComponents.CanBreakDataComponent>(
-            Obsidian.API.Inventory.DataComponents.ComponentBuilder.ComponentsMap[DataComponentType.CanBreak]());
+            Obsidian.API.Inventory.DataComponents.ComponentBuilder.Create(DataComponentType.CanBreak));
         var item = Obsidian.API.Registries.ItemsRegistry.GetSingleItem(Material.Bow);
         var buffer = new Obsidian.Net.NetworkBuffer();
         buffer.WriteItemStack(item);

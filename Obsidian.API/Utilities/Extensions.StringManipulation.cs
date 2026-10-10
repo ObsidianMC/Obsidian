@@ -17,7 +17,7 @@ public static partial class Extensions
     {
         Type type = value.GetType();
         string name = Enum.GetName(type, value);
-        if (name != null)
+        if (name is not null)
         {
             FieldInfo field = type.GetField(name);
             if (field != null)

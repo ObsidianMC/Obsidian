@@ -69,7 +69,11 @@ public interface INetStreamReader : INetStream
     public float? ReadOptionalFloat();
     public bool? ReadOptionalBoolean();
     public int? ReadOptionalInt();
+    public DataComponent ReadDataComponent(DataComponentType type);
     public ItemStack? ReadItemStack();
+    public ItemStack? ReadUntrustedItemStack();
+    public ItemStack ReadRequiredItemStack();
+    public ItemStack?[] ReadItemStackList();
     public IHashedItemStack? ReadHashedItemStack();
     public Velocity ReadVelocity();
 }

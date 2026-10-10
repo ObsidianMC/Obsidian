@@ -86,7 +86,7 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
         entity.EntityId = Server.GetNextEntityId();
         entity.Position = position;
 
-        if (entity is Living living && customName != null)
+        if (entity is Living living && customName is not null)
         {
             living.CustomName = customName;
             living.CustomNameVisible = customNameVisible;

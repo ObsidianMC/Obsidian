@@ -47,7 +47,7 @@ public partial class MerchantOffersPacket
     public override void Serialize(INetStreamWriter writer)
     {
         writer.WriteVarInt(WindowId);
-        writer.WriteLengthPrefixedArray((o) => TradeEntry.Write(o, writer), Offers.AsSpan());
+        writer.WriteLengthPrefixedArray(writer.WriteMerchantOffer, Offers.AsSpan());
         writer.WriteVarInt(VillagerLevel);
         writer.WriteVarInt(VillagerExperience);
         writer.WriteBoolean(IsRegularVillager);

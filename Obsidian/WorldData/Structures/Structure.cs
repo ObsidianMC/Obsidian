@@ -81,7 +81,8 @@ public abstract class Structure
     /// <summary>
     /// Vanilla <c>onTopOfChunkCenter</c>: starts at the middle of the chunk, on top of the given heightmap.
     /// </summary>
-    internal static StructureStub OnTopOfChunkCenter(StructureGenerationContext context, HeightmapType heightmap, Action<StructurePiecesBuilder> generator)
+    internal static StructureStub OnTopOfChunkCenter(StructureGenerationContext context, HeightmapType heightmap,
+        Action<StructurePiecesBuilder> generator)
     {
         var x = (context.ChunkX << 4) + 8;
         var z = (context.ChunkZ << 4) + 8;

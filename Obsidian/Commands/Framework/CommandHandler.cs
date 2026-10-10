@@ -7,6 +7,7 @@ using Obsidian.API.Commands.Exceptions;
 using Obsidian.API.Plugins;
 using Obsidian.API.Utilities.Interfaces;
 using Obsidian.Commands.Builders;
+using Obsidian.Commands.Modules;
 using Obsidian.Plugins;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -56,7 +57,9 @@ public sealed class CommandHandler : ICommandHandler
         this.TryGetArgumentParser(argumentType, out _);
 
     public BaseArgumentParser GetArgumentParser(Type argumentType) =>
-        this.TryGetArgumentParser(argumentType, out var parser) ? parser : throw new ArgumentException($"No parser registered for type {argumentType}");
+        this.TryGetArgumentParser(argumentType, out var parser)
+            ? parser
+            : throw new ArgumentException($"No parser registered for type {argumentType}");
 
     /// <summary>
     /// Finds the parser registered for <paramref name="type"/>. An enum without one gets an
@@ -114,7 +117,7 @@ public sealed class CommandHandler : ICommandHandler
 
     public void RegisterCommandClass(IPluginContainer? plugin, Type moduleType)
     {
-        if (moduleType.GetCustomAttribute<CommandGroupAttribute>() != null)
+        if (moduleType.GetCustomAttribute<CommandGroupAttribute>() is not null)
         {
             this.RegisterGroupCommand(moduleType, plugin, null);
             return;
@@ -128,7 +131,9 @@ public sealed class CommandHandler : ICommandHandler
     {
         var assembly = pluginContainer?.PluginAssembly ?? Assembly.GetExecutingAssembly();
 
-        var commandRoots = assembly.GetTypes().Where(x => x.IsSubclassOf(typeof(CommandModuleBase)));
+        // The integrated server's commands are registered by the server when it runs as one.
+        var commandRoots = assembly.GetTypes()
+            .Where(type => type.IsSubclassOf(typeof(CommandModuleBase)) && type != typeof(IntegratedCommandModule));
 
         foreach (var root in commandRoots)
         {
@@ -227,7 +232,9 @@ public sealed class CommandHandler : ICommandHandler
                 ModuleFactory = ActivatorUtilities.CreateFactory(moduleType, Type.EmptyTypes)
             };
 
-            var overloads = methods.Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandOverloadAttribute)) && x.Name == method.Name)
+            var overloads = methods
+                .Where(overload => overload.CustomAttributes.Any(attribute => attribute.AttributeType == typeof(CommandOverloadAttribute))
+                    && overload.Name == method.Name)
                 .Select(x => ObjectMethodExecutor.Create(x, moduleType.GetTypeInfo()))
                 .Select(x => new CommandExecutor
                 {

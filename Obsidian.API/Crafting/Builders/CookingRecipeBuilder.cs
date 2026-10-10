@@ -21,7 +21,8 @@ public sealed class CookingRecipeBuilder : BaseRecipeBuilder<SmeltingRecipe>, II
         this.type = type;
     }
 
-    public static IIngredientRecipe<ICookingRecipe> Create(CookingBookCategory category, SmeltingType type) => new CookingRecipeBuilder(category, type);
+    public static IIngredientRecipe<ICookingRecipe> Create(CookingBookCategory category, SmeltingType type) =>
+        new CookingRecipeBuilder(category, type);
 
     public ICookingRecipe WithIngredient(params ItemStack[] items)
     {

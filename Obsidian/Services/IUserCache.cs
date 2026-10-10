@@ -17,7 +17,7 @@ public sealed partial class UserCache(HttpClient httpClient, ILogger<UserCache> 
     private const string userWithIdEndpoint = "https://sessionserver.mojang.com/session/minecraft/profile/";
     private const string verifySessionEndpoint = "https://sessionserver.mojang.com/session/minecraft/hasJoined";
 
-    private readonly FileInfo cacheFile = new("usercache.json");
+    private readonly FileInfo cacheFile = new(ServerConstants.UserCacheFile);
     private readonly ILogger<UserCache> logger = logger;
 
     private List<CachedProfile> cachedUsers = new();
@@ -27,7 +27,7 @@ public sealed partial class UserCache(HttpClient httpClient, ILogger<UserCache> 
         var escapedUsername = Sanitize(username);
 
         var cachedUser = this.cachedUsers.FirstOrDefault(x => x.Name == username);
-        if (cachedUser != null && !cachedUser.Expired)
+        if (cachedUser is not null && !cachedUser.Expired)
             return cachedUser;
 
         try
@@ -55,12 +55,13 @@ public sealed partial class UserCache(HttpClient httpClient, ILogger<UserCache> 
     public async ValueTask<CachedProfile> GetCachedUserFromUuidAsync(Guid uuid)
     {
         var cachedUser = this.cachedUsers.FirstOrDefault(x => x.Uuid == uuid);
-        if (cachedUser != null && !cachedUser.Expired)
+        if (cachedUser is not null && !cachedUser.Expired)
             return cachedUser;
 
         var escapedUuid = Sanitize(uuid.ToString("N"));
 
-        var mojangProfile = await httpClient.GetFromJsonAsync<MojangProfile>($"{userWithIdEndpoint}{escapedUuid}", Globals.JsonOptions) ?? throw new UnreachableException();
+        var mojangProfile = await httpClient.GetFromJsonAsync<MojangProfile>($"{userWithIdEndpoint}{escapedUuid}",
+            Globals.JsonOptions) ?? throw new UnreachableException();
 
         cachedUser = new()
         {
@@ -79,7 +80,8 @@ public sealed partial class UserCache(HttpClient httpClient, ILogger<UserCache> 
         var escapedUsername = Sanitize(username);
         var escapedServerId = Sanitize(serverId);
 
-        return await httpClient.GetFromJsonAsync<MojangProfile>($"{verifySessionEndpoint}?username={escapedUsername}&serverId={escapedServerId}", Globals.JsonOptions);
+        return await httpClient.GetFromJsonAsync<MojangProfile>(
+            $"{verifySessionEndpoint}?username={escapedUsername}&serverId={escapedServerId}", Globals.JsonOptions);
     }
 
     public async Task SaveAsync(CancellationToken cancellationToken = default)

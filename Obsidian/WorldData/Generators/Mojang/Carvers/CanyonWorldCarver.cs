@@ -10,7 +10,8 @@ namespace Obsidian.WorldData.Generators.Mojang.Carvers;
 /// </remarks>
 internal sealed class CanyonWorldCarver : WorldCarver<CanyonCarverConfiguration>
 {
-    public override void Carve(CarvingContext context, CanyonCarverConfiguration configuration, IRandomSource random, int startChunkX, int startChunkZ)
+    public override void Carve(CarvingContext context, CanyonCarverConfiguration configuration, IRandomSource random,
+        int startChunkX, int startChunkZ)
     {
         var maxDistance = (Range * 2 - 1) * 16;
         double x = (startChunkX << 4) + random.NextInt(16);

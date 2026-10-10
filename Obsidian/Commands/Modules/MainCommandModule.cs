@@ -314,7 +314,7 @@ public sealed class MainCommandModule : CommandModuleBase
     [RequirePermission]
     public async Task GiveOpAsync(IPlayer player)
     {
-        if (player == null)
+        if (player is null)
             return;
 
         this.Server.Operators.AddOperator(player);
@@ -328,7 +328,7 @@ public sealed class MainCommandModule : CommandModuleBase
     [RequirePermission]
     public async Task UnclaimOpAsync(IPlayer player)
     {
-        if (player == null)
+        if (player is null)
             return;
 
         this.Server.Operators.RemoveOperator(player);

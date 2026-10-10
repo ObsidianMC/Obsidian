@@ -17,7 +17,8 @@ public sealed class RconCommandSender : ICommandSender
     public Task SendMessageAsync(ChatMessage message)
     {
         builder.Append(message.Text);
-        foreach (var extra in message.GetExtras()) builder.Append(extra.Text);
+        foreach (var extra in message.GetExtras())
+            builder.Append(extra.Text);
 
         return Task.CompletedTask;
     }
@@ -25,7 +26,8 @@ public sealed class RconCommandSender : ICommandSender
     public Task SendMessageAsync(ChatMessage message, Guid sender)
     {
         builder.Append(message.Text);
-        foreach (var extra in message.GetExtras()) builder.Append(extra.Text);
+        foreach (var extra in message.GetExtras())
+            builder.Append(extra.Text);
 
         return Task.CompletedTask;
     }
