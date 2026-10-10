@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Obsidian.API.Commands;
 using Obsidian.API.Commands.ArgumentParsers;
 using Obsidian.API.Plugins;
+using Obsidian.API.Utilities.Interfaces;
 using Obsidian.Commands.Builders;
 using Obsidian.Commands.Framework.Exceptions;
 using Obsidian.Plugins;
@@ -13,6 +14,9 @@ namespace Obsidian.Commands.Framework;
 
 public sealed class CommandHandler : ICommandHandler
 {
+    // Vanilla's suggestion handler sends at most this many suggestions.
+    private const int MaxSuggestions = 1000;
+
     internal readonly ILogger logger;
 
     private readonly List<Command> _commands;
@@ -244,6 +248,112 @@ public sealed class CommandHandler : ICommandHandler
                 await ProvideFeedbackToSender(ctx, ex);
             }
         }
+    }
+
+    /// <summary>
+    /// Suggests subcommand names and, for parameters with a <see cref="BaseSuggestionProviderAttribute"/>, argument
+    /// values. Arguments typed before the last word must parse for an overload to be suggested, and only commands and
+    /// overloads the sender may run are considered. A trailing <see cref="RemainingAttribute"/> parameter is suggested
+    /// for its first word only.
+    /// </summary>
+    public async Task<CommandCompletion> CompleteAsync(CommandContext ctx)
+    {
+        var input = ctx.Message;
+        var offset = input.StartsWith(_commandParser.Prefix, StringComparison.Ordinal) ? _commandParser.Prefix.Length : 0;
+        var words = CommandParser.SplitWords(input.AsSpan(offset));
+        var typedCount = words.Count - 1;
+        var (partialStart, partial) = words[^1];
+        var start = offset + partialStart;
+        var empty = new CommandCompletion(start, input.Length - start, []);
+
+        var commands = GetAllCommands();
+        Command? command = null;
+        var used = 0;
+
+        // Follow command and subcommand names as ExecuteCommand does; the words after them are arguments.
+        while (used < typedCount && commands.FirstOrDefault(x => x.CheckCommand([words[used].Value], command)) is Command next)
+        {
+            if (!await CanUseAsync(next, ctx))
+                return empty;
+
+            command = next;
+            used++;
+        }
+
+        if (command is null && typedCount > 0)
+            return empty;
+
+        var candidates = new List<CommandSuggestion>();
+
+        if (used == typedCount)
+        {
+            foreach (var child in commands.Where(x => x.Parent == command))
+            {
+                if (await CanUseAsync(child, ctx))
+                    candidates.Add(new CommandSuggestion(child.Name));
+            }
+        }
+
+        if (command is not null)
+        {
+            var arguments = words[used..typedCount].Select(word => word.Value).ToArray();
+
+            foreach (var overload in command.Overloads)
+                candidates.AddRange(await SuggestArgumentAsync(overload, arguments, ctx));
+        }
+
+        // Like vanilla, drop a suggestion that is already typed in full and cap the reply at 1000 entries.
+        CommandSuggestion[] suggestions = [.. candidates
+            .Where(x => x.Text.StartsWith(partial, StringComparison.OrdinalIgnoreCase) && x.Text != partial)
+            .DistinctBy(x => x.Text)
+            .OrderBy(x => x.Text, StringComparer.OrdinalIgnoreCase)
+            .Take(MaxSuggestions)];
+
+        return empty with { Suggestions = suggestions };
+    }
+
+    /// <summary>
+    /// Suggests values for the parameter of <paramref name="overload"/> that follows <paramref name="arguments"/>, if
+    /// those arguments parse and the sender passes the overload's checks.
+    /// </summary>
+    private async Task<IEnumerable<CommandSuggestion>> SuggestArgumentAsync(IExecutor<CommandContext> overload,
+        string[] arguments, CommandContext ctx)
+    {
+        var parameters = overload.GetParameters();
+
+        if (arguments.Length >= parameters.Length
+            || parameters[arguments.Length].GetCustomAttribute<BaseSuggestionProviderAttribute>() is not BaseSuggestionProviderAttribute provider)
+            return [];
+
+        for (var i = 0; i < arguments.Length; i++)
+        {
+            var type = parameters[i].ParameterType;
+
+            if (!IsValidArgumentType(type) || !GetArgumentParser(type).TryParseArgument(arguments[i], ctx, out _))
+                return [];
+        }
+
+        foreach (var check in overload.GetCustomAttributes<BaseExecutionCheckAttribute>())
+        {
+            if (!await check.RunChecksAsync(ctx))
+                return [];
+        }
+
+        return await provider.GetSuggestionsAsync(ctx);
+    }
+
+    private static async Task<bool> CanUseAsync(Command command, CommandContext ctx)
+    {
+        if (!command.AllowedIssuers.HasFlag(ctx.Sender.Issuer))
+            return false;
+
+        foreach (var check in command.ExecutionChecks)
+        {
+            if (!await check.RunChecksAsync(ctx))
+                return false;
+        }
+
+        return true;
     }
 
     private static async Task ProvideFeedbackToSender(CommandContext ctx, CommandExecutionCheckException ex)

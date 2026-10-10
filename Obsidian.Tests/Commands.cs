@@ -4,6 +4,7 @@ using Obsidian.API;
 using Obsidian.API.Commands;
 using Obsidian.Commands.Framework;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -61,6 +62,43 @@ public class Commands
         await cmd.ProcessCommand(new CommandContext("/ping 69 hey bye", sender, null, null));
         Assert.Equal(69, Command.arg1out);
         Assert.Equal("bye", Command.arg2out);
+    }
+
+    [Theory(DisplayName = "Command lines complete to subcommands and suggested argument values")]
+    [InlineData("/sug", 1, 3, "suggest")]
+    [InlineData("/suggest ", 9, 0, "give,set")]
+    [InlineData("/suggest set n", 13, 1, "night,noon")]
+    [InlineData("/suggest set ", 13, 0, "day,midnight,night,noon")]
+    [InlineData("suggest set N", 12, 1, "night,noon")] // command blocks omit the prefix
+    [InlineData("/suggest set day", 13, 3, "")]
+    [InlineData("/suggest give 5 d", 16, 1, "dirt")]
+    [InlineData("/suggest give x d", 16, 1, "")] // x doesn't parse as the amount
+    [InlineData("/missing n", 9, 1, "")]
+    public async Task CompletesCommandLines(string input, int start, int length, string expected)
+    {
+        var services = new ServiceCollection()
+            .AddLogging((builder) => builder.AddXUnit(this.output))
+            .AddSingleton<CommandHandler>()
+            .BuildServiceProvider();
+
+        var handler = services.GetRequiredService<CommandHandler>();
+        handler.RegisterCommandClass<SuggestionModule>(null);
+
+        var sender = new CommandSender(CommandIssuers.Client, player: null);
+        var completion = await handler.CompleteAsync(new CommandContext(input, sender, null, null));
+
+        Assert.Equal((start, length), (completion.Start, completion.Length));
+        Assert.Equal(expected, string.Join(',', completion.Suggestions.Select(x => x.Text)));
+    }
+
+    [CommandGroup("suggest")]
+    public class SuggestionModule : CommandModuleBase
+    {
+        [Command("set")]
+        public Task Set([Suggestions("noon", "day", "night", "midnight")] string value) => Task.CompletedTask;
+
+        [Command("give")]
+        public Task Give(int amount, [Suggestions("stone", "dirt")] string item) => Task.CompletedTask;
     }
 
     public class Command : CommandModuleBase
