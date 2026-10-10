@@ -113,6 +113,13 @@ public sealed class VanillaSaves : IDisposable
         Assert.Equal([(short)(3 | 4 << 4 | 5 << 8)], postProcessing[0].Cast<NbtTag<short>>().Select(mark => mark.Value));
         Assert.Equal([(short)(15 | 1 << 4)], postProcessing[5].Cast<NbtTag<short>>().Select(mark => mark.Value));
         Assert.Equal(marks, ((Chunk)reloaded).PostProcessing);
+
+        var blockTick = ((NbtList)saved["block_ticks"]).Cast<NbtCompound>().Single();
+        Assert.Equal("minecraft:repeater", blockTick.GetString("i"));
+        Assert.Equal(2, blockTick.GetInt("t"));
+
+        var references = (NbtCompound)((NbtCompound)saved["structures"])["References"];
+        Assert.Equal([1L], ((NbtArray<long>)references["minecraft:village_plains"]).GetArray());
     }
 
     [Fact(DisplayName = "A vanilla player loads, and saves keep vanilla's names and what Obsidian doesn't model")]
@@ -328,6 +335,24 @@ public sealed class VanillaSaves : IDisposable
             new NbtTag<int>("zPos", 0),
             new NbtTag<int>("yPos", -4),
             new NbtTag<string>("Status", "minecraft:full"),
+            // Data Obsidian doesn't model, which a save must keep: a scheduled repeater tick and a structure reference.
+            new NbtList(NbtTagType.Compound, "block_ticks")
+            {
+                new NbtCompound
+                {
+                    new NbtTag<string>("i", "minecraft:repeater"),
+                    new NbtTag<int>("x", 1),
+                    new NbtTag<int>("y", 2),
+                    new NbtTag<int>("z", 3),
+                    new NbtTag<int>("t", 2),
+                    new NbtTag<int>("p", 0)
+                }
+            },
+            new NbtCompound("structures")
+            {
+                new NbtCompound("starts"),
+                new NbtCompound("References") { new NbtArray<long>("minecraft:village_plains", [1L]) }
+            },
             new NbtList(NbtTagType.Compound, "sections")
             {
                 new NbtCompound

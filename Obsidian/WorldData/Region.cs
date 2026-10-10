@@ -433,6 +433,28 @@ public class Region : IRegion
     }
 
     #region NBT Ops
+    // The chunk tags SerializeChunk writes. isLightOn is left out on purpose: without it, vanilla relights the chunk
+    // rather than trusting light Obsidian computed.
+    private static readonly HashSet<string> modeledChunkTags =
+    [
+        "DataVersion",
+        "xPos",
+        "zPos",
+        "yPos",
+        "Status",
+        "InhabitedTime",
+        "sections",
+        "Heightmaps",
+        "block_entities",
+        "entities",
+        "structures",
+        "PostProcessing",
+        "fluid_ticks",
+        "ObsidianMobEggTicks",
+        "ObsidianFrogspawnTicks",
+        "isLightOn"
+    ];
+
     private Chunk DeserializeChunk(NbtCompound chunkCompound)
     {
         int x = chunkCompound.GetInt("xPos");
@@ -544,8 +566,23 @@ public class Region : IRegion
             }
         }
 
-        if (chunkCompound.TryGetTag<NbtCompound>("structures", out var structures) && structures.TryGetTag<NbtCompound>("starts", out var starts))
+        var hasStructures = chunkCompound.TryGetTag<NbtCompound>("structures", out var structures);
+        if (hasStructures && structures!.TryGetTag<NbtCompound>("starts", out var starts))
             chunk.StructureStarts = starts;
+
+        // Data from another version is in that version's shape, which the current DataVersion would misrepresent.
+        if (chunkCompound.TryGetTagValue<int>("DataVersion", out var dataVersion)
+            && dataVersion == VanillaLevelData.DataVersion)
+        {
+            foreach (var (name, tag) in chunkCompound)
+            {
+                if (!modeledChunkTags.Contains(name))
+                    chunk.UnmodeledTags.Add(tag);
+            }
+
+            if (hasStructures && structures!.TryGetTag<NbtCompound>("References", out var references))
+                chunk.StructureReferences = references;
+        }
 
         chunk.SetChunkStatus(ParseStatus(chunkCompound.TryGetTag<NbtTag<string>>("Status", out var status) ? status.Value : null));
 
@@ -662,20 +699,32 @@ public class Region : IRegion
             writer.WriteListTag(EntityNbt.ToNbt(entity));
         writer.EndList();
 
-        // Vanilla's structures.starts. References aren't saved: they follow from the starts, which are recomputed from the
-        // seed, so only the starts' placement state needs saving.
-        if (structureStarts is { Count: > 0 })
+        // Vanilla's structures.starts. Obsidian follows references from the starts, which are recomputed from the seed,
+        // so it only keeps the references a chunk was loaded with, for vanilla to read.
+        var structureReferences = (chunk as Chunk)?.StructureReferences;
+        if (structureStarts is { Count: > 0 } || structureReferences is not null)
         {
             writer.WriteCompoundStart("structures");
             writer.WriteCompoundStart("starts");
-            foreach (var (_, start) in structureStarts)
-                writer.WriteTag(start);
+            if (structureStarts is not null)
+            {
+                foreach (var (_, start) in structureStarts)
+                    writer.WriteTag(start);
+            }
+
             writer.EndCompound();
+
+            if (structureReferences is not null)
+                writer.WriteTag(structureReferences);
+
             writer.EndCompound();
         }
 
         if (chunk is Chunk generated)
         {
+            foreach (var tag in generated.UnmodeledTags)
+                writer.WriteTag(tag);
+
             if (generated.PostProcessing.Count > 0)
                 WritePostProcessing(writer, generated);
 
