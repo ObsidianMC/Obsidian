@@ -41,7 +41,8 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
     /// stack again doesn't drop them. Copies of the stack share the compound, so it's never changed.
     /// </summary>
     /// <remarks>
-    /// They aren't sent to clients and don't take part in <see cref="Equals(ItemStack?)"/>.
+    /// They aren't sent to clients, but take part in <see cref="Equals(ItemStack?)"/>, so stacks that differ only in
+    /// them don't merge.
     /// </remarks>
     internal NbtCompound? UnmodeledComponents { get; init; }
 
@@ -146,5 +147,29 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
     public override bool Equals(object obj) => Equals(obj as ItemStack);
 
     public bool Equals(ItemStack? other) => other is not null && this.Holder.Equals(other.Holder) &&
-        this.InternalStorage.SequenceEqual(other.InternalStorage);
+        this.InternalStorage.SequenceEqual(other.InternalStorage) &&
+        UnmodeledEquals(this.UnmodeledComponents, other.UnmodeledComponents);
+
+    private static bool UnmodeledEquals(NbtCompound? left, NbtCompound? right) =>
+        ReferenceEquals(left, right) || (left is not null && right is not null && NbtEquals(left, right));
+
+    // Structural equality of saved NBT. A compound's entries may come in any order.
+    private static bool NbtEquals(INbtTag left, INbtTag right) => (left, right) switch
+    {
+        (NbtCompound a, NbtCompound b) => a.Count == b.Count
+            && a.All(entry => b.TryGetTag(entry.Key, out var other) && NbtEquals(entry.Value, other)),
+        (NbtList a, NbtList b) => a.Count == b.Count && a.Zip(b).All(pair => NbtEquals(pair.First, pair.Second)),
+        (NbtArray<byte> a, NbtArray<byte> b) => a.GetArray().AsSpan().SequenceEqual(b.GetArray()),
+        (NbtArray<int> a, NbtArray<int> b) => a.GetArray().AsSpan().SequenceEqual(b.GetArray()),
+        (NbtArray<long> a, NbtArray<long> b) => a.GetArray().AsSpan().SequenceEqual(b.GetArray()),
+        (NbtTag<byte> a, NbtTag<byte> b) => a.Value == b.Value,
+        (NbtTag<bool> a, NbtTag<bool> b) => a.Value == b.Value,
+        (NbtTag<short> a, NbtTag<short> b) => a.Value == b.Value,
+        (NbtTag<int> a, NbtTag<int> b) => a.Value == b.Value,
+        (NbtTag<long> a, NbtTag<long> b) => a.Value == b.Value,
+        (NbtTag<float> a, NbtTag<float> b) => a.Value.Equals(b.Value),
+        (NbtTag<double> a, NbtTag<double> b) => a.Value.Equals(b.Value),
+        (NbtTag<string> a, NbtTag<string> b) => a.Value == b.Value,
+        _ => false
+    };
 }

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using Obsidian.API;
 using Obsidian.API.Configuration;
 using Obsidian.API.Registries;
+using Obsidian.API.Utilities;
 using Obsidian.Nbt;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
@@ -40,7 +41,11 @@ public sealed class VanillaSaves : IDisposable
 
     private readonly string folder = Path.Join(Path.GetTempPath(), $"obsidian-vanilla-saves-{Guid.NewGuid():N}");
 
-    public void Dispose() => Directory.Delete(this.folder, recursive: true);
+    public void Dispose()
+    {
+        if (Directory.Exists(this.folder))
+            Directory.Delete(this.folder, recursive: true);
+    }
 
     [Fact(DisplayName = "A vanilla chunk loads with its block states by name, biomes and namespaced status")]
     public async Task VanillaChunkLoads()
@@ -223,6 +228,41 @@ public sealed class VanillaSaves : IDisposable
             DeletePersistentData(player);
         }
     }
+
+    [Fact(DisplayName = "Saved items apply removed defaults, and differ from items with other unmodeled components")]
+    public void SavedItemComponents()
+    {
+        var pickaxe = new NbtCompound
+        {
+            new NbtTag<string>("id", "minecraft:diamond_pickaxe"),
+            new NbtTag<int>("count", 1),
+            new NbtCompound("components") { new NbtCompound("!minecraft:max_damage") }
+        };
+
+        var loaded = pickaxe.ItemFromNbt()!;
+        Assert.Equal(0, loaded.MaxDamage);
+        Assert.Contains(DataComponentType.MaxDamage, loaded.RemoveComponents);
+        Assert.True(((NbtCompound)loaded.ToNbt()["components"]).HasTag("!minecraft:max_damage"));
+
+        // The explosion is a component Obsidian doesn't model, so only the saved NBT tells the stars apart.
+        var red = FireworkStar(0xFF0000).ItemFromNbt()!;
+        Assert.Equal(red, FireworkStar(0xFF0000).ItemFromNbt());
+        Assert.NotEqual(red, FireworkStar(0x0000FF).ItemFromNbt());
+    }
+
+    private static NbtCompound FireworkStar(int color) => new()
+    {
+        new NbtTag<string>("id", "minecraft:firework_star"),
+        new NbtTag<int>("count", 1),
+        new NbtCompound("components")
+        {
+            new NbtCompound("minecraft:firework_explosion")
+            {
+                new NbtTag<string>("shape", "small_ball"),
+                new NbtArray<int>("colors", [color])
+            }
+        }
+    };
 
     private World CreateWorld()
     {

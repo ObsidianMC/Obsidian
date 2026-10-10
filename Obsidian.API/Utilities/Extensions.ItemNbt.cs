@@ -10,6 +10,10 @@ namespace Obsidian.API.Utilities;
 // Saved item stacks, in vanilla's ItemStack.CODEC form: { id, count, components }.
 public partial class Extensions
 {
+    // Component types by their saved id, for removals like vanilla's "!minecraft:max_damage".
+    private static readonly Dictionary<string, DataComponentType> componentTypesById =
+        Enum.GetValues<DataComponentType>().ToDictionary(OpaqueDataComponent.GetIdentifier);
+
     /// <summary>
     /// Saves a stack like vanilla's <c>ItemStack.CODEC</c>: its <c>id</c>, <c>count</c> and the <c>components</c> set on
     /// it (its patch).
@@ -33,6 +37,10 @@ public partial class Extensions
             if (tag is not null)
                 components.Add(tag);
         }
+
+        // Removed defaults, saved like vanilla's patch: an empty compound under the id prefixed with "!".
+        foreach (var type in item.RemoveComponents)
+            components.Add(new NbtCompound($"!{OpaqueDataComponent.GetIdentifier(type)}"));
 
         foreach (var (componentName, tag) in item.UnmodeledComponents ?? [])
         {
@@ -69,11 +77,18 @@ public partial class Extensions
             : 1;
 
         var components = new List<DataComponent>();
+        var removed = new List<DataComponentType>();
         var unmodeled = new NbtCompound();
         if (item.TryGetTag<NbtCompound>("components", out var componentsCompound))
         {
             foreach (var (componentName, tag) in componentsCompound)
             {
+                if (componentName.StartsWith('!') && componentTypesById.TryGetValue(componentName[1..], out var type))
+                {
+                    removed.Add(type);
+                    continue;
+                }
+
                 var component = ComponentFromNbt(componentName, tag);
                 if (component is not null)
                     components.Add(component);
@@ -85,7 +100,14 @@ public partial class Extensions
         if (item.TryGetTag<NbtCompound>("tag", out var legacyTag))
             components.AddRange(LegacyComponents(legacyTag));
 
-        return new ItemStack(holder, count, components) { UnmodeledComponents = unmodeled.Count > 0 ? unmodeled : null };
+        var stack = new ItemStack(holder, count, components)
+        {
+            UnmodeledComponents = unmodeled.Count > 0 ? unmodeled : null
+        };
+        foreach (var type in removed)
+            stack.Remove(type);
+
+        return stack;
     }
 
     // The fields of Obsidian's previous item tag.
