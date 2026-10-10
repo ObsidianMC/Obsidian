@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using Obsidian.API.Commands;
 using Obsidian.API.Commands.Exceptions;
 using Obsidian.API.Utilities;
 using Obsidian.Commands.Framework;
@@ -16,46 +15,25 @@ public sealed partial class RegistryConsoleCommandHandler(IServer server, ILogge
     private readonly ConsoleCommandSender sender = new(logger);
 
     /// <summary>
-    /// Completes command and subcommand names. Obsidian's argument parsers have no suggestion API, so arguments are
-    /// not completed.
+    /// Completes the text before the caret with the command handler's suggestions, as a player's tab completion does,
+    /// replacing the rest of the word at the caret too.
     /// </summary>
-    public ValueTask<ConsoleCompletion?> CompleteAsync(string commandLine, int cursor, CancellationToken cancellationToken)
+    public async ValueTask<ConsoleCompletion?> CompleteAsync(string commandLine, int cursor, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var start = cursor == 0 ? 0 : commandLine.LastIndexOf(' ', cursor - 1) + 1;
+        var context = new CommandContext(commandLine[..cursor], this.sender, null, server);
+        var completion = await server.CommandHandler.CompleteAsync(context).ConfigureAwait(false);
+
+        if (completion.Suggestions.Count == 0)
+            return null;
+
         var end = commandLine.IndexOf(' ', cursor);
 
         if (end < 0)
             end = commandLine.Length;
 
-        var previous = commandLine[..start].Split(' ', StringSplitOptions.RemoveEmptyEntries);
-
-        if (previous.Length == 0 && start < cursor && commandLine[start] == '/')
-            start++;
-
-        var commands = server.CommandHandler.GetAllCommands()
-            .Where(command => command.AllowedIssuers.HasFlag(CommandIssuers.Console))
-            .ToArray();
-        Command? parent = null;
-
-        foreach (var word in previous)
-        {
-            parent = commands.FirstOrDefault(command => command.CheckCommand([word.TrimStart('/')], parent));
-
-            if (parent is null)
-                return ValueTask.FromResult<ConsoleCompletion?>(null);
-        }
-
-        var partial = commandLine[start..cursor];
-        var candidates = commands.Where(command => command.Parent == parent)
-            .SelectMany(command => command.Aliases.Prepend(command.Name))
-            .Where(name => name.StartsWith(partial, StringComparison.OrdinalIgnoreCase))
-            .Distinct()
-            .Order(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-
-        return ValueTask.FromResult(candidates.Length == 0 ? null : new ConsoleCompletion(start, end - start, candidates));
+        return new ConsoleCompletion(completion.Start, end - completion.Start, [.. completion.Suggestions.Select(x => x.Text)]);
     }
 
     public async ValueTask<bool> HandleAsync(string commandLine, CancellationToken cancellationToken)

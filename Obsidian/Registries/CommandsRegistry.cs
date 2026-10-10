@@ -88,7 +88,8 @@ public static class CommandsRegistry
             };
 
             // The client sends a CommandSuggestionPacket for nodes with vanilla's ask_server provider.
-            if (arg.GetCustomAttribute<BaseSuggestionProviderAttribute>() is not null)
+            if (arg.GetCustomAttribute<BaseSuggestionProviderAttribute>() is not null
+                || server.CommandHandler.GetArgumentParser(type) is ISuggestionProvider)
             {
                 argNode.Type |= CommandNodeType.HasSuggestions;
                 argNode.SuggestionType = "minecraft:ask_server";

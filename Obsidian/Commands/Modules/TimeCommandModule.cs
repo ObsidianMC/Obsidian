@@ -50,7 +50,6 @@ public sealed class TimeCommandModule : CommandModuleBase
             await this.Sender.SendMessageAsync("Failed to set the time.");
     }
 
-    [Command("set")]
     [CommandOverload]
     [CommandInfo("Sets declared time", "/time set <day|night|noon|midnight>")]
     public async Task SetTime([Suggestions("day", "night", "noon", "midnight")] string value)

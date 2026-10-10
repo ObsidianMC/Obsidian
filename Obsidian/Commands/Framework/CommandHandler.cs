@@ -3,10 +3,10 @@ using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Commands;
 using Obsidian.API.Commands.ArgumentParsers;
+using Obsidian.API.Commands.Exceptions;
 using Obsidian.API.Plugins;
 using Obsidian.API.Utilities.Interfaces;
 using Obsidian.Commands.Builders;
-using Obsidian.Commands.Framework.Exceptions;
 using Obsidian.Plugins;
 using System.Reflection;
 
@@ -180,8 +180,10 @@ public sealed class CommandHandler : ICommandHandler
             parent.Overloads!.AddRange(overloads);
         }
 
-        // Selecting all methods that have the CommandAttribute.
-        foreach (var method in methods.Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandAttribute))))
+        // Selecting all methods that have the CommandAttribute. Overloads join the command of the same method name
+        // below, so they aren't registered as commands of their own even when they repeat the CommandAttribute.
+        foreach (var method in methods.Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandAttribute))
+            && !x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandOverloadAttribute))))
         {
             // Get command name from first constructor argument for command attribute.
             var cmd = method.GetCustomAttribute<CommandAttribute>();
@@ -251,10 +253,10 @@ public sealed class CommandHandler : ICommandHandler
     }
 
     /// <summary>
-    /// Suggests subcommand names and, for parameters with a <see cref="BaseSuggestionProviderAttribute"/>, argument
-    /// values. Arguments typed before the last word must parse for an overload to be suggested, and only commands and
-    /// overloads the sender may run are considered. A trailing <see cref="RemainingAttribute"/> parameter is suggested
-    /// for its first word only.
+    /// Suggests command and subcommand names and argument values from each argument's <see cref="ISuggestionProvider"/>.
+    /// Arguments typed before the one at the cursor must parse for an overload to be suggested, and only commands and
+    /// overloads the sender may run are considered. Suggestions for a trailing <see cref="RemainingAttribute"/>
+    /// parameter cover every word it takes.
     /// </summary>
     public async Task<CommandCompletion> CompleteAsync(CommandContext ctx)
     {
@@ -263,8 +265,7 @@ public sealed class CommandHandler : ICommandHandler
         var words = CommandParser.SplitWords(input.AsSpan(offset));
         var typedCount = words.Count - 1;
         var (partialStart, partial) = words[^1];
-        var start = offset + partialStart;
-        var empty = new CommandCompletion(start, input.Length - start, []);
+        var empty = new CommandCompletion(offset + partialStart, input.Length - offset - partialStart, []);
 
         var commands = GetAllCommands();
         Command? command = null;
@@ -283,64 +284,95 @@ public sealed class CommandHandler : ICommandHandler
         if (command is null && typedCount > 0)
             return empty;
 
-        var candidates = new List<CommandSuggestion>();
+        // Suggestions for the text from Start (after the prefix) to the cursor, which reads as Typed once split into words.
+        var groups = new List<(int Start, string Typed, IEnumerable<CommandSuggestion> Suggestions)>();
 
         if (used == typedCount)
         {
+            var names = new List<CommandSuggestion>();
+
             foreach (var child in commands.Where(x => x.Parent == command))
             {
                 if (await CanUseAsync(child, ctx))
-                    candidates.Add(new CommandSuggestion(child.Name));
+                    names.AddRange(child.Aliases.Prepend(child.Name).Select(name => new CommandSuggestion(name)));
             }
+
+            groups.Add((partialStart, partial, names));
         }
 
         if (command is not null)
         {
-            var arguments = words[used..typedCount].Select(word => word.Value).ToArray();
-
             foreach (var overload in command.Overloads)
-                candidates.AddRange(await SuggestArgumentAsync(overload, arguments, ctx));
+            {
+                if (await SuggestArgumentAsync(command, overload, words[used..], ctx) is { } group)
+                    groups.Add(group);
+            }
         }
 
-        // Like vanilla, drop a suggestion that is already typed in full and cap the reply at 1000 entries.
-        CommandSuggestion[] suggestions = [.. candidates
-            .Where(x => x.Text.StartsWith(partial, StringComparison.OrdinalIgnoreCase) && x.Text != partial)
+        // Like vanilla, drop suggestions that are already typed in full.
+        var matches = groups.SelectMany(group => group.Suggestions
+                .Where(x => x.Text.StartsWith(group.Typed, StringComparison.OrdinalIgnoreCase) && x.Text != group.Typed)
+                .Select(x => (Start: offset + group.Start, Suggestion: x)))
+            .ToArray();
+
+        if (matches.Length == 0)
+            return empty;
+
+        // Like vanilla, suggestions for text that starts later are widened to replace the same text as the earliest by
+        // prepending the typed text in between, and the reply is capped at 1000 entries.
+        var start = matches.Min(x => x.Start);
+        CommandSuggestion[] suggestions = [.. matches
+            .Select(x => x.Suggestion with { Text = input[start..x.Start] + x.Suggestion.Text })
             .DistinctBy(x => x.Text)
             .OrderBy(x => x.Text, StringComparer.OrdinalIgnoreCase)
             .Take(MaxSuggestions)];
 
-        return empty with { Suggestions = suggestions };
+        return new CommandCompletion(start, input.Length - start, suggestions);
     }
 
     /// <summary>
-    /// Suggests values for the parameter of <paramref name="overload"/> that follows <paramref name="arguments"/>, if
-    /// those arguments parse and the sender passes the overload's checks.
+    /// Suggests values for the parameter of <paramref name="overload"/> that the last of <paramref name="words"/> is
+    /// typed into, if the words before it parse and the sender passes the overload's checks.
     /// </summary>
-    private async Task<IEnumerable<CommandSuggestion>> SuggestArgumentAsync(IExecutor<CommandContext> overload,
-        string[] arguments, CommandContext ctx)
+    /// <param name="words">The command's arguments, ending with the word at the cursor.</param>
+    /// <returns>
+    /// The suggestions with where the argument starts and its typed text, or <see langword="null"/> if there are none.
+    /// </returns>
+    private async Task<(int Start, string Typed, IEnumerable<CommandSuggestion> Suggestions)?> SuggestArgumentAsync(
+        Command command, IExecutor<CommandContext> overload, List<(int Start, string Value)> words, CommandContext ctx)
     {
         var parameters = overload.GetParameters();
+        var index = words.Count - 1;
 
-        if (arguments.Length >= parameters.Length
-            || parameters[arguments.Length].GetCustomAttribute<BaseSuggestionProviderAttribute>() is not BaseSuggestionProviderAttribute provider)
-            return [];
+        // A trailing [Remaining] parameter takes every word from its first, as when the command runs.
+        if (index >= parameters.Length && parameters.Length > 0 && parameters[^1].GetCustomAttribute<RemainingAttribute>() is not null)
+            index = parameters.Length - 1;
 
-        for (var i = 0; i < arguments.Length; i++)
+        if (index >= parameters.Length || FindSuggestionProvider(parameters[index]) is not ISuggestionProvider provider)
+            return null;
+
+        for (var i = 0; i < index; i++)
         {
             var type = parameters[i].ParameterType;
 
-            if (!IsValidArgumentType(type) || !GetArgumentParser(type).TryParseArgument(arguments[i], ctx, out _))
-                return [];
+            if (!IsValidArgumentType(type) || !GetArgumentParser(type).TryParseArgument(words[i].Value, ctx, out _))
+                return null;
         }
 
-        foreach (var check in overload.GetCustomAttributes<BaseExecutionCheckAttribute>())
-        {
-            if (!await check.RunChecksAsync(ctx))
-                return [];
-        }
+        if (await command.FindFailedCheckAsync(overload, ctx) is not null)
+            return null;
 
-        return await provider.GetSuggestionsAsync(ctx);
+        var typed = string.Join(' ', words[index..].Select(word => word.Value));
+
+        return (words[index].Start, typed, await provider.GetSuggestionsAsync(ctx));
     }
+
+    /// <summary>
+    /// Finds what suggests values for <paramref name="parameter"/>: its suggestion attribute, or else its argument parser.
+    /// </summary>
+    private ISuggestionProvider? FindSuggestionProvider(ParameterInfo parameter) =>
+        parameter.GetCustomAttribute<BaseSuggestionProviderAttribute>()
+            ?? (IsValidArgumentType(parameter.ParameterType) ? GetArgumentParser(parameter.ParameterType) as ISuggestionProvider : null);
 
     private static async Task<bool> CanUseAsync(Command command, CommandContext ctx)
     {

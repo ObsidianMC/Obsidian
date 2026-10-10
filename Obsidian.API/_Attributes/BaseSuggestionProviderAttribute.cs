@@ -3,16 +3,12 @@ using Obsidian.API.Commands;
 namespace Obsidian.API;
 
 /// <summary>
-/// Supplies suggestions for a command parameter while a player types it. Subclass it for suggestions computed at
-/// typing time, such as names of things that exist on the server; use <see cref="SuggestionsAttribute"/> for a fixed list.
+/// Supplies suggestions for one command parameter. Subclass it for suggestions computed at typing time, such as names
+/// of things that exist on the server; use <see cref="SuggestionsAttribute"/> for a fixed list.
 /// </summary>
-/// <remarks>
-/// The client asks the server for these suggestions, so they reach players only for parameters of commands they may
-/// run. The command handler keeps the suggestions that start with what the player has typed, so a provider may return
-/// every candidate.
-/// </remarks>
+/// <remarks>See <see cref="ISuggestionProvider"/> for how suggestions are offered.</remarks>
 [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false)]
-public abstract class BaseSuggestionProviderAttribute : Attribute
+public abstract class BaseSuggestionProviderAttribute : Attribute, ISuggestionProvider
 {
     public abstract ValueTask<IEnumerable<CommandSuggestion>> GetSuggestionsAsync(CommandContext context);
 }
