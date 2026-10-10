@@ -68,7 +68,7 @@ public class Commands
 
     [Theory(DisplayName = "Command lines complete to subcommands and suggested argument values")]
     [InlineData("/sug", 1, 3, "suggest")]
-    [InlineData("/suggest ", 9, 0, "draw,g,give,mix,paint,say,set")] // not the denied locked group
+    [InlineData("/suggest ", 9, 0, "draw,g,give,mix,paint,say,set")] // not the denied locked and hidden groups
     [InlineData("/suggest set n", 13, 1, "night,noon")]
     [InlineData("/suggest set ", 13, 0, "day,midnight,night,noon")]
     [InlineData("suggest set N", 12, 1, "night,noon")] // command blocks omit the prefix
@@ -123,6 +123,13 @@ public class Commands
         if (parses)
             Assert.Equal(Shape.RoundedSquare, result);
     }
+
+    [Theory(DisplayName = "A word ends before the next one starts, counting a quoted word with spaces as one")]
+    [InlineData("/time set", 2, 5)]
+    [InlineData("/time set n", 11, 11)]
+    [InlineData("/plain \"night time\" later", 9, 19)]
+    public void FindsWordEnds(string input, int index, int end) =>
+        Assert.Equal(end, Obsidian.Commands.Framework.CommandParser.FindWordEnd(input, index));
 
     private CommandHandler CreateSuggestionHandler()
     {
@@ -187,6 +194,13 @@ public class Commands
 
         [Command("draw")]
         public Task Draw(Shape shape) => Task.CompletedTask;
+
+        [CommandGroup("hidden")]
+        public class Hidden : CommandModuleBase
+        {
+            [GroupCommand, Deny]
+            public Task Run() => Task.CompletedTask;
+        }
 
         [CommandGroup("locked")]
         [Deny]

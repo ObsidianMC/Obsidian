@@ -28,10 +28,7 @@ public sealed partial class RegistryConsoleCommandHandler(IServer server, ILogge
         if (completion.Suggestions.Count == 0)
             return null;
 
-        var end = commandLine.IndexOf(' ', cursor);
-
-        if (end < 0)
-            end = commandLine.Length;
+        var end = CommandParser.FindWordEnd(commandLine, cursor);
 
         return new ConsoleCompletion(completion.Start, end - completion.Start, [.. completion.Suggestions.Select(x => x.Text)]);
     }

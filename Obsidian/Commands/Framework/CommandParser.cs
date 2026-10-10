@@ -30,6 +30,21 @@ public sealed class CommandParser(string prefix)
     }
 
     /// <summary>
+    /// Finds where the word containing <paramref name="index"/> ends: before the space that starts the next word, so a
+    /// quoted word with spaces counts as one, or at the end of <paramref name="input"/>.
+    /// </summary>
+    public static int FindWordEnd(string input, int index)
+    {
+        foreach (var (start, _) in SplitWords(input))
+        {
+            if (start > index)
+                return start - 1;
+        }
+
+        return input.Length;
+    }
+
+    /// <summary>
     /// Splits a command line into words at unquoted spaces, removing quotes and resolving backslash escapes.
     /// </summary>
     /// <returns>

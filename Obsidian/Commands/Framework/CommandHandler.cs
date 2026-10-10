@@ -20,7 +20,8 @@ public sealed class CommandHandler : ICommandHandler
 
     internal readonly ILogger logger;
 
-    private readonly List<Command> _commands;
+    // Replaced as a whole, so network threads reading it never see a registration half done.
+    private ImmutableArray<Command> _commands = [];
     private readonly CommandParser _commandParser;
     // Concurrent because enum parsers are added on first use, which can happen on network threads.
     private readonly ConcurrentDictionary<Type, BaseArgumentParser> _argumentParsers;
@@ -30,7 +31,6 @@ public sealed class CommandHandler : ICommandHandler
     public CommandHandler(IServiceProvider serviceProvider, ILogger<CommandHandler> logger)
     {
         _commandParser = new CommandParser(CommandHelpers.DefaultPrefix);
-        _commands = [];
 
         // Find all predefined argument parsers
         var parsers = typeof(StringArgumentParser).Assembly.GetTypes()
@@ -76,6 +76,8 @@ public sealed class CommandHandler : ICommandHandler
 
     public Command[] GetAllCommands() => _commands.ToArray();
 
+    private void AddCommand(Command command) => ImmutableInterlocked.Update(ref _commands, commands => commands.Add(command));
+
     public void RegisterCommand(PluginContainer? pluginContainer, string name, Delegate commandDelegate)
     {
         var method = commandDelegate.Method;
@@ -99,13 +101,14 @@ public sealed class CommandHandler : ICommandHandler
              .AddOverload(executor)
              .Build(this, pluginContainer);
 
-        _commands.Add(command);
+        AddCommand(command);
     }
 
     public bool TryAddArgumentParser<TValue>(BaseArgumentParser<TValue> parser) =>
         _argumentParsers.TryAdd(typeof(TValue), parser);
 
-    public void UnregisterPluginCommands(IPluginContainer? plugin) => _commands.RemoveAll(x => x.PluginContainer == plugin);
+    public void UnregisterPluginCommands(IPluginContainer? plugin) =>
+        ImmutableInterlocked.Update(ref _commands, commands => commands.RemoveAll(x => x.PluginContainer == plugin));
 
     public void RegisterCommandClass<T>(IPluginContainer? plugin) => RegisterCommandClass(plugin, typeof(T));
 
@@ -160,7 +163,7 @@ public sealed class CommandHandler : ICommandHandler
         RegisterSubgroups(moduleType, pluginContainer, command);
         RegisterSubcommands(moduleType, pluginContainer, command);
 
-        _commands.Add(command);
+        AddCommand(command);
     }
 
     private void RegisterSubgroups(Type moduleType, IPluginContainer? pluginContainer, Command? parent = null)
@@ -246,7 +249,7 @@ public sealed class CommandHandler : ICommandHandler
                 .CanIssueAs(issuers)
                 .Build(this, pluginContainer);
 
-            _commands.Add(command);
+            AddCommand(command);
         }
     }
 
@@ -309,7 +312,7 @@ public sealed class CommandHandler : ICommandHandler
 
             foreach (var child in commands.Where(x => x.Parent == command))
             {
-                if (await CanUseAsync(child, ctx))
+                if (await CanSuggestNameAsync(child, commands, ctx))
                     names.AddRange(child.Aliases.Prepend(child.Name).Select(name => new CommandSuggestion(name)));
             }
 
@@ -355,6 +358,9 @@ public sealed class CommandHandler : ICommandHandler
     private async Task<SuggestionGroup?> SuggestArgumentAsync(
         Command command, IExecutor<CommandContext> overload, List<(int Start, string Value)> words, CommandContext ctx)
     {
+        // Parsers, checks and the provider see the command's plugin, as when it runs.
+        ctx.Plugin = command.PluginContainer?.Plugin;
+
         var parameters = overload.GetParameters();
         var index = words.Count - 1;
 
@@ -412,8 +418,35 @@ public sealed class CommandHandler : ICommandHandler
         parameter.GetCustomAttribute<BaseSuggestionProviderAttribute>()
             ?? (IsValidArgumentType(parameter.ParameterType) ? GetArgumentParser(parameter.ParameterType) as ISuggestionProvider : null);
 
+    /// <summary>
+    /// Whether <paramref name="command"/> may be offered by name: the sender can use it, and it has a usable overload
+    /// or subcommands, which are checked once they are typed.
+    /// </summary>
+    private static async Task<bool> CanSuggestNameAsync(Command command, Command[] commands, CommandContext ctx)
+    {
+        if (!await CanUseAsync(command, ctx))
+            return false;
+
+        if (command.Overloads.Count == 0 || commands.Any(x => x.Parent == command))
+            return true;
+
+        foreach (var overload in command.Overloads)
+        {
+            if (await command.FindFailedCheckAsync(overload, ctx) is null)
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Whether the sender may use <paramref name="command"/> as far as it and the groups already checked go. Its checks
+    /// see the command's plugin in the context, as when it runs.
+    /// </summary>
     private static async Task<bool> CanUseAsync(Command command, CommandContext ctx)
     {
+        ctx.Plugin = command.PluginContainer?.Plugin;
+
         if (!command.AllowedIssuers.HasFlag(ctx.Sender.Issuer))
             return false;
 
@@ -443,10 +476,12 @@ public sealed class CommandHandler : ICommandHandler
     {
         Command? cmd = default;
 
-        // Search for correct Command class in this._commands.
-        while (_commands.Any(x => x.CheckCommand(args, cmd)))
+        var commands = _commands;
+
+        // Search for correct Command class in the registered commands.
+        while (commands.Any(x => x.CheckCommand(args, cmd)))
         {
-            cmd = _commands.First(x => x.CheckCommand(args, cmd));
+            cmd = commands.First(x => x.CheckCommand(args, cmd));
             args = Enumerable.Skip(args, 1).ToArray();
         }
 
