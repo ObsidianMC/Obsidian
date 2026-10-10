@@ -21,7 +21,7 @@ public sealed class TimeCommandModule : CommandModuleBase
 
     [Command("query")]
     [CommandInfo("Queries the time", "/time query <day|daytime|gametime>")]
-    public async Task Query(string value)
+    public async Task Query([Suggestions("daytime", "gametime", "day")] string value)
     {
         switch (value)
         {
@@ -50,11 +50,9 @@ public sealed class TimeCommandModule : CommandModuleBase
             await this.Sender.SendMessageAsync("Failed to set the time.");
     }
 
-    //TODO: Command Suggestions
-    [Command("set")]
     [CommandOverload]
     [CommandInfo("Sets declared time", "/time set <day|night|noon|midnight>")]
-    public async Task SetTime(string value)
+    public async Task SetTime([Suggestions("day", "night", "noon", "midnight")] string value)
     {
         if (TimeDictionary.TryGetValue(value, out int time))
         {

@@ -20,10 +20,43 @@ public sealed class CommandParser(string prefix)
 
     public static string[] SplitQualifiedString(ReadOnlyMemory<char> qualifiedString)
     {
-        ReadOnlySpan<char> input = qualifiedString.Span;
-        var tokens = new List<string>();
+        var words = SplitWords(qualifiedString.Span);
+
+        // A trailing empty word is one that hasn't been typed yet, not an argument.
+        if (words[^1].Value.Length == 0)
+            words.RemoveAt(words.Count - 1);
+
+        return [.. words.Select(word => word.Value)];
+    }
+
+    /// <summary>
+    /// Finds where the word containing <paramref name="index"/> ends: before the space that starts the next word, so a
+    /// quoted word with spaces counts as one, or at the end of <paramref name="input"/>.
+    /// </summary>
+    public static int FindWordEnd(string input, int index)
+    {
+        foreach (var (start, _) in SplitWords(input))
+        {
+            if (start > index)
+                return start - 1;
+        }
+
+        return input.Length;
+    }
+
+    /// <summary>
+    /// Splits a command line into words at unquoted spaces, removing quotes and resolving backslash escapes.
+    /// </summary>
+    /// <returns>
+    /// Each word with the index in <paramref name="input"/> where it starts. The last word is the one being typed, which
+    /// is empty when <paramref name="input"/> is empty or ends with a separating space.
+    /// </returns>
+    public static List<(int Start, string Value)> SplitWords(ReadOnlySpan<char> input)
+    {
+        var words = new List<(int Start, string Value)>();
 
         var buffer = new StringBuilder();
+        int start = 0;
         bool inQuote = false;
         bool escape = false;
 
@@ -32,8 +65,9 @@ public sealed class CommandParser(string prefix)
             if (input[i] == ' ' && !inQuote)
             {
                 // flush buffer
-                tokens.Add(buffer.ToString());
+                words.Add((start, buffer.ToString()));
                 buffer.Clear();
+                start = i + 1;
             }
             else if (escape)
             {
@@ -77,12 +111,8 @@ public sealed class CommandParser(string prefix)
             }
         }
 
-        if (buffer.Length > 0)
-        {
-            // clear remaining buffer
-            tokens.Add(buffer.ToString());
-        }
+        words.Add((start, buffer.ToString()));
 
-        return tokens.ToArray();
+        return words;
     }
 }

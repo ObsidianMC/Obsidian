@@ -45,6 +45,9 @@ internal sealed partial class PlayClientHandler : ClientHandler
             case 13:
                 await HandleFromPoolAsync<ClientInformationPacket>(data);
                 break;
+            case 14:
+                await HandleFromPoolAsync<CommandSuggestionPacket>(data);
+                break;
             case 15:
                 await HandleFromPoolAsync<ConfigurationAcknowledgedPacket>(data);
                 break;

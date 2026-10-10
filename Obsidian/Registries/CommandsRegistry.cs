@@ -3,6 +3,7 @@ using Obsidian.API.Commands.ArgumentParsers;
 using Obsidian.API.Utilities.Interfaces;
 using Obsidian.Commands;
 using Obsidian.Net.Packets.Play.Clientbound;
+using System.Reflection;
 
 namespace Obsidian.Registries;
 public static class CommandsRegistry
@@ -85,6 +86,14 @@ public static class CommandsRegistry
                 "minecraft:time" => new MinecraftTimeArgumentParser(),
                 _ => new EmptyArgumentParser(id, mctype),
             };
+
+            // The client sends a CommandSuggestionPacket for nodes with vanilla's ask_server provider.
+            if (arg.GetCustomAttribute<BaseSuggestionProviderAttribute>() is not null
+                || server.CommandHandler.GetArgumentParser(type) is ISuggestionProvider)
+            {
+                argNode.Type |= CommandNodeType.HasSuggestions;
+                argNode.SuggestionType = "minecraft:ask_server";
+            }
 
             prev.AddChild(argNode);
 
