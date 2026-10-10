@@ -16,6 +16,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
+using Dimension = Obsidian.WorldData.Dimension;
 using PlayerEntity = Obsidian.Entities.Player;
 
 namespace Obsidian.Tests;
@@ -250,6 +251,30 @@ public sealed class VanillaSaves : IDisposable
         Assert.NotEqual(red, FireworkStar(0x0000FF).ItemFromNbt());
     }
 
+    [Fact(DisplayName = "A new world reads its game rules, and its dimensions share its difficulty")]
+    public void NewWorldLevelData()
+    {
+        var world = this.CreateWorld(new NbtCompound("Data")
+        {
+            new NbtTag<string>("LevelName", "world"),
+            new NbtTag<byte>("Difficulty", (byte)Difficulty.Peaceful),
+            new NbtCompound("game_rules") { new NbtTag<int>("minecraft:random_tick_speed", 0) }
+        });
+
+        Assert.Equal(0, world.LevelData.GetIntegerRule("random_tick_speed"));
+
+        CodecRegistry.TryGetDimension("minecraft:the_nether", out var netherCodec);
+        var nether = new Dimension(NullLogger<Dimension>.Instance, null!, new FixedOptions(new ServerConfiguration()),
+            null!, new EmptyWorldGenerator(), netherCodec!.Name, world);
+        nether.Initialize(netherCodec);
+        world.RegisterDimension(netherCodec, nether);
+        Assert.Equal(Difficulty.Peaceful, nether.LevelData.Difficulty);
+
+        world.SetDifficulty(Difficulty.Hard, locked: true);
+        Assert.Equal(Difficulty.Hard, nether.LevelData.Difficulty);
+        Assert.True(nether.LevelData.DifficultyLocked);
+    }
+
     private static NbtCompound FireworkStar(int color) => new()
     {
         new NbtTag<string>("id", "minecraft:firework_star"),
@@ -264,7 +289,7 @@ public sealed class VanillaSaves : IDisposable
         }
     };
 
-    private World CreateWorld()
+    private World CreateWorld(NbtCompound? data = null)
     {
         var world = new World(NullLogger<World>.Instance, null!, null!, new FixedOptions(new ServerConfiguration()), null!,
             new EmptyWorldGenerator(), "world", "0");
@@ -272,7 +297,7 @@ public sealed class VanillaSaves : IDisposable
         world.UseVanillaLayout(this.folder);
         CodecRegistry.TryGetDimension("minecraft:overworld", out var overworld);
         world.Initialize(overworld!);
-        world.CreateVanillaLevel(new NbtCompound("Data") { new NbtTag<string>("LevelName", "world") });
+        world.CreateVanillaLevel(data ?? new NbtCompound("Data") { new NbtTag<string>("LevelName", "world") });
 
         return world;
     }

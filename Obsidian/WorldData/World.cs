@@ -69,6 +69,9 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         level.GeneratorName = this.Generator.Id;
         level.Time = this.LevelData.Time;
         this.LevelData = level;
+
+        // Before the dimensions are set up, which share the rules.
+        ReadGameRules(data);
     }
 
     public async override Task<bool> LoadAsync(DimensionCodec codec)
@@ -285,6 +288,19 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
     {
         Players.TryRemove(uuid, out var player);
         await player.SaveAsync();
+    }
+
+    /// <summary>
+    /// Sets the difficulty and whether it's locked, in the world and its dimensions: like vanilla's levels, they share
+    /// one difficulty.
+    /// </summary>
+    internal void SetDifficulty(Difficulty difficulty, bool locked)
+    {
+        foreach (var level in this.dimensions.Values.OfType<AbstractLevel>().Prepend(this))
+        {
+            level.LevelData.Difficulty = difficulty;
+            level.LevelData.DifficultyLocked = locked;
+        }
     }
 
     public void RegisterDimension(DimensionCodec codec, IDimension dimension)

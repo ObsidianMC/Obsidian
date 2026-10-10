@@ -1,3 +1,5 @@
+using Obsidian.WorldData;
+
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
 public partial class ChangeDifficultyPacket
@@ -8,14 +10,16 @@ public partial class ChangeDifficultyPacket
     /// </summary>
     public override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
-        if (server is not Server obsidian || !obsidian.MayChangeDifficulty(player))
+        if (server is not Server obsidian
+            || obsidian.DefaultWorld is not World world
+            || !obsidian.MayChangeDifficulty(player))
             return default;
 
-        var level = obsidian.DefaultWorld.LevelData;
+        var level = world.LevelData;
         if (level.DifficultyLocked)
             return default;
 
-        level.Difficulty = level.Hardcore ? Difficulty.Hard : this.Difficulty;
+        world.SetDifficulty(level.Hardcore ? Difficulty.Hard : this.Difficulty, locked: false);
         obsidian.BroadcastDifficulty();
         return default;
     }

@@ -30,7 +30,11 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
             Time = codec.Element.FixedTime ?? 0,
             DefaultGamemode = GameMode.Survival,
             GeneratorName = Generator.Id,
-            GameRules = ParentWorld.LevelData.GameRules
+            GameRules = ParentWorld.LevelData.GameRules,
+            // Vanilla's levels share the world's difficulty, which World.SetDifficulty keeps in step.
+            Difficulty = ParentWorld.LevelData.Difficulty,
+            DifficultyLocked = ParentWorld.LevelData.DifficultyLocked,
+            Hardcore = ParentWorld.LevelData.Hardcore
         };
 
         this.LevelDataFilePath = Path.Combine(this.FolderPath, "level.dat");
@@ -70,7 +74,6 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
         if (data.TryGetTagValue<int>("SpawnX", out var x) && data.TryGetTagValue<int>("SpawnY", out var y) && data.TryGetTagValue<int>("SpawnZ", out var z))
             LevelData.SpawnPosition = new VectorF(x + 0.5f, y, z + 0.5f);
         if (data.TryGetTagValue<long>("Time", out var time)) LevelData.Time = time;
-        if (data.TryGetTagValue<byte>("Difficulty", out var difficulty)) LevelData.Difficulty = (Difficulty)difficulty;
         var (chunkX, chunkZ) = LevelData.SpawnPosition.ToChunkCoord();
         var index = 0;
         for (var cx = chunkX - Configuration.SpawnChunkRadius; cx < chunkX + Configuration.SpawnChunkRadius; cx++)
@@ -93,7 +96,6 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
         writer.WriteInt("SpawnY", spawn.Y);
         writer.WriteInt("SpawnZ", spawn.Z);
         writer.WriteLong("Time", LevelData.Time);
-        writer.WriteByte("Difficulty", (byte)LevelData.Difficulty);
         WriteGameRules(writer);
         WriteEndFightNbt(writer);
         WriteRaidsNbt(writer);
