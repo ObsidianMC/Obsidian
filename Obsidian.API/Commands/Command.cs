@@ -56,11 +56,11 @@ public sealed class Command
     /// <param name="args">The arguments the command was issued with.</param>
     public async Task ExecuteAsync(CommandContext context, string[] args)
     {
-        // Check whether the issuer can execute this command
-        if (!AllowedIssuers.HasFlag(context.Sender.Issuer))
+        // Check whether the issuer can execute this command and the groups it belongs to
+        if (SelfAndGroups().FirstOrDefault(command => !command.AllowedIssuers.HasFlag(context.Sender.Issuer)) is Command restricted)
         {
             throw new DisallowedCommandIssuerException(
-                $"Command {GetQualifiedName()} cannot be executed as {context.Sender.Issuer}", AllowedIssuers);
+                $"Command {GetQualifiedName()} cannot be executed as {context.Sender.Issuer}", restricted.AllowedIssuers);
         }
 
         var executors = Overloads.Where(x => x.MatchParams(args)
@@ -185,25 +185,43 @@ public sealed class Command
             }
         }
 
-        // do execution checks
-        var checks = commandExecutor.GetCustomAttributes<BaseExecutionCheckAttribute>();
-
-        foreach (var c in checks)
+        if (await this.FindFailedCheckAsync(commandExecutor, context) is BaseExecutionCheckAttribute failed)
         {
-            if (!await c.RunChecksAsync(context))
+            // TODO: Tell user what arg failed?
+            throw failed switch
             {
-                // A check failed.
-                // TODO: Tell user what arg failed?
-                throw c switch
-                {
-                    RequirePermissionAttribute r => new NoPermissionException(r.RequiredPermissions, r.CheckType),
-                    _ => new CommandExecutionCheckException($"One or more execution checks failed."),
-                };
-            }
+                RequirePermissionAttribute r => new NoPermissionException(r.RequiredPermissions, r.CheckType),
+                _ => new CommandExecutionCheckException($"One or more execution checks failed."),
+            };
         }
 
         // await the command with it's args
         await commandExecutor.Execute(serviceScope.ServiceProvider, context, parsedargs);
+    }
+
+    /// <summary>
+    /// Runs the checks of this command, of the groups it belongs to and of <paramref name="overload"/>, so that a
+    /// group's or command's restrictions also cover its subcommands and overloads.
+    /// </summary>
+    /// <returns>The first check that fails, or <see langword="null"/> if every check passes.</returns>
+    internal async Task<BaseExecutionCheckAttribute?> FindFailedCheckAsync(IExecutor<CommandContext> overload, CommandContext context)
+    {
+        var checks = SelfAndGroups().SelectMany(command => command.ExecutionChecks)
+            .Concat(overload.GetCustomAttributes<BaseExecutionCheckAttribute>());
+
+        foreach (var check in checks)
+        {
+            if (!await check.RunChecksAsync(context))
+                return check;
+        }
+
+        return null;
+    }
+
+    private IEnumerable<Command> SelfAndGroups()
+    {
+        for (var command = this; command is not null; command = command.Parent)
+            yield return command;
     }
 
     public override string ToString() => $"{CommandHelpers.DefaultPrefix}{GetQualifiedName()}";
