@@ -68,7 +68,7 @@ public class Commands
 
     [Theory(DisplayName = "Command lines complete to subcommands and suggested argument values")]
     [InlineData("/sug", 1, 3, "suggest")]
-    [InlineData("/suggest ", 9, 0, "draw,g,give,mix,paint,set")] // not the denied locked group
+    [InlineData("/suggest ", 9, 0, "draw,g,give,mix,paint,say,set")] // not the denied locked group
     [InlineData("/suggest set n", 13, 1, "night,noon")]
     [InlineData("/suggest set ", 13, 0, "day,midnight,night,noon")]
     [InlineData("suggest set N", 12, 1, "night,noon")] // command blocks omit the prefix
@@ -81,6 +81,8 @@ public class Commands
     [InlineData("/suggest draw ROU", 14, 3, "rounded_square")]
     [InlineData("/suggest mix r", 13, 1, "red bike")]
     [InlineData("/suggest mix red b", 13, 5, "red bike,red blue")] // the second word's suggestion is widened
+    [InlineData("/suggest say h", 13, 1, "\"hello \\\"world\\\"\",hi")] // quoted so it reads back as one word
+    [InlineData("/suggest say \"h", 13, 2, "\"hello \\\"world\\\"\",\"hi\"")] // replaces the opening quote too
     [InlineData("/suggest locked open n", 21, 1, "")]
     [InlineData("/missing n", 9, 1, "")]
     public async Task CompletesCommandLines(string input, int start, int length, string expected)
@@ -179,6 +181,9 @@ public class Commands
 
         [Command("paint")]
         public Task Paint(Color color) => Task.CompletedTask;
+
+        [Command("say")]
+        public Task Say([Suggestions("hello \"world\"", "hi")] string text) => Task.CompletedTask;
 
         [Command("draw")]
         public Task Draw(Shape shape) => Task.CompletedTask;

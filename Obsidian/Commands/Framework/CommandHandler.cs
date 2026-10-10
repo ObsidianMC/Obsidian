@@ -301,8 +301,7 @@ public sealed class CommandHandler : ICommandHandler
         if (command is null && typedCount > 0)
             return empty;
 
-        // Suggestions for the text from Start (after the prefix) to the cursor, which reads as Typed once split into words.
-        var groups = new List<(int Start, string Typed, IEnumerable<CommandSuggestion> Suggestions)>();
+        var groups = new List<SuggestionGroup>();
 
         if (used == typedCount)
         {
@@ -314,7 +313,7 @@ public sealed class CommandHandler : ICommandHandler
                     names.AddRange(child.Aliases.Prepend(child.Name).Select(name => new CommandSuggestion(name)));
             }
 
-            groups.Add((partialStart, partial, names));
+            groups.Add(new SuggestionGroup(partialStart, partial, IsWord: false, names));
         }
 
         if (command is not null)
@@ -329,7 +328,7 @@ public sealed class CommandHandler : ICommandHandler
         // Like vanilla, drop suggestions that are already typed in full.
         var matches = groups.SelectMany(group => group.Suggestions
                 .Where(x => x.Text.StartsWith(group.Typed, StringComparison.OrdinalIgnoreCase) && x.Text != group.Typed)
-                .Select(x => (Start: offset + group.Start, Suggestion: x)))
+                .Select(x => (Start: offset + group.Start, Suggestion: group.IsWord ? QuoteIfNeeded(x, input.AsSpan(offset + group.Start).StartsWith('"')) : x)))
             .ToArray();
 
         if (matches.Length == 0)
@@ -352,10 +351,8 @@ public sealed class CommandHandler : ICommandHandler
     /// typed into, if the words before it parse and the sender passes the overload's checks.
     /// </summary>
     /// <param name="words">The command's arguments, ending with the word at the cursor.</param>
-    /// <returns>
-    /// The suggestions with where the argument starts and its typed text, or <see langword="null"/> if there are none.
-    /// </returns>
-    private async Task<(int Start, string Typed, IEnumerable<CommandSuggestion> Suggestions)?> SuggestArgumentAsync(
+    /// <returns>The argument's suggestions, or <see langword="null"/> if there are none.</returns>
+    private async Task<SuggestionGroup?> SuggestArgumentAsync(
         Command command, IExecutor<CommandContext> overload, List<(int Start, string Value)> words, CommandContext ctx)
     {
         var parameters = overload.GetParameters();
@@ -380,9 +377,33 @@ public sealed class CommandHandler : ICommandHandler
             return null;
 
         var typed = string.Join(' ', words[index..].Select(word => word.Value));
+        var isWord = parameters[index].GetCustomAttribute<RemainingAttribute>() is null;
 
-        return (words[index].Start, typed, await provider.GetSuggestionsAsync(ctx));
+        return new SuggestionGroup(words[index].Start, typed, isWord, await provider.GetSuggestionsAsync(ctx));
     }
+
+    /// <summary>
+    /// Quotes a suggestion for a one-word argument if the command parser would otherwise split or unescape it, or if
+    /// the word being replaced was typed with an opening quote, so that the completed text reads back as the suggestion.
+    /// </summary>
+    private static CommandSuggestion QuoteIfNeeded(CommandSuggestion suggestion, bool typedQuote)
+    {
+        if (!typedQuote && !suggestion.Text.AsSpan().ContainsAny(' ', '"', '\\'))
+            return suggestion;
+
+        var escaped = suggestion.Text.Replace("\\", "\\\\").Replace("\"", "\\\"");
+
+        return suggestion with { Text = $"\"{escaped}\"" };
+    }
+
+    /// <summary>Suggestions for the text from <see cref="Start"/> (after the prefix) to the cursor.</summary>
+    /// <param name="Start">Where the replaced text starts, after the command prefix.</param>
+    /// <param name="Typed">The replaced text once split into words, which suggestions are matched against.</param>
+    /// <param name="IsWord">
+    /// Whether the suggestions fill one argument word, so they may need quoting, rather than a command name or the
+    /// rest of the line.
+    /// </param>
+    private readonly record struct SuggestionGroup(int Start, string Typed, bool IsWord, IEnumerable<CommandSuggestion> Suggestions);
 
     /// <summary>
     /// Finds what suggests values for <paramref name="parameter"/>: its suggestion attribute, or else its argument parser.
