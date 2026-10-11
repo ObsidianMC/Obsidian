@@ -99,7 +99,7 @@ internal static partial class PluginTags
     }
 
     // Vanilla's identifier rules.
-    private static bool IsIdentifier(string identifier)
+    internal static bool IsIdentifier(string identifier)
     {
         var colon = identifier.IndexOf(':');
 

@@ -394,14 +394,15 @@ internal sealed class SurfaceBuilder
         switch (condition)
         {
             case BiomeSurfaceCondition biome:
-                // Matches by registered biome id, which stands for the name, so blocks don't hash a string each.
+                // Matches by registered biome id, which stands for the name, so blocks don't hash a string each. A
+                // biome plugins registered after the rule was compiled isn't one it names.
                 var names = biome.BiomeIs.ToHashSet();
                 var registered = CodecRegistry.Biomes.All.Values;
                 var matches = new bool[registered.Max(codec => codec.Id) + 1];
                 foreach (var codec in registered)
                     matches[codec.Id] = names.Contains(codec.Name);
 
-                return context => matches[context.Biome.Id];
+                return context => (uint)context.Biome.Id < (uint)matches.Length && matches[context.Biome.Id];
             case NoiseThresholdSurfaceCondition noiseThreshold:
                 var noise = this.randomState.GetOrCreateNoise(((BaseNoise)noiseThreshold.Noise).Key);
                 return context =>

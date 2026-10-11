@@ -8,7 +8,10 @@ public sealed class DamageTypeCodec : ICodec
 
     public required int Id { get; init; }
 
-    public required DamageTypeElement Element { get; init; }
+    /// <summary>
+    /// The entry's data. A plugin's entry gets a new element when its plugin reloads, and keeps its instance and id.
+    /// </summary>
+    public required DamageTypeElement Element { get; set; }
 
     public void WriteElement(INbtWriter writer)
     {

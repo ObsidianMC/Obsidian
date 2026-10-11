@@ -1,8 +1,10 @@
-# Plugin blocks, entities and tags
+# Plugin blocks, entities, tags and data
 
 Plugins add blocks in code or from JSON files that Obsidian's source generator turns into code, add entity types in
-code, and add tags with data pack tag files, like NeoForge and Fabric mods. Clients need the matching mod: NeoForge and
-Fabric clients are sent the block, item and entity type registries, so their ids agree with the server's.
+code, and add tags, biomes, dimension types and damage types with data pack files, like NeoForge and Fabric mods.
+Clients need the matching mod for blocks, items and entity types: NeoForge and Fabric clients are sent those
+registries, so their ids agree with the server's. Biomes, dimension types and damage types are sent with their data,
+so vanilla clients can join too.
 
 ## Blocks in code
 
@@ -107,3 +109,46 @@ vanilla's tags. When tags refer to each other through optional references, the r
 is left out in identifier order, where vanilla's order depends on its hash map. Players already connected get the
 changed tags when a plugin loads or unloads, and go back through configuration when its blocks, items, entity types or
 channels changed.
+
+## Biomes, dimension types and damage types
+
+Like a data pack's, each file is an entry named after its namespace and path:
+
+- `data/<namespace>/worldgen/biome/<path>.json` is the biome `<namespace>:<path>`;
+- `data/<namespace>/dimension_type/<path>.json` is a dimension type;
+- `data/<namespace>/damage_type/<path>.json` is a damage type.
+
+The files are vanilla's format for these registries. A biome:
+
+```json
+{
+  "has_precipitation": true,
+  "temperature": 0.7,
+  "downfall": 0.8,
+  "effects": {
+    "water_color": "#3f76e4",
+    "grass_color": "#6fbf4a",
+    "foliage_color": "#59ae30"
+  },
+  "spawners": {
+    "creature": [{ "type": "minecraft:sheep", "weight": 12, "minCount": 4, "maxCount": 4 }]
+  },
+  "spawn_costs": {}
+}
+```
+
+Obsidian reads the files whenever a plugin loads or unloads, and at startup before the worlds load:
+
+- A plugin's entries get ids after vanilla's, in the order they were first added. Reloading the plugin keeps an
+  entry's id and replaces its data.
+- Entries stay registered until the server stops, even when their plugin unloads, since chunks and saves refer to
+  them. Saved chunks store biomes by name, so after a restart without the plugin its biomes load as plains, as its
+  blocks load as air.
+- Plugins can't override vanilla's entries: a file in the `minecraft` namespace is left out, with a warning. When two
+  plugins define the same entry, the first in load order wins and the other is logged.
+- A file that can't be read is logged and left out; the plugin loads without it.
+
+Clients are sent a plugin's entries with its files' data, and vanilla's by name, so vanilla clients accept them like a
+data pack's entries. Players already connected go back through configuration when entries are added or their data
+changes. Plugin biomes don't generate anywhere yet, and the Obsidian client colours biomes from compiled tables, so
+plugin biomes have no tint there yet.

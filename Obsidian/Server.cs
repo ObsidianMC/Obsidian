@@ -128,12 +128,14 @@ public sealed partial class Server : IServer
 
     /// <summary>
     /// What clients configure with that plugins change: the registries plugins added to, whose ids only grow, so their
-    /// sizes tell them apart, and the plugins' payload channels.
+    /// sizes tell them apart, with how many times plugins' data files changed biomes, dimension types or damage types
+    /// (whose data clients are sent), and the plugins' payload channels.
     /// </summary>
     internal ContentVersion GetContentVersion()
     {
         var registries = $"{ItemsRegistry.All.Count}/{BlocksRegistry.PluginBlocks.Count}/"
-            + $"{EntityDefinitionsRegistry.PluginDefinitions.Count}";
+            + $"{EntityDefinitionsRegistry.PluginDefinitions.Count}/{CodecRegistry.Biomes.All.Count}/"
+            + $"{CodecRegistry.Dimensions.All.Count}/{CodecRegistry.DamageType.All.Count}/{PluginCodecs.Revision}";
 
         Net.Payloads.NetworkProtocol[] protocols =
             [Net.Payloads.NetworkProtocol.Configuration, Net.Payloads.NetworkProtocol.Play];

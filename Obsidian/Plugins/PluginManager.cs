@@ -399,7 +399,9 @@ public sealed partial class PluginManager : IAsyncDisposable
 
             container.Plugin.ConfigureRegistry(this.pluginRegistry);
             container.TagFiles.InsertRange(0, this.ReadTagFiles(archive));
+            container.CodecFiles = this.ReadCodecFiles(archive);
             this.ApplyTags();
+            this.ApplyCodecs();
             container.Loaded = true;
 
             await container.Plugin.OnLoadedAsync(this.server);
@@ -476,6 +478,7 @@ public sealed partial class PluginManager : IAsyncDisposable
 
         this.plugins = this.plugins.Remove(pluginContainer);
         this.ApplyTags();
+        this.ApplyCodecs();
 
         var dependents = this.releases
             .Where(pair => pair.Key.Dependencies.Contains(pluginContainer))
@@ -580,6 +583,28 @@ public sealed partial class PluginManager : IAsyncDisposable
         return files;
     }
 
+    // A plugin's biome, dimension type and damage type files. A file that can't be read, or would override one of
+    // vanilla's entries, is left out; the plugin loads without it.
+    private ImmutableArray<CodecFile> ReadCodecFiles(PluginArchive archive)
+    {
+        var files = ImmutableArray.CreateBuilder<CodecFile>();
+
+        foreach (var (path, registry, identifier) in PluginCodecs.FindFiles(archive.Paths))
+        {
+            try
+            {
+                var data = archive.Read(path) ?? throw new InvalidDataException($"{path} can't be read.");
+                files.Add(PluginCodecs.Parse(registry, identifier, $"{archive.Info.Id}/{path}", data));
+            }
+            catch (InvalidDataException ex)
+            {
+                Log.CodecFileFailed(this.logger, ex, path, archive.Source);
+            }
+        }
+
+        return files.ToImmutable();
+    }
+
     // Has every loaded entity drop the goals, navigators and goal controllers plugins gave it from the load context, on
     // its level's tick, where its AI runs. The queued actions hold the context weakly: a level that doesn't tick would
     // keep it loaded otherwise, and once nothing else holds it, no mob has anything to drop.
@@ -624,6 +649,10 @@ public sealed partial class PluginManager : IAsyncDisposable
     // The tags hold vanilla's entries and the loaded plugins' tag files, in load order.
     private void ApplyTags() =>
         PluginTags.Apply(this.plugins.SelectMany(plugin => plugin.TagFiles), this.logger);
+
+    // The loaded plugins' entries are in their registries, in load order. Ones no plugin has any more stay.
+    private void ApplyCodecs() =>
+        PluginCodecs.Apply(this.plugins.SelectMany(plugin => plugin.CodecFiles), this.logger);
 
     // Players see the commands of the plugins that are loaded now. Startup doesn't need this: nobody has joined yet.
     private void OnPluginsChanged()
@@ -703,6 +732,9 @@ public sealed partial class PluginManager : IAsyncDisposable
 
         [LoggerMessage(Level = LogLevel.Error, Message = "Left out tag file {Path} of plugin {Source}")]
         public static partial void TagFileFailed(ILogger logger, Exception exception, string path, string source);
+
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Left out data file {Path} of plugin {Source}")]
+        public static partial void CodecFileFailed(ILogger logger, Exception exception, string path, string source);
 
         [LoggerMessage(Level = LogLevel.Information,
             Message = "Loaded plugin {PluginName} {Version} in {ElapsedMilliseconds}ms")]

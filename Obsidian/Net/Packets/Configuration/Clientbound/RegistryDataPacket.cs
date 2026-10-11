@@ -1,13 +1,18 @@
-﻿namespace Obsidian.Net.Packets.Configuration.Clientbound;
+﻿using Obsidian.Nbt;
+
+namespace Obsidian.Net.Packets.Configuration.Clientbound;
 
 /// <summary>
-/// Sends the entries of a synchronized registry. Entries are sent by id only unless <see cref="WriteCodecs"/> is set; the
-/// client then takes their data from the vanilla <c>minecraft:core</c> pack it shares with the server. The order of the
-/// entries gives their network ids.
+/// Sends the entries of a synchronized registry. Entries are sent by id only unless <see cref="WriteCodecs"/> is set
+/// or they're given data; the client then takes their data from the vanilla <c>minecraft:core</c> pack it shares with
+/// the server. The order of the entries gives their network ids.
 /// </summary>
 public partial class RegistryDataPacket
 {
     private readonly IReadOnlyList<string> entryIds;
+
+    // Each entry's data, or null to send it by id: the NBT of plugins' data files.
+    private readonly IReadOnlyList<NbtCompound?>? entryData;
 
     public string RegistryId { get; }
 
@@ -32,15 +37,37 @@ public partial class RegistryDataPacket
         this.entryIds = [.. entryIds];
     }
 
+    /// <summary>
+    /// Creates a packet that sends <paramref name="entries"/>, in order, each with its data, or by id where it has
+    /// none.
+    /// </summary>
+    public RegistryDataPacket(string registryId, IEnumerable<(string Id, NbtCompound? Data)> entries)
+    {
+        var list = entries.ToList();
+
+        this.RegistryId = registryId;
+        this.Codecs = new Dictionary<string, ICodec>();
+        this.entryIds = [.. list.Select(entry => entry.Id)];
+        this.entryData = [.. list.Select(entry => entry.Data)];
+    }
+
     public override void Serialize(INetStreamWriter writer)
     {
         writer.WriteString(this.RegistryId);
 
         writer.WriteVarInt(this.entryIds.Count);
 
-        foreach (var key in this.entryIds)
+        for (var i = 0; i < this.entryIds.Count; i++)
         {
+            var key = this.entryIds[i];
             writer.WriteString(key);
+
+            if (this.entryData?[i] is NbtCompound data)
+            {
+                writer.WriteBoolean(true);
+                writer.WriteNbtCompound(data);
+                continue;
+            }
 
             var writeCodec = this.WriteCodecs && this.Codecs.ContainsKey(key);
             writer.WriteBoolean(writeCodec);

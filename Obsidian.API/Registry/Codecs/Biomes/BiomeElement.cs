@@ -16,8 +16,13 @@ public sealed record class BiomeElement
     public string? Category { get; set; }
     public string? TemperatureModifier { get; set; }
 
+    // Not read from plugins' files yet: vanilla's are holder sets (a list, an id or a tag), which these don't match.
+    [JsonIgnore]
     public ImmutableArray<ImmutableArray<string>> Features { get; set; } = [];
+
+    [JsonIgnore]
     public Dictionary<string, string[]> Carvers { get; set; } = default!;
+
     public Dictionary<string, SpawnerMob[]> Spawners { get; set; } = default!;
     public Dictionary<string, SpawnCost> SpawnCosts { get; set; } = default!;
 

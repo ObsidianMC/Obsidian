@@ -93,6 +93,8 @@ internal static class ChunkSectionNbt
         if (!biomes.TryGetTag<NbtList>("palette", out var paletteTag))
             return;
 
+        // Biomes are saved by name. An unknown one, like a plugin's after a restart without its plugin, loads as
+        // plains.
         var palette = paletteTag.OfType<NbtTag<string>>()
             .Select(name => CodecRegistry.TryGetBiome(name.Value!, out var biome) ? biome! : CodecRegistry.Biomes.Plains)
             .ToList();

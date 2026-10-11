@@ -50,7 +50,7 @@ public partial class RegistryAssetsGenerator
                }
 
                builder.AppendValueType(value, ctx);
-           }, ctx);
+           }, ctx, extensible: true);
 
         builder.GenerateSimpleCodec(codecs["biomes"].ToArray(), "Biomes", "minecraft:worldgen/biome", "BiomeCodec",
             (name, value) =>
@@ -75,7 +75,7 @@ public partial class RegistryAssetsGenerator
                 }
 
                 builder.AppendValueType(value, ctx);
-            }, ctx);
+            }, ctx, extensible: true);
 
         builder.GenerateSimpleCodec(codecs["chat_type"].ToArray(), "ChatType", "minecraft:chat_type", "ChatTypeCodec", ctx);
 
@@ -99,7 +99,7 @@ public partial class RegistryAssetsGenerator
                 }
 
                 builder.AppendValueType(value, ctx);
-            }, ctx);
+            }, ctx, extensible: true);
 
         builder.GenerateSimpleCodec(codecs["trim_material"].ToArray(), "TrimMaterial", "minecraft:trim_material", "TrimMaterialCodec",
             (name, value) =>

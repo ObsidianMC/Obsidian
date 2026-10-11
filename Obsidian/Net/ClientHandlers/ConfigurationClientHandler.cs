@@ -116,10 +116,18 @@ internal sealed partial class ConfigurationClientHandler : ClientHandler
         //This is very inconvenient
         var dialogs = this.Server.CreateDialogConfiguration();
         this.SendPacket(new RegistryDataPacket(CodecRegistry.Dialog.CodecKey, dialogs.Codecs) { WriteCodecs = true });
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.Dimensions.CodecKey, ById(CodecRegistry.Dimensions.All)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.Biomes.CodecKey, ById(CodecRegistry.Biomes.All)));
+        // Plugins' dimension types, biomes and damage types are sent with their data, which vanilla clients accept
+        // like a data pack's.
+        this.SendPacket(new RegistryDataPacket(
+            CodecRegistry.Dimensions.CodecKey,
+            CodecRegistry.Dimensions.Table.NetworkEntries));
+        this.SendPacket(new RegistryDataPacket(
+            CodecRegistry.Biomes.CodecKey,
+            CodecRegistry.Biomes.Table.NetworkEntries));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.ChatType.CodecKey, ById(CodecRegistry.ChatType.All)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.DamageType.CodecKey, ById(CodecRegistry.DamageType.All)));
+        this.SendPacket(new RegistryDataPacket(
+            CodecRegistry.DamageType.CodecKey,
+            CodecRegistry.DamageType.Table.NetworkEntries));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimPattern.CodecKey,
             ById(CodecRegistry.TrimPattern.All)));
         this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimMaterial.CodecKey,

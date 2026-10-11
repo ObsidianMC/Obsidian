@@ -65,6 +65,11 @@ public sealed class PluginContainer : IPluginContainer, IAsyncDisposable
     /// </summary>
     internal List<TagFile> TagFiles { get; } = [];
 
+    /// <summary>
+    /// The plugin's biome, dimension type and damage type files, applied to their registries while it's loaded.
+    /// </summary>
+    internal ImmutableArray<CodecFile> CodecFiles { get; set; } = [];
+
     public bool Loaded { get; internal set; }
 
     internal void Initialize()

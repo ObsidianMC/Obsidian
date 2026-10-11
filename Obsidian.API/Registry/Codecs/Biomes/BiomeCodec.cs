@@ -9,7 +9,10 @@ public sealed record class BiomeCodec : ICodec
 
     public required int Id { get; init; }
 
-    public required BiomeElement Element { get; init; }
+    /// <summary>
+    /// The entry's data. A plugin's entry gets a new element when its plugin reloads, and keeps its instance and id.
+    /// </summary>
+    public required BiomeElement Element { get; set; }
 
     public void WriteElement(INbtWriter writer)
     {

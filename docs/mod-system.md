@@ -80,9 +80,19 @@ client. This document describes the design and tracks its progress. The archive 
      (`stack.Holder.Id is ItemIds.Bucket`, `block.Is(BlockIds.Stone)`). A block item places the block with its
      identifier, or a plugin item's block.
    - Next: Phase 3.
-3. **Data-driven content and world generation**: loading a mod's `data/` folder like a data pack (biomes, dimension
-   types, damage types, tags, worldgen features), letting mods register codec types for data-driven objects (feature,
-   density function and biome source types), and reload-safe world generators.
+3. **Data-driven content and world generation** (in progress): loading a mod's `data/` folder like a data pack
+   (biomes, dimension types, damage types, tags, worldgen features), letting mods register codec types for
+   data-driven objects (feature, density function and biome source types), and reload-safe world generators.
+   - Done: biomes, dimension types and damage types from a plugin's `data/<namespace>/worldgen/biome`,
+     `dimension_type` and `damage_type` files (see [plugin-content.md](plugin-content.md)). Their registries are
+     extensible at runtime: plugins' entries get ids after vanilla's in the order they were first added, keep their id
+     and instance across reloads (a reload replaces their data) and stay until the server stops, like items and
+     blocks. The global biome palette's bits follow the registry's size, like vanilla's. Vanilla's entries are sent by
+     name from the `minecraft:core` pack and plugins' with their files as NBT, which vanilla clients accept like a data
+     pack's, so they aren't refused. A change to these entries sends connected players back through configuration.
+     Plugin biomes don't generate anywhere yet.
+   - Next: worldgen data (configured and placed features, and biomes' features at runtime), then codec types
+     registered by plugins, then dimensions and reload-safe generators.
 4. **Client**: the client-facing API in `Obsidian.API.Client` (entity renderers, block and item models, screens, key
    bindings, particles), implemented by the Obsidian client, which loads mods, layers their `assets/` like resource
    packs, and answers NeoForge's handshake and registry sync.
