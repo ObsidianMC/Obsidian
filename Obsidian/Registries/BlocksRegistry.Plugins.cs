@@ -93,7 +93,13 @@ internal static partial class BlocksRegistry
             return true;
         }
 
-        return TryGetDefault(item.UnlocalizedName, out block) && !block.IsAir;
+        // A plugin's item places only the block it's given, which a reload may take away.
+        block = null;
+        if (item.Id >= ItemsRegistry.VanillaCount || !resourceIdToName.TryGetValue(item.UnlocalizedName, out var name))
+            return false;
+
+        block = defaultBlockCache[name];
+        return !block.IsAir;
     }
 
     /// <summary>
